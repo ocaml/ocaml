@@ -1,4 +1,5 @@
 (* TEST
+   unset BUILD_PATH_PREFIX_MAP;
    native-compiler;
    no-tsan; (* Skip, TSan inserts extra frames into backtraces *)
    linux;

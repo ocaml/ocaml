@@ -23,7 +23,7 @@ DRIVER = ../tools/test_in_prefix$(EXE)
 endif
 
 DRIVER_ARGS = \
-  $(VERBOSE_FLAG) --bindir "$(BINDIR)" --libdir "$(LIBDIR)" \
+  $(VERBOSE_FLAG) --bindir "$(BINDIR)" --libdir '$(TARGET_LIBDIR)' \
   $(call bool_to_with, ocamlnat, $(INSTALL_OCAMLNAT)) \
   $(call bool_to_with, ocamlopt, $(NATIVE_COMPILER)) \
   $(OTHERLIBRARIES) --pwd "$(SRCDIR_ABS)/testsuite/in_prefix"

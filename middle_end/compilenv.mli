@@ -108,6 +108,14 @@ val need_send_fun: int -> unit
         (* Record the need of a currying (resp. application,
            message sending) function with the given arity *)
 
+val need_stdlib_location: unit -> unit
+        (* Record that caml_standard_library_nat needs to be initialised if this
+           unit is linked. *)
+
+val stdlib_symbol_name: Ident.t
+        (* The name of the symbol defined globally for
+           %standard_library_default *)
+
 val new_const_symbol : unit -> string
 val closure_symbol : Closure_id.t -> Symbol.t
         (* Symbol of a function if the function is

@@ -711,6 +711,17 @@ using "compiler-libs" library (see
 ).
 }%nat
 
+\notop{%
+\item["-set-runtime-default" \var{name=value}]
+When linking an executable, override the default value for a runtime setting.
+The currently supported settings are:
+\begin{description}
+  \item["standard_library_default"] Specifies the default location used by the
+    executable to locate the Standard Library. By default, this is the absolute
+    path to the Standard Library the compiler itself was configured with.
+\end{description}
+}%notop
+
 \nat{%
 \item["-shared"]
 Build a plugin (usually ".cmxs") that can be dynamically loaded with

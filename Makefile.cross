@@ -40,8 +40,15 @@ VPATH := + $(VPATH)
 
 CROSS_OVERRIDES=OCAMLRUN=ocamlrun NEW_OCAMLRUN=ocamlrun \
   BOOT_OCAMLLEX=ocamllex OCAMLYACC=ocamlyacc
+# The cross-compiler is linked as build/bin/ocamlopt -o cross/bin/ocamlopt
+# Config.standard_library_default for cross/bin/ocamlopt would by default be the
+# value for build/bin/ocamlopt (i.e. build/lib/ocaml), which is not what is
+# wanted. When linking the cross-compiler itself, therefore, this default must
+# be overridden with -set-runtime-default so that cross/bin/ocamlopt instead has
+# cross/lib/ocaml for Config.standard_library_default
 CROSS_COMPILER_OVERRIDES=$(CROSS_OVERRIDES) CAMLC=ocamlc CAMLOPT=ocamlopt \
-  BEST_OCAMLC=ocamlc BEST_OCAMLOPT=ocamlopt BEST_OCAMLLEX=ocamllex
+  BEST_OCAMLC=ocamlc BEST_OCAMLOPT=ocamlopt BEST_OCAMLLEX=ocamllex \
+  HOST_LIBDIR="$(LIBDIR)"
 CROSS_COMPILERLIBS_OVERRIDES=$(CROSS_OVERRIDES) CAMLC=ocamlc \
   CAMLOPT="$(ROOTDIR)/ocamlopt.opt$(EXE) $(STDLIBFLAGS)"
 

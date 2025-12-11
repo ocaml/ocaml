@@ -198,6 +198,10 @@ let make_globals_map units_list ~crc_interfaces =
     crc_interfaces defined
 
 let make_startup_file ~ppf_dump units_list ~crc_interfaces =
+  let need_stdlib =
+    let needs_stdlib ({ui_need_stdlib; _}, _, _) = ui_need_stdlib in
+    List.exists needs_stdlib units_list
+  in
   let compile_phrase p = Asmgen.compile_phrase ~ppf_dump p in
   Location.input_name := "caml_startup"; (* set name of "current" input *)
   Compilenv.reset "_startup";
@@ -224,6 +228,14 @@ let make_startup_file ~ppf_dump units_list ~crc_interfaces =
   Array.iteri
     (fun i name -> compile_phrase (Cmm_helpers.predef_exception i name))
     Runtimedef.builtin_exceptions;
+  if need_stdlib then begin
+    let standard_library_default =
+      Option.value ~default:Config.standard_library_default
+                   !Clflags.standard_library_default in
+    compile_phrase
+      (Cmm_helpers.emit_global_string_constant
+        "caml_standard_library_nat" standard_library_default)
+  end;
   compile_phrase (Cmm_helpers.global_table name_list);
   let globals_map = make_globals_map units_list ~crc_interfaces in
   compile_phrase (Cmm_helpers.globals_map globals_map);

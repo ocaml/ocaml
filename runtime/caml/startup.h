@@ -48,13 +48,18 @@ extern int32_t caml_seek_optional_section(int fd, struct exec_trailer *trail,
 extern int32_t caml_seek_section(int fd, struct exec_trailer *trail,
                                  const char *name);
 
-enum caml_byte_program_mode
-  {
-   STANDARD /* normal bytecode program requiring "ocamlrun" */,
-   COMPLETE_EXE /* embedding the vm, i.e. compiled with --output-complete-exe */
-  };
+enum caml_byte_program_mode {
+  STANDARD, /* Default mode for ocamlrun */
+  APPENDED, /* bytecode must be appended (i.e. -custom) */
+  EMBEDDED  /* bytecode embedded in C (e.g. -output-complete-exe/-output-obj) */
+};
 
-extern enum caml_byte_program_mode caml_byte_program_mode;
+extern const enum caml_byte_program_mode caml_byte_program_mode;
+
+/* The default location of the Standard Library as used by the runtime to find
+   ld.conf */
+extern const char_os *caml_runtime_standard_library_default;
+extern const char_os *caml_runtime_standard_library_effective;
 
 #endif /* CAML_INTERNALS */
 

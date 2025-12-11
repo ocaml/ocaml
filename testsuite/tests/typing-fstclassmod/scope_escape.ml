@@ -7,7 +7,8 @@ module type S = sig
   type t
 end;;
 
-let rec (module M : S) =
+let rec (m : (module S)) =
+  let (module M) = m in
   (module struct
     type t = M.t
   end : S
@@ -16,22 +17,33 @@ in
 ();;
 [%%expect{|
 module type S = sig type t end
-Lines 6-9, characters 2-22:
-6 | ..(module struct
-7 |     type t = M.t
-8 |   end : S
-9 |     with type t = M.t)
+Lines 7-10, characters 2-22:
+ 7 | ..(module struct
+ 8 |     type t = M.t
+ 9 |   end : S
+10 |     with type t = M.t)
+Error: This expression has type "(module S with type t = M.t)"
+       but an expression was expected of type "(module S)"
+       The type constructor "M.t" would escape its scope
+|}, Principal{|
+module type S = sig type t end
+Lines 7-10, characters 2-22:
+ 7 | ..(module struct
+ 8 |     type t = M.t
+ 9 |   end : S
+10 |     with type t = M.t)
 Error: This expression has type "(module S with type t = M.t)"
        but an expression was expected of type "(module S)"
 |}];;
 
 let rec k =
+  let (module A) = a in
   let (module K : S with type t = A.t) = k in
   (module struct
     type t = K.t
   end : S
     with type t = K.t)
-and (module A : S) =
+and (a : (module S)) =
   (module struct
     type t = unit
 
@@ -40,25 +52,24 @@ and (module A : S) =
 in
 ();;
 [%%expect{|
-Lines 2-6, characters 2-22:
-2 | ..let (module K : S with type t = A.t) = k in
-3 |   (module struct
-4 |     type t = K.t
-5 |   end : S
-6 |     with type t = K.t)
-Error: This expression has type "(module S with type t = A.t)"
-       but an expression was expected of type "'a"
+Line 3, characters 41-42:
+3 |   let (module K : S with type t = A.t) = k in
+                                             ^
+Error: The value "k" has type "'a" but an expression was expected of type
+         "(module S with type t = A.t)"
        The type constructor "A.t" would escape its scope
 |}];;
 
 (* The locally abstract type lets us check the module's type
    without scope escape. *)
 let f (type a) () =
-  let rec (module M : S with type t = a) =
+  let rec (m : (module S with type t = a)) =
+    let (module M) = m in
     (module struct
       type t = M.t
     end : S with type t = M.t)
   in
+  ignore m;
   ()
 ;;
 [%%expect{|
@@ -66,11 +77,13 @@ val f : unit -> unit = <fun>
 |}];;
 
 let f (type a) () =
-  let rec (module M : S with type t = a) =
+  let rec (m : (module S with type t = a)) =
+    let (module M) = m in
     (module struct
       type t = M.t
     end : S with type t = a)
   in
+  ignore m;
   ();;
 [%%expect{|
 val f : unit -> unit = <fun>

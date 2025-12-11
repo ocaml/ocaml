@@ -82,6 +82,15 @@ Working version
   normalised on both Windows and Unix.
   (David Allsopp, review by Jonah Beckford, Damien Doligez and Hugo Heuzard)
 
+- #14244: Added --with-relative-libdir which allows the runtime and the
+  compilers to locate the Standard Library relative to where the binaries
+  themselves are installed, removing the absolute path previously embedded in
+  caml_standard_library_default. Executables linked with `ocamlc -custom` now
+  always attempt to load bytecode from the executable itself, rather than first
+  trying `argv[0]`.
+  (David Allsopp, review by Jonah Beckford, Antonin Décimo, Damien Doligez,
+   Samuel Hym and Vincent Laviron)
+
 - #12269, #12410, #13063: Fix unsafety, deadlocks, and/or leaks should
   rare errors happen during domain creation and thread
   creation/registration.
@@ -260,6 +269,9 @@ Working version
 
 ### Manual and documentation:
 
+- #14397: Improve documentation of type-directed disambiguation of array
+  literals (Alicia Michael, review by Olivier Nicole and Florian Angeletti)
+
 - #14293: Improve documentation of Runtime_events.Timestamp (Raphaël Proust,
   review by Gabriel Scherer)
 
@@ -335,6 +347,13 @@ Working version
   (Gabriel Scherer, review by Nicolás Ojeda Bär and Florian Angeletti,
    report by Kate Deplaix)
 
+- #14244: Add -set-runtime-default option to the compiler, allowing the default
+  value of the Standard Library location used by the runtime to be overridden.
+  (Antonin Décimo, review by David Allsopp, Jonah Beckford, Damien Doligez and
+   Samuel Hym)
+
+- #14190: `ocaml -e` now also processes `-init` (previously it was ignored).
+  (Emile Trotignon, review by David Allsopp and @ygrek)
 
 ### Internal/compiler-libs changes:
 
@@ -403,6 +422,9 @@ Working version
 - #14331: Enforce current_level <= generic_level, and explain create_scope
   (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
 
+* #14388: Remove support for `let rec (module M : S) = e1 in e2`.
+  (Alistair O'Brien, review by Vincent Laviron and Gabriel Scherer)
+
 ### Build system:
 
 - #13810: Support build of cross compilers to native freestanding targets
@@ -413,6 +435,14 @@ Working version
   stublibs subdirectory is no longer created, nor added to ld.conf, when
   building OCaml with --disable-shared.
   (David Allsopp, review by Jonah Beckford, Damien Doligez and Hugo Heuzard)
+
+- #14244: When targeting native Windows on Cygwin or MSYS2, preserve
+  backslashes in the supplied `--prefix` (in particular, backslashes instead of
+  slashes will then be displayed by `ocamlopt -config-var standard_library`).
+  If the supplied prefix contains a slash, then it is normalised, as
+  previously.
+  (David Allsopp, review by Jonah Beckford, Antonin Décimo, Damien Doligez and
+   Samuel Hym)
 
 ### Bug fixes:
 

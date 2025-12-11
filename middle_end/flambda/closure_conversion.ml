@@ -384,26 +384,30 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         ~name:Names.raise)
   | Lprim (Pctconst c, [arg], _loc) ->
       let module Backend = (val t.backend) in
-      let const =
-        begin match c with
-        | Big_endian -> lambda_const_bool Backend.big_endian
-        | Word_size -> lambda_const_int (8*Backend.size_int)
-        | Int_size -> lambda_const_int (8*Backend.size_int - 1)
-        | Max_wosize ->
-            lambda_const_int ((1 lsl ((8*Backend.size_int) - 10)) - 1)
-        | Ostype_unix ->
-            lambda_const_bool (String.equal Config.target_os_type "Unix")
-        | Ostype_win32 ->
-            lambda_const_bool (String.equal Config.target_os_type "Win32")
-        | Ostype_cygwin ->
-            lambda_const_bool (String.equal Config.target_os_type "Cygwin")
-        | Backend_type ->
-            Lambda.const_int 0 (* tag 0 is the same as Native *)
-        end
-      in
-      close t env
-        (Lambda.Llet(Strict, Pgenval, Ident.create_local "dummy",
+      let cst f v =
+        let const = f v in
+        close t env (Lambda.Llet(Strict, Pgenval, Ident.create_local "dummy",
                      arg, Lconst const))
+      in
+      begin match c with
+      | Big_endian -> cst lambda_const_bool Backend.big_endian
+      | Word_size -> cst lambda_const_int (8*Backend.size_int)
+      | Int_size -> cst lambda_const_int (8*Backend.size_int - 1)
+      | Max_wosize ->
+          cst lambda_const_int ((1 lsl ((8*Backend.size_int) - 10)) - 1)
+      | Ostype_unix ->
+          cst lambda_const_bool (String.equal Config.target_os_type "Unix")
+      | Ostype_win32 ->
+          cst lambda_const_bool (String.equal Config.target_os_type "Win32")
+      | Ostype_cygwin ->
+          cst lambda_const_bool (String.equal Config.target_os_type "Cygwin")
+      | Backend_type -> cst Lambda.const_int 0 (* tag 0 is the same as Native *)
+      | Standard_library_default ->
+          Compilenv.need_stdlib_location ();
+          let symbol = t.symbol_for_global' Compilenv.stdlib_symbol_name in
+          t.imported_symbols <- Symbol.Set.add symbol t.imported_symbols;
+          name_expr (Symbol symbol) ~name:Names.pgetglobal
+      end
   | Lprim (Pfield _, [Lprim (Pgetglobal id, [],_)], _)
       when Ident.same id t.current_unit_id ->
     Misc.fatal_errorf "[Pfield (Pgetglobal ...)] for the current compilation \

@@ -75,14 +75,22 @@ INSTALL_OCAMLNAT = @install_ocamlnat@
 DEP_CC=@DEP_CC@ -MM
 COMPUTE_DEPS=@compute_deps@
 
+BUILD_PATH_LOGICAL = @srcdir_abs@
+BUILD_PATH_PHYSICAL = @srcdir_abs_real@
+BUILD_MAP_FLAGS = @build_map_flags@
+BUILD_MAP_CFLAGS = $(foreach flag, $(BUILD_MAP_FLAGS), \
+  $(call QUOTE_SINGLE,$(flag)$(BUILD_PATH_LOGICAL)=+build) \
+  $(if $(BUILD_PATH_PHYSICAL), \
+    $(call $(QUOTE_SINGLE),$(flag)$(BUILD_PATH_PHYSICAL)=+build)))
+
 # Default flags to use to compile C files
-OC_CFLAGS = @oc_cflags@
+OC_CFLAGS = @oc_cflags@ $(BUILD_MAP_CFLAGS)
 
 # Flags to use when compiling C files to be linked with bytecode
-OC_BYTECODE_CFLAGS = @oc_bytecode_cflags@
+OC_BYTECODE_CFLAGS = @oc_bytecode_cflags@ $(BUILD_MAP_CFLAGS)
 
 # Flags to use when compiling C files to be linked with native code
-OC_NATIVE_CFLAGS = @oc_native_cflags@
+OC_NATIVE_CFLAGS = @oc_native_cflags@ $(BUILD_MAP_CFLAGS)
 
 # The submodules should be searched *before* any other external -I paths
 OC_INCLUDES = $(addprefix -I $(ROOTDIR)/, \
@@ -143,6 +151,7 @@ DOCDIR=@docdir@
 
 ### Where to look for the standard library on target
 TARGET_LIBDIR=@TARGET_LIBDIR@
+TARGET_LIBDIR_IS_RELATIVE=@target_libdir_is_relative@
 
 unix_directory = @unix_directory@
 unix_library = @unix_library@

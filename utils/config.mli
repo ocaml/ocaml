@@ -24,15 +24,27 @@ val version: string
 (** The current version number of the system *)
 
 val bindir: string
-(** The directory containing the binary programs *)
+(** The directory containing the binary programs. If the compiler was configured
+    with [--with-relative-libdir] then this will be the directory containing the
+    currently executing runtime. *)
+
+val standard_library_relative: string option
+(** The explicit relative path from the compiler binaries to the standard
+    libraries directory if the compiler was configured with
+    [--with-relative-libdir], or [None] otherwise.
+
+    @since 5.5 *)
 
 val standard_library_default: string
-(** The configured value for the directory containing the standard libraries
+(** The effective value for the default directory containing the standard
+    libraries. This is always an absolute path, computed using
+    {!standard_library_relative} if necessary.
 
     @since 5.5 *)
 
 val standard_library: string
-(** The effective directory containing the standard libraries *)
+(** The effective directory containing the standard libraries, taking CAMLLIB
+    and OCAMLLIB into account. *)
 
 val ccomp_type: string
 (** The "kind" of the C compiler, assembler and linker used: one of
@@ -74,6 +86,12 @@ val c_has_debug_prefix_map : bool
 
 val as_has_debug_prefix_map : bool
 (** Whether the assembler supports --debug-prefix-map *)
+
+val as_is_cc : bool
+(** Whether the assembler is actually an assembler, or whether we are really
+    assembling files via the C compiler
+
+    @since 5.5 *)
 
 val bytecode_cflags : string
 (** The flags ocamlc should pass to the C compiler *)
@@ -207,7 +225,24 @@ val target_os_type: string
 (** Operating system targeted by the native-code compiler. One of
 -  ["Unix"] (for all Unix versions, including Linux and macOS),
 -  ["Win32"] (for MS-Windows, OCaml compiled with MSVC++ or MinGW-w64),
--  ["Cygwin"] (for MS-Windows, OCaml compiled with Cygwin). *)
+-  ["Cygwin"] (for MS-Windows, OCaml compiled with Cygwin).
+
+    @since 5.4 *)
+
+val target_unix: bool
+(** True if [target_os_type = "Unix"]
+
+    @since 5.5 *)
+
+val target_win32: bool
+(** True if [target_os_type = "Win32"]
+
+    @since 5.5 *)
+
+val target_cygwin: bool
+(** True if [target_os_type = "Cygwin"]
+
+    @since 5.5 *)
 
 val asm: string
 (** The assembler (and flags) to use for assembling

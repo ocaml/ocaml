@@ -317,8 +317,11 @@ Display a short usage summary and exit.
 
 When
 .BR ocaml (1)
-is invoked, it will read phrases from an initialization file before
-giving control to the user. The file read is the first found of:
+is invoked as a toplevel, it will read phrases from an initialization file
+before giving control to the user. This does not happen when running a
+script, or when using -e.
+
+The file read is the first found of:
 .IP 1.
 \fB.ocamlinit\fP in the current directory;
 .IP 2.

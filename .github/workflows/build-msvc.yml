@@ -36,7 +36,8 @@ jobs:
             let compilers = ['cl', 'clang-cl'];
             // # Also test i686 MSVC
             let include = [
-              {cc: 'cl', arch: 'i686'}];
+              {cc: 'cl', arch: 'i686', libdir: 'relative'}];
+            let libdir = ['absolute'];
             // # If this is a pull request, see if the PR has the
             // # 'CI: Full matrix' label. This is done using an API request,
             // # rather than from context.payload.pull_request.labels, since we
@@ -52,10 +53,14 @@ jobs:
                 // # Test Cygwin as well
                 compilers.push('gcc');
                 // # Test bytecode-only Cygwin
-                include.push({cc: 'gcc', arch: 'x86_64', config_arg: '--disable-native-toplevel --disable-native-compiler'});
+                include.push({cc: 'gcc', arch: 'x86_64', libdir: 'absolute', config_arg: '--disable-native-toplevel --disable-native-compiler'});
+                // # Test i686 MSVC absolute
+                include.push({cc: 'cl', arch: 'i686', libdir: 'absolute'});
+                // # Expand the main matrix to include relative testing
+                libdir.push('relative');
               }
             }
-            return {config_arg: [''], arch: ['x86_64'], cc: compilers, include: include};
+            return {config_arg: [''], arch: ['x86_64'], cc: compilers, libdir: libdir, include: include};
       - name: Determine if the testsuite should be skipped
         id: skip
         uses: actions/github-script@v7
@@ -79,7 +84,7 @@ jobs:
 
     timeout-minutes: ${{ matrix.cc == 'gcc' && 90 || 60 }}
 
-    name: ${{ matrix.cc == 'cl' && 'MSVC' || matrix.cc == 'gcc' && 'Cygwin' || 'clang-cl' }} ${{ matrix.arch }} ${{ matrix.config_arg != '' && format('({0})', matrix.config_arg) || '' }}
+    name: ${{ matrix.cc == 'cl' && 'MSVC' || matrix.cc == 'gcc' && 'Cygwin' || 'clang-cl' }} ${{ matrix.arch }} ${{ matrix.libdir }} ${{ matrix.config_arg != '' && format('({0})', matrix.config_arg) || '' }}
 
     strategy:
       matrix: ${{ fromJSON(needs.config.outputs.matrix) }}
@@ -136,11 +141,12 @@ jobs:
         env:
           CONFIG_ARGS: >-
             --cache-file=config.cache
-            --prefix "${{ matrix.cc != 'gcc' && '$PROGRAMFILES/Бактріан🐫' || '$(cygpath "$PROGRAMFILES/Бактріан🐫")'}}"
+            --prefix "${{ matrix.cc != 'gcc' && '$PROGRAMFILES\\Бактріан🐫' || '$(cygpath "$PROGRAMFILES/Бактріан🐫")'}}"
             ${{ matrix.cc != 'gcc' && format('--host={0}-pc-windows', matrix.arch) || '' }}
             ${{ matrix.cc != 'gcc' && format('CC={0}', matrix.cc) || '' }}
             --enable-ocamltest
             ${{ endsWith(matrix.arch, '64') && '--enable-native-toplevel' || '--disable-native-toplevel' }}
+            ${{ matrix.libdir == 'relative' && '--with-relative-libdir' || '--without-relative-libdir' }}
             ${{ matrix.config_arg }}
         run: |
           eval $(tools/msvs-promote-path)

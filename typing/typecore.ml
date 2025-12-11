@@ -3668,6 +3668,32 @@ let contains_gadt p =
      | Tpat_construct (_, cd, _, _) when cd.cstr_generalized -> true
      | _ -> false } p
 
+
+(* When typing [let rec p = e ...], we require [p] to be "variable-like":
+   it must consists of a single variable [x], optionally wrapped in
+   erasable pattern constructs (e.g. annotations, local opens) *)
+let rec is_var_pat p =
+  match p.ppat_desc with
+  | Ppat_var _ -> true
+  | Ppat_constraint (p, _)
+  | Ppat_open (_, p) -> is_var_pat p
+  | Ppat_any
+  | Ppat_alias _
+  | Ppat_constant _
+  | Ppat_interval _
+  | Ppat_tuple _
+  | Ppat_construct _
+  | Ppat_variant _
+  | Ppat_record _
+  | Ppat_array _
+  | Ppat_or _
+  | Ppat_type _
+  | Ppat_lazy _
+  | Ppat_unpack _
+  | Ppat_exception _
+  | Ppat_effect _
+  | Ppat_extension _  -> false
+
 (* There are various things that we need to do in presence of GADT constructors
    that aren't required if there are none.
    However, because of disambiguation, we can't know for sure whether the
@@ -6578,7 +6604,12 @@ and type_let ?check ?check_strict
   let spatl =  List.map vb_pat_constraint spat_sexp_list in
   let attrs_list = List.map fst spatl in
   let is_recursive = (rec_flag = Recursive) in
-
+  if is_recursive then
+    List.iter
+      (fun { pvb_pat = pat; _ } ->
+        if not (is_var_pat pat)
+        then raise (Error (pat.ppat_loc, env, Illegal_letrec_pat)))
+      spat_sexp_list;
   let (pat_list, exp_list, new_env, mvs) =
     with_local_level_generalize begin fun () ->
       if existential_context = At_toplevel then Typetexp.TyVarEnv.reset ();
@@ -6702,12 +6733,6 @@ and type_let ?check ?check_strict
         })
       l spat_sexp_list
   in
-  if is_recursive then
-    List.iter
-      (fun {vb_pat=pat} -> match pat.pat_desc with
-           Tpat_var _ -> ()
-         | _ -> raise(Error(pat.pat_loc, env, Illegal_letrec_pat)))
-      l;
   List.iter (fun vb ->
       if pattern_needs_partial_application_check vb.vb_pat then
         check_partial_application ~statement:false vb.vb_expr

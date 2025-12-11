@@ -20,6 +20,22 @@
 (* The main OCaml version string has moved to ../build-aux/ocaml_version.m4 *)
 let version = Sys.ocaml_version
 
+external standard_library_default : unit -> string = "%standard_library_default"
+
+let standard_library_default_raw = standard_library_default ()
+
+external stdlib_dirs : string -> string * string option
+   = "caml_sys_get_stdlib_dirs"
+
+let standard_library_default, relative_root_dir =
+  stdlib_dirs standard_library_default_raw
+
+let standard_library_relative =
+  if relative_root_dir = None then
+    None
+  else
+    Some standard_library_default_raw
+
 let standard_library =
   try
     Sys.getenv "OCAMLLIB"
@@ -28,6 +44,8 @@ let standard_library =
     Sys.getenv "CAMLLIB"
   with Not_found ->
     standard_library_default
+
+let bindir = Option.value ~default:bindir relative_root_dir
 
 let exec_magic_number = {magic|@EXEC_MAGIC_NUMBER@|magic}
     (* exec_magic_number is duplicated in runtime/caml/exec.h *)
@@ -57,11 +75,16 @@ let lazy_tag = 246
 let max_young_wosize = 256
 let stack_threshold = 32 (* see runtime/caml/config.h *)
 let stack_safety_margin = 6
+let target_unix = (target_os_type = "Unix")
+let target_win32 = (target_os_type = "Win32")
+let target_cygwin = (target_os_type = "Cygwin")
 let default_executable_name =
-  match target_os_type with
-    "Unix" -> "a.out"
-  | "Win32" | "Cygwin" -> "camlprog.exe"
-  | _ -> "camlprog"
+  if target_unix then
+    "a.out"
+  else if target_win32 || target_cygwin then
+    "camlprog.exe"
+  else
+    "camlprog"
 type configuration_value =
   | String of string
   | Int of int
@@ -71,9 +94,13 @@ let configuration_variables () =
   let p x v = (x, String v) in
   let p_int x v = (x, Int v) in
   let p_bool x v = (x, Bool v) in
+  let standard_library_relative =
+    Option.value ~default:"" standard_library_relative
+  in
 [
   p "version" version;
   p "standard_library_default" standard_library_default;
+  p "standard_library_relative" standard_library_relative;
   p "standard_library" standard_library;
   p "ccomp_type" ccomp_type;
   p "c_compiler" c_compiler;

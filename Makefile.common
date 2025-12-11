@@ -29,6 +29,7 @@ EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
 # $( ) suppresses warning from the alignments in the V_ macros below
 $(SPACE) :=
+HASH := \#
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
 DIR_SEP := \$ # There must a space following the $
@@ -37,6 +38,8 @@ else
 DIR_SEP = /
 CONVERT_PATH = $(strip $(1))
 endif
+
+QUOTE_SINGLE = '$(subst ','\'',$(1))'
 
 V ?= 0
 
@@ -175,6 +178,26 @@ OPTCOMPFLAGS=
 ifeq "$(FUNCTION_SECTIONS)" "true"
 OPTCOMPFLAGS += -function-sections
 endif
+
+ifeq "$(TARGET_LIBDIR_IS_RELATIVE)" "true"
+  SRCDIR_ENCODED = $(subst =,%+,$(subst :,%.,$(subst %,%$(HASH),$(SRCDIR_ABS))))
+  SRCDIR_ABS_REAL := $(shell realpath $(SRCDIR_ABS) 2>/dev/null)
+  SRCDIR_REAL_ENCODED = \
+    $(subst =,%+,$(subst :,%.,$(subst %,%$(HASH),$(SRCDIR_ABS_REAL))))
+  BUILD_PATH_PREFIX_MAP ?=
+  export BUILD_PATH_PREFIX_MAP := \
+    $(BUILD_PATH_PREFIX_MAP)$\
+      :.=$(SRCDIR_ENCODED)$\
+      $(if $(SRCDIR_REAL_ENCODED),:.=$(SRCDIR_REAL_ENCODED))
+endif # ifeq "$(TARGET_LIBDIR_IS_RELATIVE)" "true"
+
+# Allow Makefile.cross to override the Standard Library default for the compiler
+# itself.
+HOST_LIBDIR ?= $(TARGET_LIBDIR)
+
+OC_COMMON_LINKFLAGS += \
+  -set-runtime-default \
+    $(call QUOTE_SINGLE,standard_library_default=$(HOST_LIBDIR))
 
 # The rule to compile C files
 

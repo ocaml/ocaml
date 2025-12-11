@@ -39,12 +39,13 @@ type ld_conf_test = {
 and var_setting = Unset | Empty | Set of string list
 
 (* Set of tests to run in a given environment *)
-let tests _config env =
+let tests config env =
   (* Convenience function - [if_ld_conf_found outcome] returns the empty list in
      the Renamed phase. *)
   let if_ld_conf_found outcome =
-    (* ocamlrun can't find ld.conf after the prefix has been renamed *)
-    if Environment.is_renamed env then
+    (* ocamlrun can only find ld.conf after the prefix has been renamed if it's
+       configured with --with-relative-libdir *)
+    if Environment.is_renamed env && config.has_relative_libdir = None then
       []
     else
       outcome
@@ -63,6 +64,13 @@ let tests _config env =
           Environment.libdir env
         else
           Config.standard_library in
+      let libdir =
+        if config.has_relative_libdir = None then
+          libdir
+        else
+          (* Unix.realpath raises Invalid_argument if it's not available *)
+          try Unix.realpath libdir
+          with Invalid_argument _ -> libdir in
       let (/) = Filename.concat in
       let data = [
         (* Root directory (both forms) preserved *)
@@ -326,8 +334,9 @@ let () =
     let runtime =
       mode = Bytecode && Harness.ocamlc_fails_after_rename config in
     (* In the Renamed phase, Config.standard_library will still point to the
-       Original location *)
-    let stdlib = true in
+       Original location, unless the compiler has been configured with a
+       relative libdir *)
+    let stdlib = (config.has_relative_libdir = None) in
     let (_, output) =
       Environment.run_process ~runtime ~stdlib env compiler args in
     Environment.display_output output;
@@ -342,10 +351,13 @@ let () =
     in
     (* In the Renamed phase, the test driver will need to be launched with
        ocamlrun, unless executables produced by the compiler are capable of
-       searching for the runtime (as the Windows executable launcher does) *)
+       searching for the runtime (as the Windows executable launcher does) or
+       the compiler has been configured with a relative libdir (as in this mode
+       the bytecode header will have the correct location) *)
     let runtime =
       mode = Bytecode
-      && not config.target_launcher_searches_for_ocamlrun in
+      && not config.target_launcher_searches_for_ocamlrun
+      && config.has_relative_libdir = None in
     let run run_process test =
       let code, lines =
         run_process ~runtime test_program []

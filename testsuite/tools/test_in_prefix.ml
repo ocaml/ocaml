@@ -144,12 +144,12 @@ let () =
 
      For the compiler's files to be reproducible, the compiler needs to be both
      relocatable and also required support from the assembler and C compiler. *)
-  let relocatable = false in
+  let relocatable =
+    config.has_relative_libdir <> None
+    && config.launcher_searches_for_ocamlrun
+  in
   let reproducible =
     relocatable
-    (* At present, the compiler build doesn't actually take advantage of this
-       configuration, but this does not matter because the compiler cannot yet
-       be relocatable! *)
     && (not config.has_ocamlopt
         || not Toolchain.assembler_embeds_build_path
         || Config.as_has_debug_prefix_map && Config.architecture <> "riscv")
@@ -157,7 +157,7 @@ let () =
     && (not Toolchain.c_compiler_always_embeds_build_path
         || not Toolchain.c_compiler_debug_paths_can_be_absolute)
   in
-  let target_relocatable = false in
+  let target_relocatable = config.target_launcher_searches_for_ocamlrun in
   (* Use Harness.pp_path unless --verbose was specified *)
   let pp_path =
     if verbose then

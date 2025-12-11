@@ -44,13 +44,16 @@ let run config env =
       if classification <> Vanilla then
         let fails =
           (* After the prefix has been renamed, bytecode executables compiled
-             with -custom will still work. Otherwise, only executables where the
-             header can search for ocamlrun and which do not require any C stubs
-             to be loaded will still work. *)
+             with -custom will still work. Otherwise, the header needs to be
+             able to search for ocamlrun and, if applicable, ocamlrun needs to
+             be able to load C stubs (which will only happen if the runtime
+             locates the Standard Library using a relative directory, so that it
+             can find ld.conf) *)
           Environment.is_renamed env
           && match classification with
              | Tendered {dlls; _} ->
-                 not config.launcher_searches_for_ocamlrun || dlls
+                 not config.launcher_searches_for_ocamlrun
+                 || dlls && config.has_relative_libdir = None
              | _ ->
                  false
         in

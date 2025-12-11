@@ -53,7 +53,8 @@ module Import : sig
     has_ocamlopt: bool;
       (** {v [$(NATIVE_COMPILER)] v} - {v Makefile.config v} *)
     has_relative_libdir: string option;
-      (** Not implemented; always None. *)
+      (** {v $(TARGET_LIBDIR_IS_RELATIVE) v} and {v $(TARGET_LIBDIR) v} -
+          {v Makefile.build_config v} *)
     has_runtime_search: bool option;
       (** Not implemented; always None. *)
     launcher_searches_for_ocamlrun: bool;

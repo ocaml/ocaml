@@ -88,7 +88,8 @@ let current_unit =
     ui_send_fun = [];
     ui_force_link = false;
     ui_export_info = default_ui_export_info;
-    ui_for_pack = None }
+    ui_for_pack = None;
+    ui_need_stdlib = false }
 
 let linuxlike_mangling = match Config.system with
   | "macosx"
@@ -131,6 +132,7 @@ let reset ?packname name =
   current_unit.ui_send_fun <- [];
   current_unit.ui_force_link <- !Clflags.link_everything;
   current_unit.ui_for_pack <- packname;
+  current_unit.ui_need_stdlib <- false;
   Hashtbl.clear exported_constants;
   structured_constants := structured_constants_empty;
   current_unit.ui_export_info <- default_ui_export_info;
@@ -261,11 +263,16 @@ let global_approx id =
       | None -> Clambda.Value_unknown
       | Some ui -> get_clambda_approx ui
 
+(* The name of the symbol defined globally for %standard_library_default *)
+let stdlib_symbol_name = Ident.create_persistent "caml_standard_library_nat"
+
 (* Return the symbol used to refer to a global identifier *)
 
 let symbol_for_global id =
   if Ident.is_predef id then
     "caml_exn_" ^ Ident.name id
+  else if Ident.same stdlib_symbol_name id then
+    Ident.name id
   else begin
     let unitname = Ident.name id in
     match
@@ -293,7 +300,7 @@ let is_predefined_exception sym =
 
 let symbol_for_global' id =
   let sym_label = Linkage_name.create (symbol_for_global id) in
-  if Ident.is_predef id then
+  if Ident.is_predef id || Ident.same stdlib_symbol_name id then
     Symbol.of_global_linkage predefined_exception_compilation_unit sym_label
   else
     Symbol.of_global_linkage (unit_for_global id) sym_label
@@ -350,6 +357,11 @@ let need_apply_fun n =
 let need_send_fun n =
   if not (List.mem n current_unit.ui_send_fun) then
     current_unit.ui_send_fun <- n :: current_unit.ui_send_fun
+
+(* Record that caml_standard_library_nat is needed *)
+
+let need_stdlib_location () =
+  current_unit.ui_need_stdlib <- true
 
 (* Write the description of the current unit *)
 

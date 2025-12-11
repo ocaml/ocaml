@@ -76,6 +76,9 @@ function set_configuration {
       args+=('--host=x86_64-pc-windows' '--enable-dependency-generation' \
              '--enable-native-toplevel');;
   esac
+  if [[ $RELOCATABLE = 'true' ]]; then
+    args+=('--with-relative-libdir')
+  fi
 
   # Remove old configure cache if the configure script or the OS
   # have changed
@@ -99,7 +102,6 @@ function set_configuration {
 PARALLEL_URL='https://git.savannah.gnu.org/cgit/parallel.git/plain/src/parallel'
 APPVEYOR_BUILD_FOLDER=$(echo "$APPVEYOR_BUILD_FOLDER" | cygpath -f -)
 FLEXDLLROOT="$PROGRAMFILES/flexdll"
-OCAMLROOT=$(echo "$OCAMLROOT" | cygpath -f - -m)
 
 if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
   case "$PORT" in

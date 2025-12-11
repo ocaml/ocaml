@@ -128,8 +128,90 @@ Install () {
   $MAKE install
 }
 
+target_libdir_is_relative='^ *TARGET_LIBDIR_IS_RELATIVE *= *false'
+
 Test-In-Prefix () {
+  { set +x
+    echo 'Checking that compilers invoked with alternate runtimes use their'
+    echo "configured location, not the alternate runtime's"
+    expected1="$(realpath "$PREFIX/lib/ocaml")"
+  } 2>/dev/null
+  if [[ ! -d "$PREFIX.new" ]]; then
+    # In Re-Test-In-Prefix, $PREFIX is the original compiler built by the
+    # workflow and then $PREFIX.new is the "alternate configuration". The first
+    # time round, we clone whichever compiler has just been built for this test.
+    cp -a "$PREFIX" "$PREFIX.new"
+    remove="$PREFIX.new"
+    if grep -q "$target_libdir_is_relative" Makefile.build_config; then
+      # Compiler configured absolutely - both should return the same answer
+      expected2="$expected1"
+    else
+      # Compiler configured relatively
+      expected2="$(realpath "$PREFIX").new/lib/ocaml"
+    fi
+  else
+    # The alternate configuration path should be returned, regardless of whether
+    # the runtime invoking it is an absolute or a relative one from another
+    # location.
+    expected2="$(realpath "$PREFIX").new/lib/ocaml-lib"
+    remove=''
+  fi
+  { set +x
+    lib1="$($PREFIX.new/bin/ocamlrun $PREFIX/bin/ocamlc.byte -where)"
+    lib2="$($PREFIX/bin/ocamlrun $PREFIX.new/bin/ocamlc.byte -where)"
+    echo "$PREFIX/bin/ocamlc.byte OSLD: $($PREFIX/bin/ocamlrun \
+      $PREFIX/bin/ocamlobjinfo.byte $PREFIX/bin/ocamlc.byte \
+        | sed -ne 's/^caml_standard_library_default: //p')"
+    echo -n "$PREFIX.new/bin/ocamlrun standard_library_default: "
+    $PREFIX.new/bin/ocamlrun -config | sed -ne 's/standard_library_default: //p'
+    echo "$PREFIX.new/bin/ocamlrun $PREFIX/bin/ocamlc.byte -where: $lib1"
+    if [[ $lib1 != $expected1 ]]; then
+      echo -e '  \e[31mEXPECTED\e[0m:' "$expected1"
+    fi
+    echo
+    echo "$PREFIX.new/bin/ocamlc.byte OSLD: $($PREFIX.new/bin/ocamlrun \
+      $PREFIX.new/bin/ocamlobjinfo.byte $PREFIX.new/bin/ocamlc.byte \
+        | sed -ne 's/^caml_standard_library_default: //p')"
+    echo -n "$PREFIX/bin/ocamlrun standard_library_default: "
+    $PREFIX/bin/ocamlrun -config | sed -ne 's/standard_library_default: //p'
+    echo "$PREFIX/bin/ocamlrun $PREFIX.new/bin/ocamlc.byte -where: $lib2"
+    if [[ $lib2 != $expected2 ]]; then
+      echo -e '  \e[31mEXPECTED\e[0m:' "$expected2"
+    fi
+    [[ $lib1 = $expected1 && $lib2 = $expected2 ]] && echo 'Correct.' || exit 1
+  } 2>/dev/null
+  [[ -z $remove ]] || rm -rf "$remove"
   $MAKE -C testsuite/in_prefix -f Makefile.test test-in-prefix
+}
+
+Re-Test-In-Prefix () {
+  mkdir -p bak
+  mv Makefile.config Makefile.build_config config.status bak
+  git clean -dfX &>/dev/null
+  mv bak/Makefile.config bak/Makefile.build_config bak/config.status .
+  rmdir bak
+  # The libdir is configured to be $PREFIX.new/lib/ocaml-lib in order to
+  # "poison" the cross-runtime test (otherwise if $PREFIX/bin/ocamlc.byte is
+  # missing OSLD, then $PREFIX.new/bin/ocamlrun would still supply the correct
+  # ../lib/ocaml. This way, it supplies ../lib/ocaml-lib and the test correctly
+  # fails)
+  if grep -q "$target_libdir_is_relative" Makefile.build_config; then
+    # Compiler configured absolutely - reconfigure relatively
+    echo '::group::Re-building the compiler with a relative libdir'
+    $MAKE COMPUTE_DEPS=false reconfigure \
+          'ADDITIONAL_CONFIGURE_ARGS=--with-relative-libdir=../lib/ocaml-lib \
+--prefix='"$PREFIX"'.new'
+  else
+    # Compiler configured relatively - reconfigure absolutely
+    echo '::group::Re-building the compiler with an absolute libdir'
+    $MAKE COMPUTE_DEPS=false reconfigure \
+          'ADDITIONAL_CONFIGURE_ARGS=--without-relative-libdir \
+--prefix='"$PREFIX"'.new --libdir='"$PREFIX"'.new/lib/ocaml-lib'
+  fi
+  $MAKE
+  $MAKE install
+  echo '::endgroup::'
+  Test-In-Prefix
 }
 
 Checks () {
@@ -223,6 +305,7 @@ test_prefix) TestPrefix $2;;
 api-docs) API_Docs;;
 install) Install;;
 test-in-prefix) Test-In-Prefix;;
+re-test-in-prefix) Re-Test-In-Prefix;;
 manual) BuildManual;;
 other-checks) Checks;;
 basic-compiler) BasicCompiler;;

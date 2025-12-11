@@ -800,11 +800,16 @@ build_os
 build_vendor
 build_cpu
 build
+build_map_flags
+srcdir_abs_real
+srcdir_abs
+target_libdir_is_relative
 ar_supports_response_files
 QS
 TARGET_LIBDIR
 ocaml_libdir
 ocaml_bindir
+ocaml_prefix
 compute_deps
 build_libraries_manpages
 PACKLD
@@ -851,6 +856,7 @@ build_ocamldoc
 build_ocamltex
 build_ocamldebug
 with_debugger
+as_is_cc
 as_has_debug_prefix_map
 cc_has_debug_prefix_map
 unix_directory
@@ -1044,6 +1050,7 @@ enable_force_safe_string
 enable_flat_float_array
 enable_function_sections
 enable_mmap_map_stack
+with_relative_libdir
 with_afl
 with_flexdll
 with_winpthreads_msvc
@@ -1774,6 +1781,9 @@ Optional Packages:
   --with-additional-stublibsdir
                           additional directory for searching for bytecode stub
                           libraries
+  --with-relative-libdir  location of the Standard Library, specified relative
+                          to --bindir (if no argument is given to
+                          --with-relative-libdir, defaults to ../lib/ocaml)
   --with-afl              use the AFL fuzzer
   --with-flexdll          bootstrap FlexDLL from the given sources
   --with-winpthreads-msvc build winpthreads (only for the MSVC port) from the
@@ -3371,6 +3381,10 @@ ocamltest_unix_impl="dummy"
 unix_library=""
 unix_directory=""
 diff_supports_color=false
+target_libdir_is_relative=false
+srcdir_abs=''
+srcdir_abs_real=''
+build_map_flags=''
 
 # Information about the package
 
@@ -3525,7 +3539,13 @@ LINEAR_MAGIC_NUMBER=Caml1999L037
 
 
 
+
  # TODO: rename this variable
+
+
+
+
+
 
 
 
@@ -3786,12 +3806,47 @@ then :
   ac_tool_prefix=$target_alias-
 fi
 
+# $cygwin_build_env=true if the build is taking place in any kind of Cygwin-like
+# environment (which may include cross-compiling _from_ Cygwin)
+# All patterns end with * (cf. build-aux/config.sub)
+#
+# In Cygwin itself, the mingw-w64 compilers are cross-compilers
+# (host=x86_64-pc-cygwin; target=*-w64-mingw32) and $build when running from
+# within Cygwin is always *-pc-cygwin.
+#
+# In MSYS2, the mingw-w64 compilers are normal host compilers, which MSYS2 makes
+# available through different Environments (similar to the Microsoft Visual
+# Studio Tools Command Prompts; see https://www.msys2.org/docs/environments/).
+# It is possible to use MSYS2's "Cygwin" gcc (the equivalent of compiling native
+# Cygwin), in which case $build is *-*-cygwin (some older MSYS2 installations
+# may report the legacy *-*-msys*)
+# The mingw-w64 Environments manually set $build to *-w64-mingw32, but the
+# _native_ value inferred by config.guess (which uses uname -s) will be
+# *-pc-mingw32 (for the 32-bit _target_ environments, even though MSYS2 is a
+# 64-bit build environment) and *-pc-mingw64 (for the 64-bit _target_
+# environments).
+#
+# This leads to the four patterns below, all of which imply that the build is
+# taking place on a system where Cygwin's utilities (cygpath, etc.) can be
+# expected to be found and its semantics (CYGWIN=winsymlinks:native, etc.) be
+# expected to apply.
+#
+# Note that although build=x86_64-pc-mingw64 will be accepted here, it is highly
+# likely that that's a misconfigured environment, and the script will
+# subsequently fail if host has not been altered to x86_64-w64-mingw32.
+case $build in #(
+  *-*-cygwin*|*-*-msys*|*-*-mingw32*|*-*-mingw64*) :
+    cygwin_build_env=true ;; #(
+  *) :
+    cygwin_build_env=false ;;
+esac
+
 # Ensure that AC_CONFIG_LINKS will either create symlinks which are compatible
 # with native Windows (i.e. NTFS symlinks, not WSL or Cygwin-emulated ones) or
 # use its fallback mechanisms. Native Windows versions of ocamlc/ocamlopt cannot
 # interpret either WSL or Cygwin-emulated symlinks.
-case $host in #(
-  *-pc-windows|*-w64-mingw32*) :
+case $cygwin_build_env,$host in #(
+  true,*-pc-windows|true,*-w64-mingw32*) :
     ac_config_commands="$ac_config_commands native-symlinks"
  ;; #(
   *) :
@@ -4316,6 +4371,23 @@ fi
 if test ${enable_mmap_map_stack+y}
 then :
   enableval=$enable_mmap_map_stack;
+fi
+
+
+
+# Check whether --with-relative-libdir was given.
+if test ${with_relative_libdir+y}
+then :
+  withval=$with_relative_libdir; case $withval in #(
+  no) :
+    bindir_to_libdir='' ;; #(
+  yes) :
+    bindir_to_libdir="..${default_separator}lib${default_separator}ocaml" ;; #(
+  *) :
+    bindir_to_libdir="$withval" ;;
+esac
+else $as_nop
+  bindir_to_libdir=''
 fi
 
 
@@ -15114,11 +15186,11 @@ esac
 # See https://lists.gnu.org/archive/html/autoconf/2019-07/msg00002.html
 # for the detailed explanation.
 
-ocamlsrcdir=$(unset CDPATH; cd -- "$srcdir" && printf %sX "$PWD") || fail
-ocamlsrcdir=${ocamlsrcdir%X}
+srcdir_abs=$(unset CDPATH; cd -- "$srcdir" && printf %sX "$PWD") || fail
+srcdir_abs=${srcdir_abs%X}
 
-case $host in #(
-  *-w64-mingw32*|*-pc-windows) :
+case $cygwin_build_env,$host in #(
+  true,*-w64-mingw32*|true,*-pc-windows) :
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for a workable solution for ln -sf" >&5
 printf %s "checking for a workable solution for ln -sf... " >&6; }
@@ -15132,9 +15204,10 @@ fi
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ln" >&5
 printf "%s\n" "$ln" >&6; }
 
-    ocamlsrcdir="$(LC_ALL=C.UTF-8 cygpath -w -- "$ocamlsrcdir")" ;; #(
+    ocamlsrcdir="$(LC_ALL=C.UTF-8 cygpath -w -- "$srcdir_abs")" ;; #(
   *) :
-    ln='ln -sf' ;;
+    ln='ln -sf'
+  ocamlsrcdir="$srcdir_abs" ;;
 esac
 
 # Whether ar supports @FILE arguments
@@ -16066,16 +16139,16 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
     if test x"$build" != x"$host"
 then :
 
-      case $build in #(
-  *-pc-msys|*-*-cygwin) :
-    flexlink_where="$(cmd /c "$flexlink" -where 2>/dev/null)"
-          if test -z "$flexlink_where"
+      if $cygwin_build_env
+then :
+  flexlink_where="$(cmd /c "$flexlink" -where 2>/dev/null)"
+        if test -z "$flexlink_where"
 then :
   as_fn_error $? "$flexlink is not executable from a native Win32 process" "$LINENO" 5
-fi ;; #(
-  *) :
-     ;;
-esac
+
+fi
+
+fi
 
 fi
 
@@ -17754,6 +17827,13 @@ fi
 
 
 # Checks for header files
+
+ac_fn_c_check_header_compile "$LINENO" "libgen.h" "ac_cv_header_libgen_h" "$ac_includes_default"
+if test "x$ac_cv_header_libgen_h" = xyes
+then :
+  printf "%s\n" "#define HAS_LIBGEN_H 1" >>confdefs.h
+
+fi
 
 ac_fn_c_check_header_compile "$LINENO" "pthread_np.h" "ac_cv_header_pthread_np_h" "$ac_includes_default"
 if test "x$ac_cv_header_pthread_np_h" = xyes
@@ -19448,29 +19528,44 @@ fi
 # to avoiding forking a C compiler process for each compilation by ocamlopt.
 # Both AS and ASPP can be overridden by the user.
 
-default_as="$CC -c"
-default_aspp="$CC -c"
+as_is_cc=true
+default_as=''
 
 case $as_target,$ocaml_cc_vendor in #(
   *-*-linux*,gcc-*) :
     case $as_cpu in #(
   x86_64|arm*|aarch64*|i[3-6]86|riscv*) :
-    default_as="${toolpref}as" ;; #(
+    default_as="${toolpref}as"
+        as_is_cc=false ;; #(
   *) :
      ;;
 esac ;; #(
+  *-*-cygwin,gcc-*) :
+    default_as="${toolpref}as"
+    as_is_cc=false ;; #(
   i686-pc-windows,*) :
     default_as="ml -nologo -coff -Cp -c -Fo"
-    default_aspp="$default_as" ;; #(
+    default_aspp="$default_as"
+    as_is_cc=false ;; #(
   x86_64-pc-windows,*) :
     default_as="ml64 -nologo -Cp -c -Fo"
-    default_aspp="$default_as" ;; #(
+    default_aspp="$default_as"
+    as_is_cc=false ;; #(
   *-*-darwin*,clang-*) :
-    default_as="$default_as -Wno-trigraphs"
+    default_as="$CC -c -Wno-trigraphs"
     default_aspp="$default_as" ;; #(
   *) :
      ;;
 esac
+
+if test -z "$default_as"
+then :
+  default_as="$CC -c"
+fi
+if test -z "$default_aspp"
+then :
+  default_aspp="$CC -c"
+fi
 
 if test "$with_pic"
 then :
@@ -21389,8 +21484,6 @@ fi
 
 ## -fdebug-prefix-map support by the C compiler
 case $ocaml_cc_vendor,$target in #(
-  *,*-w64-mingw32*) :
-    cc_has_debug_prefix_map=false ;; #(
   *,*-pc-windows) :
     cc_has_debug_prefix_map=false ;; #(
   xlc*,powerpc-ibm-aix*) :
@@ -21439,6 +21532,100 @@ else $as_nop
 fi
  ;;
 esac
+
+## -ffile-prefix-map support by the C compiler - used in the build, not by
+## the compiler
+if test x"$bindir_to_libdir" != 'x'
+then :
+  srcdir_abs_real="$(realpath "$srcdir_abs" 2>/dev/null)"
+  if test x"$srcdir_abs_real" = "x$srcdir_abs"
+then :
+  srcdir_abs_real=''
+fi
+  as_CACHEVAR=`printf "%s\n" "ax_cv_check_cflags_$warn_error_flag_-Wa,--debug-prefix-map=old=new" | $as_tr_sh`
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler accepts -Wa,--debug-prefix-map=old=new" >&5
+printf %s "checking whether the C compiler accepts -Wa,--debug-prefix-map=old=new... " >&6; }
+if eval test \${$as_CACHEVAR+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+
+  ax_check_save_flags=$CFLAGS
+  CFLAGS="$CFLAGS $warn_error_flag -Wa,--debug-prefix-map=old=new"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  eval "$as_CACHEVAR=yes"
+else $as_nop
+  eval "$as_CACHEVAR=no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+  CFLAGS=$ax_check_save_flags
+fi
+eval ac_res=\$$as_CACHEVAR
+	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+printf "%s\n" "$ac_res" >&6; }
+if eval test \"x\$"$as_CACHEVAR"\" = x"yes"
+then :
+  build_map_flags='-Wa,--debug-prefix-map='
+else $as_nop
+  :
+fi
+
+  as_CACHEVAR=`printf "%s\n" "ax_cv_check_cflags_$warn_error_flag_-ffile-prefix-map=old=new" | $as_tr_sh`
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler accepts -ffile-prefix-map=old=new" >&5
+printf %s "checking whether the C compiler accepts -ffile-prefix-map=old=new... " >&6; }
+if eval test \${$as_CACHEVAR+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+
+  ax_check_save_flags=$CFLAGS
+  CFLAGS="$CFLAGS $warn_error_flag -ffile-prefix-map=old=new"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  eval "$as_CACHEVAR=yes"
+else $as_nop
+  eval "$as_CACHEVAR=no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+  CFLAGS=$ax_check_save_flags
+fi
+eval ac_res=\$$as_CACHEVAR
+	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+printf "%s\n" "$ac_res" >&6; }
+if eval test \"x\$"$as_CACHEVAR"\" = x"yes"
+then :
+  build_map_flags="$build_map_flags -ffile-prefix-map="
+else $as_nop
+  if $cc_has_debug_prefix_map
+then :
+  build_map_flags="$build_map_flags -fdebug-prefix-map="
+fi
+fi
+
+fi
 
 ## Does stat support nanosecond precision
 
@@ -24148,11 +24335,6 @@ then :
   libdir="$libdir"/ocaml
 fi
 
-if test x"$TARGET_LIBDIR" = x
-then :
-  TARGET_LIBDIR="$libdir"
-fi
-
 if test x"$mandir" = x'${datarootdir}/man'
 then :
   mandir='${prefix}/man'
@@ -24173,13 +24355,95 @@ then :
   *) :
      ;;
 esac
+fi
+
+# Normalise $prefix, if necessary, on Windows. There are 9 variables to be
+# considered:
+# - $prefix and $exec_prefix. These are autoconf variables containing the values
+#   specified for --prefix and --exec-prefix respectively, or NONE if these
+#   flags were not given on the command line. These two variables are written to
+#   Makefile.config and are in _build_ format. On native Windows, the values
+#   must be suitable to pass to _both_ native Windows processes and Cygwin/MSYS2
+#   commands. The values are ultimately converted to Windows paths using slashes
+#   (i.e. C:/foo)
+# - $bindir and $libdir. These similarly contain the values specified for
+#   --bindir and --libdir, or defaults relative to $exec_prefix otherwise.
+#   Unlike --prefix, values specified to configure for --bindir and --libdir are
+#   assumed to be suitable for both native Windows processes and Cygwin/MSYS2.
+#   These two variables ultimately end up in Makefile.config as $(BINDIR) and
+#   $(LIBDIR) and are used for installation commands only.
+# - $ocaml_prefix, $ocaml_bindir and $ocaml_libdir are the _expanded_ values of
+#   $prefix, $bindir and $libdir so that the values can be inserted into OCaml
+#   strings (typically in utils/config.generated.ml). On Windows, these preserve
+#   the backslashes present in the value passed to --prefix.
+# - $TARGET_BINDIR and $TARGET_LIBDIR. These are both precious environment
+#   variables (meaning their value is recorded by configure) but they default to
+#   $ocaml_bindir and $ocaml_libdir respectively.
+ocaml_bindir="$bindir"
+ocaml_libdir="$libdir"
+ocaml_prefix="$prefix"
+case $cygwin_build_env,$host in #(
+  true,*-w64-mingw32*|true,*-pc-windows) :
+    prefix="$(LC_ALL=C.UTF-8 cygpath -m "$prefix")"
+    if test "x${ocaml_prefix%%/*}" != "x$ocaml_prefix"
+then :
+  # $prefix contained a slash - normalise it with cygpath. The rationale for
+      # this allows both `./configure --prefix $PWD/install` (which will be a
+      # Cygwin path) and also systems lazily using slashes instead of
+      # backslashes (i.e. C:/Backslashes/Scare/Us) to work.
+      ocaml_prefix="$prefix"
 else $as_nop
-  case $build,$host in #(
-  *-*-cygwin,*-w64-mingw32*|*-*-cygwin,*-pc-windows) :
-    prefix="$(LC_ALL=C.UTF-8 cygpath -m "$prefix")" ;; #(
+  # $prefix was using backslashes - preserve these in the build, but
+      # continue to use slashes for the Makefile variables.
+      if test "x$bindir" = 'x${exec_prefix}/bin'
+then :
+  ocaml_bindir='${exec_prefix}\bin'
+else $as_nop
+  ocaml_bindir="$bindir"
+fi
+      if test "x$libdir" = 'x${exec_prefix}/lib/ocaml'
+then :
+  ocaml_libdir='${exec_prefix}\lib\ocaml'
+else $as_nop
+  ocaml_libdir="$libdir"
+fi
+fi ;; #(
   *) :
      ;;
 esac
+
+if test x"$libdir" = x'${exec_prefix}/lib/ocaml'
+then :
+  if test x"$bindir_to_libdir" != 'x'
+then :
+  ocaml_libdir="$bindir_to_libdir"
+    target_libdir_is_relative=true
+    case $cygwin_build_env,$host in #(
+  true,*-w64-mingw32*|true,*-pc-windows) :
+    build_bindir_to_libdir="$(LC_ALL=C.UTF-8 cygpath \
+                                   "$bindir_to_libdir")" ;; #(
+  *) :
+    build_bindir_to_libdir="$bindir_to_libdir" ;;
+esac
+    case $build_bindir_to_libdir in #(
+  ./*) :
+    libdir="$bindir${build_bindir_to_libdir#.}" ;; #(
+  ../*) :
+    libdir="$bindir/$build_bindir_to_libdir" ;; #(
+  *) :
+    as_fn_error $? "--with-relative-libdir requires an explicit relative path" "$LINENO" 5 ;;
+esac
+fi
+else $as_nop
+  if test x"$bindir_to_libdir" != 'x'
+then :
+  as_fn_error $? "--with-relative-libdir and --libdir cannot both be specified" "$LINENO" 5
+fi
+fi
+
+if test x"$bindir_to_libdir" != 'x' && test x"$TARGET_LIBDIR" != 'x'
+then :
+  as_fn_error $? "--with-relative-libdir and TARGET_LIBDIR cannot both be specified" "$LINENO" 5
 fi
 
 # Define a few macros that were defined in config/m-nt.h
@@ -24364,6 +24628,7 @@ cclibs="$cclibs $mathlib $DLLIBS $PTHREAD_LIBS"
 
   saved_exec_prefix="$exec_prefix"
   saved_prefix="$prefix"
+  prefix="$ocaml_prefix"
   if test "x$prefix" = "xNONE"
 then :
   prefix="$ac_default_prefix"
@@ -24373,11 +24638,43 @@ then :
   exec_prefix="$prefix"
 fi
   eval "exec_prefix=\"$exec_prefix\""
-  eval "ocaml_bindir=\"$bindir\""
-  eval "ocaml_libdir=\"$libdir\""
+  # Set variables necessary to create utils/config.generated.ml and the two
+  # runtime-launch-info templates in stdlib.
+  # $ocaml_bindir is used for utils/config.generated.ml and is _empty_ if the
+  #   compiler is configured with --with-relative-libdir (otherwise the path
+  #   would be embedded in config.cmo)
+  # $HOST_BINDIR and $TARGET_BINDIR are used to generate the two
+  #   runtime-launch-info files. $HOST_BINDIR is always the absolute path to the
+  #   binary directory, in host format (i.e. potentially with backslashes on
+  #   Windows). $TARGET_BINDIR can be specified by the caller when building
+  #   cross-compilers, and the value then is used unaltered. Otherwise,
+  #   $TARGET_BINDIR is set to '.' when the compiler is configured with
+  #   --with-relative-libdir or the value of $HOST_BINDIR otherwise.
+  eval "HOST_BINDIR=\"$ocaml_bindir\""
+  if test "x$bindir_to_libdir" = 'x'
+then :
+  ocaml_bindir="$HOST_BINDIR"
+else $as_nop
+  ocaml_bindir=''
+fi
   if test x"$TARGET_BINDIR" = 'x'
 then :
-  TARGET_BINDIR="$ocaml_bindir"
+  if test "x$bindir_to_libdir" = 'x'
+then :
+  TARGET_BINDIR="$HOST_BINDIR"
+else $as_nop
+  TARGET_BINDIR='.'
+fi
+fi
+  eval "ocaml_libdir=\"$ocaml_libdir\""
+  if test x"$TARGET_LIBDIR" = 'x'
+then :
+  if test "x$bindir_to_libdir" = 'x'
+then :
+  TARGET_LIBDIR="$ocaml_libdir"
+else $as_nop
+  TARGET_LIBDIR="$bindir_to_libdir"
+fi
 fi
   if test x"$target_launch_method" = 'x'
 then :
@@ -25341,7 +25638,7 @@ fi
   launch_method='$(echo "$launch_method" | sed -e "s/'/'\"'\"'/g")'
   target_launch_method=\
 '$(echo "$target_launch_method" | sed -e "s/'/'\"'\"'/g")'
-  ocaml_bindir='$(echo "$ocaml_bindir" | sed -e "s/'/'\"'\"'/g")'
+  HOST_BINDIR='$(echo "$HOST_BINDIR" | sed -e "s/'/'\"'\"'/g")'
   TARGET_BINDIR='$(echo "$TARGET_BINDIR" | sed -e "s/'/'\"'\"'/g")'
 
   ocamltest_unix_mod='$ocamltest_unix_mod'
@@ -26527,7 +26824,7 @@ ltmain=$ac_aux_dir/ltmain.sh
   chmod +x "$ofile"
 
  ;;
-    "shebang":C) printf '%s\n%s\000\n' "$launch_method" "$ocaml_bindir" \
+    "shebang":C) printf '%s\n%s\000\n' "$launch_method" "$HOST_BINDIR" \
     > stdlib/runtime.info
   printf '%s\n%s\000\n' "$target_launch_method" "$TARGET_BINDIR" \
     > stdlib/target_runtime.info ;;

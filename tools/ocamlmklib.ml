@@ -25,10 +25,8 @@ let mklib out files opts =
   Printf.sprintf "link -lib -nologo %s-out:%s %s %s" machine out opts files
   else Printf.sprintf "%s rcs %s %s %s" Config.ar out opts files
 
-(* PR#4783: under Windows, don't use absolute paths because we do
-   not know where the binary distribution will be installed. *)
 let compiler_path name =
-  if Sys.os_type = "Win32" then name else Filename.concat Config.bindir name
+  Filename.concat Config.bindir name
 
 let bytecode_objs = ref []  (* .cmo,.cma,.ml,.mli files to pass to ocamlc *)
 and native_objs = ref []    (* .cmx,.ml,.mli files to pass to ocamlopt *)

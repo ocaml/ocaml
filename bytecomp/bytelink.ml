@@ -19,6 +19,7 @@ open Misc
 open Config
 open Cmo_format
 
+module String = Misc.Stdlib.String
 module Compunit = Symtable.Compunit
 
 module Dep = struct
@@ -201,7 +202,7 @@ let debug_info = ref ([] : (int * Instruct.debug_event list * string list) list)
 
 (* Link in a compilation unit *)
 
-let link_compunit output_fun currpos_fun inchan file_name compunit =
+let link_compunit accu output_fun currpos_fun inchan file_name compunit =
   check_consistency file_name compunit;
   seek_in inchan compunit.cu_pos;
   let code_block =
@@ -227,46 +228,44 @@ let link_compunit output_fun currpos_fun inchan file_name compunit =
     debug_info := (currpos_fun(), debug_event_list, debug_dirs) :: !debug_info
   end;
   output_fun code_block;
-  if !Clflags.link_everything then
-    List.iter Symtable.require_primitive compunit.cu_primitives
+  let fold_primitive needs_stdlib name =
+    if !Clflags.link_everything then
+      Symtable.require_primitive name;
+    (needs_stdlib || name = "%standard_library_default")
+  in
+  List.fold_left fold_primitive accu compunit.cu_primitives
 
 (* Link in a .cmo file *)
 
-let link_object output_fun currpos_fun file_name compunit =
-  let inchan = open_in_bin file_name in
-  try
-    link_compunit output_fun currpos_fun inchan file_name compunit;
-    close_in inchan
-  with
-    Symtable.Error msg ->
-      close_in inchan; raise(Error(Symbol_error(file_name, msg)))
-  | x ->
-      close_in inchan; raise x
+let link_object accu output_fun currpos_fun file_name compunit =
+  In_channel.with_open_bin file_name @@ fun inchan ->
+    try link_compunit accu output_fun currpos_fun inchan file_name compunit
+    with Symtable.Error msg -> raise(Error(Symbol_error(file_name, msg)))
 
 (* Link in a .cma file *)
 
-let link_archive output_fun currpos_fun file_name units_required =
-  let inchan = open_in_bin file_name in
-  try
-    List.iter
-      (fun cu ->
+let link_archive accu output_fun currpos_fun file_name units_required =
+  In_channel.with_open_bin file_name @@ fun inchan ->
+    List.fold_left
+      (fun accu cu ->
          let n = Compunit.name cu.cu_name in
          let name = file_name ^ "(" ^ n ^ ")" in
          try
-           link_compunit output_fun currpos_fun inchan name cu
+           link_compunit accu output_fun currpos_fun inchan name cu
          with Symtable.Error msg ->
            raise(Error(Symbol_error(name, msg))))
-      units_required;
-    close_in inchan
-  with x -> close_in inchan; raise x
+      accu units_required
 
 (* Link in a .cmo or .cma file *)
 
-let link_file output_fun currpos_fun = function
+let link_file output_fun currpos_fun accu = function
     Link_object(file_name, unit) ->
-      link_object output_fun currpos_fun file_name unit
+      link_object accu output_fun currpos_fun file_name unit
   | Link_archive(file_name, units) ->
-      link_archive output_fun currpos_fun file_name units
+      link_archive accu output_fun currpos_fun file_name units
+
+let link_files output_fun currpos_fun =
+  List.fold_left (link_file output_fun currpos_fun) false
 
 (* Output the debugging information *)
 (* Format is:
@@ -340,6 +339,11 @@ let read_runtime_launch_info file =
     let bindir_start = String.index buffer '\n' + 1 in
     let bindir_end = String.index_from buffer bindir_start '\000' in
     let bindir = String.sub buffer bindir_start (bindir_end - bindir_start) in
+    let bindir =
+      if bindir = Filename.current_dir_name then
+        Filename.dirname Sys.executable_name
+      else
+        bindir in
     let executable_offset = bindir_end + 2 in
     let launcher =
       let kind = String.sub buffer 0 (bindir_start - 1) in
@@ -496,7 +500,9 @@ let link_bytecode ?final_name tolink exec_name standalone =
        let output_fun buf =
          Out_channel.output_bigarray outchan buf 0 (Bigarray.Array1.dim buf)
        and currpos_fun () = pos_out outchan - start_code in
-       List.iter (link_file output_fun currpos_fun) tolink;
+       let needs_stdlib =
+         link_files output_fun currpos_fun tolink
+       in
        if check_dlls then Dll.close_all_dlls();
        (* The final STOP instruction *)
        output_byte outchan Opcodes.opSTOP;
@@ -519,6 +525,18 @@ let link_bytecode ?final_name tolink exec_name standalone =
          ~filename:final_name ~kind:"bytecode executable"
          outchan (Symtable.initial_global_table());
        Bytesections.record toc_writer DATA;
+       (* -custom executables don't need OSLD sections - the correct value is
+          already included in the runtime. *)
+       if standalone && needs_stdlib then begin
+         (* OCaml Standard Library Default location *)
+         let standard_library_default =
+           Option.value
+             ~default:Config.standard_library_default
+             !Clflags.standard_library_default
+         in
+         output_string outchan standard_library_default;
+         Bytesections.record toc_writer OSLD
+       end;
        (* The map of global identifiers *)
        Symtable.output_global_map outchan;
        Bytesections.record toc_writer SYMB;
@@ -590,6 +608,49 @@ let output_cds_file outfile =
        Bytesections.write_toc_and_trailer toc_writer;
     )
 
+(* [c_string_literal_of_string s] returns the C literal string representation of
+   [s], suitable for embedding in a C source file with type [char_os *]. The
+   result includes the quote markers. *)
+let c_string_literal_of_string s =
+  let b = Buffer.create (String.length s * 2) in
+  let utf16le = Bytes.create 4 in
+  let escape u =
+    match Uchar.to_int u with
+      (* Characters with C escape sequences *)
+    | 000 (* '\0' *) -> Buffer.add_string b "\\000"
+    | 009 (* '\t' *) -> Buffer.add_string b "\\t"
+    | 010 (* '\n' *) -> Buffer.add_string b "\\n"
+    | 013 (* '\r' *) -> Buffer.add_string b "\\r"
+    | 034 (* '\"' *) -> Buffer.add_string b "\\\""
+    | 092 (* '\\' *) -> Buffer.add_string b "\\\\"
+      (* Most C compilers will have no problem processing UTF-8 in the strings
+         with the characters above converted to their C representations. On
+         Windows, where the string is [wchar_t *], all characters for which
+         iswprint returns 0 are escaped using the extended [\x] notation. *)
+    | c when Config.target_win32 && (c < 32 (* ' ' *) || c >= 127) ->
+        (* Convert u to UTF-16LE, allowing for surrogate pairs *)
+        let len = Bytes.set_utf_16le_uchar utf16le 0 u in
+        for i = 1 to len / 2 do
+          Printf.bprintf b "\\x%04x" (Bytes.get_uint16_le utf16le ((i - 1) * 2))
+        done
+    | _ ->
+        Buffer.add_utf_8_uchar b u
+  in
+  if Config.target_win32 then
+    Buffer.add_char b 'L';
+  Buffer.add_char b '"';
+  Seq.iter escape (String.to_utf_8_seq s);
+  Buffer.add_char b '"';
+  Buffer.contents b
+
+let emit_runtime_standard_library_default outchan =
+  let stdlib =
+    let default = Config.standard_library_default in
+    Option.value ~default !Clflags.standard_library_default in
+  let literal = c_string_literal_of_string stdlib in
+  Printf.fprintf outchan
+    "const char_os * caml_runtime_standard_library_default = %s;\n" literal
+
 (* Output a bytecode executable as a C file *)
 
 let link_bytecode_as_c tolink outfile with_main =
@@ -613,6 +674,8 @@ extern "C" {
 #include <caml/sys.h>
 #include <caml/misc.h>
 
+const enum caml_byte_program_mode caml_byte_program_mode = EMBEDDED;
+
 static int caml_code[] = {
 |};
        Symtable.init();
@@ -622,7 +685,7 @@ static int caml_code[] = {
          output_code_string outchan code;
          currpos := !currpos + (Bigarray.Array1.dim code)
        and currpos_fun () = !currpos in
-       List.iter (link_file output_fun currpos_fun) tolink;
+       ignore (link_files output_fun currpos_fun tolink);
        (* The final STOP instruction *)
        Printf.fprintf outchan "\n0x%x};\n" Opcodes.opSTOP;
        (* The table of global data *)
@@ -650,6 +713,7 @@ static char caml_sections[] = {
 };
 
 |};
+       emit_runtime_standard_library_default outchan;
        (* The table of primitives *)
        Symtable.output_primitive_table outchan;
        (* The entry point *)
@@ -657,7 +721,6 @@ static char caml_sections[] = {
          output_string outchan {|
 int main_os(int argc, char_os **argv)
 {
-  caml_byte_program_mode = COMPLETE_EXE;
   caml_startup_code(caml_code, sizeof(caml_code),
                     caml_data, sizeof(caml_data),
                     caml_sections, sizeof(caml_sections),
@@ -799,11 +862,17 @@ let link objfiles output_name =
 extern "C" {
 #endif
 
+#define CAML_INTERNALS
 #define CAML_INTERNALS_NO_PRIM_DECLARATIONS
+
 #include <caml/mlvalues.h>
+#include <caml/startup.h>
+
+const enum caml_byte_program_mode caml_byte_program_mode = APPENDED;
 
 |};
          Symtable.output_primitive_table poc;
+         emit_runtime_standard_library_default poc;
          output_string poc {|
 #ifdef __cplusplus
 }

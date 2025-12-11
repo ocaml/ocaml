@@ -1,11 +1,9 @@
 (* TEST
    native-dynlink;
    native-compiler;
-   not-windows;
-   output = "test.output";
-   reference = "${test_source_directory}/test.reference";
-   program = "${test_source_directory}/test.sh";
-   arguments = "${ocamlsrcdir}";
-   run;
-   check-program-output;
+   readonly_files = "toto.ml main.ml";
+   output = "${test_build_directory}/script.output";
+   setup-ocamlopt.opt-build-env;
+   script = "sh ${test_source_directory}/test.sh";
+   script;
 *)

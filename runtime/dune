@@ -61,9 +61,9 @@
   (modes byte)
   (wrapped false)
   (modules runtime)
+  (foreign_archives camlrun)
   (flags (-nostdlib -nopervasives))
-  (library_flags -cclib "-I runtime")
-  (self_build_stubs_archive (runtime)))
+  (library_flags -cclib "-I runtime"))
 
 (rule
   (targets libruntime_stubs.a)

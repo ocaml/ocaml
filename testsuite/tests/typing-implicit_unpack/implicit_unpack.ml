@@ -169,12 +169,17 @@ module type S' = sig val f : int -> int end
 |}];;
 
 (* Even works with recursion, but must be fully explicit *)
-let rec (module M : S') =
-  (module struct let f n = if n <= 0 then 1 else n * M.f (n-1) end : S')
-in M.f 3;;
+let rec (m : (module S')) =
+  let (module M) = m in
+  (module struct
+    let f n = if n <= 0 then 1 else n * M.f (n - 1)
+  end : S')
+in
+let (module M) = m in
+M.f 3
 [%%expect{|
 - : int = 6
-|}];;
+|}]
 
 (* Subtyping *)
 

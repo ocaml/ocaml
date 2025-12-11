@@ -483,9 +483,11 @@ utils/config_boot.ml: utils/config.fixed.ml utils/config.common.ml
 utils/config_main.ml: utils/config.generated.ml utils/config.common.ml
 	$(V_GEN)cat $^ > $@
 
+ADDITIONAL_CONFIGURE_ARGS ?=
 .PHONY: reconfigure
 reconfigure:
-	ac_read_git_config=true ./configure $(CONFIGURE_ARGS)
+	ac_read_git_config=true ./configure $(CONFIGURE_ARGS) \
+	                                    $(ADDITIONAL_CONFIGURE_ARGS)
 
 utils/domainstate.ml: utils/domainstate.ml.c runtime/caml/domain_state.tbl
 	$(V_GEN)$(CPP) -I runtime/caml $< > $@
@@ -899,7 +901,8 @@ flexlink.opt$(EXE): \
     $(FLEXDLL_SOURCES) | $(BYTE_BINDIR)/flexlink$(EXE) $(OPT_BINDIR)
 	rm -f $(FLEXDLL_SOURCE_DIR)/flexlink.exe
 	$(MAKE) -C $(FLEXDLL_SOURCE_DIR) $(FLEXLINK_BUILD_ENV) \
-	  OCAMLOPT='$(FLEXLINK_OCAMLOPT) -nostdlib -I ../stdlib' flexlink.exe
+	  OCAMLOPT='$(FLEXLINK_OCAMLOPT) $(USE_STDLIB) $(SET_RELATIVE_STDLIB)' \
+	  flexlink.exe
 	cp $(FLEXDLL_SOURCE_DIR)/flexlink.exe $@
 	rm -f $(OPT_BINDIR)/flexlink$(EXE)
 	cd $(OPT_BINDIR); $(LN) $(call ROOT_FROM, $(OPT_BINDIR))/$@ flexlink$(EXE)
@@ -975,6 +978,10 @@ ocamlc_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
 ocamlc_SOURCES = driver/main.mli driver/main.ml
 
 ocamlc_BYTECODE_LINKFLAGS = -compat-32 -g
+
+ifeq "$(IN_COREBOOT_CYCLE)" "true"
+ocamlc_BYTECODE_LINKFLAGS += -set-runtime-default standard_library_default=.
+endif
 
 partialclean::
 	rm -f ocamlc ocamlc.exe ocamlc.opt ocamlc.opt.exe
@@ -1404,13 +1411,16 @@ $(SAK): runtime/sak.c runtime/caml/misc.h runtime/caml/config.h
 
 C_LITERAL = $(shell $(SAK) $(ENCODE_C_LITERAL) '$(1)')
 
-runtime/build_config.h: $(ROOTDIR)/Makefile.config $(SAK)
+runtime/build_config.h: $(ROOTDIR)/Makefile.config \
+                        $(ROOTDIR)/Makefile.build_config $(SAK)
 	$(V_GEN){ \
 	  echo '/* This file is generated from $(ROOTDIR)/Makefile.config */'; \
 	  printf '#define OCAML_STDLIB_DIR %s\n' \
 	         '$(call C_LITERAL,$(TARGET_LIBDIR))'; \
 	  echo '#define HOST "$(HOST)"'; \
 	} > $@
+
+runtime/prims.$(O): runtime/build_config.h
 
 ## Runtime libraries and programs
 
@@ -1710,6 +1720,10 @@ ocamllex.opt: ocamlopt
 	$(MAKE) lex-allopt
 
 ocamllex_BYTECODE_LINKFLAGS = -compat-32
+
+ifeq "$(IN_COREBOOT_CYCLE)" "true"
+ocamllex_BYTECODE_LINKFLAGS += -set-runtime-default standard_library_default=.
+endif
 
 partialclean::
 	rm -f lex/*.cm* lex/*.o lex/*.obj \
@@ -2016,6 +2030,15 @@ test_in_prefix_LIBRARIES = \
 testsuite/tools/test_in_prefi%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 
 test_in_prefix_BYTECODE_LINKFLAGS += -custom
+
+ifeq "$(TARGET_LIBDIR_IS_RELATIVE)" "true"
+# testsuite/tools/test_in_prefix cannot use a relative stdlib because it is run
+# from testsuite/tools, not from the installation tree (the alternative would be
+# to compile it directly with the installed compiler)
+test_in_prefix_NATIVE_LINKFLAGS =
+test_in_prefix_COMMON_LINKFLAGS = \
+  -set-runtime-default 'standard_library_default=$(LIBDIR)'
+endif
 
 testsuite/tools/test_in_prefi%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
 
@@ -3038,3 +3061,11 @@ config.status:
 # This is why this dependency is kept at the very end of this file
 
 $(ALL_CMX_FILES): ocamlopt$(EXE)
+
+# Allows dune to build without having to clean everything
+.PHONY: clean-for-dune
+clean-for-dune:
+	rm -f stdlib/stdlib.{a,cma,cmxa}
+	rm -f stdlib/std_exit.{o,cmo,cmx}
+	rm -f otherlibs/str/str.cma
+	rm -f otherlibs/unix/unix.cma

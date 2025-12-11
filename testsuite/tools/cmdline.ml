@@ -176,7 +176,7 @@ let parse argv =
     "--pwd", Arg.Set_string pwd, "<pwd>\tCurrent working directory to use";
     "--bindir", Arg.String (check_exists ~absolute:true bindir), "\
 <bindir>\tDirectory containing programs (must share a prefix with --libdir)";
-    "--libdir", Arg.String (check_exists ~absolute:true libdir), "\
+    "--libdir", Arg.String (check_exists ~absolute:false libdir), "\
 <libdir>\tDirectory containing stdlib.cma (must share a prefix with --bindir)";
     "--summary", Arg.Set summary, "";
     "--verbose", Arg.Set verbose, "";
