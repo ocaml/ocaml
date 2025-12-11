@@ -231,8 +231,8 @@ external __POS__ : string * int * int * int = "%loc_POS"
  *)
 
 external __FUNCTION__ : string = "%loc_FUNCTION"
-(** [__FUNCTION__] returns the name of the current function or method, including
-    any enclosing modules or classes.
+(** [__FUNCTION__] returns the name of the current function, method or
+    module-level let-binding, including any enclosing modules or classes.
 
     @since 4.12 *)
 
