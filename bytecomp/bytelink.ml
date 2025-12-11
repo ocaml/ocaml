@@ -385,7 +385,7 @@ let find_bin_sh () =
    called) *)
 
 let write_header outchan =
-  let use_runtime, runtime =
+  let use_runtime, runtime_base =
     if String.length !Clflags.use_runtime > 0 then
       (* Do not use BUILD_PATH_PREFIX_MAP mapping for this. *)
       let make_absolute file =
@@ -393,8 +393,9 @@ let write_header outchan =
         else file in
       (true, make_absolute !Clflags.use_runtime)
     else
-      (false, "ocamlrun" ^ !Clflags.runtime_variant)
+      (false, "ocamlrun")
   in
+  let runtime = runtime_base ^ !Clflags.runtime_variant in
   (* Write the header *)
   let runtime_info =
     let header = "runtime-launch-info" in
