@@ -239,7 +239,7 @@ external __FUNCTION__ : string = "%loc_FUNCTION"
     - [.n] if [n] is the name of a function, module, class or value definition,
       or
     - [#n] if [n] is the name of a method, or
-    - [(fun)] if the scope corresponds to an anonymous function.
+    - [.(fun)] if the scope corresponds to an anonymous function.
 
     Note that the precise format may change in the future.
 
