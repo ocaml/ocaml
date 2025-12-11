@@ -205,8 +205,8 @@ Working version
 
 ### Other libraries:
 
-- #14406: Better handling of address length for unix sockets (pathname,
-  unnamed, abstract).
+- #14406: Better handling of address length for unix sockets, improving Haiku
+  compatibility.
   (Sylvain Kerjean, review by Antonin Décimo and Nicolás Ojeda Bär)
 
 * #14046: On Windows, `Unix.kill pid Sys.sigkill` causes the receiving process
