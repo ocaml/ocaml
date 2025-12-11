@@ -13,17 +13,48 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let generic_quote quotequote s =
-  let l = String.length s in
-  let b = Buffer.create (l + 20) in
-  Buffer.add_char b '\'';
-  for i = 0 to l - 1 do
-    if s.[i] = '\''
-    then Buffer.add_string b quotequote
-    else Buffer.add_char b  s.[i]
-  done;
-  Buffer.add_char b '\'';
-  Buffer.contents b
+let posix_quote s =
+  let len = String.length s in
+  let rec get_buf_len ~s ~len must_escape buf_len i =
+    if i < len then
+      (* https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html#tag_19_02 *)
+      match String.unsafe_get s i with
+      | '|' | '&' | ';' | '<' | '>' | '(' | ')' | '$' | '`' | '\\' | '"' | ' ' | '\t'..'\r'
+      | '*' | '?' | '[' | ']' | '^' | '!' | '#' | '~' | '=' | '%' | '{' | ',' | '}' ->
+        (* '-' (dash) was removed from the list from the POSIX spec given that it
+           is only special in bracket expressions which are already marked as handled.
+           See: https://www.austingroupbugs.net/view.php?id=1191
+           And its meaning has been fixed by the spec to not change in the future.
+           See POSIX spec above *)
+        get_buf_len ~s ~len true buf_len (i + 1)
+      | '\'' ->
+        get_buf_len ~s ~len true (buf_len + 3) (i + 1)
+      | _ ->
+        get_buf_len ~s ~len must_escape buf_len (i + 1)
+    else if must_escape || len = 0 then
+      buf_len + 2
+    else
+      buf_len
+  in
+  match get_buf_len ~s ~len false len 0 with
+  | buf_len when Int.equal buf_len len -> s
+  | buf_len ->
+    let buf = Bytes.create buf_len in
+    Bytes.set buf 0 '\'';
+    Bytes.set buf (buf_len - 1) '\'';
+    let rec loop ~buf ~len i j =
+      if i < len then begin
+        match String.unsafe_get s i with
+        | '\'' ->
+          Bytes.blit_string "'\\''" 0 buf j 4;
+          loop ~buf ~len (i + 1) (j + 4)
+        | c ->
+          Bytes.set buf j c;
+          loop ~buf ~len (i + 1) (j + 1)
+      end
+    in
+    loop ~buf ~len 0 1;
+    Bytes.unsafe_to_string buf
 
 (* This function implements the Open Group specification found here:
   [[1]] http://pubs.opengroup.org/onlinepubs/9699919799/utilities/basename.html
@@ -103,7 +134,7 @@ module Unix : SYSDEPS = struct
 
   let temp_dir_name =
     try Sys.getenv "TMPDIR" with Not_found -> "/tmp"
-  let quote = generic_quote "'\\''"
+  let quote = posix_quote
   let quote_command cmd ?stdin ?stdout ?stderr args =
     String.concat " " (List.map quote (cmd :: args))
     ^ (match stdin  with None -> "" | Some f -> " <" ^ quote f)
