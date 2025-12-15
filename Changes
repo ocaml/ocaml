@@ -551,6 +551,10 @@ Working version
 - #14370: Fix headers for C++ inclusion.
   (Antonin Décimo, review by Gabriel Scherer)
 
+- #14379: pattern matching is exhaustive in the case of gadt indexed by
+  non-overlapping closed polymorphic variants.
+  (Alex Asafov, review by Jacques Garrigue)
+
 OCaml 5.4.0 (9 October 2025)
 ----------------------------
 
