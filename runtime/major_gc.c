@@ -702,7 +702,17 @@ static void adopt_orphaned_work (int expected_status)
 */
 static atomic_uintnat alloc_counter;
 static atomic_uintnat work_counter;
+
+/* Value of work_counter at the lastest color rotation (start of sweep)
+   and number of allocations done during the latest sweep phase.
+   Not atomic because these are only accessed in stw. */
 static uintnat work_counter_at_sweep_start;
+static uintnat latest_sweep_allocs;
+
+/* Small-memory mode: at the end of sweeping, we will not switch to
+   Phase_mark_and_sweep_main (and thus stay in idle mode) until
+   work_counter has reached this value. */
+static atomic_uintnat work_counter_min_before_mark;
 
 static inline intnat max2 (intnat a, intnat b)
 {
@@ -741,6 +751,18 @@ static inline intnat diffmod (uintnat x1, uintnat x2)
   return (intnat) (x1 - x2);
 }
 
+/* Initialize the counters for GC pacing.
+   This is for use in caml_init_gc, when everything is still single-threaded.
+   caml_small_heap_limit must be initialized before calling this function.
+*/
+void caml_init_major_pacing (void)
+{
+  alloc_counter = 0;
+  work_counter = 0;
+  caml_gc_log ("work_counter: initialize to 0");
+  work_counter_min_before_mark = caml_small_heap_limit;
+}
+
 /* Reset the work and alloc counters to be equal to each other, by
  * setting them both equal to the "larger" (in the wrapping-around
  * sense we are using here for work_counter and alloc_counter).
@@ -748,21 +770,34 @@ static inline intnat diffmod (uintnat x1, uintnat x2)
  * For use at times when we have disturbed the major GC from its usual
  * pacing and tempo, for example, after any synchronous major
  * collection.
+ *
+ * add_overhead is true if the latest collection was synchronous
+ * (with caml_gc_full_major) and thus the sweep phase counted only the
+ * live data.
  */
 
-void caml_reset_major_pacing(void)
+void caml_reset_major_pacing(bool add_overhead)
 {
   bool res;
+  uintnat target;
   do {
     uintnat alloc = atomic_load(&alloc_counter);
     uintnat work = atomic_load(&work_counter);
-    uintnat target = alloc;
+    target = alloc;
     if (diffmod(work, alloc) > 0) {
       target = work;
     }
     res = (atomic_compare_exchange_strong(&alloc_counter, &alloc, target) &&
            atomic_compare_exchange_strong(&work_counter, &work, target));
   } while (!res);
+  caml_gc_log ("work_counter: reset to %" CAML_PRIuNAT, target);
+  uintnat virtual_sweep_work = latest_sweep_allocs;
+  if (add_overhead){
+    virtual_sweep_work =
+      (double) virtual_sweep_work * (100 + caml_percent_free) / 100;
+  }
+  work_counter_min_before_mark =
+    target + max2 (virtual_sweep_work, caml_small_heap_limit);
 }
 
 /* The [log_events] parameter is used to disable writing to the ring for two
@@ -918,6 +953,7 @@ update_major_slice_work(intnat howmuch,
                     atomic_load(&alloc_counter),
                     total_cycle_work, catchup);
     atomic_fetch_add (&work_counter, catchup);
+    caml_gc_log ("work_counter: advance to %" CAML_PRIuNAT, work_counter);
   }
 
   if (howmuch == AUTO_TRIGGERED_MAJOR_SLICE ||
@@ -949,7 +985,7 @@ update_major_slice_work(intnat howmuch,
               my_alloc_suspended_count, my_alloc_resumed_count,
               alloc_work, dependent_work, extra_work,
               atomic_load (&work_counter),
-              atomic_load (&work_counter) > atomic_load (&alloc_counter)
+              diffmod (work_counter, alloc_counter) > 0
                 ? "[ahead]" : "[behind]",
               atomic_load (&alloc_counter),
               dom_st->slice_target, dom_st->slice_budget
@@ -1592,7 +1628,11 @@ void caml_mark_roots_stw (int participant_count,
   /* Synchronise and change the phase */
   Caml_global_barrier_if_final(participant_count) {
     caml_gc_phase = Phase_sweep_and_mark_main;
+    caml_gc_log ("work_counter: %" CAML_PRIuNAT " at root marking",
+                 work_counter);
     atomic_store_relaxed(&global_roots_status, WAITING);
+
+    latest_sweep_allocs = diffmod (work_counter, work_counter_at_sweep_start);
 
     /* Adopt orphaned work from domains that were spawned and terminated in the
        previous cycle. There must be no orphaned work remaining when this phase
@@ -1722,6 +1762,9 @@ static void cycle_major_heap_from_stw_single(
 
   caml_gc_phase = Phase_sweep_main;
   work_counter_at_sweep_start = work_counter;
+  caml_gc_log ("work_counter: %" CAML_PRIuNAT " at start of sweep",
+               work_counter_at_sweep_start);
+  work_counter_min_before_mark = work_counter + caml_small_heap_limit;
   atomic_store(&caml_gc_mark_phase_requested, 0);
   caml_atomic_counter_init(&ephe_cycle_info.num_domains_todo,
                            num_domains_in_stw);
@@ -2008,20 +2051,20 @@ static void major_collection_slice(intnat howmuch,
        at the same time. (Needed for performance, not for safety.)
      */
     uintnat wkcnt = work_counter;
-    uintnat small_limit = caml_small_heap_limit;
-    uintnat sweep_work_done = wkcnt - work_counter_at_sweep_start;
-    if (sweep_work_done >= small_limit){
+    intnat idle = diffmod (work_counter_min_before_mark, wkcnt);
+    if (idle <= 0){
       /* Idle phase is finished (or never existed), we should start marking. */
       request_mark_phase();
     }else{
       /* Idle phase: do nothing but commit to the work counter. */
-      uintnat i = small_limit - sweep_work_done;
       intnat todo = diffmod (alloc_counter, wkcnt);
-      if (todo < i){
+      if (todo < idle){
+        caml_gc_log("Idle phase: %" CAML_PRIdNAT, todo);
         commit_major_slice_work (todo);
         /* Idle phase is not finished. */
       }else{
-        commit_major_slice_work (i);
+        caml_gc_log("Idle phase: %" CAML_PRIdNAT " [finished]", idle);
+        commit_major_slice_work (idle);
         /* Idle phase is finished now. */
         request_mark_phase ();
       }

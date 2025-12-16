@@ -259,7 +259,7 @@ static caml_result gc_major_res(int force_compaction)
   caml_gc_log ("Major GC cycle requested");
   caml_empty_minor_heaps_once();
   caml_finish_major_cycle(force_compaction);
-  caml_reset_major_pacing();
+  caml_reset_major_pacing(0);
   caml_result result = caml_process_pending_actions_res();
   CAML_EV_END(EV_EXPLICIT_GC_MAJOR);
   return result;
@@ -280,7 +280,7 @@ static caml_result gc_full_major_res(void)
      currently-unreachable object to be collected. */
   for (int i = 0; i < 3; i++) {
     caml_finish_major_cycle(0);
-    caml_reset_major_pacing();
+    caml_reset_major_pacing(0);
     caml_result res = caml_process_pending_actions_res();
     if (caml_result_is_exception(res)) return res;
   }
@@ -316,7 +316,7 @@ CAMLprim value caml_gc_compaction(value v)
      why this needs three iterations. */
   for (int i = 0; i < 3; i++) {
     caml_finish_major_cycle(i == 2);
-    caml_reset_major_pacing();
+    caml_reset_major_pacing(0);
     result = caml_process_pending_actions_res();
     if (caml_result_is_exception(result)) break;
   }
@@ -363,7 +363,8 @@ void caml_init_gc (void)
   atomic_store_relaxed(&caml_custom_minor_max_bsz,
                        caml_params->init_custom_minor_max_bsz);
 
-  caml_gc_phase = Phase_sweep_and_mark_main;
+  caml_init_major_pacing ();
+  caml_gc_phase = Phase_sweep_main;
   #ifdef NATIVE_CODE
   caml_init_frame_descriptors();
   #endif
