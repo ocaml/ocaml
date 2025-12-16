@@ -23,6 +23,8 @@ open Typedtree
 open Types
 open Ctype
 
+module Result = Misc.Stdlib.Result
+
 exception Already_bound
 
 type error =
@@ -357,10 +359,10 @@ end = struct
           let v = new_global_var () in
           let snap = Btype.snapshot () in
           match unify env v ty with
-          | exception Unify err when is_in_scope name ->
+          | Error err when is_in_scope name ->
               Error.log_and_raise loc env (Type_mismatch err)
-          | exception _ -> Btype.backtrack snap
-          | () ->
+          | Error _ | exception _ -> Btype.backtrack snap
+          | Ok () ->
             begin match lookup_global_type_variable name with
             | global_var ->
               r := (loc, v, global_var) :: !r;
@@ -379,8 +381,8 @@ end = struct
     fun () ->
       List.iter
         (function (loc, t1, t2) ->
-         try unify env t1 t2 with Unify err ->
-           Error.log_and_raise loc env (Type_mismatch err))
+         Result.ok_or_else (unify env t1 t2)
+           (fun err -> Error.log_and_raise loc env (Type_mismatch err)))
         !r
 end
 
@@ -556,7 +558,7 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
         match decl.type_manifest with
           None -> unify_var
         | Some ty ->
-            if get_level ty = Btype.generic_level then unify_var else unify
+            if get_level ty = Btype.generic_level then unify_var else unify_exn
       in
       List.iter2
         (fun (sty, cty) ty' ->
@@ -653,8 +655,7 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
             Error.log_and_raise styp.ptyp_loc env (Variant_tags (l, l'));
           let ty = mkfield l f and ty' = mkfield l f' in
           if is_equal env false [ty] [ty'] then () else
-          try unify env ty ty'
-          with Unify _trace ->
+          if Result.is_error (unify env ty ty') then
             Error.log_and_raise loc env (Constructor_mismatch (ty, ty'))
         with Not_found ->
           hfields := HMap.add h (l, f) !hfields
@@ -819,8 +820,7 @@ and transl_fields env ~policy ~row_context o fields =
     try
       let ty' = HMap.find l !hfields in
       if is_equal env false [ty] [ty'] then () else
-        try unify env ty ty'
-        with Unify _trace ->
+        if Result.is_error (unify env ty ty') then
           Error.log_and_raise loc env (Method_mismatch (l, ty, ty'))
     with Not_found ->
       hfields := HMap.add l ty !hfields in

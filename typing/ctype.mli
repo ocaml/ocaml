@@ -332,8 +332,11 @@ val extract_concrete_typedecl:
 
 val get_new_abstract_name : Env.t -> string -> string
 
-val unify: Env.t -> type_expr -> type_expr -> unit
+val unify_exn: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
+val unify: Env.t -> type_expr -> type_expr -> unit Errortrace.unification_result
+        (* Unify the two types given. Returns [Error] if not possible.
+           May return a [Tags] exception is some cases. *)
 val unify_gadt:
     Pattern_env.t -> pat:type_expr -> expected:type_expr -> Btype.TypePairs.t
         (* [unify_gadt penv ~pat:ty1 ~expected:ty2] unifies [ty1] and [ty2]

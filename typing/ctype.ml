@@ -24,6 +24,8 @@ open Errortrace
 
 open Local_store
 
+module List = Misc.Stdlib.List
+
 module Path = struct
   include Path
 
@@ -4026,8 +4028,13 @@ let unify_pairs env ty1 ty2 pairs =
   with_univar_pairs pairs (fun () ->
     unify (Expression {env; in_subst = false}) ty1 ty2)
 
-let unify env ty1 ty2 =
+let unify_exn env ty1 ty2 =
   unify_pairs env ty1 ty2 []
+
+let unify env ty1 ty2 =
+  match unify_exn env ty1 ty2 with
+  | () -> Ok ()
+  | exception Unify trace -> Error trace
 
 
 (**** Special cases of unification ****)
@@ -4191,10 +4198,7 @@ let filter_arity env t l =
 let is_really_poly env ty =
   let snap = Btype.snapshot () in
   let really_poly =
-    try
-      unify env (newmono (newvar ())) ty;
-      false
-    with Unify _ -> true
+    Result.is_error (unify env (newmono (newvar ())) ty)
   in
   Btype.backtrack snap;
   really_poly
@@ -4328,7 +4332,7 @@ let add_dummy_method env ~scope sign =
   let kind, ty, row =
     filter_method_row env dummy_method Private sign.csig_self_row
   in
-  unify env ty (new_scoped_ty scope (Ttuple []));
+  unify_exn env ty (new_scoped_ty scope (Ttuple []));
   sign.csig_dummy_method <- kind;
   sign.csig_self_row <- row
 
@@ -4367,8 +4371,8 @@ let add_method env label priv virt ty sign =
           | Virtual -> virt
         in
         match unify env ty ty' with
-        | () -> priv, virt
-        | exception Unify trace ->
+        | Ok () -> priv, virt
+        | Error trace ->
             raise (Add_method_failed (Type_mismatch trace))
       end
     | exception Not_found -> begin
@@ -4385,10 +4389,10 @@ let add_method env label priv virt ty sign =
               raise (Add_method_failed Unexpected_method)
         in
         match unify env ty ty' with
-        | () ->
+        | Ok () ->
             sign.csig_self_row <- row;
             priv, virt
-        | exception Unify trace ->
+        | Error trace ->
             raise (Add_method_failed (Type_mismatch trace))
       end
   in
@@ -4421,8 +4425,8 @@ let add_instance_variable ~strict env label mut virt ty sign =
         if strict then begin
           check_mutability mut mut';
           match unify env ty ty' with
-          | () -> ()
-          | exception Unify trace ->
+          | Ok () -> ()
+          | Error trace ->
               raise (Add_instance_variable_failed (Type_mismatch trace))
         end;
         virt
@@ -4442,8 +4446,8 @@ let unify_self_types env sign1 sign2 =
   let self_type1 = sign1.csig_self in
   let self_type2 = sign2.csig_self in
   match unify env self_type1 self_type2 with
-  | () -> ()
-  | exception Unify err -> begin
+  | Ok () -> ()
+  | Error err -> begin
       match err.trace with
       | Errortrace.Diff _ :: Errortrace.Incompatible_fields {name; _} :: rem ->
           let err = Errortrace.unification_error ~trace:rem in
@@ -4543,7 +4547,7 @@ let reveal_private_methods env sign =
              let kind, ty', row =
                filter_method_row env lab Private row
              in
-             unify env ty ty';
+             unify_exn env ty ty';
              let meths = Meths.add lab (Mprivate kind, virt, ty) meths in
              meths, row)
       meths (meths, sign.csig_self_row)
@@ -5023,7 +5027,7 @@ let matches ~expand_error_trace env ty ty' =
   let vars = rigidify ty in
   cleanup_abbrev_memo ();
   match unify env ty ty' with
-  | () ->
+  | Ok () ->
       if not (all_distinct_vars env vars) then begin
         backtrack snap;
         let diff =
@@ -5034,7 +5038,7 @@ let matches ~expand_error_trace env ty ty' =
         raise (Matches_failure (env, unification_error ~trace:[diff]))
       end;
       backtrack snap
-  | exception Unify err ->
+  | Error err ->
       backtrack snap;
       raise (Matches_failure (env, err))
 
@@ -6055,11 +6059,11 @@ and subtype_package env trace lvl1 pack1 lvl2 pack2 constraints =
         (* need to check module subtyping *)
         let snap = Btype.snapshot () in
         let apply_constraint (env,_,t1,t2,_) = unify env t1 t2 in
-        match List.iter apply_constraint constraints' with
-        | exception Unify {trace=unification_trace} ->
+        match List.iter_result apply_constraint constraints' with
+        | Error {trace=unification_trace} ->
             Btype.backtrack snap;
             subtype_error ~env ~trace ~unification_trace
-        | () ->
+        | Ok () ->
             match !package_subtype env pack1 pack2 with
             | Ok () ->
                 Btype.backtrack snap; constraints' @ constraints
@@ -6767,7 +6771,7 @@ let rec collapse_conj env visited ty =
         (fun (_l,fi) ->
           match row_field_repr fi with
             Reither (_c, t1::(_::_ as tl), _m) ->
-              List.iter (unify env t1) tl
+              List.iter (unify_exn env t1) tl
           | _ ->
               ())
         (row_fields row);
