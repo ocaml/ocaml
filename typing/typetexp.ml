@@ -331,12 +331,9 @@ end = struct
         if flavor = Unification || is_in_scope name then
           let v = new_global_var () in
           let snap = Btype.snapshot () in
-          if try unify env v ty; true
-            with
-                Unify err when is_in_scope name ->
-                  raise (Error(loc, env, Type_mismatch err))
-              | _ -> Btype.backtrack snap; false
-          then match lookup_global_type_variable name with
+          match unify env v ty with
+          | () ->
+            begin match lookup_global_type_variable name with
             | global_var ->
               r := (loc, v, global_var) :: !r;
               unused := false
@@ -347,7 +344,11 @@ end = struct
                                                   get_in_scope_names ())));
               let v2 = new_global_var () in
               r := (loc, v, v2) :: !r;
-              add ~unused name v2)
+              add ~unused name v2
+            end
+          | exception Unify err when is_in_scope name ->
+            raise (Error(loc, env, Type_mismatch err))
+          | exception _ -> Btype.backtrack snap)
       !used_variables;
     used_variables := TyVarMap.empty;
     fun () ->
