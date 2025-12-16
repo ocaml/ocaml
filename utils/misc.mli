@@ -137,6 +137,16 @@ module Stdlib : sig
         is returned with the [xs] being the contents of those [Some]s, with
         order preserved.  Otherwise return [None]. *)
 
+    val iter_result : ('a -> (unit, 'err) result) -> 'a list ->
+      (unit, 'err) result
+    (** Similar to {!List.iter} called with a function returning an exception,
+        but with a result instead. *)
+
+      val iter2_result : ('a -> 'b -> (unit, 'err) result) -> 'a list ->
+        'b list -> (unit, 'err) result
+    (** Similar to {!List.iter2} called with a function returning an exception,
+        but with a result instead. *)
+
     val map2_prefix : ('a -> 'b -> 'c) -> 'a t -> 'b t -> ('c t * 'b t)
     (** [let r1, r2 = map2_prefix f l1 l2]
         If [l1] is of length n and [l2 = h2 @ t2] with h2 of length n,
@@ -219,6 +229,12 @@ module Stdlib : sig
     val for_all : (char -> bool) -> t -> bool
 
     val to_utf_8_seq : t -> Uchar.t Seq.t
+  end
+
+(** {2 Extensions to the Result module} *)
+  module Result : sig
+    include module type of Result
+    val ok_or_else : ('a, 'b) result -> ('b -> 'a) -> 'a
   end
 
   external compare : 'a -> 'a -> int = "%compare"

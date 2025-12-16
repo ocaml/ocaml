@@ -200,6 +200,8 @@ let swap_trace e = List.map swap_elt e
 
 type unification_error = { trace : unification error } [@@unboxed]
 
+type 'a unification_result = ('a, unification_error) result
+
 type equality_error =
   { trace : comparison error;
     subst : (type_expr * type_expr) list }

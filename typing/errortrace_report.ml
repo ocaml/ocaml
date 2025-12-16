@@ -129,8 +129,7 @@ let is_unit_param env ty =
 let unifiable env ty1 ty2 =
   let snap = Btype.snapshot () in
   let res =
-    try Ctype.unify env ty1 ty2; true
-    with Ctype.Unify _ -> false
+    Result.is_ok (Ctype.unify env ty1 ty2)
   in
   Btype.backtrack snap;
   res

@@ -62,15 +62,18 @@ let match_simple_printer_type env ty ~is_old_style =
   in
   match
     Ctype.with_local_level_generalize begin fun () ->
+      let open Result.Syntax in
       let ty_arg = Ctype.newvar() in
-      Ctype.unify env
-        (make_printer_type ty_arg)
-        (Ctype.instance ty);
+      let+ () =
+        Ctype.unify env
+          (make_printer_type ty_arg)
+          (Ctype.instance ty)
+      in
       ty_arg
     end
   with
-  | exception Ctype.Unify _ -> None
-  | ty_arg ->
+  | Error _ -> None
+  | Ok ty_arg ->
       if is_old_style
       then Some (Old ty_arg)
       else Some (Simple ty_arg)
@@ -120,14 +123,16 @@ let match_generic_printer_type env ty =
           let ty_expected =
             List.fold_right type_arrow
               printer_args_ty (printer_type_new ty_target) in
-          Ctype.unify env
-            ty_expected
-            (Ctype.instance ty);
-          args
+          let unify_res =
+            Ctype.unify env
+              ty_expected
+              (Ctype.instance ty)
+          in
+          unify_res, args
         end
       with
-      | exception Ctype.Unify _ -> None
-      | args ->
+      | Error _, _ -> None
+      | Ok (), args ->
           if Ctype.all_distinct_vars env args
           then
             Some (Generic { ty_path; arity = List.length params; })
