@@ -793,8 +793,7 @@ void caml_reset_major_pacing(bool add_overhead)
   caml_gc_log ("work_counter: reset to %" CAML_PRIuNAT, target);
   uintnat virtual_sweep_work = latest_sweep_allocs;
   if (add_overhead){
-    virtual_sweep_work =
-      (double) virtual_sweep_work * (100 + caml_percent_free) / 100;
+    virtual_sweep_work = virtual_sweep_work / 100 * (100 + caml_percent_free);
   }
   work_counter_min_before_mark =
     target + max2 (virtual_sweep_work, caml_small_heap_limit);
