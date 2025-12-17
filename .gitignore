@@ -62,7 +62,7 @@ META
 /ocamlopt.opt
 /ocamlnat
 /_opam
-
+/VERSION
 # specific files and patterns in sub-directories
 
 /asmcomp/emit.ml

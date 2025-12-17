@@ -2649,6 +2649,7 @@ endif
 	rm -rf autom4te.cache winpthreads-sources flexdll-sources \
          $(BYTE_BUILD_TREE) $(OPT_BUILD_TREE)
 	rm -f config.log config.status libtool
+	rm -f VERSION
 
 INSTALL_LIBDIR_DYNLINK = $(INSTALL_LIBDIR)/dynlink
 

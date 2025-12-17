@@ -36,7 +36,7 @@ m4_define([OCAML__VERSION_MINOR], [3])
 m4_define([OCAML__VERSION_PATCHLEVEL], [0])
 # Note that the OCAML__VERSION_EXTRA string defined below is always empty
 # for officially-released versions of OCaml.
-m4_define([OCAML__VERSION_EXTRA], [])
+m4_define([OCAML__VERSION_EXTRA], [semgrep-fork])
 
 # The OCAML__VERSION_EXTRA_PREFIX macro defined below should be a
 # single character:
@@ -54,26 +54,9 @@ m4_define([OCAML__VERSION],
     m4_if(OCAML__VERSION_EXTRA,[],[],
       OCAML__VERSION_EXTRA_PREFIX[]OCAML__VERSION_EXTRA))])
 
-# Generate the VERSION file
-# The following command is invoked when autoconf is run to generate configure
-# from configure.ac, not while configure itself is run.
-# In other words, both VERSION and configure are produced by invoking
-# autoconf (usually done by calling tools/autogen for this project)
-m4_syscmd([cat > VERSION << END_OF_VERSION_FILE
-]OCAML__VERSION[
 
-# Starting with OCaml 4.14, although the version string that appears above is
-# still correct and this file can thus still be used to figure it out,
-# the version itself is actually defined in the build-aux/ocaml_version.m4
-# file (See the OCAML__VERSION* macros there.)
-# To update the present VERSION file:
-# 1. Update build-aux/ocaml_version.m4
-# 2. Run tools/autogen.
-# 3. If you are in a context where version control matters,
-# commit the changes to both build-aux/ocaml_version.m4 and VERSION.
-# The version string must be in the format described in stdlib/sys.mli
-END_OF_VERSION_FILE
-])
+# Since we want to have the SHA at the end of the compiler version, we need
+# to generate the VERSION file during ./configure time; (see ../configure.ac)
 
 # Other variants of the version needed here and there in the compiler
 
@@ -83,11 +66,6 @@ m4_define([OCAML__VERSION_NUMBER],
     OCAML__VERSION_MAJOR,
     OCAML__VERSION_MINOR,
     OCAML__VERSION_PATCHLEVEL)])
-
-m4_define([OCAML__RELEASE_EXTRA], 
-  m4_if(OCAML__VERSION_EXTRA,[],[None],
-      ['Some (]m4_if(OCAML__VERSION_EXTRA_PREFIX,+,[Plus],
-      [Tilde])[, "]OCAML__VERSION_EXTRA[")']))]))
 
 # Magic numbers for the different file formats
 
