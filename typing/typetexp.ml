@@ -332,6 +332,9 @@ end = struct
           let v = new_global_var () in
           let snap = Btype.snapshot () in
           match unify env v ty with
+          | exception Unify err when is_in_scope name ->
+            raise (Error(loc, env, Type_mismatch err))
+          | exception _ -> Btype.backtrack snap
           | () ->
             begin match lookup_global_type_variable name with
             | global_var ->
@@ -345,10 +348,7 @@ end = struct
               let v2 = new_global_var () in
               r := (loc, v, v2) :: !r;
               add ~unused name v2
-            end
-          | exception Unify err when is_in_scope name ->
-            raise (Error(loc, env, Type_mismatch err))
-          | exception _ -> Btype.backtrack snap)
+            end)
       !used_variables;
     used_variables := TyVarMap.empty;
     fun () ->

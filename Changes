@@ -460,6 +460,10 @@ Working version
 * #14388: Remove support for `let rec (module M : S) = e1 in e2`.
   (Alistair O'Brien, review by Vincent Laviron and Gabriel Scherer)
 
+- #14422: Refactoring an `if match e with p1 -> true | p2 -> false then ...`
+  into a match in typetexp.
+  (Samuel Vivien, review by Gabriel Scherer)
+
 ### Build system:
 
 - #13810: Support build of cross compilers to native freestanding targets
