@@ -2771,8 +2771,16 @@ AC_CHECK_FUNCS(
   [AC_DEFINE([HAS_PRCTL], [1])])
 
 ## SetThreadDescription
-AC_CHECK_FUNCS(
-  [SetThreadDescription],
+AC_CACHE_CHECK([for SetThreadDescription],
+  [ac_cv_func_SetThreadDescription],
+  [AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[#include <windows.h>]],
+      [[SetThreadDescription(GetCurrentThread(), L"test");]])],
+    [ac_cv_func_SetThreadDescription=yes],
+    [ac_cv_func_SetThreadDescription=no])])
+
+AS_IF([test x"$ac_cv_func_SetThreadDescription" = 'xyes'],
   [AC_DEFINE([HAS_SETTHREADDESCRIPTION], [1])
   AC_CHECK_DECL(
     [SetThreadDescription],

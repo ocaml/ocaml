@@ -23718,14 +23718,38 @@ fi
 done
 
 ## SetThreadDescription
-
-  for ac_func in SetThreadDescription
-do :
-  ac_fn_c_check_func "$LINENO" "SetThreadDescription" "ac_cv_func_SetThreadDescription"
-if test "x$ac_cv_func_SetThreadDescription" = xyes
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for SetThreadDescription" >&5
+printf %s "checking for SetThreadDescription... " >&6; }
+if test ${ac_cv_func_SetThreadDescription+y}
 then :
-  printf "%s\n" "#define HAVE_SETTHREADDESCRIPTION 1" >>confdefs.h
- printf "%s\n" "#define HAS_SETTHREADDESCRIPTION 1" >>confdefs.h
+  printf %s "(cached) " >&6
+else $as_nop
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <windows.h>
+int
+main (void)
+{
+SetThreadDescription(GetCurrentThread(), L"test");
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_func_SetThreadDescription=yes
+else $as_nop
+  ac_cv_func_SetThreadDescription=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_func_SetThreadDescription" >&5
+printf "%s\n" "$ac_cv_func_SetThreadDescription" >&6; }
+
+if test x"$ac_cv_func_SetThreadDescription" = 'xyes'
+then :
+  printf "%s\n" "#define HAS_SETTHREADDESCRIPTION 1" >>confdefs.h
 
   ac_fn_check_decl "$LINENO" "SetThreadDescription" "ac_cv_have_decl_SetThreadDescription" "#define WIN32_LEAN_AND_MEAN
       #include <windows.h>
@@ -23737,8 +23761,6 @@ then :
 
 fi
 fi
-
-done
 
 ## Activate the systhread library
 

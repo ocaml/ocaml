@@ -554,6 +554,11 @@ Working version
 - #14417: Fix issue with nested packs on macOS.
   (Vincent Laviron, report by Kate Deplaix, review by Gabriel Scherer)
 
+- #14423: Fix detection of SetThreadDescription on 32-bit builds, meaning that
+  Thread.set_current_thread_name now works on 32-bit MSVC and uses the correct
+  mechanism on 32-bit mingw-w64.
+  (David Allsopp, review by Antonin Décimo)
+
 OCaml 5.4.0 (9 October 2025)
 ----------------------------
 
