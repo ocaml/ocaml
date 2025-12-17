@@ -58,16 +58,16 @@ let expected_ocaml_version,
 (* Check that Sys.ocaml_version is as expected *)
 let () =
   let ocaml_version =
-    Scanf.sscanf Sys.ocaml_version "%%u.%%u" (fun major minor ->
+    Scanf.sscanf Sys.ocaml_version "%u.%u" (fun major minor ->
       if (major, minor) > (3, 7) then
         (* Strip off any additional information *)
-        Scanf.sscanf Sys.ocaml_version "%%[^~+]" (fun x -> x)
+        Scanf.sscanf Sys.ocaml_version "%[^~+]" (fun x -> x)
       else
         Sys.ocaml_version)
   in
   if ocaml_version <> expected_ocaml_version then
     (Printf.eprintf
-       "OCaml version mismatch: %%s, expected %%s"
+       "OCaml version mismatch: %s, expected %s"
        ocaml_version expected_ocaml_version;
      exit 1)
 
@@ -88,7 +88,7 @@ let () =
       let r = input_line ic in
       close_in ic; Sys.remove "where"; r
     else begin
-      Printf.eprintf "Unexpected exit code %%d from `ocamlc -where'\n" exit_code;
+      Printf.eprintf "Unexpected exit code %d from `ocamlc -where'\n" exit_code;
       exit 1
     end
   in
@@ -118,12 +118,12 @@ let () =
   Printf.fprintf oc "\
     opam-version: \"2.0\"\n\
     variables {\n  \
-      native: %%b\n  \
-      native-tools: %%b\n  \
-      native-dynlink: %%b\n  \
-      stubsdir: %%S\n  \
-      preinstalled: %%s\n  \
-      compiler: \"%%s%%s\"\n\
+      native: %b\n  \
+      native-tools: %b\n  \
+      native-dynlink: %b\n  \
+      stubsdir: %S\n  \
+      preinstalled: %s\n  \
+      compiler: \"%s%s\"\n\
     }\n" native native_tools native_dynlink stubsdir preinstalled
          compiler_package_version option_names;
   close_out oc
