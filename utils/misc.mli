@@ -156,7 +156,8 @@ module Stdlib : sig
     (** Same as {!List.iter2}, but the function is applied to the index of
         the element as first argument (counting from 0) *)
 
-    val rev_iter : ('a -> unit) -> 'a list -> unit
+    val rev_iter_result : ('a -> (unit, 'b) result) -> 'a list
+        -> (unit, 'b) result
 
     val split_at : int -> 'a t -> 'a t * 'a t
     (** [split_at n l] returns the pair [before, after] where [before] is

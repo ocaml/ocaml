@@ -338,7 +338,8 @@ val unify: Env.t -> type_expr -> type_expr -> unit Errortrace.unification_result
         (* Unify the two types given. Returns [Error] if not possible.
            May return a [Tags] exception is some cases. *)
 val unify_gadt:
-    Pattern_env.t -> pat:type_expr -> expected:type_expr -> Btype.TypePairs.t
+    Pattern_env.t -> pat:type_expr -> expected:type_expr ->
+        (Btype.TypePairs.t, Errortrace.unification_error) result
         (* [unify_gadt penv ~pat:ty1 ~expected:ty2] unifies [ty1] and [ty2]
            in [Pattern] mode, possible adding local constraints to the
            environment in [penv]. Raises [Unify] if not possible.
@@ -346,9 +347,12 @@ val unify_gadt:
            Type variables in [ty1] are always assumed to be non-leaking
            (safely reifiable); if [penv.in_counterexample = true]
            then both [ty1] and [ty2] are assumed to be non-leaking. *)
-val unify_var: Env.t -> type_expr -> type_expr -> unit
+val unify_var: Env.t -> type_expr -> type_expr ->
+        (unit, Errortrace.unification_error) result
         (* Same as [unify], but allow free univars when first type
            is a variable. *)
+val unify_var_exn: Env.t -> type_expr -> type_expr -> unit
+        (** Same as [unify_var], but with an exception *)
 
 type filtered_arrow =
   { ty_param : type_expr;

@@ -1624,7 +1624,7 @@ let class_infos define_class kind
     let row = Btype.self_type_row obj_type in
     Ctype.unify_exn env row (Ctype.newty Tnil);
     if Result.is_error
-        (List.iter2_result (Ctype.unify env) obj_params obj_params')
+        (Misc.Stdlib.List.iter2_result (Ctype.unify env) obj_params obj_params')
     then
       Error.log_and_raise cl.pci_loc env
         (Bad_parameters (obj_id, obj_params, obj_params'));
@@ -1642,7 +1642,7 @@ let class_infos define_class kind
     let (cl_params', cl_type) = Ctype.instance_class params typ in
     let ty = Btype.self_type cl_type in
     if Result.is_error
-        (List.iter2_result (Ctype.unify env) cl_params cl_params')
+        (Misc.Stdlib.List.iter2_result (Ctype.unify env) cl_params cl_params')
     then
       Error.log_and_raise cl.pci_loc env
         (Bad_class_type_parameters (ty_id, cl_params, cl_params'));

@@ -1611,7 +1611,7 @@ let transl_type_extension extend env loc styext =
       TyVarEnv.reset();
       let ttype_params = make_params env styext.ptyext_params in
       let type_params = List.map (fun (cty, _) -> cty.ctyp_type) ttype_params in
-      List.iter2 (Ctype.unify_var env)
+      List.iter2 (Ctype.unify_var_exn env)
         (Ctype.instance_list type_decl.type_params)
         type_params;
       let constructors =
@@ -1978,10 +1978,11 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
   let arity_ok = arity = sig_decl.type_arity in
   if arity_ok then
     List.iter2 (fun (cty, _) tparam ->
-      try Ctype.unify_var env cty.ctyp_type tparam
-      with Ctype.Unify err ->
-        Error.log_and_raise cty.ctyp_loc
-          (Inconsistent_constraint (env, err))
+      Result.ok_or_else
+        (Ctype.unify_var env cty.ctyp_type tparam)
+        (fun err ->
+          Error.log_and_raise cty.ctyp_loc
+            (Inconsistent_constraint (env, err)))
     ) tparams sig_decl.type_params;
   List.iter (fun (cty, cty', loc) ->
     (* Note: constraints must also be enforced in [sig_env] because
