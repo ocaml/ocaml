@@ -148,12 +148,12 @@ module Stdlib = struct
 
     let iteri2 f l1 l2 = iteri2 0 f l1 l2
 
-    let rec rev_iter f l =
+    let rec rev_iter_result f l =
       match l with
-      | [] -> ()
+      | [] -> Ok ()
       | x :: xs ->
-          rev_iter f xs;
-          f x
+          Result.bind (rev_iter_result f xs)
+            (fun () -> f x)
 
     let rec iter_result f l =
       match l with

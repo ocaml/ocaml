@@ -25,6 +25,7 @@ open Errortrace
 open Local_store
 
 module List = Misc.Stdlib.List
+module Result = Misc.Stdlib.Result
 
 module Path = struct
   include Path
@@ -1920,10 +1921,10 @@ let subst ~env ~level ?scope ~priv ~abbrev ?oty ~params ~args body =
     let (params', body') = instance_parameterized_type ?scope params body in
     abbreviations := ref Mnil;
     let uenv = Expression {env; in_subst = true} in
-    try
-      !unify_var' ~check_occur:true uenv body0 body';
+    match
+      Result.bind (!unify_var' ~check_occur:true uenv body0 body') @@ fun () ->
       let _, first_gen_vars, others =
-        Misc.Stdlib.List.fold_left3
+        List.fold_left3
           (fun (previous_gen, first_gen, others) p p' a ->
              match get_desc p with
              | Tvar _ when get_level p = generic_level
@@ -1943,12 +1944,15 @@ let subst ~env ~level ?scope ~priv ~abbrev ?oty ~params ~args body =
          or non-variables cannot avoid the check, since we're not able to show
          they cannot occur.
       *)
-      Misc.Stdlib.List.rev_iter
-        (fun (p,a) -> !unify_var' uenv ~check_occur:false p a) first_gen_vars;
-      Misc.Stdlib.List.rev_iter
-        (fun (p,a) -> !unify_var' uenv ~check_occur:true p a) others;
-      body'
-    with Unify _ ->
+      Result.bind
+        (List.rev_iter_result
+          (fun (p,a) -> !unify_var' uenv ~check_occur:false p a) first_gen_vars)
+        (fun () ->
+          List.rev_iter_result
+            (fun (p,a) -> !unify_var' uenv ~check_occur:true p a) others)
+    with
+    | Ok () -> body'
+    | Error _ ->
       undo_abbrev ();
       raise Cannot_subst
   end
@@ -3971,12 +3975,13 @@ and unify_row_field uenv fixed1 fixed2 rm1 rm2 l f1 f2 =
 
 let unify uenv ty1 ty2 =
   let snap = Btype.snapshot () in
-  try
+  match
     unify uenv ty1 ty2
   with
-    Unify_trace trace ->
+  | () -> Ok ()
+  | exception Unify_trace trace ->
       undo_compress snap;
-      raise (Unify (expand_to_unification_error (get_env uenv) trace))
+      Error (expand_to_unification_error (get_env uenv) trace)
 
 let unify_gadt (penv : Pattern_env.t) ~pat:ty1 ~expected:ty2 =
   let equated_types = TypePairs.create 0 in
@@ -3987,24 +3992,24 @@ let unify_gadt (penv : Pattern_env.t) ~pat:ty1 ~expected:ty2 =
           assume_injective = true;
           unify_eq_set = TypePairs.create 11; }
     in
-    unify uenv ty1 ty2;
-    equated_types
+    Result.map (fun () -> equated_types) (unify uenv ty1 ty2)
   in
   let no_leak = penv.in_counterexample || closed_type_expr ty2 in
   if no_leak then with_univar_pairs [] do_unify_gadt else
   let snap = Btype.snapshot () in
-  try
+  match
     (* If there are free variables, first try normal unification *)
     let uenv = Expression {env = penv.env; in_subst = false} in
-    with_univar_pairs [] (fun () -> unify uenv ty1 ty2);
-    equated_types
-  with Unify _ ->
+    with_univar_pairs [] (fun () -> unify uenv ty1 ty2)
+  with
+  | Ok () -> Ok equated_types
+  | Error _ ->
     (* If it fails, retry in pattern mode *)
     Btype.backtrack snap;
     with_univar_pairs [] do_unify_gadt
 
 let unify_var ~check_occur uenv t1 t2 =
-  if eq_type t1 t2 then () else
+  if eq_type t1 t2 then Ok () else
   match get_desc t1, get_desc t2 with
     Tvar _, Tconstr _ when check_occur && deep_occur t1 t2 ->
       unify uenv t1 t2
@@ -4017,11 +4022,12 @@ let unify_var ~check_occur uenv t1 t2 =
         update_scope_for Unify (get_scope t1) t2;
         link_type t1 t2;
         reset_trace_gadt_instances reset_tracing;
+        Ok ()
       with Unify_trace trace ->
         reset_trace_gadt_instances reset_tracing;
-        raise (Unify (expand_to_unification_error
+        Error (expand_to_unification_error
                         env
-                        (Diff { got = t1; expected = t2 } :: trace)))
+                        (Diff { got = t1; expected = t2 } :: trace))
       end
   | _ ->
       unify uenv t1 t2
@@ -4032,20 +4038,28 @@ let _ = unify_var' := unify_var
 let unify_var env ty1 ty2 =
   unify_var ~check_occur:true (Expression {env; in_subst = false}) ty1 ty2
 
+let unify_var_exn env ty1 ty2 =
+  match unify_var env ty1 ty2 with
+  | Ok () -> ()
+  | Error err -> raise (Unify err)
+
 let unify_pairs env ty1 ty2 pairs =
   with_univar_pairs pairs (fun () ->
     unify (Expression {env; in_subst = false}) ty1 ty2)
 
-let unify_exn env ty1 ty2 =
+let unify env ty1 ty2 =
   unify_pairs env ty1 ty2 []
 
-let unify env ty1 ty2 =
-  match unify_exn env ty1 ty2 with
-  | () -> Ok ()
-  | exception Unify trace -> Error trace
+let unify_exn env ty1 ty2 =
+  match unify env ty1 ty2 with
+  | Ok () -> ()
+  | Error trace -> raise (Unify trace)
 
 (* Lower the level of a type to the current level *)
-let enforce_current_level env ty = unify_var env (newvar ()) ty
+let enforce_current_level env ty =
+  match unify_var env (newvar ()) ty with
+  | Ok () -> ()
+  | Error err -> raise (Unify err)
 
 
 (**** Special cases of unification ****)
@@ -5758,7 +5772,7 @@ let rec build_subtype env (visited : transient_expr list)
           let nm =
             if c > Equiv || deep_occur ty ty1' then None else Some(p,tl1) in
           set_type_desc t'' (Tobject (ty1', ref nm));
-          (try unify_var env ty t with Unify _ -> assert false);
+          assert (Result.is_ok (unify_var env ty t));
           ( t'', Changed)
       | _ -> raise Not_found
       with Not_found ->
@@ -6212,11 +6226,12 @@ let subtype env ty1 ty2 =
     function () ->
       List.iter
         (function (env, trace0, t1, t2, pairs) ->
-           try unify_pairs env t1 t2 pairs with Unify {trace} ->
-           subtype_error
-             ~env
-             ~trace:trace0
-             ~unification_trace:(List.tl trace))
+           Result.ok_or_else (unify_pairs env t1 t2 pairs)
+             (fun ({trace} : Errortrace.unification_error) ->
+               subtype_error
+                 ~env
+                 ~trace:trace0
+                 ~unification_trace:(List.tl trace)))
         (List.rev constraints))
 
                               (*******************)

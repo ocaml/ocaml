@@ -757,14 +757,15 @@ let unify_pat_types ?sdesc_for_hint loc env ty ty' =
    [penv.in_counterexample = false] (see [unify_gadt] for details) *)
 let nothing_equated = TypePairs.create 0
 let unify_pat_types_return_equated_pairs ~refine loc penv ~pat ~expected =
-  try
+  match
     if refine || penv.Pattern_env.in_counterexample
     then unify_gadt penv ~pat ~expected
-    else (unify_exn !!penv pat expected; nothing_equated)
+    else (Result.map (fun () -> nothing_equated) (unify !!penv pat expected))
   with
-  | Unify err ->
+  | Ok type_pairs -> type_pairs
+  | Error err ->
       Error.log_and_raise loc !!penv (Pattern_type_clash(err, None))
-  | Tags(l1,l2) ->
+  | exception Tags(l1,l2) ->
       Typetexp.Error.log_and_raise loc !!penv (Typetexp.Variant_tags (l1, l2))
 
 (* Unify pattern types in functions that can be called either from
@@ -1009,13 +1010,12 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
           if x1==x2 then
             unify_vars rem1 rem2
           else begin
-            begin try
-              unify_var env (newvar ()) t1;
-              unify_exn env t1 t2
-            with
-            | Unify err ->
-                Error.log_and_raise loc env (Or_pattern_type_clash(x1, err))
-            end;
+            Result.ok_or_else
+              (Result.bind
+                 (unify_var env (newvar ()) t1)
+                 (fun () -> unify env t1 t2))
+              (fun err ->
+                 Error.log_and_raise loc env (Or_pattern_type_clash(x1, err)));
           (x2,x1)::unify_vars rem1 rem2
           end
       | [],[] -> []
@@ -4330,8 +4330,7 @@ type type_function_result_param =
 (** lower the level of function arguments to the level of the application *)
 let lower_args outer_level env ty_fun =
   let lower env ty =
-    try Ctype.unify_var env (newvar2 outer_level) ty
-    with Unify _ -> assert false
+    Result.get_ok (Ctype.unify_var env (newvar2 outer_level) ty)
   in
   let rec lower_args env seen ty_fun =
     let ty = expand_head env ty_fun in
@@ -5626,7 +5625,7 @@ and type_expect_
         end ~before_generalize: begin fun (newenv, _si, exp) ->
           (* Ensure that local definitions do not leak. *)
           (* Required for implicit unpack *)
-          unify_var newenv tv exp.exp_type
+          unify_var_exn newenv tv exp.exp_type
         end
         in
         re {
@@ -6835,7 +6834,7 @@ and type_apply_arg env ~app_loc (lbl, arg) =
               in
               let (ty_arg0', vars0) = tpoly_get_poly ty_arg0 in
               let vars0, ty_arg0' = instance_poly_fixed vars0 ty_arg0' in
-              List.iter2 (fun ty ty' -> unify_var env ty ty') vars vars0;
+              List.iter2 (fun ty ty' -> unify_var_exn env ty ty') vars vars0;
               let arg =
                 type_argument env sarg ty_arg' ty_arg0'
               in
