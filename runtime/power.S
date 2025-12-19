@@ -35,7 +35,8 @@
 #define C_CALL_TMP 28
 #define TRAP_PTR 29
 #define DOMAIN_STATE_PTR 30
-#define ALLOC_PTR 31
+#define ALLOC_PTR 23
+#define FRAME_PTR 31            /* Frame pointer (when enabled via --enable-frame-pointers) */
 
 /* Stack layout */
 #define RESERVED_STACK 32
@@ -217,7 +218,8 @@ caml_hot__code_end:
        ld       TMP, Caml_state(gc_regs_buckets)
        ld       0, 0(TMP)
        std      0, Caml_state(gc_regs_buckets)
-    /* Save all allocatable integer registers */
+    /* Save all allocatable integer registers
+       (r23 is ALLOC_PTR, not saved here) */
        std      3,  0x000(TMP)
        std      4,  0x008(TMP)
        std      5,  0x010(TMP)
@@ -235,12 +237,12 @@ caml_hot__code_end:
        std      20, 0x070(TMP)
        std      21, 0x078(TMP)
        std      22, 0x080(TMP)
-       std      23, 0x088(TMP)
-       std      24, 0x090(TMP)
-       std      25, 0x098(TMP)
-       std      26, 0x0A0(TMP)
-       std      27, 0x0A8(TMP)
-       std      28, 0x0B0(TMP)
+       std      24, 0x088(TMP)
+       std      25, 0x090(TMP)
+       std      26, 0x098(TMP)
+       std      27, 0x0A0(TMP)
+       std      28, 0x0A8(TMP)
+       std      31, 0x0B0(TMP)
     /* Save caller-save floating-point registers */
     /* (callee-saves are preserved by C functions) */
        stfd     0,  0x0B8(TMP)
@@ -265,7 +267,8 @@ caml_hot__code_end:
    and refresh ALLOC_PTR and TRAP_PTR from Caml_state */
 .macro RESTORE_ALL_REGS
        ld       TMP, Caml_state(gc_regs)
-    /* Restore all allocatable integer registers */
+    /* Restore all allocatable integer registers
+       (r23 is ALLOC_PTR, not restored here) */
        ld       3,  0x000(TMP)
        ld       4,  0x008(TMP)
        ld       5,  0x010(TMP)
@@ -283,12 +286,12 @@ caml_hot__code_end:
        ld       20, 0x070(TMP)
        ld       21, 0x078(TMP)
        ld       22, 0x080(TMP)
-       ld       23, 0x088(TMP)
-       ld       24, 0x090(TMP)
-       ld       25, 0x098(TMP)
-       ld       26, 0x0A0(TMP)
-       ld       27, 0x0A8(TMP)
-       ld       28, 0x0B0(TMP)
+       ld       24, 0x088(TMP)
+       ld       25, 0x090(TMP)
+       ld       26, 0x098(TMP)
+       ld       27, 0x0A0(TMP)
+       ld       28, 0x0A8(TMP)
+       ld       31, 0x0B0(TMP)
     /* Restore caller-save floating-point registers
        (callee-saves are preserved by C functions) */
        lfd      0,  0x0B8(TMP)

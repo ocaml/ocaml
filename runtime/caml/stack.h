@@ -45,7 +45,7 @@
 #ifdef TARGET_power
 /* Size of the gc_regs structure, in words.
    See power.S and power/proc.ml for the indices */
-#define Wosize_gc_regs (23 /* int regs */ + 14 /* caller-save float regs */)
+#define Wosize_gc_regs (23 /* int regs, r23 is ALLOC_PTR, r31 allocatable */ + 14 /* caller-save float regs */)
 #define Saved_return_address_raw(sp) *((intnat *)((sp) + 16))
 #define First_frame(sp) (sp)
 #define Saved_gc_regs(sp) (*(value **)((sp) + 32 + 16 + 8))

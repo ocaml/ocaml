@@ -518,25 +518,25 @@ let emit_alloc env i bytes dbginfo far =
   if env.call_gc_label = 0 then env.call_gc_label <- new_label ();
   let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
   `	ld	0, {emit_int offset}(30)\n`;
-  `	addi	31, 31, {emit_int(-bytes)}\n`;
-  `	cmpld	31, 0\n`;
+  `	addi	23, 23, {emit_int(-bytes)}\n`;
+  `	cmpld	23, 0\n`;
   if not far then begin
     `	bltl-	{emit_label env.call_gc_label}\n`;
     record_frame env i.live (Dbg_alloc dbginfo);
-    `	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
+    `	addi	{emit_reg i.res.(0)}, 23, {emit_int size_addr}\n`
   end else begin
     let lbl = new_label() in
     `	bge+	{emit_label lbl}\n`;
     `	bl	{emit_label env.call_gc_label}\n`;
     record_frame env i.live (Dbg_alloc dbginfo);
-    `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
+    `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, 23, {emit_int size_addr}\n`
   end
 
 let emit_poll env i return_label far =
   if env.call_gc_label = 0 then env.call_gc_label <- new_label ();
   let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
   `	ld	0, {emit_int offset}(30)\n`;
-  `	cmpld	31, 0\n`;
+  `	cmpld	23, 0\n`;
   if not far then begin
     begin match return_label with
     | None ->
