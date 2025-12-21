@@ -35,4 +35,3 @@ module G (X : sig type t = int val x : t module M : S end) = struct
 
   type u = Id (X).t
 end
-

@@ -366,7 +366,9 @@ let index_occurrences binary_annots =
       | exception Not_found -> ()
       | { uid = Some (Predef _); _ } -> ()
       | path_shape ->
-        let result = Shape_reduce.local_reduce_for_uid env ~namespace path path_shape in
+        let result =
+          Shape_reduce.local_reduce_for_uid env ~namespace path path_shape
+        in
         index := (lid, result) :: !index
     in
     (* Shape reduction can be expensive, but the persistent memoization tables
