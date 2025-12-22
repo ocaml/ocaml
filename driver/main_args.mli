@@ -50,6 +50,7 @@ module type Common_options = sig
   val _version : unit -> unit
   val _vnum : unit -> unit
   val _w : string -> unit
+  val _Z : string -> unit
 
   val anonymous : string -> unit
 end

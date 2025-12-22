@@ -387,6 +387,12 @@ let mk_o f =
 let mk_open f =
   "-open", Arg.String f, "<module>  Opens the module <module> before typing"
 
+let mk_Z f =
+  "-Z", Arg.String f,
+  "<features>  Enable unstable features (comma-separated list).\n\
+  \     Unstable features are experimental and may change or be removed.\n\
+  \     Example: -Z feature1,feature2"
+
 let mk_output_obj f =
   "-output-obj", Arg.Unit f, " Output an object file instead of an executable"
 
@@ -827,6 +833,7 @@ module type Common_options = sig
   val _version : unit -> unit
   val _vnum : unit -> unit
   val _w : string -> unit
+  val _Z : string -> unit
 
   val anonymous : string -> unit
 end
@@ -1110,6 +1117,7 @@ struct
     mk_o F._o;
     mk_opaque F._opaque;
     mk_open F._open;
+    mk_Z F._Z;
     mk_output_obj F._output_obj;
     mk_output_complete_obj F._output_complete_obj;
     mk_output_complete_exe F._output_complete_exe;
@@ -1204,6 +1212,7 @@ struct
     mk_nocwd F._nocwd;
     mk_nopervasives F._nopervasives;
     mk_open F._open;
+    mk_Z F._Z;
     mk_ppx F._ppx;
     mk_keywords F._keywords;
     mk_principal F._principal;
@@ -1333,6 +1342,7 @@ struct
     mk_o3 F._o3;
     mk_opaque F._opaque;
     mk_open F._open;
+    mk_Z F._Z;
     mk_output_obj F._output_obj;
     mk_output_complete_obj F._output_complete_obj;
     mk_p F._p;
@@ -1473,6 +1483,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_o2 F._o2;
     mk_o3 F._o3;
     mk_open F._open;
+    mk_Z F._Z;
     mk_ppx F._ppx;
     mk_principal F._principal;
     mk_no_principal F._no_principal;
@@ -1564,6 +1575,7 @@ struct
     mk_nostdlib F._nostdlib;
     mk_nocwd F._nocwd;
     mk_open F._open;
+    mk_Z F._Z;
     mk_pp F._pp;
     mk_ppx F._ppx;
     mk_principal F._principal;
@@ -1661,6 +1673,10 @@ module Default = struct
     let _nostdlib = set no_std_include
     let _nocwd = set no_cwd
     let _open s = open_modules := (s :: (!open_modules))
+    let _Z s =
+      let features = parse_unstable_features s in
+      List.iter Unstable_feature.Scope.enable features;
+      unstable_features := !unstable_features @ features
     let _principal = set principal
     let _rectypes = set recursive_types
     let _safer_matching = set safer_matching

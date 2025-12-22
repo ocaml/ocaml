@@ -98,6 +98,8 @@ val nopervasives : bool ref
 val match_context_rows : int ref
 val safer_matching : bool ref
 val open_modules : string list ref
+val unstable_features : Unstable_feature.Name.t list ref
+val parse_unstable_features : string -> Unstable_feature.Name.t list
 val preprocessor : string option ref
 val all_ppx : string list ref
 val absname : bool ref

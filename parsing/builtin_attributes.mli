@@ -20,6 +20,7 @@
     - ocaml.deprecated
     - ocaml.deprecated_mutable
     - ocaml.explicit_arity
+    - ocaml.feature
     - ocaml.immediate
     - ocaml.immediate64
     - ocaml.inline
@@ -33,6 +34,7 @@
     - ocaml.tailcall
     - ocaml.tail_mod_cons
     - ocaml.unboxed
+    - ocaml.unstable
     - ocaml.untagged
     - ocaml.unrolled
     - ocaml.warnerror
@@ -190,3 +192,20 @@ val has_boxed: Parsetree.attributes -> bool
 val has_remove_aliases: Parsetree.attributes -> bool
 
 val has_atomic: Parsetree.attributes -> bool
+
+(** {3 Unstable features support} *)
+
+(** [check_unstable_feature loc attrs name] checks that the unstable feature
+    associated with [name] (if any) is enabled in the current
+    {!Unstable_feature.Scope}.
+
+    @raises Location.Error at [loc] if the feature is not enabled. *)
+val check_unstable_feature
+  :  Location.t
+  -> Parsetree.attributes
+  -> string
+  -> unit
+
+(** [unstable_feature_attribute attr] enables the unstable features listed in
+    the attribute (if any). *)
+val unstable_feature_attribute : Parsetree.attribute -> unit

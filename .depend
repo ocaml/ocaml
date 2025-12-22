@@ -29,6 +29,7 @@ utils/ccomp.cmx : \
     utils/ccomp.cmi
 utils/ccomp.cmi :
 utils/clflags.cmo : \
+    utils/unstable_feature.cmi \
     utils/profile.cmi \
     utils/numbers.cmi \
     utils/misc.cmi \
@@ -36,6 +37,7 @@ utils/clflags.cmo : \
     utils/arg_helper.cmi \
     utils/clflags.cmi
 utils/clflags.cmx : \
+    utils/unstable_feature.cmx \
     utils/profile.cmx \
     utils/numbers.cmx \
     utils/misc.cmx \
@@ -43,6 +45,7 @@ utils/clflags.cmx : \
     utils/arg_helper.cmx \
     utils/clflags.cmi
 utils/clflags.cmi : \
+    utils/unstable_feature.cmi \
     utils/profile.cmi \
     utils/misc.cmi
 utils/compression.cmo : \
@@ -210,6 +213,14 @@ utils/terminfo.cmo : \
 utils/terminfo.cmx : \
     utils/terminfo.cmi
 utils/terminfo.cmi :
+utils/unstable_feature.cmo : \
+    utils/format_doc.cmi \
+    utils/unstable_feature.cmi
+utils/unstable_feature.cmx : \
+    utils/format_doc.cmx \
+    utils/unstable_feature.cmi
+utils/unstable_feature.cmi : \
+    utils/format_doc.cmi
 utils/warnings.cmo : \
     utils/misc.cmi \
     utils/format_doc.cmi \
@@ -340,6 +351,7 @@ parsing/attr_helper.cmi : \
     parsing/asttypes.cmi
 parsing/builtin_attributes.cmo : \
     utils/warnings.cmi \
+    utils/unstable_feature.cmi \
     parsing/parsetree.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
@@ -352,6 +364,7 @@ parsing/builtin_attributes.cmo : \
     parsing/builtin_attributes.cmi
 parsing/builtin_attributes.cmx : \
     utils/warnings.cmx \
+    utils/unstable_feature.cmx \
     parsing/parsetree.cmi \
     utils/misc.cmx \
     parsing/longident.cmx \
@@ -2043,6 +2056,7 @@ typing/typedtree.cmi : \
     parsing/asttypes.cmi
 typing/typemod.cmo : \
     utils/warnings.cmi \
+    utils/unstable_feature.cmi \
     parsing/unit_info.cmi \
     typing/typetexp.cmi \
     typing/types.cmi \
@@ -2082,6 +2096,7 @@ typing/typemod.cmo : \
     typing/typemod.cmi
 typing/typemod.cmx : \
     utils/warnings.cmx \
+    utils/unstable_feature.cmx \
     parsing/unit_info.cmx \
     typing/typetexp.cmx \
     typing/types.cmx \

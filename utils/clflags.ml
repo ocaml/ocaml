@@ -85,6 +85,7 @@ and nopromptcont = ref false            (* -nopromptcont *)
 and init_file = ref (None : string option)   (* -init *)
 and noinit = ref false                  (* -noinit *)
 and open_modules = ref []               (* -open *)
+and unstable_features = ref ([] : Unstable_feature.Name.t list) (* -Z *)
 and use_prims = ref ""                  (* -use-prims ... *)
 and use_runtime = ref ""                (* -use-runtime ... *)
 and plugin = ref false                  (* -plugin ... *)
@@ -767,6 +768,11 @@ let parse_keyword_edition s =
   | [] -> None, []
   | [s] -> parse_version s, []
   | v :: rest -> parse_version v, rest
+
+let parse_unstable_features s =
+  s
+  |> String.split_on_char ','
+  |> List.filter_map Unstable_feature.Name.of_string
 
 module String = Misc.Stdlib.String
 

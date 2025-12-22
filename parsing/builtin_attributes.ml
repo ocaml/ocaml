@@ -62,6 +62,7 @@ let builtin_attrs =
   ; "deprecated"
   ; "deprecated_mutable"
   ; "explicit_arity"
+  ; "feature"
   ; "immediate"
   ; "immediate64"
   ; "inline"
@@ -76,6 +77,7 @@ let builtin_attrs =
   ; "tail_mod_cons"
   ; "unboxed"
   ; "untagged"
+  ; "unstable"
   ; "unrolled"
   ; "warnerror"
   ; "warning"
@@ -299,6 +301,9 @@ let alerts_of_str ~mark str =
 let warn_payload loc txt msg =
   Location.prerr_warning loc (Warnings.Attribute_payload (txt, msg))
 
+let warn_payloadf loc txt msgf =
+  msgf |> Format.ksprintf (warn_payload loc txt)
+
 let warning_attribute ?(ppwarning = true) =
   let process loc name errflag payload =
     mark_used name;
@@ -416,3 +421,122 @@ let has_boxed attrs = has_attribute "boxed" attrs
 let has_remove_aliases attrs = has_attribute "remove_aliases" attrs
 
 let has_atomic attrs = has_attribute "atomic" attrs
+
+module Unstable = struct
+  type t = Unstable_feature.t
+
+  (* Parses [{ feature = <string>; issue = <int> }] *)
+  let parse_attr_payload ~loc ~name payload : t option =
+    let warn_if_none opt field =
+      if Option.is_none opt
+      then
+        warn_payloadf
+          loc
+          name.txt
+          "unstable attribute requires a '%s' field"
+          field
+    in
+    match payload with
+    | PStr
+        [ { pstr_desc =
+              Pstr_eval ({ pexp_desc = Pexp_record (fields, None) }, _)
+          }
+        ] ->
+      let feature = ref None in
+      let issue = ref None in
+      List.iter
+        (fun (field_id, field_expr) ->
+          match field_id.txt, field_expr.pexp_desc with
+          | ( Longident.Lident "feature"
+            , Pexp_constant { pconst_desc = Pconst_string (s, _, _) } ) ->
+            let name = Unstable_feature.Name.of_string s in
+            feature := name
+          | ( Longident.Lident "issue"
+            , Pexp_constant { pconst_desc = Pconst_integer (i, _) } ) ->
+            issue := Some (int_of_string i)
+          | _ -> ())
+        fields;
+      warn_if_none !feature "feature";
+      warn_if_none !issue "issue";
+      (match !feature, !issue with
+      | Some name, Some issue -> Some { name; issue }
+      | _, _ -> None)
+    | _ ->
+      warn_payload
+        loc
+        name.txt
+        "unstable attribute expects payload: { feature = \"<name>\"; issue = \
+         <int> }";
+      None
+
+  let of_attrs attrs : t option =
+    let open Option.Syntax in
+    let find_unstable_attr attrs =
+      List.find_opt (fun a -> attr_equals_builtin a "unstable") attrs
+    in
+    let* attr = find_unstable_attr attrs in
+    mark_used attr.attr_name;
+    parse_attr_payload ~loc:attr.attr_loc ~name:attr.attr_name attr.attr_payload
+end
+
+module Unstable_features = struct
+  type t = { enabled : Unstable_feature.Name.t list }
+
+  let parse_attr_payload ~loc ~name payload =
+    match string_of_payload payload with
+    | Some s ->
+      let features = Clflags.parse_unstable_features s in
+      if List.is_empty features
+      then (
+        warn_payload
+          loc
+          name.txt
+          "feature attribute expects a non-empty list of features";
+        None)
+      else Some features
+    | None ->
+      warn_payload loc name.txt "feature attribute expects a string payload";
+      None
+
+  let of_attr attr : t option =
+    let open Option.Syntax in
+    let+ enabled =
+      if not (attr_equals_builtin attr "unstable_feature")
+      then None
+      else (
+        mark_used attr.attr_name;
+        parse_attr_payload
+          ~loc:attr.attr_loc
+          ~name:attr.attr_name
+          attr.attr_payload)
+    in
+    { enabled }
+
+  let iter f t = List.iter f t.enabled
+end
+
+let check_unstable_feature loc attrs ident =
+  attrs
+  |> Unstable.of_attrs
+  |> Option.iter (fun { Unstable_feature.name; issue } ->
+         if not (Unstable_feature.Scope.is_enabled name)
+         then
+           Location.raise_errorf
+             ~loc
+             "@[<v>%s uses unstable feature '%a' (issue #%d).@ Enable it with \
+              -Z %a or [%@%@%@unstable_feature \"%a\"]@]"
+             ident
+             Unstable_feature.Name.pp
+             name
+             issue
+             Unstable_feature.Name.pp
+             name
+             Unstable_feature.Name.pp
+             name)
+
+let unstable_feature_attribute attr =
+  attr
+  |> Unstable_features.of_attr
+  |> Option.iter (fun features ->
+         Unstable_features.iter Unstable_feature.Scope.enable features)
+

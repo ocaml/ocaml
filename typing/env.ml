@@ -2728,6 +2728,8 @@ let use_value ~use ~loc path vda =
     let desc = vda.vda_description in
     mark_value_used desc.val_uid;
     Builtin_attributes.check_alerts loc desc.val_attributes
+      (Path.name path);
+    Builtin_attributes.check_unstable_feature loc desc.val_attributes
       (Path.name path)
   end
 
@@ -2736,6 +2738,8 @@ let use_type ~use ~loc path tda =
     let decl = tda.tda_declaration in
     mark_type_used decl.type_uid;
     Builtin_attributes.check_alerts loc decl.type_attributes
+      (Path.name path);
+    Builtin_attributes.check_unstable_feature loc decl.type_attributes
       (Path.name path)
   end
 
@@ -2744,6 +2748,8 @@ let use_modtype ~use ~loc path desc =
   if use then begin
     mark_modtype_used desc.mtdl_uid;
     Builtin_attributes.check_alerts loc desc.mtdl_attributes
+      (Path.name path);
+    Builtin_attributes.check_unstable_feature loc desc.mtdl_attributes
       (Path.name path)
   end
 
@@ -2752,6 +2758,8 @@ let use_class ~use ~loc path clda =
     let desc = clda.clda_declaration in
     mark_class_used desc.cty_uid;
     Builtin_attributes.check_alerts loc desc.cty_attributes
+      (Path.name path);
+    Builtin_attributes.check_unstable_feature loc desc.cty_attributes
       (Path.name path)
   end
 
@@ -2759,6 +2767,8 @@ let use_cltype ~use ~loc path desc =
   if use then begin
     mark_cltype_used desc.clty_uid;
     Builtin_attributes.check_alerts loc desc.clty_attributes
+      (Path.name path);
+    Builtin_attributes.check_unstable_feature loc desc.clty_attributes
       (Path.name path)
   end
 
@@ -2766,6 +2776,7 @@ let use_label ~use ~loc usage env lbl =
   if use then begin
     mark_label_description_used usage env lbl;
     Builtin_attributes.check_alerts loc lbl.lbl_attributes lbl.lbl_name;
+    Builtin_attributes.check_unstable_feature loc lbl.lbl_attributes lbl.lbl_name;
     if is_mutating_label_usage usage then
       Builtin_attributes.check_deprecated_mutable loc lbl.lbl_attributes
         lbl.lbl_name
@@ -2774,7 +2785,8 @@ let use_label ~use ~loc usage env lbl =
 let use_constructor_desc ~use ~loc usage env cstr =
   if use then begin
     mark_constructor_description_used usage env cstr;
-    Builtin_attributes.check_alerts loc cstr.cstr_attributes cstr.cstr_name
+    Builtin_attributes.check_alerts loc cstr.cstr_attributes cstr.cstr_name;
+    Builtin_attributes.check_unstable_feature loc cstr.cstr_attributes cstr.cstr_name
   end
 
 let use_constructor ~use ~loc usage env cda =

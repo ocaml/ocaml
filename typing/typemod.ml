@@ -1898,23 +1898,25 @@ and transl_signature env sg =
             typedtree, sg, final_env
         | Psig_attribute x ->
             Builtin_attributes.warning_attribute x;
+            Builtin_attributes.unstable_feature_attribute x;
             let (trem,rem, final_env) = transl_sig env srem in
             mksig (Tsig_attribute x) env loc :: trem, rem, final_env
         | Psig_extension (ext, _attrs) ->
             raise (Error_forward (Builtin_attributes.error_of_extension ext))
   in
   let previous_saved_types = Cmt_format.get_saved_types () in
-  Builtin_attributes.warning_scope []
-    (fun () ->
-       let (trem, rem, final_env) = transl_sig (Env.in_signature true env) sg in
-       let rem = Signature_names.simplify final_env names rem in
-       let sg =
-         { sig_items = trem; sig_type = rem; sig_final_env = final_env }
-       in
-       Cmt_format.set_saved_types
-         ((Cmt_format.Partial_signature sg) :: previous_saved_types);
-       sg
-    )
+  Unstable_feature.Scope.with_local (fun () ->
+    Builtin_attributes.warning_scope []
+      (fun () ->
+         let (trem, rem, final_env) = transl_sig (Env.in_signature true env) sg in
+         let rem = Signature_names.simplify final_env names rem in
+         let sg =
+           { sig_items = trem; sig_type = rem; sig_final_env = final_env }
+         in
+         Cmt_format.set_saved_types
+           ((Cmt_format.Partial_signature sg) :: previous_saved_types);
+         sg
+      ))
 
 and transl_modtype_decl env pmtd =
   Builtin_attributes.warning_scope pmtd.pmtd_attributes
@@ -2773,7 +2775,9 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
     str, sg, names, Shape.str shape_map, final_env
   in
   if toplevel then run ()
-  else Builtin_attributes.warning_scope [] run
+  else
+    Unstable_feature.Scope.with_local (fun () ->
+      Builtin_attributes.warning_scope [] run)
 
 and type_str_item ~names ~toplevel ~funct_body anchor env shape_map
     {pstr_loc = loc; pstr_desc = desc} =
@@ -3104,6 +3108,7 @@ and type_str_item ~names ~toplevel ~funct_body anchor env shape_map
         raise (Error_forward (Builtin_attributes.error_of_extension ext))
     | Pstr_attribute x ->
         Builtin_attributes.warning_attribute x;
+        Builtin_attributes.unstable_feature_attribute x;
         Tstr_attribute x, [], shape_map, env
   in
   { str_desc = desc; str_loc = loc; str_env = env }, sg, shape_map, new_env
