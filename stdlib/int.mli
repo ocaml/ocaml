@@ -48,10 +48,55 @@ external mul : int -> int -> int = "%mulint"
 (** [mul x y] is the multiplication [x * y]. *)
 
 external div : int -> int -> int = "%divint"
-(** [div x y] is the division [x / y]. See {!Stdlib.( / )} for details. *)
+(** Rounding division.
+    [div x y] is the quotient [x / y] rounded towards zero to an integer.
+    See {!Stdlib.( / )} for details.
+
+    @raise Division_by_zero if the second argument is 0.
+*)
 
 external rem : int -> int -> int = "%modint"
-(** [rem x y] is the remainder [x mod y]. See {!Stdlib.( mod )} for details. *)
+(** [rem x y] is the remainder of the rounding division [div x y].
+    We have [rem x y = x - div x y * y].
+    See {!Stdlib.( mod )} for details.
+
+    @raise Division_by_zero if the second argument is 0.
+*)
+
+val fdiv : int -> int -> int
+(** Floor division.
+    [fdiv x y] is the quotient [x / y] rounded down to an integer.
+    We have [fdiv x y <= div x y <= cdiv x y] and [cdiv x y - fdiv x y <= 1].
+
+    @raise Division_by_zero if the second argument is 0.
+*)
+
+val cdiv : int -> int -> int
+(** Ceil division.
+    [cdiv x y] is the quotient [x / y] rounded up to an integer.
+    We have [fdiv x y <= div x y <= cdiv x y] and [cdiv x y - fdiv x y <= 1].
+
+    @raise Division_by_zero if the second argument is 0.
+*)
+
+val ediv : int -> int -> int
+(** Euclidean division.
+    [ediv x y] is the quotient [x / y] rounded down to an integer if [y > 0]
+    and rounded up to an integer if [y < 0].
+    The remainder [x - ediv x y * y] is always non-negative.
+    Moreover, [ediv x (-y)] = [- ediv x y].
+
+    @raise Division_by_zero if the second argument is 0.
+*)
+
+val erem : int -> int -> int
+(** Euclidean remainder.  If [y] is not zero, we have
+    [x = ediv x y * y + erem x y] and [0 <= erem x y <= abs y - 1].
+    The result of [erem x y] is always non-negative,
+    unlike the result of [rem x y], which has the sign of [x].
+
+    @raise Division_by_zero if the second argument is 0.
+*)
 
 external succ : int -> int = "%succint"
 (** [succ x] is [add x 1]. *)
