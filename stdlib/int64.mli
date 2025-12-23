@@ -285,6 +285,44 @@ val max: t -> t -> t
     @since 4.13
  *)
 
+val popcount: t -> int
+(** Hamming weight.
+    [popcount n] is the number of 1 bits in the binary representation of [n].
+    Negative [n] are represented in two's complement. *)
+
+val unsigned_bitsize: t -> int
+(** [unsigned_bitsize n] is the minimal number of bits needed to represent
+    [n] as an unsigned binary number.  It is the smallest integer [i]
+    between 0 and 64 such that [0 <= n < 2{^i}] (unsigned). *)
+
+val signed_bitsize: t -> int
+(** [unsigned_bitsize n] is the minimal number of bits needed to represent
+    [n] as a signed, two's complement binary number.
+    It is the smallest integer [i] between 1 and 64 such that
+    [-2{^i-1} <= n < 2{^i-1}] (signed). *)
+
+val nlz: t -> int
+(** [nlz n] is the number of leading (most significant) 0 bits in
+    the binary representation of [n].  It is an integer between 0 and 64
+    included.  If [n] is negative, [nlz n = 0] since the most significant
+    bit of [n] is 1.  [nlz n = 32] if and only if [n = zero].
+    Note that [nlz n + unsigned_bitsize n = 64]. *)
+
+val nls: t -> int
+(** [nls n] is the number of leading (most significant) sign bits in
+    the binary representation of [n], excluding the sign bit itself.
+    It is an integer between 0 and 63 included.
+    For positive [n], it is the number of leading zero bits minus one.
+    For negative [n], it is the number of leading one bits minus one.
+    Note that [nls n + signed_bitsize n = 64]. *)
+
+val ntz: t -> int
+(** [nlz n] is the number of trailing (least significant) 0 bits in
+    the binary representation of [n].  It is the largest integer [i]
+    such that [2{^i}] divides [n] evenly.
+    For example, [ntz n = 0] if [n] is even,
+    and [ntz n = max_int] if [n = 0]. *)
+
 val seeded_hash : int -> t -> int
 (** A seeded hash function for 64-bit ints, with the same output value as
     {!Hashtbl.seeded_hash}. This function allows this module to be passed as

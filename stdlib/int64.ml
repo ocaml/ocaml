@@ -125,6 +125,65 @@ let ediv n d =
   let r = sub n (mul q d) in
   if r >= 0L then q else if d >= 0L then pred q else succ q
 
+(* Number of leading zeros.  Hacker's Delight, algorithm 5.7 *)
+
+let nlz x =
+  let x = ref x and n = ref 64 in
+  let y = shift_right_logical !x 32 in
+  if y <> 0L then (n := !n - 32; x := y);
+  let y = shift_right_logical !x 16 in
+  if y <> 0L then (n := !n - 16; x := y);
+  let y = shift_right_logical !x  8 in
+  if y <> 0L then (n := !n -  8; x := y);
+  let y = shift_right_logical !x  4 in
+  if y <> 0L then (n := !n -  4; x := y);
+  let y = shift_right_logical !x 2 in
+  if y <> 0L then (n := !n -  2; x := y);
+  let y = shift_right_logical !x 1 in
+  if y <> 0L then !n - 2 else !n - to_int !x
+
+let unsigned_bitsize x =
+  64 - nlz x
+
+(* Number of leading sign bits. *)
+
+let nls x =
+  if x >= 0L then nlz x - 1 else nlz (lognot x) - 1
+
+let signed_bitsize x =
+  64 - nls x
+
+(* Number of trailing zeros.  Hacker's Delight, algorithm 5.14 *)
+
+let ntz x =
+  if x = 0L then Stdlib.max_int else begin
+    let x = ref x and n = ref 63 in
+    let y = shift_left !x 32 in
+    if y <> 0L then (n := !n - 32; x := y);
+    let y = shift_left !x 16 in
+    if y <> 0L then (n := !n - 16; x := y);
+    let y = shift_left !x  8 in
+    if y <> 0L then (n := !n -  8; x := y);
+    let y = shift_left !x  4 in
+    if y <> 0L then (n := !n -  4; x := y);
+    let y = shift_left !x  2 in
+    if y <> 0L then (n := !n -  2; x := y);
+    let y = shift_left !x  1 in
+    if y <> 0L then !n - 1 else !n
+  end
+
+(* Population count.  Hacker's Delight, algorithm 5.2 *)
+
+let popcount x =
+  let x = sub x (logand (shift_right_logical x 1) 0x5555_5555_5555_5555L) in
+  let x = add (logand x 0x3333_3333_3333_3333L)
+              (logand (shift_right_logical x 2) 0x3333_3333_3333_3333L) in
+  let x = logand (add x (shift_right_logical x 4)) 0x0F0F_0F0F_0F0F_0F0FL in
+  let x = add x (shift_right_logical x 8) in
+  let x = add x (shift_right_logical x 16) in
+  let x = add x (shift_right_logical x 32) in
+  to_int x land 0x7F
+
 external seeded_hash_param :
   int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]
 let seeded_hash seed x = seeded_hash_param 10 100 seed x

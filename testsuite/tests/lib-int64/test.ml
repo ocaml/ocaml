@@ -97,6 +97,48 @@ let test_min_max () =
   assert (Int64.max 2L 3L = 3L);
   assert (Int64.min 2L 3L = 2L)
 
+let naive_popcount n =
+  let c = ref 0 in
+  for i = 0 to 63 do
+    if Int64.(logand n (shift_left 1L i)) <> 0L then incr c
+  done;
+  !c
+
+let test_bitcounts () =
+  let check n =
+    let a = Int64.unsigned_bitsize n
+    and z = Int64.nlz n
+    and b = Int64.signed_bitsize n
+    and s = Int64.nls n in
+    assert (a + z = 64);
+    assert (b + s = 64);
+    (* Check 0 <= n < 2^a (unsigned) *)
+    if a = 64
+    then assert (n < 0L)
+    else assert (0L <= n && n <= Int64.(pred (shift_left 1L a)));
+    (* Check -2^{b-1} <= n < 2^{b-1} - 1 (signed) *)
+    assert (b > 0);
+    assert (Int64.(neg (shift_left 1L (b-1))) <= n);
+    assert (n <= Int64.(pred (shift_left 1L (b-1))));
+    (* Check n starts with t zeros but not t+1 zeros *)
+    let t = Int64.ntz n in
+    if n = 0L then assert (t = max_int) else begin
+      let m = Int64.(shift_left (-1L) t) in
+      assert (Int64.(logand n m) = n);
+      assert (Int64.(logand n (shift_left m 1)) <> n)
+    end;
+    (* Check popcount against naive count *)
+    let p = Int64.popcount n in
+    assert (p = naive_popcount n) in
+  List.iter check
+    [0L; 1L; 2L; 3L; 4L; 5L; 6L; 7L; 8L; 15L; 16L; 17L; 31L; 32L; 255L; 256L;
+     -1L; -2L; -3L; -4L; -5L; -6L; -7L; -8L; -15L; -16L; -17L; -31L; -32L;
+     -255L; -256L; Int64.min_int; Int64.max_int];
+  for _i = 1 to 1000 do
+    check (Random.int64 0x1_0000L);
+    check (Random.bits64())
+  done
+
 let tests () =
   test_consts ();
   test_arith ();
@@ -107,6 +149,7 @@ let tests () =
   test_float_conv ();
   test_string_conv ();
   test_min_max ();
+  test_bitcounts ();
   ()
 
 let () =
