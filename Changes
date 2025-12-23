@@ -581,6 +581,10 @@ Working version
   mechanism on 32-bit mingw-w64.
   (David Allsopp, review by Antonin Décimo)
 
+- #14431: Enable native backend for DragonFly BSD. This builds ocamlopt on
+  DragonFly.
+  (Michael Neumann, review by Gabriel Scherer and Kate Deplaix)
+
 OCaml 5.4.0 (9 October 2025)
 ----------------------------
 
