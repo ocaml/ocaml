@@ -49,7 +49,7 @@ external mul : int -> int -> int = "%mulint"
 
 external div : int -> int -> int = "%divint"
 (** Rounding division.
-    [div x y] is the quotient [x / y] rounded towards zero to an integer.
+    [div x y] is the real quotient [x / y] rounded towards zero to an integer.
     See {!Stdlib.( / )} for details.
 
     @raise Division_by_zero if the second argument is 0.
@@ -65,28 +65,31 @@ external rem : int -> int -> int = "%modint"
 
 val fdiv : int -> int -> int
 (** Floor division.
-    [fdiv x y] is the quotient [x / y] rounded down to an integer.
+    [fdiv x y] is the real quotient [x / y] rounded down to an integer.
     We have [fdiv x y <= div x y <= cdiv x y] and [cdiv x y - fdiv x y <= 1].
 
     @raise Division_by_zero if the second argument is 0.
+    @since 5.5
 *)
 
 val cdiv : int -> int -> int
 (** Ceil division.
-    [cdiv x y] is the quotient [x / y] rounded up to an integer.
+    [cdiv x y] is the real quotient [x / y] rounded up to an integer.
     We have [fdiv x y <= div x y <= cdiv x y] and [cdiv x y - fdiv x y <= 1].
 
     @raise Division_by_zero if the second argument is 0.
+    @since 5.5
 *)
 
 val ediv : int -> int -> int
 (** Euclidean division.
-    [ediv x y] is the quotient [x / y] rounded down to an integer if [y > 0]
-    and rounded up to an integer if [y < 0].
-    The remainder [x - ediv x y * y] is always non-negative.
+    [ediv x y] is the real quotient [x / y] rounded down to an integer
+    if [y > 0] and rounded up to an integer if [y < 0].
+    The remainder [erem x y = x - ediv x y * y] is always non-negative.
     Moreover, [ediv x (-y)] = [- ediv x y].
 
     @raise Division_by_zero if the second argument is 0.
+    @since 5.5
 *)
 
 val erem : int -> int -> int
@@ -96,6 +99,7 @@ val erem : int -> int -> int
     unlike the result of [rem x y], which has the sign of [x].
 
     @raise Division_by_zero if the second argument is 0.
+    @since 5.5
 *)
 
 external succ : int -> int = "%succint"
