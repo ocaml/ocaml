@@ -104,6 +104,23 @@ let naive_popcount n =
   done;
   !c
 
+let in_unsigned_range x nbits =
+  if nbits < 0 then false else
+  if nbits >= 64 then true else
+  0L <= x && x <= Int64.(pred (shift_left 1L nbits))
+
+let in_signed_range x nbits =
+  if nbits < 1 then false else
+  if nbits >= 64 then true else
+  let bound = Int64.shift_left 1L (nbits - 1) in
+  Int64.(neg bound <= x && x <= pred bound)
+
+let top_unsigned_bits x nbits =
+  if nbits <= 0 then 0L else Int64.(shift_right_logical x (64 - nbits))
+
+let top_signed_bits x nbits =
+  if nbits <= 0 then 0L else Int64.(shift_right x (64 - nbits))
+  
 let test_bitcounts () =
   let check n =
     let a = Int64.unsigned_bitsize n
@@ -113,14 +130,18 @@ let test_bitcounts () =
     assert (a + z = 64);
     assert (b + s = 64);
     (* Check 0 <= n < 2^a (unsigned) *)
-    if a = 64
-    then assert (n < 0L)
-    else assert (0L <= n && n <= Int64.(pred (shift_left 1L a)));
+    assert (in_unsigned_range n a);
+    if a > 0 then assert (not (in_unsigned_range n (a - 1)));
     (* Check -2^{b-1} <= n < 2^{b-1} - 1 (signed) *)
-    assert (b > 0);
-    assert (Int64.(neg (shift_left 1L (b-1))) <= n);
-    assert (n <= Int64.(pred (shift_left 1L (b-1))));
-    (* Check n starts with t zeros but not t+1 zeros *)
+    assert (in_signed_range n b);
+    if b > 1 then assert (not (in_signed_range n (b - 1)));
+    (* Check top z bits are 0 and the next bit is 1 *)
+    assert (top_unsigned_bits n z = 0L);
+    assert (z = 64 || top_unsigned_bits n (z+1) <> 0L);
+    (* Check top s + 1 bits are sign bits and the next bit is not *)
+    assert (let x = top_signed_bits n (s+1) in x = 0L || x = -1L);
+    assert (s = 63 || let x = top_signed_bits n (s+2) in x <> 0L && x <> -1L);
+    (* Check bottom t bits are 0 and the next bit is 1 *)
     let t = Int64.trailing_zeros n in
     if n = 0L then assert (t = 64) else begin
       let m = Int64.(shift_left (-1L) t) in
@@ -131,11 +152,9 @@ let test_bitcounts () =
     let p = Int64.bit_count n in
     assert (p = naive_popcount n) in
   List.iter check
-    [0L; 1L; 2L; 3L; 4L; 5L; 6L; 7L; 8L; 15L; 16L; 17L; 31L; 32L; 255L; 256L;
-     -1L; -2L; -3L; -4L; -5L; -6L; -7L; -8L; -15L; -16L; -17L; -31L; -32L;
-     -255L; -256L; Int64.min_int; Int64.max_int];
+    [0L; 1L; 2L; 3L; -1L; -2L; -3L; Int64.min_int; Int64.max_int];
   for _i = 1 to 1000 do
-    check (Random.int64 0x1_0000L);
+    check (Int64.shift_left (Random.int64 0xFFL) (Random.int 48));
     check (Random.bits64())
   done
 
