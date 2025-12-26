@@ -103,6 +103,12 @@ external get : string -> int -> char = "%string_safe_get"
 
     @raise Invalid_argument if [i] not an index of [s]. *)
 
+val of_char : char -> string
+(** [of_char c] is [c] as a string.
+
+    @since 5.5
+*)
+
 val of_bytes : bytes -> string
 (** Return a new string that contains the same bytes as the given byte
     sequence.

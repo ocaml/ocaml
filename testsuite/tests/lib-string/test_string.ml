@@ -252,3 +252,9 @@ let () =
   assert (String.cut_last_while Char.Ascii.is_white "abc" = ("abc", ""));
   assert (String.cut_last_while Char.Ascii.is_white "abc  " = ("abc", "  "));
   ()
+
+let () =
+  (* Test String.of_char *)
+  assert (String.of_char 'a' = "a");
+  assert (String.of_char '\x00' = "\x00");
+  ()

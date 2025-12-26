@@ -37,6 +37,7 @@ let make n c =
 let init n f =
   B.init n f |> bts
 let empty = ""
+let of_char c = make 1 c
 let of_bytes = B.to_string
 let to_bytes = B.of_string
 let sub s ofs len =
