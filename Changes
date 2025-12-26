@@ -137,6 +137,9 @@ Working version
 
 ### Standard library:
 
+- #14437: Add String.split_{first,last,all} and String.rsplit_all
+  (Daniel Bünzli, review by Nicolás Ojeda Bär and Florian Angeletti)
+
 - #14436: Add String.replace_{first,last,all}
   (Daniel Bünzli, review by Nicolás Ojeda Bär, Ali Caglayan and
    Florian Angeletti)
