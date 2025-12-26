@@ -454,6 +454,11 @@ let ends_with ~suffix s =
     else aux (i + 1)
   in diff >= 0 && aux 0
 
+let includes ~affix:sub =
+  let sub_lp = Search.find_maximal_suffix_and_period ~sub in
+  let sub_periodic = Search.is_sub_periodic ~sub ~sub_lp in
+  fun s -> Search.find ~start:0 ~sub ~sub_lp ~sub_periodic s <> -1
+
 external seeded_hash : int -> string -> int = "caml_string_hash" [@@noalloc]
 let hash x = seeded_hash 0 x
 

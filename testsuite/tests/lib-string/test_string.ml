@@ -396,3 +396,23 @@ let () =
   assert (String.find_last ~start:6 ~sub:"abab" "ababab" = Some 2);
   assert (String.find_last ~sub:"ab" "aabb" = Some 1);
   ()
+
+let () =
+  (* Test String.includes *)
+  assert (String.includes ~affix:"" "" = true);
+  assert (String.includes ~affix:"" "a" = true);
+  assert (String.includes ~affix:"" "ab" = true);
+  assert (String.includes ~affix:"a" "" = false);
+  assert (String.includes ~affix:"a" "a" = true);
+  assert (String.includes ~affix:"a" "ab" = true);
+  assert (String.includes ~affix:"a" "ba" = true);
+  assert (String.includes ~affix:"a" "bab" = true);
+  assert (String.includes ~affix:"ab" "" =  false);
+  assert (String.includes ~affix:"ab" "a" = false);
+  assert (String.includes ~affix:"ab" "ab" = true);
+  assert (String.includes ~affix:"ab" "aab" = true);
+  assert (String.includes ~affix:"aab" "ab" = false);
+  assert (String.includes ~affix:"ab" "aba" = true);
+  assert (String.includes ~affix:"ab" "aaba" = true);
+  assert (String.includes ~affix:"abab" "aababa" = true);
+  ()

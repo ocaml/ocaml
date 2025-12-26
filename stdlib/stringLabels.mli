@@ -177,6 +177,18 @@ val ends_with :
 
     @since 4.13 *)
 
+val includes :
+  affix (* comment thwarts tools/sync_stdlib_docs *) :string -> string -> bool
+(** [includes ~affix s] is [true] if and only if there exists an index
+    [i] of [s] such that for all indices [k] of [affix], [affix.[k] =
+    s.[i + k]].
+
+    {b Note.} To test the same [affix] string multiple times, partially
+    applying the [~affix] argument and using the resulting function repeatedly
+    is more efficient.
+
+    @since 5.5 *)
+
 val contains_from : string -> int -> char -> bool
 (** [contains_from s start c] is [true] if and only if [c] appears in [s]
     after position [start].
