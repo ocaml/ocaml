@@ -137,6 +137,10 @@ Working version
 
 ### Standard library:
 
+- #14436: Add String.replace_{first,last,all}
+  (Daniel Bünzli, review by Nicolás Ojeda Bär, Ali Caglayan and
+   Florian Angeletti)
+
 - #13343: Add Array.stable_sort_sub
   (François Pottier, review by Gabriel Scherer, Corentin Leruth and Nicolás
    Ojeda Bär)
