@@ -133,6 +133,9 @@ Working version
 
 ### Standard library:
 
+- #14440: Add String.of_char
+  (Daniel Bünzli, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
 - #14362: Add String.{drop,take,cut}_{first,last}_while
   (Daniel Bünzli, review by Nicolás Ojeda Bär and David Allsopp)
 
