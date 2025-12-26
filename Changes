@@ -137,6 +137,9 @@ Working version
 
 ### Standard library:
 
+- #14439: Add String.includes
+  (Daniel Bünzli, review by Nicolás Ojeda Bär and Olivier Nicole)
+
 - #10177: Seq.(delay : (unit -> 'a t) -> 'a t)
   (Gabriel Scherer, review by Jeremy Yallop and François Pottier)
 
