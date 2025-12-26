@@ -476,3 +476,97 @@ let () =
   assert (String.replace_all ~start:1 ~sub:"12" ~by:"a" "123112" = "1231a");
   assert (String.replace_all ~sub:"12" ~by:"ab" "123112" = "ab31ab");
   ()
+
+let () =
+  (* Test String.split_first *)
+  assert (String.split_first ~sep:"" "" = Some ("", ""));
+  assert (String.split_first ~sep:"" "a" = Some ("", "a"));
+  assert (String.split_first ~sep:"" "ab" = Some ("", "ab"));
+  assert (String.split_first ~sep:"a" "" = None);
+  assert (String.split_first ~sep:"a" "b" = None);
+  assert (String.split_first ~sep:"a" "ab" = Some ("", "b"));
+  assert (String.split_first ~sep:"a" "ba" = Some ("b", ""));
+  assert (String.split_first ~sep:"ab" "" = None);
+  assert (String.split_first ~sep:"ab" "a" = None);
+  assert (String.split_first ~sep:"ab" "b" = None);
+  assert (String.split_first ~sep:"ab" "ab" = Some ("", ""));
+  assert (String.split_first ~sep:"ab" "aab" = Some ("a", ""));
+  assert (String.split_first ~sep:"ab" "aba" = Some ("", "a"));
+  assert (String.split_first ~sep:"ab" "abab" = Some ("", "ab"));
+  assert (String.split_first ~sep:"ab" "aabb" = Some ("a", "b"));
+  ()
+
+let () =
+  (* Test String.split_last *)
+  assert (String.split_last ~sep:"" "" = Some ("", ""));
+  assert (String.split_last ~sep:"" "a" = Some ("a", ""));
+  assert (String.split_last ~sep:"" "ab" = Some ("ab", ""));
+  assert (String.split_last ~sep:"a" "" = None);
+  assert (String.split_last ~sep:"a" "b" = None);
+  assert (String.split_last ~sep:"a" "ab" = Some ("", "b"));
+  assert (String.split_last ~sep:"a" "ba" = Some ("b", ""));
+  assert (String.split_last ~sep:"ab" "" = None);
+  assert (String.split_last ~sep:"ab" "a" = None);
+  assert (String.split_last ~sep:"ab" "b" = None);
+  assert (String.split_last ~sep:"ab" "ab" = Some ("", ""));
+  assert (String.split_last ~sep:"ab" "aab" = Some ("a", ""));
+  assert (String.split_last ~sep:"ab" "aba" = Some ("", "a"));
+  assert (String.split_last ~sep:"ab" "abab" = Some ("ab", ""));
+  assert (String.split_last ~sep:"ab" "aabb" = Some ("a", "b"));
+  ()
+
+let () =
+  (* Test String.split_all *)
+  assert (String.split_all ~sep:"" "" = [""; ""]);
+  assert (String.split_all ~sep:"" "a" = [""; "a"; ""]);
+  assert (String.split_all ~sep:"" "ab" = [""; "a"; "b"; ""]);
+  assert (String.split_all ~sep:"" "abc" = [""; "a"; "b"; "c"; ""]);
+  assert (String.split_all ~sep:"a" "" = [""]);
+  assert (String.split_all ~sep:"a" "a" = ["";""]);
+  assert (String.split_all ~sep:"a" "ab" = [""; "b"]);
+  assert (String.split_all ~sep:"a" "ba" = ["b"; ""]);
+  assert (String.split_all ~sep:"a" "abc" = [""; "bc"]);
+  assert (String.split_all ~sep:"a" "aba" = [""; "b"; ""]);
+  assert (String.split_all ~sep:"a" "bab" = ["b"; "b"]);
+  assert (String.split_all ~sep:"a" "babbab" = ["b"; "bb"; "b"]);
+  assert (String.split_all ~sep:"ab" "" = [""]);
+  assert (String.split_all ~sep:"ab" "a" = ["a"]);
+  assert (String.split_all ~sep:"ab" "b" = ["b"]);
+  assert (String.split_all ~sep:"ab" "ab" = [""; ""]);
+  assert (String.split_all ~sep:"ab" "aab" = ["a"; ""]);
+  assert (String.split_all ~sep:"ab" "aba" = [""; "a"]);
+  assert (String.split_all ~sep:"ab" "abab" = [""; ""; ""]);
+  assert (String.split_all ~sep:"ab" "aabb" = ["a"; "b"]);
+  assert (String.split_all ~sep:"ab" "aaabbb" = ["aa"; "bb"]);
+  assert (String.split_all ~sep:"aba" "ababa" = [""; "ba"]);
+  assert (String.split_all ~sep:"a" "abaa" = [""; "b"; ""; ""]);
+  assert (String.split_all ~drop:(( = ) "") ~sep:"a" "abaa" = ["b"]);
+  ()
+
+let () =
+  (* Test String.rsplit_all *)
+  assert (String.rsplit_all ~sep:"" "" = [""; ""]);
+  assert (String.rsplit_all ~sep:"" "a" = [""; "a"; ""]);
+  assert (String.rsplit_all ~sep:"" "ab" = [""; "a"; "b"; ""]);
+  assert (String.rsplit_all ~sep:"" "abc" = [""; "a"; "b"; "c"; ""]);
+  assert (String.rsplit_all ~sep:"a" "" = [""]);
+  assert (String.rsplit_all ~sep:"a" "a" = ["";""]);
+  assert (String.rsplit_all ~sep:"a" "ab" = [""; "b"]);
+  assert (String.rsplit_all ~sep:"a" "ba" = ["b"; ""]);
+  assert (String.rsplit_all ~sep:"a" "abc" = [""; "bc"]);
+  assert (String.rsplit_all ~sep:"a" "aba" = [""; "b"; ""]);
+  assert (String.rsplit_all ~sep:"a" "bab" = ["b"; "b"]);
+  assert (String.rsplit_all ~sep:"a" "babbab" = ["b"; "bb"; "b"]);
+  assert (String.rsplit_all ~sep:"ab" "" = [""]);
+  assert (String.rsplit_all ~sep:"ab" "a" = ["a"]);
+  assert (String.rsplit_all ~sep:"ab" "b" = ["b"]);
+  assert (String.rsplit_all ~sep:"ab" "ab" = [""; ""]);
+  assert (String.rsplit_all ~sep:"ab" "aab" = ["a"; ""]);
+  assert (String.rsplit_all ~sep:"ab" "aba" = [""; "a"]);
+  assert (String.rsplit_all ~sep:"ab" "abab" = [""; ""; ""]);
+  assert (String.rsplit_all ~sep:"ab" "aabb" = ["a"; "b"]);
+  assert (String.rsplit_all ~sep:"ab" "aaabbb" = ["aa"; "bb"]);
+  assert (String.rsplit_all ~sep:"aba" "ababa" = ["ab"; ""]);
+  assert (String.rsplit_all ~sep:"a" "abaa" = [""; "b"; ""; ""]);
+  assert (String.rsplit_all ~drop:(( = ) "") ~sep:"a" "abaa" = ["b"]);
+  ()

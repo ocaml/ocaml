@@ -289,7 +289,77 @@ val cut_last_while : (char -> bool) -> string -> string * string
 
     @since 5.5 *)
 
-(** {2:splitting_sep Splitting with separators} *)
+(** {2:splitting_sep Splitting with separators}
+
+    {b Note.} To split the same [sep] string multiple times, partially
+    applying the [~sep] argument of these functions and using the
+    resulting function repeatedly is more efficient. *)
+
+val split_first :
+  sep(* comment thwarts tools/sync_stdlib_docs *):string ->
+  string -> (string * string) option
+(** [split_first ~sep s] is the pair [Some (left, right)] made of the
+    two (possibly empty) substrings of [s] that are delimited by the
+    first match of the separator [sep] in [s] or [None] if [sep] can't
+    be found. Search for [sep] starts at position [0] and uses
+    {!find_first}.
+
+    If [sep] is [""], this is [Some ("", s)].
+
+    The invariant [concat sep [left; right] = s] holds.
+
+    @since 5.5 *)
+
+val split_last :
+  sep(* comment thwarts tools/sync_stdlib_docs *):string ->
+  string -> (string * string) option
+(** [split_last ~sep s] is the pair [Some (left, right)] made of the
+    two (possibly empty) substrings of [s] that are delimited by the
+    last match of the separator [sep] in [s] or [None] if [sep] can't
+    be found. Search for [sep] starts at position [length s] and uses
+    {!find_last}.
+
+    If [sep] is [""], this is [Some (s, "")].
+
+    The invariant [concat sep [left; right] = s] holds.
+
+    @since 5.5 *)
+
+val split_all :
+  sep(* comment thwarts tools/sync_stdlib_docs *):string ->
+  ?drop:(string -> bool) -> string -> string list
+(** [split_all ~sep s] is the list of all substrings of [s] that are
+    delimited by non-overlapping matches of the separator [sep] or the
+    list [[s]] if [sep] can't be found. Search for [sep] starts at
+    position [0] in increasing indexing order and uses {!find_all}.
+
+    Substrings [sub] for which [drop sub] is [true] are not included
+    in the result. [drop] defaults to [Fun.const false].
+
+    If [sep] is [""], this is [[""; c0; ...; cn; ""]] with [ci]
+    the string [of_char s.[i]].
+
+    The invariant [concat sep (split_all ~sep s) = s] holds.
+
+    @since 5.5 *)
+
+val rsplit_all :
+  sep(* comment thwarts tools/sync_stdlib_docs *):string ->
+  ?drop:(string -> bool) -> string -> string list
+(** [rsplit_all ~sep s] is the list of all substrings of [s] that are
+    delimited by non-overlapping matches of the separator [sep] or
+    [[s]] if [sep] can't be found. Search for [sep] starts at position
+    [length s] in deacreasing indexing order and uses {!rfind_all}.
+
+    Substrings [sub] for which [drop sub] is [true] are not included
+    in the result. [drop] defaults to [Fun.const false].
+
+    If [sep] is [""], this is [[""; c0; ...; cn; ""]] with [ci]
+    the string [of_char s.[i]].
+
+    The invariant [concat sep (rsplit_all ~sep s) = s] holds.
+
+    @since 5.5 *)
 
 val split_on_char : sep:char -> string -> string list
 (** [split_on_char ~sep s] is the list of all (possibly empty)

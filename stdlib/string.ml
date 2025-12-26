@@ -556,6 +556,46 @@ let cut_last_while sat s =
 
 (* Splitting with separators *)
 
+let split_first ~sep =
+  let find_first = find_first ~sub:sep in
+  fun s -> match find_first s with
+  | None -> None
+  | Some i ->
+      Some (subrange ~last:(i - 1) s, subrange ~first:(i + length sep) s)
+
+let split_last ~sep =
+  let find_last = find_last ~sub:sep in
+  fun s -> match find_last s with
+  | None -> None
+  | Some i ->
+      Some (subrange ~last:(i - 1) s, subrange ~first:(i + length sep) s)
+
+let split_all ~sep =
+  let find_all = find_all ~sub:sep in
+  fun ?(drop = fun _ -> false) s ->
+    let first = ref 0 in
+    let add_token i acc =
+      let token = subrange ~first:!first ~last:(i - 1) s in
+      first := i + length sep;
+      if drop token then acc else token :: acc
+    in
+    let tokens = find_all add_token s [] in
+    let last = subrange ~first:!first s in
+    List.rev (if drop last then tokens else last :: tokens)
+
+let rsplit_all ~sep =
+  let rfind_all = rfind_all ~sub:sep in
+  fun ?(drop = fun _ -> false) s ->
+    let last = ref (length s - 1) in
+    let add_token i acc =
+      let token = subrange ~first:(i + length sep) ~last:!last s in
+      last := i - 1;
+      if drop token then acc else token :: acc
+    in
+    let tokens = rfind_all add_token s [] in
+    let last = subrange ~last:!last s in
+    if drop last then tokens else (last :: tokens)
+
 (* duplicated in bytes.ml *)
 let split_on_char sep s =
   let r = ref [] in
