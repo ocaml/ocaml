@@ -531,6 +531,51 @@ val rfind_all :
 
     @since 5.5 *)
 
+(** {1:replacing Replacing substrings}
+
+    {b Note.} To replace the same [sub] string multiple time, partially
+    applying the [~sub] argument of these functions and using the
+    resulting function repeatedly is more efficient. *)
+
+val replace_first :
+  sub(* comment thwarts tools/sync_stdlib_docs *) :string ->
+  by(* comment thwarts tools/sync_stdlib_docs *) :string ->
+  ?start:int -> string -> string
+(** [replace_first sub by start s] replaces by [by] the first
+    occurrence of [sub] in [s] at or after the index or position
+    [start] (defaults to [0]).
+
+    If [sub] is [""], this inserts [by] at position [start].
+
+    @raise Invalid_argument if [start] is not a valid position of [s].
+    @since 5.5  *)
+
+val replace_last :
+  sub(* comment thwarts tools/sync_stdlib_docs *) :string ->
+  by(* comment thwarts tools/sync_stdlib_docs *) :string ->
+  ?start:int -> string -> string
+(** [replace_last sub by start s] replaces by [by] the last
+    occurrence of [sub] in [s] at or after the index or position
+    [start] (defaults to [String.length s]).
+
+    If [sub] is [""], this inserts [by] at position [start].
+
+    @raise Invalid_argument if [start] is not a valid position of [s].
+    @since 5.5  *)
+
+val replace_all :
+  sub(* comment thwarts tools/sync_stdlib_docs *) :string ->
+  by(* comment thwarts tools/sync_stdlib_docs *) :string ->
+  ?start:int -> string -> string
+(** [replace_all sub by start s] replaces by [by] all non-overlapping
+    occurrences of [sub] in [s] at or after the index or position [start]
+    (defaults to [0]). Occurences are found in increasing indexing order.
+
+    If [sub] is [""], this inserts [by] on all positions from [start] on.
+
+    @raise Invalid_argument if [start] is not a valid position of [s].
+    @since 5.5  *)
+
 (** {1 Strings and Sequences} *)
 
 val to_seq : t -> char Seq.t

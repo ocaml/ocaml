@@ -416,3 +416,63 @@ let () =
   assert (String.includes ~affix:"ab" "aaba" = true);
   assert (String.includes ~affix:"abab" "aababa" = true);
   ()
+
+let () =
+  (* Test String.replace_first *)
+  assert (String.replace_first ~sub:"" ~by:"" "" = "");
+  assert (String.replace_first ~sub:"" ~by:"a" "" = "a");
+  assert (String.replace_first ~sub:"" ~by:"a" "123" = "a123");
+  assert (String.replace_first ~start:1 ~sub:"" ~by:"a" "123" = "1a23");
+  assert (String.replace_first ~start:2 ~sub:"" ~by:"a" "123" = "12a3");
+  assert (String.replace_first ~start:3 ~sub:"" ~by:"a" "123" = "123a");
+  assert (String.replace_first ~sub:"1" ~by:"" "123" = "23");
+  assert (String.replace_first ~sub:"3" ~by:"" "123" = "12");
+  assert (String.replace_first ~sub:"1" ~by:"" "1" = "");
+  assert (String.replace_first ~sub:"12" ~by:"z" "123" = "z3");
+  assert (String.replace_first ~start:2 ~sub:"" ~by:"z" "123" = "12z3");
+  assert (String.replace_first ~start:3 ~sub:"" ~by:"z" "123" = "123z");
+  assert (String.replace_first ~start:3 ~sub:"a" ~by:"z" "123" = "123");
+  assert (String.replace_first ~sub:"aba" ~by:"1" "ababa" = "1ba");
+  assert (String.replace_first ~sub:"aba" ~by:"12" "ababa" = "12ba");
+  ()
+
+let () =
+  (* Test String.replace_last *)
+  assert (String.replace_last ~sub:"" ~by:"" "" = "");
+  assert (String.replace_last ~sub:"" ~by:"a" "" = "a");
+  assert (String.replace_last ~sub:"" ~by:"a" "123" = "123a");
+  assert (String.replace_last ~start:1 ~sub:"" ~by:"a" "123" = "1a23");
+  assert (String.replace_last ~start:2 ~sub:"" ~by:"a" "123" = "12a3");
+  assert (String.replace_last ~start:3 ~sub:"" ~by:"a" "123" = "123a");
+  assert (String.replace_last ~sub:"1" ~by:"" "123" = "23");
+  assert (String.replace_last ~sub:"3" ~by:"" "123" = "12");
+  assert (String.replace_last ~sub:"1" ~by:"" "1" = "");
+  assert (String.replace_last ~sub:"12" ~by:"z" "123" = "z3");
+  assert (String.replace_last ~start:2 ~sub:"" ~by:"z" "123" = "12z3");
+  assert (String.replace_last ~start:3 ~sub:"" ~by:"z" "123" = "123z");
+  assert (String.replace_last ~start:3 ~sub:"a" ~by:"z" "123" = "123");
+  assert (String.replace_last ~sub:"aba" ~by:"1" "ababa" = "ab1");
+  assert (String.replace_last ~sub:"aba" ~by:"12" "ababa" = "ab12");
+  ()
+
+let () =
+  (* Test String.replace_all *)
+  assert (String.replace_all ~sub:"" ~by:"" "" = "");
+  assert (String.replace_all ~sub:"" ~by:"" "1" = "1");
+  assert (String.replace_all ~sub:"" ~by:"" "12" = "12");
+  assert (String.replace_all ~sub:"" ~by:"a" "" = "a");
+  assert (String.replace_all ~sub:"" ~by:"a" "1" = "a1a");
+  assert (String.replace_all ~sub:"" ~by:"a" "12" = "a1a2a");
+  assert (String.replace_all ~sub:"" ~by:"a" "123" = "a1a2a3a");
+  assert (String.replace_all ~start:0 ~sub:"" ~by:"a" "123" = "a1a2a3a");
+  assert (String.replace_all ~start:1 ~sub:"" ~by:"a" "123" = "1a2a3a");
+  assert (String.replace_all ~start:2 ~sub:"" ~by:"a" "123" = "12a3a");
+  assert (String.replace_all ~start:3 ~sub:"" ~by:"a" "123" = "123a");
+  assert (String.replace_all ~sub:"1" ~by:"" "121" = "2");
+  assert (String.replace_all ~sub:"1" ~by:"3" "121" = "323");
+  assert (String.replace_all ~sub:"1" ~by:"" "1" = "");
+  assert (String.replace_all ~sub:"12" ~by:"a" "123" = "a3");
+  assert (String.replace_all ~sub:"12" ~by:"a" "123112" = "a31a");
+  assert (String.replace_all ~start:1 ~sub:"12" ~by:"a" "123112" = "1231a");
+  assert (String.replace_all ~sub:"12" ~by:"ab" "123112" = "ab31ab");
+  ()
