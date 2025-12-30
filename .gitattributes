@@ -162,6 +162,7 @@ tools/magic                       typo.missing-header
 *.sh.in text eol=lf
 *.awk text eol=lf
 *.m4 text eol=lf linguist-language=M4Sugar
+*.h.in text eol=lf
 
 # ocamltest hooks which are used in the testsuite
 *.check-program-output text eol=lf
