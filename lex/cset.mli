@@ -32,3 +32,4 @@ val inter : t -> t -> t
 val diff : t -> t -> t
 val complement : t -> t
 val env_to_array : (t * 'a) list -> 'a array
+val to_list : t -> int list

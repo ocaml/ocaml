@@ -1705,6 +1705,8 @@ ocamllex_SOURCES = $(addprefix lex/,\
   lexgen.mli lexgen.ml \
   compact.mli compact.ml \
   common.mli common.ml \
+  exhausteve.mli exhausteve.ml \
+  exhaustiveness.mli exhaustiveness.ml \
   output.mli output.ml \
   outputbis.mli outputbis.ml \
   main.mli main.ml)

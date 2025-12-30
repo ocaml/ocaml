@@ -7889,6 +7889,23 @@ lex/cset.cmo : \
 lex/cset.cmx : \
     lex/cset.cmi
 lex/cset.cmi :
+lex/exhausteve.cmo : \
+    lex/exhausteve.cmi
+lex/exhausteve.cmx : \
+    lex/exhausteve.cmi
+lex/exhausteve.cmi :
+lex/exhaustiveness.cmo : \
+    lex/syntax.cmi \
+    lex/exhausteve.cmi \
+    lex/cset.cmi \
+    lex/exhaustiveness.cmi
+lex/exhaustiveness.cmx : \
+    lex/syntax.cmx \
+    lex/exhausteve.cmx \
+    lex/cset.cmx \
+    lex/exhaustiveness.cmi
+lex/exhaustiveness.cmi : \
+    lex/syntax.cmi
 lex/lexer.cmo : \
     lex/syntax.cmi \
     lex/parser.cmi \
@@ -7918,6 +7935,7 @@ lex/main.cmo : \
     lex/output.cmi \
     lex/lexgen.cmi \
     lex/lexer.cmi \
+    lex/exhaustiveness.cmi \
     lex/cset.cmi \
     lex/compact.cmi \
     lex/common.cmi \
@@ -7929,6 +7947,7 @@ lex/main.cmx : \
     lex/output.cmx \
     lex/lexgen.cmx \
     lex/lexer.cmx \
+    lex/exhaustiveness.cmx \
     lex/cset.cmx \
     lex/compact.cmx \
     lex/common.cmx \

@@ -95,3 +95,12 @@ let env_to_array env = match env with
           c)
       rem ;
     res
+
+let to_list ranges =
+  let acc = ref [] in
+  List.iter (fun (a, b) ->
+    for i = a to b do
+      acc := i :: !acc
+    done
+  ) ranges;
+  List.rev !acc
