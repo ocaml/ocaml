@@ -97,20 +97,20 @@ AC_DEFUN([OCAML_SIGNAL_HANDLERS_SEMANTICS], [
   )
 ])
 
-dnl $1: extra CFLAGS
 AC_DEFUN([OCAML_CC_SUPPORTS_TREE_VECTORIZE], [
-  AC_MSG_CHECKING(
- [whether the C compiler supports __attribute__((optimize("tree-vectorize")))])
-  saved_CFLAGS="$CFLAGS"
-  CFLAGS="$1 $CFLAGS"
-  AC_COMPILE_IFELSE(
-    [AC_LANG_PROGRAM(
-      [[__attribute__((optimize("tree-vectorize"))) void f(void) {}]],
-      [[f();]])],
-    [AC_DEFINE([SUPPORTS_TREE_VECTORIZE], [1])
-    AC_MSG_RESULT([yes])],
-    [AC_MSG_RESULT([no])])
-  CFLAGS="$saved_CFLAGS"
+  AC_CACHE_CHECK(m4_normalize([whether the C compiler supports
+      __attribute__((optimize("tree-vectorize")))]),
+    [ocaml_cv_prog_cc_optimize_tree_vectorize],
+    [saved_CFLAGS="$CFLAGS"
+    CFLAGS="$warn_error_flag $CFLAGS"
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+        [[__attribute__((optimize("tree-vectorize"))) void f(void) {}]],
+        [[f();]])],
+      [ocaml_cv_prog_cc_optimize_tree_vectorize=yes],
+      [ocaml_cv_prog_cc_optimize_tree_vectorize=no])
+    CFLAGS="$saved_CFLAGS"])
+  AS_IF([test "x$ocaml_cv_prog_cc_optimize_tree_vectorize" = xyes],
+    [AC_DEFINE([SUPPORTS_TREE_VECTORIZE], [1])])
 ])
 
 # Save C compiler related variables
@@ -140,90 +140,87 @@ AC_DEFUN([OCAML_CC_RESTORE_VARIABLES], [
 ])
 
 AC_DEFUN([OCAML_AS_HAS_DEBUG_PREFIX_MAP], [
-  AC_MSG_CHECKING([whether the assembler supports --debug-prefix-map])
-
-  OCAML_CC_SAVE_VARIABLES
-
-  # Modify C-compiler variables to use the assembler
-  CC="$AS"
-  CFLAGS="--debug-prefix-map old=new -o conftest.$ac_objext"
-  CPPFLAGS=""
-  ac_ext="S"
-  ac_compile='$CC $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-
-  AC_COMPILE_IFELSE(
-    [AC_LANG_SOURCE([
-camlPervasives__loop_1128:
-        .file   1       "pervasives.ml"
-        .loc    1       193
-    ])],
-    [as_has_debug_prefix_map=true
-    AC_MSG_RESULT([yes])],
-    [as_has_debug_prefix_map=false
-    AC_MSG_RESULT([no])])
-
-  OCAML_CC_RESTORE_VARIABLES
-])
-
-AC_DEFUN([OCAML_AS_HAS_CFI_DIRECTIVES], [
-  AC_MSG_CHECKING([whether the assembler supports CFI directives])
-
-  AS_IF([test x"$enable_cfi" = "xno"],
-    [AC_MSG_RESULT([disabled])],
+  AC_CACHE_CHECK([whether the assembler supports --debug-prefix-map],
+    [ocaml_cv_prog_as_debug_prefix_map],
     [OCAML_CC_SAVE_VARIABLES
 
     # Modify C-compiler variables to use the assembler
-    CC="$ASPP"
-    CFLAGS="-o conftest.$ac_objext"
+    CC="$AS"
+    CFLAGS="--debug-prefix-map old=new -o conftest.$ac_objext"
     CPPFLAGS=""
     ac_ext="S"
     ac_compile='$CC $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 
-    AC_COMPILE_IFELSE(
-      [AC_LANG_SOURCE([
+    AC_COMPILE_IFELSE([AC_LANG_SOURCE([
 camlPervasives__loop_1128:
         .file   1       "pervasives.ml"
         .loc    1       193
-        .cfi_startproc
-        .cfi_adjust_cfa_offset 8
-        .cfi_endproc
-      ])],
-      [aspp_ok=true],
-      [aspp_ok=false])
+    ])],
+    [ocaml_cv_prog_as_debug_prefix_map=true],
+    [ocaml_cv_prog_as_debug_prefix_map=false])
 
-    AS_IF([test "$AS" = "$ASPP"],
-      [as_ok="$aspp_ok"],
-      [CC="$AS"
+    OCAML_CC_RESTORE_VARIABLES])
+])
+
+AC_DEFUN([OCAML_AS_HAS_CFI_DIRECTIVES], [
+  AC_MSG_CHECKING([whether the assembler supports CFI directives])
+  AS_IF([test "x$enable_cfi" != xno],
+    [AC_CACHE_VAL([ocaml_cv_prog_as_cfi_directives],
+      [ocaml_cv_prog_as_cfi_directives=no
+      OCAML_CC_SAVE_VARIABLES
+      # Modify C-compiler variables to use the assembler
+      CC="$ASPP"
+      CFLAGS="-o conftest.$ac_objext"
+      CPPFLAGS=""
+      ac_ext="S"
       ac_compile='$CC $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-      AC_COMPILE_IFELSE(
-        [AC_LANG_SOURCE([
+
+        AC_COMPILE_IFELSE(
+          [AC_LANG_SOURCE([
+  camlPervasives__loop_1128:
+          .file   1       "pervasives.ml"
+          .loc    1       193
+          .cfi_startproc
+          .cfi_adjust_cfa_offset 8
+          .cfi_endproc
+        ])],
+        [prog_aspp_ok=true],
+        [prog_aspp_ok=false])
+
+      AS_IF([test "$AS" = "$ASPP"],
+        [prog_as_ok="$prog_aspp_ok"],
+        [CC="$AS"
+        ac_compile='$CC $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+        AC_COMPILE_IFELSE(
+          [AC_LANG_SOURCE([
 camlPervasives__loop_1128:
         .file   1       "pervasives.ml"
         .loc    1       193
         .cfi_startproc
         .cfi_adjust_cfa_offset 8
         .cfi_endproc
-        ])],
-        [as_ok=true],
-        [as_ok=false])])
+          ])],
+          [prog_as_ok=true],
+          [prog_as_ok=false])])
 
-    OCAML_CC_RESTORE_VARIABLES
+      OCAML_CC_RESTORE_VARIABLES
 
-    AS_IF([$aspp_ok && $as_ok],
+      AS_IF([$prog_aspp_ok && $prog_as_ok],
+        [ocaml_cv_prog_as_cfi_directives=yes])])
+    AS_IF([test "x$ocaml_cv_prog_as_cfi_directives" = xyes],
       [asm_cfi_supported=true
       AC_DEFINE([ASM_CFI_SUPPORTED], [1])
       AC_MSG_RESULT([yes])],
-      [AS_IF([test x"$enable_cfi" = "xyes"],
-        [AC_MSG_RESULT([requested but not available
-        AC_MSG_ERROR([exiting])])],
-        [asm_cfi_supported=false
-        AC_MSG_RESULT([no])])])
-  ])])
+      [AC_MSG_RESULT([requested but not available
+      AC_MSG_ERROR([exiting])])])],
+    [asm_cfi_supported=false
+    AC_MSG_RESULT([disabled])])
+])
 
 AC_DEFUN([OCAML_MMAP_SUPPORTS_MAP_STACK], [
   AC_MSG_CHECKING([whether mmap supports MAP_STACK])
-  AC_RUN_IFELSE(
-    [AC_LANG_PROGRAM([[
+  AC_CACHE_VAL([ocaml_cv_func_mmap_MAP_STACK],
+    [AC_RUN_IFELSE([AC_LANG_PROGRAM([[
 #include <sys/mman.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -235,16 +232,19 @@ AC_DEFUN([OCAML_MMAP_SUPPORTS_MAP_STACK], [
   if (block == MAP_FAILED)
      return 1;
     ]])],
-    [has_mmap_map_stack=true
-    AC_MSG_RESULT([yes])],
-    [AC_MSG_RESULT([no])],
-    [AC_MSG_RESULT([no assumed])])
+      [ocaml_cv_func_mmap_MAP_STACK=yes],
+      [ocaml_cv_func_mmap_MAP_STACK=no],
+      [ocaml_cv_func_mmap_MAP_STACK=no])])
+  AS_IF([test $cross_compiling = yes && \
+         test "x$ocaml_cv_func_mmap_MAP_STACK" = xno],
+    [AC_MSG_RESULT([no assumed])],
+    [AC_MSG_RESULT([$ocaml_cv_func_mmap_MAP_STACK])])
 ])
 
 AC_DEFUN([OCAML_MMAP_SUPPORTS_HUGE_PAGES], [
   AC_MSG_CHECKING([whether mmap supports huge pages])
-  AC_RUN_IFELSE(
-    [AC_LANG_PROGRAM([[
+  AC_CACHE_VAL([ocaml_cv_func_mmap_huge_pages],
+    [AC_RUN_IFELSE([AC_LANG_PROGRAM([[
 #include <sys/mman.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -279,11 +279,16 @@ AC_DEFUN([OCAML_MMAP_SUPPORTS_HUGE_PAGES], [
     p[i] = (char) i;
   }
     ]])],
+      [ocaml_cv_func_mmap_huge_pages=yes],
+      [ocaml_cv_func_mmap_huge_pages=no],
+      [ocaml_cv_func_mmap_huge_pages=no])])
+  AS_IF([test x"$ocaml_cv_func_mmap_huge_pages" = "xyes"],
     [AC_DEFINE([HAS_HUGE_PAGES], [1])
     AC_DEFINE_UNQUOTED([HUGE_PAGE_SIZE], [(4 * 1024 * 1024)])
     AC_MSG_RESULT([yes])],
-    [AC_MSG_RESULT([no])],
-    [AC_MSG_RESULT([no assumed])])
+    [AS_IF([test $cross_compiling = yes],
+      [AC_MSG_RESULT([no assumed])],
+      [AC_MSG_RESULT([no])])])
 ])
 
 AC_DEFUN([OCAML_CHECK_LIBUNWIND], [
@@ -359,16 +364,6 @@ EOF
     [have_flexdll_h=yes
     AC_MSG_RESULT([yes])],
     [AC_MSG_RESULT([no])])
-
-  OCAML_CC_RESTORE_VARIABLES
-])
-
-AC_DEFUN([OCAML_TEST_WINPTHREADS_PTHREAD_H], [
-  OCAML_CC_SAVE_VARIABLES
-
-  AS_IF([test -n "$1"],[CPPFLAGS="-I $1 $CPPFLAGS"])
-  AC_CHECK_HEADER([pthread.h],[],
-    [AC_MSG_ERROR([cannot find or use pthread.h from winpthreads])])
 
   OCAML_CC_RESTORE_VARIABLES
 ])
@@ -500,19 +495,24 @@ AC_DEFUN([OCAML_QUOTED_STRING_ID], [
   done
 ])
 
-AC_DEFUN([OCAML_CC_SUPPORTS_ATOMIC], [
-  OCAML_CC_SAVE_VARIABLES
-
-  opts=""
-  AS_IF([test -n "$1"],[CFLAGS="$CFLAGS $1"; opts="$1"])
-  AS_IF([test -n "$2"],[LIBS="$LIBS $2"; opts="${opts:+$opts }$2"])
-  AC_MSG_CHECKING(m4_normalize([if $CC supports _Atomic types with
-    ${opts:-no additional options}]))
-
-  AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+# OCAML_CC_C11_ATOMIC_CFLAGS([LIBS])
+AC_DEFUN([OCAML_CC_C11_ATOMIC_CFLAGS], [
+  AC_MSG_CHECKING([for options needed to enable C11 atomic support])
+  AC_CACHE_VAL([ocaml_cv_prog_cc_c11_atomic_cflags],
+    [ocaml_cv_prog_cc_c11_atomic_cflags=no
+    for ocaml_arg in dnl
+        ''dnl
+        '-experimental:c11atomics'dnl
+        '-std:c11'dnl remove with Autoconf 2.73 as cl will default to C11
+        '-std:c11 -experimental:c11atomics'dnl same
+    ; do
+      OCAML_CC_SAVE_VARIABLES
+      CFLAGS="$CFLAGS $ocaml_arg"
+      AS_IF([test -n "$1"], [LIBS="$LIBS $1"])
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 #include <stdint.h>
 #include <stdatomic.h>
-    ]],[[
+      ]],[[
   _Atomic int64_t n;
   int m;
   int * _Atomic p = &m;
@@ -520,13 +520,21 @@ AC_DEFUN([OCAML_CC_SUPPORTS_ATOMIC], [
   * atomic_exchange(&p, 0) = 45;
   if (atomic_load_explicit(&n, memory_order_acquire))
     return 1;
-  ]])],
-  [cc_supports_atomic=true
-   AC_MSG_RESULT([yes])],
-  [cc_supports_atomic=false
-   AC_MSG_RESULT([no])])
-
-  OCAML_CC_RESTORE_VARIABLES
+      ]])],
+      [AS_IF([test x"$ocaml_arg" = x],
+        [ocaml_cv_prog_cc_c11_atomic_cflags=''],
+        [ocaml_cv_prog_cc_c11_atomic_cflags="$ocaml_arg"])
+      OCAML_CC_RESTORE_VARIABLES
+      break])
+      OCAML_CC_RESTORE_VARIABLES
+    done])
+  AS_IF([test "x$ocaml_cv_prog_cc_c11_atomic_cflags" = xno],
+    [AC_MSG_FAILURE(m4_normalize(
+      [C11 atomic support is required, use another C compiler]))],
+    [AS_IF([test "x$ocaml_cv_prog_cc_c11_atomic_cflags" = x],
+      [AC_MSG_RESULT([none needed])],
+      [AC_MSG_RESULT([$ocaml_cv_prog_cc_c11_atomic_cflags])
+      common_cflags="$common_cflags $ocaml_cv_prog_cc_c11_atomic_cflags"])])
 ])
 
 # Detects whether the C compiler generates an explicit .note.GNU-stack section

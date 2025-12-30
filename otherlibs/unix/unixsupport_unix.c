@@ -24,9 +24,7 @@
 #include "caml/unixsupport.h"
 #include "cst2constr.h"
 #include <errno.h>
-#ifndef _WIN32
 #include <unistd.h>
-#endif
 #include <fcntl.h>
 
 #ifndef E2BIG

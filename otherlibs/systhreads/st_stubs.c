@@ -14,31 +14,13 @@
 /**************************************************************************/
 
 #define CAML_INTERNALS
-
-/* These macros must be defined before any winpthreads headers are included for
-   any reason. In mingw-w64 13.0.0, a subtle change meant that time.h causes
-   pthread_compat.h to be read. For this reason, this next block must appear
-   before anything headers are included. */
-#if defined(_WIN32) && !defined(NATIVE_CODE) && !defined(_MSC_VER)
-/* Ensure that pthread.h marks symbols __declspec(dllimport) so that they can be
-   picked up from the runtime (which will have linked winpthreads statically).
-   mingw-w64 11.0.0 introduced WINPTHREADS_USE_DLLIMPORT to do this explicitly;
-   prior versions co-opted this on the internal DLL_EXPORT, but this is ignored
-   in 11.0 and later unless IN_WINPTHREAD is also defined, so we can safely
-   define both to support both versions.
-   When compiling with MSVC, we currently link directly the winpthreads objects
-   into our runtime, so we do not want to mark its symbols with
-   __declspec(dllimport). */
-#define WINPTHREADS_USE_DLLIMPORT
-#define DLL_EXPORT
-#endif
-
 #define _GNU_SOURCE /* helps to find pthread_setname_np() */
 #include "caml/config.h"
 
 #if defined(_WIN32)
 #  define WIN32_LEAN_AND_MEAN
 #  include <windows.h>
+#  include <process.h>
 #  include <processthreadsapi.h>
 #  include "caml/osdeps.h"
 
@@ -321,6 +303,12 @@ static void caml_thread_enter_blocking_section(void)
 
 static void caml_thread_leave_blocking_section(void)
 {
+#ifdef _WIN32
+  /* TlsGetValue (called in This_thread) calls SetLastError which will mask any
+     error which occurred prior to the caml_thread_leave_blocking_section call.
+     EnterCriticalSection does not do this. */
+  DWORD error = GetLastError();
+#endif
   caml_thread_t th = This_thread;
   /* Wait until the runtime is free */
   thread_lock_acquire(th->domain_id);
@@ -328,6 +316,9 @@ static void caml_thread_leave_blocking_section(void)
      corresponding to the thread currently executing and restore the
      runtime state */
   restore_runtime_state(th);
+#ifdef _WIN32
+  SetLastError(error);
+#endif
 }
 
 /* Create and setup a new thread info block.
@@ -713,7 +704,8 @@ static void thread_destroy_current(caml_thread_t th)
 /* Create a thread */
 
 /* the thread lock is not held when entering */
-static void * caml_thread_start(void * v)
+static CAML_THREAD_FUNCTION
+caml_thread_start(void * v)
 {
   caml_thread_t th = (caml_thread_t) v;
   int dom_id = th->domain_id;
@@ -738,7 +730,7 @@ struct caml_thread_tick_args {
 };
 
 /* The tick thread: interrupt the domain periodically to force preemption  */
-static void * caml_thread_tick(void * arg)
+static CAML_THREAD_FUNCTION caml_thread_tick(void * arg)
 {
   struct caml_thread_tick_args* tick_thread_args =
     (struct caml_thread_tick_args*) arg;
@@ -756,7 +748,7 @@ static void * caml_thread_tick(void * arg)
     atomic_store_release(&domain->requested_external_interrupt, 1);
     caml_interrupt_self();
   }
-  return NULL;
+  return 0;
 }
 
 static st_retcode create_tick_thread(void)
@@ -1064,23 +1056,15 @@ static st_retcode caml_threadstatus_wait (value wrapper)
 CAMLprim value caml_set_current_thread_name(value name)
 {
 #if defined(_WIN32)
-#  if defined(HAS_SETTHREADDESCRIPTION)
+#if defined(HAS_SETTHREADDESCRIPTION)
   wchar_t *thread_name = caml_stat_strdup_to_utf16(String_val(name));
   HRESULT hr = SetThreadDescription(GetCurrentThread(), thread_name);
   caml_stat_free(thread_name);
   if (FAILED(hr))
     caml_set_current_thread_name_warning("SetThreadDescription failed!");
-#  endif
-
-#  if defined(HAVE_PTHREAD_SETNAME_NP)
-  // We are using both methods.
-  // See: https://github.com/ocaml/ocaml/pull/13504#discussion_r1786358928
-  char buf[1024];
-  int ret = pthread_setname_np(pthread_self(), String_val(name));
-  if (ret != 0)
-    caml_set_current_thread_name_warning(caml_strerror(ret, buf, sizeof(buf)));
-#  endif
-
+#else
+  caml_set_current_thread_name_warning("set thread name not implemented");
+#endif
 #elif defined(HAS_PRCTL)
   char buf[1024];
   int ret = prctl(PR_SET_NAME, String_val(name));

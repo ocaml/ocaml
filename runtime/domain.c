@@ -25,7 +25,6 @@
 #ifndef _WIN32
 #include <unistd.h>
 #endif
-#include <pthread.h>
 #include <string.h>
 #include <assert.h>
 #ifdef HAS_GNU_GETAFFINITY_NP
@@ -43,6 +42,9 @@ typedef cpuset_t cpu_set_t;
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <sysinfoapi.h>
+#include <process.h>
+#else
+#include <pthread.h>
 #endif
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
@@ -183,12 +185,12 @@ Caml_inline void interruptor_set_pending(struct interruptor *s)
 struct dom_internal {
   /* readonly fields, initialised and never modified */
   int id;
-  pthread_t tid;
+  caml_plat_thread tid;
   caml_domain_state* state;
   struct interruptor interruptor;
 
   /* backup thread */
-  pthread_t backup_thread;
+  caml_plat_thread backup_thread;
   atomic_uintnat backup_thread_msg;
   caml_plat_mutex domain_lock;
   caml_plat_cond domain_cond;
@@ -989,9 +991,10 @@ static void domain_create(uintnat initial_minor_heap_wsize,
 
   domain_state->parser_trace = 0;
 
-  if (caml_params->backtrace_enabled) {
-    caml_record_backtraces(1);
-  }
+  bool bt_enabled = parent
+    ? parent->backtrace_active
+    : caml_params->backtrace_enabled;
+  caml_record_backtraces(bt_enabled);
 
 #ifndef NATIVE_CODE
   domain_state->external_raise = NULL;
@@ -1156,7 +1159,8 @@ struct domain_startup_params {
   const char *error; /* out: set iff status is Dom_failed */
 };
 
-static void* backup_thread_func(void* v)
+static CAML_THREAD_FUNCTION
+backup_thread_func(void* v)
 {
   dom_internal* di = (dom_internal*)v;
   uintnat msg;
@@ -1240,7 +1244,8 @@ static value install_backup_thread_exn (dom_internal* di)
 #endif
 
   atomic_store_release(&di->backup_thread_msg, BT_ENTERING_OCAML);
-  err = pthread_create(&di->backup_thread, 0, backup_thread_func, (void*)di);
+  err = caml_plat_thread_create(&di->backup_thread, 0, backup_thread_func,
+                                (void*)di);
 
 #ifndef _WIN32
   pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
@@ -1248,7 +1253,7 @@ static value install_backup_thread_exn (dom_internal* di)
 
   if (err != 0)
       return caml_check_error_exn(err, "failed to create domain backup thread");
-  pthread_detach(di->backup_thread);
+  caml_plat_thread_detach(di->backup_thread);
   return Val_unit;
 }
 
@@ -1382,7 +1387,8 @@ static void sync_and_terminate(struct domain_ml_values *ml_values,
   caml_plat_assert_all_locks_unlocked();
 }
 
-static void* domain_thread_func(void* v)
+static CAML_THREAD_FUNCTION
+domain_thread_func(void* v)
 {
   struct domain_startup_params* p = v;
   struct domain_ml_values *ml_values = p->ml_values;
@@ -1402,7 +1408,7 @@ static void* domain_thread_func(void* v)
     handshake_failure(p, "failed to allocate domain: domain_create");
     goto out2;
   }
-  domain_self->tid = pthread_self();
+  domain_self->tid = caml_plat_thread_self();
   /* this domain is now part of the STW participant set */
   handshake_success(p);
 
@@ -1445,7 +1451,7 @@ static void* domain_thread_func(void* v)
      of it being destroyed by [caml_mutex_finalize] while it remains
      locked, leading to undefined behaviour. */
   free_domain_ml_values(ml_values);
-  return NULL;
+  return 0;
 }
 
 /* Note: [caml_domain_spawn] and [caml_domain_alone()].
@@ -1473,7 +1479,7 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
 {
   CAMLparam2 (callback, term_sync);
   struct domain_startup_params p;
-  pthread_t th;
+  caml_plat_thread th;
   int err;
 
   if (atomic_load_relaxed(&domains_exiting) != 0) {
@@ -1487,7 +1493,7 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
 
   /* Domain 0 does not need a backup thread when it is the sole
      domain. We create its backup thread before spawning domain 1. */
-  domain_self->tid = pthread_self();
+  domain_self->tid = caml_plat_thread_self();
   if (!backup_thread_running(domain_self)) {
     value res = install_backup_thread_exn(domain_self);
     if (Is_exception_result(res)) caml_raise(Extract_exception(res));
@@ -1501,10 +1507,11 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
                                     sizeof(struct domain_ml_values));
   init_domain_ml_values(p.ml_values, callback, term_sync);
 
-  err = pthread_create(&th, 0, domain_thread_func, (void*)&p);
+  err = caml_plat_thread_create(&th, 0, domain_thread_func, (void*)&p);
   if (err) {
     free_domain_ml_values(p.ml_values);
-    caml_check_error(err, "failed to create domain thread: pthread_create");
+    caml_check_error(err, "failed to create domain thread: "
+                     "caml_plat_thread_create");
   }
 
   /* p.ml_values is now owned by the new domain */
@@ -1528,11 +1535,11 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
   if (p.status == Dom_started) {
     /* successfully created a domain.
        p.ml_values is now owned by that domain */
-    pthread_detach(th);
+    caml_plat_thread_detach(th);
   } else {
     CAMLassert (p.status == Dom_failed);
     /* failed */
-    pthread_join(th, 0);
+    caml_plat_thread_join(th);
     caml_failwith(p.error);
   }
 
@@ -2170,7 +2177,8 @@ CAMLexport int caml_bt_is_in_blocking_section(void)
 
 CAMLexport int caml_bt_is_self(void)
 {
-  return pthread_equal(domain_self->backup_thread, pthread_self());
+  return caml_plat_thread_equal(domain_self->backup_thread,
+                                caml_plat_thread_self());
 }
 
 CAMLexport intnat caml_domain_is_multicore (void)
@@ -2427,14 +2435,12 @@ static void stw_terminate_domain(caml_domain_state *domain, void *data,
   int participating_count,
   caml_domain_state **participating)
 {
-  if (!pthread_equal(domain_self->tid, *(pthread_t *)data)) {
+  if (!caml_plat_thread_equal(domain_self->tid, *(caml_plat_thread *)data)) {
     if (caml_bt_is_self()) {
       /* If this STW request is handled by the backup thread, the
          domain thread is currently running C code. */
       domain_self->domain_canceled = true;
-#ifdef HAVE_PTHREAD_CANCEL
-      (void)pthread_cancel(domain_self->tid);
-#endif
+      (void)caml_plat_thread_cancel(domain_self->tid);
       /* We are intentionally not waiting for the thread to terminate here,
          and not decrementing the number of running domains either, since
          we don't know the state of the various locks and condition
@@ -2449,7 +2455,7 @@ static void stw_terminate_domain(caml_domain_state *domain, void *data,
       /* No particular memory resource cleanup is attempted here, for we
          have no idea which state each domain is in. */
     }
-    pthread_exit(0);
+    caml_plat_thread_exit();
   }
 }
 
@@ -2457,7 +2463,7 @@ void caml_stop_all_domains(void)
 {
   atomic_store_relaxed(&domains_exiting, 1);
 
-  pthread_t myself = pthread_self();
+  caml_plat_thread myself = caml_plat_thread_self();
   do {} while (!caml_try_run_on_all_domains(
                &stw_terminate_domain, &myself, NULL));
 

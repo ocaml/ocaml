@@ -21,9 +21,7 @@
 #ifdef HAS_GETGROUPS
 
 #include <sys/types.h>
-#ifndef _WIN32
 #include <unistd.h>
-#endif
 #include <errno.h>
 #include "caml/unixsupport.h"
 

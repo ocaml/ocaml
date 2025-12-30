@@ -773,14 +773,18 @@ CAMLextern int caml_snwprintf(wchar_t * buf,
 #else
 #  if defined(__SANITIZE_ADDRESS__)
 #    undef CAMLno_asan
-#    define CAMLno_asan __attribute__((no_sanitize_address))
+#    if (defined(_MSC_VER) && !defined(__clang__))
+#      define CAMLno_asan __declspec(no_sanitize_address)
+#    else
+#      define CAMLno_asan __attribute__((no_sanitize_address))
+#    endif
 #  endif
 #endif
 
-/* Generate a named symbol that is unique within the current macro expansion */
-#define CAML_GENSYM_3(name, l) caml__##name##_##l
-#define CAML_GENSYM_2(name, l) CAML_GENSYM_3(name, l)
-#define CAML_GENSYM(name) CAML_GENSYM_2(name, __LINE__)
+/* Generate a named symbol that is unique */
+#define CAML_GENSYM__(name, id) caml__##name##_##id
+#define CAML_GENSYM_(name, id) CAML_GENSYM__(name, id)
+#define CAML_GENSYM(name) CAML_GENSYM_(name, __COUNTER__)
 
 #define MSEC_PER_SEC  UINT64_C(1000)
 #define USEC_PER_MSEC UINT64_C(1000)

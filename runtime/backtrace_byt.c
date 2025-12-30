@@ -25,8 +25,7 @@
 #include "caml/config.h"
 #ifndef _WIN32
 #include <unistd.h>
-#endif
-#ifdef _WIN32
+#else
 #include <io.h>
 #endif
 

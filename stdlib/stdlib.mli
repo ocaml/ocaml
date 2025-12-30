@@ -231,8 +231,17 @@ external __POS__ : string * int * int * int = "%loc_POS"
  *)
 
 external __FUNCTION__ : string = "%loc_FUNCTION"
-(** [__FUNCTION__] returns the name of the current function or method, including
-    any enclosing modules or classes.
+(** [__FUNCTION__] returns a string of the form ["N0n1n2..."] where [N0] is the
+    name of the current compilation unit and the [ni] are the names of the
+    successive scopes leading to the location of the call. Each of the scopes
+    has one of the following forms:
+
+    - [.n] if [n] is the name of a function, module, class or value definition,
+      or
+    - [#n] if [n] is the name of a method, or
+    - [.(fun)] if the scope corresponds to an anonymous function.
+
+    Note that the precise format may change in the future.
 
     @since 4.12 *)
 

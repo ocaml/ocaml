@@ -57,7 +57,7 @@
     gsub("1 match found in /(.*):$", "1 match found in \"XXXX\":")
 
     # Remove trailing blanks
-    gsub(/[ \t]+$/, "")
+    gsub(/[ \t\r]+$/, "")
 
     if ($0 != "")
       print $0

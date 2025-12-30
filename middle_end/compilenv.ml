@@ -119,6 +119,12 @@ let current_unit_linkage_name () =
   Linkage_name.create (make_symbol ~unitname:current_unit.ui_symbol None)
 
 let reset ?packname name =
+  let packname =
+    Option.map
+      (Misc.replace_substring ~before:"."
+         ~after:(String.make 1 symbol_separator))
+      packname
+  in
   Hashtbl.clear global_infos_table;
   Set_of_closures_id.Tbl.clear imported_sets_of_closures_table;
   let symbol = symbolname_for_pack packname name in
@@ -150,15 +156,6 @@ let current_unit_infos () =
 
 let current_unit_name () =
   current_unit.ui_name
-
-let symbol_in_current_unit name =
-  let prefix = "caml" ^ current_unit.ui_symbol in
-  name = prefix ||
-  (let lp = String.length prefix in
-   String.length name >= 2 + lp
-   && String.sub name 0 lp = prefix
-   && name.[lp] = '_'
-   && name.[lp + 1] = '_')
 
 let read_unit_info filename =
   let ic = open_in_bin filename in
@@ -192,7 +189,7 @@ let read_library_info filename =
    ultimately end up in the same pack, including through nested packs. *)
 let is_import_from_same_pack ~imported ~current =
   String.equal imported current
-  || String.starts_with ~prefix:(imported ^ ".") current
+  || String.starts_with ~prefix:(concat_symbol imported "") current
 
 let get_global_info global_ident = (
   let modname = Ident.name global_ident in

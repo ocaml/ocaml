@@ -26,6 +26,7 @@
 *.cmx[as]
 *.cmti
 *.annot
+*.stripped
 *.exe
 *.exe.manifest
 .DS_Store

@@ -74,6 +74,9 @@ val record_backtrace: bool -> unit
     on (if [b = true]) or off (if [b = false]).  Initially, backtraces
     are not recorded, unless the [b] flag is given to the program
     through the [OCAMLRUNPARAM] variable.
+    @before 5.5 Spawned domains' backtraces would not be recorded, even
+    if the parent had called [record_backtrace true].
+
     @since 3.11
 *)
 

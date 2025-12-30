@@ -307,6 +307,11 @@ can help in writing an explicit interface (.mli file) for a file:
 just redirect the standard output of the compiler to a .mli file,
 and edit that file to remove all declarations of unexported names.
 .TP
+.B \-i-variance
+Cause the compiler to print the computed variance of type parameters for
+every type declaration.  Without this option, variance is printed only for
+private types or types without a manifest (e.g., abstract types).
+.TP
 .BI \-cmi\-file " filename"
 Type-check the source implementation to be compiled against the
 specified interface file (bypasses the normal lookup for .mli and .cmi files).

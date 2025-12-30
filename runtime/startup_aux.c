@@ -19,6 +19,10 @@
    and native code. */
 
 #include <stdio.h>
+#ifdef __MINGW32__
+/* See caml_startup_aux */
+#include <pthread.h>
+#endif
 #include "caml/backtrace.h"
 #include "caml/memory.h"
 #include "caml/callback.h"
@@ -146,6 +150,13 @@ static int shutdown_happened = 0;
 
 int caml_startup_aux(int pooling)
 {
+#ifdef __MINGW32__
+  /* On mingw-w64 only, this dummy call ensures that thread.o from winpthreads
+     is linked. This is done to ensure that pthreads calls synthesised by GCC
+     for TLS are linked statically. */
+  (void) pthread_getconcurrency();
+#endif
+
   if (shutdown_happened == 1)
     caml_fatal_error("caml_startup was called after the runtime "
                      "was shut down with caml_shutdown");

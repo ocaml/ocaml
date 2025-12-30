@@ -18,11 +18,11 @@
 #include <caml/alloc.h>
 #include <caml/memory.h>
 #include "caml/unixsupport.h"
+#include <unistd.h>
 #include <errno.h>
-#include <stdio.h>
 #include <grp.h>
 
-static value alloc_group_entry(struct group *entry)
+static value alloc_group_entry(const struct group *entry)
 {
   CAMLparam0();
   CAMLlocal3(name, pass, mem);
@@ -41,33 +41,92 @@ static value alloc_group_entry(struct group *entry)
   CAMLreturn(res);
 }
 
+/* Arbitrary limit to prevent allocating too much memory */
+#define CAML_GETGR_R_SIZE_MAX (1024 * 64)
+
 CAMLprim value caml_unix_getgrnam(value name)
 {
+  value res;
   struct group * entry;
   if (! caml_string_is_c_safe(name)) caml_raise_not_found();
+
+#ifdef HAVE_GETGRNAM_R
+  long initlen = sysconf(_SC_GETGR_R_SIZE_MAX);
+  size_t len = initlen <= 0 ? /* default */ 1024 : (size_t) initlen;
+  struct group result;
+  char *buffer = caml_stat_alloc_noexc(len);
+  if (buffer == NULL)
+    caml_unix_error(ENOMEM, "getgrnam", Nothing);
+  int e;
+  while ((e = getgrnam_r(String_val(name), &result, buffer, len, &entry))
+         == ERANGE) {
+    len *= 2;
+    char *newbuffer;
+    if (len > CAML_GETGR_R_SIZE_MAX ||
+        (newbuffer = caml_stat_resize_noexc(buffer, len)) == NULL) {
+      caml_stat_free(buffer);
+      caml_unix_error(ENOMEM, "getgrnam", Nothing);
+    }
+    buffer = newbuffer;
+  }
+  if (e != 0) {
+    caml_stat_free(buffer);
+    if (e == EINTR)
+#else
   errno = 0;
   entry = getgrnam(String_val(name));
   if (entry == NULL) {
-    if (errno == EINTR) {
-      caml_uerror("getgrnam", Nothing);
-    } else {
-      caml_raise_not_found();
-    }
+    if (errno == EINTR)
+#endif
+      caml_unix_error(EINTR, "getgrnam", Nothing);
+    caml_raise_not_found();
   }
-  return alloc_group_entry(entry);
+  res = alloc_group_entry(entry);
+#if HAVE_GETGRNAM_R
+  caml_stat_free(buffer);
+#endif
+  return res;
 }
 
 CAMLprim value caml_unix_getgrgid(value gid)
 {
+  value res;
   struct group * entry;
+
+#ifdef HAVE_GETGRGID_R
+  long initlen = sysconf(_SC_GETGR_R_SIZE_MAX);
+  size_t len = initlen <= 0 ? /* default */ 1024 : (size_t) initlen;
+  struct group result;
+  char *buffer = caml_stat_alloc_noexc(len);
+  if (buffer == NULL)
+    caml_unix_error(ENOMEM, "getgrid", Nothing);
+  int e;
+  while ((e = getgrgid_r(Int_val(gid), &result, buffer, len, &entry))
+         == ERANGE) {
+    len *= 2;
+    char *newbuffer;
+    if (len > CAML_GETGR_R_SIZE_MAX ||
+        (newbuffer = caml_stat_resize_noexc(buffer, len)) == NULL) {
+      caml_stat_free(buffer);
+      caml_unix_error(ENOMEM, "getgrid", Nothing);
+    }
+    buffer = newbuffer;
+  }
+  if (e != 0) {
+    caml_stat_free(buffer);
+    if (e == EINTR)
+#else
   errno = 0;
   entry = getgrgid(Int_val(gid));
   if (entry == NULL) {
-    if (errno == EINTR) {
-      caml_uerror("getgrgid", Nothing);
-    } else {
-      caml_raise_not_found();
-    }
+    if (errno == EINTR)
+#endif
+      caml_unix_error(EINTR, "getgrgid", Nothing);
+    caml_raise_not_found();
   }
-  return alloc_group_entry(entry);
+  res = alloc_group_entry(entry);
+#if HAVE_GETGRGID_R
+  caml_stat_free(buffer);
+#endif
+  return res;
 }

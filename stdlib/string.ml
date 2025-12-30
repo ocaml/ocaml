@@ -37,6 +37,7 @@ let make n c =
 let init n f =
   B.init n f |> bts
 let empty = ""
+let of_char c = make 1 c
 let of_bytes = B.to_string
 let to_bytes = B.of_string
 let sub s ofs len =
@@ -303,6 +304,7 @@ type t = string
 
 let compare (x: t) (y: t) = Stdlib.compare x y
 external equal : string -> string -> bool = "caml_string_equal" [@@noalloc]
+let is_empty s = Int.equal (length s) 0
 
 (** {1 Iterators} *)
 

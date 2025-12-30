@@ -83,7 +83,6 @@ ocamltest_libunix=None
 ocamltest_unix_impl="dummy"
 unix_library=""
 unix_directory=""
-diff_supports_color=false
 target_libdir_is_relative=false
 srcdir_abs=''
 srcdir_abs_real=''
@@ -131,11 +130,13 @@ AC_SUBST([CMT_MAGIC_NUMBER], [CMT__MAGIC_NUMBER])
 AC_SUBST([LINEAR_MAGIC_NUMBER], [LINEAR__MAGIC_NUMBER])
 AC_SUBST([CC])
 AC_SUBST([ocaml_cc_vendor])
+AC_SUBST([DEP_CC])
+AC_SUBST([DEP_CPPFLAGS])
+AC_SUBST([DEP_CC_PREFIX])
 AC_SUBST([SAK_BUILD])
 AC_SUBST([SAK])
 AC_SUBST([encode_C_literal])
-AC_SUBST([DIFF_FLAGS])
-AC_SUBST([diff_supports_color])
+AC_SUBST([ocaml_cv_prog_diff_supports_color])
 AC_SUBST([CSC])
 AC_SUBST([CSCFLAGS])
 # Note: This is present for the flexdll bootstrap where it exposed as the old
@@ -193,8 +194,6 @@ AC_SUBST([bytecode_cppflags])
 AC_SUBST([flexdll_source_dir])
 AC_SUBST([bootstrapping_flexdll])
 AC_SUBST([flexdll_dir])
-AC_SUBST([winpthreads_source_dir])
-AC_SUBST([winpthreads_source_include_dir])
 AC_SUBST([shebangscripts])
 AC_SUBST([launch_method])
 AC_SUBST([launch_method_target])
@@ -224,7 +223,7 @@ AC_SUBST([ocamltest_libunix])
 AC_SUBST([unix_library])
 AC_SUBST([unix_directory])
 AC_SUBST([cc_has_debug_prefix_map])
-AC_SUBST([as_has_debug_prefix_map])
+AC_SUBST([ocaml_cv_prog_as_debug_prefix_map])
 AC_SUBST([as_is_cc])
 AC_SUBST([with_debugger]) # TODO: rename this variable
 AC_SUBST([build_ocamldebug])
@@ -756,11 +755,6 @@ AC_ARG_WITH([flexdll],
     [bootstrap FlexDLL from the given sources])],
   [AS_IF([test x"$withval" = 'xyes'],[with_flexdll=flexdll])])
 
-AC_ARG_WITH([winpthreads-msvc],
-  [AS_HELP_STRING([--with-winpthreads-msvc],
-    [build winpthreads (only for the MSVC port) from the given sources])],
-  [AS_IF([test x"$withval" = 'xyes'], [with_winpthreads_msvc=winpthreads])])
-
 AC_ARG_WITH([zstd],
   [AS_HELP_STRING([--without-zstd],
     [disable compression of compilation artefacts])])
@@ -846,14 +840,25 @@ popdef([host])dnl
 OCAML_WITH_NONEXECSTACK_NOTE
 OCAML_ASM_SIZE_TYPE_DIRECTIVES
 
+## Find vendor of the C compiler
+OCAML_CC_VENDOR
+
+DEP_CC_PREFIX=''
 AS_CASE([$host],
   [sparc-sun-solaris*],
     [DEP_CC="false"],
   [*-pc-windows],
-    [AC_CHECK_TOOLS(
-      [DEP_CC],
-      [$DEP_CC gcc cc x86_64-w64-mingw32-gcc i686-w64-mingw32-gcc],
-      [false])],
+    [AS_CASE([$ocaml_cc_vendor],
+      [msvc-*-clang-*],
+      [DEP_CC="$CC"
+      DEP_CC_PREFIX='/clang:'],
+      [AC_CHECK_TOOLS(
+        [DEP_CC],
+        [$DEP_CC x86_64-w64-mingw32-gcc i686-w64-mingw32-gcc gcc cc],
+        [false])
+        # The C compiler may not be targetting Windows, so explicitly include
+        # the _WIN32 define
+        DEP_CPPFLAGS=-D_WIN32])],
   [DEP_CC="$CC"])
 
 AS_CASE([$enable_dependency_generation],
@@ -889,9 +894,6 @@ AS_CASE([$target],
   [
     mklib="rm -f \$(1) && ${AR} rc \$(1) \$(2)"
   ])
-
-## Find vendor of the C compiler
-OCAML_CC_VENDOR
 
 ## In cross-compilation mode, can we run executables produced?
 # At the moment, it's required, but the fact is used in C99 function detection
@@ -1348,44 +1350,6 @@ AS_CASE([$target],
     [encode_C_literal="encode-C-utf16-literal"],
   [encode_C_literal="encode-C-utf8-literal"])
 
-# Winpthreads emulation library for the MSVC port
-AC_MSG_CHECKING([for winpthreads sources])
-AS_IF([test x"$with_winpthreads_msvc" = "xno"],
-  [winpthreads_source_dir=''
-  AC_MSG_RESULT([disabled])],
-  [winpthreadmsg=''
-  AS_CASE([$target],
-    [*-pc-windows],
-    [dnl When bootstrapping from the git submodule (winpthreads directory),
-     dnl just use that, however if another directory has been specified with
-     dnl --with-winpthreads-msvc=<path> then copy the contents of <path> to
-     dnl winpthreads-sources.
-    AS_IF([m4_normalize([test x"$with_winpthreads_msvc" = 'x'
-                          || test x"$with_winpthreads_msvc" = x'winpthreads'])],
-      [AS_IF([test -f 'winpthreads/src/winpthread_internal.h'],
-        [winpthreads_source_dir=winpthreads],
-        [AC_MSG_RESULT([required but not available (uninitialized submodule?)])
-        AC_MSG_ERROR([exiting])])],
-      [rm -rf winpthreads-sources
-      AS_IF([test -f "$with_winpthreads_msvc/src/winpthread_internal.h"],
-        [mkdir -p winpthreads-sources/src winpthreads-sources/include
-        cp "$with_winpthreads_msvc"/src/*.c winpthreads-sources/src
-        cp "$with_winpthreads_msvc"/src/*.h winpthreads-sources/src
-        cp "$with_winpthreads_msvc"/include/*.h winpthreads-sources/include
-        winpthreads_source_dir='winpthreads-sources'
-        winpthreadsmsg=" (from $with_winpthreads_msvc)"],
-        [AC_MSG_RESULT([requested but not available])
-        AC_MSG_ERROR([exiting])])])
-    AS_IF([test x"$winpthreads_source_dir" = 'x'],
-      [AC_MSG_RESULT([no])],
-      [AC_MSG_RESULT([$winpthreads_source_dir$winpthreadsmsg])
-      winpthreads_source_include_dir="$winpthreads_source_dir/include"
-      OCAML_TEST_WINPTHREADS_PTHREAD_H([$winpthreads_source_include_dir])])],
-    [AS_IF([test x"$with_winpthreads_msvc" != 'x'],
-      [AC_MSG_RESULT([requested but not supported])
-      AC_MSG_ERROR([exiting])],
-      [AC_MSG_RESULT([skipping on that platform])])])])
-
 ## Program to use to install files
 AC_PROG_INSTALL
 
@@ -1497,18 +1461,7 @@ AS_IF([! $arch64],
 
 # Support for C11 atomic types
 
-OCAML_CC_SUPPORTS_ATOMIC([], [$cclibs])
-AS_CASE([$cc_supports_atomic,$ocaml_cc_vendor],
-  [false,msvc-*],
-    [OCAML_CC_SUPPORTS_ATOMIC([-std:c11])
-     AS_IF([$cc_supports_atomic],
-       [common_cflags="$common_cflags -std:c11"],
-       [OCAML_CC_SUPPORTS_ATOMIC([-std:c11 -experimental:c11atomics])
-        AS_IF([$cc_supports_atomic],
-          [common_cflags="$common_cflags -std:c11 -experimental:c11atomics"])
-])])
-AS_IF([! $cc_supports_atomic],
-  [AC_MSG_FAILURE([C11 atomic support is required, use another C compiler])])
+OCAML_CC_C11_ATOMIC_CFLAGS([$cclibs])
 
 # Full support for thread local storage
 # macOS and MinGW-w64 have problems with thread local storage accessed from DLLs
@@ -1644,7 +1597,7 @@ AS_CASE(["$ocaml_cc_vendor,$target"],
       [$warn_error_flag])])
 
 ## Check whether __attribute__((optimize("tree-vectorize")))) is supported
-OCAML_CC_SUPPORTS_TREE_VECTORIZE([$warn_error_flag])
+OCAML_CC_SUPPORTS_TREE_VECTORIZE
 
 # Check whether the C compiler supports the labels as values extension.
 OCAML_CC_SUPPORTS_LABELS_AS_VALUES
@@ -1722,7 +1675,7 @@ AS_CASE([$target],
   [x86_64-*-linux*],
     [has_native_backend=yes; arch=amd64; system=linux],
   [x86_64-*-dragonfly*],
-    [arch=amd64; system=dragonfly],
+    [has_native_backend=yes; arch=amd64; system=dragonfly],
   [x86_64-*-solaris*],
     [has_native_backend=yes; arch=amd64; system=solaris],
   [x86_64-*-freebsd*],
@@ -2284,7 +2237,9 @@ AS_CASE([$target],
     AC_CHECK_FUNC([socketpair], [AC_DEFINE([HAS_SOCKETPAIR], [1])])],
   [*-pc-windows],
     [cclibs="$cclibs ws2_32.lib"
-    AC_SEARCH_LIBS([socket], [ws2_32])
+    dnl AC_SEARCH_LIBS doesn't work with MSVC; manually update LIBS
+    AS_ECHO(["checking for library containing socket... (cached) ws2_32.lib"])
+    LIBS="ws2_32.lib $LIBS"
     AC_CHECK_FUNC([socketpair], [AC_DEFINE([HAS_SOCKETPAIR], [1])])],
   [*-*-haiku],
     [cclibs="$cclibs -lnetwork"
@@ -2347,11 +2302,9 @@ AC_CHECK_FUNC([getcwd], [AC_DEFINE([HAS_GETCWD], [1])])
 AC_CHECK_FUNC([system], [AC_DEFINE([HAS_SYSTEM], [1])])
 
 ## utime
-## Note: this was defined in config/s-nt.h but the autoconf macros do not
-# seem to detect it properly on Windows so we hardcode the definition
-# of HAS_UTIME on Windows but this will probably need to be clarified
 AS_CASE([$target],
-  [*-w64-mingw32*|*-pc-windows], [AC_DEFINE([HAS_UTIME], [1])],
+  # SetFileTime is used instead of _utime,
+  [*-w64-mingw32*|*-pc-windows], [],
   [AC_CHECK_HEADER([sys/types.h],
     [AC_CHECK_HEADER([utime.h],
       [AC_CHECK_FUNC([utime], [AC_DEFINE([HAS_UTIME], [1])])])])])
@@ -2396,6 +2349,8 @@ AC_CHECK_FUNC(
     AC_DEFINE([HAS_WAIT4], [1])
   ])
 
+AC_CHECK_FUNCS_ONCE([getlogin_r getgrnam_r getgrgid_r getpwnam_r getpwuid_r])
+
 ## getgroups
 AC_CHECK_FUNC([getgroups], [AC_DEFINE([HAS_GETGROUPS], [1])])
 
@@ -2424,11 +2379,7 @@ AC_CHECK_FUNC([setitimer],
   [setitimer=false])
 
 ## gethostname
-# Note: detection fails on Windows so hardcoding the result
-# (should be debugged later)
-AS_CASE([$target],
-  [*-w64-mingw32*|*-pc-windows], [AC_DEFINE([HAS_GETHOSTNAME], [1])],
-  [AC_CHECK_FUNC([gethostname], [AC_DEFINE([HAS_GETHOSTNAME], [1])])])
+AC_CHECK_FUNC([gethostname], [AC_DEFINE([HAS_GETHOSTNAME], [1])])
 
 ## uname
 
@@ -2447,6 +2398,7 @@ AC_CHECK_FUNC([gettimeofday],
 ## mktime
 
 AC_CHECK_FUNC([mktime], [AC_DEFINE([HAS_MKTIME], [1])])
+AC_CHECK_FUNCS_ONCE([gmtime_r localtime_r])
 
 ## setsid
 
@@ -2771,8 +2723,16 @@ AC_CHECK_FUNCS(
   [AC_DEFINE([HAS_PRCTL], [1])])
 
 ## SetThreadDescription
-AC_CHECK_FUNCS(
-  [SetThreadDescription],
+AC_CACHE_CHECK([for SetThreadDescription],
+  [ac_cv_func_SetThreadDescription],
+  [AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[#include <windows.h>]],
+      [[SetThreadDescription(GetCurrentThread(), L"test");]])],
+    [ac_cv_func_SetThreadDescription=yes],
+    [ac_cv_func_SetThreadDescription=no])])
+
+AS_IF([test x"$ac_cv_func_SetThreadDescription" = 'xyes'],
   [AC_DEFINE([HAS_SETTHREADDESCRIPTION], [1])
   AC_CHECK_DECL(
     [SetThreadDescription],
@@ -2799,13 +2759,14 @@ AS_CASE([$enable_systhreads,$enable_unix_lib],
   AC_MSG_NOTICE([the threads library is supported])])
 
 ## Does the assembler support debug prefix map and CFI directives
-as_has_debug_prefix_map=false
-asm_cfi_supported=false
 AS_IF([$native_compiler],
   [AS_CASE([$target],
     [*-w64-mingw32*|*-pc-windows], [],
     [OCAML_AS_HAS_DEBUG_PREFIX_MAP
     OCAML_AS_HAS_CFI_DIRECTIVES])])
+# Always assign a valid default OCaml value
+: ${ocaml_cv_prog_as_debug_prefix_map:=false}
+: ${asm_cfi_supported:=false}
 
 ## Frame pointers
 
@@ -2886,24 +2847,24 @@ AS_IF([$build_ocamltest],
   AC_CONFIG_LINKS([
     ocamltest/ocamltest_unix.ml:${ocamltest_unix_mod}
   ])
-  AC_CHECK_PROGS([DIFF], [patdiff diff], [none])
-  DIFF_FLAGS=""
-  flags=""
-  AS_CASE([$DIFF],
-    [diff], [flags="--strip-trailing-cr -u"],
-    [none],
-      [AC_MSG_ERROR([ocamltest requires a diff tool])])
-  AC_MSG_CHECKING([whether $DIFF supports --color={auto,always,never}])
-  AS_IF([$DIFF --color=auto $0 $0 > /dev/null 2>&1],
-    [diff_supports_color=true; AC_MSG_RESULT([yes])],
-    [diff_supports_color=false; AC_MSG_RESULT([no])])
-  for flag in ${flags}; do
-    AC_MSG_CHECKING([whether $DIFF supports $flag]);
-    AS_IF([$DIFF $DIFF_FLAGS $flag $0 $0 > /dev/null 2>&1],
-      [DIFF_FLAGS="$DIFF_FLAGS $flag"
-      AC_MSG_RESULT([yes])],
-      [AC_MSG_RESULT([no])])
-  done])
+  AC_CHECK_PROGS([DIFF], [patdiff diff],
+    [AC_MSG_ERROR([ocamltest requires a diff tool])])
+  AS_CASE([$DIFF], [diff], [flags_to_test='--strip-trailing-cr -u'])
+  AC_CACHE_CHECK([for extra $DIFF flags],
+    [ocaml_cv_prog_diff_flags],
+    [flags=""
+    for flag in ${flags_to_test}; do
+      "$DIFF" $flag /dev/null /dev/null >/dev/null 2>&1 && \
+        flags="${flags:+$flags }$flag"
+    done
+    ocaml_cv_prog_diff_flags="$flags"])
+  AC_CACHE_CHECK([whether $DIFF supports --color={auto,always,never}],
+    [ocaml_cv_prog_diff_supports_color],
+    [AS_IF([$DIFF --color=auto /dev/null /dev/null > /dev/null 2>&1],
+      [ocaml_cv_prog_diff_supports_color=true])])])
+AC_SUBST([DIFF_FLAGS], [$ocaml_cv_prog_diff_flags])
+# Always assign a valid default OCaml value
+: ${ocaml_cv_prog_diff_supports_color:=false}
 
 AS_IF([test x"$enable_flambda" = "xyes"],
   [flambda=true
@@ -2929,22 +2890,20 @@ AS_IF([test x"$enable_flat_float_array" = "xno"],
   flat_float_array=true])
 
 OCAML_MMAP_SUPPORTS_MAP_STACK
-AS_IF([test x"$enable_mmap_map_stack" = "xyes"],
-  [AS_IF([test x"$has_mmap_map_stack" = "xtrue"],
+AS_IF([test "x$enable_mmap_map_stack" = xyes],
+  [AS_IF([test "x$ocaml_cv_func_mmap_MAP_STACK" = xyes],
     [AS_CASE([$target],
        [*-freebsd*],
-         [AC_MSG_ERROR([mmap MAP_STACK not supported on FreeBSD])],
-       [with_mmap_map_stack=true;
-        AC_DEFINE([USE_MMAP_MAP_STACK], [1])])],
-    [AC_MSG_ERROR([mmap MAP_STACK requested but not found on $target])])
-  ],
-  [AS_CASE([$target],
-    [*-openbsd*],
-     [with_mmap_map_stack=true;
-      AC_DEFINE([USE_MMAP_MAP_STACK], [1])
-      AC_MSG_NOTICE([using MAP_STACK on OpenBSD due to stack checking])],
-    [with_mmap_map_stack=false])
-  ])
+         [AC_MSG_ERROR([mmap MAP_STACK is not supported on FreeBSD])])],
+    [AC_MSG_ERROR([mmap MAP_STACK requested but not found on $target])])],
+  [AS_CASE([$target,$ocaml_cv_func_mmap_MAP_STACK,$enable_mmap_map_stack],
+    [*-openbsd*,no,*|*-openbsd-*,*,no],
+      [AC_MSG_ERROR([mmap MAP_STACK is required on OpenBSD])],
+    [*-openbsd*,*,*],
+      [enable_mmap_map_stack=yes
+      AC_MSG_NOTICE([Using MAP_STACK on OpenBSD due to stack checking])])])
+AS_IF([test x"$ocaml_cv_func_mmap_MAP_STACK$enable_mmap_map_stack" = xyesyes],
+  [AC_DEFINE([USE_MMAP_MAP_STACK], [1], [Define to use mmap MAP_STACK.])])
 
 oc_native_compflags=''
 
@@ -3101,14 +3060,9 @@ AS_IF([test x"$bindir_to_libdir" != 'x' && test x"$TARGET_LIBDIR" != 'x'],
 # but whose value is not guessed properly by configure
 # (all this should be understood and fixed)
 AS_CASE([$target],
-  [*-w64-mingw32*],
+  [*-w64-mingw32*|*-pc-windows],
     [AC_DEFINE([HAS_BROKEN_PRINTF], [1])
-    AC_DEFINE([HAS_IPV6], [1])
-    AC_DEFINE([HAS_NICE], [1])],
-  [*-pc-windows],
-    [AC_DEFINE([HAS_BROKEN_PRINTF], [1])
-    AC_DEFINE([HAS_IPV6], [1])
-    AC_DEFINE([HAS_NICE], [1])],
+    AC_DEFINE([HAS_IPV6], [1])],
   [*-*-solaris*],
     # This is required as otherwise floats are printed
     # as "Infinity" and "Inf" instead of the expected "inf"

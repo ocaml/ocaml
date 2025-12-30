@@ -23,6 +23,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 #define _CRT_RAND_S
+#include <windows.h>
 #include <wtypes.h>
 #include <winbase.h>
 #include <winsock2.h>
@@ -30,6 +31,7 @@
 #include <shlobj.h>
 #include <shlwapi.h>
 #include <direct.h>
+#include <process.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -1427,4 +1429,88 @@ CAMLextern char_os* caml_locate_standard_library (const wchar_t *exe_name,
   } else {
     return caml_stat_wcsdup(stdlib_default);
   }
+}
+
+/* Mutexes */
+
+CAMLexport void caml_plat_mutex_init(caml_plat_mutex * m)
+{
+  InitializeSRWLock(&m->lock);
+  m->owner_tid = 0;
+}
+
+void caml_plat_assert_locked(caml_plat_mutex *m)
+{
+#ifdef DEBUG
+  BOOLEAN r = TryAcquireSRWLockExclusive(&m->lock);
+  if (r == 0) {
+    /* ok, it was locked */
+    return;
+  } else {
+    caml_fatal_error("Required mutex not locked");
+  }
+#endif
+}
+
+CAMLexport void caml_plat_lock_non_blocking_actual(caml_plat_mutex* m)
+{
+  /* Avoid exceptions */
+  caml_enter_blocking_section_no_pending();
+  DWORD self_tid = GetCurrentThreadId();
+  if (m->owner_tid != self_tid) {
+    AcquireSRWLockExclusive(&m->lock);
+    m->owner_tid = self_tid;
+  } else {
+    check_err("lock_non_blocking", EDEADLK);
+  }
+  caml_leave_blocking_section();
+  DEBUG_LOCK(m);
+}
+
+void caml_plat_mutex_free(caml_plat_mutex* m)
+{
+  /* nothing to do */
+}
+
+/* Condition variables */
+
+void caml_plat_cond_init(caml_plat_cond *cond)
+{
+  InitializeConditionVariable(cond);
+}
+
+void caml_plat_wait(caml_plat_cond *cond, caml_plat_mutex* mut)
+{
+  caml_plat_assert_locked(mut);
+  DWORD self_tid = GetCurrentThreadId();
+  int rc = 0;
+  if (mut->owner_tid == self_tid) {
+    mut->owner_tid = 0;
+    if (SleepConditionVariableSRW(cond, &mut->lock, INFINITE,
+                                  0 /* exclusive */)) {
+      mut->owner_tid = self_tid;
+    } else {
+      rc = caml_posixerr_of_win32err(GetLastError());
+      /* Not clear if the thread owns the mutex or not, but there's a
+       * fatal error anyway.  */
+    }
+  } else {
+    rc = EPERM;
+  }
+  check_err("wait", rc);
+}
+
+void caml_plat_broadcast(caml_plat_cond* cond)
+{
+  WakeAllConditionVariable(cond);
+}
+
+void caml_plat_signal(caml_plat_cond* cond)
+{
+  WakeConditionVariable(cond);
+}
+
+void caml_plat_cond_free(caml_plat_cond* cond)
+{
+  /* nothing to do */
 }

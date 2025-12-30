@@ -31,11 +31,9 @@
 #include <io.h> /* for _wopen and close */
 #else
 #include <sys/wait.h>
-#endif
-#include "caml/config.h"
-#ifndef _WIN32
 #include <unistd.h>
 #endif
+#include "caml/config.h"
 #ifdef HAS_TIMES
 #include <sys/times.h>
 #endif

@@ -35,6 +35,10 @@ Working version
 
 ### Runtime system:
 
+- #14416: Spawned domains will record backtraces if the parent domain has
+  enabled it.
+  (Nathan Taylor, review by Gabriel Scherer)
+
 - #13616: Change free list representation in shared heap
   (Sadiq Jaffer, review by Damien Doligez)
 
@@ -120,9 +124,20 @@ Working version
   continuations without calling `caml_continuation_use`.
   (Max Slater, review by Nick Barnes and Stephen Dolan)
 
+- #13416: Implement concurrency primitives using WinAPI instead of
+  winpthreads on Windows.
+  (Antonin Décimo, review by Samuel Hym, Gabriel Scherer, Miod Vallat,
+  B. Szilvasy, and Nicolás Ojeda Bär)
+
 ### Code generation and optimizations:
 
 ### Standard library:
+
+- #14438: Add String.is_empty
+  (Daniel Bünzli, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
+- #14440: Add String.of_char
+  (Daniel Bünzli, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
 - #14362: Add String.{drop,take,cut}_{first,last}_while
   (Daniel Bünzli, review by Nicolás Ojeda Bär and David Allsopp)
@@ -178,6 +193,9 @@ Working version
   (Émile Trotignon, review by Nicolás Ojeda Bär, Jan Midtgaard and
    Damien Doligez)
 
+- #14084: Future-proof Dynarray implementation against a smarter compiler
+  (Basile Clément, review by Gabriel Scherer)
+
 ### Type system:
 
 - #13781: Set scope of internal type nodes during abbreviation expansion
@@ -215,6 +233,10 @@ Working version
    review by Gabriel Scherer)
 
 ### Other libraries:
+
+- #13700: Use POSIX thread-safe getgrnam_r, getgrgid_r, getpwnam_r, getpwuid_r,
+  gmtime_r, localtime_r, getlogin_r, and fix mktime error checking.
+  (Antonin Décimo, review by David Allsopp, Stefan Muenzel, and Miod Vallat)
 
 - #14406: Better handling of address length for unix sockets, improving Haiku
   compatibility.
@@ -357,6 +379,9 @@ Working version
   e.g. `< foo : int; .. as $0>` when $0 is introduced by a GADT constructor
   (Stefan Muenzel, review by Jacques Garrigue and Florian Angeletti)
 
+- #14190: `ocaml -e` now also processes `-init` (previously it was ignored).
+  (Emile Trotignon, review by David Allsopp and @ygrek)
+
 - #14225: do not raise unused-constructor warning on private
   constructor in type implementations, for example
   `type safe = private Safe`, which are typically used to
@@ -379,12 +404,14 @@ Working version
   hard-coded path.
   (David Allsopp, review by Damien Doligez and Samuel Hym)
 
-- #14190: `ocaml -e` now also processes `-init` (previously it was ignored).
-  (Emile Trotignon, review by David Allsopp and @ygrek)
+- #14315: enable -i-variance also for classes and extension constructors,
+  and add description of -i-variance in manpages
+  (Takafumi Saikawa, review by Florian Angeletti and Jacques Garrigue)
 
--  #14373: remove the OCAML_BINANNOT_WITHENV environment variable, and
+- #14373: remove the OCAML_BINANNOT_WITHENV environment variable, and
    always strip typing environment in cmt files
    (Florian Angeletti, review by David Allsopp)
+
 
 ### Internal/compiler-libs changes:
 
@@ -456,7 +483,21 @@ Working version
 * #14388: Remove support for `let rec (module M : S) = e1 in e2`.
   (Alistair O'Brien, review by Vincent Laviron and Gabriel Scherer)
 
+- #14422: Refactoring an `if match e with p1 -> true | p2 -> false then ...`
+  into a match in typetexp.
+  (Samuel Vivien, review by Gabriel Scherer)
+
+- #13224: Clarify barriers and spin macros with delayed expansion.
+  (Antonin Décimo, review by David Allsopp and Gabriel Scherer)
+
+- #14435: Add the not-root builtin ocamltest action. This allows to skip
+  tests that fail if the current user is root (superuser).
+  (Kate Deplaix, review by Gabriel Scherer and Nicolás Ojeda Bär)
+
 ### Build system:
+
+- #13705, #14444: Cache test results of custom Autoconf tests from aclocal.m4.
+  (Antonin Décimo, review by David Allsopp and Miod Vallat)
 
 - #13810: Support build of cross compilers to native freestanding targets
   (Samuel Hym, review by Antonin Décimo and Romain Calascibetta)
@@ -544,8 +585,20 @@ Working version
 - #14332: Fix missing TSan instrumentation in subexpressions
   (Vincent Laviron, review by Gabriel Scherer and Olivier Nicole)
 
-- #14370: Fix headers for C++ inclusion.
+- #14370, #14429: Fix headers for C++ inclusion.
   (Antonin Décimo, review by Gabriel Scherer)
+
+- #14417: Fix issue with nested packs on macOS.
+  (Vincent Laviron, report by Kate Deplaix, review by Gabriel Scherer)
+
+- #14423: Fix detection of SetThreadDescription on 32-bit builds, meaning that
+  Thread.set_current_thread_name now works on 32-bit MSVC and uses the correct
+  mechanism on 32-bit mingw-w64.
+  (David Allsopp, review by Antonin Décimo)
+
+- #14431: Enable native backend for DragonFly BSD. This builds ocamlopt on
+  DragonFly.
+  (Michael Neumann, review by Gabriel Scherer and Kate Deplaix)
 
 OCaml 5.4.0 (9 October 2025)
 ----------------------------

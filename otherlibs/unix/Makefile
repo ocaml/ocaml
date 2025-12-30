@@ -84,4 +84,5 @@ distclean::
 depend:
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
+.PHONY: .depend
 include .depend

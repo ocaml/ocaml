@@ -18,14 +18,6 @@
 #include <caml/signals.h>
 #include "caml/unixsupport.h"
 
-#ifndef _WIN32
-#include <unistd.h>
-#else
-#define SEEK_SET 0
-#define SEEK_CUR 1
-#define SEEK_END 2
-#endif
-
 static const DWORD seek_command_table[] = {
   FILE_BEGIN, FILE_CURRENT, FILE_END
 };

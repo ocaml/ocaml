@@ -305,6 +305,13 @@ let has_symlink = make
     "symlinks available"
     "symlinks not available")
 
+let not_root = make
+  ~name:"not-root"
+  ~description:"Skip test if the current user is root"
+  (Actions_helpers.pass_or_skip (Unix.getuid () <> 0)
+    "current user is not root"
+    "current user is root")
+
 let setup_build_env = make
   ~name:"setup-build-env"
   ~description:"Create a dedicated directory for the test and populates it"
@@ -426,6 +433,7 @@ let _ =
     arch32;
     arch64;
     has_symlink;
+    not_root;
     setup_build_env;
     setup_simple_build_env;
     run;

@@ -15,6 +15,7 @@
 
 # Used by included Makefiles
 ROOTDIR = ../..
+SUBDIR_NAME = api_docgen/odoc
 
 include ../Makefile.common
 
@@ -191,13 +192,10 @@ $(ALL_PAGED_DOC:%=build/%.3o.stamp):build/%.3o.stamp:build/%.odocl | build/
 # Man pages are the only installed documentation
 .PHONY: install
 install:
-	$(MKDIR) "$(INSTALL_LIBRARIES_MAN_DIR)"
-	if test -d build/man/libref ; then \
-	  $(INSTALL_DATA) build/man/libref/* "$(INSTALL_LIBRARIES_MAN_DIR)"; \
-	fi
-	if test -d build/man/compilerlibref ; then \
-	  $(INSTALL_DATA) build/man/libref/* "$(INSTALL_LIBRARIES_MAN_DIR)"; \
-	fi
+	$(call INSTALL_ITEMS_OPT, \
+	  build/man/libref/*, man, $(INSTALL_MANDIR_LIBRARIES))
+	$(call INSTALL_ITEMS_OPT, \
+	  build/man/compilerlibref/*, man, $(INSTALL_MANDIR_LIBRARIES))
 
 # Dependencies for stdlib modules.
 # Use the same dependencies used for compiling .cmx files.

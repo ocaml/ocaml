@@ -39,7 +39,7 @@ let target_os_type = {@QS@|@target_os_type@|@QS@}
 
 let diff = {@QS@|@DIFF@|@QS@}
 let diff_flags = {@QS@|@DIFF_FLAGS@|@QS@}
-let diff_supports_color = @diff_supports_color@
+let diff_supports_color = @ocaml_cv_prog_diff_supports_color@
 
 let shared_libraries = @supports_shared_libraries@
 

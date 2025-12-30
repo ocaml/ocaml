@@ -109,6 +109,7 @@ otherlibs/unix/symlink_win32.c     typo.long-line
 # Some Unicode characters here and there
 utils/misc.ml            typo.non-ascii
 runtime/sak.c            typo.non-ascii
+tools/opam/process.sh    typo.non-ascii
 
 testsuite/tests/**                                      typo.missing-header typo.long-line=may
 testsuite/tests/lib-bigarray-2/bigarrf.f                typo.tab linguist-language=Fortran

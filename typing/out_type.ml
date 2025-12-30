@@ -1288,6 +1288,24 @@ let filter_params tyl =
       [] tyl
   in List.rev params
 
+(* When printing the variance of a type parameter,
+   we need to translate the computed variance ([Variance.t])
+   back into the corresponding syntactic node ([Asttypes.variance]).
+   [Typedecl_variance.transl_variance] is half inverse to this operation. *)
+let syntactic_variance
+    ?(with_variance=(!Clflags.print_variance))
+    ?(with_injectivity=(!Clflags.print_variance)) vi =
+  let open Variance in let open Asttypes in
+  let v = if not with_variance then NoVariance else
+  match mem May_pos vi, mem May_neg vi with
+  | false, false -> Bivariant
+  | true, false -> Covariant
+  | false, true -> Contravariant
+  | true, true -> NoVariance in
+  let i = if not with_injectivity then NoInjectivity else
+  if mem Inj vi then Injective else NoInjectivity in
+  (v, i)
+
 let prepare_type_constructor_arguments = function
   | Cstr_tuple l -> List.iter prepare_type l
   | Cstr_record l -> List.iter (fun l -> prepare_type l.ld_type) l
@@ -1410,23 +1428,18 @@ let tree_of_type_decl id decl =
       List.map2
         (fun ty v ->
           let is_var = is_Tvar ty in
-          if !Clflags.print_variance || abstr || not is_var then
-            let inj =
-              !Clflags.print_variance && Variance.mem Inj v ||
-              type_kind_is_abstract decl && Variance.mem Inj v &&
-              match decl.type_manifest with
-              | None -> true
-              | Some ty -> (* only abstract or private row types *)
-                  decl.type_private = Private &&
-                  Btype.is_constr_row ~allow_ident:true (Btype.row_of_type ty)
-            and (co, cn) = Variance.get_upper v in
-            (match co, cn with
-            | false, false -> Bivariant
-            | true, false -> Covariant
-            | false, true -> Contravariant
-            | true, true -> NoVariance),
-            (if inj then Injective else NoInjectivity)
-          else (NoVariance, NoInjectivity))
+          let with_variance = !Clflags.print_variance || abstr || not is_var in
+          let with_injectivity =
+            !Clflags.print_variance ||
+            (abstr || not is_var) &&
+            type_kind_is_abstract decl &&
+            match decl.type_manifest with
+            | None -> true
+            | Some ty -> (* only abstract or private row types *)
+                decl.type_private = Private &&
+                Btype.is_constr_row ~allow_ident:true (Btype.row_of_type ty)
+          in
+          syntactic_variance ~with_variance ~with_injectivity v)
         decl.type_params decl.type_variance
     in
     (Ident.name id,
@@ -1535,15 +1548,25 @@ let extension_constructor_args_and_ret_type_subtree ext_args ext_ret_type =
   let args = tree_of_constructor_arguments ext_args in
   (args, ret)
 
-let prepared_tree_of_extension_constructor
-   id ext es
-  =
+let prepared_tree_of_extension_constructor id ext es =
   let ty_name = Path.name ext.ext_type_path in
   let ty_params = filter_params ext.ext_type_params in
-  let type_param =
+  let ty_variances =
+    try
+      let variances =
+        (Env.find_type ext.ext_type_path !printing_env).type_variance in
+      List.map syntactic_variance variances
+    with Not_found ->
+      List.map (fun _ -> NoVariance, NoInjectivity) ty_params
+  in
+  let type_param ot_variance =
     function
-    | Otyp_var (_, id) -> id
-    | _ -> "?"
+    | Otyp_var (_ot_non_gen, ot_name) ->
+        {ot_non_gen=false; ot_name; ot_variance}
+        (* NB(#14315): simply using the given ot_non_gen here
+           does not break the testsuite *)
+    | _ ->
+        {ot_non_gen=false; ot_name="?"; ot_variance=NoVariance,NoInjectivity}
   in
   let param_scope f =
     match ext.ext_ret_type with
@@ -1558,7 +1581,8 @@ let prepared_tree_of_extension_constructor
     param_scope
       (fun () ->
          List.iter (Aliases.add_printed ~non_gen:false) ty_params;
-         List.map (fun ty -> type_param (tree_of_typexp Type ty)) ty_params
+         List.map2 (fun v ty -> type_param v (tree_of_typexp Type ty))
+          ty_variances ty_params
       )
   in
   let name = Ident.name id in
@@ -1714,22 +1738,11 @@ let rec tree_of_class_type mode params =
 
 
 let tree_of_class_param param variance =
-  let ot_variance =
-    if is_Tvar param then Asttypes.(NoVariance, NoInjectivity) else variance in
+  let ot_variance = syntactic_variance variance
+      ~with_variance:(!Clflags.print_variance || not (is_Tvar param)) in
   match tree_of_typexp Type_scheme param with
     Otyp_var (ot_non_gen, ot_name) -> {ot_non_gen; ot_name; ot_variance}
   | _ -> {ot_non_gen=false; ot_name="?"; ot_variance}
-
-let class_variance =
-  let open Variance in let open Asttypes in
-  List.map (fun v ->
-    let inj = !Clflags.print_variance && Variance.mem Inj v in
-    (match mem May_pos v, mem May_neg v with
-    | false, false -> Bivariant
-    | true, false -> Covariant
-    | false, true -> Contravariant
-    | true, true -> NoVariance),
-    (if inj then Injective else NoInjectivity))
 
 let tree_of_class_declaration id cl rs =
   let params = filter_params cl.cty_params in
@@ -1747,7 +1760,7 @@ let tree_of_class_declaration id cl rs =
   let vir_flag = cl.cty_new = None in
   Osig_class
     (vir_flag, Ident.name id,
-     List.map2 tree_of_class_param params (class_variance cl.cty_variance),
+     List.map2 tree_of_class_param params cl.cty_variance,
      tree_of_class_type Type_scheme params cl.cty_type,
      tree_of_rec rs)
 
@@ -1774,7 +1787,7 @@ let tree_of_cltype_declaration id cl rs =
   in
   Osig_class_type
     (has_virtual_vars || has_virtual_meths, Ident.name id,
-     List.map2 tree_of_class_param params (class_variance cl.clty_variance),
+     List.map2 tree_of_class_param params cl.clty_variance,
      tree_of_class_type Type_scheme params cl.clty_type,
      tree_of_rec rs)
 

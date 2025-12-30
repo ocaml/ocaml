@@ -20,9 +20,7 @@
 #ifdef HAS_INITGROUPS
 
 #include <sys/types.h>
-#ifndef _WIN32
 #include <unistd.h>
-#endif
 #include <errno.h>
 #include <limits.h>
 #include <grp.h>

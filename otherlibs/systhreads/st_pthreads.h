@@ -22,9 +22,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <time.h>
-#ifndef _WIN32
 #include <unistd.h>
-#endif
 
 
 typedef pthread_t st_thread_id;
@@ -44,8 +42,6 @@ static int st_thread_create(st_thread_id * res,
   if (res != NULL) *res = thr;
   return rc;
 }
-
-#define ST_THREAD_FUNCTION void *
 
 /* Thread termination */
 

@@ -226,6 +226,9 @@
 
 /* Define HAS_MKTIME if you have mktime(). */
 
+#undef HAVE_GMTIME_R
+#undef HAVE_LOCALTIME_R
+
 #undef HAS_SETSID
 
 /* Define HAS_SETSID if you have setsid(). */
@@ -323,6 +326,11 @@
 #undef HAS_ZSTD
 
 #undef HAVE_MAX_ALIGN_T
+
+#undef HAVE_GETGRNAM_R
+#undef HAVE_GETGRGID_R
+#undef HAVE_GETPWNAM_R
+#undef HAVE_GETPWUID_R
 
 /* 3. Language extensions. */
 

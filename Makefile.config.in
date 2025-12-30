@@ -67,7 +67,7 @@ TOOLPREF=@ac_tool_prefix@
 CC=@CC@
 
 CC_HAS_DEBUG_PREFIX_MAP=@cc_has_debug_prefix_map@
-AS_HAS_DEBUG_PREFIX_MAP=@as_has_debug_prefix_map@
+AS_HAS_DEBUG_PREFIX_MAP=@ocaml_cv_prog_as_debug_prefix_map@
 
 LDFLAGS?=@LDFLAGS@
 

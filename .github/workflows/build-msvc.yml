@@ -33,10 +33,12 @@ jobs:
         with:
           script: |
             // # Always test cl and clang-cl
-            let compilers = ['cl', 'clang-cl'];
+            let compilers = ['clang-cl'];
             // # Also test i686 MSVC
             let include = [
-              {cc: 'cl', arch: 'i686', libdir: 'relative'}];
+              {os: 'windows-latest', cc: 'cl', arch: 'i686', opam: 'false', prefix: '$PROGRAMFILES/Бактріан🐫', libdir: 'relative'},
+              {os: 'windows-2025', cc: 'cl', arch: 'x86_64', opam: 'true', prefix: 'C:\\\\Бактріан🐫'},
+              {os: 'windows-2025', cc: 'cl', arch: 'i686', opam: 'true', prefix: 'C:\\\\Бактріан🐫'}];
             let libdir = ['absolute'];
             // # If this is a pull request, see if the PR has the
             // # 'CI: Full matrix' label. This is done using an API request,
@@ -53,14 +55,14 @@ jobs:
                 // # Test Cygwin as well
                 compilers.push('gcc');
                 // # Test bytecode-only Cygwin
-                include.push({cc: 'gcc', arch: 'x86_64', libdir: 'absolute', config_arg: '--disable-native-toplevel --disable-native-compiler'});
+                include.push({os: 'windows-latest', prefix: '$PROGRAMFILES/Бактріан🐫', opam: ['false'], cc: 'gcc', arch: 'x86_64', libdir: 'absolute', config_arg: '--disable-native-toplevel --disable-native-compiler'});
                 // # Test i686 MSVC absolute
-                include.push({cc: 'cl', arch: 'i686', libdir: 'absolute'});
+                include.push({os: 'windows-latest', prefix: '$PROGRAMFILES/Бактріан🐫', opam: ['false'], cc: 'cl', arch: 'i686', libdir: 'absolute'});
                 // # Expand the main matrix to include relative testing
                 libdir.push('relative');
               }
             }
-            return {config_arg: [''], arch: ['x86_64'], cc: compilers, libdir: libdir, include: include};
+            return {os: ['windows-latest'], prefix: ['$PROGRAMFILES/Бактріан🐫'], opam: ['false'], config_arg: [''], arch: ['x86_64'], cc: compilers, libdir: libdir, include: include};
       - name: Determine if the testsuite should be skipped
         id: skip
         uses: actions/github-script@v7
@@ -78,7 +80,7 @@ jobs:
   build:
     permissions: {}
 
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
 
     needs: config
 
@@ -107,7 +109,7 @@ jobs:
       - name: Install Cygwin
         uses: cygwin/cygwin-install-action@v3
         with:
-          packages: make,${{ matrix.cc != 'gcc' && 'mingw64-x86_64-' || 'gcc-g++,gcc-fortran,' }}gcc-core
+          packages: make,${{ matrix.cc != 'gcc' && 'mingw64-x86_64-' || 'gcc-g++,gcc-fortran,' }}gcc-core,rsync,unzip
           install-dir: 'D:\cygwin'
 
       - name: Save Cygwin cache
@@ -122,6 +124,13 @@ jobs:
         with:
           arch: ${{ matrix.arch == 'x86_64' && 'x64' || 'x86' }}
         if: matrix.cc != 'gcc'
+
+      - name: Install opam
+        if: matrix.opam == 'true'
+        shell: pwsh
+        run: |
+          winget install opam --accept-source-agreements
+          Add-Content -Path $env:GITHUB_PATH -Value "$env:LOCALAPPDATA\Microsoft\WinGet\Links"
 
       - name: Compute a key to cache configure results
         id: autoconf-cache-key
@@ -141,7 +150,8 @@ jobs:
         env:
           CONFIG_ARGS: >-
             --cache-file=config.cache
-            --prefix "${{ matrix.cc != 'gcc' && '$PROGRAMFILES\\Бактріан🐫' || '$(cygpath "$PROGRAMFILES/Бактріан🐫")'}}"
+            --prefix ${{ matrix.cc != 'gcc' && format('"{0}/_opam"', matrix.prefix) || format('"$(cygpath "{0}")"', matrix.prefix) }}
+            --docdir ${{ format((matrix.cc != 'gcc' && '"{0}/_opam/doc/ocaml"' || '"$(cygpath "{0}/doc/ocaml")"'), matrix.prefix) }}
             ${{ matrix.cc != 'gcc' && format('--host={0}-pc-windows', matrix.arch) || '' }}
             ${{ matrix.cc != 'gcc' && format('CC={0}', matrix.cc) || '' }}
             --enable-ocamltest
@@ -200,7 +210,23 @@ jobs:
           make tests
 
       - name: Install the compiler
+        if: matrix.opam != 'true'
         run: make install
+
+      - name: Create opam switch
+        if: matrix.opam == 'true'
+        env:
+          OPAMSWITCH: ${{ matrix.prefix }}
+        run: |
+          make OPAM_PACKAGE_NAME=ocaml-variants INSTALL_MODE=opam install
+          opam init --cli=2.4 --bare --yes --disable-sandboxing --auto-setup --cygwin-local-install
+          # These commands intentionally run using opam's "default" CLI
+          opam switch create '${{ env.OPAMSWITCH }}' --empty
+          opam pin add --no-action --kind=path ocaml-variants .
+          opam pin add --no-action flexdll flexdll
+          opam install --yes flexdll
+          opam install --yes --assume-built ocaml-variants
+          opam exec -- ocamlc -v
 
       - name: Test in prefix
         run: |

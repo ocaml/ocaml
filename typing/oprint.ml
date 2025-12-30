@@ -808,12 +808,12 @@ and print_out_extension_constructor ppf ext =
         [] -> fprintf ppf "%a" print_lident ext.oext_type_name
       | [ty_param] ->
         fprintf ppf "@[%a@ %a@]"
-          (print_type_parameter ~non_gen:false)
+          type_parameter
           ty_param
           print_lident ext.oext_type_name
       | _ ->
         fprintf ppf "@[(@[%a)@]@ %a@]"
-          (print_list print_type_parameter (fun ppf -> fprintf ppf ",@ "))
+          (print_list type_parameter (fun ppf -> fprintf ppf ",@ "))
           ext.oext_type_params
           print_lident ext.oext_type_name
   in
@@ -829,11 +829,11 @@ and print_out_type_extension ppf te =
       [] -> fprintf ppf "%a" print_lident te.otyext_name
     | [param] ->
       fprintf ppf "@[%a@ %a@]"
-        (print_type_parameter ~non_gen:false) param
+        type_parameter param
         print_lident te.otyext_name
     | _ ->
         fprintf ppf "@[(@[%a)@]@ %a@]"
-          (print_list print_type_parameter (fun ppf -> fprintf ppf ",@ "))
+          (print_list type_parameter (fun ppf -> fprintf ppf ",@ "))
           te.otyext_params
           print_lident te.otyext_name
   in
