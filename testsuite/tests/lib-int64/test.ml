@@ -107,9 +107,9 @@ let naive_popcount n =
 let test_bitcounts () =
   let check n =
     let a = Int64.unsigned_bitsize n
-    and z = Int64.nlz n
+    and z = Int64.leading_zeros n
     and b = Int64.signed_bitsize n
-    and s = Int64.nls n in
+    and s = Int64.leading_sign_bits n in
     assert (a + z = 64);
     assert (b + s = 64);
     (* Check 0 <= n < 2^a (unsigned) *)
@@ -121,14 +121,14 @@ let test_bitcounts () =
     assert (Int64.(neg (shift_left 1L (b-1))) <= n);
     assert (n <= Int64.(pred (shift_left 1L (b-1))));
     (* Check n starts with t zeros but not t+1 zeros *)
-    let t = Int64.ntz n in
-    if n = 0L then assert (t = max_int) else begin
+    let t = Int64.trailing_zeros n in
+    if n = 0L then assert (t = 64) else begin
       let m = Int64.(shift_left (-1L) t) in
       assert (Int64.(logand n m) = n);
       assert (Int64.(logand n (shift_left m 1)) <> n)
     end;
     (* Check popcount against naive count *)
-    let p = Int64.popcount n in
+    let p = Int64.bit_count n in
     assert (p = naive_popcount n) in
   List.iter check
     [0L; 1L; 2L; 3L; 4L; 5L; 6L; 7L; 8L; 15L; 16L; 17L; 31L; 32L; 255L; 256L;

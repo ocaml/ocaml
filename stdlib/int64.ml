@@ -125,9 +125,9 @@ let ediv n d =
   let r = sub n (mul q d) in
   if r >= 0L then q else if d >= 0L then pred q else succ q
 
-(* Number of leading zeros.  Hacker's Delight, algorithm 5.7 *)
+(* Number of leading zeros.  Hacker's Delight (2 ed.), algorithm 5.12 *)
 
-let nlz x =
+let leading_zeros x =
   let x = ref x and n = ref 64 in
   let y = shift_right_logical !x 32 in
   if y <> 0L then (n := !n - 32; x := y);
@@ -143,20 +143,20 @@ let nlz x =
   if y <> 0L then !n - 2 else !n - to_int !x
 
 let unsigned_bitsize x =
-  64 - nlz x
+  64 - leading_zeros x
 
 (* Number of leading sign bits. *)
 
-let nls x =
-  if x >= 0L then nlz x - 1 else nlz (lognot x) - 1
+let leading_sign_bits x =
+  if x >= 0L then leading_zeros x - 1 else leading_zeros (lognot x) - 1
 
 let signed_bitsize x =
-  64 - nls x
+  64 - leading_sign_bits x
 
-(* Number of trailing zeros.  Hacker's Delight, algorithm 5.14 *)
+(* Number of trailing zeros.  Hacker's Delight (2 ed.), algorithm 5.21 *)
 
-let ntz x =
-  if x = 0L then Stdlib.max_int else begin
+let trailing_zeros x =
+  if x = 0L then 64 else begin
     let x = ref x and n = ref 63 in
     let y = shift_left !x 32 in
     if y <> 0L then (n := !n - 32; x := y);
@@ -172,9 +172,9 @@ let ntz x =
     if y <> 0L then !n - 1 else !n
   end
 
-(* Population count.  Hacker's Delight, algorithm 5.2 *)
+(* Population count.  Hacker's Delight (2 ed.), algorithm 5.2 *)
 
-let popcount x =
+let bit_count x =
   let x = sub x (logand (shift_right_logical x 1) 0x5555_5555_5555_5555L) in
   let x = add (logand x 0x3333_3333_3333_3333L)
               (logand (shift_right_logical x 2) 0x3333_3333_3333_3333L) in
