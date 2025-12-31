@@ -1,22 +1,28 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                             Martin Jambon                              *)
+(*                                                                        *)
+(*   Copyright 2025 Martin Jambon                                         *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 (*
    Check whether a rule may fail to match on some input
 *)
 
 open Printf
 
+(************************)
+(* Debugging *)
+(************************)
+
+(* Change to true to print automaton details for debugging purposes *)
 let debug = false
-
-(* For keeping track of visited nodes *)
-module DFA_states = Set.Make (struct
-    type t = int (* state ID *)
-    let compare = Int.compare
-end)
-
-(* For mapping at most one state to a matching path *)
-module DFA_state_map = Map.Make (struct
-    type t = int (* state ID *)
-    let compare = Int.compare
-end)
 
 (* Print what we care about for debugging purposes *)
 let print_state state_id (state : Lexgen.automata) =
@@ -39,6 +45,26 @@ let print_state state_id (state : Lexgen.automata) =
               symbol dst_state
       ) transitions
 
+(************************)
+(* Sets and maps *)
+(************************)
+
+(* For keeping track of visited nodes *)
+module DFA_states = Set.Make (struct
+    type t = int (* state ID *)
+    let compare = Int.compare
+end)
+
+(* For mapping at most one state to a matching path *)
+module DFA_state_map = Map.Make (struct
+    type t = int (* state ID *)
+    let compare = Int.compare
+end)
+
+(************************)
+(* Automaton navigation *)
+(************************)
+
 (* Return the state's transitions if any *)
 let get_transitions (state : Lexgen.automata) =
   match state with
@@ -46,12 +72,25 @@ let get_transitions (state : Lexgen.automata) =
   | Shift (_, transitions) -> Some transitions
 
 (* Indicate if a state is final.
-   [is this close to being correct?] *)
+   [is this correct?] *)
 let is_final (state : Lexgen.automata) =
   match state with
   | Perform _ -> true
   | Shift (Remember _, _) -> true
   | Shift (No_remember, _) -> false
+
+(*
+   We assume the following encoding for input symbols triggering transitions:
+   0-255: bytes
+   256: end of input
+*)
+let is_end_of_input = function
+  | 256 -> true
+  | _ -> false
+
+(****************************************************************)
+(* Main algorithm for exhaustiveness checking *)
+(****************************************************************)
 
 (* Reconstruct a string from a stack of chars *)
 let string_of_path (path : char list) =
@@ -60,12 +99,8 @@ let string_of_path (path : char list) =
   |> List.to_seq
   |> String.of_seq
 
-(*
-   We assume the following encoding of transitions:
-   0-255: bytes
-   256: end of input
-*)
-exception Missing_transition of int
+(* Local exception *)
+exception Missing_transition of int (* 0-256 *)
 
 (* This is Array.iteri but we start from the symbol for end-of-input (256,
    last index in the array).
@@ -77,10 +112,6 @@ let iter_symbols_in_preferred_order func ar =
   for i = 0 to last - 1 do
     func i ar.(i)
   done
-
-let is_end_of_input = function
-  | 256 -> true
-  | _ -> false
 
 let find_missing_transition (state : Lexgen.automata) =
   match get_transitions state with
@@ -101,14 +132,15 @@ let find_missing_transition (state : Lexgen.automata) =
         None
       with Missing_transition trans -> Some trans
 
+(* Local exception *)
 exception Found_string of string
 
 (*
    In order to match any input, each reachable state of the automaton
    must be either final or have a transition defined for any byte
-   of input (0-255) and for the end-of-input condition (256).
+   of input (0-255) and for the end-of-input/eof condition (256).
 
-   We try to provide nice examples by favoring shorter input strings.
+   We try to provide nice examples by favoring shorter strings.
    This is achieved by visiting the graph breadth-first instead of depth-first.
 *)
 let is_exhaustive
