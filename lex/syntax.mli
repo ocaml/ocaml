@@ -23,6 +23,16 @@ type location = {
   start_col : int;
 }
 
+(** Format a location into a string the standard error format of OCaml:
+    "File %S, line %d, characters %d-%d". *)
+val show_location : location -> string
+
+(** Print a warning to stderr message after the location and
+    the "Warning: " prefix.
+    The message may span multiple lines but should not be terminated by
+    a newline. *)
+val print_warning : location -> string -> unit
+
 type regular_expression =
     Epsilon
   | Characters of Cset.t

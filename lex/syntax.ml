@@ -47,3 +47,23 @@ type lexer_definition = {
   trailer: location;
   refill_handler : location option;
 }
+
+let show_location loc =
+  Printf.sprintf "File %S, line %d, characters %d-%d"
+    loc.loc_file
+    loc.start_line
+    loc.start_col
+    (loc.start_col + loc.end_pos - loc.start_pos)
+
+(*
+   - We could have command-line options to enable or disable
+     warnings, or make them fatal if desired.
+   - It would be nice to use the same function as the OCaml compilers
+     to print and highlight the affected snippet of code.
+*)
+let print_warning loc msg =
+  Printf.eprintf
+    "%s:\n\
+     Warning: %s\n"
+    (show_location loc) msg;
+  flush stderr

@@ -142,6 +142,37 @@ exception Found_string of string
 
    We try to provide nice examples by favoring shorter strings.
    This is achieved by visiting the graph breadth-first instead of depth-first.
+
+   The cost of this function is bounded by the number of states and
+   the number of possible transitions. This is fast enough in practice
+   even though it could be faster if the characters were grouped into
+   classes of equivalent characters as it is done during automaton
+   construction.
+
+   Algorithm overview:
+
+   The input is a DFA and an initial state. A state is a node in a
+   directed graph with labeled edges representing state
+   transitions. Transitions represent an input symbol which is either
+   a byte (of type 'char' and numbered 0-255) or the end of input
+   (code 256, denoted 'eof' in ocamllex pattern syntax).
+
+   We start from the initial state and visit all the reachable states
+   until we find a missing transition or until there are no more nodes
+   to visit. To avoid visiting the same node multiple times, we keep
+   track of the visited nodes.
+
+   To obtain a sample input string, we keep an input path constructed
+   from the sequence of transitions that were taken from the initial
+   state. To provide one of the shortest nonmatching paths, we visit
+   the graph breadth-first. This ensures all the paths being tracked
+   have the same length at any given round of the visit. Since we only
+   want to produce one nonmatching path, we use a map from state IDs to
+   paths to ensure we keep at most one path per node.
+
+   When a missing transition is found, we extend the path with the missing
+   character (or nothing if the transition is eof) and we return it via
+   an exception.
 *)
 let is_exhaustive
     (states : Lexgen.automata array) (initial_state : int) =
@@ -211,13 +242,6 @@ let is_exhaustive
   with Found_string example ->
     Error example
 
-(* TODO: obtain a good location for the rule and report it here *)
-let warning (loc : Syntax.location) msg =
-  eprintf "File \"%s\", line 1, character 0:\n\
-           Warning: %s\n\
-          "
-    loc.loc_file msg
-
 (* An entry is a 'rule' in an ocamllex file.
    It contains the rule name (useful for reporting) and the initial
    state in the automaton. *)
@@ -228,10 +252,11 @@ let check_entry loc
   match is_exhaustive states initial_state with
   | Ok () -> ()
   | Error example ->
-      warning loc (sprintf "rule %s is not exhaustive.\n\
-                            Here is an example of nonmatching input:\n\
-                            %S"
-                     e.auto_name example)
+      Syntax.print_warning
+        loc (sprintf "rule \"%s\" is not exhaustive.\n\
+                      Here is an example of nonmatching input:\n\
+                      %S"
+               e.auto_name example)
 
 let check loc
     (states : Lexgen.automata array)
