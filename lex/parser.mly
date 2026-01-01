@@ -46,13 +46,33 @@ let rec as_cset = function
   | Alternative (e1, e2) -> Cset.union (as_cset e1) (as_cset e2)
   | _ -> raise Cset.Bad
 
+(* Extract the end of the last closing '}' to be used in the location
+   of the rule body. *)
+let finalize_clauses xs =
+  let end_pos =
+    match List.rev xs with
+    | (_clause, curly_end_pos) :: _ -> curly_end_pos
+    | [] -> (* syntax ensures at least one clause *) assert false
+  in
+  let clauses_without_location = List.map (fun (x, _pos) -> x) xs in
+  (clauses_without_location, end_pos)
 %}
 
 %token <string> Tident
 %token <int> Tchar
 %token <string> Tstring
-%token <Syntax.location> Taction
-%token Trule Tparse Tparse_shortest Tand Tequal Tend Tor Tunderscore Teof
+
+/* We consider this position to be the beginning of the rule body
+   (list of clauses). It's used when reporting non-exhaustive rules. */
+%token <Lexing.position> Tparse Tparse_shortest
+
+/* An action is represented as (loc, end_pos)
+   where loc is the location of the user-defined OCaml code within
+   curly braces and end_pos is the position of the closing brace
+   that will be used as the end delimiter of the rule body. */
+%token <Syntax.location * Lexing.position> Taction
+
+%token Trule Tand Tequal Tend Tor Tunderscore Teof
        Tlbracket Trbracket Trefill
 %token Tstar Tmaybe Tplus Tlparen Trparen Tcaret Tdash Tlet Tas Thash
 
@@ -78,7 +98,7 @@ lexer_definition:
 ;
 header:
     Taction
-        { $1 }
+        { fst $1 }
   | /*epsilon*/
         { { loc_file = ""; start_pos = 0; end_pos = 0; start_line = 1;
             start_col = 0 } }
@@ -96,14 +116,20 @@ other_definitions:
         { [] }
 ;
 refill_handler:
-  | Trefill Taction { Some $2 }
+  | Trefill Taction { Some (fst $2) }
   | /*empty*/ { None }
 ;
 definition:
     Tident arguments Tequal Tparse entry
-        { {name=$1 ; shortest=false ; args=$2 ; clauses=$5} }
+        { let start_p = $4 in
+          let clauses, end_p = finalize_clauses $5 in
+          let body_location = location_of_positions start_p end_p in
+          {name=$1 ; shortest=false ; args=$2 ; body_location ; clauses} }
   |  Tident arguments Tequal Tparse_shortest entry
-        { {name=$1 ; shortest=true ; args=$2 ; clauses=$5} }
+        { let start_p = $4 in
+          let clauses, end_p = finalize_clauses $5 in
+          let body_location = location_of_positions start_p end_p in
+          {name=$1 ; shortest=true ; args=$2 ; body_location ; clauses} }
 ;
 
 arguments:
@@ -127,7 +153,8 @@ rest_of_entry:
 ;
 case:
     regexp Taction
-        { ($1,$2) }
+        { let action_code_location, end_pos = $2 in
+          (($1, action_code_location), end_pos) }
 ;
 regexp:
     Tunderscore

@@ -26,6 +26,21 @@ type location = {
   start_col : int;
 }
 
+let location_of_positions (a : Lexing.position) (b : Lexing.position)
+  : location =
+  let f = a.pos_fname in
+  let n1 = a.pos_cnum
+  and l1 = a.pos_lnum
+  and s1 = a.pos_bol in
+  let n2 = b.pos_cnum in
+  {
+    loc_file = f;
+    start_pos = n1;
+    end_pos = n2;
+    start_line = l1;
+    start_col = n1 - s1
+  }
+
 type regular_expression =
     Epsilon
   | Characters of Cset.t
@@ -35,11 +50,13 @@ type regular_expression =
   | Repetition of regular_expression
   | Bind of regular_expression * (string * location)
 
-type ('arg,'action) entry =
-  {name:string ;
-   shortest : bool ;
-   args : 'arg ;
-   clauses : (regular_expression * 'action) list}
+type ('arg, 'action) entry = {
+  name: string;
+  shortest: bool;
+  args: 'arg;
+  body_location: location;
+  clauses: (regular_expression * 'action) list
+}
 
 type lexer_definition = {
   header: location;
@@ -56,6 +73,9 @@ let show_location loc =
     (loc.start_col + loc.end_pos - loc.start_pos)
 
 (*
+   Roughly the same format as Lexer.warning.
+   TODO: reuse code to ensure consistency?
+
    - We could have command-line options to enable or disable
      warnings, or make them fatal if desired.
    - It would be nice to use the same function as the OCaml compilers
@@ -63,7 +83,7 @@ let show_location loc =
 *)
 let print_warning loc msg =
   Printf.eprintf
-    "%s:\n\
-     Warning: %s\n"
+    "ocamllex warning:\n\
+     %s: %s\n"
     (show_location loc) msg;
   flush stderr

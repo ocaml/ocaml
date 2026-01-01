@@ -15,6 +15,11 @@
 
 (* The shallow abstract syntax *)
 
+(** Location in the source mll file.
+
+    Its uses include identifying source OCaml code (header, trailer, actions)
+    and injecting it into the generated ml file.
+*)
 type location = {
   loc_file : string;
   start_pos : int;
@@ -23,12 +28,14 @@ type location = {
   start_col : int;
 }
 
+val location_of_positions : Lexing.position -> Lexing.position -> location
+
 (** Format a location into a string the standard error format of OCaml:
     "File %S, line %d, characters %d-%d". *)
 val show_location : location -> string
 
 (** Print a warning to stderr message after the location and
-    the "Warning: " prefix.
+    the ["Warning: "] prefix.
     The message may span multiple lines but should not be terminated by
     a newline. *)
 val print_warning : location -> string -> unit
@@ -42,11 +49,13 @@ type regular_expression =
   | Repetition of regular_expression
   | Bind of regular_expression * (string * location)
 
-type ('arg,'action) entry =
-  {name:string ;
-   shortest : bool ;
-   args : 'arg ;
-   clauses : (regular_expression * 'action) list}
+type ('arg, 'action) entry = {
+  name: string;
+  shortest: bool;
+  args: 'arg;
+  body_location: location;
+  clauses: (regular_expression * 'action) list
+}
 
 type lexer_definition = {
   header: location;

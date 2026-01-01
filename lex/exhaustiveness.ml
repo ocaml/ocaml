@@ -245,7 +245,7 @@ let is_exhaustive
 (* An entry is a 'rule' in an ocamllex file.
    It contains the rule name (useful for reporting) and the initial
    state in the automaton. *)
-let check_entry loc
+let check_entry
     (states : Lexgen.automata array)
     (e : (_, Syntax.location) Lexgen.automata_entry) =
   let initial_state, _mem_actions = e.auto_initial_state in
@@ -253,16 +253,17 @@ let check_entry loc
   | Ok () -> ()
   | Error example ->
       Syntax.print_warning
-        loc (sprintf "rule \"%s\" is not exhaustive.\n\
-                      Here is an example of nonmatching input:\n\
-                      %S"
-               e.auto_name example)
+        e.auto_body_location
+        (sprintf "rule \"%s\" is not exhaustive.\n\
+                  Here is an example of nonmatching input:\n\
+                  %S"
+           e.auto_name example)
 
-let check loc
+let check
     (states : Lexgen.automata array)
     (entries : (_, Syntax.location) Lexgen.automata_entry list) =
   if debug then (
     printf "number of states: %i\n" (Array.length states);
     Array.iteri print_state states
   );
-  List.iter (check_entry loc states) entries
+  List.iter (check_entry states) entries

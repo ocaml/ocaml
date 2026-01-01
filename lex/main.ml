@@ -74,7 +74,7 @@ let main () =
   try
     let def = Parser.lexer_definition Lexer.main lexbuf in
     let (entries, transitions) = Lexgen.make_dfa def.entrypoints in
-    Exhaustiveness.check def.header transitions entries;
+    Exhaustiveness.check transitions entries;
     if !ml_automata then begin
       Outputbis.output_lexdef
         ic oc tr
