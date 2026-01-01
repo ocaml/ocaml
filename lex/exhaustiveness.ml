@@ -136,8 +136,9 @@ let find_missing_transition (state : Lexgen.automata) =
 exception Found_string of string
 
 (*
-   In order to match any input, each reachable state of the automaton
-   must be either final or have a transition defined for any byte
+   In order to match any input, every state of the automaton
+   that is reachable without going through a final state
+   must be final or have a transition defined for any byte
    of input (0-255) and for the end-of-input/eof condition (256).
 
    We try to provide nice examples by favoring shorter strings.
