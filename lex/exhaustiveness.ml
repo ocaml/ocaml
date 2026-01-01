@@ -158,10 +158,11 @@ exception Found_string of string
    a byte (of type 'char' and numbered 0-255) or the end of input
    (code 256, denoted 'eof' in ocamllex pattern syntax).
 
-   We start from the initial state and visit all the reachable states
-   until we find a missing transition or until there are no more nodes
-   to visit. To avoid visiting the same node multiple times, we keep
-   track of the visited nodes.
+   We start from the initial state and visit all the states that are
+   reachable [without going through a final state] until we find a
+   missing transition or until there are no more nodes to visit. To
+   avoid visiting the same node multiple times, we keep track of the
+   visited nodes.
 
    To obtain a sample input string, we keep an input path constructed
    from the sequence of transitions that were taken from the initial
