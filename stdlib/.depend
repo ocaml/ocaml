@@ -563,10 +563,14 @@ stdlib__Mutex.cmi : mutex.mli
 stdlib__Nativeint.cmo : nativeint.ml \
     stdlib__Sys.cmi \
     stdlib.cmi \
+    stdlib__Int64.cmi \
+    stdlib__Int32.cmi \
     stdlib__Nativeint.cmi
 stdlib__Nativeint.cmx : nativeint.ml \
     stdlib__Sys.cmx \
     stdlib.cmx \
+    stdlib__Int64.cmx \
+    stdlib__Int32.cmx \
     stdlib__Nativeint.cmi
 stdlib__Nativeint.cmi : nativeint.mli
 stdlib__Obj.cmo : obj.ml \

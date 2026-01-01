@@ -275,6 +275,59 @@ val max: t -> t -> t
     @since 4.13
  *)
 
+val bit_count: t -> int
+(** Also known as population count and as Hamming weight.
+    [bit_count n] is the number of 1 bits in the binary representation of [n].
+    Negative [n] are represented in two's complement.
+
+    @since 5.5 *)
+
+val unsigned_bitsize: t -> int
+(** [unsigned_bitsize n] is the minimal number of bits needed to represent
+    [n] as an unsigned binary number.  It is the smallest integer [i]
+    between 0 and [size] inclusive such that [0 <= n < 2{^i}] (unsigned).
+
+    @since 5.5 *)
+
+val signed_bitsize: t -> int
+(** [signed_bitsize n] is the minimal number of bits needed to represent
+    [n] as a signed, two's complement binary number.
+    It is the smallest integer [i] between 1 and [size] inclusive such that
+    [-2{^i-1} <= n < 2{^i-1}] (signed).
+
+    @since 5.5 *)
+
+val leading_zeros: t -> int
+(** [leading_zeros n] is the number of leading (most significant) 0 bits in
+    the binary representation of [n].  
+    It is an integer between 0 and 64 inclusive.
+    If [n] is negative, [leading_zeros n = 0] since the most significant
+    bit of [n] is 1.  [leading_zeros n = size] if and only if [n = zero].
+    Note that [leading_zeros n + unsigned_bitsize n = size].
+
+    @since 5.5 *)
+
+val leading_sign_bits: t -> int
+(** [leading_sign_bits n] is the number of leading (most significant)
+    sign bits in the binary representation of [n],
+    excluding the sign bit itself.
+    It is an integer between 0 and 63 inclusive.
+    For positive [n], it is the number of leading zero bits minus one.
+    For negative [n], it is the number of leading one bits minus one.
+    Note that [leading_sign_bits n + signed_bitsize n = size].
+
+    @since 5.5 *)
+
+val trailing_zeros: t -> int
+(** [trailing_zeros n] is the number of trailing (least significant) 0 bits in
+    the binary representation of [n].
+    It is an integer between 0 and [size] inclusive.
+    It is the largest integer [i <= size] such that [2{^i}] divides [n] evenly.
+    For example, [trailing_zeros n = 0] if and only if [n] is even,
+    and [trailing_zeros n = size] if and only if [n = zero].
+
+    @since 5.5 *)
+
 val seeded_hash : int -> t -> int
 (** A seeded hash function for native ints, with the same output value as
     {!Hashtbl.seeded_hash}. This function allows this module to be passed as

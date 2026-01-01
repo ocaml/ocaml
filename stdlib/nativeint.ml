@@ -117,6 +117,32 @@ let ediv n d =
   let r = sub n (mul q d) in
   if r >= 0n then q else if d >= 0n then pred q else succ q
 
+(* Bit counting functions *)
+
+let leading_zeros =
+  if size = 64
+  then fun x -> Int64.(leading_zeros (of_nativeint x))
+  else fun x -> Int32.(leading_zeros (to_int32 x))
+
+let unsigned_bitsize x =
+  size - leading_zeros x
+
+let leading_sign_bits x =
+  if x >= 0n then leading_zeros x - 1 else leading_zeros (lognot x) - 1
+
+let signed_bitsize x =
+  size - leading_sign_bits x
+
+let trailing_zeros =
+  if size = 64
+  then fun x -> Int64.(trailing_zeros (of_nativeint x))
+  else fun x -> Int32.(trailing_zeros (to_int32 x))
+
+let bit_count =
+  if size = 64
+  then fun x -> Int64.(bit_count (of_nativeint x))
+  else fun x -> Int32.(bit_count (to_int32 x))
+
 external seeded_hash_param :
   int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]
 let seeded_hash seed x = seeded_hash_param 10 100 seed x
