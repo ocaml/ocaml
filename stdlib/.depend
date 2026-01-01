@@ -458,9 +458,11 @@ stdlib__In_channel.cmi : in_channel.mli \
     stdlib.cmi \
     stdlib__Bigarray.cmi
 stdlib__Int.cmo : int.ml \
+    stdlib__Sys.cmi \
     stdlib.cmi \
     stdlib__Int.cmi
 stdlib__Int.cmx : int.ml \
+    stdlib__Sys.cmx \
     stdlib.cmx \
     stdlib__Int.cmi
 stdlib__Int.cmi : int.mli

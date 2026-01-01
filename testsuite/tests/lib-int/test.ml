@@ -98,6 +98,68 @@ let test_min_max () =
   assert (Int.max 2 3 = 3);
   assert (Int.min 2 3 = 2)
 
+let naive_popcount n =
+  let c = ref 0 in
+  for i = 0 to Sys.int_size do
+    if Int.(logand n (shift_left 1 i)) <> 0 then incr c
+  done;
+  !c
+
+let in_unsigned_range x nbits =
+  if nbits < 0 then false else
+  if nbits >= Sys.int_size then true else
+  0 <= x && x <= Int.(pred (shift_left 1 nbits))
+
+let in_signed_range x nbits =
+  if nbits < 1 then false else
+  if nbits >= Sys.int_size then true else
+  let bound = Int.shift_left 1 (nbits - 1) in
+  Int.(neg bound <= x && x <= pred bound)
+
+let top_unsigned_bits x nbits =
+  if nbits <= 0 then 0 else Int.(shift_right_logical x (Sys.int_size - nbits))
+
+let top_signed_bits x nbits =
+  if nbits <= 0 then 0 else Int.(shift_right x (Sys.int_size - nbits))
+  
+let test_bitcounts () =
+  let check n =
+    let a = Int.unsigned_bitsize n
+    and z = Int.leading_zeros n
+    and b = Int.signed_bitsize n
+    and s = Int.leading_sign_bits n in
+    assert (a + z = Sys.int_size);
+    assert (b + s = Sys.int_size);
+    (* Check 0 <= n < 2^a (unsigned) *)
+    assert (in_unsigned_range n a);
+    if a > 0 then assert (not (in_unsigned_range n (a - 1)));
+    (* Check -2^{b-1} <= n < 2^{b-1} - 1 (signed) *)
+    assert (in_signed_range n b);
+    if b > 1 then assert (not (in_signed_range n (b - 1)));
+    (* Check top z bits are 0 and the next bit is 1 *)
+    assert (top_unsigned_bits n z = 0);
+    assert (z = Sys.int_size || top_unsigned_bits n (z+1) <> 0);
+    (* Check top s + 1 bits are sign bits and the next bit is not *)
+    assert (let x = top_signed_bits n (s+1) in x = 0 || x = -1);
+    assert (s = Sys.int_size - 1
+            || let x = top_signed_bits n (s+2) in x <> 0 && x <> -1);
+    (* Check bottom t bits are 0 and the next bit is 1 *)
+    let t = Int.trailing_zeros n in
+    if n = 0 then assert (t = Sys.int_size) else begin
+      let m = Int.(shift_left (-1) t) in
+      assert (Int.(logand n m) = n);
+      assert (Int.(logand n (shift_left m 1)) <> n)
+    end;
+    (* Check popcount against naive count *)
+    let p = Int.bit_count n in
+    assert (p = naive_popcount n) in
+  List.iter check
+    [0; 1; 2; 3; -1; -2; -3; Int.min_int; Int.max_int];
+  for _i = 1 to 1000 do
+    check (Int.shift_left (Random.int 0xFF) (Random.int (Sys.int_size - 8)));
+    check (Random.int_in_range ~min: Int.min_int ~max: Int.max_int)
+  done
+
 let test_hash () =
   let f n =
     assert (Hashtbl.hash n = Int.hash n);
