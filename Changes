@@ -304,6 +304,9 @@ Working version
   executable (either from the RNTM section or by analysing the shebang lines)
   (David Allsopp, review by Damien Doligez and Samuel Hym)
 
+- #14448: ocamllex now prints a warning and shows an example of nonmatching
+  input if a rule is not exhaustive (Martin Jambon, review by XXXXX)
+
 ### Manual and documentation:
 
 - #14397: Improve documentation of type-directed disambiguation of array
