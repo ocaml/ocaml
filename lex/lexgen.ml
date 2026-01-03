@@ -74,6 +74,7 @@ and tag_action = SetTag of int * int | EraseTag of int
 type ('args,'action) automata_entry =
   { auto_name: string;
     auto_args: 'args ;
+    auto_shortest: bool;
     auto_body_location: Syntax.location;
     auto_mem_size : int ;
     auto_initial_state: int * memory_action list;
@@ -1172,6 +1173,7 @@ let make_dfa lexdef =
              (translate_state shortest tags chars follow) !r_states ;
         { auto_name = le.lex_name;
           auto_args = args ;
+          auto_shortest = shortest;
           auto_body_location = le.lex_body_location;
           auto_mem_size =
             (if !temp_pending then !next_mem_cell+1 else !next_mem_cell) ;

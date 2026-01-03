@@ -244,6 +244,24 @@ let is_exhaustive
   with Found_string example ->
     Error example
 
+let make_hint ~shortest example =
+  let opt_msg =
+    match example with
+    | "" ->
+        if shortest then
+          Some "consider adding '| eof { ... }'"
+        else
+          (* This is a very common occurrence *)
+          Some {|consider adding '| "" { ... }'|}
+    | str when String.length str = 1 ->
+        Some "consider adding '| _ { ... }'"
+    | _ ->
+        None
+  in
+  match opt_msg with
+  | None -> ""
+  | Some msg -> "\nHint: " ^ msg
+
 (* An entry is a 'rule' in an ocamllex file.
    It contains the rule name (useful for reporting) and the initial
    state in the automaton. *)
@@ -258,8 +276,9 @@ let check_entry
         e.auto_body_location
         (sprintf "rule \"%s\" is not exhaustive.\n\
                   Here is an example of nonmatching input:\n\
-                  %S"
-           e.auto_name example)
+                  %S%s"
+           e.auto_name example
+           (make_hint ~shortest:e.auto_shortest example))
 
 let check
     (states : Lexgen.automata array)
