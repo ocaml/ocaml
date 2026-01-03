@@ -9,7 +9,7 @@ let alpha' = (digit | alpha) # digit
 rule read = parse
 | alpha'+ as lxm { (Some lxm) }
 | digit+ as lxm { Some lxm }
-| eof { None }
+| "" { None }
 
 {
 let () =
