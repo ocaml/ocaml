@@ -286,7 +286,7 @@ val max: t -> t -> t
  *)
 
 val bit_count: t -> int
-(** Also known as population count and as Hamming weight.
+(** Also known as population count or Hamming weight.
     [bit_count n] is the number of 1 bits in the binary representation of [n].
     Negative [n] are represented in two's complement.
 
