@@ -254,7 +254,10 @@ let make_hint ~shortest example =
           (* This is a very common occurrence *)
           Some {|consider adding '| "" { ... }'|}
     | str when String.length str = 1 ->
-        Some "consider adding '| _ { ... }'"
+        if shortest then
+          Some "consider adding '| _ eof { ... }'"
+        else
+          Some "consider adding '| _ { ... }'"
     | _ ->
         None
   in

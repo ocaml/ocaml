@@ -29,6 +29,11 @@ and shortest0 = shortest
 | 'a'+  { () }
 | _     { () }
 
+(* missing '_ eof' case *)
+and shortest1 = shortest
+| 'a'+  { () }
+| eof   { () }
+
 (******************************************************************)
 (* Check different kinds of regular expressions *)
 (******************************************************************)

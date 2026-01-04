@@ -18,23 +18,28 @@ Here is an example of nonmatching input:
 ""
 Hint: consider adding '| eof { ... }'
 ocamllex warning:
-File "exhaustiveness_warning.mll", line 47, characters 16-177: rule "not_hello" is not exhaustive.
+File "exhaustiveness_warning.mll", line 33, characters 16-54: rule "shortest1" is not exhaustive.
+Here is an example of nonmatching input:
+"\000"
+Hint: consider adding '| _ eof { ... }'
+ocamllex warning:
+File "exhaustiveness_warning.mll", line 52, characters 16-177: rule "not_hello" is not exhaustive.
 Here is an example of nonmatching input:
 "hello"
 ocamllex warning:
-File "exhaustiveness_warning.mll", line 56, characters 25-189: rule "not_hello_shortest" is not exhaustive.
+File "exhaustiveness_warning.mll", line 61, characters 25-189: rule "not_hello_shortest" is not exhaustive.
 Here is an example of nonmatching input:
 "hello"
 ocamllex warning:
-File "exhaustiveness_warning.mll", line 65, characters 14-45: rule "string2" is not exhaustive.
+File "exhaustiveness_warning.mll", line 70, characters 14-45: rule "string2" is not exhaustive.
 Here is an example of nonmatching input:
 "\000\000"
 ocamllex warning:
-File "exhaustiveness_warning.mll", line 69, characters 23-58: rule "empty_char_class" is not exhaustive.
+File "exhaustiveness_warning.mll", line 74, characters 23-58: rule "empty_char_class" is not exhaustive.
 Here is an example of nonmatching input:
 "\000"
 Hint: consider adding '| _ { ... }'
 ocamllex warning:
-File "exhaustiveness_warning.mll", line 74, characters 10-87: rule "alt" is not exhaustive.
+File "exhaustiveness_warning.mll", line 79, characters 10-87: rule "alt" is not exhaustive.
 Here is an example of nonmatching input:
 "\000a"
