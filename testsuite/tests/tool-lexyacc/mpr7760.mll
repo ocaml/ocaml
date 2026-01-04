@@ -5,7 +5,7 @@
 rule read = shortest
       | ("aa" | "bbb") (_ as x) _? { x }
       | _ as y { y }
-      | eof { "" }
+      | eof { '?' }
 
 {
  let r = read (Lexing.from_string "aasdf") in
