@@ -177,6 +177,7 @@ let tests () =
   test_float_conv ();
   test_string_conv ();
   test_min_max ();
+  test_bitcounts ();
   test_hash ();
   ()
 
