@@ -107,17 +107,17 @@ type type_mismatch =
   | Immediate of Type_immediacy.Violation.t
 
 val value_descriptions:
-  loc:Location.t -> Env.t -> string ->
+  ?loc:Location.t -> Env.t -> string ->
   value_description -> value_description -> module_coercion
 
 val type_declarations:
   ?equality:bool ->
-  loc:Location.t ->
+  ?loc:Location.t ->
   Env.t -> mark:bool -> string ->
   type_declaration -> Path.t -> type_declaration -> type_mismatch option
 
 val extension_constructors:
-  loc:Location.t -> Env.t -> mark:bool -> Ident.t ->
+  ?loc:Location.t -> Env.t -> mark:bool -> Ident.t ->
   extension_constructor -> extension_constructor ->
   extension_constructor_mismatch option
 

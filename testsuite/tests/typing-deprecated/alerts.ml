@@ -303,54 +303,6 @@ module F : Sx -> Sy -> Sx -> Sy -> sig end
 |}]
 module E = F(Y)(Y)(X)(X)(Y)(Y)
 [%%expect {|
-File "_none_", line 1:
-Alert x: x
-module X used
-Line 3, characters 22-52:
-3 | module X = struct let (x[@alert x "module X used" ]) = 0 end
-                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  Definition
-Line 1, characters 21-31:
-1 | module type Sx = sig val x: int end
-                         ^^^^^^^^^^
-  Expected signature
-
-File "_none_", line 1:
-Alert x: x
-module X used
-Line 3, characters 22-52:
-3 | module X = struct let (x[@alert x "module X used" ]) = 0 end
-                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  Definition
-Line 1, characters 21-31:
-1 | module type Sx = sig val x: int end
-                         ^^^^^^^^^^
-  Expected signature
-
-File "_none_", line 1:
-Alert x: x
-module X used
-Line 3, characters 22-52:
-3 | module X = struct let (x[@alert x "module X used" ]) = 0 end
-                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  Definition
-Line 1, characters 21-31:
-1 | module type Sx = sig val x: int end
-                         ^^^^^^^^^^
-  Expected signature
-
-File "_none_", line 1:
-Alert x: x
-module X used
-Line 3, characters 22-52:
-3 | module X = struct let (x[@alert x "module X used" ]) = 0 end
-                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  Definition
-Line 1, characters 21-31:
-1 | module type Sx = sig val x: int end
-                         ^^^^^^^^^^
-  Expected signature
-
 Line 1, characters 11-30:
 1 | module E = F(Y)(Y)(X)(X)(Y)(Y)
                ^^^^^^^^^^^^^^^^^^^

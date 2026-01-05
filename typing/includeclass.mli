@@ -21,7 +21,7 @@ open Ctype
 val class_types:
         Env.t -> class_type -> class_type -> class_match_failure list
 val class_type_declarations:
-  loc:Location.t ->
+  ?loc:Location.t ->
   Env.t -> class_type_declaration -> class_type_declaration ->
   class_match_failure list
 val class_declarations:

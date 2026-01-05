@@ -150,7 +150,7 @@ val modtypes:
   module_type -> module_type -> module_coercion
 
 val modtypes_consistency:
-  loc:Location.t -> Env.t -> module_type -> module_type -> unit
+  Env.t -> module_type -> module_type -> unit
 
 (** [modtypes_constraint ~shape ~loc env ~mark exp_modtype constraint_modtype]
     checks that [exp_modtype] is a subtype of [constraint_modtype], and returns

@@ -817,8 +817,7 @@ let unexpected_functor ~env ~before ~ctx diff =
           "@[This module should not be a functor,@ a@ structure was expected.@]"
   in
   let main =
-    match Includemod.modtypes_consistency ~loc:Location.none env rmty
-            diff.expected.res with
+    match Includemod.modtypes_consistency env rmty diff.expected.res with
     | _ ->
         Fmt.dprintf
           "%t@ @{<hint>Hint@}: Did you forget to apply the functor?"

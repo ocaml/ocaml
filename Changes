@@ -607,6 +607,9 @@ Working version
   DragonFly.
   (Michael Neumann, review by Gabriel Scherer and Kate Deplaix)
 
+- #14453: deduplicate some alert messages
+  (Florian Angeletti, review by ???)
+
 OCaml 5.4.0 (9 October 2025)
 ----------------------------
 
