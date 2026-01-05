@@ -26,12 +26,13 @@ type location = {
   end_pos : int;
   start_line : int;
   start_col : int;
+  end_line : int;
+  end_col : int;
 }
 
 val location_of_positions : Lexing.position -> Lexing.position -> location
 
-(** Format a location into a string the standard error format of OCaml:
-    "File %S, line %d, characters %d-%d". *)
+(** Format a location into a string in the standard error format of OCaml. *)
 val show_location : location -> string
 
 (** Print a warning to stderr message after the location and

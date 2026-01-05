@@ -24,21 +24,25 @@ type location = {
   end_pos : int;
   start_line : int;
   start_col : int;
+  end_line : int;
+  end_col : int;
 }
+
+let line_col_of_pos (x : Lexing.position) : int * int =
+  (x.pos_lnum, x.pos_cnum - x.pos_bol)
 
 let location_of_positions (a : Lexing.position) (b : Lexing.position)
   : location =
-  let f = a.pos_fname in
-  let n1 = a.pos_cnum
-  and l1 = a.pos_lnum
-  and s1 = a.pos_bol in
-  let n2 = b.pos_cnum in
+  let start_line, start_col = line_col_of_pos a in
+  let end_line, end_col = line_col_of_pos b in
   {
-    loc_file = f;
-    start_pos = n1;
-    end_pos = n2;
-    start_line = l1;
-    start_col = n1 - s1
+    loc_file = a.pos_fname;
+    start_pos = a.pos_cnum;
+    end_pos = b.pos_cnum;
+    start_line;
+    start_col;
+    end_line;
+    end_col;
   }
 
 type regular_expression =
@@ -65,12 +69,21 @@ type lexer_definition = {
   refill_handler : location option;
 }
 
+(* Using the format described at https://github.com/ocaml/ocaml/pull/8541
+   for multiline locations *)
 let show_location loc =
-  Printf.sprintf "File %S, line %d, characters %d-%d"
+  let open Printf in
+  let lines =
+    if loc.start_line = loc.end_line then
+      sprintf "line %d" loc.start_line
+    else
+      sprintf "lines %d-%d" loc.start_line loc.end_line
+  in
+  sprintf "File %S, %s, characters %d-%d"
     loc.loc_file
-    loc.start_line
+    lines
     loc.start_col
-    (loc.start_col + loc.end_pos - loc.start_pos)
+    loc.end_col
 
 (*
    Roughly the same format as Lexer.warning.

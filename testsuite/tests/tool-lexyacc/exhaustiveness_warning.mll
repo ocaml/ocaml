@@ -80,3 +80,6 @@ and alt = parse
 | ['a'-'z'] ['a'-'z']+
 | [^'a'-'z'] [^'a'-'z']+
 | _? eof         { () }
+
+(* check that the location is shown as "... line N ..." *)
+and oneliner = parse eof {}
