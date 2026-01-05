@@ -323,7 +323,7 @@ val trailing_zeros: t -> int
     the binary representation of [n].
     It is an integer between 0 and [size] inclusive.
     It is the largest integer [i <= size] such that [2{^i}] divides [n] evenly.
-    For example, [trailing_zeros n = 0] if and only if [n] is even,
+    For example, [trailing_zeros n = 0] if and only if [n] is odd,
     and [trailing_zeros n = size] if and only if [n = zero].
 
     @since 5.5 *)
