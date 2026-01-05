@@ -220,7 +220,7 @@ val trailing_zeros: t -> int
     It is an integer between 0 and {!Sys.int_size} inclusive.
     It is the largest integer [i <= {!Sys.int_size]
     such that [2{^i}] divides [n] evenly.
-    For example, [trailing_zeros n = 0] if and only if [n] is even,
+    For example, [trailing_zeros n = 0] if and only if [n] is odd,
     and [trailing_zeros n = {!Sys.int_size}] if and only if [n = zero].
 
     @since 5.5 *)
