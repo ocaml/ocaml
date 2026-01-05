@@ -490,9 +490,10 @@ Working version
 - #13224: Clarify barriers and spin macros with delayed expansion.
   (Antonin Décimo, review by David Allsopp and Gabriel Scherer)
 
-- #14435: Add the not-root builtin ocamltest action. This allows to skip
+- #14435, #14455: Add the not-root builtin ocamltest action. This allows to skip
   tests that fail if the current user is root (superuser).
-  (Kate Deplaix, review by Gabriel Scherer and Nicolás Ojeda Bär)
+  (Kate Deplaix, review by Gabriel Scherer, Nicolás Ojeda Bär, and
+   Antonin Décimo)
 
 ### Build system:
 
