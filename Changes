@@ -205,6 +205,10 @@ Working version
   to the Int, Int32, Int64 and Nativeint modules.
   (Xavier Leroy, review by Ali Caglayan, Nicolás Ojeda Bär, Gabriel Scherer)
 
+- #14433: Add bit-counting functions `leading_zeros`, `leading_sign_bits`,
+  `trailing_zeros`, `bit_count`, `unsigned_bitsize`, `signed_bitsize`
+  to Int, Int32, Int64, and Nativeint
+  (Xavier Leroy, review by Ali Caglayan and David Allsopp)
 
 ### Type system:
 
