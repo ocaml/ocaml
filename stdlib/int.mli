@@ -218,7 +218,7 @@ val trailing_zeros: t -> int
 (** [trailing_zeros n] is the number of trailing (least significant) 0 bits in
     the binary representation of [n].
     It is an integer between 0 and {!Sys.int_size} inclusive.
-    It is the largest integer [i <= {!Sys.int_size]
+    It is the largest integer [i <= {!Sys.int_size}]
     such that [2{^i}] divides [n] evenly.
     For example, [trailing_zeros n = 0] if and only if [n] is odd,
     and [trailing_zeros n = {!Sys.int_size}] if and only if [n = zero].

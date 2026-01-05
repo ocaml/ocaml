@@ -305,7 +305,7 @@ val leading_sign_bits: t -> int
     It is an integer between 0 and 31 inclusive.
     For positive [n], it is the number of leading zero bits minus one.
     For negative [n], it is the number of leading one bits minus one.
-    Note that [leading_sign_bits n + signed_bitsize n = 31].
+    Note that [leading_sign_bits n + signed_bitsize n = 32].
 
     @since 5.5 *)
 
