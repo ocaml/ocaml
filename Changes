@@ -501,8 +501,8 @@ Working version
   (Kate Deplaix, review by Gabriel Scherer, Nicolás Ojeda Bär, and
    Antonin Décimo)
 
-- #14457: Handle qualified `M.{ x }` patterns in untypeast (Basile Clément,
-  review by ???)
+- #14457: Handle qualified `M.{ x }` patterns in untypeast
+  (Basile Clément, review by ???)
 
 ### Build system:
 
