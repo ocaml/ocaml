@@ -502,7 +502,7 @@ Working version
    Antonin Décimo)
 
 - #14457: Handle qualified `M.{ x }` patterns in untypeast
-  (Basile Clément, review by ???)
+  (Basile Clément, review by Florian Angeletti)
 
 ### Build system:
 
