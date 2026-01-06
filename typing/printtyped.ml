@@ -15,22 +15,10 @@
 
 open Asttypes
 open Format
-open Lexing
 open Location
 open Typedtree
 
-let fmt_position f l =
-  if l.pos_lnum = -1
-  then fprintf f "%s[%d]" l.pos_fname l.pos_cnum
-  else fprintf f "%s[%d,%d+%d]" l.pos_fname l.pos_lnum l.pos_bol
-               (l.pos_cnum - l.pos_bol)
-
-let fmt_location f loc =
-  if not !Clflags.locations then ()
-  else begin
-    fprintf f "(%a..%a)" fmt_position loc.loc_start fmt_position loc.loc_end;
-    if loc.loc_ghost then fprintf f " ghost";
-  end
+let fmt_location = Location.dump
 
 let rec fmt_longident_aux f x =
   match x with
