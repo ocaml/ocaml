@@ -298,6 +298,8 @@ let pattern : type k . _ -> k T.general_pattern -> _ = fun sub pat ->
     | { pat_extra= (Tpat_constraint ct, _, _attrs) :: rem; _ } ->
         Ppat_constraint (sub.pat sub { pat with pat_extra=rem },
                          sub.typ sub ct)
+    | { pat_extra = (Tpat_open (_path, lid, _env), _, _attrs) :: rem; _ } ->
+        Ppat_open (lid, sub.pat sub { pat with pat_extra=rem })
     | _ ->
     match pat.pat_desc with
       Tpat_any -> Ppat_any

@@ -82,6 +82,18 @@ let module MS = struct module type S  = sig  end end in
 - : unit = ()
 |}]
 
+run {|
+  let module M = struct type t = { x : int } end in
+  fun x -> let M.{ x } = M.{ x } in x
+|};;
+
+[%%expect{|
+let module M = struct type t = {
+                        x: int } end in
+  fun x -> let M.{ x }  = let open M in { x } in x
+- : unit = ()
+|}]
+
 
 let run s =
   let pe = Parse.implementation (Lexing.from_string s) in
