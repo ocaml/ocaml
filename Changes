@@ -133,6 +133,8 @@ Working version
 
 ### Standard library:
 
+- #14660: Make `List.flatten` tail-rec mod cons (Simon Cruanes)
+
 - #14438: Add String.is_empty
   (Daniel Bünzli, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
