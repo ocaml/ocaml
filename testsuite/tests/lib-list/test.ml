@@ -118,6 +118,7 @@ let () =
   assert
     ( List.filter_mapi string_of_add_even_opt l
     = ["0";"2";"4";"6";"8";"10";"12";"14";"16";"18"]);
+  assert (List.flatten [[1]; [2;3]; [4]; []; [5;6;7]] = [1;2;3;4;5;6;7]);
   assert (List.concat_map (fun i -> [i; i+1]) [1; 5] = [1; 2; 5; 6]);
   assert (
     let count = ref 0 in
