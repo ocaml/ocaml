@@ -73,13 +73,15 @@ let init len f =
   if len < 0 then invalid_arg "List.init" else
   init 0 (len - 1) f
 
-let[@tail_mod_cons] rec flatten_rec first_list tail =
+(** [append_to_flattened first l] is [first @ flatten l], but TRMC *)
+let[@tail_mod_cons] rec append_to_flattened first_list tail =
   match first_list, tail with
   | [], [] -> []
-  | [], first_list :: tail -> flatten_rec first_list tail
-  | x :: first_list, tail -> x :: flatten_rec first_list tail
+  | [], first_list :: tail -> append_to_flattened first_list tail
+  | [x], _ -> x :: append_to_flattened [] tail
+  | x :: y :: first_list, _ -> x :: y :: append_to_flattened first_list tail
 
-let flatten l = flatten_rec [] l
+let flatten l = append_to_flattened [] l
 let concat = flatten
 
 let[@tail_mod_cons] rec map f = function
