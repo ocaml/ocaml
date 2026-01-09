@@ -121,13 +121,12 @@ val rev_append : 'a list -> 'a list -> 'a list
 val concat : 'a list list -> 'a list
 (** Concatenate a list of lists. The elements of the argument are all
    concatenated together (in the same order) to give the result.
-   Not tail-recursive
-   (length of the argument + length of the longest sub-list).
+
+   Tail recursive since 5.5
  *)
 
 val flatten : 'a list list -> 'a list
-(** Same as {!concat}. Not tail-recursive
-   (length of the argument + length of the longest sub-list).
+(** Same as {!concat}.
  *)
 
 

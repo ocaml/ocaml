@@ -76,10 +76,12 @@ let init len f =
 (** [append_to_flattened first l] is [first @ flatten l], but TRMC *)
 let[@tail_mod_cons] rec append_to_flattened first_list tail =
   match first_list, tail with
-  | [], [] -> []
-  | [], first_list :: tail -> append_to_flattened first_list tail
-  | [x], _ -> x :: append_to_flattened [] tail
-  | x :: y :: first_list, _ -> x :: y :: append_to_flattened first_list tail
+  | _, [] -> first_list
+  | [], first_list' :: tail' -> append_to_flattened first_list' tail'
+  | [x], first_list' :: tail' ->
+      x :: append_to_flattened first_list' tail'
+  | x :: y :: first_list', _ ->
+      x :: y :: append_to_flattened first_list' tail
 
 let flatten l = append_to_flattened [] l
 let concat = flatten
