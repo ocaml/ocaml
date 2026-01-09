@@ -33,6 +33,12 @@
 let expected_ocaml_version, package_name, package_config_file =
   match Sys.argv with
   | [| _; expected_ocaml_version; package_name |] ->
+      let expected_ocaml_version =
+        if expected_ocaml_version = "" then
+          Sys.ocaml_version
+        else
+          expected_ocaml_version
+      in
       expected_ocaml_version, package_name, package_name ^ ".config"
   | _ ->
       prerr_endline "Invalid arguments";
@@ -48,7 +54,7 @@ let ocamlc =
 let () =
   let ocaml_version =
     (* Strip off official pre-release information *)
-    if String.contains Sys.ocaml_version '+' then
+    if expected_ocaml_version = "" || String.contains Sys.ocaml_version '+' then
       Sys.ocaml_version
     else
       Scanf.sscanf Sys.ocaml_version "%[^~]" (fun x -> x)
