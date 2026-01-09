@@ -72,7 +72,7 @@ let cdiv n d =
 
 let erem n d =
   let r = rem n d in
-  if r >= 0 then r else add r (abs d)
+  if r >= 0 then r else if d >= 0 then r + d else r - d
 
 let ediv n d =
   let q = div n d in
