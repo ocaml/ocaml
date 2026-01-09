@@ -133,6 +133,11 @@ Working version
 
 ### Standard library:
 
+- #14381: Add String.find_{first,last}_index, String.find_{first,last},
+  String.[r]find_all.
+  (Daniel Bünzli, review by Nicolás Ojeda Bär, Ali Caglayan and
+   Florian Angeletti)
+
 - #14660: Make `List.flatten` tail-rec mod cons (Simon Cruanes)
 
 - #14438: Add String.is_empty

@@ -804,6 +804,7 @@ stdlib__String.cmo : string.ml \
     stdlib.cmi \
     stdlib__List.cmi \
     stdlib__Int.cmi \
+    stdlib__Char.cmi \
     stdlib__Bytes.cmi \
     stdlib__Array.cmi \
     stdlib__String.cmi
@@ -812,6 +813,7 @@ stdlib__String.cmx : string.ml \
     stdlib.cmx \
     stdlib__List.cmx \
     stdlib__Int.cmx \
+    stdlib__Char.cmx \
     stdlib__Bytes.cmx \
     stdlib__Array.cmx \
     stdlib__String.cmi

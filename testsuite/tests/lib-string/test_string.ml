@@ -264,3 +264,135 @@ let () =
   assert (String.is_empty "life" = false);
   assert (String.is_empty "" = true);
   ()
+
+let () =
+  (* Test String.find_{first,last}_index *)
+  let is_letter = Char.Ascii.is_letter in
+  let is_invalid_arg f = match f () with
+    | exception Invalid_argument _ -> () | _ -> assert false
+  in
+  is_invalid_arg (fun () -> String.find_first_index ~start:(-1) is_letter "");
+  is_invalid_arg (fun () -> String.find_last_index ~start:(-1) is_letter "");
+  assert (String.find_first_index ~start:0 is_letter "" = None);
+  assert (String.find_last_index ~start:0 is_letter "" = None);
+  is_invalid_arg (fun () -> String.find_first_index ~start:1 is_letter "");
+  is_invalid_arg (fun () -> String.find_last_index ~start:1 is_letter "");
+  assert (String.find_first_index ~start:0 is_letter "-" = None);
+  assert (String.find_first_index ~start:1 is_letter "-" = None);
+  assert (String.find_last_index ~start:0 is_letter "-" = None);
+  assert (String.find_last_index ~start:1 is_letter "-" = None);
+  assert (String.find_first_index ~start:0 is_letter "a-" = Some 0);
+  assert (String.find_first_index ~start:1 is_letter "a-" = None);
+  assert (String.find_first_index ~start:2 is_letter "a-" = None);
+  assert (String.find_last_index ~start:0 is_letter "a-" = Some 0);
+  assert (String.find_last_index ~start:1 is_letter "a-" = Some 0);
+  assert (String.find_last_index ~start:2 is_letter "a-" = Some 0);
+  assert (String.find_first_index ~start:0 is_letter "a-a" = Some 0);
+  assert (String.find_first_index ~start:1 is_letter "a-a" = Some 2);
+  assert (String.find_first_index ~start:2 is_letter "a-a" = Some 2);
+  assert (String.find_first_index ~start:3 is_letter "a-a" = None);
+  assert (String.find_last_index ~start:0 is_letter "a-a" = Some 0);
+  assert (String.find_last_index ~start:1 is_letter "a-a" = Some 0);
+  assert (String.find_last_index ~start:2 is_letter "a-a" = Some 2);
+  assert (String.find_last_index ~start:3 is_letter "a-a" = Some 2);
+  assert (String.find_first_index ~start:0 is_letter "-a-" = Some 1);
+  assert (String.find_first_index ~start:1 is_letter "-a-" = Some 1);
+  assert (String.find_first_index ~start:2 is_letter "-a-" = None);
+  assert (String.find_first_index ~start:3 is_letter "-a-" = None);
+  assert (String.find_last_index ~start:0 is_letter "-a-" = None);
+  assert (String.find_last_index ~start:1 is_letter "-a-" = Some 1);
+  assert (String.find_last_index ~start:2 is_letter "-a-" = Some 1);
+  assert (String.find_last_index ~start:3 is_letter "-a-" = Some 1);
+  ()
+
+let () =
+  (* Test String.find_first *)
+  let is_invalid_arg f = match f () with
+    | exception Invalid_argument _ -> () | _ -> assert false
+  in
+  is_invalid_arg (fun () -> String.find_first ~start:(-1) ~sub:"" "");
+  assert (String.find_first ~start:0 ~sub:"" "" = Some 0);
+  is_invalid_arg (fun () -> String.find_first ~start:1 ~sub:"" "");
+  assert (String.find_first ~start:0 ~sub:"" "ab" = Some 0);
+  assert (String.find_first ~start:1 ~sub:"" "ab" = Some 1);
+  assert (String.find_first ~start:2 ~sub:"" "ab" = Some 2);
+  is_invalid_arg (fun () -> String.find_first ~start:3 ~sub:"" "ab");
+  assert (String.find_first ~start:0 ~sub:"a" "" = None);
+  assert (String.find_first ~start:0 ~sub:"a" "a" = Some 0);
+  assert (String.find_first ~start:1 ~sub:"a" "a" = None);
+  assert (String.find_first ~start:0 ~sub:"a" "ba" = Some 1);
+  assert (String.find_first ~start:1 ~sub:"a" "ba" = Some 1);
+  assert (String.find_first ~start:2 ~sub:"a" "ba" = None);
+  assert (String.find_first ~start:0 ~sub:"ab" "" = None);
+  assert (String.find_first ~start:0 ~sub:"ab" "ab" = Some 0);
+  assert (String.find_first ~start:0 ~sub:"ab" "aab" = Some 1);
+  assert (String.find_first ~start:1 ~sub:"ab" "aab" = Some 1);
+  assert (String.find_first ~start:2 ~sub:"ab" "aab" = None);
+  assert (String.find_first ~start:3 ~sub:"ab" "aab" = None);
+  is_invalid_arg (fun () -> String.find_first ~start:(-1) ~sub:"abaa" "aba");
+  assert (String.find_first ~start:0 ~sub:"abaa" "aba" = None);
+  assert (String.find_first ~start:2 ~sub:"abaa" "aba" = None);
+  assert (String.find_first ~start:3 ~sub:"abaa" "aba" = None);
+  is_invalid_arg (fun () -> String.find_first ~start:4 ~sub:"abaa" "aba");
+  assert (String.find_first ~start:0 ~sub:"aba" "ababa" = Some 0);
+  assert (String.find_first ~start:1 ~sub:"aba" "ababa" = Some 2);
+  assert (String.find_first ~start:2 ~sub:"aba" "ababa" = Some 2);
+  assert (String.find_first ~start:3 ~sub:"aba" "ababa" = None);
+  assert (String.find_first ~start:4 ~sub:"aba" "ababa" = None);
+  assert (String.find_first ~start:5 ~sub:"aba" "ababa" = None);
+  assert (String.find_first ~start:0 ~sub:"abab" "ababab" = Some 0);
+  assert (String.find_first ~start:1 ~sub:"abab" "ababab" = Some 2);
+  assert (String.find_first ~start:2 ~sub:"abab" "ababab" = Some 2);
+  assert (String.find_first ~start:3 ~sub:"abab" "ababab" = None);
+  assert (String.find_first ~start:4 ~sub:"abab" "ababab" = None);
+  assert (String.find_first ~start:5 ~sub:"abab" "ababab" = None);
+  assert (String.find_first ~start:6 ~sub:"abab" "ababab" = None);
+  assert (String.find_first ~start:0 ~sub:"aba" "xbabxbaba" = Some 6);
+  assert (String.find_first ~start:0 ~sub:"xxxxaz" "yyyyazxxxxxaz" = Some 7);
+  assert (String.find_first ~start:0 ~sub:"aaa" "abaacaaad" = Some 5);
+  ()
+
+let () =
+  (* Test String.find_last *)
+  let is_invalid_arg f = match f () with
+    | exception Invalid_argument _ -> () | _ -> assert false
+  in
+  is_invalid_arg (fun () -> String.find_last ~start:(-1) ~sub:"" "");
+  assert (String.find_last ~start:0 ~sub:"" "" = Some 0);
+  is_invalid_arg (fun () -> String.find_last ~start:1 ~sub:"" "");
+  assert (String.find_last ~start:0 ~sub:"" "ab" = Some 0);
+  assert (String.find_last ~start:1 ~sub:"" "ab" = Some 1);
+  assert (String.find_last ~start:2 ~sub:"" "ab" = Some 2);
+  is_invalid_arg (fun () -> String.find_last ~start:3 ~sub:"" "ab");
+  assert (String.find_last ~start:0 ~sub:"a" "" = None);
+  assert (String.find_last ~start:0 ~sub:"a" "a" = Some 0);
+  assert (String.find_last ~start:1 ~sub:"a" "a" = Some 0);
+  assert (String.find_last ~start:0 ~sub:"a" "ba" = None);
+  assert (String.find_last ~start:1 ~sub:"a" "ba" = Some 1);
+  assert (String.find_last ~start:2 ~sub:"a" "ba" = Some 1);
+  assert (String.find_last ~start:0 ~sub:"ab" "" = None);
+  assert (String.find_last ~start:0 ~sub:"ab" "ab" = Some 0);
+  assert (String.find_last ~start:0 ~sub:"ab" "aab" = None);
+  assert (String.find_last ~start:1 ~sub:"ab" "aab" = Some 1);
+  assert (String.find_last ~start:2 ~sub:"ab" "aab" = Some 1);
+  assert (String.find_last ~start:3 ~sub:"ab" "aab" = Some 1);
+  is_invalid_arg (fun () -> String.find_last ~start:(-1) ~sub:"abaa" "aba");
+  assert (String.find_last ~start:0 ~sub:"abaa" "aba" = None);
+  assert (String.find_last ~start:2 ~sub:"abaa" "aba" = None);
+  assert (String.find_last ~start:3 ~sub:"abaa" "aba" = None);
+  is_invalid_arg (fun () -> String.find_last ~start:4 ~sub:"abaa" "aba");
+  assert (String.find_last ~start:0 ~sub:"aba" "ababa" = Some 0);
+  assert (String.find_last ~start:1 ~sub:"aba" "ababa" = Some 0);
+  assert (String.find_last ~start:2 ~sub:"aba" "ababa" = Some 2);
+  assert (String.find_last ~start:3 ~sub:"aba" "ababa" = Some 2);
+  assert (String.find_last ~start:4 ~sub:"aba" "ababa" = Some 2);
+  assert (String.find_last ~start:5 ~sub:"aba" "ababa" = Some 2);
+  assert (String.find_last ~start:0 ~sub:"abab" "ababab" = Some 0);
+  assert (String.find_last ~start:1 ~sub:"abab" "ababab" = Some 0);
+  assert (String.find_last ~start:2 ~sub:"abab" "ababab" = Some 2);
+  assert (String.find_last ~start:3 ~sub:"abab" "ababab" = Some 2);
+  assert (String.find_last ~start:4 ~sub:"abab" "ababab" = Some 2);
+  assert (String.find_last ~start:5 ~sub:"abab" "ababab" = Some 2);
+  assert (String.find_last ~start:6 ~sub:"abab" "ababab" = Some 2);
+  assert (String.find_last ~sub:"ab" "aabb" = Some 1);
+  ()
