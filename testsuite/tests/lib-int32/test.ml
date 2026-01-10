@@ -18,6 +18,44 @@ let test_arith () =
   assert (Int32.abs 5l = 5l);
   ()
 
+let test_div () =
+  let divzero f x y =
+    try ignore (f x y); false with Division_by_zero -> true in
+  let check x y =
+    if y = 0l then begin
+      assert (divzero Int32.div x y);
+      assert (divzero Int32.rem x y);
+      assert (divzero Int32.fdiv x y);
+      assert (divzero Int32.cdiv x y);
+      assert (divzero Int32.ediv x y);
+      assert (divzero Int32.erem x y)
+    end else begin
+      let q = Int32.div x y
+      and r = Int32.rem x y
+      and f = Int32.fdiv x y
+      and c = Int32.cdiv x y
+      and q' = Int32.ediv x y
+      and r' = Int32.erem x y in
+      assert (x = Int32.add (Int32.mul q y) r);
+      assert (Int32.abs r <= Int32.(sub (abs y) 1l));
+      assert (x = Int32.add (Int32.mul q' y) r');
+      assert (0l <= r' && r' <= Int32.(sub (abs y) 1l));
+      assert (f <= q && q <= c);
+      if r = 0l then assert (f = q && q = c);
+      assert (q' = (if y > 0l then f else c))
+    end in
+  for _i = 1 to 1000 do
+    check (Random.bits32()) (Random.bits32());
+    check (Random.bits32())
+          (Random.int32_in_range ~min:(-10000l) ~max:10000l)
+  done;
+  let interesting_values =
+    [Int32.min_int; -119l; -99l; -3l; -2l; -1l; 0l;
+     1l; 2l; 3l; 99l; 119l; Int32.max_int] in
+  List.iter
+    (fun x -> List.iter (check x) interesting_values)
+    interesting_values
+
 let test_logops () =
   assert (Int32.logand 0xF0F0l 0xFFFFl = 0xF0F0l);
   assert (Int32.logor 0xF0FFl 0x0F0Fl = 0xFFFFl);
@@ -121,6 +159,7 @@ let test_bitcounts () =
 let tests () =
   test_consts ();
   test_arith ();
+  test_div ();
   test_logops ();
   test_equal ();
   test_compare ();

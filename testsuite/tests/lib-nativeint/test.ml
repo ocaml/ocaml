@@ -18,6 +18,44 @@ let test_arith () =
   assert (Nativeint.abs 5n = 5n);
   ()
 
+let test_div () =
+  let divzero f x y =
+    try ignore (f x y); false with Division_by_zero -> true in
+  let check x y =
+    if y = 0n then begin
+      assert (divzero Nativeint.div x y);
+      assert (divzero Nativeint.rem x y);
+      assert (divzero Nativeint.fdiv x y);
+      assert (divzero Nativeint.cdiv x y);
+      assert (divzero Nativeint.ediv x y);
+      assert (divzero Nativeint.erem x y)
+    end else begin
+      let q = Nativeint.div x y
+      and r = Nativeint.rem x y
+      and f = Nativeint.fdiv x y
+      and c = Nativeint.cdiv x y
+      and q' = Nativeint.ediv x y
+      and r' = Nativeint.erem x y in
+      assert (x = Nativeint.add (Nativeint.mul q y) r);
+      assert (Nativeint.abs r <= Nativeint.(sub (abs y) 1n));
+      assert (x = Nativeint.add (Nativeint.mul q' y) r');
+      assert (0n <= r' && r' <= Nativeint.(sub (abs y) 1n));
+      assert (f <= q && q <= c);
+      if r = 0n then assert (f = q && q = c);
+      assert (q' = (if y > 0n then f else c))
+    end in
+  for _i = 1 to 1000 do
+    check (Random.nativebits()) (Random.nativebits());
+    check (Random.nativebits())
+          (Random.nativeint_in_range ~min:(-10000n) ~max:10000n)
+  done;
+  let interesting_values =
+    [Nativeint.min_int; -119n; -99n; -3n; -2n; -1n; 0n;
+     1n; 2n; 3n; 99n; 119n; Nativeint.max_int] in
+  List.iter
+    (fun x -> List.iter (check x) interesting_values)
+    interesting_values
+
 let test_logops () =
   assert (Nativeint.logand 0xF0F0n 0xFFFFn = 0xF0F0n);
   assert (Nativeint.logor 0xF0FFn 0x0F0Fn = 0xFFFFn);
