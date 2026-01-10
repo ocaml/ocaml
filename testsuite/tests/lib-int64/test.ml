@@ -120,7 +120,7 @@ let top_unsigned_bits x nbits =
 
 let top_signed_bits x nbits =
   if nbits <= 0 then 0L else Int64.(shift_right x (64 - nbits))
-  
+
 let test_bitcounts () =
   let check n =
     let a = Int64.unsigned_bitsize n

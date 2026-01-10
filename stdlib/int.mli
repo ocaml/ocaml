@@ -194,7 +194,7 @@ val signed_bitsize: t -> int
 
 val leading_zeros: t -> int
 (** [leading_zeros n] is the number of leading (most significant) 0 bits in
-    the binary representation of [n].  
+    the binary representation of [n].
     It is an integer between 0 and {!Sys.int_size} inclusive.
     If [n] is negative, [leading_zeros n = 0] since the most significant
     bit of [n] is 1.

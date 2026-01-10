@@ -121,7 +121,7 @@ let top_unsigned_bits x nbits =
 
 let top_signed_bits x nbits =
   if nbits <= 0 then 0 else Int.(shift_right x (Sys.int_size - nbits))
-  
+
 let test_bitcounts () =
   let check n =
     let a = Int.unsigned_bitsize n

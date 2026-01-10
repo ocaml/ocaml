@@ -118,7 +118,7 @@ let top_unsigned_bits x nbits =
 
 let top_signed_bits x nbits =
   if nbits <= 0 then 0l else Int32.(shift_right x (32 - nbits))
-  
+
 let test_bitcounts () =
   let check n =
     let a = Int32.unsigned_bitsize n

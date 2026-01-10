@@ -118,7 +118,7 @@ let top_unsigned_bits x nbits =
 
 let top_signed_bits x nbits =
   if nbits <= 0 then 0n else Nativeint.(shift_right x (size - nbits))
-  
+
 let test_bitcounts () =
   let check n =
     let a = Nativeint.unsigned_bitsize n
