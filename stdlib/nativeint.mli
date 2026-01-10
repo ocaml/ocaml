@@ -85,6 +85,45 @@ val unsigned_rem : nativeint -> nativeint -> nativeint
 
     @since 4.08 *)
 
+val fdiv : nativeint -> nativeint -> nativeint
+(** Floor division.
+    [fdiv x y] is the real quotient [x / y] rounded down to an integer.
+    We have [fdiv x y <= div x y <= cdiv x y] and [cdiv x y - fdiv x y <= 1].
+
+    @raise Division_by_zero if the second argument is 0.
+    @since 5.5
+*)
+
+val cdiv : nativeint -> nativeint -> nativeint
+(** Ceil division.
+    [cdiv x y] is the real quotient [x / y] rounded up to an integer.
+    We have [fdiv x y <= div x y <= cdiv x y] and [cdiv x y - fdiv x y <= 1].
+
+    @raise Division_by_zero if the second argument is 0.
+    @since 5.5
+*)
+
+val ediv : nativeint -> nativeint -> nativeint
+(** Euclidean division.
+    [ediv x y] is the real quotient [x / y] rounded down to an integer
+    if [y > 0] and rounded up to an integer if [y < 0].
+    The remainder [erem x y = x - ediv x y * y] is always non-negative.
+    Moreover, [ediv x (-y)] = [- ediv x y].
+
+    @raise Division_by_zero if the second argument is 0.
+    @since 5.5
+*)
+
+val erem : nativeint -> nativeint -> nativeint
+(** Euclidean remainder.  If [y] is not zero, we have
+    [x = ediv x y * y + erem x y] and [0 <= erem x y <= abs y - 1].
+    The result of [erem x y] is always non-negative,
+    unlike the result of [rem x y], which has the sign of [x].
+
+    @raise Division_by_zero if the second argument is 0.
+    @since 5.5
+*)
+
 val succ : nativeint -> nativeint
 (** Successor.
    [Nativeint.succ x] is [Nativeint.add x Nativeint.one]. *)
