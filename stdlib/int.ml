@@ -99,7 +99,7 @@ let cst1 = int64_to_int 0x5555_5555_5555_5555L
 let cst2 = int64_to_int 0x3333_3333_3333_3333L
 let cst3 = int64_to_int 0x0F0F_0F0F_0F0F_0F0FL
 
-let bit_count x =
+let popcount x =
   let x = sub x (logand (shift_right_logical x 1) cst1) in
   let x = add (logand x cst2)
               (logand (shift_right_logical x 2) cst2) in

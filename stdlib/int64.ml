@@ -174,7 +174,7 @@ let trailing_zeros x =
 
 (* Population count.  Hacker's Delight (2 ed.), algorithm 5.2 *)
 
-let bit_count x =
+let popcount x =
   let x = sub x (logand (shift_right_logical x 1) 0x5555_5555_5555_5555L) in
   let x = add (logand x 0x3333_3333_3333_3333L)
               (logand (shift_right_logical x 2) 0x3333_3333_3333_3333L) in

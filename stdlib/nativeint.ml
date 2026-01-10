@@ -138,10 +138,10 @@ let trailing_zeros =
   then fun x -> Int64.(trailing_zeros (of_nativeint x))
   else fun x -> Int32.(trailing_zeros (to_int32 x))
 
-let bit_count =
+let popcount =
   if size = 64
-  then fun x -> Int64.(bit_count (of_nativeint x))
-  else fun x -> Int32.(bit_count (to_int32 x))
+  then fun x -> Int64.(popcount (of_nativeint x))
+  else fun x -> Int32.(popcount (to_int32 x))
 
 external seeded_hash_param :
   int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]

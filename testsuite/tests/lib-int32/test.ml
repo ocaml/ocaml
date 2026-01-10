@@ -109,7 +109,7 @@ let test_bitcounts () =
       assert (Int32.(logand n (shift_left m 1)) <> n)
     end;
     (* Check popcount against naive count *)
-    let p = Int32.bit_count n in
+    let p = Int32.popcount n in
     assert (p = naive_popcount n) in
   List.iter check
     [0l; 1l; 2l; 3l; -1l; -2l; -3l; Int32.min_int; Int32.max_int];
