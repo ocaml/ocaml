@@ -79,6 +79,45 @@ val unsigned_rem : int64 -> int64 -> int64
 
     @since 4.08 *)
 
+val fdiv : int64 -> int64 -> int64
+(** Floor division.
+    [fdiv x y] is the real quotient [x / y] rounded down to an integer.
+    We have [fdiv x y <= div x y <= cdiv x y] and [cdiv x y - fdiv x y <= 1].
+
+    @raise Division_by_zero if the second argument is 0.
+    @since 5.5
+*)
+
+val cdiv : int64 -> int64 -> int64
+(** Ceil division.
+    [cdiv x y] is the real quotient [x / y] rounded up to an integer.
+    We have [fdiv x y <= div x y <= cdiv x y] and [cdiv x y - fdiv x y <= 1].
+
+    @raise Division_by_zero if the second argument is 0.
+    @since 5.5
+*)
+
+val ediv : int64 -> int64 -> int64
+(** Euclidean division.
+    [ediv x y] is the real quotient [x / y] rounded down to an integer
+    if [y > 0] and rounded up to an integer if [y < 0].
+    The remainder [erem x y = x - ediv x y * y] is always non-negative.
+    Moreover, [ediv x (-y)] = [- ediv x y].
+
+    @raise Division_by_zero if the second argument is 0.
+    @since 5.5
+*)
+
+val erem : int64 -> int64 -> int64
+(** Euclidean remainder.  If [y] is not zero, we have
+    [x = ediv x y * y + erem x y] and [0 <= erem x y <= abs y - 1].
+    The result of [erem x y] is always non-negative,
+    unlike the result of [rem x y], which has the sign of [x].
+
+    @raise Division_by_zero if the second argument is 0.
+    @since 5.5
+*)
+
 val succ : int64 -> int64
 (** Successor.  [Int64.succ x] is [Int64.add x Int64.one]. *)
 

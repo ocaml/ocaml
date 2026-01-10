@@ -102,6 +102,29 @@ let unsigned_div n d =
 let unsigned_rem n d =
   sub n (mul (unsigned_div n d) d)
 
+(* Floor division, ceil division *)
+
+let fdiv n d =
+  let q = div n d in
+  if logxor n d >= 0L (* n and d have same sign *) || n = mul q d
+  then q else pred q
+
+let cdiv n d =
+  let q = div n d in
+  if logxor n d < 0L (* n and d have different signs *) || n = mul q d
+  then q else succ q
+
+(* Euclidean division and remainder *)
+
+let erem n d =
+  let r = rem n d in
+  if r >= 0L then r else if d >= 0L then add r d else sub r d
+
+let ediv n d =
+  let q = div n d in
+  let r = sub n (mul q d) in
+  if r >= 0L then q else if d >= 0L then pred q else succ q
+
 external seeded_hash_param :
   int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]
 let seeded_hash seed x = seeded_hash_param 10 100 seed x
