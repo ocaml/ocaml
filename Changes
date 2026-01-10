@@ -201,6 +201,11 @@ Working version
 - #14084: Future-proof Dynarray implementation against a smarter compiler
   (Basile Clément, review by Gabriel Scherer)
 
+- #14432: Add floor division, ceil division, Euclidean division and remainder
+  to the Int, Int32, Int64 and Nativeint modules.
+  (Xavier Leroy, review by Ali Caglayan, Nicolás Ojeda Bär, Gabriel Scherer)
+
+
 ### Type system:
 
 - #13781: Set scope of internal type nodes during abbreviation expansion
