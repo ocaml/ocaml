@@ -951,6 +951,14 @@ let check_regularity ~abs_env env loc path decl to_check =
             try
               (* Attempt expansion *)
               let (params0, body0, _) = Env.find_type_expansion path' env in
+              (* Clear out the names in the manifest type; this preserves
+                 the type variable names from the left-hand side of the
+                 type declaration, which is better for error messages *)
+              List.iter (fun param ->
+                match get_desc param with
+                | Tvar (Some _) -> set_type_desc param (Tvar None)
+                | _ -> ())
+                params0;
               let (params, body) =
                 Ctype.instance_parameterized_type params0 body0 in
               begin
