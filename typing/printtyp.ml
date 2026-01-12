@@ -810,7 +810,7 @@ end = struct
   let names = ref ([] : (transient_expr * string) list)
   let name_subst = ref ([] : (transient_expr * transient_expr) list)
   let name_counter = ref 0
-  let named_vars = ref ([] : string list)
+  let named_vars = ref ([] : (string * bool ref) list)
   let visited_for_named_vars = ref ([] : transient_expr list)
 
   let weak_counter = ref 1
@@ -825,10 +825,14 @@ end = struct
     visited_for_named_vars := []
 
   let add_named_var tty =
+    let add n ~is_univar =
+      match List.assoc_opt n !named_vars with
+      | None -> named_vars := (n, ref is_univar) :: !named_vars
+      | Some was_univar -> was_univar := !was_univar || is_univar
+    in
     match tty.desc with
-      Tvar (Some name) | Tunivar (Some name) ->
-        if List.mem name !named_vars then () else
-        named_vars := name :: !named_vars
+    | Tvar (Some name) -> add name ~is_univar:false
+    | Tunivar (Some name) -> add name ~is_univar:true
     | _ -> ()
 
   let rec add_named_vars ty =
@@ -855,7 +859,7 @@ end = struct
       @ !name_subst
 
   let name_is_already_used name =
-    List.mem name !named_vars
+    List.mem_assoc name !named_vars
     || List.exists (fun (_, name') -> name = name') !names
     || String.Set.mem name !named_weak_vars
 
@@ -878,13 +882,23 @@ end = struct
     if non_gen then new_weak_name ty ()
     else new_name ()
 
-  let name_of_type ~non_gen name_generator t =
-    let available name =
-      List.for_all
-        (fun (_, name') -> name <> name')
-        !names
-    in
-    let find_better_name name =
+  (* A name is available if it's not in the list of used [names],
+     /AND/ if either the current usage is a univar, or it is never
+     used as a univar. This reserves univar names for use in the
+     univar (which was probably user-written). This way, if we print
+     ['a -> 'a] and ['a. 'a -> 'a], actually the latter gets the right
+     name, and the first type is printed as ['a0 -> 'a0]. *)
+  let available name ~is_univar =
+    List.for_all
+      (fun (_, name') -> name <> name')
+      !names
+    &&
+    (is_univar ||
+     match List.assoc_opt name !named_vars with
+     | None -> true
+     | Some was_univar -> not !was_univar)
+
+    let find_better_name name ~is_univar =
       (* Some part of the type we've already printed has assigned another
          unification variable to that name. Yet we want to keep the name we
          have, even though it's taken. Our approach:
@@ -896,7 +910,7 @@ end = struct
       let with_suffix () =
         let suffixed i = name ^ Int.to_string i in
         let i =
-          Misc.find_first_mono (fun i -> available (suffixed i))
+          Misc.find_first_mono (fun i -> available (suffixed i) ~is_univar)
         in
         suffixed i
       in
@@ -917,23 +931,30 @@ end = struct
           List.init actual_num_letters_to_try
             (fun n -> String.make 1 (Char.chr (code + n + 1)))
         in
-        match List.find_opt available possible_names with
+        match List.find_opt (available ~is_univar) possible_names with
         | Some avail_name -> avail_name
         | None -> with_suffix ()
       else with_suffix ()
-    in
+
+  let try_name name ~is_univar =
+    (* Some part of the type we've already printed has assigned another
+     * unification variable to that name. We want to keep the name, so
+     * try adding a number until we find a name that's not taken. *)
+    if available name ~is_univar then name
+    else find_better_name name ~is_univar
+
+  let name_of_type ~non_gen name_generator t =
     (* We've already been through repr at this stage, so t is our representative
        of the union-find class. *)
     let t = substitute t in
     try List.assq t !names with Not_found ->
       try TransientTypeMap.find t !weak_var_map with Not_found ->
       let name =
+        if non_gen then name_generator ()
+        else
         match t.desc with
-          Tvar (Some name) | Tunivar (Some name) when
-            not non_gen (* [non_gen] (that is, weak) variables should
-                           always get fresh names *) ->
-            if available name then name
-            else find_better_name name
+        | Tvar (Some name) -> try_name name ~is_univar:false
+        | Tunivar (Some name) -> try_name name ~is_univar:true
         | _ ->
             (* No name available, create a new one *)
             name_generator ()

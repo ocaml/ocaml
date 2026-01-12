@@ -36,10 +36,10 @@ let f (x:<a:'a; b:'a. 'a>) (y:<a:'a;b:'a>) = x = y
 Line 4, characters 49-50:
 4 | let f (x:<a:'a; b:'a. 'a>) (y:<a:'a;b:'a>) = x = y
                                                      ^
-Error: The value "y" has type "< a : 'a; b : 'a >"
-       but an expression was expected of type "< a : 'a; b : 'b. 'b >"
-       The method "b" has type "'a", but the expected method type was "'b. 'b"
-       The universal variable "'b" would escape its scope
+Error: The value "y" has type "< a : 'b; b : 'b >"
+       but an expression was expected of type "< a : 'b; b : 'a. 'a >"
+       The method "b" has type "'b", but the expected method type was "'a. 'a"
+       The universal variable "'a" would escape its scope
 |}]
 
 
