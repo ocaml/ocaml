@@ -20,6 +20,7 @@ open Syntax
 let ml_automata = ref false
 let source_name = ref None
 let output_name = ref None
+let enable_exhaustiveness_checking = ref true
 
 let usage = "Usage: ocamllex [options] sourcefile\nOptions are:"
 
@@ -42,6 +43,15 @@ let specs =
    "-v",  Arg.Unit print_version_string, " Print version and exit";
    "-version",  Arg.Unit print_version_string, " Print version and exit";
    "-vnum",  Arg.Unit print_version_num, " Print version number and exit";
+   "-warn-off",
+   (* This option is designed to be extended to support more warnings
+      as well as a '-warn-error' option to make some warnings fatal. *)
+   Arg.String (fun warnings ->
+     match warnings with
+     | "missing-case" -> enable_exhaustiveness_checking := false
+     | warnings -> raise (Arg.Bad ("Invalid warning name: " ^ warnings))
+   ),
+   "missing-case  Disable exhaustiveness checking"
   ]
 
 let _ =
@@ -74,7 +84,8 @@ let main () =
   try
     let def = Parser.lexer_definition Lexer.main lexbuf in
     let (entries, transitions) = Lexgen.make_dfa def.entrypoints in
-    Exhaustiveness.check transitions entries;
+    if !enable_exhaustiveness_checking then
+      Exhaustiveness.check transitions entries;
     if !ml_automata then begin
       Outputbis.output_lexdef
         ic oc tr
