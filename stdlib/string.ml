@@ -242,7 +242,7 @@ module Search = struct
     if l0 > l1 then (l0, p0) else (l1, p1)
 
   let is_sub_periodic ~sub ~sub_lp:(l, p) =
-    l < length sub / 2 &&
+    l <= p &&
     let i = ref 0 in
     while !i <= l && Char.equal (get sub !i) (get sub (!i + p))
     do incr i done;
