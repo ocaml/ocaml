@@ -423,24 +423,21 @@ let rfind_all ~sub =
     loop f acc sub rsub_lp rsub_periodic s ~start ~slen
 
 let replace_first ~sub:needle =
-  let sub_lp = Search.find_maximal_suffix_and_period ~sub:needle in
-  let sub_periodic = Search.is_sub_periodic ~sub:needle ~sub_lp in
-  fun ~by ?(start = 0) s ->
-    match Search.find ~start ~sub:needle ~sub_lp ~sub_periodic s with
-    | -1 -> s
-    | i ->
+  let find_first = find_first ~sub:needle in
+  fun ~by ?start s ->
+    match find_first ?start s with
+    | None -> s
+    | Some i ->
         let rest_first = i + length needle in
         let rest_len = length s - i - length needle in
         concat by [sub s 0 i; sub s rest_first rest_len]
 
 let replace_last ~sub:needle =
-  let rsub_lp = Search.rfind_maximal_suffix_and_period ~sub:needle in
-  let rsub_periodic = Search.ris_sub_periodic ~sub:needle ~rsub_lp in
+  let find_last = find_last ~sub:needle in
   fun ~by ?start s ->
-    let start = match start with None -> length s | Some s -> s in
-    match Search.rfind ~start ~sub:needle ~rsub_lp ~rsub_periodic s with
-    | -1 -> s
-    | i ->
+    match find_last ?start s with
+    | None -> s
+    | Some i ->
         let rest_first = i + length needle in
         let rest_len = length s - i - length needle in
         concat by [sub s 0 i; sub s rest_first rest_len]
