@@ -34,11 +34,12 @@ WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
 
   Thread T2 (tid=<implemspecific>, running) created by main thread at:
     #0 pthread_create <implemspecific> (<implemspecific>)
-    #1 caml_domain_spawn <implemspecific> (<implemspecific>)
-    #2 caml_c_call <implemspecific> (<implemspecific>)
-    #3 camlStdlib__Domain$spawn_<implemspecific> <implemspecific> (<implemspecific>)
-    #4 camlRaise_through_handler$entry <implemspecific> (<implemspecific>)
-    #5 caml_program <implemspecific> (<implemspecific>)
+    #1 caml_plat_thread_create <implemspecific> (<implemspecific>)
+    #2 caml_domain_spawn <implemspecific> (<implemspecific>)
+    #3 caml_c_call <implemspecific> (<implemspecific>)
+    #4 camlStdlib__Domain$spawn_<implemspecific> <implemspecific> (<implemspecific>)
+    #5 camlRaise_through_handler$entry <implemspecific> (<implemspecific>)
+    #6 caml_program <implemspecific> (<implemspecific>)
 
 SUMMARY: ThreadSanitizer: data race (<systemspecific>:<implemspecific>) in camlRaise_through_handler$reader_<implemspecific>
 ==================
