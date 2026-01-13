@@ -1,0 +1,5 @@
+# add stdlib label to any changes within `stdlib` directory
+# see https://github.com/actions/labeler for the documentation
+stdlib:
+  - changed-files:
+    - any-glob-to-any-file: stdlib/**

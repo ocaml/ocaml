@@ -1,0 +1,14 @@
+# workflow to automatically adds label to PR
+# see ../labeler.yml if you want more labels to be added automatically
+name: "add-label-to-pr"
+on:
+- pull_request_target
+
+jobs:
+  labeler:
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/labeler@v6
