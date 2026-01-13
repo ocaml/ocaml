@@ -1434,7 +1434,7 @@ module Check = struct
   let modules env subst m1 m2 =
     Result.is_ok @@
     check_only (module_declarations ~core:core_inclusion) env subst m1 m2
-      Shape.leaf_for_unpack
+      Shape.(leaf Uid.internal_not_actually_unique)
 
   let values env subst v1 v2 = check_ok value_descriptions env subst v1 v2
   let types env subst t1 t2 = check_ok type_declarations env subst t1 t2
