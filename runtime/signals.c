@@ -36,6 +36,7 @@
 #include "caml/sys.h"
 #include "caml/memprof.h"
 #include "caml/finalise.h"
+#include "caml/runtime_events.h"
 #include "misc_internals.h"
 
 /* The set of pending signals (received but not yet processed).
@@ -635,6 +636,9 @@ void caml_init_signals(void)
     }
   }
 #endif
+  if (caml_runtime_events_are_active()) {
+    caml_register_cleanup_runtime_events_sigint_handler();
+  }
 }
 
 void caml_terminate_signals(void)

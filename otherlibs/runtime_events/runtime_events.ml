@@ -419,3 +419,6 @@ external create_cursor : (string * int) option -> cursor
 external free_cursor : cursor -> unit = "caml_ml_runtime_events_free_cursor"
 external read_poll : cursor -> Callbacks.t -> int option -> int
                                         = "caml_ml_runtime_events_read_poll"
+
+external register_cleanup_runtime_events_sigint_handler : unit -> unit
+  = "caml_register_cleanup_runtime_events_sigint_handler"
