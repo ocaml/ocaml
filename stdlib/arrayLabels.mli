@@ -355,8 +355,9 @@ val stable_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
    than the current implementation of {!sort}.
 *)
 
-val stable_sort_sub : ('a -> 'a -> int) -> 'a array -> int -> int -> unit
-(**[stable_sort_sub cmp a pos len] sorts the subarray of the array [a]
+val stable_sort_sub :
+   cmp:('a -> 'a -> int) -> 'a array -> pos:int -> len:int -> unit
+(**[stable_sort_sub ~cmp a ~pos ~len] sorts the subarray of the array [a]
    delimited by the start position [pos] and by the length [len]. The data
    in this subarray is sorted in increasing order according to the comparison
    function [cmp]. The data outside of this subarray is unaffected. The
