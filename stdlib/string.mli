@@ -179,9 +179,7 @@ val ends_with :
 
 val includes :
   affix (* comment thwarts tools/sync_stdlib_docs *) :string -> string -> bool
-(** [includes affix s] is [true] if and only if there exists an index
-    [i] of [s] such that for all indices [k] of [affix], [affix.[k] =
-    s.[i + k]].
+(** [includes affix s] is [true] if and only if [affix] occurs in [s].
 
     {b Note.} To test the same [affix] string multiple times, partially
     applying the [~affix] argument and using the resulting function repeatedly
