@@ -119,6 +119,9 @@ class GDBValue:
     def double_array(self, size):
         return self._v.cast(self._target._double_type.array(size-1)._t)
 
+    def pointer_index(self, index):
+        return GDBValue(self._v[index], self._target)
+
 class GDBTarget:
     def __init__(self):
         self._value_type = GDBType(gdb.lookup_type('value'))

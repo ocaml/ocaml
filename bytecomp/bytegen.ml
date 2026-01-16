@@ -145,7 +145,7 @@ let preserve_tailcall_for_prim = function
   | Prunstack | Pperform | Presume | Preperform | Ppoll ->
       true
   | Pbytes_to_string | Pbytes_of_string | Pignore | Pgetglobal _ | Psetglobal _
-  | Pmakeblock _ | Pfield _ | Pfield_computed | Psetfield _
+  | Pmakeblock _ | Pmakelazyblock _ | Pfield _ | Pfield_computed | Psetfield _
   | Psetfield_computed _ | Pfloatfield _ | Psetfloatfield _ | Pduprecord _
   | Pccall _ | Praise _ | Pnot | Pnegint | Paddint | Psubint | Pmulint
   | Pdivint _ | Pmodint _ | Pandint | Porint | Pxorint | Plslint | Plsrint
@@ -164,7 +164,7 @@ let preserve_tailcall_for_prim = function
   | Pbytes_set_64 _ | Pbigstring_load_16 _ | Pbigstring_load_32 _
   | Pbigstring_load_64 _ | Pbigstring_set_16 _ | Pbigstring_set_32 _
   | Pbigstring_set_64 _ | Pctconst _ | Pbswap16 | Pbbswap _ | Pint_as_pointer
-  | Patomic_exchange | Patomic_cas | Patomic_fetch_add | Patomic_load _
+  | Patomic_load
   | Pdls_get ->
       false
 
@@ -439,7 +439,8 @@ let comp_primitive stack_info p sz args =
        | Ostype_unix -> "ostype_unix"
        | Ostype_win32 -> "ostype_win32"
        | Ostype_cygwin -> "ostype_cygwin"
-       | Backend_type -> "backend_type" in
+       | Backend_type -> "backend_type"
+       | Standard_library_default -> "standard_library_default" in
      Kccall(Printf.sprintf "caml_sys_const_%s" const_name, 1)
   | Pisint -> Kisint
   | Pisout -> Kisout
@@ -488,10 +489,7 @@ let comp_primitive stack_info p sz args =
   | Pint_as_pointer -> Kccall("caml_int_as_pointer", 1)
   | Pbytes_to_string -> Kccall("caml_string_of_bytes", 1)
   | Pbytes_of_string -> Kccall("caml_bytes_of_string", 1)
-  | Patomic_load _ -> Kccall("caml_atomic_load", 1)
-  | Patomic_exchange -> Kccall("caml_atomic_exchange", 2)
-  | Patomic_cas -> Kccall("caml_atomic_cas", 3)
-  | Patomic_fetch_add -> Kccall("caml_atomic_fetch_add", 2)
+  | Patomic_load -> Kccall("caml_atomic_load_field", 2)
   | Pdls_get -> Kccall("caml_domain_dls_get", 1)
   | Ppoll -> Kccall("caml_process_pending_actions_with_root", 1)
   (* The cases below are handled in [comp_expr] before the [comp_primitive] call
@@ -504,6 +502,7 @@ let comp_primitive stack_info p sz args =
   | Pmakearray _ | Pduparray _
   | Pfloatcomp _
   | Pmakeblock _
+  | Pmakelazyblock _
   | Pfloatfield _
     ->
       fatal_error "Bytegen.comp_primitive"
@@ -572,7 +571,7 @@ let rec comp_expr stack_info env exp sz cont =
       let getmethod, args' =
         if kind = Self then (Kgetmethod, met::obj::args) else
         match met with
-          Lconst(Const_base(Const_int n)) -> (Kgetpubmet n, obj::args)
+          Lconst(Const_int n) -> (Kgetpubmet n, obj::args)
         | _ -> (Kgetdynmet, met::obj::args)
       in
       if is_tailcall cont then
@@ -669,17 +668,17 @@ let rec comp_expr stack_info env exp sz cont =
       end
   | Lprim(Praise k, [arg], _) ->
       comp_expr stack_info env arg sz (Kraise k :: discard_dead_code cont)
-  | Lprim(Paddint, [arg; Lconst(Const_base(Const_int n))], _)
+  | Lprim(Paddint, [arg; Lconst(Const_int n)], _)
     when is_immed n ->
       comp_expr stack_info env arg sz (Koffsetint n :: cont)
-  | Lprim(Psubint, [arg; Lconst(Const_base(Const_int n))], _)
+  | Lprim(Psubint, [arg; Lconst(Const_int n)], _)
     when is_immed (-n) ->
       comp_expr stack_info env arg sz (Koffsetint (-n) :: cont)
   | Lprim (Poffsetint n, [arg], _)
     when not (is_immed n) ->
       comp_expr stack_info env arg sz
         (Kpush::
-         Kconst (Const_base (Const_int n))::
+         Kconst (Const_int n)::
          Kaddint::cont)
   | Lprim(Pmakearray (kind, _), args, loc) ->
       let cont = add_pseudo_event loc !compunit_name cont in
@@ -772,6 +771,10 @@ let rec comp_expr stack_info env exp sz cont =
       let cont = add_pseudo_event loc !compunit_name cont in
       comp_args stack_info env args sz
         (Kmakeblock(List.length args, tag) :: cont)
+  | Lprim(Pmakelazyblock tag, [arg], loc) ->
+      let cont = add_pseudo_event loc !compunit_name cont in
+      comp_args stack_info env [arg] sz
+        (Kmakeblock(1, Lambda.tag_of_lazy_tag tag) :: cont)
   | Lprim(Pfloatfield n, args, loc) ->
       let cont = add_pseudo_event loc !compunit_name cont in
       comp_args stack_info env args sz (Kgetfloatfield n :: cont)
@@ -1041,7 +1044,7 @@ let comp_block env exp sz cont =
   let code = comp_expr stack_info env exp sz cont in
   let used_safe = !(stack_info.max_stack_used) + Config.stack_safety_margin in
   if used_safe > Config.stack_threshold then
-    Kconst(Const_base(Const_int used_safe)) ::
+    Kconst(Const_int used_safe) ::
     Kccall("caml_ensure_stack_capacity", 1) ::
     code
   else

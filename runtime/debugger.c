@@ -43,6 +43,16 @@ void caml_debugger_init(void)
 {
 }
 
+opcode_t caml_debugger_saved_instruction(code_t pc)
+{
+  /* Raise a fatal error in the should-not-happen case where this function
+   * would be called without a socket, so that the execution does not branch
+   * to opcode 0 */
+  caml_fatal_error("cannot execute debugger instructions"
+                   " without a debugger connection socket\n");
+  return 0;
+}
+
 void caml_debugger(enum event_kind event, value param)
 {
 }
@@ -53,13 +63,11 @@ CAMLexport void caml_debugger_cleanup_fork(void)
 
 #else
 
-#ifdef HAS_UNISTD
-#include <unistd.h>
-#endif
 #include <errno.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #ifndef _WIN32
+#include <unistd.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include <sys/un.h>

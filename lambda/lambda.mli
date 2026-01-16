@@ -26,10 +26,13 @@ type compile_time_constant =
   | Ostype_win32
   | Ostype_cygwin
   | Backend_type
+  | Standard_library_default
 
 type immediate_or_pointer =
   | Immediate
+  (* The value must be immediate. *)
   | Pointer
+  (* The value may be a pointer or an immediate. *)
 
 type initialization_or_assignment =
   | Assignment
@@ -45,6 +48,10 @@ type is_safe =
   | Safe
   | Unsafe
 
+type lazy_block_tag =
+  | Lazy_tag
+  | Forward_tag
+
 type primitive =
   | Pbytes_to_string
   | Pbytes_of_string
@@ -54,6 +61,7 @@ type primitive =
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag * block_shape
+  | Pmakelazyblock of lazy_block_tag
   | Pfield of int * immediate_or_pointer * mutable_flag
   | Pfield_computed
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
@@ -153,10 +161,7 @@ type primitive =
   (* Integer to external pointer *)
   | Pint_as_pointer
   (* Atomic operations *)
-  | Patomic_load of {immediate_or_pointer : immediate_or_pointer}
-  | Patomic_exchange
-  | Patomic_cas
-  | Patomic_fetch_add
+  | Patomic_load
   (* Inhibition of optimisation *)
   | Popaque
   (* Fetching domain-local state *)
@@ -210,7 +215,12 @@ val equal_value_kind : value_kind -> value_kind -> bool
 val equal_boxed_integer : boxed_integer -> boxed_integer -> bool
 
 type structured_constant =
-    Const_base of constant
+    Const_int of int
+  | Const_char of char
+  | Const_float of string
+  | Const_int32 of int32
+  | Const_int64 of int64
+  | Const_nativeint of nativeint
   | Const_block of int * structured_constant list
   | Const_float_array of string list
   | Const_immstring of string
@@ -382,6 +392,8 @@ val const_unit: structured_constant
 val const_int : int -> structured_constant
 val lambda_unit: lambda
 
+val lambda_of_const : Asttypes.constant -> lambda
+
 (** [dummy_constant] produces a plecholder value with a recognizable
     bit pattern (currently 0xBBBB in its tagged form) *)
 val dummy_constant: lambda
@@ -424,7 +436,7 @@ val transl_prim: string -> string -> lambda
 (** Translate a value from a persistent module. For instance:
 
     {[
-      transl_internal_value "CamlinternalLazy" "force"
+      transl_prim "CamlinternalLazy" "force"
     ]}
 *)
 
@@ -497,6 +509,8 @@ val max_arity : unit -> int
       maximal length of the [params] list of a [lfunction] record.
       This is unlimited ([max_int]) for bytecode, but limited
       (currently to 126) for native code. *)
+
+val tag_of_lazy_tag : lazy_block_tag -> int
 
 (***********************)
 (* For static failures *)

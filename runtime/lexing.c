@@ -143,7 +143,7 @@ static void run_mem(char *pc, value mem, value curr_pos) {
   }
 }
 
-static void run_tag(char *pc, value mem) {
+static void run_tag(const char *pc, value mem) {
   for (;;) {
     unsigned char dst, src ;
 

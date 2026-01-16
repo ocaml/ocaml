@@ -42,4 +42,12 @@ Line 1, characters 16-33:
 1 | let g: int -> [%empty_poly_binder] = fun n x -> x;;
                     ^^^^^^^^^^^^^^^^^
 Error: broken invariant in parsetree: Explicit universal type quantification cannot be empty.
+Line 2, characters 9-29:
+2 | let f ([%empty_open_tuple_pat]) = ();;
+             ^^^^^^^^^^^^^^^^^^^^
+Error: broken invariant in parsetree: Open tuple patterns must have at least one component.
+Line 1, characters 9-31:
+1 | let f ([%short_closed_tuple_pat]) = ();;
+             ^^^^^^^^^^^^^^^^^^^^^^
+Error: broken invariant in parsetree: Closed tuple patterns must have at least two components.
 

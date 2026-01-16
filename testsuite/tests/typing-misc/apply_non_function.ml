@@ -17,7 +17,7 @@ Error: The function "print_lines" has type string list -> unit
 Line 4, characters 55-57:
 4 |   print_lines (List.map string_of_int [ 1; 2; 3; 4; 5 ])
                                                            ^^
-  Hint: Did you forget a ';'?
+  Hint: Did you forget a ";"?
 Line 5, characters 2-15:
 5 |   print_endline "foo"
       ^^^^^^^^^^^^^
@@ -38,7 +38,7 @@ Error: The function "t.f" has type int -> unit
 Line 4, characters 6-8:
 4 |   t.f 1 2
           ^^
-  Hint: Did you forget a ';'?
+  Hint: Did you forget a ";"?
 Line 4, characters 8-9:
 4 |   t.f 1 2
             ^
@@ -56,7 +56,7 @@ Error: The function "t#f" has type int -> unit
 Line 2, characters 6-8:
 2 |   t#f 1 2
           ^^
-  Hint: Did you forget a ';'?
+  Hint: Did you forget a ";"?
 Line 2, characters 8-9:
 2 |   t#f 1 2
             ^
@@ -77,7 +77,7 @@ Error: The function "a" has type 'a -> unit
 Line 4, characters 17-19:
 4 |     method b = a 1 2
                      ^^
-  Hint: Did you forget a ';'?
+  Hint: Did you forget a ";"?
 Line 4, characters 19-20:
 4 |     method b = a 1 2
                        ^
@@ -115,7 +115,7 @@ Error: The function "x" has type int -> int -> unit
 Line 2, characters 18-20:
 2 | let f (x:t) = x 0 1 2
                       ^^
-  Hint: Did you forget a ';'?
+  Hint: Did you forget a ";"?
 Line 2, characters 20-21:
 2 | let f (x:t) = x 0 1 2
                         ^
@@ -134,7 +134,7 @@ Error: The function "x" has type int -> t
 Line 2, characters 25-27:
 2 | let f (x:int -> t) = x 0 1 2
                              ^^
-  Hint: Did you forget a ';'?
+  Hint: Did you forget a ";"?
 Line 2, characters 27-28:
 2 | let f (x:int -> t) = x 0 1 2
                                ^

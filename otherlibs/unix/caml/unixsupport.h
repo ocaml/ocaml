@@ -30,9 +30,7 @@
 #include <ws2tcpip.h>
 #include <wspiapi.h>
 #else /* Unix */
-#ifdef HAS_UNISTD
 #include <unistd.h>
-#endif
 #endif
 
 #ifdef __cplusplus
@@ -46,7 +44,10 @@ struct filedescr {
     SOCKET socket;
   } fd;                   /* Real windows handle */
   enum { KIND_HANDLE, KIND_SOCKET } kind;
-  _Atomic int crt_fd;     /* C runtime descriptor */
+#ifdef __cplusplus
+  std::
+#endif
+  atomic_int crt_fd;      /* C runtime descriptor */
   unsigned int flags_fd;  /* See FLAGS_FD_* */
 };
 
@@ -107,11 +108,11 @@ CAMLnoret extern void caml_uerror (const char * cmdname, value arg);
 
 extern void caml_unix_check_path(value path, const char * cmdname);
 
-#define UNIX_BUFFER_SIZE 65536
+#define UNIX_BUFFER_SIZE IO_BUFFER_SIZE
 
 #define DIR_Val(v) *((DIR **) &Field(v, 0))
 
-extern char_os ** caml_unix_cstringvect(value arg, char * cmdname);
+extern char_os ** caml_unix_cstringvect(value arg, const char * cmdname);
 extern void caml_unix_cstringvect_free(char_os **);
 
 extern int caml_unix_cloexec_default;
@@ -123,8 +124,8 @@ extern int caml_win32_set_inherit(HANDLE fd, BOOL inherit);
 #define caml_win32_set_cloexec(fd, cloexec) \
   caml_win32_set_inherit((fd), ! caml_unix_cloexec_p((cloexec)))
 #else
-extern void caml_unix_set_cloexec(int fd, char * cmdname, value arg);
-extern void caml_unix_clear_cloexec(int fd, char * cmdname, value arg);
+extern void caml_unix_set_cloexec(int fd, const char * cmdname, value arg);
+extern void caml_unix_clear_cloexec(int fd, const char * cmdname, value arg);
 #endif /* _WIN32 */
 
 /* Compatibility definitions for the pre-5.0 names of these functions */
@@ -166,5 +167,41 @@ extern void caml_unix_clear_cloexec(int fd, char * cmdname, value arg);
 #else
 #define EXECV_CAST
 #endif
+
+#ifdef CAML_INTERNALS
+#include <time.h>
+#include <math.h>
+#ifndef _WIN32
+#include <sys/time.h>
+#endif
+
+Caml_inline struct timespec caml_timespec_of_sec(double sec)
+{
+  double int_sec, frac_sec;
+  frac_sec = modf(sec, &int_sec);
+  return (struct timespec)
+    { .tv_sec  = (time_t) int_sec,
+#if __STDC_VERSION__ >= 202311L
+      .tv_nsec = (typeof((struct timespec){0}.tv_nsec))
+#else
+      .tv_nsec = (long)
+#endif
+        (frac_sec * NSEC_PER_SEC) };
+}
+
+Caml_inline struct timeval caml_timeval_of_sec(double sec)
+{
+  double int_sec, frac_sec;
+  frac_sec = modf(sec, &int_sec);
+  return (struct timeval)
+#ifdef _WIN32
+    { .tv_sec  = (long) int_sec,
+      .tv_usec = (long) (frac_sec * USEC_PER_SEC) };
+#else
+    { .tv_sec  = (time_t) int_sec,
+      .tv_usec = (suseconds_t) (frac_sec * USEC_PER_SEC) };
+#endif
+}
+#endif  /* CAML_INTERNALS */
 
 #endif /* CAML_UNIXSUPPORT_H */

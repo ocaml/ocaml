@@ -290,8 +290,8 @@ end;;
 Line 3, characters 2-36:
 3 |   inherit printable_point y as super
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 13 [instance-variable-override]: the following instance variables are overridden by the class printable_point :
-  x
+Warning 13 [instance-variable-override]: the following instance variables
+  are overridden by the class "printable_point": "x"
 
 class printable_color_point :
   int ->

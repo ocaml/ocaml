@@ -91,7 +91,7 @@ module State = struct
   (* The seed is an array of integers.  It can be just one integer,
      but it can also be 12 or more bytes.  To hide the difference,
      we serialize the array as a sequence of bytes, then hash the
-     sequence with MD5 (Digest.bytes).  MD5 gives only 128 bits while
+     sequence with MD5 (Digest.MD5.bytes).  MD5 gives only 128 bits while
      we need 256 bits, so we hash twice with different suffixes. *)
   let reinit s seed =
     let n = Array.length seed in
@@ -100,9 +100,9 @@ module State = struct
       Bytes.set_int64_le b (i * 8) (Int64.of_int seed.(i))
     done;
     Bytes.set b (n * 8) '\x01';
-    let d1 = Digest.bytes b in
+    let d1 = Digest.MD5.bytes b in
     Bytes.set b (n * 8) '\x02';
-    let d2 = Digest.bytes b in
+    let d2 = Digest.MD5.bytes b in
     set s (String.get_int64_le d1 0)
           (String.get_int64_le d1 8)
           (String.get_int64_le d2 0)

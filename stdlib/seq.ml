@@ -27,6 +27,10 @@ let return x () = Cons (x, empty)
 
 let cons x next () = Cons (x, next)
 
+let singleton x () = Cons (x, empty)
+
+let delay delayed_seq () = delayed_seq () ()
+
 let rec append seq1 seq2 () =
   match seq1() with
   | Nil -> seq2()
@@ -49,6 +53,17 @@ let rec filter f seq () = match seq() with
       if f x
       then Cons (x, filter f next)
       else filter f next ()
+
+let rec filteri_aux f i seq () = match seq() with
+  | Nil -> Nil
+  | Cons (x, next) ->
+      let i' = i + 1 in
+      if f i x
+      then Cons (x, filteri_aux f i' next)
+      else filteri_aux f i' next ()
+
+let[@inline] filteri f seq () =
+  filteri_aux f 0 seq ()
 
 let rec concat seq () = match seq () with
   | Nil -> Nil

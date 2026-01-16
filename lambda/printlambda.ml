@@ -21,14 +21,13 @@ open Lambda
 
 
 let rec struct_const ppf = function
-  | Const_base(Const_int n) -> fprintf ppf "%i" n
-  | Const_base(Const_char c) -> fprintf ppf "%C" c
-  | Const_base(Const_string (s, _, _)) -> fprintf ppf "%S" s
-  | Const_immstring s -> fprintf ppf "#%S" s
-  | Const_base(Const_float f) -> fprintf ppf "%s" f
-  | Const_base(Const_int32 n) -> fprintf ppf "%lil" n
-  | Const_base(Const_int64 n) -> fprintf ppf "%LiL" n
-  | Const_base(Const_nativeint n) -> fprintf ppf "%nin" n
+  | Const_int n -> fprintf ppf "%i" n
+  | Const_char c -> fprintf ppf "%C" c
+  | Const_immstring s -> fprintf ppf "%S" s
+  | Const_float f -> fprintf ppf "%s" f
+  | Const_int32 n -> fprintf ppf "%lil" n
+  | Const_int64 n -> fprintf ppf "%LiL" n
+  | Const_nativeint n -> fprintf ppf "%nin" n
   | Const_block(tag, []) ->
       fprintf ppf "[%i]" tag
   | Const_block(tag, sc1::scl) ->
@@ -112,7 +111,7 @@ let record_rep ppf r =
   | Record_unboxed false -> fprintf ppf "unboxed"
   | Record_unboxed true -> fprintf ppf "inlined(unboxed)"
   | Record_float -> fprintf ppf "float"
-  | Record_extension path -> fprintf ppf "ext(%a)" Printtyp.Compat.path path
+  | Record_extension path -> fprintf ppf "ext(%a)" Printtyp.path path
 
 let block_shape ppf shape = match shape with
   | None | Some [] -> ()
@@ -156,6 +155,10 @@ let primitive ppf = function
       fprintf ppf "makeblock %i%a" tag block_shape shape
   | Pmakeblock(tag, Mutable, shape) ->
       fprintf ppf "makemutable %i%a" tag block_shape shape
+  | Pmakelazyblock Lazy_tag ->
+      fprintf ppf "makelazyblock"
+  | Pmakelazyblock Forward_tag ->
+      fprintf ppf "makeforwardblock"
   | Pfield(n, ptr, mut) ->
       let instr =
         match ptr, mut with
@@ -266,7 +269,8 @@ let primitive ppf = function
        | Ostype_unix -> "ostype_unix"
        | Ostype_win32 -> "ostype_win32"
        | Ostype_cygwin -> "ostype_cygwin"
-       | Backend_type -> "backend_type" in
+       | Backend_type -> "backend_type"
+       | Standard_library_default -> "standard_library_default" in
      fprintf ppf "sys.constant_%s" const_name
   | Pisint -> fprintf ppf "isint"
   | Pisout -> fprintf ppf "isout"
@@ -350,13 +354,7 @@ let primitive ppf = function
   | Pbswap16 -> fprintf ppf "bswap16"
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
-  | Patomic_load {immediate_or_pointer} ->
-      (match immediate_or_pointer with
-        | Immediate -> fprintf ppf "atomic_load_imm"
-        | Pointer -> fprintf ppf "atomic_load_ptr")
-  | Patomic_exchange -> fprintf ppf "atomic_exchange"
-  | Patomic_cas -> fprintf ppf "atomic_cas"
-  | Patomic_fetch_add -> fprintf ppf "atomic_fetch_add"
+  | Patomic_load -> fprintf ppf "atomic_load"
   | Popaque -> fprintf ppf "opaque"
   | Pdls_get -> fprintf ppf "dls_get"
   | Ppoll -> fprintf ppf "poll"
@@ -368,6 +366,7 @@ let name_of_primitive = function
   | Pgetglobal _ -> "Pgetglobal"
   | Psetglobal _ -> "Psetglobal"
   | Pmakeblock _ -> "Pmakeblock"
+  | Pmakelazyblock _ -> "Pmakelazyblock"
   | Pfield _ -> "Pfield"
   | Pfield_computed -> "Pfield_computed"
   | Psetfield _ -> "Psetfield"
@@ -462,13 +461,7 @@ let name_of_primitive = function
   | Pbswap16 -> "Pbswap16"
   | Pbbswap _ -> "Pbbswap"
   | Pint_as_pointer -> "Pint_as_pointer"
-  | Patomic_load {immediate_or_pointer} ->
-      (match immediate_or_pointer with
-        | Immediate -> "atomic_load_imm"
-        | Pointer -> "atomic_load_ptr")
-  | Patomic_exchange -> "Patomic_exchange"
-  | Patomic_cas -> "Patomic_cas"
-  | Patomic_fetch_add -> "Patomic_fetch_add"
+  | Patomic_load -> "Patomic_load"
   | Popaque -> "Popaque"
   | Prunstack -> "Prunstack"
   | Presume -> "Presume"

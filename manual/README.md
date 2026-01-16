@@ -80,11 +80,13 @@ chapters (or sometimes sections) are mapped to a distinct `.etex` file:
     - Dependency generator (ocamldep): `ocamldep.etex`
     - The documentation generator (ocamldoc): `ocamldoc.etex`
     - The debugger (ocamldebug): `debugger.etex`
-    - Profiling (ocamlprof): `profil.etex`
+    - Profiling (ocamlprof, perf): `profil.etex`
     - Interfacing C with OCaml: `intf-c.etex`
     - Optimisation with Flambda: `flambda.etex`
     - Fuzzing with afl-fuzz: `afl-fuzz.etex`
     - Runtime tracing with Runtime_events: `runtime_tracing.etex`
+    - The “Tail Modulo Constructor” program transformation: `tail-mod-cons.etex`
+    - Runtime detection of data races with ThreadSanitizer: `tsan.etex`
 
 Note that ocamlc,ocamlopt and the toplevel options overlap a lot.
 Consequently, these options are described together in the file
@@ -104,6 +106,8 @@ of `unified-options.etex` contains the relevant information.
     - The runtime_events library: `libruntime_events.etex`
     - The dynlink library: dynamic loading and linking of object files:
       `libdynlink.etex`
+    - Recently removed or moved libraries (Graphics, Bigarray, Num, LablTk):
+      `old.etex`
 
 Latex extensions
 ----------------

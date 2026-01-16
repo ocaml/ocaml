@@ -101,7 +101,7 @@ static debuginfo debuginfo_extract(frame_descr *d, ptrdiff_t alloc_idx);
    TODO: Consider rewriting this to use get_callstack, so we only have
    one body of code capturing callstacks.
 */
-void caml_stash_backtrace(value exn, uintnat pc, char * sp, char* trapsp)
+void caml_stash_backtrace(value exn, uintnat pc, char * sp, const char* trapsp)
 {
   caml_domain_state* domain_state = Caml_state;
   caml_frame_descrs* fds;
@@ -336,7 +336,7 @@ debuginfo caml_debuginfo_next(debuginfo dbg)
    so it is referenced as an offset instead of stored inline */
 struct name_info {
   int32_t filename_offs;
-  char name[1];
+  char name[]; /* flexible array member */
 };
 
 /* Extended version of name_info including location fields which didn't fit
@@ -346,7 +346,7 @@ struct name_and_loc_info {
   uint16_t start_chr;
   uint16_t end_chr;
   int32_t end_offset; /* End character position relative to start bol */
-  char name[1];
+  char name[]; /* flexible array member */
 };
 
 /* Extract location information for the given frame descriptor */

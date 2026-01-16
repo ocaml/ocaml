@@ -373,7 +373,7 @@ let add_free_var ~free_vars ~state ~free_var =
   end
 
 (* Add a function to the new set of closures iff:
-   1) All it's specialised parameters are available in
+   1) All its specialised parameters are available in
       [old_outside_to_new_outside]
    2) At least one more parameter will become specialised *)
 let add_function ~specialised_args ~state ~fun_var ~function_decl =

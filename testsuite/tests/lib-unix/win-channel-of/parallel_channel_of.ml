@@ -1,7 +1,8 @@
 (* TEST
  modules = "fd_of_channel.c";
  include unix;
- libwin32unix;
+ hasunix;
+ target-windows;
  {
    bytecode;
  }{

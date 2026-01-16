@@ -239,7 +239,8 @@ struct c_stack_link {
  *   handle_exception function is executed on the parent stack.
  */
 
-/* The table of global identifiers */
+/* The table of global identifiers. Val_unit initially and replaced with a block
+   during bytecode startup. */
 extern value caml_global_data;
 
 #define Trap_pc(tp) (((code_t *)(tp))[0])
@@ -286,6 +287,9 @@ CAMLnoret CAMLextern void caml_raise_continuation_already_resumed (void);
 CAMLnoret CAMLextern void caml_raise_unhandled_effect (value effect);
 
 value caml_make_unhandled_effect_exn (value effect);
+
+CAMLextern uintnat caml_live_stacks_memory(void);
+CAMLextern uintnat caml_current_stack_size(void);
 
 #endif /* CAML_INTERNALS */
 

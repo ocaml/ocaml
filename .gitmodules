@@ -1,6 +1,5 @@
 [submodule "flexdll"]
-    path = flexdll
-    url = https://github.com/ocaml/flexdll.git
-[submodule "winpthreads"]
-    path = winpthreads
-    url = https://github.com/ocaml/winpthreads.git
+	path = flexdll
+	url = https://github.com/ocaml/flexdll.git
+	shallow = true
+	branch = master

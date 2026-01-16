@@ -2,7 +2,8 @@
  include systhreads;
  hassysthreads;
  not-bsd;
- libunix;
+ hasunix;
+ not-target-windows;
  no-tsan; (* tsan limitation: starting new threads after fork is not supported *)
  {
    bytecode;

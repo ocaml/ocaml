@@ -46,13 +46,15 @@ type unit_infos =
     mutable ui_send_fun: int list;        (* Send functions needed *)
     mutable ui_export_info: export_info;
     mutable ui_force_link: bool;          (* Always linked *)
-    mutable ui_for_pack: string option }  (* Part of a pack *)
+    mutable ui_for_pack: string option;   (* Part of a pack *)
+    mutable ui_need_stdlib: bool}         (* caml_standard_library_nat needed *)
 
 (* Each .a library has a matching .cmxa file that provides the following
    infos on the library: *)
 
 type library_infos =
-  { lib_units: (unit_infos * Digest.t) list;  (* List of unit infos w/ MD5s *)
+  { lib_units:
+      (unit_infos * Digest.BLAKE128.t) list;  (* List of unit infos w/ CRCs *)
     (* In the following fields the lists are reversed with respect to
        how they end up being used on the command line. *)
     lib_ccobjs: string list;            (* C object files needed *)

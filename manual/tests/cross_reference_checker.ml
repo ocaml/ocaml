@@ -178,7 +178,8 @@ module OCaml_refs = struct
   let rec try_parse_as_list e =
     match e.Parsetree.pexp_desc with
     | Parsetree.Pexp_construct
-        ({ txt = Lident "::"; _ }, Some { pexp_desc = Pexp_tuple [ x; rest]; _ }) ->
+        ({ txt = Lident "::"; _ },
+         Some { pexp_desc = Pexp_tuple [ None, x; None, rest]; _ }) ->
           ((int x) :: try_parse_as_list rest)
     | Parsetree.Pexp_construct ({ txt = Lident "[]"; _}, None) ->
         []
@@ -191,7 +192,7 @@ module OCaml_refs = struct
     let tuple_expected () = print_error (Tuple_or_list_expected loc) in
     match e.Parsetree.pexp_desc with
     | Parsetree.Pexp_tuple l ->
-        begin match int_list l with
+        begin match int_list (List.map snd l) with
         | None -> tuple_expected (); []
         | Some pos -> pos
         end

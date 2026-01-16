@@ -13,12 +13,12 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
 #define _GNU_SOURCE  /* helps to find execvpe() */
 #include <string.h>
 #include <errno.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
-#define CAML_INTERNALS
 #include <caml/osdeps.h>
 #include "caml/unixsupport.h"
 
@@ -101,7 +101,8 @@ int caml_unix_execvpe_emulation(const char * name,
                            char * const argv[],
                            char * const envp[])
 {
-  char * searchpath, * p, * q, * fullname;
+  const char * searchpath, * p, * q;
+  char * fullname;
   size_t namelen, dirlen;
   int r, got_eacces;
 

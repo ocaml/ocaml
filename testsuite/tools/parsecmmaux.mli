@@ -15,8 +15,11 @@
 
 (* Auxiliary functions for parsing *)
 
-val bind_ident: string -> Backend_var.With_provenance.t
-val find_ident: string -> Backend_var.t
+type mutability = Immutable | Mutable
+
+val bind_ident: string -> mutability -> Backend_var.With_provenance.t
+val find_ident: string -> Cmm.expression
+val find_mut_ident: string -> Backend_var.t
 val unbind_ident: Backend_var.With_provenance.t -> unit
 
 val find_label: string -> int
@@ -24,7 +27,8 @@ val find_label: string -> int
 val debuginfo: ?loc:Location.t -> unit -> Debuginfo.t
 
 type error =
-    Unbound of string
+  | Unbound of string
+  | Immutable_used_as_mutable of string
 
 exception Error of error
 

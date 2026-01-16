@@ -1,25 +1,25 @@
 File "pr4018_bad.ml", line 42, characters 11-17:
 42 | let f (x : entity entity_container) = ()
                 ^^^^^^
-Error: This type "entity" = "< destroy_subject : id subject; entity_id : id >"
+Error: This type entity = < destroy_subject : id subject; entity_id : id >
        should be an instance of type
-         "< destroy_subject : < add_observer : 'a entity_container -> 'b; .. >;
+         < destroy_subject : < add_observer : 'a entity_container -> 'b; .. >;
            .. >
-         as 'a"
+         as 'a
        Type
-         "id subject" =
-           "< add_observer : (id subject, id) observer -> unit;
-             notify_observers : id -> unit >"
+         id subject =
+           < add_observer : (id subject, id) observer -> unit;
+             notify_observers : id -> unit >
        is not compatible with type
-         "< add_observer : < destroy_subject : 'c; .. > entity_container -> 'b;
+         < add_observer : < destroy_subject : 'c; .. > entity_container -> 'b;
            .. >
-         as 'c"
-       Type "(id subject, id) observer" = "< notify : id subject -> id -> unit >"
+         as 'c
+       Type (id subject, id) observer = < notify : id subject -> id -> unit >
        is not compatible with type
-         "(< destroy_subject : < add_observer : 'd -> 'b; .. >; .. > as 'a)
-         entity_container as 'd" =
-           "< add_entity : 'a -> 'b; notify : 'a -> id -> unit >"
-       The method "add_observer" has type "(id subject, id) observer -> unit",
+         (< destroy_subject : < add_observer : 'd -> 'b; .. >; .. > as 'a)
+         entity_container as 'd =
+           < add_entity : 'a -> 'b; notify : 'a -> id -> unit >
+       The method add_observer has type (id subject, id) observer -> unit,
        but the expected method type was
-       "< destroy_subject : < add_observer : 'e; .. >; .. > entity_container ->
-       'b as 'e"
+       < destroy_subject : < add_observer : 'e; .. >; .. > entity_container ->
+       'b as 'e

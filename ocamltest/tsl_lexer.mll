@@ -112,6 +112,7 @@ and string acc = parse
     { let space =
         match blank with None -> "" | Some blank -> String.make 1 blank
       in
+      Lexing.new_line lexbuf;
       string (acc ^ space) lexbuf }
   | '\\'
     {string (acc ^ "\\") lexbuf}
@@ -138,6 +139,11 @@ and comment = parse
       let message = Printf.sprintf "%s:%d:%d: unterminated comment"
         file line column in
       lexer_error message
+    }
+  | newline
+    {
+      Lexing.new_line lexbuf;
+      comment lexbuf
     }
   | _
     {

@@ -1,3 +1,6 @@
+\section{s:alerts}{Alerts}
+%HEVEA\cutname{alerts.html}
+
 (Introduced in 4.08)
 
 Since OCaml 4.08, it is possible to mark components (such as value or
@@ -17,31 +20,84 @@ component is referenced).
 
 The "ocaml.alert" or "alert" attribute serves two purposes: (i) to
 mark component with an alert to be triggered when the component is
-referenced, and (ii) to control which alert names are enabled.  In the
-first form, the attribute takes an identifier possibly
+referenced, and (ii) to control which alerts are enabled.
+
+\subsection{ss:alert_marking}{Marking a component}
+
+When marking a component, the attribute takes an identifier possibly
 followed by a message. Here is an example of a value declaration marked
 with an alert:
 
-\begin{verbatim}
+\begin{caml_example*}{signature}
 module U: sig
   val fork: unit -> bool
     [@@alert unix "This function is only available under Unix."]
 end
-\end{verbatim}
+\end{caml_example*}
 
 Here "unix" is the identifier for the alert.  If this alert category
 is enabled, any reference to "U.fork" will produce a message at
 compile time, which can be turned or not into a fatal error.
 
-And here is another example as a floating attribute on top
-of an ``.mli'' file (i.e. before any other non-attribute item)
-or on top of an ``.ml'' file without a corresponding interface file,
-so that any reference to that unit will trigger the alert:
+For other structure or signature components, the syntax is as follows:
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
+module type Sig = sig
+  val v: int [@@alert name]
+end
+
+let v [@alert name] = 1
+let `A (v [@alert name]) = `A 1
+
+external e : int -> int = "c_function" [@@alert name]
+
+type t1 = A | B [@@alert name]
+(* N.B.: this only alerts on use of "t1", not uses of the constructors "A"
+   and "B". So let x = A wouldn't alert, so long as you don't write down its
+   type. *)
+
+type t2 = A | B [@alert name]
+(* Alerts on use of "B", but not "A" nor "t2". Note the single "@". *)
+
+type t3 = { a : int; b : int [@alert name] }
+(* Alerts on use of "b", but not "a" nor "t3". Note the single "@". *)
+
+exception E of int [@alert name]
+(* Alerts on use of "E". Note the single "@". *)
+
+module M = struct end [@@alert name]
+module type S = sig end [@@alert name]
+class c1 = object end [@@alert name]
+class type c2 = object end [@@alert name]
+\end{caml_example*}
+
+When the typer coerces a signature with alerts to a signature with different
+alerts:
+
+\begin{caml_example*}{verbatim}
+module M : sig 
+  val x : int
+  val y : int [@@alert name]
+end = struct
+  let x [@alert name] = 0
+  let y = 1
+end
+\end{caml_example*}
+
+any alert that isn't passed through, i.e. the alert on "x" here, gets
+triggered.
+
+Finally, to alert when the module corresponding to a file is referenced,
+a floating attribute can be written at the top of the ``.mli'' file
+(i.e. before any other non-attribute item), or the top of the ``.ml'' file
+if there is no ``.mli'' file:
+
+\begin{caml_example*}{verbatim}
 [@@@alert unsafe "This module is unsafe!"]
-\end{verbatim}
+\end{caml_example*}
 
+
+\subsection{ss:control}{Controlling which alerts are enabled}
 
 Controlling which alerts are enabled and whether they are turned into
 fatal errors is done either through the compiler's command-line option
@@ -77,20 +133,22 @@ let x =
   end
 \end{verbatim}
 
+\subsection{ss:alert_deprecated}{Shorthand syntax for deprecation}
+
 Before OCaml 4.08, there was support for a single kind of deprecation
 alert.  It is now known as the "deprecated" alert, but legacy
 attributes to trigger it and the legacy ways to control it as warning
 3 are still supported. For instance, passing "-w +3" on the
 command-line is equivalent to "-alert +deprecated", and:
 
-\begin{verbatim}
+\begin{caml_example*}{signature}
 val x: int
   [@@ocaml.deprecated "Please do something else"]
-\end{verbatim}
+\end{caml_example*}
 
 is equivalent to:
 
-\begin{verbatim}
+\begin{caml_example*}{signature}
 val x: int
   [@@ocaml.alert deprecated "Please do something else"]
-\end{verbatim}
+\end{caml_example*}

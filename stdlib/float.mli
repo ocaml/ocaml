@@ -424,7 +424,7 @@ external frexp : float -> float * int = "caml_frexp_float"
     and the exponent of [f].  When [f] is zero, the
     significant [x] and the exponent [n] of [f] are equal to
     zero.  When [f] is non-zero, they are defined by
-    [f = x *. 2 ** n] and [0.5 <= x < 1.0]. *)
+    [f = x *. 2 ** n] and [0.5 <= abs x < 1.0]. *)
 
 external ldexp : (float [@unboxed]) -> (int [@untagged]) -> (float [@unboxed]) =
   "caml_ldexp_float" "caml_ldexp_float_unboxed" [@@noalloc]
@@ -600,6 +600,22 @@ module Array : sig
       of [l].
       @raise Invalid_argument if the length of [l] is greater than
       [Sys.max_floatarray_length].*)
+
+  (** {1:comparison Comparison} *)
+
+  val equal : (float -> float -> bool) -> t -> t -> bool
+  (** [equal eq a b] is [true] if and only if [a] and [b] have the
+      same length [n] and for all [i] in \[[0];[n-1]\], [eq a.(i) b.(i)]
+      is [true].
+
+      @since 5.4 *)
+
+  val compare : (float -> float -> int) -> t -> t -> int
+  (** [compare cmp a b] compares [a] and [b] according to the shortlex order,
+      that is, shorter arrays are smaller and equal-sized arrays are compared
+      in lexicographic order using [cmp] to compare elements.
+
+      @since 5.4 *)
 
   (** {1 Iterators} *)
 
@@ -967,6 +983,22 @@ module ArrayLabels : sig
       of [l].
       @raise Invalid_argument if the length of [l] is greater than
       [Sys.max_floatarray_length].*)
+
+  (** {1:comparison Comparison} *)
+
+  val equal : eq:(float -> float -> bool) -> t -> t -> bool
+  (** [equal eq a b] is [true] if and only if [a] and [b] have the
+      same length [n] and for all [i] in \[[0];[n-1]\], [eq a.(i) b.(i)]
+      is [true].
+
+      @since 5.4 *)
+
+  val compare : cmp:(float -> float -> int) -> t -> t -> int
+  (** [compare cmp a b] compares [a] and [b] according to the shortlex order,
+      that is, shorter arrays are smaller and equal-sized arrays are compared
+      in lexicographic order using [cmp] to compare elements.
+
+      @since 5.4 *)
 
   (** {1 Iterators} *)
 

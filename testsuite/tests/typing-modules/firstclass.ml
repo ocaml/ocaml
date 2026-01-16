@@ -22,8 +22,6 @@ let g2 x = (x : (module S2 with type t = 'a and type u = 'b) :> (module S'));;
 let h x = (x : (module S2 with type t = 'a) :> (module S with type t = 'a));;
 let f2 (x : (module S2 with type t = 'a and type u = 'b)) =
   (x : (module S'));; (* fail *)
-let k (x : (module S2 with type t = 'a)) =
-  (x : (module S with type t = 'a));; (* fail *)
 [%%expect{|
 module type S2 = sig type u type t type w end
 val g2 : (module S2 with type t = int and type u = bool) -> (module S') =
@@ -38,6 +36,17 @@ Error: The value "x" has type "(module S2 with type t = int and type u = bool)"
          S'
        is not included in
          sig type u = bool type t = int type w end
+       The type "w" is required but not provided
+|}];;
+let k (x : (module S2 with type t = 'a)) =
+  (x : (module S with type t = 'a));; (* fail *)
+[%%expect{|
+Line 2, characters 3-4:
+2 |   (x : (module S with type t = 'a));; (* fail *)
+       ^
+Error: The value "x" has type "(module S2 with type t = 'a)"
+       but an expression was expected of type "(module S with type t = 'a)"
+       Modules do not match: S is not included in S2
        The type "w" is required but not provided
 |}];;
 
@@ -145,4 +154,24 @@ Error: Type "(module Nested_coercion)" is not a subtype of
          "(module Nested_coercion_bis)"
        The two first-class module types differ by a coercion of
        the primitive "%identity" to a value, in module "M".
+|}]
+
+(* Test if it is typed correctly *)
+module type T = sig type t end
+
+let valid_fcm = (module Int : T)
+
+[%%expect{|
+module type T = sig type t end
+val valid_fcm : (module T) = <module>
+|}]
+
+(* Test location in the error message *)
+let x = (module struct end : T with type t2 = int);;
+
+[%%expect{|
+Line 1, characters 29-49:
+1 | let x = (module struct end : T with type t2 = int);;
+                                 ^^^^^^^^^^^^^^^^^^^^
+Error: The signature constrained by "with" has no component named "t2"
 |}]

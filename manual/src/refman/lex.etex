@@ -1,5 +1,12 @@
 \section{s:lexical-conventions}{Lexical conventions}
 %HEVEA\cutname{lex.html}
+
+\subsubsection*{sss:lex:text-encoding}{Source file encoding}
+
+OCaml source files are expected to be valid UTF-8 encoded Unicode text.
+The interpretation of source files which are not UTF-8 encoded is unspecified.
+Such source files may be rejected in the future.
+
 \subsubsection*{sss:lex:blanks}{Blanks}
 
 The following characters are considered as blanks: space,
@@ -31,21 +38,27 @@ let f = function
 
 \begin{syntax}
 ident: (letter || "_") { letter || "0"\ldots"9" || "_" || "'" } ;
-capitalized-ident: ("A"\ldots"Z") { letter || "0"\ldots"9" || "_" || "'" } ;
+capitalized-ident: uppercase-letter { letter || "0"\ldots"9" || "_" || "'" } ;
 lowercase-ident:
-   ("a"\ldots"z" || "_") { letter || "0"\ldots"9" || "_" || "'" } ;
-letter: "A"\ldots"Z" || "a"\ldots"z"
+   (lowercase-letter || "_") { letter || "0"\ldots"9" || "_" || "'" } ;
+letter: uppercase-letter || lowercase-letter ;
+lowercase-letter:
+"a"\ldots"z"  || 'U+00DF' \ldots 'U+00F6' || 'U+00F8' \dots 'U+00FF' || 'U+0153' || 'U+0161' || 'U+017E'  ;
+uppercase-letter:
+  "A"\ldots"Z" || 'U+00C0' \ldots 'U+00D6' || 'U+00D8' \ldots 'U+00DE' \\
+  || 'U+0152' || 'U+0160' || 'U+017D' || 'U+0178' || 'U+1E9E'
+ ;
 \end{syntax}
 
 Identifiers are sequences of letters, digits, "_" (the underscore
 character), and "'" (the single quote), starting with a
 letter or an underscore.
-Letters contain at least the 52 lowercase and uppercase
-letters from the ASCII set. The current implementation
-also recognizes as letters some characters from the ISO
-8859-1 set (characters 192--214 and 216--222 as uppercase letters;
-characters 223--246 and 248--255 as lowercase letters). This
-feature is deprecated and should be avoided for future compatibility.
+Letters contain the 52 lowercase and uppercase letters from the ASCII set,
+letters "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ" from
+the Latin-1 Supplement block, letters "ŠšŽžŒœŸ" from the Latin Extended-A block
+and upper case ẞ ("U+189E"). Any byte sequence which is equivalent to one of
+these Unicode characters under NFC\footnote{Normalization Form C} is supported
+too.
 
 All characters in an identifier are
 meaningful. The current implementation accepts identifiers up to
@@ -186,7 +199,7 @@ string-literal:
        |  '{' quoted-string-id '|' { newline | any-char } '|' quoted-string-id '}'
 ;
 quoted-string-id:
-     { 'a'...'z' || '_' }
+     { lowercase-letter || '_' }
 ;
 string-character:
           regular-string-char

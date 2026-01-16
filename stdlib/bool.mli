@@ -39,6 +39,15 @@ external ( || ) : bool -> bool -> bool = "%sequor"
     If [e0] evaluates to [true], [e1] is not evaluated. Right-associative
     operator at precedence level 2/11. *)
 
+val logand : bool -> bool -> bool
+(** [logand b1 b2] is [true] if and only if [b1] and [b2] are both [true]. *)
+
+val logor : bool -> bool -> bool
+(** [logor b1 b2] is [true] if and only if either [b1] or [b2] is [true]. *)
+
+val logxor : bool -> bool -> bool
+(** [logxor b1 b2] is [true] if exactly one of [b1] and [b2] is [true]. *)
+
 (** {1:preds Predicates and comparisons} *)
 
 val equal : bool -> bool -> bool

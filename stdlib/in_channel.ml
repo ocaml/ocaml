@@ -151,7 +151,7 @@ let ensure buf ofs n =
   end
 
 let input_all ic =
-  let chunk_size = 65536 in (* IO_BUFFER_SIZE *)
+  let chunk_size = Sys.io_buffer_size in
   let initial_size =
     try
       Stdlib.in_channel_length ic - Stdlib.pos_in ic

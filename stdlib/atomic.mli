@@ -68,6 +68,32 @@ val incr : int t -> unit
 (** [decr r] atomically decrements the value of [r] by [1]. *)
 val decr : int t -> unit
 
+(** Atomic "locations", such as record fields. *)
+module Loc : sig
+  (** This module exposes a dedicated type ['a Atomic.Loc.t] for
+      atomic locations (storing a value of type ['a]) inside objects
+      that may not be atomic references. It is used in particular for
+      atomic record fields: if a record [r] has an atomic field [f] of
+      type [foo], then [[%atomic.loc r.f]] has type [foo Atomic.Loc.t].
+
+      The API below mirrors the API to access {{!t}atomic references},
+      see the documentation above for more information. *)
+  type 'a t = 'a atomic_loc
+
+  (* exposing 'external' primitives directly helps reasoning about
+     performance: it guarantees that all versions of the compiler
+     (including bytecode) remove the pair construction on direct
+     calls:
+       Atomic.Loc.foo [%atomic.loc r.x] ...  *)
+  external get : 'a t -> 'a = "%atomic_load_loc"
+  val set : 'a t -> 'a -> unit
+  external exchange : 'a t -> 'a -> 'a = "%atomic_exchange_loc"
+  external compare_and_set : 'a t -> 'a -> 'a -> bool = "%atomic_cas_loc"
+  external fetch_and_add : int t -> int -> int = "%atomic_fetch_add_loc"
+  val incr : int t -> unit
+  val decr : int t -> unit
+end
+
 (** {1:examples Examples}
 
     {2 Basic Thread Coordination}

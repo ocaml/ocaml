@@ -23,8 +23,16 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-/* interpret a bytecode */
-value caml_interprete (code_t prog, asize_t prog_size);
+CAMLextern
+value caml_bytecode_interpreter (code_t prog, asize_t prog_size,
+                                 value initial_env, intnat initial_extra_args);
+
+/* For backward compatibility */
+
+Caml_inline value caml_interprete (code_t prog, asize_t prog_size)
+{
+  return caml_bytecode_interpreter(prog, prog_size, Atom(0), 0);
+}
 
 #endif /* CAML_INTERNALS */
 

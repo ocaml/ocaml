@@ -43,6 +43,12 @@ value caml_gc_major(value);
 void caml_heap_check (void);
 #endif
 
+/* See the documentation of [Gc.ramp_up] in the standard library. */
+caml_result caml_gc_ramp_up(value callback, uintnat *out_suspended_work);
+
+/* See the documentation of [Gc.ramp_down] in the standard library. */
+void caml_gc_ramp_down(uintnat suspended_ramp_up_words);
+
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_GC_CTRL_H */

@@ -24,7 +24,8 @@ let with_info =
   Compile_common.with_info ~native:true ~tool_name
 
 let interface ~source_file ~output_prefix =
-  with_info ~source_file ~output_prefix ~dump_ext:"cmi" @@ fun info ->
+  let unit_info = Unit_info.make ~source_file Intf output_prefix in
+  with_info ~dump_ext:"cmi" unit_info @@ fun info ->
   Compile_common.interface info
 
 let (|>>) (x, y) f = (x, f y)
@@ -108,7 +109,8 @@ let implementation ~backend ~start_from ~source_file ~output_prefix =
     then flambda info backend typed
     else clambda info backend typed
   in
-  with_info ~source_file ~output_prefix ~dump_ext:"cmx" @@ fun info ->
+  let unit_info = Unit_info.make ~source_file Impl output_prefix in
+  with_info ~dump_ext:"cmx" unit_info @@ fun info ->
   match (start_from:Clflags.Compiler_pass.t) with
   | Parsing -> Compile_common.implementation info ~backend
   | Emit -> emit info

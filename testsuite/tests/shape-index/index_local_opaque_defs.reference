@@ -1,0 +1,47 @@
+Indexed shapes:
+Resolved: Index_local_opaque_defs.5:
+  Y (File "index_local_opaque_defs.ml", line 32, characters 11-12)
+Local opaque: [L]Index_local_opaque_defs.1:
+  Y.u (File "index_local_opaque_defs.ml", line 32, characters 11-14)
+Resolved: Index_local_opaque_defs.4:
+  X (File "index_local_opaque_defs.ml", line 31, characters 23-24)
+Resolved: Index_local_opaque_defs.3:
+  G (File "index_local_opaque_defs.ml", line 31, characters 21-22)
+Resolved: Index_local_opaque_defs.4:
+  X (File "index_local_opaque_defs.ml", line 30, characters 11-12)
+Local opaque: [L]Index_local_opaque_defs.1:
+  X.u (File "index_local_opaque_defs.ml", line 30, characters 11-14)
+Resolved: Index_local_opaque_defs.4:
+  X (File "index_local_opaque_defs.ml", line 29, characters 11-12)
+Local opaque: [L]Index_local_opaque_defs.1:
+  X.u (File "index_local_opaque_defs.ml", line 29, characters 11-14)
+Resolved: Index_local_opaque_defs.1:
+  S (File "index_local_opaque_defs.ml", line 28, characters 21-22)
+Resolved: Index_local_opaque_defs.2:
+  X (File "index_local_opaque_defs.ml", line 25, characters 10-11)
+Resolved: Index_local_opaque_defs.2:
+  X (File "index_local_opaque_defs.ml", line 24, characters 11-12)
+Local opaque: [L]Index_local_opaque_defs.0:
+  X.u (File "index_local_opaque_defs.ml", line 24, characters 11-14)
+Resolved: Index_local_opaque_defs.2:
+  X (File "index_local_opaque_defs.ml", line 23, characters 11-12)
+Local opaque: [L]Index_local_opaque_defs.0:
+  X.u (File "index_local_opaque_defs.ml", line 23, characters 11-14)
+Resolved: Index_local_opaque_defs.1:
+  S (File "index_local_opaque_defs.ml", line 22, characters 22-23)
+
+Uid dependencies:
+[L]Index_local_opaque_defs.0 <- Index_local_opaque_defs.0
+[L]Index_local_opaque_defs.1 <- Index_local_opaque_defs.0
+
+Uid of decls:
+Index_local_opaque_defs.0:
+  u (File "index_local_opaque_defs.ml", line 19, characters 6-7)
+Index_local_opaque_defs.1:
+  S (File "index_local_opaque_defs.ml", line 18, characters 12-13)
+Index_local_opaque_defs.3:
+  G (File "index_local_opaque_defs.ml", line 22, characters 7-8)
+Index_local_opaque_defs.5:
+  Y (File "index_local_opaque_defs.ml", line 31, characters 9-10)
+Index_local_opaque_defs.6:
+  H (File "index_local_opaque_defs.ml", line 28, characters 7-8)

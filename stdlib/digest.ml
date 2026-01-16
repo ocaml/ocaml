@@ -74,10 +74,12 @@ module BLAKE2 (X: sig val hash_length : int end) : S = struct
   type state
 
   external create_gen: int -> string -> state = "caml_blake2_create"
-  external update: state -> string -> int -> int -> unit = "caml_blake2_update"
+  external update: state -> bytes -> int -> int -> unit = "caml_blake2_update"
   external final: state -> int -> t = "caml_blake2_final"
   external unsafe_string: int -> string -> string -> int -> int -> t
                         = "caml_blake2_string"
+  external unsafe_bytes: int -> string -> bytes -> int -> int -> t
+                        = "caml_blake2_bytes"
 
   let create () = create_gen hash_length ""
 
@@ -85,7 +87,7 @@ module BLAKE2 (X: sig val hash_length : int end) : S = struct
     unsafe_string hash_length "" str 0 (String.length str)
 
   let bytes b =
-    string (Bytes.unsafe_to_string b)
+    unsafe_bytes hash_length "" b 0 (Bytes.length b)
 
   let substring str ofs len =
     if ofs < 0 || len < 0 || ofs > String.length str - len
@@ -93,7 +95,9 @@ module BLAKE2 (X: sig val hash_length : int end) : S = struct
     unsafe_string hash_length "" str ofs len
 
   let subbytes b ofs len =
-    substring (Bytes.unsafe_to_string b) ofs len
+    if ofs < 0 || len < 0 || ofs > Bytes.length b - len
+    then invalid_arg "Digest.subbytes";
+    unsafe_bytes hash_length "" b ofs len
 
   let channel ic toread =
     let buf_size = 4096 in
@@ -104,7 +108,7 @@ module BLAKE2 (X: sig val hash_length : int end) : S = struct
         let n = In_channel.input ic buf 0 buf_size in
         if n = 0
         then final ctx hash_length
-        else (update ctx (Bytes.unsafe_to_string buf) 0 n; do_read ())
+        else (update ctx buf 0 n; do_read ())
       in do_read ()
     end else begin
       let rec do_read toread =
@@ -113,7 +117,7 @@ module BLAKE2 (X: sig val hash_length : int end) : S = struct
           if n = 0
           then raise End_of_file
           else begin
-            update ctx (Bytes.unsafe_to_string buf) 0 n;
+            update ctx buf 0 n;
             do_read (toread - n)
           end
         end
@@ -153,19 +157,24 @@ module MD5 = struct
   let equal = String.equal
 
   external unsafe_string: string -> int -> int -> t = "caml_md5_string"
+  external unsafe_bytes: bytes -> int -> int -> t = "caml_md5_bytes"
   external channel: in_channel -> int -> t = "caml_md5_chan"
 
   let string str =
     unsafe_string str 0 (String.length str)
 
-  let bytes b = string (Bytes.unsafe_to_string b)
+  let bytes b =
+    unsafe_bytes b 0 (Bytes.length b)
 
   let substring str ofs len =
     if ofs < 0 || len < 0 || ofs > String.length str - len
     then invalid_arg "Digest.substring"
     else unsafe_string str ofs len
 
-  let subbytes b ofs len = substring (Bytes.unsafe_to_string b) ofs len
+  let subbytes b ofs len =
+    if ofs < 0 || len < 0 || ofs > Bytes.length b - len
+    then invalid_arg "Digest.subbytes"
+    else unsafe_bytes b ofs len
 
   let file filename =
     In_channel.with_open_bin filename (fun ic -> channel ic (-1))

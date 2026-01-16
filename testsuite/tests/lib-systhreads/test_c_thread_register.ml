@@ -1,6 +1,7 @@
 (* TEST
  modules = "test_c_thread_register_cstubs.c";
  include systhreads;
+ no-tsan; (* Flaky under TSan, disable until fixed (see issue #13472) *)
  hassysthreads;
  not-bsd;
  {

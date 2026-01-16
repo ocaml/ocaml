@@ -1,6 +1,7 @@
 (* TEST
  include unix;
- libwin32unix;
+ hasunix;
+ target-windows;
  has_symlink;
  {
    bytecode;

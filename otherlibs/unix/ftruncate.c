@@ -15,17 +15,16 @@
 
 #define CAML_INTERNALS
 
-#include <sys/types.h>
 #include <caml/fail.h>
 #include <caml/mlvalues.h>
 #include <caml/io.h>
 #include <caml/signals.h>
 #include "caml/unixsupport.h"
-#ifdef HAS_UNISTD
-#include <unistd.h>
-#endif
 
 #ifdef HAS_TRUNCATE
+
+#include <sys/types.h>
+#include <unistd.h>
 
 CAMLprim value caml_unix_ftruncate(value fd, value len)
 {

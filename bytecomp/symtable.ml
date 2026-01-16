@@ -205,13 +205,12 @@ const char * const caml_names_of_builtin_cprim[] = {
 (* Translate structured constants *)
 
 let rec transl_const = function
-    Const_base(Const_int i) -> Obj.repr i
-  | Const_base(Const_char c) -> Obj.repr c
-  | Const_base(Const_string (s, _, _)) -> Obj.repr s
-  | Const_base(Const_float f) -> Obj.repr (float_of_string f)
-  | Const_base(Const_int32 i) -> Obj.repr i
-  | Const_base(Const_int64 i) -> Obj.repr i
-  | Const_base(Const_nativeint i) -> Obj.repr i
+    Const_int i -> Obj.repr i
+  | Const_char c -> Obj.repr c
+  | Const_float f -> Obj.repr (float_of_string f)
+  | Const_int32 i -> Obj.repr i
+  | Const_int64 i -> Obj.repr i
+  | Const_nativeint i -> Obj.repr i
   | Const_immstring s -> Obj.repr s
   | Const_block(tag, fields) ->
       let block = Obj.new_block tag (List.length fields) in
@@ -238,8 +237,8 @@ let init () =
       let c = slot_for_setglobal global in
       let cst = Const_block
           (Obj.object_tag,
-           [Const_base(Const_string (name, Location.none,None));
-            Const_base(Const_int (-i-1))
+           [Const_immstring name;
+            Const_int (-i-1)
            ])
       in
       literal_table := (c, transl_const cst) :: !literal_table)
@@ -340,7 +339,7 @@ let update_global_table () =
 
 type bytecode_sections =
   { symb: GlobalMap.t;
-    crcs: (string * Digest.t option) list;
+    crcs: (string * Digest.BLAKE128.t option) list;
     prim: string list;
     dlpt: string list }
 

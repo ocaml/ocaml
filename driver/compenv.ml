@@ -43,6 +43,8 @@ let fatal err =
   prerr_endline err;
   raise (Exit_with_status 2)
 
+let fatalf fmt = Printf.ksprintf fatal fmt
+
 let extract_output = function
   | Some s -> s
   | None ->
@@ -180,6 +182,31 @@ let set_compiler_pass ppf ~name v flag ~filter =
           "Please specify at most one %s <pass>." name
       end
 
+let handle_dump_option ppf v =
+  let module D = Clflags.Dump_option in
+  let value, key =
+    (* "foo"  => true, "foo"
+       "-foo" => false, "foo"
+       "+foo" => true, "foo" *)
+    let tail () = String.sub v 1 (String.length v - 1) in
+    if String.starts_with ~prefix:"-" v
+    then false, tail ()
+    else if String.starts_with ~prefix:"+" v
+    then true, tail ()
+    else true, v
+  in
+  match D.of_string key with
+  | None ->
+      Printf.ksprintf (print_error ppf)
+        "bad value %s for option \"dump\"." key
+  | Some option ->
+  match D.available option with
+  | Error msg ->
+      Printf.ksprintf (print_error ppf)
+        "dump=%s: %s." key msg
+  | Ok () ->
+      D.flag option := value
+
 (* 'can-discard=' specifies which arguments can be discarded without warning
    because they are not understood by some versions of OCaml. *)
 let can_discard = ref []
@@ -234,7 +261,7 @@ let read_one_param ppf position name v =
   | "no-app-funct" -> clear "no-app-funct" [ applicative_functors ] v
   | "nodynlink" -> clear "nodynlink" [ dlcode ] v
   | "short-paths" -> clear "short-paths" [ real_paths ] v
-  | "trans-mod" -> set "trans-mod" [ transparent_modules ] v
+  | "no-alias-deps" -> set "no-alias-deps" [ no_alias_deps ] v
   | "opaque" -> set "opaque" [ opaque ] v
 
   | "pp" -> preprocessor := Some v
@@ -452,6 +479,11 @@ let read_one_param ppf position name v =
   | "dump-into-file" -> Clflags.dump_into_file := true
   | "dump-dir" -> Clflags.dump_dir := Some v
 
+  | "dump" ->
+      handle_dump_option ppf v
+
+  |  "keywords"  -> Clflags.keyword_edition := Some v
+
   | _ ->
     if not (List.mem name !can_discard) then begin
       can_discard := name :: !can_discard;
@@ -594,17 +626,33 @@ type deferred_action =
   | ProcessCFile of string
   | ProcessOtherFile of string
   | ProcessObjects of string list
-  | ProcessDLLs of string list
+  | ProcessDLLs of bool * string list
 
 let c_object_of_filename name =
   Filename.chop_suffix (Filename.basename name) ".c" ^ Config.ext_obj
 
-let process_action
-    (ppf, implementation, interface, ocaml_mod_ext, ocaml_lib_ext) action =
+type action_context = {
+  log : Format.formatter;
+  compile_implementation:
+    start_from:Clflags.Compiler_pass.t ->
+    source_file:string -> output_prefix:string -> unit;
+  compile_interface:
+    source_file:string -> output_prefix:string -> unit;
+  ocaml_mod_ext: string;
+  ocaml_lib_ext: string;
+}
+
+let process_action ctx action =
+  let { log = ppf;
+        compile_implementation;
+        compile_interface;
+        ocaml_mod_ext;
+        ocaml_lib_ext;
+      } = ctx in
   let impl ~start_from name =
     readenv ppf (Before_compile name);
     let opref = output_prefix name in
-    implementation ~start_from ~source_file:name ~output_prefix:opref;
+    compile_implementation ~start_from ~source_file:name ~output_prefix:opref;
     objfiles := (opref ^ ocaml_mod_ext) :: !objfiles
   in
   match action with
@@ -613,7 +661,7 @@ let process_action
   | ProcessInterface name ->
       readenv ppf (Before_compile name);
       let opref = output_prefix name in
-      interface ~source_file:name ~output_prefix:opref;
+      compile_interface ~source_file:name ~output_prefix:opref;
       if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
   | ProcessCFile name ->
       readenv ppf (Before_compile name);
@@ -627,8 +675,8 @@ let process_action
       ccobjs := obj_name :: !ccobjs
   | ProcessObjects names ->
       ccobjs := names @ !ccobjs
-  | ProcessDLLs names ->
-      dllibs := names @ !dllibs
+  | ProcessDLLs (suffixed, names) ->
+      dllibs := (List.map (fun n -> (~suffixed, n)) names) @ !dllibs
   | ProcessOtherFile name ->
       if Filename.check_suffix name ocaml_mod_ext
       || Filename.check_suffix name ocaml_lib_ext then
@@ -641,7 +689,7 @@ let process_action
         ccobjs := name :: !ccobjs
       end
       else if not !native_code && Filename.check_suffix name Config.ext_dll then
-        dllibs := name :: !dllibs
+        dllibs := (~suffixed:false, name) :: !dllibs
       else
         match Compiler_pass.of_input_filename name with
         | Some start_from ->
@@ -732,3 +780,14 @@ let parse_arguments ?(current=ref 0) argv f program =
         Printf.sprintf "Usage: %s <options> <files>\nOptions are:" program in
       Printf.printf "%s\n%s" help_msg err_msg;
       raise (Exit_with_status 0)
+
+let parse_runtime_parameter opt =
+  let k, setting =
+    try Misc.cut_at opt '='
+    with Not_found ->
+      fatalf "-set-runtime-default: invalid runtime parameter '%s'. \
+              Expected <name>=<value>." opt in
+    if k = "standard_library_default" then
+      Clflags.standard_library_default := Some setting
+    else
+      fatalf "-set-runtime-default: unrecognized runtime parameter %s." k

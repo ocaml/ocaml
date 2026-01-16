@@ -2,10 +2,9 @@ File "b_bad.ml", lines 13-14, characters 29-28:
 13 | .............................function
 14 |     A.X s -> print_endline s
 Error (warning 8 [partial-match]): this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Y
+  Here is an example of a case that is not matched: Y
 
 File "b_bad.ml", line 18, characters 11-14:
 18 | let () = f A.y
                 ^^^
-Error: Unbound value "A.y"
+Error: Unbound value A.y

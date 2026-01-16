@@ -1,7 +1,8 @@
 (* TEST
  include unix;
  modules = "test_signalhandler_.c";
- libunix;
+ hasunix;
+ not-target-windows;
  {
    bytecode;
  }{

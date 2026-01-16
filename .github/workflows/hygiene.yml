@@ -28,7 +28,7 @@ jobs:
         # context variable.
         if: failure()
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 50
           persist-credentials: false
@@ -36,20 +36,6 @@ jobs:
       - name: Changes updated
         run: >-
           tools/ci/actions/check-changes-modified.sh
-          '${{ github.event.pull_request.issue_url }}'
-          '${{ github.ref }}'
-          'pull_request'
-          '${{ github.event.pull_request.base.ref }}'
-          '${{ github.event.pull_request.base.sha }}'
-          '${{ github.event.pull_request.head.ref }}'
-          '${{ github.event.pull_request.head.sha }}'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        if: github.event_name == 'pull_request'
-
-      - name: Parsetree updated
-        run: >-
-          tools/ci/actions/check-parsetree-modified.sh
           '${{ github.event.pull_request.issue_url }}'
           '${{ github.ref }}'
           'pull_request'
@@ -81,6 +67,7 @@ jobs:
         if: ${{ always() }}
 
       - name: check-typo revered
+        id: revered
         run: >-
           tools/ci/actions/check-typo.sh
           '${{ github.ref }}'
@@ -98,9 +85,11 @@ jobs:
       - name: check-typo on whole tree
         run: tools/check-typo
         if: >-
-          github.event_name == 'push'
-          && (startsWith(github.event.ref, 'refs/heads/4.')
-             || github.event.ref == 'refs/heads/trunk')
+          ((github.event_name == 'push'
+            && (github.event.ref == 'refs/heads/trunk'
+                || startsWith(github.event.ref, 'refs/heads/4.')
+                || startsWith(github.event.ref, 'refs/heads/5.')))
+            || steps.revered.outputs.full_check_needed == 'true')
           && always()
 
       - name: Check that labelled/unlabelled .mli files are in sync

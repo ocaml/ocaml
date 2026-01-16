@@ -1,7 +1,8 @@
 (* TEST
  include unix;
  modules = "callbackprim.c";
- libunix;
+ hasunix;
+ not-target-windows;
  {
    bytecode;
  }{

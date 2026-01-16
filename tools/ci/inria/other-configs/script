@@ -26,9 +26,10 @@ echo "============== minimal build ================="
 # The "MIN_BUILD" (formerly on Travis) builds with everything disabled (apart
 # from ocamltest). Its goals:
 #  - Ensure that the system builds correctly without native compilation
-#  - Ensure ocamltest builds correctly with Unix
+#  - Ensure ocamltest builds correctly without Unix
 #  - Ensure the testsuite runs correctly with everything switched off
 ${main} -conf --disable-native-compiler \
+        -conf --disable-native-toplevel \
         -conf --disable-shared \
         -conf --disable-debug-runtime \
         -conf --disable-instrumented-runtime \

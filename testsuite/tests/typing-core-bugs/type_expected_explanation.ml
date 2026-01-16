@@ -168,7 +168,7 @@ Line 3, characters 22-26:
 3 |   else if x > y then [y;x]
                           ^^^^
 Error: This variant expression is expected to have type "unit"
-         because it is in the result of a conditional with no else branch
+       because it is in the result of a conditional with no else branch
        There is no constructor "::" within type "unit"
 |}];;
 
@@ -192,6 +192,6 @@ Line 1, characters 35-39:
 1 | if false then (match () with () -> true);;
                                        ^^^^
 Error: This variant expression is expected to have type "unit"
-         because it is in the result of a conditional with no else branch
+       because it is in the result of a conditional with no else branch
        There is no constructor "true" within type "unit"
 |}]

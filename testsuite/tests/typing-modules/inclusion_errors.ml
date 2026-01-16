@@ -2035,3 +2035,75 @@ Error: Signature mismatch:
        The type "'a -> unit" is not compatible with the type "?x:int -> unit"
        A label "?x" was expected
 |}]
+
+
+module M: sig
+  module type TUVW = sig type a=A type b=B end
+  module MNJK: TUVW
+  type abcd
+  type efgh = A of abcd * MNJK.a
+  type ijkl = B of efgh * MNJK.b
+  type mnop = C of ijkl
+  val x: abcd
+  val vwxy : ijkl
+end = struct
+  module type TUVX =  sig type a=A type b=B end
+  module MNJX= struct type a = A type b = B end
+  type abcx = H
+  type efgx = A of abcx * MNJX.a
+  type ijkx = B of efgx * MNJX.b
+  type mnox = C of ijkx
+
+  let x = H
+  let vwxx = B (A(H,A),B)
+end
+[%%expect {|
+Lines 10-20, characters 6-3:
+10 | ......struct
+11 |   module type TUVX =  sig type a=A type b=B end
+12 |   module MNJX= struct type a = A type b = B end
+13 |   type abcx = H
+14 |   type efgx = A of abcx * MNJX.a
+...
+17 |
+18 |   let x = H
+19 |   let vwxx = B (A(H,A),B)
+20 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           module type TUVX = sig type a = A type b = B end
+           module MNJX : sig type a = A type b = B end
+           type abcx = H
+           type efgx = A of abcx * MNJX.a
+           type ijkx = B of efgx * MNJX.b
+           type mnox = C of ijkx
+           val x : abcx
+           val vwxx : ijkx
+         end
+       is not included in
+         sig
+           module type TUVW = sig type a = A type b = B end
+           module MNJK : TUVW
+           type abcd
+           type efgh = A of abcd * MNJK.a
+           type ijkl = B of efgh * MNJK.b
+           type mnop = C of ijkl
+           val x : abcd
+           val vwxy : ijkl
+         end
+       The module type "TUVW" is required but not provided.
+       Hint:           "TUVX" is a close match.
+       The module "MNJK" is required but not provided.
+       Hint:      "MNJX" is a close match.
+       The type "abcd" is required but not provided.
+       Hint:    "abcx" is a close match.
+       The type "efgh" is required but not provided.
+       Hint:    "efgx" is a close match.
+       The type "ijkl" is required but not provided.
+       Hint:    "ijkx" is a close match.
+       The type "mnop" is required but not provided.
+       Hint:    "mnox" is a close match.
+       The value "vwxy" is required but not provided.
+       Hint:     "vwxx" is a close match.
+|}]

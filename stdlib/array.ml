@@ -185,6 +185,23 @@ let of_list = function
         | hd::tl -> unsafe_set a i hd; fill (i+1) tl in
       fill 1 tl
 
+let equal eq a b =
+  if length a <> length b then false else
+  let i = ref 0 in
+  let len = length a in
+  while !i < len && eq (unsafe_get a !i) (unsafe_get b !i) do incr i done;
+  !i = len
+
+let stdlib_compare = compare
+let compare cmp a b =
+  let len_a = length a and len_b = length b in
+  let diff = len_a - len_b in
+  if diff <> 0 then (if diff < 0 then -1 else 1) else
+  let i = ref 0 and c = ref 0 in
+  while !i < len_a && !c = 0
+  do c := cmp (unsafe_get a !i) (unsafe_get b !i); incr i done;
+  !c
+
 let fold_left f x a =
   let r = ref x in
   for i = 0 to length a - 1 do
@@ -253,7 +270,7 @@ let mem x a =
   let n = length a in
   let rec loop i =
     if i = n then false
-    else if compare (unsafe_get a i) x = 0 then true
+    else if stdlib_compare (unsafe_get a i) x = 0 then true
     else loop (succ i) in
   loop 0
 
@@ -449,12 +466,10 @@ let fast_sort = stable_sort
 
 let shuffle_contract_violation i j =
   let int = string_of_int in
-  String.concat "" [
-    "Array.shuffle: 'rand "; int (i + 1);
-    "' returned "; int j;
-    ", out of expected range [0; "; int i; "]"
-  ]
-  |> invalid_arg
+  invalid_arg
+    ("Array.shuffle: 'rand " ^ int (i + 1) ^
+     "' returned " ^ int j ^
+     ", out of expected range [0; " ^ int i ^ "]")
 
 let shuffle ~rand a = (* Fisher-Yates *)
   for i = length a - 1 downto 1 do

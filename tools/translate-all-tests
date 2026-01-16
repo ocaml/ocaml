@@ -348,6 +348,7 @@ lib-format/print_array.ml \
 lib-format/print_if_newline.ml \
 lib-format/print_seq.ml \
 lib-format/tformat.ml \
+lib-format/tlprintf.ml \
 lib-fun/test.ml \
 lib-hashtbl/compatibility.ml \
 lib-hashtbl/hfun.ml \

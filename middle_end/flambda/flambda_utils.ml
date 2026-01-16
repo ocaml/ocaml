@@ -123,7 +123,10 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
   | Static_raise _, _ | _, Static_raise _ -> false
   | Static_catch (s1, v1, a1, b1), Static_catch (s2, v2, a2, b2) ->
     Static_exception.equal s1 s2
-      && Misc.Stdlib.List.equal Variable.equal v1 v2
+      && Misc.Stdlib.List.equal
+        (fun (v1, k1) (v2, k2) -> Variable.equal v1 v2
+                                  && Lambda.equal_value_kind k1 k2)
+        v1 v2
       && same a1 a2
       && same b1 b2
   | Static_catch _, _ | _, Static_catch _ -> false
@@ -844,12 +847,11 @@ let all_free_symbols (function_decls : Flambda.function_declarations) =
     function_decls.funs Symbol.Set.empty
 
 let contains_stub (fun_decls : Flambda.function_declarations) =
-  let number_of_stub_functions =
-    Variable.Map.cardinal
+  not (
+    Variable.Map.is_empty
       (Variable.Map.filter (fun _ { Flambda.stub } -> stub)
          fun_decls.funs)
-  in
-  number_of_stub_functions > 0
+  )
 
 let clean_projections ~which_variables =
   Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->

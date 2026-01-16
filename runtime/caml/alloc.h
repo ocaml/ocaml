@@ -16,7 +16,6 @@
 #ifndef CAML_ALLOC_H
 #define CAML_ALLOC_H
 
-
 #include "misc.h"
 #include "mlvalues.h"
 
@@ -57,7 +56,7 @@ CAMLextern value caml_copy_nativeint (intnat);  /* defined in [ints.c] */
 CAMLextern value caml_alloc_array (value (*funct) (char const *),
                                    char const * const * array);
 CAMLextern value caml_alloc_sprintf(const char * format, ...)
-#ifdef __GNUC__
+#if __has_attribute(format) || defined(__GNUC__)
   __attribute__ ((format (printf, 1, 2)))
 #endif
 ;

@@ -1,6 +1,6 @@
-File "deprecated_module.ml", line 16, characters 8-11:
+File "deprecated_module.ml", line 16, characters 8-9:
 16 | let _ = M.x
-             ^^^
+             ^
 Alert deprecated: module M
 
 File "deprecated_module.ml", line 17, characters 8-9:

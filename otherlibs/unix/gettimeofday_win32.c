@@ -13,13 +13,11 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <time.h>
-
-#define CAML_INTERNALS
 #include <caml/winsupport.h>
-
 #include "caml/unixsupport.h"
 
 double caml_unix_gettimeofday_unboxed(value unit)

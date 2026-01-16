@@ -73,6 +73,10 @@ struct caml_exception_context {
 
 int caml_is_special_exception(value exn);
 
+/* from runtime/sync.c */
+CAMLextern void caml_check_error(int err, char const * msg);
+CAMLextern value caml_check_error_exn(int err, char const * msg);
+
 #endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus
@@ -140,7 +144,7 @@ Caml_inline value caml_get_value_or_raise (struct caml_result_private result)
 }
 
 #ifdef CAML_INTERNALS
-// internals only, provided for backward-compatibility
+/* internals only, provided for backward-compatibility */
 Caml_inline value caml_result_get_encoded_exception(
   struct caml_result_private result)
 {
@@ -149,7 +153,7 @@ Caml_inline value caml_result_get_encoded_exception(
   else
     return result.data;
 }
-#endif // CAML_INTERNALS
+#endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus
 }

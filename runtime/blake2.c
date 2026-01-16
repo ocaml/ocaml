@@ -244,3 +244,9 @@ CAMLprim value caml_blake2_string(value hashlen, value key,
   caml_BLAKE2Final(&ctx, hlen, &Byte_u(hash, 0));
   return hash;
 }
+
+CAMLprim value caml_blake2_bytes(value hashlen, value key,
+                                  value buf, value ofs, value len)
+{
+  return caml_blake2_string(hashlen, key, buf, ofs, len);
+}

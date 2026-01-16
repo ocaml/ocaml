@@ -131,6 +131,9 @@ void caml_free_extern_state (void);
 void caml_output_val (struct channel * chan, value v, value flags);
   /* Output [v] with flags [flags] on the channel [chan]. */
 
+value caml_input_val (struct channel * chan);
+  /* Read a structured value from the channel [chan]. */
+
 void caml_free_intern_state (void);
 
 /* Compression hooks */
@@ -159,11 +162,6 @@ CAMLextern intnat caml_output_value_to_block(value v, value flags,
      [data] points to the start of this buffer, and [len] is its size
      in bytes.  Return the number of bytes actually written in buffer.
      Raise [Failure] if buffer is too short. */
-
-#ifdef CAML_INTERNALS
-value caml_input_val (struct channel * chan);
-  /* Read a structured value from the channel [chan]. */
-#endif /* CAML_INTERNALS */
 
 CAMLextern value caml_input_val_from_string (value str, intnat ofs);
   /* Read a structured value from the OCaml string [str], starting
@@ -209,7 +207,7 @@ CAMLextern void caml_deserialize_block_4(void * data, intnat len);
 CAMLextern void caml_deserialize_block_8(void * data, intnat len);
 CAMLextern void caml_deserialize_block_float_8(void * data, intnat len);
 
-CAMLnoret CAMLextern void caml_deserialize_error(char * msg);
+CAMLnoret CAMLextern void caml_deserialize_error(const char * msg);
 
 #ifdef __cplusplus
 }

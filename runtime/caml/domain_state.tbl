@@ -74,14 +74,47 @@ DOMAIN_STATE(uintnat, sweeping_done)
 /* Is sweeping done for the current major cycle. */
 
 DOMAIN_STATE(uintnat, allocated_words)
-/* Number of words promoted or allocated directly to the major heap since
-   latest slice. */
+/* Number of words allocated in the major heap (by promotion or
+   direct allocation) since the latest slice. */
 
 DOMAIN_STATE(uintnat, allocated_words_direct)
-/* Number of words allocated directly to the major heap since the latest
-   slice. (subset of allocated_words) */
+/* Subset of [allocated_words] that was allocated directly to the
+   major heap since the latest slice. */
+
+DOMAIN_STATE(uintnat, allocated_words_suspended)
+/* Subset of [allocated_words] that were allocated in ramp-up
+   phases since the latest slice.
+
+   The corresponding deallocation work is "suspended" for later
+   ramp-down phases, instead of being performed in the next slice. */
+
+DOMAIN_STATE(uintnat, allocated_words_resumed)
+/* A number of allocated words (disjoint from [allocated_words])
+   whose deallocation work was suspended by a previous ramp-up phase,
+   and was resumed during a ramp-down phase since the latest slice. */
+
+DOMAIN_STATE(intnat, current_ramp_up_allocated_words_diff)
+/* The total number of suspended deallocation words for the current ramp-up
+   phase is [allocated_suspended + current_ramp_up_allocated_words_diff].
+
+   When [current_ramp_up_allocated_words_diff] is positive, it adds
+   allocations that happened during the current ramp-up phase but
+   before the latest slice.
+
+   When [current_ramp_up_allocated_words_diff] is negative, it
+   subtracts allocations that happened since the latest slice but
+   during a previous ramp-up phase.
+
+   (Instead of tracking a difference, we could count the total
+   number of suspended deallocation of the ramp_up phase, but
+   this would require additional work to increment this value
+   in [caml_update_major_allocated_words].)
+*/
 
 DOMAIN_STATE(uintnat, swept_words)
+
+DOMAIN_STATE(caml_gc_policy, gc_policy)
+/* Domain-local GC policy setting. */
 
 DOMAIN_STATE(uintnat, major_slice_epoch)
 
@@ -137,7 +170,9 @@ DOMAIN_STATE(intnat, slice_target)
 DOMAIN_STATE(intnat, slice_budget)
 
 /* Accounting for sweeping work done while allocating. */
-DOMAIN_STATE(intnat, major_work_done_between_slices)
+DOMAIN_STATE(uintnat, sweep_work_done_between_slices)
+/* Accounting for marking work done in the write barrier. */
+DOMAIN_STATE(uintnat, mark_work_done_between_slices)
 
 DOMAIN_STATE(struct caml_extern_state*, extern_state)
 DOMAIN_STATE(struct caml_intern_state*, intern_state)

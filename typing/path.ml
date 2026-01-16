@@ -122,6 +122,10 @@ let flatten =
   in
   fun t -> flatten [] t
 
+let rec scrape_extra_ty = function
+  | Pextra_ty (t, _) -> scrape_extra_ty t
+  | t -> t
+
 let heads p =
   let rec heads p acc = match p with
     | Pident id -> id :: acc

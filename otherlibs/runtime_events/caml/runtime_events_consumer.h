@@ -21,6 +21,10 @@
 
 #include "caml/runtime_events.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Create a cursor to read events from an runtime_events. Cursors can be created
    for runtime_events in and out of process. An runtime_events may have
    multiple cursors reading from it at any point in time and a program may have
@@ -95,4 +99,8 @@ CAMLextern runtime_events_error caml_runtime_events_read_poll(
     void *callback_data,
     uintnat max_events, uintnat *events_consumed);
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* CAML_RUNTIME_EVENTS_CONSUMER_H */

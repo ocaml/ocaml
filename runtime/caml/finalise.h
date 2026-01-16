@@ -45,7 +45,7 @@ struct finalisable {
 struct final_todo {
   struct final_todo *next;
   int size;
-  struct final item[1];  /* variable size */
+  struct final item[/* size */]; /* flexible array member */
 };
 
 /*

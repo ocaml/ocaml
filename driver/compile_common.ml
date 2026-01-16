@@ -23,15 +23,14 @@ type info = {
   native : bool;
 }
 
-let with_info ~native ~tool_name ~source_file ~output_prefix ~dump_ext k =
+let with_info ~native ~tool_name ~dump_ext unit_info k =
   Compmisc.init_path ();
-  let target = Unit_info.make ~source_file output_prefix in
-  Env.set_unit_name (Unit_info.modname target);
+  Env.set_current_unit unit_info ;
   let env = Compmisc.initial_env() in
-  let dump_file = String.concat "." [output_prefix; dump_ext] in
+  let dump_file = String.concat "." [Unit_info.prefix unit_info; dump_ext] in
   Compmisc.with_ppf_dump ~file_prefix:dump_file @@ fun ppf_dump ->
   k {
-    target;
+    target = unit_info;
     env;
     ppf_dump;
     tool_name;
@@ -59,7 +58,7 @@ let typecheck_intf info ast =
         Format.(fprintf std_formatter) "%a@."
           (Printtyp.printed_signature (Unit_info.source_file info.target))
           sg);
-  ignore (Includemod.signatures info.env ~mark:Mark_both sg sg);
+  ignore (Includemod.signatures info.env ~mark:true sg sg);
   Typecore.force_delayed_checks ();
   Builtin_attributes.warn_unused ();
   Warnings.check_fatal ();

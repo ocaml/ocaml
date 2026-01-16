@@ -22,11 +22,10 @@
 #include <caml/signals.h>
 #include <caml/io.h>
 #include "caml/unixsupport.h"
-#ifdef HAS_UNISTD
-#include <unistd.h>
-#endif
 
 #ifdef HAS_TRUNCATE
+
+#include <unistd.h>
 
 CAMLprim value caml_unix_truncate(value path, value vlen)
 {

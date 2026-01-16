@@ -18,7 +18,6 @@
 open Misc
 open Asttypes
 open Primitive
-open Types
 open Typedtree
 open Typeopt
 open Lambda
@@ -77,9 +76,21 @@ type loc_kind =
   | Loc_POS
   | Loc_FUNCTION
 
+type atomic_kind =
+  | Ref   (* operation on an atomic reference (takes only a pointer) *)
+  | Field (* operation on an atomic field (takes a pointer and an offset) *)
+  | Loc   (* operation on a first-class field (takes a (pointer, offset) pair *)
+
+type atomic_op =
+  | Load
+  | Exchange
+  | Cas
+  | Faa
+
 type prim =
   | Primitive of Lambda.primitive * int
   | External of Primitive.description
+  | Sys_argv
   | Comparison of comparison * comparison_kind
   | Raise of Lambda.raise_kind
   | Raise_with_backtrace
@@ -92,6 +103,7 @@ type prim =
   | Identity
   | Apply
   | Revapply
+  | Atomic of atomic_op * atomic_kind
 
 let used_primitives = Hashtbl.create 7
 let add_used_primitive loc env path =
@@ -112,6 +124,13 @@ let gen_array_kind =
 
 let prim_sys_argv =
   Primitive.simple ~name:"caml_sys_argv" ~arity:1 ~alloc:true
+
+let prim_atomic_exchange =
+  Primitive.simple ~name:"caml_atomic_exchange_field" ~arity:3 ~alloc:false
+let prim_atomic_cas =
+  Primitive.simple ~name:"caml_atomic_cas_field" ~arity:4 ~alloc:false
+let prim_atomic_fetch_add =
+  Primitive.simple ~name:"caml_atomic_fetch_add_field" ~arity:3 ~alloc:false
 
 let primitives_table =
   create_hashtable 57 [
@@ -148,6 +167,8 @@ let primitives_table =
     "%ostype_unix", Primitive ((Pctconst Ostype_unix), 1);
     "%ostype_win32", Primitive ((Pctconst Ostype_win32), 1);
     "%ostype_cygwin", Primitive ((Pctconst Ostype_cygwin), 1);
+    "%standard_library_default",
+    Primitive ((Pctconst Standard_library_default), 1);
     "%frame_pointers", Frame_pointers;
     "%negint", Primitive (Pnegint, 1);
     "%succint", Primitive ((Poffsetint 1), 1);
@@ -353,7 +374,7 @@ let primitives_table =
     "%bswap_native", Primitive ((Pbbswap(Pnativeint)), 1);
     "%int_as_pointer", Primitive (Pint_as_pointer, 1);
     "%opaque", Primitive (Popaque, 1);
-    "%sys_argv", External prim_sys_argv;
+    "%sys_argv", Sys_argv;
     "%send", Send;
     "%sendself", Send_self;
     "%sendcache", Send_cache;
@@ -364,11 +385,18 @@ let primitives_table =
     "%greaterequal", Comparison(Greater_equal, Compare_generic);
     "%greaterthan", Comparison(Greater_than, Compare_generic);
     "%compare", Comparison(Compare, Compare_generic);
-    "%atomic_load",
-    Primitive ((Patomic_load {immediate_or_pointer=Pointer}), 1);
-    "%atomic_exchange", Primitive (Patomic_exchange, 2);
-    "%atomic_cas", Primitive (Patomic_cas, 3);
-    "%atomic_fetch_add", Primitive (Patomic_fetch_add, 2);
+    "%atomic_load", Atomic(Load, Ref);
+    "%atomic_exchange", Atomic(Exchange, Ref);
+    "%atomic_cas", Atomic(Cas, Ref);
+    "%atomic_fetch_add", Atomic(Faa, Ref);
+    "%atomic_load_field", Atomic(Load, Field);
+    "%atomic_exchange_field", Atomic(Exchange, Field);
+    "%atomic_cas_field", Atomic(Cas, Field);
+    "%atomic_fetch_add_field", Atomic(Faa, Field);
+    "%atomic_load_loc", Atomic(Load, Loc);
+    "%atomic_exchange_loc", Atomic(Exchange, Loc);
+    "%atomic_cas_loc", Atomic(Cas, Loc);
+    "%atomic_fetch_add_loc", Atomic(Faa, Loc);
     "%runstack", Primitive (Prunstack, 3);
     "%reperform", Primitive (Preperform, 3);
     "%perform", Primitive (Pperform, 1);
@@ -489,13 +517,6 @@ let specialize_primitive env ty ~has_constant_constructor prim =
       let useful = List.exists (fun knd -> knd <> Pgenval) shape in
       if useful then Some (Primitive (Pmakeblock(tag, mut, Some shape), arity))
       else None
-    end
-  | Primitive (Patomic_load { immediate_or_pointer = Pointer },
-               arity), _ ->begin
-      let is_int = match is_function_type env ty with
-        | None -> Pointer
-        | Some (_p1, rhs) -> maybe_pointer_type env rhs in
-      Some (Primitive (Patomic_load {immediate_or_pointer = is_int}, arity))
     end
   | Comparison(comp, Compare_generic), p1 :: _ ->
     if (has_constant_constructor
@@ -639,24 +660,97 @@ let lambda_of_loc kind sloc =
   | Loc_POS ->
     Lconst (Const_block (0, [
           Const_immstring file;
-          Const_base (Const_int lnum);
-          Const_base (Const_int cnum);
-          Const_base (Const_int enum);
+          Const_int lnum;
+          Const_int cnum;
+          Const_int enum;
         ]))
   | Loc_FILE -> Lconst (Const_immstring file)
   | Loc_MODULE ->
     let filename = Filename.basename file in
-    let name = Env.get_unit_name () in
+    let name = Env.get_current_unit_name () in
     let module_name = if name = "" then "//"^filename^"//" else name in
     Lconst (Const_immstring module_name)
   | Loc_LOC ->
     let loc = Printf.sprintf "File %S, line %d, characters %d-%d"
         file lnum cnum enum in
     Lconst (Const_immstring loc)
-  | Loc_LINE -> Lconst (Const_base (Const_int lnum))
+  | Loc_LINE -> Lconst (Const_int lnum)
   | Loc_FUNCTION ->
     let scope_name = Debuginfo.Scoped_location.string_of_scoped_location sloc in
     Lconst (Const_immstring scope_name)
+
+let atomic_arity op (kind : atomic_kind) =
+  let arity_of_op =
+    match op with
+    | Load -> 1
+    | Exchange -> 2
+    | Cas -> 3
+    | Faa -> 2
+  in
+  let extra_kind_arity =
+    match kind with
+    | Ref | Loc -> 0
+    | Field -> 1
+  in
+  arity_of_op + extra_kind_arity
+
+let lambda_of_atomic prim_name loc op (kind : atomic_kind) args =
+  if List.length args <> atomic_arity op kind then
+    raise (Error (to_location loc, Wrong_arity_builtin_primitive prim_name)) ;
+  let split = function
+    | [] ->
+        (* split is only called when [arity >= 1] *)
+        assert false
+    | first :: rest ->
+        first, rest
+  in
+  let prim =
+    match op with
+    | Load -> Patomic_load
+    | Exchange -> Pccall prim_atomic_exchange
+    | Cas -> Pccall prim_atomic_cas
+    | Faa -> Pccall prim_atomic_fetch_add
+  in
+  match kind with
+  | Ref ->
+      (* the primitive application
+           [Lprim(%atomic_exchange, [ref; v])]
+         becomes
+           [Lprim(caml_atomic_exchange_field, [ref; 0; v])]
+      *)
+      let ref_arg, rest = split args in
+      let args = ref_arg :: Lconst (Lambda.const_int 0) :: rest in
+      Lprim (prim, args, loc)
+  | Field ->
+      (* the primitive application
+           [Lprim(%atomic_exchange_field, [ptr; ofs; v])]
+         becomes
+           [Lprim(caml_atomic_exchange_field, [ptr; ofs; v])] *)
+      Lprim (prim, args, loc)
+  | Loc ->
+      (* the primitive application
+           [Lprim(%atomic_exchange_loc, [(ptr, ofs); v])]
+         becomes
+           [Lprim(caml_atomic_exchange_field, [ptr; ofs; v])]
+         and in the general case of a non-tuple expression <loc>
+           [Lprim(%atomic_exchange_loc, [loc; v])]
+         becomes
+           [Llet(p, loc,
+              Lprim(caml_atomic_exchange_field, [Field(p, 0); Field(p, 1); v]))]
+      *)
+      let loc_arg, rest = split args in
+      match loc_arg with
+      | Lprim (Pmakeblock _, [ptr; ofs], _argloc) ->
+          let args = ptr :: ofs :: rest in
+          Lprim (prim, args, loc)
+      | _ ->
+          let varg = Ident.create_local "atomic_arg" in
+          let ptr = Lprim (Pfield (0, Pointer, Immutable), [Lvar varg], loc) in
+          let ofs =
+            Lprim (Pfield (1, Immediate, Immutable), [Lvar varg], loc)
+          in
+          let args = ptr :: ofs :: rest in
+          Llet (Strict, Pgenval, varg, loc_arg, Lprim (prim, args, loc))
 
 let caml_restore_raw_backtrace =
   Primitive.simple ~name:"caml_restore_raw_backtrace" ~arity:2 ~alloc:false
@@ -673,8 +767,8 @@ let lambda_of_prim prim_name prim loc args arg_exps =
   match prim, args with
   | Primitive (prim, arity), args when arity = List.length args ->
       Lprim(prim, args, loc)
-  | External prim, args when prim = prim_sys_argv ->
-      Lprim(Pccall prim, Lconst (const_int 0) :: args, loc)
+  | Sys_argv, [] ->
+      Lprim(Pccall prim_sys_argv, [Lconst (const_int 0)], loc)
   | External prim, args ->
       Lprim(Pccall prim, args, loc)
   | Comparison(comp, knd), ([_;_] as args) ->
@@ -744,10 +838,13 @@ let lambda_of_prim prim_name prim loc args arg_exps =
         ap_inlined = Default_inline;
         ap_specialised = Default_specialise;
       }
+  | Atomic (op, kind), args ->
+      lambda_of_atomic prim_name loc op kind args
   | (Raise _ | Raise_with_backtrace
-    | Lazy_force | Loc _ | Primitive _ | Comparison _
+    | Lazy_force | Loc _ | Primitive _ | Sys_argv | Comparison _
     | Send | Send_self | Send_cache | Frame_pointers | Identity
-    | Apply | Revapply), _ ->
+    | Apply | Revapply
+    ), _ ->
       raise(Error(to_location loc, Wrong_arity_builtin_primitive prim_name))
 
 let check_primitive_arity loc p =
@@ -756,6 +853,7 @@ let check_primitive_arity loc p =
     match prim with
     | Primitive (_,arity) -> arity = p.prim_arity
     | External _ -> true
+    | Sys_argv -> p.prim_arity = 0
     | Comparison _ -> p.prim_arity = 2
     | Raise _ -> p.prim_arity = 1
     | Raise_with_backtrace -> p.prim_arity = 2
@@ -766,6 +864,7 @@ let check_primitive_arity loc p =
     | Frame_pointers -> p.prim_arity = 0
     | Identity -> p.prim_arity = 1
     | Apply | Revapply -> p.prim_arity = 2
+    | Atomic (op, kind) -> p.prim_arity = atomic_arity op kind
   in
   if not ok then raise(Error(loc, Wrong_arity_builtin_primitive p.prim_name))
 
@@ -826,19 +925,27 @@ let lambda_primitive_needs_event_after = function
   | Pfloatcomp _ | Pstringlength | Pstringrefu | Pbyteslength | Pbytesrefu
   | Pbytessetu | Pmakearray ((Pintarray | Paddrarray | Pfloatarray), _)
   | Parraylength _ | Parrayrefu _ | Parraysetu _ | Pisint | Pisout
-  | Patomic_exchange | Patomic_cas | Patomic_fetch_add | Patomic_load _
+  | Patomic_load
   | Pintofbint _ | Pctconst _ | Pbswap16 | Pint_as_pointer | Popaque | Pdls_get
+  | Pmakelazyblock _
       -> false
 
 (* Determine if a primitive should be surrounded by an "after" debug event *)
 let primitive_needs_event_after = function
   | Primitive (prim,_) -> lambda_primitive_needs_event_after prim
-  | External _ -> true
   | Comparison(comp, knd) ->
       lambda_primitive_needs_event_after (comparison_primitive comp knd)
+  (* C calls that may allocate or raise need an event.
+     We conservatively add an event to all C calls. *)
+  | External _ | Sys_argv -> true
+  (* Primitives that may call an arbitrary OCaml function need an event *)
   | Lazy_force | Send | Send_self | Send_cache
   | Apply | Revapply -> true
-  | Raise _ | Raise_with_backtrace | Loc _ | Frame_pointers | Identity -> false
+  | Raise _ | Raise_with_backtrace
+  | Loc _
+  | Frame_pointers | Identity
+  | Atomic (_, _)
+    -> false
 
 let transl_primitive_application loc p env ty path exp args arg_exps =
   let prim =

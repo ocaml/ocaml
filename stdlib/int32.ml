@@ -105,6 +105,83 @@ let unsigned_div n d =
 let unsigned_rem n d =
   sub n (mul (unsigned_div n d) d)
 
+(* Floor division, ceil division *)
+
+let fdiv n d =
+  let q = div n d in
+  if logxor n d >= 0l (* n and d have same sign *) || n = mul q d
+  then q else pred q
+
+let cdiv n d =
+  let q = div n d in
+  if logxor n d < 0l (* n and d have different signs *) || n = mul q d
+  then q else succ q
+
+(* Euclidean division and remainder *)
+
+let erem n d =
+  let r = rem n d in
+  if r >= 0l then r else if d >= 0l then add r d else sub r d
+
+let ediv n d =
+  let q = div n d in
+  let r = sub n (mul q d) in
+  if r >= 0l then q else if d >= 0l then pred q else succ q
+
+(* Number of leading zeros.  Hacker's Delight (2 ed.), algorithm 5.12 *)
+
+let leading_zeros x =
+  let x = ref x and n = ref 32 in
+  let y = shift_right_logical !x 16 in
+  if y <> 0l then (n := !n - 16; x := y);
+  let y = shift_right_logical !x  8 in
+  if y <> 0l then (n := !n -  8; x := y);
+  let y = shift_right_logical !x  4 in
+  if y <> 0l then (n := !n -  4; x := y);
+  let y = shift_right_logical !x 2 in
+  if y <> 0l then (n := !n -  2; x := y);
+  let y = shift_right_logical !x 1 in
+  if y <> 0l then !n - 2 else !n - to_int !x
+
+let unsigned_bitsize x =
+  32 - leading_zeros x
+
+(* Number of leading sign bits. *)
+
+let leading_sign_bits x =
+  if x >= 0l then leading_zeros x - 1 else leading_zeros (lognot x) - 1
+
+let signed_bitsize x =
+  32 - leading_sign_bits x
+
+(* Number of trailing zeros.  Hacker's Delight (2 ed.), algorithm 5.21 *)
+
+let trailing_zeros x =
+  if x = 0l then 32 else begin
+    let x = ref x and n = ref 31 in
+    let y = shift_left !x 16 in
+    if y <> 0l then (n := !n - 16; x := y);
+    let y = shift_left !x  8 in
+    if y <> 0l then (n := !n -  8; x := y);
+    let y = shift_left !x  4 in
+    if y <> 0l then (n := !n -  4; x := y);
+    let y = shift_left !x  2 in
+    if y <> 0l then (n := !n -  2; x := y);
+    let y = shift_left !x  1 in
+    if y <> 0l then !n - 1 else !n
+  end
+
+(* Population count.  Hacker's Delight (2 ed.), algorithm 5.2 *)
+
+let popcount x =
+  let x = sub x (logand (shift_right_logical x 1) 0x5555_5555l) in
+  let x = add (logand x 0x3333_3333l)
+              (logand (shift_right_logical x 2) 0x3333_3333l) in
+  let x = logand (add x (shift_right_logical x 4)) 0x0F0F_0F0Fl in
+  let x = add x (shift_right_logical x 8) in
+  let x = add x (shift_right_logical x 16) in
+  to_int x land 0x3F
+
 external seeded_hash_param :
   int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]
 let seeded_hash seed x = seeded_hash_param 10 100 seed x

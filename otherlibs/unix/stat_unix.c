@@ -60,7 +60,7 @@ static double stat_timestamp(time_t sec, long nsec)
   double s = (double) sec;
   /* The conversion of nsec to fraction of seconds can round.
      Still, we have 0 <= n < 1.0. */
-  double n = (double) nsec / 1e9;
+  double n = (double) nsec / NSEC_PER_SEC;
   /* The sum s + n can round up, hence s <= t + <= s + 1.0 */
   double t = s + n;
   /* Detect the "round up to s + 1" case and decrease t so that

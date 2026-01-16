@@ -27,6 +27,7 @@
     - ocaml.noalloc
     - ocaml.poll
     - ocaml.ppwarning
+    - ocaml.remove_aliases
     - ocaml.specialise
     - ocaml.specialised
     - ocaml.tailcall
@@ -185,3 +186,7 @@ val immediate64: Parsetree.attributes -> bool
 
 val has_unboxed: Parsetree.attributes -> bool
 val has_boxed: Parsetree.attributes -> bool
+
+val has_remove_aliases: Parsetree.attributes -> bool
+
+val has_atomic: Parsetree.attributes -> bool

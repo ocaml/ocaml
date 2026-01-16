@@ -23,10 +23,9 @@
 #include <string.h>
 
 #include "caml/config.h"
-#ifdef HAS_UNISTD
+#ifndef _WIN32
 #include <unistd.h>
-#endif
-#ifdef _WIN32
+#else
 #include <io.h>
 #endif
 
@@ -451,12 +450,12 @@ static void read_main_debug_info(struct debug_info *di)
   CAMLassert(di->already_read == 0);
   di->already_read = 1;
 
-  /* At the moment, bytecode programs built with --output-complete-exe
+  /* At the moment, bytecode programs built with -output-complete-exe
      do not contain any debug info.
 
      See  https://github.com/ocaml/ocaml/issues/9344 for details.
   */
-  if (caml_params->cds_file == NULL && caml_byte_program_mode == COMPLETE_EXE)
+  if (caml_params->cds_file == NULL && caml_byte_program_mode == EMBEDDED)
     CAMLreturn0;
 
   if (caml_params->cds_file != NULL) {

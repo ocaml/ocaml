@@ -9,7 +9,7 @@ val f : t -> t = <fun>
 Line 1, characters 14-15:
 1 | let f () = A {a = 1};; (* customized error message *)
                   ^
-Error: The field "a" is not part of the record argument for the "t.A" constructor
+Error: The field a is not part of the record argument for the t.A constructor
 val f : unit -> t = <fun>
 type _ t = A : { x : 'a; y : 'b; } -> 'a t
 val f : 'a t -> 'a t = <fun>
@@ -33,12 +33,12 @@ Error: This expression creates fresh types.
 Line 5, characters 2-29:
 5 |   exception A of {x : string}
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Multiple definition of the extension constructor name "A".
+Error: Multiple definition of the extension constructor name A.
        Names must be unique in a given structure or signature.
 Line 4, characters 2-29:
 4 |   exception A of {x : string}
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Multiple definition of the extension constructor name "A".
+Error: Multiple definition of the extension constructor name A.
        Names must be unique in a given structure or signature.
 module M1 : sig exception A of { x : int; } end
 module M : sig exception A of { x : int; } end
@@ -50,7 +50,7 @@ module X2 : sig type t = .. end
 Line 3, characters 15-28:
 3 |   type X2.t += A of {x: int}
                    ^^^^^^^^^^^^^
-Error: Multiple definition of the extension constructor name "A".
+Error: Multiple definition of the extension constructor name A.
        Names must be unique in a given structure or signature.
 type _ c = C : [ `A ] c
 type t = T : { x : [< `A ] c; } -> t

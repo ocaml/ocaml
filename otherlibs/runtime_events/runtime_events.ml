@@ -33,6 +33,17 @@ type runtime_counter =
 | EV_C_MAJOR_HEAP_POOL_FRAG_WORDS
 | EV_C_MAJOR_HEAP_POOL_LIVE_BLOCKS
 | EV_C_MAJOR_HEAP_LARGE_BLOCKS
+| EV_C_MAJOR_HEAP_WORDS
+| EV_C_MAJOR_ALLOCATED_WORDS
+| EV_C_MAJOR_ALLOCATED_WORK
+| EV_C_MAJOR_DEPENDENT_WORK
+| EV_C_MAJOR_EXTRA_WORK
+| EV_C_MAJOR_WORK_COUNTER
+| EV_C_MAJOR_ALLOC_COUNTER
+| EV_C_MAJOR_SLICE_TARGET
+| EV_C_MAJOR_SLICE_BUDGET
+| EV_C_MINOR_ALLOCATED_WORDS
+| EV_C_MINOR_PROMOTED_WORDS
 
 type runtime_phase =
 | EV_EXPLICIT_GC_SET
@@ -83,6 +94,7 @@ type runtime_phase =
 | EV_COMPACT_EVACUATE
 | EV_COMPACT_FORWARD
 | EV_COMPACT_RELEASE
+| EV_EMPTY_MINOR
 
 type lifecycle =
   EV_RING_START
@@ -101,7 +113,9 @@ let runtime_counter_name counter =
   | EV_C_FORCE_MINOR_SET_MINOR_HEAP_SIZE -> "force_minor_set_minor_heap_size"
   | EV_C_FORCE_MINOR_MEMPROF -> "force_minor_memprof"
   | EV_C_MINOR_PROMOTED -> "minor_promoted"
+  | EV_C_MINOR_PROMOTED_WORDS -> "minor_promoted_words"
   | EV_C_MINOR_ALLOCATED -> "minor_allocated"
+  | EV_C_MINOR_ALLOCATED_WORDS -> "minor_allocated_words"
   | EV_C_REQUEST_MAJOR_ALLOC_SHR -> "request_major_alloc_shr"
   | EV_C_REQUEST_MAJOR_ADJUST_GC_SPEED -> "request_major_adjust_gc_speed"
   | EV_C_REQUEST_MINOR_REALLOC_REF_TABLE -> "request_minor_realloc_ref_table"
@@ -121,6 +135,25 @@ let runtime_counter_name counter =
       "major_heap_pool_live_blocks"
   | EV_C_MAJOR_HEAP_LARGE_BLOCKS ->
       "major_heap_large_blocks"
+  | EV_C_MAJOR_HEAP_WORDS ->
+      "major_heap_words"
+  | EV_C_MAJOR_ALLOCATED_WORDS ->
+      "major_allocated_words"
+  | EV_C_MAJOR_ALLOCATED_WORK ->
+      "major_allocated_work"
+  | EV_C_MAJOR_DEPENDENT_WORK ->
+      "major_dependent_work"
+  | EV_C_MAJOR_EXTRA_WORK ->
+      "major_extra_work"
+  | EV_C_MAJOR_WORK_COUNTER ->
+      "major_work_counter"
+  | EV_C_MAJOR_ALLOC_COUNTER ->
+      "major_alloc_counter"
+  | EV_C_MAJOR_SLICE_TARGET ->
+      "major_slice_target"
+  | EV_C_MAJOR_SLICE_BUDGET ->
+      "major_slice_budget"
+
 
 let runtime_phase_name phase =
   match phase with
@@ -172,6 +205,7 @@ let runtime_phase_name phase =
   | EV_COMPACT_EVACUATE -> "compaction_evacuate"
   | EV_COMPACT_FORWARD -> "compaction_forward"
   | EV_COMPACT_RELEASE -> "compaction_release"
+  | EV_EMPTY_MINOR -> "empty_minor"
 
 let lifecycle_name lifecycle =
   match lifecycle with
@@ -191,6 +225,11 @@ module Timestamp = struct
 
   let to_int64 t =
     t
+
+  external get_current : unit -> (t [@unboxed]) =
+    "caml_ml_runtime_current_timestamp"
+    "caml_ml_runtime_current_timestamp_unboxed"
+    [@@noalloc]
 end
 
 module Type = struct
@@ -330,7 +369,7 @@ module Callbacks = struct
     lifecycle: (int -> Timestamp.t -> lifecycle
                 -> int option -> unit) option;
     lost_events: (int -> int -> unit) option;
-    (* user event callbacks is an array containing at each indice [i] a list
+    (* user event callbacks is an array containing at each index [i] a list
         of functions to call when an event of type id [i] happen *)
     user_events: any_callback list array;
   }
@@ -373,6 +412,7 @@ end
 external start : unit -> unit = "caml_ml_runtime_events_start"
 external pause : unit -> unit = "caml_ml_runtime_events_pause"
 external resume : unit -> unit = "caml_ml_runtime_events_resume"
+external path : unit -> string option = "caml_ml_runtime_events_path"
 
 external create_cursor : (string * int) option -> cursor
                                         = "caml_ml_runtime_events_create_cursor"

@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-external id : 'a -> 'a = "%identity"
+let id x = x
 let const c _ = c
 let compose f g x = f (g x)
 let flip f x y = f y x

@@ -21,17 +21,17 @@
 #include <caml/osdeps.h>
 #include "caml/unixsupport.h"
 
-CAMLprim value caml_unix_chdir(value path)
+CAMLprim value caml_unix_chdir(value dirname)
 {
-  CAMLparam1(path);
+  CAMLparam1(dirname);
   char_os * p;
   int ret;
-  caml_unix_check_path(path, "chdir");
-  p = caml_stat_strdup_to_os(String_val(path));
+  caml_unix_check_path(dirname, "chdir");
+  p = caml_stat_strdup_to_os(String_val(dirname));
   caml_enter_blocking_section();
   ret = chdir_os(p);
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (ret == -1) caml_uerror("chdir", path);
+  if (ret == -1) caml_uerror("chdir", dirname);
   CAMLreturn(Val_unit);
 }

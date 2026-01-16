@@ -1,12 +1,14 @@
+#define CAML_INTERNALS
 #include <assert.h>
 #include <stdatomic.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <caml/mlvalues.h>
 #include <caml/tsan.h>
 
 #define MAX_WAITGROUP   8
-#define SPIN_WAIT_MS    10
+#define SPIN_WAIT_NSEC  (10 * NSEC_PER_MSEC) /* 10 msec */
 
 /* waitgroup inspired by Golang's `sync.WaitGroup`. This version does *not*
  * allow to restart a waitgroup. */
@@ -52,7 +54,12 @@ CAMLno_tsan value wg_wait(value t)
    * checkpoint. This allows TSan to always generate a report with a
    * 'As if synchronized via sleep' section. */
   do {
-    usleep(SPIN_WAIT_MS);
+#ifdef HAS_NANOSLEEP
+    const struct timespec ts = caml_timespec_of_nsec(SPIN_WAIT_NSEC);
+    nanosleep(&ts, NULL);
+#else
+    usleep(SPIN_WAIT_NSEC / NSEC_PER_USEC);
+#endif
   }
   while (wg->count != wg->limit);
   return Val_unit;

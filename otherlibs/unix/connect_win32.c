@@ -21,13 +21,13 @@
 CAMLprim value caml_unix_connect(value socket, value address)
 {
   SOCKET s = Socket_val(socket);
-  union sock_addr_union addr;
-  socklen_param_type addr_len;
+  struct sockaddr_storage addr;
+  socklen_t addr_len;
   DWORD err = 0;
 
   caml_unix_get_sockaddr(address, &addr, &addr_len);
   caml_enter_blocking_section();
-  if (connect(s, &addr.s_gen, addr_len) == -1)
+  if (connect(s, (struct sockaddr *) &addr, addr_len) == -1)
     err = WSAGetLastError();
   caml_leave_blocking_section();
   if (err) {

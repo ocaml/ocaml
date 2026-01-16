@@ -102,7 +102,7 @@ class LLDBValue:
         return LLDBValue(self._v.Dereference(), self._target)
 
     def struct(self):
-        t = self._v.GetType()
+        t = self._v.type
         fields = t.GetNumberOfFields()
         return {member.name:
                     LLDBValue(self._v.GetChildMemberWithName(member.name),
@@ -156,6 +156,11 @@ class LLDBValue:
 
     def double_array(self, size):
         return self._v.Cast(self._target._double_type.array(size)._t)
+
+    def pointer_index(self, index):
+        t = self._v.type.GetPointeeType()
+        address = self.unsigned() + index * t.size
+        return self._target._create_value("[]", address, LLDBType(t))
 
 class LLDBTarget:
     def __init__(self, target):

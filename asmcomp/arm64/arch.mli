@@ -20,6 +20,8 @@
 
 val macosx : bool
 
+val top_bits_ignore : bool
+
 (* Machine-specific command-line options *)
 
 val command_line_options : (string * Arg.spec * string) list

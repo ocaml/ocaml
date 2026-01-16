@@ -42,7 +42,7 @@ type stat =
 
     heap_chunks : int;
     (** Number of contiguous pieces of memory that make up the major heap.
-        This metrics is currently not available in OCaml 5: the field value is
+        This metric is currently not available in OCaml 5: the field value is
         always [0]. *)
 
     live_words : int;
@@ -71,12 +71,12 @@ type stat =
 
     free_blocks : int;
     (** Number of blocks in the free list.
-        This metrics is currently not available in OCaml 5: the field value is
+        This metric is currently not available in OCaml 5: the field value is
         always [0]. *)
 
     largest_free : int;
     (** Size (in words) of the largest block in the free list.
-        This metrics is currently not available in OCaml 5: the field value
+        This metric is currently not available in OCaml 5: the field value
         is always [0]. *)
 
     fragments : int;
@@ -91,15 +91,23 @@ type stat =
     (** Maximum size reached by the major heap, in words. *)
 
     stack_size: int;
-    (** Current size of the stack, in words.
-        This metrics is currently not available in OCaml 5: the field value is
-        always [0].
-        @since 3.12 *)
-
+    (** Current size of the current OCaml stack, in words.
+        @since 3.12
+        @since 5.0 not implemented
+        @since 5.5 restored for the current stack
+    *)
     forced_major_collections: int;
     (** Number of forced full major collections completed since the program
         was started.
         @since 4.12 *)
+
+    live_stacks_words: int;
+    (** Total space allocated outside of the OCaml heap for stack fragments.
+        This includes stack metadata and stack fragments stored inside the stack
+        fragment cache.
+        @since 5.5
+    *)
+
 }
 (** The memory management counters are returned in a [stat] record. These
    counters give values for the whole program.
@@ -122,7 +130,10 @@ type control =
         number is less than or equal to 1000, it is a percentage of
         the current heap size (i.e. setting it to 100 will double the heap
         size at each increase). If it is more than 1000, it is a fixed
-        number of words that will be added to the heap. Default: 15. *)
+        number of words that will be added to the heap.
+
+        This field is currently not available in OCaml 5: the field value is
+        always [0]. *)
 
     space_overhead : int;
     (** The major GC speed is computed from this parameter.
@@ -137,17 +148,19 @@ type control =
     (** This value controls the GC messages on standard error output.
        It is a sum of some of the following flags, to print messages
        on the corresponding events:
-       - [0x001] Start and end of major GC cycle.
-       - [0x002] Minor collection and major GC slice.
-       - [0x004] Growing and shrinking of the heap.
-       - [0x008] Resizing of stacks and memory manager tables.
-       - [0x010] Heap compaction.
-       - [0x020] Change of GC parameters.
-       - [0x040] Computation of major GC slice size.
-       - [0x080] Calling of finalisation functions.
-       - [0x100] Bytecode executable and shared library search at start-up.
-       - [0x200] Computation of compaction-triggering condition.
-       - [0x400] Output GC statistics at program exit.
+       - [0x0001] Start and end of major GC cycle.
+       - [0x0002] Minor collection and major GC slice.
+       - [0x0004] Growing and shrinking of the heap.
+       - [0x0008] Resizing of stacks and memory manager tables.
+       - [0x0010] Heap compaction.
+       - [0x0020] Change of GC parameters.
+       - [0x0040] Computation of major GC slice size.
+       - [0x0080] Calling of finalisation functions.
+       - [0x0100] Bytecode executable and shared library search at start-up.
+       - [0x0200] Computation of compaction-triggering condition.
+       - [0x0400] Output GC statistics at program exit.
+       - [0x0800] GC debugging messages.
+       - [0x1000] Address space reservation changes.
        Default: 0. *)
 
     max_overhead : int;
@@ -157,16 +170,19 @@ type control =
        compaction is triggered at the end of each major GC cycle
        (this setting is intended for testing purposes only).
        If [max_overhead >= 1000000], compaction is never triggered.
-       Default: 500. *)
+
+       This field is currently not available in OCaml 5: the field value is
+       always [0]. *)
 
     stack_limit : int;
     (** The maximum size of the fiber stacks (in words).
-       Default: 1024k. *)
+       Default: 128M. *)
 
     allocation_policy : int;
     (** The policy used for allocating in the major heap.
 
-        This option is ignored in OCaml 5.x.
+        This field is currently not available in OCaml 5: the field value is
+        always [0].
 
         Prior to OCaml 5.0, possible values were 0, 1 and 2.
 
@@ -182,8 +198,10 @@ type control =
     (** The size of the window used by the major GC for smoothing
         out variations in its workload. This is an integer between
         1 and 50.
-        Default: 1.
-        @since 4.03 *)
+        @since 4.03
+
+        This field is currently not available in OCaml 5: the field value is
+        always [0]. *)
 
     custom_major_ratio : int;
     (** Target ratio of floating garbage to major heap size for
@@ -224,16 +242,19 @@ type control =
 
 external stat : unit -> stat = "caml_gc_stat"
 (** Return the current values of the memory management counters in a
-   [stat] record that represent the program's total memory stats.
-   This function causes a full major collection. *)
+    [stat] record that represents the program's total memory stats.
+    The [heap_chunks], [free_blocks], [largest_free], and [stack_size] metrics
+    are currently not available in OCaml 5: their returned field values are
+    therefore [0].
+    This function causes a full major collection. *)
 
 external quick_stat : unit -> stat = "caml_gc_quick_stat"
-(** Same as [stat] except that [live_words], [live_blocks], [free_words],
-    [free_blocks], [largest_free], and [fragments] are set to 0. Due to
-    per-domain buffers it may only represent the state of the program's
-    total memory usage since the last minor collection or major cycle.
-    This function is much faster than [stat] because it does not need to
-    trigger a full major collection. *)
+(** Returns a record with the current values of the memory management counters
+    like [stat]. Unlike [stat], [quick_stat] does not perform a full major
+    collection, and hence, is much faster. However, [quick_stat] reports the
+    counters sampled at the last minor collection or at the end of the last
+    major collection cycle (whichever is the latest). Hence, the memory stats
+    returned by [quick_stat] are not instantaneously accurate. *)
 
 external counters : unit -> float * float * float = "caml_gc_counters"
 (** Return [(minor_words, promoted_words, major_words)] for the current
@@ -254,14 +275,22 @@ external get : unit -> control = "caml_gc_get"
 [@@alert unsynchronized_access
     "GC parameters are a mutable global state."
 ]
-(** Return the current values of the GC parameters in a [control] record. *)
+(** Return the current values of the GC parameters in a [control] record.
+
+    The [major_heap_increment], [max_overhead], [allocation_policy], and
+    [window_size] fields are currently not available in OCaml 5: their returned
+    field values are therefore [0]. *)
 
 external set : control -> unit = "caml_gc_set"
 [@@alert unsynchronized_access
     "GC parameters are a mutable global state."
 ]
- (** [set r] changes the GC parameters according to the [control] record [r].
-   The normal usage is: [Gc.set { (Gc.get()) with Gc.verbose = 0x00d }] *)
+(** [set r] changes the GC parameters according to the [control] record [r].
+    The normal usage is: [Gc.set { (Gc.get()) with Gc.verbose = 0x00d }]
+
+    The [major_heap_increment], [max_overhead], [allocation_policy], and
+    [window_size] fields are currently not available in OCaml 5: setting them
+    therefore has no effect. *)
 
 external minor : unit -> unit = "caml_gc_minor"
 (** Trigger a minor collection. *)
@@ -453,7 +482,9 @@ module Memprof :
     type t
     (** the type of a profile *)
 
-    type allocation_source = Normal | Marshal | Custom
+    type allocation_source = Normal | Marshal | Custom | Map_file
+    val string_of_allocation_source : allocation_source -> string
+
     type allocation = private
       { n_samples : int;
         (** The number of samples in this block (>= 1). *)
@@ -499,8 +530,7 @@ module Memprof :
       ?callstack_size:int ->
       ('minor, 'major) tracker ->
       t
-    (** Start a profile with the given parameters. Raises an exception
-       if a profile is already sampling in the current domain.
+    (** Start a profile with the given parameters.
 
        Sampling begins immediately. The parameter [sampling_rate] is
        the sampling rate in samples per word (including headers).
@@ -527,10 +557,11 @@ module Memprof :
        have evolved between the allocation and the call to the
        callback.
 
-       If a new thread or domain is created when the current domain is
-       sampling for a profile, the child thread or domain joins that
-       profile (using the same [sampling_rate], [callstack_size], and
-       [tracker] callbacks).
+       All the threads belonging to a domain share the same profile
+       (using the same [sampling_rate], [callstack_size], and
+       [tracker] callbacks). In addition, if a new domain is spawned
+       by the current domain while sampling for a profile, then the
+       child domain likewise shares that profile with its parent.
 
        An allocation callback is always run by the thread which
        allocated the block. If the thread exits or the profile is
@@ -543,7 +574,17 @@ module Memprof :
        by a different domain.
 
        Different domains may sample for different profiles
-       simultaneously.  *)
+       simultaneously.
+
+       If a profile is already sampling in the current domain, then
+       calling [start] replaces it with a new profile in this domain.
+       If the old profile was sampling in other domains, it continues
+       doing so. *)
+
+    val is_sampling : unit -> bool
+    (** Returns whether a profile is sampling in the current domain,
+        if any. Returns [None] if the current domain is not
+        sampling. *)
 
     val stop : unit -> unit
     (** Stop sampling for the current profile. Fails if no profile is
@@ -564,3 +605,54 @@ module Memprof :
        called on a profile which has not been stopped.
        *)
 end
+
+
+type suspended_collection_work
+
+external ramp_up : (unit -> 'a) -> 'a * suspended_collection_work
+  = "caml_ml_gc_ramp_up"
+(** In general, the OCaml GC assumes that the program runs in
+    a "steady state" where peak memory usage remains constant: for
+    each newly allocated work, it assumes that one work has become
+    unreachable and will try to collect it during the next GC slice.
+
+    This assumption is incorrect at the points during program
+    execution where the live memory increases instead of remaining
+    stable: the steady-state assumption will make the GC work harder
+    at no benefit as it will not find more memory to collect.
+
+    [ramp_up f] puts the current domain in a "ramp-up" phase for the
+    duration of the evaluation of [f ()], letting the GC know that the
+    steady-state assumption does not hold; it should be used when you
+    know that the live memory of the program will increase
+    significantly.
+
+    During a ramp-up phase, the GC will not try to work harder for new
+    allocations: the corresponding collection work is "suspended". The
+    total amount of suspended collection work is returned by [ramp_up]
+    along with the result of the function.
+
+    If the user discards this suspended work (by doing nothing
+    with it), the GC will never accelerate to recover the
+    corresponding amount of memory. This is appropriate if the ramp-up
+    work allocates long-lived memory that remains live until the end
+    of the program execution.
+
+    If the user knows that at a certain point in the program the live
+    memory consumption has been reduced by the corresponding amount --
+    typically, because the memory allocated during [ramp_up] has become
+    unused -- then they should call {!ramp_down} below to have the GC
+    "resume" this collection work.
+
+    If [f ()] raises an exception, the ramp-up phase terminates, the
+    collection work that was suspended is resumed, and the exception
+    is re-raised.
+
+    If [f ()] performs an effect, the effect is not handled and an
+    [Effect.Unhandled] exception is thrown instead.
+*)
+
+external ramp_down : suspended_collection_work -> unit
+  = "caml_ml_gc_ramp_down"
+(** Notify the GC about some amount of collection work that was
+    suspended during a ramp-up phase, to be resumed now. *)

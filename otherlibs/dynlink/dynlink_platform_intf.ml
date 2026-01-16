@@ -25,10 +25,10 @@ module type S = sig
     type t
 
     val name : t -> string
-    val crc : t -> Digest.t option
+    val crc : t -> Digest.BLAKE128.t option
 
-    val interface_imports : t -> (string * Digest.t option) list
-    val implementation_imports : t -> (string * Digest.t option) list
+    val interface_imports : t -> (string * Digest.BLAKE128.t option) list
+    val implementation_imports : t -> (string * Digest.BLAKE128.t option) list
 
     val defined_symbols : t -> string list
     val unsafe_module : t -> bool
@@ -46,8 +46,9 @@ module type S = sig
      : init:'a
     -> f:('a
       -> compunit:string
-      -> interface:Digest.t option
-      -> implementation:(Digest.t option * Dynlink_types.implem_state) option
+      -> interface:Digest.BLAKE128.t option
+      -> implementation:
+           (Digest.BLAKE128.t option * Dynlink_types.implem_state) option
       -> defined_symbols:string list
       -> 'a)
     -> 'a
@@ -57,7 +58,6 @@ module type S = sig
     -> priv:bool
     -> handle * (Unit_header.t list)
 
-  val run_shared_startup : handle -> unit
   val run : Mutex.t -> handle -> unit_header:Unit_header.t -> priv:bool -> unit
 
   val unsafe_get_global_value : bytecode_or_asm_symbol:string -> Obj.t option

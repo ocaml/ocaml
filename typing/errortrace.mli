@@ -18,9 +18,12 @@
 open Types
 
 type position = First | Second
+type order = Less | Equal | More
 
 val swap_position : position -> position
 val print_pos : position Format_doc.printer
+
+val swap_order: order -> order
 
 type expanded_type = { ty: type_expr; expanded: type_expr }
 
@@ -89,6 +92,10 @@ type first_class_module =
     | Package_inclusion of Format_doc.doc
     | Package_coercion of Format_doc.doc
 
+type univar =
+  | Var_mismatch of { order:order; diff:type_expr diff }
+  | Quantification_mismatch of type_expr list
+
 type ('a, 'variety) elt =
   (* Common *)
   | Diff : 'a diff -> ('a, _) elt
@@ -96,8 +103,10 @@ type ('a, 'variety) elt =
   | Obj : 'variety obj -> ('a, 'variety) elt
   | Escape : 'a escape -> ('a, _) elt
   | Function_label_mismatch of Asttypes.arg_label diff
+  | Tuple_label_mismatch of string option diff
   | Incompatible_fields : { name:string; diff: type_expr diff } -> ('a, _) elt
   | First_class_module: first_class_module -> ('a,_) elt
+  | Univar of univar
   (* Unification & Moregen; included in Equality for simplicity *)
   | Rec_occur : type_expr * type_expr -> ('a, _) elt
 

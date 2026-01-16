@@ -356,6 +356,32 @@
 	color: inherit;
     }
 
+    /* Anchors */
+
+    a.anchor{
+        position: absolute;
+        right: 100%;
+        padding-right: 0.4em;
+        opacity: 0;
+        box-shadow: none;
+    }
+
+    a.anchor:before{
+        content: "#";
+    }
+
+    a.anchor:hover{
+        opacity: 1 !important;
+    }
+
+    pre:hover a.anchor, :hover>a.anchor{
+        opacity: 0.5;
+    }
+
+    .anchored {
+        position: relative;
+    }
+
     /* Module member specification */
 
     .spec:not(.include), .spec.include details summary {

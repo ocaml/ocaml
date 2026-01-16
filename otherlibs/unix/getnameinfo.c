@@ -37,8 +37,8 @@ CAMLprim value caml_unix_getnameinfo(value vaddr, value vopts)
 {
   CAMLparam0();
   CAMLlocal3(vhost, vserv, vres);
-  union sock_addr_union addr;
-  socklen_param_type addr_len;
+  struct sockaddr_storage addr;
+  socklen_t addr_len;
   char host[4096];
   char serv[1024];
   int opts, retcode;
@@ -47,7 +47,7 @@ CAMLprim value caml_unix_getnameinfo(value vaddr, value vopts)
   opts = caml_convert_flag_list(vopts, getnameinfo_flag_table);
   caml_enter_blocking_section();
   retcode =
-    getnameinfo((const struct sockaddr *) &addr.s_gen, addr_len,
+    getnameinfo((struct sockaddr *) &addr, addr_len,
                 host, sizeof(host), serv, sizeof(serv), opts);
   caml_leave_blocking_section();
   /* TODO: detailed error reporting? */

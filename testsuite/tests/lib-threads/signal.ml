@@ -2,7 +2,7 @@
  include systhreads;
  readonly_files = "sigint.c";
  hassysthreads;
- libunix; (* excludes mingw32/64 and msvc32/64 *)
+ not-target-windows; (* excludes mingw32/64 and msvc32/64 *)
  {
    program = "${test_build_directory}/signal.byte";
    setup-ocamlc.byte-build-env;

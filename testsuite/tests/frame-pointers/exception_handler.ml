@@ -11,8 +11,8 @@ external fp_backtrace : string -> unit = "fp_backtrace" [@@noalloc]
 exception Exn1
 exception Exn2
 
-(* We want to be sure to use some stack space so that rbp is shifted,
-* preventing inlining seems enough *)
+(* We want to be sure to use some stack space so that frame pointer is shifted,
+ * preventing inlining seems enough *)
 let[@inline never] raiser i =
   match i with
   | 1 -> raise Exn1
@@ -21,10 +21,10 @@ let[@inline never] raiser i =
 
 let[@inline never][@local never] f x = x
 
-(* This give us a chance to overwrite the memory address pointed by rbp if it
-* is still within 'raiser' stack frame.
-* Technically we don't need to overwrite it but by doing so we avoid some
-* infinite loop while walking the stack. *)
+(* This give us a chance to overwrite the memory address pointed by frame
+ * pointer if it is still within 'raiser' stack frame.
+ * Technically we don't need to overwrite it but by doing so we avoid some
+ * infinite loop while walking the stack. *)
 let[@inline never] handler () =
   (* Force spilling of x0, x1, x2 *)
   let x0 = Sys.opaque_identity 0x6f56df77 (* 0xdeadbeef *) in
@@ -48,7 +48,7 @@ let[@inline never] nested i =
   i
 
 (* Check that we haven't broken anything by raising directly from this
-* function, it doesn't require rbp to be adjusted *)
+ * function, it doesn't require the frame pointer to be adjusted. *)
 let[@inline never] bare i =
   begin
     try

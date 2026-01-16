@@ -17,6 +17,18 @@ let test_and () =
   assert (!wit = 2); wit := 0;
   ()
 
+let test_eager_and () =
+  let wit = ref 0 in
+  assert (Bool.logand (incr wit; false) (incr wit; false) = false);
+  assert (!wit = 2); wit := 0;
+  assert (Bool.logand (incr wit; false) (incr wit; true) = false);
+  assert (!wit = 2); wit := 0;
+  assert (Bool.logand (incr wit; true) (incr wit; false) = false);
+  assert (!wit = 2); wit := 0;
+  assert (Bool.logand (incr wit; true) (incr wit; true) = true);
+  assert (!wit = 2); wit := 0;
+  ()
+
 let test_or () =
   let wit = ref 0 in
   assert (Bool.( || ) (incr wit; false) (incr wit; false) = false);
@@ -27,6 +39,30 @@ let test_or () =
   assert (!wit = 1); wit := 0;
   assert (Bool.( || ) (incr wit; true) (incr wit; true) = true);
   assert (!wit = 1); wit := 0;
+  ()
+
+let test_eager_or () =
+  let wit = ref 0 in
+  assert (Bool.logor (incr wit; false) (incr wit; false) = false);
+  assert (!wit = 2); wit := 0;
+  assert (Bool.logor (incr wit; false) (incr wit; true) = true);
+  assert (!wit = 2); wit := 0;
+  assert (Bool.logor (incr wit; true) (incr wit; false) = true);
+  assert (!wit = 2); wit := 0;
+  assert (Bool.logor (incr wit; true) (incr wit; true) = true);
+  assert (!wit = 2); wit := 0;
+  ()
+
+let test_eager_xor () =
+  let wit = ref 0 in
+  assert (Bool.logxor (incr wit; false) (incr wit; false) = false);
+  assert (!wit = 2); wit := 0;
+  assert (Bool.logxor (incr wit; false) (incr wit; true) = true);
+  assert (!wit = 2); wit := 0;
+  assert (Bool.logxor (incr wit; true) (incr wit; false) = true);
+  assert (!wit = 2); wit := 0;
+  assert (Bool.logxor (incr wit; true) (incr wit; true) = false);
+  assert (!wit = 2); wit := 0;
   ()
 
 let test_equal () =
@@ -79,7 +115,10 @@ let test_hash () =
 let tests () =
   test_not ();
   test_and ();
+  test_eager_and ();
   test_or ();
+  test_eager_or ();
+  test_eager_xor ();
   test_equal ();
   test_compare ();
   test_to_int ();

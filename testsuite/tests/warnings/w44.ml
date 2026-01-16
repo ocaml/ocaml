@@ -14,7 +14,8 @@ let g f = f (); M.(f ());;
 Line 1, characters 16-17:
 1 | let g f = f (); M.(f ());;
                     ^
-Warning 44 [open-shadow-identifier]: this open statement shadows the value identifier f (which is later used)
+Warning 44 [open-shadow-identifier]: this open statement shadows the
+  value identifier "f" (which is later used)
 
 val g : (unit -> 'a) -> int = <fun>
 |}]
@@ -49,8 +50,8 @@ end;;
 Line 3, characters 10-11:
 3 |   val y = x + 1
               ^
-Error: The instance variable "x"
-       cannot be accessed from the definition of another instance variable
+Error: The instance variable "x" cannot be accessed from the definition of
+       another instance variable
 |}]
 
 module M = struct let x = 0 end

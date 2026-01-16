@@ -46,7 +46,10 @@ type 'a parser =
 let wrap (parser : 'a parser) lexbuf : 'a =
   try
     Docstrings.init ();
-    Lexer.init ();
+    let keyword_edition =
+      Clflags.(Option.map parse_keyword_edition !keyword_edition)
+    in
+    Lexer.init ?keyword_edition ();
     let ast = parser token lexbuf in
     Parsing.clear_parser();
     Docstrings.warn_bad_docstrings ();
@@ -116,11 +119,11 @@ let prepare_error err =
   | Unclosed(opening_loc, opening, closing_loc, closing) ->
       Location.errorf
         ~loc:closing_loc
+        "Syntax error: %a expected" Style.inline_code closing
         ~sub:[
           Location.msg ~loc:opening_loc
             "This %a might be unmatched" Style.inline_code opening
         ]
-        "Syntax error: %a expected" Style.inline_code closing
 
   | Expecting (loc, nonterm) ->
       Location.errorf ~loc "Syntax error: %a expected."
@@ -164,12 +167,18 @@ let prepare_error err =
       Location.errorf ~loc "Syntax error: invalid package type: %a" invalid ipt
   | Removed_string_set loc ->
       Location.errorf ~loc
-        "Syntax error: strings are immutable, there is no assignment \
-         syntax for them.\n\
-         @{<hint>Hint@}: Mutable sequences of bytes are available in \
-         the Bytes module.\n\
-         @{<hint>Hint@}: Did you mean to use %a?"
-        Style.inline_code "Bytes.set"
+        "Syntax error: strings are immutable,@ there@ is@ no@ assignment@ \
+         syntax@ for@ them."
+        ~sub:[
+          Location.msg
+            "@{<hint>Hint@}: Mutable sequences of bytes are available in \
+             the %a module."
+            Style.inline_code "Bytes";
+          Location.msg
+            "@{<hint>Hint@}: Did you mean to use %a?"
+            Style.inline_code "Bytes.set"
+        ]
+
 let () =
   Location.register_error_of_exn
     (function

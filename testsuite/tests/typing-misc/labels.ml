@@ -10,7 +10,7 @@ val f : x:int -> int = <fun>
 Line 2, characters 5-6:
 2 | f ?x:0;;
          ^
-Warning 43 [nonoptional-label]: the label x is not optional.
+Warning 43 [nonoptional-label]: the label "x" is not optional.
 
 - : int = 1
 |}];;

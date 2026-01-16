@@ -36,15 +36,26 @@ _Atomic caml_timing_hook caml_finalise_begin_hook = (caml_timing_hook)NULL;
 _Atomic caml_timing_hook caml_finalise_end_hook = (caml_timing_hook)NULL;
 
 #ifdef DEBUG
-
-void caml_failed_assert (char * expr, char_os * file_os, int line)
-{
+void caml_print_loc(const char_os *file_os, int line) {
   char* file = caml_stat_strdup_of_os(file_os);
-  fprintf(stderr, "[%02d] file %s; line %d ### Assertion failed: %s\n",
-          (Caml_state_opt != NULL) ? Caml_state_opt->id : -1, file, line, expr);
-  fflush(stderr);
+  fprintf(stderr, "[%02d] file %s; line %d ### ",
+          (Caml_state_opt != NULL) ? Caml_state_opt->id : -1, file, line);
   caml_stat_free(file);
-  abort();
+}
+
+void caml_failed_assert (const char * expr, const char_os * file_os, int line)
+{
+  caml_print_loc(file_os, line);
+  fprintf(stderr, "Assertion failed: %s\n", expr);
+  fflush(stderr);
+  caml_abort();
+}
+
+CAMLnoret void caml_debug_abort(const char_os * file_os, int line) {
+  caml_print_loc(file_os, line);
+  fprintf(stderr, "Abort\n");
+  fflush(stderr);
+  caml_abort();
 }
 #endif
 
@@ -69,9 +80,9 @@ void caml_alloc_point_here(void)
 
 atomic_uintnat caml_verb_gc = 0;
 
-void caml_gc_log (char *msg, ...)
+void caml_gc_log (const char *msg, ...)
 {
-  if ((atomic_load_relaxed(&caml_verb_gc) & 0x800) != 0) {
+  if ((atomic_load_relaxed(&caml_verb_gc) & CAML_GC_MSG_DEBUG) != 0) {
     char fmtbuf[GC_LOG_LENGTH];
     va_list args;
     va_start (args, msg);
@@ -83,7 +94,7 @@ void caml_gc_log (char *msg, ...)
   }
 }
 
-void caml_gc_message (int level, char *msg, ...)
+void caml_gc_message (int level, const char *msg, ...)
 {
   if ((atomic_load_relaxed(&caml_verb_gc) & level) != 0){
     va_list ap;
@@ -96,7 +107,7 @@ void caml_gc_message (int level, char *msg, ...)
 
 _Atomic fatal_error_hook caml_fatal_error_hook = (fatal_error_hook)NULL;
 
-CAMLexport void caml_fatal_error (char *msg, ...)
+CAMLexport void caml_fatal_error (const char *msg, ...)
 {
   va_list ap;
   fatal_error_hook hook;
@@ -110,6 +121,9 @@ CAMLexport void caml_fatal_error (char *msg, ...)
     fprintf (stderr, "\n");
   }
   va_end(ap);
+  /* We could use [caml_abort()] instead of [abort()], but misc.h
+     documents that we call [abort()] so we kept this version
+     for compatibility. */
   abort();
 }
 
@@ -247,7 +261,7 @@ CAMLexport int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
 uintnat caml_runtime_warnings = 0;
 static int caml_runtime_warnings_first = 1;
 
-int caml_runtime_warnings_active(void)
+CAMLextern int caml_runtime_warnings_active(void)
 {
   if (!caml_runtime_warnings) return 0;
   if (caml_runtime_warnings_first) {

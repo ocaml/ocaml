@@ -88,69 +88,88 @@ let report_error loc e bt =
   print_exn loc e bt;
   "=> error in test script"
 
-type result_summary = No_failure | Some_failure | All_skipped
-let join_result summary result =
-  let open Result in
-  match result.status, summary with
-  | Fail, _
-  | _, Some_failure -> Some_failure
-  | Skip, All_skipped -> All_skipped
-  | _ -> No_failure
+type summary = Result.status = Pass | Skip | Fail
 
-let join_summaries sa sb =
-  match sa, sb with
-  | Some_failure, _
-  | _, Some_failure -> Some_failure
-  | All_skipped, All_skipped -> All_skipped
-  | _ -> No_failure
+(* The sequential join passes if both tests pass.
+
+   This implies that a linear sequence of actions, a path along the
+   test tree, is considered successful if all actions passed. *)
+let join_sequential r1 r2 =
+  match r1, r2 with
+  | Fail, _ | _, Fail -> Fail
+  | Pass, Pass -> Pass
+  | Skip, _ | _, Skip -> Skip
+
+(* The parallel join passes if either test passes.
+
+   This implies that a test formed of several parallel branches is
+   considered successful if at least one of the branches is successful.
+*)
+let join_parallel r1 r2 =
+  match r1, r2 with
+  | Fail, _ | _, Fail -> Fail
+  | Pass, _ | _, Pass -> Pass
+  | Skip, Skip -> Skip
 
 let string_of_summary = function
-  | No_failure -> "passed"
-  | Some_failure -> "failed"
-  | All_skipped -> "skipped"
+  | Pass -> "passed"
+  | Fail -> "failed"
+  | Skip -> "skipped"
 
-let rec run_test_tree log add_msg behavior env summ ast =
-  match ast with
-  | Ast (Environment_statement s :: stmts, subs) ->
-    begin match interpret_environment_statement env s with
-    | env ->
-      run_test_tree log add_msg behavior env summ (Ast (stmts, subs))
-    | exception e ->
-      let bt = Printexc.get_backtrace () in
-      let line = s.loc.Location.loc_start.Lexing.pos_lnum in
-      Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e bt);
-      Some_failure
-    end
-  | Ast (Test (_, name, mods) :: stmts, subs) ->
-    let locstr =
-      if name.loc = Location.none then
-        "default"
-      else
-        Printf.sprintf "line %d" name.loc.Location.loc_start.Lexing.pos_lnum
-    in
-    let (msg, children_behavior, newenv, result) =
-      match behavior with
-      | Skip_all -> ("=> n/a", Skip_all, env, Result.skip)
-      | Run ->
-        begin try
-          let testenv = List.fold_left apply_modifiers env mods in
-          let test = lookup_test name in
-          let (result, newenv) = Tests.run log testenv test in
-          let msg = Result.string_of_result result in
-          let sub_behavior = if Result.is_pass result then Run else Skip_all in
-          (msg, sub_behavior, newenv, result)
-        with e ->
-          let bt = Printexc.get_backtrace () in
-          (report_error name.loc e bt, Skip_all, env, Result.fail)
+let run_test_tree log add_msg behavior env summ ast =
+  let run_statement (behavior, env, summ) = function
+    | Environment_statement s ->
+      begin match interpret_environment_statement env s with
+      | env -> Ok (behavior, env, summ)
+      | exception e ->
+        let bt = Printexc.get_backtrace () in
+        let line = s.loc.Location.loc_start.Lexing.pos_lnum in
+        Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e bt);
+        Error Fail
+      end
+    | Test (_, name, mods) ->
+      let locstr =
+        if name.loc = Location.none then
+          "default"
+        else
+          Printf.sprintf "line %d" name.loc.Location.loc_start.Lexing.pos_lnum
+      in
+      let (msg, behavior, env, result) =
+        match behavior with
+        | Skip_all -> ("=> n/a", Skip_all, env, Result.skip)
+        | Run ->
+          begin try
+            let testenv = List.fold_left apply_modifiers env mods in
+            let test = lookup_test name in
+            let (result, newenv) = Tests.run log testenv test in
+            let msg = Result.string_of_result result in
+            let sub_behavior =
+              if Result.is_pass result then Run else Skip_all in
+            (msg, sub_behavior, newenv, result)
+          with e ->
+            let bt = Printexc.get_backtrace () in
+            (report_error name.loc e bt, Skip_all, env, Result.fail)
+          end
+      in
+      Printf.ksprintf add_msg "%s (%s) %s" locstr name.node msg;
+      let summ = join_sequential summ result.status in
+      Ok (behavior, env, summ)
+  in
+  let rec run_tree behavior env summ (Ast (stmts, subs)) =
+    match List.fold_left_result run_statement (behavior, env, summ) stmts with
+    | Error e -> e
+    | Ok (behavior, env, summ) ->
+        (* If [subs] is empty, there are no further test actions to
+           perform: we are at the end of a test path and can report
+           our current summary. Otherwise we continue with each
+           branch, and parallel-join the result summaries. *)
+        begin match subs with
+        | [] -> summ
+        | _ ->
+            List.fold_left join_parallel Skip
+              (List.map (run_tree behavior env summ) subs)
         end
-    in
-    Printf.ksprintf add_msg "%s (%s) %s" locstr name.node msg;
-    let newsumm = join_result summ result in
-    let newast = Ast (stmts, subs) in
-    run_test_tree log add_msg children_behavior newenv newsumm newast
-  | Ast ([], subs) ->
-    List.fold_left join_summaries summ
-      (List.map (run_test_tree log add_msg behavior env All_skipped) subs)
+  in run_tree behavior env summ ast
 
 let get_test_source_directory test_dirname =
   if (Filename.is_relative test_dirname) then
@@ -205,6 +224,7 @@ let test_file test_filename =
   let hookname_prefix = Filename.concat test_source_directory test_prefix in
   let test_build_directory_prefix =
     get_test_build_directory_prefix test_directory in
+  Filename.set_temp_dir_name test_build_directory_prefix;
   let clean_test_build_directory () =
     try
       Sys.rm_rf test_build_directory_prefix
@@ -235,6 +255,7 @@ let test_file test_filename =
        let make = try Sys.getenv "MAKE" with Not_found -> "make" in
        let initial_environment = Environments.from_bindings
            [
+             Builtin_variables.dev_null, "/dev/null";
              Builtin_variables.make, make;
              Builtin_variables.test_file, test_basename;
              Builtin_variables.reference, reference_filename;
@@ -253,7 +274,7 @@ let test_file test_filename =
        let rootenv, initial_status, initial_summary =
          let rec loop env stmts =
            match stmts with
-           | [] -> (env, initial_status, All_skipped)
+           | [] -> (env, initial_status, Pass)
            | s :: t ->
              begin match interpret_environment_statement env s with
              | env -> loop env t
@@ -262,23 +283,24 @@ let test_file test_filename =
                let line = s.loc.Location.loc_start.Lexing.pos_lnum in
                Printf.ksprintf add_msg "line %d %s" line
                  (report_error s.loc e bt);
-               (env, Skip_all, Some_failure)
+               (env, Skip_all, Fail)
              end
          in
          loop rootenv rootenv_statements
        in
        let rootenv = Environments.initialize Environments.Post log rootenv in
+       let common_prefix = " ... testing '" ^ test_basename ^ "'" in
+       Printf.printf "%s%!" common_prefix;
        let summary =
          run_test_tree log add_msg initial_status rootenv initial_summary
            tsl_ast
        in
-       let common_prefix = " ... testing '" ^ test_basename ^ "'" in
-       Printf.printf "%s => %s%s\n%!" common_prefix (string_of_summary summary)
-         (if Options.show_timings && summary = No_failure then
+       Printf.printf " => %s%s\n%!" (string_of_summary summary)
+         (if Options.show_timings && summary = Pass then
             let wall_clock_duration = Unix.gettimeofday () -. start in
             Printf.sprintf " (wall clock: %.02fs)" wall_clock_duration
           else "");
-       if summary = Some_failure then
+       if summary = Fail then
          List.iter (Printf.printf "%s with %s\n%!" common_prefix)
            (List.rev !msgs);
        Actions.clear_all_hooks();
@@ -286,10 +308,10 @@ let test_file test_filename =
     ) in
   if not Options.log_to_stderr then close_out log;
   begin match summary with
-  | Some_failure ->
+  | Fail ->
       if not Options.log_to_stderr then
         Sys.dump_file stderr ~prefix:"> " log_filename
-  | No_failure | All_skipped ->
+  | Pass | Skip ->
       if not Options.keep_test_dir_on_success then
         clean_test_build_directory ()
   end

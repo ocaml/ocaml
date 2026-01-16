@@ -1,7 +1,7 @@
 (* TEST
  include systhreads;
  hassysthreads;
- not-windows;
+ not-target-windows;
  {
    bytecode;
  }{

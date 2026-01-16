@@ -19,12 +19,20 @@ let ok v = Ok v
 let error e = Error e
 let value r ~default = match r with Ok v -> v | Error _ -> default
 let get_ok = function Ok v -> v | Error _ -> invalid_arg "result is Error _"
+let get_ok' = function Ok v -> v | Error e -> invalid_arg e
 let get_error = function Error e -> e | Ok _ -> invalid_arg "result is Ok _"
+let error_to_failure = function Ok v -> v | Error e -> failwith e
 let bind r f = match r with Ok v -> f v | Error _ as e -> e
 let join = function Ok r -> r | Error _ as e -> e
 let map f = function Ok v -> Ok (f v) | Error _ as e -> e
+let product r0 r1 = match r0, r1 with
+| (Error _ as r), _
+| _, (Error _ as r) -> r
+| Ok v0, Ok v1 -> Ok (v0, v1)
+
 let map_error f = function Error e -> Error (f e) | Ok _ as v -> v
 let fold ~ok ~error = function Ok v -> ok v | Error e -> error e
+let retract = function Ok v -> v | Error v -> v
 let iter f = function Ok v -> f v | Error _ -> ()
 let iter_error f = function Error e -> f e | Ok _ -> ()
 let is_ok = function Ok _ -> true | Error _ -> false
@@ -44,3 +52,10 @@ let compare ~ok ~error r0 r1 = match r0, r1 with
 let to_option = function Ok v -> Some v | Error _ -> None
 let to_list = function Ok v -> [v] | Error _ -> []
 let to_seq = function Ok v -> Seq.return v | Error _ -> Seq.empty
+
+module Syntax = struct
+  let ( let* ) = bind
+  let ( and* ) = product
+  let ( let+ ) r f = map f r
+  let ( and+ ) = product
+end

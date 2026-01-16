@@ -39,7 +39,7 @@ struct skiplist {
 struct skipcell {
   uintnat key;
   uintnat data;
-  struct skipcell * forward[];  /* flexible array member */
+  struct skipcell * forward[]; /* flexible array member */
 };
 
 /* Initialize a skip list, statically */
@@ -53,6 +53,12 @@ extern void caml_skiplist_init(struct skiplist * sk);
    If [key] is not found, return 0 and leave [*data] unchanged. */
 extern int caml_skiplist_find(struct skiplist * sk, uintnat key,
                               /*out*/ uintnat * data);
+
+/* Search a skip list.
+   If [key] is found, return a pointer to its associated data.
+   If [key] is not found, return NULL. */
+extern uintnat* caml_skiplist_find_ptr(struct skiplist * sk, uintnat key);
+
 
 /* Search the entry of the skip list that has the largest key less than
    or equal to [k].
@@ -96,6 +102,6 @@ extern void caml_skiplist_empty(struct skiplist * sk);
     }                                                           \
   }
 
-#endif
+#endif /* CAML_INTERNALS */
 
-#endif
+#endif /* CAML_SKIPLIST_H */

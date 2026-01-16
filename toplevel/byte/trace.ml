@@ -66,14 +66,13 @@ let print_label ppf l =
 
 (* If a function returns a functional value, wrap it into a trace code *)
 
-module Printtyp = Printtyp.Compat
 let rec instrument_result env name ppf clos_typ =
   match get_desc (Ctype.expand_head env clos_typ) with
   | Tarrow(l, t1, t2, _) ->
       let starred_name =
         match name with
-        | Lident s -> Lident(s ^ "*")
-        | Ldot(lid, s) -> Ldot(lid, s ^ "*")
+        | Lident s -> Lident(s ^ "*" )
+        | Ldot(lid, id) -> Ldot(lid, { id with txt = id.txt ^ "*" })
         | Lapply _ -> fatal_error "Trace.instrument_result" in
       let trace_res = instrument_result env starred_name ppf t2 in
       (fun clos_val ->

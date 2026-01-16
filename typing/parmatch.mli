@@ -18,6 +18,7 @@
 open Asttypes
 open Typedtree
 open Types
+open Data_types
 
 (** Most checks in this file need not access all information about a case,
     and just need a few pieces of information. [parmatch_case] is those
@@ -55,8 +56,8 @@ module Compat :
   functor
     (_ : sig
       val equal :
-          Types.constructor_description ->
-            Types.constructor_description ->
+          Data_types.constructor_description ->
+            Data_types.constructor_description ->
               bool
      end) -> sig
        val compat : pattern -> pattern -> bool

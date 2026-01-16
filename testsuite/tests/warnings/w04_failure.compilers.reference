@@ -4,7 +4,7 @@ File "w04_failure.ml", lines 20-23, characters 2-17:
 22 |   | _, XY, X -> ()
 23 |   | _, _, _ -> ()
 Warning 4 [fragile-match]: this pattern-matching is fragile.
-It will remain exhaustive when constructors are added to type repr.
+  It will remain exhaustive when constructors are added to type repr.
 
 File "w04_failure.ml", lines 20-23, characters 2-17:
 20 | ..match r1, r2, t with
@@ -12,7 +12,7 @@ File "w04_failure.ml", lines 20-23, characters 2-17:
 22 |   | _, XY, X -> ()
 23 |   | _, _, _ -> ()
 Warning 4 [fragile-match]: this pattern-matching is fragile.
-It will remain exhaustive when constructors are added to type ab.
+  It will remain exhaustive when constructors are added to type ab.
 
 File "w04_failure.ml", lines 20-23, characters 2-17:
 20 | ..match r1, r2, t with
@@ -20,4 +20,4 @@ File "w04_failure.ml", lines 20-23, characters 2-17:
 22 |   | _, XY, X -> ()
 23 |   | _, _, _ -> ()
 Warning 4 [fragile-match]: this pattern-matching is fragile.
-It will remain exhaustive when constructors are added to type xy.
+  It will remain exhaustive when constructors are added to type xy.

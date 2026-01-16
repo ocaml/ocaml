@@ -253,12 +253,32 @@ module Stdlib = struct
       in
       loop 0
 
+    let rec to_utf_8_seq b i () =
+      if i >= Bytes.length b then
+        Seq.Nil
+      else
+        let next = Bytes.get_utf_8_uchar b i in
+        let u = Uchar.utf_decode_uchar next in
+        Seq.Cons(u, to_utf_8_seq b (i + Uchar.utf_decode_length next))
+
+    let to_utf_8_seq s = to_utf_8_seq (Bytes.unsafe_of_string s) 0
+
     let print ppf t =
       Format.pp_print_string ppf t
   end
 
   external compare : 'a -> 'a -> int = "%compare"
 end
+
+let repeated_label l =
+  let module Set = Stdlib.String.Set in
+  let rec go s = function
+    | [] -> None
+    | (None, _) :: l -> go s l
+    | (Some lbl, _) :: l ->
+      if Set.mem lbl s then Some lbl else go (Set.add lbl s) l
+  in
+  go Set.empty l
 
 (** {1 Minimal support for Unicode characters in identifiers} *)
 
@@ -793,6 +813,7 @@ module Color = struct
 
   let default_setting = Auto
   let enabled = ref true
+  let is_enabled () = !enabled
 
 end
 
@@ -863,7 +884,7 @@ module Style = struct
       error = no_markup [Bold; FG Red];
       loc = no_markup [Bold];
       hint = no_markup [Bold; FG Blue];
-      inline_code= { ansi=[Bold]; text_open = {|"|}; text_close = {|"|} }
+      inline_code= no_markup [Bold]
     }
 
   let cur_styles = ref default_styles
@@ -878,6 +899,7 @@ module Style = struct
     | Format.String_tag "loc" -> (!cur_styles).loc
     | Format.String_tag "hint" -> (!cur_styles).hint
     | Format.String_tag "inline_code" -> (!cur_styles).inline_code
+    | Format.String_tag "ralign" -> no_markup []
     | Style s -> no_markup s
     | _ -> raise Not_found
 
@@ -889,6 +911,7 @@ module Style = struct
     pp_close_stag ppf ()
 
   let inline_code ppf s = as_inline_code Format_doc.pp_print_string ppf s
+  let hint ppf = Format_doc.fprintf ppf "@{<hint>Hint@}"
 
   (* either prints the tag of [s] or delegates to [or_else] *)
   let mark_open_tag ~or_else s =
@@ -941,7 +964,7 @@ let edit_distance a b cutoff =
   let la, lb = String.length a, String.length b in
   let cutoff =
     (* using max_int for cutoff would cause overflows in (i + cutoff + 1);
-       we bring it back to the (max la lb) worstcase *)
+       we bring it back to the (max la lb) worst case *)
     Int.min (Int.max la lb) cutoff in
   if abs (la - lb) > cutoff then None
   else begin
@@ -1002,22 +1025,34 @@ let spellcheck env name =
   let env = List.sort_uniq (fun s1 s2 -> String.compare s2 s1) env in
   fst (List.fold_left (compare name) ([], max_int) env)
 
+let align_hint ~prefix ~main ~hint =
+    let prefix_shift = String.length prefix in
+    Format_doc.Doc.align_prefix2 (main,prefix_shift) (hint,0)
 
-let did_you_mean ppf get_choices =
+let align_error_hint ~main ~hint = align_hint ~prefix:"Error: " ~main ~hint
+
+let aligned_hint ~prefix ppf main_fmt  =
   let open Format_doc in
-  (* flush now to get the error report early, in the (unheard of) case
-     where the search in the get_choices function would take a bit of
-     time; in the worst case, the user has seen the error, she can
-     interrupt the process before the spell-checking terminates. *)
-  fprintf ppf "@?";
-  match get_choices () with
-  | [] -> ()
+  kdoc_printf (fun main hint ->
+      match hint with
+      | None -> pp_doc ppf main
+      | Some hint ->
+        let main, hint = align_hint ~prefix ~main ~hint in
+        fprintf ppf "%a@.%a" pp_doc main pp_doc hint
+    ) main_fmt
+
+let did_you_mean ?(pp=Style.inline_code) choices =
+  let open Format_doc in
+  match choices with
+  | [] -> None
   | choices ->
     let rest, last = split_last choices in
-     fprintf ppf "@\n@[@{<hint>Hint@}: Did you mean %a%s%a?@]"
-       (pp_print_list ~pp_sep:comma Style.inline_code) rest
-       (if rest = [] then "" else " or ")
-       Style.inline_code last
+    Some (doc_printf
+            "@[@{<hint>Hint@}: @{<ralign>Did you mean @}%a%s%a?@]"
+            (pp_print_list ~pp_sep:comma pp) rest
+            (if rest = [] then "" else " or ")
+            pp last
+      )
 
 module Error_style = struct
   type setting =
@@ -1103,6 +1138,14 @@ let get_build_path_prefix_map =
     end;
     !map_cache
 
+let invert_build_path_prefix_map path =
+  match get_build_path_prefix_map () with
+  | None -> [path]
+  | Some prefix_map ->
+    match Build_path_prefix_map.invert_all prefix_map path with
+    | [] -> [path]
+    | matches -> matches
+
 let debug_prefix_map_flags () =
   if not Config.as_has_debug_prefix_map then
     []
@@ -1135,7 +1178,7 @@ let print_if ppf flag printer arg =
 
 type filepath = string
 type modname = string
-type crcs = (modname * Digest.t option) list
+type crcs = (modname * Digest.BLAKE128.t option) list
 
 type alerts = string Stdlib.String.Map.t
 
@@ -1389,4 +1432,135 @@ module Magic_number = struct
          match check_current kind info with
            | Error err -> Error (Unexpected_error err)
            | Ok () -> Ok info
+end
+
+module RuntimeID = struct
+  type t = {
+    dev: bool;
+    release: int;
+    reserved: int;
+    no_flat_float_array: bool;
+    fp: bool;
+    tsan: bool;
+    int31: bool;
+    static: bool;
+    no_compression: bool;
+    ansi: bool;
+  }
+
+  let make fn ?(dev = not Config.is_official_release)
+              ?(release = Config.release_number)
+              ?(reserved = Config.reserved_header_bits)
+              ?(no_flat_float_array = not Config.flat_float_array)
+              ?(fp = Config.with_frame_pointers)
+              ?(tsan = Config.tsan)
+              ?(int31 = (Sys.int_size = 31))
+              ?(static = not Config.supports_shared_libraries)
+              ?(no_compression = (Config.compression_c_libraries = ""))
+              ?(ansi = Config.target_win32 && not Config.windows_unicode) () =
+    if release < 0 || release > 63 || reserved < 0 || reserved > 31 then
+      invalid_arg fn
+    else
+      {dev; release; reserved; no_flat_float_array; fp; tsan; int31; static;
+       no_compression; ansi}
+
+  let make_zinc =
+    make "Misc.RuntimeID.make_zinc"
+      ~reserved:0 ~fp:false ~tsan:false ~ansi:false
+
+  let make_bytecode =
+    make "Misc.RuntimeID.make_bytecode" ~fp:false ~tsan:false
+
+  let make_native = make "Misc.RuntimeID.make_native"
+
+  let is_zinc = function
+  | {dev = _; release = _; reserved = 0; no_flat_float_array = _; fp = false;
+     tsan = false; int31 = _; static = _; no_compression = _; ansi = false} ->
+      true
+  | _ ->
+      false
+
+  let is_bytecode = function
+  | {dev = _; release = _; reserved = _; no_flat_float_array = _; fp = false;
+     tsan = false; int31 = _; static = _; no_compression = _; ansi = _} -> true
+  | _ -> false
+
+  let is_native _ = true
+
+  let to_string t =
+    let alpha = "0123456789abcdefghijklmnopqrstuv" in
+    let bit bit cond = if cond then 1 lsl bit else 0 in
+    let q0 =
+      (bit 0 t.dev) lor
+      ((t.release lsl 1) land 0b11110) (* 4 bits *)
+    in
+    let q1 =
+      t.release lsr 4 lor               (* 2 bits *)
+      ((t.reserved lsl 2) land 0b11100) (* 3 bits *)
+    in
+    let q2 =
+      t.reserved lsr 3 lor (* 2 bits *)
+      bit 2 t.no_flat_float_array lor
+      bit 3 t.fp lor
+      bit 4 t.tsan
+    in
+    let q3 =
+      bit 0 t.int31 lor
+      bit 1 t.static lor
+      bit 2 t.no_compression lor
+      bit 3 t.ansi
+      (* bit 4 is unused *)
+    in
+    Printf.sprintf "%c%c%c%c" alpha.[q0] alpha.[q1] alpha.[q2] alpha.[q3]
+
+  let of_string s =
+    if String.length s <> 4 then
+      None
+    else
+      let convert c =
+        match c with
+        | '0'..'9' -> Char.code c - Char.code '0'
+        | 'a'..'v' -> Char.code c - Char.code 'a' + 10
+        | _ -> min_int
+      in
+      let set bit q = (q land (1 lsl bit) <> 0) in
+      let q0 = convert s.[0] in
+      let q1 = convert s.[1] in
+      let q2 = convert s.[2] in
+      let q3 = convert s.[3] in
+      if q0 + q1 + q2 + q3 >= 0 then
+        Some {dev = set 0 q0; release = ((q1 land 0b11) lsl 4) lor (q0 lsr 1);
+              reserved = ((q2 land 0b11) lsl 2) lor (q1 lsr 2);
+              no_flat_float_array = set 2 q2; fp = set 3 q2; tsan = set 4 q2;
+              int31 = set 0 q3; static = set 1 q3; no_compression = set 2 q3;
+              ansi = set 3 q3; (* bit 4 of q3 is unused *)}
+      else
+        None
+
+  let of_zinc_hi ?(dev = not Config.is_official_release)
+                 ?(release = Config.release_number) s =
+    Option.map (fun id -> {id with dev; release}) (of_string ("00" ^ s))
+
+  let ocamlrun variant runtime_id =
+    if is_zinc runtime_id then
+      Printf.sprintf "ocamlrun%s-%s" variant (to_string runtime_id)
+    else
+      invalid_arg "Misc.RuntimeID.ocamlrun"
+
+  let shared_runtime ?runtime_id ?(host = Config.target) ?(prefix = "-l")
+                     backend_type =
+    match backend_type with
+    | Sys.Native ->
+        let runtime_id = Option.value ~default:(make_native ()) runtime_id in
+        Printf.sprintf "%sasmrun-%s-%s" prefix host (to_string runtime_id)
+    | Sys.Bytecode ->
+        let runtime_id = Option.value ~default:(make_bytecode ()) runtime_id in
+        Printf.sprintf "%scamlrun-%s-%s" prefix host (to_string runtime_id)
+    | Sys.Other _ ->
+        invalid_arg "Misc.RuntimeID.shared_runtime"
+
+  let stubslib ?(runtime_id = make_bytecode ())
+               ?(host = Config.target)
+               name =
+    Printf.sprintf "%s-%s-%s" name host (to_string runtime_id)
 end

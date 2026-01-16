@@ -44,7 +44,7 @@ let save filename linear_unit_info =
     output_value ch (Cmm.cur_label ());
     (* Compute digest of the contents and append it to the file. *)
     flush ch;
-    let crc = Digest.file filename in
+    let crc = Digest.BLAKE128.file filename in
     output_value ch crc
   )
     ~always:(fun () -> close_out ch)
@@ -62,7 +62,7 @@ let restore filename =
            let last_label = (input_value ic : Cmm.label) in
            Cmm.reset ();
            Cmm.set_label last_label;
-           let crc = (input_value ic : Digest.t) in
+           let crc = (input_value ic : Digest.BLAKE128.t) in
            linear_unit_info, crc
          with End_of_file | Failure _ -> raise (Error (Corrupted filename))
             | Error e -> raise (Error e)

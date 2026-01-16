@@ -6,7 +6,7 @@
      However, this does not seem very reliable, so that this test fails
      on some Windows configurations. See GPR #1533.
    *)
- not-windows;
+ not-target-windows;
  {
    bytecode;
  }{

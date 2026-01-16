@@ -46,7 +46,15 @@ CAMLextern caml_result caml_process_pending_actions_res (void);
    kept around for compatibility. */
 CAMLextern value caml_process_pending_actions_exn (void);
 
+CAMLextern int caml_check_pending_actions (void);
+/* Returns 1 if there are pending actions, 0 otherwise. */
+
+#ifdef __cplusplus
+}
+#endif
+
 #ifdef CAML_INTERNALS
+
 value caml_process_pending_actions_with_root (value extra_root); // raises
 /* This is identical to [caml_process_pending_actions], except that it
    registers its argument as a root and eventually returns it. This is
@@ -71,12 +79,6 @@ value caml_process_pending_actions_with_root (value extra_root); // raises
 */
 
 caml_result caml_process_pending_actions_with_root_res (value extra_root);
-#endif
-
-CAMLextern int caml_check_pending_actions (void);
-/* Returns 1 if there are pending actions, 0 otherwise. */
-
-#ifdef CAML_INTERNALS
 
 #ifndef NSIG
 #define NSIG 65
@@ -111,10 +113,7 @@ CAMLextern void caml_free_signal_stack(void *);
 /* These hooks are not modified after other threads are spawned. */
 CAMLextern void (*caml_enter_blocking_section_hook)(void);
 CAMLextern void (*caml_leave_blocking_section_hook)(void);
-#endif /* CAML_INTERNALS */
 
-#ifdef __cplusplus
-}
-#endif
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_SIGNALS_H */

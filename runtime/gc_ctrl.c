@@ -38,14 +38,15 @@
 #include "caml/signals.h"
 #include "caml/startup.h"
 #include "caml/fail.h"
+#include "caml/callback.h"
 
 atomic_uintnat caml_max_stack_wsize;
 uintnat caml_fiber_wsz;
 
-extern uintnat caml_percent_free; /* see major_gc.c */
-extern uintnat caml_custom_major_ratio; /* see custom.c */
-extern uintnat caml_custom_minor_ratio; /* see custom.c */
-extern uintnat caml_custom_minor_max_bsz; /* see custom.c */
+extern _Atomic uintnat caml_percent_free; /* see major_gc.c */
+extern _Atomic uintnat caml_custom_major_ratio; /* see custom.c */
+extern _Atomic uintnat caml_custom_minor_ratio; /* see custom.c */
+extern _Atomic uintnat caml_custom_minor_max_bsz; /* see custom.c */
 extern uintnat caml_minor_heap_max_wsz; /* see domain.c */
 
 CAMLprim value caml_gc_quick_stat(value v)
@@ -61,7 +62,7 @@ CAMLprim value caml_gc_quick_stat(value v)
   mincoll = atomic_load(&caml_minor_collections_count);
   compactions = atomic_load(&caml_compactions_count);
 
-  res = caml_alloc_tuple (17);
+  res = caml_alloc_tuple (18);
   Store_field (res, 0, caml_copy_double ((double)s.alloc_stats.minor_words));
   Store_field (res, 1, caml_copy_double ((double)s.alloc_stats.promoted_words));
   Store_field (res, 2, caml_copy_double ((double)s.alloc_stats.major_words));
@@ -83,8 +84,9 @@ CAMLprim value caml_gc_quick_stat(value v)
   Store_field (res, 13, Val_long (compactions));
   Store_field (res, 14, Val_long (
     s.heap_stats.pool_max_words + s.heap_stats.large_max_words));
-  Store_field (res, 15, Val_long (0));
+  Store_field (res, 15, Val_long (caml_current_stack_size()));
   Store_field (res, 16, Val_long (s.alloc_stats.forced_major_collections));
+  Store_field (res, 17, Val_long (caml_live_stacks_memory()));
   CAMLreturn (res);
 }
 
@@ -103,8 +105,8 @@ CAMLprim value caml_gc_minor_words(value v)
 
 CAMLprim value caml_gc_counters(value v)
 {
-  CAMLparam0 ();   /* v is ignored */
-  CAMLlocal1 (res);
+  CAMLparam0 (); /* v is ignored */
+  CAMLlocal4 (minwords_, prowords_, majwords_, res);
 
   /* get a copy of these before allocating anything... */
   double minwords = caml_gc_minor_words_unboxed();
@@ -112,11 +114,11 @@ CAMLprim value caml_gc_counters(value v)
   double majwords = Caml_state->stat_major_words +
                     (double) Caml_state->allocated_words;
 
-  res = caml_alloc_3(0,
-    caml_copy_double (minwords),
-    caml_copy_double (prowords),
-    caml_copy_double (majwords));
-  CAMLreturn (res);
+  minwords_ = caml_copy_double(minwords);
+  prowords_ = caml_copy_double(prowords);
+  majwords_ = caml_copy_double(majwords);
+  res = caml_alloc_3(0, minwords_, prowords_, majwords_);
+  CAMLreturn(res);
 }
 
 CAMLprim value caml_gc_get(value v)
@@ -126,12 +128,16 @@ CAMLprim value caml_gc_get(value v)
 
   res = caml_alloc_tuple (11);
   Store_field (res, 0, Val_long (Caml_state->minor_heap_wsz));          /* s */
-  Store_field (res, 2, Val_long (caml_percent_free));                   /* o */
+  Store_field (res, 2,
+    Val_long (atomic_load_relaxed(&caml_percent_free)));                /* o */
   Store_field (res, 3, Val_long (atomic_load_relaxed(&caml_verb_gc)));  /* v */
   Store_field (res, 5, Val_long (caml_max_stack_wsize));                /* l */
-  Store_field (res, 8, Val_long (caml_custom_major_ratio));             /* M */
-  Store_field (res, 9, Val_long (caml_custom_minor_ratio));             /* m */
-  Store_field (res, 10, Val_long (caml_custom_minor_max_bsz));          /* n */
+  Store_field (res, 8,
+    Val_long (atomic_load_relaxed(&caml_custom_major_ratio)));          /* M */
+  Store_field (res, 9,
+    Val_long (atomic_load_relaxed(&caml_custom_minor_ratio)));          /* m */
+  Store_field (res, 10,
+    Val_long (atomic_load_relaxed(&caml_custom_minor_max_bsz)));        /* n */
   CAMLreturn (res);
 }
 
@@ -166,55 +172,52 @@ CAMLprim value caml_gc_set(value v)
 
   caml_change_max_stack_size (new_max_stack_size);
 
-  if (newpf != caml_percent_free){
-    caml_percent_free = newpf;
-    caml_gc_message (0x20, "New space overhead: %"
-                     ARCH_INTNAT_PRINTF_FORMAT "u%%\n", caml_percent_free);
+  if (newpf != atomic_load_relaxed(&caml_percent_free)){
+    atomic_store_relaxed(&caml_percent_free, newpf);
+    CAML_GC_MESSAGE(PARAMS, "New space overhead: %" CAML_PRIuNAT "%%\n",
+                    caml_percent_free);
   }
 
   atomic_store_relaxed(&caml_verb_gc, new_verb_gc);
 
   /* These fields were added in 4.08.0. */
   if (Wosize_val (v) >= 11){
-    if (new_custom_maj != caml_custom_major_ratio){
-      caml_custom_major_ratio = new_custom_maj;
-      caml_gc_message (0x20, "New custom major ratio: %"
-                       ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
-                       caml_custom_major_ratio);
+    if (new_custom_maj != atomic_load_relaxed(&caml_custom_major_ratio)){
+      atomic_store_relaxed(&caml_custom_major_ratio, new_custom_maj);
+      CAML_GC_MESSAGE(PARAMS, "New custom major ratio: %" CAML_PRIuNAT "%%\n",
+                      caml_custom_major_ratio);
     }
-    if (new_custom_min != caml_custom_minor_ratio){
-      caml_custom_minor_ratio = new_custom_min;
-      caml_gc_message (0x20, "New custom minor ratio: %"
-                       ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
-                       caml_custom_minor_ratio);
+    if (new_custom_min != atomic_load_relaxed(&caml_custom_minor_ratio)){
+      atomic_store_relaxed(&caml_custom_minor_ratio, new_custom_min);
+      CAML_GC_MESSAGE(PARAMS, "New custom minor ratio: %" CAML_PRIuNAT "%%\n",
+                      caml_custom_minor_ratio);
     }
-    if (new_custom_sz != caml_custom_minor_max_bsz){
-      caml_custom_minor_max_bsz = new_custom_sz;
-      caml_gc_message (0x20, "New custom minor size limit: %"
-                       ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
-                       caml_custom_minor_max_bsz);
+    if (new_custom_sz != atomic_load_relaxed(&caml_custom_minor_max_bsz)){
+      atomic_store_relaxed(&caml_custom_minor_max_bsz, new_custom_sz);
+      CAML_GC_MESSAGE(PARAMS,
+                      "New custom minor size limit: %" CAML_PRIuNAT "%%\n",
+                      caml_custom_minor_max_bsz);
     }
   }
 
   /* Minor heap size comes last because it will trigger a minor collection
      (thus invalidating [v]) and it can raise [Out_of_memory]. */
   if (newminwsz != Caml_state->minor_heap_wsz) {
-    caml_gc_message (0x20, "New minor heap size: %"
-                     ARCH_INTNAT_PRINTF_FORMAT "uk words\n", newminwsz / 1024);
+    CAML_GC_MESSAGE(PARAMS, "New minor heap size: %" CAML_PRIuNAT "k words\n",
+                    newminwsz / 1024);
   }
 
   if (newminwsz > caml_minor_heap_max_wsz) {
-    caml_gc_log ("update minor heap max: %"
-                 ARCH_INTNAT_PRINTF_FORMAT "uk words", newminwsz / 1024);
+    caml_gc_log ("update minor heap max: %" CAML_PRIuNAT "k words",
+                 newminwsz / 1024);
     caml_update_minor_heap_max(newminwsz);
   }
   CAMLassert(newminwsz <= caml_minor_heap_max_wsz);
   if (newminwsz != Caml_state->minor_heap_wsz) {
-    caml_gc_log ("current minor heap size: %"
-                 ARCH_SIZET_PRINTF_FORMAT "uk words",
+    caml_gc_log ("current minor heap size: %" CAML_PRIuSZT "k words",
                  Caml_state->minor_heap_wsz / 1024);
-    caml_gc_log ("set minor heap size: %"
-                 ARCH_INTNAT_PRINTF_FORMAT "uk words", newminwsz / 1024);
+    caml_gc_log ("set minor heap size: %" CAML_PRIuNAT "k words",
+                 newminwsz / 1024);
     /* FIXME: when (newminwsz > caml_minor_heap_max_wsz) and
        (newminwsz != Caml_state->minor_heap_wsz) are both true,
        the current domain reallocates its own minor heap twice. */
@@ -242,6 +245,7 @@ static caml_result gc_major_res(int force_compaction)
   caml_gc_log ("Major GC cycle requested");
   caml_empty_minor_heaps_once();
   caml_finish_major_cycle(force_compaction);
+  caml_reset_major_pacing();
   caml_result result = caml_process_pending_actions_res();
   CAML_EV_END(EV_EXPLICIT_GC_MAJOR);
   return result;
@@ -262,6 +266,7 @@ static caml_result gc_full_major_res(void)
      currently-unreachable object to be collected. */
   for (int i = 0; i < 3; i++) {
     caml_finish_major_cycle(0);
+    caml_reset_major_pacing();
     caml_result res = caml_process_pending_actions_res();
     if (caml_result_is_exception(res)) return res;
   }
@@ -297,6 +302,7 @@ CAMLprim value caml_gc_compaction(value v)
      why this needs three iterations. */
   for (int i = 0; i < 3; i++) {
     caml_finish_major_cycle(i == 2);
+    caml_reset_major_pacing();
     result = caml_process_pending_actions_res();
     if (caml_result_is_exception(result)) break;
   }
@@ -330,16 +336,17 @@ void caml_init_gc (void)
 
   caml_max_stack_wsize = caml_params->init_max_stack_wsz;
   caml_fiber_wsz = (Stack_threshold * 2) / sizeof(value);
-  caml_percent_free = norm_pfree (caml_params->init_percent_free);
-  caml_gc_log ("Initial stack limit: %"
-               ARCH_INTNAT_PRINTF_FORMAT "uk bytes",
+  atomic_store_relaxed(&caml_percent_free,
+                       norm_pfree (caml_params->init_percent_free));
+  caml_gc_log ("Initial stack limit: %" CAML_PRIuNAT "k bytes",
                caml_params->init_max_stack_wsz / 1024 * sizeof (value));
 
-  caml_custom_major_ratio =
-      norm_custom_maj (caml_params->init_custom_major_ratio);
-  caml_custom_minor_ratio =
-      norm_custom_min (caml_params->init_custom_minor_ratio);
-  caml_custom_minor_max_bsz = caml_params->init_custom_minor_max_bsz;
+  atomic_store_relaxed(&caml_custom_major_ratio,
+                       norm_custom_maj (caml_params->init_custom_major_ratio));
+  atomic_store_relaxed(&caml_custom_minor_ratio,
+                       norm_custom_min (caml_params->init_custom_minor_ratio));
+  atomic_store_relaxed(&caml_custom_minor_max_bsz,
+                       caml_params->init_custom_minor_max_bsz);
 
   caml_gc_phase = Phase_sweep_and_mark_main;
   #ifdef NATIVE_CODE
@@ -367,13 +374,13 @@ CAMLprim value caml_runtime_variant (value unit)
 
 CAMLprim value caml_runtime_parameters (value unit)
 {
-#define F_Z ARCH_INTNAT_PRINTF_FORMAT
-#define F_S ARCH_SIZET_PRINTF_FORMAT
+#define F_Z CAML_PRIuNAT
+#define F_S CAML_PRIuSZT
 
   CAMLassert (unit == Val_unit);
   return caml_alloc_sprintf
-      ("b=%d,c=%"F_Z"u,e=%"F_Z"u,l=%"F_Z"u,M=%"F_Z"u,m=%"F_Z"u,n=%"F_Z"u,"
-       "o=%"F_Z"u,p=%d,s=%"F_S"u,t=%"F_Z"u,v=%"F_Z"u,V=%"F_Z"u,W=%"F_Z"u",
+      ("b=%d,c=%"F_Z",e=%"F_Z",l=%"F_Z",M=%"F_Z",m=%"F_Z",n=%"F_Z","
+       "o=%"F_Z",p=%d,s=%"F_S",t=%"F_Z",v=%"F_Z",V=%"F_Z",W=%"F_Z"",
        /* b */ (int) Caml_state->backtrace_active,
        /* c */ caml_params->cleanup_on_exit,
        /* e */ caml_params->runtime_events_log_wsize,
@@ -406,4 +413,83 @@ CAMLprim value caml_ml_runtime_warnings_enabled(value unit)
 {
   CAMLassert (unit == Val_unit);
   return Val_bool(caml_runtime_warnings);
+}
+
+
+/* Ramp-up phase. */
+
+static uintnat get_ramp_up_suspended_words(void) {
+  return (Caml_state->current_ramp_up_allocated_words_diff
+          + Caml_state->allocated_words_suspended);
+}
+
+static void set_ramp_up_suspended_words(uintnat suspended_words) {
+  Caml_state->current_ramp_up_allocated_words_diff =
+    suspended_words - Caml_state->allocated_words_suspended;
+}
+
+caml_result caml_gc_ramp_up(value callback, uintnat *out_suspended_words) {
+    /* Calls to [caml_gc_ramp_up] could be nested, so we are careful
+       to save the current setting beforehand and restore it afterwards.
+
+       When nesting an inner ramp-up phase within an outer ramp-up
+       phase, the allocations suspended during the inner phase should
+       be returned as the suspended count of the inner call, and
+       should not be double-counted as suspended allocations of the
+       outer phase. */
+
+    CAML_GC_MESSAGE(SLICESIZE, "Entering a GC ramp-up phase.\n");
+
+    intnat ramp_up_already = (Caml_state->gc_policy & CAML_GC_RAMP_UP);
+    if (!ramp_up_already)
+      Caml_state->gc_policy = (Caml_state->gc_policy | CAML_GC_RAMP_UP);
+
+    /* Save the suspended words of a potential outer phase,
+       and start a new ramp_up phase. */
+    uintnat suspended_words_outer = get_ramp_up_suspended_words();
+    if (!ramp_up_already) CAMLassert(suspended_words_outer == 0);
+    set_ramp_up_suspended_words(0);
+
+    caml_result res = caml_callback_res(callback, Val_unit);
+
+    /* Write the suspended words of the inner phase,
+       restore the suspended words of the outer phase. */
+    uintnat suspended_words_inner = get_ramp_up_suspended_words();
+    *out_suspended_words = suspended_words_inner;
+    set_ramp_up_suspended_words(suspended_words_outer);
+
+    CAML_GC_MESSAGE(SLICESIZE,
+      "Leaving a GC ramp-up phase; suspended words: %" CAML_PRIuNAT "\n",
+      suspended_words_inner);
+
+    if (!ramp_up_already)
+      Caml_state->gc_policy = (Caml_state->gc_policy & ~CAML_GC_RAMP_UP);
+
+    return res;
+}
+
+void caml_gc_ramp_down(uintnat ramp_up_words) {
+  Caml_state->allocated_words_resumed += ramp_up_words;
+}
+
+CAMLprim value caml_ml_gc_ramp_up(value callback) {
+  CAMLparam1(callback);
+  CAMLlocal1(v);
+  uintnat deferred_words;
+  caml_result res = caml_gc_ramp_up(callback, &deferred_words);
+  if (caml_result_is_exception(res)) {
+    // We will re-raise the exception below; before that,
+    // we ramp_down to avoid discarding the deferred work.
+    caml_gc_ramp_down(deferred_words);
+  }
+  v = caml_get_value_or_raise(res);
+  CAMLreturn (caml_alloc_2(0, v, Val_long(deferred_words)));
+}
+
+CAMLprim value caml_ml_gc_ramp_down(value work) {
+  uintnat resumed_words = Long_val(work);
+  CAML_GC_MESSAGE(SLICESIZE,
+    "GC ramp-down; resumed words: %" CAML_PRIuNAT "\n", resumed_words);
+  caml_gc_ramp_down(resumed_words);
+  return Val_unit;
 }

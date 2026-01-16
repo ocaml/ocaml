@@ -64,11 +64,12 @@ type (!'a, !'b) t
 
 val create : ?random: (* thwart tools/sync_stdlib_docs *) bool ->
              int -> ('a, 'b) t
-(** [Hashtbl.create n] creates a new, empty hash table, with
-   initial size [n].  For best results, [n] should be on the
-   order of the expected number of elements that will be in
-   the table.  The table grows as needed, so [n] is just an
-   initial guess.
+(** [Hashtbl.create n] creates a new, empty hash table, with initial
+   size greater or equal to the suggested size [n].  For best results,
+   [n] should be on the order of the expected number of elements that
+   will be in the table.  The table grows as needed, so [n] is just an
+   initial guess.  If [n] is very small or negative then it is
+   disregarded and a small default size is used.
 
    The optional [~random] parameter (a boolean) controls whether
    the internal organization of the hash table is randomized at each
@@ -148,12 +149,20 @@ val remove : ('a, 'b) t -> 'a -> unit
    restoring the previous binding if it exists.
    It does nothing if [x] is not bound in [tbl]. *)
 
+val find_and_remove : ('a, 'b) t -> 'a -> 'b option
+(** Same as {!remove} but returns the previous binding, if any.
+    @since 5.5 *)
+
 val replace : ('a, 'b) t -> 'a -> 'b -> unit
 (** [Hashtbl.replace tbl key data] replaces the current binding of [key]
    in [tbl] by a binding of [key] to [data].  If [key] is unbound in [tbl],
    a binding of [key] to [data] is added to [tbl].
    This is functionally equivalent to {!remove}[ tbl key]
    followed by {!add}[ tbl key data]. *)
+
+val find_and_replace : ('a, 'b) t -> 'a -> 'b -> 'b option
+(** Same as {!replace} but returns the previous binding, if any.
+    @since 5.5 *)
 
 val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
 (** [Hashtbl.iter f tbl] applies [f] to all bindings in table [tbl].
@@ -379,12 +388,18 @@ module type S =
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
+    val find_and_remove : 'a t -> key -> 'a option
+    (** @since 5.5 *)
+
     val find : 'a t -> key -> 'a
     val find_opt : 'a t -> key -> 'a option
     (** @since 4.05 *)
 
     val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
+    val find_and_replace : 'a t -> key -> 'a -> 'a option
+    (** @since 5.5 *)
+
     val mem : 'a t -> key -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
     val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t ->
@@ -457,11 +472,17 @@ module type SeededS =
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
+    val find_and_remove : 'a t -> key -> 'a option
+    (** @since 5.5 *)
+
     val find : 'a t -> key -> 'a
     val find_opt : 'a t -> key -> 'a option (** @since 4.05 *)
 
     val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
+    val find_and_replace : 'a t -> key -> 'a -> 'a option
+    (** @since 5.5 *)
+
     val mem : 'a t -> key -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
     val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t ->

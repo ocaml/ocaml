@@ -13,6 +13,7 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/fail.h>
@@ -24,20 +25,20 @@
 #include <math.h>
 #include <sys/time.h>
 
-static void caml_unix_set_timeval(struct timeval * tv, double d)
+static void caml_unix_set_timeval(struct timeval * tv, double sec)
 {
-  double integr, frac;
-  frac = modf(d, &integr);
-  /* Round time up so that if d is small but not 0, we end up with
+  double int_sec, frac_sec;
+  frac_sec = modf(sec, &int_sec);
+  /* Round time up so that if [sec] is small but not 0, we end up with
      a non-0 timeval. */
-  tv->tv_sec = integr;
-  tv->tv_usec = ceil(1e6 * frac);
-  if (tv->tv_usec >= 1000000) { tv->tv_sec++; tv->tv_usec = 0; }
+  tv->tv_sec = int_sec;
+  tv->tv_usec = ceil(frac_sec * USEC_PER_SEC);
+  if (tv->tv_usec >= USEC_PER_SEC) { tv->tv_sec++; tv->tv_usec = 0; }
 }
 
 static value caml_unix_convert_itimer(struct itimerval *tp)
 {
-#define Get_timeval(tv) (double) tv.tv_sec + (double) tv.tv_usec / 1e6
+#define Get_timeval(tv) (double) tv.tv_sec + (double) tv.tv_usec / USEC_PER_SEC
   value res = caml_alloc_small(Double_wosize * 2, Double_array_tag);
   Store_double_flat_field(res, 0, Get_timeval(tp->it_interval));
   Store_double_flat_field(res, 1, Get_timeval(tp->it_value));
@@ -45,7 +46,7 @@ static value caml_unix_convert_itimer(struct itimerval *tp)
 #undef Get_timeval
 }
 
-static int itimers[3] = { ITIMER_REAL, ITIMER_VIRTUAL, ITIMER_PROF };
+static const int itimers[3] = { ITIMER_REAL, ITIMER_VIRTUAL, ITIMER_PROF };
 
 CAMLprim value caml_unix_setitimer(value which, value newval)
 {

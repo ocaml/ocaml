@@ -39,6 +39,10 @@
   asize_t reserve;             \
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Count of the total number of minor collections performed by the program */
 CAMLextern atomic_uintnat caml_minor_collections_count;
 
@@ -51,6 +55,7 @@ struct caml_ref_table CAML_TABLE_STRUCT(value *);
 struct caml_ephe_ref_elt {
   value ephe;      /* an ephemeron in major heap */
   mlsize_t offset; /* the offset that points in the minor heap  */
+  value locked;    /* only used during minor GC; see minor_gc.c */
 };
 struct caml_ephe_ref_table CAML_TABLE_STRUCT(struct caml_ephe_ref_elt);
 
@@ -69,6 +74,10 @@ struct caml_minor_tables {
 
 CAMLextern void caml_minor_collection (void);
 
+#ifdef __cplusplus
+}
+#endif
+
 #ifdef CAML_INTERNALS
 extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
 extern void caml_empty_minor_heap_no_major_slice_from_stw
@@ -86,7 +95,7 @@ extern void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *);
 extern void caml_realloc_custom_table (struct caml_custom_table *);
 struct caml_minor_tables* caml_alloc_minor_tables(void);
 void caml_free_minor_tables(struct caml_minor_tables*);
-void caml_empty_minor_heap_setup(caml_domain_state* domain);
+void caml_empty_minor_heap_setup(caml_domain_state* domain, void *);
 
 #ifdef DEBUG
 extern int caml_debug_is_minor(value val);
@@ -113,6 +122,7 @@ Caml_inline void add_to_ephe_ref_table (struct caml_ephe_ref_table *tbl,
   ephe_ref = tbl->ptr++;
   ephe_ref->ephe = ar;
   ephe_ref->offset = offset;
+  ephe_ref->locked = Val_unit;
   CAMLassert(ephe_ref->offset < Wosize_val(ephe_ref->ephe));
 }
 

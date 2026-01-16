@@ -2,11 +2,9 @@ val foreign_names : string list = ["été"; "simple"; "sœur"; "你好"]
 val test_files : string list =
   ["été.txt"; "simple.txt"; "sœur.txt"; "你好.txt"]
 val to_create_and_delete_files : string list =
-  ["верблюды"; "骆驼"; "קעמל"; "اونٹ"; "Lạc đà";
-   "ఒంటె"; "ஒட்டகம்"; "وشتر";
+  ["верблюды"; "骆驼"; "קעמל"; "اونٹ"; "Lạc đà"; "ఒంటె"; "ஒட்டகம்"; "وشتر";
    "उष्ट्रः"; "اٺ"]
-val foreign_names2 : string list =
-  ["верблюды"; "骆驼"; "קעמל"; "اونٹ"]
+val foreign_names2 : string list = ["верблюды"; "骆驼"; "קעמל"; "اونٹ"]
 val getenvironmentenv : string -> string = <fun>
 val unix_getcwd : unit -> string = <fun>
 val sys_getcwd : unit -> string = <fun>
@@ -39,9 +37,8 @@ val t_sys_readdir : string list =
 val t_open_in : string list =
   ["été.txt"; "simple.txt"; "sœur.txt"; "你好.txt"]
 val t_open_out : string list =
-  ["Hello, верблюды"; "Hello, 骆驼"; "Hello, קעמל";
-   "Hello, اونٹ"; "Hello, Lạc đà"; "Hello, ఒంటె";
-   "Hello, ஒட்டகம்"; "Hello, وشتر";
+  ["Hello, верблюды"; "Hello, 骆驼"; "Hello, קעמל"; "Hello, اونٹ";
+   "Hello, Lạc đà"; "Hello, ఒంటె"; "Hello, ஒட்டகம்"; "Hello, وشتر";
    "Hello, उष्ट्रः"; "Hello, اٺ"]
 val t_file_exists : bool list =
   [true; true; true; true; true; true; true; true; true; true]
@@ -78,8 +75,7 @@ val t_sys_chdir : string list = ["été"; "simple"; "sœur"; "你好"]
 val t_unix_chdir : string list = ["été"; "simple"; "sœur"; "你好"]
 - : bool list = [false; false; false; false]
 val t_getenv : ((string * string) * (string * string)) list =
-  [(("верблюды", "верблюды"),
-    ("верблюдыверблюды", "верблюдыверблюды"));
+  [(("верблюды", "верблюды"), ("верблюдыверблюды", "верблюдыверблюды"));
    (("骆驼", "骆驼"), ("骆驼骆驼", "骆驼骆驼"));
    (("קעמל", "קעמל"), ("קעמלקעמל", "קעמלקעמל"));
    (("اونٹ", "اونٹ"), ("اونٹاونٹ", "اونٹاونٹ"))]

@@ -15,9 +15,7 @@
 
 #include <caml/config.h>
 
-#ifdef HAS_UNISTD
 #include <unistd.h>
-#endif
 #include <sys/types.h>
 #ifdef HAS_GETAUXVAL
 #include <sys/auxv.h>

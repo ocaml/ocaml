@@ -1,8 +1,8 @@
 (* TEST
  script = "sh ${test_source_directory}/has-afunix.sh";
- libwin32unix;
  include systhreads;
  hassysthreads;
+ target-windows;
  script;
  {
    output = "${test_build_directory}/program-output";

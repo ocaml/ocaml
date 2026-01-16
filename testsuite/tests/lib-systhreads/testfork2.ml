@@ -2,7 +2,8 @@
  include systhreads;
  hassysthreads;
  not-bsd;
- libunix;
+ hasunix;
+ not-target-windows;
  {
    bytecode;
  }{

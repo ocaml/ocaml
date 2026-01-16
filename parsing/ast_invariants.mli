@@ -21,3 +21,13 @@
 
 val structure : Parsetree.structure -> unit
 val signature : Parsetree.signature -> unit
+
+(** Checks the invariant of Location.t's loc_ghost field, that are stated in
+    location.mli. This can be run with -dparsetree-loc-ghost-invariants, which
+    is used slightly in the testsuite, but should be used more to find more
+    of the places where the invariant is broken. *)
+val check_loc_ghost :
+  (Ast_iterator.iterator -> Ast_iterator.iterator -> 'a -> unit)
+  -> 'a
+  -> source_contents:string
+  -> unit

@@ -19,6 +19,7 @@
 #ifdef CAML_INTERNALS
 
 typedef enum {
+  Phase_sweep_main,
   Phase_sweep_and_mark_main,
   Phase_mark_final,
   Phase_sweep_ephe
@@ -26,6 +27,12 @@ typedef enum {
 
 extern gc_phase_t caml_gc_phase;
 
+Caml_inline int caml_marking_started(void)
+{
+  return caml_gc_phase != Phase_sweep_main;
+}
+
+extern atomic_uintnat caml_gc_mark_phase_requested;
 intnat caml_opportunistic_major_work_available (caml_domain_state*);
 void caml_opportunistic_major_collection_slice (intnat);
 /* auto-triggered slice from within the GC */
@@ -40,26 +47,34 @@ void caml_teardown_major_gc(void);
 void caml_darken(void*, value, volatile value* ignored);
 void caml_darken_cont(value);
 void caml_mark_root(value, value*);
-void caml_empty_mark_stack(void);
+void caml_mark_roots_stw(int, caml_domain_state **);
 void caml_finish_major_cycle(int force_compaction);
+/* Reset any internal accounting the GC uses to set collection pacing.
+ * For use at times when we have disturbed the usual pacing, for
+ * example, after any synchronous major collection.
+ */
+void caml_reset_major_pacing(void);
 #ifdef DEBUG
 int caml_mark_stack_is_empty(void);
 #endif
 void caml_orphan_ephemerons(caml_domain_state*);
 void caml_orphan_finalisers(caml_domain_state*);
 
-/* Forces finalisation of all heap-allocated values,
-   disregarding both local and global roots.
-
-   Warning: finalisation is performed by means of forced sweeping, which may
-   result in pointers referencing nonexistent values; therefore the function
-   should only be used on runtime shutdown.
-*/
-void caml_finalise_heap (void);
-
 /* This variable is only written with the world stopped,
    so it need not be atomic */
 extern uintnat caml_major_cycles_completed;
+
+Caml_inline void caml_update_major_allocated_words(
+  caml_domain_state *self, intnat words, int direct
+) {
+  self->allocated_words += words;
+  if (direct) {
+    self->allocated_words_direct += words;
+  }
+  if (self->gc_policy & CAML_GC_RAMP_UP) {
+    self->allocated_words_suspended += words;
+  }
+}
 
 #endif /* CAML_INTERNALS */
 

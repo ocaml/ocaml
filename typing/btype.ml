@@ -155,6 +155,7 @@ let newty2 ~level desc =
   newty3 ~level ~scope:Ident.lowest_scope desc
 
 let newgenty desc      = newty2 ~level:generic_level desc
+let newgenmono desc    = newgenty (Tpoly(desc, []))
 let newgenvar ?name () = newgenty (Tvar name)
 let newgenstub ~scope  = newty3 ~level:generic_level ~scope (Tvar None)
 
@@ -163,6 +164,7 @@ let newgenstub ~scope  = newty3 ~level:generic_level ~scope (Tvar None)
 let is_Tvar ty = match get_desc ty with Tvar _ -> true | _ -> false
 let is_Tunivar ty = match get_desc ty with Tunivar _ -> true | _ -> false
 let is_Tconstr ty = match get_desc ty with Tconstr _ -> true | _ -> false
+let is_Tpoly ty = match get_desc ty with Tpoly _ -> true | _ -> false
 let is_poly_Tpoly ty =
   match get_desc ty with Tpoly (_, _ :: _) -> true | _ -> false
 let type_kind_is_abstract decl =
@@ -170,10 +172,36 @@ let type_kind_is_abstract decl =
 let type_origin decl =
   match decl.type_kind with
   | Type_abstract origin -> origin
-  | Type_variant _ | Type_record _ | Type_open -> Definition
-let label_is_poly lbl = is_poly_Tpoly lbl.lbl_arg
+  | Type_variant _ | Type_record _ | Type_open | Type_external _ -> Definition
 
 let dummy_method = "*dummy method*"
+
+                  (********************************)
+                  (*  Utilities for poly types    *)
+                  (********************************)
+
+let tpoly_is_mono ty =
+  match get_desc ty with
+  | Tpoly(_, []) -> true
+  | Tpoly(_, _ :: _) -> false
+  | _ -> assert false
+
+let tpoly_get_poly ty =
+  match get_desc ty with
+  | Tpoly(ty, vars) -> (ty, vars)
+  | _ -> assert false
+
+let tpoly_get_mono ty =
+  match get_desc ty with
+  | Tpoly(ty, []) -> ty
+  | _ -> assert false
+
+let tpoly_get_mono_opt ty =
+  match get_desc ty with
+  | Tpoly(ty, []) -> Some ty
+  | Tpoly _ -> None
+  | _ -> assert false
+
 
 (**** Representative of a type ****)
 
@@ -255,7 +283,7 @@ let is_row_name s =
   let l = String.length s in
   (* PR#10661: when l=4 and s is "#row", this is not a row name
      but the valid #-type name of a class named "row". *)
-  l > 4 && String.sub s (l-4) 4 = "#row"
+  l > 4 && String.ends_with ~suffix:"#row" s
 
 let is_constr_row ~allow_ident t =
   match get_desc t with
@@ -311,7 +339,7 @@ let fold_type_expr f init ty =
   | Tarrow (_, ty1, ty2, _) ->
       let result = f init ty1 in
       f result ty2
-  | Ttuple l            -> List.fold_left f init l
+  | Ttuple l            -> List.fold_left (fun acc (_, t) -> f acc t) init l
   | Tconstr (_, l, _)   -> List.fold_left f init l
   | Tobject(ty, {contents = Some (_, p)}) ->
       let result = f init ty in
@@ -328,10 +356,11 @@ let fold_type_expr f init ty =
   | Tsubst _            -> assert false
   | Tunivar _           -> init
   | Tpoly (ty, tyl)     ->
-    let result = f init ty in
-    List.fold_left f result tyl
-  | Tpackage (_, fl)  ->
-    List.fold_left (fun result (_n, ty) -> f result ty) init fl
+      let result = f init ty in
+      List.fold_left f result tyl
+  | Tpackage pack ->
+      List.fold_left
+        (fun result (_n, ty) -> f result ty) init pack.pack_constraints
 
 let iter_type_expr f ty =
   fold_type_expr (fun () v -> f v) () ty
@@ -361,8 +390,8 @@ let iter_type_expr_kind f = function
         cstrs
   | Type_record(lbls, _) ->
       List.iter (fun d -> f d.ld_type) lbls
-  | Type_open ->
-      ()
+  | Type_open -> ()
+  | Type_external _ -> ()
 
                   (**********************************)
                   (*     Utilities for marking      *)
@@ -477,7 +506,7 @@ let type_iterators mark =
     match get_desc ty with
       Tconstr (p, _, _)
     | Tobject (_, {contents=Some (p, _)})
-    | Tpackage (p, _) ->
+    | Tpackage {pack_path = p} ->
         it.it_path p
     | Tvariant row ->
         Option.iter (fun (p,_) -> it.it_path p) (row_name row)
@@ -515,7 +544,7 @@ let copy_commu c = if is_commu_ok c then commu_ok else commu_var ()
 let rec copy_type_desc ?(keep_names=false) f = function
     Tvar _ as ty        -> if keep_names then ty else Tvar None
   | Tarrow (p, ty1, ty2, c)-> Tarrow (p, f ty1, f ty2, copy_commu c)
-  | Ttuple l            -> Ttuple (List.map f l)
+  | Ttuple l            -> Ttuple (List.map (fun (label, t) -> label, f t) l)
   | Tconstr (p, l, _)   -> Tconstr (p, List.map f l, ref Mnil)
   | Tobject(ty, {contents = Some (p, tl)})
                         -> Tobject (f ty, ref (Some(p, List.map f tl)))
@@ -531,7 +560,10 @@ let rec copy_type_desc ?(keep_names=false) f = function
   | Tpoly (ty, tyl)     ->
       let tyl = List.map f tyl in
       Tpoly (f ty, tyl)
-  | Tpackage (p, fl)  -> Tpackage (p, List.map (fun (n, ty) -> (n, f ty)) fl)
+  | Tpackage pack       ->
+      let pack_constraints =
+        List.map (fun (n, ty) -> (n, f ty)) pack.pack_constraints in
+      Tpackage {pack with pack_constraints }
 
 (* TODO: rename to [module Copy_scope] *)
 module For_copy : sig
@@ -557,9 +589,8 @@ end = struct
 
   let with_scope f =
     let scope = { saved_desc = [] } in
-    let res = f scope in
-    cleanup scope;
-    res
+    Fun.protect ~finally:(fun () -> cleanup scope) (fun () -> f scope)
+
 end
 
                   (*******************************************)
@@ -775,15 +806,3 @@ let instance_variable_type label sign =
   match Vars.find label sign.csig_vars with
   | (_, _, ty) -> ty
   | exception Not_found -> assert false
-
-
-                  (**********)
-                  (*  Misc  *)
-                  (**********)
-
-(**** Type information getter ****)
-
-let cstr_type_path cstr =
-  match get_desc cstr.cstr_res with
-  | Tconstr (p, _, _) -> p
-  | _ -> assert false

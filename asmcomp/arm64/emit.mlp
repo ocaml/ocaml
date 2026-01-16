@@ -45,23 +45,11 @@ let label_prefix =
 let emit_label lbl =
   emit_string label_prefix; emit_int lbl
 
-(* Symbols *)
-
-let emit_symbol s =
-  if macosx then emit_string "_";
-  Emitaux.emit_symbol s
-
 (* Object types *)
 
-let emit_symbol_type emit_lbl_or_sym lbl_or_sym ty =
-  if not macosx then begin
-    `	.type	{emit_lbl_or_sym lbl_or_sym}, %{emit_string ty}\n`
-  end
-
-
-let emit_symbol_size sym =
-  if not macosx then begin
-    `	.size	{emit_symbol sym}, .-{emit_symbol sym}\n`
+let emit_label_type lbl ty =
+  if Config.asm_size_type_directives then begin
+    `	.type	{emit_label lbl}, {emit_string ty}\n`
   end
 
 (* Output a pseudo-register *)
@@ -82,10 +70,14 @@ let emit_wreg = function
     {loc = Reg r} -> emit_string int_reg_name_w.(r)
   | _ -> fatal_error "Emit.emit_wreg"
 
+let fp = Config.with_frame_pointers
+
 let initial_stack_offset f =
-  8 * f.fun_num_stack_slots.(0) +
-  8 * f.fun_num_stack_slots.(1) +
-  (if f.fun_frame_required then 8 else 0)
+  8 * f.fun_num_stack_slots.(0) + (* Local int variables *)
+  8 * f.fun_num_stack_slots.(1) + (* Local float variables *)
+    (if f.fun_frame_required then
+       8 + (if fp then 8 else 0) (* Return address plus optional Frame Pointer *)
+     else 0)
 
 let frame_size env =
   let sz =
@@ -98,10 +90,9 @@ let slot_offset env loc cl =
       assert (n >= 0);
       frame_size env + n
   | Local n ->
-      env.stack_offset +
-      (if cl = 0
-       then n * 8
-       else env.f.fun_num_stack_slots.(0) * 8 + n * 8)
+      if cl = 0
+      then env.stack_offset + n * 8
+      else env.stack_offset + (env.f.fun_num_stack_slots.(0) + n) * 8
   | Outgoing n ->
       assert (n >= 0);
       n
@@ -271,13 +262,16 @@ let emit_stack_adjustment n =
 
 (* Deallocate the stack frame and reload the return address
    before a return or tail call *)
-
 let output_epilogue env f =
   let n = frame_size env in
-  if env.f.fun_frame_required then
-    `	ldr	x30, [sp, #{emit_int (n-8)}]\n`;
   if n > 0 then
     emit_stack_adjustment n;
+  if env.f.fun_frame_required then
+    if fp then (
+      `	ldp	x29, x30, [sp, #-16]\n`;
+    ) else (
+      `	ldr	x30, [sp, #-8]\n`;
+    );
   f();
   (* reset CFA back because function body may continue *)
   if n > 0 then cfi_adjust_cfa_offset n
@@ -293,7 +287,7 @@ let rec emit_addimm rd rs n =
     let nl = n land 0xFFF and nh = n land 0xFFF_000 in
     `	add	{emit_reg rd}, {emit_reg rs}, #{emit_int nh}\n`;
     if nl <> 0 then
-      `	add	{emit_reg rd}, {emit_reg rd}, #{emit_int nl}\n`
+    `	add	{emit_reg rd}, {emit_reg rd}, #{emit_int nl}\n`
   end
 
 and emit_subimm rd rs n =
@@ -401,7 +395,7 @@ let max_out_of_line_code_offset ~num_call_gc ~num_check_bound =
     max_offset
   end
 
-module BR = Branch_relaxation.Make (struct
+module Size = struct
   (* CR-someday mshinwell: B and BL have +/- 128Mb ranges; for the moment we
      assume we will never exceed this.  It would seem to be most likely to
      occur for branches between functions; in this case, the linker should be
@@ -443,12 +437,27 @@ module BR = Branch_relaxation.Make (struct
 
   let offset_pc_at_branch = 0
 
+  let addsub_size n =
+    let m = abs n in
+    assert (m < 0x1_000_000);
+    let ml = m land 0xFFF and mh = m land 0xFFF_000 in
+    max 1 ((if mh <> 0 then 1 else 0) +
+           (if ml <> 0 then 1 else 0))
+
+  let stack_adj_size n =
+    (* see emit_stack_adjustment *)
+    addsub_size n
+
   let prologue_size f =
-    (if initial_stack_offset f > 0 then 2 else 0)
-      + (if f.fun_frame_required then 1 else 0)
+    let stk = initial_stack_offset f in
+    (if stk > 0 then stack_adj_size (-stk) else 0)
+    + (if f.fun_frame_required then (if fp then 2 else 1) else 0)
 
   let epilogue_size f =
-    if f.fun_frame_required then 3 else 2
+    let stk = initial_stack_offset f in
+    (if stk > 0 then stack_adj_size stk else 0) +
+    (if f.fun_frame_required then 1 else 0) +
+    1
 
   let instr_size f = function
     | Lend -> 0
@@ -456,7 +465,8 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Imove | Ispill | Ireload) -> 1
     | Lop (Iconst_int n) ->
       num_instructions_for_intconst n
-    | Lop (Iconst_float _) -> 2
+    | Lop (Iconst_float f) ->
+       if f = 0L || is_immediate_float f then 1 else 2
     | Lop (Iconst_symbol _) -> 2
     | Lop (Icall_ind) -> 1
     | Lop (Icall_imm _) -> 1
@@ -467,29 +477,36 @@ module BR = Branch_relaxation.Make (struct
       if stack_ofs > 0 then 5
       else if alloc then 3
       else 5
-    | Lop (Istackoffset _) -> 2
+    | Lop (Istackoffset n) -> stack_adj_size (-n)
     | Lop (Iload  { memory_chunk; addressing_mode; is_atomic }) ->
       let based = match addressing_mode with Iindexed _ -> 0 | Ibased _ -> 1
       and barrier = if is_atomic then 1 else 0
       and single = match memory_chunk with Single -> 2 | _ -> 1 in
       based + barrier + single
     | Lop (Istore (memory_chunk, addressing_mode, assignment)) ->
-      let based = match addressing_mode with Iindexed _ -> 0 | Ibased _ -> 1
-      and barrier =
-        match memory_chunk, assignment with
-        | (Word_int | Word_val), true -> 1
+      let based =
+        match addressing_mode with
+        | Iindexed _ -> 0
+        | Ibased _ -> 1
+      and pre_store =
+        match memory_chunk, assignment, macosx, addressing_mode with
+        | (Word_int | Word_val), true, true, Iindexed 0 -> 0
+        | (Word_int | Word_val), true, true, _ -> 1  (* Compute dest address *)
+        | (Word_int | Word_val), true, false, _ -> 1 (* Barrier instruction *)
         | _ -> 0
-      and single = match memory_chunk with Single -> 2 | _ -> 1 in
-      based + barrier + single
+      and store = match memory_chunk with Single -> 2 | _ -> 1 in
+      based + pre_store + store
     | Lop (Ialloc _) when f.fun_fast -> 5
     | Lop (Ispecific (Ialloc_far _)) when f.fun_fast -> 6
-    | Lop (Ipoll _) -> 3
-    | Lop (Ispecific (Ipoll_far _)) -> 4
+    | Lop (Ipoll {return_label=None}) -> 3
+    | Lop (Ipoll {return_label=Some _}) -> 4
+    | Lop (Ispecific (Ipoll_far {return_label=None})) -> 4
+    | Lop (Ispecific (Ipoll_far {return_label=Some _})) -> 5
     | Lop (Ialloc { bytes = num_bytes; _ })
     | Lop (Ispecific (Ialloc_far { bytes = num_bytes; _ })) ->
       begin match num_bytes with
-      | 16 | 24 | 32 -> 1
-      | _ -> 1 + num_instructions_for_intconst (Nativeint.of_int num_bytes)
+      | 16 | 24 | 32 -> 2
+      | _ -> 2 + num_instructions_for_intconst (Nativeint.of_int num_bytes)
       end
     | Lop (Iintop (Icomp _)) -> 2
     | Lop (Icompf _) -> 2
@@ -502,6 +519,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Ispecific (Ishiftcheckbound_far _)) -> 3
     | Lop (Iintop Imod) -> 2
     | Lop (Iintop Imulh) -> 1
+    | Lop (Iintop_imm ((Iadd|Isub), n)) -> addsub_size n
     | Lop (Iintop _) -> 1
     | Lop (Iintop_imm _) -> 1
     | Lop (Ifloatofint | Iintoffloat | Iabsf | Inegf | Ispecific Isqrtf) -> 1
@@ -517,7 +535,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Idls_get) -> 1
     | Lop (Ireturn_addr) -> 1
     | Lreloadretaddr -> 0
-    | Lreturn -> epilogue_size f
+    | Lreturn -> epilogue_size f + (if top_bits_ignore then 0 else 1)
     | Llabel _ -> 0
     | Lbranch _ -> 1
     | Lcondbranch (tst, _) ->
@@ -535,15 +553,15 @@ module BR = Branch_relaxation.Make (struct
         + begin match lbl1 with None -> 0 | Some _ -> 1 end
         + begin match lbl2 with None -> 0 | Some _ -> 1 end
     | Lswitch jumptbl -> 3 + Array.length jumptbl
-    | Lentertrap -> 0
+    | Lentertrap -> if fp then 1 else 0
     | Ladjust_trap_depth _ -> 0
-    | Lpushtrap _ -> 4
+    | Lpushtrap _ -> 3
     | Lpoptrap -> 1
     | Lraise k ->
       begin match k with
       | Lambda.Raise_regular -> 1
       | Lambda.Raise_reraise -> 1
-      | Lambda.Raise_notrace -> 4
+      | Lambda.Raise_notrace -> 3
       end
 
   let relax_poll ~return_label =
@@ -562,7 +580,8 @@ module BR = Branch_relaxation.Make (struct
     | Ishiftcheckbound { shift; } ->
       Lop (Ispecific (Ishiftcheckbound_far { shift; }))
     | _ -> assert false
-end)
+end
+module BR = Branch_relaxation.Make (Size)
 
 (* Output the assembly code for allocation. *)
 
@@ -667,19 +686,42 @@ let name_for_float_comparison = function
   | CFge -> "ge"
   | CFnge -> "lt"
 
-(* Output the assembly code for an instruction *)
+(* Output a release store [stlr] of register [src] at address [base + addr].
+   Since [stlr] does not support addressing modes, we compute [base + addr]
+   explicitly. *)
+let emit_stlr src base addr =
+  assert macosx;
+  let dest_reg =
+    match addr with
+    | Iindexed 0 -> base
+    | Iindexed ofs ->
+        `	add	{emit_reg reg_tmp1}, {emit_reg base}, #{emit_int ofs}\n`;
+        reg_tmp1
+    | Ibased _ -> assert false (* Ibased is not emitted under macOS *)
+  in
+  `	stlr	{emit_reg src}, [{emit_reg dest_reg}]\n`
 
+(* Output the assembly code for an instruction *)
 let emit_instr env i =
     emit_debug_info i.dbg;
     match i.desc with
     | Lend -> ()
     | Lprologue ->
       let n = frame_size env in
-      if n > 0 then
-        emit_stack_adjustment (-n);
       if env.f.fun_frame_required then begin
-        cfi_offset ~reg:30 (* return address *) ~offset:(-8);
-        `	str	x30, [sp, #{emit_int (n-8)}]\n`
+          if fp then (
+            `	stp	x29, x30, [sp, #-16]\n`;
+            cfi_offset ~reg:29 (* frame pointer *) ~offset:(-16);
+            cfi_offset ~reg:30 (* return address *) ~offset:(-8)
+          ) else (
+            `	str	x30, [sp, #-8]\n`;
+            cfi_offset ~reg:30 (* return address *) ~offset:(-8)
+          );
+      end;
+      if n > 0 then begin
+          emit_stack_adjustment (-n);
+          if env.f.fun_frame_required && fp then
+            `	add	x29,  sp, #{emit_int (n-16)}\n`;
       end
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
@@ -747,18 +789,15 @@ let emit_instr env i =
           `	bl	{emit_symbol "caml_c_call"}\n`;
           `{record_frame env i.live (Dbg_other i.dbg)}\n`
         end else begin
-          (* Push frame pointer (x29) onto stack and restore later. *)
-          `	str	x29, [sp, -16]!\n`;
-          (* Store OCaml stack in the frame pointer register. *)
-          `	mov	x29, sp\n`;
+          (* Store OCaml stack in x19 register and restore later. *)
+          `	mov	x19, sp\n`;
           cfi_remember_state ();
-          cfi_def_cfa_register ~reg:29;
+          cfi_def_cfa_register ~reg:19;
           let offset = Domainstate.(idx_of_field Domain_c_stack) * 8 in
           `	ldr	{emit_reg reg_tmp1}, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`;
           `	mov	sp, {emit_reg reg_tmp1}\n`;
           `	bl	{emit_symbol func}\n`;
-          `	mov	sp, x29\n`;
-          `	ldr	x29, [sp], 16\n`;
+          `	mov	sp, x19\n`;
           cfi_restore_state ()
         end
     | Lop(Istackoffset n) ->
@@ -791,9 +830,10 @@ let emit_instr env i =
         | Single ->
             `	ldr	s7, {emit_addressing addressing_mode base}\n`;
             `	fcvt	{emit_reg dst}, s7\n`
-        | Word_int | Word_val ->
+        | Sixtyfour | Word_int | Word_val ->
             if is_atomic then begin
               assert (addressing_mode = Iindexed 0);
+              assert (not (memory_chunk = Sixtyfour));
               `	dmb	ishld\n`;
               `	ldar	{emit_reg dst}, [{emit_reg i.arg.(0)}]\n`
             end else
@@ -803,7 +843,7 @@ let emit_instr env i =
         end
     | Lop(Istore(size, addr, assignment)) ->
         (* NB: assignments other than Word_int and Word_val do not follow the
-        Multicore OCaml memory model and so do not emit a barrier *)
+           Multicore OCaml memory model and so do not emit a barrier *)
         let src = i.arg.(0) in
         let base =
           match addr with
@@ -822,10 +862,22 @@ let emit_instr env i =
         | Single ->
             `	fcvt	s7, {emit_reg src}\n`;
             `	str	s7, {emit_addressing addr base}\n`;
-        | Word_int | Word_val ->
-            (* memory model barrier for non-initializing store *)
-            if assignment then `	dmb	ishld\n`;
+        | Sixtyfour ->
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
+        | Word_int | Word_val ->
+            begin match assignment, macosx with
+            | true, true ->
+                (* Release store for assignments on macOS. See
+                   https://github.com/ocaml/ocaml/issues/13262. *)
+                emit_stlr src base addr
+            | true, false ->
+                (* Memory model barrier for assignments. *)
+                `	dmb	ishld\n`;
+                `	str	{emit_reg src}, {emit_addressing addr base}\n`
+            | _, _ ->
+                (* Initializing store *)
+                `	str	{emit_reg src}, {emit_addressing addr base}\n`
+            end
         | Double ->
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
         end
@@ -963,7 +1015,13 @@ let emit_instr env i =
     | Lreloadretaddr ->
         ()
     | Lreturn ->
-        output_epilogue env (fun () -> `	ret\n`)
+        output_epilogue env begin fun () ->
+          if not top_bits_ignore then begin
+            (* mask the top 8 bits ourselves *)
+            `	and	x30, x30, #0x00FFFFFFFFFFFFFF\n`;
+          end;
+          `	ret\n`
+        end
     | Llabel lbl ->
         `{emit_label lbl}:\n`
     | Lbranch lbl ->
@@ -1026,7 +1084,10 @@ let emit_instr env i =
         done
 *)
     | Lentertrap ->
-        ()
+       if fp then begin
+         let delta = (frame_size env) - 16 (* return address + frame pointer *) in
+         `	add	x29, sp, #{emit_int delta}\n`
+       end
     | Ladjust_trap_depth { delta_traps } ->
         (* each trap occupies 16 bytes on the stack *)
         let delta = 16 * delta_traps in
@@ -1058,8 +1119,37 @@ let emit_instr env i =
 
 (* Emission of an instruction sequence *)
 
-let rec emit_all env i =
-  if i.desc = Lend then () else (emit_instr env i; emit_all env i.next)
+(* for debugging instr_size errors *)
+let emit_instr_debug env i =
+  let lbl = new_label () in
+  `{emit_label lbl}:\n`;
+  emit_instr env i;
+  let sz = Size.instr_size env.f i.desc * 4 in
+  `	.ifne (. - {emit_label lbl}) - {emit_int sz}\n`;
+  `	.error \"Emit.instr_size: instruction length mismatch\"\n`;
+  `	.endif\n`
+
+let rec emit_all env lbl_start acc i =
+  let debug = Config.with_codegen_invariants in
+  match i.desc with
+  | Lend ->
+     if debug then begin
+       (* acc measures in units of 32-bit instructions *)
+       let sz = acc * 4 in
+       `	.ifne (. - {emit_label lbl_start}) - {emit_int sz}\n`;
+       `	.error \"Emit.instr_size: instruction length mismatch\"\n`;
+       `	.endif\n`;
+       end
+     else
+       ()
+  | _ ->
+     if debug then emit_instr_debug env i else emit_instr env i;
+     emit_all env lbl_start (acc + Size.instr_size env.f i.desc) i.next
+
+let emit_all env i =
+  let lbl = new_label () in
+  `{emit_label lbl}:\n`;
+  emit_all env lbl 0 i
 
 (* Emission of a function declaration *)
 
@@ -1068,7 +1158,7 @@ let fundecl fundecl =
   emit_named_text_section fundecl.fun_name;
   `	.align	3\n`;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
-  emit_symbol_type emit_symbol fundecl.fun_name "function";
+  emit_type_directive fundecl.fun_name "%function";
   (* Dynamic stack checking *)
   let stack_threshold_size = Config.stack_threshold * 8 in (* bytes *)
   let max_frame_size = frame_size env + fundecl.fun_extra_stack_used in
@@ -1119,8 +1209,8 @@ let fundecl fundecl =
   assert (List.length env.bound_error_sites = num_check_bound);
 
   cfi_endproc();
-  emit_symbol_type emit_symbol fundecl.fun_name "function";
-  emit_symbol_size fundecl.fun_name;
+  emit_type_directive fundecl.fun_name "%function";
+  emit_size_directive fundecl.fun_name;
   emit_literals env
 
 (* Emission of data *)
@@ -1193,10 +1283,10 @@ let end_assembly () =
   `{emit_symbol lbl}:\n`;
   emit_frames
     { efa_code_label = (fun lbl ->
-                       emit_symbol_type emit_label lbl "function";
+                       emit_label_type lbl "%function";
                        `	.quad	{emit_label lbl}\n`);
       efa_data_label = (fun lbl ->
-                       emit_symbol_type emit_label lbl "object";
+                       emit_label_type lbl "%object";
                        `	.quad	{emit_label lbl}\n`);
       efa_8 = (fun n -> `	.byte	{emit_int n}\n`);
       efa_16 = (fun n -> `	.short	{emit_int n}\n`);
@@ -1207,11 +1297,6 @@ let end_assembly () =
                            `	.long	{emit_label lbl} - . + {emit_int32 ofs}\n`);
       efa_def_label = (fun lbl -> `{emit_label lbl}:\n`);
       efa_string = (fun s -> emit_string_directive "	.asciz	" s) };
-  emit_symbol_type emit_symbol lbl "object";
-  emit_symbol_size lbl;
-  begin match Config.system with
-  | "linux" ->
-      (* Mark stack as non-executable *)
-      `	.section	.note.GNU-stack,\"\",%progbits\n`
-  | _ -> ()
-  end
+  emit_type_directive lbl "%object";
+  emit_size_directive lbl;
+  emit_nonexecstack_note ()

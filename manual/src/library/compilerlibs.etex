@@ -1,5 +1,5 @@
 \chapter{The compiler front-end} \label{c:parsinglib}\cutname{parsing.html}
-\label{Compiler-underscorelibs} % redirect references to compiler_libs.mld here
+\label{Compiler_libs} % redirect references to compiler_libs.mld here
 
 This chapter describes the OCaml front-end, which declares the abstract
 syntax tree used by the compiler, provides a way to parse, print

@@ -131,7 +131,7 @@ end = struct
     let k_with_placeholder =
       apply { constr with flag = Mutable } tmc_placeholder in
     let placeholder_pos = List.length constr.before in
-    let placeholder_pos_lam = Lconst (Const_base (Const_int placeholder_pos)) in
+    let placeholder_pos_lam = Lconst (Const_int placeholder_pos) in
     let block_var = Ident.create_local "block" in
     Llet (Strict, Pgenval, block_var, k_with_placeholder,
           body {
@@ -865,7 +865,7 @@ let rec choice ctx t =
     | Prunstack | Pperform | Presume | Preperform | Pdls_get
 
     (* we don't handle atomic primitives *)
-    | Patomic_exchange | Patomic_cas | Patomic_fetch_add | Patomic_load _
+    | Patomic_load
 
     (* we don't handle array indices as destinations yet *)
     | (Pmakearray _ | Pduparray _)
@@ -881,6 +881,13 @@ let rec choice ctx t =
     | Paddbint _ | Psubbint _ | Pmulbint _ | Pdivbint _ | Pmodbint _
     | Pandbint _ | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _ | Pasrbint _
     | Pbintcomp _
+
+    (* Lazy blocks should never contain a recursive call directly:
+       either it's a closure (Lazy_tag), or a variable (Forward_tag).
+       The case 'let foo = recursive_call in lazy foo' could be translated to
+       use tmc in the cases where 'foo' might be of type lazy or float, but
+       given the fragility of such a transformation we choose not to. *)
+    | Pmakelazyblock _
 
     (* more common cases... *)
     | Pbigarrayref _ | Pbigarrayset _

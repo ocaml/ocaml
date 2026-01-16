@@ -6,7 +6,7 @@
   match c with
   | '\'' -> printf "{\\textquotesingle}"
   | '`' -> printf "{\\textasciigrave}"
-  | _ -> printf "\\char%d" (int_of_char c);
+  | _ -> printf "{\\char%d}" (int_of_char c);
   ;;
 }
 
@@ -83,6 +83,10 @@ and inquote = parse
   | '\'' {
       print_string "}";
       syntax lexbuf }
+  | ['\128' - '\255'] {
+      print_char (lexeme_char lexbuf 0);
+      inquote lexbuf
+    }
   | _ {
       print_char_repr (lexeme_char lexbuf 0);
       inquote lexbuf }
@@ -94,6 +98,10 @@ and indoublequote = parse
   | '"' {
       print_string "}";
       syntax lexbuf }
+  | ['\128' - '\255'] {
+      print_char (lexeme_char lexbuf 0);
+      indoublequote lexbuf
+    }
   | _ {
       print_char_repr (lexeme_char lexbuf 0);
       indoublequote lexbuf }

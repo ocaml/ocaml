@@ -51,14 +51,14 @@ static void compare_free_stack(struct compare_stack* stk)
 /* Same, then raise Out_of_memory */
 CAMLnoret static void compare_stack_overflow(struct compare_stack* stk)
 {
-  caml_gc_message (0x04, "Stack overflow in structural comparison\n");
+  CAML_GC_MESSAGE(HEAPSIZE, "Stack overflow in structural comparison\n");
   compare_free_stack(stk);
   caml_raise_out_of_memory();
 }
 
 /* Grow the compare stack */
-static struct compare_item * compare_resize_stack(struct compare_stack* stk,
-                                                  struct compare_item * sp)
+static struct compare_item *
+compare_resize_stack(struct compare_stack* stk, const struct compare_item * sp)
 {
   asize_t newsize;
   asize_t sp_offset = sp - stk->stack;
@@ -97,7 +97,7 @@ static intnat compare_val(value v1, value v2, int total)
 }
 
 static void run_pending_actions(struct compare_stack* stk,
-                                struct compare_item* sp)
+                                const struct compare_item* sp)
 {
   caml_result result;
   value* roots_start = (value*)(stk->stack);

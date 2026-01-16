@@ -47,9 +47,13 @@ type variance_error =
        variable : type_expr
      }
 
+type anonymous_variance_error =
+  | Variable_constrained of type_expr
+  | Variable_instantiated of type_expr
+
 type error =
   | Bad_variance of variance_error * surface_variance * surface_variance
-  | Varying_anonymous
+  | Varying_anonymous of int * anonymous_variance_error
 
 exception Error of Location.t * error
 

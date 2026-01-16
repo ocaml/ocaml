@@ -115,9 +115,9 @@ let add variable value env = VariableMap.add variable (Some value) env
 let add_if_undefined variable value env =
   if VariableMap.mem variable env then env else add variable value env
 
-let append variable appened_value environment =
+let append variable appended_value environment =
   let previous_value = safe_lookup variable environment in
-  let new_value = previous_value ^ appened_value in
+  let new_value = previous_value ^ appended_value in
   VariableMap.add variable (Some new_value) environment
 
 let remove = VariableMap.remove

@@ -203,6 +203,7 @@ let unsafe_environment = environment
 external getenv: string -> string = "caml_sys_getenv"
 external unsafe_getenv: string -> string = "caml_sys_unsafe_getenv"
 external putenv: string -> string -> unit = "caml_unix_putenv"
+external unsetenv: string -> unit = "caml_unix_unsetenv"
 
 type process_status =
     WEXITED of int
@@ -579,6 +580,7 @@ let sigprocmask _cmd _sigs = invalid_arg "Unix.sigprocmask not implemented"
 let sigpending () = invalid_arg "Unix.sigpending not implemented"
 let sigsuspend _sigs = invalid_arg "Unix.sigsuspend not implemented"
 let pause () = invalid_arg "Unix.pause not implemented"
+let sigwait _sigs = invalid_arg "Unix.sigwait not implemented"
 
 (* Time functions *)
 

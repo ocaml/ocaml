@@ -31,6 +31,9 @@ let cwd = Variables.make ("cwd",
 let commandline = Variables.make ("commandline",
   "Specify the commandline of a tool")
 
+let dev_null = Variables.make ("dev_null",
+                               "Path to /dev/null")
+
 let dst = Variables.make ("dst", "Location where to copy files and directories")
 
 let exit_status = Variables.make ("exit_status",
@@ -119,6 +122,7 @@ let _ = List.iter Variables.register_variable
     arguments;
     cwd;
     commandline;
+    dev_null;
     dst;
     exit_status;
     file;

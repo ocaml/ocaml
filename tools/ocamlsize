@@ -19,12 +19,25 @@ foreach $f (@ARGV) {
     open(FILE, $f) || die("Cannot open $f");
     read(FILE, $header, 2);
     if ($header eq '#!') {
-      $path = <FILE>;
-      if ($path = '/bin/sh') {
-        # exec form of the shebang header
-        $path = <FILE>;
+      chomp($path = <FILE>);
+      if ($path =~ m/\/sh$/) {
+        # shell-script form of the shebang header
+        chomp($path = <FILE>);
+        # exec form - used for -runtime-search absolute when the path to the
+        # runtime isn't valid as a #! line.
         if ($path =~ s/^exec '(.*)' "\$0" "\$@\"$/$1/ > 0) {
           $path =~ s/'\\''/'/g;
+        # Both -runtime-search fallback and -runtime-search enable define a
+        # variable r with the name of the runtime (see bytecomp/bytelink.ml)
+        } elsif ($path =~ s/^r='(.*)'$/$1/ > 0) {
+          $path =~ s/'\\''/'/g;
+          chomp($dir = <FILE>);
+          # In -runtime-search fallback, there will also be a path to the
+          # runtime defined the variable c.
+          if ($dir =~ s/^c='(.*)'"\$r"$/$1/ > 0) {
+            $dir =~ s/'\\''/'/g;
+            $path = "[$dir]$path";
+          }
         } else {
           undef $path;
         }
@@ -45,10 +58,19 @@ foreach $f (@ARGV) {
     }
     print $f, ":\n" if ($#ARGV > 0);
     if (not defined $path) {
-      $path =
-          $length{'RNTM'} > 0 ?
-              substr(&read_section('RNTM'), 0, -1) :
-              "(custom runtime)";
+      if ($length{'RNTM'} > 0) {
+        $path = &read_section('RNTM');
+        # RNTM is "\0ocamlrun" for -runtime-search enable
+        if ($path !~ s/^\0//) {
+          # RNTM is "/path/to/ocamlrun" for -runtime-search disable and
+          # "/path/to\0ocamlrun" for -runtime-search fallback. Transform the
+          # embedded "\0" into a directory separator and display the directory
+          # in square brackets (as above for the sh-case)
+          $path =~ s/^([^\/\\]*)([\\\/])([^\0]*)\0(.*)$/[$1$2$3$2]$4/
+        }
+      } else {
+        $path = '(custom runtime)';
+      }
     };
     printf ("\tcode: %-7d data: %-7d symbols: %-7d debug: %-7d\n",
             $length{'CODE'}, $length{'DATA'},

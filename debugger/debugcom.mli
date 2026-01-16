@@ -105,14 +105,13 @@ val update_follow_fork_mode : unit -> unit
 
 (* Handling of remote values *)
 
-exception Marshalling_error
-
 module Remote_value :
   sig
     type t
 
     val repr : 'a -> t
-    val obj : t -> 'a
+    val base_obj : t -> 'a
+    val obj : t -> (Obj.t, string) result
     val is_block : t -> bool
     val tag : t -> int
     val size : t -> int

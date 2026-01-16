@@ -17,6 +17,7 @@
 
 #include <math.h>
 #include <stdbool.h>
+#include <assert.h>
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
 #include "caml/backtrace_prim.h"
@@ -447,6 +448,10 @@ typedef struct memprof_orphan_table_s memprof_orphan_table_s,
 /* the mask for a given callback index */
 #define CB_MASK(cb) (1 << ((cb) - 1))
 
+/* How many bits required for an allocation source */
+#define SRC_TYPE_BITS    2
+static_assert((1 << SRC_TYPE_BITS) >= CAML_MEMPROF_NUM_SOURCE_KINDS, "");
+
 /* Structure for each tracked allocation. Six words (with many spare
  * bits in the final word). */
 
@@ -474,7 +479,7 @@ struct entry_s {
 
   /* The source of the allocation: normal allocations, interning,
    * or custom_mem (CAML_MEMPROF_SRC_*). */
-  unsigned int source : 2;
+  unsigned int source : SRC_TYPE_BITS;
 
   /* Is `block` actually an offset? */
   bool offset : 1;
@@ -1197,7 +1202,7 @@ static void rand_init(memprof_domain_t domain)
  * * lambda].  We could use a more involved algorithm, but this should
  * be good enough since, in the typical use case, [lambda] << 0.01 and
  * therefore the generation of the binomial variable is amortized by
- * the initialialization of the corresponding block.
+ * the initialization of the corresponding block.
  *
  * If needed, we could use algorithm BTRS from the paper:
  *  Hormann, Wolfgang. "The generation of binomial random variates."
@@ -1700,23 +1705,6 @@ static value capture_callstack_GC(memprof_domain_t domain, int alloc_idx)
   return res;
 }
 
-/* Given a stashed callstack, copy it to the Caml heap and free the
- * stash. Given a non-stashed callstack, simply return it. */
-
-static value unstash_callstack(value callstack)
-{
-  CAMLparam1(callstack);
-  if (Is_long(callstack)) { /* stashed on C heap */
-    callstack_stash_t stash = Ptr_val(callstack);
-    callstack = caml_alloc(stash->frames, 0);
-    for (size_t i = 0; i < stash->frames; ++i) {
-      Field(callstack, i) = Val_backtrace_slot(stash->stack[i]);
-    }
-    caml_stat_free(stash);
-  }
-  CAMLreturn(callstack);
-}
-
 /**** Running callbacks ****/
 
 /* Runs a single callback, in thread `thread`, for entry number `i` in
@@ -1805,12 +1793,26 @@ static caml_result run_alloc_callback_res(
   entry_t e = &es->t[i];
   CAMLassert(e->deallocated || e->offset || Is_block(e->block));
 
-  e->user_data = unstash_callstack(e->user_data);
   value sample_info = caml_alloc_small(4, 0);
   Field(sample_info, 0) = Val_long(e->samples);
   Field(sample_info, 1) = Val_long(e->wosize);
   Field(sample_info, 2) = Val_long(e->source);
   Field(sample_info, 3) = e->user_data;
+
+  if (Is_long(e->user_data)) {
+    /* Callstack stashed on C heap, so copy it to OCaml heap */
+    CAMLparam1(sample_info);
+    CAMLlocal1(callstack);
+    callstack_stash_t stash = Ptr_val(e->user_data);
+    callstack = caml_alloc(stash->frames, 0);
+    for (size_t i = 0; i < stash->frames; ++i) {
+      Field(callstack, i) = Val_backtrace_slot(stash->stack[i]);
+    }
+    caml_stat_free(stash);
+    Store_field(sample_info, 3, callstack);
+    CAMLdrop;
+  }
+
   value callback =
     e->alloc_young ? Alloc_minor(es->config) : Alloc_major(es->config);
   return run_callback_res(thread, es, i, callback, sample_info, CB_ALLOC);
@@ -2211,7 +2213,7 @@ CAMLexport void caml_memprof_enter_thread(memprof_thread_t thread)
 CAMLprim value caml_memprof_start(value lv, value szv, value tracker)
 {
   CAMLparam3(lv, szv, tracker);
-  CAMLlocal1(one_log1m_lambda_v);
+  CAMLlocal3(lambda_v, one_log1m_lambda_v, config);
 
   double lambda = Double_val(lv);
   intnat sz = Long_val(szv);
@@ -2219,19 +2221,6 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker)
   /* Checks that [lambda] is within range (and not NaN). */
   if (sz < 0 || !(lambda >= 0.0 && lambda <= 1.0))
     caml_invalid_argument("Gc.Memprof.start");
-
-  memprof_domain_t domain = Caml_state->memprof;
-  CAMLassert(domain);
-  CAMLassert(domain->current);
-
-  if (Sampling(thread_config(domain->current))) {
-    caml_failwith("Gc.Memprof.start: already started.");
-  }
-
-  /* Orphan any surviving tracking entries from a previous profile. */
-  if (!orphans_create(domain)) {
-    caml_raise_out_of_memory();
-  }
 
   double one_log1m_lambda = lambda == 1.0 ? 0.0 : 1.0/caml_log1p(-lambda);
   /* Buggy implementations of caml_log1p could produce a
@@ -2244,12 +2233,16 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker)
     one_log1m_lambda = MIN_ONE_LOG1M_LAMBDA; /* negative infinity */
   }
 
-  one_log1m_lambda_v = caml_copy_double(one_log1m_lambda);
+  lambda_v = caml_alloc_shr(Double_wosize, Double_tag);
+  Store_double_val(lambda_v, lambda);
 
-  value config = caml_alloc_shr(CONFIG_FIELDS, 0);
+  one_log1m_lambda_v = caml_alloc_shr(Double_wosize, Double_tag);
+  Store_double_val(one_log1m_lambda_v, one_log1m_lambda);
+
+  config = caml_alloc_shr(CONFIG_FIELDS, 0);
   caml_initialize(&Field(config, CONFIG_FIELD_STATUS),
                   Val_int(CONFIG_STATUS_SAMPLING));
-  caml_initialize(&Field(config, CONFIG_FIELD_LAMBDA), lv);
+  caml_initialize(&Field(config, CONFIG_FIELD_LAMBDA), lambda_v);
   caml_initialize(&Field(config, CONFIG_FIELD_1LOG1ML), one_log1m_lambda_v);
   caml_initialize(&Field(config, CONFIG_FIELD_STACK_FRAMES), szv);
   for (int i = CONFIG_FIELD_FIRST_CALLBACK;
@@ -2257,6 +2250,20 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker)
     caml_initialize(&Field(config, i), Field(tracker,
                                              i - CONFIG_FIELD_FIRST_CALLBACK));
   }
+
+  /* Final attempt to run allocation callbacks in this thread. */
+  (void) caml_get_value_or_raise(caml_memprof_run_callbacks_res());
+
+  memprof_domain_t domain = Caml_state->memprof;
+  CAMLassert(domain);
+  CAMLassert(domain->current);
+
+  /* Orphan any surviving tracking entries from a previous profile.
+     There should be no allocations after this. */
+  if (!orphans_create(domain)) {
+    caml_raise_out_of_memory();
+  }
+
   CAMLassert(domain->entries.size == 0);
 
   /* Set config pointers of the domain and all its threads */
@@ -2279,25 +2286,25 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker)
   CAMLreturn(config);
 }
 
+CAMLprim value caml_memprof_is_sampling(value unit)
+{
+  memprof_domain_t domain = Caml_state->memprof;
+  CAMLassert(domain);
+  CAMLassert(domain->current);
+  return Val_bool(Sampling(thread_config(domain->current)));
+}
+
 CAMLprim value caml_memprof_stop(value unit)
 {
+  /* Final attempt to run allocation callbacks in this thread. */
+  (void) caml_get_value_or_raise(caml_memprof_run_callbacks_res());
+
   memprof_domain_t domain = Caml_state->memprof;
   CAMLassert(domain);
   memprof_thread_t thread = domain->current;
   CAMLassert(thread);
-
-  /* Final attempt to run allocation callbacks; don't use
-   * caml_memprof_run_callbacks_res as we only really need allocation
-   * callbacks now. */
-  if (!thread->suspended) {
-    update_suspended(domain, true);
-    caml_result res = entries_run_callbacks_res(thread, &thread->entries);
-    update_suspended(domain, false);
-    (void) caml_get_value_or_raise(res);
-  }
-
   value config = thread_config(thread);
-  if (config == CONFIG_NONE || Status(config) != CONFIG_STATUS_SAMPLING) {
+  if (!Sampling(config)) {
     caml_failwith("Gc.Memprof.stop: no profile running.");
   }
   Set_status(config, CONFIG_STATUS_STOPPED);

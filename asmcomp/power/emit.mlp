@@ -184,7 +184,7 @@ let load_mnemonic = function
   | Sixteen_signed -> "lha"
   | Thirtytwo_unsigned -> "lwz"
   | Thirtytwo_signed -> "lwa"
-  | Word_int | Word_val -> "ld"
+  | Word_int | Word_val | Sixtyfour -> "ld"
   | Single -> "lfs"
   | Double -> "lfd"
 
@@ -192,7 +192,7 @@ let store_mnemonic = function
   | Byte_unsigned | Byte_signed -> "stb"
   | Sixteen_unsigned | Sixteen_signed -> "sth"
   | Thirtytwo_unsigned | Thirtytwo_signed -> "stw"
-  | Word_int | Word_val -> "std"
+  | Word_int | Word_val | Sixtyfour -> "std"
   | Single -> "stfs"
   | Double -> "stfd"
 
@@ -480,6 +480,7 @@ module BR = Branch_relaxation.Make (struct
     | Lreturn -> 2
     | Llabel _ -> 0
     | Lbranch _ -> 1
+    | Lcondbranch (Ifloattest(CFle | CFnle  | CFge | CFnge), _) -> 3
     | Lcondbranch _ -> 2
     | Lcondbranch3(lbl0, lbl1, lbl2) ->
       1 + (if lbl0 = None then 0 else 1)
@@ -1007,8 +1008,9 @@ let fundecl fundecl =
   || max_frame_size >= stack_threshold_size then begin
     let overflow = new_label () and ret = new_label () in
     (* The return address is saved in a register not used for param passing *)
+    (* The size is passed in a register normally not used for param passing *)
     `{emit_label overflow}:	mflr	28\n`;
-    `	li	12, {emit_int (Config.stack_threshold + max_frame_size / 8)}\n`;
+    `	li	27, {emit_int (Config.stack_threshold + max_frame_size / 8)}\n`;
     emit_call "caml_call_realloc_stack";
     emit_call_nop ();
     `	mtlr	28\n`;
@@ -1017,7 +1019,7 @@ let fundecl fundecl =
   end;
   (* Function entry point *)
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
-  `	.type	{emit_symbol fundecl.fun_name}, @function\n`;
+  emit_type_directive fundecl.fun_name "@function";
   `{emit_symbol fundecl.fun_name}:\n`;
   `0:	addis	2, 12, (.TOC. - 0b)@ha\n`;
   `	addi	2, 2, (.TOC. - 0b)@l\n`;
@@ -1053,7 +1055,7 @@ let fundecl fundecl =
   (* Emit the glue code to handle bound errors *)
   emit_call_bound_errors env;
   cfi_endproc();
-  `	.size	{emit_symbol fundecl.fun_name}, . - {emit_symbol fundecl.fun_name}\n`;
+  emit_size_directive fundecl.fun_name;
   (* Emit the numeric literals *)
   if env.float_literals <> [] then begin
     emit_string rodata_space;
@@ -1081,7 +1083,7 @@ let fundecl fundecl =
 
 let declare_global_data s =
   `	.globl	{emit_symbol s}\n`;
-  `	.type	{emit_symbol s}, @object\n`
+  emit_type_directive s "@object"
 
 let emit_item = function
     Cglobal_symbol s ->
@@ -1165,8 +1167,9 @@ let end_assembly() =
       efa_def_label = (fun l -> `{emit_label l}:\n`);
       efa_string = (fun s -> emit_bytes_directive "	.byte	" (s ^ "\000"))
      };
+  emit_size_directive lbl;
   (* Emit the TOC entries *)
   emit_string toc_space;
   emit_toctable();
   Hashtbl.clear tocref_entries;
-  `	.section .note.GNU-stack,\"\",%progbits\n`
+  emit_nonexecstack_note ()

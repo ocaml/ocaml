@@ -20,38 +20,21 @@
 #include <caml/memory.h>
 #include <caml/osdeps.h>
 #include "caml/unixsupport.h"
-#include <errno.h>
 #include <windows.h>
-
-typedef
-BOOL (WINAPI *tCreateHardLink)(
-  LPCWSTR lpFileName,
-  LPCWSTR lpExistingFileName,
-  LPSECURITY_ATTRIBUTES lpSecurityAttributes
-);
 
 CAMLprim value caml_unix_link(value follow, value path1, value path2)
 {
-  HMODULE hModKernel32;
-  tCreateHardLink pCreateHardLink;
   BOOL result;
   wchar_t * wpath1, * wpath2;
-  if (Is_some(follow) && !Bool_val(Some_val(follow))) {
-    errno = ENOSYS;
-    caml_uerror("link", path2);
-  }
-  hModKernel32 = GetModuleHandle(L"KERNEL32.DLL");
-  pCreateHardLink =
-    (tCreateHardLink) GetProcAddress(hModKernel32, "CreateHardLinkW");
-  if (pCreateHardLink == NULL)
-    caml_invalid_argument("Unix.link not implemented");
+  if (Is_some(follow) && !Bool_val(Some_val(follow)))
+    caml_unix_error(ENOSYS, "link", path2);
   caml_unix_check_path(path1, "link");
   caml_unix_check_path(path2, "link");
 
   wpath1 = caml_stat_strdup_to_utf16(String_val(path1));
   wpath2 = caml_stat_strdup_to_utf16(String_val(path2));
 
-  result = pCreateHardLink(wpath2, wpath1, NULL);
+  result = CreateHardLink(wpath2, wpath1, NULL);
 
   caml_stat_free(wpath1);
   caml_stat_free(wpath2);

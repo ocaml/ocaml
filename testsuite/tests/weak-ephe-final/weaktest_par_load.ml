@@ -1,4 +1,5 @@
 (* TEST
+ no-tsan;
  {
    bytecode;
  }{

@@ -43,10 +43,18 @@ val toplevel_env : Env.t ref
         (* Typing environment for the toplevel *)
 val initialize_toplevel_env : unit -> unit
         (* Initialize the typing environment for the toplevel *)
+
 val preprocess_phrase :
-      formatter -> Parsetree.toplevel_phrase ->  Parsetree.toplevel_phrase
-        (* Preprocess the given toplevel phrase using regular and ppx
-           preprocessors. Return the updated phrase. *)
+  formatter -> Parsetree.toplevel_phrase -> Parsetree.toplevel_phrase
+(* Preprocess the given toplevel phrase using regular and ppx
+   preprocessors. Return the updated phrase. *)
+
+val typecheck_phrase :
+  formatter -> Env.t -> Parsetree.structure ->
+  Typedtree.structure * Types.signature * Env.t
+(* Type-check the current toplevel phrase (not a directive)
+   in the current typing environment, return an updated typing environment. *)
+
 val record_backtrace : unit -> unit
 
 
@@ -106,21 +114,6 @@ module MakeEvalPrinter (_ : EVAL_BASE) : sig
 
   val outval_of_value:
     Env.t -> Printer.t -> Types.type_expr -> Outcometree.out_value
-
-  type ('a, 'b) gen_printer =
-    | Zero of 'b
-    | Succ of ('a -> ('a, 'b) gen_printer)
-
-  val install_printer :
-    Path.t -> Types.type_expr -> (formatter -> Printer.t -> unit) -> unit
-  val install_generic_printer :
-    Path.t -> Path.t ->
-    (int -> (int -> Printer.t -> Outcometree.out_value,
-            Printer.t-> Outcometree.out_value) gen_printer) -> unit
-  val install_generic_printer' :
-    Path.t -> Path.t -> (formatter -> Printer.t -> unit,
-                         formatter -> Printer.t -> unit) gen_printer -> unit
-  val remove_printer : Path.t -> unit
 
 end
 

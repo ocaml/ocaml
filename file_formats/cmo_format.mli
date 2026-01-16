@@ -16,7 +16,7 @@
 (* Symbol table information for .cmo and .cma files *)
 
 type modname = string
-type crcs = (modname * Digest.t option) list
+type crcs = (modname * Digest.BLAKE128.t option) list
 
 (* Names of compilation units as represented in CMO files *)
 type compunit = Compunit of string [@@unboxed]
@@ -67,7 +67,7 @@ type library =
        how they end up being used on the command line. *)
     lib_ccobjs: string list;            (* C object files needed for -custom *)
     lib_ccopts: string list;            (* Extra opts to C compiler *)
-    lib_dllibs: string list }           (* DLLs needed *)
+    lib_dllibs: (suffixed:bool * string) list }  (* DLLs needed *)
 
 (* Format of a .cma file:
      magic number (Config.cma_magic_number)

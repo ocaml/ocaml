@@ -307,9 +307,14 @@ can help in writing an explicit interface (.mli file) for a file:
 just redirect the standard output of the compiler to a .mli file,
 and edit that file to remove all declarations of unexported names.
 .TP
+.B \-i-variance
+Cause the compiler to print the computed variance of type parameters for
+every type declaration.  Without this option, variance is printed only for
+private types or types without a manifest (e.g., abstract types).
+.TP
 .BI \-cmi\-file " filename"
 Type-check the source implementation to be compiled against the
-specified interface file (by-passes the normal lookup for .mli and .cmi files).
+specified interface file (bypasses the normal lookup for .mli and .cmi files).
 .TP
 .BI \-I " directory"
 Add the given directory to the list of directories searched for
@@ -529,9 +534,8 @@ Cause the compiler to call the given
 .I command
 as a preprocessor for each source file. The output of
 .I command
-is redirected to
-an intermediate file, which is compiled. If there are no compilation
-errors, the intermediate file is deleted afterwards.
+is redirected to an intermediate file, which is compiled. If there are
+no compilation errors, the intermediate file is deleted afterwards.
 .TP
 .BI \-ppx " command"
 After parsing, pipe the abstract syntax tree through the preprocessor
@@ -593,6 +597,15 @@ polymorphic variant compilation.
 Save intermediate representation after the given compilation pass. The currently
 supported passes are:
 .BR scheduling .
+.TP
+.BI \-set\-runtime\-default " setting=value"
+When linking an executable, override the default value for a runtime setting.
+The only currently supported setting is:
+
+.B standard_library_default
+Specifies the default location used by the executable to locate the Standard
+Library. By default, this is the absolute path to the Standard Library the
+compiler itself was configured with.
 .TP
 .B \-shared
 Build a plugin (usually .cmxs) that can be dynamically loaded with
@@ -739,10 +752,10 @@ Display a short usage summary and exit.
 When the Flambda code generator has been enabled at configuration time,
 its behavior may be tuned up with the following additional options:
 .TP
-.B \-02
+.B \-O2
 Perform more optimisation than usual. Compilation times may be lengthened.
 .TP
-.B \-03
+.B \-O3
 Perform even more optimisation than usual, possibly including unrolling
 of recursive functions. Compilation times may be significantly lengthened.
 .TP

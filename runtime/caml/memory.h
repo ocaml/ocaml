@@ -43,7 +43,7 @@ CAMLextern void caml_alloc_dependent_memory (mlsize_t bsz);
 CAMLextern void caml_free_dependent_memory (mlsize_t bsz);
 CAMLextern void caml_modify (volatile value *, value);
 CAMLextern void caml_initialize (volatile value *, value);
-CAMLextern int caml_atomic_cas_field (value, intnat, value, value);
+CAMLextern value caml_atomic_cas_field (value, value, value, value);
 CAMLextern value caml_check_urgent_gc (value);
 
 /* [caml_stat_*] functions below provide an interface to the static memory
@@ -79,16 +79,21 @@ CAMLextern void caml_stat_destroy_pool(void);
 
 #endif /* CAML_INTERNALS */
 
+/* [caml_stat_free(block)] deallocates the provided [block]. */
+CAMLextern void caml_stat_free(caml_stat_block);
+
 /* [caml_stat_alloc(size)] allocates a memory block of the requested [size]
    (in bytes) and returns a pointer to it. It throws an OCaml exception in case
    the request fails, and so requires the runtime lock to be held.
 */
+CAMLmalloc(caml_stat_free, 1, 1) CAMLreturns_nonnull()
 CAMLextern caml_stat_block caml_stat_alloc(asize_t);
 
 /* [caml_stat_alloc_noexc(size)] allocates a memory block of the requested
    [size] (in bytes) and returns a pointer to it, or NULL in case the request
    fails.
 */
+CAMLmalloc(caml_stat_free, 1, 1)
 CAMLextern caml_stat_block caml_stat_alloc_noexc(asize_t);
 
 /* [caml_stat_alloc_aligned(size, modulo, block*)] allocates a memory block of
@@ -97,12 +102,14 @@ CAMLextern caml_stat_block caml_stat_alloc_noexc(asize_t);
    well as the unaligned [block] (as an output parameter). It throws an OCaml
    exception in case the request fails, and so requires the runtime lock.
 */
+CAMLaligned_alloc(caml_stat_free, 1, 1, 2) CAMLreturns_nonnull()
 CAMLextern void* caml_stat_alloc_aligned(asize_t, int modulo, caml_stat_block*);
 
 /* [caml_stat_alloc_aligned_noexc] is a variant of [caml_stat_alloc_aligned]
    that returns NULL in case the request fails, and doesn't require the runtime
    lock to be held.
 */
+CAMLaligned_alloc(caml_stat_free, 1, 1, 2)
 CAMLextern void* caml_stat_alloc_aligned_noexc(asize_t, int modulo,
                                                caml_stat_block*);
 
@@ -111,10 +118,8 @@ CAMLextern void* caml_stat_alloc_aligned_noexc(asize_t, int modulo,
    bits to zero, effectively allocating a zero-initialized memory block of
    [num * size] bytes. It returns NULL in case the request fails.
 */
+CAMLcalloc(caml_stat_free, 1, 1, 2)
 CAMLextern caml_stat_block caml_stat_calloc_noexc(asize_t, asize_t);
-
-/* [caml_stat_free(block)] deallocates the provided [block]. */
-CAMLextern void caml_stat_free(caml_stat_block);
 
 /* [caml_stat_resize(block, size)] changes the size of the provided [block] to
    [size] bytes. The function may move the memory block to a new location (whose
@@ -124,11 +129,13 @@ CAMLextern void caml_stat_free(caml_stat_block);
    portion is indeterminate. The function throws an OCaml exception in case the
    request fails, and so requires the runtime lock to be held.
 */
+CAMLrealloc(2) CAMLreturns_nonnull()
 CAMLextern caml_stat_block caml_stat_resize(caml_stat_block, asize_t);
 
 /* [caml_stat_resize_noexc] is a variant of [caml_stat_resize] that returns NULL
    in case the request fails, and doesn't require the runtime lock.
 */
+CAMLrealloc(2)
 CAMLextern caml_stat_block caml_stat_resize_noexc(caml_stat_block, asize_t);
 
 
@@ -139,23 +146,45 @@ typedef char* caml_stat_string;
    copy of the null-terminated string [s]. It throws an OCaml exception in case
    the request fails, and so requires the runtime lock to be held.
 */
+CAMLalloc(caml_stat_free, 1) CAMLreturns_nonnull()
 CAMLextern caml_stat_string caml_stat_strdup(const char *s);
-#ifdef _WIN32
-CAMLextern wchar_t* caml_stat_wcsdup(const wchar_t *s);
-#endif
 
 /* [caml_stat_strdup_noexc] is a variant of [caml_stat_strdup] that returns NULL
    in case the request fails, and doesn't require the runtime lock.
 */
+CAMLalloc(caml_stat_free, 1)
 CAMLextern caml_stat_string caml_stat_strdup_noexc(const char *s);
+
+#ifdef _WIN32
+/* On Windows, [caml_stat_wcsdup] and [caml_stat_wcsdup_noexc] are the
+ * obvious equivalents of [caml_stat_strdup] and
+ * [caml_stat_strdup_noexc] for wide characters.
+ */
+CAMLalloc(caml_stat_free, 1) CAMLreturns_nonnull()
+CAMLextern wchar_t* caml_stat_wcsdup(const wchar_t *s);
+CAMLalloc(caml_stat_free, 1)
+CAMLextern wchar_t* caml_stat_wcsdup_noexc(const wchar_t *s);
+#endif
+
+/* [caml_stat_memdup(s, size, &out_size)] returns a copy of the first [size]
+   bytes of [s] (which may include NUL characters). If [out_size] is not [NULL],
+   then [size] is stored in [*out_size]. This function is the "dummy" Unix
+   implementation of the Windows-only functions
+   caml_stat_char_array_{to,from}_utf16.
+*/
+CAMLmalloc(caml_stat_free, 1, 2) CAMLreturns_nonnull()
+CAMLextern caml_stat_string caml_stat_memdup(const char *s, asize_t size,
+                                             asize_t *out_size);
 
 /* [caml_stat_strconcat(nargs, strings)] concatenates null-terminated [strings]
    (an array of [char*] of size [nargs]) into a new string, dropping all NULs,
    except for the very last one. It throws an OCaml exception in case the
    request fails, and so requires the runtime lock to be held.
 */
+CAMLalloc(caml_stat_free, 1) CAMLreturns_nonnull()
 CAMLextern caml_stat_string caml_stat_strconcat(int n, ...);
 #ifdef _WIN32
+CAMLalloc(caml_stat_free, 1) CAMLreturns_nonnull()
 CAMLextern wchar_t* caml_stat_wcsconcat(int n, ...);
 #endif
 
@@ -256,9 +285,10 @@ struct caml__roots_block {
    Your function may raise an exception or return a [value] with the
    [CAMLreturn] macro.  Its argument is simply the [value] returned by
    your function.  Do NOT directly return a [value] with the [return]
-   keyword.  If your function returns void, use [CAMLreturn0]. If you
-   un-register the local roots (i.e. undo the effects of the [CAMLparam*]
-   and [CAMLlocal] macros) without returning immediately, use [CAMLdrop].
+   keyword.  If your function returns void, use [CAMLreturn0]. If your
+   function is Noreturn, use [CAMLnoreturn].  If you un-register the
+   local roots (i.e. undo the effects of the [CAMLparam*] and
+   [CAMLlocal] macros) without returning immediately, use [CAMLdrop].
 
    All the identifiers beginning with "caml__" are reserved by OCaml.
    Do not use them for anything (local or global variables, struct or

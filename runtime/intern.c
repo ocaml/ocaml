@@ -337,13 +337,13 @@ static void readfloats(struct caml_intern_state* s,
 
 CAMLnoret static void intern_stack_overflow(struct caml_intern_state* s)
 {
-  caml_gc_message (0x04, "Stack overflow in un-marshaling value\n");
+  CAML_GC_MESSAGE(HEAPSIZE, "Stack overflow in un-marshaling value\n");
   intern_cleanup(s);
   caml_raise_out_of_memory();
 }
 
 static struct intern_item * intern_resize_stack(struct caml_intern_state* s,
-                                                struct intern_item * sp)
+                                                const struct intern_item * sp)
 {
   asize_t newsize = 2 * (s->intern_stack_limit - s->intern_stack);
   asize_t sp_offset = sp - s->intern_stack;
@@ -438,9 +438,9 @@ static value intern_alloc_obj(struct caml_intern_state* s, caml_domain_state* d,
       intern_cleanup (s);
       caml_raise_out_of_memory();
     }
-    d->allocated_words += Whsize_wosize(wosize);
-    d->allocated_words_direct += Whsize_wosize(wosize);
-    Hd_hp(p) = Make_header (wosize, tag, caml_global_heap_state.MARKED);
+    caml_update_major_allocated_words(
+      d, Whsize_wosize(wosize), 1 /* direct */);
+    Hd_hp(p) = Make_header (wosize, tag, caml_allocation_status());
     caml_memprof_sample_block(Val_hp(p), wosize,
                               Whsize_wosize(wosize),
                               CAML_MEMPROF_SRC_MARSHAL);
@@ -862,7 +862,6 @@ value caml_input_val(struct channel *chan)
   char header[MAX_INTEXT_HEADER_SIZE];
   struct marshal_header h;
   char * block;
-  value res;
   struct caml_intern_state* s = init_intern_state ();
 
   if (! caml_channel_binary_mode(chan))
@@ -907,9 +906,10 @@ value caml_input_val(struct channel *chan)
   intern_init(s, block, block);
   intern_decompress_input(s, "input_value", &h);
   intern_alloc_storage(s, h.whsize, h.num_objects);
-  /* Fill it in */
-  intern_rec(s, "input_value", &res);
-  return intern_end(s, res);
+  /* Fill it in - obj must NOT be registered as a GC root */
+  value obj;
+  intern_rec(s, "input_value", &obj);
+  return intern_end(s, obj);
 }
 
 CAMLprim value caml_input_value(value vchan)
@@ -935,7 +935,6 @@ CAMLprim value caml_input_value_to_outside_heap(value vchan)
 CAMLexport value caml_input_val_from_bytes(value str, intnat ofs)
 {
   CAMLparam1 (str);
-  CAMLlocal1 (obj);
   struct marshal_header h;
   struct caml_intern_state* s = init_intern_state ();
 
@@ -949,7 +948,8 @@ CAMLexport value caml_input_val_from_bytes(value str, intnat ofs)
   s->intern_src = &Byte_u(str, ofs + h.header_len); /* If a GC occurred */
   /* Decompress if needed */
   intern_decompress_input(s, "input_val_from_string", &h);
-  /* Fill it in */
+  /* Fill it in - obj must NOT be registered as a GC root */
+  value obj;
   intern_rec(s, "input_val_from_string", &obj);
   CAMLreturn (intern_end(s, obj));
 }
@@ -962,12 +962,12 @@ CAMLprim value caml_input_value_from_bytes(value str, value ofs)
 static value input_val_from_block(struct caml_intern_state* s,
                                   struct marshal_header * h)
 {
-  value obj;
   /* Decompress if needed */
   intern_decompress_input(s, "input_val_from_block", h);
   /* Allocate result */
   intern_alloc_storage(s, h->whsize, h->num_objects);
-  /* Fill it in */
+  /* Fill it in - obj must NOT be registered as a GC root */
+  value obj;
   intern_rec(s, "input_val_from_block", &obj);
   return (intern_end(s, obj));
 }
@@ -1052,7 +1052,7 @@ CAMLprim value caml_marshal_data_size(value buff, value ofs)
 static char * intern_resolve_code_pointer(unsigned char digest[16],
                                           asize_t offset)
 {
-  struct code_fragment * cf = caml_find_code_fragment_by_digest(digest);
+  const struct code_fragment * cf = caml_find_code_fragment_by_digest(digest);
   if (cf != NULL && cf->code_start + offset < cf->code_end)
     return cf->code_start + offset;
   else
@@ -1207,7 +1207,7 @@ CAMLexport void caml_deserialize_block_float_8(void * data, intnat len)
 #endif
 }
 
-CAMLexport void caml_deserialize_error(char * msg)
+CAMLexport void caml_deserialize_error(const char * msg)
 {
   struct caml_intern_state* s = get_intern_state ();
   intern_cleanup(s);

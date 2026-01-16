@@ -21,7 +21,7 @@
 #include <caml/osdeps.h>
 #include "caml/unixsupport.h"
 
-char_os ** caml_unix_cstringvect(value arg, char * cmdname)
+char_os ** caml_unix_cstringvect(value arg, const char * cmdname)
 {
   char_os ** res;
   mlsize_t size;

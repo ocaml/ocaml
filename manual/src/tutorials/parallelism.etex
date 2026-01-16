@@ -2,23 +2,23 @@
 %HEVEA\cutname{parallelism.html}
 \label{c:parallelism}
 
-In this chapter, we shall look at the parallel programming facilities in OCaml.
+In this chapter we look at the parallel programming facilities in OCaml.
 The OCaml standard library exposes low-level primitives for parallel
-programming. We recommend the users to utilise higher-level parallel
+programming. We recommend that users make use of higher-level parallel
 programming libraries such as
 \href{https://github.com/ocaml-multicore/domainslib}{domainslib}. This
-tutorial will first cover the high-level parallel programming using domainslib
+tutorial will first cover high-level parallel programming using domainslib
 followed by low-level primitives exposed by the compiler.
 
-OCaml distinguishes concurrency and parallelism and provides distinct
-mechanisms for expressing them. Concurrency is overlapped execution of tasks
+OCaml distinguishes between concurrency and parallelism and provides distinct
+mechanisms for expressing them. Concurrency is interleaved execution of tasks
 (section \ref{s:effects-concurrency}) whereas parallelism is simultaneous
 execution of tasks. In particular, parallel tasks overlap in time but
 concurrent tasks may or may not overlap in time. Tasks may execute concurrently
 by yielding control to each other. While concurrency is a program structuring
 mechanism, parallelism is a mechanism to make your programs run faster. If you
 are interested in the concurrent programming mechanisms in OCaml, please refer
-to the section \ref{s:effect-handlers} on effect handlers and the chapter
+to section \ref{s:effect-handlers} on effect handlers and chapter
 \ref{c:threads} on the threads library.
 
 \section{s:par_domains}{Domains}
@@ -39,31 +39,31 @@ thread. Each domain also has its own runtime state, which includes domain-local
 structures for allocating memory. Hence, they are relatively expensive to
 create and tear down.
 
-\emph{\textbf{It is recommended that the programs do not spawn more domains
-than cores available}}.
+\emph{\textbf{It is recommended that programs do not spawn more domains
+than the number of available cores}}.
 
-In this tutorial, we shall be implementing, running and measuring the
+In this tutorial we will be implementing, running and measuring the
 performance of parallel programs. The results observed are dependent on the
-number of cores available on the target machine. This tutorial is being written
+number of cores available on the target machine. This tutorial was written
 on a 2.3 GHz Quad-Core Intel Core i7 MacBook Pro with 4 cores and 8 hardware
 threads. It is reasonable to expect roughly 4x performance on 4 domains for
 parallel programs with little coordination between the domains, and when the
 machine is not under load. Beyond 4 domains, the speedup is likely to be less
-than linear. We shall also use the command-line benchmarking tool
-\href{https://github.com/sharkdp/hyperfine}{hyperfine} for benchmarking our
+than linear. We will also use the command-line benchmarking tool
+\href{https://github.com/sharkdp/hyperfine}{hyperfine} to benchmark our
 programs.
 
 \subsection{s:par_join}{Joining domains}
 
-We shall use the program to compute the nth Fibonacci number using recursion as
-a running example. The sequential program for computing the nth Fibonacci
+We will write a program to compute the $n$th Fibonacci number using recursion as
+a running example. The sequential program for computing the $n$th Fibonacci
 number is given below.
 
 \begin{caml_example*}{verbatim}
 (* fib.ml *)
 let n = try int_of_string Sys.argv.(1) with _ -> 1
 
-let rec fib n = if n < 2 then 1 else fib (n - 1) + fib (n - 2)
+let rec fib n = if n < 2 then n else fib (n - 1) + fib (n - 2)
 
 let main () =
   let r = fib n in
@@ -72,12 +72,12 @@ let main () =
 let _ = main ()
 \end{caml_example*}
 
-The program can be compiled and benchmarked as follows.
+The program can be compiled and benchmarked as follows:
 
 \begin{verbatim}
 $ ocamlopt -o fib.exe fib.ml
 $ ./fib.exe 42
-fib(42) = 433494437
+fib(42) = 267914296
 $ hyperfine './fib.exe 42' # Benchmarking
 Benchmark 1: ./fib.exe 42
   Time (mean ± sd):     1.193 s ±  0.006 s    [User: 1.186 s, System: 0.003 s]
@@ -88,13 +88,13 @@ We see that it takes around 1.2 seconds to compute the 42nd Fibonacci number.
 
 Spawned domains can be joined using the "join" function to get their results.
 The "join" function waits for target domain to terminate. The following program
-computes the nth Fibonacci number twice in parallel.
+computes the $n$th Fibonacci number twice in parallel.
 
 \begin{caml_example*}{verbatim}
 (* fib_twice.ml *)
 let n = int_of_string Sys.argv.(1)
 
-let rec fib n = if n < 2 then 1 else fib (n - 1) + fib (n - 2)
+let rec fib n = if n < 2 then n else fib (n - 1) + fib (n - 2)
 
 let main () =
   let d1 = Domain.spawn (fun _ -> fib n) in
@@ -107,7 +107,7 @@ let main () =
 let _ = main ()
 \end{caml_example*}
 
-The program spawns two domains which compute the nth Fibonacci number. The
+The program spawns two domains which compute the $n$th Fibonacci number. The
 "spawn" function returns a "Domain.t" value which can be joined to get the
 result of the parallel computation. The "join" function blocks until the
 computation runs to completion.
@@ -115,16 +115,16 @@ computation runs to completion.
 \begin{verbatim}
 $ ocamlopt -o fib_twice.exe fib_twice.ml
 $ ./fib_twice.exe 42
-fib(42) = 433494437
-fib(42) = 433494437
+fib(42) = 267914296
+fib(42) = 267914296
 $ hyperfine './fib_twice.exe 42'
 Benchmark 1: ./fib_twice.exe 42
   Time (mean ± sd):     1.249 s ±  0.025 s    [User: 2.451 s, System: 0.012 s]
   Range (min … max):    1.221 s …  1.290 s    10 runs
 \end{verbatim}
 
-As one can see that computing the nth Fibonacci number twice almost took the
-same time as computing it once thanks to parallelism.
+As one can see, computing the $n$th Fibonacci number twice takes almost the
+same time as computing it once, thanks to parallelism.
 
 \section{s:par_parfib}{Domainslib: A library for nested-parallel programming}
 
@@ -137,7 +137,7 @@ by spawning domains for each one will not work as it spawns too many domains.
 let n = try int_of_string Sys.argv.(1) with _ -> 1
 
 let rec fib n =
-  if n < 2 then 1 else begin
+  if n < 2 then n else begin
     let d1 = Domain.spawn (fun _ -> fib (n - 1)) in
     let d2 = Domain.spawn (fun _ -> fib (n - 2)) in
     Domain.join d1 + Domain.join d2
@@ -175,15 +175,16 @@ tutorial uses domainslib version 0.5.0.
 Domainslib provides an async/await mechanism for spawning parallel tasks and
 awaiting their results. On top of this mechanism, domainslib provides parallel
 iterators. At its core, domainslib has an efficient implementation of
-work-stealing queue in order to efficiently share tasks with other domains. A
-parallel implementation of the Fibonacci program is given below.
+\href{https://en.wikipedia.org/wiki/Work_stealing}{work-stealing queues} in
+order to efficiently share tasks with other domains. A parallel implementation
+of the Fibonacci program follows:
 
 \begin{verbatim}
 (* fib_par2.ml *)
 let num_domains = int_of_string Sys.argv.(1)
 let n = int_of_string Sys.argv.(2)
 
-let rec fib n = if n < 2 then 1 else fib (n - 1) + fib (n - 2)
+let rec fib n = if n < 2 then n else fib (n - 1) + fib (n - 2)
 
 module T = Domainslib.Task
 
@@ -223,15 +224,15 @@ For small inputs, the "fib_par" function simply calls the sequential Fibonacci
 function "fib". It is important to switch to sequential mode for small problem
 sizes. If not, the cost of parallelisation will outweigh the work available.
 
-For simplicity, we use "ocamlfind" to compile this program. It is recommended
-that the users use \href{https://github.com/ocaml/dune}{dune} to build their
-programs that utilise libraries installed through
+For simplicity, we use "ocamlfind" to compile this program. In general, it is
+recommended that users use \href{https://github.com/ocaml/dune}{dune} to build
+programs that use libraries installed through
 \href{https://opam.ocaml.org/}{opam}.
 
 \begin{verbatim}
 $ ocamlfind ocamlopt -package domainslib -linkpkg -o fib_par2.exe fib_par2.ml
 $ ./fib_par2.exe 1 42
-fib(42) = 433494437
+fib(42) = 267914296
 $ hyperfine './fib.exe 42' './fib_par2.exe 2 42' \
             './fib_par2.exe 4 42' './fib_par2.exe 8 42'
 Benchmark 1: ./fib.exe 42
@@ -362,7 +363,7 @@ let () =
 \end{verbatim}
 
 Observe that the "parallel_for" function is isomorphic to the for-loop in the
-sequential version. No other change is required except for the boiler plate
+sequential version. No other change is required except for the boilerplate
 code to set up and tear down the pools.
 
 \begin{verbatim}
@@ -418,8 +419,8 @@ allocated. Having domain-local pools avoids synchronisation for most major heap
 allocations. The major heap is collected by a concurrent mark-and-sweep
 algorithm that involves a few short stop-the-world pauses for each major cycle.
 
-Overall, the users should expect the garbage collector to scale well with
-increasing number of domains, with the latency remaining low. For more
+Overall, users should expect the garbage collector to scale well with as
+the number of domains increases, with latency remaining low. For more
 information on the design and evaluation of the garbage collector, please have
 a look at the ICFP 2020 paper on
 \href{https://arxiv.org/abs/2004.11663}{"Retrofitting Parallelism onto OCaml"}.
@@ -447,12 +448,12 @@ variables (section \ref{s:par_atomics}) and mutexes (section \ref{s:par_sync}).
 Importantly, \textbf{for data race free (DRF) programs, OCaml provides
 sequentially consistent (SC) semantics} -- the observed behaviour of such
 programs can be explained by the interleaving of operations from different
-domains. This property is known as DRF-SC guarantee. Moreover, in OCaml, DRF-SC
-guarantee is modular -- if a part of a program is data race free, then the
-OCaml memory model ensures that those parts have sequential consistency despite
-other parts of the program having data races. Even for programs with data
-races, OCaml provides strong guarantees. While the user may observe non
-sequentially consistent behaviours, there are no crashes.
+domains. This property is known as the DRF-SC guarantee. Moreover, in OCaml,
+the DRF-SC guarantee is modular -- if a part of a program is data race free,
+then the OCaml memory model ensures that those parts have sequential consistency
+despite other parts of the program having data races. Even for programs with
+data races, OCaml provides strong guarantees. While the user may observe
+non-sequentially consistent behaviours, there are no crashes.
 
 For more details on the relaxed behaviours in the presence of data races,
 please have a look at the chapter on the hard bits of the memory model
@@ -464,7 +465,7 @@ Domains may perform blocking synchronisation with the help of
 \stdmoduleref{Mutex}, \stdmoduleref{Condition} and \stdmoduleref{Semaphore}
 modules. These modules are the same as those used to synchronise threads
 created by the threads library (chapter \ref{c:threads}). For clarity, in the
-rest of this chapter, we shall call the threads created by the threads library
+rest of this chapter, we refer to the threads created by the threads library
 as \emph{systhreads}. The following program implements a concurrent stack using
 mutex and condition variables.
 
@@ -580,7 +581,7 @@ let _ = main ()
 \end{verbatim}
 
 \begin{verbatim}
-$ ocamlopt -I +threads unix.cmxa threads.cmxa -o dom_thr.exe dom_thr.ml
+$ ocamlopt -I +threads -I +unix unix.cmxa threads.cmxa -o dom_thr.exe dom_thr.ml
 $ ./dom_thr.exe
 Thread 1 running on domain 1 saw initial write
 Thread 0 running on domain 0 saw the write by thread 1
@@ -591,8 +592,12 @@ Thread 3 running on domain 0 saw the write by thread 2
 This program uses a shared reference cell protected by a mutex to communicate
 between the different systhreads running on two different domains. The
 systhread identifiers uniquely identify systhreads in the program. The initial
-domain gets the domain id and the thread id as 0. The newly spawned domain gets
-domain id as 1.
+domain gets the domain id 0 and thread id 0. The newly spawned domain gets
+the domain id 1.
+
+Note that all the systhreads belonging to a particular domain are joined when
+the domain is joined. In particular, if such a systhread is running an infinite
+loop, then joining the domain will never return.
 
 \section{s:par_c_bindings}{Interaction with C bindings}
 
@@ -606,7 +611,7 @@ domains.
 
 \section{s:par_atomics}{Atomics}
 
-Mutex, condition variables and semaphores are used to implement blocking
+Mutexes, condition variables and semaphores are used to implement blocking
 synchronisation between domains. For non-blocking synchronisation, OCaml
 provides \stdmoduleref{Atomic} variables. As the name suggests, non-blocking
 synchronisation does not provide mechanisms for suspending and waking up
@@ -668,9 +673,9 @@ the effect will be that of a single increment. On the other hand, the atomic
 counter performs the load and the store atomically with the help of hardware
 support for atomicity. The atomic counter returns the expected result.
 
-The atomic variables can be used for low-level synchronisation between the
-domains. The following example uses an atomic variable to exchange a message
-between two domains.
+Atomic variables can be used for low-level synchronisation between domains. The
+following example uses an atomic variable to exchange a message between two
+domains.
 
 \begin{caml_example}{verbatim}
 let r = Atomic.make None
@@ -691,7 +696,7 @@ let main () =
 let _ = main ()
 \end{caml_example}
 
-While the sender and the receiver compete to access "r", this is not a data
+Although the sender and the receiver compete to access "r", this is not a data
 race since "r" is an atomic reference.
 
 \subsection{s:par_lockfree_stack}{Lock-free stack}
@@ -737,5 +742,54 @@ If the "compare_and_set" fails, then some other domain is also attempting to
 update the atomic reference at the same time. In this case, the "push" and
 "pop" operations call "Domain.cpu_relax" to back off for a short duration
 allowing competing domains to make progress before retrying the failed
-operation. This lock-free stack implementation is also known as Treiber
-stack.
+operation. This lock-free stack implementation is called a
+\href{https://en.wikipedia.org/wiki/Treiber_stack}{Treiber stack}.
+
+
+\subsection{s:atomic-record-fields}{Atomic record fields}
+
+The type "'a Atomic.t" is the atomic counterpart of the type of OCaml
+references, "'a ref". Since OCaml 5.4, we also support atomic record
+fields, which must be mutable, via the "[@atomic]" attribute.
+
+For example:
+\begin{caml_example*}{verbatim}
+type 'a refcounted = {
+  value : 'a;
+  mutable readers : int [@atomic];
+}
+\end{caml_example*}
+
+The field "readers" is atomic, so that reading and writing to this
+field are atomic operations similar to "Atomic.get" and
+"Atomic.set". It is possible to perform other atomic operations on
+this field by using a built-in extension node, "%atomic.loc": if
+"rc" is a value of type "foo refcounted", then "[%atomic.loc rc.readers]"
+is an expression of the built-in type "foo Atomic.Loc.t", which allows
+atomic operations defined in the the \stdmoduleref{Atomic}.Loc module
+of the standard library, mirroring the operations exposed for atomic
+references in the \stdmoduleref{Atomic} module:
+
+\begin{caml_example}{toplevel}
+let add_reader rc =
+  Atomic.Loc.fetch_and_add [%atomic.loc rc.readers] 1;;
+
+#show Atomic.Loc;;
+\end{caml_example}
+
+\paragraph{Limitation} Currently there is no analogue of
+"Atomic.make_contended" for atomic record fields. If false sharing is
+an issue for a specific record field, the best supported approach is
+to use a field of type "Atomic.t". We hope to implement support for
+on-demand padding of record fields in the future.
+
+\paragraph{Performance note} Internally "[%atomic.loc rc.readers]"
+is represented as a pair of the record value and a field
+offset. Whenever this expression is directly applied to an atomic
+primitive of the \stdmoduleref{Atomic}.Loc module, the compiler will
+optimize away the creation of the pair; it passes the value and the
+offset as separate parameters to an underlying runtime primitive. On
+the other hand, storing an atomic location in a data-structure or
+passing it to another, non-inlined function may allocate a pair. When
+in doubt, you can inspect the "-dcmm" intermediate representation of
+your code.

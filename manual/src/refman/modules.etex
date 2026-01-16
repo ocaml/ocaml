@@ -22,7 +22,7 @@ for the specifications expressed in module types.
 module-expr:
           module-path
         | 'struct' [ module-items ] 'end'
-        | 'functor' '(' module-name ':' module-type ')' '->' module-expr
+        | 'functor' {{ '(' module-name ':' module-type ')' }} '->' module-expr
         | module-expr '(' module-expr ')'
         | '(' module-expr ')'
         | '(' module-expr ':' module-type ')'
@@ -30,19 +30,25 @@ module-expr:
 module-items:
         { ';;' } ( definition || expr ) { { ';;' } ( definition || ';;' expr) } { ';;' }
 ;
-%\end{syntax} \begin{syntax}
-definition:
-          'let' ['rec'] let-binding { 'and' let-binding }
-        | 'external' value-name ':' typexpr '=' external-declaration
+module-definition:
+          'module' module-name { '(' module-name ':' module-type ')' }
+                   [ ':' module-type ] \\ '=' module-expr
+;
+local-definition:
+          'external' value-name ':' typexpr '=' external-declaration
         | type-definition
         | exception-definition
         | class-definition
         | classtype-definition
-        | 'module' module-name { '(' module-name ':' module-type ')' }
-                   [ ':' module-type ] \\ '=' module-expr
+        | module-definition
         | 'module' 'type' modtype-name '=' module-type
         | 'open' module-path
+;
+definition:
+          'let' ['rec'] let-binding { 'and' let-binding }
         | 'include' module-expr
+        | local-definition
+;
 \end{syntax}
 See also the following language extensions:
 \hyperref[s:recursive-modules]{recursive modules},
@@ -245,4 +251,3 @@ The expression @module-expr_1 '(' module-expr_2 ')'@ evaluates
 @module-expr_1@ to a functor and @module-expr_2@ to a module, and
 applies the former to the latter. The type of @module-expr_2@ must
 match the type expected for the arguments of the functor @module-expr_1@.
-

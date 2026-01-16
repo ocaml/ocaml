@@ -198,6 +198,7 @@ external unsafe_environment : unit -> string array
 external getenv: string -> string = "caml_sys_getenv"
 external unsafe_getenv: string -> string = "caml_sys_unsafe_getenv"
 external putenv: string -> string -> unit = "caml_unix_putenv"
+external unsetenv: string -> unit = "caml_unix_unsetenv"
 
 type process_status =
     WEXITED of int
@@ -472,6 +473,7 @@ external sigprocmask: sigprocmask_command -> int list -> int list
         = "caml_unix_sigprocmask"
 external sigpending: unit -> int list = "caml_unix_sigpending"
 external sigsuspend: int list -> unit = "caml_unix_sigsuspend"
+external sigwait: int list -> int = "caml_unix_sigwait"
 
 let pause() =
   let sigs = sigprocmask SIG_BLOCK [] in sigsuspend sigs

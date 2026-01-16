@@ -1,3 +1,44 @@
+OCaml 5.4.0 (9 October 2025)
+----------------------------
+
+Some of the highlights of OCaml 5.4.0 are:
+
+- Labelled tuples
+- Immutable arrays
+- Array literal syntax support for immutable arrays and `floatarray`s
+  (through type-directed disambiguation)
+- Atomic record fields
+- Four new standard library modules: Pair, Pqueue, Repr, and Iarray
+- Restored "memory cleanup upon exit" mode
+- New chapter in the manual on profiling OCaml programs on Linux and macOS
+
+And a lot of incremental changes:
+
+- Many runtime and code generation improvements
+- More than thirty new standard library functions
+- Nearly a dozen improved error messages
+- Around fifty bug fixes
+
+OCaml 5.3.0 (8 January 2025)
+----------------------------
+
+Some of the highlights of OCaml 5.3.0 are:
+
+- Syntax for deep effect handlers
+- Restored MSVC port
+- Re-introduced statistical memory profiling (statmemprof)
+- utf-8 encoded Unicode source files and modest support of Unicode identifiers
+- More space-efficient implementation of Dynarray
+- Improved metadata on the pairs of declarations and definitions for merlin.
+
+And a lot of incremental changes:
+
+- Around 20 new functions in the standard library
+- Many fixes and improvements in the runtime
+- Improved error messages for first-class modules, functors, labeled arguments,
+type clashes.
+- Numerous bug fixes
+
 OCaml 5.2.0 (13 May 2024)
 ------------------------
 
@@ -9,7 +50,7 @@ branch. Some of the highlights in OCaml 5.2.0 are:
 - Thread sanitizer support
 - New Dynarray module
 - New -H flag for hidden include directories
-- Project-wide occurence metadata support for developer tools
+- Project-wide occurrence metadata support for developer tools
 - Raw identifiers
 - Local open in type expressions
 

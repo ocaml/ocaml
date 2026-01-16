@@ -27,6 +27,7 @@ module Name : sig
     | DBUG (** debug info *)
     | DLLS (** dll names *)
     | DLPT (** dll paths *)
+    | OSLD (** OCaml Standard Library Default location *)
     | PRIM (** primitives names *)
     | RNTM (** The path to the bytecode interpreter (use_runtime mode) *)
     | SYMB (** global identifiers *)

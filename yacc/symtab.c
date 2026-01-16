@@ -25,9 +25,9 @@ bucket *last_symbol;
 
 
 int
-hash(char *name)
+hash(const char *name)
 {
-    char *s;
+    const char *s;
     int c, k;
 
     assert(name && *name);
@@ -41,7 +41,7 @@ hash(char *name)
 
 
 bucket *
-make_bucket(char *name)
+make_bucket(const char *name)
 {
     bucket *bp;
 
@@ -69,7 +69,7 @@ make_bucket(char *name)
 
 
 bucket *
-lookup(char *name)
+lookup(const char *name)
 {
     bucket *bp, **bpp;
 

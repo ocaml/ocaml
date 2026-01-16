@@ -23,6 +23,7 @@ val print_version_and_library : string -> 'a
 val print_version_string : unit -> 'a
 val print_standard_library : unit -> 'a
 val fatal : string -> 'a
+val fatalf : ('a, unit, string, 'b) format4 -> 'a
 
 val first_ccopts : string list ref
 val first_ppx : string list ref
@@ -52,7 +53,7 @@ type deferred_action =
   | ProcessCFile of string
   | ProcessOtherFile of string
   | ProcessObjects of string list
-  | ProcessDLLs of string list
+  | ProcessDLLs of bool * string list
 
 val c_object_of_filename : string -> string
 
@@ -61,18 +62,24 @@ val anonymous : string -> unit
 val impl : string -> unit
 val intf : string -> unit
 
-val process_deferred_actions :
-  Format.formatter *
-  (start_from:Clflags.Compiler_pass.t ->
-   source_file:string -> output_prefix:string -> unit) *
-  (* compile implementation *)
-  (source_file:string -> output_prefix:string -> unit) *
-  (* compile interface *)
-  string * (* ocaml module extension *)
-  string -> (* ocaml library extension *)
-  unit
+type action_context = {
+  log : Format.formatter;
+  compile_implementation:
+    start_from:Clflags.Compiler_pass.t ->
+    source_file:string -> output_prefix:string -> unit;
+  compile_interface:
+    source_file:string -> output_prefix:string -> unit;
+  ocaml_mod_ext: string; (* ".cmo" or ".cmx" *)
+  ocaml_lib_ext: string; (* ".cma" or ".cmxa" *)
+}
+
+val process_deferred_actions : action_context -> unit
+
 (* [parse_arguments ?current argv anon_arg program] will parse the arguments,
  using the arguments provided in [Clflags.arg_spec].
 *)
 val parse_arguments : ?current:(int ref)
       -> string array ref -> Arg.anon_fun -> string -> unit
+
+(** Validate a single -set-runtime-default parameter specification. *)
+val parse_runtime_parameter : string -> unit

@@ -23,6 +23,8 @@ val cwd : Variables.t
 
 val commandline : Variables.t
 
+val dev_null : Variables.t
+
 val dst : Variables.t
 
 val exit_status : Variables.t

@@ -16,18 +16,19 @@
 (* To print values *)
 
 open Misc
-open Format
 open Longident
 open Path
 open Types
+open Data_types
 open Outcometree
-module Out_name = Printtyp.Out_name
 
 module type OBJ =
   sig
     type t
     val repr : 'a -> t
-    val obj : t -> 'a
+    (* [base_obj] assumes that the value has a marshallable base type. *)
+    val base_obj : t -> 'a
+    val obj : t -> (Obj.t, string) result
     val is_block : t -> bool
     val tag : t -> int
     val size : t -> int
@@ -44,26 +45,89 @@ module type EVALPATH =
     val same_value: valu -> valu -> bool
   end
 
-type ('a, 'b) gen_printer =
-  | Zero of 'b
-  | Succ of ('a -> ('a, 'b) gen_printer)
+let exn_printer path ppf exn =
+  Format_doc.fprintf ppf "<printer %a raised an exception: %s>"
+    Printtyp.Doc.path path
+    (Printexc.to_string exn)
+
+module User_printer = struct
+  type ('a, 'b) gen =
+    | Zero of 'b
+    | Succ of ('a -> ('a, 'b) gen)
+
+  type t =
+  | Simple of Types.type_expr * (Obj.t -> Outcometree.out_value)
+  | Generic of Path.t * (int -> (int -> Obj.t -> Outcometree.out_value,
+                                     Obj.t -> Outcometree.out_value) gen)
+
+  (* The user-defined printers. Also used for some builtin types. *)
+
+  let printers = ref ([
+    ( Pident(Ident.create_local "print_int"),
+      Simple (Predef.type_int,
+              (fun x -> Oval_int (Obj.obj x : int))) );
+    ( Pident(Ident.create_local "print_float"),
+      Simple (Predef.type_float,
+              (fun x -> Oval_float (Obj.obj x : float))) );
+    ( Pident(Ident.create_local "print_char"),
+      Simple (Predef.type_char,
+              (fun x -> Oval_char (Obj.obj x : char))) );
+    ( Pident(Ident.create_local "print_int32"),
+      Simple (Predef.type_int32,
+              (fun x -> Oval_int32 (Obj.obj x : int32))) );
+    ( Pident(Ident.create_local "print_nativeint"),
+      Simple (Predef.type_nativeint,
+              (fun x -> Oval_nativeint (Obj.obj x : nativeint))) );
+    ( Pident(Ident.create_local "print_int64"),
+      Simple (Predef.type_int64,
+              (fun x -> Oval_int64 (Obj.obj x : int64)) ))
+  ] : (Path.t * t) list)
+
+  let get_printers () = !printers
+
+  let user_printer path f ppf x =
+    Format_doc.deprecated_printer
+      (fun ppf ->
+         try f ppf x with
+         | exn -> Format_doc.compat1 exn_printer path ppf exn
+      )
+      ppf
+
+  let install_simple path ty fn =
+    let print_val ppf obj = user_printer path fn ppf obj in
+    let printer obj = Oval_printer (fun ppf -> print_val ppf obj) in
+    printers := (path, Simple (ty, printer)) :: !printers
+
+  let install_generic_outcometree function_path constr_path fn =
+    printers := (function_path, Generic (constr_path, fn))  :: !printers
+
+  let install_generic_format function_path ty_path fn =
+    let rec build gp depth =
+      match gp with
+      | Zero fn ->
+          let out_printer obj =
+            let printer ppf = user_printer function_path fn ppf obj in
+            Oval_printer printer in
+          Zero out_printer
+      | Succ fn ->
+          let print_val fn_arg =
+            let print_arg ppf o =
+              !Oprint.out_value ppf (fn_arg (depth+1) o) in
+            build (fn print_arg) depth in
+          Succ print_val in
+    printers := (function_path, Generic (ty_path, build fn)) :: !printers
+
+  let remove path =
+    let rec remove = function
+    | [] -> raise Not_found
+    | ((p, _) as printer) :: rem ->
+        if Path.same p path then rem else printer :: remove rem in
+    printers := remove !printers
+end
 
 module type S =
   sig
     type t
-    val install_printer :
-          Path.t -> Types.type_expr -> (formatter -> t -> unit) -> unit
-    val install_generic_printer :
-           Path.t -> Path.t ->
-           (int -> (int -> t -> Outcometree.out_value,
-                    t -> Outcometree.out_value) gen_printer) ->
-           unit
-    val install_generic_printer' :
-           Path.t -> Path.t ->
-           (formatter -> t -> unit,
-            formatter -> t -> unit) gen_printer ->
-           unit
-    val remove_printer : Path.t -> unit
     val outval_of_untyped_exception : t -> Outcometree.out_value
     val outval_of_value :
           int -> int ->
@@ -84,6 +148,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           with _exn -> 0
       end)
 
+    let tree_of_name (name : string) =
+      Oide_ident (Out_type.Out_name.create name)
 
     (* Given an exception value, we cannot recover its type,
        hence we cannot print its arguments in general.
@@ -95,15 +161,16 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         for i = start_offset to O.size obj - 1 do
           let arg = O.field obj i in
           if not (O.is_block arg) then
-            list := Oval_int (O.obj arg : int) :: !list
+            list := Oval_int (O.base_obj arg : int) :: !list
                (* Note: this could be a char or a constant constructor... *)
           else if O.tag arg = Obj.string_tag then
             list :=
-              Oval_string ((O.obj arg : string), max_int, Ostr_string) :: !list
+              Oval_string ((O.base_obj arg : string), max_int, Ostr_string)
+              :: !list
           else if O.tag arg = Obj.double_tag then
-            list := Oval_float (O.obj arg : float) :: !list
+            list := Oval_float (O.base_obj arg : float) :: !list
           else
-            list := Oval_constr (Oide_ident (Out_name.create "_"), []) :: !list
+            list := Oval_constr (tree_of_name "_", []) :: !list
         done;
         List.rev !list
       end
@@ -111,10 +178,10 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
     let outval_of_untyped_exception bucket =
       if O.tag bucket <> 0 then
-        let name = Out_name.create (O.obj (O.field bucket 0) : string) in
-        Oval_constr (Oide_ident name, [])
+        let name = (O.base_obj (O.field bucket 0) : string)in
+        Oval_constr (tree_of_name name, [])
       else
-      let name = (O.obj(O.field(O.field bucket 0) 0) : string) in
+      let name = (O.base_obj(O.field(O.field bucket 0) 0) : string) in
       let args =
         if (name = "Match_failure"
             || name = "Assert_failure"
@@ -123,115 +190,81 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         && O.tag(O.field bucket 1) = 0
         then outval_of_untyped_exception_args (O.field bucket 1) 0
         else outval_of_untyped_exception_args bucket 1 in
-      Oval_constr (Oide_ident (Out_name.create name), args)
-
-    (* The user-defined printers. Also used for some builtin types. *)
-
-    type printer =
-      | Simple of Types.type_expr * (O.t -> Outcometree.out_value)
-      | Generic of Path.t * (int -> (int -> O.t -> Outcometree.out_value,
-                                     O.t -> Outcometree.out_value) gen_printer)
-
-    let printers = ref ([
-      ( Pident(Ident.create_local "print_int"),
-        Simple (Predef.type_int,
-                (fun x -> Oval_int (O.obj x : int))) );
-      ( Pident(Ident.create_local "print_float"),
-        Simple (Predef.type_float,
-                (fun x -> Oval_float (O.obj x : float))) );
-      ( Pident(Ident.create_local "print_char"),
-        Simple (Predef.type_char,
-                (fun x -> Oval_char (O.obj x : char))) );
-      ( Pident(Ident.create_local "print_int32"),
-        Simple (Predef.type_int32,
-                (fun x -> Oval_int32 (O.obj x : int32))) );
-      ( Pident(Ident.create_local "print_nativeint"),
-        Simple (Predef.type_nativeint,
-                (fun x -> Oval_nativeint (O.obj x : nativeint))) );
-      ( Pident(Ident.create_local "print_int64"),
-        Simple (Predef.type_int64,
-                (fun x -> Oval_int64 (O.obj x : int64)) ))
-    ] : (Path.t * printer) list)
-
-    let exn_printer ppf path exn =
-      Format_doc.fprintf ppf "<printer %a raised an exception: %s>"
-        Printtyp.path path
-        (Printexc.to_string exn)
+      Oval_constr (tree_of_name name, args)
 
     let out_exn path exn =
-      Oval_printer (fun ppf -> exn_printer ppf path exn)
-
-    let user_printer path f ppf x =
-      Format_doc.deprecated_printer
-        (fun ppf ->
-           try f ppf x with
-           | exn -> Format_doc.compat (fun ppf -> exn_printer ppf path) ppf exn
-        )
-        ppf
-
-    let install_printer path ty fn =
-      let print_val ppf obj = user_printer path fn ppf obj in
-      let printer obj = Oval_printer (fun ppf -> print_val ppf obj) in
-      printers := (path, Simple (ty, printer)) :: !printers
-
-    let install_generic_printer function_path constr_path fn =
-      printers := (function_path, Generic (constr_path, fn))  :: !printers
-
-    let install_generic_printer' function_path ty_path fn =
-      let rec build gp depth =
-        match gp with
-        | Zero fn ->
-            let out_printer obj =
-              let printer ppf = user_printer function_path fn ppf obj in
-              Oval_printer printer in
-            Zero out_printer
-        | Succ fn ->
-            let print_val fn_arg =
-              let print_arg ppf o =
-                !Oprint.out_value ppf (fn_arg (depth+1) o) in
-              build (fn print_arg) depth in
-            Succ print_val in
-      printers := (function_path, Generic (ty_path, build fn)) :: !printers
-
-    let remove_printer path =
-      let rec remove = function
-      | [] -> raise Not_found
-      | ((p, _) as printer) :: rem ->
-          if Path.same p path then rem else printer :: remove rem in
-      printers := remove !printers
+      Oval_printer (fun ppf -> exn_printer path ppf exn)
 
     (* Print a constructor or label, giving it the same prefix as the type
        it comes from. Attempt to omit the prefix if the type comes from
        a module that has been opened. *)
 
-    let tree_of_qualified find env ty_path name =
-      match ty_path with
-      | Pident _ ->
-          Oide_ident name
-      | Pdot(p, _s) ->
-          if
-            match get_desc (find (Lident (Out_name.print name)) env) with
-            | Tconstr(ty_path', _, _) -> Path.same ty_path ty_path'
-            | _ -> false
-            | exception Not_found -> false
-          then Oide_ident name
-          else Oide_dot (Printtyp.tree_of_path p, Out_name.print name)
-      | Papply _ ->
-          Printtyp.tree_of_path ty_path
-      | Pextra_ty _ ->
-          (* These can only appear directly inside of the associated
-             constructor so we can just drop the prefix *)
-          Oide_ident name
+    let tree_of_qualified lookup_all get_path env ty_path name =
+      (*First, we rewrite double underscore [__] into [.] whenever possible *)
+      let ty_path = Out_type.rewrite_double_underscore_paths env ty_path in
+      (* If [ty_path] is [M.N.t] and [name] is [Foo], we want to find
+         a short name for [M.N.Foo] in the current typing environment.
+         Our strategy is to try [Foo], [N.Foo] and [M.N.Foo] in
+         turn. *)
+
+      (* Start by transforming the path [M.N.t] into the Longident [M.N.Foo]. *)
+      let lid = match Untypeast.lident_of_path ty_path with
+        | Lident _ -> Lident name
+        | Ldot (p,_) -> Ldot(p, Location.mknoloc name)
+        | x -> x
+      in
+
+      (* [candidates exn M.N.Foo] is [Foo; N.Foo; M.N.Foo].
+         @raise [exn] on functor application. *)
+      let candidates apply_exn lid =
+        (* [loop M.N [Foo]] is [[Foo]; [N; Foo]; [M; N; Foo]] *)
+        let rec loop lid suff = match lid with
+          | Lident last -> [suff; (last :: suff)]
+          | Ldot({txt=p; _}, {txt=s; _}) -> suff :: loop p (s :: suff)
+          | Lapply _ -> raise apply_exn
+        in
+        loop lid [] (* [[]; [Foo]; [N; Foo]; [M; N; Foo]] *)
+        |> List.filter_map Longident.unflatten
+      in
+
+      (* A shorter name is correct (matches) if one of its possible
+         interpretations (there may be several constructors with the
+         same name at different types in a module) has the same type
+         path as the one we are printing. *)
+      let matches lid =
+        match lookup_all lid env with
+        | Error _ -> false
+        | Ok cstrs ->
+            List.exists (fun (cstr, _) ->
+              Path.same (get_path cstr) ty_path
+            ) cstrs
+      in
+
+      let rec tree_of_lident = function
+        | Lident name ->
+            tree_of_name name
+        | Ldot ({txt=lid; _}, {txt=name; _}) ->
+            Oide_dot (tree_of_lident lid, name)
+        | Lapply ({txt=lid1; _}, {txt=lid2; _}) ->
+            Oide_apply (tree_of_lident lid1, tree_of_lident lid2)
+      in
+
+      let exception Functor_application in
+      match List.find matches (candidates Functor_application lid) with
+      | exception (Functor_application | Not_found) ->
+          tree_of_lident lid
+      | best_lid ->
+          tree_of_lident best_lid
 
     let tree_of_constr =
       tree_of_qualified
-        (fun lid env ->
-          (Env.find_constructor_by_name lid env).cstr_res)
+        (Env.lookup_all_constructors ~use:false ~loc:Location.none Env.Positive)
+        Data_types.cstr_res_type_path
 
     and tree_of_label =
       tree_of_qualified
-        (fun lid env ->
-          (Env.find_label_by_name lid env).lbl_res)
+        (Env.lookup_all_labels ~use:false ~loc:Location.none Env.Construct)
+        Data_types.lbl_res_type_path
 
     (* An abstract type *)
 
@@ -268,223 +301,74 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         decr printer_steps;
         if !printer_steps < 0 || depth < 0 then Oval_ellipsis
         else begin
-        try
-          find_printer depth env ty obj
-        with Not_found ->
+        match find_user_printer depth env ty with
+        | user_printer ->
+           begin match O.obj obj with
+           | Ok v -> user_printer v
+           | Error msg -> Oval_stuff msg
+           end
+        | exception Not_found ->
           match get_desc ty with
           | Tvar _ | Tunivar _ ->
               Oval_stuff "<poly>"
           | Tarrow _ ->
               Oval_stuff "<fun>"
-          | Ttuple(ty_list) ->
-              Oval_tuple (tree_of_val_list 0 depth obj ty_list)
+          | Ttuple(labeled_tys) ->
+              Oval_tuple (tree_of_labeled_val_list 0 depth obj labeled_tys)
           | Tconstr(path, ty_list, _) -> begin
               match get_desc (Ctype.expand_head env ty) with
               | Tconstr(path, [ty_arg], _)
                 when Path.same path Predef.path_list ->
-                  if O.is_block obj then
-                    match check_depth depth obj ty with
-                      Some x -> x
-                    | None ->
-                        let rec tree_of_conses tree_list depth obj ty_arg =
-                          if !printer_steps < 0 || depth < 0 then
-                            Oval_ellipsis :: tree_list
-                          else if O.is_block obj then
-                            let tree = nest tree_of_val (depth - 1)
-                                          (O.field obj 0) ty_arg
-                            in
-                            let next_obj = O.field obj 1 in
-                            nest_gen (Oval_stuff "<cycle>" :: tree :: tree_list)
-                              (tree_of_conses (tree :: tree_list))
-                              depth next_obj ty_arg
-                          else tree_list
-                        in
-                        Oval_list
-                            (List.rev (tree_of_conses [] depth obj ty_arg))
-                  else
-                    Oval_list []
+                  tree_of_list depth obj ty_arg
 
               | Tconstr(path, [ty_arg], _)
                 when Path.same path Predef.path_array ->
-                  let length = O.size obj in
-                  if length > 0 then
-                    match check_depth depth obj ty with
-                      Some x -> x
-                    | None ->
-                        let rec tree_of_items tree_list i =
-                          if !printer_steps < 0 || depth < 0 then
-                            Oval_ellipsis :: tree_list
-                          else if i < length then
-                            let tree = nest tree_of_val (depth - 1)
-                                            (O.field obj i) ty_arg
-                            in
-                            tree_of_items (tree :: tree_list) (i + 1)
-                          else tree_list
-                        in
-                        Oval_array (List.rev (tree_of_items [] 0))
-                  else
-                    Oval_array []
+                  tree_of_generic_array Asttypes.Mutable depth obj ty_arg
+
+              | Tconstr(path, [ty_arg], _)
+                when Path.same path Predef.path_iarray ->
+                  tree_of_generic_array Asttypes.Immutable depth obj ty_arg
 
               | Tconstr(path, [], _)
                   when Path.same path Predef.path_string ->
-                Oval_string ((O.obj obj : string), !printer_steps, Ostr_string)
+                Oval_string ((O.base_obj obj : string),
+                             !printer_steps, Ostr_string)
 
               | Tconstr (path, [], _)
                   when Path.same path Predef.path_bytes ->
-                let s = Bytes.to_string (O.obj obj : bytes) in
+                let s = Bytes.to_string (O.base_obj obj : bytes) in
                 Oval_string (s, !printer_steps, Ostr_bytes)
+
+              | Tconstr(path, [], _)
+                  when Path.same path Predef.path_floatarray ->
+                Oval_floatarray (O.base_obj obj : floatarray)
 
               | Tconstr (path, [ty_arg], _)
                 when Path.same path Predef.path_lazy_t ->
-                let obj_tag = O.tag obj in
-                (* Lazy values are represented in three possible ways:
+                tree_of_lazy depth obj ty_arg
 
-                    1. a lazy thunk that is not yet forced has tag
-                      Obj.lazy_tag
-
-                    2. a lazy thunk that has just been forced has tag
-                      Obj.forward_tag; its first field is the forced
-                      result, which we can print
-
-                    3. when the GC moves a forced trunk with forward_tag,
-                      or when a thunk is directly created from a value,
-                      we get a third representation where the value is
-                      directly exposed, without the Obj.forward_tag
-                      (if its own tag is not ambiguous, that is neither
-                      lazy_tag nor forward_tag)
-
-                    Note that using Lazy.is_val and Lazy.force would be
-                    unsafe, because they use the Obj.* functions rather
-                    than the O.* functions of the functor argument, and
-                    would thus crash if called from the toplevel
-                    (debugger/printval instantiates Genprintval.Make with
-                    an Obj module talking over a socket).
-                  *)
-                if obj_tag = Obj.lazy_tag then Oval_stuff "<lazy>"
-                else begin
-                    let forced_obj =
-                      if obj_tag = Obj.forward_tag then O.field obj 0 else obj
-                    in
-                    (* calling oneself recursively on forced_obj risks
-                        having a false positive for cycle detection;
-                        indeed, in case (3) above, the value is stored
-                        as-is instead of being wrapped in a forward
-                        pointer. It means that, for (lazy "foo"), we have
-                          forced_obj == obj
-                        and it is easy to wrongly print (lazy <cycle>) in such
-                        a case (PR#6669).
-
-                        Unfortunately, there is a corner-case that *is*
-                        a real cycle: using unboxed types one can define
-
-                          type t = T : t Lazy.t -> t [@@unboxed]
-                          let rec x = lazy (T x)
-
-                        which creates a Forward_tagged block that points to
-                        itself. For this reason, we still "nest"
-                        (detect head cycles) on forward tags.
-                      *)
-                    let v =
-                      if obj_tag = Obj.forward_tag
-                      then nest tree_of_val depth forced_obj ty_arg
-                      else      tree_of_val depth forced_obj ty_arg
-                    in
-                    Oval_lazy v
-                  end
-            | _ -> begin try
-                let decl = Env.find_type path env in
-                match decl with
+              | _ ->
+                match Env.find_type path env with
+                | exception Not_found
                 | {type_kind = Type_abstract _; type_manifest = None} ->
                     Oval_stuff "<abstr>"
-                | {type_kind = Type_abstract _; type_manifest = Some body} ->
+                | {type_kind = Type_abstract _; type_manifest = Some body;
+                   type_params} ->
                     tree_of_val depth obj
-                      (instantiate_type env decl.type_params ty_list body)
-                | {type_kind = Type_variant (constr_list,rep)} ->
-                    let unbx = (rep = Variant_unboxed) in
-                    let tag =
-                      if unbx then Cstr_unboxed
-                      else if O.is_block obj
-                      then Cstr_block(O.tag obj)
-                      else Cstr_constant(O.obj obj) in
-                    let {cd_id;cd_args;cd_res} =
-                      Datarepr.find_constr_by_tag tag constr_list in
-                    let type_params =
-                      match cd_res with
-                        Some t ->
-                          begin match get_desc t with
-                            Tconstr (_,params,_) ->
-                              params
-                          | _ -> assert false end
-                      | None -> decl.type_params
-                    in
-                    begin
-                      match cd_args with
-                      | Cstr_tuple l ->
-                          let ty_args =
-                            instantiate_types env type_params ty_list l in
-                          tree_of_constr_with_args (tree_of_constr env path)
-                            (Ident.name cd_id) false 0 depth obj
-                            ty_args unbx
-                      | Cstr_record lbls ->
-                          let r =
-                            tree_of_record_fields depth
-                              env path type_params ty_list
-                              lbls 0 obj unbx
-                          in
-                          Oval_constr(tree_of_constr env path
-                                        (Out_name.create (Ident.name cd_id)),
-                                      [ r ])
-                    end
-                | {type_kind = Type_record(lbl_list, rep)} ->
-                    begin match check_depth depth obj ty with
-                      Some x -> x
-                    | None ->
-                        let pos =
-                          match rep with
-                          | Record_extension _ -> 1
-                          | _ -> 0
-                        in
-                        let unbx =
-                          match rep with Record_unboxed _ -> true | _ -> false
-                        in
-                        tree_of_record_fields depth
-                          env path decl.type_params ty_list
-                          lbl_list pos obj unbx
-                    end
+                      (instantiate_type env type_params ty_list body)
+                | {type_kind = Type_variant (constr_list,rep); type_params} ->
+                    tree_of_variant depth path type_params ty_list obj
+                      constr_list rep
+                | {type_kind = Type_record(lbl_list, rep); type_params} ->
+                    tree_of_record depth path type_params ty_list obj
+                      lbl_list rep
                 | {type_kind = Type_open} ->
                     tree_of_extension path ty_list depth obj
-              with
-                Not_found ->                (* raised by Env.find_type *)
-                  Oval_stuff "<abstr>"
-              | Datarepr.Constr_not_found -> (* raised by find_constr_by_tag *)
-                  Oval_stuff "<unknown constructor>"
-              end
+                | {type_kind = Type_external _} ->
+                    Oval_stuff "<external>"
             end
           | Tvariant row ->
-              if O.is_block obj then
-                let tag : int = O.obj (O.field obj 0) in
-                let rec find = function
-                  | (l, f) :: fields ->
-                      if Btype.hash_variant l = tag then
-                        match row_field_repr f with
-                        | Rpresent(Some ty) | Reither(_,[ty],_) ->
-                            let args =
-                              nest tree_of_val (depth - 1) (O.field obj 1) ty
-                            in
-                              Oval_variant (l, Some args)
-                        | _ -> find fields
-                      else find fields
-                  | [] -> Oval_stuff "<variant>" in
-                find (row_fields row)
-              else
-                let tag : int = O.obj obj in
-                let rec find = function
-                  | (l, _) :: fields ->
-                      if Btype.hash_variant l = tag then
-                        Oval_variant (l, None)
-                      else find fields
-                  | [] -> Oval_stuff "<variant>" in
-                find (row_fields row)
+              tree_of_polyvariant depth obj row
           | Tobject (_, _) ->
               Oval_stuff "<obj>"
           | Tsubst _ | Tfield(_, _, _, _) | Tnil | Tlink _ ->
@@ -494,6 +378,160 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           | Tpackage _ ->
               Oval_stuff "<module>"
         end
+
+      and tree_of_list depth obj ty_arg =
+        if not (O.is_block obj) then Oval_list []
+        else match check_depth depth obj ty with
+          | Some x -> x
+          | None ->
+              let rec tree_of_conses tree_list depth obj ty_arg =
+                if !printer_steps < 0 || depth < 0 then
+                  Oval_ellipsis :: tree_list
+                else if O.is_block obj then
+                  let tree = nest tree_of_val (depth - 1)
+                                (O.field obj 0) ty_arg
+                  in
+                  let next_obj = O.field obj 1 in
+                  nest_gen (Oval_stuff "<cycle>" :: tree :: tree_list)
+                    (tree_of_conses (tree :: tree_list))
+                    depth next_obj ty_arg
+                else tree_list
+              in
+              Oval_list
+                  (List.rev (tree_of_conses [] depth obj ty_arg))
+
+      and tree_of_generic_array am depth obj ty_arg =
+        let length = O.size obj in
+        if length = 0 then Oval_array ([], am)
+        else match check_depth depth obj ty with
+          | Some x -> x
+          | None ->
+              let rec tree_of_items tree_list i =
+                if !printer_steps < 0 || depth < 0 then
+                  Oval_ellipsis :: tree_list
+                else if i < length then
+                  let tree = nest tree_of_val (depth - 1)
+                                  (O.field obj i) ty_arg
+                  in
+                  tree_of_items (tree :: tree_list) (i + 1)
+                else tree_list
+              in
+              Oval_array (List.rev (tree_of_items [] 0), am)
+
+      and tree_of_lazy depth obj ty_arg =
+        let obj_tag = O.tag obj in
+        (* Lazy values are represented in several possible ways:
+
+            1. a lazy thunk that is not yet forced has tag
+              Obj.lazy_tag
+
+            1bis. a lazy thunk that is in the process of
+               being forced has tag Obj.forcing_tag
+
+            2. a lazy thunk that has just been forced has tag
+              Obj.forward_tag; its first field is the forced
+              result, which we can print
+
+            3. when the GC moves a forced trunk with forward_tag,
+              or when a thunk is directly created from a value,
+              we get a third representation where the value is
+              directly exposed, without the Obj.forward_tag
+              (if its own tag is not ambiguous, that is neither
+              lazy_tag nor forward_tag)
+
+            Note that using Lazy.is_val and Lazy.force would be
+            unsafe, because they use the Obj.* functions rather
+            than the O.* functions of the functor argument, and
+            would thus crash if called from the toplevel
+            (debugger/printval instantiates Genprintval.Make with
+            an Obj module talking over a socket).
+          *)
+        if obj_tag = Obj.lazy_tag then Oval_stuff "<lazy>"
+        else if obj_tag = Obj.forcing_tag then Oval_stuff "<lazy (forcing)>"
+        else begin
+            let forced_obj =
+              if obj_tag = Obj.forward_tag then O.field obj 0 else obj
+            in
+            (* calling oneself recursively on forced_obj risks
+                having a false positive for cycle detection;
+                indeed, in case (3) above, the value is stored
+                as-is instead of being wrapped in a forward
+                pointer. It means that, for (lazy "foo"), we have
+                  forced_obj == obj
+                and it is easy to wrongly print (lazy <cycle>) in such
+                a case (PR#6669).
+
+                Unfortunately, there is a corner-case that *is*
+                a real cycle: using unboxed types one can define
+
+                  type t = T : t Lazy.t -> t [@@unboxed]
+                  let rec x = lazy (T x)
+
+                which creates a Forward_tagged block that points to
+                itself. For this reason, we still "nest"
+                (detect head cycles) on forward tags.
+              *)
+            let v =
+              if obj_tag = Obj.forward_tag
+              then nest tree_of_val depth forced_obj ty_arg
+              else      tree_of_val depth forced_obj ty_arg
+            in
+            Oval_lazy v
+          end
+
+      and tree_of_variant depth path type_params ty_list obj constr_list rep =
+        let unbx = (rep = Variant_unboxed) in
+        let tag =
+          if unbx then Cstr_unboxed
+          else if O.is_block obj
+          then Cstr_block(O.tag obj)
+          else Cstr_constant(O.base_obj obj) (* immediate *) in
+        match Datarepr.find_constr_by_tag tag constr_list with
+        | exception Datarepr.Constr_not_found ->
+            Oval_stuff "<unknown constructor>"
+        | {cd_id;cd_args;cd_res} ->
+        let type_params =
+          match cd_res with
+            Some t ->
+              begin match get_desc t with
+                Tconstr (_,params,_) ->
+                  params
+              | _ -> assert false end
+          | None -> type_params
+        in
+        begin
+          match cd_args with
+          | Cstr_tuple l ->
+              let ty_args =
+                instantiate_types env type_params ty_list l in
+              tree_of_constr_with_args (tree_of_constr env path)
+                (Ident.name cd_id) false 0 depth obj
+                ty_args unbx
+          | Cstr_record lbls ->
+              let r =
+                tree_of_record_fields depth
+                  env path type_params ty_list
+                  lbls 0 obj unbx
+              in
+              Oval_constr(tree_of_constr env path (Ident.name cd_id),
+                          [ r ])
+        end
+
+      and tree_of_record depth path type_params ty_list obj lbl_list rep =
+        match check_depth depth obj ty with
+        | Some x -> x
+        | None ->
+            let pos =
+              match rep with
+              | Record_extension _ -> 1
+              | _ -> 0
+            in
+            let unbx =
+              match rep with Record_unboxed _ -> true | _ -> false
+            in
+            tree_of_record_fields depth
+              env path type_params ty_list
+              lbl_list pos obj unbx
 
       and tree_of_record_fields depth env path type_params ty_list
           lbl_list pos obj unboxed =
@@ -505,8 +543,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               (* PR#5722: print full module path only
                  for first record field *)
               let lid =
-                if pos = 0 then tree_of_label env path (Out_name.create name)
-                else Oide_ident (Out_name.create name)
+                if pos = 0 then tree_of_label env path name
+                else tree_of_name name
               and v =
                 if unboxed then
                   tree_of_val (depth - 1) obj ty_arg
@@ -524,6 +562,40 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         in
         Oval_record (tree_of_fields pos lbl_list)
 
+      and tree_of_polyvariant depth obj row =
+        if O.is_block obj then
+          let tag : int = O.base_obj (O.field obj 0) in
+          let rec find = function
+            | (l, f) :: fields ->
+                if Btype.hash_variant l = tag then
+                  match row_field_repr f with
+                  | Rpresent(Some ty) | Reither(_,[ty],_) ->
+                      let args =
+                        nest tree_of_val (depth - 1) (O.field obj 1) ty
+                      in
+                        Oval_variant (l, Some args)
+                  | _ -> find fields
+                else find fields
+            | [] -> Oval_stuff "<variant>" in
+          find (row_fields row)
+        else
+          let tag : int = O.base_obj obj in
+          let rec find = function
+            | (l, _) :: fields ->
+                if Btype.hash_variant l = tag then
+                  Oval_variant (l, None)
+                else find fields
+            | [] -> Oval_stuff "<variant>" in
+          find (row_fields row)
+
+      and tree_of_labeled_val_list start depth obj labeled_tys =
+        let rec tree_list i = function
+          | [] -> []
+          | (label, ty) :: labeled_tys ->
+              let tree = nest tree_of_val (depth - 1) (O.field obj i) ty in
+              (label, tree) :: tree_list (i + 1) labeled_tys in
+      tree_list start labeled_tys
+
       and tree_of_val_list start depth obj ty_list =
         let rec tree_list i = function
           | [] -> []
@@ -534,7 +606,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
       and tree_of_constr_with_args
              tree_of_cstr cstr_name inlined start depth obj ty_args unboxed =
-        let lid = tree_of_cstr (Out_name.create cstr_name) in
+        let lid = tree_of_cstr cstr_name in
         let args =
           if inlined || unboxed then
             match ty_args with
@@ -550,7 +622,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         if O.tag bucket <> 0 then bucket
         else O.field bucket 0
       in
-      let name = (O.obj(O.field slot 0) : string) in
+      let name = (O.base_obj (O.field slot 0) : string) in
       try
         (* Attempt to recover the constructor description for the exn
            from its name *)
@@ -580,7 +652,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         in
         let args = instantiate_types env type_params ty_list cstr.cstr_args in
         tree_of_constr_with_args
-           (fun x -> Oide_ident x) name (cstr.cstr_inlined <> None)
+           tree_of_name name (cstr.cstr_inlined <> None)
            1 depth bucket
            args false
       with Not_found | EVP.Error ->
@@ -598,34 +670,42 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
     and instantiate_types env type_params ty_list args =
       List.map (instantiate_type env type_params ty_list) args
 
-    and find_printer depth env ty =
+    and find_user_printer depth env ty : Obj.t -> _ =
       let rec find = function
       | [] -> raise Not_found
-      | (_name, Simple (sch, printer)) :: remainder ->
-          if Ctype.is_moregeneral env false sch ty
+      | (_name, User_printer.Simple (sch, printer)) :: remainder ->
+          if not (Ctype.contains_nongen_variables sch) &&
+             Ctype.is_moregeneral env sch ty
           then printer
           else find remainder
-      | (_name, Generic (path, fn)) :: remainder ->
+      | (_name, User_printer.Generic (path, fn)) :: remainder ->
           begin match get_desc (Ctype.expand_head env ty) with
           | Tconstr (p, args, _) when Path.same p path ->
               begin try apply_generic_printer path (fn depth) args
               with exn -> (fun _obj -> out_exn path exn) end
           | _ -> find remainder end in
-      find !printers
+      find (User_printer.get_printers ())
 
-    and apply_generic_printer path printer args =
+    and apply_generic_printer
+      path (printer : _ User_printer.gen) args : Obj.t -> _ =
       match (printer, args) with
       | (Zero fn, []) ->
-          (fun (obj : O.t)-> try fn obj with exn -> out_exn path exn)
+          (fun obj -> try fn obj with exn -> out_exn path exn)
       | (Succ fn, arg :: args) ->
-          let printer = fn (fun depth obj -> tree_of_val depth obj arg) in
-          apply_generic_printer path printer args
+           let printer =
+             fn (fun depth obj ->
+                 (* user printers receive a whole Obj.t value, but the printers
+                    they call on their arguments is [tree_of_val],
+                    which expects a possibly-remote O.t value. *)
+                 let obj : O.t = O.repr (obj : Obj.t) in
+                 tree_of_val depth obj arg) in
+           apply_generic_printer path printer args
       | _ ->
           (fun _obj ->
             let printer ppf =
               Format_doc.fprintf ppf
                 "<internal error: incorrect arity for '%a'>"
-                Printtyp.path path in
+                Printtyp.Doc.path path in
             Oval_printer printer)
 
 

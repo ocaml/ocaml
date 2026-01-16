@@ -90,6 +90,6 @@ extern unsigned char * caml_digest_of_code_fragment(struct code_fragment *);
 /* Cleans up (and frees) removed code fragments. */
 extern void caml_code_fragment_cleanup_from_stw_single(void);
 
-#endif
+#endif /* CAML_INTERNALS */
 
-#endif
+#endif /* CAML_CODEFRAG_H */

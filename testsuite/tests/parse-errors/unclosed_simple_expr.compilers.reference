@@ -1,201 +1,201 @@
 Line 5, characters 5-7:
 5 | (3; 2;;
          ^^
-Error: Syntax error: ")" expected
+Error: Syntax error: ) expected
 Line 5, characters 0-1:
 5 | (3; 2;;
     ^
-  This "(" might be unmatched
+  This ( might be unmatched
 Line 2, characters 10-12:
 2 | begin 3; 2;;
               ^^
-Error: Syntax error: "end" expected
+Error: Syntax error: end expected
 Line 2, characters 0-5:
 2 | begin 3; 2;;
     ^^^^^
-  This "begin" might be unmatched
+  This begin might be unmatched
 Line 2, characters 10-12:
 2 | List.(3; 2;;
               ^^
-Error: Syntax error: ")" expected
+Error: Syntax error: ) expected
 Line 2, characters 5-6:
 2 | List.(3; 2;;
          ^
-  This "(" might be unmatched
+  This ( might be unmatched
 Line 2, characters 17-19:
 2 | simple_expr.(3; 2;;
                      ^^
-Error: Syntax error: ")" expected
+Error: Syntax error: ) expected
 Line 2, characters 12-13:
 2 | simple_expr.(3; 2;;
                 ^
-  This "(" might be unmatched
+  This ( might be unmatched
 Line 2, characters 17-19:
 2 | simple_expr.[3; 2;;
                      ^^
-Error: Syntax error: "]" expected
+Error: Syntax error: ] expected
 Line 2, characters 12-13:
 2 | simple_expr.[3; 2;;
                 ^
-  This "[" might be unmatched
+  This [ might be unmatched
 Line 2, characters 15-17:
 2 | simple_expr.%[3;;
                    ^^
-Error: Syntax error: "]" expected
+Error: Syntax error: ] expected
 Line 2, characters 13-14:
 2 | simple_expr.%[3;;
                  ^
-  This "[" might be unmatched
+  This [ might be unmatched
 Line 2, characters 15-17:
 2 | simple_expr.%(3;;
                    ^^
-Error: Syntax error: ")" expected
+Error: Syntax error: ) expected
 Line 2, characters 13-14:
 2 | simple_expr.%(3;;
                  ^
-  This "(" might be unmatched
+  This ( might be unmatched
 Line 2, characters 15-17:
 2 | simple_expr.%{3;;
                    ^^
-Error: Syntax error: "}" expected
+Error: Syntax error: } expected
 Line 2, characters 13-14:
 2 | simple_expr.%{3;;
                  ^
-  This "{" might be unmatched
+  This { might be unmatched
 Line 2, characters 11-13:
 2 | foo.Bar.%[3;;
                ^^
-Error: Syntax error: "]" expected
+Error: Syntax error: ] expected
 Line 2, characters 9-10:
 2 | foo.Bar.%[3;;
              ^
-  This "[" might be unmatched
+  This [ might be unmatched
 Line 2, characters 11-13:
 2 | foo.Bar.%(3;;
                ^^
-Error: Syntax error: ")" expected
+Error: Syntax error: ) expected
 Line 2, characters 9-10:
 2 | foo.Bar.%(3;;
              ^
-  This "(" might be unmatched
+  This ( might be unmatched
 Line 2, characters 11-13:
 2 | foo.Bar.%{3;;
                ^^
-Error: Syntax error: "}" expected
+Error: Syntax error: } expected
 Line 2, characters 9-10:
 2 | foo.Bar.%{3;;
              ^
-  This "{" might be unmatched
+  This { might be unmatched
 Line 2, characters 17-19:
 2 | simple_expr.{3, 2;;
                      ^^
-Error: Syntax error: "}" expected
+Error: Syntax error: } expected
 Line 2, characters 12-13:
 2 | simple_expr.{3, 2;;
                 ^
-  This "{" might be unmatched
+  This { might be unmatched
 Line 2, characters 10-12:
 2 | { x = 3; y;;
               ^^
-Error: Syntax error: "}" expected
+Error: Syntax error: } expected
 Line 2, characters 0-1:
 2 | { x = 3; y;;
     ^
-  This "{" might be unmatched
+  This { might be unmatched
 Line 2, characters 16-18:
 2 | List.{ x = 3; y ;;
                     ^^
-Error: Syntax error: "}" expected
+Error: Syntax error: } expected
 Line 2, characters 5-6:
 2 | List.{ x = 3; y ;;
          ^
-  This "{" might be unmatched
+  This { might be unmatched
 Line 2, characters 7-9:
 2 | [| 3; 2;;
            ^^
-Error: Syntax error: "|]" expected
+Error: Syntax error: |] expected
 Line 2, characters 0-2:
 2 | [| 3; 2;;
     ^^
-  This "[|" might be unmatched
+  This [| might be unmatched
 Line 2, characters 11-13:
 2 | List.[|3; 2;;
                ^^
-Error: Syntax error: "|]" expected
+Error: Syntax error: |] expected
 Line 2, characters 5-7:
 2 | List.[|3; 2;;
          ^^
-  This "[|" might be unmatched
+  This [| might be unmatched
 Line 2, characters 5-7:
 2 | [3; 2;;
          ^^
-Error: Syntax error: "]" expected
+Error: Syntax error: ] expected
 Line 2, characters 0-1:
 2 | [3; 2;;
     ^
-  This "[" might be unmatched
+  This [ might be unmatched
 Line 2, characters 10-12:
 2 | List.[3; 2;;
               ^^
-Error: Syntax error: "]" expected
+Error: Syntax error: ] expected
 Line 2, characters 5-6:
 2 | List.[3; 2;;
          ^
-  This "[" might be unmatched
+  This [ might be unmatched
 Line 2, characters 13-15:
 2 | {< x = 3; y; ;;
                  ^^
-Error: Syntax error: ">}" expected
+Error: Syntax error: >} expected
 Line 2, characters 0-2:
 2 | {< x = 3; y; ;;
     ^^
-  This "{<" might be unmatched
+  This {< might be unmatched
 Line 2, characters 17-19:
 2 | List.{< x = 3; y ;;
                      ^^
-Error: Syntax error: ">}" expected
+Error: Syntax error: >} expected
 Line 2, characters 5-7:
 2 | List.{< x = 3; y ;;
          ^^
-  This "{<" might be unmatched
+  This {< might be unmatched
 Line 2, characters 20-22:
 2 | (module struct end :;;
                         ^^
-Error: Syntax error: ")" expected
+Error: Syntax error: ) expected
 Line 2, characters 0-1:
 2 | (module struct end :;;
     ^
-  This "(" might be unmatched
+  This ( might be unmatched
 Line 2, characters 25-27:
 2 | List.(module struct end :;;
                              ^^
-Error: Syntax error: ")" expected
+Error: Syntax error: ) expected
 Line 2, characters 5-6:
 2 | List.(module struct end :;;
          ^
-  This "(" might be unmatched
+  This ( might be unmatched
 Line 2, characters 2-4:
 2 | (=;;
       ^^
-Error: Syntax error: ")" expected
+Error: Syntax error: ) expected
 Line 2, characters 0-1:
 2 | (=;;
     ^
-  This "(" might be unmatched
+  This ( might be unmatched
 Line 2, characters 14-16:
 2 | while true do ();;
                   ^^
-Error: Syntax error: "done" expected
+Error: Syntax error: done expected
 Line 2, characters 11-13:
 2 | while true do ();;
                ^^
-  This "do" might be unmatched
+  This do might be unmatched
 Line 2, characters 20-22:
 2 | for _ = e1 to e2 do ();;
                         ^^
-Error: Syntax error: "done" expected
+Error: Syntax error: done expected
 Line 2, characters 17-19:
 2 | for _ = e1 to e2 do ();;
                      ^^
-  This "do" might be unmatched
+  This do might be unmatched
 

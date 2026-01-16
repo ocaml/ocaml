@@ -13,4 +13,4 @@ Debian architecture name: `riscv64`
   - https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/riscv-elf.adoc
 
 * Assembly language manual
-  - https://github.com/riscv/riscv-asm-manual/blob/master/riscv-asm.md
+  - https://github.com/riscv-non-isa/riscv-asm-manual/blob/main/src/asm-manual.adoc

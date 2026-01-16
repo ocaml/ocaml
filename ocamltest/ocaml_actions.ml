@@ -187,7 +187,9 @@ let get_program_file backend env =
 
 let is_c_file (_filename, filetype) = filetype=Ocaml_filetypes.C
 
-let cmas_need_dynamic_loading directories libraries =
+type need = Dynamic_loading | Custom_runtime
+
+let cmas_need what directories libraries =
   let loads_c_code library =
     match Misc.find_in_path directories library with
     | exception Not_found ->
@@ -202,7 +204,12 @@ let cmas_need_dynamic_loading directories libraries =
           seek_in ic toc_pos;
           let toc = (input_value ic : Cmo_format.library) in
           close_in ic;
-          if toc.Cmo_format.lib_dllibs <> [] then Some (Ok ()) else None
+          let found =
+            match what with
+            | Dynamic_loading -> toc.Cmo_format.lib_dllibs <> []
+            | Custom_runtime -> toc.Cmo_format.lib_custom
+          in
+          if found then Some (Ok ()) else None
         else
           raise End_of_file
       with End_of_file
@@ -220,7 +227,7 @@ let compile_program (compiler : Ocaml_compilers.compiler) log env =
   let output_variable = compiler#output_variable in
   let prepare = prepare_module output_variable log env in
   let modules =
-    List.concatmap prepare (List.map Ocaml_filetypes.filetype all_modules) in
+    List.concat_map prepare (List.map Ocaml_filetypes.filetype all_modules) in
   let has_c_file = List.exists is_c_file modules in
   let c_headers_flags =
     if has_c_file then Ocaml_flags.c_includes else "" in
@@ -240,23 +247,22 @@ let compile_program (compiler : Ocaml_compilers.compiler) log env =
   in
   let output = if compile_only then "" else "-o " ^ program_file in
   let libraries = libraries compiler#target env in
-  let cmas_need_dynamic_loading =
-    if not Config.supports_shared_libraries &&
-       compiler#target = Ocaml_backends.Bytecode then
-      cmas_need_dynamic_loading (directories env) libraries
+  let cmas_need_custom_runtime =
+    if compiler#target = Ocaml_backends.Bytecode then
+      cmas_need Custom_runtime (directories env) libraries
     else
       None
   in
-  match cmas_need_dynamic_loading with
+  match cmas_need_custom_runtime with
     | Some (Error reason) ->
         (Result.fail_with_reason reason, env)
     | _ ->
-      let bytecode_links_c_code = (cmas_need_dynamic_loading = Some (Ok ())) in
+      let lib_needs_custom = (cmas_need_custom_runtime = Some (Ok ())) in
       let commandline =
       [
         compiler#name;
         Ocaml_flags.runtime_flags env compiler#target
-                                  (has_c_file || bytecode_links_c_code);
+                                  (has_c_file || lib_needs_custom);
         c_headers_flags;
         Ocaml_flags.stdlib;
         directory_flags env;
@@ -350,7 +356,7 @@ let find_source_modules log env =
       ((plugins env) @ (modules env) @ [(Actions_helpers.testfile env)]) in
   print_module_names log "Specified" specified_modules;
   let source_modules =
-    List.concatmap
+    List.concat_map
       (add_module_interface source_directory)
       specified_modules in
   print_module_names log "Source" source_modules;
@@ -534,43 +540,6 @@ let env_with_lib_unix env =
   in
   Environments.add Ocaml_variables.caml_ld_library_path newlibs env
 
-let debug log env =
-  let program = Environments.safe_lookup Builtin_variables.program env in
-  let what = Printf.sprintf "Debugging program %s" program in
-  Printf.fprintf log "%s\n%!" what;
-  let commandline =
-  [
-    Ocaml_commands.ocamlrun_ocamldebug;
-    Ocaml_flags.ocamldebug_default_flags;
-    program
-  ] in
-  let systemenv =
-    Environments.append_to_system_env
-      default_ocaml_env
-      (env_with_lib_unix env)
-  in
-  let expected_exit_status = 0 in
-  let exit_status =
-    Actions_helpers.run_cmd
-      ~environment:systemenv
-      ~stdin_variable: Ocaml_variables.ocamldebug_script
-      ~stdout_variable:Builtin_variables.output
-      ~stderr_variable:Builtin_variables.output
-      ~append:true
-      log (env_with_lib_unix env) commandline in
-  if exit_status=expected_exit_status
-  then (Result.pass, env)
-  else begin
-    let reason =
-      (Actions_helpers.mkreason
-        what (String.concat " " commandline) exit_status) in
-    (Result.fail_with_reason reason, env)
-  end
-
-let ocamldebug =
-  Actions.make ~name:"ocamldebug" ~description:"Run ocamldebug on the program"
-    debug
-
 let objinfo log env =
   let tools_directory = Ocaml_directories.tools in
   let program = Environments.safe_lookup Builtin_variables.program env in
@@ -611,7 +580,13 @@ let objinfo log env =
 
 let ocamlobjinfo =
   Actions.make ~name:"ocamlobjinfo"
-    ~description:"Run ocamlobjinfo on the program" objinfo
+    ~description:"Run ocamlobjinfo on the program"
+    (fun log env ->
+       if Ocamltest_config.ocamlobjinfo then
+         objinfo log env
+       else
+         Result.skip_with_reason "ocamlobjinfo not available", env
+    )
 
 let mklib log env =
   let program = Environments.safe_lookup Builtin_variables.program env in
@@ -629,7 +604,9 @@ let mklib log env =
     Ocaml_commands.ocamlrun_ocamlmklib;
     "-ocamlc '" ^ ocamlc_command ^ "'";
     "-o " ^ program
-  ] @ modules env in
+  ] @ (if Ocamltest_config.suffixing then ["-suffixed"] else [])
+    @ modules env
+  in
   let expected_exit_status = 0 in
   let exit_status =
     Actions_helpers.run_cmd
@@ -738,7 +715,7 @@ let run_codegen log env =
     if exit_status=0
     then begin
       let finalise =
-        if Ocamltest_config.ccomptype="msvc"
+        if Ocamltest_config.ccomp_type="msvc"
         then finalise_codegen_msvc
         else finalise_codegen_cc
       in
@@ -760,7 +737,7 @@ let run_cc log env =
   let what = Printf.sprintf "Running C compiler to build %s" program in
   Printf.fprintf log "%s\n%!" what;
   let output_exe =
-    if Ocamltest_config.ccomptype="msvc" then "/Fe" else "-o "
+    if Ocamltest_config.ccomp_type="msvc" then "/Fe" else "-o "
   in
   let commandline =
   [
@@ -1014,7 +991,7 @@ let run_test_program_in_toplevel (toplevel : Ocaml_toplevels.toplevel) log env =
   let toplevel_supports_dynamic_loading =
     Config.supports_shared_libraries || backend <> Ocaml_backends.Bytecode
   in
-  match cmas_need_dynamic_loading (directories env) libraries with
+  match cmas_need Dynamic_loading (directories env) libraries with
     | Some (Error reason) ->
       (Result.fail_with_reason reason, env)
     | Some (Ok ()) when not toplevel_supports_dynamic_loading ->
@@ -1438,7 +1415,6 @@ let _ =
     setup_ocamldoc_build_env;
     run_ocamldoc;
     check_ocamldoc_output;
-    ocamldebug;
     ocamlmklib;
     codegen;
     cc;

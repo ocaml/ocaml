@@ -177,6 +177,18 @@ let set_input_lexbuf ic =
   Location.input_lexbuf := Some lexbuf;
   lexbuf
 
+let check_loc_ghost (type a) (kind : a ast_kind) (ast : a) ~inputfile =
+  if !Clflags.parsetree_ghost_loc_invariant then
+    let meth : (Ast_iterator.iterator -> Ast_iterator.iterator -> a -> unit) =
+      match kind with
+      | Structure -> (fun i -> i.structure)
+      | Signature -> (fun i -> i.signature)
+    in
+    let source_contents =
+      In_channel.with_open_bin inputfile In_channel.input_all
+    in
+    Ast_invariants.check_loc_ghost meth ast ~source_contents
+
 let file_aux ~tool_name ~sourcefile inputfile (type a) parse_fun invariant_fun
              (kind : a ast_kind) : a =
   let ast =
@@ -211,6 +223,7 @@ let file_aux ~tool_name ~sourcefile inputfile (type a) parse_fun invariant_fun
       Profile.record_call "parser" (fun () -> parse_fun lexbuf)
     end
   in
+  check_loc_ghost kind ast ~inputfile;
   Profile.record_call "-ppx" (fun () ->
       apply_rewriters ~restore:false ~tool_name kind ast
     )

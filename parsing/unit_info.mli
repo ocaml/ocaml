@@ -21,6 +21,7 @@
 
 (** {1:modname_from_strings Module name convention and computation} *)
 
+type intf_or_impl = Intf | Impl
 type modname = string
 type filename = string
 type file_prefix = string
@@ -36,7 +37,7 @@ val normalize: string -> string
 
 (** [lax_modname_from_source filename] is [modulize stem] where [stem] is the
     basename of the filename [filename] stripped from all its extensions.
-    For instance, [modname_from_source "/pa.th/x.ml.pp"] is ["X"]. *)
+    For instance, [lax_modname_from_source "/pa.th/x.ml.pp"] is ["X"]. *)
 val lax_modname_from_source: filename -> modname
 
 (** Same as {!lax_modname_from_source} but raises an {!error.Invalid_encoding}
@@ -74,19 +75,24 @@ val prefix: t -> file_prefix
     or compilation artifact.*)
 val modname: t -> modname
 
+(** [kind u] is the kind (interface or implementation) of the unit. *)
+val kind: t -> intf_or_impl
+
 (** [check_unit_name u] prints a warning if the derived module name [modname u]
     should not be used as a module name as specified
     by {!is_unit_name}[ ~strict:true]. *)
 val check_unit_name : t -> unit
 
-(** [make ~check ~source_file prefix] associates both the
-    [source_file] and the module name {!modname_from_source}[ target_prefix] to
-    the prefix filesystem path [prefix].
+(** [make ~check ~source_file kind prefix] associates both the
+    [source_file] and the module name {!lax_modname_from_source}[ target_prefix]
+    to the prefix filesystem path [prefix].
 
    If [check_modname=true], this function emits a warning if the derived module
    name is not valid according to {!check_unit_name}.
 *)
-val make: ?check_modname:bool -> source_file:filename -> file_prefix -> t
+val make:
+    ?check_modname:bool -> source_file:filename ->
+    intf_or_impl -> file_prefix -> t
 
 (** {1:artifact_function Build artifacts }*)
 module Artifact: sig
@@ -110,7 +116,8 @@ module Artifact: sig
    val modname: t -> modname
 
    (** [from_filename filename] reconstructs the module name
-       [modname_from_source filename] associated to the artifact [filename]. *)
+       [lax_modname_from_source filename] associated to the artifact
+       [filename]. *)
    val from_filename: filename -> t
 
 end
@@ -145,7 +152,7 @@ val companion_cmi: Artifact.t -> Artifact.t
 (** {1:ml_mli_cmi_interaction Mli and cmi derived from implementation files } *)
 
 (** The compilation of module implementation changes in presence of mli and cmi
-    files, the function belows help to handle this. *)
+    files, the function below help to handle this. *)
 
 (** [mli_from_source u] is the interface source filename associated to the unit
     [u]. The actual suffix depends on {!Config.interface_suffix}.

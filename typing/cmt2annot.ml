@@ -23,7 +23,7 @@ let variables_iterator scope =
   let super = default_iterator in
   let pat sub (type k) (p : k general_pattern) =
     begin match p.pat_desc with
-    | Tpat_var (id, _, _) | Tpat_alias (_, id, _, _) ->
+    | Tpat_var (id, _, _) | Tpat_alias (_, id, _, _, _) ->
         Stypes.record (Stypes.An_ident (p.pat_loc,
                                         Ident.name id,
                                         Annot.Idef scope))
@@ -108,10 +108,6 @@ let rec iterator ~scope rebuild_env =
         bind_cases f2
     | Texp_function (params, _) ->
         List.iter (bind_function_param exp.exp_loc) params
-    | Texp_letmodule (_, modname, _, _, body ) ->
-        Stypes.record (Stypes.An_ident
-                         (modname.loc,Option.value ~default:"_" modname.txt,
-                          Annot.Idef body.exp_loc))
     | _ -> ()
     end;
     Stypes.record (Stypes.Ti_expr exp);

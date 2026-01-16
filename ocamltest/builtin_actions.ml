@@ -56,7 +56,7 @@ let cd = make
       try
         Sys.chdir cwd; (Result.pass, env)
       with _ ->
-        let reason = "Could not chidir to \"" ^ cwd ^ "\"" in
+        let reason = "Could not chdir to \"" ^ cwd ^ "\"" in
         let result = Result.fail_with_reason reason in
         (result, env)
     end)
@@ -102,6 +102,13 @@ let hasstr = make
     "str library available"
     "str library not available")
 
+let multicore = make
+  ~name:"multicore"
+  ~description:"Pass if running on multicore"
+  (Actions_helpers.pass_or_skip (Domain.recommended_domain_count () >= 2)
+    "running on multicore"
+    "not running on multicore")
+
 let windows_OS = "Windows_NT"
 
 let get_OS () = Sys.safe_getenv "OS"
@@ -119,6 +126,39 @@ let not_windows = make
   (Actions_helpers.pass_or_skip (get_OS () <> windows_OS)
     "not running on Windows"
     "running on Windows")
+
+let not_msvc = make
+  ~name:"not-msvc"
+  ~description:"Pass if not using MSVC / clang-cl"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.ccomp_type <> "msvc")
+    "not using MSVC / clang-cl"
+    "using MSVC / clang-cl")
+
+let is_clang =
+  List.mem "clang" (String.split_on_char '-' Ocamltest_config.c_compiler_vendor)
+
+let not_clang = make
+  ~name:"not-clang"
+  ~description:"Pass if not using clang"
+  (Actions_helpers.pass_or_skip (not is_clang)
+    "not using clang"
+    "using clang")
+
+(* windows _passes_ on Cygwin; target_windows _skips_ for Cygwin *)
+
+let target_windows = make
+  ~name:"target-windows"
+  ~description:"Pass if the compiler does targets native Windows"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.target_os_type = "Win32")
+    "targeting native Windows"
+    "not targeting native Windows")
+
+let not_target_windows = make
+  ~name:"not-target-windows"
+  ~description:"Pass if the compiler does not target native Windows"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.target_os_type <> "Win32")
+    "not targeting native Windows"
+    "targeting native Windows")
 
 let is_bsd_system s =
   match s with
@@ -138,6 +178,15 @@ let not_bsd = make
   (Actions_helpers.pass_or_skip (not (is_bsd_system Ocamltest_config.system))
     "not on a BSD system"
     "on a BSD system")
+
+let linux_system = "linux"
+
+let linux = make
+  ~name:"linux"
+  ~description:"Pass if running on a Linux system"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.system = linux_system)
+     "on a Linux system"
+     "not on a Linux system")
 
 let macos_system = "macosx"
 
@@ -207,12 +256,12 @@ let arch_power = make
     "Target is POWER architecture"
     "Target is not POWER architecture")
 
-let arch_riscv64 = make
-  ~name:"arch_riscv64"
-  ~description:"Pass if target is a RiscV64 architecture"
-  (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "riscv64")
-     "Target is RiscV64 architecture"
-     "Target is not RiscV64 architecture")
+let arch_riscv = make
+  ~name:"arch_riscv"
+  ~description:"Pass if target is a RISC-V architecture"
+  (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "riscv")
+     "Target is RISC-V architecture"
+     "Target is not RISC-V architecture")
 
 let arch_s390x = make
   ~name:"arch_s390x"
@@ -255,6 +304,13 @@ let has_symlink = make
   (Actions_helpers.pass_or_skip (Unix.has_symlink () )
     "symlinks available"
     "symlinks not available")
+
+let not_root = make
+  ~name:"not-root"
+  ~description:"Skip test if the current user is root"
+  (Actions_helpers.pass_or_skip (Unix.getuid () <> 0)
+    "current user is not root"
+    "current user is root")
 
 let setup_build_env = make
   ~name:"setup-build-env"
@@ -360,17 +416,24 @@ let _ =
     hasunix;
     hassysthreads;
     hasstr;
+    multicore;
     libunix;
     libwin32unix;
     windows;
     not_windows;
+    not_msvc;
+    not_clang;
+    target_windows;
+    not_target_windows;
     bsd;
     not_bsd;
+    linux;
     macos;
     not_macos_amd64_tsan;
     arch32;
     arch64;
     has_symlink;
+    not_root;
     setup_build_env;
     setup_simple_build_env;
     run;
@@ -381,7 +444,7 @@ let _ =
     arch_amd64;
     arch_i386;
     arch_power;
-    arch_riscv64;
+    arch_riscv;
     arch_s390x;
     function_sections;
     frame_pointers;

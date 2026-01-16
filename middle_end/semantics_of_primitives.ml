@@ -21,7 +21,7 @@ type coeffects = No_coeffects | Has_coeffects
 
 let for_primitive (prim : Clambda_primitives.primitive) =
   match prim with
-  | Pmakeblock _
+  | Pmakeblock _ | Pmakelazyblock _
   | Pmakearray (_, Mutable) -> Only_generative_effects, No_coeffects
   | Pmakearray (_, Immutable) -> No_effects, No_coeffects
   | Pduparray (_, Immutable) ->
@@ -116,10 +116,7 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Psetfield _
   | Psetfield_computed _
   | Psetfloatfield _
-  | Patomic_load _
-  | Patomic_exchange
-  | Patomic_cas
-  | Patomic_fetch_add
+  | Patomic_load
   | Parraysetu _
   | Parraysets _
   | Pbytessetu

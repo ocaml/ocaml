@@ -13,28 +13,26 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
-#define CAML_INTERNALS
 #include <caml/osdeps.h>
 #include "caml/unixsupport.h"
 
-#ifdef HAS_UNISTD
-# include <unistd.h>
+#ifdef _WIN32
+# include <io.h>
 #else
-# ifdef _WIN32
-#  include <io.h>
-# else
-#  include <sys/file.h>
-# endif
-# ifndef R_OK
-#   define R_OK    4/* test for read permission */
-#   define W_OK    2/* test for write permission */
-#   define X_OK    1/* test for execute (search) permission */
-#   define F_OK    0/* test for presence of file */
-# endif
+# include <unistd.h>
+# include <sys/file.h>
+#endif
+
+#ifndef R_OK
+# define R_OK    4/* test for read permission */
+# define W_OK    2/* test for write permission */
+# define X_OK    1/* test for execute (search) permission */
+# define F_OK    0/* test for presence of file */
 #endif
 
 static const int access_permission_table[] = {
@@ -42,7 +40,7 @@ static const int access_permission_table[] = {
   W_OK,
 #ifdef _WIN32
   /* Since there is no concept of execute permission on Windows,
-     we fall b+ack to the read permission */
+     we fall back to the read permission */
   R_OK,
 #else
   X_OK,

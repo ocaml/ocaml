@@ -26,19 +26,28 @@ module DT = Dynlink_types
 
 type global_map = {
   name : string;
-  crc_intf : Digest.t option;
-  crc_impl : Digest.t option;
+  crc_intf : Digest.BLAKE128.t option;
+  crc_impl : Digest.BLAKE128.t option;
   syms : string list
 }
 
 module Native = struct
-  type handle
+  type ndl_handle
+  type initialized =
+    | Initialized
+    | Not_yet_initialized of string list
+  type handle = {
+    ndl_handle : ndl_handle;
+    mutable initialized : initialized;
+  }
 
-  external ndl_open : string -> bool -> handle * dynheader
+  external ndl_open : string -> bool -> ndl_handle * dynheader
     = "caml_natdynlink_open"
-  external ndl_register : handle -> string array -> unit
+  external ndl_close : ndl_handle -> unit
+    = "caml_natdynlink_close"
+  external ndl_register : ndl_handle -> string array -> unit
     = "caml_natdynlink_register"
-  external ndl_run : handle -> string -> unit = "caml_natdynlink_run"
+  external ndl_run : ndl_handle -> string -> unit = "caml_natdynlink_run"
   external ndl_getmap : unit -> global_map list = "caml_natdynlink_getmap"
   external ndl_globals_inited : unit -> int = "caml_natdynlink_globals_inited"
   external ndl_loadsym : string -> Obj.t = "caml_natdynlink_loadsym"
@@ -78,11 +87,21 @@ module Native = struct
       (ndl_getmap ())
 
   let run_shared_startup handle =
-    ndl_run handle "_shared_startup"
+    match handle.initialized with
+    | Initialized -> ()
+    | Not_yet_initialized syms ->
+        handle.initialized <- Initialized;
+        begin try
+          ndl_register handle.ndl_handle (Array.of_list syms);
+        with exn ->
+          raise (DT.Error (Cannot_open_dynamic_library exn))
+        end;
+        ndl_run handle.ndl_handle "_shared_startup"
 
   let run _lock handle ~unit_header ~priv:_ =
+    run_shared_startup handle;
     List.iter (fun cu ->
-        try ndl_run handle cu
+        try ndl_run handle.ndl_handle cu
         with exn ->
           Printexc.raise_with_backtrace
             (DT.Error (Library's_module_initializers_failed exn))
@@ -90,28 +109,30 @@ module Native = struct
       (Unit_header.defined_symbols unit_header)
 
   let load ~filename ~priv =
-    let handle, header =
+    let ndl_handle, header =
       try ndl_open filename (not priv)
       with exn -> raise (DT.Error (Cannot_open_dynamic_library exn))
     in
     if header.dynu_magic <> Config.cmxs_magic_number then begin
+      ndl_close ndl_handle;
       raise (DT.Error (Not_a_bytecode_file filename))
     end;
     let syms =
       "_shared_startup" ::
       List.concat_map Unit_header.defined_symbols header.dynu_units
     in
-    try
-      ndl_register handle (Array.of_list syms);
-      handle, header.dynu_units
-    with exn -> raise (DT.Error (Cannot_open_dynamic_library exn))
+    let handle = { ndl_handle; initialized = Not_yet_initialized syms } in
+    handle, header.dynu_units
 
   let unsafe_get_global_value ~bytecode_or_asm_symbol =
     match ndl_loadsym bytecode_or_asm_symbol with
     | exception _ -> None
     | obj -> Some obj
 
-  let finish _handle = ()
+  let finish handle =
+    match handle.initialized with
+    | Initialized -> ()
+    | Not_yet_initialized _ -> ndl_close handle.ndl_handle
 end
 
 include DC.Make (Native)

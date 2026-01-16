@@ -1,7 +1,8 @@
 File "w55.ml", line 25, characters 10-26:
 25 | let g x = (f [@inlined]) x
                ^^^^^^^^^^^^^^^^
-Warning 55 [inlining-impossible]: Cannot inline: Function information unavailable
+Warning 55 [inlining-impossible]: Cannot inline:
+  Function information unavailable
 
 File "w55.ml", line 29, characters 10-27:
 29 | let i x = (!r [@inlined]) x
@@ -21,9 +22,11 @@ Warning 55 [inlining-impossible]: Cannot inline: Over-application
 File "w55.ml", line 39, characters 12-30:
 39 | let b x y = (a [@inlined]) x y
                  ^^^^^^^^^^^^^^^^^^
-Warning 55 [inlining-impossible]: Cannot inline: Function information unavailable
+Warning 55 [inlining-impossible]: Cannot inline:
+  Function information unavailable
 
 File "w55.ml", line 42, characters 10-26:
 42 | let d x = (c [@inlined]) x
                ^^^^^^^^^^^^^^^^
-Warning 55 [inlining-impossible]: Cannot inline: Function information unavailable
+Warning 55 [inlining-impossible]: Cannot inline:
+  Function information unavailable

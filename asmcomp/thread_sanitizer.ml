@@ -34,6 +34,7 @@ let bit_size memory_chunk =
   | Byte_unsigned | Byte_signed -> 8
   | Sixteen_unsigned | Sixteen_signed -> 16
   | Thirtytwo_unsigned | Thirtytwo_signed -> 32
+  | Sixtyfour -> 64
   | Word_int | Word_val -> Sys.word_size
   | Single -> 32
   | Double -> 64
@@ -57,7 +58,7 @@ end
 
 let machtype_of_memory_chunk = function
   | Byte_unsigned | Byte_signed | Sixteen_unsigned | Sixteen_signed
-  | Thirtytwo_unsigned | Thirtytwo_signed | Word_int ->
+  | Thirtytwo_unsigned | Thirtytwo_signed | Word_int | Sixtyfour ->
     typ_int
   | Word_val -> typ_val
   | Single | Double -> typ_float
@@ -68,13 +69,14 @@ let wrap_entry_exit expr =
   let call_entry =
     Cmm_helpers.return_unit dbg_none
       (Cop
-         ( Cextcall ("__tsan_func_entry", typ_void, [], false),
+         ( Cextcall ("caml_tsan_func_entry_asm", typ_void, [], false),
            [Creturn_addr],
            dbg_none ))
   in
   let call_exit =
     Cmm_helpers.return_unit dbg_none
-      (Cop (Cextcall ("__tsan_func_exit", typ_void, [], false), [], dbg_none))
+      (Cop (Cextcall ("caml_tsan_func_exit_asm", typ_void, [], false),
+            [], dbg_none))
   in
   (* [is_tail] is true when the expression is in tail position *)
   let rec insert_call_exit is_tail = function
@@ -154,7 +156,7 @@ let wrap_entry_exit expr =
       | Cconst_natint (_, _)
       | Cconst_float (_, _)
       | Cconst_symbol (_, _)
-      | Cvar _ | Ctuple _ | Creturn_addr ) as expr ->
+      | Cvar _ | Cvar_mut _ | Ctuple _ | Creturn_addr ) as expr ->
       let id = VP.create (V.create_local "res") in
       Clet (id, expr, Csequence (call_exit, Cvar (VP.var id)))
   in
@@ -172,7 +174,7 @@ let instrument body =
       let loc_exp = Cvar (VP.var loc_id) in
       Clet
         ( loc_id,
-          loc,
+          aux loc,
           Csequence
             ( Cmm_helpers.return_unit dbg_none
                 (Cop
@@ -193,7 +195,7 @@ let instrument body =
               ret_typ,
               [],
               false ),
-          [loc; TSan_memory_order.seq_cst],
+          [aux loc; TSan_memory_order.seq_cst],
           dbginfo )
     | Cop
         (Cload { memory_chunk = _; mutability = Mutable; is_atomic = _ }, _, _)
@@ -215,10 +217,10 @@ let instrument body =
         let args = [loc_exp; v_exp] in
         Clet
           ( v_id,
-            v,
+            aux v,
             Clet
               ( loc_id,
-                loc,
+                aux loc,
                 Csequence
                   ( Cmm_helpers.return_unit dbg_none
                       (Cop
@@ -240,16 +242,23 @@ let instrument body =
     | Cop ((Cload { mutability = Immutable; _ } as op), es, dbg_none) ->
       (* Loads of immutable location require no instrumentation *)
       Cop (op, List.map aux es, dbg_none)
-    | Cop (Craise _, _, _) as raise ->
+    | Cop (Craise kind, [arg], dbg) ->
       (* Call a routine that will call [__tsan_func_exit] for every function
          about to be exited due to the exception *)
-      Csequence
-        (Cmm_helpers.return_unit dbg_none
-          (Cop (Capply typ_int,
-                [Cconst_symbol ("caml_tsan_exit_on_raise_asm", dbg_none);
-                  Cconst_int (0, dbg_none)],
-                dbg_none)),
-         raise)
+      let arg_id = VP.create (V.create_local "raise_arg") in
+      let arg_exp = Cvar (VP.var arg_id) in
+      Clet
+        ( arg_id,
+          aux arg,
+          Csequence
+            (Cmm_helpers.return_unit dbg_none
+               (Cop (Capply typ_int,
+                     [Cconst_symbol ("caml_tsan_exit_on_raise_asm", dbg_none);
+                      Cconst_int (0, dbg_none)],
+                     dbg_none)),
+             Cop (Craise kind, [arg_exp], dbg)))
+    | Cop (Craise _, ([] | _ :: _ :: _), _) ->
+      invalid_arg "instrument: wrong number of arguments for operation Craise"
     | Cop
         ( (( Capply _ | Caddi | Calloc | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
            | Cand | Cor | Cxor | Clsl | Clsr | Casr | Caddv | Cadda | Cnegf
@@ -285,7 +294,7 @@ let instrument body =
       Cswitch (aux e, cases, handlers, dbg_none)
     (* no instrumentation *)
     | ( Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
-      | Cvar _ | Creturn_addr ) as c ->
+      | Cvar _ | Cvar_mut _ | Creturn_addr ) as c ->
       c
   in
   body |> aux |> wrap_entry_exit

@@ -1,3 +1,10 @@
+\section{s:first-class-modules}{First-class modules}
+%HEVEA\cutname{firstclassmodules.html}
+\ikwd{module\@\texttt{module}}
+\ikwd{val\@\texttt{val}}
+\ikwd{with\@\texttt{with}}
+\ikwd{and\@\texttt{and}}
+
 (Introduced in OCaml 3.12; pattern syntax and package type inference
 introduced in 4.00; structural comparison of package types introduced in 4.02.;
 fewer parens required starting from 4.05)

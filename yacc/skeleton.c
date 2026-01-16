@@ -17,14 +17,14 @@
 
 #include "defs.h"
 
-char *header[] =
+char const * const header[] =
 {
   "open Parsing",
   "let _ = parse_error;;", /* avoid warning 33 (PR#5719) */
   0
 };
 
-char *define_tables[] =
+char const * const define_tables[] =
 {
   "let yytables =",
   "  { Parsing.actions=yyact;",
@@ -46,7 +46,7 @@ char *define_tables[] =
   0
 };
 
-void write_section(char **section)
+void write_section(char const * const * section)
 {
     int i;
     FILE *fp;

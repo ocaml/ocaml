@@ -18,11 +18,10 @@
 #include <signal.h>
 #include <string.h>
 #include "defs.h"
-#ifdef HAS_UNISTD
-#include <unistd.h>
-#endif
 #ifdef _WIN32
 #include <io.h>
+#else
+#include <unistd.h>
 #endif
 
 #include "caml/version.h"
@@ -37,7 +36,7 @@ char sflag;
 char big_endian;
 
 char_os *file_prefix = 0;
-char *myname = "yacc";
+const char *myname = "yacc";
 char_os temp_form[] = T("yacc.XXXXXXX");
 
 #ifdef _WIN32
@@ -57,7 +56,7 @@ char_os *entry_file_name;
 char_os *code_file_name;
 char *code_file_name_disp, *interface_file_name_disp;
 char_os *interface_file_name;
-char_os *input_file_name = T("");
+const char_os *input_file_name = T("");
 char *input_file_name_disp;
 char_os *output_file_name;
 char_os *text_file_name;
@@ -287,7 +286,7 @@ allocate(unsigned int n)
 void create_file_names(void)
 {
     int i, len;
-    char_os *tmpdir;
+    const char_os *tmpdir;
 
 #ifdef _WIN32
     tmpdir = _wgetenv(L"TEMP");

@@ -22,7 +22,7 @@ specify the general shape and type properties of modules.
 module-type:
           modtype-path
         | 'sig' { specification [';;'] } 'end'
-        | ['functor'] '(' module-name ':' module-type ')' '->' module-type
+        | ['functor'] {{ '(' module-name ':' module-type ')' }} '->' module-type
         | module-type '->' module-type
         | module-type 'with' mod-constraint { 'and' mod-constraint }
         | '(' module-type ')'

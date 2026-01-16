@@ -23,13 +23,7 @@
 #include <caml/signals.h>
 #include "caml/unixsupport.h"
 
-#ifdef HAS_UNISTD
 #include <unistd.h>
-#else
-#define SEEK_SET 0
-#define SEEK_CUR 1
-#define SEEK_END 2
-#endif
 
 #ifndef EOVERFLOW
 #define EOVERFLOW ERANGE

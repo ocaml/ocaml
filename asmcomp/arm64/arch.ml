@@ -22,6 +22,8 @@ open Format
 
 let macosx = (Config.system = "macosx")
 
+let top_bits_ignore = (Config.system = "linux")
+
 (* Machine-specific command-line options *)
 
 let command_line_options = []
@@ -74,7 +76,7 @@ let size_addr = 8
 let size_int = 8
 let size_float = 8
 
-let allow_unaligned_access = false
+let allow_unaligned_access = true
 
 (* Behavior of division *)
 

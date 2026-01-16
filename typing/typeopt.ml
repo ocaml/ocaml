@@ -22,6 +22,11 @@ open Typedtree
 open Lambda
 
 let scrape_ty env ty =
+  let ty =
+    match get_desc ty with
+    | Tpoly(ty, _) -> ty
+    | _ -> ty
+  in
   match get_desc ty with
   | Tconstr _ ->
       let ty = Ctype.expand_head_opt env ty in
@@ -29,36 +34,35 @@ let scrape_ty env ty =
       | Tconstr (p, _, _) ->
           begin match Env.find_type p env with
           | {type_kind = ( Type_variant (_, Variant_unboxed)
-          | Type_record (_, Record_unboxed _) ); _} -> begin
-              match Typedecl_unboxed.get_unboxed_type_representation env ty with
-              | None -> ty
-              | Some ty2 -> ty2
-          end
-          | _ -> ty
-          | exception Not_found -> ty
+          | Type_record (_, Record_unboxed _) ); _} ->
+            Typedecl_unboxed.get_unboxed_type_representation env ty
+          | _ -> Some ty
+          | exception Not_found -> None
           end
       | _ ->
-          ty
+          Some ty
       end
-  | _ -> ty
+  | _ -> Some ty
 
 let scrape env ty =
-  get_desc (scrape_ty env ty)
+  Option.map get_desc (scrape_ty env ty)
 
 let scrape_poly env ty =
   let ty = scrape_ty env ty in
-  match get_desc ty with
-  | Tpoly (ty, _) -> get_desc ty
-  | d -> d
+  Option.map (fun ty ->
+      match get_desc ty with
+      | Tpoly (ty, _) -> get_desc ty
+      | d -> d)
+    ty
 
 let is_function_type env ty =
   match scrape env ty with
-  | Tarrow (_, lhs, rhs, _) -> Some (lhs, rhs)
+  | Some (Tarrow (_, lhs, rhs, _)) -> Some (lhs, rhs)
   | _ -> None
 
 let is_base_type env ty base_ty_path =
   match scrape env ty with
-  | Tconstr(p, _, _) -> Path.same p base_ty_path
+  | Some (Tconstr(p, _, _)) -> Path.same p base_ty_path
   | _ -> false
 
 let is_immediate = function
@@ -70,9 +74,11 @@ let is_immediate = function
       !Clflags.native_code && Sys.word_size = 64
 
 let maybe_pointer_type env ty =
-  let ty = scrape_ty env ty in
-  if is_immediate (Ctype.immediacy env ty) then Immediate
-  else Pointer
+  match scrape_ty env ty with
+  | Some ty ->
+    if is_immediate (Ctype.immediacy env ty) then Immediate
+    else Pointer
+  | None -> Pointer
 
 let maybe_pointer exp = maybe_pointer_type exp.exp_env exp.exp_type
 
@@ -83,25 +89,29 @@ type classification =
   | Addr  (* anything except a float or a lazy *)
   | Any
 
-let classify env ty =
-  let ty = scrape_ty env ty in
+let classify env ty : classification =
+  match scrape_ty env ty with
+  | None -> Any
+  | Some ty ->
   if maybe_pointer_type env ty = Immediate then Int
   else match get_desc ty with
   | Tvar _ | Tunivar _ ->
       Any
   | Tconstr (p, _args, _abbrev) ->
-      if Path.same p Predef.path_float then Float
-      else if Path.same p Predef.path_lazy_t then Lazy
-      else if Path.same p Predef.path_string
-           || Path.same p Predef.path_bytes
-           || Path.same p Predef.path_array
-           || Path.same p Predef.path_nativeint
-           || Path.same p Predef.path_int32
-           || Path.same p Predef.path_int64 then Addr
-      else begin
+      begin match Predef.find_type_constr p with
+      | Some `Float -> Float
+      | Some `Lazy_t -> Lazy
+      | Some (`Int | `Char) -> Int
+      | Some (`String | `Bytes
+             | `Int32 | `Int64 | `Nativeint
+             | `Extension_constructor | `Continuation
+             | `Array | `Floatarray | `Iarray
+             | `Atomic_loc)
+        -> Addr
+      | Some #Predef.data_type_constr | None ->
         try
           match (Env.find_type p env).type_kind with
-          | Type_abstract _ ->
+          | Type_abstract _ | Type_external _ ->
               Any
           | Type_record _ | Type_variant _ | Type_open ->
               Addr
@@ -118,14 +128,15 @@ let classify env ty =
 
 let array_type_kind env ty =
   match scrape_poly env ty with
-  | Tconstr(p, [elt_ty], _) when Path.same p Predef.path_array ->
+  | Some (Tconstr(p, [elt_ty], _))
+    when Path.same p Predef.path_array || Path.same p Predef.path_iarray ->
       begin match classify env elt_ty with
       | Any -> if Config.flat_float_array then Pgenarray else Paddrarray
       | Float -> if Config.flat_float_array then Pfloatarray else Paddrarray
       | Addr | Lazy -> Paddrarray
       | Int -> Pintarray
       end
-  | Tconstr(p, [], _) when Path.same p Predef.path_floatarray ->
+  | Some (Tconstr(p, [], _)) when Path.same p Predef.path_floatarray ->
       Pfloatarray
   | _ ->
       (* This can happen with e.g. Obj.field *)
@@ -137,7 +148,7 @@ let array_pattern_kind pat = array_type_kind pat.pat_env pat.pat_type
 
 let bigarray_decode_type env ty tbl dfl =
   match scrape env ty with
-  | Tconstr(Pdot(Pident mod_id, type_name), [], _)
+  | Some (Tconstr(Pdot(Pident mod_id, type_name), [], _))
     when Ident.name mod_id = "Stdlib__Bigarray" ->
       begin try List.assoc type_name tbl with Not_found -> dfl end
   | _ ->
@@ -164,7 +175,7 @@ let layout_table =
 
 let bigarray_type_kind_and_layout env typ =
   match scrape env typ with
-  | Tconstr(_p, [_caml_type; elt_type; layout_type], _abbrev) ->
+  | Some (Tconstr(_p, [_caml_type; elt_type; layout_type], _abbrev)) ->
       (bigarray_decode_type env elt_type kind_table Pbigarray_unknown,
        bigarray_decode_type env layout_type layout_table
                             Pbigarray_unknown_layout)
@@ -172,7 +183,9 @@ let bigarray_type_kind_and_layout env typ =
       (Pbigarray_unknown, Pbigarray_unknown_layout)
 
 let value_kind env ty =
-  let ty = scrape_ty env ty in
+  match scrape_ty env ty with
+  | None -> Pgenval
+  | Some ty ->
   if is_immediate (Ctype.immediacy env ty) then Pintval
   else begin
     match get_desc ty with

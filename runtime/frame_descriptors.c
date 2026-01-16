@@ -237,7 +237,7 @@ static void add_frame_descriptors(
 
 /* protected by STW sections */
 static caml_frame_descrs current_frame_descrs =
-  { 0, -1, NULL, NULL, NULL, PTHREAD_MUTEX_INITIALIZER };
+  { 0, -1, NULL, NULL, NULL, CAML_PLAT_MUTEX_INITIALIZER };
 
 static caml_frametable_list *cons(
   intnat *frametable, caml_frametable_list *tl)
@@ -326,6 +326,7 @@ static void remove_frame_descriptors(
   void *frametable;
   caml_frametable_list ** previous;
 
+  /* cannot release the domain lock here (e.g. custom block finaliser) */
   caml_plat_lock_blocking(&table->mutex);
 
   previous = &table->frametables;

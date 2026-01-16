@@ -48,5 +48,18 @@ let settings_of_commandline ?(stdout_fname="") ?(stderr_fname="") commandline =
   }
 
 external run : settings -> int = "caml_run_command"
+external drop_privilege : string -> unit = "caml_drop_privilege"
+
+let () =
+  (* This allows lib-runtime-events/test_create_cursor_failures.ml to operate
+     correctly. That test removes its own access to a file and cannot be run as
+     root. Cygwin intentionally enables SeBackupPrivilege (see
+     set_cygwin_privileges in sec/helper.cc) in order to allow an elevated
+     process to behave in a root-like fashion. Thwart this by dropping the
+     privilege from our primary token - CreateProcess uses the primary token,
+     which means anything called by ocamltest will not be able to enable
+     SeBackupPrivilege. *)
+  if Sys.cygwin then
+    drop_privilege "SeBackupPrivilege"
 
 let run_commandline commandline = run (settings_of_commandline commandline)

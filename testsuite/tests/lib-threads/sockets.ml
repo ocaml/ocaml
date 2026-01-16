@@ -1,7 +1,7 @@
 (* TEST
  include systhreads;
  hassysthreads;
- libunix; (* Broken on Windows (missing join?), needs to be fixed *)
+ not-target-windows; (* Broken on Windows (missing join?), needs to be fixed *)
  {
    bytecode;
  }{

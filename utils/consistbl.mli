@@ -35,7 +35,7 @@ end) : sig
 
   val clear: t -> unit
 
-  val check: t -> Module_name.t -> Digest.t -> filepath -> unit
+  val check: t -> Module_name.t -> Digest.BLAKE128.t -> filepath -> unit
         (* [check tbl name crc source]
              checks consistency of ([name], [crc]) with infos previously
              stored in [tbl].  If no CRC was previously associated with
@@ -43,7 +43,7 @@ end) : sig
              [source] is the name of the file from which the information
              comes from.  This is used for error reporting. *)
 
-  val check_noadd: t -> Module_name.t -> Digest.t -> filepath -> unit
+  val check_noadd: t -> Module_name.t -> Digest.BLAKE128.t -> filepath -> unit
         (* Same as [check], but raise [Not_available] if no CRC was previously
              associated with [name]. *)
 
@@ -52,12 +52,14 @@ end) : sig
            if the latter has an associated CRC in [tbl].
            Raise [Not_found] otherwise. *)
 
-  val extract: Module_name.t list -> t -> (Module_name.t * Digest.t option) list
+  val extract:
+    Module_name.t list -> t -> (Module_name.t * Digest.BLAKE128.t option) list
         (* [extract tbl names] returns an associative list mapping each string
            in [names] to the CRC associated with it in [tbl]. If no CRC is
            associated with a name then it is mapped to [None]. *)
 
-  val extract_map : Module_name.Set.t -> t -> Digest.t option Module_name.Map.t
+  val extract_map :
+    Module_name.Set.t -> t -> Digest.BLAKE128.t option Module_name.Map.t
         (* Like [extract] but with a more sophisticated type. *)
 
   val filter: (Module_name.t -> bool) -> t -> unit

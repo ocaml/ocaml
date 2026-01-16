@@ -19,12 +19,16 @@
 #define CAML_WEAK_H
 
 #include "mlvalues.h"
-#include "memory.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-extern value caml_ephe_none;
+
+extern value caml_ephe_none, caml_ephe_locked;
+
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef CAML_INTERNALS
 
@@ -32,13 +36,13 @@ struct caml_ephe_info {
   value todo;
   /* These are ephemerons which need to be marked and swept in the current
      cycle. If the ephemeron is alive, after marking, they go into the live
-     list after cleaning them off the unreachable keys and releasing the data
+     list after cleaning off the unreachable keys and releasing the data
      if any of the keys are unreachable. */
 
   value live;
-  /* These are ephemerons are alive (marked). The keys of these ephemerons may
-     be unmarked if these ephemerons were the target of a blit operation. The
-     data field is never unmarked. */
+  /* These are ephemerons which are alive (marked). The keys of these ephemerons
+     may be unmarked if these ephemerons were the target of a blit operation.
+     The data field is never unmarked. */
 
   int must_sweep_ephe;
   /* At the beginning of [Phase_sweep_ephe] the [live] list is moved to the
@@ -62,8 +66,6 @@ struct caml_ephe_info {
     A weak pointer is an ephemeron with the data at caml_ephe_none
     If fields are added, don't forget to update weak.ml, [additional_values],
     and obj.ml, [Ephemeron.additional_values].
-
-
  */
 
 #define CAML_EPHE_LINK_OFFSET 0
@@ -73,14 +75,22 @@ struct caml_ephe_info {
 
 #define Ephe_link(e) (*(Op_val(e) + CAML_EPHE_LINK_OFFSET))
 #define Ephe_data(e) (*(Op_val(e) + CAML_EPHE_DATA_OFFSET))
+#define Ephe_data_addr(e) (Op_atomic_val(e) + CAML_EPHE_DATA_OFFSET)
+
+value caml_ephe_await_key(value ephe, uintnat i);
+
+Caml_inline value Ephe_key(value ephe, uintnat i)
+{
+  value v = atomic_load_acquire(Op_atomic_val(ephe) + i);
+  if (v == caml_ephe_locked)
+    return caml_ephe_await_key(ephe, i);
+  else
+    return v;
+}
 
 struct caml_ephe_info* caml_alloc_ephe_info (void);
 void caml_ephe_clean(value e);
 
 #endif /* CAML_INTERNALS */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* CAML_WEAK_H */

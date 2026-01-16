@@ -1,6 +1,7 @@
 (* TEST
  include unix;
- libunix;
+ hasunix;
+ not-target-windows;
  (*
    Disabled on MacOS amd64 with TSan due to a
    possible infinite signal loop with TSan under MacOS

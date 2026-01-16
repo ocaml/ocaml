@@ -142,7 +142,7 @@ CAMLprim value caml_int_of_string(value s)
 #define FORMAT_BUFFER_SIZE 32
 
 static char parse_format(value fmt,
-                         char * suffix,
+                         const char * suffix,
                          char format_string[FORMAT_BUFFER_SIZE])
 {
   char * p;

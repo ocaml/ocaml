@@ -43,6 +43,10 @@
 #include "misc.h"
 #include "mlvalues.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 CAMLextern uintnat caml_minor_heaps_start;
 CAMLextern uintnat caml_minor_heaps_end;
 
@@ -58,5 +62,9 @@ CAMLextern uintnat caml_minor_heaps_end;
 /* These definitions are retained for backwards compatibility with OCaml 4 */
 #define Is_in_heap_or_young(a) 1
 #define Is_in_value_area(a) 1
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CAML_ADDRESS_CLASS_H */

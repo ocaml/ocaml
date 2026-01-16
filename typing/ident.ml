@@ -137,19 +137,48 @@ let is_predef = function
   | Predef _ -> true
   | _ -> false
 
+let canonical_stamps = s_table Hashtbl.create 0
+let next_canonical_stamp = s_table Hashtbl.create 0
+
+let canonicalize name stamp =
+  try Hashtbl.find !canonical_stamps (name, stamp)
+  with Not_found ->
+    let canonical_stamp =
+      try Hashtbl.find !next_canonical_stamp name
+      with Not_found -> 0
+    in
+    Hashtbl.replace !next_canonical_stamp name
+      (canonical_stamp + 1);
+    Hashtbl.add !canonical_stamps (name, stamp)
+      canonical_stamp;
+    canonical_stamp
+
+let pp_stamped ppf (name, stamp) =
+  let open Format_doc in
+  if not !Clflags.unique_ids then
+    fprintf ppf "%s" name
+  else begin
+    let stamp =
+      if not !Clflags.canonical_ids then stamp
+      else canonicalize name stamp
+    in
+    fprintf ppf "%s/%i" name stamp
+  end
+
 let print ~with_scope ppf =
   let open Format_doc in
   function
-  | Global name -> fprintf ppf "%s!" name
-  | Predef { name; stamp = n } ->
-      fprintf ppf "%s%s!" name
-        (if !Clflags.unique_ids then asprintf "/%i" n else "")
-  | Local { name; stamp = n } ->
-      fprintf ppf "%s%s" name
-        (if !Clflags.unique_ids then asprintf "/%i" n else "")
-  | Scoped { name; stamp = n; scope } ->
-      fprintf ppf "%s%s%s" name
-        (if !Clflags.unique_ids then asprintf "/%i" n else "")
+  | Global name ->
+      fprintf ppf "%s!" name
+  | Predef { name; stamp } ->
+      fprintf ppf "%a!"
+        pp_stamped (name, stamp)
+  | Local { name; stamp } ->
+      fprintf ppf "%a"
+        pp_stamped (name, stamp)
+  | Scoped { name; stamp; scope } ->
+      fprintf ppf "%a%s"
+        pp_stamped (name, stamp)
         (if with_scope then asprintf "[%i]" scope else "")
 
 let print_with_scope ppf id = print ~with_scope:true ppf id

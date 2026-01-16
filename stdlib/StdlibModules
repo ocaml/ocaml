@@ -45,23 +45,26 @@ STDLIB_MODULE_BASENAMES = \
   lazy \
   seq \
   option \
+  pair \
   result \
   bool \
   char \
   uchar \
   list \
   int \
+  array \
+  iarray \
   bytes \
   string \
   unit \
   marshal \
-  array \
   float \
   int32 \
   int64 \
   nativeint \
   lexing \
   parsing \
+  repr \
   set \
   map \
   stack \
@@ -70,11 +73,11 @@ STDLIB_MODULE_BASENAMES = \
   mutex \
   condition \
   semaphore \
-  domain \
   camlinternalFormat \
   printf \
   arg \
   printexc \
+  domain \
   fun \
   gc \
   in_channel \
@@ -91,6 +94,7 @@ STDLIB_MODULE_BASENAMES = \
   oo \
   camlinternalMod \
   dynarray \
+  pqueue \
   ephemeron \
   filename \
   complex \

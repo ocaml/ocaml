@@ -1,6 +1,6 @@
 File "unclosed_paren_module_type.mli", line 9, characters 0-0:
-Error: Syntax error: ")" expected
+Error: Syntax error: ) expected
 File "unclosed_paren_module_type.mli", line 8, characters 11-12:
 8 | module M : (sig end
                ^
-  This "(" might be unmatched
+  This ( might be unmatched

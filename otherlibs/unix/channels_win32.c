@@ -81,7 +81,25 @@ int caml_win32_CRT_fd_of_filedescr(value handle)
       if (! atomic_compare_exchange_strong(&CRT_field_val(handle),
                                            &fd, GETTING_CRT_FD))
         break; /* try again */
-      fd = _open_osfhandle((intptr_t) Handle_val(handle), O_BINARY);
+      /* _open_osfhandle cares about four possible flags:
+         - O_TEXT / O_BINARY - the Unix library only opens descriptors in binary
+           mode; the only way to get a text mode file_descr is to go via the
+           runtime (which will retrieve the CRT fd and call setmode on it). Here
+           we can always specify O_BINARY, therefore.
+         - O_APPEND - FIXME at present, in caml_unix_open, we call
+           SetFilePointer when the file is opened in append mode, but this is
+           not presently done on each write operation, nor do we ensure that the
+           writes cannot overlap.
+         - O_NOINHERIT - probably for historical reasons, the CRT chooses not to
+           detect that a handle is inheritable, so we have to do that here. */
+      int flags = O_BINARY;
+      DWORD handle_flags = 0;
+      /* Ignore errors from GetHandleInformation - we'll rely on _open_osfhandle
+         failing instead */
+      GetHandleInformation(Handle_val(handle), &handle_flags);
+      if ((handle_flags & HANDLE_FLAG_INHERIT) == 0)
+        flags |= O_NOINHERIT;
+      fd = _open_osfhandle((intptr_t) Handle_val(handle), flags);
       if (fd == -1) {
         atomic_store(&CRT_field_val(handle), NO_CRT_FD);
         caml_uerror("channel_of_descr", Nothing);

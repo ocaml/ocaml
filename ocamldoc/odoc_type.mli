@@ -26,6 +26,7 @@ type private_flag = Asttypes.private_flag = Private | Public
 type record_field = {
   rf_name : string;
   rf_mutable : bool;
+  rf_atomic : bool;
   rf_type : Types.type_expr;
   mutable rf_text : Odoc_types.info option;
 }
@@ -48,6 +49,7 @@ type type_kind =
   | Type_variant of variant_constructor list
   | Type_record of record_field list
   | Type_open
+  | Type_external of string
 (** The various kinds of type. *)
 
 type object_field = {

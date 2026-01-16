@@ -25,3 +25,22 @@ value print_and_raise(value unit)
   caml_failwith("test");
   return Val_unit; /* Unreachable */
 }
+
+value print_and_raise_many_args(value arg1, value arg2, value arg3, value arg4,
+                                value arg5, value arg6, value arg7, value arg8,
+                                value arg9)
+{
+  (void)arg1;
+  (void)arg2;
+  (void)arg3;
+  (void)arg4;
+  (void)arg5;
+  (void)arg6;
+  (void)arg7;
+  (void)arg8;
+  (void)arg9;
+
+  fprintf(stderr, "Hello from print_and_raise_many_args\n");
+  caml_raise_not_found();
+  return Val_unit; /* Unreachable */
+}

@@ -11,10 +11,10 @@
 
 
 
-
 *)
 
 let f x =
+  let _d = Printer.[D (0, A); D (42, B)] in
   for _i = 0 to x do
     print_endline "..."
   done
@@ -23,7 +23,7 @@ let () = f 3
 
 (* TEST
  flags += " -g ";
- ocamldebug_script = "${test_source_directory}/input_script";
+ debugger_script = "${test_source_directory}/input_script";
  readonly_files = "printer.ml";
  include debugger;
  debugger;

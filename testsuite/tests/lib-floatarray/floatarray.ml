@@ -186,6 +186,8 @@ module Test (A : S) : sig end = struct
   (* check_inval omitted *)
 
   (* [concat] *)
+  assert (A.of_list [1.; 2.; 3.]
+          = A.concat [A.of_list [1.]; A.of_list [2.; 3.]]);
   let check l =
     let f (len, acc) n =
       (len + n, A.init n (fun i -> Float.of_int (len + i)) :: acc)

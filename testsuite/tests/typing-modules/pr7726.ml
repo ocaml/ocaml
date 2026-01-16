@@ -93,9 +93,9 @@ Error: In the signature of this functor application:
 |}]
 type t = Fix(Id).Fixed.t;;
 [%%expect{|
-Line 1, characters 9-24:
+Line 1, characters 9-16:
 1 | type t = Fix(Id).Fixed.t;;
-             ^^^^^^^^^^^^^^^
+             ^^^^^^^
 Error: In the signature of Fix(Id):
        The definition of "Fixed.t" contains a cycle:
          "Id(Fixed).t" = "Fixed.t",
@@ -104,9 +104,9 @@ Error: In the signature of Fix(Id):
 |}]
 let f (x : Fix(Id).Fixed.t) = x;;
 [%%expect{|
-Line 1, characters 11-26:
+Line 1, characters 11-18:
 1 | let f (x : Fix(Id).Fixed.t) = x;;
-               ^^^^^^^^^^^^^^^
+               ^^^^^^^
 Error: In the signature of Fix(Id):
        The definition of "Fixed.t" contains a cycle:
          "Id(Fixed).t" = "Fixed.t",
@@ -137,9 +137,9 @@ type t = F(M).t;;
 [%%expect{|
 module F : () -> sig type t end
 module M : sig end
-Line 3, characters 9-15:
+Line 3, characters 9-10:
 3 | type t = F(M).t;;
-             ^^^^^^
+             ^
 Error: The functor "F" is generative, it cannot be applied in type expressions
 |}]
 
@@ -155,9 +155,9 @@ module Fix2 :
       module rec Fixed : sig type t = F(Fixed).t end
       module R : (X : sig end) -> sig type t = Fixed.t end
     end
-Line 5, characters 11-26:
+Line 5, characters 11-19:
 5 | let f (x : Fix2(Id).R(M).t) = x;;
-               ^^^^^^^^^^^^^^^
+               ^^^^^^^^
 Error: In the signature of Fix2(Id):
        The definition of "Fixed.t" contains a cycle:
          "Id(Fixed).t" = "Fixed.t",

@@ -32,8 +32,8 @@ let () =
         !Clflags.recursive_types;
       Printf.eprintf "principal: %B\n"
         !Clflags.principal;
-      Printf.eprintf "transparent_modules: %B\n"
-        !Clflags.transparent_modules;
+      Printf.eprintf "no_alias_deps: %B\n"
+        !Clflags.no_alias_deps;
       Printf.eprintf "unboxed_types: %B\n"
         !Clflags.unboxed_types;
       Printf.eprintf "</ppx-context>\n";

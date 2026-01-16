@@ -297,6 +297,9 @@ let default_options = Options.list @
     Arg.String (fun s -> Odoc_latex.latex_class_prefix := s), M.latex_class_prefix ;
   "-latex-class-type-prefix",
     Arg.String (fun s -> Odoc_latex.latex_class_type_prefix := s), M.latex_class_type_prefix ;
+  "-latex-escape-underscore", Arg.Bool ((:=) Odoc_latex.latex_escape_underscore),
+    "escape underscore in references";
+
   "-notoc", Arg.Unit (fun () -> Odoc_global.with_toc := false), M.no_toc ^
   "\n\n *** texinfo options ***\n";
 

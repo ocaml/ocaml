@@ -68,12 +68,12 @@ let rec env_from_summary sum subst =
           | Error `Functor -> assert false
           | Error `Not_found -> raise (Error (Module_not_found path'))
           end
-      | Env_functor_arg(Env_module(s, id, pres, desc), id')
+      | Env_not_aliasable(Env_module(s, id, pres, desc), id')
             when Ident.same id id' ->
           Env.add_module_declaration ~check:false
             id pres (Subst.module_declaration Keep subst desc)
-            ~arg:true (env_from_summary s subst)
-      | Env_functor_arg _ -> assert false
+            ~noalias:true (env_from_summary s subst)
+      | Env_not_aliasable _ -> assert false
       | Env_constraints(s, map) ->
           Path.Map.fold
             (fun path info ->
@@ -107,7 +107,7 @@ module Style = Misc.Style
 let report_error_doc ppf = function
   | Module_not_found p ->
       fprintf ppf "@[Cannot find module %a@].@."
-        (Style.as_inline_code Printtyp.path) p
+        (Style.as_inline_code Printtyp.Doc.path) p
 
 let () =
   Location.register_error_of_exn

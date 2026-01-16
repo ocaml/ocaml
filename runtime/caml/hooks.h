@@ -19,10 +19,6 @@
 #include "misc.h"
 #include "memory.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifdef CAML_INTERNALS
 
 #ifdef NATIVE_CODE
@@ -35,9 +31,5 @@ CAMLextern void (*caml_natdynlink_hook)(void* handle, const char* unit);
 #endif /* NATIVE_CODE */
 
 #endif /* CAML_INTERNALS */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* CAML_HOOKS_H */

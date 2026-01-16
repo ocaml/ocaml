@@ -15,7 +15,10 @@ exception ExnB
 
 open Printf
 
+(* Synchronization barriers for reproducibility of the tests (see comment in
+   [exn_from_c.ml]). *)
 let wg = Waitgroup.create 2
+let wg' = Waitgroup.create 2
 let r = ref 0
 
 let [@inline never] race () =
@@ -23,34 +26,37 @@ let [@inline never] race () =
   Waitgroup.join wg
 
 let [@inline never] i () =
-  printf "Entering i\n%!";
-  printf "Throwing ExnA...\n%!";
+  eprintf "Entering i\n%!";
+  eprintf "Throwing ExnA...\n%!";
   ignore (raise ExnA);
-  printf "Leaving i\n%!"
+  eprintf "Leaving i\n%!"
 
 let [@inline never] h () =
-  printf "Entering h\n%!";
+  eprintf "Entering h\n%!";
   try i () with
-  | ExnB -> printf "Caught an ExnB\n%!";
-  printf "Leaving h\n%!"
+  | ExnB -> eprintf "Caught an ExnB\n%!";
+  eprintf "Leaving h\n%!"
 
 let [@inline never] g () =
-  printf "Entering g\n%!";
+  eprintf "Entering g\n%!";
   h ();
-  printf "Leaving g\n%!"
+  eprintf "Leaving g\n%!"
 
 let [@inline never] f () =
-  printf "Entering f\n%!";
+  eprintf "Entering f\n%!";
   (try g () with
   | ExnA ->
-    printf "Caught an ExnA\n%!";
-    Printexc.print_backtrace stdout;
+    eprintf "Caught an ExnA\n%!";
+    Printexc.print_backtrace stderr;
+    flush stderr;
     race ());
-  printf "Leaving f\n%!"
+  Waitgroup.join wg';
+  eprintf "Leaving f\n%!"
 
 let [@inline never] writer () =
   Waitgroup.join wg;
-  r := 1
+  r := 1;
+  Waitgroup.join wg'
 
 let () =
   Printexc.record_backtrace true;

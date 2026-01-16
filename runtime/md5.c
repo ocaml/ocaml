@@ -37,6 +37,11 @@ CAMLprim value caml_md5_string(value str, value ofs, value len)
   return res;
 }
 
+CAMLprim value caml_md5_bytes(value b, value ofs, value len)
+{
+  return caml_md5_string(b, ofs, len);
+}
+
 CAMLexport value caml_md5_channel(struct channel *chan, intnat toread)
 {
   CAMLparam0();

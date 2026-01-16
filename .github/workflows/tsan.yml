@@ -29,11 +29,13 @@ jobs:
       manual_changed: ${{ steps.manual.outputs.manual_changed }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           persist-credentials: false
       - name: Install libunwind
-        run: sudo apt install -y libunwind-dev
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libunwind-dev
       # This temporary workaround reduces the number of random bits for the base
       # address of vma regions for mmap allocation, to avoid the
       # "FATAL: ThreadSanitizer: unexpected memory mapping" TSan error.
@@ -85,7 +87,8 @@ jobs:
       - name: Packages
         if: matrix.dependencies != ''
         run: |
-          sudo apt-get update -y && sudo apt-get install -y ${{ matrix.dependencies }}
+          sudo apt-get update -y
+          sudo apt-get install -y ${{ matrix.dependencies }}
       - name: Run the testsuite
         if: matrix.id == 'normal'
         # Run testsuite with 30-minute timeout per test

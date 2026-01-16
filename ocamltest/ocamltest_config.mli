@@ -36,14 +36,23 @@ val cc : string
 val cflags : string
 (** Flags to pass to the C compiler *)
 
-val ccomptype : string
+val ccomp_type : string
 (** Type of C compiler (msvc, cc, etc.) *)
+
+val c_compiler_vendor: string
+(** The vendor and version of the C compiler (see {!Config.c_compiler_vendor} *)
+
+val target_os_type : string
+(** The value of Sys.os_type for the target (cf. Config.target_os_type) *)
 
 val diff : string
 (** Path to the diff tool *)
 
 val diff_flags : string
 (** Flags to pass to the diff tool *)
+
+val diff_supports_color : bool
+(** Whether {!diff} supports the [--color={auto,always,never}] flag *)
 
 val shared_libraries : bool
 (** [true] if shared libraries are supported, [false] otherwise *)
@@ -91,6 +100,9 @@ val ocamldoc : bool
 val ocamldebug : bool
 (** Whether ocamldebug has been enabled at configure time *)
 
+val ocamlobjinfo : bool
+(** Whether ocamlobjinfo has been enabled at configure time *)
+
 val native_compiler : bool
 (** Whether the native compiler has been enabled at configure time *)
 
@@ -133,3 +145,10 @@ val frame_pointers : bool
 
 val tsan : bool
 (** Whether ThreadSanitizer support has been enabled at configure time *)
+
+val has_relative_libdir : bool
+(** Whether the compiler has been configured using --with-relative-libdir *)
+
+val suffixing : bool
+(** Whether C stub library filenames are being mangled with the Bytecode
+    Runtime ID and {!Config.target}. *)

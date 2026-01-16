@@ -154,6 +154,11 @@ let case { pc_rhs; pc_guard } = { rhs = pc_rhs; guard = pc_guard }
 let rec rewrite_patexp_list iflag l =
   rewrite_exp_list iflag (List.map (fun x -> x.pvb_expr) l)
 
+and rewrite_case_body iflag rhs =
+  match rhs.pexp_desc with
+  | Pexp_unreachable -> ()
+  | _ -> rewrite_exp iflag rhs
+
 and rewrite_cases iflag l =
   List.iter
     (fun pc ->
@@ -161,7 +166,7 @@ and rewrite_cases iflag l =
       | None -> ()
       | Some g -> rewrite_exp iflag g
       end;
-      rewrite_exp iflag pc.pc_rhs
+      rewrite_case_body iflag pc.pc_rhs
     )
     l
 
@@ -215,7 +220,7 @@ and rw_exp iflag sexp =
     rewrite_exp_list iflag (List.map snd sargs)
 
   | Pexp_tuple sexpl ->
-    rewrite_exp_list iflag sexpl
+    List.iter (fun (_, e) -> rewrite_exp iflag e) sexpl
 
   | Pexp_construct(_, None) -> ()
   | Pexp_construct(_, Some sarg) ->
@@ -238,7 +243,7 @@ and rw_exp iflag sexp =
     rewrite_exp iflag srecord;
     rewrite_exp iflag snewval
 
-  | Pexp_array(sargl) ->
+  | Pexp_array sargl ->
     rewrite_exp_list iflag sargl
 
   | Pexp_ifthenelse(scond, sifso, None) ->
@@ -280,13 +285,6 @@ and rw_exp iflag sexp =
   | Pexp_override l ->
       List.iter (fun (_, sexp) -> rewrite_exp iflag sexp) l
 
-  | Pexp_letmodule (_, smod, sexp) ->
-      rewrite_mod iflag smod;
-      rewrite_exp iflag sexp
-
-  | Pexp_letexception (_cd, exp) ->
-      rewrite_exp iflag exp
-
   | Pexp_assert (cond) -> rewrite_exp iflag cond
 
   | Pexp_lazy (expr) -> rewrite_exp iflag expr
@@ -297,14 +295,16 @@ and rw_exp iflag sexp =
       List.iter (rewrite_class_field iflag) cl.pcstr_fields
 
   | Pexp_newtype (_, sexp) -> rewrite_exp iflag sexp
-  | Pexp_open (_, e) -> rewrite_exp iflag e
-  | Pexp_pack (smod) -> rewrite_mod iflag smod
+  | Pexp_pack (smod, _) -> rewrite_mod iflag smod
   | Pexp_letop {let_; ands; body; _} ->
       rewrite_exp iflag let_.pbop_exp;
       List.iter (fun {pbop_exp; _} -> rewrite_exp iflag pbop_exp) ands;
       rewrite_exp iflag body
   | Pexp_extension _ -> ()
   | Pexp_unreachable -> ()
+  | Pexp_struct_item (si, exp) ->
+      rewrite_str_item iflag si;
+      rewrite_exp iflag exp
 
 and rewrite_ifbody iflag ghost sifbody =
   if !instr_if && not ghost then
@@ -318,11 +318,17 @@ and rewrite_annotate_exp_list l =
     (function
      | {guard=Some scond; rhs=sbody} ->
          insert_profile rw_exp scond;
-         insert_profile rw_exp sbody;
+         rewrite_annotate_rhs sbody
      | {rhs={pexp_desc = Pexp_constraint(sbody, _)}} (* let f x : t = e *)
-        -> insert_profile rw_exp sbody
-     | {rhs=sexp} -> insert_profile rw_exp sexp)
+        -> rewrite_annotate_rhs sbody
+     | {rhs=sexp} -> rewrite_annotate_rhs sexp
+    )
     l
+
+and rewrite_annotate_rhs rhs =
+  match rhs.pexp_desc with
+  | Pexp_unreachable -> ()
+  | _ -> insert_profile rw_exp rhs
 
 and rewrite_function iflag = function
   | [{guard=None;
@@ -505,6 +511,8 @@ let main () =
        "-instrument", Arg.Set instr_mode, "  (undocumented)";
        "-intf", Arg.String process_intf_file,
                 "<file>  Process <file> as a .mli file";
+       "-keywords", Arg.String (fun s -> Clflags.keyword_edition := Some s),
+       "<version+keywords> Specify keyword set.";
        "-m", Arg.String (fun s -> modes := s), "<flags>    (undocumented)";
        "-version", Arg.Unit print_version,
                    "     Print version and exit";

@@ -38,10 +38,10 @@ value ml_perform_stack_walk(value unused) {
             if (strlen(procname) > 4 &&
                 !memcmp(procname, "caml", 4) &&
                 'A' <= procname[4] && procname[4] <= 'Z' &&
-                strchr(procname+4, '.')) {
+                strchr(procname+4, '$')) {
               /* mangled OCaml name, unmangle and print */
               const char* mangled = procname + 4;
-              const char* mod_end = strchr(mangled, '.');
+              const char* mod_end = strchr(mangled, '$');
               const char* id_begin = strchr(mod_end + 1, '_');
               if (!id_begin) id_begin = mangled + strlen(mangled);
               printf("%.*s.%.*s\n",

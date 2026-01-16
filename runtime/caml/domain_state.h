@@ -22,6 +22,10 @@
 
 #include "misc.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define NUM_EXTRA_PARAMS 64
 typedef value extra_params_area[NUM_EXTRA_PARAMS];
 
@@ -46,7 +50,7 @@ enum {
   CAMLextern CAMLthread_local caml_domain_state* caml_state;
   #define Caml_state_opt caml_state
 #else
-#ifdef __GNUC__
+#if __has_attribute(pure) || defined(__GNUC__)
   __attribute__((pure))
 #endif
   CAMLextern caml_domain_state* caml_get_domain_state(void);
@@ -66,5 +70,9 @@ CAMLnoret CAMLextern void caml_bad_caml_state(void);
    caml_bad_caml_state())
 
 #define Caml_state_field(field) (Caml_state->field)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CAML_STATE_H */

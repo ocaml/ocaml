@@ -41,7 +41,7 @@ Ptop_def
         type_declaration "t" (//toplevel//[2,1+5]..[2,1+6]) (//toplevel//[2,1+0]..[2,1+28])
           ptype_params =
             []
-          ptype_cstrs =
+          ptype_constraints =
             []
           ptype_kind =
             Ptype_abstract
@@ -152,7 +152,7 @@ Ptop_def
                 type_declaration "t" (//toplevel//[4,18+26]..[4,18+27]) (//toplevel//[4,18+21]..[4,18+27])
                   ptype_params =
                     []
-                  ptype_cstrs =
+                  ptype_constraints =
                     []
                   ptype_kind =
                     Ptype_abstract
@@ -177,7 +177,7 @@ Ptop_def
               type_declaration "t" (//toplevel//[2,1+30]..[2,1+31]) (//toplevel//[2,1+25]..[2,1+37])
                 ptype_params =
                   []
-                ptype_cstrs =
+                ptype_constraints =
                   []
                 ptype_kind =
                   Ptype_abstract
@@ -204,7 +204,7 @@ Ptop_def
               type_declaration "t" (//toplevel//[2,1+30]..[2,1+31]) (//toplevel//[2,1+25]..[2,1+38])
                 ptype_params =
                   []
-                ptype_cstrs =
+                ptype_constraints =
                   []
                 ptype_kind =
                   Ptype_abstract
@@ -585,9 +585,11 @@ Ptop_def
           pattern (//toplevel//[4,19+4]..[4,19+5])
             Ppat_var "x" (//toplevel//[4,19+4]..[4,19+5])
           expression (//toplevel//[4,19+8]..[4,19+26])
-            Pexp_open Fresh
-            module_expr (//toplevel//[4,19+8]..[4,19+9])
-              Pmod_ident "M" (//toplevel//[4,19+8]..[4,19+9])
+            Pexp_struct_item
+            structure_item (_none_[0,0+-1]..[0,0+-1]) ghost
+              Pstr_open Fresh
+              module_expr (//toplevel//[4,19+8]..[4,19+9])
+                Pmod_ident "M" (//toplevel//[4,19+8]..[4,19+9])
             expression (//toplevel//[4,19+10]..[4,19+26])
               Pexp_record
               [
@@ -611,29 +613,35 @@ Ptop_def
           pattern (//toplevel//[2,1+4]..[2,1+5])
             Ppat_var "x" (//toplevel//[2,1+4]..[2,1+5])
           expression (//toplevel//[2,1+8]..[2,1+18])
-            Pexp_open Fresh
-            module_expr (//toplevel//[2,1+8]..[2,1+9])
-              Pmod_ident "M" (//toplevel//[2,1+8]..[2,1+9])
+            Pexp_struct_item
+            structure_item (_none_[0,0+-1]..[0,0+-1]) ghost
+              Pstr_open Fresh
+              module_expr (//toplevel//[2,1+8]..[2,1+9])
+                Pmod_ident "M" (//toplevel//[2,1+8]..[2,1+9])
             expression (//toplevel//[2,1+10]..[2,1+18])
               Pexp_construct "::" (//toplevel//[2,1+12]..[2,1+18]) ghost
               Some
                 expression (//toplevel//[2,1+12]..[2,1+18]) ghost
                   Pexp_tuple
                   [
+                    None
                     expression (//toplevel//[2,1+12]..[2,1+13])
                       Pexp_constant
                       constant (//toplevel//[2,1+12]..[2,1+13])
                         PConst_int (3,None)
+                    None
                     expression (//toplevel//[2,1+15]..[2,1+18]) ghost
                       Pexp_construct "::" (//toplevel//[2,1+15]..[2,1+18]) ghost
                       Some
                         expression (//toplevel//[2,1+15]..[2,1+18]) ghost
                           Pexp_tuple
                           [
+                            None
                             expression (//toplevel//[2,1+15]..[2,1+16])
                               Pexp_constant
                               constant (//toplevel//[2,1+15]..[2,1+16])
                                 PConst_int (4,None)
+                            None
                             expression (//toplevel//[2,1+17]..[2,1+18]) ghost
                               Pexp_construct "[]" (//toplevel//[2,1+17]..[2,1+18]) ghost
                               None
@@ -652,9 +660,11 @@ Ptop_def
           pattern (//toplevel//[2,1+4]..[2,1+5])
             Ppat_var "x" (//toplevel//[2,1+4]..[2,1+5])
           expression (//toplevel//[2,1+8]..[2,1+18])
-            Pexp_open Fresh
-            module_expr (//toplevel//[2,1+8]..[2,1+9])
-              Pmod_ident "M" (//toplevel//[2,1+8]..[2,1+9])
+            Pexp_struct_item
+            structure_item (_none_[0,0+-1]..[0,0+-1]) ghost
+              Pstr_open Fresh
+              module_expr (//toplevel//[2,1+8]..[2,1+9])
+                Pmod_ident "M" (//toplevel//[2,1+8]..[2,1+9])
             expression (//toplevel//[2,1+12]..[2,1+16])
               Pexp_sequence
               expression (//toplevel//[2,1+12]..[2,1+13])
@@ -1129,12 +1139,10 @@ Ptop_def
               [
                 <case>
                   pattern (//toplevel//[4,28+17]..[4,28+31])
-                    Ppat_constraint
-                    pattern (//toplevel//[4,28+25]..[4,28+26])
-                      Ppat_unpack "M" (//toplevel//[4,28+25]..[4,28+26])
-                    core_type (//toplevel//[4,28+29]..[4,28+30])
-                      Ptyp_package "S" (//toplevel//[4,28+29]..[4,28+30])
-                      []
+                    Ppat_unpack "M" (//toplevel//[4,28+25]..[4,28+26])
+                    Some
+                        package_type "S" (//toplevel//[4,28+29]..[4,28+30])
+                        []
                   expression (//toplevel//[4,28+35]..[4,28+37])
                     Pexp_construct "()" (//toplevel//[4,28+35]..[4,28+37])
                     None
@@ -1182,7 +1190,7 @@ Ptop_def
               class_type (//toplevel//[4,33+2]..[4,33+12])
                 Pcty_signature
                 class_signature
-                  core_type (//toplevel//[4,33+8]..[4,33+8])
+                  core_type (//toplevel//[4,33+8]..[4,33+8]) ghost
                     Ptyp_any
                   []
       ]

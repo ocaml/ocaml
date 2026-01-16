@@ -45,6 +45,17 @@ val id : t -> int
    is an integer that identifies uniquely the thread.
    It can be used to build data structures indexed by threads. *)
 
+val set_current_thread_name : string -> unit
+(** Set the thread's name. This should be called from within the thread
+    function. Setting thread name is available on most systems.
+
+    This does nothing if the functionality is not implemented but will
+    print a warning on the standard error if enabled.
+
+    Likewise, a warning is printed if the operation fails.
+
+    @since 5.4 *)
+
 exception Exit
 (** Exception raised by user code to initiate termination of the
     current thread.
@@ -141,7 +152,8 @@ val wait_pid : int -> int * Unix.process_status
   under Unix, but not under Win32, nor by the VM thread library. *)
 
 val sigmask : Unix.sigprocmask_command -> int list -> int list
-(** [sigmask cmd sigs] changes the set of blocked signals for the
+(** Same function as {!Unix.sigprocmask}.
+   [sigmask cmd sigs] changes the set of blocked signals for the
    calling thread.
    If [cmd] is [SIG_SETMASK], blocked signals are set to those in
    the list [sigs].
@@ -151,9 +163,9 @@ val sigmask : Unix.sigprocmask_command -> int list -> int list
    from the set of blocked signals.
    [sigmask] returns the set of previously blocked signals for the thread. *)
 
-
 val wait_signal : int list -> int
-(** [wait_signal sigs] suspends the execution of the calling thread
+(** Same function as {!Unix.sigwait}.
+   [wait_signal sigs] suspends the execution of the calling thread
    until the process receives one of the signals specified in the
    list [sigs].  It then returns the number of the signal received.
    Signal handlers attached to the signals in [sigs] will not

@@ -211,6 +211,8 @@ ENDM
 
         .CODE
 
+; Allocation functions and GC interface.
+; Referenced from C code in runtime/startup_nat.c
         PUBLIC  caml_system__code_begin
 caml_system__code_begin:
         ret  ; just one instruction, so that debuggers don't display
@@ -337,12 +339,30 @@ caml_c_call_stack_args:
     ;    C stack args        : begin=r13 end=r12
     ; Switch from OCaml to C
         SWITCH_OCAML_TO_C
-    ; we use rbx (otherwise unused) to enable backtraces
-        mov     rbx, rsp
     ; Make the alloc ptr available to the C code
         mov     Caml_state(young_ptr), r15
+    ; Copy the arguments and call
+        call    caml_c_call_copy_stack_args
+    ; Prepare for return to OCaml
+        mov     r15, Caml_state(young_ptr)
+    ; Load ocaml stack and restore global variables
+        SWITCH_C_TO_OCAML
+    ; Return to OCaml caller
+        RET_FROM_C_CALL
+
+; To correctly maintain frame pointers during stack reallocation,
+; the runtime assumes that the caml_c_call stub does not push
+; anything to the stack before the first frame pointer on the C stack.
+; To guarantee this when stack arguments are used, the actual pushing
+; of arguments is done by this separate function
+        PUBLIC caml_c_call_copy_stack_args
+        ALIGN 4
+caml_c_call_copy_stack_args:
+    ; Set up a frame pointer even without WITH_FRAME_POINTERS,
+    ; which we use to pop an unknown number of arguments later
+        push    rbp
+        mov     rbp, rsp
     ; Copy arguments from OCaml to C stack
-        add     rsp, 32
 L105:
         sub     r12, 8
         cmp     r12,r13
@@ -350,17 +370,15 @@ L105:
         push    qword ptr [r12]
         jmp     L105
 L210:
+    ; Allocate the shadow store on Windows (the c_stack_link store was used
+    ; in calling caml_c_call_copy_stack_args)
         sub     rsp, 32
     ; Call the function (address in %rax)
         call    rax
     ; Pop arguments back off the stack
-        mov     rsp, Caml_state(c_stack)
-    ; Prepare for return to OCaml
-        mov     r15, Caml_state(young_ptr)
-    ; Load ocaml stack and restore global variables
-        SWITCH_C_TO_OCAML
-    ; Return to OCaml caller
-        RET_FROM_C_CALL
+        mov     rsp, rbp
+        pop     rbp
+        ret
 
 ; Start the OCaml program
 
@@ -665,6 +683,8 @@ L310:
         PUBLIC caml_system__code_end
 caml_system__code_end:
 
+; Frametable - GC roots for callback
+; Uses the same naming convention as ocamlopt generated modules.
         .DATA
         PUBLIC  caml_system$frametable
 caml_system$frametable LABEL QWORD

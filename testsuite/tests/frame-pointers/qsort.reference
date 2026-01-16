@@ -1,0 +1,4 @@
+Comparing foo <=> bar
+Sorted: bar <= foo
+Comparing bar <=> foo
+Sorted: bar <= foo

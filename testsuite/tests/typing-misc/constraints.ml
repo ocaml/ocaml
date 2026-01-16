@@ -1,5 +1,6 @@
 (* TEST
- expect;
+   flags = "-i-variance";
+   expect;
 *)
 
 type 'a t = [`A of 'a t t] as 'a;; (* fails *)
@@ -50,9 +51,9 @@ Error: The definition of "t" contains a cycle:
 |}];;
 type 'a t = [`A of 'a] as 'a;;
 [%%expect{|
-type 'a t = 'a constraint 'a = [ `A of 'a ]
+type !'a t = 'a constraint 'a = [ `A of 'a ]
 |}, Principal{|
-type 'a t = [ `A of 'b ] as 'b constraint 'a = [ `A of 'a ]
+type !'a t = [ `A of 'b ] as 'b constraint 'a = [ `A of 'a ]
 |}];;
 type 'a v = [`A of u v] constraint 'a = t and t = u and u = t;; (* fails *)
 [%%expect{|
@@ -67,7 +68,7 @@ Error: The type abbreviation "t" is cyclic:
 type 'a t = 'a;;
 let f (x : 'a t as 'a) = ();; (* ok *)
 [%%expect{|
-type 'a t = 'a
+type +!'a t = 'a
 val f : 'a -> unit = <fun>
 |}];;
 
@@ -114,8 +115,8 @@ let _ = PR6505a.y#bang;; (* fails *)
 [%%expect{|
 module PR6505a :
   sig
-    type 'o is_an_object = 'o constraint 'o = < .. >
-    type ('a, 'b) abs = 'b constraint 'a = 'b is_an_object
+    type !'o is_an_object = 'o constraint 'o = < .. >
+    type (!'a, !'b) abs = 'b constraint 'a = 'b is_an_object
       constraint 'b = < .. >
     val y : (<  > is_an_object, <  > is_an_object) abs
   end
@@ -128,8 +129,8 @@ Error: This expression has type
 |}, Principal{|
 module PR6505a :
   sig
-    type 'o is_an_object = 'o constraint 'o = < .. >
-    type ('a, 'b) abs = 'b constraint 'a = 'b is_an_object
+    type !'o is_an_object = 'o constraint 'o = < .. >
+    type (!'a, !'b) abs = 'b constraint 'a = 'b is_an_object
       constraint 'b = < .. >
     val y : (<  >, <  >) abs
   end
@@ -149,8 +150,8 @@ let () = print_endline (match PR6505b.x with `Bar s -> s);; (* fails *)
 [%%expect{|
 module PR6505b :
   sig
-    type 'o is_an_object = 'o constraint 'o = [>  ]
-    type ('a, 'o) abs = 'o constraint 'a = 'o is_an_object
+    type !'o is_an_object = 'o constraint 'o = [>  ]
+    type (!'a, !'o) abs = 'o constraint 'a = 'o is_an_object
       constraint 'o = [>  ]
     val x : (([> `Foo of int ] as 'a) is_an_object, 'a is_an_object) abs
   end
@@ -158,8 +159,7 @@ Line 6, characters 23-57:
 6 | let () = print_endline (match PR6505b.x with `Bar s -> s);; (* fails *)
                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-`Foo _
+  Here is an example of a case that is not matched: "`Foo _"
 
 Exception: Match_failure ("", 6, 23).
 |}]
@@ -263,7 +263,7 @@ sig
   type !'a t = 'b  constraint 'a = 'b s
 end
 [%%expect{|
-module type S = sig type !'a s type 'a t = 'b constraint 'a = 'b s end
+module type S = sig type !'a s type !'a t = 'b constraint 'a = 'b s end
 |}]
 
 (* This still causes a stack overflow *)
@@ -317,13 +317,14 @@ Error: The class constraints are not consistent.
 type ('node,'self) extension = < node: 'node; self: 'self > as 'self
 type 'ext node = < > constraint 'ext = ('ext node, 'self) extension;;
 [%%expect{|
-type ('node, 'a) extension = 'a constraint 'a = < node : 'node; self : 'a >
-type 'a node = <  >
+type (+!'node, !'a) extension = 'a
+  constraint 'a = < node : 'node; self : 'a >
+type !'a node = <  >
   constraint 'a = ('a node, < node : 'a node; self : 'b > as 'b) extension
 |}, Principal{|
-type ('node, 'a) extension = < node : 'node; self : 'b > as 'b
+type (+!'node, !'a) extension = < node : 'node; self : 'b > as 'b
   constraint 'a = < node : 'node; self : 'a >
-type 'a node = <  >
+type !'a node = <  >
   constraint 'a = ('a node, < node : 'a node; self : 'b > as 'b) extension
 |}]
 
@@ -335,7 +336,7 @@ class type ['node] extension =
 type 'ext node = < >
   constraint 'ext = 'ext node #extension ;;
 [%%expect{|
-class type ['node] extension =
+class type [+!'node] extension =
   object ('a) method clone : 'a method node : 'node end
 type 'a node = <  > constraint 'a = < clone : 'a; node : 'a node; .. >
 |}]
@@ -352,7 +353,7 @@ Exception: Failure "Default_extension failure".
 type 'a t = 'b constraint 'a = < x : 'b >
 type u = < x : u > t
 [%%expect{|
-type 'a t = 'b constraint 'a = < x : 'b >
+type !'a t = 'b constraint 'a = < x : 'b >
 Line 2, characters 0-20:
 2 | type u = < x : u > t
     ^^^^^^^^^^^^^^^^^^^^
@@ -374,8 +375,8 @@ type ('a, 'self) obj =
 [%%expect {|
 type foo = Foo
 type bar = Bar
-type _ tag = Foo_tag : foo tag | Bar_tag : bar tag
-type ('a, 'self) obj = 'self
+type !_ tag = Foo_tag : foo tag | Bar_tag : bar tag
+type (+!'a, !'self) obj = 'self
   constraint 'self = < bar : bar -> 'a; foo : foo -> 'a; .. >
 |}]
 
@@ -419,19 +420,22 @@ Error: The type abbreviation "cycle" is cyclic:
          "cycle id" = "cycle"
 |}]
 
-(* Vanishing constraints may be discarded during the translation *)
+(* Vanishing constraints should be checked during the translation *)
 type 'a t = [`Foo]
 type 'a cstr constraint 'a = float
 [%%expect{|
-type 'a t = [ `Foo ]
+type +-'a t = [ `Foo ]
 type 'a cstr constraint 'a = float
 |}]
 
 type s = int
 and r = [s cstr t | `Bar]
 [%%expect{|
-type s = int
-and r = [ `Bar | `Foo ]
+Line 1, characters 0-12:
+1 | type s = int
+    ^^^^^^^^^^^^
+Error: This type constructor expands to type "s" = "int"
+       but is used here with type "float"
 |}]
 
 
@@ -447,4 +451,50 @@ Error: Constraints are not satisfied in this type.
        Type "'a foo" should be an instance of "int"
        Type "foo" was considered abstract when checking constraints in this
        recursive type definition.
+|}]
+
+(* PR#13510 *)
+
+type 'a x = [ `X of 'e ] constraint 'a = 'e list
+
+type p = private [> a x]
+and a = int list
+[%%expect{|
+type !'a x = [ `X of 'e ] constraint 'a = 'e list
+type p = private [> a x ]
+and a = int list
+|}]
+
+(* PR #13605 *)
+
+type 'a t3 = < m : 'b. (int -> 'b) as 'a >
+
+[%%expect{|
+Line 1, characters 23-40:
+1 | type 'a t3 = < m : 'b. (int -> 'b) as 'a >
+                           ^^^^^^^^^^^^^^^^^
+Error: This type "'a" should be an instance of type "int -> 'b"
+       The universal variable "'b" would escape its scope
+|}]
+
+type 'a t4 = < m : 'b. int -> ('b as 'a) > * 'a
+
+[%%expect{|
+Line 1, characters 31-39:
+1 | type 'a t4 = < m : 'b. int -> ('b as 'a) > * 'a
+                                   ^^^^^^^^
+Error: This type "'a" should be an instance of type "'b"
+       The universal variable "'b" would escape its scope
+|}]
+
+class type ['a] c = object
+  method m : 'b. (int -> 'b) as 'a
+end
+
+[%%expect{|
+Line 2, characters 17-34:
+2 |   method m : 'b. (int -> 'b) as 'a
+                     ^^^^^^^^^^^^^^^^^
+Error: This type "'a" should be an instance of type "int -> 'b"
+       The universal variable "'b" would escape its scope
 |}]

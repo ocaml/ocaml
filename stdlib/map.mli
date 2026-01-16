@@ -88,7 +88,7 @@ module type S =
     val add_to_list: key -> 'a -> 'a list t -> 'a list t
     (** [add_to_list key data m] is [m] with [key] mapped to [l] such
         that [l] is [data :: Map.find key m] if [key] was bound in
-        [m] and [[v]] otherwise.
+        [m] and [[data]] otherwise.
         @since 5.1 *)
 
     val update: key -> ('a option -> 'a option) -> 'a t -> 'a t
@@ -303,6 +303,11 @@ module type S =
 
     val is_empty: 'a t -> bool
     (** Test whether a map is empty or not. *)
+
+    val is_singleton: 'a t -> bool
+    (** Test whether a map has exactly one element or not.
+
+        @since 5.5 *)
 
     val mem: key -> 'a t -> bool
     (** [mem x m] returns [true] if [m] contains a binding for [x],

@@ -5,12 +5,13 @@
    ocamlc.byte;
    exit_status = "2";
    run;
+   hasunix;
    {
-     libunix;
+     not-target-windows;
      reference = "${test_source_directory}/syserror.unix.reference";
      check-program-output;
    }{
-     libwin32unix;
+     target-windows;
      reference = "${test_source_directory}/syserror.win32.reference";
      check-program-output;
    }
@@ -19,12 +20,13 @@
    ocamlopt.byte;
    exit_status = "2";
    run;
+   hasunix;
    {
-     libunix;
+     not-target-windows;
      reference = "${test_source_directory}/syserror.unix.reference";
      check-program-output;
    }{
-     libwin32unix;
+     target-windows;
      reference = "${test_source_directory}/syserror.win32.reference";
      check-program-output;
    }

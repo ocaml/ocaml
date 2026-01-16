@@ -14,6 +14,7 @@
 /**************************************************************************/
 
 #include "caml/m.h"
+#include "caml/asm.h"
 
         .abiversion 2
 
@@ -88,7 +89,7 @@ caml_hot.code_end:
 .macro FUNCTION name
         TEXT_SECTION \name
         .globl \name
-        .type \name, @function
+        TYPE_DIRECTIVE(\name,@function)
 \name:
 0:      addis   2, 12, .TOC.- 0b@ha
         addi    2, 2,  .TOC.- 0b@l
@@ -96,7 +97,17 @@ caml_hot.code_end:
 .endm
 
 .macro ENDFUNCTION name
-       .size \name, . - \name
+        SIZE_DIRECTIVE(\name)
+.endm
+
+.macro OBJECT name
+        .globl \name
+        TYPE_DIRECTIVE(\name,@object)
+\name:
+.endm
+
+.macro ENDOBJECT name
+        SIZE_DIRECTIVE(\name)
 .endm
 
 /* Function prologue and epilogue */
@@ -290,7 +301,7 @@ caml_hot.code_end:
         SWITCH_OCAML_TO_C
         TSAN_SETUP_C_CALL 0
         mr      3, 0            /* arg1: return address in caller */
-        Far_call(__tsan_func_entry)
+        Far_call(caml_tsan_func_entry_asm)
         TSAN_CLEANUP_AFTER_C_CALL 0
         SWITCH_C_TO_OCAML
 .endm
@@ -383,19 +394,22 @@ caml_hot.code_end:
 
 #endif /* } WITH_THREAD_SANITIZER */
 
+/* Allocation functions and GC interface.
+   Referenced from C code in runtime/startup_nat.c
+*/
         TEXT_SECTION caml_system__code_begin
         .globl  caml_system__code_begin
 caml_system__code_begin:
 
 /* Reallocate the stack when it is too small. */
-/* Desired size is passed in register TMP2. */
+/* Desired size is passed in register r27. */
 
 FUNCTION caml_call_realloc_stack
         ENTER_FUNCTION
    /* Save all registers, as well as ALLOC_PTR and TRAP_PTR */
-        SAVE_ALL_REGS  /* TMP2 is preserved */
+        SAVE_ALL_REGS  /* r27 is preserved */
    /* Recover desired size, to be passed in r3 */
-        mr      3, TMP2
+        mr      3, 27
    /* Switch stacks and call caml_try_realloc_stack */
         SWITCH_OCAML_TO_C
         Far_call(caml_try_realloc_stack)
@@ -425,8 +439,7 @@ FUNCTION caml_call_gc
         Far_call(caml_garbage_collection)
 #if defined(WITH_THREAD_SANITIZER)
         TSAN_SETUP_C_CALL 0
-        li      3, 0
-        Far_call(__tsan_func_exit)
+        Far_call(caml_tsan_func_exit_asm)
         TSAN_CLEANUP_AFTER_C_CALL 0
 #endif
         SWITCH_C_TO_OCAML
@@ -478,8 +491,7 @@ FUNCTION caml_c_call
        it may have returned its result (if any) either in r3 or f1. */
         std     3,  (RESERVED_STACK + 0)(SP)
         stfd    1,  (RESERVED_STACK + 8)(SP)
-        li      3, 0
-        Far_call(__tsan_func_exit)
+        Far_call(caml_tsan_func_exit_asm)
         lfd     1,  (RESERVED_STACK + 8)(SP)
         ld      3,  (RESERVED_STACK + 0)(SP)
         TSAN_CLEANUP_AFTER_C_CALL 16
@@ -639,7 +651,7 @@ FUNCTION caml_start_program
         TSAN_SETUP_C_CALL 16
         std     3, (RESERVED_STACK + 0)(SP)
         mr      3, 0            /* arg1: return address in caller */
-        Far_call(__tsan_func_entry)
+        Far_call(caml_tsan_func_entry_asm)
         ld      3, (RESERVED_STACK + 0)(SP)
         TSAN_CLEANUP_AFTER_C_CALL 16
 #endif
@@ -798,8 +810,7 @@ FUNCTION caml_start_program
 #if defined(WITH_THREAD_SANITIZER)
         TSAN_SETUP_C_CALL 16
         std     3, (RESERVED_STACK + 0)(SP)
-        li      3, 0
-        Far_call(__tsan_func_exit)
+        Far_call(caml_tsan_func_exit_asm)
         ld      3, (RESERVED_STACK + 0)(SP)
         TSAN_CLEANUP_AFTER_C_CALL 16
 #endif
@@ -827,7 +838,7 @@ FUNCTION caml_callback_asm
         std     4, (RESERVED_STACK + 8)(SP)
         std     5, (RESERVED_STACK + 16)(SP)
         mr      3, 0 /* return address */
-        Far_call(__tsan_func_entry)
+        Far_call(caml_tsan_func_entry_asm)
         ld      5, (RESERVED_STACK + 16)(SP)
         ld      4, (RESERVED_STACK + 8)(SP)
         ld      3, (RESERVED_STACK + 0)(SP)
@@ -850,7 +861,7 @@ FUNCTION caml_callback2_asm
         std     4, (RESERVED_STACK + 8)(SP)
         std     5, (RESERVED_STACK + 16)(SP)
         mr      3, 0 /* return address */
-        Far_call(__tsan_func_entry)
+        Far_call(caml_tsan_func_entry_asm)
         ld      5, (RESERVED_STACK + 16)(SP)
         ld      4, (RESERVED_STACK + 8)(SP)
         ld      3, (RESERVED_STACK + 0)(SP)
@@ -875,7 +886,7 @@ FUNCTION caml_callback3_asm
         std     4, (RESERVED_STACK + 8)(SP)
         std     5, (RESERVED_STACK + 16)(SP)
         mr      3, 0 /* return address */
-        Far_call(__tsan_func_entry)
+        Far_call(caml_tsan_func_entry_asm)
         ld      5, (RESERVED_STACK + 16)(SP)
         ld      4, (RESERVED_STACK + 8)(SP)
         ld      3, (RESERVED_STACK + 0)(SP)
@@ -957,8 +968,7 @@ FUNCTION caml_perform
         std     7, (RESERVED_STACK + 32)(SP)
         std     8, (RESERVED_STACK + 40)(SP)
     /* Match the TSan-enter made from caml_runstack */
-        li      3, 0
-        Far_call(__tsan_func_exit)
+        Far_call(caml_tsan_func_exit_asm)
         ld      8, (RESERVED_STACK + 40)(SP)
         ld      7, (RESERVED_STACK + 32)(SP)
         ld      6, (RESERVED_STACK + 24)(SP)
@@ -1003,7 +1013,7 @@ FUNCTION caml_perform
         Far_call(caml_tsan_entry_on_resume)
         /* invoke __tsan_func_entry without shuffling stacks */
         ld      3, LR_SAVE(SP)
-        Far_call(__tsan_func_entry)
+        Far_call(caml_tsan_func_entry_asm)
         TSAN_CLEANUP_AFTER_C_CALL 0
         SWITCH_C_TO_OCAML
         TSAN_RESTORE_CALLER_REGS
@@ -1042,7 +1052,7 @@ FUNCTION caml_resume
         std     3, (RESERVED_STACK + 0)(SP)
     /* Necessary to include the caller of caml_resume in the TSan backtrace */
         mr      3, 0            /* arg1: return address in caller */
-        Far_call(__tsan_func_entry)
+        Far_call(caml_tsan_func_entry_asm)
     /* Signal to TSan all stack frames exited by the perform. */
         ld      3, (RESERVED_STACK + 0)(SP)
         mr      5, 3            /* arg3: fiber */
@@ -1082,7 +1092,7 @@ FUNCTION caml_runstack
         std     5, (RESERVED_STACK + 16)(SP)
     /* Necessary to include the caller of caml_runstack in the TSan backtrace */
         mr      3, 0            /* arg1: return address in caller */
-        Far_call(__tsan_func_entry)
+        Far_call(caml_tsan_func_entry_asm)
         ld      5, (RESERVED_STACK + 16)(SP)
         ld      4, (RESERVED_STACK + 8)(SP)
         ld      3, (RESERVED_STACK + 0)(SP)
@@ -1147,10 +1157,9 @@ FUNCTION caml_runstack
         mr      SP, 27 /* OCaml stack */
 #if defined(WITH_THREAD_SANITIZER)
     /* Signal to TSan that we exit caml_runstack (no registers to save here) */
-        li      3, 0
         SWITCH_OCAML_TO_C
         TSAN_SETUP_C_CALL 0
-        Far_call(__tsan_func_exit)
+        Far_call(caml_tsan_func_exit_asm)
         TSAN_CLEANUP_AFTER_C_CALL 0
         SWITCH_C_TO_OCAML
 #endif
@@ -1178,12 +1187,10 @@ ENDFUNCTION caml_ml_array_bound_error
         .globl  caml_system__code_end
 caml_system__code_end:
 
-/* Frame table */
-
+/* Frametable - GC roots for callback */
+/* Uses the same naming convention as ocamlopt generated modules. */
         .section ".data"
-        .globl  caml_system.frametable
-        .type   caml_system.frametable, @object
-caml_system.frametable:
+OBJECT caml_system.frametable
         .quad   2               /* two descriptors */
         .quad   .Lcaml_retaddr + 4  /* return address into callback */
         .short  -1              /* negative frame size => use callback link */
@@ -1193,6 +1200,7 @@ caml_system.frametable:
         .short  -1              /* negative frame size => use callback link */
         .short  0               /* no roots here */
         .align 3
+ENDOBJECT caml_system.frametable
 
 /* TOC entries */
 
@@ -1211,5 +1219,4 @@ TOCENTRY(caml_array_bound_error_asm)
 TOCENTRYLABEL(fiber_exn_handler)
 TOCENTRYLABEL(trap_handler)
 
-/* Mark stack as non-executable */
-        .section .note.GNU-stack,"",%progbits
+        NONEXECSTACK_NOTE

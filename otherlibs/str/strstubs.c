@@ -124,12 +124,12 @@ static const unsigned char re_word_letters[32] = {
    Beginning of group #N is at 2N, end is at 2N+1.
    Take position = -1 when group wasn't matched. */
 
-static value re_alloc_groups(value re, unsigned char * starttxt,
+static value re_alloc_groups(value re, const unsigned char * starttxt,
                              struct re_group * groups)
 {
   value res;
   int n = Numgroups(re);
-  struct re_group * group;
+  const struct re_group * group;
 
   res = caml_alloc(n * 2, 0);
   for (int i = 0; i < n; i++) {
@@ -149,9 +149,9 @@ static value re_alloc_groups(value re, unsigned char * starttxt,
    Return Caml array of matched groups on success, 0 on failure. */
 
 static value re_match(value re,
-                      unsigned char * starttxt,
+                      const unsigned char * starttxt,
                       register unsigned char * txt,
-                      register unsigned char * endtxt,
+                      register const unsigned char * endtxt,
                       int accept_partial_match)
 {
   /* Fields of [re] */
@@ -212,7 +212,7 @@ static value re_match(value re,
       txt++;
       break;
     case STRING: {
-      unsigned char * s =
+      const unsigned char * s =
         (unsigned char *) String_val(Field(cpool, Arg(instr)));
       while ((c = *s++) != 0) {
         if (txt == endtxt) goto prefix_match;
@@ -222,7 +222,7 @@ static value re_match(value re,
       break;
     }
     case STRINGNORM: {
-      unsigned char * s =
+      const unsigned char * s =
         (unsigned char *) String_val(Field(cpool, Arg(instr)));
       while ((c = *s++) != 0) {
         if (txt == endtxt) goto prefix_match;
@@ -423,10 +423,9 @@ CAMLprim value re_partial_match(value re, value str, value pos)
 
 CAMLprim value re_search_forward(value re, value str, value startpos)
 {
-  unsigned char * starttxt = &Byte_u(str, 0);
+  const unsigned char * starttxt = &Byte_u(str, 0);
   unsigned char * txt = &Byte_u(str, Long_val(startpos));
   unsigned char * endtxt = &Byte_u(str, caml_string_length(str));
-  unsigned char * startchars;
   value res;
 
   if (txt < starttxt || txt > endtxt)
@@ -439,7 +438,7 @@ CAMLprim value re_search_forward(value re, value str, value startpos)
     } while (txt <= endtxt);
     return Atom(0);
   } else {
-    startchars =
+    const unsigned char * startchars =
       (unsigned char *) String_val(Field(Cpool(re), Startchars(re)));
     do {
       while (txt < endtxt && startchars[*txt] == 0) txt++;
@@ -455,8 +454,7 @@ CAMLprim value re_search_backward(value re, value str, value startpos)
 {
   unsigned char * starttxt = &Byte_u(str, 0);
   unsigned char * txt = &Byte_u(str, Long_val(startpos));
-  unsigned char * endtxt = &Byte_u(str, caml_string_length(str));
-  unsigned char * startchars;
+  const unsigned char * endtxt = &Byte_u(str, caml_string_length(str));
   value res;
 
   if (txt < starttxt || txt > endtxt)
@@ -469,7 +467,7 @@ CAMLprim value re_search_backward(value re, value str, value startpos)
     } while (txt >= starttxt);
     return Atom(0);
   } else {
-    startchars =
+    const unsigned char * startchars =
       (unsigned char *) String_val(Field(Cpool(re), Startchars(re)));
     do {
       while (txt > starttxt && startchars[*txt] == 0) txt--;

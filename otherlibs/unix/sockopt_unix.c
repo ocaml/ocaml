@@ -13,6 +13,7 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
@@ -180,7 +181,7 @@ CAMLexport value caml_unix_getsockopt_aux(const char * name,
   CAMLlocal1(err);
   value res;
   union option_value optval;
-  socklen_param_type optsize;
+  socklen_t optsize;
 
 
   switch (ty) {
@@ -214,7 +215,7 @@ CAMLexport value caml_unix_getsockopt_aux(const char * name,
     break;
   case TYPE_TIMEVAL:
     res = caml_copy_double((double) optval.tv.tv_sec
-                           + (double) optval.tv.tv_usec / 1e6);
+                           + (double) optval.tv.tv_usec / USEC_PER_SEC);
     break;
   case TYPE_UNIX_ERROR:
     if (optval.i == 0) {
@@ -235,8 +236,7 @@ CAMLexport value caml_unix_setsockopt_aux(const char * name,
                                      value socket, value val)
 {
   union option_value optval;
-  socklen_param_type optsize;
-  double f;
+  socklen_t optsize;
 
   switch (ty) {
   case TYPE_BOOL:
@@ -251,10 +251,8 @@ CAMLexport value caml_unix_setsockopt_aux(const char * name,
       optval.lg.l_linger = Int_val(Some_val(val));
     break;
   case TYPE_TIMEVAL:
-    f = Double_val(val);
+    optval.tv = caml_timeval_of_sec(Double_val(val));
     optsize = sizeof(optval.tv);
-    optval.tv.tv_sec = (int) f;
-    optval.tv.tv_usec = (int) (1e6 * (f - optval.tv.tv_sec));
     break;
   case TYPE_UNIX_ERROR:
   default:

@@ -172,7 +172,7 @@ struct core
     short number;
     short accessing_symbol;
     short nitems;
-    short items[1];
+    short items[/* nitems */]; /* flexible array member */
 };
 
 
@@ -184,7 +184,7 @@ struct shifts
     struct shifts *next;
     short number;
     short nshifts;
-    short shift[1];
+    short shift[/* nshifts */]; /* flexible array member */
 };
 
 
@@ -196,7 +196,7 @@ struct reductions
     struct reductions *next;
     short number;
     short nreds;
-    short rules[1];
+    short rules[/* nreds */]; /* flexible array member */
 };
 
 
@@ -227,7 +227,7 @@ extern char eflag;
 extern char big_endian;
 
 /* myname should be UTF-8 encoded */
-extern char *myname;
+extern const char *myname;
 extern char *cptr;
 extern char *line;
 extern int lineno;
@@ -238,7 +238,7 @@ extern int outline;
 extern char_os *action_file_name;
 extern char_os *entry_file_name;
 extern char_os *code_file_name;
-extern char_os *input_file_name;
+extern const char_os *input_file_name;
 extern char_os *output_file_name;
 extern char_os *text_file_name;
 extern char_os *verbose_file_name;
@@ -316,8 +316,8 @@ extern short final_state;
 /* global functions */
 
 extern char *allocate(unsigned int n);
-extern bucket *lookup(char *name);
-extern bucket *make_bucket(char *name);
+extern bucket *lookup(const char *name);
+extern bucket *make_bucket(const char *name);
 extern action *parse_actions(int stateno);
 extern action *get_shifts(int stateno);
 extern action *add_reductions(int stateno, action *actions);
@@ -327,7 +327,7 @@ extern void create_symbol_table (void);
 CAMLnoret extern void default_action_error (void);
 CAMLnoret extern void done (int k);
 CAMLnoret extern void entry_without_type (char *s);
-CAMLnoret extern void fatal (char *msg);
+CAMLnoret extern void fatal (const char *msg);
 extern void finalize_closure (void);
 extern void free_parser (void);
 extern void free_symbol_table (void);
@@ -339,7 +339,7 @@ extern void lr0 (void);
 extern void make_parser (void);
 CAMLnoret extern void no_grammar (void);
 CAMLnoret extern void no_space (void);
-CAMLnoret extern void open_error (char_os *filename);
+CAMLnoret extern void open_error (const char_os *filename);
 extern void output (void);
 extern void prec_redeclared (void);
 CAMLnoret extern void polymorphic_entry_point(char *s);
@@ -365,7 +365,7 @@ CAMLnoret extern void unterminated_string (int s_lineno, char *s_line, char *s_c
 CAMLnoret extern void unterminated_text (int t_lineno, char *t_line, char *t_cptr);
 CAMLnoret extern void used_reserved (char *s);
 extern void verbose (void);
-extern void write_section (char **section);
+extern void write_section (char const * const * section);
 CAMLnoret extern void invalid_literal(int s_lineno, char *s_line, char *s_cptr);
 
 #endif /* YACC_DEFS_H */

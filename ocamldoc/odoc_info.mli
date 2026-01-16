@@ -260,6 +260,7 @@ module Type :
         {
           rf_name : string ; (** Name of the field. *)
           rf_mutable : bool ; (** [true] if mutable. *)
+          rf_atomic : bool ; (** [true] if atomic. *)
           rf_type : Types.type_expr ; (** Type of the field. *)
           mutable rf_text : info option ; (** Optional description in the associated comment.*)
         }
@@ -285,6 +286,8 @@ module Type :
       | Type_record of record_field list
                    (** fields *)
       | Type_open (** Type is open *)
+      | Type_external of string
+                   (** Type is external, e.g. [type t = external "t"] *)
 
     type object_field = Odoc_type.object_field = {
       of_name : string ;

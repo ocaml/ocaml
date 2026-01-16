@@ -29,7 +29,6 @@
 #define CAML_RUNTIME_EVENTS_H
 
 #include "mlvalues.h"
-#include <stdint.h>
 
 #ifdef CAML_INSTR
 #define CAML_EV_ALLOC(s) caml_ev_alloc(s)
@@ -58,6 +57,8 @@ typedef enum {
 typedef enum {
     EV_GC
 } ev_event_type;
+
+/* See runtime_events.mli for event documentation */
 
 typedef enum {
     EV_RING_START,
@@ -118,7 +119,9 @@ typedef enum {
     EV_COMPACT,
     EV_COMPACT_EVACUATE,
     EV_COMPACT_FORWARD,
-    EV_COMPACT_RELEASE
+    EV_COMPACT_RELEASE,
+    EV_EMPTY_MINOR,
+    EV_MINOR_EPHE_CLEAN,
 } ev_runtime_phase;
 
 typedef enum {
@@ -126,19 +129,36 @@ typedef enum {
     EV_C_FORCE_MINOR_MAKE_VECT,
     EV_C_FORCE_MINOR_SET_MINOR_HEAP_SIZE,
     EV_C_FORCE_MINOR_MEMPROF,
+
     EV_C_MINOR_PROMOTED,
     EV_C_MINOR_ALLOCATED,
+
     EV_C_REQUEST_MAJOR_ALLOC_SHR,
     EV_C_REQUEST_MAJOR_ADJUST_GC_SPEED,
     EV_C_REQUEST_MINOR_REALLOC_REF_TABLE,
     EV_C_REQUEST_MINOR_REALLOC_EPHE_REF_TABLE,
     EV_C_REQUEST_MINOR_REALLOC_CUSTOM_TABLE,
+
     EV_C_MAJOR_HEAP_POOL_WORDS,
     EV_C_MAJOR_HEAP_POOL_LIVE_WORDS,
     EV_C_MAJOR_HEAP_LARGE_WORDS,
     EV_C_MAJOR_HEAP_POOL_FRAG_WORDS,
     EV_C_MAJOR_HEAP_POOL_LIVE_BLOCKS,
     EV_C_MAJOR_HEAP_LARGE_BLOCKS,
+
+    EV_C_MAJOR_HEAP_WORDS,
+    EV_C_MAJOR_ALLOCATED_WORDS,
+    EV_C_MAJOR_ALLOCATED_WORK,
+    EV_C_MAJOR_DEPENDENT_WORK,
+    EV_C_MAJOR_EXTRA_WORK,
+    EV_C_MAJOR_WORK_COUNTER,
+    EV_C_MAJOR_ALLOC_COUNTER,
+    EV_C_MAJOR_SLICE_TARGET,
+    EV_C_MAJOR_SLICE_BUDGET,
+
+    EV_C_MINOR_ALLOCATED_WORDS,
+    EV_C_MINOR_PROMOTED_WORDS
+
 } ev_runtime_counter;
 
 typedef enum {
@@ -161,6 +181,10 @@ typedef enum {
   E_CURSOR_POLL_BUSY = -8,
 } runtime_events_error;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Starts runtime_events. Needs to be called before
    [caml_runtime_events_create_cursor]. Needs the runtime lock held to call and
    will trigger a stop-the-world pause. */
@@ -182,11 +206,22 @@ CAMLextern void caml_runtime_events_resume(void);
    [0] otherwise. */
 CAMLextern int caml_runtime_events_are_active(void);
 
+#ifdef __cplusplus
+}
+#endif
+
 #ifdef CAML_INTERNALS
 
+/* Force alignment to prevent GCC note on i686. Standard C alignas
+   isn't enough to silence the note. */
+#if defined(__GNUC__) && __has_attribute(aligned)
+#undef CAMLalign
+#define CAMLalign(n) __attribute__ ((aligned(n)))
+#endif
+
 struct runtime_events_buffer_header {
-  atomic_uint_fast64_t ring_head;
-  atomic_uint_fast64_t ring_tail;
+  CAMLalign(8) atomic_uint_fast64_t ring_head;
+  CAMLalign(8) atomic_uint_fast64_t ring_tail;
   uint64_t padding[8]; /* Padding so headers don't share cache lines. Eight
                           words guarantees that buffer headers don't share
                           cache lines, even for non-aligned allocations. */
@@ -280,8 +315,10 @@ void caml_runtime_events_destroy(void);
    in a forked child */
 CAMLextern void caml_runtime_events_post_fork(void);
 
-/* Returns the location of the runtime_events for the current process if started
-   or NULL otherwise */
+/* Return the path of the ring buffers file of this process, or NULL
+   if runtime events are not enabled. This is used in the consumer to
+   read the ring buffers of the current process. Always returns a
+   freshly-allocated string. */
 CAMLextern char_os* caml_runtime_events_current_location(void);
 
 /* Functions for putting runtime data on to the runtime_events. These are all
@@ -322,4 +359,4 @@ CAMLextern value caml_runtime_events_user_resolve(char* event_name,
 
 #endif /* CAML_INTERNALS */
 
-#endif /*CAML_RUNTIME_EVENTS_H*/
+#endif /* CAML_RUNTIME_EVENTS_H */

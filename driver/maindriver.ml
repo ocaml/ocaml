@@ -32,12 +32,13 @@ let main argv ppf =
     if !Clflags.plugin then
       Compenv.fatal "-plugin is only supported up to OCaml 4.08.0";
     begin try
-      Compenv.process_deferred_actions
-        (ppf,
-         Compile.implementation,
-         Compile.interface,
-         ".cmo",
-         ".cma");
+      Compenv.process_deferred_actions {
+        log = ppf;
+        compile_implementation = Compile.implementation;
+        compile_interface = Compile.interface;
+        ocaml_mod_ext = ".cmo";
+        ocaml_lib_ext = ".cma";
+      }
     with Arg.Bad msg ->
       begin
         prerr_endline msg;
@@ -61,7 +62,7 @@ let main argv ppf =
             "Please specify at most one of -pack, -a, -c, -output-obj";
       | Some ((P.Parsing | P.Typing | P.Lambda) as p) ->
         assert (P.is_compilation_pass p);
-        Printf.ksprintf Compenv.fatal
+        Compenv.fatalf
           "Options -i and -stop-after (%s) \
            are  incompatible with -pack, -a, -output-obj"
           (String.concat "|"

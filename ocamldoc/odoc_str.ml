@@ -16,8 +16,7 @@
 (** The functions to get a string from different kinds of elements (types, modules, ...). *)
 
 module Name = Odoc_name
-let () = Printtyp.Naming_context.enable false
-module Printtyp = Printtyp.Compat
+let () = Out_type.Ident_names.enable false
 
 let string_of_variance t v =
   if ( t.Odoc_type.ty_kind = Odoc_type.Type_abstract ||
@@ -169,9 +168,10 @@ let string_of_record l =
   P.sprintf "{\n%s\n}" (
     String.concat "\n" (
       List.map (fun field ->
-          P.sprintf "   %s%s : %s;%s"
+          P.sprintf "   %s%s : %s%s;%s"
             (if field.M.rf_mutable then "mutable " else "") field.M.rf_name
             (Odoc_print.string_of_type_expr field.M.rf_type)
+            (if field.M.rf_atomic then " [@atomic]" else "")
             (field_doc_str field.M.rf_text)
         ) l
     )
@@ -244,6 +244,9 @@ let string_of_type t =
   | M.Type_record l ->
      P.sprintf "= %s{\n%s\n}\n" (if priv then "private " else "")
        (string_of_record l)
+
+  | M.Type_external name ->
+      P.sprintf "= external %S" name
  in
  P.sprintf "type %s %s %s%s%s" parameters_str (Name.simple t.M.ty_name)
    manifest_str type_kind_str

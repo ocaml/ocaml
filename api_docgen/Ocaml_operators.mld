@@ -9,27 +9,42 @@ are also listed as references.
 % Note: the tables below should be kept in sync with the one in
 % manual/src/refman/expr.etex .
 %
-\begin{tabular}{cc}
+\begin{tabular}{|l|c|}
 \hline
 Operator class                                       & Associativity \\
 \hline
-$!\ldots$ $\tilde{}\ldots$                                    &  --   \\
-$.\cdots()$ $.\cdots[]$ $.\cdots$\textbraceleft\textbraceright&  --   \\
-\#\ldots                                                      & left  \\
+\verb"!"\ldots\quad \verb"~"\ldots\quad                       &  --   \\
+\verb"."$\cdots$\verb"()"\quad
+  \verb"."$\cdots$\verb"[]"\quad
+  \verb"."$\cdots$\verb"{}"                                   &  --   \\
+\verb"#"\ldots                                                & left  \\
 function application                                          & left  \\
-- -.                                                          &  --   \\
-$**\ldots$ lsl lsr asr                                        & right \\
-$*\ldots$ /\ldots \%\ldots  mod land lor lxor                 & left  \\
-+\ldots -\ldots                                               & left  \\
-::                                                            & right \\
-@\ldots \textasciicircum\ldots                                & right \\
-=\ldots <\ldots >\ldots |\ldots \&\ldots \$\ldots !=          & left  \\
-\& \&\&                                                       & right \\
-or ||                                                         & right \\
-,                                                             &  --   \\
-<- :=                                                         & right \\
-if                                                            &  --   \\
-;                                                             & right \\
+\verb"-"\quad \verb"-."  \quad (prefix)                       &  --   \\
+\verb"**"\ldots\quad
+   \verb"lsl"\quad \verb"lsr"\quad \verb"asr"                 & right \\
+\verb"*"\ldots\quad
+   \verb"/"\ldots\quad
+   \verb"%"\ldots\quad
+   \verb"mod"\quad
+   \verb"land"\quad
+   \verb"lor"\quad
+   \verb"lxor"                                                & left  \\
+\verb"+"\ldots\quad \verb"-"\ldots                            & left  \\
+\verb"::"                                                     & right \\
+\verb"@"\ldots\quad \verb"^"\ldots                            & right \\
+\verb"="\ldots\quad
+  \verb"<"\ldots\quad
+  \verb">"\ldots\quad
+  \verb"|"\ldots\quad
+  \verb"&"\ldots\quad
+  \verb"$"\ldots\quad
+  \verb"!="\ldots                                             & left  \\
+\verb"&"\quad \verb"&&"                                       & right \\
+\verb"or"\quad \verb"||"                                      & right \\
+\verb","                                                      &  --   \\
+\verb"<-"\quad \verb":="                                      & right \\
+\verb"if"                                                     &  --   \\
+\verb";"                                                      & right \\
 \hline
 \end{tabular}
 %}

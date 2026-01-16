@@ -1,7 +1,8 @@
 (* TEST
  include runtime_events;
  include unix;
- libunix;
+ hasunix;
+ not-target-windows;
  {
    bytecode;
  }{

@@ -711,6 +711,10 @@ output:
  ... testing 'hello.ml' with 1 (script) => failed (Why should this pass in the first place)
 #+end_src
 
+In addition, the script can write lines of the form ~variable="string"~, or
+~variable+="string"~, or ~-variable~, to file ~${ocamltest_response}~, to set, append to,
+and unset ocamltest environment variables, respectively.
+
 * Key concepts
   :PROPERTIES:
   :CUSTOM_ID: concepts

@@ -69,6 +69,20 @@ val is_left : ('a, 'b) t -> bool
 val is_right : ('a, 'b) t -> bool
 (** [is_right (Left v)] is [false], [is_right (Right v)] is [true]. *)
 
+val get_left : ('a, 'b) t -> 'a
+(** [get_left e] is [v] if [e] is [Left v] and raise otherwise.
+
+    @raise Invalid_argument if [e] is [Right _].
+
+    @since 5.4 *)
+
+val get_right : ('a, 'b) t -> 'b
+(** [get_right e] is [v] if [e] is [Right v] and raise otherwise.
+
+    @raise Invalid_argument if [e] is [Left _].
+
+    @since 5.4 *)
+
 val find_left : ('a, 'b) t -> 'a option
 (** [find_left (Left v)] is [Some v], [find_left (Right _)] is [None] *)
 
@@ -91,6 +105,11 @@ val map :
 val fold : left:('a -> 'c) -> right:('b -> 'c) -> ('a, 'b) t -> 'c
 (** [fold ~left ~right (Left v)] is [left v], and
     [fold ~left ~right (Right v)] is [right v]. *)
+
+val retract : ('a, 'a) t -> 'a
+(** [retract (Left v)] is [v], and [retract (Right v)] is [v].
+
+    @since 5.4 *)
 
 val iter : left:('a -> unit) -> right:('b -> unit) -> ('a, 'b) t -> unit
 (** [iter ~left ~right (Left v)] is [left v], and

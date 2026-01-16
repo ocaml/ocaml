@@ -18,9 +18,10 @@
 
 #include "config.h"
 #include "mlvalues.h"
+#include "camlatomic.h"
 
-typedef signed char caml_ba_int8;
-typedef unsigned char caml_ba_uint8;
+typedef int8_t caml_ba_int8;
+typedef uint8_t caml_ba_uint8;
 typedef int16_t caml_ba_int16;
 typedef uint16_t caml_ba_uint16;
 
@@ -82,7 +83,7 @@ struct caml_ba_array {
   intnat num_dims;            /* Number of dimensions */
   intnat flags;  /* Kind of element array + memory layout + allocation status */
   struct caml_ba_proxy * proxy; /* The proxy for sub-arrays, or NULL */
-  intnat dim[]  /*[num_dims]*/; /* Size in each dimension */
+  intnat dim[/* num_dims */]; /* Size in each dimension */
 };
 
 /* Size of struct caml_ba_array, in bytes, without [dim] array */
@@ -109,13 +110,13 @@ CAMLextern uintnat caml_ba_num_elts(struct caml_ba_array * b);
 
 #ifdef CAML_INTERNALS
 
-CAMLextern int caml_ba_element_size[];
+CAMLextern const int caml_ba_element_size[];
 CAMLextern void caml_ba_finalize(value v);
 CAMLextern int caml_ba_compare(value v1, value v2);
 CAMLextern intnat caml_ba_hash(value v);
 CAMLextern void caml_ba_serialize(value, uintnat *, uintnat *);
 CAMLextern uintnat caml_ba_deserialize(void * dst);
 
-#endif
+#endif  /* CAML_INTERNALS */
 
 #endif /* CAML_BIGARRAY_H */
