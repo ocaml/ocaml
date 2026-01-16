@@ -339,18 +339,18 @@ val stable_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
    than the current implementation of {!sort}.
 *)
 
-val stable_sort_segment : ('a -> 'a -> int) -> 'a array -> int -> int -> unit
-(**[stable_sort_segment cmp a ofs len] sorts the segment of the array [a]
-   delimited by the start offset [ofs] and by the length [len]. The data
-   in this segment is sorted in increasing order according to the comparison
-   function [cmp]. The data outside of this segment is unaffected. The
+val stable_sort_sub : ('a -> 'a -> int) -> 'a array -> int -> int -> unit
+(**[stable_sort_sub cmp a pos len] sorts the subarray of the array [a]
+   delimited by the start position [pos] and by the length [len]. The data
+   in this subarray is sorted in increasing order according to the comparison
+   function [cmp]. The data outside of this subarray is unaffected. The
    sorting algorithm is stable; it is the same as in {!stable_sort}.
 
    @raise Invalid_argument if [pos] and [len] do not
    designate a valid subarray of [a]; that is, if
    [pos < 0], or [len < 0], or [pos + len > length a].
 
-   @since 5.3 *)
+   @since 5.5 *)
 
 val fast_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
 (** Same as {!sort} or {!stable_sort}, whichever is

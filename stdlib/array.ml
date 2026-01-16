@@ -385,7 +385,7 @@ let sort cmp a =
 
 
 let cutoff = 5
-let unsafe_stable_sort_segment cmp a init_ofs init_len =
+let unsafe_stable_sort_sub cmp a init_ofs init_len =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
     let src1r = src1ofs + src1len and src2r = src2ofs + src2len in
     let rec loop i1 s1 i2 s2 d =
@@ -437,13 +437,13 @@ let unsafe_stable_sort_segment cmp a init_ofs init_len =
     merge (base + l2) l1 t 0 l2 a base;
   end
 
-let stable_sort_segment cmp a ofs len =
+let stable_sort_sub cmp a ofs len =
   if ofs < 0 || len < 0 || ofs > length a - len
-  then invalid_arg "Array.stable_sort_segment"
-  else unsafe_stable_sort_segment cmp a ofs len
+  then invalid_arg "Array.stable_sort_sub"
+  else unsafe_stable_sort_sub cmp a ofs len
 
 let stable_sort cmp a =
-  unsafe_stable_sort_segment cmp a 0 (length a)
+  unsafe_stable_sort_sub cmp a 0 (length a)
 
 let fast_sort = stable_sort
 

@@ -19,7 +19,7 @@ let equal a1 a2 =
   assert (Array.length a1 = Array.length a2);
   Array.for_all2 (=) a1 a2
 
-(* [test a ofs len] tests [Array.stable_sort_segment a ofs len].
+(* [test a ofs len] tests [Array.stable_sort_sub a ofs len].
    [Array.sort] is used as a reference sorting algorithm. *)
 let test a ofs len =
   let segment = Array.sub a ofs len in
@@ -31,9 +31,9 @@ let test a ofs len =
       Array.sub a (ofs+len) (Array.length a - (ofs+len))
     ]
   in
-  Array.stable_sort_segment cmp a ofs len;
+  Array.stable_sort_sub cmp a ofs len;
   if not (equal a expected) then
-    printf "Array.stable_sort_segment: FAILURE (array length %d, offset %d, segment length %d)\n%!"
+    printf "Array.stable_sort_sub: FAILURE (array length %d, offset %d, segment length %d)\n%!"
       (Array.length a) ofs len
 
 (* One set of tests, with random segments of a random array. *)
