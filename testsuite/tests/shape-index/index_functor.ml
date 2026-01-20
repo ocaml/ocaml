@@ -35,3 +35,11 @@ module G (X : sig type t = int val x : t module M : S end) = struct
 
   type u = Id (X).t
 end
+
+type e = ..
+module I (X: sig type s = A | B of { r:unit } type r = { x:unit } type e += E  end) = struct
+  let x = X.A
+  let y = X.B { r = () }
+  let z = { X.x = () }
+  let w = X.E
+end

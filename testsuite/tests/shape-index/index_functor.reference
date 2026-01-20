@@ -1,4 +1,24 @@
 Indexed shapes:
+Resolved: Index_functor.32:
+  X (File "index_functor.ml", line 44, characters 10-11)
+Local opaque: [L]Index_functor.9:
+  X.E (File "index_functor.ml", line 44, characters 10-13)
+Resolved: Index_functor.32:
+  X (File "index_functor.ml", line 43, characters 12-13)
+Local opaque: [L]Index_functor.8:
+  X.x (File "index_functor.ml", line 43, characters 12-15)
+Local opaque: [L]Index_functor.7:
+  r (File "index_functor.ml", line 42, characters 16-17)
+Resolved: Index_functor.32:
+  X (File "index_functor.ml", line 42, characters 10-11)
+Local opaque: [L]Index_functor.6:
+  X.B (File "index_functor.ml", line 42, characters 10-13)
+Resolved: Index_functor.32:
+  X (File "index_functor.ml", line 41, characters 10-11)
+Local opaque: [L]Index_functor.5:
+  X.A (File "index_functor.ml", line 41, characters 10-13)
+Resolved: Index_functor.19:
+  e (File "index_functor.ml", line 40, characters 71-72)
 Resolved: Index_functor.7:
   Id (File "index_functor.ml", line 36, characters 11-13)
 Resolved: Index_functor.13:
@@ -51,6 +71,11 @@ Index_functor.10 <-> Index_functor.5
 [L]Index_functor.2 <- Index_functor.8
 [L]Index_functor.3 <- Index_functor.12
 [L]Index_functor.4 <- Index_functor.5
+[L]Index_functor.5 <- Index_functor.21
+[L]Index_functor.6 <- Index_functor.23
+[L]Index_functor.7 <- Index_functor.22
+[L]Index_functor.8 <- Index_functor.30
+[L]Index_functor.9 <- Index_functor.31
 
 Uid of decls:
 Index_functor.1: M (File "index_functor.ml", line 18, characters 39-40)
@@ -69,3 +94,16 @@ Index_functor.15: y (File "index_functor.ml", line 28, characters 6-7)
 Index_functor.16: Y (File "index_functor.ml", line 30, characters 9-10)
 Index_functor.17: u (File "index_functor.ml", line 36, characters 7-8)
 Index_functor.18: G (File "index_functor.ml", line 26, characters 7-8)
+Index_functor.19: e (File "index_functor.ml", line 39, characters 5-6)
+Index_functor.20: s (File "index_functor.ml", line 40, characters 22-23)
+Index_functor.21: A (File "index_functor.ml", line 40, characters 26-27)
+Index_functor.22: r (File "index_functor.ml", line 40, characters 37-38)
+Index_functor.23: B (File "index_functor.ml", line 40, characters 30-31)
+Index_functor.29: r (File "index_functor.ml", line 40, characters 51-52)
+Index_functor.30: x (File "index_functor.ml", line 40, characters 57-58)
+Index_functor.31: E (File "index_functor.ml", line 40, characters 76-77)
+Index_functor.33: x (File "index_functor.ml", line 41, characters 6-7)
+Index_functor.35: y (File "index_functor.ml", line 42, characters 6-7)
+Index_functor.36: z (File "index_functor.ml", line 43, characters 6-7)
+Index_functor.37: w (File "index_functor.ml", line 44, characters 6-7)
+Index_functor.38: I (File "index_functor.ml", line 40, characters 7-8)

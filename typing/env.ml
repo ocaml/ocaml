@@ -1187,7 +1187,19 @@ and find_cstr path name env =
   | Type_record _ | Type_abstract _ | Type_open | Type_external _ ->
       raise Not_found
 
-
+let find_type_component_uid path env =
+  match path with
+  | Pident _ | Pdot _ | Papply _ | Pextra_ty (_,Pext_ty) -> raise Not_found
+  | Pextra_ty (ty, Pcstr_ty name) ->
+     let tda = find_type_data ty env in
+     match tda.tda_descriptions with
+     | Type_variant (cstrs, _) ->
+        let cstr = List.find (fun cstr -> cstr.cstr_name = name) cstrs in
+        cstr.cstr_uid
+     | Type_record (fields,_) ->
+        let field = List.find (fun f -> f.lbl_name = name) fields in
+        field.lbl_uid
+     | _ -> raise Not_found
 
 let find_modtype_lazy path env =
   match path with
@@ -1416,7 +1428,13 @@ let find_uid namespace path env =
         let path = normalize_value_path None env path in
         let vd = find_value path env in
         vd.val_uid
-      | Type | Extension_constructor | Constructor | Label ->
+      | Extension_constructor ->
+         let cda = find_extension_full path env in
+         cda.cda_description.cstr_uid
+      | Constructor | Label ->
+         let path = normalize_type_path None env path in
+         find_type_component_uid path env
+      | Type ->
         let path = normalize_type_path None env path in
         let td = find_type path env in
         td.type_uid
