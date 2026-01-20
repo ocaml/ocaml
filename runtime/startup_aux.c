@@ -102,15 +102,8 @@ void caml_parse_ocamlrunparam(void)
 
   char_os *opt_os = caml_secure_getenv (T("OCAMLRUNPARAM"));
   if (opt_os == NULL) opt_os = caml_secure_getenv (T("CAMLRUNPARAM"));
-#ifdef _WIN32
-  char *tofree, *opt;
-  if (opt_os)
-    tofree = opt = caml_stat_strdup_noexc_of_utf16(opt_os);
-  else
-    tofree = opt = NULL;
-#else
-  char *opt = opt_os;
-#endif
+  char *opt_tofree = opt_os ? caml_stat_strdup_noexc_of_os(opt_os) : NULL;
+  char *opt = opt_tofree;
 
   if (opt != NULL){
     while (*opt != '\0'){
@@ -163,9 +156,7 @@ void caml_parse_ocamlrunparam(void)
     }
   }
 
-#ifdef _WIN32
-  caml_stat_free(tofree);
-#endif
+  caml_stat_free(opt_tofree);
 
   /* Validate */
   if (params.max_domains < 1) {
