@@ -37,7 +37,16 @@ module G (X : sig type t = int val x : t module M : S end) = struct
 end
 
 type e = ..
-module I (X: sig type s = A | B of { r:unit } type r = { x:unit } type e += E  end) = struct
+module type T = sig
+  type s =
+    | A
+    | B of { r:unit }
+  type r =
+    { x:unit }
+  type e +=
+      | E
+end
+module I (X:T) = struct
   let x = X.A
   let y = X.B { r = () }
   let z = { X.x = () }
