@@ -664,7 +664,8 @@ external ramp_down : suspended_collection_work -> unit
     OCAMLRUNPARAM, using the following syntax:
 
         OCAMLRUNPARAM='Xfoo=42'
-    *)
+
+    Additionally, OCAMLRUNPARAM=Xhelp will show the available GC tweaks. *)
 module Tweak : sig
   (** Change a parameter.
       Raises Invalid_argument if no such parameter exists *)

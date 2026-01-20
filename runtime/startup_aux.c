@@ -136,27 +136,23 @@ void caml_parse_ocamlrunparam(void)
       case 'W': scanmult (opt, &caml_runtime_warnings); break;
       case 'X': {
         char *name = opt;
-        while (*opt != '\0') {
-          if (*opt == '=') {
-            if (opt - name == strlen("help") &&
-                memcmp(name, "help", opt - name) == 0) {
-              fprintf(stderr, "Known GC tweaks:\n");
-              caml_print_gc_tweaks();
-            } else {
-              uintnat* p = caml_lookup_gc_tweak(name, opt - name);
-              if (p == NULL) {
-                fprintf(stderr, "Ignored unknown GC tweak '%.*s'. "
-                        "Use 'Xhelp=1' to list known tweaks\n",
-                        (int)(opt - name), name);
-              } else {
-                scanmult(opt, p);
-              }
-            }
-            break;
+        while (*opt != '=' && *opt != ',' && *opt != '\0') opt++;
+        if (opt - name == strlen("help") &&
+            memcmp(name, "help", opt - name) == 0) {
+          fprintf(stderr, "Known GC tweaks:\n");
+          caml_print_gc_tweaks();
+        } else {
+          atomic_uintnat* p = caml_lookup_gc_tweak(name, opt - name);
+          if (p == NULL) {
+            fprintf(stderr, "Ignored unknown GC tweak '%.*s'. "
+                    "Use 'Xhelp' to list known tweaks\n",
+                    (int)(opt - name), name);
           } else {
-            opt++;
+            scanmult(opt, &val);
+            *p = val;
           }
         }
+
         break;
       }
       case ',': continue;

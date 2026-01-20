@@ -49,7 +49,7 @@ extern _Atomic uintnat caml_custom_major_ratio; /* see custom.c */
 extern _Atomic uintnat caml_custom_minor_ratio; /* see custom.c */
 extern _Atomic uintnat caml_custom_minor_max_bsz; /* see custom.c */
 extern uintnat caml_minor_heap_max_wsz; /* see domain.c */
-extern uintnat caml_mark_stack_prune_factor; /* see major_gc.c */
+extern atomic_uintnat caml_mark_stack_prune_factor; /* see major_gc.c */
 
 CAMLprim value caml_gc_quick_stat(value v)
 {
@@ -403,9 +403,7 @@ CAMLprim value caml_runtime_parameters (value unit)
        /* W */ caml_runtime_warnings,
        /* X */ tweaks ? tweaks : no_tweaks
        );
-  if (tweaks) {
-    free(tweaks);
-  }
+  free(tweaks);
   return res;
 #undef F_Z
 #undef F_S
@@ -507,11 +505,13 @@ CAMLprim value caml_ml_gc_ramp_down(value work) {
 
 struct gc_tweak {
   const char* name;
-  uintnat* ptr;
+  atomic_uintnat* ptr;
   uintnat initial_value;
 };
 static struct gc_tweak gc_tweaks[] = {
-  { "mark_stack_prune_factor", &caml_mark_stack_prune_factor, 0 }
+#define TWEAK(v) { #v, &caml_##v, 0 }
+  TWEAK(mark_stack_prune_factor),
+#undef TWEAK
 };
 enum {N_GC_TWEAKS = sizeof(gc_tweaks)/sizeof(gc_tweaks[0])};
 
@@ -531,7 +531,7 @@ void caml_print_gc_tweaks(void)
   }
 }
 
-uintnat* caml_lookup_gc_tweak(const char* name, uintnat len)
+atomic_uintnat* caml_lookup_gc_tweak(const char* name, uintnat len)
 {
   for (int i = 0; i < N_GC_TWEAKS; i++) {
     if (strlen(gc_tweaks[i].name) == len &&
@@ -545,8 +545,8 @@ uintnat* caml_lookup_gc_tweak(const char* name, uintnat len)
 CAMLprim value caml_gc_tweak_get(value name)
 {
   CAMLparam1(name);
-  uintnat* p = caml_lookup_gc_tweak(String_val(name),
-                                    caml_string_length(name));
+  atomic_uintnat* p = caml_lookup_gc_tweak(String_val(name),
+                                           caml_string_length(name));
   if (p == NULL)
     caml_invalid_argument("Gc.Tweak: parameter not found");
   CAMLreturn (Val_long((long)*p));
@@ -555,8 +555,8 @@ CAMLprim value caml_gc_tweak_get(value name)
 CAMLprim value caml_gc_tweak_set(value name, value v)
 {
   CAMLparam2(name, v);
-  uintnat* p = caml_lookup_gc_tweak(String_val(name),
-                                    caml_string_length(name));
+  atomic_uintnat* p = caml_lookup_gc_tweak(String_val(name),
+                                           caml_string_length(name));
   if (p == NULL)
     caml_invalid_argument("Gc.Tweak: parameter not found");
   *p = (uintnat)Long_val(v);
@@ -567,11 +567,12 @@ CAMLprim value caml_gc_tweak_list_active(value unit)
 {
   CAMLparam1(unit);
   CAMLlocal3(list, name, pair);
+  list = Val_emptylist;
   for (int i = N_GC_TWEAKS - 1; i >= 0; i--) {
     if (*gc_tweaks[i].ptr != gc_tweaks[i].initial_value) {
       name = caml_copy_string(gc_tweaks[i].name);
       pair = caml_alloc_2(0, name, Val_long((long)*gc_tweaks[i].ptr));
-      list = caml_alloc_2(0, pair, list);
+      list = caml_alloc_2(Tag_cons, pair, list);
     }
   }
   CAMLreturn(list);

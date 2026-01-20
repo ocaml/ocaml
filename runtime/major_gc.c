@@ -46,7 +46,7 @@ _Atomic uintnat caml_percent_free = Percent_free_def;
 
 /* The mark stack will be pruned if it grows bigger than
    1/caml_mark_stack_prune_factor of the domain's major heap size */
-uintnat caml_mark_stack_prune_factor = 32;
+atomic_uintnat caml_mark_stack_prune_factor = 32;
 
 /* This variable is only written with the world stopped, so it need not be
    atomic */
