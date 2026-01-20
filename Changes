@@ -175,6 +175,10 @@ OCaml 5.5.0
   occur when concurrent threads or processes were trying to create socketpairs.
   (Jessie Grosen, review by Antonin Décimo and Nicolás Ojeda Bär)
 
+- #14365: Add an Idle phase to the GC for better performance on small
+  heaps and for a smooth start at program launch and after a forced major GC.
+  (Damien Doligez, review by Stephen Dolan and Nick Barnes)
+
 - #14494: Consistently use macro to test header promotion.
   (Nick Barnes, review by Gabriel Scherer)
 

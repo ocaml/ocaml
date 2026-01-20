@@ -169,10 +169,6 @@ CAMLprim value caml_gc_set(value v)
   uintnat newpf = norm_pfree (Long_val (Field (v, 2)));
   uintnat new_verb_gc = Long_val (Field (v, 3));
   uintnat new_max_stack_size = Long_val (Field (v, 5));
-  uintnat new_custom_maj = norm_custom_maj (Long_val (Field (v, 8)));
-  uintnat new_custom_min = norm_custom_min (Long_val (Field (v, 9)));
-  uintnat new_custom_sz = Long_val (Field (v, 10));
-  uintnat new_small_limit = Long_val (Field (v, 11));
 
   CAML_EV_BEGIN(EV_EXPLICIT_GC_SET);
 
@@ -188,6 +184,9 @@ CAMLprim value caml_gc_set(value v)
 
   /* These fields were added in 4.08.0. */
   if (Wosize_val (v) >= 11){
+    uintnat new_custom_maj = norm_custom_maj (Long_val (Field (v, 8)));
+    uintnat new_custom_min = norm_custom_min (Long_val (Field (v, 9)));
+    uintnat new_custom_sz = Long_val (Field (v, 10));
     if (new_custom_maj != atomic_load_relaxed(&caml_custom_major_ratio)){
       atomic_store_relaxed(&caml_custom_major_ratio, new_custom_maj);
       CAML_GC_MESSAGE(PARAMS, "New custom major ratio: %" CAML_PRIuNAT "%%\n",
@@ -207,6 +206,7 @@ CAMLprim value caml_gc_set(value v)
   }
   /* This field was added in 5.5.0 */
   if (Wosize_val (v) >= 12){
+    uintnat new_small_limit = Long_val (Field (v, 11));
     if (new_small_limit != caml_small_heap_limit){
       caml_small_heap_limit = new_small_limit;
       CAML_GC_MESSAGE(PARAMS, "New small heap limit: %" CAML_PRIuNAT "%%\n",
@@ -259,7 +259,7 @@ static caml_result gc_major_res(int force_compaction)
   caml_gc_log ("Major GC cycle requested");
   caml_empty_minor_heaps_once();
   caml_finish_major_cycle(force_compaction);
-  caml_reset_major_pacing(0);
+  caml_reset_major_pacing(false);
   caml_result result = caml_process_pending_actions_res();
   CAML_EV_END(EV_EXPLICIT_GC_MAJOR);
   return result;
@@ -280,7 +280,7 @@ static caml_result gc_full_major_res(void)
      currently-unreachable object to be collected. */
   for (int i = 0; i < 3; i++) {
     caml_finish_major_cycle(0);
-    caml_reset_major_pacing(0);
+    caml_reset_major_pacing(i == 2);
     caml_result res = caml_process_pending_actions_res();
     if (caml_result_is_exception(res)) return res;
   }
@@ -316,7 +316,7 @@ CAMLprim value caml_gc_compaction(value v)
      why this needs three iterations. */
   for (int i = 0; i < 3; i++) {
     caml_finish_major_cycle(i == 2);
-    caml_reset_major_pacing(0);
+    caml_reset_major_pacing(i == 2);
     result = caml_process_pending_actions_res();
     if (caml_result_is_exception(result)) break;
   }
@@ -354,7 +354,7 @@ void caml_init_gc (void)
   caml_fiber_wsz = (Stack_threshold * 2) / sizeof(value);
   atomic_store_relaxed(&caml_percent_free,
                        norm_pfree (caml_params->init_percent_free));
-  caml_small_heap_limit = norm_pfree (caml_params->init_small_heap_limit);
+  caml_small_heap_limit = caml_params->init_small_heap_limit;
 
   atomic_store_relaxed(&caml_custom_major_ratio,
                        norm_custom_maj (caml_params->init_custom_major_ratio));

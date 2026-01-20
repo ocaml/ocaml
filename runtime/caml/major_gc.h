@@ -56,7 +56,7 @@ void caml_init_major_pacing (void);
  * For use at times when we have disturbed the usual pacing, for
  * example, after any synchronous major collection.
  */
-void caml_reset_major_pacing(bool);
+void caml_reset_major_pacing(bool add_overhead);
 #ifdef DEBUG
 int caml_mark_stack_is_empty(void);
 #endif

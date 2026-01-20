@@ -703,14 +703,14 @@ static void adopt_orphaned_work (int expected_status)
 static atomic_uintnat alloc_counter;
 static atomic_uintnat work_counter;
 
-/* Value of work_counter at the lastest color rotation (start of sweep)
+/* Value of work_counter at the latest color rotation (start of sweep)
    and number of allocations done during the latest sweep phase.
    Not atomic because these are only accessed in stw. */
 static uintnat work_counter_at_sweep_start;
 static uintnat latest_sweep_allocs;
 
 /* Small-memory mode: at the end of sweeping, we will not switch to
-   Phase_mark_and_sweep_main (and thus stay in idle mode) until
+   Phase_mark_and_sweep_main (and thus will stay in idle mode) until
    work_counter has reached this value. */
 static atomic_uintnat work_counter_min_before_mark;
 
@@ -773,7 +773,7 @@ void caml_init_major_pacing (void)
  *
  * add_overhead is true if the latest collection was synchronous
  * (with caml_gc_full_major) and thus the sweep phase counted only the
- * live data.
+ * live data (with no floating garbage).
  */
 
 void caml_reset_major_pacing(bool add_overhead)
@@ -2057,16 +2057,11 @@ static void major_collection_slice(intnat howmuch,
     }else{
       /* Idle phase: do nothing but commit to the work counter. */
       intnat todo = diffmod (alloc_counter, wkcnt);
-      if (todo < idle){
-        caml_gc_log("Idle phase: %" CAML_PRIdNAT, todo);
-        commit_major_slice_work (todo);
-        /* Idle phase is not finished. */
-      }else{
-        caml_gc_log("Idle phase: %" CAML_PRIdNAT " [finished]", idle);
-        commit_major_slice_work (idle);
-        /* Idle phase is finished now. */
-        request_mark_phase ();
-      }
+      todo = min2(todo, idle);
+      caml_gc_log("Idle phase: %" CAML_PRIdNAT "%s", todo,
+                  todo == idle ? " [finished]" : "");
+      commit_major_slice_work (todo);
+      if (todo == idle) request_mark_phase ();
     }
   }
 

@@ -215,7 +215,7 @@ typedef uintptr_t uintnat;
 /* Default "small heap mode" setting for the major GC.  The GC will
    add an Idle phase when the sweeping work for a cycle is smaller than
    this limit. */
-#define Small_heap_limit_def Minor_heap_def
+#define Small_heap_limit_def 262144
 
 /* Default setting for the major GC slice smoothing window: 1
    (i.e. no smoothing)

@@ -249,7 +249,7 @@ type control =
         start-up and for programs with small amounts of live data.
         This parameter is also an upper bound on the amount of overhead
         added by the idle phase.
-        Default: same as [minor_heap_size].
+        Default: 256k (words).
         @since 5.5 *)
   }
 (** The GC parameters are given as a [control] record.  Note that
