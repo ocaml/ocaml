@@ -37,3 +37,12 @@ let protect ~(finally : unit -> unit) work =
       let work_bt = Printexc.get_raw_backtrace () in
       finally_no_exn () ;
       Printexc.raise_with_backtrace work_exn work_bt
+
+exception Todo
+
+let () =
+  Printexc.register_printer @@ function
+  | Todo -> Some "Fun.Todo"
+  | _ -> None
+
+let todo () = raise Todo

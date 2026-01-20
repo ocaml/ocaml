@@ -1,0 +1,42 @@
+(* TEST
+ expect;
+*)
+
+
+Printexc.record_backtrace true;;
+
+Fun.todo ();;
+[%%expect {|
+- : unit = ()
+Exception: Fun.Todo
+Called from unknown location
+Called from unknown location
+|}];;
+
+
+Printexc.record_backtrace false;;
+
+[@@@ocaml.alert "+todo"];;
+
+Fun.todo ();;
+[%%expect {|
+- : unit = ()
+Line 5, characters 0-8:
+5 | Fun.todo ();;
+    ^^^^^^^^
+Alert todo: Stdlib.Fun.todo
+call to Fun.todo (will fail at runtime)
+
+Exception: Fun.Todo
+|}];;
+
+[@@@ocaml.alert "++todo"];;
+
+Fun.todo ();;
+[%%expect {|
+Line 3, characters 0-8:
+3 | Fun.todo ();;
+    ^^^^^^^^
+Error (alert todo): Stdlib.Fun.todo
+call to Fun.todo (will fail at runtime)
+|}];;
