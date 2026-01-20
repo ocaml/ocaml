@@ -1421,37 +1421,37 @@ let find_module path env =
 let find_module_lazy path env =
   find_module_lazy ~alias:false path env
 
-let find_uid namespace path env =
+let find_uid (namespace: Shape.Sig_component_kind.t) path env =
+  let path = match namespace with
+    | Value | Class -> normalize_value_path None env path
+    | Type | Constructor | Label | Extension_constructor | Class_type ->
+       normalize_type_path None env path
+    | Module -> normalize_module_path None env path
+    | Module_type -> normalize_modtype_path env path
+  in
   try
     Option.some @@ match (namespace : Shape.Sig_component_kind.t) with
       | Value ->
-        let path = normalize_value_path None env path in
         let vd = find_value path env in
         vd.val_uid
       | Extension_constructor ->
          let cda = find_extension_full path env in
          cda.cda_description.cstr_uid
       | Constructor | Label ->
-         let path = normalize_type_path None env path in
          find_type_component_uid path env
       | Type ->
-        let path = normalize_type_path None env path in
         let td = find_type path env in
         td.type_uid
       | Module ->
-        let path = normalize_module_path None env path in
         let md = find_module path env in
         md.md_uid
       | Module_type ->
-        let path = normalize_modtype_path env path in
         let mtd = find_modtype path env in
         mtd.mtd_uid
       | Class ->
-        let path = normalize_value_path None env path in
         let cty = find_class path env in
         cty.cty_uid
       | Class_type ->
-        let path = normalize_type_path None env path in
         let clty = find_cltype path env in
         clty.clty_uid
   with Not_found -> None
