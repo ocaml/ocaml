@@ -539,8 +539,9 @@ Working version
 - #14457: Handle qualified `M.{ x }` patterns in untypeast
   (Basile Clément, review by Florian Angeletti)
 
-- #14120: Associate Uids to items that don't have a concrete definition
-  (Ulysse Gérard, review by Florian Angeletti)
+- #14120, #14474, #14476: Associate Uids to items that don't have a concrete
+  definition
+  (Ulysse Gérard, review by Florian Angeletti and Gabriel Scherer)
 
 ### Build system:
 
