@@ -22,6 +22,8 @@ open Reg
 open Arch
 open Mach
 
+let fp = Config.with_frame_pointers
+
 (* Registers available for register allocation *)
 
 (* Integer register map:
@@ -36,7 +38,8 @@ open Mach
     24 - 28             general purpose, preserved by C
     29                  trap pointer
     30                  domain state pointer
-    31                  general purpose, preserved by C
+    31                  frame pointer when enabled (--enable-frame-pointers),
+                        otherwise general purpose
   Floating-point register map:
     0                   temporary
     1 - 13              function arguments and results
@@ -47,8 +50,10 @@ let int_reg_name =
   Array.append
   [| "3"; "4"; "5"; "6"; "7"; "8"; "9"; "10";           (* 0 - 7 *)
      "14"; "15"; "16"; "17"; "18"; "19"; "20"; "21";    (* 8 - 15 *)
-     "22"; "24"; "25"; "26"; "27"; "28" |]              (* 16 - 21, r23 reserved for ALLOC_PTR *)
-  [| "31" |]                                            (* 22: r31, freed by ALLOC_PTR move to r23 *)
+     (* 16 - 21, r23 reserved for ALLOC_PTR *)
+     "22"; "24"; "25"; "26"; "27"; "28" |]
+  (* r31 allocatable unless used as frame pointer *)
+  (if fp then [||] else [| "31" |])
 
 let float_reg_name =
   [| "0"; "1"; "2"; "3"; "4"; "5"; "6"; "7";
@@ -63,7 +68,7 @@ let register_class r =
   | Val | Int | Addr -> 0
   | Float -> 1
 
-let num_available_registers = [| Array.length int_reg_name; 32 |]  (* r23 reserved for ALLOC_PTR *)
+let num_available_registers = [| Array.length int_reg_name; 32 |]
 
 let first_available_register = [| 0; 100 |]
 
@@ -223,7 +228,7 @@ let int_dwarf_reg_numbers =
      14; 15; 16; 17; 18; 19; 20; 21;
      22; 24; 25; 26; 27; 28;  (* r23 reserved for ALLOC_PTR *)
   |]
-  [| 31 |]
+  (if fp then [||] else [| 31 |])
 
 let float_dwarf_reg_numbers =
   [| 32; 33; 34; 35; 36; 37; 38; 39;
@@ -266,14 +271,14 @@ let destroyed_at_reloadretaddr = [| phys_reg 11 |]
 
 let safe_register_pressure = function
     Iextcall _ -> 13
-  | _ -> Array.length int_reg_name  (* r23 reserved for ALLOC_PTR *)
+  | _ -> Array.length int_reg_name
 
 let max_register_pressure =
   let n = Array.length int_reg_name in
   function
     Iextcall _ -> [| 13; 18 |]
   | Iintoffloat | Istore(Single, _, _) -> [| n; 31 |]
-  | _ -> [| n; 32 |]  (* r23 reserved for ALLOC_PTR *)
+  | _ -> [| n; 32 |]
 
 (* Calling the assembler *)
 

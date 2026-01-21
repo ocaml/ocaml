@@ -127,6 +127,7 @@ runtime/sak.c            typo.non-ascii
 tools/opam/process.sh    typo.non-ascii
 
 testsuite/tests/**                                      typo.missing-header typo.long-line=may
+testsuite/tests/basic-manyargs/outgoing_stack_args_.c   typo.missing-header=false
 testsuite/tests/lib-bigarray-2/bigarrf.f                typo.tab linguist-language=Fortran
 testsuite/tests/lib-unix/win-stat/fakeclock.c           typo.missing-header=false
 testsuite/tests/misc-unsafe/almabench.ml                typo.long-line

@@ -1,45 +1,51 @@
-(* TEST *)
+(* TEST
+ modules = "outgoing_stack_args_.c";
+*)
 
 (* Regression test for outgoing stack arguments.
 
-   On targets that pass the first few arguments in registers (e.g. PowerPC
-   ELFv2: 8 integer / 13 float argument registers), a call with more
-   arguments spills the surplus to an outgoing-argument area on the stack.
-   The caller must reserve that area *in addition to* the ABI's fixed
-   bottom-of-frame linkage area, otherwise the outgoing arguments overflow
-   into the caller's own frame.
+   A call whose arguments do not all fit in registers passes the surplus in
+   an outgoing-argument area that the caller allocates below its own frame.
+   If the caller reserves the wrong amount, the arguments it writes there
+   overflow into its own frame.  On POWER, [Istackoffset] must reserve the
+   ELFv2 linkage area in addition to the arguments themselves, since
+   [slot_offset] places outgoing arguments above it.
 
-   This exercises calls that force outgoing integer stack slots and checks
-   that the results are correct and that live locals are preserved across
-   the calls.  On PowerPC the overflow is latent for ordinary execution
-   (the clobbered slots are the caller's linkage area, which non-frame-
-   pointer code neither reads nor relies on); the frame-pointers test suite
-   exercises the observable path. *)
+   External calls are what reach this path in practice: they follow the C
+   ABI, whose register budget is small and has no escape hatch.  (An
+   OCaml-to-OCaml call is not enough: arguments that do not fit in registers
+   go into domain-state slots first -- 64 of them, see
+   [Proc.size_domainstate_args] -- so such a call would need more than 80
+   arguments before it used the stack at all.)
 
-let[@inline never] sum10 a b c d e f g h i j =
-  a + b + c + d + e + f + g + h + i + j
+   Each call below is made with values held live across it, so an
+   overflowing outgoing-argument area shows up as a wrong result. *)
 
-let[@inline never] sum16 a b c d e f g h i j k l m n o p =
-  a + b + c + d + e + f + g + h + i + j + k + l + m + n + o + p
+external stack_args_ints :
+  int -> int -> int -> int -> int -> int ->
+  int -> int -> int -> int -> int -> int -> int
+  = "stack_args_ints_byte" "stack_args_ints"
 
-let[@inline never] mixed a b c d e f g h i (x : float) =
-  float_of_int (a + b + c + d + e + f + g + h + i) +. x
-
-(* Recursion through a many-argument function, so successive frames each
-   carry an outgoing-argument region. *)
-let[@inline never] rec countdown n acc a b c d e f g h i j =
-  if n = 0 then acc + a + b + c + d + e + f + g + h + i + j
-  else countdown (n - 1) (acc + 1) a b c d e f g h i j
+external stack_args_floats :
+  (float [@unboxed]) -> (float [@unboxed]) -> (float [@unboxed]) ->
+  (float [@unboxed]) -> (float [@unboxed]) -> (float [@unboxed]) ->
+  (float [@unboxed]) -> (float [@unboxed]) -> (float [@unboxed]) ->
+  (float [@unboxed]) -> (float [@unboxed]) -> (float [@unboxed]) ->
+  (float [@unboxed]) -> (float [@unboxed]) -> (float [@unboxed]) ->
+  (float [@unboxed]) -> (float [@unboxed])
+  = "stack_args_floats_byte" "stack_args_floats"
 
 let () =
-  let x = Sys.opaque_identity 1000 in
-  let y = Sys.opaque_identity 2000 in
-  let s10 = sum10 1 2 3 4 5 6 7 8 9 10 in
-  let s16 = sum16 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 in
-  let m = mixed 1 2 3 4 5 6 7 8 9 0.5 in
-  let c = countdown 100 0 1 2 3 4 5 6 7 8 9 10 in
-  (* Live locals must survive the stack-argument calls. *)
-  assert (x = 1000);
-  assert (y = 2000);
-  Printf.printf "s10=%d s16=%d mixed=%.1f countdown=%d x=%d y=%d\n"
-    s10 s16 m c x y
+  let a = Sys.opaque_identity 1000 in
+  let b = Sys.opaque_identity 2000 in
+  let c = Sys.opaque_identity 3000 in
+  let d = Sys.opaque_identity 4000 in
+  let ints = stack_args_ints 1 2 3 4 5 6 7 8 9 10 11 12 in
+  let floats =
+    stack_args_floats 1. 2. 3. 4. 5. 6. 7. 8. 9. 10. 11. 12. 13. 14. 15. 16.
+  in
+  (* Arguments taken from live locals, and a result kept live across a
+     further call. *)
+  let ints2 = stack_args_ints a b c d 1 2 3 4 5 6 7 8 in
+  Printf.printf "ints=%d floats=%.1f ints2=%d a=%d b=%d c=%d d=%d\n"
+    ints floats ints2 a b c d
