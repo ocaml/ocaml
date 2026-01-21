@@ -242,10 +242,10 @@ Restriction (see the manual section 6.1.2).
 exception Todo
 
 val todo : unit -> 'a
-[@@alert todo "call to Fun.todo (will fail at runtime)"]
+[@@alert todo "Unimplemented functionality, may lead to runtime errors"]
 (** Raise an exception {!exception:Todo}. This is intended to be used as a
     placeholder for to-be-written code. If you want to make sure that there are
-    not calls to this function left in your code, you can make the compiler
-    warn you by enabling the [todo] alert (see \ref{s:alerts}).
+    no calls to this function left in your code, you can make the compiler warn
+    you by enabling the [todo] alert (see \ref{s:alerts}).
     @since 5.5
 *)
