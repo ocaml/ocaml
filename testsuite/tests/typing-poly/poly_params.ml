@@ -456,6 +456,12 @@ val g : unit -> ('a. 'a -> 'a) -> unit = <fun>
 let rec f ([] : 'a. 'a list) = ()
 
 [%%expect{|
+Line 1, characters 11-27:
+1 | let rec f ([] : 'a. 'a list) = ()
+               ^^^^^^^^^^^^^^^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+  Here is an example of a case that is not matched: "_::_"
+
 val f : ('a. 'a list) -> unit = <fun>
 |}]
 

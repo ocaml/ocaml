@@ -1186,6 +1186,11 @@ let solve_Ppat_lazy loc env expected_ty =
     (generic_instance expected_ty);
   nv
 
+let maybe_instance_poly ty =
+  match get_desc ty with
+  | Tpoly (ty', tl) -> instance_poly ~keep_names:true tl ty'
+  | _ -> ty
+
 let solve_Ppat_constraint tps loc env sty expected_ty =
   let cty, ty, force =
     with_local_level_generalize_structure
@@ -1194,12 +1199,7 @@ let solve_Ppat_constraint tps loc env sty expected_ty =
   tps.tps_pattern_force <- force :: tps.tps_pattern_force;
   let ty, expected_ty' = instance ty, ty in
   unify_pat_types loc env ty (instance expected_ty);
-  let expected_ty' =
-    match get_desc expected_ty' with
-    | Tpoly (expected_ty', tl) ->
-        instance_poly ~keep_names:true tl expected_ty'
-    | _ -> expected_ty'
-  in
+  let expected_ty' = maybe_instance_poly expected_ty' in
   (cty, ty, expected_ty')
 
 let solve_Ppat_variant loc env tag no_arg expected_ty =
@@ -2607,6 +2607,7 @@ let rec check_counter_example_pat
     | Backtrack_or -> false
     | Refine_or {inside_nonsplit_or} -> inside_nonsplit_or
   in
+  let expected_ty = maybe_instance_poly expected_ty in
   match tp.pat_desc with
     Tpat_any | Tpat_var _ ->
       let k' () = mkp k tp.pat_desc in
