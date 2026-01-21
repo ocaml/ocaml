@@ -8,7 +8,7 @@ Printexc.record_backtrace true;;
 Fun.todo ();;
 [%%expect {|
 - : unit = ()
-Exception: Fun.Todo
+Exception: Stdlib.Fun.Todo.
 Called from unknown location
 Called from unknown location
 |}];;
@@ -27,7 +27,7 @@ Line 5, characters 0-8:
 Alert todo: Stdlib.Fun.todo
 call to Fun.todo (will fail at runtime)
 
-Exception: Fun.Todo
+Exception: Stdlib.Fun.Todo.
 |}];;
 
 [@@@ocaml.alert "++todo"];;

@@ -40,9 +40,4 @@ let protect ~(finally : unit -> unit) work =
 
 exception Todo
 
-let () =
-  Printexc.register_printer @@ function
-  | Todo -> Some "Fun.Todo"
-  | _ -> None
-
 let todo () = raise Todo
