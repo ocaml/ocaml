@@ -241,7 +241,7 @@ Restriction (see the manual section 6.1.2).
 
 exception Todo
 
-val todo : unit -> _
+val todo : unit -> 'a
 [@@alert todo "call to Fun.todo (will fail at runtime)"]
 (** Raise an exception {!exception:Todo}. This is intended to be used as a
     placeholder for to-be-written code. If you want to make sure that there are
