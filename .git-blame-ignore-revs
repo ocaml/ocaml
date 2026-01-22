@@ -1,0 +1,10 @@
+# This file contains a list of Git commit hashes that should be ignored by git
+# blame. These are typically mass formatting changes, whitespace fixes, or
+# other commits that don't meaningfully change the code logic but would
+# otherwise obscure the true author of each line.
+#
+# To use this file, configure git with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+
+bd9fa8f4faff174511b6d77a5c76e31f4fe5ed8b
