@@ -25,7 +25,7 @@ Line 5, characters 0-8:
 5 | Fun.todo ();;
     ^^^^^^^^
 Alert todo: Stdlib.Fun.todo
-call to Fun.todo (will fail at runtime)
+Unimplemented functionality, may lead to runtime errors
 
 Exception: Stdlib.Fun.Todo.
 |}];;
@@ -38,5 +38,5 @@ Line 3, characters 0-8:
 3 | Fun.todo ();;
     ^^^^^^^^
 Error (alert todo): Stdlib.Fun.todo
-call to Fun.todo (will fail at runtime)
+Unimplemented functionality, may lead to runtime errors
 |}];;
