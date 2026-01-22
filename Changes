@@ -226,8 +226,8 @@ Working version
   to the Int, Int32, Int64 and Nativeint modules.
   (Xavier Leroy, review by Ali Caglayan, Nicolás Ojeda Bär, Gabriel Scherer)
 
-- #13101: Add `Stdlib.todo ?msg ?__LOC__ ()` to signal that a piece of code is
-  not yet implemented.
+- #13101: Add `Fun.todo ()` to signal that a piece of code is not yet
+  implemented.
   (Pavlo Khrystenko and Olivier Nicole, review by Daniel Bünzli, Yawar Amin,
    Gabriel Scherer)
 
