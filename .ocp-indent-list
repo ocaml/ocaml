@@ -1,0 +1,8 @@
+; This file lists source files that should be formatted with ocp-indent.
+; Only files listed here (or matching patterns specified here) will be
+; automatically indented by ocp-indent.
+;
+; Format: List of [dependencies](deps).
+;
+; [deps]: https://dune.readthedocs.io/en/stable/concepts/dependency-spec.html
+()

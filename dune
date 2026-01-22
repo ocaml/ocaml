@@ -450,3 +450,20 @@
   ocamlbytecomp.cma
   ocamltest/ocamltest_core_and_plugin.cma
   toplevel/ocamltoplevel.cma))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Auto indent files with `dune build @fmt` ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(subdir
+ run
+ (dynamic_include ../rules/dune.ocp-indent.inc))
+
+(subdir
+ rules
+ (rule
+  (target dune.ocp-indent.inc)
+  (deps
+   (include ../.ocp-indent-list))
+  (action
+   (run ocp-indent-gen-rules -o %{target}))))
