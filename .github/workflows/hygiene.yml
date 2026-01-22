@@ -16,6 +16,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  formatting:
+    name: Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 5
+
+        # To format the tree with dune, we must configure to avoid
+        # errors about unimplemented modules
+      - name: Configure
+        run: bash -xe tools/ci/actions/runner.sh configure
+
+      - name: Check dune formatting
+        run: |
+          opam install dune ocp-indent --yes
+          opam exec -- dune fmt || true
+          git diff --exit-code
+
   hygiene:
     name: Checks
     runs-on: ubuntu-latest
