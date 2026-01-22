@@ -15,7 +15,8 @@
 (library
  (name str)
  (modes byte)
- (flags (:standard -nostdlib))
+ (flags
+  (:standard -nostdlib))
  (libraries stdlib)
  (foreign_stubs
   (language c)

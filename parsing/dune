@@ -19,29 +19,35 @@
 
 (rule
  (targets camlinternalMenhirLib.ml)
- (mode    fallback)
- (action  (copy# ../boot/menhir/menhirLib.ml %{targets})))
+ (mode fallback)
+ (action
+  (copy# ../boot/menhir/menhirLib.ml %{targets})))
 
 (rule
  (targets camlinternalMenhirLib.mli)
- (mode    fallback)
- (action  (copy# ../boot/menhir/menhirLib.mli %{targets})))
+ (mode fallback)
+ (action
+  (copy# ../boot/menhir/menhirLib.mli %{targets})))
 
 (rule
  (targets parser.ml)
- (mode    fallback)
- (deps    (:dep ../boot/menhir/parser.ml))
+ (mode fallback)
+ (deps
+  (:dep ../boot/menhir/parser.ml))
  (action
-   (with-stdout-to %{targets}
-     (bash "cat %{dep} | sed 's/MenhirLib/CamlinternalMenhirLib/g'"))))
+  (with-stdout-to
+   %{targets}
+   (bash "cat %{dep} | sed 's/MenhirLib/CamlinternalMenhirLib/g'"))))
 
 (rule
  (targets parser.mli)
- (mode    fallback)
- (deps    (:dep ../boot/menhir/parser.mli))
+ (mode fallback)
+ (deps
+  (:dep ../boot/menhir/parser.mli))
  (action
-   (with-stdout-to %{targets}
-     (bash "cat %{dep} | sed 's/MenhirLib/CamlinternalMenhirLib/g'"))))
+  (with-stdout-to
+   %{targets}
+   (bash "cat %{dep} | sed 's/MenhirLib/CamlinternalMenhirLib/g'"))))
 
 (ocamllex
  (modules lexer)
