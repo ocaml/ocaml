@@ -24,6 +24,9 @@ Working version
 
 ### Standard library:
 
+- #14487: Add String.drop_{prefix,suffix}
+  (Michael Neumann, review by ???)
+
 ### Other libraries:
 
 ### Tools:

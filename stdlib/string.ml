@@ -512,6 +512,22 @@ let take_last n s = subrange ~first:(length s - n) s
 let drop_last n s = subrange ~last:(length s - n - 1) s
 let cut_last n s = (drop_last n s, take_last n s)
 
+let drop_prefix ~prefix =
+  let len_pre = length prefix in
+  let starts_with_pre = starts_with ~prefix:prefix in
+  fun s ->
+    if starts_with_pre s
+    then Some (sub s len_pre (length s - len_pre))
+    else None
+
+let drop_suffix ~suffix =
+  let len_suf = length suffix in
+  let ends_with_suf = ends_with ~suffix:suffix in
+  fun s ->
+    if ends_with_suf s
+    then Some (sub s 0 (length s - len_suf))
+    else None
+
 (* Splitting with predicates *)
 
 let take_first_while sat s =
