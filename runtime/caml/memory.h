@@ -24,8 +24,8 @@
 #include "major_gc.h"
 #include "minor_gc.h"
 #endif /* CAML_INTERNALS */
-#include "domain.h"
 #include "misc.h"
+#include "domain.h"
 #include "mlvalues.h"
 #include "signals.h"
 
