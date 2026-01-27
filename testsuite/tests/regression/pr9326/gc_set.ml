@@ -4,7 +4,6 @@ open Gc
 
 let min_heap_sz = 524288 (* 512k *)
 let space_overhead = 70
-let small_heap_limit = min_heap_sz
 let stack_limit = 4194304 (* 4M *)
 let custom_major_ratio = 40
 let custom_minor_ratio = 99
@@ -25,7 +24,6 @@ let _ =
            custom_major_ratio = custom_major_ratio;
            custom_minor_ratio = custom_minor_ratio;
            custom_minor_max_size = custom_minor_max_size;
-           small_heap_limit = small_heap_limit;
          };
   let g2 = Gc.get() in
   assert (g2.minor_heap_size = min_heap_sz);
@@ -37,6 +35,4 @@ let _ =
   assert (g2.window_size = g1.window_size);
   assert (g2.custom_major_ratio = custom_major_ratio);
   assert (g2.custom_minor_ratio = custom_minor_ratio);
-  assert (g2.custom_minor_max_size = custom_minor_max_size);
-  assert (g2.small_heap_limit = small_heap_limit);
-  ()
+  assert (g2.custom_minor_max_size = custom_minor_max_size)

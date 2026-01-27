@@ -129,7 +129,7 @@ CAMLprim value caml_gc_get(value v)
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
 
-  res = caml_alloc_tuple (12);
+  res = caml_alloc_tuple (11);
   Store_field (res, 0, Val_long (Caml_state->minor_heap_wsz));          /* s */
   Store_field (res, 2,
     Val_long (atomic_load_relaxed(&caml_percent_free)));                /* o */
@@ -141,8 +141,6 @@ CAMLprim value caml_gc_get(value v)
     Val_long (atomic_load_relaxed(&caml_custom_minor_ratio)));          /* m */
   Store_field (res, 10,
     Val_long (atomic_load_relaxed(&caml_custom_minor_max_bsz)));        /* n */
-  Store_field (res, 11,
-    Val_long (atomic_load_relaxed(&caml_small_heap_limit)));            /* L */
   CAMLreturn (res);
 }
 
@@ -202,15 +200,6 @@ CAMLprim value caml_gc_set(value v)
       CAML_GC_MESSAGE(PARAMS,
                       "New custom minor size limit: %" CAML_PRIuNAT "%%\n",
                       caml_custom_minor_max_bsz);
-    }
-  }
-  /* This field was added in 5.5.0 */
-  if (Wosize_val (v) >= 12){
-    uintnat new_small_limit = Long_val (Field (v, 11));
-    if (new_small_limit != caml_small_heap_limit){
-      caml_small_heap_limit = new_small_limit;
-      CAML_GC_MESSAGE(PARAMS, "New small heap limit: %" CAML_PRIuNAT "%%\n",
-                      new_small_limit);
     }
   }
 
@@ -354,7 +343,6 @@ void caml_init_gc (void)
   caml_fiber_wsz = (Stack_threshold * 2) / sizeof(value);
   atomic_store_relaxed(&caml_percent_free,
                        norm_pfree (caml_params->init_percent_free));
-  caml_small_heap_limit = caml_params->init_small_heap_limit;
 
   atomic_store_relaxed(&caml_custom_major_ratio,
                        norm_custom_maj (caml_params->init_custom_major_ratio));
@@ -403,11 +391,11 @@ CAMLprim value caml_runtime_parameters (value unit)
        /* b */ (int) Caml_state->backtrace_active,
        /* c */ caml_params->cleanup_on_exit,
        /* e */ caml_params->runtime_events_log_wsize,
-       /* l */ atomic_load_relaxed (&caml_max_stack_wsize),
-       /* M */ atomic_load_relaxed (&caml_custom_major_ratio),
-       /* m */ atomic_load_relaxed (&caml_custom_minor_ratio),
-       /* n */ atomic_load_relaxed (&caml_custom_minor_max_bsz),
-       /* o */ atomic_load_relaxed (&caml_percent_free),
+       /* l */ caml_max_stack_wsize,
+       /* M */ caml_custom_major_ratio,
+       /* m */ caml_custom_minor_ratio,
+       /* n */ caml_custom_minor_max_bsz,
+       /* o */ caml_percent_free,
        /* p */ Caml_state->parser_trace,
        /* R */ /* missing */
        /* s */ Caml_state->minor_heap_wsz,
@@ -525,6 +513,7 @@ struct gc_tweak {
 static struct gc_tweak gc_tweaks[] = {
 #define TWEAK(v) { #v, &caml_##v, 0 }
   TWEAK(mark_stack_prune_factor),
+  TWEAK(small_heap_limit),
 #undef TWEAK
 };
 enum {N_GC_TWEAKS = sizeof(gc_tweaks)/sizeof(gc_tweaks[0])};
