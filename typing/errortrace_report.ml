@@ -40,19 +40,36 @@ module Style = Misc.Style
 type 'a diff = 'a Out_type.diff = Same of 'a | Diff of 'a * 'a
 
 let trees_of_trace mode =
-  List.map (Errortrace.map_diff (trees_of_type_expansion mode))
+  List.map (Errortrace.map_ctx (trees_of_type_expansion mode))
+
+let print_tag ppf s = Style.inline_code ppf ("`" ^ s)
+let incompatible_tag_types s =
+  doc_printf "@,Types for tag %a are incompatible" print_tag s
 
 let rec trace fst txt ppf = function
-  | {Errortrace.got; expected} :: rem ->
+  | elt :: rem ->
       if not fst then fprintf ppf "@,";
-      fprintf ppf "@[Type@;<1 2>%a@ %s@;<1 2>%a@]%a"
+      fprintf ppf "@[%a@]%a"
+      (trace_elt txt) elt
+      (trace false txt) rem
+  | [] -> ()
+and trace_elt txt ppf = function
+  | { ctx = None; Errortrace.d = {got; expected} } ->
+      fprintf ppf "Type@;<1 2>%a@ %s@;<1 2>%a"
        pp_type_expansion got txt pp_type_expansion expected
-       (trace false txt) rem
-  | _ -> ()
+  | { ctx = Some (In_tag l); Errortrace.d = {got; expected} } ->
+      fprintf ppf "In tag %a, type@;<1 2>%a@ %s@;<1 2>%a"
+       print_tag l
+       pp_type_expansion got txt pp_type_expansion expected
+  | { ctx = Some (In_method m); Errortrace.d = {got; expected} } ->
+      fprintf ppf "In method %a, type@;<1 2>%a@ %s@;<1 2>%a"
+       Style.inline_code m
+       pp_type_expansion got txt pp_type_expansion expected
 
 type printing_status =
   | Discard
   | Keep
+  | Contextual_refinement of Errortrace.ctx
   | Optional_refinement
   (** An [Optional_refinement] printing status is attributed to trace
       elements that are focusing on a new subpart of a structural type.
@@ -71,7 +88,12 @@ let diff_printing_status Errortrace.{ got      = {ty = t1; expanded = t1'};
   else Keep
 
 let printing_status = function
-  | Errortrace.Diff d -> diff_printing_status d
+  | Errortrace.Diff { ctx = Some (In_method _); _} -> Keep
+  | Errortrace.Diff d ->
+      begin match diff_printing_status d.d, d.ctx with
+      | Optional_refinement, Some c -> Contextual_refinement c
+      | x, _ -> x
+      end
   | Errortrace.Escape {kind = Constraint} -> Keep
   | _ -> Keep
 
@@ -79,18 +101,24 @@ let printing_status = function
     during printing *)
 
 (* Takes [printing_status] to change behavior for [Subtype] *)
-let prepare_any_trace printing_status tr =
-  let clean_trace x l = match printing_status x with
-    | Keep -> x :: l
-    | Optional_refinement when l = [] -> [x]
-    | Optional_refinement | Discard -> l
+let prepare_any_trace merge printing_status tr =
+  let clean_trace x l = match printing_status x, l with
+    | Keep , _ -> x :: l
+    | (Contextual_refinement _ | Optional_refinement), [] -> [x]
+    | Contextual_refinement ctx, [x] -> [merge ctx x]
+    | (Contextual_refinement _ | Optional_refinement | Discard), _ -> l
   in
   match tr with
   | [] -> []
   | elt :: rem -> elt :: List.fold_right clean_trace rem []
 
+let merge_ctx ctx = function
+  | Errortrace.Diff ({ ctx = None; _ } as d) ->
+      Errortrace.Diff { d with ctx = Some ctx }
+  | d -> d
+
 let prepare_trace f tr =
-  prepare_any_trace printing_status (Errortrace.map f tr)
+  prepare_any_trace merge_ctx printing_status (Errortrace.map f tr)
 
 (** Keep elements that are [Diff _ ] and split the the last element if it is
     optionally elidable, require a prepared trace *)
@@ -98,7 +126,7 @@ let rec filter_trace = function
   | [] -> [], None
   | [Errortrace.Diff d as elt]
     when printing_status elt = Optional_refinement -> [], Some d
-  | Errortrace.Diff d :: rem ->
+  | Errortrace.Diff ({ctx=(None|Some (In_tag _)); _ } as d) :: rem ->
       let filtered, last = filter_trace rem in
       d :: filtered, last
   | _ :: rem -> filter_trace rem
@@ -111,8 +139,6 @@ let may_prepare_expansion compact (Errortrace.{ty; expanded} as ty_exp) =
 
 let print_path p =
   Fmt.dprintf "%a" !Oprint.out_ident (namespaced_tree_of_path Type p)
-
-let print_tag ppf s = Style.inline_code ppf ("`" ^ s)
 
 let print_tags ppf tags  =
   Fmt.(pp_print_list ~pp_sep:comma) print_tag ppf tags
@@ -180,12 +206,11 @@ let explain_fixed_row pos expl = match expl with
       p
   | Types.Rigid -> Format_doc.Doc.empty
 
+
 let explain_variant (type variety) : variety Errortrace.variant -> _ = function
   (* Common *)
-  | Errortrace.Incompatible_types_for s ->
-      Some(doc_printf "@,Types for tag %a are incompatible"
-             print_tag s
-          )
+  | Errortrace.Arity_mismatch s -> Some(incompatible_tag_types s)
+  | Errortrace.Inconsistent_conjunction s -> Some (incompatible_tag_types s)
   (* Unification *)
   | Errortrace.No_intersection ->
       Some(doc_printf "@,These two variant types have no intersection")
@@ -319,8 +344,9 @@ let explain_first_class_module = function
 let explain_univar prev = function
   | Errortrace.Var_mismatch { diff; order} ->
       let prev = match prev with
-        | Some (Errortrace.Incompatible_fields f) ->
-            explain_incompatible_fields f.name f.diff
+        | Some (Errortrace.Diff { ctx=Some (In_method name); d }) ->
+            let d = Errortrace.map_diff (fun t -> t.Errortrace.ty) d in
+            explain_incompatible_fields name d
         | _ -> Fmt.Doc.empty
       in
       add_type_to_preparation diff.got;
@@ -370,8 +396,13 @@ let explain_univar prev = function
 
 let explanation (type variety) intro prev env
   : (Errortrace.expanded_type, variety) Errortrace.elt -> _ = function
-  | Errortrace.Diff {got; expected} ->
+  | Errortrace.Diff { ctx = None; d = {got; expected} } ->
     explanation_diff env got.expanded expected.expanded
+  | Errortrace.Diff { ctx = Some (In_method name); d } ->
+    let diff = Errortrace.map_diff (fun t -> t.Errortrace.ty) d in
+    Some(explain_incompatible_fields name diff)
+  | Errortrace.Diff { ctx = Some (In_tag name); _ } ->
+    Some(incompatible_tag_types name)
   | Errortrace.Escape {kind; context} ->
     let pre =
       match context, kind, prev with
@@ -379,13 +410,12 @@ let explanation (type variety) intro prev env
         Variable_names.reserve ctx;
         doc_printf "@[%a@;<1 2>%a@]" pp_doc intro
           (Style.as_inline_code type_expr_with_reserved_names) ctx
-      | None, Univ _, Some(Errortrace.Incompatible_fields {name; diff}) ->
-        explain_incompatible_fields name diff
+      | None, Univ _, Some(Errortrace.Diff { ctx=Some (In_method name); d} ) ->
+          let d = Errortrace.map_diff (fun t -> t.Errortrace.ty) d in
+          explain_incompatible_fields name d
       | _ -> Format_doc.Doc.empty
     in
     explain_escape pre kind
-  | Errortrace.Incompatible_fields { name; diff} ->
-    Some(explain_incompatible_fields name diff)
   | Errortrace.Function_label_mismatch diff ->
     let missing_label_msg =
       format_of_string
@@ -462,21 +492,21 @@ let warn_on_missing_def env ppf t =
 
 let prepare_expansion_head empty_tr = function
   | Errortrace.Diff d ->
-      Some (Errortrace.map_diff (may_prepare_expansion empty_tr) d)
+      Some (Errortrace.map_ctx (may_prepare_expansion empty_tr) d)
   | _ -> None
 
 let head_error_printer mode txt_got txt_but = function
   | None -> Format_doc.Doc.empty
   | Some d ->
-      let d = Errortrace.map_diff (trees_of_type_expansion mode) d in
+      let d = Errortrace.(map_diff (trees_of_type_expansion mode) d.d) in
       doc_printf "%a@;<1 2>%a@ %a@;<1 2>%a"
-        pp_doc txt_got pp_type_expansion d.Errortrace.got
-        pp_doc txt_but pp_type_expansion d.Errortrace.expected
+        pp_doc txt_got pp_type_expansion d.got
+        pp_doc txt_but pp_type_expansion d.expected
 
 let warn_on_missing_defs env ppf = function
   | None -> ()
-  | Some Errortrace.{got      = {ty=te1; expanded=_};
-                     expected = {ty=te2; expanded=_} } ->
+  | Some Errortrace.{ d = { got      = {ty=te1; expanded=_};
+                            expected = {ty=te2; expanded=_} }; _ } ->
       warn_on_missing_def env ppf te1;
       warn_on_missing_def env ppf te2
 
@@ -553,12 +583,12 @@ let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
       with_labels (not !Clflags.classic) (fun () ->
       let tr, last = filter_trace tr in
       let head = prepare_expansion_head (tr=[] && last=None) elt in
-      let tr = List.map (Errortrace.map_diff prepare_expansion) tr in
-      let last = Option.map (Errortrace.map_diff prepare_expansion) last in
+      let tr = List.map (Errortrace.map_ctx prepare_expansion) tr in
+      let last = Option.map (Errortrace.map_ctx prepare_expansion) last in
       let head_error = head_error_printer mode txt1 txt2 head in
       let tr = trees_of_trace mode tr in
       let last =
-        Option.map (Errortrace.map_diff (trees_of_type_expansion mode)) last in
+        Option.map (Errortrace.map_ctx (trees_of_type_expansion mode)) last in
       let mis = mismatch txt1 env full_trace in
       let tr = match mis, last with
         | None, Some elt -> tr @ [elt]
@@ -618,7 +648,8 @@ module Subtype = struct
   let prepare_unification_trace = prepare_trace
 
   let prepare_trace f tr =
-    prepare_any_trace printing_status (Errortrace.Subtype.map f tr)
+    prepare_any_trace (fun _ d -> d) printing_status
+      (Errortrace.Subtype.map f tr)
 
   let trace filter_trace get_diff fst keep_last txt ppf tr =
     with_labels (not !Clflags.classic) (fun () ->
@@ -632,7 +663,7 @@ module Subtype = struct
         in
         let tr =
           trees_of_trace Type
-          @@ List.map (Errortrace.map_diff prepare_expansion) tr in
+          @@ List.map (Errortrace.map_ctx prepare_expansion) tr in
         let tr =
           match fst, diffed_elt with
           | true, Some elt -> elt :: tr
@@ -642,23 +673,25 @@ module Subtype = struct
       | _ -> ()
     )
 
+  let no_ctx d = { Errortrace.d; ctx = None}
   let rec filter_subtype_trace = function
     | [] -> [], None
     | [Errortrace.Subtype.Diff d as elt]
       when printing_status elt = Optional_refinement ->
-        [], Some d
+        [], Some (no_ctx d)
     | Errortrace.Subtype.Diff d :: rem ->
         let ftr, last = filter_subtype_trace rem in
-        d :: ftr, last
+        no_ctx d :: ftr, last
 
   let unification_get_diff = function
     | Errortrace.Diff diff ->
-        Some (Errortrace.map_diff (trees_of_type_expansion Type) diff)
+        Some (Errortrace.map_ctx (trees_of_type_expansion Type) diff)
     | _ -> None
 
   let subtype_get_diff = function
     | Errortrace.Subtype.Diff diff ->
-        Some (Errortrace.map_diff (trees_of_type_expansion Type) diff)
+        let d = Errortrace.map_diff (trees_of_type_expansion Type) diff in
+        Some { Errortrace.d; ctx = None }
 
   let error
         ppf

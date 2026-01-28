@@ -781,7 +781,7 @@ Line 2, characters 14-15:
                   ^
 Error: The value "o" has type "[> `A of a ]"
        but an expression was expected of type "[> `A of b ]"
-       Type "a" is not compatible with type "b" = "a"
+       In tag "`A", type "a" is not compatible with type "b" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -794,7 +794,7 @@ Line 2, characters 22-23:
                           ^
 Error: The value "v" has type "[> `A of a ]"
        but an expression was expected of type "[> `A of b ]"
-       Type "a" is not compatible with type "b" = "a"
+       In tag "`A", type "a" is not compatible with type "b" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -852,7 +852,7 @@ Line 4, characters 49-50:
                                                      ^
 Error: The value "o" has type "[ `A of a | `B ]"
        but an expression was expected of type "[ `A of b | `B ]"
-       Type "a" is not compatible with type "b" = "a"
+       In tag "`A", type "a" is not compatible with type "b" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -868,7 +868,7 @@ Line 3, characters 49-50:
                                                      ^
 Error: The value "o" has type "[> `A of a | `B ]"
        but an expression was expected of type "[ `A of b | `B ]"
-       Type "a" is not compatible with type "b" = "a"
+       In tag "`A", type "a" is not compatible with type "b" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
 |}];;

@@ -1831,6 +1831,7 @@ Line 2, characters 2-72:
 Error: This expression has type "< m : 'b 'x. ([< `Foo of 'x ] as 'b) -> 'x >"
        but an expression was expected of type
          "< m : 'a. [< `Foo of int ] -> 'a >"
+       In tag "`Foo", type "'x" is not compatible with type "int"
        Types for tag "`Foo" are incompatible
 |}];;
 (* fail *)
@@ -1843,6 +1844,7 @@ Line 2, characters 2-72:
 Error: This expression has type "< m : 'b 'x. ([< `Foo of 'x ] as 'b) -> 'x >"
        but an expression was expected of type
          "< m : 'a. [< `Foo of int ] -> 'a >"
+       In tag "`Foo", type "'x" is not compatible with type "int"
        Types for tag "`Foo" are incompatible
 |}];;
 (* ok *)
@@ -1863,6 +1865,7 @@ Line 2, characters 3-4:
 Error: The value "n" has type "< m : 'a 'c. [< `Bar | `Foo of 'a & int ] as 'c >"
        but an expression was expected of type
          "< m : 'b 'd. [< `Bar | `Foo of int & 'b ] as 'd >"
+       In tag "`Foo", type "'a" is not compatible with type "int"
        Types for tag "`Foo" are incompatible
 |}]
 (* ok (with implicit universal quantification) *)

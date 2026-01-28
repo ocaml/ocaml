@@ -71,7 +71,8 @@ type fixed_row_case =
 
 type 'variety variant =
   (* Common *)
-  | Incompatible_types_for : string -> _ variant
+  | Arity_mismatch : string -> _ variant
+  | Inconsistent_conjunction: string -> _ variant
   | No_tags : position * (Asttypes.label * row_field) list -> _ variant
   (* Unification *)
   | No_intersection : unification variant
@@ -97,15 +98,21 @@ type univar =
   | Var_mismatch of { order:order; diff:type_expr diff }
   | Quantification_mismatch of type_expr list
 
+type ctx =
+  | In_method of string
+  | In_tag of string
+
+type 'a ctx_diff = { ctx: ctx option; d: 'a diff }
+val map_ctx: ('a -> 'b) -> 'a ctx_diff -> 'b ctx_diff
+
 type ('a, 'variety) elt =
   (* Common *)
-  | Diff : 'a diff -> ('a, _) elt
+  | Diff : 'a ctx_diff -> ('a, _) elt
   | Variant : 'variety variant -> ('a, 'variety) elt
   | Obj : 'variety obj -> ('a, 'variety) elt
   | Escape : 'a escape -> ('a, _) elt
   | Function_label_mismatch of Asttypes.arg_label diff
   | Tuple_label_mismatch of string option diff
-  | Incompatible_fields : { name:string; diff: type_expr diff } -> ('a, _) elt
   | First_class_module: first_class_module -> ('a,_) elt
   | Univar of univar
   (* Unification & Moregen; included in Equality for simplicity *)
@@ -117,9 +124,19 @@ type 'variety trace = (type_expr,     'variety) t
 type 'variety error = (expanded_type, 'variety) t
 
 val map : ('a -> 'b) -> ('a, 'variety) t -> ('b, 'variety) t
+val diff:
+  ?ctx:ctx -> got:'a -> expected:'a -> ('a,'variety) t -> ('a,'variety) t
 
-val incompatible_fields :
-  name:string -> got:type_expr -> expected:type_expr -> (type_expr, _) elt
+val incompatible_fields:
+  name:string -> got:type_expr -> expected:type_expr ->
+  (type_expr, 'v) t -> (type_expr, 'v) t
+
+val in_tag:
+  l:string -> (type_expr, 'f) t -> (type_expr, 'f) t
+
+val variant_arity_mismatch: l:string -> ('any, 'f) elt
+val inconsistent_conjunction: l:string -> ('any, 'f) elt
+
 
 val swap_trace : ('a, 'variety) t -> ('a, 'variety) t
 

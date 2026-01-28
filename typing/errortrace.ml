@@ -89,7 +89,8 @@ type fixed_row_case =
 
 type 'variety variant =
   (* Common *)
-  | Incompatible_types_for : string -> _ variant
+  | Arity_mismatch : string -> _ variant
+  | Inconsistent_conjunction: string -> _ variant
   | No_tags : position * (Asttypes.label * row_field) list -> _ variant
   (* Unification *)
   | No_intersection : unification variant
@@ -115,16 +116,21 @@ type univar =
   | Var_mismatch of { order:order; diff:type_expr diff }
   | Quantification_mismatch of type_expr list
 
+type ctx =
+  | In_method of string
+  | In_tag of string
+type 'a ctx_diff = { ctx: ctx option; d: 'a diff }
+let map_ctx f x = { x with d = map_diff f x.d }
+let swap_ctx x = { x with d = swap_diff x.d }
+
 type ('a, 'variety) elt =
   (* Common *)
-  | Diff : 'a diff -> ('a, _) elt
+  | Diff : 'a ctx_diff -> ('a, _) elt
   | Variant : 'variety variant -> ('a, 'variety) elt
   | Obj : 'variety obj -> ('a, 'variety) elt
   | Escape : 'a escape -> ('a, _) elt
   | Function_label_mismatch of Asttypes.arg_label diff
   | Tuple_label_mismatch of string option diff
-  | Incompatible_fields : { name:string; diff: type_expr diff } -> ('a, _) elt
-      (* Could move [Incompatible_fields] into [obj] *)
   | First_class_module: first_class_module -> ('a,_) elt
   | Univar of univar
   (* Unification & Moregen; included in Equality for simplicity *)
@@ -136,26 +142,29 @@ type 'variety trace = (type_expr,     'variety) t
 type 'variety error = (expanded_type, 'variety) t
 
 let map_elt (type variety) f : ('a, variety) elt -> ('b, variety) elt = function
-  | Diff x -> Diff (map_diff f x)
+  | Diff x -> Diff (map_ctx f x)
   | Escape {kind = Equation x; context} ->
       Escape { kind = Equation (f x); context }
   | Escape {kind = (Univ _ | Self | Constructor _
       | Module_type _ | Module _ | Constraint);
             _}
   | Variant _ | Obj _ | Function_label_mismatch _ | Tuple_label_mismatch _
-  | Incompatible_fields _
   | Rec_occur (_, _) | First_class_module _  as x -> x
   | Univar _  as x -> x
 
 let map f t = List.map (map_elt f) t
+let diff ?ctx ~got ~expected trace = Diff { ctx; d = {got;expected} } :: trace
 
-let incompatible_fields ~name ~got ~expected =
-  Incompatible_fields { name; diff={got; expected} }
+let incompatible_fields ~name ~got ~expected  t =
+  Diff { ctx = Some (In_method name); d = { got; expected} } :: t
+let in_tag ~l = function
+  | Diff { ctx = None; d} :: rem -> Diff { ctx = Some(In_tag l); d} :: rem
+  | trace -> trace
+let variant_arity_mismatch ~l = Variant (Arity_mismatch l)
+let inconsistent_conjunction ~l = Variant (Inconsistent_conjunction l)
 
 let swap_elt (type variety) : ('a, variety) elt -> ('a, variety) elt = function
-  | Diff x -> Diff (swap_diff x)
-  | Incompatible_fields { name; diff } ->
-    Incompatible_fields { name; diff = swap_diff diff}
+  | Diff x -> Diff (swap_ctx x)
   | Obj (Missing_field(pos,s)) -> Obj (Missing_field(swap_position pos,s))
   | Obj (Abstract_row pos) -> Obj (Abstract_row (swap_position pos))
   | Variant (Fixed_row(pos,k,f)) ->
