@@ -8235,7 +8235,7 @@ let report_literal_type_constraint expected_type const =
 
 let report_literal_type_constraint const = function
   | Some tr ->
-      begin match get_desc Errortrace.(tr.expected.ty) with
+      begin match get_desc Errortrace.(tr.d.expected.ty) with
         Tconstr (typ, [], _) ->
           report_literal_type_constraint typ const
       | _ -> []
@@ -8244,7 +8244,7 @@ let report_literal_type_constraint const = function
 
 let report_partial_application = function
   | Some tr -> begin
-      match get_desc tr.Errortrace.got.Errortrace.expanded with
+      match get_desc Errortrace.(tr.d.got.expanded) with
       | Tarrow _ | Tfunctor _ ->
           [ Location.msg
               "@[@{<hint>Hint@}:@ This function application is partial,@ \
@@ -8429,7 +8429,7 @@ let report_error ~loc env =
       in
       match last_diff with
       | None -> None
-      | Some diff -> Some diff.expected.ty
+      | Some diff -> Some diff.d.expected.ty
     in
     (* [syntactic_arity>1] for this error, so "arguments" is always plural. *)
     Location.errorf ~loc
