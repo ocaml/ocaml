@@ -54,11 +54,12 @@ val apply_rewriters_sig:
 val report_error : error Format_doc.format_printer
 val report_error_doc: error Format_doc.printer
 
+type 'a ast_result = { ast : 'a; source_file : string }
 
 val parse_implementation:
-  tool_name:string -> string -> Parsetree.structure
+  tool_name:string -> string -> Parsetree.structure ast_result
 val parse_interface:
-  tool_name:string -> string -> Parsetree.signature
+  tool_name:string -> string -> Parsetree.signature ast_result
 
 (* [call_external_preprocessor sourcefile pp] *)
 val call_external_preprocessor : string -> string -> string

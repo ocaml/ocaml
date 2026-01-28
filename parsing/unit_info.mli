@@ -58,15 +58,27 @@ type t
     - the module name associated to the unit
     - the filename prefix (dirname + basename with all extensions stripped)
       for compilation artifacts
-    - the input source file
+    - the original input source file
+    - the raw input source file
     For instance, when calling [ocamlopt dir/x.mli -o target/y.cmi],
     - the input source file is [dir/x.mli]
     - the module name is [Y]
     - the prefix is [target/y]
+
+    When calling, for example, [ocamlopt foo.pp.ml] (where foo.pp.ml is a serialized,
+    ppx-expanded AST of foo.ml), the "raw" source file is foo.pp.ml, while foo.ml is the
+    "original" source file.
 *)
 
-(** [source_file u] is the source file of [u]. *)
-val source_file: t -> filename
+(** [original_source_file u] is the original source file of [u]. When calling,
+    for example, [ocamlopt foo.pp.ml] (where foo.pp.ml is a serialized, ppx-expanded AST
+    of foo.ml), foo.ml is the "original" source file. *)
+val original_source_file: t -> filename
+
+(** [raw_source_file u] is the raw source file of [u]. When calling, for example,
+    [ocamlopt foo.pp.ml] (where foo.pp.ml is a serialized, ppx-expanded AST of foo.ml),
+    foo.pp.ml is the "raw" source file.) *)
+val raw_source_file: t -> filename
 
 (** [prefix u] is the filename prefix of the unit. *)
 val prefix: t -> file_prefix
@@ -93,6 +105,8 @@ val check_unit_name : t -> unit
 val make:
     ?check_modname:bool -> source_file:filename ->
     intf_or_impl -> file_prefix -> t
+
+val set_original_source_file_name : t -> filename -> t
 
 (** {1:artifact_function Build artifacts }*)
 module Artifact: sig
