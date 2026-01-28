@@ -127,6 +127,8 @@ Error: Signature mismatch:
          type s = private [ `Bar of int | `Foo of 'a -> int ] as 'a
        The type "[ `Bar of int | `Foo of t -> int ]" is not equal to the type
          "[ `Bar of int | `Foo of 'a -> int ] as 'a"
+       In tag "`Foo", type "t" is not equal to type
+         "[ `Bar of int | `Foo of 'a -> int ] as 'a"
        Types for tag "`Foo" are incompatible
 |}]
 
