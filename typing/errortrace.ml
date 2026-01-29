@@ -90,7 +90,6 @@ type fixed_row_case =
 type 'variety variant =
   (* Common *)
   | Arity_mismatch : string -> _ variant
-  | Inconsistent_conjunction: string -> _ variant
   | No_tags : position * (Asttypes.label * row_field) list -> _ variant
   (* Unification *)
   | No_intersection : unification variant
@@ -160,8 +159,7 @@ let incompatible_fields ~name ~got ~expected  t =
 let in_tag ~l = function
   | Diff { ctx = None; d} :: rem -> Diff { ctx = Some(In_tag l); d} :: rem
   | trace -> trace
-let variant_arity_mismatch ~l = Variant (Arity_mismatch l)
-let inconsistent_conjunction ~l = Variant (Inconsistent_conjunction l)
+let variant_arity_mismatch l = Variant (Arity_mismatch l)
 
 let swap_elt (type variety) : ('a, variety) elt -> ('a, variety) elt = function
   | Diff x -> Diff (swap_ctx x)

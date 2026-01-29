@@ -71,8 +71,7 @@ type fixed_row_case =
 
 type 'variety variant =
   (* Common *)
-  | Arity_mismatch : string -> _ variant
-  | Inconsistent_conjunction: string -> _ variant
+  | Arity_mismatch: string -> _ variant
   | No_tags : position * (Asttypes.label * row_field) list -> _ variant
   (* Unification *)
   | No_intersection : unification variant
@@ -134,9 +133,7 @@ val incompatible_fields:
 val in_tag:
   l:string -> (type_expr, 'f) t -> (type_expr, 'f) t
 
-val variant_arity_mismatch: l:string -> ('any, 'f) elt
-val inconsistent_conjunction: l:string -> ('any, 'f) elt
-
+val variant_arity_mismatch: string -> ('any, 'f) elt
 
 val swap_trace : ('a, 'variety) t -> ('a, 'variety) t
 

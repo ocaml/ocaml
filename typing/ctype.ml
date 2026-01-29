@@ -3722,7 +3722,7 @@ and unify_row_field uenv fixed1 fixed2 rm1 rm2 l f1 f2 =
          !rigid_variants && (List.length tl1 = 1 || List.length tl2 = 1)) &&
         begin match tl1 @ tl2 with [] -> false
         | t1 :: tl ->
-            if no_arg then raise_for Unify (variant_arity_mismatch ~l);
+            if no_arg then raise_for Unify (variant_arity_mismatch l);
             Types.changed_row_field_exts [f1;f2] (fun () ->
                 List.iter (unify uenv t1) tl
               )
@@ -3792,11 +3792,11 @@ and unify_row_field uenv fixed1 fixed2 rm1 rm2 l f1 f2 =
   | (Rpresent None | Reither(true,_,_)),
     (Rpresent (Some _) | Reither(false,_,_)) ->
       (* constructor arity mismatch: 0 <> 1 *)
-      raise_for Unify (variant_arity_mismatch ~l)
-  | Reither(true, _ :: _, _ ), Rpresent _
-  | Rpresent _ , Reither(true, _ :: _, _ ) ->
-      (* inconsistent conjunction on a non-absent field *)
-      raise_for Unify (inconsistent_conjunction ~l)
+      raise_for Unify (variant_arity_mismatch l)
+  | Reither(true, _ :: _, _ ), Rpresent None
+  | Rpresent None , Reither(true, _ :: _, _ ) ->
+      (* inconsistent arity on a non-absent field *)
+      raise_for Unify (variant_arity_mismatch l)
 
 let unify uenv ty1 ty2 =
   let snap = Btype.snapshot () in
@@ -4679,7 +4679,7 @@ and moregen_row type_pairs env row1 row2 =
              try
                if not (eq_row_field_ext f1 f2) then begin
                  if c1 && not c2 then
-                   raise_for Moregen (variant_arity_mismatch ~l);
+                   raise_for Moregen (variant_arity_mismatch l);
                  let f2' =
                    rf_either [] ~use_ext_of:f2 ~no_arg:c2 ~matched:m2 in
                  link_row_field_ext ~inside:f1 f2';
@@ -4692,7 +4692,7 @@ and moregen_row type_pairs env row1 row2 =
                        tl1
                    | [] ->
                       if tl1 <> [] then
-                        raise_for Moregen (variant_arity_mismatch ~l)
+                        raise_for Moregen (variant_arity_mismatch l)
                end
              with Moregen_trace trace ->
                raise_trace_for Moregen (in_tag ~l trace)
@@ -4717,7 +4717,7 @@ and moregen_row type_pairs env row1 row2 =
          (* Mismatched constructor arguments *)
          | Rpresent (Some _), Rpresent None
          | Rpresent None, Rpresent (Some _) ->
-             raise_for Moregen (variant_arity_mismatch ~l)
+             raise_for Moregen (variant_arity_mismatch l)
          (* Mismatched presence *)
          | Reither _, Rpresent _ ->
              raise_for Moregen
@@ -5100,7 +5100,7 @@ and eqtype_row rename type_pairs subst env row1 row2 =
        | Rpresent (Some _), Rpresent None
        | Rpresent None, Rpresent (Some _)
        | Reither _, Reither _ ->
-           raise_for Equality (variant_arity_mismatch ~l)
+           raise_for Equality (variant_arity_mismatch l)
        (* Mismatched presence *)
        | Reither _, Rpresent _ ->
            raise_for Equality
@@ -5955,7 +5955,7 @@ and subtype_row env trace row1 row2 constraints =
           | Rpresent None, Rpresent (Some _)
           | Rpresent (Some _), Rpresent None ->
               subtype_error ~env ~trace
-                ~unification_trace:[variant_arity_mismatch ~l]
+                ~unification_trace:[variant_arity_mismatch l]
           | _ ->
               raise Exit)
         constraints pairs
