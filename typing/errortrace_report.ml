@@ -209,8 +209,9 @@ let explain_fixed_row pos expl = match expl with
 
 let explain_variant (type variety) : variety Errortrace.variant -> _ = function
   (* Common *)
-  | Errortrace.Arity_mismatch s -> Some(incompatible_tag_types s)
-  | Errortrace.Inconsistent_conjunction s -> Some (incompatible_tag_types s)
+  | Errortrace.Arity_mismatch s ->
+      Some(doc_printf "@,@[Arities for tag %a are incompatible.@]"
+             print_tag s)
   (* Unification *)
   | Errortrace.No_intersection ->
       Some(doc_printf "@,These two variant types have no intersection")
