@@ -749,8 +749,7 @@ static CAML_THREAD_FUNCTION caml_thread_tick(void * arg)
   caml_domain_state *domain = Caml_state;
 
   caml_plat_lock_blocking (&Tick_thread_mu);
-  while(1){
-    if (Tick_thread_state == Tick_stop) break;
+  while (Tick_thread_state != Tick_stop){
     clock_gettime (caml_plat_get_cond_clockid (), &deadline);
     deadline.tv_nsec += 1000000 * Thread_timeout_msec;
     if (deadline.tv_nsec > 1000000000){

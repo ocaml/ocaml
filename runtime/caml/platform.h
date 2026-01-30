@@ -281,20 +281,21 @@ CAMLextern void caml_plat_mutex_init(caml_plat_mutex*);
 Caml_inline void caml_plat_lock_blocking(caml_plat_mutex*);
 Caml_inline void caml_plat_lock_non_blocking(caml_plat_mutex*);
 Caml_inline int caml_plat_try_lock(caml_plat_mutex*);
-void caml_plat_assert_locked(caml_plat_mutex*);
-void caml_plat_assert_all_locks_unlocked(void);
+CAMLextern void caml_plat_assert_locked(caml_plat_mutex*);
+CAMLextern void caml_plat_assert_all_locks_unlocked(void);
 Caml_inline void caml_plat_unlock(caml_plat_mutex*);
-void caml_plat_mutex_free(caml_plat_mutex*);
+CAMLextern void caml_plat_mutex_free(caml_plat_mutex*);
 CAMLextern void caml_plat_mutex_reinit(caml_plat_mutex*);
-void caml_plat_cond_init(caml_plat_cond*);
-void caml_plat_wait(caml_plat_cond*, caml_plat_mutex*); /* blocking */
-clockid_t caml_plat_get_cond_clockid (void);
-int caml_plat_timedwait(caml_plat_cond*, caml_plat_mutex *,
-                        const struct timespec *);
-  /* blocking; returns ETIMEDOUT on timeout, 0 otherwise. */
-void caml_plat_broadcast(caml_plat_cond*);
-void caml_plat_signal(caml_plat_cond*);
-void caml_plat_cond_free(caml_plat_cond*);
+CAMLextern void caml_plat_cond_init(caml_plat_cond*);
+CAMLextern void caml_plat_wait(caml_plat_cond*, caml_plat_mutex*);
+  /* blocking */
+CAMLextern clockid_t caml_plat_get_cond_clockid (void);
+CAMLextern int caml_plat_timedwait(caml_plat_cond*, caml_plat_mutex *,
+                                   const struct timespec *);
+  /* blocking; returns ETIMEDOUT on timeout, 0 if the condition was signaled. */
+CAMLextern void caml_plat_broadcast(caml_plat_cond*);
+CAMLextern void caml_plat_signal(caml_plat_cond*);
+CAMLextern void caml_plat_cond_free(caml_plat_cond*);
 
 /* Futexes
 
