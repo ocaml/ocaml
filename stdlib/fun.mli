@@ -246,6 +246,7 @@ val todo : unit -> 'a
 (** Raise an exception {!exception:Todo}. This is intended to be used as a
     placeholder for to-be-written code. If you want to make sure that there are
     no calls to this function left in your code, you can make the compiler warn
-    you by enabling the [todo] alert ("-alert +todo", see \ref{s:alerts}).
+    you by enabling the [todo] alert ("-alert +todo", see
+    {{:https://ocaml.org/manual/latest/alerts.html}alerts} in the manual).
     @since 5.5
 *)
