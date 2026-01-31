@@ -116,6 +116,16 @@ let emit_stack_adjustment n =
     cfi_adjust_cfa_offset (-n)
   end
 
+(* Set up frame pointer: s0 = sp + n, clobbers reg_tmp *)
+
+let emit_setup_frame_pointer n =
+  if is_immediate n then
+    `	addi	s0, sp, {emit_int n}\n`
+  else begin
+    `	li	{emit_reg reg_tmp}, {emit_int n}\n`;
+    `	add	s0, sp, {emit_reg reg_tmp}\n`
+  end
+
 (* Output add-immediate instruction, clobbers reg_tmp2 *)
 
 let emit_addimm rd rs n =
@@ -287,12 +297,7 @@ let emit_instr env i =
           store_s0 n;
           cfi_offset ~reg:8 (* s0 *) ~offset:(-16);
           (* Set up frame pointer: s0 = sp + n = CFA *)
-          if is_immediate n then
-            `	addi	s0, sp, {emit_int n}\n`
-          else begin
-            `	li	{emit_reg reg_tmp}, {emit_int n}\n`;
-            `	add	s0, sp, {emit_reg reg_tmp}\n`
-          end
+          emit_setup_frame_pointer n
         end
       end;
   | Lop(Imove | Ispill | Ireload) ->
@@ -377,16 +382,9 @@ let emit_instr env i =
         `	{emit_call func}\n`;
         `	mv	sp, s0\n`;
         cfi_restore_state ();
-        if fp && env.f.fun_frame_required then begin
+        if fp && env.f.fun_frame_required then
           (* Restore frame pointer: s0 = sp + frame_size = CFA *)
-          let n = frame_size env in
-          if is_immediate n then
-            `	addi	s0, sp, {emit_int n}\n`
-          else begin
-            `	li	{emit_reg reg_tmp}, {emit_int n}\n`;
-            `	add	s0, sp, {emit_reg reg_tmp}\n`
-          end
-        end
+          emit_setup_frame_pointer (frame_size env)
       end
   | Lop(Istackoffset n) ->
       assert (n mod 16 = 0);
@@ -618,17 +616,10 @@ let emit_instr env i =
         `	j	{emit_label jumptbl.(i)}\n`
       done
   | Lentertrap ->
-      if fp && env.f.fun_frame_required then begin
+      if fp && env.f.fun_frame_required then
         (* Recalculate frame pointer after entering trap handler:
            s0 = sp + frame_size = CFA *)
-        let n = frame_size env in
-        if is_immediate n then
-          `	addi	s0, sp, {emit_int n}\n`
-        else begin
-          `	li	{emit_reg reg_tmp}, {emit_int n}\n`;
-          `	add	s0, sp, {emit_reg reg_tmp}\n`
-        end
-      end
+        emit_setup_frame_pointer (frame_size env)
   | Ladjust_trap_depth { delta_traps } ->
       (* each trap occupes 16 bytes on the stack *)
       let delta = 16 * delta_traps in
