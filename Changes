@@ -426,6 +426,11 @@ OCaml 5.5.0
   the marshalled output.
   (David Allsopp, review by Gabriel Scherer)
 
+- #14480: Typecheck polymorphic patterns correctly before exhaustiveness
+  checking, restoring type soundness.
+  (completing #14434)
+  (Alistair O'Brien, review by ??)
+
 ### Other libraries:
 
 - #13700, #14454: Use POSIX thread-safe getgrnam_r, getgrgid_r, getpwnam_r,
