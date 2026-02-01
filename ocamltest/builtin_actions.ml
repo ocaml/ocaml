@@ -120,29 +120,22 @@ let windows = make
     "running on Windows"
     "not running on Windows")
 
-let not_windows = make
-  ~name:"not-windows"
-  ~description:"Pass if not running on Windows"
-  (Actions_helpers.pass_or_skip (get_OS () <> windows_OS)
-    "not running on Windows"
-    "running on Windows")
-
-let not_msvc = make
-  ~name:"not-msvc"
-  ~description:"Pass if not using MSVC / clang-cl"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.ccomp_type <> "msvc")
-    "not using MSVC / clang-cl"
-    "using MSVC / clang-cl")
+let msvc = make
+  ~name:"msvc"
+  ~description:"Pass if using MSVC / clang-cl"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.ccomp_type = "msvc")
+    "using MSVC / clang-cl"
+    "not using MSVC / clang-cl")
 
 let is_clang =
   List.mem "clang" (String.split_on_char '-' Ocamltest_config.c_compiler_vendor)
 
-let not_clang = make
-  ~name:"not-clang"
-  ~description:"Pass if not using clang"
-  (Actions_helpers.pass_or_skip (not is_clang)
-    "not using clang"
-    "using clang")
+let clang = make
+  ~name:"clang"
+  ~description:"Pass if using clang"
+  (Actions_helpers.pass_or_skip is_clang
+    "using clang"
+    "not using clang")
 
 (* windows _passes_ on Cygwin; target_windows _skips_ for Cygwin *)
 
@@ -152,13 +145,6 @@ let target_windows = make
   (Actions_helpers.pass_or_skip (Ocamltest_config.target_os_type = "Win32")
     "targeting native Windows"
     "not targeting native Windows")
-
-let not_target_windows = make
-  ~name:"not-target-windows"
-  ~description:"Pass if the compiler does not target native Windows"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.target_os_type <> "Win32")
-    "not targeting native Windows"
-    "targeting native Windows")
 
 let is_bsd_system s =
   match s with
@@ -171,13 +157,6 @@ let bsd = make
   (Actions_helpers.pass_or_skip (is_bsd_system Ocamltest_config.system)
     "on a BSD system"
     "not on a BSD system")
-
-let not_bsd = make
-  ~name:"not-bsd"
-  ~description:"Pass if not running on a BSD system"
-  (Actions_helpers.pass_or_skip (not (is_bsd_system Ocamltest_config.system))
-    "not on a BSD system"
-    "on a BSD system")
 
 let linux_system = "linux"
 
@@ -206,6 +185,13 @@ let not_macos_amd64_tsan = make
            && (Ocamltest_config.tsan)))
      "not on a MacOS amd64 system with TSan enabled"
      "on a MacOS amd64 system with TSan enabled")
+
+let has_cxx = make
+    ~name:"has-cxx"
+    ~description:"Pass if a C++ compiler is available"
+    (Actions_helpers.pass_or_skip (Ocamltest_config.cxx <> "")
+       "C++ compiler is available"
+       "C++ compiler not available")
 
 let arch32 = make
   ~name:"arch32"
@@ -290,13 +276,6 @@ let tsan = make
   (Actions_helpers.pass_or_skip (Ocamltest_config.tsan)
      "tsan available"
      "tsan not available")
-
-let no_tsan = make
-  ~name:"no-tsan"
-  ~description:"Pass if thread sanitizer is not supported"
-  (Actions_helpers.pass_or_skip (not Ocamltest_config.tsan)
-     "tsan not available"
-     "tsan available")
 
 let has_symlink = make
   ~name:"has_symlink"
@@ -420,16 +399,14 @@ let _ =
     libunix;
     libwin32unix;
     windows;
-    not_windows;
-    not_msvc;
-    not_clang;
+    msvc;
+    clang;
     target_windows;
-    not_target_windows;
     bsd;
-    not_bsd;
     linux;
     macos;
     not_macos_amd64_tsan;
+    has_cxx;
     arch32;
     arch64;
     has_symlink;
@@ -451,5 +428,4 @@ let _ =
     file_exists;
     copy;
     tsan;
-    no_tsan;
   ]

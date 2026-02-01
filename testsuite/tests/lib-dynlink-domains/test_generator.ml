@@ -515,7 +515,7 @@ include dynlink
 libraries = ""
 readonly_files = "@[<h>store.ml main.ml%a@]"
 
-*01 not-windows
+*01 not windows
 *02 shared-libraries
 *03 setup-ocamlc.byte-build-env
 *04 ocamlc.byte

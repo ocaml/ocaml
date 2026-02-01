@@ -2,7 +2,7 @@
  include unix;
  modules = "callbackprim.c";
  hasunix;
- not-target-windows;
+ not target-windows;
  {
    bytecode;
  }{

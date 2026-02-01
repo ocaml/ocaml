@@ -7,7 +7,7 @@
    run;
    hasunix;
    {
-     not-target-windows;
+     not target-windows;
      reference = "${test_source_directory}/syserror.unix.reference";
      check-program-output;
    }{
@@ -22,7 +22,7 @@
    run;
    hasunix;
    {
-     not-target-windows;
+     not target-windows;
      reference = "${test_source_directory}/syserror.unix.reference";
      check-program-output;
    }{

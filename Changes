@@ -25,6 +25,10 @@ Working version
   to convert from this syntax.
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
+- #14502: in ocamltest, `not <action>` negates a
+  predicate-like action.
+  (Gabriel Scherer, review by Olivier Nicole)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:
@@ -633,6 +637,9 @@ OCaml 5.5.0
 
 ### Bug fixes:
 
+- #14010: Fix miscompilation / liveness errors for string operations
+  (Mark Shinwell, Xavier Clerc, review by Xavier Leroy and Gabriel Scherer)
+
 - #14036: Fix nontermination of cycle printing in recursive modules with
   `-short-paths`. Add error message for types considered abstract while
   checking recursive modules.
@@ -675,6 +682,10 @@ OCaml 5.5.0
 - #13658, #14181: Fix handling of recursive function types that can result
   in an unbounded number of labeled or optional arguments.
   (Stefan Muenzel, report by Samuel Vivien, review by Florian Angeletti)
+
+- #13777, #14347, #14348, #14421: Test that C++ compilers can link with
+  the OCaml runtime and include its headers.
+  (Antonin Décimo, review by David Allsopp and Gabriel Scherer)
 
 - #14255: Fix TSan bug with C calls that take many arguments
   (Olivier Nicole and Miod Vallat, report by Nathan Taylor, review by Gabriel

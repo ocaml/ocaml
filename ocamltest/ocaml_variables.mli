@@ -32,7 +32,13 @@ val cppflags : Variables.t
 
 val cc : Variables.t
 
+val outputobj : Variables.t
+
 val cflags : Variables.t
+
+val cxx : Variables.t
+
+val ccomp_type : Variables.t
 
 val caml_ld_library_path : Variables.t
 

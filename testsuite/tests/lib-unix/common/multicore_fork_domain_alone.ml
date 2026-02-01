@@ -1,7 +1,7 @@
 (* TEST
  include unix;
  hasunix;
- not-target-windows;
+ not target-windows;
  {
    bytecode;
  }{

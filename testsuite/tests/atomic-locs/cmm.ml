@@ -25,7 +25,7 @@ let cas (r : 'a atomic) oldv newv =
 (* TEST
 
   (* we restrict this test to a single configuration,
-       amd64+linux no-tsan no-flambda
+       amd64+linux not tsan no-flambda
      to avoid dealing with differences in cmm output across systems
      (the check is known to fail under MSCV, which uses a different
      symbol generator.)
@@ -33,7 +33,7 @@ let cas (r : 'a atomic) oldv newv =
    arch_amd64;
    linux;
    no-flambda; (* the output will be slightly different under Flambda *)
-   no-tsan; (* TSan modifies the generated code *)
+   not tsan; (* TSan modifies the generated code *)
 
    setup-ocamlopt.byte-build-env;
    flags = "-c -dcmm -dno-locations -dno-unique-ids";

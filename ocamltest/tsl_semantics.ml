@@ -77,6 +77,12 @@ type behavior =
 type summary = Test_result.status = Pass | Skip | Fail
 let string_of_summary = Test_result.string_of_status
 
+(* 'not' preserves failure and negates skips *)
+let skip_negation = function
+  | Fail -> Fail
+  | Pass -> Skip
+  | Skip -> Pass
+
 (* The sequential join passes if both tests pass.
 
    This implies that a linear sequence of actions, a path along the
@@ -114,7 +120,7 @@ let run ~log ~add_msg ~report_error behavior env summ ast =
       | Ok env' -> Ok (behavior, env', summ)
       | Error () -> Error Fail
       end
-    | Test (name, mods) ->
+    | Test (sign, name, mods) ->
       let locstr =
         if name.loc = Location.none then
           "default"
@@ -129,6 +135,11 @@ let run ~log ~add_msg ~report_error behavior env summ ast =
             let testenv = List.fold_left apply_modifiers env mods in
             let test = lookup_test name in
             let (result, newenv) = Tests.run log testenv test in
+            let result =
+              match sign with
+              | Pos -> result
+              | Neg -> { result with status = skip_negation result.status }
+            in
             let msg = Test_result.string_of_result result in
             let sub_behavior =
               if Test_result.is_pass result then Run else Skip_all in

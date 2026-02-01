@@ -20,6 +20,8 @@ type 'a located = {
   loc : Location.t
 }
 
+type sign = Pos | Neg
+
 type environment_statement =
   | Assignment of bool * string located * string located (* variable = value *)
   | Append of string located * string located (* variable += value *)
@@ -29,6 +31,7 @@ type environment_statement =
 type tsl_item =
   | Environment_statement of environment_statement located
   | Test of
+    sign (* when Neg, negate the test *) *
     string located (* test name *) *
     string located list (* environment modifiers *)
 

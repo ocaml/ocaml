@@ -36,6 +36,7 @@ let mkenvstmt envstmt =
 %token <[`Above | `Below]> TSL_BEGIN_OCAML_STYLE
 %token TSL_END_OCAML_STYLE
 %token COMMA LEFT_BRACE RIGHT_BRACE SEMI
+%token NOT
 %token EQUAL PLUSEQUAL
 /* %token COLON */
 %token INCLUDE SET UNSET WITH
@@ -63,7 +64,8 @@ statement_list:
 
 statement:
 | env_item SEMI { $1 }
-| identifier with_environment_modifiers SEMI { Test ($1, $2) }
+|     identifier with_environment_modifiers SEMI { Test (Pos, $1, $2) }
+| NOT identifier with_environment_modifiers SEMI { Test (Neg, $2, $3) }
 
 tsl_script:
 | TSL_BEGIN_C_STYLE node TSL_END_C_STYLE { $2 }

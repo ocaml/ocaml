@@ -1,8 +1,8 @@
 (* TEST
    native-compiler;
-   no-tsan; (* Skip, TSan inserts extra frames into backtraces *)
+   not tsan; (* Skip, TSan inserts extra frames into backtraces *)
    linux;
-   not-clang; (* Skip, clang is tested on macOS *)
+   not clang; (* Skip, clang is tested on macOS *)
    arch_amd64;
    script = "sh ${test_source_directory}/has_gdb.sh";
    script;

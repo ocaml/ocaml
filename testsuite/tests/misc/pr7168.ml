@@ -1,6 +1,6 @@
 (* TEST
  ocamlrunparam += "l=100000";
- no-tsan; (* TSan does not support call stacks bigger than 64k frames *)
+ not tsan; (* TSan does not support call stacks bigger than 64k frames *)
  {
    bytecode;
  }

@@ -2,7 +2,7 @@
  include unix;
  modules = "recvfrom.ml";
  hasunix;
- not-windows;
+ not windows;
  {
    bytecode;
  }{

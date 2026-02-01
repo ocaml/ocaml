@@ -1,10 +1,10 @@
 (* TEST
  include systhreads;
  hassysthreads;
- not-bsd;
+ not bsd;
  hasunix;
- not-target-windows;
- no-tsan; (* tsan limitation: starting new threads after fork is not supported *)
+ not target-windows;
+ not tsan; (* tsan limitation: starting new threads after fork is not supported *)
  {
    bytecode;
  }{

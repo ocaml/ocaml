@@ -2,7 +2,7 @@
  include unix;
  modules = "test_signalhandler_.c";
  hasunix;
- not-target-windows;
+ not target-windows;
  {
    bytecode;
  }{

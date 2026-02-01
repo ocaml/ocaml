@@ -1,5 +1,5 @@
 (* TEST
- not-windows;
+ not windows;
  include unix;
  hasunix;
  native;

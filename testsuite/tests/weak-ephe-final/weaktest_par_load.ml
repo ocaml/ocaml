@@ -1,5 +1,5 @@
 (* TEST
- no-tsan;
+ not tsan;
  {
    bytecode;
  }{
