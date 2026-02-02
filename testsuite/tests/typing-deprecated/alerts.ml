@@ -286,3 +286,57 @@ Warning 47 [attribute-payload]: illegal payload for attribute "alert".
 
 module X : sig val x : int val y : int val z : int end
 |}]
+
+(* Only one alert by location *)
+
+module type Sx = sig val x: int end
+module type Sy = sig val y: int end
+module X = struct let (x[@alert x "module X used" ]) = 0 end
+module Y = struct let y = 0 end
+module F(_:Sx)(_:Sy)(_:Sx)(_:Sy) = struct end
+[%%expect {|
+module type Sx = sig val x : int end
+module type Sy = sig val y : int end
+module X : sig val x : int end
+module Y : sig val y : int end
+module F : Sx -> Sy -> Sx -> Sy -> sig end
+|}]
+module E = F(Y)(Y)(X)(X)(Y)(Y)
+[%%expect {|
+Line 1, characters 11-30:
+1 | module E = F(Y)(Y)(X)(X)(Y)(Y)
+               ^^^^^^^^^^^^^^^^^^^
+Error: This application of the functor "F" is ill-typed.
+       These arguments:
+         Y Y X X Y Y
+       do not match these parameters:
+         (Arg : Sx) (Arg : Sy) (Arg : Sx) (Arg : Sy) -> ...
+       1. Modules do not match:
+            Y : sig val y : int end
+          is not included in
+            Sx
+          The value "x" is required but not provided
+       2. Module Y matches the expected module type Sy
+       3. Module X matches the expected module type Sx
+       4. The following extra argument is provided X : sig val x : int end
+       5. Module Y matches the expected module type Sy
+       6. The following extra argument is provided Y : sig val y : int end
+|}]
+
+module type Sxd = sig val x:int [@@alert first_class] end
+let f x = (x: (module Sxd) :> (module Sx))
+[%%expect {|
+module type Sxd = sig val x : int end
+File "_none_", line 1:
+Alert first_class: x
+Line 1, characters 22-53:
+1 | module type Sxd = sig val x:int [@@alert first_class] end
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  Definition
+Line 1, characters 21-31:
+1 | module type Sx = sig val x: int end
+                         ^^^^^^^^^^
+  Expected signature
+
+val f : (module Sxd) -> (module Sx) = <fun>
+|}]

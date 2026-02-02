@@ -114,8 +114,8 @@ val mark_deprecated_mutable_used : Parsetree.attributes -> unit
 
 val check_alerts: Location.t -> Parsetree.attributes -> string -> unit
 val check_alerts_inclusion:
-  def:Location.t -> use:Location.t -> Location.t -> Parsetree.attributes ->
-  Parsetree.attributes -> string -> unit
+  def:Location.t -> use:Location.t -> Location.t option ->
+  Parsetree.attributes -> Parsetree.attributes -> string -> unit
 val alerts_of_attrs: Parsetree.attributes -> Misc.alerts
 val alerts_of_sig: mark:bool -> Parsetree.signature -> Misc.alerts
 val alerts_of_str: mark:bool -> Parsetree.structure -> Misc.alerts
@@ -123,8 +123,8 @@ val alerts_of_str: mark:bool -> Parsetree.structure -> Misc.alerts
 val check_deprecated_mutable:
     Location.t -> Parsetree.attributes -> string -> unit
 val check_deprecated_mutable_inclusion:
-  def:Location.t -> use:Location.t -> Location.t -> Parsetree.attributes ->
-  Parsetree.attributes -> string -> unit
+  def:Location.t -> use:Location.t -> Location.t option ->
+  Parsetree.attributes -> Parsetree.attributes -> string -> unit
 
 val error_of_extension: Parsetree.extension -> Location.error
 

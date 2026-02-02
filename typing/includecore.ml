@@ -90,7 +90,7 @@ let value_descriptions_consistency env vd1 vd2 =
   | (_, Val_prim _) -> raise (Dont_match Not_a_primitive)
   | (_, _) -> Tcoerce_none
 
-let value_descriptions ~loc env name
+let value_descriptions ?loc env name
     (vd1 : Types.value_description)
     (vd2 : Types.value_description) =
   Builtin_attributes.check_alerts_inclusion
@@ -504,7 +504,7 @@ module Record_diffing = struct
         Some (Type err : label_mismatch)
     | () -> None
 
-  let rec equal ~loc env params1 params2
+  let rec equal ?loc env params1 params2
       (labels1 : Types.label_declaration list)
       (labels2 : Types.label_declaration list) =
     match labels1, labels2 with
@@ -524,7 +524,7 @@ module Record_diffing = struct
           | Some _ -> false
           (* add arguments to the parameters, cf. PR#7378 *)
           | None ->
-              equal ~loc env
+              equal ?loc env
                 (ld1.ld_type::params1) (ld2.ld_type::params2)
                 rem1 rem2
         end
@@ -545,7 +545,7 @@ module Record_diffing = struct
            (in inline records) *)
         x.data.ld_type::params1, y.data.ld_type::params2
 
-  let test _loc env (params1,params2)
+  let test env (params1,params2)
       ({pos; data=lbl1}: Diff.left)
       ({data=lbl2; _ }: Diff.right)
     =
@@ -600,27 +600,27 @@ module Record_diffing = struct
             we have [Type_change Delete^D < Delete^D Name_change]. *)
 
   let key (x: Defs.left) = Ident.name x.ld_id
-  let diffing loc env params1 params2 cstrs_1 cstrs_2 =
+  let diffing env params1 params2 cstrs_1 cstrs_2 =
     let module Compute = Diff.Simple(struct
         let key_left = key
         let key_right = key
         let update = update
-        let test = test loc env
+        let test = test env
         let weight = weight
       end)
     in
     Compute.diff (params1,params2) cstrs_1 cstrs_2
 
-  let compare ~loc env params1 params2 l r =
-    if equal ~loc env params1 params2 l r then
+  let compare ?loc env params1 params2 l r =
+    if equal ?loc env params1 params2 l r then
       None
     else
-      Some (diffing loc env params1 params2 l r)
+      Some (diffing env params1 params2 l r)
 
 
-  let compare_with_representation ~loc env params1 params2 l r rep1 rep2 =
-    if not (equal ~loc env params1 params2 l r) then
-      let patch = diffing loc env params1 params2 l r in
+  let compare_with_representation ?loc env params1 params2 l r rep1 rep2 =
+    if not (equal ?loc env params1 params2 l r) then
+      let patch = diffing env params1 params2 l r in
       Some (Record_mismatch (Label_mismatch patch))
     else
      match rep1, rep2 with
@@ -646,7 +646,7 @@ end
 
 module Variant_diffing = struct
 
-  let compare_constructor_arguments ~loc env params1 params2 arg1 arg2 =
+  let compare_constructor_arguments ?loc env params1 params2 arg1 arg2 =
     match arg1, arg2 with
     | Types.Cstr_tuple arg1, Types.Cstr_tuple arg2 ->
         if List.length arg1 <> List.length arg2 then
@@ -660,23 +660,23 @@ module Variant_diffing = struct
     | Types.Cstr_record l1, Types.Cstr_record l2 ->
         Option.map
           (fun rec_err -> Inline_record rec_err)
-          (Record_diffing.compare env ~loc params1 params2 l1 l2)
+          (Record_diffing.compare env ?loc params1 params2 l1 l2)
     | Types.Cstr_record _, _ -> Some (Kind First : constructor_mismatch)
     | _, Types.Cstr_record _ -> Some (Kind Second : constructor_mismatch)
 
-  let compare_constructors ~loc env params1 params2 res1 res2 args1 args2 =
+  let compare_constructors ?loc env params1 params2 res1 res2 args1 args2 =
     match res1, res2 with
     | Some r1, Some r2 ->
         begin match Ctype.equal env true [r1] [r2] with
         | exception Ctype.Equality err -> Some (Type err)
-        | () -> compare_constructor_arguments ~loc env [r1] [r2] args1 args2
+        | () -> compare_constructor_arguments ?loc env [r1] [r2] args1 args2
         end
     | Some _, None -> Some (Explicit_return_type First)
     | None, Some _ -> Some (Explicit_return_type Second)
     | None, None ->
-        compare_constructor_arguments ~loc env params1 params2 args1 args2
+        compare_constructor_arguments ?loc env params1 params2 args1 args2
 
-  let equal ~loc env params1 params2
+  let equal ?loc env params1 params2
       (cstrs1 : Types.constructor_declaration list)
       (cstrs2 : Types.constructor_declaration list) =
     List.length cstrs1 = List.length cstrs2 &&
@@ -692,7 +692,7 @@ module Variant_diffing = struct
             cd1.cd_attributes cd2.cd_attributes
             (Ident.name cd1.cd_id)
           ;
-        match compare_constructors ~loc env params1 params2
+        match compare_constructors ?loc env params1 params2
                 cd1.cd_res cd2.cd_res cd1.cd_args cd2.cd_args with
         | Some _ -> false
         | None -> true
@@ -716,13 +716,13 @@ module Variant_diffing = struct
     | Change (_,_,Diffing_with_keys.Type _) -> 50
     (** See {!Variant_diffing.weight} for an explanation *)
 
-  let test loc env (params1,params2)
+  let test env (params1,params2)
       ({pos; data=cd1}: D.left)
       ({data=cd2; _}: D.right) =
     let name1, name2 = Ident.name cd1.cd_id, Ident.name cd2.cd_id in
     if  name1 <> name2 then
       let types_match =
-        match compare_constructors ~loc env params1 params2
+        match compare_constructors env params1 params2
                 cd1.cd_res cd2.cd_res cd1.cd_args cd2.cd_args with
         | Some _ -> false
         | None -> true
@@ -730,34 +730,34 @@ module Variant_diffing = struct
       Error
         (Diffing_with_keys.Name {types_match; pos; got=name1; expected=name2})
     else
-      match compare_constructors ~loc env params1 params2
+      match compare_constructors env params1 params2
               cd1.cd_res cd2.cd_res cd1.cd_args cd2.cd_args with
       | Some reason ->
           Error (Diffing_with_keys.Type {pos; got=cd1; expected=cd2; reason})
       | None -> Ok ()
 
-  let diffing loc env params1 params2 cstrs_1 cstrs_2 =
+  let diffing env params1 params2 cstrs_1 cstrs_2 =
     let key (x:Defs.left) = Ident.name x.cd_id in
     let module Compute = D.Simple(struct
         let key_left = key
         let key_right = key
-        let test = test loc env
+        let test = test env
         let update = update
         let weight = weight
       end)
     in
     Compute.diff (params1,params2) cstrs_1 cstrs_2
 
-  let compare ~loc env params1 params2 l r =
-    if equal ~loc env params1 params2 l r then
+  let compare ?loc env params1 params2 l r =
+    if equal ?loc env params1 params2 l r then
       None
     else
-      Some (diffing loc env params1 params2 l r)
+      Some (diffing env params1 params2 l r)
 
-  let compare_with_representation ~loc env params1 params2
+  let compare_with_representation ?loc env params1 params2
       cstrs1 cstrs2 rep1 rep2
     =
-    let err = compare ~loc env params1 params2 cstrs1 cstrs2 in
+    let err = compare ?loc env params1 params2 cstrs1 cstrs2 in
     match err, rep1, rep2 with
     | None, Variant_regular, Variant_regular
     | None, Variant_unboxed, Variant_unboxed ->
@@ -947,7 +947,7 @@ let type_declarations_consistency env decl1 decl2 =
     | Some err -> Some (Privacy err)
     | None -> None
 
-let type_declarations ?(equality = false) ~loc env ~mark name
+let type_declarations ?(equality = false) ?loc env ~mark name
       decl1 path decl2 =
   Builtin_attributes.check_alerts_inclusion
     ~def:decl1.type_loc
@@ -995,7 +995,7 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           mark usage cstrs1;
           if equality then mark Env.Exported cstrs2
         end;
-        Variant_diffing.compare_with_representation ~loc env
+        Variant_diffing.compare_with_representation ?loc env
           decl1.type_params
           decl2.type_params
           cstrs1
@@ -1016,7 +1016,7 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           mark usage labels1;
           if equality then mark Env.Exported labels2
         end;
-        Record_diffing.compare_with_representation ~loc env
+        Record_diffing.compare_with_representation ?loc env
           decl1.type_params decl2.type_params
           labels1 labels2
           rep1 rep2
@@ -1074,7 +1074,7 @@ let type_declarations ?(equality = false) ~loc env ~mark name
 
 (* Inclusion between extension constructors *)
 
-let extension_constructors ~loc env ~mark id ext1 ext2 =
+let extension_constructors ?loc env ~mark id ext1 ext2 =
   if mark then begin
     let usage : Env.constructor_usage =
       if ext2.ext_private = Public then Env.Exported
@@ -1095,7 +1095,7 @@ let extension_constructors ~loc env ~mark id ext1 ext2 =
       Some (Constructor_mismatch (id, ext1, ext2, Type err))
   | () ->
     let r =
-      Variant_diffing.compare_constructors ~loc env
+      Variant_diffing.compare_constructors ?loc env
         ext1.ext_type_params ext2.ext_type_params
         ext1.ext_ret_type ext2.ext_ret_type
         ext1.ext_args ext2.ext_args
