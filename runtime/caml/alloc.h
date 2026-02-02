@@ -108,7 +108,8 @@ CAMLextern value caml_alloc_tuple (mlsize_t);
    contains uninitialized values. */
 CAMLextern value caml_alloc_float_array(mlsize_t len);
 
-/* caml_alloc_string(n) returns a byte sequence (or string) value of length n bytes.
+/* caml_alloc_string(n) returns a byte sequence (or string)
+   value of length n bytes.
    The sequence initially contains uninitialized bytes.*/
 CAMLextern value caml_alloc_string (mlsize_t len);
 
@@ -131,13 +132,16 @@ CAMLextern value caml_copy_string_array (char const * const*);
    floating-point value initialized with the double d. */
 CAMLextern value caml_copy_double (double);
 
-/* caml_copy_int32(i) return a value of OCaml type int32 initialized with the integer i. */
+/* caml_copy_int32(i) return a value of OCaml type int32
+   initialized with the integer i. */
 CAMLextern value caml_copy_int32(int32_t); /* defined in [ints.c] */
 
-/* caml_copy_int64(i) return a value of OCaml type int64 initialized with the integer i. */
+/* caml_copy_int64(i) return a value of OCaml type int64
+   initialized with the integer i. */
 CAMLextern value caml_copy_int64 (int64_t);       /* defined in [ints.c] */
 
-/* caml_copy_nativeint(i) return a value of OCaml type nativeint initialized with the integer i. */
+/* caml_copy_nativeint(i) return a value of OCaml type nativeint
+   initialized with the integer i. */
 CAMLextern value caml_copy_nativeint (intnat);  /* defined in [ints.c] */
 
 /* caml_alloc_array(f, a) allocates an array of values,
@@ -147,7 +151,8 @@ CAMLextern value caml_copy_nativeint (intnat);  /* defined in [ints.c] */
    The function f receives each pointer as argument, and returns a value.
    The zero-tagged block returned by alloc_array(f, a)
    is filled with the values returned by the successive calls to f.
-   (This function must not be used to build an array of floating-point numbers.) */
+   (This function must not be used to build an array of
+   floating-point numbers.) */
 CAMLextern value caml_alloc_array (value (*funct) (char const *),
                                    char const * const * array);
 
