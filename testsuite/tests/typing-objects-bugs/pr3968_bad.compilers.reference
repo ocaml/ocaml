@@ -38,7 +38,10 @@ Error: The class type
          as 'a
        is not compatible with type
          expr = [ `Abs of string * expr | `App of expr * expr ]
-       In tag `App, type exp = < eval : (string, exp) Hashtbl.t -> expr >
+       In tag `App, type
+         [ `Abs of string * [> `App of 'b ] | `App of expr * expr ] * exp
+         as 'b
+       is not compatible with type expr * expr
+       Type exp = < eval : (string, exp) Hashtbl.t -> expr >
        is not compatible with type
          expr = [ `Abs of string * expr | `App of expr * expr ]
-       Types for tag `App are incompatible
