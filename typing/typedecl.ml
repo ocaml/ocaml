@@ -432,7 +432,8 @@ let transl_declaration env sdecl (id, uid) =
               raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
             all_constrs := String.Set.add name !all_constrs)
           scstrs;
-        if List.length
+        if not large_variant_attr
+        && List.length
             (List.filter (fun cd -> cd.pcd_args <> Pcstr_tuple []) scstrs)
            > (Config.max_tag + 1) then
           raise(Error(sdecl.ptype_loc, Too_many_constructors));
