@@ -12,6 +12,8 @@
 ;*                                                                        *
 ;**************************************************************************
 
+(files :standard \ emit.ml)
+
 (rule
  (targets arch.ml CSE.ml proc.ml reload.ml scheduling.ml selection.ml
           stackframe.ml)
