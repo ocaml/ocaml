@@ -1,0 +1,16 @@
+{
+  // This file tries to enforce some of the hygiene rules
+  // enforced in CI by tools/check-typo.
+  "files.insertFinalNewline": true, // (missing-lf)
+  "files.trimFinalNewlines": true, // (white-at-eof)
+  "files.trimTrailingWhitespace": true, // (white-at-eol)
+  "editor.detectIndentation": false,
+  "editor.insertSpaces": true, // (tab)
+  "editor.tabSize": 2,
+  "editor.renderWhitespace": "all", // Makes trailing spaces visible
+  "editor.rulers": [
+    80, // (long-line)
+    132 // (very-long-line)
+  ],
+  "files.eol": "\n"
+}
