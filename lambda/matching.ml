@@ -3264,8 +3264,15 @@ let combine_regular_constructor loc arg cstr partial ctx def
       mk_failaction_pos partial constrs ctx def
   in
   let descr_lambda_list = fails @ descr_lambda_list in
-  let consts, nonconsts =
-    split_cases (List.map tag_lambda descr_lambda_list) in
+  let tag_lambda_list = List.map tag_lambda descr_lambda_list in
+  let consts, nonconsts = split_cases tag_lambda_list in
+  let is_large_variant =
+    (* Note: it might be safer to check that all [Cstr_block] constructors
+       agree on the size *)
+    List.exists
+      (function Cstr_block (_, Variant_expanded), _ -> true | _, _ -> false)
+      tag_lambda_list
+  in
   (* Our duty below is to generate code, for matching on a list of
      constructor+action cases, that is good for both bytecode and
      native-code compilation. (Optimizations that only work well
@@ -3341,18 +3348,30 @@ let combine_regular_constructor loc arg cstr partial ctx def
                       ~low:0 ~high:(n - 1) consts,
                     act )
             | None ->
-                (* In the general case, emit a switch. *)
-                let sw =
-                  { sw_numconsts = cstr.cstr_consts;
-                    sw_consts = consts;
-                    sw_numblocks = cstr.cstr_nonconsts;
-                    sw_blocks = nonconsts;
-                    sw_failaction = fail_opt
-                  }
-                in
-                let hs, sw = share_actions_sw sw in
-                let sw = reintroduce_fail sw in
-                hs (Lswitch (arg, sw, loc))
+                if is_large_variant then
+                  let non_const_tag = Ident.create_local "tag" in
+                  Lifthenelse
+                    ( Lprim (Pisint, [ arg ], loc),
+                      call_switcher loc fail_opt arg
+                        ~low:0 ~high:(cstr.cstr_consts - 1) consts,
+                      bind Alias non_const_tag
+                        (Lprim (Pfield (0, Immediate, Immutable),
+                                [ arg ], loc))
+                        (call_switcher loc fail_opt (Lvar non_const_tag)
+                           ~low:0 ~high:(cstr.cstr_nonconsts - 1) nonconsts))
+                else
+                  (* In the general case, emit a switch. *)
+                  let sw =
+                    { sw_numconsts = cstr.cstr_consts;
+                      sw_consts = consts;
+                      sw_numblocks = cstr.cstr_nonconsts;
+                      sw_blocks = nonconsts;
+                      sw_failaction = fail_opt
+                    }
+                  in
+                  let hs, sw = share_actions_sw sw in
+                  let sw = reintroduce_fail sw in
+                  hs (Lswitch (arg, sw, loc))
           )
       )
   in
