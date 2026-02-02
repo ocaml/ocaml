@@ -301,11 +301,19 @@ and transl_exp0 ~in_new_scope ~scopes e =
           Lconst(const_int n)
       | Cstr_unboxed ->
           (match ll with [v] -> v | _ -> assert false)
-      | Cstr_block n ->
+      | Cstr_block (n, Variant_compact) ->
           begin try
             Lconst(Const_block(n, List.map extract_constant ll))
           with Not_constant ->
             Lprim(Pmakeblock(n, Immutable, Some shape), ll,
+                  of_location ~scopes e.exp_loc)
+          end
+      | Cstr_block (n, Variant_expanded) ->
+          begin try
+            Lconst(Const_block(0, const_int n :: List.map extract_constant ll))
+          with Not_constant ->
+            Lprim(Pmakeblock(0, Immutable, Some (Pintval :: shape)),
+                  Lconst(const_int n) :: ll,
                   of_location ~scopes e.exp_loc)
           end
       | Cstr_extension(path, is_const) ->

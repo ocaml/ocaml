@@ -38,15 +38,22 @@ type constructor_description =
 
 and constructor_tag =
     Cstr_constant of int                (* Constant constructor (an int) *)
-  | Cstr_block of int                   (* Regular constructor (a block) *)
+  | Cstr_block of int * variant_size    (* Regular constructor (a block) *)
   | Cstr_unboxed                        (* Constructor of an unboxed type *)
   | Cstr_extension of Path.t * bool     (* Extension constructor
                                            true if a constant false if a block*)
 
+let equal_size (sz1 : variant_size) sz2 =
+  match sz1, sz2 with
+  | Variant_compact, Variant_compact
+  | Variant_expanded, Variant_expanded -> true
+  | Variant_compact, Variant_expanded
+  | Variant_expanded, Variant_compact -> false
+
 let equal_tag t1 t2 =
   match (t1, t2) with
   | Cstr_constant i1, Cstr_constant i2 -> i2 = i1
-  | Cstr_block i1, Cstr_block i2 -> i2 = i1
+  | Cstr_block (i1, size1), Cstr_block (i2, size2) -> i2 = i1 && equal_size size1 size2
   | Cstr_unboxed, Cstr_unboxed -> true
   | Cstr_extension (path1, _), Cstr_extension (path2, _) ->
       Path.same path1 path2

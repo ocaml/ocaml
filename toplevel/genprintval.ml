@@ -484,7 +484,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         let tag =
           if unbx then Cstr_unboxed
           else if O.is_block obj
-          then Cstr_block(O.tag obj)
+          then Cstr_block(O.tag obj, Variant_compact)
           else Cstr_constant(O.base_obj obj) (* immediate *) in
         match Datarepr.find_constr_by_tag tag constr_list with
         | exception Datarepr.Constr_not_found ->

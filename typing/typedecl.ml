@@ -72,6 +72,7 @@ type error =
   | Immediacy of Typedecl_immediacy.error
   | Separability of Typedecl_separability.error
   | Bad_unboxed_attribute of string
+  | Bad_large_variant_attribute
   | Boxed_and_unboxed
   | Nonrec_gadt
   | Invalid_private_row_declaration of type_expr
@@ -90,6 +91,9 @@ let get_unboxed_from_attributes sdecl =
   | true, false -> Some false
   | false, true -> Some true
   | false, false -> None
+
+let get_large_variant_from_attributes sdecl =
+  Builtin_attributes.has_large_variant sdecl.ptype_attributes
 
 (* Enter all declared types in the environment as abstract types *)
 
@@ -356,6 +360,15 @@ let transl_declaration env sdecl (id, uid) =
       transl_simple_type env ~closed:false sty', loc)
     sdecl.ptype_constraints
   in
+  let large_variant_attr = get_large_variant_from_attributes sdecl in
+  begin if large_variant_attr then
+      match sdecl.ptype_kind with
+      | Ptype_abstract
+      | Ptype_external _
+      | Ptype_open
+      | Ptype_record _ -> raise (Error(sdecl.ptype_loc, Bad_large_variant_attribute))
+      | Ptype_variant _ -> ()
+  end;
   let unboxed_attr = get_unboxed_from_attributes sdecl in
   begin match unboxed_attr with
   | (None | Some false) -> ()
@@ -453,7 +466,16 @@ let transl_declaration env sdecl (id, uid) =
           Builtin_attributes.warning_scope scstr.pcd_attributes
             (fun () -> make_cstr scstr)
         in
-        let rep = if unbox then Variant_unboxed else Variant_regular in
+        let rep =
+          if unbox then Variant_unboxed
+          else
+            let size =
+              if large_variant_attr
+              then Variant_expanded
+              else Variant_compact
+            in
+            Variant_regular size
+        in
         let tcstrs, cstrs = List.split (List.map make_cstr scstrs) in
           Ttype_variant tcstrs, Type_variant (cstrs, rep)
       | Ptype_record lbls ->
@@ -2322,6 +2344,8 @@ let report_error ~loc = function
       )
   | Bad_unboxed_attribute msg ->
       Location.errorf ~loc "This type cannot be unboxed because@ %s." msg
+  | Bad_large_variant_attribute ->
+      Location.errorf ~loc "The large_variant attribute only applies to variant declarations."
   | Separability (Typedecl_separability.Non_separable_evar evar) ->
       let pp_evar ppf = function
         | None ->

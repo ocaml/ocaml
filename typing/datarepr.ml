@@ -118,18 +118,18 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
           | _, Variant_unboxed ->
             assert (rem = []);
             (Cstr_unboxed, [])
-          | Cstr_tuple [], Variant_regular ->
+          | Cstr_tuple [], Variant_regular _size ->
              (Cstr_constant idx_const,
               describe_constructors (idx_const+1) idx_nonconst rem)
-          | _, Variant_regular  ->
-             (Cstr_block idx_nonconst,
+          | _, Variant_regular size ->
+             (Cstr_block (idx_nonconst, size),
               describe_constructors idx_const (idx_nonconst+1) rem) in
         let cstr_name = Ident.name cd_id in
         let existentials, cstr_args, cstr_inlined =
           let representation =
             match rep with
             | Variant_unboxed -> Record_unboxed true
-            | Variant_regular -> Record_inlined idx_nonconst
+            | Variant_regular _size -> Record_inlined idx_nonconst
           in
           constructor_args ~current_unit decl.type_private cd_args cd_res
             Path.(Pextra_ty (ty_path, Pcstr_ty cstr_name)) representation
@@ -225,10 +225,13 @@ let rec find_constr tag num_const num_nonconst = function
       if tag = Cstr_constant num_const
       then c
       else find_constr tag (num_const + 1) num_nonconst rem
-  | c :: rem ->
-      if tag = Cstr_block num_nonconst || tag = Cstr_unboxed
-      then c
-      else find_constr tag num_const (num_nonconst + 1) rem
+  | c :: rem -> begin
+      match tag with
+      | Cstr_block (idx, _) when idx = num_nonconst -> c
+      | Cstr_unboxed -> c
+      | Cstr_block _ | Cstr_constant _ | Cstr_extension _ ->
+        find_constr tag num_const (num_nonconst + 1) rem
+    end
 
 let find_constr_by_tag tag cstrlist =
   find_constr tag 0 0 cstrlist

@@ -2054,9 +2054,14 @@ let get_expr_args_constr ~scopes head { arg; mut; _ } rem =
     { arg; binding_kind = Alias; mut } :: rem
   else
     match cstr.cstr_tag with
-    | Cstr_constant _
-    | Cstr_block _ ->
-        make_field_accesses Alias 0 (cstr.cstr_arity - 1) rem
+    | Cstr_constant _ -> rem
+    | Cstr_block (_, size) ->
+        let offset =
+          match size with
+          | Variant_compact -> 0
+          | Variant_expanded -> 1
+        in
+        make_field_accesses Alias offset (cstr.cstr_arity + offset - 1) rem
     | Cstr_unboxed -> { arg; binding_kind = Alias; mut } :: rem
     | Cstr_extension _ -> make_field_accesses Alias 1 cstr.cstr_arity rem
 
@@ -2101,11 +2106,14 @@ let divide_variant ~scopes row ctx { cases = cl; args; default = def } =
                 (make_matching get_expr_args_variant_constant head def ctx)
                 ( = ) (Cstr_constant tag) (patl, action) variants
           | Some pat ->
+              (* Note: the use of Variant_expanded below is not important.
+                 Using regular variant descriptors allows us to reuse the
+                 [split_cases] function, which ignores the block size. *)
               add_in_div
                 (make_matching
                    (get_expr_args_variant_nonconst ~scopes)
                    head def ctx)
-                ( = ) (Cstr_block tag)
+                ( = ) (Cstr_block (tag, Variant_expanded))
                 (pat :: patl, action)
                 variants
       )
@@ -3168,7 +3176,7 @@ let split_cases tag_lambda_list =
         let consts, nonconsts = split_rec rem in
         match cstr_tag with
         | Cstr_constant n -> ((n, act) :: consts, nonconsts)
-        | Cstr_block n -> (consts, (n, act) :: nonconsts)
+        | Cstr_block (n, _size) -> (consts, (n, act) :: nonconsts)
         | Cstr_unboxed -> (consts, (0, act) :: nonconsts)
         | Cstr_extension _ -> assert false
       )
