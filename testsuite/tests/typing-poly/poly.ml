@@ -1832,7 +1832,6 @@ Error: This expression has type "< m : 'b 'x. ([< `Foo of 'x ] as 'b) -> 'x >"
        but an expression was expected of type
          "< m : 'a. [< `Foo of int ] -> 'a >"
        In tag "`Foo", type "'x" is not compatible with type "int"
-       Types for tag "`Foo" are incompatible
 |}];;
 (* fail *)
 let (n : 'b -> < m : 'a . ([< `Foo of int] as 'b) -> 'a >) = fun x ->
@@ -1845,7 +1844,6 @@ Error: This expression has type "< m : 'b 'x. ([< `Foo of 'x ] as 'b) -> 'x >"
        but an expression was expected of type
          "< m : 'a. [< `Foo of int ] -> 'a >"
        In tag "`Foo", type "'x" is not compatible with type "int"
-       Types for tag "`Foo" are incompatible
 |}];;
 (* ok *)
 let f (n : < m : 'a 'r. [< `Foo of 'a & int | `Bar] as 'r >) =
@@ -1866,7 +1864,6 @@ Error: The value "n" has type "< m : 'a 'c. [< `Bar | `Foo of 'a & int ] as 'c >
        but an expression was expected of type
          "< m : 'b 'd. [< `Bar | `Foo of int & 'b ] as 'd >"
        In tag "`Foo", type "'a" is not compatible with type "int"
-       Types for tag "`Foo" are incompatible
 |}]
 (* ok (with implicit universal quantification) *)
 let f (n : < m : 'a. [< `Foo of 'a & int | `Bar] >) =
@@ -2167,7 +2164,7 @@ Lines 1-3, characters 15-3:
 2 |   method x : 'b . 'b s list = [S]
 3 | end
 Error: This expression has type "< x : 'b. 'b s list >"
-       but an expression was expected of type "'a c"
+       but an expression was expected of type "'a c" = "< x : 'a list >"
        The method "x" has type "'b. 'b s list", but the expected method type was
        "'a list"
        The universal variable "'b" would escape its scope
@@ -2184,9 +2181,12 @@ let f (x : u) = (x : v)
 Line 1, characters 17-18:
 1 | let f (x : u) = (x : v)
                      ^
-Error: The value "x" has type "u" but an expression was expected of type "v"
-       The method "m" has type "'a s list * < m : 'b > as 'b",
-       but the expected method type was "'a. 'a s list * < m : 'a. 'c > as 'c"
+Error: The value "x" has type
+         "u" = "< m : 'a. 'a s list * (< m : 'a s list * 'b > as 'b) >"
+       but an expression was expected of type
+         "v" = "< m : 'a. 'a s list * 'c > as 'c"
+       The method "m" has type "'a s list * < m : 'd > as 'd",
+       but the expected method type was "'a. 'a s list * < m : 'a. 'e > as 'e"
        The universal variable "'a" would escape its scope
 |}]
 
@@ -2203,7 +2203,7 @@ Lines 1-3, characters 15-3:
 2 |   method x : 'b . 'b s list = []
 3 | end
 Error: This expression has type "< x : 'b. 'b s list >"
-       but an expression was expected of type "'a c"
+       but an expression was expected of type "'a c" = "< x : 'a list >"
        The method "x" has type "'b. 'b s list", but the expected method type was
        "'a list"
        The universal variable "'b" would escape its scope

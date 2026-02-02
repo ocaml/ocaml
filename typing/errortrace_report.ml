@@ -43,8 +43,6 @@ let trees_of_trace mode =
   List.map (Errortrace.map_ctx (trees_of_type_expansion mode))
 
 let print_tag ppf s = Style.inline_code ppf ("`" ^ s)
-let incompatible_tag_types s =
-  doc_printf "@,Types for tag %a are incompatible" print_tag s
 
 let rec trace fst txt ppf = function
   | elt :: rem ->
@@ -62,14 +60,62 @@ and trace_elt txt ppf = function
        print_tag l
        pp_type_expansion got txt pp_type_expansion expected
   | { ctx = Some (In_method m); Errortrace.d = {got; expected} } ->
-      fprintf ppf "In method %a, type@;<1 2>%a@ %s@;<1 2>%a"
-       Style.inline_code m
-       pp_type_expansion got txt pp_type_expansion expected
+      fprintf ppf "@,@[The method %a has type@ %a,@ \
+                   but the expected method type was@ %a@]"
+        Style.inline_code m
+        pp_type_expansion got
+        pp_type_expansion expected
+
+(**
+This module contains helper functions to split the error trace into two parts:
+- a list of meaningful context difference element
+- a root explanation
+*)
+module Structured_trace = struct
+
+(** Flatten the trace and remove elements that are always discarded
+    during printing *)
+
+(** The first intermediary representation splits the trace into four parts:
+- the head element of the trace
+- the trace elements in reverse order situated before the last method or tag
+  difference
+- the last method or tag context, and the list of elements after it
+- the last element that could be optioannly printed
+*)
+type 'a segments =
+  {
+    head: 'a;
+    before:'a list;
+    last_ctx:('a * 'a list) option;
+    optional: 'a option
+  }
+
+let head_segment hd =
+  { head = hd; before=[]; last_ctx = None; optional = None }
+
+(** Add a non-contextual element to the active context *)
+let add x s = match s.last_ctx with
+  | None ->  { s with optional = None; before = x :: s.before }
+  | Some (ctx, rest)->
+      { s with optional = None; last_ctx = Some (ctx, x :: rest)}
+
+(** Add a new context, add the last context contents to the {!before} trace *)
+let add_ctx c s = match s.last_ctx with
+  | None ->  { s with optional = None; last_ctx = Some (c,[]) }
+  | Some (_ctx, rest) -> {
+      head = s.head;
+      optional = None;
+      before = rest @ s.before;
+      last_ctx = Some (c,[])
+    }
 
 type printing_status =
   | Discard
   | Keep
-  | Contextual_refinement of Errortrace.ctx
+  | Context
+    (** A {!Context} element marks the entry inside a method or a polymorphic
+        variant tag *)
   | Optional_refinement
   (** An [Optional_refinement] printing status is attributed to trace
       elements that are focusing on a new subpart of a structural type.
@@ -79,57 +125,116 @@ type printing_status =
       type error.
   *)
 
+(** Construct a segment from an unstructured trace *)
+let segment status = function
+  | [] -> assert false
+  | hd :: tr ->
+      List.fold_left (fun s x ->
+      match status x with
+      | Discard -> s
+      | Keep -> add x s
+      | Optional_refinement -> { s with optional = Some x }
+      | Context -> add_ctx x s
+    ) (head_segment hd) tr
+
+type 'a extended_explanation =
+  | Promoted of Format_doc.t
+  | Standard of 'a
+
+let is_unit_param env ty =
+  let ty, vars = Btype.tpoly_get_poly ty in
+  if vars <> [] then false
+  else begin
+    match Types.get_desc (Ctype.expand_head env ty) with
+    | Tconstr (p, _, _) -> Path.same p Predef.path_unit
+    | _ -> false
+  end
+
+let unifiable env ty1 ty2 =
+    try Ctype.unify env ty1 ty2; true
+    with Ctype.Unify _ -> false
+
+let promote_diff env {Errortrace.got; expected} =
+  let snap = Btype.snapshot () in
+  let t3, t4 = Errortrace.(got.expanded, expected.expanded) in
+  let res = match Types.get_desc t3, Types.get_desc t4 with
+  | Tarrow (_, ty1, ty2, _), _
+    when is_unit_param env ty1 && unifiable env ty2 t4 ->
+      Some (Promoted (doc_printf
+          "@,@[@{<hint>Hint@}: Did you forget to provide %a as argument?@]"
+          Style.inline_code "()"
+        ))
+  | _, Tarrow (_, ty1, ty2, _)
+    when is_unit_param env ty1 && unifiable env t3 ty2 ->
+      Some (Promoted (doc_printf
+          "@,@[@{<hint>Hint@}: Did you forget to wrap the expression using \
+           %a?@]"
+          Style.inline_code "fun () ->"
+        ))
+  | _ -> None
+  in
+  Btype.backtrack snap;
+  res
+
+let merge env s =
+  let rtr, opt = match s.last_ctx with
+    | None -> s.before, s.optional
+    | Some (ctx, rest) -> rest @ ctx :: s.before, None
+  in
+  let head, rtr, expl = match rtr with
+    | Errortrace.Diff d :: _ ->
+        begin match promote_diff env d.d with
+        | Some p -> [s.head], rtr, Some p
+        | None -> [s.head], rtr, None
+        end
+    | expl :: rest -> [s.head], rest, Some (Standard expl)
+    | [] ->
+        begin match s.head with
+        | Errortrace.Diff d -> [s.head], [], promote_diff env d.d
+        | expl -> [], [], Some (Standard expl)
+        end
+  in
+  let rtr =
+    match expl, opt with
+    | None, Some opt -> head @ List.rev (opt :: rtr)
+    | Some _, _ | None, _  -> head @ List.rev rtr
+  in
+  rtr, expl
+
+  let split env status s= merge env (segment status s)
+end
+
 let diff_printing_status Errortrace.{ got      = {ty = t1; expanded = t1'};
                                       expected = {ty = t2; expanded = t2'} } =
   if  Btype.is_constr_row ~allow_ident:true t1'
    || Btype.is_constr_row ~allow_ident:true t2'
-  then Discard
-  else if same_path t1 t1' && same_path t2 t2' then Optional_refinement
-  else Keep
+  then Structured_trace.Discard
+  else if same_path t1 t1' && same_path t2 t2' then
+    Structured_trace.Optional_refinement
+  else Structured_trace.Keep
 
 let printing_status = function
-  | Errortrace.Diff { ctx = Some (In_method _); _} -> Keep
-  | Errortrace.Diff d ->
-      begin match diff_printing_status d.d, d.ctx with
-      | Optional_refinement, Some c -> Contextual_refinement c
-      | x, _ -> x
-      end
-  | Errortrace.Escape {kind = Constraint} -> Keep
-  | _ -> Keep
+  | Errortrace.Diff { ctx = Some _; _} -> Structured_trace.Context
+  | Errortrace.Diff d -> diff_printing_status d.d
+  | _ -> Structured_trace.Keep
 
-(** Flatten the trace and remove elements that are always discarded
-    during printing *)
-
-(* Takes [printing_status] to change behavior for [Subtype] *)
-let prepare_any_trace merge printing_status tr =
-  let clean_trace x l = match printing_status x, l with
-    | Keep , _ -> x :: l
-    | (Contextual_refinement _ | Optional_refinement), [] -> [x]
-    | Contextual_refinement ctx, [x] -> [merge ctx x]
-    | (Contextual_refinement _ | Optional_refinement | Discard), _ -> l
-  in
-  match tr with
-  | [] -> []
-  | elt :: rem -> elt :: List.fold_right clean_trace rem []
-
-let merge_ctx ctx = function
-  | Errortrace.Diff ({ ctx = None; _ } as d) ->
-      Errortrace.Diff { d with ctx = Some ctx }
-  | d -> d
-
-let prepare_trace f tr =
-  prepare_any_trace merge_ctx printing_status (Errortrace.map f tr)
 
 (** Keep elements that are [Diff _ ] and split the the last element if it is
     optionally elidable, require a prepared trace *)
-let rec filter_trace = function
-  | [] -> [], None
+let rec filter_trace keep_last = function
+  | [] -> []
   | [Errortrace.Diff d as elt]
-    when printing_status elt = Optional_refinement -> [], Some d
+    when printing_status elt = Structured_trace.Optional_refinement ->
+      if keep_last then [d] else []
   | Errortrace.Diff ({ctx=(None|Some (In_tag _)); _ } as d) :: rem ->
-      let filtered, last = filter_trace rem in
-      d :: filtered, last
-  | _ :: rem -> filter_trace rem
+      d :: filter_trace keep_last rem
+  | _ :: rem -> filter_trace keep_last rem
+
+let simplify_trace tr =
+  List.filter_map (function
+      | Errortrace.Diff d -> Some d
+      | _ -> None)
+    tr
 
 let may_prepare_expansion compact (Errortrace.{ty; expanded} as ty_exp) =
   match Types.get_desc expanded with
@@ -142,42 +247,6 @@ let print_path p =
 
 let print_tags ppf tags  =
   Fmt.(pp_print_list ~pp_sep:comma) print_tag ppf tags
-
-let is_unit_param env ty =
-  let ty, vars = Btype.tpoly_get_poly ty in
-  if vars <> [] then false
-  else begin
-    match Types.get_desc (Ctype.expand_head env ty) with
-    | Tconstr (p, _, _) -> Path.same p Predef.path_unit
-    | _ -> false
-  end
-
-let unifiable env ty1 ty2 =
-  let snap = Btype.snapshot () in
-  let res =
-    try Ctype.unify env ty1 ty2; true
-    with Ctype.Unify _ -> false
-  in
-  Btype.backtrack snap;
-  res
-
-let explanation_diff env t3 t4 =
-  match Types.get_desc t3, Types.get_desc t4 with
-  | Tarrow (_, ty1, ty2, _), _
-    when is_unit_param env ty1 && unifiable env ty2 t4 ->
-      Some (doc_printf
-          "@,@[@{<hint>Hint@}: Did you forget to provide %a as argument?@]"
-          Style.inline_code "()"
-        )
-  | _, Tarrow (_, ty1, ty2, _)
-    when is_unit_param env ty1 && unifiable env t3 ty2 ->
-      Some (doc_printf
-          "@,@[@{<hint>Hint@}: Did you forget to wrap the expression using \
-           %a?@]"
-          Style.inline_code "fun () ->"
-        )
-  | _ ->
-      None
 
 let explain_fixed_row_case = function
   | Errortrace.Cannot_be_closed -> doc_printf "it cannot be closed"
@@ -296,16 +365,6 @@ let explain_object (type variety) : variety Errortrace.obj -> _ = function
               "@,Self type cannot be unified with a closed object type"
            )
 
-let explain_incompatible_fields name (diff: Types.type_expr Errortrace.diff) =
-  Variable_names.reserve diff.got;
-  Variable_names.reserve diff.expected;
-  doc_printf "@,@[The method %a has type@ %a,@ \
-  but the expected method type was@ %a@]"
-    Style.inline_code name
-    (Style.as_inline_code type_expr_with_reserved_names) diff.got
-    (Style.as_inline_code type_expr_with_reserved_names) diff.expected
-
-
 let explain_label_mismatch ~missing_label_msg  {Errortrace.got;expected} =
   let quoted_label ppf l = Style.inline_code ppf (Asttypes.string_of_label l) in
   match got, expected with
@@ -342,14 +401,8 @@ let explain_first_class_module = function
   | Errortrace.Package_coercion pr ->
       Some(doc_printf "@,@[%a@]" Fmt.pp_doc pr)
 
-let explain_univar prev = function
+let explain_univar = function
   | Errortrace.Var_mismatch { diff; order} ->
-      let prev = match prev with
-        | Some (Errortrace.Diff { ctx=Some (In_method name); d }) ->
-            let d = Errortrace.map_diff (fun t -> t.Errortrace.ty) d in
-            explain_incompatible_fields name d
-        | _ -> Fmt.Doc.empty
-      in
       add_type_to_preparation diff.got;
       add_type_to_preparation diff.expected;
       let more = match order with
@@ -366,8 +419,7 @@ let explain_univar prev = function
               (Style.as_inline_code prepared_type_expr) diff.expected
       in
       doc_printf
-        "%a@,@[The universal variables@ %a and@ %a@ are distinct.%a@]"
-        Fmt.pp_doc prev
+        "@,@[The universal variables@ %a and@ %a@ are distinct.%a@]"
         (Style.as_inline_code prepared_type_expr) diff.got
         (Style.as_inline_code prepared_type_expr) diff.expected
         pp_doc more
@@ -395,25 +447,15 @@ let explain_univar prev = function
       let pp_sep _ () = () in
       doc_printf "%a" (pp_print_list ~pp_sep pp) delta
 
-let explanation (type variety) intro prev env
+let explanation (type variety) intro
   : (Errortrace.expanded_type, variety) Errortrace.elt -> _ = function
-  | Errortrace.Diff { ctx = None; d = {got; expected} } ->
-    explanation_diff env got.expanded expected.expanded
-  | Errortrace.Diff { ctx = Some (In_method name); d } ->
-    let diff = Errortrace.map_diff (fun t -> t.Errortrace.ty) d in
-    Some(explain_incompatible_fields name diff)
-  | Errortrace.Diff { ctx = Some (In_tag name); _ } ->
-    Some(incompatible_tag_types name)
   | Errortrace.Escape {kind; context} ->
     let pre =
-      match context, kind, prev with
-      | Some ctx, _, _ ->
+      match context, kind with
+      | Some ctx, _ ->
         Variable_names.reserve ctx;
         doc_printf "@[%a@;<1 2>%a@]" pp_doc intro
           (Style.as_inline_code type_expr_with_reserved_names) ctx
-      | None, Univ _, Some(Errortrace.Diff { ctx=Some (In_method name); d} ) ->
-          let d = Errortrace.map_diff (fun t -> t.Errortrace.ty) d in
-          explain_incompatible_fields name d
       | _ -> Format_doc.Doc.empty
     in
     explain_escape pre kind
@@ -461,10 +503,14 @@ let explanation (type variety) intro prev env
              {[ The type int occurs inside int list -> 'a |}
         *)
     end
-  | Univar um -> Some (explain_univar prev um)
+  | Univar um -> Some (explain_univar um)
+  | Diff _ -> None
 
-let mismatch intro env trace =
-  Errortrace.explain trace (fun ~prev h -> explanation intro prev env h)
+let mismatch intro expl =
+  match expl with
+  | None -> None
+  | Some (Structured_trace.Promoted msg) -> Some msg
+  | Some (Structured_trace.Standard e) -> explanation intro e
 
 let warn_on_missing_def env ppf t =
   match Types.get_desc t with
@@ -567,34 +613,27 @@ let explain_names env ppf =
              Style.inline_code constructor
     ) explanations
 
+let hide_variant ty_exp =
+  Errortrace.{ty_exp with expanded = hide_variant_name ty_exp.expanded}
+
 (* [subst] comes out of equality, and is [[]] otherwise *)
 let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
   reset ();
   (* We want to substitute in the opposite order from [Eqtype] *)
   Variable_names.add_subst (List.map (fun (ty1,ty2) -> ty2,ty1) subst);
-  let tr =
-    prepare_trace
-      (fun ty_exp ->
-         Errortrace.{ty_exp with expanded = hide_variant_name ty_exp.expanded})
-      tr
+  let tr = Errortrace.map hide_variant tr in
+  let tr, expl = Structured_trace.split env printing_status tr in
+  let elt, tr = match tr with
+    | [] -> None, tr
+    | hd :: tr -> Some hd, tr
   in
-  match tr with
-  | [] -> assert false
-  | (elt :: tr) as full_trace ->
-      with_labels (not !Clflags.classic) (fun () ->
-      let tr, last = filter_trace tr in
-      let head = prepare_expansion_head (tr=[] && last=None) elt in
+  with_labels (not !Clflags.classic) (fun () ->
+      let tr = simplify_trace tr in
+      let head = Option.bind elt (prepare_expansion_head (List.is_empty tr)) in
       let tr = List.map (Errortrace.map_ctx prepare_expansion) tr in
-      let last = Option.map (Errortrace.map_ctx prepare_expansion) last in
       let head_error = head_error_printer mode txt1 txt2 head in
       let tr = trees_of_trace mode tr in
-      let last =
-        Option.map (Errortrace.map_ctx (trees_of_type_expansion mode)) last in
-      let mis = mismatch txt1 env full_trace in
-      let tr = match mis, last with
-        | None, Some elt -> tr @ [elt]
-        | Some _, _ | _, None -> tr
-      in
+      let mis = mismatch txt1 expl in
       fprintf ppf
         "@[<v>\
          @[%a%a@]%a%a\
@@ -643,25 +682,34 @@ module Subtype = struct
      while being *just* different enough (it's only [Diff]) for the abstraction
      to be nonobvious.  Someday, perhaps... *)
 
-  let printing_status = function
+  let sub_printing_status = function
     | Errortrace.Subtype.Diff d -> diff_printing_status d
 
-  let prepare_unification_trace = prepare_trace
+  let prepare_unification_trace env f tr =
+    let tr = Errortrace.map f tr in
+    match tr with
+    | [] -> [], None
+    | _ -> Structured_trace.split env printing_status tr
 
   let prepare_trace f tr =
-    prepare_any_trace (fun _ d -> d) printing_status
-      (Errortrace.Subtype.map f tr)
+    let tr = Errortrace.Subtype.map f tr in
+    let s = Structured_trace.segment sub_printing_status tr in
+    let rtr = match s.last_ctx with
+    | None -> s.before
+    | Some (ctx, rest) -> rest @ ctx :: s.before
+    in
+    let rtr = match s.optional with
+      | Some x -> x :: rtr
+      | None -> rtr
+    in
+    s.head :: List.rev rtr, None
 
   let trace filter_trace get_diff fst keep_last txt ppf tr =
     with_labels (not !Clflags.classic) (fun () ->
       match tr with
       | elt :: tr' ->
         let diffed_elt = get_diff elt in
-        let tr, last = filter_trace tr' in
-        let tr = match keep_last, last with
-          | true, Some last -> tr @ [last]
-          | _ -> tr
-        in
+        let tr = filter_trace keep_last tr' in
         let tr =
           trees_of_trace Type
           @@ List.map (Errortrace.map_ctx prepare_expansion) tr in
@@ -675,14 +723,13 @@ module Subtype = struct
     )
 
   let no_ctx d = { Errortrace.d; ctx = None}
-  let rec filter_subtype_trace = function
-    | [] -> [], None
+  let rec filter_subtype_trace keep_last = function
+    | [] -> []
     | [Errortrace.Subtype.Diff d as elt]
-      when printing_status elt = Optional_refinement ->
-        [], Some (no_ctx d)
+      when sub_printing_status elt = Structured_trace.Optional_refinement ->
+        if keep_last then [no_ctx d] else []
     | Errortrace.Subtype.Diff d :: rem ->
-        let ftr, last = filter_subtype_trace rem in
-        no_ctx d :: ftr, last
+        no_ctx d :: filter_subtype_trace keep_last rem
 
   let unification_get_diff = function
     | Errortrace.Diff diff ->
@@ -701,16 +748,18 @@ module Subtype = struct
         txt1 =
     wrap_printing_env ~error:true env (fun () ->
       reset ();
-      let tr_sub = prepare_trace prepare_expansion tr_sub in
-      let tr_unif = prepare_unification_trace prepare_expansion tr_unif in
-      let keep_first = match tr_unif with
-        | [Obj _ | Variant _ | Escape _ ] | [] -> true
+      let tr_sub, _ = prepare_trace prepare_expansion tr_sub in
+      let tr_unif, expl_unif =
+        prepare_unification_trace env prepare_expansion tr_unif
+      in
+      let keep_first = match tr_unif, expl_unif with
+        | [], Some (Standard (Obj _ | Variant _ | Escape _ )) | [], None -> true
         | _ -> false in
       fprintf ppf "@[<v>%a"
         (trace filter_subtype_trace subtype_get_diff true keep_first txt1)
         tr_sub;
-      if tr_unif = [] then fprintf ppf "@]" else
-        let mis = mismatch (doc_printf "Within this type") env tr_unif in
+      if tr_unif = [] && expl_unif = None then fprintf ppf "@]" else
+        let mis = mismatch (doc_printf "Within this type") expl_unif in
         fprintf ppf "%a%a%t@]"
           (trace filter_trace unification_get_diff false
              (mis = None) "is not compatible with type") tr_unif
