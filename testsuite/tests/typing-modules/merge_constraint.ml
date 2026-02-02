@@ -351,7 +351,6 @@ Error: In this "with" constraint, the new definition of "M.t"
          type t = private [ `Foo of M.r ]
        The type "s" = "[ `Foo of s ]" is not equal to the type "[ `Foo of M.r ]"
        In tag "`Foo", type "s" = "[ `Foo of s ]" is not equal to type "M.r" = "M.t"
-       Types for tag "`Foo" are incompatible
 |}]
 
 (* Should succeed *)
@@ -390,7 +389,6 @@ Error: In this "with" constraint, the new definition of "M.N"
          type t = private [ `Foo of M.r ]
        The type "[ `Foo of t ]" is not equal to the type "[ `Foo of M.r ]"
        In tag "`Foo", type "t" = "[ `Foo of t ]" is not equal to type "M.r" = "M.N.t"
-       Types for tag "`Foo" are incompatible
 |}]
 
 (* Should succeed *)
