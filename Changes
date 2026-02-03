@@ -39,6 +39,9 @@ Working version
 
 ### Bug fixes:
 
+- #13693: Fix segfault in libasmrun_shared.so on s390x (RHEL/Fedora)
+  by explicitly initializing global root skiplists at runtime.
+  (Zaneham, review by ...)
 
 OCaml 5.5.0
 -----------

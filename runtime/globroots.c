@@ -50,6 +50,18 @@ struct skiplist caml_global_roots_young = SKIPLIST_STATIC_INITIALIZER;
 struct skiplist caml_global_roots_old = SKIPLIST_STATIC_INITIALIZER;
                   /* generational roots pointing to major heap */
 
+/* Explicitly initialize global root skiplists.
+   Static initialization may not work reliably in shared libraries
+   on some platforms (observed on s390x with RHEL/Fedora).
+   See: https://github.com/ocaml/ocaml/issues/13693 */
+__attribute__((constructor))
+static void caml_init_global_roots(void)
+{
+  caml_skiplist_init(&caml_global_roots);
+  caml_skiplist_init(&caml_global_roots_young);
+  caml_skiplist_init(&caml_global_roots_old);
+}
+
 /* The invariant of the generational roots is the following:
    - If the global root contains a pointer to the minor heap, then the root is
      in [caml_global_roots_young];
