@@ -219,17 +219,7 @@ let printing_status = function
   | _ -> Structured_trace.Keep
 
 
-(** Keep elements that are [Diff _ ] and split the the last element if it is
-    optionally elidable, require a prepared trace *)
-let rec filter_trace keep_last = function
-  | [] -> []
-  | [Errortrace.Diff d as elt]
-    when printing_status elt = Structured_trace.Optional_refinement ->
-      if keep_last then [d] else []
-  | Errortrace.Diff ({ctx=(None|Some (In_tag _)); _ } as d) :: rem ->
-      d :: filter_trace keep_last rem
-  | _ :: rem -> filter_trace keep_last rem
-
+(** Keep elements that are [Diff _ ]  *)
 let simplify_trace tr =
   List.filter_map (function
       | Errortrace.Diff d -> Some d
@@ -704,12 +694,12 @@ module Subtype = struct
     in
     s.head :: List.rev rtr, None
 
-  let trace filter_trace get_diff fst keep_last txt ppf tr =
+  let trace filter_trace get_diff fst txt ppf tr =
     with_labels (not !Clflags.classic) (fun () ->
       match tr with
       | elt :: tr' ->
         let diffed_elt = get_diff elt in
-        let tr = filter_trace keep_last tr' in
+        let tr = filter_trace tr' in
         let tr =
           trees_of_trace Type
           @@ List.map (Errortrace.map_ctx prepare_expansion) tr in
@@ -756,13 +746,13 @@ module Subtype = struct
         | [], Some (Standard (Obj _ | Variant _ | Escape _ )) | [], None -> true
         | _ -> false in
       fprintf ppf "@[<v>%a"
-        (trace filter_subtype_trace subtype_get_diff true keep_first txt1)
+        (trace (filter_subtype_trace keep_first) subtype_get_diff true txt1)
         tr_sub;
       if tr_unif = [] && expl_unif = None then fprintf ppf "@]" else
         let mis = mismatch (doc_printf "Within this type") expl_unif in
         fprintf ppf "%a%a%t@]"
-          (trace filter_trace unification_get_diff false
-             (mis = None) "is not compatible with type") tr_unif
+          (trace simplify_trace unification_get_diff false
+             "is not compatible with type") tr_unif
           (pp_print_option pp_doc) mis
           Ident_conflicts.err_print
     )
