@@ -21,6 +21,13 @@
 #include "caml/m.h"
 #include "caml/asm.h"
 
+/* Branch Target Identification for Intel CET */
+#if defined(WITH_BTI)
+#define ENDBR64 endbr64
+#else
+#define ENDBR64
+#endif
+
 #if defined(SYS_macosx)
 
 #define CAMLSEP(x,y) caml_##x##$##y
@@ -35,7 +42,7 @@
 #define FUNCTION(name) \
         .globl G(name); \
         .align FUNCTION_ALIGN; \
-G(name):
+G(name): ENDBR64;
 
 #elif defined(SYS_mingw64) || defined(SYS_cygwin)
 
@@ -52,7 +59,7 @@ G(name):
         TEXT_SECTION(G(name)); \
         .globl G(name); \
         .align FUNCTION_ALIGN; \
-G(name):
+G(name): ENDBR64;
 
 #else /* Unix-like operating systems using ELF binaries */
 
@@ -74,7 +81,7 @@ G(name):
         .globl G(name); \
         TYPE_DIRECTIVE(G(name),@function); \
         .align FUNCTION_ALIGN; \
-G(name):
+G(name): ENDBR64;
 
 #endif
 
