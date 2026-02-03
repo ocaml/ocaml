@@ -86,6 +86,7 @@ let asm_cfi_supported = @asm_cfi_supported@
 let asm_size_type_directives = @asm_size_type_directives@
 let asm_dwarf_version = @asm_dwarf_version@
 let with_frame_pointers = @frame_pointers@
+let with_bti = false (* TODO: should be @bti@ once configure is regenerated *)
 let reserved_header_bits = @reserved_header_bits@
 
 let ext_exe = {@QS@|@EXEEXT@|@QS@}

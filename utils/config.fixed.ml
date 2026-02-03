@@ -73,6 +73,7 @@ let asm_cfi_supported = false
 let asm_size_type_directives = false
 let asm_dwarf_version = None
 let with_frame_pointers = false
+let with_bti = false
 let reserved_header_bits = 0
 let ext_exe = ".ex_The boot compiler should not be using Config.ext_exe"
 let ext_obj = ".o_The boot compiler cannot process C objects"

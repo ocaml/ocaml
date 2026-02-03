@@ -281,6 +281,11 @@ val asm_dwarf_version : int option
 val with_frame_pointers : bool
 (** Whether assembler should maintain frame pointers *)
 
+val with_bti : bool
+(** Whether to emit endbr64 landing pads for Intel CET/BTI on x86_64
+
+    @since 5.5 *)
+
 val ext_obj: string
 (** Extension for object files, e.g. [.o] under Unix. *)
 

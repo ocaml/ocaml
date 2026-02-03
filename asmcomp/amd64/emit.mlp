@@ -29,6 +29,7 @@ open X86_proc
 open X86_dsl
 module String = Misc.Stdlib.String
 module Int = Numbers.Int
+module LabelSet = Int.Set
 
 (* [Branch_relaxation] is not used in this file, but is required by
    emit.mlp files for certain other targets; the reference here ensures
@@ -38,6 +39,24 @@ module Int = Numbers.Int
 open! Branch_relaxation
 
 let _label s = D.label ~typ:QWORD s
+
+(* BTI/CET support: track labels that are indirect jump targets *)
+let indirect_targets = ref LabelSet.empty
+
+let collect_indirect_targets fundecl =
+  let targets = ref LabelSet.empty in
+  let rec scan instr =
+    begin match instr.desc with
+    | Lswitch jumptbl ->
+        Array.iter (fun lbl -> targets := LabelSet.add lbl !targets) jumptbl
+    | Lpushtrap { lbl_handler } ->
+        targets := LabelSet.add lbl_handler !targets
+    | _ -> ()
+    end;
+    if instr.desc <> Lend then scan instr.next
+  in
+  scan fundecl.fun_body;
+  !targets
 
 (* Override proc.ml *)
 
@@ -176,7 +195,9 @@ let def_label ?typ s =
 
 let emit_Llabel env fallthrough lbl =
   if not fallthrough && env.f.fun_fast then D.align 4;
-  def_label lbl
+  def_label lbl;
+  if Config.with_bti && LabelSet.mem lbl !indirect_targets then
+    I.endbr64 ()
 
 (* Output a pseudo-register *)
 
@@ -903,6 +924,8 @@ let all_functions = ref []
 
 let fundecl fundecl =
   let env = mk_env fundecl in
+  (* Collect indirect jump targets for BTI/CET support *)
+  indirect_targets := collect_indirect_targets fundecl;
   all_functions := fundecl :: !all_functions;
   emit_named_text_section fundecl.fun_name;
   D.align 16;
@@ -916,6 +939,8 @@ let fundecl fundecl =
     D.global (emit_symbol fundecl.fun_name);
   D.label (emit_symbol fundecl.fun_name);
   emit_debug_info fundecl.fun_dbg;
+  (* Emit endbr64 at function entry for BTI/CET support *)
+  if Config.with_bti then I.endbr64 ();
   cfi_startproc ();
   if !Clflags.runtime_variant = "d" then
     emit_call "caml_assert_stack_invariants";

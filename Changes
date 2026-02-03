@@ -213,6 +213,13 @@ Working version
   barrier; the default is chosen at configure time and can be overridden.
   (Sebastian Pop and Xavier Leroy, review by Xavier Leroy and Olivier Nicole)
 
+- #14515: Add selective endbr64 emission for Intel CET (Control-flow
+  Enforcement Technology) on x86-64. Landing pads are emitted only at
+  indirect branch targets (function entry, switch tables, exception
+  handlers), minimizing code size overhead. Enabled via --enable-bti,
+  auto-enabled on OpenBSD.
+  (Zane Hambly, review by XXXXX)
+
 ### Standard library:
 
 - #14941, #13937: Add `{Option,Result}.try_value`

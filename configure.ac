@@ -279,6 +279,7 @@ AC_SUBST([install_source_artifacts])
 AC_SUBST([install_ocamlnat])
 AC_SUBST([reserved_header_bits])
 AC_SUBST([frame_pointers])
+AC_SUBST([bti])
 AC_SUBST([flambda])
 AC_SUBST([flambda_invariants])
 AC_SUBST([cmm_invariants])
@@ -613,6 +614,10 @@ AC_ARG_ENABLE([native-toplevel],
 AC_ARG_ENABLE([frame-pointers],
   [AS_HELP_STRING([--enable-frame-pointers],
     [use frame pointers in runtime and generated code])])
+
+AC_ARG_ENABLE([bti],
+  [AS_HELP_STRING([--enable-bti],
+    [emit endbr64 landing pads for Intel CET/BTI (x86_64 only)])])
 
 AC_ARG_ENABLE([naked-pointers], [],
   [AS_IF([test "x$enableval" != 'xno'],
@@ -2869,6 +2874,26 @@ AS_IF([test x"$enable_frame_pointers" = "xyes"],
   )],
   [AC_MSG_NOTICE([not using frame pointers])
   frame_pointers=false])
+
+## BTI (Branch Target Identification) / Intel CET support
+
+AS_IF([test x"$enable_bti" = "xyes"],
+  [AS_CASE([$target],
+    [x86_64-*-linux*|x86_64-*-openbsd*|x86_64-*-freebsd*],
+      [bti=true
+       AC_MSG_NOTICE([emitting endbr64 landing pads for Intel CET/BTI])],
+    [AC_MSG_ERROR([BTI/CET is only supported on x86_64 Linux, OpenBSD, and FreeBSD])]
+  )],
+  [test x"$enable_bti" = "xno"],
+  [bti=false
+   AC_MSG_NOTICE([not emitting BTI landing pads])],
+  [AS_CASE([$target],
+    [x86_64-*-openbsd*],
+      [bti=true
+       AC_MSG_NOTICE([auto-enabling BTI on OpenBSD x86_64])],
+    [bti=false
+     AC_MSG_NOTICE([not emitting BTI landing pads])]
+  )])
 
 ## Check for mmap support for huge pages and contiguous heap
 OCAML_MMAP_SUPPORTS_HUGE_PAGES

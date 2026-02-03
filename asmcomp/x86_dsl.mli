@@ -201,4 +201,5 @@ module I : sig
   val xchg: arg -> arg -> unit
   val xor: arg -> arg -> unit
   val xorpd: arg -> arg -> unit
+  val endbr64: unit -> unit
 end

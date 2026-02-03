@@ -208,4 +208,5 @@ module I = struct
   let xchg x y = emit (XCHG (x, y))
   let xor x y= emit (XOR (x, y))
   let xorpd x y = emit (XORPD (x, y))
+  let endbr64 () = emit ENDBR64
 end

@@ -197,6 +197,7 @@ type instruction =
   | XCHG of arg * arg
   | XOR of arg * arg
   | XORPD of arg * arg
+  | ENDBR64
 
 type asm_line =
   | Ins of instruction
