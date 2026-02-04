@@ -7551,3 +7551,6 @@ let () =
   let module%foo M = P(A) [@@foo] in
   let%e[@foo] x = 12 in
   ()
+
+(* 5.5 Features *)
+type t = external "foo"
