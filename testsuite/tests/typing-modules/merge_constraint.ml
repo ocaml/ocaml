@@ -345,7 +345,7 @@ Error: In this "with" constraint, the new definition of "M.t"
          type t = s
        is not included in
          type t = private [ `Foo of M.r ]
-       The type "s" = "[ `Foo of s ]" is not equal to the type "[ `Foo of M.r ]"
+       The type "s" is not equal to the type "[ `Foo of M.r ]"
        In tag "`Foo", type "s" = "[ `Foo of s ]" is not equal to type "M.r" = "M.t"
 |}]
 

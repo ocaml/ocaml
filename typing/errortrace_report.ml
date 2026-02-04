@@ -177,9 +177,9 @@ let promote_diff env {Errortrace.got; expected} =
   res
 
 let merge env s =
-  let rtr, opt = match s.last_ctx with
-    | None -> s.before, s.optional
-    | Some (ctx, rest) -> rest @ ctx :: s.before, None
+  let rtr, opt, maybe_compact = match s.last_ctx with
+    | None -> s.before, s.optional, false
+    | Some (ctx, rest) -> rest @ ctx :: s.before, None, true
   in
   let head, rtr, expl = match rtr with
     | Errortrace.Diff d :: _ ->
@@ -199,7 +199,11 @@ let merge env s =
     | None, Some opt -> head @ List.rev (opt :: rtr)
     | Some _, _ | None, _  -> head @ List.rev rtr
   in
-  rtr, expl
+  let compact = match rtr, maybe_compact with
+    | [_], _ | [_;_], true -> true
+    | _ -> false
+  in
+  rtr, expl, compact
 
   let split env status s= merge env (segment status s)
 end
@@ -612,16 +616,16 @@ let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
   (* We want to substitute in the opposite order from [Eqtype] *)
   Variable_names.add_subst (List.map (fun (ty1,ty2) -> ty2,ty1) subst);
   let tr = Errortrace.map hide_variant tr in
-  let tr, expl = Structured_trace.split env printing_status tr in
+  let tr, expl, compact = Structured_trace.split env printing_status tr in
   let elt, tr = match tr with
     | [] -> None, tr
     | hd :: tr -> Some hd, tr
   in
   with_labels (not !Clflags.classic) (fun () ->
       let tr = simplify_trace tr in
-      let head = Option.bind elt (prepare_expansion_head (List.is_empty tr)) in
-      let tr = List.map (Errortrace.map_ctx prepare_expansion) tr in
+      let head = Option.bind elt (prepare_expansion_head compact) in
       let head_error = head_error_printer mode txt1 txt2 head in
+      let tr = List.map (Errortrace.map_ctx prepare_expansion) tr in
       let tr = trees_of_trace mode tr in
       let mis = mismatch txt1 expl in
       fprintf ppf
@@ -679,7 +683,9 @@ module Subtype = struct
     let tr = Errortrace.map f tr in
     match tr with
     | [] -> [], None
-    | _ -> Structured_trace.split env printing_status tr
+    | _ ->
+        let tr, expl, _ = Structured_trace.split env printing_status tr in
+        tr, expl
 
   let prepare_trace f tr =
     let tr = Errortrace.Subtype.map f tr in
