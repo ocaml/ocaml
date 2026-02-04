@@ -66,22 +66,28 @@ and trace_elt txt ppf = function
         pp_type_expansion got
         pp_type_expansion expected
 
-(**
-This module contains helper functions to split the error trace into two parts:
-- a list of meaningful context difference element
-- a root explanation
-*)
 module Structured_trace = struct
 
-(** Flatten the trace and remove elements that are always discarded
-    during printing *)
+
+  type ('a,'b) t = {
+  top: ('a * bool) option;
+  tr: 'a list;
+  expl: 'b
+}
+(**
+This module contains helper functions to split the error trace into three parts:
+- {!top} the first element of the trace
+- {!tr} a list of meaningful context difference element
+- {!expl} a root explanation for a type error
+*)
 
 (** The first intermediary representation splits the trace into four parts:
-- the head element of the trace
-- the trace elements in reverse order situated before the last method or tag
-  difference
-- the last method or tag context, and the list of elements after it
-- the last element that could be optioannly printed
+- the {!head} element of the trace
+- the {!top_to_ctx} trace elements in reverse order situated before the last
+  method or tag difference
+- {!last_ctx}: the last method or tag context, and the list of elements after it
+- {!optional}: the last element that might be printed if we don't discover a
+  better element to print later on.
 *)
 type 'a segments =
   {
@@ -90,6 +96,7 @@ type 'a segments =
     last_ctx:('a * 'a list) option;
     optional: 'a option
   }
+
 
 let head_segment hd =
   { head = hd; before=[]; last_ctx = None; optional = None }
@@ -102,7 +109,7 @@ let add x s = match s.last_ctx with
 
 (** Add a new context, add the last context contents to the {!before} trace *)
 let add_ctx c s = match s.last_ctx with
-  | None ->  { s with optional = None; last_ctx = Some (c,[]) }
+  | None -> { s with optional = None; last_ctx = Some (c,[]) }
   | Some (_ctx, rest) -> {
       head = s.head;
       optional = None;
@@ -177,6 +184,8 @@ let promote_diff env {Errortrace.got; expected} =
   res
 
 let merge env s =
+  (* First, we commit the last contextualized segment of the trace to the
+     trace *)
   let rtr, opt, maybe_compact = match s.last_ctx with
     | None -> s.before, s.optional, false
     | Some (ctx, rest) -> rest @ ctx :: s.before, None, true
@@ -184,28 +193,27 @@ let merge env s =
   let head, rtr, expl = match rtr with
     | Errortrace.Diff d :: _ ->
         begin match promote_diff env d.d with
-        | Some p -> [s.head], rtr, Some p
-        | None -> [s.head], rtr, None
+        | Some p -> Some s.head, rtr, Some p
+        | None -> Some s.head, rtr, None
         end
-    | expl :: rest -> [s.head], rest, Some (Standard expl)
+    | expl :: rest -> Some s.head, rest, Some (Standard expl)
     | [] ->
         begin match s.head with
-        | Errortrace.Diff d -> [s.head], [], promote_diff env d.d
-        | expl -> [], [], Some (Standard expl)
+        | Errortrace.Diff d -> Some s.head, [], promote_diff env d.d
+        | expl -> None, [], Some (Standard expl)
         end
   in
-  let rtr =
-    match expl, opt with
-    | None, Some opt -> head @ List.rev (opt :: rtr)
-    | Some _, _ | None, _  -> head @ List.rev rtr
+  let tr = match expl, opt with
+    | None, Some opt -> List.rev (opt :: rtr)
+    | Some _, _ | None, _  -> List.rev rtr
   in
-  let compact = match rtr, maybe_compact with
-    | [_], _ | [_;_], true -> true
-    | _ -> false
+  let compact head = match tr, maybe_compact with
+    | [], _ | [_], true -> head, true
+    | _ -> head, false
   in
-  rtr, expl, compact
+  { top=Option.map compact head; tr; expl }
 
-  let split env status s= merge env (segment status s)
+  let split env status s = merge env (segment status s)
 end
 
 let diff_printing_status Errortrace.{ got      = {ty = t1; expanded = t1'};
@@ -531,7 +539,7 @@ let warn_on_missing_def env ppf t =
       end
   | _ -> ()
 
-let prepare_expansion_head empty_tr = function
+let prepare_expansion_head (h,empty_tr)= match h with
   | Errortrace.Diff d ->
       Some (Errortrace.map_ctx (may_prepare_expansion empty_tr) d)
   | _ -> None
@@ -616,18 +624,14 @@ let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
   (* We want to substitute in the opposite order from [Eqtype] *)
   Variable_names.add_subst (List.map (fun (ty1,ty2) -> ty2,ty1) subst);
   let tr = Errortrace.map hide_variant tr in
-  let tr, expl, compact = Structured_trace.split env printing_status tr in
-  let elt, tr = match tr with
-    | [] -> None, tr
-    | hd :: tr -> Some hd, tr
-  in
+  let str = Structured_trace.split env printing_status tr in
   with_labels (not !Clflags.classic) (fun () ->
-      let tr = simplify_trace tr in
-      let head = Option.bind elt (prepare_expansion_head compact) in
+      let tr = simplify_trace str.tr in
+      let head = Option.bind str.top prepare_expansion_head in
       let head_error = head_error_printer mode txt1 txt2 head in
       let tr = List.map (Errortrace.map_ctx prepare_expansion) tr in
       let tr = trees_of_trace mode tr in
-      let mis = mismatch txt1 expl in
+      let mis = mismatch txt1 str.expl in
       fprintf ppf
         "@[<v>\
          @[%a%a@]%a%a\
@@ -682,10 +686,12 @@ module Subtype = struct
   let prepare_unification_trace env f tr =
     let tr = Errortrace.map f tr in
     match tr with
-    | [] -> [], None
+    | [] -> None, None
     | _ ->
-        let tr, expl, _ = Structured_trace.split env printing_status tr in
-        tr, expl
+        let str = Structured_trace.split env printing_status tr in
+        match str.top with
+        | Some (h,_) -> Some (h,str.tr), str.expl
+        | None -> None, str.expl
 
   let prepare_trace f tr =
     let tr = Errortrace.Subtype.map f tr in
@@ -698,14 +704,14 @@ module Subtype = struct
       | Some x -> x :: rtr
       | None -> rtr
     in
-    s.head :: List.rev rtr, None
+    Some (s.head, List.rev rtr), None
 
-  let trace filter_trace get_diff fst txt ppf tr =
+  let trace filter_trace get_diff fst txt ppf htr =
     with_labels (not !Clflags.classic) (fun () ->
-      match tr with
-      | elt :: tr' ->
+      match htr with
+      | Some (elt,tr) ->
         let diffed_elt = get_diff elt in
-        let tr = filter_trace tr' in
+        let tr = filter_trace tr in
         let tr =
           trees_of_trace Type
           @@ List.map (Errortrace.map_ctx prepare_expansion) tr in
@@ -715,7 +721,7 @@ module Subtype = struct
           | _, _ -> tr
         in
         trace fst txt ppf tr
-      | _ -> ()
+      | None -> ()
     )
 
   let no_ctx d = { Errortrace.d; ctx = None}
@@ -749,12 +755,13 @@ module Subtype = struct
         prepare_unification_trace env prepare_expansion tr_unif
       in
       let keep_first = match tr_unif, expl_unif with
-        | [], Some (Standard (Obj _ | Variant _ | Escape _ )) | [], None -> true
+        | None, Some (Standard (Obj _ | Variant _ | Escape _ ))
+        | None, None -> true
         | _ -> false in
       fprintf ppf "@[<v>%a"
         (trace (filter_subtype_trace keep_first) subtype_get_diff true txt1)
         tr_sub;
-      if tr_unif = [] && expl_unif = None then fprintf ppf "@]" else
+      if tr_unif = None && expl_unif = None then fprintf ppf "@]" else
         let mis = mismatch (doc_printf "Within this type") expl_unif in
         fprintf ppf "%a%a%t@]"
           (trace simplify_trace unification_get_diff false
