@@ -14,32 +14,33 @@
 
 (rule
  (targets config.ml)
- (mode    fallback)
- (deps    config.generated.ml config.common.ml)
+ (mode fallback)
+ (deps config.generated.ml config.common.ml)
  (action
-   (with-stdout-to %{targets}
-     (system "cat %{deps}"))))
+  (with-stdout-to
+   %{targets}
+   (system "cat %{deps}"))))
 
 (rule
  (targets domainstate.ml)
- (mode    fallback)
- (deps    (:conf ../Makefile.config)
-          (:c domainstate.ml.c)
-          (:tbl ../runtime/caml/domain_state.tbl))
+ (mode fallback)
+ (deps
+  (:conf ../Makefile.config)
+  (:c domainstate.ml.c)
+  (:tbl ../runtime/caml/domain_state.tbl))
  (action
-   (with-stdout-to %{targets}
-     (bash
-       "`grep '^CPP=' %{conf} | cut -d'=' -f2` -I ../runtime/caml %{c}"
-       ))))
+  (with-stdout-to
+   %{targets}
+   (bash "`grep '^CPP=' %{conf} | cut -d'=' -f2` -I ../runtime/caml %{c}"))))
 
 (rule
  (targets domainstate.mli)
- (mode    fallback)
- (deps    (:conf ../Makefile.config)
-          (:c domainstate.mli.c)
-          (:tbl ../runtime/caml/domain_state.tbl))
+ (mode fallback)
+ (deps
+  (:conf ../Makefile.config)
+  (:c domainstate.mli.c)
+  (:tbl ../runtime/caml/domain_state.tbl))
  (action
-   (with-stdout-to %{targets}
-     (bash
-       "`grep '^CPP=' %{conf} | cut -d'=' -f2` -I ../runtime/caml %{c}"
-       ))))
+  (with-stdout-to
+   %{targets}
+   (bash "`grep '^CPP=' %{conf} | cut -d'=' -f2` -I ../runtime/caml %{c}"))))
