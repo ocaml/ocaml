@@ -295,5 +295,6 @@ let check
     printf "number of states: %i\n" (Array.length states);
     Array.iteri print_state states
   );
-  if not (List.for_all (check_entry ~fatal states) entries) && fatal then
+  let results = List.map (check_entry ~fatal states) entries in
+  if List.mem false results && fatal then
     exit 3
