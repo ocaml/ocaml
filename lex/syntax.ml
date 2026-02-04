@@ -96,7 +96,7 @@ let show_location loc =
    - It would be nice to use the same function as the OCaml compilers
      to print and highlight the affected snippet of code.
 *)
-let print_warning ~fatal ?name loc msg =
+let print_warning ?(fatal = false) ?name loc msg =
   Printf.eprintf
     "ocamllex %swarning%s:\n\
      %s: %s\n"

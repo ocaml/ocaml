@@ -37,8 +37,14 @@ val show_location : location -> string
 
 (** Print a warning to stderr.
     The message may span multiple lines but should not be terminated by
-    a newline. *)
-val print_warning : fatal:bool -> ?name:string -> location -> string -> unit
+    a newline.
+
+    @param fatal indicate that the warning is fatal in the error message.
+    This does not exit the program.
+
+    @param name show the warning name as known to the [-w] option, if any.
+*)
+val print_warning : ?fatal:bool -> ?name:string -> location -> string -> unit
 
 type regular_expression =
     Epsilon
