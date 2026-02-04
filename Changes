@@ -39,6 +39,9 @@ Working version
 
 ### Bug fixes:
 
+- #14519: Fix segfault when using `Runtime_events` under certain
+  circumstances due to bad error checking when calling `mmap()`.
+  (Mark Elvers, review by Nicolás Ojeda Bär)
 
 OCaml 5.5.0
 -----------
