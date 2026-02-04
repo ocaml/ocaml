@@ -50,6 +50,10 @@ let flags env = Environments.safe_lookup Ocaml_variables.flags env
 
 let last_flags env = Environments.safe_lookup Ocaml_variables.last_flags env
 
+let ocamllex_exit_status env =
+  Actions_helpers.exit_status_of_variable
+    env Ocaml_variables.ocamllex_exit_status
+
 let ocamllex_flags env =
   Environments.safe_lookup Ocaml_variables.ocamllex_flags env
 
@@ -95,6 +99,7 @@ type module_generator = {
   description : string;
   command : string;
   flags : Environments.t -> string;
+  expected_exit_status : Environments.t -> int;
   generated_compilation_units :
     string -> (string * Ocaml_filetypes.t) list
 }
@@ -104,6 +109,7 @@ let ocamllex =
   description = "lexer";
   command = Ocaml_commands.ocamlrun_ocamllex;
   flags = ocamllex_flags;
+  expected_exit_status = ocamllex_exit_status;
   generated_compilation_units =
     fun lexer_name -> [(lexer_name, Ocaml_filetypes.Implementation)]
 }
@@ -113,6 +119,7 @@ let ocamlyacc =
   description = "parser";
   command = Ocaml_files.ocamlyacc;
   flags = ocamlyacc_flags;
+  expected_exit_status = (fun _env -> 0);
   generated_compilation_units =
     fun parser_name ->
       [
@@ -135,7 +142,7 @@ let generate_module generator output_variable input log env =
     generator.flags env;
     input_file
   ] in
-  let expected_exit_status = 0 in
+  let expected_exit_status = generator.expected_exit_status env in
   let exit_status =
     Actions_helpers.run_cmd
       ~environment:default_ocaml_env
