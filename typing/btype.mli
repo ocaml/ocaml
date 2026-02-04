@@ -161,6 +161,9 @@ val iter_type_expr_cstr_args: (type_expr -> unit) ->
 val map_type_expr_cstr_args: (type_expr -> type_expr) ->
   (constructor_arguments -> constructor_arguments)
 
+val map_pack : (Path.t -> Path.t) -> (type_expr -> type_expr) -> package ->
+  package
+
 (**** Utilities for type marking ****)
 
 val mark_type: type_mark -> type_expr -> unit

@@ -42,6 +42,10 @@ Line 1, characters 16-33:
 1 | let g: int -> [%empty_poly_binder] = fun n x -> x;;
                     ^^^^^^^^^^^^^^^^^
 Error: broken invariant in parsetree: Explicit universal type quantification cannot be empty.
+Line 2, characters 13-29:
+2 | let f (x : [%tfunctor_opt_arg]) = ();;
+                 ^^^^^^^^^^^^^^^^
+Error: broken invariant in parsetree: Optional argument for a module dependent function.
 Line 2, characters 9-29:
 2 | let f ([%empty_open_tuple_pat]) = ();;
              ^^^^^^^^^^^^^^^^^^^^

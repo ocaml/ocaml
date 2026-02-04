@@ -45,6 +45,7 @@ and type_desc =
   | Tunivar of string option
   | Tpoly of type_expr * type_expr list
   | Tpackage of package
+  | Tfunctor of arg_label * Ident.Unscoped.t * package * type_expr
 
 and package =
     { pack_path : Path.t;
@@ -88,6 +89,12 @@ and _ commutable_gen =
     Cok      : [> `some] commutable_gen
   | Cunknown : [> `none] commutable_gen
   | Cvar : {mutable commu: any commutable_gen} -> [> `var] commutable_gen
+
+type tfunctor = {
+  id_us : Ident.Unscoped.t;
+  pack : package;
+  ty : type_expr;
+}
 
 module TransientTypeOps = struct
   type t = type_expr
@@ -475,6 +482,7 @@ type change =
   | Ckind of [`var] field_kind_gen
   | Ccommu of [`var] commutable_gen
   | Cuniv of type_expr option ref * type_expr option
+  | Cuident of Ident.Unscoped.change
 
 type changes =
     Change of change * changes ref
@@ -487,6 +495,9 @@ let log_change ch =
   let r' = ref Unchanged in
   !trail := Change (ch, r');
   trail := r'
+
+let () =
+    Ident.Unscoped.change_log := (fun change -> log_change (Cuident change))
 
 (* constructor and accessors for [field_kind] *)
 
@@ -666,6 +677,11 @@ let set_row_name row row_name =
   let row = row_repr_no_fields row in
   {row with row_fields; row_name}
 
+let subst_row_name_path id_map row =
+  match row_name row with
+  | Some (p, tl) -> set_row_name row (Some (Path.subst id_map p, tl))
+  | None -> row
+
 type row_desc_repr =
     Row of { fields: (label * row_field) list;
              more:type_expr;
@@ -776,6 +792,7 @@ let undo_change = function
   | Ckind  (FKvar r) -> r.field_kind <- FKprivate
   | Ccommu (Cvar r)  -> r.commu <- Cunknown
   | Cuniv  (r, v)    -> r := v
+  | Cuident change    -> Ident.Unscoped.undo_change change
 
 type snapshot = changes ref * int
 let last_snapshot = Local_store.s_ref 0

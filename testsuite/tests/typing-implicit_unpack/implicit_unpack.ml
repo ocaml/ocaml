@@ -14,8 +14,9 @@
  *)
 (* ocaml -principal *)
 
-(* Use a module pattern *)
-let sort (type s) (module Set : Set.S with type elt = s) l =
+(* Use a module pattern,
+   in this test we want to avoid module-dependent functions. *)
+let sort (type s) ((module Set) : (module Set.S with type elt = s)) l =
   Set.elements (List.fold_right Set.add l Set.empty)
 ;;
 [%%expect{|
@@ -43,7 +44,7 @@ module type S = sig type t val x : t end;;
 module type S = sig type t val x : t end
 |}];;
 
-let f (module M : S with type t = int) = M.x;;
+let f ((module M) : (module S with type t = int)) = M.x;;
 [%%expect{|
 val f : (module S with type t = int) -> int = <fun>
 |}];;
@@ -57,7 +58,9 @@ Error: The type of this packed module contains variables:
        "(module S with type t = 'a)"
 |}];;
 
-let f (type a) (module M : S with type t = a) = M.x;;
+(* We add the parenthesis here to ensure that this function is understood
+  as a non-dependent function. *)
+let f (type a) ((module M) : (module S with type t = a)) = M.x;;
 f (module struct type t = int let x = 1 end);;
 [%%expect{|
 val f : (module S with type t = 'a) -> 'a = <fun>
@@ -106,7 +109,7 @@ module type S = sig val x : int end;;
 module type S = sig val x : int end
 |}];;
 
-let f (module M : S) y (module N : S) = M.x + y + N.x;;
+let f ((module M) : (module S)) y ((module N) : (module S)) = M.x + y + N.x;;
 [%%expect{|
 val f : (module S) -> int -> (module S) -> int = <fun>
 |}];;

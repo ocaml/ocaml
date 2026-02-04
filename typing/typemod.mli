@@ -54,8 +54,6 @@ val type_open_:
 val modtype_of_package:
         Env.t -> Location.t -> package -> module_type
 
-val path_of_module : Typedtree.module_expr -> Path.t option
-
 val save_signature:
   Unit_info.t -> Typedtree.signature -> Env.t ->
   Cmi_format.cmi_infos -> unit

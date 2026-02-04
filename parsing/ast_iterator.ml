@@ -164,6 +164,10 @@ module T = struct
         iter_loc_lid sub mod_ident;
         sub.typ sub t
     | Ptyp_extension x -> sub.extension sub x
+    | Ptyp_functor (_lab, s, ptyp, t2) ->
+      iter_loc iter_string sub s;
+      sub.package_type sub ptyp;
+      sub.typ sub t2
 
   let iter_type_declaration sub
       {ptype_name; ptype_params; ptype_constraints;

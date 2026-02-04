@@ -608,6 +608,10 @@ let typ sub {ctyp_loc; ctyp_desc; ctyp_env; ctyp_attributes; _} =
   | Ttyp_open (_, mod_ident, t) ->
       iter_loc_lid sub mod_ident;
       sub.typ sub t
+  | Ttyp_functor (_, id, pack, ct) ->
+      iter_loc sub id;
+      sub.package_type sub pack;
+      sub.typ sub ct
 
 let class_structure sub {cstr_self; cstr_fields; _} =
   sub.pat sub cstr_self;

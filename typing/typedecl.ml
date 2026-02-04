@@ -69,6 +69,7 @@ type error =
   | Multiple_native_repr_attributes
   | Cannot_unbox_or_untag_type of native_repr_kind
   | Deep_unbox_or_untag_attribute of native_repr_kind
+  | Type_cannot_be_external of type_expr
   | Immediacy of Typedecl_immediacy.error
   | Separability of Typedecl_separability.error
   | Bad_unboxed_attribute of string
@@ -565,6 +566,12 @@ let rec check_constraints_rec env loc visited ty =
           raise (Error(loc, Constraint_failed (env, err)))
       end;
       List.iter (check_constraints_rec env loc visited) args
+  | Tfunctor (_, us, pack, ty) ->
+      List.iter (fun (_, t) -> check_constraints_rec env loc visited t)
+        pack.pack_constraints;
+      let (env, ty) =
+        Ctype.open_tfunctor env ~loc us pack ty in
+      check_constraints_rec env loc visited ty
   | Tpoly (ty, tl) ->
       let ty = Ctype.instance_poly tl ty in
       check_constraints_rec env loc visited ty
@@ -1618,10 +1625,12 @@ let rec parse_native_repr_attributes env core_type ty ~global_repr =
       parse_native_repr_attributes env ct2 t2 ~global_repr
     in
     (repr_arg :: repr_args, repr_res)
+  | Ptyp_functor _, Tfunctor _, _ ->
+    raise (Error (core_type.ptyp_loc, Type_cannot_be_external ty))
   | (Ptyp_poly (_, t) | Ptyp_alias (t, _)), _, _ ->
      parse_native_repr_attributes env t ty ~global_repr
-  | Ptyp_arrow _, _, _ -> assert false
-  | _, Tarrow _, _ ->
+  | Ptyp_arrow _, _, _ | Ptyp_functor _, _, _ -> assert false
+  | _, Tarrow _, _ | _, Tfunctor _, _ ->
       raise (Error (core_type.ptyp_loc, External_with_non_syntactic_arity))
   | _ -> ([], make_native_repr env core_type ty ~global_repr)
 
@@ -2305,6 +2314,10 @@ let report_error ~loc = function
          it should not occur deeply into its type."
         Style.inline_code
         (match kind with Unboxed -> "@unboxed" | Untagged -> "@untagged")
+  | Type_cannot_be_external ty ->
+      Location.errorf ~loc
+        "The type@ %a@ cannot be used to annotate an external function."
+          (Style.as_inline_code Printtyp.type_expr) ty
   | Immediacy (Typedecl_immediacy.Bad_immediacy_attribute violation) ->
       (match violation with
        | Type_immediacy.Violation.Not_always_immediate ->

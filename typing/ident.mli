@@ -59,13 +59,48 @@ val compare: t -> t -> int
 
 val global: t -> bool
 val is_predef: t -> bool
+val is_unscoped: t -> bool
 
 val scope: t -> int
 
 val lowest_scope : int
 val highest_scope: int
 
+
 val reinit: unit -> unit
+
+(**
+    Unscoped defines a notion of identifier that are bound locally inside a
+    module-dependant function type : [(module M : S) -> t)].
+
+    Those identifiers do not have scopes because they are bound locally and can
+    be unified with each other to respect alpha-conversion.
+*)
+module Unscoped : sig
+   type t
+
+   val create : string -> t
+   val refresh: t -> t
+
+   val name: t -> string
+   val same: t -> t -> bool
+
+   type change
+   val change_log: (change -> unit) ref
+   val undo_change: change -> unit
+   val link: t -> t -> unit
+
+   module Set : Stdlib.Set.S with type elt = t
+end
+
+val of_unscoped: Unscoped.t -> t
+val find_unscoped: t -> Unscoped.t option
+
+val equiv: (Unscoped.t * Unscoped.t) list -> t -> t -> bool
+        (** Same as [same] up to the fact that identifiers
+            created by [Unscoped.create] are equivalent only
+            the corresponding pair is stored in the list. *)
+
 
 type 'a tbl
 (** ['a tbl] represents association tables from identifiers to values

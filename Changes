@@ -285,6 +285,12 @@ OCaml 5.5.0
 
 ### Type system:
 
+* #13681, #13682, #13683, #13684, #13275 :
+  Introduce a new type `(module M : S) -> t[M]` that corresponds to
+  module-dependent functions (aka modular explicits).
+  (Samuel Vivien review by Leo White, Gabriel Scherer, Florian Angeletti,
+    Jacques Garrigue and Stephen Dolan)
+
 - #13781: Set scope of internal type nodes during abbreviation expansion
   rather than recursing during unification.
   (Jacques Garrigue, review by Gabriel Scherer)
@@ -722,6 +728,10 @@ OCaml 5.5.0
 - #14431: Enable native backend for DragonFly BSD. This builds ocamlopt on
   DragonFly.
   (Michael Neumann, review by Gabriel Scherer and Kate Deplaix)
+
+- #14495: Fix infix-tag bug in the minor collector which could cause SEGVs
+  in multi-domain programs.
+  (Nick Barnes, review by Gabriel Scherer)
 
 OCaml 5.4.0 (9 October 2025)
 ----------------------------
@@ -1506,7 +1516,6 @@ OCaml 5.3.0 (8 January 2025)
   compatible identifiers.
   (Xavier Leroy and Florian Angeletti, review by Daniel Bünzli and
    Jules Aguillon)
-
 
 - #12828, #13283: Add short syntax for dependent functor types `(X:A) -> ...`
   (Jeremy Yallop, review by Nicolás Ojeda Bär and Gabriel Scherer)

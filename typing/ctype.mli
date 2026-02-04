@@ -193,8 +193,14 @@ val new_local_type:
         type_origin -> type_declaration
 
 module Pattern_env : sig
+  type envop
   type t = private
     { mutable env : Env.t;
+      mutable op_list : envop list;
+      (* When comparing module-dependent functions we add a module to the
+         environment locally. [op_list] records all the changes to the
+         environment in order to replay them once again after removing the local
+         module from the environment. *)
       equations_scope : int;
       (* scope for local type declarations *)
       in_counterexample : bool;
@@ -202,6 +208,7 @@ module Pattern_env : sig
     }
   val make: Env.t -> equations_scope:int -> in_counterexample:bool -> t
   val copy: ?equations_scope:int -> t -> t
+  val enter_type: scope:int -> label -> type_declaration -> t -> Ident.t
   val set_env: t -> Env.t -> unit
 end
 
@@ -233,6 +240,22 @@ val instance_poly_fixed:
         type_expr list -> type_expr -> type_expr list * type_expr
         (* Take an instance of a type scheme containing free univars for
            checking that an expression matches this scheme. *)
+
+val instance_funct_opt:
+        id_in:Ident.t -> p_out:Path.t -> fixed:bool ->
+        type_expr -> type_expr option
+(** Takes a instance of the functor return type by replacing [id_in]
+    by [p_out]. Returns [None] if [id_in] did not occur in the type. *)
+
+val instance_funct:
+        id_in:Ident.t -> p_out:Path.t -> fixed:bool -> type_expr -> type_expr
+(** Same as [instance_funct_opt] but behaves as identity if [id_in] does
+    not occur in the type. *)
+
+val instance_funct_nondep :
+        Env.t -> arg_label -> tfunctor -> module_type -> type_expr
+(** Tries to use the module argument actual signature to remove the depencies
+    that might occur in the return type of a module-dependent function. *)
 
 val polyfy: Env.t -> type_expr -> type_expr list -> type_expr * type_expr list
 
@@ -320,12 +343,22 @@ type filter_arrow_failure =
       }
   | Not_a_function
 
-val filter_arrow: Env.t -> type_expr -> arg_label -> param_hole:bool ->
-        (filtered_arrow, filter_arrow_failure) result
+val filter_arrow: Env.t -> in_apply:bool -> type_expr -> arg_label ->
+        param_hole:bool -> (filtered_arrow, filter_arrow_failure) result
         (* A special case of unification with [l:'a -> 'b]. If [param_hole] is
            true then ['a] might be initialized with a [Tvar _] hole to be filled
            later by a [Tpoly _].
-           Raises [Filter_arrow_failed] instead of [Unify]. *)
+           If [in_apply] is false than the type argument is presented as the
+           expected type in the error message if filter_arrow fails.
+           Returns a result instead of raising [Unify]. *)
+val filter_functor:
+        Env.t -> type_expr -> arg_label ->
+        ((Ident.Unscoped.t * package * type_expr) option,
+         filter_arrow_failure) result
+        (* A special case of unification with [{M:P} -> 'a]
+           Returns a result instead of raising [Unify].
+           May return [Some _] when the type is not principally known,
+           so you should check for principality. *)
 val is_really_poly : Env.t -> type_expr -> bool
 val filter_method: Env.t -> string -> type_expr -> type_expr
         (* A special case of unification (with {m : 'a; 'b}).  Raises
@@ -385,6 +418,7 @@ val equal: Env.t -> bool -> type_expr list -> type_expr list -> unit
         (* [equal env [x1...xn] tau [y1...yn] sigma]
            checks whether the parameterized types
            [/\x1.../\xn.tau] and [/\y1.../\yn.sigma] are equivalent. *)
+val eq_package_path : Env.t -> Path.t -> Path.t -> bool
 val is_equal : Env.t -> bool -> type_expr list -> type_expr list -> bool
 val equal_private :
         Env.t -> type_expr list -> type_expr ->
@@ -514,5 +548,12 @@ val package_subtype :
     (Env.t -> package -> package ->
      (unit,Errortrace.first_class_module) Result.t) ref
 
+val modtype_of_package : Env.t -> Location.t -> package -> module_type
+val set_modtype_of_package :
+        (Env.t -> Location.t -> package -> module_type) -> unit
+
 (* Raises [Incompatible] *)
 val mcomp : Env.t -> type_expr -> type_expr -> unit
+
+val open_tfunctor : Env.t -> loc:Location.t -> Ident.Unscoped.t -> package ->
+        type_expr -> Env.t * type_expr

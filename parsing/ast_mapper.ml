@@ -197,6 +197,9 @@ module T = struct
     | Ptyp_open (mod_ident, t) ->
         open_ ~loc ~attrs (map_loc_lid sub mod_ident) (sub.typ sub t)
     | Ptyp_extension x -> extension ~loc ~attrs (sub.extension sub x)
+    | Ptyp_functor (lab, s, ptyp, t) ->
+        functor_ ~loc ~attrs lab (map_loc map_string sub s)
+          (sub.package_type sub ptyp) (sub.typ sub t)
 
   let map_type_declaration sub
       {ptype_name; ptype_params; ptype_constraints;

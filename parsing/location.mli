@@ -94,6 +94,7 @@ type 'a loc = {
 
 val mknoloc : 'a -> 'a loc
 val mkloc : 'a -> t -> 'a loc
+val map : ('a -> 'b) -> 'a loc -> 'b loc
 
 
 (** {1 Input info} *)

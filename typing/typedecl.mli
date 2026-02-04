@@ -114,6 +114,7 @@ type error =
   | Multiple_native_repr_attributes
   | Cannot_unbox_or_untag_type of native_repr_kind
   | Deep_unbox_or_untag_attribute of native_repr_kind
+  | Type_cannot_be_external of type_expr
   | Immediacy of Typedecl_immediacy.error
   | Separability of Typedecl_separability.error
   | Bad_unboxed_attribute of string

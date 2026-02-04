@@ -899,15 +899,23 @@ module Merge = struct
     let _, _, _, sg = merge ~patch ~destructive:false env sg loc lid in
     sg
 
-  let check_package_with_type_constraints loc env mty constraints =
+  let check_package_with_type_constraints (type a) loc env mty
+    (maybe : a Typetexp.maybe_compute_mty) constraints : a =
     let sg = extract_sig env loc mty in
-    ignore (List.fold_left
-                (fun sg (lid, cty) ->
-                  merge_package env loc sg lid cty)
-                sg constraints)
+    let sg =
+      List.fold_left
+        (fun sg (lid, cty) ->
+           merge_package env loc sg lid cty)
+        sg constraints
+    in
+    match maybe with
+    | NoMType -> ()
+    | ComputeMType ->
+      let scope = Ctype.create_scope () in
+      Mtype.freshen ~scope (Mty_signature sg)
 
   let () =
-    Typetexp.check_package_with_type_constraints :=
+    Typetexp.forward_decl.check_package_with_type_constraints <-
       check_package_with_type_constraints
 
   (* Helper for handling constraints on signatures: destructive constraints,
@@ -2017,24 +2025,6 @@ and transl_recmodule_modtypes env sdecls =
   in
   (dcl2, env2)
 
-(* Try to convert a module expression to a module path. *)
-
-exception Not_a_path
-
-let rec path_of_module mexp =
-  match mexp.mod_desc with
-  | Tmod_ident (p,_) -> p
-  | Tmod_apply(funct, arg, _coercion) when !Clflags.applicative_functors ->
-      Papply(path_of_module funct, path_of_module arg)
-  | Tmod_constraint (mexp, _, _, _) ->
-      path_of_module mexp
-  | (Tmod_structure _ | Tmod_functor _ | Tmod_apply_unit _ | Tmod_unpack _ |
-    Tmod_apply _) ->
-    raise Not_a_path
-
-let path_of_module mexp =
- try Some (path_of_module mexp) with Not_a_path -> None
-
 (* Check that all core type schemes in a structure
    do not contain non-generalized type variable *)
 
@@ -2302,7 +2292,9 @@ let package_subtype env pack1 pack2 =
         let msg = doc_printf "%a" Includemod_errorprinter.err_msgs e in
         Result.Error (Errortrace.Package_inclusion msg)
 
-let () = Ctype.package_subtype := package_subtype
+let () =
+    Ctype.package_subtype := package_subtype;
+    Ctype.set_modtype_of_package modtype_of_package
 
 let wrap_constraint_package env mark arg mty explicit =
   let mty1 = Subst.modtype Keep Subst.identity arg.mod_type in
@@ -3269,6 +3261,7 @@ let () =
   Typetexp.type_open := type_open_ ?toplevel:None;
   Typecore.type_open_decl := type_open_decl;
   Typecore.type_package := type_package;
+  Typecore.check_package_closed := check_package_closed;
   Typeclass.type_open_descr := type_open_descr;
   type_module_type_of_fwd := type_module_type_of
 
