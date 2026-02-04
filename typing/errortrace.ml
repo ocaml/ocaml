@@ -230,3 +230,130 @@ module Subtype = struct
 
   let map f t = List.map (map_elt f) t
 end
+
+module Structured = struct
+
+type 'a extended_explanation =
+  | Promoted of Format_doc.t
+  | Standard of 'a
+
+type 'a t = {
+  top: ('a * bool) option;
+  tr: 'a list;
+  expl: 'a extended_explanation option;
+}
+(**
+This module contains helper functions to split the error trace into three parts:
+- {!top} the first element of the trace
+- {!tr} a list of meaningful context difference element
+- {!expl} a root explanation for a type error
+*)
+
+(** The first intermediary representation splits the trace into four parts:
+- the {!head} element of the trace
+- the {!top_to_ctx} trace elements in reverse order situated before the last
+  method or tag difference
+- {!last_ctx}: the last method or tag context, and the list of elements after it
+- {!optional}: the last element that might be printed if we don't discover a
+  better element to print later on.
+*)
+type 'a segments =
+  {
+    head: 'a;
+    before:'a list;
+    last_ctx:('a * 'a list) option;
+    optional: 'a option
+  }
+
+let head_segment hd =
+  { head = hd; before=[]; last_ctx = None; optional = None }
+
+(** Add a non-contextual element to the active context *)
+let add x s = match s.last_ctx with
+  | None ->  { s with optional = None; before = x :: s.before }
+  | Some (ctx, rest)->
+      { s with optional = None; last_ctx = Some (ctx, x :: rest)}
+
+(** Add a new context, add the last context contents to the {!before} trace *)
+let add_ctx c s = match s.last_ctx with
+  | None -> { s with optional = None; last_ctx = Some (c,[]) }
+  | Some (_ctx, rest) -> {
+      head = s.head;
+      optional = None;
+      before = rest @ s.before;
+      last_ctx = Some (c,[])
+    }
+
+type printing_status =
+  | Discard
+  | Keep
+  | Context
+    (** A {!Context} element marks the entry inside a method or a polymorphic
+        variant tag *)
+  | Optional_refinement
+  (** An [Optional_refinement] printing status is attributed to trace
+      elements that are focusing on a new subpart of a structural type.
+      Since the whole type should have been printed earlier in the trace,
+      we only print those elements if they are the last printed element
+      of a trace, and there is no explicit explanation for the
+      type error.
+  *)
+
+(** Construct a segment from an unstructured trace *)
+let segment status = function
+  | [] -> assert false
+  | hd :: tr ->
+      List.fold_left (fun s x ->
+      match status x with
+      | Discard -> s
+      | Keep -> add x s
+      | Optional_refinement -> { s with optional = Some x }
+      | Context -> add_ctx x s
+    ) (head_segment hd) tr
+
+let promoted x = Option.map (fun p -> Promoted p) x
+let merge promote s =
+  (* First, we commit the last contextualized segment of the trace to the
+     trace *)
+  let rtr, opt, maybe_compact = match s.last_ctx with
+    | None -> s.before, s.optional, false
+    | Some (ctx, rest) -> rest @ ctx :: s.before, None, true
+  in
+  let head, rtr, expl = match rtr with
+    | Diff d :: _ ->
+        begin match promote d.d with
+        | Some p -> Some s.head, rtr, Some (Promoted p)
+        | None -> Some s.head, rtr, None
+        end
+    | expl :: rest -> Some s.head, rest, Some (Standard expl)
+    | [] ->
+        begin match s.head with
+        | Diff d -> Some s.head, [], promoted (promote d.d)
+        | expl -> None, [], Some (Standard expl)
+        end
+  in
+  let tr = match expl, opt with
+    | None, Some opt -> List.rev (opt :: rtr)
+    | Some _, _ | None, _  -> List.rev rtr
+  in
+  let compact head = match tr, maybe_compact with
+    | [], _ | [_], true -> head, true
+    | _ -> head, false
+  in
+  { top=Option.map compact head; tr; expl }
+
+  let parse ~promote ~status s = merge promote (segment status s)
+
+  let parse_simple status tr =
+    let s = segment status tr in
+    let rtr = match s.last_ctx with
+      | None -> s.before
+      | Some (ctx, rest) -> rest @ ctx :: s.before
+    in
+    let rtr = match s.optional with
+      | Some x -> x :: rtr
+      | None -> rtr
+    in
+    s.head, List.rev rtr
+
+end

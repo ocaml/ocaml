@@ -66,87 +66,28 @@ and trace_elt txt ppf = function
         pp_type_expansion got
         pp_type_expansion expected
 
-module Structured_trace = struct
+
+let diff_printing_status Errortrace.{ got      = {ty = t1; expanded = t1'};
+                                      expected = {ty = t2; expanded = t2'} } =
+  if  Btype.is_constr_row ~allow_ident:true t1'
+   || Btype.is_constr_row ~allow_ident:true t2'
+  then Errortrace.Structured.Discard
+  else if same_path t1 t1' && same_path t2 t2' then
+    Errortrace.Structured.Optional_refinement
+  else Errortrace.Structured.Keep
+
+let printing_status = function
+  | Errortrace.Diff { ctx = Some _; _} -> Errortrace.Structured.Context
+  | Errortrace.Diff d -> diff_printing_status d.d
+  | _ -> Errortrace.Structured.Keep
 
 
-  type ('a,'b) t = {
-  top: ('a * bool) option;
-  tr: 'a list;
-  expl: 'b
-}
-(**
-This module contains helper functions to split the error trace into three parts:
-- {!top} the first element of the trace
-- {!tr} a list of meaningful context difference element
-- {!expl} a root explanation for a type error
-*)
-
-(** The first intermediary representation splits the trace into four parts:
-- the {!head} element of the trace
-- the {!top_to_ctx} trace elements in reverse order situated before the last
-  method or tag difference
-- {!last_ctx}: the last method or tag context, and the list of elements after it
-- {!optional}: the last element that might be printed if we don't discover a
-  better element to print later on.
-*)
-type 'a segments =
-  {
-    head: 'a;
-    before:'a list;
-    last_ctx:('a * 'a list) option;
-    optional: 'a option
-  }
-
-
-let head_segment hd =
-  { head = hd; before=[]; last_ctx = None; optional = None }
-
-(** Add a non-contextual element to the active context *)
-let add x s = match s.last_ctx with
-  | None ->  { s with optional = None; before = x :: s.before }
-  | Some (ctx, rest)->
-      { s with optional = None; last_ctx = Some (ctx, x :: rest)}
-
-(** Add a new context, add the last context contents to the {!before} trace *)
-let add_ctx c s = match s.last_ctx with
-  | None -> { s with optional = None; last_ctx = Some (c,[]) }
-  | Some (_ctx, rest) -> {
-      head = s.head;
-      optional = None;
-      before = rest @ s.before;
-      last_ctx = Some (c,[])
-    }
-
-type printing_status =
-  | Discard
-  | Keep
-  | Context
-    (** A {!Context} element marks the entry inside a method or a polymorphic
-        variant tag *)
-  | Optional_refinement
-  (** An [Optional_refinement] printing status is attributed to trace
-      elements that are focusing on a new subpart of a structural type.
-      Since the whole type should have been printed earlier in the trace,
-      we only print those elements if they are the last printed element
-      of a trace, and there is no explicit explanation for the
-      type error.
-  *)
-
-(** Construct a segment from an unstructured trace *)
-let segment status = function
-  | [] -> assert false
-  | hd :: tr ->
-      List.fold_left (fun s x ->
-      match status x with
-      | Discard -> s
-      | Keep -> add x s
-      | Optional_refinement -> { s with optional = Some x }
-      | Context -> add_ctx x s
-    ) (head_segment hd) tr
-
-type 'a extended_explanation =
-  | Promoted of Format_doc.t
-  | Standard of 'a
+(** Keep elements that are [Diff _ ]  *)
+let simplify_trace tr =
+  List.filter_map (function
+      | Errortrace.Diff d -> Some d
+      | _ -> None)
+    tr
 
 let is_unit_param env ty =
   let ty, vars = Btype.tpoly_get_poly ty in
@@ -167,76 +108,21 @@ let promote_diff env {Errortrace.got; expected} =
   let res = match Types.get_desc t3, Types.get_desc t4 with
   | Tarrow (_, ty1, ty2, _), _
     when is_unit_param env ty1 && unifiable env ty2 t4 ->
-      Some (Promoted (doc_printf
+      Some (doc_printf
           "@,@[@{<hint>Hint@}: Did you forget to provide %a as argument?@]"
           Style.inline_code "()"
-        ))
+        )
   | _, Tarrow (_, ty1, ty2, _)
     when is_unit_param env ty1 && unifiable env t3 ty2 ->
-      Some (Promoted (doc_printf
+      Some (doc_printf
           "@,@[@{<hint>Hint@}: Did you forget to wrap the expression using \
            %a?@]"
           Style.inline_code "fun () ->"
-        ))
+        )
   | _ -> None
   in
   Btype.backtrack snap;
   res
-
-let merge env s =
-  (* First, we commit the last contextualized segment of the trace to the
-     trace *)
-  let rtr, opt, maybe_compact = match s.last_ctx with
-    | None -> s.before, s.optional, false
-    | Some (ctx, rest) -> rest @ ctx :: s.before, None, true
-  in
-  let head, rtr, expl = match rtr with
-    | Errortrace.Diff d :: _ ->
-        begin match promote_diff env d.d with
-        | Some p -> Some s.head, rtr, Some p
-        | None -> Some s.head, rtr, None
-        end
-    | expl :: rest -> Some s.head, rest, Some (Standard expl)
-    | [] ->
-        begin match s.head with
-        | Errortrace.Diff d -> Some s.head, [], promote_diff env d.d
-        | expl -> None, [], Some (Standard expl)
-        end
-  in
-  let tr = match expl, opt with
-    | None, Some opt -> List.rev (opt :: rtr)
-    | Some _, _ | None, _  -> List.rev rtr
-  in
-  let compact head = match tr, maybe_compact with
-    | [], _ | [_], true -> head, true
-    | _ -> head, false
-  in
-  { top=Option.map compact head; tr; expl }
-
-  let split env status s = merge env (segment status s)
-end
-
-let diff_printing_status Errortrace.{ got      = {ty = t1; expanded = t1'};
-                                      expected = {ty = t2; expanded = t2'} } =
-  if  Btype.is_constr_row ~allow_ident:true t1'
-   || Btype.is_constr_row ~allow_ident:true t2'
-  then Structured_trace.Discard
-  else if same_path t1 t1' && same_path t2 t2' then
-    Structured_trace.Optional_refinement
-  else Structured_trace.Keep
-
-let printing_status = function
-  | Errortrace.Diff { ctx = Some _; _} -> Structured_trace.Context
-  | Errortrace.Diff d -> diff_printing_status d.d
-  | _ -> Structured_trace.Keep
-
-
-(** Keep elements that are [Diff _ ]  *)
-let simplify_trace tr =
-  List.filter_map (function
-      | Errortrace.Diff d -> Some d
-      | _ -> None)
-    tr
 
 let may_prepare_expansion compact (Errortrace.{ty; expanded} as ty_exp) =
   match Types.get_desc expanded with
@@ -511,8 +397,8 @@ let explanation (type variety) intro
 let mismatch intro expl =
   match expl with
   | None -> None
-  | Some (Structured_trace.Promoted msg) -> Some msg
-  | Some (Structured_trace.Standard e) -> explanation intro e
+  | Some (Errortrace.Structured.Promoted msg) -> Some msg
+  | Some (Errortrace.Structured.Standard e) -> explanation intro e
 
 let warn_on_missing_def env ppf t =
   match Types.get_desc t with
@@ -618,13 +504,17 @@ let explain_names env ppf =
 let hide_variant ty_exp =
   Errortrace.{ty_exp with expanded = hide_variant_name ty_exp.expanded}
 
+let structured_trace env tr =
+ Errortrace.Structured.parse ~promote:(promote_diff env) ~status:printing_status
+   tr
+
 (* [subst] comes out of equality, and is [[]] otherwise *)
 let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
   reset ();
   (* We want to substitute in the opposite order from [Eqtype] *)
   Variable_names.add_subst (List.map (fun (ty1,ty2) -> ty2,ty1) subst);
   let tr = Errortrace.map hide_variant tr in
-  let str = Structured_trace.split env printing_status tr in
+  let str = structured_trace env tr in
   with_labels (not !Clflags.classic) (fun () ->
       let tr = simplify_trace str.tr in
       let head = Option.bind str.top prepare_expansion_head in
@@ -680,7 +570,7 @@ module Subtype = struct
      while being *just* different enough (it's only [Diff]) for the abstraction
      to be nonobvious.  Someday, perhaps... *)
 
-  let sub_printing_status = function
+  let printing_status = function
     | Errortrace.Subtype.Diff d -> diff_printing_status d
 
   let prepare_unification_trace env f tr =
@@ -688,23 +578,15 @@ module Subtype = struct
     match tr with
     | [] -> None, None
     | _ ->
-        let str = Structured_trace.split env printing_status tr in
+        let str = structured_trace env tr in
         match str.top with
         | Some (h,_) -> Some (h,str.tr), str.expl
         | None -> None, str.expl
 
   let prepare_trace f tr =
     let tr = Errortrace.Subtype.map f tr in
-    let s = Structured_trace.segment sub_printing_status tr in
-    let rtr = match s.last_ctx with
-    | None -> s.before
-    | Some (ctx, rest) -> rest @ ctx :: s.before
-    in
-    let rtr = match s.optional with
-      | Some x -> x :: rtr
-      | None -> rtr
-    in
-    Some (s.head, List.rev rtr), None
+    let htr = Errortrace.Structured.parse_simple printing_status tr in
+    Some htr, None
 
   let trace filter_trace get_diff fst txt ppf htr =
     with_labels (not !Clflags.classic) (fun () ->
@@ -728,7 +610,7 @@ module Subtype = struct
   let rec filter_subtype_trace keep_last = function
     | [] -> []
     | [Errortrace.Subtype.Diff d as elt]
-      when sub_printing_status elt = Structured_trace.Optional_refinement ->
+      when printing_status elt = Errortrace.Structured.Optional_refinement ->
         if keep_last then [no_ctx d] else []
     | Errortrace.Subtype.Diff d :: rem ->
         no_ctx d :: filter_subtype_trace keep_last rem

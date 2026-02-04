@@ -197,3 +197,48 @@ module Subtype : sig
 
   val map : ('a -> 'b) -> 'a t -> 'b t
 end
+
+module Structured: sig
+
+  type 'a extended_explanation =
+    | Promoted of Format_doc.t
+    | Standard of 'a
+
+  type 'a t = {
+    top: ('a * bool) option;
+    tr: 'a list;
+    expl: 'a extended_explanation option
+  }
+  (**
+     This module contains helper functions to split the error trace into three
+     parts:
+     - {!top} the first element of the trace
+     - {!tr} a list of meaningful context difference element
+     - {!expl} a root explanation for a type error
+  *)
+
+
+  type printing_status =
+    | Discard
+    | Keep
+    | Context
+    (** A {!Context} element marks the entry inside a method or a polymorphic
+        variant tag *)
+    | Optional_refinement
+    (** An [Optional_refinement] printing status is attributed to trace
+        elements that are focusing on a new subpart of a structural type.
+        Since the whole type should have been printed earlier in the trace,
+        we only print those elements if they are the last printed element
+        of a trace, and there is no explicit explanation for the
+        type error.
+    *)
+
+val parse:
+    promote:('a diff -> Format_doc.t option) ->
+    status:(('a, 'b) elt -> printing_status) ->
+    ('a, 'b) elt list ->
+    ('a, 'b) elt t
+
+  val parse_simple: ('a -> printing_status) -> 'a list -> 'a * 'a list
+
+end
