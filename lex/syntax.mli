@@ -35,11 +35,10 @@ val location_of_positions : Lexing.position -> Lexing.position -> location
 (** Format a location into a string in the standard error format of OCaml. *)
 val show_location : location -> string
 
-(** Print a warning to stderr message after the location and
-    the ["Warning: "] prefix.
+(** Print a warning to stderr.
     The message may span multiple lines but should not be terminated by
     a newline. *)
-val print_warning : location -> string -> unit
+val print_warning : fatal:bool -> ?name:string -> location -> string -> unit
 
 type regular_expression =
     Epsilon

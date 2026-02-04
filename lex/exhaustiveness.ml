@@ -269,25 +269,31 @@ let make_hint ~shortest example =
    It contains the rule name (useful for reporting) and the initial
    state in the automaton. *)
 let check_entry
+    ~fatal
     (states : Lexgen.automata array)
     (e : (_, Syntax.location) Lexgen.automata_entry) =
   let initial_state, _mem_actions = e.auto_initial_state in
   match is_exhaustive states initial_state with
-  | Ok () -> ()
+  | Ok () -> true
   | Error example ->
       Syntax.print_warning
+        ~fatal
+        ~name:"missing-case"
         e.auto_body_location
         (sprintf "rule \"%s\" is not exhaustive.\n\
                   Here is an example of nonmatching input:\n\
                   %S%s"
            e.auto_name example
-           (make_hint ~shortest:e.auto_shortest example))
+           (make_hint ~shortest:e.auto_shortest example));
+      false
 
 let check
+    ?(fatal = false)
     (states : Lexgen.automata array)
     (entries : (_, Syntax.location) Lexgen.automata_entry list) =
   if debug then (
     printf "number of states: %i\n" (Array.length states);
     Array.iteri print_state states
   );
-  List.iter (check_entry states) entries
+  if not (List.for_all (check_entry ~fatal states) entries) && fatal then
+    exit 3

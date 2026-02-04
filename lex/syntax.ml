@@ -16,6 +16,8 @@
 (* This apparently useless implementation file is in fact required
    by the pa_ocamllex syntax extension *)
 
+open Printf
+
 (* The shallow abstract syntax *)
 
 type location = {
@@ -94,9 +96,13 @@ let show_location loc =
    - It would be nice to use the same function as the OCaml compilers
      to print and highlight the affected snippet of code.
 *)
-let print_warning loc msg =
+let print_warning ~fatal ?name loc msg =
   Printf.eprintf
-    "ocamllex warning:\n\
+    "ocamllex %swarning%s:\n\
      %s: %s\n"
+    (if fatal then "fatal " else "")
+    (match name with
+     | None -> ""
+     | Some name -> sprintf " [%s]" name)
     (show_location loc) msg;
   flush stderr
