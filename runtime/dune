@@ -38,6 +38,7 @@
    ../Makefile.config_if_required
    ../Makefile.common Makefile
    (glob_files caml/*.h)
+   misc_internals.h
    ; matches the line structure of files in Makefile/BYTECODE_C_SOURCES
    interp.c misc.c fix_code.c startup_aux.c startup_byt.c freelist.c
      major_gc.c

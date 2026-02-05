@@ -1,92 +1,137 @@
-\section{s:first-class-modules}{First-class modules}
+\section{s:first-class-modules}{%
+  Module-dependent functions and first-class modules}
 %HEVEA\cutname{firstclassmodules.html}
 \ikwd{module\@\texttt{module}}
 \ikwd{val\@\texttt{val}}
 \ikwd{with\@\texttt{with}}
 \ikwd{and\@\texttt{and}}
 
-(Introduced in OCaml 3.12; pattern syntax and package type inference
-introduced in 4.00; structural comparison of package types introduced in 4.02.;
-fewer parens required starting from 4.05)
+(First-class modules were introduced in OCaml 3.12; pattern syntax and
+package type inference in 4.00; structural comparison of package types
+in 4.02; fewer parentheses required starting from
+4.05.\\
+Module-dependent functions were introduced in 5.5.)
 
-\begin{syntax}
-typexpr:
-      ...
-    | '(''module' package-type')'
-;
-module-expr:
-      ...
-    | '(''val' expr [':' package-type]')'
-;
-expr:
-      ...
-    | '(''module' module-expr [':' package-type]')'
-;
-pattern:
-      ...
-    | '(''module' module-name [':' package-type]')'
-;
-package-type:
-      modtype-path
-    | modtype-path 'with' package-constraint { 'and' package-constraint }
-;
-package-constraint:
-          'type' typeconstr '=' typexpr
-;
-\end{syntax}
+Module-dependent functions and first-class modules make it possible to
+manipulate modules as values, in particular to accept modules as
+function parameters.
 
-Modules are typically thought of as static components. This extension
-makes it possible to pack a module as a first-class value, which can
-later be dynamically unpacked into a module.
+\subsection{ss:fst-mod-intro}{Introduction}
 
-The expression @'(' 'module' module-expr ':' package-type ')'@ converts the
-module (structure or functor) denoted by module expression @module-expr@
-to a value of the core language that encapsulates this module.  The
-type of this core language value is @'(' 'module' package-type ')'@.
-The @package-type@ annotation can be omitted if it can be inferred
-from the context.
+\lparagraph{p:fst-mod-intro-mod-fun}{Module-dependent functions: functions parameterized over a module}
 
-Conversely, the module expression @'(' 'val' expr ':' package-type ')'@
-evaluates the core language expression @expr@ to a value, which must
-have type @'module' package-type@, and extracts the module that was
-encapsulated in this value. Again @package-type@ can be omitted if the
-type of @expr@ is known.
-If the module expression is already parenthesized, like the arguments
-of functors are, no additional parens are needed: "Map.Make(val key)".
+One can write a function "sort0" that sorts elements by adding them into
+a sorted set, and then reads them back in order:
+\begin{caml_example}{verbatim}
+let sort0 (type a) cmp li =
+  let module M = struct type t = a let compare = cmp end in
+  let module MSet = Stdlib.Set.Make(M) in
+  MSet.elements (List.fold_right MSet.add li MSet.empty)
 
-The pattern @'(' 'module' module-name ':' package-type ')'@ matches a
-package with type @package-type@ and binds it to @module-name@.
-It is not allowed in toplevel let bindings.
-Again @package-type@ can be omitted if it can be inferred from the
-enclosing pattern.
+let example = sort0 Int.compare [3; 1; 2]
+\end{caml_example*}
 
-The @package-type@ syntactic class appearing in the  @'(' 'module'
-package-type ')'@ type expression and in the annotated forms represents a
-subset of module types.
-This subset consists of named module types with optional constraints
-of a limited form: only non-parametrized types can be specified.
+Using module-dependent functions, it is also possible to express
+"sort" as a function parameterized over an ordered-set module. This
+lets callers choose their ordered-set implementation, which may be
+specialized for their type; for example sets of integers can be
+represented with bitsets, or with compact representations of dense
+intervals.
 
-For type-checking purposes (and starting from OCaml 4.02), package types
-are compared using the structural comparison of module types.
+\begin{caml_example}{verbatim}
+let sort (module MSet : Set.S) li =
+  MSet.elements (List.fold_right MSet.add li MSet.empty)
+\end{caml_example}
 
-In general, the module expression @'(' "val" expr ":" package-type
-')'@ cannot be used in the body of a functor, because this could cause
-unsoundness in conjunction with applicative functors.
-Since OCaml 4.02, this is relaxed in two ways:
-if @package-type@ does not contain nominal type declarations ({\em
-  i.e.} types that are created with a proper identity), then this
-expression can be used anywhere, and even if it contains such types
-it can be used inside the body of a generative
-functor, described in section~\ref{s:generative-functors}.
-It can also be used anywhere in the context of a local module binding
-@'let' 'module' module-name '=' '(' "val" expr_1 ":" package-type ')'
- "in" expr_2@.
+The declaration of "sort" uses the pattern syntax "(module M : S)",
+which allows function parameters to be modules instead of ordinary
+values. We call "sort" a \emph{module-dependent} function because in
+its type, "(module MSet : Set.S) -> MSet.elt list -> MSet.elt list", the
+module parameter appears in the right-hand-side (return type) of the
+arrow "(module MSet : Set.S) -> ...", via occurrences of the type
+"MSet.elt".
 
-\lparagraph{p:fst-mod-example}{Basic example} A typical use of first-class modules is to
-select at run-time among several implementations of a signature.
-Each implementation is a structure that we can encapsulate as a
-first-class module, then store in a data structure such as a hash
-table:
+To apply the "sort" function, we use the construction "(module M)" to
+provide the argument, or "(module M : S)" to be explicit about the
+intended signature.
+
+\begin{caml_example*}{verbatim}
+module ISetIncr = Set.Make(Int)
+module ISetDecr =
+  Set.Make(struct
+    type t = int
+    let compare i1 i2 = Int.compare i2 i1
+  end)
+\end{caml_example*}
+
+\begin{caml_example}{toplevel}
+let example = sort (module ISetIncr) [3; 1; 2];;
+let example = sort (module ISetDecr) [3; 1; 2];;
+\end{caml_example}
+
+This provides a lightweight alternative to functors. Indeed, the
+"sort" function could also be expressed using a "Sort" functor:
+
+\begin{caml_example}{verbatim}
+module Sort (MSet : Set.S) = struct
+  let f li =
+    MSet.elements (List.fold_right MSet.add li MSet.empty)
+end
+\end{caml_example}
+
+\begin{caml_example}{toplevel}
+let module S = Sort(ISetDecr) in S.f [3; 1; 2];;
+\end{caml_example}
+
+\lparagraph{p:fst-mod-intro-algebraic-structures}{Use-case: abstracting over algebraic structures}
+
+Module-dependent functions offer a nice way to implement code that is parametric over families of type structures, for example over any monad.
+
+\begin{caml_example*}{verbatim}
+module type Monad = sig
+  type 'a t
+  val return : 'a -> 'a t
+  val bind : 'a t -> ('a -> 'b t) -> 'b t
+end
+
+let mapM (module M : Monad) (f : 'a -> 'b M.t) (li : 'a list) : 'b list M.t =
+  let ( let* ) = M.bind in
+  let rec loop = function
+  | [] -> M.return []
+  | x::xs ->
+    let* y = f x in
+    let* ys = loop xs in
+    M.return (y :: ys)
+  in loop li
+
+(* Example use-case: a map on the Result monad *)
+let map_result (type e)
+: ('a -> ('b, e) result) -> 'a list -> ('b list, e) result
+= let module R = struct
+    type 'a t = ('a, e) result
+    let return = Result.ok
+    let bind = Result.bind
+  end in mapM (module R)
+\end{caml_example*}
+
+
+\lparagraph{p:fst-mod-intro-dynamic}{First-class modules}
+
+In the function application "sort (module ISetIncr)" from our example
+above, we say that the module argument is \emph{static}: it is known
+at compile-time.
+
+First-class modules let you build \emph{dynamic} values that represent
+modules, where the choice of module depends on runtime
+computations. If "M" is a module of signature "S", then
+"(module M : S)" is an expression of type "(module S)", we say that it
+``packs'' the module "M" as a value.
+
+A typical use of first-class modules is to select at run-time among
+several implementations of a signature. Each implementation is
+a structure that we can pack into a first-class module, then
+store in a data structure such as a hash table:
+
 \begin{caml_example*}{verbatim}
 type picture = unit[@ellipsis]
 module type DEVICE = sig
@@ -102,8 +147,10 @@ module PDF = struct let draw () = () [@@ellipsis] end
 let _ = Hashtbl.add devices "PDF" (module PDF : DEVICE)
 \end{caml_example*}
 
-We can then select one implementation based on command-line
-arguments, for instance:
+The module expression "(val e : S)" can then \emph{unpack}
+a packed-module value "(e : (module S))" back into a module. In our
+example, one implementation can be selected based on command-line
+arguments:
 \begin{caml_example*}{verbatim}
 let parse_cmdline () = "SVG"[@ellipsis]
 module Device =
@@ -121,29 +168,129 @@ let draw_using_device device_name picture =
     (val (Hashtbl.find devices device_name) : DEVICE)
   in
   Device.draw picture
+
+(* or, equivalently *)
+let draw_using_device device_name picture =
+  let (module Device : DEVICE) = Hashtbl.find devices device_name in
+  Device.draw picture
 \end{caml_example*}
 
-\lparagraph{p:fst-mod-advexamples}{Advanced examples}
-With first-class modules, it is possible to parametrize some code over the
-implementation of a module without using a functor.
+\lparagraph{p:fst-mod-intro-limitation-dynamic-arg}{Limitation: selecting a module at runtime}
 
-\begin{caml_example}{verbatim}
-let sort (type s) (module Set : Set.S with type elt = s) l =
-  Set.elements (List.fold_right Set.add l Set.empty)
+There is a restriction on module-dependent functions "fun
+(module A : S) -> ...": if the type of the body of the function
+(the "...") \emph{depends} on the module argument "A", then this
+function is only allowed to take static module arguments of the form
+"(module M : S)", rather than arbitrary expressions of type
+"(module S)". There is no such restriction if the type of the body
+does not mention "A", or if the type-checker can remove the
+occurrences of "A" by inlining type equalities (for example when
+"A.t" equals "int").
+
+Our "sort" function of Paragraph~\ref{p:fst-mod-intro-mod-fun} is such
+a module-dependent function: its type is "(module MSet : Set.S) ->
+MSet.elt list -> MSet.elt list", where the module "MSet" is used on
+the right of the arrow "(module MSet : Set.S) -> ...". The following
+example is rejected:
+
+\begin{caml_example*}{verbatim}
+let sort_order = `Decr
+\end{caml_example*}
+\begin{caml_example}{verbatim}[error]
+let wrong =
+  sort
+    (match sort_order with
+     | `Incr -> (module ISetIncr)
+     | `Decr -> (module ISetDecr))
+    [2; 4]
 \end{caml_example}
 
-To use this function, one can wrap the "Set.Make" functor:
+In some cases, including this example, it is possible to rewrite the
+code to use a static module argument again:
 
 \begin{caml_example}{verbatim}
-let make_set (type s) cmp =
-  let module S = Set.Make(struct
-    type t = s
-    let compare = cmp
-  end) in
-  (module S : Set.S with type elt = s)
+let okay =
+  let m : (module Set.S with type elt = int) =
+    match sort_order with
+    | `Incr -> (module ISetIncr)
+    | `Decr -> (module ISetDecr)
+  in
+  let module MSet = (val m) in
+  sort (module MSet) [2; 4]
 \end{caml_example}
+
+Notice that "MSet.elt" cannot occur in the type of "okay", as the
+module "MSet" is only defined locally. In this example the return type
+of "sort" does mention "MSet.elt", but this type is equal to "int" so
+it can be simplified away.
+
+Finally, it is also possible to remove the dependency from the
+definition of "sort", by replacing the argument signature "Set.S" with
+the signature "Set.S with type elt = a", which uses a locally abstract
+type "(type a)" (See \ref{s:locally-abstract}). This was the only
+approach available before module-dependent functions were introduced
+in the language, but it is less flexible as it requires changing the
+function definition and not just the call-site.
+
+\begin{caml_example}{verbatim}
+let sort_nondep (type a) (module MSet : Set.S with type elt = a) (li : a list) =
+  MSet.elements (List.fold_right MSet.add li MSet.empty)
+
+let also_okay =
+  sort_nondep
+    (match sort_order with
+     | `Incr -> (module ISetIncr)
+     | `Decr -> (module ISetDecr))
+    [2; 4]
+\end{caml_example}
+
+Note that removing dependencies using "(type a)" like this can only be
+done for non-parameterized types like "elt", not with parameterized
+types like "'a t"; there is no corresponding "(type 'a t)"
+abstraction. It would not be possible for the "mapM" example above,
+which has a dependency on a module containing a parameterized type "'a
+M.t", and thus cannot be passed dynamically-selected module arguments.
+
+\lparagraph{p:fst-mod-intro-limitation-nary-app}{Limitation: n-ary applications}
+
+The following example fails, where "sort" is our module-dependent function from before:
+
+\begin{caml_example}{verbatim}[error]
+let sort (module MSet : Set.S) li =
+  MSet.elements (List.fold_right MSet.add li MSet.empty)
+
+let wrong = Fun.id sort (module ISetIncr) [2; 3]
+\end{caml_example}
+
+The problem comes from subtle details in the type-checking of n-ary
+function applications. This is checked as "Fun.id" to which three
+parameters are passed, and only the type of "Fun.id" (not
+its arguments) is used to resolve the module application, so no
+module-dependent function type is known at that point.
+
+The example can be fixed by first applying "Fun.id sort", and then
+passing the module argument in a separate application. Then the
+module-dependent type of "Fun.id sort" will be used to check the
+module application. This can be done by simply adding extra
+parentheses:
+
+\begin{caml_example}{verbatim}
+let fixed = (Fun.id sort) (module ISetIncr) [2; 3]
+\end{caml_example}
+
+(Explicitly annotating the type of `Fun.id` with a module-dependent
+function type would also work.)
+
+
+\lparagraph{p:fst-mod-compatibility}{Compatibility}
+
+Before OCaml 5.5, module-dependent functions were not supported. One
+could use first-class modules, but functions taking a first-class module
+had to be non-dependent, so this "(type a)" workaround was often used.
 
 \iffalse
+\lparagraph{p:fst-mod-abstract-types}{Abstract types}
+
 Another advanced use of first-class module is to encode existential
 types. In particular, they can be used to simulate generalized
 algebraic data types (GADT). To demonstrate this, we first define a type
@@ -163,7 +310,7 @@ end = struct
 end
 \end{caml_example*}
 
-We can then define a parametrized algebraic data type whose
+We can then define a parameterized algebraic data type whose
 constructors provide some information about the type parameter:
 
 \begin{caml_example*}{verbatim}
@@ -231,3 +378,82 @@ let rec to_string: 'a. 'a Typ.typ -> 'a -> string =
 Note that this function uses an explicit polymorphic annotation to obtain
 polymorphic recursion.
 \fi
+
+\subsection{ss:fst-mod-reference}{Reference}
+
+\begin{syntax}
+typexpr:
+      ...
+    | '(''module' package-type')'
+    | '(''module' module-name ':' package-type')' '->' typexpr
+;
+module-expr:
+      ...
+    | '(''val' expr [':' package-type]')'
+;
+expr:
+      ...
+    | '(''module' module-expr [':' package-type]')'
+;
+pattern:
+      ...
+    | '(''module' module-name [':' package-type]')'
+;
+package-type:
+      modtype-path
+    | modtype-path 'with' package-constraint { 'and' package-constraint }
+;
+package-constraint:
+          'type' typeconstr '=' typexpr
+;
+\end{syntax}
+
+The expression @'(' 'module' module-expr ':' package-type ')'@ converts the
+module (structure or functor) denoted by module expression @module-expr@
+to a value of the core language that packs this module.  The
+type of this core language value is @'(' 'module' package-type ')'@.
+The @package-type@ annotation can be omitted if it can be inferred
+from the context.
+
+Conversely, the module expression @'(' 'val' expr ':' package-type ')'@
+evaluates the core language expression @expr@ to a value, which must
+have type @'module' package-type@, and extracts the module that was
+encapsulated in this value. Again @package-type@ can be omitted if the
+type of @expr@ is known.
+If the module expression is already parenthesized, like the arguments
+of functors are, no additional parens are needed: "Map.Make(val key)".
+
+The pattern @'(' 'module' module-name ':' package-type ')'@ matches a
+package with type @package-type@ and binds it to @module-name@.
+It is not allowed in toplevel let bindings. A function whose parameter
+has this exact pattern can be module-dependent.
+Again @package-type@ can be omitted if it can be inferred from the
+enclosing pattern.
+
+The @package-type@ syntactic class appearing in the  @'(' 'module'
+package-type ')'@ type expression, in @'(' 'module' module-name ':'
+package-type ')' '->' typexpr @ type expression and in the annotated forms
+represents a subset of module types.
+This subset consists of named module types with optional constraints
+of a limited form: only non-parameterized types can be specified.
+
+For type-checking purposes (and starting from OCaml 4.02), package types
+are compared using the structural comparison of module types.
+
+When typechecking we also consider
+@'(' 'module' module-name ':' package-type ')' '->' typexpr@ and
+@'(' 'module' package-type ')' '->' typexpr@ to be identical when @module-name@
+can be erased from @typexpr@.
+
+In general, the module expression @'(' "val" expr ":" package-type
+')'@ cannot be used in the body of a functor, because this could cause
+unsoundness in conjunction with applicative functors.
+Since OCaml 4.02, this is relaxed in two ways:
+if @package-type@ does not contain nominal type declarations ({\em
+  i.e.} types that are created with a proper identity), then this
+expression can be used anywhere, and even if it contains such types
+it can be used inside the body of a generative
+functor, described in section~\ref{s:generative-functors}.
+It can also be used anywhere in the context of a local module binding
+@'let' 'module' module-name '=' '(' "val" expr_1 ":" package-type ')'
+ "in" expr_2@.

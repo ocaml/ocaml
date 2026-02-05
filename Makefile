@@ -2206,8 +2206,8 @@ partialclean::
 .PHONY: ocamltest-manual
 ocamltest-manual: ocamltest/ocamltest.html
 
-ocamltest/ocamltest.html: ocamltest/OCAMLTEST.org
-	pandoc -s --toc -N -f org -t html -o $@ $<
+ocamltest/ocamltest.html: ocamltest/OCAMLTEST.adoc
+	asciidoctor -o $@ $<
 
 # The extra libraries
 

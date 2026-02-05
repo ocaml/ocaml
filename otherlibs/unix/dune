@@ -12,6 +12,8 @@
 ;*                                                                        *
 ;**************************************************************************
 
+(files :standard \ *.cm* *.o *.a)
+
 (library
  (name unix)
  (wrapped false)
@@ -20,7 +22,8 @@
  (libraries stdlib)
  (foreign_stubs
   (language c)
-  (flags -I %{project_root}/runtime)
+  (extra_deps %{project_root}/runtime/misc_internals.h)
+  (flags (:standard -I . -I %{project_root}/runtime))
   (names
    accept access addrofstr alarm bind channels chdir chmod chown chroot close
    fsync closedir connect cst2constr cstringv dup dup2 envir errmsg execv execve

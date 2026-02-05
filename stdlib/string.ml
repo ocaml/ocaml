@@ -378,7 +378,7 @@ let find_first ~sub =
   let sub_lp = Search.find_maximal_suffix_and_period ~sub in
   let sub_periodic = Search.is_sub_periodic ~sub ~sub_lp in
   fun ?(start = 0) s ->
-    match Search.find ~start ~sub_lp ~sub_periodic ~sub s with
+    match Search.find ~start ~sub ~sub_lp ~sub_periodic s with
     | -1 -> None | i -> Some i
 
 let find_last ~sub =
@@ -450,7 +450,7 @@ let replace_all ~sub:needle =
       let acc = sub s !chunk_first (i - !chunk_first) :: acc in
       chunk_first := i + length needle; acc
     in
-    match find_all ?start add_chunk s [] with
+    match find_all add_chunk ?start s [] with
     | [] -> s
     | chunks ->
         let chunks = sub s !chunk_first (length s - !chunk_first) :: chunks in
