@@ -39,10 +39,6 @@ Working version
 
 ### Bug fixes:
 
-- #14519: Fix segfault when using `Runtime_events` under certain
-  circumstances due to bad error checking when calling `mmap()`.
-  (Mark Elvers, review by Nicolás Ojeda Bär)
-
 OCaml 5.5.0
 -----------
 
@@ -732,6 +728,10 @@ OCaml 5.5.0
 - #14495: Fix infix-tag bug in the minor collector which could cause SEGVs
   in multi-domain programs.
   (Nick Barnes, review by Gabriel Scherer)
+
+- #14519: Fix segfault when using `Runtime_events` under certain
+  circumstances due to bad error checking when calling `mmap()`.
+  (Mark Elvers, review by Nicolás Ojeda Bär)
 
 OCaml 5.4.0 (9 October 2025)
 ----------------------------
