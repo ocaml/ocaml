@@ -35,6 +35,10 @@ let print_pos ppf = function
   | Second -> fprintf ppf "second"
 
 type expanded_type = { ty: type_expr; expanded: type_expr }
+let map_expanded f { ty; expanded } =
+  let ty = f ty in
+  let expanded = f expanded in
+  {ty; expanded}
 
 let trivial_expansion ty = { ty; expanded = ty }
 
@@ -131,31 +135,31 @@ type 'a ctx_diff = { ctx: ctx option; d: 'a diff }
 let map_ctx f x = { x with d = map_diff f x.d }
 let swap_ctx x = { x with d = swap_diff x.d }
 
-type ('a, 'variety) elt =
+type ('a, 'variety) root  =
   (* Common *)
-  | Diff : 'a ctx_diff -> ('a, _) elt
-  | Variant : 'variety variant -> ('a, 'variety) elt
-  | Obj : 'variety obj -> ('a, 'variety) elt
-  | Escape : 'a escape -> ('a, _) elt
+  | Variant : 'variety variant -> ('a, 'variety) root
+  | Obj : 'variety obj -> ('a, 'variety) root
+  | Escape : 'a escape -> ('a, _) root
   | Function_label_mismatch of Asttypes.arg_label diff
   | Tuple_label_mismatch of string option diff
-  | First_class_module: first_class_module -> ('a,_) elt
+  | First_class_module: first_class_module -> ('a,_) root
   | Univar of univar
   (* Unification & Moregen; included in Equality for simplicity *)
-  | Rec_occur : type_expr * type_expr -> ('a, _) elt
+  | Rec_occur : type_expr * type_expr -> ('a, _) root
 
-type ('a, 'variety) t = ('a, 'variety) elt list
+type ('a, 'variety) t = {
+  path: 'a ctx_diff list;
+  root: ('a, 'variety) root option
+}
+
+let root root = { root= Some root; path = [] }
+let empty_root = { root = None; path = [] }
 
 type 'variety trace = (type_expr,     'variety) t
 type 'variety error = (expanded_type, 'variety) t
 
-let map_desc f { ty; expanded } =
-  let ty = f ty in
-  let expanded = f expanded in
-  { ty; expanded }
-
-let map_elt (type variety) f : ('a, variety) elt -> ('b, variety) elt = function
-  | Diff x -> Diff (map_ctx f x)
+let map_root (type variety) f : ('a, variety) root -> ('b, variety) root =
+  function
   | Escape {kind = Equation x; context} ->
       Escape { kind = Equation (f x); context }
   | Escape {kind = (Univ _ | Self | Constructor _
@@ -165,20 +169,25 @@ let map_elt (type variety) f : ('a, variety) elt -> ('b, variety) elt = function
   | Rec_occur (_, _) | First_class_module _  as x -> x
   | Univar _  as x -> x
 
-let map f t = List.map (map_elt f) t
-let diff ?ctx ~got ~expected trace = Diff { ctx; d = {got;expected} } :: trace
+let map f t =
+  { path = List.map (map_ctx f) t.path; root = Option.map (map_root f) t.root }
 
-let map_types f = map (map_desc f)
+let map_types f t = map (map_expanded f) t
+
+let diff ?ctx ~got ~expected trace =
+  { trace with path = { ctx; d = {got;expected} } :: trace.path }
+
 
 let incompatible_fields ~name ~got ~expected  t =
-  Diff { ctx = Some (In_method name); d = { got; expected} } :: t
-let in_tag ~l = function
-  | Diff { ctx = None; d} :: rem -> Diff { ctx = Some(In_tag l); d} :: rem
-  | trace -> trace
+  diff ~ctx:(In_method name) ~got ~expected t
+let in_tag ~l t = match t.path with
+  | { ctx = None; d} :: rem ->
+      { t with path = { ctx = Some(In_tag l); d } :: rem }
+  | _ -> t
 let variant_arity_mismatch l = Variant (Arity_mismatch l)
 
-let swap_elt (type variety) : ('a, variety) elt -> ('a, variety) elt = function
-  | Diff x -> Diff (swap_ctx x)
+let swap_root (type variety) : ('a, variety) root -> ('a, variety) root =
+  function
   | Obj (Missing_field(pos,s)) -> Obj (Missing_field(swap_position pos,s))
   | Obj (Abstract_row pos) -> Obj (Abstract_row (swap_position pos))
   | Obj (Kind_differ (name, k1, k2)) -> Obj (Kind_differ (name, k2, k1))
@@ -203,7 +212,10 @@ let swap_elt (type variety) : ('a, variety) elt -> ('a, variety) elt = function
       First_class_module c
   | x -> x
 
-let swap_trace e = List.map swap_elt e
+let swap_trace t = {
+  root = Option.map swap_root t.root;
+  path = List.map swap_ctx t.path
+}
 
 type unification_error = { trace : unification error } [@@unboxed]
 
@@ -213,16 +225,17 @@ type equality_error =
 
 type moregen_error = { trace : comparison error } [@@unboxed]
 
+let non_empty trace = trace.root <> None || trace.path <> []
 let unification_error ~trace : unification_error =
-  assert (trace <> []);
+  assert (non_empty trace);
   { trace }
 
 let equality_error ~trace ~subst : equality_error =
-    assert (trace <> []);
+    assert (non_empty trace);
     { trace; subst }
 
 let moregen_error ~trace : moregen_error =
-  assert (trace <> []);
+  assert (non_empty trace);
   { trace }
 
 type comparison_error =
@@ -233,10 +246,8 @@ let swap_unification_error ({trace} : unification_error) =
   ({trace = swap_trace trace} : unification_error)
 
 module Subtype = struct
-  type 'a elt =
-    | Diff of 'a diff
 
-  type 'a t = 'a elt list
+  type 'a t = 'a ctx_diff list
 
   type trace       = type_expr t
   type error_trace = expanded_type t
@@ -247,21 +258,14 @@ module Subtype = struct
     { trace             : error_trace
     ; unification_trace : unification error }
 
+  let diff ?ctx ~got ~expected t = { ctx; d = { got; expected }} :: t
   let error ~trace ~unification_trace =
   assert (trace <> []);
   { trace; unification_trace }
 
-  let map_elt f = function
-    | Diff x -> Diff (map_diff f x)
+  let map f t = List.map (map_ctx f) t
+  let map_types f t = map (map_expanded f) t
 
-  let map f t = List.map (map_elt f) t
-
-  let map_desc f { ty; expanded } =
-    let ty = f ty in
-    let expanded = f expanded in
-    { ty; expanded }
-
-  let map_types f = map (map_desc f)
 end
 
 module Structured = struct
@@ -270,10 +274,10 @@ type 'a extended_explanation =
   | Promoted of Format_doc.t
   | Standard of 'a
 
-type 'a t = {
-  top: ('a * bool) option;
-  tr: 'a list;
-  expl: 'a extended_explanation option;
+type ('a,'b) s = {
+  top: ('a ctx_diff * bool) option;
+  tr: 'a ctx_diff list;
+  expl: ('a,'b) root extended_explanation option;
 }
 (**
 This module contains helper functions to split the error trace into three parts:
@@ -290,16 +294,17 @@ This module contains helper functions to split the error trace into three parts:
 - {!optional}: the last element that might be printed if we don't discover a
   better element to print later on.
 *)
-type 'a segments =
+type ('a,'b) segments =
   {
     head: 'a;
     before:'a list;
     last_ctx:('a * 'a list) option;
-    optional: 'a option
+    optional: 'a option;
+    expl:  'b option;
   }
 
-let head_segment hd =
-  { head = hd; before=[]; last_ctx = None; optional = None }
+let head_segment hd expl =
+  { head = hd; before=[]; last_ctx = None; optional = None; expl }
 
 (** Add a non-contextual element to the active context *)
 let add x s = match s.last_ctx with
@@ -314,7 +319,8 @@ let add_ctx c s = match s.last_ctx with
       head = s.head;
       optional = None;
       before = rest @ s.before;
-      last_ctx = Some (c,[])
+      last_ctx = Some (c,[]);
+      expl = s.expl
     }
 
 type printing_status =
@@ -333,7 +339,7 @@ type printing_status =
   *)
 
 (** Construct a segment from an unstructured trace *)
-let segment status = function
+let segment status path expl = match path with
   | [] -> assert false
   | hd :: tr ->
       List.fold_left (fun s x ->
@@ -342,7 +348,7 @@ let segment status = function
       | Keep -> add x s
       | Optional_refinement -> { s with optional = Some x }
       | Context -> add_ctx x s
-    ) (head_segment hd) tr
+    ) (head_segment hd expl) tr
 
 let promoted x = Option.map (fun p -> Promoted p) x
 let merge promote s =
@@ -352,18 +358,13 @@ let merge promote s =
     | None -> s.before, s.optional, false
     | Some (ctx, rest) -> rest @ ctx :: s.before, None, true
   in
-  let head, rtr, expl = match rtr with
-    | Diff d :: _ ->
-        begin match promote d.d with
+  let head, rtr, expl = match s.expl, rtr with
+    | Some expl, _ -> Some s.head, rtr, Some (Standard expl)
+    | None, [] -> Some s.head, [], promoted (promote s.head.d)
+    | None, d :: _ ->
+        match promote d.d with
         | Some p -> Some s.head, rtr, Some (Promoted p)
         | None -> Some s.head, rtr, None
-        end
-    | expl :: rest -> Some s.head, rest, Some (Standard expl)
-    | [] ->
-        begin match s.head with
-        | Diff d -> Some s.head, [], promoted (promote d.d)
-        | expl -> None, [], Some (Standard expl)
-        end
   in
   let tr = match expl, opt with
     | None, Some opt -> List.rev (opt :: rtr)
@@ -375,18 +376,26 @@ let merge promote s =
   in
   { top=Option.map compact head; tr; expl }
 
-  let parse ~promote ~status s = merge promote (segment status s)
+  let parse ~promote ~status s =
+    match s.path with
+    | [] ->
+        let expl = Option.map (fun s -> Standard s) s.root in
+        { top = None; tr = []; expl}
+    | path -> merge promote (segment status path s.root)
 
   let parse_simple status tr =
-    let s = segment status tr in
-    let rtr = match s.last_ctx with
-      | None -> s.before
-      | Some (ctx, rest) -> rest @ ctx :: s.before
-    in
-    let rtr = match s.optional with
-      | Some x -> x :: rtr
-      | None -> rtr
-    in
-    s.head, List.rev rtr
+    match tr with
+    | [] -> None
+    | _ ->
+        let s = segment status tr None in
+        let rtr = match s.last_ctx with
+          | None -> s.before
+          | Some (ctx, rest) -> rest @ ctx :: s.before
+        in
+        let rtr = match s.optional with
+          | Some x -> x :: rtr
+          | None -> rtr
+        in
+        Some (s.head, List.rev rtr)
 
 end
