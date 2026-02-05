@@ -77,17 +77,8 @@ let diff_printing_status Errortrace.{ got      = {ty = t1; expanded = t1'};
   else Errortrace.Structured.Keep
 
 let printing_status = function
-  | Errortrace.Diff { ctx = Some _; _} -> Errortrace.Structured.Context
-  | Errortrace.Diff d -> diff_printing_status d.d
-  | _ -> Errortrace.Structured.Keep
-
-
-(** Keep elements that are [Diff _ ]  *)
-let simplify_trace tr =
-  List.filter_map (function
-      | Errortrace.Diff d -> Some d
-      | _ -> None)
-    tr
+  | { Errortrace.ctx = Some _; _} -> Errortrace.Structured.Context
+  | d -> diff_printing_status d.Errortrace.d
 
 let is_unit_param env ty =
   let ty, vars = Btype.tpoly_get_poly ty in
@@ -336,7 +327,7 @@ let explain_univar = function
       doc_printf "%a" (pp_print_list ~pp_sep pp) delta
 
 let explanation (type variety) intro
-  : (Errortrace.expanded_type, variety) Errortrace.elt -> _ = function
+  : (Errortrace.expanded_type, variety) Errortrace.root -> _ = function
   | Errortrace.Escape {kind; context} ->
     let pre =
       match context, kind with
@@ -392,7 +383,6 @@ let explanation (type variety) intro
         *)
     end
   | Univar um -> Some (explain_univar um)
-  | Diff _ -> None
 
 let mismatch intro expl =
   match expl with
@@ -425,10 +415,8 @@ let warn_on_missing_def env ppf t =
       end
   | _ -> ()
 
-let prepare_expansion_head (h,empty_tr)= match h with
-  | Errortrace.Diff d ->
-      Some (Errortrace.map_ctx (may_prepare_expansion empty_tr) d)
-  | _ -> None
+let prepare_expansion_head (h,empty_tr)=
+  Errortrace.map_ctx (may_prepare_expansion empty_tr) h
 
 let head_error_printer mode txt_got txt_but = function
   | None -> Format_doc.Doc.empty
@@ -516,10 +504,9 @@ let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
   let tr = Errortrace.map hide_variant tr in
   let str = structured_trace env tr in
   with_labels (not !Clflags.classic) (fun () ->
-      let tr = simplify_trace str.tr in
-      let head = Option.bind str.top prepare_expansion_head in
+      let head = Option.map prepare_expansion_head str.top in
       let head_error = head_error_printer mode txt1 txt2 head in
-      let tr = List.map (Errortrace.map_ctx prepare_expansion) tr in
+      let tr = List.map (Errortrace.map_ctx prepare_expansion) str.tr in
       let tr = trees_of_trace mode tr in
       let mis = mismatch txt1 str.expl in
       fprintf ppf
@@ -570,13 +557,10 @@ module Subtype = struct
      while being *just* different enough (it's only [Diff]) for the abstraction
      to be nonobvious.  Someday, perhaps... *)
 
-  let printing_status = function
-    | Errortrace.Subtype.Diff d -> diff_printing_status d
-
   let prepare_unification_trace env f tr =
     let tr = Errortrace.map f tr in
-    match tr with
-    | [] -> None, None
+    match tr.path with
+    | [] -> None, Option.map (fun x -> Errortrace.Structured.Standard x) tr.root
     | _ ->
         let str = structured_trace env tr in
         match str.top with
@@ -585,45 +569,31 @@ module Subtype = struct
 
   let prepare_trace f tr =
     let tr = Errortrace.Subtype.map f tr in
-    let htr = Errortrace.Structured.parse_simple printing_status tr in
-    Some htr, None
+    Errortrace.Structured.parse_simple printing_status tr
 
-  let trace filter_trace get_diff fst txt ppf htr =
+  let trace filter_trace fst txt ppf htr =
     with_labels (not !Clflags.classic) (fun () ->
       match htr with
       | Some (elt,tr) ->
-        let diffed_elt = get_diff elt in
+        let diffed_elt =
+          Errortrace.map_ctx (trees_of_type_expansion Type) elt
+        in
         let tr = filter_trace tr in
         let tr =
           trees_of_trace Type
           @@ List.map (Errortrace.map_ctx prepare_expansion) tr in
-        let tr =
-          match fst, diffed_elt with
-          | true, Some elt -> elt :: tr
-          | _, _ -> tr
-        in
+        let tr = if fst then diffed_elt :: tr else tr in
         trace fst txt ppf tr
       | None -> ()
     )
 
-  let no_ctx d = { Errortrace.d; ctx = None}
   let rec filter_subtype_trace keep_last = function
     | [] -> []
-    | [Errortrace.Subtype.Diff d as elt]
+    | [elt]
       when printing_status elt = Errortrace.Structured.Optional_refinement ->
-        if keep_last then [no_ctx d] else []
-    | Errortrace.Subtype.Diff d :: rem ->
-        no_ctx d :: filter_subtype_trace keep_last rem
+        if keep_last then [elt] else []
+    | d :: rem -> d :: filter_subtype_trace keep_last rem
 
-  let unification_get_diff = function
-    | Errortrace.Diff diff ->
-        Some (Errortrace.map_ctx (trees_of_type_expansion Type) diff)
-    | _ -> None
-
-  let subtype_get_diff = function
-    | Errortrace.Subtype.Diff diff ->
-        let d = Errortrace.map_diff (trees_of_type_expansion Type) diff in
-        Some { Errortrace.d; ctx = None }
 
   let error
         ppf
@@ -632,22 +602,20 @@ module Subtype = struct
         txt1 =
     wrap_printing_env ~error:true env (fun () ->
       reset ();
-      let tr_sub, _ = prepare_trace prepare_expansion tr_sub in
-      let tr_unif, expl_unif =
+      let tr_sub = prepare_trace prepare_expansion tr_sub in
+      let tr_unif, expl =
         prepare_unification_trace env prepare_expansion tr_unif
       in
-      let keep_first = match tr_unif, expl_unif with
+      let keep_first = match tr_unif, expl with
         | None, Some (Standard (Obj _ | Variant _ | Escape _ ))
         | None, None -> true
         | _ -> false in
       fprintf ppf "@[<v>%a"
-        (trace (filter_subtype_trace keep_first) subtype_get_diff true txt1)
-        tr_sub;
-      if tr_unif = None && expl_unif = None then fprintf ppf "@]" else
-        let mis = mismatch (doc_printf "Within this type") expl_unif in
+        (trace (filter_subtype_trace keep_first) true txt1) tr_sub;
+      if tr_unif = None && expl = None then fprintf ppf "@]" else
+        let mis = mismatch (doc_printf "Within this type") expl in
         fprintf ppf "%a%a%t@]"
-          (trace simplify_trace unification_get_diff false
-             "is not compatible with type") tr_unif
+          (trace Fun.id false "is not compatible with type") tr_unif
           (pp_print_option pp_doc) mis
           Ident_conflicts.err_print
     )

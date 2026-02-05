@@ -104,27 +104,33 @@ type ctx =
 type 'a ctx_diff = { ctx: ctx option; d: 'a diff }
 val map_ctx: ('a -> 'b) -> 'a ctx_diff -> 'b ctx_diff
 
-type ('a, 'variety) elt =
+type ('a, 'variety) root =
   (* Common *)
-  | Diff : 'a ctx_diff -> ('a, _) elt
-  | Variant : 'variety variant -> ('a, 'variety) elt
-  | Obj : 'variety obj -> ('a, 'variety) elt
-  | Escape : 'a escape -> ('a, _) elt
+  | Variant : 'variety variant -> ('a, 'variety) root
+  | Obj : 'variety obj -> ('a, 'variety) root
+  | Escape : 'a escape -> ('a, _) root
   | Function_label_mismatch of Asttypes.arg_label diff
   | Tuple_label_mismatch of string option diff
-  | First_class_module: first_class_module -> ('a,_) elt
+  | First_class_module: first_class_module -> ('a,_) root
   | Univar of univar
   (* Unification & Moregen; included in Equality for simplicity *)
-  | Rec_occur : type_expr * type_expr -> ('a, _) elt
+  | Rec_occur : type_expr * type_expr -> ('a, _) root
 
-type ('a, 'variety) t = ('a, 'variety) elt list
+type ('a, 'variety) t = {
+  path: 'a ctx_diff list;
+  root: ('a, 'variety) root option
+}
 
 type 'variety trace = (type_expr,     'variety) t
 type 'variety error = (expanded_type, 'variety) t
 
 val map : ('a -> 'b) -> ('a, 'variety) t -> ('b, 'variety) t
+
 val diff:
   ?ctx:ctx -> got:'a -> expected:'a -> ('a,'variety) t -> ('a,'variety) t
+val root: ('a,'variety) root -> ('a,'variety) t
+val empty_root: ('a,'variety) t
+
 
 val incompatible_fields:
   name:string -> got:type_expr -> expected:type_expr ->
@@ -133,7 +139,7 @@ val incompatible_fields:
 val in_tag:
   l:string -> (type_expr, 'f) t -> (type_expr, 'f) t
 
-val variant_arity_mismatch: string -> ('any, 'f) elt
+val variant_arity_mismatch: string -> ('any, 'f) root
 
 val swap_trace : ('a, 'variety) t -> ('a, 'variety) t
 
@@ -171,10 +177,9 @@ type comparison_error =
 val swap_unification_error : unification_error -> unification_error
 
 module Subtype : sig
-  type 'a elt =
-    | Diff of 'a diff
 
-  type 'a t = 'a elt list
+  type 'a t = 'a ctx_diff list
+  val diff: ?ctx:ctx -> got:'a -> expected:'a -> 'a t -> 'a t
 
   (** Just as outside [Subtype], we split traces, completed traces, and complete
       errors.  However, in a minor asymmetry, the name [Subtype.error_trace]
@@ -204,10 +209,10 @@ module Structured: sig
     | Promoted of Format_doc.t
     | Standard of 'a
 
-  type 'a t = {
-    top: ('a * bool) option;
-    tr: 'a list;
-    expl: 'a extended_explanation option
+  type ('a,'b) s = {
+    top: ('a ctx_diff * bool) option;
+    tr: 'a ctx_diff list;
+    expl: ('a, 'b) root extended_explanation option
   }
   (**
      This module contains helper functions to split the error trace into three
@@ -235,10 +240,10 @@ module Structured: sig
 
 val parse:
     promote:('a diff -> Format_doc.t option) ->
-    status:(('a, 'b) elt -> printing_status) ->
-    ('a, 'b) elt list ->
-    ('a, 'b) elt t
+    status:('a ctx_diff -> printing_status) ->
+    ('a, 'b) t -> ('a, 'b) s
 
-  val parse_simple: ('a -> printing_status) -> 'a list -> 'a * 'a list
+  val parse_simple:
+    ('a  -> printing_status) -> 'a list -> ('a  * 'a  list) option
 
 end

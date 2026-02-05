@@ -108,10 +108,10 @@ let raise_trace_for
    trace information; sometimes it makes sense, however, since we're maintaining
    the trace at an outer exception handler. *)
 let raise_unexplained_for tr_exn =
-  raise_trace_for tr_exn []
+  raise_trace_for tr_exn empty_root
 
 let raise_for tr_exn e =
-  raise_trace_for tr_exn [e]
+  raise_trace_for tr_exn (root e)
 
 (* Thrown from [moregen_kind] *)
 exception Public_method_to_private_method
@@ -2659,15 +2659,14 @@ let expand_to_moregen_error env trace =
 
 (* Equivalent to [expand_trace env [Diff {got; expected}]] for a single
    element *)
-let mk_diff ~got ~expected = { d = {got; expected}; ctx = None }
-
-let expanded_diff env ~got ~expected =
-  Diff (map_ctx (expand_type env) (mk_diff ~got ~expected))
+let with_diff f ~got ~expected t = diff ~got:(f got) ~expected:(f expected) t
+let expanded_diff env ~got ~expected t =
+  with_diff (expand_type env) ~got ~expected t
 
 (* Diff while transforming a [type_expr] into an [expanded_type] without
    expanding *)
-let unexpanded_diff ~got ~expected =
-  Diff (map_ctx trivial_expansion (mk_diff ~got ~expected))
+let unexpanded_diff ~got ~expected t =
+  with_diff trivial_expansion ~got ~expected t
 
 (**** Unification ****)
 
@@ -3697,8 +3696,8 @@ and unify_row_field uenv fixed1 fixed2 rm1 rm2 l f1 f2 =
     match fixed with
     | None -> f ()
     | Some fix ->
-        let tr = [Variant(Fixed_row(pos,Cannot_add_tags [l],fix))] in
-        raise_trace_for Unify tr in
+        let tr = Errortrace.Variant(Fixed_row(pos,Cannot_add_tags [l],fix)) in
+        raise_for Unify tr in
   let first = First, fixed1 and second = Second, fixed2 in
   let either_fixed = match fixed1, fixed2 with
     | None, None -> false
@@ -3784,9 +3783,9 @@ and unify_row_field uenv fixed1 fixed2 rm1 rm2 l f1 f2 =
   | Rpresent None, Reither(true, [], _) ->
       if_not_fixed second (fun () -> link_row_field_ext ~inside:f2 f1)
   | Rabsent, (Rpresent _ | Reither(_,_,true)) ->
-      raise_trace_for Unify [Variant(No_tags(First, [l,f1]))]
+      raise_for Unify (Variant(No_tags(First, [l,f1])))
   | (Rpresent _ | Reither (_,_,true)), Rabsent ->
-      raise_trace_for Unify [Variant(No_tags(Second, [l,f2]))]
+      raise_for Unify (Variant(No_tags(Second, [l,f2])))
   | (Rpresent (Some _) | Reither(false,_,_)),
     (Rpresent None | Reither(true,_,_))
   | (Rpresent None | Reither(true,_,_)),
@@ -4275,10 +4274,10 @@ let unify_self_types env sign1 sign2 =
   match unify env self_type1 self_type2 with
   | () -> ()
   | exception Unify err -> begin
-      match err.trace with
-      | Errortrace.Diff { ctx=None; _ }
-        :: Errortrace.Diff { ctx = Some (In_method name); _ } :: rem ->
-          let err = Errortrace.unification_error ~trace:rem in
+      match err.trace.path with
+      | { ctx=None; _ } :: { ctx = Some (In_method name); _ } :: rem ->
+          let trace = { err.trace with path = rem } in
+          let err = Errortrace.unification_error ~trace in
           let failure = Method (name, Type_mismatch err) in
           raise (Inherit_class_signature_failed failure)
       | _ ->
@@ -4834,12 +4833,12 @@ let matches ~expand_error_trace env ty ty' =
   | () ->
       if not (all_distinct_vars env vars) then begin
         backtrack snap;
-        let diff =
+        let trace =
           if expand_error_trace
-          then expanded_diff env ~got:ty ~expected:ty'
-          else unexpanded_diff ~got:ty ~expected:ty'
+          then expanded_diff env ~got:ty ~expected:ty' empty_root
+          else unexpanded_diff ~got:ty ~expected:ty' empty_root
         in
-        raise (Matches_failure (env, unification_error ~trace:[diff]))
+        raise (Matches_failure (env, unification_error ~trace))
       end;
       backtrack snap
   | exception Unify err ->
@@ -5704,7 +5703,7 @@ let rec subtype_rec env trace t1 t2 constraints =
         let constraints = subtype_rec env trace t2 t1 constraints in
         subtype_rec
           env
-          (Subtype.Diff {got = u1; expected = u2} :: trace)
+          (Subtype.diff ~got:u1 ~expected:u2 trace)
           u1 u2
           constraints
     | (Tfunctor (l1, id1, pack1, u1), Tfunctor (l2, id2, pack2, u2))
@@ -5713,7 +5712,7 @@ let rec subtype_rec env trace t1 t2 constraints =
         let fcm2 = newty (Tpackage pack2) in
         let constraints =
           subtype_package env
-            (Subtype.Diff {got = fcm2; expected = fcm1} :: trace)
+            (Subtype.diff ~got:fcm2 ~expected:fcm1 trace)
             (get_level t2) pack2 (get_level t1) pack1 constraints
         in
         begin
@@ -5773,7 +5772,7 @@ let rec subtype_rec env trace t1 t2 constraints =
                 else
                   subtype_rec
                     env
-                    (Subtype.Diff {got = t1; expected = t2} :: trace)
+                    (Subtype.diff ~got:t1 ~expected:t2 trace)
                     t1 t2
                     constraints
               else
@@ -5781,7 +5780,7 @@ let rec subtype_rec env trace t1 t2 constraints =
                 then
                   subtype_rec
                     env
-                    (Subtype.Diff {got = t2; expected = t1} :: trace)
+                    (Subtype.diff ~got:t2 ~expected:t1 trace)
                     t2 t1
                     constraints
                 else constraints)
@@ -5807,14 +5806,14 @@ let rec subtype_rec env trace t1 t2 constraints =
           (env, trace, t1, t2, !univar_pairs)::constraints
         end
     | (Tpoly (u1, []), Tpoly (u2, [])) ->
-        let trace = Subtype.Diff {got = u1; expected = u2} :: trace in
+        let trace = Subtype.diff ~got:u1 ~expected:u2 trace in
         subtype_rec env trace u1 u2 constraints
     | (Tpoly (u1, tl1), Tpoly (u2, [])) ->
-        let trace = Subtype.Diff {got = t1; expected = u2} :: trace in
+        let trace = Subtype.diff ~got:t1 ~expected:u2 trace in
         let u1' = instance_poly tl1 u1 in
         subtype_rec env trace u1' u2 constraints
     | (Tpoly (u1, tl1), Tpoly (u2,tl2)) ->
-        let trace = Subtype.Diff {got = t1; expected = t2} :: trace in
+        let trace = Subtype.diff ~got:t1 ~expected:t2 trace in
         begin try
           enter_poly env u1 tl1 u2 tl2
             (fun t1 t2 -> subtype_rec env trace t1 t2 constraints)
@@ -5830,14 +5829,14 @@ let rec subtype_rec env trace t1 t2 constraints =
 
 and subtype_labeled_list env trace labeled_tl1 labeled_tl2 constraints =
   if 0 <> List.compare_lengths labeled_tl1 labeled_tl2 then
-    subtype_error ~env ~trace ~unification_trace:[];
+    subtype_error ~env ~trace ~unification_trace:empty_root;
   List.fold_left2
     (fun constraints (label1, ty1) (label2, ty2) ->
       if not (Option.equal String.equal label1 label2) then
-        subtype_error ~env ~trace ~unification_trace:[];
+        subtype_error ~env ~trace ~unification_trace:empty_root;
       subtype_rec
         env
-        (Subtype.Diff { got = ty1; expected = ty2 } :: trace)
+        (Subtype.diff ~got:ty1 ~expected:ty2 trace)
         ty1 ty2
         constraints)
     constraints labeled_tl1 labeled_tl2
@@ -5878,7 +5877,7 @@ and subtype_functor env trace ?id1 id pack u1 u2 constraints =
   let env = Env.add_module (Ident.of_unscoped id) Mp_present mty env in
   subtype_rec
     env
-    (Subtype.Diff {got = u1; expected = u2} :: trace)
+    (Subtype.diff ~got:u1 ~expected:u2 trace)
     u1 u2
     constraints
 
@@ -5892,7 +5891,7 @@ and subtype_fields env trace ty1 ty2 constraints =
     if miss1 = [] then
       subtype_rec
         env
-        (Subtype.Diff {got = rest1; expected = rest2} :: trace)
+        (Subtype.diff ~got:rest1 ~expected:rest2 trace)
         rest1 rest2
         constraints
     else
@@ -5911,7 +5910,7 @@ and subtype_fields env trace ty1 ty2 constraints =
        (* These fields are always present *)
        subtype_rec
          env
-         (Subtype.Diff {got = t1; expected = t2} :: trace)
+         (Subtype.diff ~got:t1 ~expected:t2 trace)
          t1 t2
          constraints)
     constraints pairs
@@ -5929,7 +5928,7 @@ and subtype_row env trace row1 row2 constraints =
     Tconstr(p1,_,_), Tconstr(p2,_,_) when Env_unscoped.path_equiv env p1 p2 ->
       subtype_rec
         env
-        (Subtype.Diff {got = more1; expected = more2} :: trace)
+        (Subtype.diff ~got:more1 ~expected:more2 trace)
         more1 more2
         constraints
   | (Tvar _|Tconstr _|Tnil), (Tvar _|Tconstr _|Tnil)
@@ -5942,20 +5941,20 @@ and subtype_row env trace row1 row2 constraints =
           | Rpresent(Some t1), Rpresent(Some t2) ->
               subtype_rec
                 env
-                (Subtype.Diff {got = t1; expected = t2} :: trace)
+                (Subtype.diff ~got:t1 ~expected:t2 trace)
                 t1 t2
                 constraints
           | Reither(false, t1::_, _), Rpresent(Some t2) ->
               subtype_rec
                 env
-                (Subtype.Diff {got = t1; expected = t2} :: trace)
+                (Subtype.diff ~got:t1 ~expected:t2 trace)
                 t1 t2
                 constraints
           | Rabsent, _ -> constraints
           | Rpresent None, Rpresent (Some _)
           | Rpresent (Some _), Rpresent None ->
               subtype_error ~env ~trace
-                ~unification_trace:[variant_arity_mismatch l]
+                ~unification_trace:(root (variant_arity_mismatch l))
           | _ ->
               raise Exit)
         constraints pairs
@@ -5964,7 +5963,7 @@ and subtype_row env trace row1 row2 constraints =
       let constraints =
         subtype_rec
           env
-          (Subtype.Diff {got = more1; expected = more2} :: trace)
+          (Subtype.diff ~got:more1 ~expected:more2 trace)
           more1 more2
           constraints
       in
@@ -5979,7 +5978,7 @@ and subtype_row env trace row1 row2 constraints =
           | Reither(false,[t1],_), Reither(false,[t2],_) ->
               subtype_rec
                 env
-                (Subtype.Diff {got = t1; expected = t2} :: trace)
+                (Subtype.diff ~got:t1 ~expected:t2 trace)
                 t1 t2
                 constraints
           | _ -> raise Exit)
@@ -5992,7 +5991,7 @@ let subtype env ty1 ty2 =
   with_univar_pairs [] (fun () ->
     (* Build constraint set. *)
     let constraints =
-      subtype_rec env [Subtype.Diff {got = ty1; expected = ty2}] ty1 ty2 []
+      subtype_rec env (Subtype.diff ~got:ty1 ~expected:ty2 []) ty1 ty2 []
     in
     TypePairs.clear subtypes;
     (* Enforce constraints. *)
@@ -6003,7 +6002,7 @@ let subtype env ty1 ty2 =
            subtype_error
              ~env
              ~trace:trace0
-             ~unification_trace:(List.tl trace))
+             ~unification_trace:({ trace with path = List.tl trace.path}))
         (List.rev constraints))
 
                               (*******************)
