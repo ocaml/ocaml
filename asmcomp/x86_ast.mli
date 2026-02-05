@@ -164,6 +164,7 @@ type instruction =
   | INC of arg
   | J of condition * arg
   | JMP of arg
+  | JMP_NOTRACK of arg
   | LEA of arg * arg
   | LEAVE
   | MOV of arg * arg

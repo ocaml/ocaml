@@ -176,6 +176,7 @@ module I = struct
   let je = j E
   let jg = j G
   let jmp x = emit (JMP x)
+  let jmp_notrack x = emit (JMP_NOTRACK x)
   let jne = j NE
   let jp = j P
   let lea x y = emit (LEA (x, y))

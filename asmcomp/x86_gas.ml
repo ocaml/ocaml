@@ -182,6 +182,7 @@ let print_instr b = function
   | INC arg -> i1_s b "inc" arg
   | J (c, arg) -> i1_call_jmp b ("j" ^ string_of_condition c) arg
   | JMP arg -> i1_call_jmp b "jmp" arg
+  | JMP_NOTRACK arg -> i1_call_jmp b "notrack jmp" arg
   | LEA (arg1, arg2) -> i2_s b "lea" arg1 arg2
   | LEAVE -> i0 b "leave"
   | MOV ((Imm n as arg1), (Reg64 _ as arg2))

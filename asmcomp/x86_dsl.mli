@@ -169,6 +169,7 @@ module I : sig
   val je: arg -> unit
   val jg: arg -> unit
   val jmp: arg -> unit
+  val jmp_notrack: arg -> unit
   val jne: arg -> unit
   val jp: arg -> unit
   val lea: arg -> arg -> unit

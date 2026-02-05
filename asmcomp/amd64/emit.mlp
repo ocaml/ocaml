@@ -47,8 +47,7 @@ let collect_indirect_targets fundecl =
   let targets = ref LabelSet.empty in
   let rec scan instr =
     begin match instr.desc with
-    | Lswitch jumptbl ->
-        Array.iter (fun lbl -> targets := LabelSet.add lbl !targets) jumptbl
+    (* Lswitch uses notrack prefix, so jump table targets don't need endbr64 *)
     | Lpushtrap { lbl_handler } ->
         targets := LabelSet.add lbl_handler !targets
     | _ -> ()
@@ -850,7 +849,10 @@ let emit_instr env fallthrough i =
       I.movsxd (mem64 DWORD 0 (arg64 i 0) ~scale:4 ~base:(reg64 tmp1))
                (reg env tmp2);
       I.add (reg env tmp2) (reg env tmp1);
-      I.jmp (reg env tmp1);
+      (* Use notrack prefix to skip IBT check - the jump table targets
+         don't need endbr64 instructions. The notrack prefix is ignored
+         on CPUs without CET/IBT support. *)
+      I.jmp_notrack (reg env tmp1);
 
       begin match system with
       | S_mingw64 | S_cygwin -> D.section [".rdata"] (Some "dr") []
