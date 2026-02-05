@@ -743,24 +743,14 @@ caml_thread_start(void * v)
 static CAML_THREAD_FUNCTION caml_thread_tick(void * arg)
 {
   int domain_id = (intptr_t) arg;
-  struct timespec deadline;
 
   caml_init_domain_self(domain_id);
   caml_domain_state *domain = Caml_state;
 
   caml_plat_lock_blocking (&Tick_thread_mu);
   while (Tick_thread_state != Tick_stop){
-    clock_gettime (caml_plat_get_cond_clockid (), &deadline);
-    deadline.tv_nsec += 1000000 * Thread_timeout_msec;
-    if (deadline.tv_nsec > 1000000000){
-      deadline.tv_nsec -= 1000000000;
-      deadline.tv_sec += 1;
-    }
-    while (!caml_plat_timedwait (&Tick_thread_cond, &Tick_thread_mu, &deadline)
-           && Tick_thread_state != Tick_stop){
-      /* Loop here until timeout occurs or the state is changed to Tick_stop.
-         Everything else is spurious wake-ups. */
-    }
+    (void) caml_plat_timedwait (&Tick_thread_cond, &Tick_thread_mu,
+				Thread_timeout_msec);
     atomic_store_release(&domain->requested_external_interrupt, 1);
     caml_interrupt_self();
   }

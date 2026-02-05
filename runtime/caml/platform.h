@@ -289,10 +289,10 @@ CAMLextern void caml_plat_mutex_reinit(caml_plat_mutex*);
 CAMLextern void caml_plat_cond_init(caml_plat_cond*);
 CAMLextern void caml_plat_wait(caml_plat_cond*, caml_plat_mutex*);
   /* blocking */
-CAMLextern clockid_t caml_plat_get_cond_clockid (void);
 CAMLextern int caml_plat_timedwait(caml_plat_cond*, caml_plat_mutex *,
-                                   const struct timespec *);
-  /* blocking; returns ETIMEDOUT on timeout, 0 if the condition was signaled. */
+                                   unsigned long delay);
+  /* blocking; returns ETIMEDOUT on timeout, 0 if the condition was signaled.
+     Note that delay is a duration in milliseconds, not a deadline. */
 CAMLextern void caml_plat_broadcast(caml_plat_cond*);
 CAMLextern void caml_plat_signal(caml_plat_cond*);
 CAMLextern void caml_plat_cond_free(caml_plat_cond*);
