@@ -500,6 +500,9 @@ let emit_instr env i =
   | Lop (Idls_get) ->
       let ofs = Domainstate.(idx_of_field Domain_dls_root) * 8 in
       `	ld	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg reg_domain_state_ptr})\n`
+  | Lop (Iatomic_fetch_add) ->
+      (* TODO: implement with amoadd.d instruction *)
+      fatal_error "Iatomic_fetch_add not yet implemented for riscv"
   | Lop (Ireturn_addr) ->
       let n = frame_size env in
       if env.f.fun_frame_required then
