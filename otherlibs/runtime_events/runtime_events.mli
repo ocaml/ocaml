@@ -174,8 +174,11 @@ began.
 *)
 | EV_C_MAJOR_ALLOC_COUNTER
 (**
-The global {b words} of major GC allocations done by all domains since the
-program began.
+The global amount of major GC 'work' as determined by allocations,
+done by all domains since the program began.
+
+The difference between this and {!EV_C_MAJOR_WORK_COUNTER} indicates how far
+behind the GC is.
 @since 5.3
 *)
 | EV_C_MAJOR_SLICE_TARGET
