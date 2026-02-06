@@ -750,7 +750,7 @@ static CAML_THREAD_FUNCTION caml_thread_tick(void * arg)
   caml_plat_lock_blocking (&Tick_thread_mu);
   while (Tick_thread_state != Tick_stop){
     (void) caml_plat_timedwait (&Tick_thread_cond, &Tick_thread_mu,
-				Thread_timeout_msec);
+                                Thread_timeout_msec);
     atomic_store_release(&domain->requested_external_interrupt, 1);
     caml_interrupt_self();
   }

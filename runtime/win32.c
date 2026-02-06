@@ -1497,7 +1497,7 @@ void caml_plat_wait(caml_plat_cond *cond, caml_plat_mutex* mut)
 }
 
 int caml_plat_timedwait(caml_plat_cond *cond, caml_plat_mutex* mut,
-			unsigned long delay)
+                        unsigned long delay)
 {
   caml_plat_assert_locked(mut);
   DWORD self_tid = GetCurrentThreadId();
@@ -1510,9 +1510,9 @@ int caml_plat_timedwait(caml_plat_cond *cond, caml_plat_mutex* mut,
     if (!s){
       unsigned long err = GetLastError();
       if (err == ERROR_TIMEOUT){
-	rc = ETIMEDOUT;
+        rc = ETIMEDOUT;
       }else{
-	rc = caml_posixerr_of_win32err(err);
+        rc = caml_posixerr_of_win32err(err);
       }
     }
   } else {
