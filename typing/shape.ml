@@ -325,6 +325,7 @@ let of_path ~find_shape ~namespace path =
             proj (aux Constructor path) (name, ns)
         | Pcstr_ty name, _, _ -> proj (aux Type path) (name, ns)
         | Pext_ty, _, _ -> aux Extension_constructor path
+        | Pfld_ty name, _, _ -> proj (aux Type path) (name, ns)
       end
   in
   aux namespace path
