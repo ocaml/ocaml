@@ -80,16 +80,6 @@ let map_escape f esc =
      | (Constructor _ | Univ _ | Self | Module_type _
         | Module _ | Constraint) as c -> c}
 
-let explain trace f =
-  let rec explain = function
-    | [] -> None
-    | [h] -> f ~prev:None h
-    | h :: (prev :: _ as rem) ->
-      match f ~prev:(Some prev) h with
-      | Some _ as m -> m
-      | None -> explain rem in
-  explain (List.rev trace)
-
 (* Type indices *)
 type unification = private Unification
 type comparison  = private Comparison
