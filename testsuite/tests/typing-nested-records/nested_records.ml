@@ -78,3 +78,7 @@ type 'a deep = { a : { b : { c : 'a } } };;
 let dx : float deep = { a = { b = { c = 3.14 } } };;
 let dv = dx.a.b.c;;
 let unwrap_deep { a = { b = { c } } } = c;;
+
+let p2 = { p with name = "Bob" };;
+let p3 = { p with address = { street = "Elm St"; city = "LA" } };;
+let p4 = { p with address = { p.address with street = "Oak St" } };;
