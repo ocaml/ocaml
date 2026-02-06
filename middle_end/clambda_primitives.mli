@@ -127,6 +127,7 @@ type primitive =
   | Pint_as_pointer
   (* Atomic operations *)
   | Patomic_load
+  | Patomic_fetch_add
   (* Inhibition of optimisation *)
   | Popaque
   (* Fetch domain-local state *)

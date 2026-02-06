@@ -364,7 +364,7 @@ let compute_static_size lam =
     | Pbswap16
     | Pbbswap _
     | Pint_as_pointer
-    | Patomic_load
+    | Patomic_load | Patomic_fetch_add
     | Popaque
     | Pdls_get ->
         dynamic_size ()

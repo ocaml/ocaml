@@ -129,9 +129,6 @@ let prim_atomic_exchange =
   Primitive.simple ~name:"caml_atomic_exchange_field" ~arity:3 ~alloc:false
 let prim_atomic_cas =
   Primitive.simple ~name:"caml_atomic_cas_field" ~arity:4 ~alloc:false
-let prim_atomic_fetch_add =
-  Primitive.simple ~name:"caml_atomic_fetch_add_field" ~arity:3 ~alloc:false
-
 let primitives_table =
   create_hashtable 57 [
     "%identity", Identity;
@@ -709,7 +706,7 @@ let lambda_of_atomic prim_name loc op (kind : atomic_kind) args =
     | Load -> Patomic_load
     | Exchange -> Pccall prim_atomic_exchange
     | Cas -> Pccall prim_atomic_cas
-    | Faa -> Pccall prim_atomic_fetch_add
+    | Faa -> Patomic_fetch_add
   in
   match kind with
   | Ref ->
@@ -925,7 +922,7 @@ let lambda_primitive_needs_event_after = function
   | Pfloatcomp _ | Pstringlength | Pstringrefu | Pbyteslength | Pbytesrefu
   | Pbytessetu | Pmakearray ((Pintarray | Paddrarray | Pfloatarray), _)
   | Parraylength _ | Parrayrefu _ | Parraysetu _ | Pisint | Pisout
-  | Patomic_load
+  | Patomic_load | Patomic_fetch_add
   | Pintofbint _ | Pctconst _ | Pbswap16 | Pint_as_pointer | Popaque | Pdls_get
   | Pmakelazyblock _
       -> false

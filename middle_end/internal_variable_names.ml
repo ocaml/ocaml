@@ -171,6 +171,7 @@ let psubint = "Psubint"
 let pxorbint = "Pxorbint"
 let pxorint = "Pxorint"
 let patomic_load = "Patomic_load"
+let patomic_fetch_add = "Patomic_fetch_add"
 let prunstack = "Prunstack"
 let pperform = "Pperform"
 let presume = "Presume"
@@ -282,6 +283,7 @@ let psubint_arg = "Psubint_arg"
 let pxorbint_arg = "Pxorbint_arg"
 let pxorint_arg = "Pxorint_arg"
 let patomic_load_arg = "Patomic_load_arg"
+let patomic_fetch_add_arg = "Patomic_fetch_add_arg"
 let prunstack_arg = "Prunstack_arg"
 let pperform_arg = "Pperform_arg"
 let presume_arg = "Presume_arg"
@@ -425,6 +427,7 @@ let of_primitive : Lambda.primitive -> string = function
   | Pint_as_pointer -> pint_as_pointer
   | Popaque -> popaque
   | Patomic_load -> patomic_load
+  | Patomic_fetch_add -> patomic_fetch_add
   | Prunstack -> prunstack
   | Pperform -> pperform
   | Presume -> presume
@@ -536,6 +539,7 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Pint_as_pointer -> pint_as_pointer_arg
   | Popaque -> popaque_arg
   | Patomic_load -> patomic_load_arg
+  | Patomic_fetch_add -> patomic_fetch_add_arg
   | Prunstack -> prunstack_arg
   | Pperform -> pperform_arg
   | Presume -> presume_arg

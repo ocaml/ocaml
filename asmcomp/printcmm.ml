@@ -164,6 +164,7 @@ let operation d = function
   | Craise k -> Lambda.raise_kind k ^ location d
   | Ccheckbound -> "checkbound" ^ location d
   | Copaque -> "opaque"
+  | Catomic_fetch_add -> "atomic_fetch_add"
   | Cdls_get -> "dls_get"
   | Cpoll -> "poll"
 

@@ -168,6 +168,7 @@ and operation =
                    It results in a bounds error if the index is greater than
                    or equal to the bound. *)
   | Copaque (* Sys.opaque_identity *)
+  | Catomic_fetch_add (* Atomic read-modify-write: fetch old value and add *)
   | Cdls_get
   | Cpoll
 

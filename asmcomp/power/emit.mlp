@@ -850,7 +850,7 @@ let emit_instr env i =
         `	ld	{emit_reg i.res.(0)}, {emit_int offset}(30)\n`
     | Lop (Iatomic_fetch_add) ->
         (* TODO: implement with ldarx/stdcx. loop *)
-        fatal_error "Iatomic_fetch_add not yet implemented for power"
+        Misc.fatal_error "Iatomic_fetch_add not yet implemented for power"
     | Lop (Ireturn_addr) ->
         if env.f.fun_frame_required then
         `	ld	{emit_reg i.res.(0)}, {emit_int(retaddr_offset env)}(1)\n`
