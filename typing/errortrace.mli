@@ -35,9 +35,14 @@ type expanded_type = { ty: type_expr; expanded: type_expr }
 val trivial_expansion : type_expr -> expanded_type
 
 type 'a diff = { got: 'a; expected: 'a }
+type ctx =
+  | In_method of string
+  | In_tag of string
+type 'a ctx_diff = { ctx: ctx option; d: 'a diff }
 
 (** [map_diff f {expected;got}] is [{expected=f expected; got=f got}] *)
 val map_diff: ('a -> 'b) -> 'a diff -> 'b diff
+val map_cdiff: ('a -> 'b) -> 'a ctx_diff -> 'b ctx_diff
 
 (** Scope escape related errors *)
 type 'a escape_kind =
@@ -96,13 +101,6 @@ type first_class_module =
 type univar =
   | Var_mismatch of { order:order; diff:type_expr diff }
   | Quantification_mismatch of type_expr list
-
-type ctx =
-  | In_method of string
-  | In_tag of string
-
-type 'a ctx_diff = { ctx: ctx option; d: 'a diff }
-val map_ctx: ('a -> 'b) -> 'a ctx_diff -> 'b ctx_diff
 
 type ('a, 'variety) root =
   (* Common *)

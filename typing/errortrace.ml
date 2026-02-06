@@ -39,14 +39,24 @@ type expanded_type = { ty: type_expr; expanded: type_expr }
 let trivial_expansion ty = { ty; expanded = ty }
 
 type 'a diff = { got: 'a; expected: 'a }
+type ctx =
+  | In_method of string
+  | In_tag of string
+type 'a ctx_diff = { ctx: ctx option; d: 'a diff }
 
 let map_diff f r =
   (* ordering is often meaningful when dealing with type_expr *)
   let got = f r.got in
   let expected = f r.expected in
   { got; expected }
-
 let swap_diff x = { got = x.expected; expected = x.got }
+
+let map_cdiff f x = { x with d = map_diff f x.d }
+let swap_cdiff x = { x with d = swap_diff x.d }
+
+
+
+
 
 type 'a escape_kind =
   | Constructor of Path.t
@@ -115,13 +125,6 @@ type univar =
   | Var_mismatch of { order:order; diff:type_expr diff }
   | Quantification_mismatch of type_expr list
 
-type ctx =
-  | In_method of string
-  | In_tag of string
-type 'a ctx_diff = { ctx: ctx option; d: 'a diff }
-let map_ctx f x = { x with d = map_diff f x.d }
-let swap_ctx x = { x with d = swap_diff x.d }
-
 type ('a, 'variety) root  =
   (* Common *)
   | Variant : 'variety variant -> ('a, 'variety) root
@@ -156,8 +159,10 @@ let map_root (type variety) f : ('a, variety) root -> ('b, variety) root =
   | Rec_occur (_, _) | First_class_module _  as x -> x
   | Univar _  as x -> x
 
-let map f t =
-  { path = List.map (map_ctx f) t.path; root = Option.map (map_root f) t.root }
+let map f t ={
+  path = List.map (map_cdiff f) t.path;
+  root = Option.map (map_root f) t.root
+}
 let diff ?ctx ~got ~expected trace =
   { trace with path = { ctx; d = {got;expected} } :: trace.path }
 
@@ -187,7 +192,7 @@ let swap_root (type variety) : ('a, variety) root -> ('a, variety) root =
 
 let swap_trace t = {
   root = Option.map swap_root t.root;
-  path = List.map swap_ctx t.path
+  path = List.map swap_cdiff t.path
 }
 
 type unification_error = { trace : unification error } [@@unboxed]
@@ -236,7 +241,7 @@ module Subtype = struct
   assert (trace <> []);
   { trace; unification_trace }
 
-  let map f t = List.map (map_ctx f) t
+  let map f t = List.map (map_cdiff f) t
 end
 
 module Structured = struct

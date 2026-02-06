@@ -41,7 +41,7 @@ module Structured = Errortrace.Structured
 type 'a diff = 'a Out_type.diff = Same of 'a | Diff of 'a * 'a
 
 let trees_of_trace mode =
-  List.map (Errortrace.map_ctx (trees_of_type_expansion mode))
+  List.map (Errortrace.map_cdiff (trees_of_type_expansion mode))
 
 let print_tag ppf s = Style.inline_code ppf ("`" ^ s)
 
@@ -417,7 +417,7 @@ let warn_on_missing_def env ppf t =
   | _ -> ()
 
 let prepare_expansion_head (h,empty_tr)=
-  Errortrace.map_ctx (may_prepare_expansion empty_tr) h
+  Errortrace.map_cdiff (may_prepare_expansion empty_tr) h
 
 let head_error_printer mode txt_got txt_but = function
   | None -> Format_doc.Doc.empty
@@ -506,7 +506,7 @@ let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
   with_labels (not !Clflags.classic) (fun () ->
       let head = Option.map prepare_expansion_head str.top in
       let head_error = head_error_printer mode txt1 txt2 head in
-      let tr = List.map (Errortrace.map_ctx prepare_expansion) str.tr in
+      let tr = List.map (Errortrace.map_cdiff prepare_expansion) str.tr in
       let tr = trees_of_trace mode tr in
       let mis = mismatch txt1 str.expl in
       fprintf ppf
@@ -563,7 +563,7 @@ module Subtype = struct
       match str.top, str.tr with
       | Some (elt,_), tr ->
         let diffed_elt =
-          Errortrace.map_ctx (trees_of_type_expansion Type) elt
+          Errortrace.map_cdiff (trees_of_type_expansion Type) elt
         in
         let tr = trees_of_trace Type (filter_trace tr) in
         if fst then diffed_elt :: tr else tr
