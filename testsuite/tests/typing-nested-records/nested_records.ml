@@ -53,6 +53,7 @@ let get_hosts { server = { host = sh; _ }; database = { host = dh; _ } } =
 ;;
 
 let get_server (c : config) = c.server;;
+let standalone = { host = "test"; port = 99 };;
 
 type 'a box = { inner : { value : 'a } };;
 
@@ -77,5 +78,3 @@ type 'a deep = { a : { b : { c : 'a } } };;
 let dx : float deep = { a = { b = { c = 3.14 } } };;
 let dv = dx.a.b.c;;
 let unwrap_deep { a = { b = { c } } } = c;;
-
-let standalone = { host = "test"; port = 99 };;
