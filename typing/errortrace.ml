@@ -356,7 +356,7 @@ let merge promote s =
 
   let parse_simple status tr =
     match tr with
-    | [] -> None
+    | [] -> { top = None; tr = []; expl = None}
     | _ ->
         let s = segment status tr None in
         let rtr = match s.last_ctx with
@@ -367,6 +367,6 @@ let merge promote s =
           | Some x -> x :: rtr
           | None -> rtr
         in
-        Some (s.head, List.rev rtr)
+        { top = Some (s.head,false); tr = List.rev rtr; expl = None }
 
 end

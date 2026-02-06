@@ -36,6 +36,7 @@ open Out_type
 open Format_doc
 module Fmt = Format_doc
 module Style = Misc.Style
+module Structured = Errortrace.Structured
 
 type 'a diff = 'a Out_type.diff = Same of 'a | Diff of 'a * 'a
 
@@ -71,13 +72,13 @@ let diff_printing_status Errortrace.{ got      = {ty = t1; expanded = t1'};
                                       expected = {ty = t2; expanded = t2'} } =
   if  Btype.is_constr_row ~allow_ident:true t1'
    || Btype.is_constr_row ~allow_ident:true t2'
-  then Errortrace.Structured.Discard
+  then Structured.Discard
   else if same_path t1 t1' && same_path t2 t2' then
-    Errortrace.Structured.Optional_refinement
-  else Errortrace.Structured.Keep
+    Structured.Optional_refinement
+  else Structured.Keep
 
 let printing_status = function
-  | { Errortrace.ctx = Some _; _} -> Errortrace.Structured.Context
+  | { Errortrace.ctx = Some _; _} -> Structured.Context
   | d -> diff_printing_status d.Errortrace.d
 
 let is_unit_param env ty =
@@ -387,8 +388,8 @@ let explanation (type variety) intro
 let mismatch intro expl =
   match expl with
   | None -> None
-  | Some (Errortrace.Structured.Promoted msg) -> Some msg
-  | Some (Errortrace.Structured.Standard e) -> explanation intro e
+  | Some (Structured.Promoted msg) -> Some msg
+  | Some (Structured.Standard e) -> explanation intro e
 
 let warn_on_missing_def env ppf t =
   match Types.get_desc t with
@@ -493,8 +494,7 @@ let hide_variant ty_exp =
   Errortrace.{ty_exp with expanded = hide_variant_name ty_exp.expanded}
 
 let structured_trace env tr =
- Errortrace.Structured.parse ~promote:(promote_diff env) ~status:printing_status
-   tr
+  Structured.parse ~promote:(promote_diff env) ~status:printing_status tr
 
 (* [subst] comes out of equality, and is [[]] otherwise *)
 let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
@@ -551,73 +551,52 @@ let comparison ppf mode env = function
   | Errortrace.Moregen_error  error -> moregen  ppf mode env error
 
 module Subtype = struct
-  (* There's a frustrating amount of code duplication between this module and
-     the outside code, particularly in [prepare_trace] and [filter_trace].
-     Unfortunately, [Subtype] is *just* similar enough to have code duplication,
-     while being *just* different enough (it's only [Diff]) for the abstraction
-     to be nonobvious.  Someday, perhaps... *)
 
-  let prepare_unification_trace env f tr =
-    let tr = Errortrace.map f tr in
-    match tr.path with
-    | [] -> None, Option.map (fun x -> Errortrace.Structured.Standard x) tr.root
-    | _ ->
-        let str = structured_trace env tr in
-        match str.top with
-        | Some (h,_) -> Some (h,str.tr), str.expl
-        | None -> None, str.expl
+  let prepare_trace { Errortrace.Subtype.trace; unification_trace } =
+    let trace = Errortrace.Subtype.map prepare_expansion trace in
+    let unification_trace =
+      Errortrace.map prepare_expansion unification_trace in
+    Errortrace.Subtype.error ~trace ~unification_trace
 
-  let prepare_trace f tr =
-    let tr = Errortrace.Subtype.map f tr in
-    Errortrace.Structured.parse_simple printing_status tr
-
-  let trace filter_trace fst txt ppf htr =
+  let flatten_trace filter_trace fst (str: _ Structured.s) =
     with_labels (not !Clflags.classic) (fun () ->
-      match htr with
-      | Some (elt,tr) ->
+      match str.top, str.tr with
+      | Some (elt,_), tr ->
         let diffed_elt =
           Errortrace.map_ctx (trees_of_type_expansion Type) elt
         in
-        let tr = filter_trace tr in
-        let tr =
-          trees_of_trace Type
-          @@ List.map (Errortrace.map_ctx prepare_expansion) tr in
-        let tr = if fst then diffed_elt :: tr else tr in
-        trace fst txt ppf tr
-      | None -> ()
+        let tr = trees_of_trace Type (filter_trace tr) in
+        if fst then diffed_elt :: tr else tr
+      | None, _ -> []
     )
 
-  let rec filter_subtype_trace keep_last = function
+  let rec filter_trace keep_last = function
     | [] -> []
-    | [elt]
-      when printing_status elt = Errortrace.Structured.Optional_refinement ->
+    | [elt] when printing_status elt = Structured.Optional_refinement ->
         if keep_last then [elt] else []
-    | d :: rem -> d :: filter_subtype_trace keep_last rem
+    | d :: rem -> d :: filter_trace keep_last rem
 
+  let obj_only_trace (trace: _ Structured.s) =
+    match trace.top, trace.tr, trace.expl with
+    | None, [], Some (Standard (Obj _ | Variant _ | Escape _ ))
+    | None, [], None -> true
+    | _ -> false
 
-  let error
-        ppf
-        env
-        (Errortrace.Subtype.{trace = tr_sub; unification_trace = tr_unif})
-        txt1 =
+  let error ppf env tr txt1 =
     wrap_printing_env ~error:true env (fun () ->
       reset ();
-      let tr_sub = prepare_trace prepare_expansion tr_sub in
-      let tr_unif, expl =
-        prepare_unification_trace env prepare_expansion tr_unif
-      in
-      let keep_first = match tr_unif, expl with
-        | None, Some (Standard (Obj _ | Variant _ | Escape _ ))
-        | None, None -> true
-        | _ -> false in
-      fprintf ppf "@[<v>%a"
-        (trace (filter_subtype_trace keep_first) true txt1) tr_sub;
-      if tr_unif = None && expl = None then fprintf ppf "@]" else
-        let mis = mismatch (doc_printf "Within this type") expl in
-        fprintf ppf "%a%a%t@]"
-          (trace Fun.id false "is not compatible with type") tr_unif
-          (pp_print_option pp_doc) mis
-          Ident_conflicts.err_print
+      let tr = prepare_trace tr in
+      let tr_sub = Structured.parse_simple printing_status tr.trace in
+      let str_unif = structured_trace env tr.unification_trace in
+      let keep_last = obj_only_trace str_unif in
+      let tr_sub = flatten_trace (filter_trace keep_last) true tr_sub in
+      let tr_unif = flatten_trace Fun.id false str_unif in
+      let mis = mismatch (doc_printf "Within this type") str_unif.expl in
+      fprintf ppf "@[<v>%a%a%a%t@]"
+        (trace true txt1) tr_sub
+        (trace false "is not compatible with type") tr_unif
+        (pp_print_option pp_doc) mis
+        Ident_conflicts.err_print
     )
 end
 

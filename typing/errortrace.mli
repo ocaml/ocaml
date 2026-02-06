@@ -237,13 +237,12 @@ module Structured: sig
         of a trace, and there is no explicit explanation for the
         type error.
     *)
-
 val parse:
     promote:('a diff -> Format_doc.t option) ->
     status:('a ctx_diff -> printing_status) ->
     ('a, 'b) t -> ('a, 'b) s
 
   val parse_simple:
-    ('a  -> printing_status) -> 'a list -> ('a  * 'a  list) option
+    ('a ctx_diff -> printing_status) -> 'a ctx_diff list -> ('a, 'b) s
 
 end
