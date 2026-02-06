@@ -414,6 +414,8 @@ let rec tree_of_path ?(disambiguation=true) namespace p =
       let t2 = tree_of_path (Some Module) p2 in
       Oide_apply (t1, t2)
   | Pextra_ty (p, extra) -> begin
+      (* inline record types are syntactically prevented from escaping their
+         binding scope, and are never shown to users. *)
       match extra with
         Pcstr_ty s | Pfld_ty s ->
           Oide_dot (tree_of_path (Some Type) p, s)
