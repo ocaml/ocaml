@@ -67,14 +67,16 @@ let rec compare p1 p2 =
   | (Pextra_ty _, Papply _)
     -> 1
 and compare_extra t1 t2 =
+  let rank = function
+    | Pcstr_ty _ -> 0
+    | Pext_ty -> 1
+    | Pfld_ty _ -> 2
+  in
   match (t1, t2) with
-    Pcstr_ty s1, Pcstr_ty s2 -> String.compare s1 s2
+  | (Pcstr_ty s1, Pcstr_ty s2) | (Pfld_ty s1, Pfld_ty s2) ->
+      String.compare s1 s2
   | (Pext_ty, Pext_ty) -> 0
-  | (Pfld_ty s1, Pfld_ty s2) -> String.compare s1 s2
-  | (Pcstr_ty _, (Pext_ty | Pfld_ty _)) -> -1
-  | (Pext_ty, Pfld_ty _) -> -1
-  | (Pfld_ty _, (Pcstr_ty _ | Pext_ty)) -> 1
-  | (Pext_ty, Pcstr_ty _) -> 1
+  | _ -> Int.compare (rank t1) (rank t2)
 
 let rec find_free_opt ids = function
     Pident id -> List.find_opt (Ident.same id) ids
