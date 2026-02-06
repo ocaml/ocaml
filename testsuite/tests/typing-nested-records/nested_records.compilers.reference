@@ -32,20 +32,20 @@ Line 1, characters 19-23:
                        ^^^^
 Error: Unbound record field host
 type 'a box = { inner : { value : 'a; }; }
-val b : int box = {inner = {value = <poly>}}
-val bv : 'a = <poly>
+val b : int box = {inner = {value = 1}}
+val bv : int = 1
 type ('a, 'b) either_record = {
   left : { payload : 'a; };
   right : { payload : 'b; };
 }
 val e : (int, string) either_record =
-  {left = {payload = <poly>}; right = {payload = <poly>}}
-val el : 'a = <poly>
-val er : 'a = <poly>
+  {left = {payload = 42}; right = {payload = "hi"}}
+val el : int = 42
+val er : string = "hi"
 type 'a deep = { a : { b : { c : 'a; }; }; }
-val dx : float deep = {a = {b = {c = <poly>}}}
-val dv : 'a = <poly>
-val unwrap_deep : 'a deep -> 'b = <fun>
+val dx : float deep = {a = {b = {c = 3.14}}}
+val dv : float = 3.14
+val unwrap_deep : 'a deep -> 'a = <fun>
 val p2 : person =
   {name = "Bob"; address = {street = "123 Main St"; city = "Springfield"}}
 val p3 : person =
