@@ -54,4 +54,28 @@ let get_hosts { server = { host = sh; _ }; database = { host = dh; _ } } =
 
 let get_server (c : config) = c.server;;
 
+type 'a box = { inner : { value : 'a } };;
+
+let b : int box = { inner = { value = 1 } };;
+let bv = b.inner.value;;
+
+type ('a, 'b) either_record = {
+  left : { payload : 'a };
+  right : { payload : 'b };
+}
+;;
+
+let e : (int, string) either_record =
+  { left = { payload = 42 }; right = { payload = "hi" } }
+;;
+
+let el = e.left.payload;;
+let er = e.right.payload;;
+
+type 'a deep = { a : { b : { c : 'a } } };;
+
+let dx : float deep = { a = { b = { c = 3.14 } } };;
+let dv = dx.a.b.c;;
+let unwrap_deep { a = { b = { c } } } = c;;
+
 let standalone = { host = "test"; port = 99 };;

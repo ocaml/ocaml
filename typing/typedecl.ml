@@ -250,8 +250,14 @@ let rec transl_labels env univars closed ?type_path lbls =
              then Record_float
              else Record_regular
            in
-           let type_params = [] in
-           let arity = 0 in
+           let inner_tyl =
+             List.map (fun (l : Types.label_declaration) -> l.ld_type)
+               inner_lbls'
+           in
+           let type_params =
+             Ctype.free_variables_list inner_tyl
+           in
+           let arity = List.length type_params in
            let inline_decl =
              { type_params;
                type_arity = arity;
