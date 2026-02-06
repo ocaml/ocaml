@@ -771,6 +771,7 @@ and label_declaration =
      ld_mutable: mutable_flag;
      ld_atomic: atomic_flag;
      ld_type: core_type;
+     ld_inline_record: label_declaration list option;
      ld_loc: Location.t;
      ld_attributes: attributes;
     }

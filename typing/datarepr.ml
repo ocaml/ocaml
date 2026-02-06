@@ -188,6 +188,7 @@ let dummy_label =
     lbl_mut = Immutable; lbl_atomic = Nonatomic;
     lbl_pos = (-1); lbl_all = [||]; lbl_repres = Record_regular;
     lbl_private = Public;
+    lbl_inlined = None;
     lbl_loc = Location.none;
     lbl_attributes = [];
     lbl_uid = Uid.internal_not_actually_unique;
@@ -208,6 +209,7 @@ let label_descrs ty_res lbls repres priv =
             lbl_all = all_labels;
             lbl_repres = repres;
             lbl_private = priv;
+            lbl_inlined = l.ld_inlined;
             lbl_loc = l.ld_loc;
             lbl_attributes = l.ld_attributes;
             lbl_uid = l.ld_uid;
