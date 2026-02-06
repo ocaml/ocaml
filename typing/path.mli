@@ -55,6 +55,20 @@ and extra_ty =
       it has the path
         [Pextra_ty (Pident `Error`, Pext_ty)].
   *)
+  | Pfld_ty of string
+  (** [Pextra_ty (p, Pfld_ty f)] is the type of the inline record for
+      field [f] inside record type [p].
+
+      For example, in
+      {[
+        type person = { name : string; address : {street : string; city : string} }
+      ]}
+
+      The inline record type [{street : string; city : string}] cannot
+      be named by the user in the surface syntax, but internally
+      it has the path
+        [Pextra_ty (Pident `person`, Pfld_ty "address")].
+  *)
 
 val same: t -> t -> bool
 val equiv: (Ident.Unscoped.t * Ident.Unscoped.t) list -> t -> t -> bool
@@ -86,6 +100,7 @@ val heads: t -> Ident.t list
 val last: t -> string
 
 val is_constructor_typath: t -> bool
+val is_field_typath: t -> bool
 
 module Map : Map.S with type key = t
 module Set : Set.S with type elt = t
