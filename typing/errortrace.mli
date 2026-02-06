@@ -62,10 +62,6 @@ type 'a escape =
 
 val map_escape : ('a -> 'b) -> 'a escape -> 'b escape
 
-val explain: 'a list ->
-  (prev:'a option -> 'a -> 'b option) ->
-  'b option
-
 (** Type indices *)
 type unification = private Unification
 type comparison  = private Comparison

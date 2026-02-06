@@ -54,10 +54,6 @@ let swap_diff x = { got = x.expected; expected = x.got }
 let map_cdiff f x = { x with d = map_diff f x.d }
 let swap_cdiff x = { x with d = swap_diff x.d }
 
-
-
-
-
 type 'a escape_kind =
   | Constructor of Path.t
   | Univ of type_expr
@@ -78,16 +74,6 @@ let map_escape f esc =
      | Equation eq -> Equation (f eq)
      | (Constructor _ | Univ _ | Self | Module_type _
         | Module _ | Constraint) as c -> c}
-
-let explain trace f =
-  let rec explain = function
-    | [] -> None
-    | [h] -> f ~prev:None h
-    | h :: (prev :: _ as rem) ->
-      match f ~prev:(Some prev) h with
-      | Some _ as m -> m
-      | None -> explain rem in
-  explain (List.rev trace)
 
 (* Type indices *)
 type unification = private Unification
