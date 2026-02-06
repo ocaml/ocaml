@@ -23908,7 +23908,7 @@ fi
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for a C++11 compiler" >&5
 printf %s "checking for a C++11 compiler... " >&6; }
-if test ${ocaml_cv_prog_cxx+y}
+  if test ${ocaml_cv_prog_cxx+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
@@ -23917,13 +23917,20 @@ else $as_nop
   cc) :
 
         saved_CC="$CC"
-        CC="$CC -xc++"
+        saved_CFLAGS="$CFLAGS"
+        if test x"$CXX" = x
+then :
+  CC="$CC -xc++"; CFLAGS="$CXXFLAGS"
+else $as_nop
+  CC="$CXX"; CFLAGS="$CXXFLAGS"
+fi
         cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 #if !defined(__cplusplus) || __cplusplus < 201103L
 #error "No C++11 support"
 #endif
+#include <iostream>
 
 int
 main (void)
@@ -23940,7 +23947,8 @@ else $as_nop
   ocaml_cv_prog_cxx=""
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-        CC="$saved_CC" ;; #(
+        CC="$saved_CC"
+        CFLAGS="$saved_CFLAGS" ;; #(
   msvc) :
 
         # cl.exe selects between C and C++ based on the file extension
@@ -23949,8 +23957,9 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
     ocaml_cv_prog_cxx="" ;;
 esac
 fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ocaml_cv_prog_cxx" >&5
-printf "%s\n" "$ocaml_cv_prog_cxx" >&6; }
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ocaml_cv_prog_cxx:-none found}" >&5
+printf "%s\n" "${ocaml_cv_prog_cxx:-none found}" >&6; }
   ocamltest_CXX="$ocaml_cv_prog_cxx" ;; #(
   *) :
     build_ocamltest=false
