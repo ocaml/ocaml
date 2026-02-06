@@ -217,6 +217,37 @@ let make_params env params =
   in
     List.map make_param params
 
+let compute_record_rep env ?(unbox=false) lbls =
+  if unbox then Record_unboxed false
+  else if List.for_all (fun (l : Types.label_declaration) ->
+      is_float env l.ld_type && l.ld_atomic = Nonatomic
+    ) lbls
+  then Record_float
+  else Record_regular
+
+let make_inline_record_decl ~current_unit ~loc lbls rep =
+  let tyl = List.map (fun (l : Types.label_declaration) -> l.ld_type) lbls in
+  let type_params = Ctype.free_variables_list tyl in
+  let arity = List.length type_params in
+  let decl =
+    { type_params;
+      type_arity = arity;
+      type_kind = Type_record (lbls, rep);
+      type_private = Public;
+      type_manifest = None;
+      type_variance = Variance.unknown_signature ~injective:true ~arity;
+      type_separability = Types.Separability.default_signature ~arity;
+      type_is_newtype = false;
+      type_expansion_scope = Btype.lowest_level;
+      type_loc = loc;
+      type_attributes = [];
+      type_immediate = Unknown;
+      type_unboxed_default = false;
+      type_uid = Uid.mk ~current_unit;
+    }
+  in
+  decl, type_params
+
 let rec transl_labels env univars closed ?type_path lbls =
   assert (lbls <> []);
   let current_unit = Env.get_current_unit () in
@@ -235,80 +266,50 @@ let rec transl_labels env univars closed ?type_path lbls =
          let is_mutable = match mut with Mutable -> true | Immutable -> false in
          if is_atomic && not is_mutable then
            raise (Error (loc, Atomic_field_must_be_mutable name.txt));
-         match pld_inline_record, type_path with
-         | Some inner_fields, Some parent_path ->
-           let field_path =
-             Path.Pextra_ty (parent_path, Pfld_ty name.txt)
-           in
-           let _inner_lbls, inner_lbls' =
-             transl_labels env univars closed ~type_path:field_path inner_fields
-           in
-           let inner_rep =
-             if List.for_all (fun (l : Types.label_declaration) ->
-                  is_float env l.ld_type && l.ld_atomic = Nonatomic
-                ) inner_lbls'
-             then Record_float
-             else Record_regular
-           in
-           let inner_tyl =
-             List.map (fun (l : Types.label_declaration) -> l.ld_type)
-               inner_lbls'
-           in
-           let type_params =
-             Ctype.free_variables_list inner_tyl
-           in
-           let arity = List.length type_params in
-           let inline_decl =
-             { type_params;
-               type_arity = arity;
-               type_kind = Type_record (inner_lbls', inner_rep);
-               type_private = Public;
-               type_manifest = None;
-               type_variance =
-                 Variance.unknown_signature ~injective:true ~arity;
-               type_separability =
-                 Types.Separability.default_signature ~arity;
-               type_is_newtype = false;
-               type_expansion_scope = Btype.lowest_level;
-               type_loc = loc;
-               type_attributes = [];
-               type_immediate = Unknown;
-               type_unboxed_default = false;
-               type_uid = Uid.mk ~current_unit;
-             }
-           in
-           let field_ty =
-             Btype.newgenty (Tconstr (field_path, type_params, ref Mnil)) in
-           let cty = {
-             ctyp_desc = Typedtree.Ttyp_constr (
-               field_path,
-               Location.mkloc (Longident.Lident name.txt) loc,
-               []);
-             ctyp_type = field_ty;
-             ctyp_env = env;
-             ctyp_loc = loc;
-             ctyp_attributes = [];
-           } in
-           {ld_id = Ident.create_local name.txt;
-            ld_name = name;
-            ld_uid = Uid.mk ~current_unit;
-            ld_mutable = mut;
-            ld_atomic = if is_atomic then Atomic else Nonatomic;
-            ld_type = cty;
-            ld_inline_record = Some _inner_lbls;
-            ld_loc = loc; ld_attributes = attrs},
-           Some inline_decl
-         | _ ->
-           let arg = Ast_helper.Typ.force_poly arg in
-           let cty = transl_simple_type env ?univars ~closed arg in
-           {ld_id = Ident.create_local name.txt;
-            ld_name = name;
-            ld_uid = Uid.mk ~current_unit;
-            ld_mutable = mut;
-            ld_atomic = if is_atomic then Atomic else Nonatomic;
-            ld_type = cty; ld_inline_record = None;
-            ld_loc = loc; ld_attributes = attrs},
-           None
+         let cty, inline_record, inline_decl =
+           match pld_inline_record, type_path with
+           | Some inner_fields, Some parent_path ->
+             let field_path =
+               Path.Pextra_ty (parent_path, Pfld_ty name.txt)
+             in
+             let inner_lbls, inner_lbls' =
+               transl_labels env univars closed ~type_path:field_path
+                 inner_fields
+             in
+             let inner_rep = compute_record_rep env inner_lbls' in
+             let inline_decl, type_params =
+               make_inline_record_decl ~current_unit ~loc inner_lbls' inner_rep
+             in
+             let field_ty =
+               Btype.newgenty
+                 (Tconstr (field_path, type_params, ref Mnil)) in
+             let cty = {
+               ctyp_desc = Typedtree.Ttyp_constr (
+                 field_path,
+                 Location.mkloc (Longident.Lident name.txt) loc,
+                 []);
+               ctyp_type = field_ty;
+               ctyp_env = env;
+               ctyp_loc = loc;
+               ctyp_attributes = [];
+             } in
+             cty, Some inner_lbls, Some inline_decl
+           | Some _, None ->
+             assert false
+           | None, _ ->
+             let arg = Ast_helper.Typ.force_poly arg in
+             let cty = transl_simple_type env ?univars ~closed arg in
+             cty, None, None
+         in
+         {ld_id = Ident.create_local name.txt;
+          ld_name = name;
+          ld_uid = Uid.mk ~current_unit;
+          ld_mutable = mut;
+          ld_atomic = if is_atomic then Atomic else Nonatomic;
+          ld_type = cty;
+          ld_inline_record = inline_record;
+          ld_loc = loc; ld_attributes = attrs},
+         inline_decl
       )
   in
   let results = List.map mk lbls in
@@ -530,18 +531,7 @@ let transl_declaration env sdecl (id, uid) =
           let type_path = Path.Pident id in
           let lbls, lbls' =
             transl_labels env None true ~type_path lbls in
-          let rep =
-            if unbox then (
-              Record_unboxed false
-            ) else if
-              List.for_all (fun (l : Types.label_declaration) ->
-                is_float env l.ld_type && l.ld_atomic = Nonatomic
-              ) lbls'
-            then
-              Record_float
-            else
-              Record_regular
-          in
+          let rep = compute_record_rep env ~unbox lbls' in
           Ttype_record lbls, Type_record(lbls', rep)
       | Ptype_open -> Ttype_open, Type_open
       in
