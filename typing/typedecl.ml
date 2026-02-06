@@ -248,88 +248,113 @@ let make_inline_record_decl ~current_unit ~loc lbls rep =
   in
   decl, type_params
 
-let rec transl_labels env univars closed ?type_path lbls =
-  assert (lbls <> []);
-  let current_unit = Env.get_current_unit () in
+let check_duplicate_labels lbls =
   let all_labels = ref String.Set.empty in
   List.iter
     (fun {pld_name = {txt=name; loc}} ->
        if String.Set.mem name !all_labels then
          raise(Error(loc, Duplicate_label name));
        all_labels := String.Set.add name !all_labels)
-    lbls;
+    lbls
+
+let mk_label ~current_unit ~name ~mut ~loc ~attrs ~cty ~inline_record =
+  let is_atomic = Builtin_attributes.has_atomic attrs in
+  let is_mutable = match mut with Mutable -> true | Immutable -> false in
+  if is_atomic && not is_mutable then
+    raise (Error (loc, Atomic_field_must_be_mutable name.txt));
+  {ld_id = Ident.create_local name.txt;
+   ld_name = name;
+   ld_uid = Uid.mk ~current_unit;
+   ld_mutable = mut;
+   ld_atomic = if is_atomic then Atomic else Nonatomic;
+   ld_type = cty;
+   ld_inline_record = inline_record;
+   ld_loc = loc; ld_attributes = attrs}
+
+let typed_label_to_types ld ~inline_decl =
+  let ty = ld.ld_type.ctyp_type in
+  let ty = match get_desc ty with Tpoly(t,[]) -> t | _ -> ty in
+  {Types.ld_id = ld.ld_id;
+   ld_mutable = ld.ld_mutable;
+   ld_atomic = ld.ld_atomic;
+   ld_type = ty;
+   ld_inlined = inline_decl;
+   ld_loc = ld.ld_loc;
+   ld_attributes = ld.ld_attributes;
+   ld_uid = ld.ld_uid;
+  }
+
+let transl_labels env univars closed lbls =
+  assert (lbls <> []);
+  check_duplicate_labels lbls;
+  let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;
+          pld_attributes=attrs} =
+    Builtin_attributes.warning_scope attrs
+      (fun () ->
+         let arg = Ast_helper.Typ.force_poly arg in
+         let cty = transl_simple_type env ?univars ~closed arg in
+         let current_unit = Env.get_current_unit () in
+         mk_label ~current_unit ~name ~mut ~loc ~attrs ~cty
+           ~inline_record:None
+      )
+  in
+  let lbls = List.map mk lbls in
+  let lbls' = List.map (fun ld -> typed_label_to_types ld ~inline_decl:None) lbls in
+  lbls, lbls'
+
+let rec transl_labels_with_inline env univars closed type_path lbls =
+  assert (lbls <> []);
+  check_duplicate_labels lbls;
   let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;
           pld_inline_record; pld_attributes=attrs} =
     Builtin_attributes.warning_scope attrs
       (fun () ->
-         let is_atomic = Builtin_attributes.has_atomic attrs in
-         let is_mutable = match mut with Mutable -> true | Immutable -> false in
-         if is_atomic && not is_mutable then
-           raise (Error (loc, Atomic_field_must_be_mutable name.txt));
-         let cty, inline_record, inline_decl =
-           match pld_inline_record, type_path with
-           | Some inner_fields, Some parent_path ->
-             let field_path =
-               Path.Pextra_ty (parent_path, Pfld_ty name.txt)
-             in
-             let inner_lbls, inner_lbls' =
-               transl_labels env univars closed ~type_path:field_path
-                 inner_fields
-             in
-             let inner_rep = compute_record_rep env inner_lbls' in
-             let inline_decl, type_params =
-               make_inline_record_decl ~current_unit ~loc inner_lbls' inner_rep
-             in
-             let field_ty =
-               Btype.newgenty
-                 (Tconstr (field_path, type_params, ref Mnil)) in
-             let cty = {
-               ctyp_desc = Typedtree.Ttyp_constr (
-                 field_path,
-                 Location.mkloc (Longident.Lident name.txt) loc,
-                 []);
-               ctyp_type = field_ty;
-               ctyp_env = env;
-               ctyp_loc = loc;
-               ctyp_attributes = [];
-             } in
-             cty, Some inner_lbls, Some inline_decl
-           | Some _, None ->
-             assert false
-           | None, _ ->
-             let arg = Ast_helper.Typ.force_poly arg in
-             let cty = transl_simple_type env ?univars ~closed arg in
-             cty, None, None
-         in
-         {ld_id = Ident.create_local name.txt;
-          ld_name = name;
-          ld_uid = Uid.mk ~current_unit;
-          ld_mutable = mut;
-          ld_atomic = if is_atomic then Atomic else Nonatomic;
-          ld_type = cty;
-          ld_inline_record = inline_record;
-          ld_loc = loc; ld_attributes = attrs},
-         inline_decl
+         let current_unit = Env.get_current_unit () in
+         match pld_inline_record with
+         | Some inner_fields ->
+           let field_path =
+             Path.Pextra_ty (type_path, Pfld_ty name.txt)
+           in
+           let inner_lbls, inner_lbls' =
+             transl_labels_with_inline env univars closed
+               field_path inner_fields
+           in
+           let inner_rep = compute_record_rep env inner_lbls' in
+           let inline_decl, type_params =
+             make_inline_record_decl ~current_unit ~loc inner_lbls' inner_rep
+           in
+           let field_ty =
+             Btype.newgenty
+               (Tconstr (field_path, type_params, ref Mnil))
+           in
+           let cty = {
+             ctyp_desc = Typedtree.Ttyp_constr (
+               field_path,
+               Location.mkloc (Longident.Lident name.txt) loc,
+               []);
+             ctyp_type = field_ty;
+             ctyp_env = env;
+             ctyp_loc = loc;
+             ctyp_attributes = [];
+           } in
+           mk_label ~current_unit ~name ~mut ~loc ~attrs ~cty
+             ~inline_record:(Some inner_lbls),
+           Some inline_decl
+         | None ->
+           let arg = Ast_helper.Typ.force_poly arg in
+           let cty = transl_simple_type env ?univars ~closed arg in
+           mk_label ~current_unit ~name ~mut ~loc ~attrs ~cty
+             ~inline_record:None,
+           None
       )
   in
   let results = List.map mk lbls in
   let lbls = List.map fst results in
   let lbls' =
-    List.map
-      (fun (ld, inline_decl) ->
-         let ty = ld.ld_type.ctyp_type in
-         let ty = match get_desc ty with Tpoly(t,[]) -> t | _ -> ty in
-         {Types.ld_id = ld.ld_id;
-          ld_mutable = ld.ld_mutable;
-          ld_atomic = ld.ld_atomic;
-          ld_type = ty;
-          ld_inlined = inline_decl;
-          ld_loc = ld.ld_loc;
-          ld_attributes = ld.ld_attributes;
-          ld_uid = ld.ld_uid;
-         }
-      )
-      results in
+    List.map (fun (ld, inline_decl) ->
+      typed_label_to_types ld ~inline_decl
+    ) results
+  in
   lbls, lbls'
 
 let transl_constructor_arguments env univars closed = function
@@ -528,9 +553,9 @@ let transl_declaration env sdecl (id, uid) =
         let tcstrs, cstrs = List.split (List.map make_cstr scstrs) in
           Ttype_variant tcstrs, Type_variant (cstrs, rep)
       | Ptype_record lbls ->
-          let type_path = Path.Pident id in
           let lbls, lbls' =
-            transl_labels env None true ~type_path lbls in
+            transl_labels_with_inline env None true
+              (Path.Pident id) lbls in
           let rep = compute_record_rep env ~unbox lbls' in
           Ttype_record lbls, Type_record(lbls', rep)
       | Ptype_open -> Ttype_open, Type_open
