@@ -1192,6 +1192,30 @@ let rec find_type_data path env =
           | Pext_ty ->
               let cda = find_extension_full p env in
               type_of_cstr path cda.cda_description
+          | Pfld_ty name ->
+              let tda = find_type_data p env in
+              let lbl = match tda.tda_descriptions with
+                | Type_record (labels, _) ->
+                    List.find (fun l -> l.lbl_name = name) labels
+                | Type_variant _ | Type_abstract _ | Type_open
+                | Type_external _ ->
+                    raise Not_found
+              in
+              (match lbl.lbl_inlined with
+               | Some decl ->
+                   let labels =
+                     List.map snd (Datarepr.labels_of_type path decl)
+                   in
+                   begin match decl.type_kind with
+                   | Type_record (_, repr) ->
+                     {
+                       tda_declaration = decl;
+                       tda_descriptions = Type_record (labels, repr);
+                       tda_shape = Shape.leaf decl.type_uid;
+                     }
+                   | _ -> raise Not_found
+                   end
+               | None -> raise Not_found)
         end
     end
 and find_cstr path name env =
@@ -1212,7 +1236,8 @@ let find_label path name env =
 
 let find_path_extra path =
   match path with
-  | Pident _ | Pdot _ | Papply _ | Pextra_ty (_,Pext_ty) -> raise Not_found
+  | Pident _ | Pdot _ | Papply _
+  | Pextra_ty (_, (Pext_ty | Pfld_ty _)) -> raise Not_found
   | Pextra_ty (ty, Pcstr_ty name) -> ty, name
 
 let find_modtype_lazy path env =

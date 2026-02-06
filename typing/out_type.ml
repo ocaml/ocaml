@@ -414,10 +414,8 @@ let rec tree_of_path ?(disambiguation=true) namespace p =
       let t2 = tree_of_path (Some Module) p2 in
       Oide_apply (t1, t2)
   | Pextra_ty (p, extra) -> begin
-      (* inline record types are syntactically prevented from escaping their
-         binding scope, and are never shown to users. *)
       match extra with
-        Pcstr_ty s ->
+        Pcstr_ty s | Pfld_ty s ->
           Oide_dot (tree_of_path (Some Type) p, s)
       | Pext_ty ->
           tree_of_path None p
@@ -571,7 +569,7 @@ let wrap_printing_env ~error env f =
 let rec lid_of_path = function
     Path.Pident id ->
       Longident.Lident (Ident.name id)
-  | Path.Pdot (p1, s) | Path.Pextra_ty (p1, Pcstr_ty s)  ->
+  | Path.Pdot (p1, s) | Path.Pextra_ty (p1, (Pcstr_ty s | Pfld_ty s))  ->
       Longident.Ldot (Location.mknoloc (lid_of_path p1), Location.mknoloc s)
   | Path.Papply (p1, p2) ->
       Longident.Lapply
@@ -1133,6 +1131,27 @@ let rec tree_of_typexp mode ty =
                       tree_of_package mode pack, ty)
     | Ttuple tyl ->
         Otyp_tuple (tree_of_labeled_typlist mode tyl)
+    | Tconstr(p, _tyl, _abbrev) when Path.is_field_typath p ->
+        begin match
+          try Some (Env.find_type p !printing_env) with Not_found -> None
+        with
+        | Some decl -> begin
+            match decl.type_kind with
+            | Type_record (inner_lbls, _) ->
+                let mk_label l =
+                  { olab_name = Ident.name l.ld_id;
+                    olab_mut = l.ld_mutable;
+                    olab_atomic = l.ld_atomic;
+                    olab_type = tree_of_typexp Type l.ld_type;
+                  }
+                in
+                Otyp_record (List.map mk_label inner_lbls)
+            | _ ->
+                Otyp_constr (tree_of_path (Some Type) p, [])
+          end
+        | None ->
+            Otyp_constr (tree_of_path (Some Type) p, [])
+        end
     | Tconstr(p, tyl, _abbrev) ->
         let p', s = best_type_path p in
         let tyl' = apply_subst s tyl in
@@ -1353,12 +1372,21 @@ let prepare_type_constructor_arguments = function
   | Cstr_tuple l -> List.iter prepare_type l
   | Cstr_record l -> List.iter (fun l -> prepare_type l.ld_type) l
 
-let tree_of_label l =
+let rec tree_of_label l =
+  let typ = match l.ld_inlined with
+    | Some decl -> begin
+        match decl.type_kind with
+        | Type_record (inner_lbls, _) ->
+            Otyp_record (List.map tree_of_label inner_lbls)
+        | _ -> tree_of_typexp Type l.ld_type
+      end
+    | None -> tree_of_typexp Type l.ld_type
+  in
   {
     olab_name = Ident.name l.ld_id;
     olab_mut = l.ld_mutable;
     olab_atomic = l.ld_atomic;
-    olab_type = tree_of_typexp Type l.ld_type;
+    olab_type = typ;
   }
 
 let tree_of_constructor_arguments = function

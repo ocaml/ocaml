@@ -136,7 +136,7 @@ let rec type_path s path =
         fatal_error "Subst.type_path"
      | Pextra_ty (p, extra) ->
          match extra with
-         | Pcstr_ty _ -> Pextra_ty (type_path s p, extra)
+         | Pcstr_ty _ | Pfld_ty _ -> Pextra_ty (type_path s p, extra)
          | Pext_ty -> Pextra_ty (value_path s p, extra)
 
 let to_subst_by_type_function s p =
@@ -376,6 +376,7 @@ let label_declaration copy_scope s l =
     ld_mutable = l.ld_mutable;
     ld_atomic = l.ld_atomic;
     ld_type = typexp copy_scope s l.ld_type;
+    ld_inlined = l.ld_inlined;
     ld_loc = loc s l.ld_loc;
     ld_attributes = attrs s l.ld_attributes;
     ld_uid = l.ld_uid;
