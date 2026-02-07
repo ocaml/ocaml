@@ -212,6 +212,8 @@ After installation, do *not* strip the `ocamldebug` executables.
   handling of mathematical corner cases and error conditions may need to
   consider running their code on a platform with better C99 support.
 
+== Additional hints
+
 Check the files `m.h` and `s.h` in `runtime/caml/`.
 Wrong endianness or alignment constraints in `m.h` will
 immediately crash the bytecode interpreter.
