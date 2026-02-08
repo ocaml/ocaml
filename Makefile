@@ -48,6 +48,12 @@ endif
 
 OC_OCAMLDEPDIRS = $(VPATH)
 
+# This variable lists configure-time dependencies that are painful
+# to build from Dune, and will be built by the conf-for-dune target below.
+# It is initially empty, we append weird files at the place where
+# their target is defined.
+dune_conf_FILES =
+
 # This list is passed to expunge, which accepts both uncapitalized and
 # capitalized module names.
 PERVASIVES=$(STDLIB_MODULES) outcometree topprinters topdirs toploop
@@ -2547,6 +2553,7 @@ dumpobj_SOURCES = $(addprefix tools/, \
   opnames.mli opnames.ml \
   dumpobj.mli dumpobj.ml)
 
+dune_conf_FILES += tools/opnames.ml
 tools/opnames.ml: tools/opnames.ml.c runtime/caml/opcodes.h
 	$(V_GEN)$(CPP) -I runtime $< > $@
 
@@ -2670,11 +2677,13 @@ toplevel/native/topeval.cmx: otherlibs/dynlink/dynlink.cmxa
 
 # The numeric opcodes
 
+dune_conf_FILES += bytecomp/opcodes.ml bytecomp/opcodes.mli
+
 bytecomp/opcodes.ml: bytecomp/opcodes.ml.c runtime/caml/opcodes.h
 	$(V_GEN)$(CPP) -I runtime $< > $@
 
-bytecomp/opcodes.mli: bytecomp/opcodes.ml
-	$(V_GEN)$(CAMLC) -i $< > $@
+bytecomp/opcodes.mli: bytecomp/opcodes.mli.c runtime/caml/opcodes.h
+	$(CPP) -I runtime $< > $@
 
 partialclean::
 	rm -f bytecomp/opcodes.ml bytecomp/opcodes.mli
@@ -3170,3 +3179,8 @@ clean-for-dune:
 	rm -f stdlib/std_exit.{o,cmo,cmx}
 	rm -f otherlibs/str/str.cma
 	rm -f otherlibs/unix/unix.cma
+
+# An easy way to build files morally generated during our configure
+# step, to reduce splurge in dune files.
+.PHONY: configure-for-dune
+configure-for-dune: $(dune_conf_FILES)
