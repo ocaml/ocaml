@@ -3922,9 +3922,9 @@ and type_approx_function env params c body ty_expected ~in_function ~first =
              correct thing to do if it were to be reachable in the future. *)
           ()
 
-(* Check that all univars are safe in a type. Both exp.exp_type and
+(* Check that all univars are safe in a type. Both ty_actual and
    ty_expected should already be generalized. *)
-let check_univars env kind exp ty_expected vars =
+let check_univars ~env ~loc ~kind ty_actual ty_expected vars =
   let pty = instance ty_expected in
   let exp_ty, vars =
     with_local_level_generalize begin fun () ->
@@ -3934,8 +3934,8 @@ let check_univars env kind exp ty_expected vars =
              since body is not generic,  instance_poly_fixed only makes
              copies of nodes that have a Tunivar as descendant *)
           let _, ty' = instance_poly_fixed ~keep_names:true tl body in
-          let vars, exp_ty = instance_parameterized_type vars exp.exp_type in
-          unify_exp_types exp.exp_loc env exp_ty ty';
+          let vars, exp_ty = instance_parameterized_type vars ty_actual in
+          unify_exp_types loc env exp_ty ty';
           (exp_ty, vars)
       | _ -> assert false
     end
@@ -3946,7 +3946,7 @@ let check_univars env kind exp ty_expected vars =
     let diff = Ctype.expanded_diff env ~got:ty ~expected:ty_expected in
     let explanation = Errortrace.Univar (Quantification_mismatch errs) in
     let err = Errortrace.unification_error ~trace:[diff;explanation] in
-    Error.log_and_raise exp.exp_loc env (Less_general(kind,err))
+    Error.log_and_raise loc env (Less_general (kind, err))
 
 (* [check_statement] implements the [non-unit-statement] check.
 
@@ -4498,9 +4498,68 @@ let do_relaxed_value_restriction env pat_list exp_list =
 let check_let_univars env pat_list exp_list =
   List.iter2
     (fun (_, expected_ty) (exp, vars) ->
-      Option.iter (check_univars env "definition" exp expected_ty) vars)
+      Option.iter
+        (check_univars
+           ~env
+           ~loc:exp.exp_loc
+           ~kind:"definition"
+           exp.exp_type
+           expected_ty)
+        vars)
     pat_list
     exp_list
+
+(** [('s, 'r) poly_rule] encodes the behavior needed to type a possibly
+    polymorphic 'subject' ['s], producing a result ['r].
+    See [type_poly] for more details. *)
+type ('s, 'r) poly_rule =
+  { kind : string
+    (** A short label used in diagnostic messages (e.g. "expression",
+        "function cases", etc) *)
+  ; type_subject : Env.t -> 's -> type_expr -> 'r * type_expr
+    (** [type_subject env s ty_expected] types [s] with the
+        instanced expected type [ty_expected]. This type may
+        still be generalized, indicating that structures are
+        principally known. *)
+  ; is_expansive : 'r -> bool
+    (** [is_expansive r] returns [true] if [r] is part of an expansive
+        expression. *)
+  }
+
+let type_poly
+    (type s r)
+    ~(rule : (s, r) poly_rule)
+    ~env
+    ~loc
+    (subj : s)
+    (ty_expected : type_expr)
+    : r * type_expr
+  =
+  (* With principal typing / ambivalent types (for GADTs), we
+     need to unshare types (by generalizing) *)
+  let unshare = !Clflags.principal || Env.has_local_constraints env in
+  let is_poly = is_poly_Tpoly ty_expected in
+  let vars, ret, ret_ty =
+    (* Raise level to check univars *)
+    with_local_level_generalize_if
+      is_poly
+      (fun () ->
+        let vars, ty_subj_expected =
+          with_local_level_generalize_structure_if unshare (fun () ->
+              match get_desc ty_expected with
+              | Tpoly (sch, univars) ->
+                instance_poly_fixed ~keep_names:true univars sch
+              | _ -> [], ty_expected)
+        in
+        let ret, ret_ty = rule.type_subject env subj ty_subj_expected in
+        vars, ret, ret_ty)
+      ~before_generalize:(fun (_, ret, ret_ty) ->
+        if rule.is_expansive ret then lower_contravariant env ret_ty)
+  in
+  (* Check univars after generalizing *)
+  if is_poly
+  then check_univars ~env ~loc ~kind:rule.kind ret_ty ty_expected vars;
+  ret, instance ret_ty
 
 let rec type_exp ?recarg env sexp =
   (* We now delegate everything to type_expect *)
@@ -5195,13 +5254,19 @@ and type_expect_
         exp_type = instance Predef.type_unit;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_constraint (sarg, sty) ->
-      let (ty, exp_extra) = type_constraint env sty in
-      let arg = type_argument env sarg ty (instance ty) in
+  | Pexp_constraint (sarg, spt) ->
+      let (ty, exp_extra) = type_constraint env spt in
+      let arg = type_poly_argument env sarg ty in
+      let ty =
+        match get_desc ty with
+        | Tpoly (tybody, tyvars) ->
+          instance_poly ~keep_names:true tyvars tybody
+        | _ -> instance ty
+      in
       rue {
         exp_desc = arg.exp_desc;
         exp_loc = arg.exp_loc;
-        exp_type = instance ty;
+        exp_type = ty;
         exp_attributes = arg.exp_attributes;
         exp_env = env;
         exp_extra = (exp_extra, loc, sexp.pexp_attributes) :: arg.exp_extra;
@@ -5412,7 +5477,13 @@ and type_expect_
                 (exp, vars)
               end
             in
-            check_univars env "method" exp ty_expected vars;
+            check_univars
+              ~env
+              ~loc:exp.exp_loc
+              ~kind:"method"
+              exp.exp_type
+              ty_expected
+              vars;
             { exp with exp_type = instance ty }
         | Tvar _ ->
             let exp = type_exp env sbody in
@@ -6644,8 +6715,35 @@ and type_label_exp create env loc ty_expected
     end
     ~before_generalize:(fun (_,arg) -> may_lower_contravariant env arg)
   in
-  if is_poly then check_univars env "field value" arg label.lbl_arg vars;
+  if is_poly
+  then
+    check_univars
+      ~env
+      ~loc:arg.exp_loc
+      ~kind:"field value"
+      arg.exp_type
+      label.lbl_arg
+      vars;
   (lid, label, {arg with exp_type = instance arg.exp_type})
+
+and type_poly_argument env sarg ty_expected =
+  let arg, arg_type =
+    type_poly
+      ~rule:
+        { kind = "expression"
+        ; type_subject =
+            (fun env sarg ty_arg ->
+              let arg = type_argument env sarg ty_arg (instance ty_arg) in
+              arg, arg.exp_type)
+        ; is_expansive = maybe_expansive
+        }
+      ~env
+      ~loc:sarg.pexp_loc
+      sarg
+      ty_expected
+  in
+  { arg with exp_type = arg_type }
+
 
 and type_argument_ ?explanation ?recarg env sarg ty_expected' ty_expected =
   (* ty_expected' may be generic *)
@@ -6843,7 +6941,13 @@ and type_apply_arg env ~app_loc (lbl, arg) =
             ~before_generalize:(fun (arg, _, _) ->
                                   may_lower_contravariant env arg)
           in
-          check_univars env "argument" arg ty_arg vars;
+          check_univars
+            ~env
+            ~loc:arg.exp_loc
+            ~kind:"argument"
+            arg.exp_type
+            ty_arg
+            vars;
           {arg with exp_type = instance arg.exp_type}
         end
       in
