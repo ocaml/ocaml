@@ -54,7 +54,7 @@ struct skiplist caml_global_roots_old = SKIPLIST_STATIC_INITIALIZER;
    Static initialization may not work reliably in shared libraries
    on some platforms (observed on s390x with RHEL/Fedora).
    See: https://github.com/ocaml/ocaml/issues/13693 */
-if __has_attribute(constructor) || defined(__GNUC__)
+#if __has_attribute(constructor) || defined(__GNUC__)
 __attribute__((constructor))
 #endif
 static void caml_init_global_roots(void)
