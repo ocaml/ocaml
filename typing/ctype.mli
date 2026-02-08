@@ -257,6 +257,19 @@ val instance_funct_nondep :
 (** Tries to use the module argument actual signature to remove the depencies
     that might occur in the return type of a module-dependent function. *)
 
+(** [instance_scheme ?keep_names ty] instantiates any quantified variables
+    in [ty] and returns the instantiated type.
+
+    If [ty] is an explicit polymorphic type [Tpoly], its bound variables
+    are replaced by fresh variables.
+
+    [?keep_names] preserves the original variable names in [Tpoly]
+    (default: [false]) *)
+val instance_scheme
+    :  ?keep_names:bool
+    -> type_expr
+    -> type_expr
+
 val polyfy: Env.t -> type_expr -> type_expr list -> type_expr * type_expr list
 
 val instance_label:

@@ -1731,6 +1731,11 @@ let open_tfunctor env ~loc us pack ty =
                           ~p_out:(Pident id) ~fixed:false ty in
   (env, ty)
 
+let instance_scheme ?(keep_names = false) ty =
+  match get_desc ty with
+  | Tpoly (sch, univars) -> instance_poly ~keep_names univars sch
+  | _ -> instance ty
+
 let instance_label ~fixed lbl =
   For_copy.with_scope (fun copy_scope ->
     let vars, ty_arg =
