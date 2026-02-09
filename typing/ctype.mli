@@ -192,6 +192,18 @@ val new_local_type:
         ?manifest_and_scope:(type_expr * int) ->
         type_origin -> type_declaration
 
+(** [with_forall_instance env ~name ~inst body] introduces a fresh locally
+    abstract type (aka rigid type variable) named [name] in [body].
+
+    After, the rigid type variable is immediately instantiated to [inst]
+    in the returned type. *)
+val with_forall_instance
+  :  Env.t
+  -> name:string loc
+  -> inst:type_expr
+  -> (Env.t -> 'a * type_expr)
+  -> 'a * type_expr
+
 module Pattern_env : sig
   type envop
   type t = private

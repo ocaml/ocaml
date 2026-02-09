@@ -3873,6 +3873,39 @@ let unify env ty1 ty2 =
 (* Lower the level of a type to the current level *)
 let enforce_current_level env ty = unify_var env (newvar ()) ty
 
+let with_forall_instance
+    env
+    ~name:({ txt = name; loc = name_loc } : string loc)
+    ~inst
+    body
+  =
+  (* Use [with_local_level_generalize] just for scoping *)
+  with_local_level_generalize
+    (fun () ->
+      (* Create a fake abstract type declaration for [name]. *)
+      let decl = new_local_type ~loc:name_loc Definition in
+      let scope = create_scope () in
+      let id, env = Env.enter_type ~scope name decl env in
+      let result, body_ty = body env in
+      (* Replace every instance of this type constructor in the resulting
+         type. *)
+      let instantiate ty =
+        with_type_mark (fun mark ->
+            let rec loop ty =
+              if try_mark_node mark ty
+              then (
+                match get_desc ty with
+                | Tconstr (Path.Pident id', _, _) when Ident.same id id' ->
+                  link_type ty inst
+                | _ -> iter_type_expr loop ty)
+            in
+            loop ty)
+      in
+      let body_ty = Subst.type_expr Subst.identity body_ty in
+      instantiate body_ty;
+      result, body_ty)
+    ~before_generalize:(fun (_, ety) -> enforce_current_level env ety)
+
 
 (**** Special cases of unification ****)
 

@@ -4016,6 +4016,12 @@ let type_poly
   then check_univars ~env ~loc ~kind:rule.kind ret_ty ty_expected vars;
   ret, instance ret_ty
 
+let type_newtype env ~name:({ txt; _ } as name) type_body =
+  let inst =
+    if Typetexp.valid_tyvar_name txt then newvar ~name:txt () else newvar ()
+  in
+  with_forall_instance env ~name ~inst type_body
+
 let rec type_exp ?recarg env sexp =
   (* We now delegate everything to type_expect *)
   type_expect ?recarg env sexp (mk_expected (newvar ()))
@@ -4953,8 +4959,8 @@ and type_expect_
       in
       re { exp with exp_extra =
              (Texp_poly cty, loc, sexp.pexp_attributes) :: exp.exp_extra }
-  | Pexp_newtype(name, sbody) ->
-      let body, ety = type_newtype env name (fun env ->
+  | Pexp_newtype (name, sbody) ->
+      let body, ety = type_newtype env ~name (fun env ->
         let expr = type_exp env sbody in
         expr, expr.exp_type)
       in
@@ -5290,51 +5296,6 @@ and type_constraint_expect
   unify_exp_types loc env ty (instance ty_expected);
   ret, ty, exp_extra
 
-(** Typecheck the body of a newtype. The "body" of a newtype may be:
-      - an expression
-      - a suffix of function parameters together with a function body
-    That's why this function is polymorphic over the body.
-
-    @param type_body A function that produces a type for the body given the
-    environment. When typechecking an expression, this is [type_exp].
-    @return The type returned by [type_body] but with the Tconstr
-    nodes for the newtype properly linked.
-*)
-and type_newtype
-  : type a. _ -> _ -> (Env.t -> a * type_expr) -> a * type_expr =
-  fun env { txt = name; loc = name_loc } type_body ->
-  let ty =
-    if Typetexp.valid_tyvar_name name then
-      newvar ~name ()
-    else
-      newvar ()
-  in
-  (* Use [with_local_level_generalize] just for scoping *)
-  with_local_level_generalize begin fun () ->
-    (* Create a fake abstract type declaration for [name]. *)
-    let decl = new_local_type ~loc:name_loc Definition in
-    let scope = create_scope () in
-    let (id, new_env) = Env.enter_type ~scope name decl env in
-
-    let result, exp_type = type_body new_env in
-    (* Replace every instance of this type constructor in the resulting
-       type. *)
-    let seen = Hashtbl.create 8 in
-    let rec replace t =
-      if Hashtbl.mem seen (get_id t) then ()
-      else begin
-        Hashtbl.add seen (get_id t) ();
-        match get_desc t with
-        | Tconstr (Path.Pident id', _, _) when id == id' -> link_type t ty
-        | _ -> Btype.iter_type_expr replace t
-      end
-    in
-    let ety = Subst.type_expr Subst.identity exp_type in
-    replace ety;
-    (result, ety)
-  end
-  ~before_generalize:(fun (_,ety) -> enforce_current_level env ety)
-
 and type_ident env ?(recarg=Rejected) lid =
   let (path, desc) = Env.lookup_value ~loc:lid.loc lid.txt env in
   let is_recarg =
@@ -5463,7 +5424,7 @@ and type_function
   | { pparam_desc = Pparam_newtype newtype; pparam_loc = _ } :: rest ->
       (* Check everything else in the scope of (type a). *)
       let (params, body, newtypes, contains_gadt), exp_type =
-        type_newtype env newtype (fun env ->
+        type_newtype env ~name:newtype (fun env ->
           let exp_type, params, body, newtypes, contains_gadt =
             (* mimic the typing of Pexp_newtype by minting a new type var,
               like [type_exp].
