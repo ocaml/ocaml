@@ -40,6 +40,13 @@ module Approx_env = struct
     | _ -> unknown t
 end
 
+let with_forall_instance (aenv : Approx_env.t) ~name body =
+  let (), ty =
+    with_forall_instance aenv.env ~name ~inst:(newvar ()) (fun env ->
+      (), body { aenv with env })
+  in
+  ty
+
 let match_or_keep_matchee (aenv : Approx_env.t) ty ~matchee =
   try
     unify aenv.env ty matchee;
@@ -124,6 +131,7 @@ let rec type_expression aenv sexp =
     let loc = sexp.pexp_loc in
     let sty = Ast_helper.Typ.package ~loc ptyp in
     type_constraint aenv (Pconstraint sty)
+  | Pexp_newtype (name, sbody) -> type_newtype aenv name sbody
   | _ -> Approx_env.unknown aenv
 
 
@@ -137,15 +145,17 @@ and type_tuple aenv components =
 
 
 and type_function aenv params ret_constraint body =
-  (* We can approximate types up to the first newtype parameter or potential
+  (* We can approximate types up to the first potential
      dependent module argument, whereupon we give up. *)
   match params with
   | { pparam_desc =
         Pparam_val
           (Nolabel, _, { ppat_desc = Ppat_unpack ({ txt = Some _ }, _); _ })
     }
-    :: _params
-  | { pparam_desc = Pparam_newtype _ } :: _params -> Approx_env.unknown aenv
+    :: _params -> Approx_env.unknown aenv
+  | { pparam_desc = Pparam_newtype name } :: params ->
+    with_forall_instance aenv ~name (fun aenv ->
+        type_function aenv params ret_constraint body)
   | { pparam_desc = Pparam_val (label, default, pat) } :: params ->
     type_function_param
       aenv
@@ -162,3 +172,7 @@ and type_function aenv params ret_constraint body =
       | Pfunction_cases ([], _, _) ->
         (* This case is in fact not reachable. *)
         assert false))
+
+
+and type_newtype aenv name sbody =
+  with_forall_instance aenv ~name (fun aenv -> type_expression aenv sbody)
