@@ -513,17 +513,13 @@ let drop_last n s = subrange ~last:(length s - n - 1) s
 let cut_last n s = (drop_last n s, take_last n s)
 
 let drop_prefix ~prefix s =
-  let drop_pre = drop_first (length prefix) in
-  let starts_with_pre = starts_with ~prefix in
-  if starts_with_pre s
-  then Some (drop_pre s)
+  if starts_with ~prefix s
+  then Some (drop_first (length prefix) s)
   else None
 
 let drop_suffix ~suffix s =
-  let drop_suf = drop_last (length suffix) in
-  let ends_with_suf = ends_with ~suffix in
-  if ends_with_suf s
-  then Some (drop_suf s)
+  if ends_with ~suffix s
+  then Some (drop_last (length suffix) s)
   else None
 
 (* Splitting with predicates *)
