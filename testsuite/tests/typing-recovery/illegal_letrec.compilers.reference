@@ -8,6 +8,16 @@ File "illegal_letrec.ml", line 17, characters 10-18:
 17 |   let rec (_ as f) = fun () -> f () in
                ^^^^^^^^
   Only variables are allowed as left-hand side of let rec
+File "illegal_letrec.ml", line 17, characters 33-35:
+17 |   let rec (_ as f) = fun () -> f () in
+                                      ^^
+  The function applied to this argument has type x:'a -> y:'b -> z:'c -> unit
+This argument cannot be applied without label
+File "illegal_letrec.ml", line 18, characters 4-6:
+18 |   f ()
+         ^^
+  The function applied to this argument has type x:'a -> y:'b -> z:'c -> unit
+This argument cannot be applied without label
 File "illegal_letrec.ml", line 20, characters 12-16:
 20 | let rec x = f ~x
                  ^^^^

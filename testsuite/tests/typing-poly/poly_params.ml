@@ -152,32 +152,22 @@ let rec poly6 : 'b. bool -> ('a. 'a -> 'a) -> 'b -> 'b * 'b option =
   fun p id x ->
     if p then poly6 false id x else id x, id (Some x)
 [%%expect {|
-Line 1, characters 8-13:
-1 | let rec poly6 : 'b. bool -> ('a. 'a -> 'a) -> 'b -> 'b * 'b option =
-            ^^^^^
-Error: This pattern matches values of type
-         "bool -> ('a. 'a -> 'a) -> 'b -> 'b * 'b option"
-       but a pattern was expected which matches values of type
-         "bool -> 'c -> 'd -> 'e"
-       The universal variable "'a" would escape its scope
+val poly6 : bool -> ('a. 'a -> 'a) -> 'b -> 'b * 'b option = <fun>
 |}];;
 
 let _ = poly6 true (fun x -> x) 8
 [%%expect {|
-Line 1, characters 8-13:
-1 | let _ = poly6 true (fun x -> x) 8
-            ^^^^^
-Error: Unbound value "poly6"
-Hint:   Did you mean "poly1", "poly2", "poly3", "poly4" or "poly5"?
+- : int * int option = (8, Some 8)
 |}];;
 
 let _ = poly6 true (fun x -> x + 1) 8
 [%%expect {|
-Line 1, characters 8-13:
+Line 1, characters 19-35:
 1 | let _ = poly6 true (fun x -> x + 1) 8
-            ^^^^^
-Error: Unbound value "poly6"
-Hint:   Did you mean "poly1", "poly2", "poly3", "poly4" or "poly5"?
+                       ^^^^^^^^^^^^^^^^
+Error: This argument has type "int -> int" which is less general than
+         "'a. 'a -> 'a"
+       The type "int" is not a type variable.
 |}];;
 
 let needs_magic (magic : 'a 'b. 'a -> 'b) = (magic 5 : string)

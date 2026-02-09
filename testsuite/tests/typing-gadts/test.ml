@@ -773,6 +773,18 @@ Error: The value "o" has type "< m : a >" but an expression was expected of type
        it would escape the scope of its equation
        Hint (manual section 7.2): A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
+|}, Rectypes{|
+Lines 1-5, characters 4-5:
+1 | ....f : type a b. (a,b) eq -> < m : a; .. > -> < m : b > =
+2 |   fun eq o ->
+3 |     ignore (o : < m : a >);
+4 |     let r : < m : b > = match eq with Eq -> o in (* fail with principal *)
+5 |     r..
+Error: This expression has type "'b. ('a, 'b) eq -> < m : 'a > -> < m : 'b >"
+       which is less general than
+         "'a0 'b. ('a0, 'b) eq -> < m : 'a0 > -> < m : 'b >"
+       The type variable "'a" is not generalizable to an universal
+       type variable.
 |}];;
 
 let f : type a b. (a,b) eq -> < m : a; .. > -> < m : b > =
@@ -829,7 +841,7 @@ let f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
 Lines 1-2, characters 4-15:
 1 | ....f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
 2 |   fun Eq o -> o..............
-Error: This definition has type
+Error: This expression has type
          "'c 'b. ('b, 'b) eq -> ([< `A of 'b | `B ] as 'c) -> 'c"
        which is less general than
          "'d 'e 'a 'b.
