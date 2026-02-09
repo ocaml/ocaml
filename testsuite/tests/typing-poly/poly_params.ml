@@ -152,22 +152,32 @@ let rec poly6 : 'b. bool -> ('a. 'a -> 'a) -> 'b -> 'b * 'b option =
   fun p id x ->
     if p then poly6 false id x else id x, id (Some x)
 [%%expect {|
-val poly6 : bool -> ('a. 'a -> 'a) -> 'b -> 'b * 'b option = <fun>
+Line 1, characters 8-13:
+1 | let rec poly6 : 'b. bool -> ('a. 'a -> 'a) -> 'b -> 'b * 'b option =
+            ^^^^^
+Error: This pattern matches values of type
+         "bool -> ('a. 'a -> 'a) -> 'b -> 'b * 'b option"
+       but a pattern was expected which matches values of type
+         "bool -> 'c -> 'd -> 'e"
+       The universal variable "'a" would escape its scope
 |}];;
 
 let _ = poly6 true (fun x -> x) 8
 [%%expect {|
-- : int * int option = (8, Some 8)
+Line 1, characters 8-13:
+1 | let _ = poly6 true (fun x -> x) 8
+            ^^^^^
+Error: Unbound value "poly6"
+Hint:   Did you mean "poly1", "poly2", "poly3", "poly4" or "poly5"?
 |}];;
 
 let _ = poly6 true (fun x -> x + 1) 8
 [%%expect {|
-Line 1, characters 19-35:
+Line 1, characters 8-13:
 1 | let _ = poly6 true (fun x -> x + 1) 8
-                       ^^^^^^^^^^^^^^^^
-Error: This argument has type "int -> int" which is less general than
-         "'a. 'a -> 'a"
-       The type "int" is not a type variable.
+            ^^^^^
+Error: Unbound value "poly6"
+Hint:   Did you mean "poly1", "poly2", "poly3", "poly4" or "poly5"?
 |}];;
 
 let needs_magic (magic : 'a 'b. 'a -> 'b) = (magic 5 : string)
@@ -427,10 +437,7 @@ let rec f (x : (module T)) =
 
 [%%expect{|
 module type T = sig type 'a t = 'a list end
-Line 4, characters 58-69:
-4 |   let (module LocalModule) = x in (assert false : ('a. 'a LocalModule.t) -> unit)
-                                                              ^^^^^^^^^^^
-Error: Unbound module "LocalModule"
+val f : (module T) -> ('a. 'a list) -> unit = <fun>
 |}]
 
 (* The following test requires full translation in the [approx_type] function if
@@ -482,10 +489,8 @@ val f : unit -> ('a. 'a list) -> unit = <fun>
 let rec f () = g (module Map.Make(Int)) and g (m : (module Map.S)) = ();;
 
 [%%expect{|
-Line 1, characters 17-39:
-1 | let rec f () = g (module Map.Make(Int)) and g (m : (module Map.S)) = ();;
-                     ^^^^^^^^^^^^^^^^^^^^^^
-Error: The signature for this packaged module couldn't be inferred.
+val f : unit -> unit = <fun>
+val g : (module Map.S) -> unit = <fun>
 |}]
 
 let rec f () = g (module Map.Make(Int)) and g (m : 'a. (module Map.S)) = ();;

@@ -3717,127 +3717,6 @@ let loc_rest_of_function
   | [], Pfunction_body pexp -> pexp.pexp_loc
   | [], Pfunction_cases (_, loc_cases, _) -> loc_cases
 
-(* Approximate the type of an expression, for better recursion *)
-
-let rec approx_type env sty =
-  match sty.ptyp_desc with
-  | Ptyp_arrow (p, ({ ptyp_desc = Ptyp_poly _ } as arg_sty), sty) ->
-    if is_optional p then newvar ()
-    else begin
-      let arg_ty =
-        (* Polymorphic types will only unify with types that match all of their
-         polymorphic parts, so we need to fully translate the type here
-         unlike in the monomorphic case *)
-        Typetexp.transl_simple_type env ~closed:false arg_sty
-      in
-      newty (Tarrow (p, arg_ty.ctyp_type, approx_type env sty, commu_ok))
-    end
-  | Ptyp_arrow (p, _, sty) ->
-      let ty1 = if is_optional p then type_option (newvar ()) else newvar () in
-      newty (Tarrow (p, newmono ty1, approx_type env sty, commu_ok))
-  | Ptyp_tuple args ->
-      newty (Ttuple (List.map (fun (l, t) -> l, approx_type env t) args))
-  | Ptyp_constr (lid, ctl) ->
-      let path, decl = Env.lookup_type ~use:false ~loc:lid.loc lid.txt env in
-      if List.length ctl <> decl.type_arity then newvar ()
-      else begin
-        let tyl = List.map (approx_type env) ctl in
-        newconstr path tyl
-      end
-  | _ -> newvar ()
-
-let type_pattern_approx env spat ty_expected =
-  match spat.ppat_desc with
-  | Ppat_constraint (_, sty) ->
-      let inferred_ty =
-        match sty with
-        | {ptyp_desc=Ptyp_poly _} ->
-          let inferred_ty =
-            Typetexp.transl_simple_type env ~closed:false sty
-          in
-          inferred_ty.ctyp_type
-        | _ -> approx_type env sty
-      in
-      begin try unify_pat_types spat.ppat_loc env inferred_ty ty_expected
-        with Unify trace ->
-        Error.log_and_raise spat.ppat_loc env (Pattern_type_clash(trace, None))
-      end;
-  | _ -> ()
-
-let type_approx_fun_one_param
-  env label default spato ty_expected ~first ~in_function =
-  (* [spato] is [None] when approximating a [Pfunction_cases],
-     the parameter is implicit in that case. *)
-  let has_poly =
-    match spato with
-    | None -> false
-    | Some spat -> check_poly_constraint spat env label
-  in
-  let { ty_param; ty_ret } =
-    match
-      filter_arrow env ~in_apply:false ty_expected label ~param_hole:has_poly
-    with
-    | Ok filtered_arrow -> filtered_arrow
-    | Error err ->
-      let loc_fun, ty_fun = in_function in
-      let err =
-        error_of_filter_arrow_failure ~explanation:None ty_fun err ~first
-      in
-      let level = get_level (instance ty_expected) in
-      Error.log_or_raise loc_fun env err;
-      let ty_param = newty2 ~level (Tpoly (newvar2 level, [])) in
-      { ty_param; ty_ret = ty_expected}
-
-  in
-  begin
-    match spato with
-    | None -> ()
-    | Some spat ->
-        let ty_param =
-          match label, default with
-          | (Nolabel | Labelled _), _ -> ty_param
-          | Optional _, None ->
-            let var = newmono (type_option (newvar ())) in
-            unify_pat_types spat.ppat_loc env ty_param var;
-            ty_param
-          | Optional _, Some _ ->
-            let ty_opt_param = newvar () in
-            let ty_pat_param = newmono (type_option ty_opt_param) in
-            unify_pat_types spat.ppat_loc env ty_param ty_pat_param;
-            newmono ty_opt_param
-        in
-        let ty_param =
-          if has_poly || not (Btype.tpoly_is_mono ty_param) then ty_param
-          else Btype.tpoly_get_mono  ty_param
-        in
-        type_pattern_approx env spat ty_param;
-  end;
-  ty_ret
-
-let type_approx_constraint env constraint_ ~loc ty_expected =
-  match constraint_ with
-  | Pconstraint constrain ->
-      let ty_constrain = approx_type env constrain in
-      begin try unify env ty_constrain ty_expected with Unify err ->
-        Error.log_and_raise loc env (Expr_type_clash (err, None, None))
-      end;
-      ty_constrain
-  | Pcoerce (constrain, coerce) ->
-      let ty_constrain = match constrain with
-        | None -> newvar ()
-        | Some sty -> approx_type env sty
-      in
-      let ty_coerce = approx_type env coerce in
-      begin try unify env ty_coerce ty_expected with Unify err ->
-        Error.log_and_raise loc env (Expr_type_clash (err, None, None))
-      end;
-      ty_constrain
-
-let type_approx_constraint_opt env constraint_ ~loc ty_expected =
-  match constraint_ with
-  | None -> ty_expected
-  | Some constraint_ -> type_approx_constraint env constraint_ ~loc ty_expected
-
 let is_unpack pat =
   match pat.ppat_desc with
     Ppat_unpack ({ txt = Some _ }, _) -> true
@@ -3847,80 +3726,6 @@ let could_be_functor env ty =
   match get_desc (expand_head env ty) with
   | Tvar _ | Tfunctor _ -> true
   | _ -> false
-
-let rec type_approx env sexp ty_expected =
-  let loc = sexp.pexp_loc in
-  match sexp.pexp_desc with
-    Pexp_let (_, _, e) -> type_approx env e ty_expected
-  | Pexp_function (params, c, body) ->
-      let in_function = loc, ty_expected in
-      let first = true in
-      type_approx_function env params c body ty_expected ~in_function ~first
-  | Pexp_match (_, {pc_rhs=e}::_) -> type_approx env e ty_expected
-  | Pexp_try (e, _) -> type_approx env e ty_expected
-  | Pexp_tuple l -> type_tuple_approx env sexp.pexp_loc ty_expected l
-  | Pexp_ifthenelse (_,e,_) -> type_approx env e ty_expected
-  | Pexp_sequence (_,e) -> type_approx env e ty_expected
-  | Pexp_constraint (e, sty) ->
-      let ty_expected =
-        type_approx_constraint env (Pconstraint sty) ~loc ty_expected
-      in
-      type_approx env e ty_expected
-  | Pexp_coerce (_, sty1, sty2) ->
-      ignore @@
-      type_approx_constraint env (Pcoerce (sty1, sty2)) ~loc ty_expected
-  | Pexp_pack (_, Some ptyp) ->
-      let sty = Ast_helper.Typ.package ~loc ptyp in
-      ignore @@
-      type_approx_constraint env (Pconstraint sty) ~loc ty_expected
-  | _ -> ()
-
-and type_tuple_approx (env: Env.t) loc ty_expected l =
-  let labeled_tys = List.map (fun (label, _) -> label, newvar ()) l in
-  let ty = newty (Ttuple labeled_tys) in
-  begin try unify env ty ty_expected with Unify err ->
-    Error.log_and_raise loc env (Expr_type_clash (err, None, None))
-  end;
-  List.iter2
-    (fun (_, e) (_, ty) -> type_approx env e ty)
-    l labeled_tys
-
-and type_approx_function env params c body ty_expected ~in_function ~first =
-  let loc_function, _ = in_function in
-  let loc = loc_rest_of_function ~first ~loc_function params body in
-  (* We can approximate types up to the first newtype parameter or potential
-     dependent module argument, whereupon we give up.
-  *)
-  match params with
-    { pparam_desc = Pparam_val (label, None, pat)} :: _
-      when is_unpack pat && not (is_optional label) -> ()
-  | { pparam_desc = Pparam_val (label, default, pat) } :: params ->
-      let ty_res =
-        type_approx_fun_one_param env label default (Some pat) ty_expected
-          ~first ~in_function
-      in
-      type_approx_function env params c body ty_res ~in_function ~first:false
-  | { pparam_desc = Pparam_newtype _ } :: _ -> ()
-  | [] ->
-      (* In the [Pconstraint] case, we override the [ty_expected] that
-         gets passed to the approximating of the rest of the type.
-      *)
-      let ty_expected =
-        type_approx_constraint_opt env c ty_expected ~loc
-      in
-      match body with
-      | Pfunction_body body ->
-          type_approx env body ty_expected
-      | Pfunction_cases ({pc_rhs = e} :: _, _, _) ->
-          let ty_res =
-            type_approx_fun_one_param env Nolabel None None ty_expected
-              ~in_function ~first
-          in
-          type_approx env e ty_res
-      | Pfunction_cases ([], _, _) ->
-          (* This case is in fact not reachable. Doing nothing would be the
-             correct thing to do if it were to be reachable in the future. *)
-          ()
 
 (* Check that all univars are safe in a type. Both ty_actual and
    ty_expected should already be generalized. *)
@@ -7604,7 +7409,8 @@ and type_let_rec
                     | _ -> pat
                   in
                   let bound_expr = vb_exp_constraint binding in
-                  type_approx env bound_expr pat.pat_type)
+                  let approx_ty = Type_approx.type_expression env bound_expr in
+                  unify_pat env pat approx_ty)
                 pat_list
                 spat_sexp_list;
               pat_list, new_env, force, pvs

@@ -1661,6 +1661,28 @@ typing/tast_mapper.cmi : \
     parsing/location.cmi \
     typing/env.cmi \
     parsing/asttypes.cmi
+typing/type_approx.cmo : \
+    typing/typetexp.cmi \
+    typing/types.cmi \
+    typing/predef.cmi \
+    parsing/parsetree.cmi \
+    typing/ctype.cmi \
+    parsing/asttypes.cmi \
+    parsing/ast_helper.cmi \
+    typing/type_approx.cmi
+typing/type_approx.cmx : \
+    typing/typetexp.cmx \
+    typing/types.cmx \
+    typing/predef.cmx \
+    parsing/parsetree.cmi \
+    typing/ctype.cmx \
+    parsing/asttypes.cmx \
+    parsing/ast_helper.cmx \
+    typing/type_approx.cmi
+typing/type_approx.cmi : \
+    typing/types.cmi \
+    parsing/parsetree.cmi \
+    typing/env.cmi
 typing/type_immediacy.cmo : \
     parsing/builtin_attributes.cmi \
     typing/type_immediacy.cmi
@@ -1678,6 +1700,7 @@ typing/typeclass.cmo : \
     typing/typedecl_variance.cmi \
     typing/typedecl.cmi \
     typing/typecore.cmi \
+    typing/type_approx.cmi \
     typing/subst.cmi \
     typing/printtyp.cmi \
     typing/predef.cmi \
@@ -1711,6 +1734,7 @@ typing/typeclass.cmx : \
     typing/typedecl_variance.cmx \
     typing/typedecl.cmx \
     typing/typecore.cmx \
+    typing/type_approx.cmx \
     typing/subst.cmx \
     typing/printtyp.cmx \
     typing/predef.cmx \
@@ -1756,6 +1780,7 @@ typing/typecore.cmo : \
     typing/typetexp.cmi \
     typing/types.cmi \
     typing/typedtree.cmi \
+    typing/type_approx.cmi \
     typing/subst.cmi \
     typing/shape.cmi \
     typing/printtyp.cmi \
@@ -1794,6 +1819,7 @@ typing/typecore.cmx : \
     typing/typetexp.cmx \
     typing/types.cmx \
     typing/typedtree.cmx \
+    typing/type_approx.cmx \
     typing/subst.cmx \
     typing/shape.cmx \
     typing/printtyp.cmx \

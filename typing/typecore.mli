@@ -130,10 +130,6 @@ val type_expect:
 val type_exp:
         Env.t -> Parsetree.expression -> Typedtree.expression
 
-(** [type_approx env exp ty_expectd] approximates the type of the expression
-    [expr] and unifies the result with [ty_expected]. *)
-val type_approx:
-        Env.t -> Parsetree.expression -> type_expr -> unit
 val type_argument:
         Env.t -> Parsetree.expression ->
         type_expr -> type_expr -> Typedtree.expression
