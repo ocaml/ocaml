@@ -383,7 +383,21 @@ let case : type k . mapper -> k case -> _ = fun sub {c_lhs; c_guard; c_rhs} ->
 let value_binding sub vb =
   let loc = sub.location sub vb.vb_loc in
   let attrs = sub.attributes sub vb.vb_attributes in
+  (* This function does the minimum inverse elaboration of [vb_exp_constraint]
+     and [vb_pat_constraint] to produce a well-formed OCaml program.
+
+     It is NOT the inverse of [vb_exp_constraint] and [vb_pat_constraint].
+     For instance:
+     {[
+       let foo : type a. a -> a = fun x -> x
+     ]}
+     becomes
+     {[
+       let foo : 'a. 'a -> 'a = fun (type a) -> (fun x -> x : a -> a)
+     ]}
+  *)
   let pat = sub.pat sub vb.vb_pat in
+  let exp = sub.expr sub vb.vb_expr in
   let pat, value_constraint =
     match pat.ppat_desc with
     | Ppat_constraint (pat, ({ ptyp_desc = Ptyp_poly _; _ } as cty)) ->
@@ -393,7 +407,16 @@ let value_binding sub vb =
       pat, Some constr
     | _ -> pat, None
   in
-  Vb.mk ~loc ~attrs ?value_constraint pat (sub.expr sub vb.vb_expr)
+  let exp, value_constraint =
+    match exp.pexp_desc with
+    | Pexp_constraint (exp, ({ ptyp_desc = Ptyp_poly _; _ } as cty)) ->
+      let constr =
+        Pvc_constraint { locally_abstract_univars = []; typ = cty }
+      in
+      exp, Some constr
+    | _ -> exp, value_constraint
+  in
+  Vb.mk ~loc ~attrs ?value_constraint pat exp
 
 let expression sub exp =
   let loc = sub.location sub exp.exp_loc in

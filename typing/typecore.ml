@@ -3866,25 +3866,52 @@ let may_lower_contravariant env exp =
 
 (* value binding elaboration *)
 
-let vb_exp_constraint {pvb_expr=expr; pvb_pat=pat; pvb_constraint=ct; _ } =
+
+let vb_exp_constraint { pvb_expr = expr; pvb_pat = pat; pvb_constraint = ct; _ }
+  =
   let open Ast_helper in
-  match ct with
-  | None -> expr
-  | Some (Pvc_constraint { locally_abstract_univars=[]; typ }) ->
-      begin match typ.ptyp_desc with
-      | Ptyp_poly _ -> expr
-      | _ ->
-          let loc = { expr.pexp_loc with Location.loc_ghost = true } in
-          Exp.constraint_ ~loc expr typ
-      end
-  | Some (Pvc_coercion { ground; coercion}) ->
-      let loc = { expr.pexp_loc with Location.loc_ghost = true } in
-      Exp.coerce ~loc expr ground coercion
-  | Some (Pvc_constraint { locally_abstract_univars=vars;typ}) ->
-      let loc_start = pat.ppat_loc.Location.loc_start in
-      let loc = { expr.pexp_loc with loc_start; loc_ghost=true } in
-      let expr = Exp.constraint_ ~loc expr typ in
-      List.fold_right (Exp.newtype ~loc) vars expr
+  match pat.ppat_desc, ct with
+  | Ppat_constraint (_, typ), None ->
+    let loc = { expr.pexp_loc with Location.loc_ghost = true } in
+    Exp.constraint_ ~loc expr typ
+  | _, None -> expr
+  | _, Some (Pvc_constraint { locally_abstract_univars = []; typ }) ->
+    (* Here we permit [Pexp_constraint] to carry a [Ptyp_poly],
+       since [typ] may be a [Ptyp_poly]. This will be typed
+       as expected and is required by [Type_approx] to give
+       the approximated type a *polymorphic* type. *)
+    let loc = { expr.pexp_loc with Location.loc_ghost = true } in
+    Exp.constraint_ ~loc expr typ
+  | _, Some (Pvc_coercion { ground; coercion }) ->
+    let loc = { expr.pexp_loc with Location.loc_ghost = true } in
+    Exp.coerce ~loc expr ground coercion
+  | _, Some (Pvc_constraint { locally_abstract_univars = vars; typ }) ->
+    (* For locally abstract types, we introduce [newtype]
+       binders and a polymorphic annotation. The [newtype]
+       binders introduce the locally abstract types in [expr]
+       and the polymorphic annotation ensures that locally abstract
+       types are indeed generalizable.
+
+       It is worth noting that the [newtype] binders alone are
+       insufficient, as in the following example:
+       {[
+       # let f = fun (type a) : a option ref -> ref None;;
+       val f : '_a option ref
+       ]}
+       Here, the locally abstract [a] isn't guaranteed to
+       be generalizable (in fact it cannot be generalized due
+       to the value restriction)
+    *)
+    let loc_start = pat.ppat_loc.Location.loc_start in
+    let loc = { expr.pexp_loc with loc_start; loc_ghost = true } in
+    let body =
+      List.fold_right
+        (Exp.newtype ~loc)
+        vars
+        (Exp.constraint_ ~loc expr typ)
+    in
+    let varified = Typ.varify_constructors vars typ in
+    Exp.constraint_ ~loc body (Typ.poly ~loc:typ.ptyp_loc vars varified)
 
 let vb_pat_constraint ({pvb_pat=pat; pvb_expr = exp; _ } as vb) =
   vb.pvb_attributes,
@@ -6916,6 +6943,29 @@ and value_bindings_of_pat_exp_lists pat_list exp_list ~spat_sexp_list =
   in
   l
 
+and type_var_pattern_list ~env ~existential_restriction pat_list pat_types =
+  let pat_list, env, bind_type_vars_delayed, pvs, mvs =
+    type_pattern_list
+      Value
+      existential_restriction
+      env
+      pat_list
+      pat_types
+      Modules_rejected
+  in
+  (* The accumulated module variables [mvs] must be
+     empty, since module unpacking is forbidden in
+     'var'-patterns. *)
+  ignore mvs;
+  (* The updated environment [env] cannot introduce
+     any GADT equations, rigid type variables, etc
+     in 'var'-patterns. *)
+  ignore env;
+  (* HACK: It is useful to obtain the list of bound variables
+           in the order of patterns. This is in fact the
+           reverse of the list of variables in [pvs]. *)
+  pat_list, bind_type_vars_delayed, List.rev pvs
+
 and type_let_rec
     ?check
     ?check_strict
@@ -6923,7 +6973,9 @@ and type_let_rec
     env
     spat_sexp_list
   =
-  let spatl = List.map vb_pat_constraint spat_sexp_list in
+  let spatl =
+    List.map (fun vb -> vb.pvb_attributes, vb.pvb_pat) spat_sexp_list
+  in
   let attrs_list = List.map fst spatl in
   (* Recursive patterns can only consist of (possibly annotated)
      variables. *)
@@ -6934,68 +6986,75 @@ and type_let_rec
     spat_sexp_list;
   let pat_list, exp_list, new_env =
     with_local_level_generalize
-      begin fun () ->
+      (fun () ->
         (* We must reset the tyvarenv in this local region since it
            resets the global level *)
         if reset_tyvarenv then Typetexp.TyVarEnv.reset ();
-        let pat_list, new_env, bind_type_vars_delayed, pvs =
-          with_local_level_generalize_structure_if_principal begin fun () ->
-              (* Typecheck the patterns *)
-              let nvs = List.map (fun _ -> newvar ()) spatl in
-              let pat_list, new_env, force, pvs, _mvs =
-                with_local_level_generalize begin fun () ->
-                    type_pattern_list
-                      Value
-                      In_rec
-                      env
-                      spatl
-                      nvs
-                      Modules_rejected
-                end
-              in
-              (* Approximate the type of the recursive binding *)
-              List.iter2
-                (fun pat binding ->
-                  let pat =
-                    match get_desc pat.pat_type with
-                    | Tpoly (ty, tl) ->
-                      { pat with
-                        pat_type = instance_poly ~keep_names:true tl ty
-                      }
-                    | _ -> pat
-                  in
-                  let bound_expr = vb_exp_constraint binding in
-                  let approx_ty =
-                    Type_approx.(
-                      type_expression (Approx_env.create ~env ()) bound_expr)
-                  in
-                  unify_pat env pat approx_ty)
-                pat_list
-                spat_sexp_list;
-              pat_list, new_env, force, pvs
-          end
+        let pat_list, bind_type_vars_delayed, pvs =
+          let nvs = List.map (fun _ -> newvar ()) spatl in
+          type_var_pattern_list
+            ~env
+            ~existential_restriction:In_rec
+            spatl
+            nvs
         in
-        let new_env =
-          add_let_pattern_vars new_env ~pvs ~bind_type_vars_delayed
+        (* We create a [new_env] here which is used in [type_let_exps]
+           for the unused check. *)
+        let new_env = add_let_pattern_vars env ~pvs ~bind_type_vars_delayed in
+        (* We keep the type in [pat_list] as the 'expected' type
+           for the expression. But to typecheck recursive bindings,
+           we also introduce an approximation of the type of the
+           recursive binding. *)
+        let approx_env =
+          let approx_pvs =
+            List.map2
+              (fun pv vb ->
+                let exp = vb_exp_constraint vb in
+                let mono_lvl = get_current_level () in
+                with_local_level_generalize (fun () ->
+                    let approx_ty =
+                      Type_approx.(
+                        type_expression
+                          (Approx_env.create ~env ~mono_lvl ())
+                          exp)
+                    in
+                    { pv with pv_type = approx_ty }))
+              pvs
+              spat_sexp_list
+          in
+          add_let_pattern_vars env ~pvs:approx_pvs ~bind_type_vars_delayed:[]
         in
+        (* Ensure that the approximated environment is compatable with
+           the inferred types. *)
+        List.iter2
+          (fun pv { pvb_expr = sexp; _ } ->
+            let path = Path.Pident pv.pv_id in
+            let rec_vd = Env.find_value path approx_env in
+            let vd = Env.find_value path new_env in
+            unify_exp_types
+              sexp.pexp_loc
+              env
+              vd.val_type
+              (instance rec_vd.val_type))
+          pvs
+          spat_sexp_list;
+        (* Typecheck the expressions with the approximated environment. *)
         let pat_list, exp_list =
           type_let_exps
             ?check
             ?check_strict
             ~is_recursive:true
-            ~exp_env:new_env
+            ~exp_env:approx_env
             ~new_env
             ~attrs_list
             ~pat_list
             ~pvs
             spat_sexp_list
         in
-        pat_list, exp_list, new_env
-      end
+        pat_list, exp_list, new_env)
       ~before_generalize:(fun (pat_list, exp_list, _) ->
         do_relaxed_value_restriction env pat_list exp_list)
   in
-  check_let_univars env pat_list exp_list;
   value_bindings_of_pat_exp_lists pat_list exp_list ~spat_sexp_list, new_env
 
 and type_let_nonrec
@@ -7218,6 +7277,8 @@ and type_let_def_wrap_warnings
        events on the bound identifiers and record them in a slot corresponding
        to the current definition (!current_slot).
        In effect, this creates a dependency graph between definitions.
+       This is captured using handlers on value definitions in [exp_env],
+       the environment used to typecheck bindings
 
      - After type checking the definition (!current_slot = None),
        when one of the bound identifier is effectively used, we trigger
@@ -7254,18 +7315,24 @@ and type_let_def_wrap_warnings
                         Location.prerr_warning vd.Types.val_loc
                           ((if !some_used then check_strict else check) name)
                     );
-                Env.set_value_used_callback
-                  vd
-                  (fun () ->
-                    match !current_slot with
-                    | Some slot ->
-                        slot := vd.val_uid :: !slot; rec_needed := true
-                    | None ->
-                        List.iter Env.mark_value_used (get_ref slot);
-                        used := true;
-                        some_used := true
-                  )
-              )
+                let on_value_used () =
+                  match !current_slot with
+                  | Some slot ->
+                    slot := vd.val_uid :: !slot;
+                    rec_needed := true
+                  | None ->
+                    List.iter Env.mark_value_used (get_ref slot);
+                    used := true;
+                    some_used := true
+                in
+                if is_recursive
+                then (
+                  (* If the `let` is recursive, we need to register
+                     handlers on the recursive bindings (which live in
+                     [exp_env]). *)
+                  let rec_vd = Env.find_value (Path.Pident id) exp_env in
+                  Env.set_value_used_callback rec_vd on_value_used);
+                Env.set_value_used_callback vd on_value_used)
               (Typedtree.pat_bound_idents pat);
               expected_ty, Some slot
            ))

@@ -95,8 +95,11 @@ let type_function_param aenv spat ~ret_ty =
 let type_constraint aenv sconstraint =
   match sconstraint with
   | Pconstraint pty ->
-    Approx_env.approx_transl aenv (fun env ->
+    let pty =
+      Approx_env.approx_transl aenv (fun env ->
         (Typetexp.transl_simple_type env ~closed:false pty).ctyp_type)
+    in
+    maybe_instance_poly pty
   | Pcoerce (_constrain, coerce) ->
     Approx_env.approx_transl aenv (fun env ->
         (Typetexp.transl_simple_type env ~closed:false coerce).ctyp_type)
