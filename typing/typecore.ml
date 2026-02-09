@@ -7409,7 +7409,9 @@ and type_let_rec
                     | _ -> pat
                   in
                   let bound_expr = vb_exp_constraint binding in
-                  let approx_ty = Type_approx.type_expression env bound_expr in
+                  let approx_ty =
+                    Type_approx.type_expression ~env bound_expr
+                  in
                   unify_pat env pat approx_ty)
                 pat_list
                 spat_sexp_list;

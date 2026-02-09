@@ -23,5 +23,15 @@
 
 open Types
 
-(** [type_expression env exp] computes a type approximation for [exp]. *)
-val type_expression : Env.t -> Parsetree.expression -> type_expr
+(** [type_expression ~env ?mono_lvl exp] computes a type approximation
+    for [exp] in environment [env].
+
+    The [mono_lvl] parameter specifies the level at which fresh type
+    variables are generated when precise typing information is unavailable
+    or deliberately approximated. If not provided, it defaults to the
+    current level. *)
+val type_expression
+  :  env:Env.t
+  -> ?mono_lvl:int
+  -> Parsetree.expression
+  -> type_expr

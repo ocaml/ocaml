@@ -1666,6 +1666,7 @@ typing/type_approx.cmo : \
     typing/types.cmi \
     typing/predef.cmi \
     parsing/parsetree.cmi \
+    typing/env.cmi \
     typing/ctype.cmi \
     parsing/asttypes.cmi \
     parsing/ast_helper.cmi \
@@ -1675,6 +1676,7 @@ typing/type_approx.cmx : \
     typing/types.cmx \
     typing/predef.cmx \
     parsing/parsetree.cmi \
+    typing/env.cmx \
     typing/ctype.cmx \
     parsing/asttypes.cmx \
     parsing/ast_helper.cmx \
