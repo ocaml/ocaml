@@ -692,8 +692,8 @@ OCaml 5.5.0
   in an unbounded number of labeled or optional arguments.
   (Stefan Muenzel, report by Samuel Vivien, review by Florian Angeletti)
 
-- #13777, #14347, #14348, #14421: Test that C++ compilers can link with
-  the OCaml runtime and include its headers.
+- #13777, #14347, #14348, #14421, #14498, #14526: Test that C++
+  compilers can link with the OCaml runtime and include its headers.
   (Antonin Décimo, review by David Allsopp and Gabriel Scherer)
 
 - #14255: Fix TSan bug with C calls that take many arguments
