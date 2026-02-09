@@ -23,5 +23,19 @@
 
 open Types
 
-(** [type_expression env exp] computes a type approximation for [exp]. *)
-val type_expression : Env.t -> Parsetree.expression -> type_expr
+module Approx_env : sig
+  (** An environment for approximate typing.
+
+      It carries an environment together with a *monomorphic level*,
+      used to generate fresh type variables when precise typing information
+      is unabailable or deliberately approximated. *)
+  type t
+
+  (** [create ~env ?mono_lvl ()] creates a fresh environment.
+
+      If [mono_lvl] is not provided, it defaults to the current level. *)
+  val create : env:Env.t -> ?mono_lvl:int -> unit -> t
+end
+
+(** [type_expression aenv exp] computes a type approximation for [exp]. *)
+val type_expression : Approx_env.t -> Parsetree.expression -> type_expr

@@ -774,11 +774,17 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
              try
                match get_desc ty with
                | Tvar _ ->
-                 let ty' = Type_approx.type_expression val_env sbody in
+                 let ty' =
+                   Type_approx.(
+                     type_expression (Approx_env.create ~env:val_env ()) sbody)
+                 in
                  Ctype.unify val_env (Ctype.newmono ty') ty
                | Tpoly (ty1, tl) ->
                  let ty1' = Ctype.instance_poly tl ty1 in
-                 let ty2' = Type_approx.type_expression val_env sbody in
+                 let ty2' =
+                   Type_approx.(
+                     type_expression (Approx_env.create ~env:val_env ()) sbody)
+                 in
                  Ctype.unify val_env ty2' ty1'
                | _ -> assert false
              with Ctype.Unify err ->
