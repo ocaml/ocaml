@@ -558,6 +558,11 @@ module Subtype = struct
       Errortrace.map prepare_expansion unification_trace in
     Errortrace.Subtype.error ~trace ~unification_trace
 
+  let parse_sub tr =
+    (* The subtype part of the trace does not contain any explanation *)
+    let trace = { Errortrace.root = None; path = tr } in
+    Structured.parse ~promote:(Fun.const None) ~status:printing_status trace
+
   let flatten_trace filter_trace fst (str: _ Structured.s) =
     with_labels (not !Clflags.classic) (fun () ->
       match str.top, str.tr with
@@ -586,7 +591,7 @@ module Subtype = struct
     wrap_printing_env ~error:true env (fun () ->
       reset ();
       let tr = prepare_trace tr in
-      let tr_sub = Structured.parse_simple printing_status tr.trace in
+      let tr_sub = parse_sub tr.trace in
       let str_unif = structured_trace env tr.unification_trace in
       let keep_last = obj_only_trace str_unif in
       let tr_sub = flatten_trace (filter_trace keep_last) true tr_sub in

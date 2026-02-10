@@ -204,7 +204,7 @@ module Structured: sig
     | Standard of 'a
 
   type ('a,'b) s = {
-    top: ('a ctx_diff * bool) option;
+    top: ('a ctx_diff * bool) option; (* top = None => tr = [] *)
     tr: 'a ctx_diff list;
     expl: ('a, 'b) root extended_explanation option
   }
@@ -235,8 +235,5 @@ val parse:
     promote:('a diff -> Format_doc.t option) ->
     status:('a ctx_diff -> printing_status) ->
     ('a, 'b) t -> ('a, 'b) s
-
-  val parse_simple:
-    ('a ctx_diff -> printing_status) -> 'a ctx_diff list -> ('a, 'b) s
 
 end

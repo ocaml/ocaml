@@ -349,21 +349,4 @@ let merge promote s =
         { top = None; tr = []; expl}
     | path -> merge promote (segment status path s.root)
 
-  (* In the simple case, we are handling a partial trace with no explanation at
-     all.*)
-  let parse_simple status tr =
-    match tr with
-    | [] -> { top = None; tr = []; expl = None}
-    | _ ->
-        let s = segment status tr None in
-        let rtr = match s.last_ctx with
-          | None -> s.before
-          | Some (ctx, rest) -> rest @ ctx :: s.before
-        in
-        let rtr = match s.optional with
-          | Some x -> x :: rtr
-          | None -> rtr
-        in
-        { top = Some (s.head,false); tr = List.rev rtr; expl = None }
-
 end
