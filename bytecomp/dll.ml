@@ -91,8 +91,8 @@ let open_dll mode name =
       begin match dll_open fullname with
       | dll ->
           let opened = match current with
-            | None -> List.remove_assoc fullname !opened_dlls
-            | Some _ -> !opened_dlls
+            | None -> !opened_dlls
+            | Some _ -> List.remove_assoc fullname !opened_dlls
           in
           opened_dlls := (fullname, Execution dll) :: opened
       | exception Failure msg ->
