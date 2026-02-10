@@ -17,7 +17,6 @@
 
 open Path
 open Types
-open Asttypes
 open Typedtree
 open Lambda
 
@@ -201,39 +200,100 @@ let value_kind env ty =
         Pgenval
   end
 
-(** Whether a forward block is needed for a lazy thunk on a value, i.e.
-    if the value can be represented as a float/forward/lazy *)
-let lazy_val_requires_forward env ty =
-  match classify env ty with
-  | Any | Lazy -> true
-  | Float -> Config.flat_float_array
-  | Addr | Int -> false
-
 (** The compilation of the expression [lazy e] depends on the form of e:
-    constants, floats and identifiers are optimized.  The optimization must be
-    taken into account when determining whether a recursive binding is safe. *)
-let classify_lazy_argument : Typedtree.expression ->
-                             [`Constant_or_function
-                             |`Float_that_cannot_be_shortcut
-                             |`Identifier of [`Forward_value|`Other]
-                             |`Other] =
-  fun e -> match e.exp_desc with
-    | Texp_constant
-        ( Const_int _ | Const_char _ | Const_string _
-        | Const_int32 _ | Const_int64 _ | Const_nativeint _ )
-    | Texp_function _
-    | Texp_construct (_, {cstr_arity = 0}, _) ->
-       `Constant_or_function
-    | Texp_constant(Const_float _) ->
-       if Config.flat_float_array
-       then `Float_that_cannot_be_shortcut
-       else `Constant_or_function
-    | Texp_ident _ when lazy_val_requires_forward e.exp_env e.exp_type ->
-       `Identifier `Forward_value
-    | Texp_ident _ ->
-       `Identifier `Other
-    | _ ->
-       `Other
+    in some cases we optimize it into [let x = e in lazy x], evaluating
+    [e] right now (if it is equivalent) and avoiding creating a thunk.
+
+    We can also avoid creating a forward block completely in some
+    cases, depending on the value type.
+
+    This optimization must be taken into account when determining
+    whether a recursive binding is safe.
+*)
+
+type lazy_summary =
+  | Lazy_thunk
+  | Eager of forward_repr
+and forward_repr =
+  | Forward
+  | Shortcut
+
+let classify_lazy_argument e =
+  (* We can compile [lazy e] into [let x = e in lazy x] whenever [e]
+     is what we call "commutative", when we can safely evaluate it
+     earlier. In terms of [middle_end/semantics_of_primitive], this is
+     valid when [e] has no coeffects (so it does not depend on the
+     evaluation of other expressions) and only generative effects
+     (so it does not influence the evaluation of other expressions).
+
+     If a commutative expression is very large, it may be
+     a performance pessimization to force its evaluation earlier in
+     the program -- maybe the user put it under a [lazy] because it is
+     not needed most of the time. We implement a cutoff based on
+     expression size.
+  *)
+  let size_cutoff = 42 in
+  let size = ref 0 in
+  let rec small_and_commutative e =
+    incr size;
+    !size <= size_cutoff && match e.exp_desc with
+    | Texp_ident _ | Texp_constant _ | Texp_function _ | Texp_lazy _ -> true
+    | Texp_variant (_, args) ->
+        Option.for_all small_and_commutative args
+    | Texp_construct (_, _, args) | Texp_array (_, args) ->
+        List.for_all small_and_commutative args
+    | Texp_tuple args ->
+        List.for_all (fun (_lbl, arg) -> small_and_commutative arg) args
+    | Texp_record { fields; extended_expression } ->
+        Array.for_all (fun (_lbl, def) ->
+          match def with
+          | Overridden (_, e) -> small_and_commutative e
+          | Kept _ -> incr size; true
+        ) fields
+        && Option.for_all small_and_commutative extended_expression
+    | Texp_extension_constructor _ -> true
+    (* under-approximations: these could be refined
+       -- below we write [c] for any commutative expression. *)
+    | Texp_let _ (* [let x = c in c] would be ok *)
+    | Texp_pack _ (* commutative modules would be ok *)
+    | Texp_field _ (* [v.x] for immutable fields would be ok *)
+    | Texp_atomic_loc _ (* [%atomic.loc c.x] would be ok *)
+    | Texp_object _ (* commutative objects would be ok *)
+    | Texp_struct_item _ (* [let <structure item> in c] would be ok *)
+      -> false
+    (* (typically) not commutative *)
+    | Texp_apply _
+    | Texp_match _
+    | Texp_try _
+    | Texp_setfield _
+    | Texp_ifthenelse _
+    | Texp_sequence _
+    | Texp_while _
+    | Texp_for _
+    | Texp_send _
+    | Texp_new _
+    | Texp_instvar _
+    | Texp_setinstvar _
+    | Texp_override _
+    | Texp_assert _
+    | Texp_letop _
+    | Texp_unreachable
+      -> false
+  in
+  (* In [let x = e in lazy x], [lazy x] sometimes need to be
+     a [Forward] block, but this block can typically be shortcut into
+     just [x]. The forward block is required for expressions that may
+     have a lazy type themselves, or float when flat-float-array is
+     enabled. *)
+  if not (small_and_commutative e) then Lazy_thunk
+  else Eager (match classify e.exp_env e.exp_type with
+    | Addr | Int -> Shortcut
+    | Any | Lazy -> Forward
+    | Float ->
+        if Config.flat_float_array
+        then Forward
+        else Shortcut
+  )
 
 let value_kind_union k1 k2 =
   if k1 = k2 then k1

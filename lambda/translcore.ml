@@ -528,23 +528,14 @@ and transl_exp0 ~in_new_scope ~scopes e =
       else Lifthenelse (transl_exp ~scopes cond, lambda_unit,
                         assert_failed loc ~scopes e)
   | Texp_lazy e ->
-      (* when e needs no computation (constants, identifiers, ...), we
-         optimize the translation just as Lazy.lazy_from_val would
-         do *)
       begin match Typeopt.classify_lazy_argument e with
-      | `Constant_or_function ->
-        (* A constant expr (of type <> float if [Config.flat_float_array] is
-           true) gets compiled as itself. *)
+      | Eager Shortcut ->
          transl_exp ~scopes e
-      | `Float_that_cannot_be_shortcut
-      | `Identifier `Forward_value ->
+      | Eager Forward ->
          Lprim (Pmakelazyblock Forward_tag,
                 [transl_exp ~scopes e],
                 of_location ~scopes e.exp_loc)
-      | `Identifier `Other ->
-         transl_exp ~scopes e
-      | `Other ->
-         (* other cases compile to a lazy block holding a function *)
+      | Lazy_thunk ->
          let fn = lfunction ~kind:Curried
                             ~params:[Ident.create_local "param", Pgenval]
                             ~return:Pgenval

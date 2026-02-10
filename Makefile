@@ -493,10 +493,10 @@ reconfigure:
 	                                    $(ADDITIONAL_CONFIGURE_ARGS)
 
 utils/domainstate.ml: utils/domainstate.ml.c runtime/caml/domain_state.tbl
-	$(V_GEN)$(CPP) -I runtime/caml $< > $@
+	$(V_GEN)$(CPP) -I runtime $< > $@
 
 utils/domainstate.mli: utils/domainstate.mli.c runtime/caml/domain_state.tbl
-	$(V_GEN)$(CPP) -I runtime/caml $< > $@
+	$(V_GEN)$(CPP) -I runtime $< > $@
 
 configure: tools/autogen configure.ac aclocal.m4 build-aux/ocaml_version.m4
 	$<
@@ -1699,8 +1699,11 @@ clean::
 	rm -f $(addprefix runtime/, ocamlrun ocamlrund ocamlruni ocamlruns sak)
 	rm -f $(addprefix runtime/, \
 	  ocamlrun.exe ocamlrund.exe ocamlruni.exe ocamlruns.exe sak.exe)
+# jumptbl.h and opnames.h stopped being generated in #14488, but the two headers
+# continue to be removed as otherwise when switching between branches based
+# before this change the (stale) headers trip the C/C++ compatibility tests.
 	rm -f runtime/primitives runtime/primitives*.new runtime/prims.c \
-	  $(runtime_BUILT_HEADERS)
+	  $(runtime_BUILT_HEADERS) runtime/caml/jumptbl.h runtime/caml/opnames.h
 	rm -f runtime/domain_state.inc
 	rm -rf $(DEPDIR)
 	rm -f stdlib/libcamlrun.a stdlib/libcamlrun.lib

@@ -2187,7 +2187,6 @@ typing/typeopt.cmo : \
     typing/ctype.cmi \
     utils/config.cmi \
     utils/clflags.cmi \
-    parsing/asttypes.cmi \
     typing/typeopt.cmi
 typing/typeopt.cmx : \
     typing/types.cmx \
@@ -2202,7 +2201,6 @@ typing/typeopt.cmx : \
     typing/ctype.cmx \
     utils/config.cmx \
     utils/clflags.cmx \
-    parsing/asttypes.cmx \
     typing/typeopt.cmi
 typing/typeopt.cmi : \
     typing/types.cmi \
