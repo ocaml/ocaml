@@ -1,0 +1,13 @@
+001: OK
+002: OK
+003: OK
+004: OK
+005: OK
+006: FAIL: sqrt(-4 + -0i) = 0 + 2i, expected 0 + -2i
+007: FAIL: sqrt(-1 + -0i) = 0 + 1i, expected 0 + -1i
+008: OK
+009: FAIL: sqrt(-9 + -0i) = 0 + 3i, expected 0 + -3i
+010: OK
+011: OK
+012: OK
+013: OK
