@@ -965,20 +965,22 @@ let rec f : (module T : Typ) -> int -> T.t -> T.t -> T.t =
 val f : (module T : Typ) -> int -> T.t -> T.t -> T.t = <fun>
 |}]
 
-(* Type cannot be infered because type approximation for letrecs is partial. *)
+(* Type cannot be infered because type approximation for return type is
+   unknown. *)
 let rec f (module T : Typ) n (x : T.t) (y : T.t) =
   if n = 0
   then x
   else f (module T) (n - 1) y x
 
 [%%expect{|
-Line 4, characters 9-19:
-4 |   else f (module T) (n - 1) y x
-             ^^^^^^^^^^
-Error: The signature for this packaged module couldn't be inferred.
+Line 3, characters 7-8:
+3 |   then x
+           ^
+Error: The value "x" has type "T.t" but an expression was expected of type "'a"
+       The type constructor "T.t" would escape its scope
 |}]
 
-(* Type cannot be infered because type approximation for letrecs is partial. *)
+(* Same as the above (but mutual recursion) *)
 let rec f (module T : Typ) n (x : T.t) (y : T.t) =
   if n = 0
   then x
@@ -989,11 +991,41 @@ and g (module T : Typ) n (x : T.t) (y : T.t) =
   else f (module T) x y
 
 [%%expect{|
-Line 4, characters 9-19:
-4 |   else g (module T) x y
-             ^^^^^^^^^^
-Error: The signature for this packaged module couldn't be inferred.
+Line 3, characters 7-8:
+3 |   then x
+           ^
+Error: The value "x" has type "T.t" but an expression was expected of type "'a"
+       The type constructor "T.t" would escape its scope
 |}]
+
+(* Type can be infered because type approximation has all
+   required information. *)
+let rec f (module T : Typ) n (x : T.t) (y : T.t) : T.t =
+  if n = 0
+  then x
+  else f (module T) (n - 1) y x
+
+[%%expect{|
+val f : (module T : Typ) -> int -> T.t -> T.t -> T.t = <fun>
+|}]
+
+let rec f (module T : Typ) n (x : T.t) (y : T.t) : T.t =
+  if n = 0
+  then x
+  else g (module T) x y
+and g (module T : Typ) n (x : T.t) (y : T.t) : T.t =
+  if n = 0
+  then y
+  else f (module T) x y
+
+[%%expect{|
+Line 4, characters 20-21:
+4 |   else g (module T) x y
+                        ^
+Error: The value "x" has type "T.t" but an expression was expected of type "'a"
+       The type constructor "T.t" would escape its scope
+|}]
+
 
 (* This test is similar to the previous one without the error in f definition *)
 let rec f (module T : Typ) x =
@@ -1001,14 +1033,6 @@ let rec f (module T : Typ) x =
 and g x = f (module Int) x
 
 [%%expect{|
-val f : (module Typ) -> 'a -> 'b = <fun>
-val g : 'a -> 'b = <fun>
-|}, Principal{|
-Line 3, characters 12-24:
-3 | and g x = f (module Int) x
-                ^^^^^^^^^^^^
-Warning 18 [not-principal]: this module packing is not principal.
-
 val f : (module Typ) -> 'a -> 'b = <fun>
 val g : 'a -> 'b = <fun>
 |}]

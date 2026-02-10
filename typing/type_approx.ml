@@ -40,6 +40,18 @@ module Approx_env = struct
     | _ -> unknown t
 end
 
+let with_moddep_param (aenv : Approx_env.t) ~loc ~arg_label ~name ~pack body =
+  let (), arrow_ty =
+    with_moddep_param
+      aenv.env
+      ~loc
+      ~arg_label
+      ~name
+      ~pack
+      (fun env uid ident -> (), body { aenv with env } uid ident)
+  in
+  arrow_ty
+
 let match_or_keep_matchee (aenv : Approx_env.t) ty ~matchee =
   try
     unify aenv.env ty matchee;
@@ -137,14 +149,36 @@ and type_tuple aenv components =
 
 
 and type_function aenv params ret_constraint body =
-  (* We can approximate types up to the first newtype parameter or potential
-     dependent module argument, whereupon we give up. *)
+  (* We can approximate types up to the first newtype parameter,
+     whereupon we give up. *)
   match params with
   | { pparam_desc =
         Pparam_val
-          (Nolabel, _, { ppat_desc = Ppat_unpack ({ txt = Some _ }, _); _ })
+          ( Nolabel
+          , _
+          , { ppat_desc = Ppat_unpack (({ txt = Some name; loc }), Some pack)
+            ; _
+            } )
+    ; pparam_loc
     }
-    :: _params
+    :: params ->
+    (* This parsetree pattern is a possible module dependent function. *)
+    let name = { txt = name; loc } in
+    let pack =
+      Approx_env.approx_transl aenv (fun env ->
+          let pack = Ast_helper.Typ.package ~loc:pack.ppt_loc pack in
+          (Typetexp.transl_simple_type env ~closed:false pack).ctyp_type)
+    in
+    (match get_desc pack with
+    | Tpackage pack ->
+      with_moddep_param
+        aenv
+        ~loc:pparam_loc
+        ~arg_label:Nolabel
+        ~name
+        ~pack
+        (fun aenv _uid _ident -> type_function aenv params ret_constraint body)
+    | _ -> Approx_env.unknown aenv)
   | { pparam_desc = Pparam_newtype _ } :: _params -> Approx_env.unknown aenv
   | { pparam_desc = Pparam_val (label, default, pat) } :: params ->
     type_function_param
