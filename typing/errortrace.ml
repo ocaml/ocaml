@@ -300,7 +300,7 @@ type printing_status =
       type error.
   *)
 
-(** Construct a segment from an unstructured trace *)
+(** Construct a segmented trace from an unstructured trace *)
 let segment status path expl = match path with
   | [] -> assert false
   | hd :: tr ->
@@ -314,29 +314,33 @@ let segment status path expl = match path with
 
 let promoted x = Option.map (fun p -> Promoted p) x
 let merge promote s =
-  (* First, we commit the last contextualized segment of the trace to the
-     trace *)
-  let rtr, opt, maybe_compact = match s.last_ctx with
-    | None -> s.before, s.optional, false
-    | Some (ctx, rest) -> rest @ ctx :: s.before, None, true
+  (* First, we commit the last contextualized segment of the trace to the trace
+     if there one. We also discard the optional last element in this
+     case. *)
+  let rtr, opt = match s.last_ctx with
+    | None -> s.before, s.optional
+    | Some (ctx, rest) -> rest @ ctx :: s.before, None
   in
-  let head, rtr, expl = match s.expl, rtr with
-    | Some expl, _ -> Some s.head, rtr, Some (Standard expl)
-    | None, [] -> Some s.head, [], promoted (promote s.head.d)
-    | None, d :: _ ->
-        match promote d.d with
-        | Some p -> Some s.head, rtr, Some (Promoted p)
-        | None -> Some s.head, rtr, None
+  let rtr, expl =
+    (* If there are no root explanation, we try to promote one from the last
+       element*)
+    match s.expl, rtr, s.head with
+    | Some expl, _, _ -> rtr, Some (Standard expl)
+    | None, [], last | None, last :: _, _ -> rtr, promoted (promote last.d)
   in
+  (* Finally, we keep the last optional element only if there were no
+     explanation at all.*)
   let tr = match expl, opt with
     | None, Some opt -> List.rev (opt :: rtr)
-    | Some _, _ | None, _  -> List.rev rtr
+    | Some _, _ | None, None  -> List.rev rtr
   in
-  let compact head = match tr, maybe_compact with
-    | [], _ | [_], true -> head, true
-    | _ -> head, false
+  (* We use a compact presentation for the top element only if the trace is
+     empty, or is a singleton contextual element (?). *)
+  let compact_head = match tr with
+    | [] | [{ ctx = Some _; _}] -> s.head, true
+    | _ -> s.head, false
   in
-  { top=Option.map compact head; tr; expl }
+  { top = Some compact_head; tr; expl }
 
   let parse ~promote ~status s =
     match s.path with
@@ -345,6 +349,8 @@ let merge promote s =
         { top = None; tr = []; expl}
     | path -> merge promote (segment status path s.root)
 
+  (* In the simple case, we are handling a partial trace with no explanation at
+     all.*)
   let parse_simple status tr =
     match tr with
     | [] -> { top = None; tr = []; expl = None}
