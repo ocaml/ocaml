@@ -3867,6 +3867,55 @@ let unify env ty1 ty2 =
 (* Lower the level of a type to the current level *)
 let enforce_current_level env ty = unify_var env (newvar ()) ty
 
+let check_package_closed
+    : (loc:Location.t
+       -> env:Env.t
+       -> typ:type_expr
+       -> (string list * type_expr) list
+       -> unit)
+    ref
+  =
+  ref (fun ~loc:_ ~env:_ ~typ:_ _ -> assert false)
+
+let with_moddep_param env ~loc ~arg_label ~name ~pack body =
+  !check_package_closed
+    ~loc
+    ~env
+    ~typ:(newty (Tpackage pack))
+    pack.pack_constraints;
+  let mty = modtype_of_package env loc pack in
+  let uid = Uid.mk ~current_unit:(Env.get_current_unit ()) in
+  let (result, ret_ty), sident =
+    with_local_level (fun () ->
+        let sident =
+          Ident.create_scoped ~scope:(get_current_level ()) name.txt
+        in
+        let new_env =
+          Env.add_module_declaration
+            ~check:true
+            sident
+            Mp_present
+            { md_type = mty; md_attributes = []; md_loc = loc; md_uid = uid }
+            env
+        in
+        body new_env uid sident, sident)
+  in
+  let uident = Ident.Unscoped.create name.txt in
+  let arrow_ty =
+    match
+      instance_funct_opt
+        ~p_out:(Pident (Ident.of_unscoped uident))
+        ~id_in:sident
+        ~fixed:false
+        ret_ty
+    with
+    | Some ret_ty ->
+      Btype.newgenty (Tfunctor (arg_label, uident, pack, ret_ty))
+    | None ->
+      let pck_ty = newgenmono (newgenty (Tpackage pack)) in
+      newgenty (Tarrow (arg_label, pck_ty, ret_ty, commu_ok))
+  in
+  result, arrow_ty
 
 (**** Special cases of unification ****)
 

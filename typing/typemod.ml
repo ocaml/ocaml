@@ -3253,6 +3253,7 @@ let type_str_item env pstri =
   si, new_env
 
 let () =
+  Ctype.check_package_closed := check_package_closed;
   Typecore.type_module := type_module_alias;
   Typecore.type_str_item := type_str_item;
   Typetexp.transl_modtype_longident := transl_modtype_longident;
@@ -3261,7 +3262,6 @@ let () =
   Typetexp.type_open := type_open_ ?toplevel:None;
   Typecore.type_open_decl := type_open_decl;
   Typecore.type_package := type_package;
-  Typecore.check_package_closed := check_package_closed;
   Typeclass.type_open_descr := type_open_descr;
   type_module_type_of_fwd := type_module_type_of
 

@@ -280,11 +280,6 @@ val type_object:
 val type_package:
   (Env.t -> Parsetree.module_expr -> package ->
    Typedtree.module_expr * package) ref
-(* Forward declaration, to be filled in by Typemod.check_package_closed.
-   Ensures that the package type does not contain any type variable. *)
-val check_package_closed:
-  (loc:Location.t -> env:Env.t -> typ:type_expr ->
-   (string list * type_expr) list -> unit) ref
 
 val constant: Parsetree.constant -> (Asttypes.constant, error) result
 

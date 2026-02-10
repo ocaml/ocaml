@@ -263,13 +263,6 @@ let type_open_decl :
 let type_package =
   ref (fun _ -> assert false)
 
-(* Forward declaration, to be filled in by Typemod.check_package_closed *)
-
-let check_package_closed :
-  (loc:Location.t -> env:Env.t -> typ:type_expr ->
-   (string list * type_expr) list -> unit) ref =
-  ref (fun ~loc:_ ~env:_ ~typ:_ _ -> assert false)
-
 (* Forward declaration, to be filled in by Typeclass.class_structure *)
 let type_object =
   ref (fun _env _s -> assert false :
@@ -5724,6 +5717,7 @@ and type_function
         the body is a [Tfunction_cases] whose patterns include a GADT.
      *)
     exp_type, [], body, [], No_gadt
+
 and type_moddep_fun ~env ~name ~pack_param ~rest ~arg_label ~first
     ~in_function ~ty_expected ~pparam_loc ~loc ~body_constraint ~body =
   let type_pack pack =
@@ -5757,81 +5751,67 @@ and type_moddep_fun ~env ~name ~pack_param ~rest ~arg_label ~first
               (not_principal "this module unpacking");
         (Some (id, ety), None, pack')
   in
-  !check_package_closed ~loc:pparam_loc ~env
-      ~typ:(newty (Tpackage pack)) pack.pack_constraints;
-  let mty = Ctype.modtype_of_package env pparam_loc pack in
-  let pv_uid = Uid.mk ~current_unit:(Env.get_current_unit ()) in
-  let arg_md = {
-    md_type = mty;
-    md_attributes = [];
-    md_loc = pparam_loc;
-    md_uid = pv_uid;
-  } in
-  let (res_ty, params, body, newtypes, contains_gadt), s_ident =
-    with_local_level begin fun () ->
-      let s_ident =
-        Ident.create_scoped ~scope:(Ctype.get_current_level()) name.txt
-      in
-      let new_env = Env.add_module_declaration ~check:true s_ident
-                          Mp_present arg_md env in
-      let expected_res = match id_expected_typ_opt with
-        | Some (id, ety) ->
-          with_local_level_generalize_structure_if_principal
-            (fun () -> instance_funct ~id_in:(Ident.of_unscoped id)
-                            ~p_out:(Pident s_ident) ~fixed:false ety)
-        | None -> newvar ()
-      in
-      type_function new_env rest body_constraint body
-          expected_res ~first:false ~in_function,
-      s_ident
-  end
+  let (param, params, body, contains_gadt), arrow_ty =
+    with_moddep_param
+      env
+      ~loc:pparam_loc
+      ~arg_label
+      ~name
+      ~pack
+      (fun env uid ident ->
+        let expected_res =
+          match id_expected_typ_opt with
+          | Some (id, ety) ->
+            with_local_level_generalize_structure_if_principal (fun () ->
+                instance_funct
+                  ~id_in:(Ident.of_unscoped id)
+                  ~p_out:(Pident ident)
+                  ~fixed:false
+                  ety)
+          | None -> newvar ()
+        in
+        let ret_ty, params, body, newtypes, contains_gadt =
+          type_function
+            env
+            rest
+            body_constraint
+            body
+            expected_res
+            ~first:false
+            ~in_function
+        in
+        let pat_desc = Tpat_var (ident, name, uid) in
+        let pack_param =
+          match cpack with
+          | Some { ctyp_desc = Ttyp_package pack } -> Some pack
+          | None -> None
+          | _ -> assert false
+        in
+        let pattern =
+          { pat_desc
+          ; pat_loc = pparam_loc
+          ; pat_extra = [ Tpat_unpack pack_param, pparam_loc, [] ]
+          ; pat_type = newty (Tpackage pack)
+          ; pat_env = env
+          ; pat_attributes = []
+          }
+        in
+        let fp_kind = Tparam_pat pattern in
+        let param =
+          { fp_kind
+          ; fp_arg_label = arg_label
+          ; fp_param = ident
+          ; fp_partial = Total
+          ; fp_newtypes = newtypes
+          ; fp_loc = pparam_loc
+          }
+        in
+        (param, params, body, contains_gadt), ret_ty)
   in
-  let ident = Ident.Unscoped.create name.txt in
-  let exp_type =
-    match
-      instance_funct_opt ~p_out:(Pident (Ident.of_unscoped ident))
-                          ~id_in:s_ident ~fixed:false res_ty
-    with
-    | Some res_ty ->
-        Btype.newgenty (Tfunctor (arg_label, ident, pack, res_ty))
-    | None ->
-        let pck_ty = newgenmono (newgenty (Tpackage pack)) in
-        newgenty (Tarrow (arg_label, pck_ty, res_ty, commu_ok))
-  in
-  let _ =
-    try
-      unify env ty_expected exp_type
-    with Unify trace ->
-      raise (Error(loc, env, Expr_type_clash(trace, None, None)))
-  in
-  let pat_desc = Tpat_var (s_ident, name, pv_uid) in
-  let pack_param =
-    match cpack with
-    | Some {ctyp_desc = Ttyp_package pack} -> Some pack
-    | None -> None
-    | _ -> assert false
-  in
-  let pattern = {
-    pat_desc;
-    pat_loc = pparam_loc;
-    pat_extra = [Tpat_unpack pack_param, pparam_loc, []];
-    pat_type = newty (Tpackage pack);
-    pat_env = env;
-    pat_attributes = []
-  } in
-  let fp_kind = Tparam_pat pattern in
-  let param =
-    { fp_kind;
-      fp_arg_label = arg_label;
-      fp_param = s_ident;
-      fp_partial = Total;
-      fp_newtypes = newtypes;
-      fp_loc = pparam_loc;
-    }
-  in
-  exp_type, { has_poly = false; param } :: params, body, [], contains_gadt
-
-
+  (try unify env ty_expected arrow_ty with
+  | Unify trace ->
+    raise (Error (loc, env, Expr_type_clash (trace, None, None))));
+  arrow_ty, { has_poly = false; param } :: params, body, [], contains_gadt
 
 and type_label_access env srecord usage lid =
   let record =
