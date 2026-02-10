@@ -198,7 +198,11 @@ module Subtype : sig
 end
 
 module Structured: sig
+(** This module contains helper functions to parse the error trace into the more
+    structured type {!Stuctured.t} *)
 
+  (** We extend the core explanation type with promoted explanation generated
+      from the main trace *)
   type 'a extended_explanation =
     | Promoted of Format_doc.t
     | Standard of 'a
@@ -208,14 +212,11 @@ module Structured: sig
     tr: 'a ctx_diff list;
     expl: ('a, 'b) root extended_explanation option
   }
-  (**
-     This module contains helper functions to split the error trace into three
-     parts:
-     - {!top} the first element of the trace
-     - {!tr} a list of meaningful context difference element
-     - {!expl} a root explanation for a type error
-  *)
-
+  (** The structured version of the trace is split in three parts:
+      - {!top} the first element of the trace
+      - {!tr} a list of meaningful context difference element
+      - {!expl} a root explanation for a type error
+   *)
 
   type printing_status =
     | Discard
@@ -231,6 +232,12 @@ module Structured: sig
         of a trace, and there is no explicit explanation for the
         type error.
     *)
+
+  (** [parse ~promote ~status] builds a structured trace from an unstructured
+      one. The [status] function is used to classify elements of the trace,
+      whereas the [promote] function describe which kind of trace element might
+      be promoted to an extended explanation in the absence of a standard
+      explanation. *)
 val parse:
     promote:('a diff -> Format_doc.t option) ->
     status:('a ctx_diff -> printing_status) ->

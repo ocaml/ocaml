@@ -231,7 +231,11 @@ module Subtype = struct
 end
 
 module Structured = struct
+(** This module contains helper functions to parse the error trace into the more
+    structured type {!Stuctured.t} *)
 
+(** We extend the core explanation type with promoted explanation generated from
+    the main trace *)
 type 'a extended_explanation =
   | Promoted of Format_doc.t
   | Standard of 'a
@@ -241,28 +245,28 @@ type ('a,'b) s = {
   tr: 'a ctx_diff list;
   expl: ('a,'b) root extended_explanation option;
 }
-(**
-This module contains helper functions to split the error trace into three parts:
+(** The structured version of the trace is split in three parts:
 - {!top} the first element of the trace
 - {!tr} a list of meaningful context difference element
 - {!expl} a root explanation for a type error
 *)
 
-(** The first intermediary representation splits the trace into four parts:
+(**  The first intermediary representation splits the trace into four parts:
 - the {!head} element of the trace
-- the {!top_to_ctx} trace elements in reverse order situated before the last
-  method or tag difference
+- {!before}: trace elements appearing before the last method or tag
+  difference, in reverse order.
 - {!last_ctx}: the last method or tag context, and the list of elements after it
-- {!optional}: the last element that might be printed if we don't discover a
-  better element to print later on.
-*)
+  in reverse order.
+- {!optional}: the last element that might be useful to print, if we do not
+  discover a better element to print later on.
+Contrarily to the {!t} format this form can be built element by element. *)
 type ('a,'b) segments =
   {
     head: 'a;
     before:'a list;
     last_ctx:('a * 'a list) option;
     optional: 'a option;
-    expl:  'b option;
+    expl: 'b option;
   }
 
 let head_segment hd expl =
