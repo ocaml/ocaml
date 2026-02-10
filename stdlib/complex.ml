@@ -68,7 +68,7 @@ let sqrt x =
       end in
     if x.re >= 0.0
     then { re = w;  im = 0.5 *. x.im /. w }
-    else { re = 0.5 *. i /. w;  im = if x.im >= 0.0 then w else -. w }
+    else { re = 0.5 *. i /. w;  im = Float.copy_sign w x.im }
   end
 
 let exp x =
