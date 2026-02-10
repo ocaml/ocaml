@@ -393,7 +393,7 @@ let rec emit = function
       if n < 8 then out(opPUSHACC0 + n) else (out opPUSHACC; out_int n);
       emit c
   | Kpush :: Kenvacc n :: c ->
-      if n >= 1 && n < 4
+      if n >= 1 && n <= 4
       then out(opPUSHENVACC1 + n - 1)
       else (out opPUSHENVACC; out_int n);
       emit c
