@@ -427,10 +427,7 @@ let rec f (x : (module T)) =
 
 [%%expect{|
 module type T = sig type 'a t = 'a list end
-Line 4, characters 58-69:
-4 |   let (module LocalModule) = x in (assert false : ('a. 'a LocalModule.t) -> unit)
-                                                              ^^^^^^^^^^^
-Error: Unbound module "LocalModule"
+val f : (module T) -> ('a. 'a list) -> unit = <fun>
 |}]
 
 (* The following test requires full translation in the [approx_type] function if
@@ -482,10 +479,8 @@ val f : unit -> ('a. 'a list) -> unit = <fun>
 let rec f () = g (module Map.Make(Int)) and g (m : (module Map.S)) = ();;
 
 [%%expect{|
-Line 1, characters 17-39:
-1 | let rec f () = g (module Map.Make(Int)) and g (m : (module Map.S)) = ();;
-                     ^^^^^^^^^^^^^^^^^^^^^^
-Error: The signature for this packaged module couldn't be inferred.
+val f : unit -> unit = <fun>
+val g : (module Map.S) -> unit = <fun>
 |}]
 
 let rec f () = g (module Map.Make(Int)) and g (m : 'a. (module Map.S)) = ();;
