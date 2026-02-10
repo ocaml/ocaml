@@ -14,6 +14,11 @@ Working version
 
 ### Code generation and optimizations:
 
+- #14524: Add native Iatomic_fetch_add using LAAG on s390x
+  with TSan instrumentation via __tsan_atomic64_fetch_add.
+  Other architectures fall back to C runtime.
+  (Zane Hambly)
+
 ### Standard library:
 
 ### Other libraries:

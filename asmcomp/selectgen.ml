@@ -369,7 +369,8 @@ method effects_of exp =
   | Cop (op, args, _) ->
     let from_op =
       match op with
-      | Capply _ | Cextcall _ | Copaque | Catomic_fetch_add | Cpoll -> EC.arbitrary
+      | Capply _ | Cextcall _ | Copaque | Catomic_fetch_add
+      | Cpoll -> EC.arbitrary
       | Calloc -> EC.none
       | Cstore _ -> EC.effect_only Effect.Arbitrary
       | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
