@@ -24,6 +24,14 @@ Working version
 
 ### Standard library:
 
+### Type system:
+
+- #14517: Support polymorphic recursion using locally abstract types:
+  ```
+  let rec f (type a) (x : a) : unit = f 10; f true; f []
+  ```
+  (Alistair O'Brien, review by ??)
+
 ### Other libraries:
 
 ### Tools:
