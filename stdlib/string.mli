@@ -165,21 +165,21 @@ val is_empty : string -> bool
     @since 5.5 *)
 
 val starts_with :
-  prefix (* comment thwarts tools/sync_stdlib_docs *) :string -> string -> bool
-(** [starts_with ][~prefix s] is [true] if and only if [s] starts with
+  prefix:string -> string -> bool
+(** [starts_with ~prefix s] is [true] if and only if [s] starts with
     [prefix].
 
     @since 4.13 *)
 
 val ends_with :
-  suffix (* comment thwarts tools/sync_stdlib_docs *) :string -> string -> bool
-(** [ends_with ][~suffix s] is [true] if and only if [s] ends with [suffix].
+  suffix:string -> string -> bool
+(** [ends_with ~suffix s] is [true] if and only if [s] ends with [suffix].
 
     @since 4.13 *)
 
 val includes :
-  affix (* comment thwarts tools/sync_stdlib_docs *) :string -> string -> bool
-(** [includes affix s] is [true] if and only if [affix] occurs in [s].
+  affix:string -> string -> bool
+(** [includes ~affix s] is [true] if and only if [affix] occurs in [s].
 
     {b Note.} To test the same [affix] string multiple times, partially
     applying the [~affix] argument and using the resulting function repeatedly
@@ -296,9 +296,9 @@ val cut_last_while : (char -> bool) -> string -> string * string
     resulting function repeatedly is more efficient. *)
 
 val split_first :
-  sep(* comment thwarts tools/sync_stdlib_docs *):string ->
+  sep:string ->
   string -> (string * string) option
-(** [split_first sep s] is the pair [Some (left, right)] made of the
+(** [split_first ~sep s] is the pair [Some (left, right)] made of the
     two (possibly empty) substrings of [s] that are delimited by the
     first match of the separator [sep] in [s] or [None] if [sep] can't
     be found. Search for [sep] starts at position [0] and uses
@@ -311,9 +311,9 @@ val split_first :
     @since 5.5 *)
 
 val split_last :
-  sep(* comment thwarts tools/sync_stdlib_docs *):string ->
+  sep:string ->
   string -> (string * string) option
-(** [split_last sep s] is the pair [Some (left, right)] made of the
+(** [split_last ~sep s] is the pair [Some (left, right)] made of the
     two (possibly empty) substrings of [s] that are delimited by the
     last match of the separator [sep] in [s] or [None] if [sep] can't
     be found. Search for [sep] starts at position [length s] and uses
@@ -326,9 +326,9 @@ val split_last :
     @since 5.5 *)
 
 val split_all :
-  sep(* comment thwarts tools/sync_stdlib_docs *):string ->
+  sep:string ->
   ?drop:(string -> bool) -> string -> string list
-(** [split_all sep s] is the list of all substrings of [s] that are
+(** [split_all ~sep s] is the list of all substrings of [s] that are
     delimited by non-overlapping matches of the separator [sep] or the
     list [[s]] if [sep] can't be found. Search for [sep] starts at
     position [0] in increasing indexing order and uses {!find_all}.
@@ -339,14 +339,14 @@ val split_all :
     If [sep] is [""], this is [[""; c0; ...; cn; ""]] with [ci]
     the string [of_char s.[i]].
 
-    The invariant [concat sep (split_all sep s) = s] holds.
+    The invariant [concat sep (split_all ~sep s) = s] holds.
 
     @since 5.5 *)
 
 val rsplit_all :
-  sep(* comment thwarts tools/sync_stdlib_docs *):string ->
+  sep:string ->
   ?drop:(string -> bool) -> string -> string list
-(** [rsplit_all sep s] is the list of all substrings of [s] that are
+(** [rsplit_all ~sep s] is the list of all substrings of [s] that are
     delimited by non-overlapping matches of the separator [sep] or
     [[s]] if [sep] can't be found. Search for [sep] starts at position
     [length s] in deacreasing indexing order and uses {!rfind_all}.
@@ -357,7 +357,7 @@ val rsplit_all :
     If [sep] is [""], this is [[""; c0; ...; cn; ""]] with [ci]
     the string [of_char s.[i]].
 
-    The invariant [concat sep (rsplit_all sep s) = s] holds.
+    The invariant [concat sep (rsplit_all ~sep s) = s] holds.
 
     @since 5.5 *)
 
@@ -538,9 +538,9 @@ val rindex_opt : string -> char -> int option
     resulting function repeatedly is more efficient *)
 
 val find_first :
-  sub (* comment thwarts tools/sync_stdlib_docs *) :string ->
+  sub:string ->
   ?start:int -> string -> int option
-(** [find_first sub start s] is the starting position of the first
+(** [find_first ~sub start s] is the starting position of the first
     occurrence of [sub] in [s] at or after the index or position [start]
     (defaults to [0]).
 
@@ -553,9 +553,9 @@ val find_first :
     @since 5.5 *)
 
 val find_last :
-  sub (* comment thwarts tools/sync_stdlib_docs *) :string ->
+  sub:string ->
   ?start:int -> string -> int option
-(** [find_last sub start s] is the starting position of the last
+(** [find_last ~sub start s] is the starting position of the last
     occurrence of [sub] in [s] at or before the index or position
     [start] (defaults to [String.length s]).
 
@@ -568,10 +568,10 @@ val find_last :
     @since 5.5 *)
 
 val find_all :
-  sub (* comment thwarts tools/sync_stdlib_docs *) :string ->
+  sub:string ->
   (int -> 'acc -> 'acc) ->
   ?start:int -> string -> 'acc -> 'acc
-(** [find_all sub f start s acc], starting with [acc], folds [f] by
+(** [find_all ~sub f start s acc], starting with [acc], folds [f] by
     increasing index order over all non-overlapping starting positions
     of [sub] in [s] at or after the index or position [start]
     (defaults to [0]). The result is [acc] if [sub] could not be found
@@ -585,10 +585,10 @@ val find_all :
     @since 5.5 *)
 
 val rfind_all :
-  sub (* comment thwarts tools/sync_stdlib_docs *) :string ->
+  sub:string ->
   (int -> 'acc -> 'acc) ->
   ?start:int -> string -> 'acc -> 'acc
-(** [rfind_all sub f start s acc], starting with [acc], folds [f] by
+(** [rfind_all ~sub f start s acc], starting with [acc], folds [f] by
     decreasing index order over all non-overlapping starting
     positions of [sub] in [s] at or before the index or position
     [start] (defaults to [String.length s]). The result is [acc] if
@@ -608,10 +608,10 @@ val rfind_all :
     resulting function repeatedly is more efficient. *)
 
 val replace_first :
-  sub(* comment thwarts tools/sync_stdlib_docs *) :string ->
-  by(* comment thwarts tools/sync_stdlib_docs *) :string ->
+  sub:string ->
+  by:string ->
   ?start:int -> string -> string
-(** [replace_first sub by start s] replaces by [by] the first
+(** [replace_first ~sub ~by start s] replaces by [by] the first
     occurrence of [sub] in [s] at or after the index or position
     [start] (defaults to [0]).
 
@@ -621,10 +621,10 @@ val replace_first :
     @since 5.5  *)
 
 val replace_last :
-  sub(* comment thwarts tools/sync_stdlib_docs *) :string ->
-  by(* comment thwarts tools/sync_stdlib_docs *) :string ->
+  sub:string ->
+  by:string ->
   ?start:int -> string -> string
-(** [replace_last sub by start s] replaces by [by] the last
+(** [replace_last ~sub ~by start s] replaces by [by] the last
     occurrence of [sub] in [s] at or after the index or position
     [start] (defaults to [String.length s]).
 
@@ -634,10 +634,10 @@ val replace_last :
     @since 5.5  *)
 
 val replace_all :
-  sub(* comment thwarts tools/sync_stdlib_docs *) :string ->
-  by(* comment thwarts tools/sync_stdlib_docs *) :string ->
+  sub:string ->
+  by:string ->
   ?start:int -> string -> string
-(** [replace_all sub by start s] replaces by [by] all non-overlapping
+(** [replace_all ~sub ~by start s] replaces by [by] all non-overlapping
     occurrences of [sub] in [s] at or after the index or position [start]
     (defaults to [0]). Occurences are found in increasing indexing order.
 

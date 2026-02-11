@@ -48,14 +48,31 @@ LABELSDOTREGEX="s/([A-Z][a-z_]*)Labels\./\1./g"
 #Stdlib
 perl -p -e "$LABREGEX" stdlib/listLabels.mli > stdlib/list.temp.mli
 perl -p -e "$LABREGEX" stdlib/arrayLabels.mli > stdlib/array.temp.mli
-perl -p -e "$LABREGEX" stdlib/stringLabels.mli > stdlib/string.temp.mli
+#perl -p -e "$LABREGEX" stdlib/stringLabels.mli > stdlib/string.temp.mli
 perl -p -e "$LABREGEX" stdlib/bytesLabels.mli > stdlib/bytes.temp.mli
 
 #Stdlib tildes
 perl -p -e "$TILDEREGEX" stdlib/list.temp.mli > stdlib/list.mli
 perl -p -e "$TILDEREGEX" stdlib/array.temp.mli > stdlib/array.2temp.mli
-perl -p -e "$TILDEREGEX" stdlib/string.temp.mli > stdlib/string.mli
+#perl -p -e "$TILDEREGEX" stdlib/string.temp.mli > stdlib/string.mli
 perl -p -e "$TILDEREGEX" stdlib/bytes.temp.mli > stdlib/bytes.mli
+
+perl tools/replace_labels.pl \
+	starts_with:prefix \
+	ends_with:suffix \
+	includes:affix \
+	split_first:sep \
+	split_last:sep \
+	split_all:sep \
+	rsplit_all:sep \
+	find_first:sub \
+	find_last:sub \
+	find_all:sub \
+	rfind_all:sub \
+	replace_first:sub:by \
+	replace_last:sub:by \
+	replace_all:sub:by \
+	< stdlib/stringLabels.mli > stdlib/string.mli
 
 # Array
 
