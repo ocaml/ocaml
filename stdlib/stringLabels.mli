@@ -21,6 +21,24 @@
    stringLabels.mli instead.
  *)
 
+(* #KEEP-LABELS [
+        starts_with:prefix
+        ends_with:suffix
+        includes:affix
+        split_first:sep
+        split_last:sep
+        split_all:sep
+        rsplit_all:sep
+        find_first:sub
+        find_last:sub
+        find_all:sub
+        rfind_all:sub
+        replace_first:sub:by
+        replace_last:sub:by
+        replace_all:sub:by
+   ]
+*)
+
 (** Strings.
 
     A string [s] of length [n] is an indexable and immutable sequence

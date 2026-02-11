@@ -12,7 +12,20 @@ my $last_val_name;
 
 sub handle_normal_comment {
     my $comment = shift(@_);
-    print $comment;
+
+    if ($comment =~ /\A\(\*\s+#KEEP-LABELS\s*\[([^\]]*)\]\s*\*\)\Z/) {
+        # This is a pragma comment
+        my @argv = split ' ', $1;
+	foreach my $arg (@argv) {
+	    my @a = split(/:/, $arg);
+	    my $name_of_val = shift(@a);
+	    for my $label (@a) {
+		$keep_labels{"${name_of_val}:${label}"} = 1;
+	    }
+	}
+    } else {
+         print $comment;
+    }
 }
 
 sub handle_whitespace {
@@ -89,16 +102,6 @@ sub process {
         } else {
             die "Unrecoginized token";
         }
-    }
-}
-
-# parse command line arguments
-foreach my $arg (@ARGV) {
-    my @a = split(/:/, $arg);
-    my $name_of_val = shift(@a);
-    # $keep_labels[$name_of_val] = \@a;
-    for my $label (@a) {
-        $keep_labels{"${name_of_val}:${label}"} = 1;
     }
 }
 
