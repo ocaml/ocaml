@@ -754,7 +754,8 @@ end = struct
            match origin with
            | Existential constr ->
                String.Map.add_to_list constr p acc
-           | Definition | Equation _ | Rec_check_regularity -> acc)
+           | Approx_recmod | Definition | Equation _ | Rec_check_regularity ->
+               acc)
         String.Map.empty
     in
     let existentials =
@@ -783,7 +784,8 @@ end = struct
                     Some (TypeMap.add_to_list t2 p ps)
                  )
                  acc
-           | Existential _ | Definition | Rec_check_regularity -> acc)
+           | Approx_recmod | Existential _
+           | Definition | Rec_check_regularity -> acc)
         TypeMap.empty
     in
     let from_eqns =

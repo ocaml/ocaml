@@ -53,25 +53,6 @@ module Presence = struct
     | Sometimes
 end
 
-let rec annotate_presence
-  (type pre pos)
-  (type a)
-  (annotator : (pre, pos, Presence.t) t)
-  (e : a Entry.t)
-  parent_presence
-  =
-  match e with
-  | E e ->
-    let this_presence =
-      match e.t with
-      | Field _ -> parent_presence
-      | Group g ->
-        if g.optional
-        then Presence.Sometimes
-        else parent_presence
-    in
-    Entry.E e
-
 [%%expect{|
 module Annot :
   sig
@@ -122,8 +103,30 @@ module type Annotator =
 type ('pre, 'post, 'contents) t =
     (module Annotator with type contents = 'contents and type post = 'post and type pre = 'pre)
 module Presence : sig type t = Always | Sometimes end
-Line 69, characters 12-13:
-69 |     Entry.E e
+|}]
+
+let rec annotate_presence
+  (type pre pos)
+  (type a)
+  (annotator : (pre, pos, Presence.t) t)
+  (e : a Entry.t)
+  parent_presence
+  =
+  match e with
+  | E e ->
+    let this_presence =
+      match e.t with
+      | Field _ -> parent_presence
+      | Group g ->
+        if g.optional
+        then Presence.Sometimes
+        else parent_presence
+    in
+    Entry.E e
+
+[%%expect{|
+Line 18, characters 12-13:
+18 |     Entry.E e
                  ^
 Error: The value "e" has type "($s, $2, $1, $0) Entry.t.E"
        but an expression was expected of type "($s, 'a, 'b, 'c) Entry.t.E"
