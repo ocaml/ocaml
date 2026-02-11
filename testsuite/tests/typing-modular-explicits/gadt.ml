@@ -127,4 +127,6 @@ Error: This pattern matches values of type
           (module X : S) -> (float * 'b) R.n)
          Type.eq"
        The type constructor "$'a" would escape its scope
+       Hint: "$'a" is a type variable introduced in the equation
+         "int * $'a" = "float * '_b"
 |}]
