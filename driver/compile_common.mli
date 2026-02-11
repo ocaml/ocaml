@@ -72,7 +72,8 @@ val interface : info -> unit
 val parse_impl : info -> Parsetree.structure Parse_result.t
 (** [parse_impl info] parses an implementation (usually an [.ml] file). *)
 
-val typecheck_impl : Parsetree.structure Parse_result.t -> Typedtree.implementation
+val typecheck_impl :
+  Parsetree.structure Parse_result.t -> Typedtree.implementation
 (** [typecheck_impl info parsetree] typechecks an implementation and returns
     the typedtree of the associated module, its public interface, and a
     coercion against that public interface.

@@ -65,19 +65,20 @@ type t
     - the module name is [Y]
     - the prefix is [target/y]
 
-    When calling, for example, [ocamlopt foo.pp.ml] (where foo.pp.ml is a serialized,
-    ppx-expanded AST of foo.ml), the "input" source file is foo.pp.ml, while foo.ml is the
-    "human" source file.
+    When calling, for example, [ocamlopt foo.pp.ml] (where foo.pp.ml is a
+    serialized, ppx-expanded AST of foo.ml), the "input" source file is
+    foo.pp.ml, while foo.ml is the "human" source file.
 *)
 
 (** [human_source_file u] is the original source file of [u]. When calling,
-    for example, [ocamlopt foo.pp.ml] (where foo.pp.ml is a serialized, ppx-expanded AST
-    of foo.ml), foo.ml is the "original" source file. *)
+    for example, [ocamlopt foo.pp.ml] (where foo.pp.ml is a serialized,
+    ppx-expanded AST of foo.ml), foo.ml is the "original" source file. *)
 val human_source_file: t -> filename
 
-(** [input_source_file u] is the source file of [u] that was explicitly passed to the
-    compiler. When calling, for example, [ocamlopt foo.pp.ml] (where foo.pp.ml is a
-    serialized, ppx-expanded AST of foo.ml), foo.pp.ml is the "input" source file.) *)
+(** [input_source_file u] is the source file of [u] that was explicitly passed
+    to the compiler. When calling, for example, [ocamlopt foo.pp.ml] (where
+    foo.pp.ml is a serialized, ppx-expanded AST of foo.ml), foo.pp.ml is the
+    "input" source file.) *)
 val input_source_file: t -> filename
 
 (** [prefix u] is the filename prefix of the unit. *)

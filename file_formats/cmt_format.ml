@@ -467,9 +467,9 @@ let save_cmt target binary_annots initial_env cmi shape =
             be the file we computed the digest of, which is why we use the
             input_source_file for that as well.
 
-            Or from another perspective, cmt files are meant to be metadata for a compiled
-            file, which is why we want to associate it with the input_source_file rather
-            than the human_source_file. *)
+            Or from another perspective, cmt files are meant to be metadata
+            for a compiled file, which is why we want to associate it with
+            the input_source_file rather than the human_source_file. *)
          let sourcefile = Unit_info.Artifact.input_source_file target in
          let cmt_ident_occurrences =
           if !Clflags.store_occurrences then
