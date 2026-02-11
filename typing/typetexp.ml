@@ -64,6 +64,9 @@ module TyVarEnv : sig
   val with_local_scope : (unit -> 'a) -> 'a
   (* see mli file *)
 
+  val with_any_var_level : level:int -> (unit -> 'a) -> 'a
+  (* see mli file *)
+
   type poly_univars
   val with_univars : poly_univars -> (unit -> 'a) -> 'a
   (* evaluate with a locally extended set of univars *)
@@ -137,6 +140,15 @@ end = struct
   let used_variables =
     ref (TyVarMap.empty : (type_expr * Location.t * bool ref) TyVarMap.t)
 
+  let any_var_level = ref (None : int option)
+
+  let reset_any_var_level () = any_var_level := None
+
+  let get_any_var_level () =
+    match !any_var_level with
+    | None -> get_current_level ()
+    | Some level -> level
+
   (* These are variables we expect to become univars (they were introduced with
      e.g. ['a .]), but we need to make sure they don't unify first.  Why not
      just birth them as univars? Because they might successfully unify with a
@@ -162,6 +174,7 @@ end = struct
 
   let reset () =
     reset_global_level ();
+    reset_any_var_level ();
     type_variables := TyVarMap.empty
 
   let is_in_scope name =
@@ -183,6 +196,11 @@ end = struct
    Fun.protect
      f
      ~finally:(fun () -> widen context)
+
+  let with_any_var_level ~level f =
+    let old = !any_var_level in
+    any_var_level := Some level;
+    Fun.protect f ~finally:(fun () -> any_var_level := old)
 
   (* throws Not_found if the variable is not in scope *)
   let lookup_global_type_variable name =
@@ -322,8 +340,12 @@ end = struct
     tv
 
   let new_any_var loc env = function
-    | { extensibility = Fixed } -> raise(Error(loc, env, No_type_wildcards))
-    | policy -> new_var policy
+    | { extensibility = Fixed; _ } ->
+      raise (Error (loc, env, No_type_wildcards))
+    | policy ->
+      let tv = newvar2 (get_any_var_level ()) in
+      add_pre_univar tv policy;
+      tv
 
   let globalize_used_variables { flavor; extensibility } env =
     let r = ref [] in

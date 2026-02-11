@@ -51,17 +51,23 @@ And use it:
 \begin{caml_example}{verbatim}
 let two = eval (App (App (Add, Int 1), Int 1))
 \end{caml_example}
-It is important to remark that the function "eval" is using the
-polymorphic syntax for locally abstract types. When defining a recursive
-function that manipulates a GADT, explicit polymorphic recursion should
-generally be used. For instance, the following definition fails with a
-type error:
-\begin{caml_example}{verbatim}[error]
+It is important to remark that the function "eval" uses the polymorphic
+syntax for locally abstract types. When defining a recursive
+function that manipulates a GADT, explicit polymorphic recursion with
+locally abstract types should generally be used. Prior to OCaml 5.6,
+the locally abstract type binder "(type a)" was not sufficient to
+enforce polymorphic recursion on its own, and the explicit
+"type a. a term -> a" annotation was required. For instance,
+the following definition fails with a type error in earlier versions
+of the compiler:
+\begin{caml_example}{verbatim}
 let rec eval (type a) : a term -> a = function
   | Int n    -> n
   | Add      -> (fun x y -> x+y)
   | App(f,x) -> (eval f) (eval x)
 \end{caml_example}
+However, since OCaml 5.6, this restriction has been lifted.
+
 In absence of an explicit polymorphic annotation, a monomorphic type
 is inferred for the recursive function. If a recursive call occurs
 inside the function definition at a type that involves an existential

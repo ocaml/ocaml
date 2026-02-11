@@ -805,7 +805,7 @@ let f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
 Lines 1-2, characters 4-15:
 1 | ....f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
 2 |   fun Eq o -> o..............
-Error: This definition has type
+Error: This expression has type
          "'c 'b. ('b, 'b) eq -> ([< `A of 'b | `B ] as 'c) -> 'c"
        which is less general than
          "'d 'e 'a 'b.

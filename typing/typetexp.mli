@@ -27,6 +27,9 @@ module TyVarEnv : sig
   val with_local_scope : (unit -> 'a) -> 'a
   (** Evaluate in a narrowed type-variable scope *)
 
+  val with_any_var_level : level:int -> (unit -> 'a) -> 'a
+  (** Evaluate with the level of wildcards (i.e. [Ptyp_any]) set to [level] *)
+
   type poly_univars
   val make_poly_univars : string list -> poly_univars
     (** remember that a list of strings connotes univars; this must
