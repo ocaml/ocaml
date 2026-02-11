@@ -537,6 +537,11 @@ OCaml 5.5.0
   ```
   (Malo Monin, Florian Angeletti, review by Gabriel Scherer)
 
+- #14205: Make inclusion check error message reference the user-written file
+  when operating on a ppx-generated file.
+  (Liam Stevenson, review by Florian Angeletti)
+
+
 ### Internal/compiler-libs changes:
 
 - #13839, #14008: Reimplement `let open`, `let module` and `let exception` in
