@@ -519,7 +519,7 @@ let explain_names env ppf =
            let lhseq = tree_of_typexp Type_scheme lhs in
            fprintf ppf
              "@ @[<2>@{<hint>Hint@}:@ %a@ %a@ \
-              introduced by the equation@ %a = %a@]"
+              introduced in the equation@ %a = %a@]"
              (pp_print_list_comma_and quoted_ident) paths
              (pp_plural ("is a type variable", "are type variables")) paths
              (Style.as_inline_code !Oprint.out_type)

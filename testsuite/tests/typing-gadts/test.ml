@@ -1073,9 +1073,9 @@ Error: The value "x" has type "t" = "< foo : int; .. as $0 >"
        but an expression was expected of type "< foo : int >"
        Type "$0" = "< bar : int; .. as $1 >" is not compatible with type "<  >"
        The second object type has no method "bar"
-       Hint: "$1" is a type variable introduced by the equation
+       Hint: "$1" is a type variable introduced in the equation
          "$0" = "< bar : int; .. as $1 >"
-       Hint: "$0" is a type variable introduced by the equation
+       Hint: "$0" is a type variable introduced in the equation
          "t" = "< foo : int; .. as $0 >"
 |}];;
 
@@ -1092,9 +1092,9 @@ Error: The value "x" has type "t" = "< foo : int; .. as $0 >"
        Type "$0" = "< bar : int; .. as $1 >" is not compatible with type
          "< bar : int >"
        The first object type has an abstract row, it cannot be closed
-       Hint: "$1" is a type variable introduced by the equation
+       Hint: "$1" is a type variable introduced in the equation
          "$0" = "< bar : int; .. as $1 >"
-       Hint: "$0" is a type variable introduced by the equation
+       Hint: "$0" is a type variable introduced in the equation
          "t" = "< foo : int; .. as $0 >"
 |}];;
 
@@ -1109,7 +1109,7 @@ Line 3, characters 2-26:
 Error: This expression has type "< bar : int; foo : int; .. as $1 >"
        but an expression was expected of type "'a"
        The type constructor "$1" would escape its scope
-       Hint: "$1" is a type variable introduced by the equation
+       Hint: "$1" is a type variable introduced in the equation
          "$0" = "< bar : int; .. as $1 >"
 |}, Principal{|
 Line 3, characters 2-26:
@@ -1119,7 +1119,7 @@ Error: This expression has type "< bar : int; foo : int; .. as $1 >"
        but an expression was expected of type "'a"
        This instance of "$1" is ambiguous:
        it would escape the scope of its equation
-       Hint: "$1" is a type variable introduced by the equation
+       Hint: "$1" is a type variable introduced in the equation
          "$0" = "< bar : int; .. as $1 >"
 |}];;
 

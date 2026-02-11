@@ -34,7 +34,7 @@ Error: This pattern matches values of type
        but a pattern was expected which matches values of type
          "($0, $0 * insert, visit_action) context"
        The type constructor "$0" would escape its scope
-       Hint: "$0" is a type variable introduced by the equation
+       Hint: "$0" is a type variable introduced in the equation
          "visit_action" = "$0 local_visit_action"
 |}];;
 
@@ -53,7 +53,7 @@ Error: This pattern matches values of type
        but a pattern was expected which matches values of type
          "($'a, $'a * insert, visit_action) context"
        The type constructor "$'a" would escape its scope
-       Hint: "$'a" is a type variable introduced by the equation
+       Hint: "$'a" is a type variable introduced in the equation
          "visit_action" = "$'a local_visit_action"
 |}];;
 
