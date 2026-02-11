@@ -244,18 +244,16 @@ val drop_last : int -> string -> string
 val drop_prefix :
   prefix (* comment thwarts tools/sync_stdlib_docs *) :string ->
   string -> string option
-(** [drop_prefix ][~prefix s] is [Some s] with [prefix] removed
-    from the beginning of [s] if [s] starts with [prefix].
-    Else, [None] is returned.
+(** [drop_prefix ][~prefix s] is [Some t] if [s = prefix ^ t].
+    Otherwise, it is [None].
 
     @since 5.6 *)
 
 val drop_suffix :
   suffix (* comment thwarts tools/sync_stdlib_docs *) :string ->
   string -> string option
-(** [drop_suffix ][~suffix s] is [Some s] with [suffix] removed
-    from the end of [s] if [s] ends with [suffix].
-    Else, [None] is returned.
+(** [drop_suffix ][~suffix s] is [Some t] if [s = t ^ suffix].
+    Otherwise, it is [None].
 
     @since 5.6 *)
 
