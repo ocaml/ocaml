@@ -26,10 +26,15 @@
     rewritten on the fly to avoid name collisions *)
 type out_name = { mutable printed_name: string }
 
+type highlight_kind =
+  | Paired
+  | Independent
+
 type out_ident =
   | Oide_apply of out_ident * out_ident
   | Oide_dot of out_ident * string
   | Oide_ident of out_name
+  | Oide_highlight of highlight_kind * out_ident
 
 type out_string =
   | Ostr_string
@@ -58,8 +63,13 @@ type out_value =
   | Oval_lazy of out_value
   | Oval_floatarray of floatarray
 
+type 'a highlightable = {
+  highlighted:bool;
+  item:'a
+}
+
 type out_type_param = {
-    ot_non_gen: bool;
+    ot_non_gen: bool highlightable;
     ot_name: string;
     ot_variance: Asttypes.variance * Asttypes.injectivity
 }
@@ -67,28 +77,38 @@ type out_type_param = {
 type out_type =
   | Otyp_abstract
   | Otyp_open
-  | Otyp_alias of {non_gen:bool; aliased:out_type; alias:string}
-  | Otyp_arrow of Asttypes.arg_label * out_type * out_type
+  | Otyp_alias of {non_gen:bool highlightable; aliased:out_type; alias:string}
+  | Otyp_arrow of Asttypes.arg_label highlightable * out_type * out_type
   | Otyp_class of out_ident * out_type list
   | Otyp_constr of out_ident * out_type list
   | Otyp_manifest of out_type * out_type
-  | Otyp_object of { fields: (string * out_type) list; row: out_row}
+  | Otyp_object of {
+      fields: (string highlightable * out_type) list;
+      row:out_row highlightable
+    }
   | Otyp_record of out_label list
   | Otyp_stuff of string
   | Otyp_sum of out_constructor list
-  | Otyp_tuple of (string option * out_type) list
-  | Otyp_var of bool * string
-  | Otyp_variant of out_variant * bool * (string list) option
+  | Otyp_tuple of (string option highlightable * out_type) list
+  | Otyp_var of bool highlightable * string
+  | Otyp_variant of {
+      fields:out_variant;
+      closed:bool highlightable;
+      presents: (string highlightable list) option
+    }
   | Otyp_poly of string list * out_type
   | Otyp_module of out_package
   | Otyp_attribute of out_type * out_attribute
   | Otyp_external of string
-  | Otyp_functor of Asttypes.arg_label * out_ident * out_package * out_type
+  | Otyp_functor of
+      Asttypes.arg_label highlightable * out_ident * out_package * out_type
+  | Otyp_highlight of highlight_kind * out_type
 
 and out_row =
   | Orow_closed
   | Orow_open_anonymous
   | Orow_open of out_type
+
 
 and out_label = {
   olab_name: string;
@@ -105,12 +125,18 @@ and out_constructor = {
 
 and out_package = {
   opack_path: out_ident;
-  opack_constraints: (string * out_type) list;
+  opack_constraints: (string highlightable * out_type) list;
 }
 
 and out_variant =
-  | Ovar_fields of (string * bool * out_type list) list
+  | Ovar_fields of out_field highlightable list
   | Ovar_typ of out_type
+
+and out_field = {
+      name:string highlightable;
+      constant:bool highlightable;
+      argument_conjunction: out_type list
+    }
 
 type out_class_type =
   | Octy_constr of out_ident * out_type list
