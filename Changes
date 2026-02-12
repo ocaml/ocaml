@@ -59,6 +59,11 @@ Working version
 
 ### Bug fixes:
 
+- #13693, #14514: s390x: fix heap corruption with libasmrun_shared.so caused
+  by PLT lazy binding trampoline saving FPRs into OCaml's fiber stack.
+  Replace @PLT calls with GOT-indirect calls in the s390x code emitter.
+  (Zane Hambly, review by ...)
+
 OCaml 5.5.0
 -----------
 
