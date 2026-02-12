@@ -38,12 +38,26 @@ module Fmt = Format_doc
 module Style = Misc.Style
 module Structured = Errortrace.Structured
 
-type 'a diff = Same of 'a | Diff of 'a * 'a
-
 let trees_of_trace mode =
   List.map (Errortrace.map_cdiff (trees_of_type_expansion mode))
 
 let print_tag ppf s = Style.inline_code ppf ("`" ^ s)
+
+let syntactic_highlighting l r = match l, r with
+  | Same l, Same r ->
+      let l, r = Syntactic_highlighting.diff l r in
+      Same l, Same r
+  | Same l, With_expansion (short, expanded) ->
+      let l, expanded = Syntactic_highlighting.diff l expanded in
+      Same l, With_expansion (short, expanded)
+  | With_expansion (short, expanded), Same r ->
+      let expanded, r = Syntactic_highlighting.diff expanded r in
+      With_expansion(short,expanded), Same r
+  | With_expansion (short, expanded), With_expansion (short', expanded') ->
+      let short, short' = Syntactic_highlighting.diff short short' in
+      let expanded, expanded' =
+        Syntactic_highlighting.diff expanded expanded' in
+      With_expansion (short, expanded), With_expansion (short', expanded')
 
 let rec trace fst txt ppf = function
   | elt :: rem ->
@@ -53,19 +67,23 @@ let rec trace fst txt ppf = function
       (trace false txt) rem
   | [] -> ()
 and trace_elt txt ppf = function
-  | { ctx = None; Errortrace.d = {got; expected} } ->
-      fprintf ppf "Type@;<1 2>%a@ %s@;<1 2>%a"
-       pp_type_expansion got txt pp_type_expansion expected
-  | { ctx = Some (In_tag l); Errortrace.d = {got; expected} } ->
-      fprintf ppf "In tag %a, type@;<1 2>%a@ %s@;<1 2>%a"
-       print_tag l
-       pp_type_expansion got txt pp_type_expansion expected
-  | { ctx = Some (In_method m); Errortrace.d = {got; expected} } ->
-      fprintf ppf "@,@[The method %a has type@ %a,@ \
-                   but the expected method type was@ %a@]"
-        Style.inline_code m
-        pp_type_expansion got
-        pp_type_expansion expected
+  | { ctx; Errortrace.d = {got; expected} } ->
+      let got, expected = syntactic_highlighting got expected in
+      match ctx with
+      | None ->
+          fprintf ppf "Type@;<1 2>%a@ %s@;<1 2>%a"
+            pp_type_expansion got txt pp_type_expansion expected
+      | Some (In_tag l) ->
+          fprintf ppf "In tag %a, type@;<1 2>%a@ %s@;<1 2>%a"
+            print_tag l
+            pp_type_expansion got txt pp_type_expansion expected
+      | Some (In_method m) ->
+          fprintf ppf
+            "@,@[The method %a has type@ %a,@ \
+             but the expected method type was@ %a@]"
+            Style.inline_code m
+            pp_type_expansion got
+            pp_type_expansion expected
 
 
 let diff_printing_status Errortrace.{ got      = {ty = t1; expanded = t1'};
@@ -487,9 +505,10 @@ let head_error_printer mode txt_got txt_but = function
   | None -> Format_doc.Doc.empty
   | Some d ->
       let d = Errortrace.(map_diff (trees_of_type_expansion mode) d.d) in
+      let got, expected = syntactic_highlighting d.got d.expected in
       doc_printf "%a@;<1 2>%a@ %a@;<1 2>%a"
-        pp_doc txt_got pp_type_expansion d.got
-        pp_doc txt_but pp_type_expansion d.expected
+        pp_doc txt_got pp_type_expansion got
+        pp_doc txt_but pp_type_expansion expected
 
 let warn_on_missing_defs env ppf = function
   | None -> ()
@@ -670,6 +689,8 @@ module Subtype = struct
 end
 
 let subtype = Subtype.error
+
+type 'a diff = Same of 'a | Diff of 'a * 'a
 
 let type_path_expansion ppf = function
   | Same p -> quoted_ident ppf p
