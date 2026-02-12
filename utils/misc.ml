@@ -654,6 +654,7 @@ module Style = struct
     | Insertion
     | Modification
     | Preservation
+    | Diff
     | Style of style list
 
   type tag_style ={
@@ -672,6 +673,7 @@ module Style = struct
     modification: tag_style;
     preservation: tag_style;
     inline_code: tag_style;
+    difference_highlight: tag_style;
   }
 
   let no_markup stl = { ansi = stl; text_close = ""; text_open = "" }
@@ -686,6 +688,7 @@ module Style = struct
       insertion = no_markup [FG Red; Bold];
       modification = no_markup [FG Magenta; Bold];
       inline_code= no_markup [Bold];
+      difference_highlight = no_markup [FG Red];
     }
 
   let cur_styles = ref default_styles
@@ -700,6 +703,7 @@ module Style = struct
     | Format.String_tag "loc" | Loc -> (!cur_styles).loc
     | Format.String_tag "hint" | Hint -> (!cur_styles).hint
     | Format.String_tag "inline_code" | Inline_code -> (!cur_styles).inline_code
+    | Format.String_tag "diff" | Diff -> (!cur_styles).difference_highlight
     | Format.String_tag "ralign" -> no_markup []
     | Deletion -> (!cur_styles).deletion
     | Insertion -> (!cur_styles).insertion
@@ -708,12 +712,14 @@ module Style = struct
     | Style s -> no_markup s
     | _ -> raise Not_found
 
-
-  let as_inline_code printer ppf x =
+  let with_tag tag printer ppf x =
     let open Format_doc in
-    pp_open_stag ppf Inline_code;
+    pp_open_stag ppf tag;
     printer ppf x;
     pp_close_stag ppf ()
+
+  let highlight printer ppf x = with_tag Diff printer ppf x
+  let as_inline_code printer ppf x = with_tag Inline_code printer ppf x
 
   let inline_code ppf s = as_inline_code Format_doc.pp_print_string ppf s
 
@@ -724,26 +730,35 @@ module Style = struct
     pp_close_stag ppf ()
 
   (* either prints the tag of [s] or delegates to [or_else] *)
-  let mark_open_tag ~color ~or_else s =
+  let mark_open_tag stack ~color ~or_else s =
     try
       let style = style_of_tag s in
+      stack := style.ansi :: !stack;
       if color then ansi_of_style_l style.ansi else style.text_open
     with Not_found -> or_else s
 
-  let mark_close_tag ~color ~or_else s =
+  let mark_close_tag stack ~color ~or_else s =
     try
       let style = style_of_tag s in
-      if color then ansi_of_style_l [Reset] else style.text_close
+      let after_reset = match !stack with
+      | [] -> []
+      | [_] -> stack := []; []
+      | _ :: (before :: _ as q) -> stack := q; before
+      in
+      if color then ansi_of_style_l (Reset::after_reset)
+      else style.text_close
     with Not_found -> or_else s
 
   (* add tag handling to formatter [ppf] *)
   let set_tag_handling ~color ppf =
     let open Format in
+    let stack = ref [] in
     let functions = pp_get_formatter_stag_functions ppf () in
     let functions' = {functions with
-      mark_open_stag=(mark_open_tag ~color ~or_else:functions.mark_open_stag);
+      mark_open_stag=
+        (mark_open_tag stack ~color ~or_else:functions.mark_open_stag);
       mark_close_stag=
-        (mark_close_tag ~color ~or_else:functions.mark_close_stag);
+        (mark_close_tag stack ~color ~or_else:functions.mark_close_stag);
     } in
     pp_set_mark_tags ppf true; (* enable tags *)
     pp_set_formatter_stag_functions ppf functions';

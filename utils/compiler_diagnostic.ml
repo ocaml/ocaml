@@ -95,6 +95,7 @@ module Structured_text = struct
           [%extension_constructor Warning];
           [%extension_constructor Loc];
           [%extension_constructor Inline_code];
+          [%extension_constructor Diff];
           [%extension_constructor Hint];
           [%extension_constructor Deletion];
           [%extension_constructor Insertion];

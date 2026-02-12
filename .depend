@@ -1305,6 +1305,7 @@ typing/oprint.cmo : \
     utils/utf8_lexeme.cmi \
     parsing/pprintast.cmi \
     typing/outcometree.cmi \
+    utils/misc.cmi \
     parsing/lexer.cmi \
     utils/format_doc.cmi \
     parsing/asttypes.cmi \
@@ -1313,6 +1314,7 @@ typing/oprint.cmx : \
     utils/utf8_lexeme.cmx \
     parsing/pprintast.cmx \
     typing/outcometree.cmi \
+    utils/misc.cmx \
     parsing/lexer.cmx \
     utils/format_doc.cmx \
     parsing/asttypes.cmx \
