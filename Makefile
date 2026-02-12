@@ -125,6 +125,7 @@ typing_SOURCES = \
   typing/gprinttyp.mli typing/gprinttyp.ml \
   typing/btype.mli typing/btype.ml \
   typing/oprint.mli typing/oprint.ml \
+  typing/syntactic_highlighting.mli typing/syntactic_highlighting.ml \
   typing/subst.mli typing/subst.ml \
   typing/predef.mli typing/predef.ml \
   typing/datarepr.mli typing/datarepr.ml \
