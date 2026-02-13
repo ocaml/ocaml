@@ -145,6 +145,8 @@ testsuite/tests/lib-uchar/test.ml                       typo.non-ascii
 testsuite/tests/lexing/reject_bad_encoding.ml           typo.prune
 testsuite/tests/asmgen/immediates.cmm                   typo.very-long-line
 testsuite/tests/generated-parse-errors/errors.*         typo.very-long-line
+testsuite/tests/let-syntax/let_syntax.ml                typo.non-ascii
+testsuite/tests/tool-expect-test/clean_typer.ml         typo.non-ascii
 testsuite/tools/*.S                                     typo.missing-header
 testsuite/tools/*.asm                                   typo.missing-header
 testsuite/tests/messages/highlight_tabs.ml              typo.tab

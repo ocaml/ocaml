@@ -201,7 +201,7 @@ Error: Signature mismatch:
          type t = int * float * int
        is not included in
          type t = int * float
-       The type "int * float * int" is not equal to the type "int * float"
+       The type "int * float * (|int|)" is not equal to the type "int * float"
 |}];;
 
 module M : sig
@@ -586,8 +586,8 @@ Error: Signature mismatch:
        The type "(< m : 'a. 'a * 'd > as 'd) -> unit"
        is not compatible with the type
          "< m : 'b. 'b * < m : 'c. 'c * 'e > as 'e > -> unit"
-       The method "m" has type "'a. 'a * < m : 'a. 'f > as 'f",
-       but the expected method type was "'c. 'c * ('b * < m : 'c. 'g >) as 'g"
+       The method "m" has type "'a. 'a * (|< m : 'a. 'f >|) as 'f",
+       but the expected method type was "'c. 'c * ('b (|*|) < m : 'c. 'g >) as 'g"
        The universal variable "'b" would escape its scope
 |}];;
 
@@ -773,9 +773,9 @@ Error: Signature mismatch:
          val f : int * int -> int * int
        is not included in
          val f : int * float * int -> int -> int
-       The type "int * int -> int * int" is not compatible with the type
-         "int * float * int -> int -> int"
-       Type "int * int" is not compatible with type "int * float * int"
+       The type "int * int -> int (|*|) int" is not compatible with the type
+         "int * float * (|int|) -> int (|->|) int"
+       Type "int * int" is not compatible with type "int * float * (|int|)"
 |}];;
 
 module M: sig
@@ -944,7 +944,7 @@ Error: Signature mismatch:
          val f : [< `C of int & float ] -> unit
        is not included in
          val f : [< `C ] -> unit
-       The type "[< `C of & int & float ] -> unit"
+       The type "[< `C of (|&|) int & float ] -> unit"
        is not compatible with the type "[< `C ] -> unit"
        Arities for tag "`C" are incompatible.
 |}];;
@@ -1746,8 +1746,8 @@ Error: Signature mismatch:
          "A : (< x : 'b > as 'b) -> (< y : 'a > as 'a) t"
        The type "< x : 'a * 'a > as 'a" is not equal to the type
          "< x : 'b > as 'b"
-       The method "x" has type "< x : 'c > * < x : 'c > as 'c",
-       but the expected method type was "< x : 'b > as 'b"
+       The method "x" has type "< x : 'c > (|*|) < x : 'c > as 'c",
+       but the expected method type was "(|< x : 'b >|) as 'b"
 |}]
 module R: sig
   type t = { a: (<x:'a> as 'a) }
@@ -1774,8 +1774,8 @@ Error: Signature mismatch:
          "a : < x : 'a > as 'a;"
        The type "< x : 'a * 'a > as 'a" is not equal to the type
          "< x : 'b > as 'b"
-       The method "x" has type "< x : 'c > * < x : 'c > as 'c",
-       but the expected method type was "< x : 'b > as 'b"
+       The method "x" has type "< x : 'c > (|*|) < x : 'c > as 'c",
+       but the expected method type was "(|< x : 'b >|) as 'b"
 |}]
 type _ ext = ..
 module Ext: sig
@@ -1809,8 +1809,8 @@ Error: Signature mismatch:
          "A : (< x : 'b > as 'b) -> (< y : 'a > as 'a) ext"
        The type "< x : 'a * 'a > as 'a" is not equal to the type
          "< x : 'b > as 'b"
-       The method "x" has type "< x : 'c > * < x : 'c > as 'c",
-       but the expected method type was "< x : 'b > as 'b"
+       The method "x" has type "< x : 'c > (|*|) < x : 'c > as 'c",
+       but the expected method type was "(|< x : 'b >|) as 'b"
 |}]
 
 (********************************** Nested modules ****************************)
@@ -1873,7 +1873,7 @@ Error: Signature mismatch:
          type t = x:int -> int
        is not included in
          type t = int -> int
-       The type "x:int -> int" is not equal to the type "int -> int"
+       The type "(|x|):int -> int" is not equal to the type "int -> int"
        The first argument is labeled "x",
        but an unlabeled argument was expected
 |}]
@@ -1897,7 +1897,7 @@ Error: Signature mismatch:
          type t = x:int -> int
        is not included in
          type t = y:int -> int
-       The type "x:int -> int" is not equal to the type "y:int -> int"
+       The type "(|x|):int -> int" is not equal to the type "(|y|):int -> int"
        Labels "x" and "y" do not match
 |}]
 
@@ -1920,7 +1920,7 @@ Error: Signature mismatch:
          val f : x:'a -> unit
        is not included in
          val f : int -> unit
-       The type "x:'a -> unit" is not compatible with the type "int -> unit"
+       The type "(|x|):'a -> unit" is not compatible with the type "int -> unit"
        The first argument is labeled "x",
        but an unlabeled argument was expected
 |}]
@@ -1949,7 +1949,7 @@ Error: Signature mismatch:
          val f : ?x:'a -> unit
        is not included in
          val f : int -> unit
-       The type "?x:'a -> unit" is not compatible with the type "int -> unit"
+       The type "?(|x|):'a -> unit" is not compatible with the type "int -> unit"
        The first argument is labeled "?x",
        but an unlabeled argument was expected
 |}]
@@ -1979,7 +1979,7 @@ Error: Signature mismatch:
          val f : ?x:'a -> unit
        is not included in
          val f : x:int -> unit
-       The type "?x:'a -> unit" is not compatible with the type "x:int -> unit"
+       The type "?(|x|):'a -> unit" is not compatible with the type "(|x|):int -> unit"
        The label "?x" was expected to not be optional
 |}]
 
@@ -2008,7 +2008,7 @@ Error: Signature mismatch:
          val f : ?y:'a -> unit
        is not included in
          val f : ?x:int -> unit
-       The type "?y:'a -> unit" is not compatible with the type "?x:int -> unit"
+       The type "?(|y|):'a -> unit" is not compatible with the type "?(|x|):int -> unit"
        Labels "?y" and "?x" do not match
 |}]
 
@@ -2032,7 +2032,7 @@ Error: Signature mismatch:
          val f : 'a -> unit
        is not included in
          val f : ?x:int -> unit
-       The type "'a -> unit" is not compatible with the type "?x:int -> unit"
+       The type "'a -> unit" is not compatible with the type "?(|x|):int -> unit"
        A label "?x" was expected
 |}]
 
