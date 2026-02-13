@@ -204,8 +204,8 @@ let swap (~x, ~y) = (~x, ~y : yx)
 Line 1, characters 21-27:
 1 | let swap (~x, ~y) = (~x, ~y : yx)
                          ^^^^^^
-Error: This expression has type "x:'a * y:'b"
-       but an expression was expected of type "yx" = "y:int * x:int"
+Error: This expression has type "(|x:|)'a * (|y:|)'b"
+       but an expression was expected of type "yx" = "(|y:|)int * (|x:|)int"
        Labels "x" and "y" do not match
 |}]
 
@@ -214,8 +214,8 @@ let swap (pt : xy) : yx = pt
 Line 1, characters 26-28:
 1 | let swap (pt : xy) : yx = pt
                               ^^
-Error: The value "pt" has type "xy" = "x:int * y:int"
-       but an expression was expected of type "yx" = "y:int * x:int"
+Error: The value "pt" has type "xy" = "(|x:|)int * (|y:|)int"
+       but an expression was expected of type "yx" = "(|y:|)int * (|x:|)int"
        Labels "x" and "y" do not match
 |}]
 
@@ -226,7 +226,7 @@ Line 1, characters 22-28:
                           ^^^^^^
 Error: The value "Fun.id" has type "xy -> xy"
        but an expression was expected of type "xy -> yx"
-       Type "xy" = "x:int * y:int" is not compatible with type "yx" = "y:int * x:int"
+       Type "xy" = "(|x:|)int * (|y:|)int" is not compatible with type "yx" = "(|y:|)int * (|x:|)int"
        Labels "x" and "y" do not match
 |}]
 
@@ -237,7 +237,7 @@ Line 1, characters 22-27:
                           ^^^^^
 Error: The value "xy_id" has type "(y:int * x:int) -> xy"
        but an expression was expected of type "xy -> yx"
-       Type "y:int * x:int" is not compatible with type "xy" = "x:int * y:int"
+       Type "(|y:|)int * (|x:|)int" is not compatible with type "xy" = "(|x:|)int * (|y:|)int"
        Labels "y" and "x" do not match
 |}]
 
@@ -248,7 +248,7 @@ Line 1, characters 22-27:
                           ^^^^^
 Error: The value "yx_id" has type "yx -> yx"
        but an expression was expected of type "xy -> yx"
-       Type "yx" = "y:int * x:int" is not compatible with type "xy" = "x:int * y:int"
+       Type "yx" = "(|y:|)int * (|x:|)int" is not compatible with type "xy" = "(|x:|)int * (|y:|)int"
        Labels "y" and "x" do not match
 |}]
 
@@ -539,8 +539,8 @@ val f : (x:int * y:int) -> int = <fun>
 Line 4, characters 21-27:
 4 |   (f z, match z with ~y, ~x -> x + y)
                          ^^^^^^
-Error: This pattern matches values of type "y:'a * x:'b"
-       but a pattern was expected which matches values of type "x:int * y:int"
+Error: This pattern matches values of type "(|y:|)'a * (|x:|)'b"
+       but a pattern was expected which matches values of type "(|x:|)int * (|y:|)int"
        Labels "y" and "x" do not match
 |}]
 
@@ -553,8 +553,8 @@ val f : (x:int * y:int) -> int = <fun>
 Line 4, characters 34-35:
 4 |   match z with ~y, ~x -> x + y, f z
                                       ^
-Error: The value "z" has type "y:int * x:int"
-       but an expression was expected of type "x:int * y:int"
+Error: The value "z" has type "(|y:|)int * (|x:|)int"
+       but an expression was expected of type "(|x:|)int * (|y:|)int"
        Labels "y" and "x" do not match
 |}]
 

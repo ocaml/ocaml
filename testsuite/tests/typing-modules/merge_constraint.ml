@@ -668,7 +668,7 @@ Line 6, characters 32-34:
 6 |   module type S2 = S with type ('a, 'b) t = ('a, 'b) t2
                                     ^^
 Error: The type constraints are not consistent.
-       Type "'a * 'b * 'c" is not compatible with type "'d * 'e"
+       Type "'a * 'b * (|'c|)" is not compatible with type "'d * 'e"
 |}]
 
 module type Destructive_with_type_with_constraint = sig
@@ -715,7 +715,7 @@ Line 6, characters 32-34:
 6 |   module type S2 = S with type ('a, 'b) t := ('a, 'b) t2
                                     ^^
 Error: The type constraints are not consistent.
-       Type "'a * 'b * 'c" is not compatible with type "'d * 'e"
+       Type "'a * 'b * (|'c|)" is not compatible with type "'d * 'e"
 |}]
 
 (** Merging and approximation ***)

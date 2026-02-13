@@ -257,7 +257,7 @@ Line 1, characters 25-26:
 1 | let f (x:[`X of int]) = (x:[<`X of & int])
                              ^
 Error: The value "x" has type "[ `X of int ]"
-       but an expression was expected of type "[< `X of & int ]"
+       but an expression was expected of type "[< `X of (|&|) int ]"
        Arities for tag "`X" are incompatible.
 |}]
 
@@ -268,7 +268,7 @@ let f (x:[<`X of & int & float]) = (x:[`X])
 Line 3, characters 36-37:
 3 | let f (x:[<`X of & int & float]) = (x:[`X])
                                         ^
-Error: The value "x" has type "[< `X of & int & float ]"
+Error: The value "x" has type "[< `X of (|&|) int & float ]"
        but an expression was expected of type "[ `X ]"
        Arities for tag "`X" are incompatible.
 |}]
@@ -350,7 +350,7 @@ Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Line 8, characters 8-9:
 8 |   [ `A; x]
             ^
-Error: The value "x" has type "[< `A of & int ]"
+Error: The value "x" has type "[< `A of (|&|) int ]"
        but an expression was expected of type "[> `A ]"
        Arities for tag "`A" are incompatible.
 |}]
