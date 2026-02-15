@@ -69,6 +69,7 @@ let _ =
     (fun name -> source_name := Some name)
     usage
 
+let exit_code_for_known_error = 3
 
 let main () =
 
@@ -95,8 +96,11 @@ let main () =
     let (entries, transitions) = Lexgen.make_dfa def.entrypoints in
     (match !warn_missing_case with
      | Off -> ()
-     | On -> Exhaustiveness.check transitions entries
-     | Error -> Exhaustiveness.check ~fatal:true transitions entries);
+     | On -> Exhaustiveness.check transitions entries |> ignore
+     | Error ->
+         match Exhaustiveness.check ~fatal:true transitions entries with
+         | Ok () -> ()
+         | Error () -> exit exit_code_for_known_error);
     if !ml_automata then begin
       Outputbis.output_lexdef
         ic oc tr
@@ -143,6 +147,6 @@ let main () =
     | _ ->
         Printexc.raise_with_backtrace exn bt
     end;
-    exit 3
+    exit exit_code_for_known_error
 
 let _ = main (); exit 0

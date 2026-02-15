@@ -296,5 +296,7 @@ let check
     Array.iteri print_state states
   );
   let results = List.map (check_entry ~fatal states) entries in
-  if List.mem false results && fatal then
-    exit 3
+  if List.mem false results then
+    Error ()
+  else
+    Ok ()

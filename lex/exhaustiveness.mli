@@ -25,4 +25,5 @@
 val check :
   ?fatal:bool ->
   Lexgen.automata array ->
-  (string list, Syntax.location) Lexgen.automata_entry list -> unit
+  (string list, Syntax.location) Lexgen.automata_entry list ->
+  (unit, unit) result
