@@ -18,9 +18,7 @@
 (** Report rules that may fail on some input.
     A warning is printed on stderr.
 
-    @param fatal exit with the appropriate error code if a check fails.
-    This option is also used in warning messages to indicate that they're
-    fatal.
+    @param fatal changes the error messages to indicate that they're fatal
 *)
 val check :
   ?fatal:bool ->
