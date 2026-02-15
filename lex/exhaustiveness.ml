@@ -50,16 +50,10 @@ let print_state state_id (state : Lexgen.automata) =
 (************************)
 
 (* For keeping track of visited nodes *)
-module DFA_states = Set.Make (struct
-    type t = int (* state ID *)
-    let compare = Int.compare
-end)
+module DFA_states = Set.Make (Int)
 
 (* For mapping at most one state to a matching path *)
-module DFA_state_map = Map.Make (struct
-    type t = int (* state ID *)
-    let compare = Int.compare
-end)
+module DFA_state_map = Map.Make (Int)
 
 (************************)
 (* Automaton navigation *)
