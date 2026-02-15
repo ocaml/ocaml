@@ -306,7 +306,7 @@ Working version
 
 - #14448: ocamllex now prints a `missing-case` warning and shows an example
   of nonmatching input if a rule is not exhaustive (Martin Jambon,
-  review by David Allsopp)
+  review by David Allsopp and Gabriel Scherer)
 
 ### Manual and documentation:
 
