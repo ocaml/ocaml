@@ -65,8 +65,7 @@ let get_transitions (state : Lexgen.automata) =
   | Perform _ -> None
   | Shift (_, transitions) -> Some transitions
 
-(* Indicate if a state is final.
-   [is this correct?] *)
+(* Indicate if a state is final. *)
 let is_final (state : Lexgen.automata) =
   match state with
   | Perform _ -> true
