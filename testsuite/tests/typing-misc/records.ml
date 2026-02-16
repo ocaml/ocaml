@@ -157,8 +157,8 @@ val x : int t = {f = 12; g = 43}
 Line 3, characters 0-19:
 3 | {x with f = "hola"};;
     ^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "string t"
-       but an expression was expected of type "int t"
+Error: This expression has type "(|string|) t"
+       but an expression was expected of type "(|int|) t"
        Type "string" is not compatible with type "int"
 |}]
 

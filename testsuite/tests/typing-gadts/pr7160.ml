@@ -22,6 +22,6 @@ Error: This variant or record definition does not match that of type "'a t"
          "Same : 'l t -> 'l t"
        is not the same as:
          "Same : 'l1 t -> 'l2 t"
-       The type "'l t" is not equal to the type "'l1 t"
+       The type "(|'l|) t" is not equal to the type "(|'l1|) t"
        Type "'l" is not equal to type "'l1"
 |}];;

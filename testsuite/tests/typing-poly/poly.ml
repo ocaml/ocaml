@@ -465,8 +465,8 @@ val f : < m : 'a. 'a -> 'a > -> < m : 'b. 'b -> 'b > = <fun>
 Line 9, characters 41-42:
 9 | let f (x : < m : 'a. 'a -> 'a list >) = (x : < m : 'b. 'b -> 'c >)
                                              ^
-Error: The value "x" has type "< m : 'b. 'b -> 'b list >"
-       but an expression was expected of type "< m : 'b. 'b -> 'c >"
+Error: The value "x" has type "< m : (|'b. 'b -> 'b list|) >"
+       but an expression was expected of type "< m : (|'b. 'b -> 'c|) >"
        The method "m" has type "'b. 'b -> 'b list",
        but the expected method type was "'b. 'b -> 'c"
        The universal variable "'b" would escape its scope
@@ -1034,7 +1034,7 @@ Line 3, characters 13-29:
 3 |   and 'a u = (float,string) t;;
                  ^^^^^^^^^^^^^^^^
 Error: Constraints are not satisfied in this type.
-       Type "(float, string) t" should be an instance of "(int, int) t"
+       Type "((|float|), string) t" should be an instance of "((|int|), (|int|)) t"
        Type "float" is not compatible with type "int"
 |}]
 
@@ -1206,7 +1206,7 @@ Line 2, characters 3-4:
        ^
 Error: The value "x" has type "< m : 'a. 'a * < m : 'a * 'b > > as 'b"
        but an expression was expected of type
-         "< m : 'a. 'a * (< m : 'a * < m : 'c. 'c * 'd > > as 'd) >"
+         "< m : 'a. 'a * (< m : 'a * < m : (|'c. 'c * 'd|) > > as 'd) >"
        The method "m" has type
        "'a. 'a * (< m : 'a * < m : 'c. 'c * 'd > > as 'd)",
        but the expected method type was
@@ -1245,9 +1245,9 @@ fun (x : <m : 'a. 'a * ('a * <m : 'a. 'a * 'foo> as 'foo)>) ->
 Line 2, characters 3-4:
 2 |   (x : <m : 'b. 'b * ('b * <m : 'c. 'c * ('c * 'bar)>)> as 'bar);;
        ^
-Error: The value "x" has type "< m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) >"
+Error: The value "x" has type "< m : 'b. 'b * ('b * < m : (|'c. 'c * 'a|) > as 'a) >"
        but an expression was expected of type
-         "< m : 'b. 'b * ('b * < m : 'c. 'c * ('c * 'd) >) > as 'd"
+         "< m : 'b. 'b * ('b * < m : (|'c. 'c * ('c * 'd)|) >) > as 'd"
        The method "m" has type "'c. 'c * ('b * < m : 'c. 'e >) as 'e",
        but the expected method type was
        "'c. 'c * ('c * < m : 'b. 'b * ('b * < m : 'c. 'f >) >) as 'f"
@@ -1278,7 +1278,7 @@ Line 2, characters 3-4:
        ^
 Error: The value "x" has type "< m : 'b. 'b * ('b * 'a) > as 'a"
        but an expression was expected of type
-         "< m : 'b. 'b * ('b * < m : 'c. 'c * 'd > as 'd) >"
+         "< m : 'b. 'b * ('b * < m : (|'c. 'c * 'd|) > as 'd) >"
        The method "m" has type "'b. 'b * ('b * < m : 'c. 'c * 'd > as 'd)",
        but the expected method type was "'c. 'c * ('b * < m : 'c. 'e >) as 'e"
        The universal variable "'b" would escape its scope
@@ -1290,7 +1290,7 @@ let f x =
 Lines 2-3, characters 4-46:
 2 | ....(x : <m : 'a. 'a -> ('a * <m:'c. 'c -> 'bar> as 'bar)>
 3 |        :> <m : 'a. 'a -> ('a * 'foo)> as 'foo)..
-Error: Type "< m : 'a. 'a -> ('a * < m : 'c. 'c -> 'b > as 'b) >"
+Error: Type "< m : 'a. 'a -> ('a * < m : (|'c. 'c -> 'b|) > as 'b) >"
        is not a subtype of "< m : 'a. 'a -> 'a * 'd > as 'd"
        Type "'c. 'c -> 'a * < m : 'c. 'e > as 'e" is not a subtype of
          "'a. 'a -> 'a * < m : 'a. 'f > as 'f"
@@ -1303,9 +1303,9 @@ let f (x: <x: 'a 'b 'c. 'a * 'b * 'b * 'c >) =
 Line 2, characters 3-4:
 2 |   (x: <x: 'a 'b 'c. 'c * 'a * 'b * 'b>)
        ^
-Error: The value "x" has type "< x : 'c 'a 'c0. 'c * 'a * 'a * 'c0 >"
+Error: The value "x" has type "< x : (|'c 'a 'c0. 'c * 'a * 'a * 'c0|) >"
        but an expression was expected of type
-         "< x : 'a 'b 'c. 'c * 'a * 'b * 'b >"
+         "< x : (|'a 'b 'c. 'c * 'a * 'b * 'b|) >"
        The method "x" has type "'c 'a 'c0. 'c * 'a * 'a * 'c0",
        but the expected method type was "'a 'b 'c. 'c * 'a * 'b * 'b"
        The universal variables "'a" and "'b" are distinct.
@@ -1317,8 +1317,8 @@ let f (x: <x: 'a. <x: 'b. 'a * 'b > >) =
 Line 2, characters 7-8:
 2 |       (x: <x: 'b. <x: 'a. 'a * 'b > >)
            ^
-Error: The value "x" has type "< x : 'a. < x : 'b. 'a * 'b > >"
-       but an expression was expected of type "< x : 'b. < x : 'a. 'a * 'b > >"
+Error: The value "x" has type "< x : 'a. < x : (|'b. 'a * 'b|) > >"
+       but an expression was expected of type "< x : 'b. < x : (|'a. 'a * 'b|) > >"
        The method "x" has type "'b. 'a * 'b", but the expected method type was
        "'a0. 'a0 * 'b"
        The universal variables "'a" and "'a0" are distinct.
@@ -1332,8 +1332,8 @@ let f (o: <x: 'a 'b. ('a * 'a) * 'b >) =
 Line 2, characters 7-8:
 2 |       (o: <x: 'a 'b. ('a * 'a) * 'a >)
            ^
-Error: The value "o" has type "< x : 'a 'b. ('a * 'a) * 'b >"
-       but an expression was expected of type "< x : 'a. ('a * 'a) * 'a >"
+Error: The value "o" has type "< x : (|'a 'b. ('a * 'a) * 'b|) >"
+       but an expression was expected of type "< x : (|'a. ('a * 'a) * 'a|) >"
        The method "x" has type "'a 'b. ('a * 'a) * 'b",
        but the expected method type was "'a. ('a * 'a) * 'a"
        The universal variables "'b" and "'a" are distinct.
@@ -1359,7 +1359,7 @@ Error: Signature mismatch:
          val f : < m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) > -> unit
        The type "(< m : 'a. 'a * ('a * 'd) > as 'd) -> unit"
        is not compatible with the type
-         "< m : 'b. 'b * ('b * < m : 'c. 'c * 'e > as 'e) > -> unit"
+         "< m : 'b. 'b * ('b * < m : (|'c. 'c * 'e|) > as 'e) > -> unit"
        The method "m" has type "'a. 'a * ('a * < m : 'a. 'f >) as 'f",
        but the expected method type was "'c. 'c * ('b * < m : 'c. 'g >) as 'g"
        The universal variable "'b" would escape its scope
@@ -1381,7 +1381,7 @@ Error: Signature mismatch:
        is not included in
          type t = < m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) >
        The type "< m : 'a. 'a * ('a * 'd) > as 'd" is not equal to the type
-         "< m : 'b. 'b * ('b * < m : 'c. 'c * 'e > as 'e) >"
+         "< m : 'b. 'b * ('b * < m : (|'c. 'c * 'e|) > as 'e) >"
        The method "m" has type "'a. 'a * ('a * < m : 'a. 'f >) as 'f",
        but the expected method type was "'c. 'c * ('b * < m : 'c. 'g >) as 'g"
        The universal variable "'b" would escape its scope
@@ -1843,9 +1843,9 @@ let (n : < m : 'a. [< `Foo of int] -> 'a >) =
 Line 2, characters 2-72:
 2 |   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "< m : 'b 'x. ([< `Foo of 'x ] as 'b) -> 'x >"
+Error: This expression has type "< m : 'b 'x. ([< `Foo of (|'x|) ] as 'b) -> 'x >"
        but an expression was expected of type
-         "< m : 'a. [< `Foo of int ] -> 'a >"
+         "< m : 'a. [< `Foo of (|int|) ] -> 'a >"
        In tag "`Foo", type "'x" is not compatible with type "int"
 |}];;
 (* fail *)
@@ -1855,9 +1855,9 @@ let (n : 'b -> < m : 'a . ([< `Foo of int] as 'b) -> 'a >) = fun x ->
 Line 2, characters 2-72:
 2 |   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "< m : 'b 'x. ([< `Foo of 'x ] as 'b) -> 'x >"
+Error: This expression has type "< m : 'b 'x. ([< `Foo of (|'x|) ] as 'b) -> 'x >"
        but an expression was expected of type
-         "< m : 'a. [< `Foo of int ] -> 'a >"
+         "< m : 'a. [< `Foo of (|int|) ] -> 'a >"
        In tag "`Foo", type "'x" is not compatible with type "int"
 |}];;
 (* ok *)
@@ -1875,9 +1875,9 @@ let f (n : < m : 'a 'r. [< `Foo of 'a & int | `Bar] as 'r >) =
 Line 2, characters 3-4:
 2 |   (n : < m : 'b 'r. [< `Foo of int & 'b | `Bar] as 'r >)
        ^
-Error: The value "n" has type "< m : 'a 'c. [< `Bar | `Foo of 'a & int ] as 'c >"
+Error: The value "n" has type "< m : 'a 'c. [< `Bar | `Foo of (|'a|) & int ] as 'c >"
        but an expression was expected of type
-         "< m : 'b 'd. [< `Bar | `Foo of int & 'b ] as 'd >"
+         "< m : 'b 'd. [< `Bar | `Foo of (|int|) & 'b ] as 'd >"
        In tag "`Foo", type "'a" is not compatible with type "int"
 |}]
 (* ok (with implicit universal quantification) *)
@@ -2178,7 +2178,7 @@ Lines 1-3, characters 15-3:
 1 | ...............object
 2 |   method x : 'b . 'b s list = [S]
 3 | end
-Error: This expression has type "< x : 'b. 'b s list >"
+Error: This expression has type "< x : (|'b. 'b s list|) >"
        but an expression was expected of type "'a c"
        The method "x" has type "'b. 'b s list", but the expected method type was
        "'a list"
@@ -2199,8 +2199,8 @@ Line 1, characters 17-18:
 Error: The value "x" has type
          "u" = "< m : 'a. 'a s list * (< m : 'a s list * 'b > as 'b) >"
        but an expression was expected of type "v" = "< m : 'a. 'a s list * v >"
-       Type "< m : 'a s list * 'b > as 'b" is not compatible with type
-         "v" = "< m : 'a. 'a s list * v >"
+       Type "< m : 'a s list (|*|) 'b > as 'b" is not compatible with type
+         "v" = "< m : (|'a. 'a s list * v|) >"
        The method "m" has type "'a s list * < m : 'c > as 'c",
        but the expected method type was "'a. 'a s list * v"
        The universal variable "'a" would escape its scope
@@ -2218,7 +2218,7 @@ Lines 1-3, characters 15-3:
 1 | ...............object
 2 |   method x : 'b . 'b s list = []
 3 | end
-Error: This expression has type "< x : 'b. 'b s list >"
+Error: This expression has type "< x : (|'b. 'b s list|) >"
        but an expression was expected of type "'a c"
        The method "x" has type "'b. 'b s list", but the expected method type was
        "'a list"
@@ -2350,6 +2350,6 @@ Error: Some type variables are unbound in this type:
        The method "m" has type
          "'b.
            < n : 'irr.
-                   ('irr -> unit) * ((< x : 'a; y : 'b; .. > as 'c) -> 'a) >"
-       where "'c" is unbound
+                   ('irr -> unit) * (((|< x : 'a; y : 'b; .. > as 'c|)) -> 'a) >"
+       where "(|'c|)" is unbound
 |}]

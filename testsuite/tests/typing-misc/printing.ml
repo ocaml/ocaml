@@ -99,8 +99,8 @@ Line 3, characters 22-23:
 Error: The value "x" has type
          "t1" = "< m : 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b) >"
        but an expression was expected of type "t2" = "< m : 'a. 'a * ('a * t2) >"
-       Type "< m : 'c. 'c * ('a * 'd) > as 'd" is not compatible with type
-         "t2" = "< m : 'a. 'a * ('a * t2) >"
+       Type "< m : (|'c. 'c * ('a * 'd)|) > as 'd" is not compatible with type
+         "t2" = "< m : (|'a. 'a * ('a * t2)|) >"
        The method "m" has type "'c. 'c * ('a * < m : 'c. 'e >) as 'e",
        but the expected method type was "'a. 'a * ('a * t2)"
        The universal variable "'a" would escape its scope

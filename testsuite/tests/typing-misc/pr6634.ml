@@ -23,7 +23,7 @@ Error: Signature mismatch:
          type t = [ `T of t ]
        is not included in
          type t = [ `T of t/3 ]
-       The type "[ `T of t ]" is not equal to the type "[ `T of t/2 ]"
+       The type "[ `T of (|t|) ]" is not equal to the type "[ `T of (|t/2|) ]"
        In tag "`T", type "t" = "[ `T of t ]" is not equal to type "t/2" = "int"
        Line 4, characters 2-20:
          Definition of type "t"

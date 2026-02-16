@@ -620,7 +620,7 @@ Error: Signature mismatch:
          external f : int -> int -> int = "f" "f_nat"
        is not included in
          external f : int -> int = "f" "f_nat"
-       The type "int -> int -> int" is not compatible with the type "int -> int"
+       The type "int -> int (|->|) int" is not compatible with the type "int -> (|int|)"
        Type "int -> int" is not compatible with type "int"
 |}]
 

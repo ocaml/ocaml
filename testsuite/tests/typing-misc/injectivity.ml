@@ -548,7 +548,7 @@ type 'a t
 Line 3, characters 79-84:
 3 | let inj_t : type a b. (a t, b t) Type.eq -> (a, b) Type.eq = function Equal -> Equal
                                                                                    ^^^^^
-Error: The constructor "Equal" has type "(a, a) Type.eq"
-       but an expression was expected of type "(a, b) Type.eq"
+Error: The constructor "Equal" has type "((|a|), (|a|)) Type.eq"
+       but an expression was expected of type "(a, (|b|)) Type.eq"
        Type "a" is not compatible with type "b"
 |}]
