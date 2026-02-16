@@ -12,7 +12,7 @@ class virtual t : object method virtual x : float end
 Line 4, characters 8-17:
 4 |         inherit t
             ^^^^^^^^^
-Error: The method "x" has type "int" but is expected to have type "float"
+Error: The method "x" has type "(|int|)" but is expected to have type "(|float|)"
        Type "int" is not compatible with type "float"
 |}]
 

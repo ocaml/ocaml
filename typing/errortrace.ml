@@ -240,10 +240,10 @@ type 'a extended_explanation =
   | Promoted of Format_doc.t
   | Standard of 'a
 
-type ('a,'b) s = {
+type ('a,'b,'c) s = {
   top: ('a ctx_diff * bool) option;
   tr: 'a ctx_diff list;
-  expl: ('a,'b) root extended_explanation option;
+  expl: ('b,'c) root extended_explanation option;
 }
 (** The structured version of the trace is split in three parts:
 - {!top} the first element of the trace

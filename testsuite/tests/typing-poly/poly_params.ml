@@ -344,8 +344,8 @@ type p2 = ('a. 'a -> 'a) -> int
 Line 4, characters 24-25:
 4 | let foo (x : p1) : p2 = x
                             ^
-Error: The value "x" has type "p1" = "(bool -> bool) -> int"
-       but an expression was expected of type "p2" = "('a. 'a -> 'a) -> int"
+Error: The value "x" has type "p1" = "((|bool|) -> bool) -> int"
+       but an expression was expected of type "p2" = "('a. (|'a|) -> 'a) -> int"
        Type "bool" is not compatible with type "'a"
 |}];;
 
@@ -367,6 +367,19 @@ Error: Signature mismatch:
        Values do not match: val f : p1 is not included in val f : p2
        The type "p1" = "(bool -> bool) -> int" is not compatible with the type
          "p2" = "('a. 'a -> 'a) -> int"
+       Type "bool" is not compatible with type "'a"
+|}, Principal{|
+Line 1, characters 59-60:
+1 | module Foo (X : sig val f : p1 end) : sig val f : p2 end = X
+                                                               ^
+Error: Signature mismatch:
+       Modules do not match:
+         sig val f : p1 end
+       is not included in
+         sig val f : p2 end
+       Values do not match: val f : p1 is not included in val f : p2
+       The type "p1" = "((|bool|) -> bool) -> int" is not compatible with the type
+         "p2" = "('a. (|'a|) -> 'a) -> int"
        Type "bool" is not compatible with type "'a"
 |}];;
 

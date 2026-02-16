@@ -109,7 +109,7 @@ Error: Some type variables are unbound in this type:
              method get : 'a
              method set : 'a -> unit
            end
-       The method "get" has type "'a" where "'a" is unbound
+       The method "get" has type "(|'a|)" where "(|'a|)" is unbound
 |}];;
 
 class ref (x_init:int) = object
@@ -590,9 +590,9 @@ Line 1, characters 25-27:
                              ^^
 Error: The value "c3" has type
          "int_comparable3" =
-           "< cmp : int_comparable -> int; setx : int -> unit; x : int >"
+           "< cmp : int_comparable (|->|) int; setx : int -> unit; x : int >"
        but an expression was expected of type
-         "#comparable as 'a" = "< cmp : 'a -> int; .. >"
+         "#comparable as 'a" = "< cmp : 'a (|->|) int; .. >"
        The method "cmp" has type "int_comparable -> int",
        but the expected method type was "#comparable -> int"
        Type "int_comparable" = "< cmp : int_comparable -> int; x : int >"

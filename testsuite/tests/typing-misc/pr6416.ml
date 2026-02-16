@@ -26,7 +26,7 @@ Error: Signature mismatch:
          val f : t -> unit
        is not included in
          val f : t/2 -> unit
-       The type "t -> unit" is not compatible with the type "t/2 -> unit"
+       The type "(|t|) -> unit" is not compatible with the type "(|t/2|) -> unit"
        Type "t" is not compatible with type "t/2"
        Line 6, characters 4-14:
          Definition of type "t"
@@ -182,8 +182,8 @@ Error: Signature mismatch:
          val f : a/2 -> 'a -> a
        is not included in
          val f : a/2 -> (module a) -> a/2
-       The type "a/2 -> (module a) -> a" is not compatible with the type
-         "a/2 -> (module a) -> a/2"
+       The type "a/2 -> (module a) -> (|a|)" is not compatible with the type
+         "a/2 -> (module a) -> (|a/2|)"
        Type "a" is not compatible with type "a/2"
        Line 5, characters 12-22:
          Definition of type "a"
@@ -313,7 +313,7 @@ Error: Signature mismatch:
          class type c = object method m : t/2 end
        does not match
          class type c = object method m : t end
-       The method m has type "t/2" but is expected to have type "t"
+       The method m has type "(|t/2|)" but is expected to have type "(|t|)"
        Type "t/2" is not equal to type "t" = "K.t"
        Line 12, characters 4-10:
          Definition of type "t"
@@ -372,8 +372,8 @@ Error: Signature mismatch:
          val f : t/4 -> t/3 -> t/2 -> t
        is not included in
          val f : t -> t -> t -> t
-       The type "t/4 -> t/3 -> t/2 -> t" is not compatible with the type
-         "t -> t -> t -> t"
+       The type "(|t/4|) -> t/3 -> t/2 -> t" is not compatible with the type
+         "(|t|) -> t -> t -> t"
        Type "t/4" is not compatible with type "t"
        Line 4, characters 0-10:
          Definition of type "t"

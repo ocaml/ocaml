@@ -295,7 +295,7 @@ Line 4, characters 13-20:
 4 |   constraint 'a = 'b
                  ^^^^^^^
 Error: The type constraints are not consistent.
-       Type "int -> float" is not compatible with type "bool -> char"
+       Type "(|int|) -> float" is not compatible with type "(|bool|) -> char"
        Type "int" is not compatible with type "bool"
 |}]
 
@@ -309,7 +309,7 @@ Line 4, characters 2-31:
 4 |   constraint 'b = float * float
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The class constraints are not consistent.
-       Type "int * int" is not compatible with type "float * float"
+       Type "(|int|) * int" is not compatible with type "(|float|) * float"
        Type "int" is not compatible with type "float"
 |}]
 

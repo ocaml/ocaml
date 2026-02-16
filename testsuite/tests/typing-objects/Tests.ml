@@ -37,7 +37,7 @@ Lines 3-5, characters 4-3:
 5 | end..
 Error: Some type variables are unbound in this type:
          class d : unit -> object method f : 'a -> unit end
-       The method "f" has type "'a -> unit" where "'a" is unbound
+       The method "f" has type "(|'a|) -> unit" where "(|'a|)" is unbound
 |}];;
 
 (* Create instance #c *)
@@ -714,8 +714,8 @@ Error: Signature mismatch:
        is not included in
          val f : #c -> #c
        The type "(#c as 'a) -> 'a" is not compatible with the type "#c -> #c"
-       Type "#c as 'a" = "< m : 'a; .. >" is not compatible with type
-         "#c as 'b" = "< m : 'b; .. >"
+       Type "(|#c as 'a|)" = "< m : (|'a|); .. >" is not compatible with type
+         "(|#c as 'b|)" = "< m : (|'b|); .. >"
        Type "'a" is not compatible with type "'b"
 |}];;
 
@@ -741,7 +741,7 @@ fun x -> (x : int -> bool :> 'a -> 'a);;
 Line 1, characters 9-38:
 1 | fun x -> (x : int -> bool :> 'a -> 'a);;
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type "int -> bool" is not a subtype of "int -> int"
+Error: Type "int -> (|bool|)" is not a subtype of "int -> (|int|)"
        Type "bool" is not a subtype of "int"
 |}];;
 fun x -> (x : int -> bool :> int -> int);;
@@ -749,7 +749,7 @@ fun x -> (x : int -> bool :> int -> int);;
 Line 1, characters 9-40:
 1 | fun x -> (x : int -> bool :> int -> int);;
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type "int -> bool" is not a subtype of "int -> int"
+Error: Type "int -> (|bool|)" is not a subtype of "int -> (|int|)"
        Type "bool" is not a subtype of "int"
 |}];;
 fun x -> (x : < > :> < .. >);;
@@ -1040,7 +1040,7 @@ Error: The class type object method a : int method b : 'a end
        The class type object method a : int method b : 'a end
        is not matched by the class type
          object method a : 'a method b : 'a end
-       The method a has type "int" but is expected to have type "'a"
+       The method a has type "(|int|)" but is expected to have type "(|'a|)"
        Type "int" is not compatible with type "'a"
 |}];;
 
@@ -1073,8 +1073,8 @@ Lines 3-5, characters 8-3:
 Error: The class type object ('a) method m : < m : 'a; .. > as 'a end
        is not matched by the class type
          object method m : < m : 'a > as 'a end
-       The method m has type "< m : 'a; .. > as 'a"
-       but is expected to have type "< m : 'b > as 'b"
+       The method m has type "(|< m : (|'a|); .. > as 'a|)"
+       but is expected to have type "(|< m : (|'b|) > as 'b|)"
        Type "'a" is not compatible with type "<  >"
 |}];;
 
@@ -1094,9 +1094,9 @@ Error: The class type
          object method foo : (< foo : int; .. > as 'a) -> 'a -> unit end
        is not matched by the class type
          object method foo : < foo : int; .. > -> < foo : int > -> unit end
-       The method foo has type "'a. (< foo : int; .. > as 'a) -> 'a -> unit"
+       The method foo has type "'a. (< foo : int; .. > as 'a) -> (|'a|) -> unit"
        but is expected to have type
-         "'b. (< foo : int; .. > as 'b) -> < foo : int > -> unit"
+         "'b. (< foo : int; .. > as 'b) -> (|< foo : int >|) -> unit"
        Type "'c" is not compatible with type "<  >"
 |}];;
 
@@ -1132,7 +1132,7 @@ Error: The class type
          object ('a) method m : (< m : 'a -> unit; .. > as 'a) -> unit end
        is not matched by the class type
          object method m : < m : 'a; x : int; .. > -> unit as 'a end
-       The method m has type "(< m : 'a -> unit; .. > as 'a) -> unit"
+       The method m has type "(< m : (|'a|) -> unit; .. > as 'a) -> unit"
        but is expected to have type
          "'b. (< m : 'c; x : int; .. > as 'b) -> unit as 'c"
        Type "'a" is not compatible with type "< x : int; .. >"
@@ -1459,6 +1459,6 @@ Line 2, characters 0-16:
 2 | class d = ['a] c
     ^^^^^^^^^^^^^^^^
 Error: Some type variables are unbound in this type: class d : ['a] c
-       The method "m" has type "(< f : 'b; x : 'a > as 'b) -> unit" where "'a"
+       The method "m" has type "(< f : 'b; x : (|'a|) > as 'b) -> unit" where "(|'a|)"
        is unbound
 |}]

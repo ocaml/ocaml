@@ -285,7 +285,7 @@ val f : ([< `A | `B of string | `R of 'a ] as 'a) -> int = <fun>
 Line 4, characters 30-31:
 4 | let g (x:[`A | `R of rt]) = f x
                                   ^
-Error: The value "x" has type "[ `A | `R of rt ]"
+Error: The value "x" has type "[ `A | `R of (|rt|) ]"
        but an expression was expected of type "[< `A | `R of 'a ] as 'a"
        In tag "`R", type "rt" = "[ `A | `B of string | `R of rt ]"
        is not compatible with type "[< `A | `R of 'a ] as 'a"
@@ -310,7 +310,7 @@ let f x = (x : [ `Foo of int ] list :> [ `Foo | `Bar ] list)
 Line 1, characters 10-60:
 1 | let f x = (x : [ `Foo of int ] list :> [ `Foo | `Bar ] list)
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type "[ `Foo of int ] list" is not a subtype of "[ `Bar | `Foo ] list"
+Error: Type "(|[ `Foo of int ]|) list" is not a subtype of "(|[ `Bar | `Foo ]|) list"
        Type "[ `Foo of int ]" is not a subtype of "[ `Bar | `Foo ]"
        Arities for tag "`Foo" are incompatible.
 |}]
@@ -324,9 +324,9 @@ let f (x: [< `A] * 'a * ' a ) = match x with
 Line 2, characters 4-13:
 2 |   | `A , _, _ -> ()
         ^^^^^^^^^
-Error: This pattern matches values of type "[< `A ] * unit * 'a option"
+Error: This pattern matches values of type "[< `A ] * unit * 'a (|option|)"
        but a pattern was expected which matches values of type
-         "[< `A ] * unit * unit"
+         "[< `A ] * unit * (|unit|)"
        Type "'a option" is not compatible with type "unit"
 |}]
 

@@ -21,8 +21,8 @@ let trivial t =
 Line 4, characters 4-11:
 4 |   | BoolLit -> ()
         ^^^^^^^
-Error: This pattern matches values of type "bool t"
-       but a pattern was expected which matches values of type "int t"
+Error: This pattern matches values of type "(|bool|) t"
+       but a pattern was expected which matches values of type "(|int|) t"
        Type "bool" is not compatible with type "int"
 |}]
 
@@ -46,8 +46,8 @@ let trivial_merged t =
 Line 4, characters 4-11:
 4 |   | BoolLit -> ()
         ^^^^^^^
-Error: This pattern matches values of type "bool t"
-       but a pattern was expected which matches values of type "int t"
+Error: This pattern matches values of type "(|bool|) t"
+       but a pattern was expected which matches values of type "(|int|) t"
        Type "bool" is not compatible with type "int"
 |}]
 
@@ -81,8 +81,8 @@ let trivial_merged_annotated_under_tuple2 (type a) (tt : a t * a t) =
 Line 3, characters 22-29:
 3 |   | IntLit, (IntLit | BoolLit) -> ()
                           ^^^^^^^
-Error: This pattern matches values of type "bool t"
-       but a pattern was expected which matches values of type "a t"
+Error: This pattern matches values of type "(|bool|) t"
+       but a pattern was expected which matches values of type "(|a|) t"
        Type "bool" is not compatible with type "a" = "int"
 |}]
 
@@ -121,8 +121,8 @@ let simple t a =
 Line 4, characters 4-11:
 4 |   | BoolLit, true -> ()
         ^^^^^^^
-Error: This pattern matches values of type "bool t"
-       but a pattern was expected which matches values of type "int t"
+Error: This pattern matches values of type "(|bool|) t"
+       but a pattern was expected which matches values of type "(|int|) t"
        Type "bool" is not compatible with type "int"
 |}]
 
@@ -148,8 +148,8 @@ let simple_merged t a =
 Line 4, characters 4-11:
 4 |   | BoolLit, true -> ()
         ^^^^^^^
-Error: This pattern matches values of type "bool t"
-       but a pattern was expected which matches values of type "int t"
+Error: This pattern matches values of type "(|bool|) t"
+       but a pattern was expected which matches values of type "(|int|) t"
        Type "bool" is not compatible with type "int"
 |}]
 
@@ -377,8 +377,8 @@ let noop t a =
 Line 4, characters 4-11:
 4 |   | BoolLit, x -> x
         ^^^^^^^
-Error: This pattern matches values of type "bool t"
-       but a pattern was expected which matches values of type "int t"
+Error: This pattern matches values of type "(|bool|) t"
+       but a pattern was expected which matches values of type "(|int|) t"
        Type "bool" is not compatible with type "int"
 |}]
 
@@ -402,8 +402,8 @@ let noop_merged t a =
 Line 4, characters 4-11:
 4 |   | BoolLit, x -> x
         ^^^^^^^
-Error: This pattern matches values of type "bool t"
-       but a pattern was expected which matches values of type "int t"
+Error: This pattern matches values of type "(|bool|) t"
+       but a pattern was expected which matches values of type "(|int|) t"
        Type "bool" is not compatible with type "int"
 |}]
 
@@ -437,8 +437,8 @@ let trivial2 t2 =
 Line 4, characters 4-10:
 4 |   | Bool _ -> ()
         ^^^^^^
-Error: This pattern matches values of type "bool t2"
-       but a pattern was expected which matches values of type "int t2"
+Error: This pattern matches values of type "(|bool|) t2"
+       but a pattern was expected which matches values of type "(|int|) t2"
        Type "bool" is not compatible with type "int"
 |}]
 
@@ -462,8 +462,8 @@ let trivial2_merged t2 =
 Line 4, characters 4-10:
 4 |   | Bool _ -> ()
         ^^^^^^
-Error: This pattern matches values of type "bool t2"
-       but a pattern was expected which matches values of type "int t2"
+Error: This pattern matches values of type "(|bool|) t2"
+       but a pattern was expected which matches values of type "(|int|) t2"
        Type "bool" is not compatible with type "int"
 |}]
 
@@ -488,8 +488,8 @@ let extract t2 =
 Line 4, characters 4-10:
 4 |   | Bool _ -> x
         ^^^^^^
-Error: This pattern matches values of type "bool t2"
-       but a pattern was expected which matches values of type "int t2"
+Error: This pattern matches values of type "(|bool|) t2"
+       but a pattern was expected which matches values of type "(|int|) t2"
        Type "bool" is not compatible with type "int"
 |}]
 
@@ -513,8 +513,8 @@ let extract_merged t2 =
 Line 4, characters 4-10:
 4 |   | Bool x -> x
         ^^^^^^
-Error: This pattern matches values of type "bool t2"
-       but a pattern was expected which matches values of type "int t2"
+Error: This pattern matches values of type "(|bool|) t2"
+       but a pattern was expected which matches values of type "(|int|) t2"
        Type "bool" is not compatible with type "int"
 |}]
 
@@ -704,8 +704,8 @@ Lines 3-4, characters 4-42:
 3 | ....IntLit,  ({ contents = true } as x), _
 4 |   | BoolLit,  _, ({ contents = true} as x)............
 Error: The variable "x" on the left-hand side of this or-pattern has type
-         "bool ref"
-       but on the right-hand side it has type "a ref"
+         "(|bool|) ref"
+       but on the right-hand side it has type "(|a|) ref"
        Type "bool" is not compatible with type "a"
 |}]
 

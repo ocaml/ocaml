@@ -89,8 +89,8 @@ let f (type a) t (x : a) =
 Line 4, characters 4-11:
 4 |   | BoolLit, b -> 1
         ^^^^^^^
-Error: This pattern matches values of type "bool t"
-       but a pattern was expected which matches values of type "int t"
+Error: This pattern matches values of type "(|bool|) t"
+       but a pattern was expected which matches values of type "(|int|) t"
        Type "bool" is not compatible with type "int"
 |}]
 

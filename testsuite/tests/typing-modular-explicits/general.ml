@@ -619,8 +619,8 @@ let failed_subtyping x =
 Line 2, characters 2-63:
 2 |   (x : (module A : Typ) -> A.t list :> (module B : Typ) -> B.t)
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type "(module A : Typ) -> A.t list" is not a subtype of
-         "(module B : Typ) -> B.t"
+Error: Type "(module A : Typ) -> A.t (|list|)" is not a subtype of
+         "(module B : Typ) -> (|B.t|)"
        Type "A.t list" is not a subtype of "B.t"
 |}]
 
@@ -1332,9 +1332,9 @@ let f (x : (module T : Typ) -> int -> Int.t)
 Line 8, characters 4-5:
 8 |   = x
         ^
-Error: The value "x" has type "(module Int : Typ) -> int -> Stdlib.Int.t"
+Error: The value "x" has type "(module Int : Typ) -> int -> (|Stdlib.Int.t|)"
        but an expression was expected of type
-         "(module Int : Typ) -> int -> Int.t"
+         "(module Int : Typ) -> int -> (|Int.t|)"
        Type "Int.t" = "int" is not compatible with type "Int.t"
 |}]
 

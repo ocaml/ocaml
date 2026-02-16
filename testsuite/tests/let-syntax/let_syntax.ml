@@ -263,8 +263,8 @@ let ill_typed_4 =
 Line 4, characters 4-8:
 4 |     and+ y = 2 in
         ^^^^
-Error: The operator "and+" has type "bool -> bool"
-       but it was expected to have type "bool -> 'a -> 'b"
+Error: The operator "and+" has type "bool -> (|bool|)"
+       but it was expected to have type "bool -> 'a (|->|) 'b"
        Type "bool" is not compatible with type "'a -> 'b"
 |}];;
 
@@ -352,8 +352,8 @@ let ill_typed_7 =
 Line 3, characters 4-8:
 3 |     let+ x = 1
         ^^^^
-Error: The operator "let+" has type "(int -> 'a) -> int -> 'a"
-       but it was expected to have type "(int -> 'a) -> ('b * 'c -> 'd) -> 'e"
+Error: The operator "let+" has type "(int -> 'a) -> (|int|) -> 'a"
+       but it was expected to have type "(int -> 'a) -> ('b * 'c (|->|) 'd) -> 'e"
        Type "int" is not compatible with type "'b * 'c -> 'd"
 |}];;
 
@@ -496,9 +496,9 @@ Line 4, characters 14-25:
 4 |     and+ () = open_ "foo"
                   ^^^^^^^^^^^
 Error: This expression has type
-         "(Indexed_monad.closed, Indexed_monad.opened, unit) Indexed_monad.t"
+         "((|Indexed_monad.closed|), Indexed_monad.opened, unit) Indexed_monad.t"
        but an expression was expected of type
-         "(Indexed_monad.opened, 'a, 'b) Indexed_monad.t"
+         "((|Indexed_monad.opened|), 'a, 'b) Indexed_monad.t"
        Type "Indexed_monad.closed" is not compatible with type
          "Indexed_monad.opened"
 |}];;
@@ -516,9 +516,9 @@ Lines 6-7, characters 4-29:
 6 | ....let* second = read in
 7 |       return (first ^ second)
 Error: This expression has type
-         "(Indexed_monad.opened, Indexed_monad.opened, string) Indexed_monad.t"
+         "((|Indexed_monad.opened|), Indexed_monad.opened, string) Indexed_monad.t"
        but an expression was expected of type
-         "(Indexed_monad.closed, 'a, 'b) Indexed_monad.t"
+         "((|Indexed_monad.closed|), 'a, 'b) Indexed_monad.t"
        Type "Indexed_monad.opened" is not compatible with type
          "Indexed_monad.closed"
 |}];;

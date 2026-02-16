@@ -16,8 +16,8 @@ end
 Line 6, characters 5-10:
 6 |      Equal
          ^^^^^
-Error: The constructor "Equal" has type "(m1, m1) Type.eq"
-       but an expression was expected of type "(m1, m2) Type.eq"
+Error: The constructor "Equal" has type "((|m1|), (|m1|)) Type.eq"
+       but an expression was expected of type "(m1, (|m2|)) Type.eq"
        Type "m1" is not compatible with type "m2"
 |}]
 
@@ -127,7 +127,7 @@ end;;
 Line 2, characters 52-53:
 2 |   let f : type a b. a M.t u -> b M.t = fun (U x) -> x
                                                         ^
-Error: The value "x" has type "$0 M.t" but an expression was expected of type
-         "b M.t"
+Error: The value "x" has type "(|$0|) M.t" but an expression was expected of type
+         "(|b|) M.t"
        Type "$0" is not compatible with type "b"
 |}]

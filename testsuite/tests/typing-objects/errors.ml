@@ -31,7 +31,7 @@ Error: The class type object method x : 'a * float end
        is not matched by the class type ct
        The class type object method x : 'a * float end
        is not matched by the class type object method x : int end
-       The method x has type "'a * float" but is expected to have type "int"
+       The method x has type "'a (|*|) float" but is expected to have type "(|int|)"
        Type "'a * float" is not compatible with type "int"
 |}]
 

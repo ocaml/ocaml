@@ -40,8 +40,8 @@ module Structured = Errortrace.Structured
 
 type 'a diff = 'a Out_type.diff = Same of 'a | Diff of 'a * 'a
 
-let trees_of_trace mode =
-  List.map (Errortrace.map_cdiff (trees_of_type_expansion mode))
+let trees_of_trace mode l =
+  List.map (Errortrace.map_cdiff (trees_of_type_expansion mode)) l
 
 let print_tag ppf s = Style.inline_code ppf ("`" ^ s)
 
@@ -136,11 +136,12 @@ let promote_diff env {Errortrace.got; expected} =
   Btype.backtrack snap;
   res
 
-let may_prepare_expansion compact (Errortrace.{ty; expanded} as ty_exp) =
+let may_prepare_expansion compact (ty_exp, htarget) =
+  let Errortrace.{ty; expanded} = ty_exp in
   match Types.get_desc expanded with
     Tvariant _ | Tobject _ when compact ->
-      Variable_names.reserve ty; Errortrace.{ty; expanded = ty}
-  | _ -> prepare_expansion ty_exp
+      Variable_names.reserve ty; Errortrace.{ty; expanded = ty}, htarget
+  | _ -> prepare_expansion ty_exp, htarget
 
 let print_path p =
   Fmt.dprintf "%a" !Oprint.out_ident (namespaced_tree_of_path Type p)
@@ -450,8 +451,8 @@ let head_error_printer mode txt_got txt_but = function
 
 let warn_on_missing_defs env ppf = function
   | None -> ()
-  | Some Errortrace.{ d = { got      = {ty=te1; expanded=_};
-                            expected = {ty=te2; expanded=_} }; _ } ->
+  | Some Errortrace.{ d = { got      = {ty=te1; expanded=_}, _;
+                            expected = {ty=te2; expanded=_}, _ }; _ } ->
       warn_on_missing_def env ppf te1;
       warn_on_missing_def env ppf te2
 
@@ -490,8 +491,8 @@ let explain_names env ppf =
        let paths = List.map tree_of_path paths in
        match explanation with
        | Internal_names.Equation { lhs; rhs; } ->
-           let rhseq = tree_of_typexp Type_scheme rhs in
-           let lhseq = tree_of_typexp Type_scheme lhs in
+           let rhseq = tree_of_typexp None Type_scheme rhs in
+           let lhseq = tree_of_typexp None Type_scheme lhs in
            fprintf ppf
              "@ @[<2>@{<hint>Hint@}:@ %a@ %a@ \
               introduced in the equation@ %a = %a@]"
@@ -514,8 +515,39 @@ let explain_names env ppf =
 let hide_variant ty_exp =
   Errortrace.{ty_exp with expanded = hide_variant_name ty_exp.expanded}
 
+let zip_cdiff x y =
+  let open Errortrace in
+  let d = {
+        got = x.d.got, y.d.got;
+        expected = x.d.expected, y.d.expected
+      }
+  in
+  { ctx = x.ctx; d }
+
+let highlight_type ty =
+  let hty x = highlight_type Paired x.Errortrace.ty in
+  Errortrace.map_cdiff hty ty
+let no_highlight = Errortrace.{ ctx = None; d = { got = None; expected = None} }
+
+let associate_htarget { Structured.top; tr; expl} =
+  match top, tr with
+  | None, _ -> { Structured.top = None; tr = []; expl }
+  | Some (h,c), [] ->
+      let h = Errortrace.map_cdiff (fun x -> x, None) h in
+      { Structured.top = Some (h, c); tr = []; expl }
+  | Some (h,c), a :: q ->
+      let top = Some (zip_cdiff h (highlight_type a), c) in
+      let htrace = List.map highlight_type q @ [no_highlight] in
+      let tr = List.map2 zip_cdiff tr htrace in
+      { Structured.top; tr; expl }
+
 let structured_trace env tr =
-  Structured.parse ~promote:(promote_diff env) ~status:printing_status tr
+  associate_htarget
+  @@ Structured.parse ~promote:(promote_diff env) ~status:printing_status tr
+
+let prepare_trace_expansion tr =
+  let expand_elt (x,h) = prepare_expansion x, h in
+  List.map (Errortrace.map_cdiff expand_elt) tr
 
 (* [subst] comes out of equality, and is [[]] otherwise *)
 let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
@@ -527,7 +559,7 @@ let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
   with_labels (not !Clflags.classic) (fun () ->
       let head = Option.map prepare_expansion_head str.top in
       let head_error = head_error_printer mode txt1 txt2 head in
-      let tr = List.map (Errortrace.map_cdiff prepare_expansion) str.tr in
+      let tr = prepare_trace_expansion str.tr in
       let tr = trees_of_trace mode tr in
       let mis = mismatch txt1 str.expl in
       fprintf ppf
@@ -582,7 +614,8 @@ module Subtype = struct
   let parse_sub tr =
     (* The subtype part of the trace does not contain any explanation *)
     let trace = { Errortrace.root = None; path = tr } in
-    Structured.parse ~promote:(Fun.const None) ~status:printing_status trace
+    associate_htarget
+      (Structured.parse ~promote:(Fun.const None) ~status:printing_status trace)
 
   let flatten_trace filter_trace fst (str: _ Structured.s) =
     with_labels (not !Clflags.classic) (fun () ->
@@ -596,9 +629,13 @@ module Subtype = struct
       | None, _ -> []
     )
 
+  let subtyping_printing_status elt =
+    printing_status (Errortrace.map_cdiff fst elt)
+
   let rec filter_trace keep_last = function
     | [] -> []
-    | [elt] when printing_status elt = Structured.Optional_refinement ->
+    | [elt] when
+        subtyping_printing_status elt = Structured.Optional_refinement ->
         if keep_last then [elt] else []
     | d :: rem -> d :: filter_trace keep_last rem
 

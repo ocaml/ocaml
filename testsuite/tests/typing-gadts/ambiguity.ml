@@ -267,7 +267,7 @@ Error: Signature mismatch:
          val r : '_weak2 list ref
        is not included in
          val r : T.t list ref
-       The type "'_weak2 list ref" is not compatible with the type "T.t list ref"
+       The type "(|'_weak2|) list ref" is not compatible with the type "(|T.t|) list ref"
        Type "'_weak2" is not compatible with type "T.t" = "T.u"
        This instance of "T.u" is ambiguous:
        it would escape the scope of its equation

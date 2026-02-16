@@ -44,15 +44,15 @@ Error: Signature mismatch:
          "f0 : unit * unit * unit * float * unit * unit * unit;"
        is not the same as:
          "f0 : unit * unit * unit * int * unit * unit * unit;"
-       The type "unit * unit * unit * float * unit * unit * unit"
-       is not equal to the type "unit * unit * unit * int * unit * unit * unit"
+       The type "unit * unit * unit * (|float|) * unit * unit * unit"
+       is not equal to the type "unit * unit * unit * (|int|) * unit * unit * unit"
        Type "float" is not equal to type "int"
        2. Fields do not match:
          "f1 : unit * unit * unit * string * unit * unit * unit;"
        is not the same as:
          "f1 : unit * unit * unit * int * unit * unit * unit;"
-       The type "unit * unit * unit * string * unit * unit * unit"
-       is not equal to the type "unit * unit * unit * int * unit * unit * unit"
+       The type "unit * unit * unit * (|string|) * unit * unit * unit"
+       is not equal to the type "unit * unit * unit * (|int|) * unit * unit * unit"
        Type "string" is not equal to type "int"
 |}];;
 
@@ -104,8 +104,8 @@ Error: Signature mismatch:
          "f1 : unit * unit * unit * string * unit * unit * unit;"
        is not the same as:
          "f1 : unit * unit * unit * int * unit * unit * unit;"
-       The type "unit * unit * unit * string * unit * unit * unit"
-       is not equal to the type "unit * unit * unit * int * unit * unit * unit"
+       The type "unit * unit * unit * (|string|) * unit * unit * unit"
+       is not equal to the type "unit * unit * unit * (|int|) * unit * unit * unit"
        Type "string" is not equal to type "int"
 |}];;
 

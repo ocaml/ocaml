@@ -178,8 +178,8 @@ let ko1 (type a) : a th -> a = function
 Line 2, characters 29-48:
 2 |   | Thunk (type b c) (x, f : b * (b -> c option)) -> f x
                                  ^^^^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type "b * (b -> c option)"
-       but a pattern was expected which matches values of type "b * (b -> a)"
+Error: This pattern matches values of type "b * (b -> c (|option|))"
+       but a pattern was expected which matches values of type "b * (b -> (|a|))"
        Type "c option" is not compatible with type "a"
 |}]
 (* Can only name fresh existentials *)

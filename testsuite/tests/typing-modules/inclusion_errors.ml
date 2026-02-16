@@ -23,7 +23,7 @@ Error: Signature mismatch:
          type ('a, 'b) t = 'a * 'a
        is not included in
          type ('a, 'b) t = 'a * 'b
-       The type "'a * 'a" is not equal to the type "'a * 'b"
+       The type "'a * (|'a|)" is not equal to the type "'a * (|'b|)"
        Type "'a" is not equal to type "'b"
 |}];;
 
@@ -46,7 +46,7 @@ Error: Signature mismatch:
          type ('a, 'b) t = 'a * 'b
        is not included in
          type ('a, 'b) t = 'a * 'a
-       The type "'a * 'b" is not equal to the type "'a * 'a"
+       The type "'a * (|'b|)" is not equal to the type "'a * (|'a|)"
        Type "'b" is not equal to type "'a"
 |}];;
 
@@ -71,8 +71,8 @@ Error: Signature mismatch:
          type ('b, 'c, 'a) t = ('b * 'c * 'a * 'c * 'a) x
        is not included in
          type ('a, 'b, 'c) t = ('a * 'b * 'c * 'b * 'a) x
-       The type "('b * 'c * 'a * 'c * 'a) x" is not equal to the type
-         "('b * 'c * 'a * 'c * 'b) x"
+       The type "('b * 'c * (|'a|) * 'c * (|'a|)) x" is not equal to the type
+         "((|'b|) * 'c * 'a * 'c * (|'b|)) x"
        Type "'a" is not equal to type "'b"
 |}]
 
@@ -96,7 +96,7 @@ Error: Signature mismatch:
        is not included in
          type t = < m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) >
        The type "< m : 'a. 'a * ('a * 'd) > as 'd" is not equal to the type
-         "< m : 'b. 'b * ('b * < m : 'c. 'c * 'e > as 'e) >"
+         "< m : 'b. 'b * ('b * < m : (|'c. 'c * 'e|) > as 'e) >"
        The method "m" has type "'a. 'a * ('a * < m : 'a. 'f >) as 'f",
        but the expected method type was "'c. 'c * ('b * < m : 'c. 'g >) as 'g"
        The universal variable "'b" would escape its scope
@@ -270,8 +270,8 @@ Error: Signature mismatch:
          type t = < m : int; n : int >
        is not included in
          type t = < m : float * int; n : int >
-       The type "< m : int; n : int >" is not equal to the type
-         "< m : float * int; n : int >"
+       The type "< m : (|int|); n : int >" is not equal to the type
+         "< m : float (|*|) int; n : int >"
        The method "m" has type "int", but the expected method type was
        "float * int"
 |}];;
@@ -585,7 +585,7 @@ Error: Signature mismatch:
          val f : < m : 'b. 'b * < m : 'c. 'c * 'a > as 'a > -> unit
        The type "(< m : 'a. 'a * 'd > as 'd) -> unit"
        is not compatible with the type
-         "< m : 'b. 'b * < m : 'c. 'c * 'e > as 'e > -> unit"
+         "< m : 'b. 'b * < m : (|'c. 'c * 'e|) > as 'e > -> unit"
        The method "m" has type "'a. 'a * (|< m : 'a. 'f >|) as 'f",
        but the expected method type was "'c. 'c * ('b (|*|) < m : 'c. 'g >) as 'g"
        The universal variable "'b" would escape its scope
@@ -638,7 +638,7 @@ Error: Signature mismatch:
          val f : 'b -> int
        is not included in
          val f : 'a -> float
-       The type "'a -> int" is not compatible with the type "'a -> float"
+       The type "'a -> (|int|)" is not compatible with the type "'a -> (|float|)"
        Type "int" is not compatible with type "float"
 |}]
 
@@ -661,7 +661,7 @@ Error: Signature mismatch:
          val x : '_weak2 list ref
        is not included in
          val x : 'a list ref
-       The type "'_weak2 list ref" is not compatible with the type "'a list ref"
+       The type "(|'_weak2|) list ref" is not compatible with the type "(|'a|) list ref"
        Type "'_weak2" is not compatible with type "'a"
 |}];;
 
@@ -750,7 +750,7 @@ Error: Signature mismatch:
          val f : 'a -> 'a
        is not included in
          val f : int -> float
-       The type "int -> int" is not compatible with the type "int -> float"
+       The type "int -> (|int|)" is not compatible with the type "int -> (|float|)"
        Type "int" is not compatible with type "float"
 |}];;
 
@@ -773,8 +773,8 @@ Error: Signature mismatch:
          val f : int * int -> int * int
        is not included in
          val f : int * float * int -> int -> int
-       The type "int * int -> int (|*|) int" is not compatible with the type
-         "int * float * (|int|) -> int (|->|) int"
+       The type "int (|*|) int -> int (|*|) int" is not compatible with the type
+         "int (|*|) float (|*|) int -> int (|->|) int"
        Type "int * int" is not compatible with type "int * float * (|int|)"
 |}];;
 
@@ -894,8 +894,8 @@ Error: Signature mismatch:
          val f : < m : 'a. [< `Foo ] as 'a > -> unit
        is not included in
          val f : < m : [< `Foo ] > -> unit
-       The type "< m : 'a. [< `Foo ] as 'a > -> unit"
-       is not compatible with the type "< m : [< `Foo ] > -> unit"
+       The type "< m : (|'a. [< `Foo ] as 'a|) > -> unit"
+       is not compatible with the type "< m : (|[< `Foo ]|) > -> unit"
        The method "m" has type "'b. [< `Foo ] as 'b",
        but the expected method type was "[< `Foo ]"
 |}];;
@@ -919,8 +919,8 @@ Error: Signature mismatch:
          val f : < m : [ `Foo ] > -> unit
        is not included in
          val f : < m : 'a. [< `Foo ] as 'a > -> unit
-       The type "< m : [ `Foo ] > -> unit" is not compatible with the type
-         "< m : 'a. [< `Foo ] as 'a > -> unit"
+       The type "< m : (|[ `Foo ]|) > -> unit" is not compatible with the type
+         "< m : (|'a. [< `Foo ] as 'a|) > -> unit"
        The method "m" has type "[ `Foo ]", but the expected method type was
        "'b. [< `Foo ] as 'b"
 |}];;
@@ -1321,7 +1321,7 @@ Error: Signature mismatch:
          type t = < a : int >
        is not included in
          type t = private < a : float; .. >
-       The type "int" is not equal to the type "float"
+       The type "(|int|)" is not equal to the type "(|float|)"
        Type "int" is not equal to type "float"
 |}];;
 
@@ -1350,7 +1350,7 @@ Error: Signature mismatch:
          type t = private u
        is not included in
          type t = private int * (int * int)
-       The type "int * q" is not equal to the type "int * (int * int)"
+       The type "int * (|q|)" is not equal to the type "int * (int (|*|) int)"
        Type "q" is not equal to type "int * int"
 |}];;
 
@@ -1379,8 +1379,8 @@ Error: Signature mismatch:
          type t = private u
        is not included in
          type t = private int * (int * int)
-       The type "int * q" is not equal to the type "int * (int * int)"
-       Type "q" = "int * w" is not equal to type "int * int"
+       The type "int * (|q|)" is not equal to the type "int * (int (|*|) int)"
+       Type "q" = "int * (|w|)" is not equal to type "int * (|int|)"
        Type "w" = "float" is not equal to type "int"
 |}];;
 
@@ -1744,8 +1744,8 @@ Error: Signature mismatch:
          "A : (< x : 'b * 'b > as 'b) -> (< y : 'a > as 'a) t"
        is not the same as:
          "A : (< x : 'b > as 'b) -> (< y : 'a > as 'a) t"
-       The type "< x : 'a * 'a > as 'a" is not equal to the type
-         "< x : 'b > as 'b"
+       The type "< x : 'a (|*|) 'a > as 'a" is not equal to the type
+         "< x : (|'b|) > as 'b"
        The method "x" has type "< x : 'c > (|*|) < x : 'c > as 'c",
        but the expected method type was "(|< x : 'b >|) as 'b"
 |}]
@@ -1772,8 +1772,8 @@ Error: Signature mismatch:
          "a : < x : 'a * 'a > as 'a;"
        is not the same as:
          "a : < x : 'a > as 'a;"
-       The type "< x : 'a * 'a > as 'a" is not equal to the type
-         "< x : 'b > as 'b"
+       The type "< x : 'a (|*|) 'a > as 'a" is not equal to the type
+         "< x : (|'b|) > as 'b"
        The method "x" has type "< x : 'c > (|*|) < x : 'c > as 'c",
        but the expected method type was "(|< x : 'b >|) as 'b"
 |}]
@@ -1807,8 +1807,8 @@ Error: Signature mismatch:
          "A : (< x : 'b * 'b > as 'b) -> (< y : 'a > as 'a) ext"
        is not the same as:
          "A : (< x : 'b > as 'b) -> (< y : 'a > as 'a) ext"
-       The type "< x : 'a * 'a > as 'a" is not equal to the type
-         "< x : 'b > as 'b"
+       The type "< x : 'a (|*|) 'a > as 'a" is not equal to the type
+         "< x : (|'b|) > as 'b"
        The method "x" has type "< x : 'c > (|*|) < x : 'c > as 'c",
        but the expected method type was "(|< x : 'b >|) as 'b"
 |}]

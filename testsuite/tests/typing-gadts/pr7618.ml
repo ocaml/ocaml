@@ -46,7 +46,7 @@ let x = match [] with ["1"] -> 1 | [1.0] -> 2 | [1] -> 3 | _ -> 4;;
 Line 1, characters 35-40:
 1 | let x = match [] with ["1"] -> 1 | [1.0] -> 2 | [1] -> 3 | _ -> 4;;
                                        ^^^^^
-Error: This pattern matches values of type "float list"
-       but a pattern was expected which matches values of type "string list"
+Error: This pattern matches values of type "(|float|) list"
+       but a pattern was expected which matches values of type "(|string|) list"
        Type "float" is not compatible with type "string"
 |}]
