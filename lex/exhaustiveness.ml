@@ -130,10 +130,19 @@ let find_missing_transition (state : Lexgen.automata) =
 exception Found_string of string
 
 (*
-   In order to match any input, every state of the automaton
-   that is reachable without going through a final state
-   must be final or have a transition defined for any byte
-   of input (0-255) and for the end-of-input/eof condition (256).
+   Let us say that an automata state is 'total' if it matches any
+   input byte (0-255) and the end-of-input/eof condition (256), and
+   'partial' otherwise. The automaton is 'exhaustive' if any path from
+   the input state to a partial state goes through a final state.
+
+   Note: due the longest-match policy, there can be transitions out of a
+   final states, which may lead to further final states corresponding to
+   longer matches, or fail and backtrack to the last final state
+   encountered.
+
+   The [is_exhaustive] function checks that the automaton is exhaustive,
+   or returns a counter-example, an input string that reaches a partial
+   state without going through a final state.
 
    We try to provide nice examples by favoring shorter strings.
    This is achieved by visiting the graph breadth-first instead of depth-first.
@@ -152,11 +161,10 @@ exception Found_string of string
    a byte (of type 'char' and numbered 0-255) or the end of input
    (code 256, denoted 'eof' in ocamllex pattern syntax).
 
-   We start from the initial state and visit all the states that are
-   reachable [without going through a final state] until we find a
-   missing transition or until there are no more nodes to visit. To
-   avoid visiting the same node multiple times, we keep track of the
-   visited nodes.
+   We start from the initial state and visit all reachable states,
+   stopping at final states. We fail if we encounter a partial state.
+   To avoid visiting the same node multiple times, we keep track
+   of the set of visited nodes.
 
    To obtain a sample input string, we keep an input path constructed
    from the sequence of transitions that were taken from the initial
