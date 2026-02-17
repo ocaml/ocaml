@@ -277,7 +277,7 @@ void * caml_globalsym(const char * name)
 
 char * caml_dlerror(void)
 {
-  return "dynamic loading not supported on this platform";
+  return (char *) "dynamic loading not supported on this platform";
 }
 
 #endif /* WITH_DYNAMIC_LINKING */

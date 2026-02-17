@@ -182,7 +182,7 @@ void getargs(int argc, char_os **argv)
         {
         case '\0':
             input_file = stdin;
-            file_prefix = T("stdin");
+            file_prefix = (char_os *) T("stdin");
             if (i + 1 < argc) usage();
             return;
 

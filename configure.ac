@@ -1066,15 +1066,19 @@ AS_CASE([$ocaml_cc_vendor],
       [cc_warnings="$cc_warnings -Wno-cast-function-type-mismatch"], [],
       [$warn_error_flag])])
 
-# Use -Wold-style-declaration if supported
-AX_CHECK_COMPILE_FLAG([-Wold-style-declaration],
-  [cc_warnings="$cc_warnings -Wold-style-declaration"], [],
-  [$warn_error_flag])
-
 # Use -Wimplicit-fallthrough if supported
 for flag in '-Wimplicit-fallthrough=5' '-Wimplicit-fallthrough'; do
   AX_CHECK_COMPILE_FLAG([$flag],
     [cc_warnings="$cc_warnings $flag"; break], [], [$warn_error_flag])
+done
+
+# Additional warnings
+for flag in \
+  '-Wold-style-declaration' \
+  '-Wwrite-strings' \
+; do
+    AX_CHECK_COMPILE_FLAG([$flag],
+      [cc_warnings="$cc_warnings $flag"], [], [$warn_error_flag])
 done
 
 AS_CASE([$enable_warn_error,OCAML__DEVELOPMENT_VERSION],
