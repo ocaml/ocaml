@@ -19,6 +19,10 @@ Working version
   legibility and correctness (fixes one bug, in weak.c).
   (Nick Barnes, review by Gabriel Scherer)
 
+* #14559: Remove `caml_fatal_error_arg` and `caml_fatal_error_arg2`
+  symbols from the runtime. The declarations were removed in 5.0.
+  (Antonin Décimo, review by Nicolás Ojeda Bär)
+
 ### Code generation and optimizations:
 
 * #13919: optimize `lazy v` when `v` is a structured constant

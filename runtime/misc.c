@@ -127,20 +127,6 @@ CAMLexport void caml_fatal_error (const char *msg, ...)
   abort();
 }
 
-CAMLexport void caml_fatal_error_arg (const char *fmt, const char *arg)
-{
-  fprintf (stderr, fmt, arg);
-  exit(2);
-}
-
-CAMLexport void caml_fatal_error_arg2 (const char *fmt1, const char *arg1,
-                                       const char *fmt2, const char *arg2)
-{
-  fprintf (stderr, fmt1, arg1);
-  fprintf (stderr, fmt2, arg2);
-  exit(2);
-}
-
 #ifdef ARCH_SIXTYFOUR
 #define MAX_EXT_TABLE_CAPACITY INT_MAX
 #else
