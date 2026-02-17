@@ -365,7 +365,7 @@ val rsplit_all :
 (** [rsplit_all ~sep s] is the list of all substrings of [s] that are
     delimited by non-overlapping matches of the separator [sep] or
     [[s]] if [sep] can't be found. Search for [sep] starts at position
-    [length s] in deacreasing indexing order and uses {!rfind_all}.
+    [length s] in decreasing indexing order and uses {!rfind_all}.
 
     Substrings [sub] for which [drop sub] is [true] are not included
     in the result. [drop] defaults to [Fun.const false].
@@ -619,7 +619,7 @@ val rfind_all :
 
 (** {1:replacing Replacing substrings}
 
-    {b Note.} To replace the same [sub] string multiple time, partially
+    {b Note.} To replace the same [sub] string multiple times, partially
     applying the [~sub] argument of these functions and using the
     resulting function repeatedly is more efficient. *)
 
@@ -655,7 +655,7 @@ val replace_all :
   ?start:int -> string -> string
 (** [replace_all ~sub ~by ~start s] replaces by [by] all non-overlapping
     occurrences of [sub] in [s] at or after the index or position [start]
-    (defaults to [0]). Occurences are found in increasing indexing order.
+    (defaults to [0]). Occurrences are found in increasing indexing order.
 
     If [sub] is [""], this inserts [by] on all positions from [start] on.
 
