@@ -414,7 +414,7 @@ external copy_sign : float -> float -> float
 external sign_bit : (float [@unboxed]) -> bool
   = "caml_signbit_float" "caml_signbit" [@@noalloc]
 (** [sign_bit x] is [true] if and only if the sign bit of [x] is set.
-    For example [sign_bit 1.] and [signbit 0.] are [false] while
+    For example [sign_bit 1.] and [sign_bit 0.] are [false] while
     [sign_bit (-1.)] and [sign_bit (-0.)] are [true].
 
     @since 4.08 *)

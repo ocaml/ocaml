@@ -318,7 +318,7 @@ module type S =
         @since 4.07 *)
 
     val of_seq : elt Seq.t -> t
-    (** Build a set from the given bindings
+    (** Build a set from the given elements
         @since 4.07 *)
   end
 (** Output signature of the functor {!Make}. *)

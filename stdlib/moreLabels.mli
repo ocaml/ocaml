@@ -928,7 +928,7 @@ module Map : sig
 
       val filter: f:(key -> 'a -> bool) -> 'a t -> 'a t
       (** [filter ~f m] returns the map with all the bindings in [m]
-          that satisfy predicate [p]. If every binding in [m] satisfies [f],
+          that satisfy predicate [f]. If every binding in [m] satisfies [f],
           [m] is returned unchanged (the result of the function is then
           physically equal to [m])
           @since 3.12
@@ -1350,7 +1350,7 @@ module Set : sig
           @since 4.07 *)
 
       val of_seq : elt Seq.t -> t
-      (** Build a set from the given bindings
+      (** Build a set from the given elements
           @since 4.07 *)
     end
   (** Output signature of the functor {!Make}. *)

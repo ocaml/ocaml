@@ -436,7 +436,7 @@ val escaped : string -> string
     sequences, following the lexical conventions of OCaml.
 
     All characters outside the US-ASCII printable range \[0x20;0x7E\] are
-    escaped, as well as backslash (0x2F) and double-quote (0x22).
+    escaped, as well as backslash (0x5C) and double-quote (0x22).
 
     The function {!Scanf.unescaped} is a left inverse of [escaped],
     i.e. [Scanf.unescaped (escaped s) = s] for any string [s] (unless
