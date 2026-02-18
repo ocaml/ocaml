@@ -30,6 +30,27 @@
 
 *)
 
+(** {1:capacity Capacity and reallocation strategy}
+
+    Internally, a buffer uses a {b backing byte sequence} whose length,
+    called the {b capacity}, is greater or equal to the number of
+    characters stored in the buffer (its {b length}).
+
+    When an operation needs to add more characters than the remaining
+    capacity allows, the backing byte sequence is reallocated. The new
+    capacity is the smallest power-of-two multiple of the initial size [n]
+    (as given to {!create}) that is large enough to hold the resulting
+    contents. In other words, the capacity is always [n * 2{^k}] for
+    some non-negative integer [k], up to a maximum of
+    {!Sys.max_string_length}.
+
+    This exponential reallocation strategy ensures that appending
+    characters has amortized constant-time cost.
+
+    {!clear} preserves the current capacity, while {!reset} returns
+    the capacity to its initial value [n].
+*)
+
 (** {b Unsynchronized accesses} *)
 
 [@@@alert unsynchronized_access
