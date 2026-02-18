@@ -39,7 +39,7 @@
 *)
 
 val zero : float
-(** The floating point 0.
+(** The floating-point number 0.
    @since 4.08 *)
 
 val one : float
@@ -73,7 +73,7 @@ external fma : float -> float -> float -> float =
    emulation.
 
    On 64-bit Cygwin, 64-bit mingw-w64 and MSVC 2017 and earlier, this function
-   may be emulated owing to known bugs on limitations on these platforms.
+   may be emulated owing to known bugs or limitations on these platforms.
    Note: since software emulation of the fma is costly, make sure that you are
    using hardware fma support if performance matters.
 
@@ -302,15 +302,15 @@ external hypot : float -> float -> float = "caml_hypot_float" "caml_hypot"
 
 external cosh : float -> float = "caml_cosh_float" "cosh"
 [@@unboxed] [@@noalloc]
-(** Hyperbolic cosine.  Argument is in radians. *)
+(** Hyperbolic cosine. *)
 
 external sinh : float -> float = "caml_sinh_float" "sinh"
 [@@unboxed] [@@noalloc]
-(** Hyperbolic sine.  Argument is in radians. *)
+(** Hyperbolic sine. *)
 
 external tanh : float -> float = "caml_tanh_float" "tanh"
 [@@unboxed] [@@noalloc]
-(** Hyperbolic tangent.  Argument is in radians. *)
+(** Hyperbolic tangent. *)
 
 external acosh : float -> float = "caml_acosh_float" "caml_acosh"
   [@@unboxed] [@@noalloc]
@@ -649,9 +649,9 @@ module Array : sig
       @since 5.1 *)
 
   val fold_left : ('acc -> float -> 'acc) -> 'acc -> t -> 'acc
-  (** [fold_left f x init] computes
-      [f (... (f (f x init.(0)) init.(1)) ...) init.(n-1)],
-      where [n] is the length of the floatarray [init]. *)
+  (** [fold_left f init a] computes
+      [f (... (f (f init a.(0)) a.(1)) ...) a.(n-1)],
+      where [n] is the length of the floatarray [a]. *)
 
   val fold_right : (float -> 'acc -> 'acc) -> t -> 'acc -> 'acc
   (** [fold_right f a init] computes
@@ -661,7 +661,7 @@ module Array : sig
   (** {1 Iterators on two arrays} *)
 
   val iter2 : (float -> float -> unit) -> t -> t -> unit
-  (** [Array.iter2 f a b] applies function [f] to all the elements of [a]
+  (** [iter2 f a b] applies function [f] to all the elements of [a]
       and [b].
       @raise Invalid_argument if the floatarrays are not the same size. *)
 
@@ -987,14 +987,14 @@ module ArrayLabels : sig
   (** {1:comparison Comparison} *)
 
   val equal : eq:(float -> float -> bool) -> t -> t -> bool
-  (** [equal eq a b] is [true] if and only if [a] and [b] have the
+  (** [equal ~eq a b] is [true] if and only if [a] and [b] have the
       same length [n] and for all [i] in \[[0];[n-1]\], [eq a.(i) b.(i)]
       is [true].
 
       @since 5.4 *)
 
   val compare : cmp:(float -> float -> int) -> t -> t -> int
-  (** [compare cmp a b] compares [a] and [b] according to the shortlex order,
+  (** [compare ~cmp a b] compares [a] and [b] according to the shortlex order,
       that is, shorter arrays are smaller and equal-sized arrays are compared
       in lexicographic order using [cmp] to compare elements.
 
@@ -1017,7 +1017,7 @@ module ArrayLabels : sig
       and builds a floatarray with the results returned by [f]. *)
 
   val map_inplace : f:(float -> float) -> t -> unit
-  (** [map_inplace f a] applies function [f] to all elements of [a],
+  (** [map_inplace ~f a] applies function [f] to all elements of [a],
       and updates their values in place.
       @since 5.1 *)
 
@@ -1032,19 +1032,19 @@ module ArrayLabels : sig
       @since 5.1 *)
 
   val fold_left : f:('acc -> float -> 'acc) -> init:'acc -> t -> 'acc
-  (** [fold_left ~f x ~init] computes
-      [f (... (f (f x init.(0)) init.(1)) ...) init.(n-1)],
-      where [n] is the length of the floatarray [init]. *)
+  (** [fold_left ~f ~init a] computes
+      [f (... (f (f init a.(0)) a.(1)) ...) a.(n-1)],
+      where [n] is the length of the floatarray [a]. *)
 
   val fold_right : f:(float -> 'acc -> 'acc) -> t -> init:'acc -> 'acc
-  (** [fold_right f a init] computes
+  (** [fold_right ~f a ~init] computes
       [f a.(0) (f a.(1) ( ... (f a.(n-1) init) ...))],
       where [n] is the length of the floatarray [a]. *)
 
   (** {1 Iterators on two arrays} *)
 
   val iter2 : f:(float -> float -> unit) -> t -> t -> unit
-  (** [Array.iter2 ~f a b] applies function [f] to all the elements of [a]
+  (** [iter2 ~f a b] applies function [f] to all the elements of [a]
       and [b].
       @raise Invalid_argument if the floatarrays are not the same size. *)
 
@@ -1062,7 +1062,7 @@ module ArrayLabels : sig
       [(f a1) && (f a2) && ... && (f an)]. *)
 
   val exists : f:(float -> bool) -> t -> bool
-  (** [exists f [|a1; ...; an|]] checks if at least one element of
+  (** [exists ~f [|a1; ...; an|]] checks if at least one element of
       the floatarray satisfies the predicate [f]. That is, it returns
       [(f a1) || (f a2) || ... || (f an)]. *)
 

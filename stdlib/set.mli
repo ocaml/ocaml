@@ -220,7 +220,7 @@ module type S =
 
     val filter: (elt -> bool) -> t -> t
     (** [filter f s] returns the set of all elements in [s]
-        that satisfy predicate [f]. If [f] satisfies every element in [s],
+        that satisfy predicate [f]. If every element in [s] satisfies [f],
         [s] is returned unchanged (the result of the function is then
         physically equal to [s]).
         @before 4.03 Physical equality was not ensured.*)

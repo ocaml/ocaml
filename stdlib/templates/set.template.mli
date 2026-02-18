@@ -201,7 +201,7 @@ module type S =
         with respect to the ordering over the type of the elements. *)
 
     val fold: f:(elt -> 'acc -> 'acc) -> t -> init:'acc -> 'acc
-    (** [fold ~f s init] computes [(f xN ... (f x2 (f x1 init))...)],
+    (** [fold ~f s ~init] computes [(f xN ... (f x2 (f x1 init))...)],
         where [x1 ... xN] are the elements of [s], in increasing order. *)
 
     (** {1:transforming Transforming} *)
@@ -220,7 +220,7 @@ module type S =
 
     val filter: f:(elt -> bool) -> t -> t
     (** [filter ~f s] returns the set of all elements in [s]
-        that satisfy predicate [f]. If [f] satisfies every element in [s],
+        that satisfy predicate [f]. If every element in [s] satisfies [f],
         [s] is returned unchanged (the result of the function is then
         physically equal to [s]).
         @before 4.03 Physical equality was not ensured.*)

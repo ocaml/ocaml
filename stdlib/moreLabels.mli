@@ -68,7 +68,7 @@ module Hashtbl : sig
 
    (**
       Unsynchronized accesses to a hash table may lead to an invalid hash table
-      state. Thus, concurrent accesses to a hash tables must be synchronized
+      state. Thus, concurrent accesses to a hash table must be synchronized
       (for instance with a {!Mutex.t}).
   *)
 
@@ -204,9 +204,9 @@ module Hashtbl : sig
   val filter_map_inplace: f:(key:'a -> data:'b -> 'b option) -> ('a, 'b) t ->
       unit
   (** [Hashtbl.filter_map_inplace ~f tbl] applies [f] to all bindings in
-      table [tbl] and update each binding depending on the result of
+      table [tbl] and updates each binding depending on the result of
       [f].  If [f] returns [None], the binding is discarded.  If it
-      returns [Some new_val], the binding is update to associate the key
+      returns [Some new_val], the binding is updated to associate the key
       to [new_val].
 
       Other comments for {!iter} apply as well.
@@ -1233,7 +1233,7 @@ module Set : sig
           with respect to the ordering over the type of the elements. *)
 
       val fold: f:(elt -> 'acc -> 'acc) -> t -> init:'acc -> 'acc
-      (** [fold ~f s init] computes [(f xN ... (f x2 (f x1 init))...)],
+      (** [fold ~f s ~init] computes [(f xN ... (f x2 (f x1 init))...)],
           where [x1 ... xN] are the elements of [s], in increasing order. *)
 
       (** {1:transforming Transforming} *)
@@ -1252,7 +1252,7 @@ module Set : sig
 
       val filter: f:(elt -> bool) -> t -> t
       (** [filter ~f s] returns the set of all elements in [s]
-          that satisfy predicate [f]. If [f] satisfies every element in [s],
+          that satisfy predicate [f]. If every element in [s] satisfies [f],
           [s] is returned unchanged (the result of the function is then
           physically equal to [s]).
           @before 4.03 Physical equality was not ensured.*)

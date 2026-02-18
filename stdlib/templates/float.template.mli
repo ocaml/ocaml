@@ -39,7 +39,7 @@
 *)
 
 val zero : float
-(** The floating point 0.
+(** The floating-point number 0.
    @since 4.08 *)
 
 val one : float
@@ -73,7 +73,7 @@ external fma : float -> float -> float -> float =
    emulation.
 
    On 64-bit Cygwin, 64-bit mingw-w64 and MSVC 2017 and earlier, this function
-   may be emulated owing to known bugs on limitations on these platforms.
+   may be emulated owing to known bugs or limitations on these platforms.
    Note: since software emulation of the fma is costly, make sure that you are
    using hardware fma support if performance matters.
 
@@ -302,15 +302,15 @@ external hypot : float -> float -> float = "caml_hypot_float" "caml_hypot"
 
 external cosh : float -> float = "caml_cosh_float" "cosh"
 [@@unboxed] [@@noalloc]
-(** Hyperbolic cosine.  Argument is in radians. *)
+(** Hyperbolic cosine. *)
 
 external sinh : float -> float = "caml_sinh_float" "sinh"
 [@@unboxed] [@@noalloc]
-(** Hyperbolic sine.  Argument is in radians. *)
+(** Hyperbolic sine. *)
 
 external tanh : float -> float = "caml_tanh_float" "tanh"
 [@@unboxed] [@@noalloc]
-(** Hyperbolic tangent.  Argument is in radians. *)
+(** Hyperbolic tangent. *)
 
 external acosh : float -> float = "caml_acosh_float" "caml_acosh"
   [@@unboxed] [@@noalloc]
