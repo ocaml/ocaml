@@ -22,7 +22,7 @@ set -e
 mainjob=./tools/ci/inria/main
 main="${mainjob} -j8"
 
-echo "============== minimal build ================="
+echo "============== minimal build ================= `date`"
 # The "MIN_BUILD" (formerly on Travis) builds with everything disabled (apart
 # from ocamltest). Its goals:
 #  - Ensure that the system builds correctly without native compilation
@@ -40,23 +40,26 @@ ${main} -conf --disable-native-compiler \
         -conf --disable-dependency-generation \
         -no-native
 
-echo "============== no naked pointers ================="
+echo "============== no naked pointers ================= `date`"
 ${main} -conf --disable-naked-pointers
 
-echo "============ bootstrap, no flat float arrays, clang, C23 ==============="
+echo "============ bootstrap, no flat float arrays, clang, C23 ===============\
+ `date`"
 ${main} -with-bootstrap \
         -conf --disable-flat-float-array \
         -conf CC=clang-18 \
         -conf CFLAGS=-std=gnu2x
 
-echo "============== flambda, no-naked-pointers  ================="
+echo "============== flambda, no-naked-pointers  ================= `date`"
 ${main} -conf --enable-flambda -conf --disable-naked-pointers
 
-echo "============== reserved header bits ================="
+echo "============== reserved header bits ================= `date`"
 ${main} -conf --enable-reserved-header-bits=27
 
-echo "============== cleanup at exit, clang ================="
+echo "============== cleanup at exit, clang ================= `date`"
 OCAMLRUNPARAM="c=1" ${main} -conf CC=clang-18
 
-echo "============== pic ================="
+echo "============== pic ================= `date`"
 ${main} -conf --with-pic
+
+echo "============== done ================= `date`"
