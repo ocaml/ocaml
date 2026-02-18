@@ -84,10 +84,107 @@ module rec G : sig
 end = G
 
 [%%expect {|
-Line 5, characters 19-25:
+Line 6, characters 6-7:
+6 | end = G
+          ^
+Error: Cannot safely evaluate the definition of the following cycle
+       of recursively-defined modules: G -> G.
+       There are no safe modules in this cycle (see manual section 12.2).
+Line 5, characters 2-36:
 5 |   external magic : a -> b = identity
-                       ^^^^^^
-Error: The type of this alias does not match that of the aliased primitive.
-       Type "a -> b" is not compatible with type "'a -> 'a"
-       Type "b" is not compatible with type "'a" = "a"
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  Module "G" defines an unsafe primitive alias, "magic" .
+  The type of the aliased primitive is less general than that of its alias.
+|}]
+
+type e
+external id: e -> e = "%identity"
+type f = int -> int
+
+[%%expect{|
+type e
+external id : e -> e = "%identity"
+type f = int -> int
+|}]
+
+module rec A: sig
+  type t
+  external id: t -> f = id
+end = struct
+  type t = A
+  external id = A.id
+end
+
+[%%expect{|
+Lines 4-7, characters 6-3:
+4 | ......struct
+5 |   type t = A
+6 |   external id = A.id
+7 | end
+Error: Cannot safely evaluate the definition of the following cycle
+       of recursively-defined modules: A -> A.
+       There are no safe modules in this cycle (see manual section 12.2).
+Line 3, characters 2-26:
+3 |   external id: t -> f = id
+      ^^^^^^^^^^^^^^^^^^^^^^^^
+  Module "A" defines an unsafe primitive alias, "id" .
+  The type of the aliased primitive is less general than that of its alias.
+|}]
+
+module rec A: sig
+  type t
+  external id: t -> f = id
+end = struct
+  type t = A
+  external id: t -> f = A.id
+end
+
+[%%expect{|
+Lines 4-7, characters 6-3:
+4 | ......struct
+5 |   type t = A
+6 |   external id: t -> f = A.id
+7 | end
+Error: Cannot safely evaluate the definition of the following cycle
+       of recursively-defined modules: A -> A.
+       There are no safe modules in this cycle (see manual section 12.2).
+Line 3, characters 2-26:
+3 |   external id: t -> f = id
+      ^^^^^^^^^^^^^^^^^^^^^^^^
+  Module "A" defines an unsafe primitive alias, "id" .
+  The type of the aliased primitive is less general than that of its alias.
+|}]
+
+(* Certain types of recursion are safe. *)
+module rec A : sig
+  external identity = identity
+end = A
+
+[%%expect{|
+module rec A : sig external identity : 'a -> 'a = "%identity" end
+|}]
+
+(* However, we still reject some things that could plausibly be compiled. *)
+module rec A : sig
+  type t
+  external id : t -> t = id
+end = struct
+  type t = e
+  external id = A.id
+end
+
+[%%expect{|
+Lines 4-7, characters 6-3:
+4 | ......struct
+5 |   type t = e
+6 |   external id = A.id
+7 | end
+Error: Cannot safely evaluate the definition of the following cycle
+       of recursively-defined modules: A -> A.
+       There are no safe modules in this cycle (see manual section 12.2).
+Line 3, characters 2-27:
+3 |   external id : t -> t = id
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  Module "A" defines an unsafe primitive alias, "id" .
+  The type of the aliased primitive is less general than that of its alias.
 |}]

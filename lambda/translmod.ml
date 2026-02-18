@@ -32,6 +32,7 @@ type unsafe_component =
   | Unsafe_functor
   | Unsafe_non_function
   | Unsafe_typext
+  | Unsafe_primitive
 
 type unsafe_info =
   | Unsafe of {
@@ -216,7 +217,7 @@ let compose_coercions c1 c2 =
 
 let primitive_declarations = ref ([] : Primitive.description list)
 let record_primitive = function
-  | {val_kind=Val_prim p;val_loc} ->
+  | {val_kind=Val_prim (p, _);val_loc} ->
       Translprim.check_primitive_arity val_loc p;
       primitive_declarations := p :: !primitive_declarations
   | _ -> ()
@@ -264,8 +265,13 @@ let init_shape id modl =
               raise (Initialization_failure info)
         in
         init_v :: init_shape_struct new_path env rem
-    | Sig_value(_, {val_kind=Val_prim _}, _) :: rem ->
+    | Sig_value(_, {val_kind=Val_prim (_, Safe)}, _) :: rem ->
         init_shape_struct path env rem
+    | Sig_value(subid, {val_kind=Val_prim (_, Unsafe_in_recmod); val_loc = loc},
+                _) :: _ ->
+        let new_path = Pdot(path, Ident.name subid) in
+        let info = Unsafe {reason=Unsafe_primitive; loc; path=new_path} in
+        raise (Initialization_failure info)
     | Sig_value _ :: _rem ->
         assert false
     | Sig_type(id, tdecl, _, _) :: rem ->
@@ -440,6 +446,19 @@ let transl_class_bindings ~scopes cl_list =
        let def, rkind = transl_class ~scopes ids id meths cl vf in
        (id, rkind, def))
      cl_list)
+
+(* Translate potentially-unsafe primitive aliases by forcing a dependency on
+   the module containing the aliased primitive. Cyclic dependencies will be
+   caught and rejected by [reorder_rec_bindings]. *)
+
+let transl_primitive_alias ~scopes env {prim_kind; prim_loc; _} body =
+  match prim_kind with
+  | Tprim_decl _ | Tprim_alias (_, (Pident _ | Papply _ | Pextra_ty _), _) ->
+    body
+  | Tprim_alias (_, Pdot (path, _), _) ->
+    let loc = of_location ~scopes prim_loc in
+    let dep = transl_module_path loc env path in
+    Lsequence (Lprim (Pignore, [dep], loc), body)
 
 (* Compile one or more functors, merging curried functors to produce
    multi-argument functors.  Any [@inline] attribute on a functor that is
@@ -630,7 +649,7 @@ and transl_struct_item ~scopes fields rootpath item next =
       mk_lam_let body
   | Tstr_primitive descr ->
       record_primitive descr.prim_val;
-      next fields
+      transl_primitive_alias ~scopes item.str_env descr (next fields)
   | Tstr_type _ ->
       next fields
   | Tstr_typext(tyext) ->
@@ -1002,7 +1021,8 @@ let transl_store_structure ~scopes glob map prims aliases str =
                         (add_idents false ids subst) cont rem)
         | Tstr_primitive descr ->
             record_primitive descr.prim_val;
-            transl_store ~scopes rootpath subst cont rem
+            transl_primitive_alias ~scopes item.str_env descr
+              (transl_store ~scopes rootpath subst cont rem)
         | Tstr_type _ ->
             transl_store ~scopes rootpath subst cont rem
         | Tstr_typext(tyext) ->
@@ -1693,6 +1713,10 @@ let explanation_submsg (id, unsafe_info) =
           print "Module %a defines an unsafe extension constructor, %a ."
       | Unsafe_non_function ->
           print "Module %a defines an unsafe value, %a ."
+      | Unsafe_primitive ->
+        print "Module %a defines an unsafe primitive alias, %a .@ \
+               The type of the aliased primitive is less general than@ \
+               that of its alias."
 
 let report_error loc = function
   | Circular_dependency cycle ->
