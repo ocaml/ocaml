@@ -32,6 +32,7 @@
 # -patch1 file-name       apply patch with -p1
 # -no-native              do not build "opt" and "opt.opt"
 # -jNN                    pass "-jNN" option to make for parallel builds
+# -with-bootstrap         perform a bootstrap
 
 error () {
   echo "$1" >&2
