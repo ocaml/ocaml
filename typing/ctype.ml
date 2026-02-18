@@ -4922,30 +4922,49 @@ let all_distinct_vars env vars =
       (tys := TypeSet.add ty !tys; is_Tvar ty))
     vars
 
-let matches ~expand_error_trace env ty ty' =
+let gen_matches ~unify ~expand_error_trace env ty ty' =
   let snap = snapshot () in
   let vars = rigidify ty in
   cleanup_abbrev_memo ();
   match unify env ty ty' with
   | () ->
-      if not (all_distinct_vars env vars) then begin
-        backtrack snap;
-        let diff =
-          if expand_error_trace
-          then expanded_diff env ~got:ty ~expected:ty'
-          else unexpanded_diff ~got:ty ~expected:ty'
-        in
-        raise (Matches_failure (env, unification_error ~trace:[diff]))
-      end;
-      backtrack snap
-  | exception Unify err ->
+    if not (all_distinct_vars env vars) then begin
       backtrack snap;
-      raise (Matches_failure (env, err))
+      let diff =
+        if expand_error_trace
+        then expanded_diff env ~got:ty ~expected:ty'
+        else unexpanded_diff ~got:ty ~expected:ty'
+      in
+      raise (Matches_failure (env, unification_error ~trace:[diff]))
+    end;
+    backtrack snap
+  | exception Unify err ->
+    backtrack snap;
+    raise (Matches_failure (env, err))
 
-let does_match env ty ty' =
+let matches ~expand_error_trace env ty ty' =
+  gen_matches ~unify ~expand_error_trace env ty ty'
+
+let matches_gadt ~expand_error_trace env ty ty' =
+  let unify env ty ty' =
+    let penv =
+      Pattern_env.make
+        env
+        ~equations_scope:!current_level
+        ~in_counterexample:true
+    in
+    ignore (unify_gadt penv ~pat:ty ~expected:ty' : Btype.TypePairs.t)
+  in
+  gen_matches ~unify ~expand_error_trace env ty ty'
+
+let gen_does_match ~matches env ty ty' =
   match matches ~expand_error_trace:false env ty ty' with
   | () -> true
   | exception Matches_failure (_, _) -> false
+
+let does_match env ty ty' = gen_does_match ~matches env ty ty'
+
+let does_match_gadt env ty ty' = gen_does_match ~matches:matches_gadt env ty ty'
 
                  (*********************************************)
                  (*  Equivalence between parameterized types  *)
