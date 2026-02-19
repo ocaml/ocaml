@@ -184,11 +184,6 @@ Caml_inline header_t get_header_val(value v) {
   return spin_on_header(v);
 }
 
-header_t caml_get_header_val(value v) {
-  return get_header_val(v);
-}
-
-
 static int try_update_object_header(value v, volatile value *p, value result,
                                     mlsize_t infix_offset) {
   int success = 0;
@@ -802,7 +797,7 @@ static void custom_finalize_minor (caml_domain_state * domain)
        elt++) {
     value *v = &elt->block;
     if (Is_block(*v) && Is_young(*v)) {
-      if (Is_promoted_hd(get_header_val(*v))) { /* value promoted */
+      if (Is_promoted_hd(Hd_val(*v))) { /* value copied to major heap */
         caml_adjust_gc_speed(elt->mem, elt->max);
       } else {
         void (*final_fun)(value) = Custom_ops_val(*v)->finalize;
