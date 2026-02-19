@@ -83,6 +83,9 @@ Working version
   + #14733: clarify the implementation of per-domain ephemeron work counters
   (Gabriel Scherer, review by Damien Doligez)
 
+- #14571: Faster minor GC.
+  (Nick Barnes, review by Damien Doligez).
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776: Keep expansion and new well-foundedness check
