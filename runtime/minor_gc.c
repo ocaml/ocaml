@@ -39,6 +39,7 @@
 #include "caml/roots.h"
 #include "caml/shared_heap.h"
 #include "caml/signals.h"
+#include "caml/sizeclasses.h"
 #include "caml/startup_aux.h"
 #include "caml/weak.h"
 
@@ -143,24 +144,31 @@ void caml_set_minor_heap_size (asize_t wsize)
 
 /*****************************************************************************/
 
+/* The `todo_list` of a minor collection is a linked list of
+ * incompletely-scanned blocks. Each entry is a minor-heap block of
+ * scannable size at least 2. Field 0 of that block points to its
+ * major-heap copy. Field 1 _of the major-heap copy_ is the next entry
+ * in the todo list. (field 0 of the major-heap copy is where the
+ * (unscanned) field 0 of the minor-heap block has been
+ * saved). `oldify_one` adds blocks to the todo list; `oldify_mopup`
+ * traverses it.
+ *
+ * Blocks with scannable size 1 are scanned tail-recursively in
+ * `oldify_one`.
+*/
+
 struct oldify_state {
   value todo_list;
-  uintnat live_bytes;
   caml_domain_state* domain;
+  bool domain_alone;
+  status status;
+  shared_heap_fast_data_p fast_data;
+  uintnat live_bytes;
+  uintnat pool_live_blocks;
+  uintnat pool_live_words;
+  uintnat pool_frag_words;
+  uintnat allocated_words;
 };
-
-static value alloc_shared(caml_domain_state* d,
-                          mlsize_t wosize, tag_t tag, reserved_t reserved)
-{
-  void* mem = caml_shared_try_alloc(d->shared_heap, wosize, tag,
-                                    reserved);
-  caml_update_major_allocated_words(
-    d, Whsize_wosize(wosize), 0 /* promoted, not direct */);
-  if (mem == NULL) {
-    caml_fatal_error("allocation failure during minor GC");
-  }
-  return Val_hp(mem);
-}
 
 /* In-progress headers are zeros except for the lowest color bit set
    to 1. */
@@ -184,76 +192,119 @@ Caml_inline header_t get_header_val(value v) {
   return spin_on_header(v);
 }
 
-static int try_update_object_header(value v, volatile value *p, value result,
-                                    mlsize_t infix_offset) {
-  int success = 0;
+/* Allocate a block to copy `v` into, and attempt to write the
+ * forwarding pointer into field 0 of `v`. If we lose the race against
+ * some other domain to do that, return 0. If we win, return our
+ * newly-allocated block. Win or lose, update `*p` with the promoted
+ * block plus `infix_offset` (which is in bytes).
+ *
+ * `hd` is the header of `v`.
+ *
+ * `prefix` is the size in words of any unscannable prefix of `v`. If
+ * `v` includes any infix tags, they must be within this prefix.
+ *
+ * `st` points to the oldify_state, which is where we cache all sorts
+ * of handy values and accumulators during a single minor GC.
+*/
 
-  if( caml_domain_alone() ) {
+Caml_inline value try_promote(value v, volatile value *p, header_t hd,
+                              mlsize_t infix_offset, mlsize_t prefix,
+                              struct oldify_state *st)
+{
+  caml_domain_state *domain = st->domain;
+  void *mem = NULL;
+
+  CAMLassert(!Is_update_in_progress(hd)); /* from get_header_val */
+  CAMLassert(!Is_promoted_hd(hd)); /* Promoted blocks already filtered out */
+
+  /* manual inline of parts of caml_shared_try_alloc */
+  mlsize_t wosize = Wosize_hd(hd);
+  mlsize_t whsize = Whsize_wosize(wosize);
+  if (whsize <= SIZECLASS_MAX) {
+    mem = caml_shared_fast_alloc(whsize, st->fast_data, domain);
+    if (mem) {
+      CAML_EV_ALLOC(wosize);
+      ++ st->pool_live_blocks;
+      st->pool_live_words += whsize;
+      st->pool_frag_words += wfrag_whsize[whsize];
+      Hd_hp((value *)mem) = Hd_with_color(hd, st->status);
+    }
+  }
+  if (!mem) {
+    mem = caml_shared_try_alloc(domain->shared_heap, Wosize_hd(hd),
+                                Tag_hd(hd), Reserved_hd(hd));
+  }
+  if (mem == NULL) {
+    caml_fatal_error("allocation failure during minor GC");
+  }
+  st->allocated_words += Whsize_wosize(wosize);
+  value result = Val_hp(mem);
+
+  /* Copy unscannable prefix, which will include any infix tags, so
+   * that infix pointers to `v` can be oldified into pointers with
+   * Infix_tag to a working header as soon as the header is
+   * Promoted_hd (so that, e.g., major GC marking can work while the
+   * block is still on our oldify todo list). Have to do this here,
+   * before we update the object header. Start from field 2 as fields
+   * 0 and 1 are used for forwarding pointers and the todo-list. */
+  CAMLassert(infix_offset <= prefix * sizeof(value));
+  for (mlsize_t j = 2; j < prefix; ++j) {
+    Field(result, j) = Field(v, j);
+  }
+
+  if (st->domain_alone) {
     *Hp_val (v) = Promoted_hd;
     Field(v, 0) = result;
-    success = 1;
   } else {
-    header_t hd = atomic_load(Hp_atomic_val(v));
-    if( Is_promoted_hd(hd) ) {
-      /* in this case this has been updated by another domain, throw away result
-         and return the one in the object */
-      result = Field(v, 0);
-    } else if( Is_update_in_progress(hd) ) {
-      /* here we've caught a domain in the process of moving a minor heap object
-         we need to wait for it to finish */
-      (void)spin_on_header(v);
-      /* Also throw away result and use the one from the other domain */
-      result = Field(v, 0);
+    if (atomic_compare_exchange_strong(Hp_atomic_val(v), &hd, In_progress_hd)) {
+      /* Success. Now we can write the forwarding pointer. */
+      atomic_store_relaxed(Op_atomic_val(v), result);
+      /* And update header ('release' ensures after update of fwd pointer) */
+      atomic_store_release(Hp_atomic_val(v), Promoted_hd);
     } else {
-      /* Here the header is neither zero nor an in-progress update */
-      header_t desired_hd = In_progress_hd;
-      if( atomic_compare_exchange_strong(Hp_atomic_val(v), &hd, desired_hd) ) {
-        /* Success. Now we can write the forwarding pointer. */
-        atomic_store_relaxed(Op_atomic_val(v), result);
-        /* And update header ('release' ensures after update of fwd pointer) */
-        atomic_store_release(Hp_atomic_val(v), Promoted_hd);
-        /* Let the caller know we were responsible for the update */
-        success = 1;
-      } else {
-        /* Updated by another domain. Spin for that update to complete and
-           then throw away the result and use the one from the other domain. */
-        (void)spin_on_header(v);
-        result = Field(v, 0);
+      /* Failure case: header was updated by another domain. Spin for
+         that update to complete, then throw away our allocated block
+         and use the one from the other domain. */
+      (void)spin_on_header(v);
+
+      *Hp_val(result) = Make_header(wosize, Abstract_tag, st->status);
+#ifdef DEBUG
+      for (mlsize_t i = 0; i < wosize ; i++) {
+        Field(result, i) = Debug_free_unused;
       }
+#endif
+      *p = Field(v, 0) + infix_offset;
+      return (value)0;
     }
   }
 
+  st->live_bytes += Bhsize_hd(hd);
   *p = result + infix_offset;
-  return success;
+  return result;
 }
 
 /* oldify_one is a no-op outside the minor heap. */
 static scanning_action_flags oldify_scanning_flags =
   SCANNING_ONLY_YOUNG_VALUES | SCANNING_ONLY_RECENT_FRAMES;
 
-/* Note that the tests on the tag depend on the fact that Infix_tag,
-   Forward_tag, and No_scan_tag are contiguous. */
 static void oldify_one (void* st_v, value v, volatile value *p)
 {
-  struct oldify_state* st = st_v;
-  value result;
-  header_t hd;
-  mlsize_t sz;
-  mlsize_t infix_offset;
-  tag_t tag;
-
-  tail_call:
+tail_call:
   if (!(Is_block(v) && Is_young(v))) {
     /* not a minor block */
     *p = v;
     return;
   }
 
-  infix_offset = 0;
+  struct oldify_state* st = st_v;
+  header_t hd;
+  tag_t tag;
+  mlsize_t infix_offset = 0;
+
   do {
     hd = get_header_val(v);
     if (Is_promoted_hd(hd)) {
-      /* already forwarded, another domain is likely working on this. */
+      /* already promoted */
       *p = Field(v, 0) + infix_offset;
       return;
     }
@@ -267,102 +318,13 @@ static void oldify_one (void* st_v, value v, volatile value *p)
     }
   } while (tag == Infix_tag);
 
-  if (tag == Cont_tag) {
-    value stack_value = Field(v, 0);
-    CAMLassert(Wosize_hd(hd) == 1);
-    CAMLassert(infix_offset == 0);
-    result = alloc_shared(st->domain, 1, Cont_tag, Reserved_hd(hd));
-    if( try_update_object_header(v, p, result, 0) ) {
-      struct stack_info* stk = Ptr_val(stack_value);
-      Field(result, 0) = stack_value;
-      if (stk != NULL) {
-        caml_scan_stack(&oldify_one, oldify_scanning_flags, st,
-                        stk, 0);
-      }
-    }
-    else
-    {
-      /* Conflict - fix up what we allocated on the major heap */
-      *Hp_val(result) = Make_header(1, No_scan_tag,
-                                    caml_allocation_status());
-      #ifdef DEBUG
-      Field(result, 0) = Val_long(1);
-      #endif
-    }
-  } else if (tag < Infix_tag) {
-    value field0;
-    sz = Wosize_hd (hd);
-    st->live_bytes += Bhsize_hd(hd);
-    result = alloc_shared(st->domain, sz, tag, Reserved_hd(hd));
-    field0 = Field(v, 0);
-    if (tag == Closure_tag) {
-      /* We must copy all infix tags before updating the object
-       * header, so that any domain can oldify infix pointers to `v`
-       * into pointers which also have Infix_tag to a working header
-       * (so that, e.g., major GC marking can work while the block is
-       * still on our oldify todo list). */
-      mlsize_t i = Start_env_closinfo(Closinfo_val(v));
-      CAMLassert(i >= 2); /* at least code pointer and closinfo word */
-      CAMLassert(i <= sz);
-      /* Skip fields 0 and 1, used below for field0 and the todo list.
-       * It is safe to skip these, as they cannot include an infix
-       * tag, due to the layout of closures. */
-      for (mlsize_t j = 2; j < i; ++j) {
-        Field(result, j) = Field(v, j);
-      }
-    }
-
-    if( try_update_object_header(v, p, result, infix_offset) ) {
-      if (sz > 1){
-        Field(result, 0) = field0;
-        Field(result, 1) = st->todo_list;
-        st->todo_list = v;
-      } else {
-        CAMLassert (sz == 1);
-        p = Op_val(result);
-        v = field0;
-        goto tail_call;
-      }
-    } else {
-      /* Conflict - fix up what we allocated on the major heap */
-      *Hp_val(result) = Make_header(sz, No_scan_tag,
-                                    caml_allocation_status());
-      #ifdef DEBUG
-      {
-        for (int c = 0; c < sz; c++) {
-          Field(result, c) = Val_long(1);
-        }
-      }
-      #endif
-    }
-
-  } else if (!Scannable_tag(tag)) {
-    sz = Wosize_hd (hd);
-    st->live_bytes += Bhsize_hd(hd);
-    result = alloc_shared(st->domain, sz, tag, Reserved_hd(hd));
-    for (mlsize_t i = 0; i < sz; i++) {
-      Field(result, i) = Field(v, i);
-    }
+  mlsize_t sz = Wosize_hd (hd);
+  value field0 = Field(v, 0); /* will be overwritten by try_promote */
+  if (tag == Forward_tag) {
     CAMLassert (infix_offset == 0);
-    if( !try_update_object_header(v, p, result, 0) ) {
-      /* Conflict */
-      *Hp_val(result) = Make_header(sz, No_scan_tag,
-                                    caml_allocation_status());
-      #ifdef DEBUG
-      for(mlsize_t i = 0; i < sz; i++) {
-        Field(result, i) = Val_long(1);
-      }
-      #endif
-    }
-  } else {
-    value f;
-    tag_t ft;
-    CAMLassert (tag == Forward_tag);
-    CAMLassert (infix_offset == 0);
-
-    f = Forward_val (v);
-    ft = 0;
-
+    CAMLassert (sz == 1);
+    value f = field0;
+    tag_t ft = 0;
     if (Is_block (f)) {
       ft = Tag_val (Is_promoted_hd(get_header_val(f)) ? Field(f, 0) : f);
     }
@@ -370,133 +332,169 @@ static void oldify_one (void* st_v, value v, volatile value *p)
     if (ft == Forward_tag || ft == Lazy_tag ||
         ft == Forcing_tag || ft == Double_tag) {
       /* Do not short-circuit the pointer.  Copy as a normal block. */
-      CAMLassert (Wosize_hd (hd) == 1);
-      st->live_bytes += Bhsize_hd(hd);
-      result = alloc_shared(st->domain, 1, Forward_tag, Reserved_hd(hd));
-      if( try_update_object_header(v, p, result, 0) ) {
+      value result = try_promote(v, p, hd, infix_offset, 0, st);
+      if (result) {
         p = Op_val (result);
         v = f;
         goto tail_call;
-      } else {
-        *Hp_val(result) = Make_header(1, No_scan_tag,
-                                      caml_allocation_status());
-        #ifdef DEBUG
-        Field(result, 0) = Val_long(1);
-        #endif
       }
     } else {
       v = f;                        /* Follow the forwarding */
-      goto tail_call;               /*  then oldify. */
+      goto tail_call;               /* then oldify. */
+    }
+  } else {
+    mlsize_t unscannable_prefix =
+      (tag == Closure_tag) ? Start_env_closinfo(Closinfo_val(v)) : 0;
+    value result = try_promote(v, p, hd, infix_offset, unscannable_prefix, st);
+
+    if (result) {
+      if (tag == Cont_tag) {
+        CAMLassert(infix_offset == 0);
+        CAMLassert(sz == 1);
+        struct stack_info* stk = Ptr_val(field0);
+        Field(result, 0) = field0;
+        if (stk != NULL) {
+          caml_scan_stack(&oldify_one, oldify_scanning_flags, st, stk, 0);
+        }
+      } else if (!Scannable_tag(tag)) {
+        CAMLassert (infix_offset == 0);
+        CAMLassert (unscannable_prefix == 0); /* not Closure_tag */
+        Field(result, 0) = field0;
+        for (mlsize_t i = 1; i < sz; i++) {
+          Field(result, i) = Field(v, i);
+        }
+      } else { /* Scannable, and neither Cont_tag nor Forward_tag */
+        CAMLassert(tag < Infix_tag);
+        if (sz == 1) {
+          p = Op_val(result);
+          v = field0;
+          goto tail_call;
+        } else { /* add to todo_list */
+          CAMLassert (sz > 1);
+          Field(result, 0) = field0;
+          Field(result, 1) = st->todo_list;
+          st->todo_list = v;
+        }
+      }
     }
   }
 }
 
 typedef struct {
   bool locked_ephemerons;
-} promote_result;
+} mopup_result;
 
 /* Finish the work that was put off by [oldify_one].
    Note that [oldify_one] itself is called by oldify_mopup, so we
    have to be careful to remove the first entry from the list before
    oldifying its fields. */
 CAMLno_tsan_for_perf
-static promote_result oldify_mopup (struct oldify_state* st, int do_ephemerons)
+static mopup_result oldify_mopup (struct oldify_state* st, int do_ephemerons)
 {
-  value v, new_v, f;
-  caml_domain_state* domain_state = st->domain;
-  struct caml_ephe_ref_table ephe_ref_table =
-                                    domain_state->minor_tables->ephe_ref;
-  struct caml_ephe_ref_elt *re;
-  int redo;
-  promote_result result = { .locked_ephemerons = false };
+  mopup_result result = { .locked_ephemerons = false, };
+  bool redo;
 
-again:
-  redo = 0;
+  do {
+    redo = false;
+    while (st->todo_list != 0) {
+      value v = st->todo_list;                        /* Get the head. */
+      CAMLassert (Is_promoted_hd(get_header_val(v))); /* It must be promoted. */
+      value new_v = Field(v, 0);                      /* Follow forwarding. */
+      value next = Field (new_v, 1);
+      st->todo_list = next;
+      /* TODO: Measure whether this prefetch helps or hurts */
+      caml_prefetchw((void*)next);
 
-  while (st->todo_list != 0) {
-    v = st->todo_list;                   /* Get the head. */
-    CAMLassert (Is_promoted_hd(get_header_val(v))); /* It must be forwarded. */
-    new_v = Field(v, 0);                 /* Follow forward pointer. */
-    st->todo_list = Field (new_v, 1);    /* Remove from list. */
+      mlsize_t wosize = Wosize_val(new_v);
+      /* [v] was only added to the [todo_list] if its [wosize > 1].
+         - It needs to be greater than 0 because we oldify the first field.
+         - It needs to be greater than 1 so the below loop runs at least once,
+         overwriting Field(new_v, 1) which [oldify_one] used as temporary
+         storage of the next value of [todo_list].
+      */
+      CAMLassert (wosize > 1);
 
-    f = Field(new_v, 0);
-    CAMLassert (!Is_debug_tag(f));
-    if (Is_block (f) && Is_young(f)) {
-      oldify_one (st, f, Op_val (new_v));
-    }
-
-    mlsize_t i = 1;
-
-    if(Tag_val(new_v) == Closure_tag) {
-      /* non-scannable prefix already copied in oldify_one */
-      Field(new_v, 1) = Field(v, 1); /* todo-list pointer */
-      i = Start_env_closinfo(Closinfo_val(v));
-    }
-
-    for (; i < Wosize_val(new_v); i++){
-      f = Field(v, i);
+      value f = Field(new_v, 0);
       CAMLassert (!Is_debug_tag(f));
       if (Is_block (f) && Is_young(f)) {
-        oldify_one (st, f, Op_val (new_v) + i);
-      } else {
-        Field(new_v, i) = f;
+        oldify_one (st, f, Op_val (new_v));
       }
+
+      mlsize_t i = 1;
+      if(Tag_val(new_v) == Closure_tag) {
+        /* non-scannable prefix already copied in oldify_one */
+        Field(new_v, 1) = Field(v, 1); /* was todo-list pointer */
+        i = Start_env_closinfo(Closinfo_val(v));
+      }
+
+      for (; i < wosize; i++){
+        f = Field(v, i);
+        CAMLassert (!Is_debug_tag(f));
+        if (Is_block (f) && Is_young(f)) {
+          oldify_one (st, f, Op_val (new_v) + i);
+        } else {
+          Field(new_v, i) = f;
+        }
+      }
+      CAMLassert (Wosize_val(new_v));
     }
-    CAMLassert (Wosize_val(new_v));
-  }
 
-  /* Oldify any ephemeron data fields pointing to the minor heap, and some keys.
+    /* Oldify ephemeron data fields pointing to the minor heap, and some keys.
 
-     In theory the data need only be promoted if the ephemeron and all keys are
-     live, but determining this requires a multi-round synchronisation (consider
-     the case where the keys are live, but from different domains). So, we do it
-     unconditionally here, and leave the hard cases for the major GC.
+       In theory the data need only be promoted if the ephemeron and all
+       keys are live, but determining this may require a multi-round
+       synchronisation (consider the case where the keys are live, but
+       from different domains). So, we promote hard cases
+       unconditionally, leaving them for the major GC.
 
-     We try to avoid promoting ephemeron keys unnecessarily. If an ephemeron
-     key points to the current domain's minor heap, then we lock the key
-     (see caml_ephe_await_key in weak.c) and check whether it got promoted
-     after minor GC has completed. In all other cases we promote, leaving it to
-     the major GC to sort out.
+       There are easy cases, though, in which an ephemeron key is on our
+       own minor heap. In that case, we "lock" the key (stashing it in
+       our ephe_ref table and replacing it with caml_ephe_locked), then
+       after minor GC completes we check whether locked keys were
+       promoted. If not, we can clean the ephemeron value (see
+       ephe_clean_minor).
 
-     The condition that it must be our *own* minor heap is important: checking
-     whether a block was promoted after minor GC completes is safe only on our
-     own heap, because other domains will immediately begin reusing theirs. */
-  if( do_ephemerons ) {
-    /* Limits of *this* minor heap, not other domains' */
-    value young_start = (value)Caml_state->young_start;
-    value young_end = (value)Caml_state->young_end;
-    for (re = ephe_ref_table.base;
-         re < ephe_ref_table.ptr; re++) {
-      if (re->locked != Val_unit)
-        continue; /* we locked it on a prior iteration */
-      atomic_value* data = Op_atomic_val(re->ephe) + re->offset;
-      value v = atomic_load_relaxed(data);
-      header_t hd;
-      if (v != caml_ephe_none &&                 /* occupied field       */
-          v != caml_ephe_locked &&               /* not already locked   */
-          re->offset != CAML_EPHE_DATA_OFFSET && /* ephe key (not data)  */
-          Is_block(v) &&                         /* a block              */
-          young_start <= v && v < young_end &&   /* on *this* minor heap */
-          !Is_promoted_hd(hd = Hd_val(v)) &&     /* not already promoted */
-          Tag_hd(hd) != Infix_tag &&             /* not Infix_tag        */
-          atomic_compare_exchange_strong(data, &v, caml_ephe_locked)) {
-        /* locked, clean it later */
-        re->locked = v;
-        result.locked_ephemerons = true;
-      } else {
-        value new_v;
-        oldify_one(st, v, &new_v);
-        if (new_v != v) {
-          /* atomic CAS, because another domain might be trying to lock it.
-             (We don't care who wins the race, so result not checked) */
-          atomic_compare_exchange_strong(data, &v, new_v);
-          redo = 1; /* may have found new oldify_todo_list */
+       The condition that it must be our *own* minor heap is important:
+       checking whether a block was promoted after minor GC completes is
+       safe only on our own heap, because other domains will immediately
+       begin reusing theirs. */
+    if (do_ephemerons) {
+      struct caml_ephe_ref_table ephe_ref_table =
+        st->domain->minor_tables->ephe_ref;
+      /* Limits of *this* minor heap, not other domains' */
+      value young_start = (value)st->domain->young_start;
+      value young_end = (value)st->domain->young_end;
+      for (struct caml_ephe_ref_elt *re = ephe_ref_table.base;
+           re < ephe_ref_table.ptr; re++) {
+        if (re->locked != Val_unit)
+          continue; /* we locked it on a prior iteration */
+        atomic_value* data = Op_atomic_val(re->ephe) + re->offset;
+        value v = atomic_load_relaxed(data);
+        header_t hd;
+        if (v != caml_ephe_none &&                 /* occupied field       */
+            v != caml_ephe_locked &&               /* not already locked   */
+            re->offset != CAML_EPHE_DATA_OFFSET && /* ephe key (not data)  */
+            Is_block(v) &&                         /* a block              */
+            young_start <= v && v < young_end &&   /* on *this* minor heap */
+            !Is_promoted_hd(hd = Hd_val(v)) &&     /* not already promoted */
+            Tag_hd(hd) != Infix_tag &&             /* not Infix_tag        */
+            atomic_compare_exchange_strong(data, &v, caml_ephe_locked)) {
+          /* locked, clean it later */
+          re->locked = v;
+          result.locked_ephemerons = true;
+        } else {
+          value new_v;
+          oldify_one(st, v, &new_v);
+          if (new_v != v) {
+            /* atomic CAS, because another domain might be trying to lock it.
+               (We don't care who wins the race, so result not checked) */
+            atomic_compare_exchange_strong(data, &v, new_v);
+            redo = true; /* may have found new oldify_todo_list */
+          }
         }
       }
     }
-  }
-
-  if (redo) goto again;
+  } while (redo);
   return result;
 }
 
@@ -522,6 +520,10 @@ int caml_do_opportunistic_major_slice
 static void minor_gc_leave_barrier
   (caml_domain_state* domain, int participating_count);
 
+typedef struct {
+  bool locked_ephemerons;
+} promote_result;
+
 static promote_result
 caml_empty_minor_heap_promote(caml_domain_state* domain,
                               int participating_count,
@@ -537,8 +539,12 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
   intnat c, curr_idx;
   int remembered_roots = 0;
   scan_roots_hook scan_roots_hook;
+  promote_result result = { .locked_ephemerons = false, };
 
   st.domain = domain;
+  st.domain_alone = caml_domain_alone();
+  st.status = caml_allocation_status();
+  st.fast_data = caml_shared_fast_data(domain->shared_heap);
 
   prev_alloc_words = domain->allocated_words;
 
@@ -653,7 +659,8 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
   CAML_EV_END(EV_MINOR_MEMPROF_ROOTS);
 
   CAML_EV_BEGIN(EV_MINOR_REMEMBERED_SET_PROMOTE);
-  promote_result result = oldify_mopup (&st, 1); /* ephemerons promoted here */
+  mopup_result mopup_result = oldify_mopup (&st, 1); /* promoting ephemerons */
+  result.locked_ephemerons = mopup_result.locked_ephemerons;
   CAML_EV_END(EV_MINOR_REMEMBERED_SET_PROMOTE);
   CAML_EV_END(EV_MINOR_REMEMBERED_SET);
   caml_gc_log("promoted %d roots, %" CAML_PRIuNAT " bytes",
@@ -681,9 +688,28 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
     (*scan_roots_hook)(&oldify_one, oldify_scanning_flags, &st, domain);
 
   CAML_EV_BEGIN(EV_MINOR_LOCAL_ROOTS_PROMOTE);
-  oldify_mopup (&st, 0);
+  (void)oldify_mopup (&st, 0); /* ignore result as we're not doing ephemerons */
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS_PROMOTE);
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS);
+
+  caml_shared_add_pool_stats(domain->shared_heap,
+                             st.pool_live_blocks,
+                             st.pool_live_words,
+                             st.pool_frag_words);
+  domain->allocated_words += st.allocated_words;
+
+  if (minor_allocated_bytes) {
+    CAML_GC_MESSAGE(MINOR,
+                    "Promoted %"CAML_PRIuNAT" bytes "
+                    "(%2.0f%% of %u KB)\n",
+                    st.live_bytes,
+                    (100.0 * st.live_bytes) / minor_allocated_bytes,
+                    (unsigned)(minor_allocated_bytes + 512)/1024);
+  } else {
+    CAML_GC_MESSAGE(MINOR,
+                    "Promoted %"CAML_PRIuNAT" bytes (of zero)\n",
+                    st.live_bytes);
+  }
 
   domain->young_ptr = domain->young_end;
   /* Trigger a GC poll when half of the minor heap is filled. At that point, a
