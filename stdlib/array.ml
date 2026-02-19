@@ -233,8 +233,8 @@ let fold_left2 f x a b =
   let n1 = length a in
   let n2 = length b in
   if n1 <> n2 then
-    invalid_arg "Array.fold_left2: arrays must have the same length"
-  else let r = ref x in
+    invalid_arg "Array.fold_left2: arrays must have the same length";
+  let r = ref x in
   for i = 0 to n1 - 1 do
     r := f !r (unsafe_get a i) (unsafe_get b i)
   done;
@@ -244,8 +244,8 @@ let fold_right2 f a b x =
   let n1 = length a in
   let n2 = length b in
   if n1 <> n2 then
-    invalid_arg "Array.fold_right2: arrays must have the same length"
-  else let r = ref x in
+    invalid_arg "Array.fold_right2: arrays must have the same length";
+  let r = ref x in
   for i = n1 - 1 downto 0 do
     r := f (unsafe_get a i) (unsafe_get b i) !r
   done;

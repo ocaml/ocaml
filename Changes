@@ -30,6 +30,9 @@ Working version
 - #14487: Add String.drop_{prefix,suffix}
   (Michael Neumann, review by Léo Andrès, Nicolás Ojeda Bär and Gabriel Scherer)
 
+- #14553: Add Array.fold_{left,right}2
+  (Clément Pottier, review by Nicolás Ojeda Bär and Vincent Laviron)
+
 ### Other libraries:
 
 ### Tools:
