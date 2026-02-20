@@ -37,8 +37,10 @@ let ko2 = function Dyn (type a b) (a, x : a ty * b) -> ignore (x : b)
 Line 1, characters 42-50:
 1 | let ko2 = function Dyn (type a b) (a, x : a ty * b) -> ignore (x : b)
                                               ^^^^^^^^
-Error: This type does not bind all existentials in the constructor:
-         "type a b. a ty * b"
+Error: The local name "b" can only be given to an existential variable
+       introduced by this GADT constructor.
+       The type annotation tries to bind it to the name "a"
+       that is already bound.
 |}]
 
 type u = C : 'a * ('a -> 'b list) -> u

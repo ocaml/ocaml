@@ -1018,9 +1018,6 @@ Error: Constraints are not satisfied in this type.
 type 'a u = 'a and 'a v = 'a u t constraint 'a = int;;
 [%%expect {|
 type 'a u = 'a
-and 'a v = 'a u t constraint 'a = int u
-|}, Principal{|
-type 'a u = 'a
 and 'a v = 'a u t constraint 'a = int
 |}];;
 

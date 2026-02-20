@@ -158,7 +158,7 @@ let apply_labelled_success = labelled' ~y:3
 
 [%%expect{|
 val labelled' : (module M : Typ with type t = int) -> y:M.t -> M.t = <fun>
-val apply_labelled_success : (module Typ with type t = int) -> int = <fun>
+val apply_labelled_success : (module Typ with type t = int) -> M.t = <fun>
 |}]
 
 (* Check that the optionnal argument is removed correctly when applying a
@@ -249,7 +249,7 @@ This argument cannot be applied with label "~c"
 let x_from_struct = id (module struct type t = int end) 3
 
 [%%expect{|
-val x_from_struct : int = 3
+val x_from_struct : T.t = <external>
 |}]
 
 module F () : Typ = struct type t = int end
@@ -346,7 +346,7 @@ let s_list_arrayb =
       string_of_int [|[3; 2]; [2]; []|]
 
 [%%expect{|
-val s_list_arrayb : string list Array.t = [|["3"; "2"]; ["2"]; []|]
+val s_list_arrayb : string M.t = [|["3"; "2"]; ["2"]; []|]
 |}]
 
 module F () : Map = struct
@@ -383,7 +383,7 @@ let ok = map (module F()) string_of_int [3]
 module F :
   () ->
     sig type 'a t = 'a list val map : ('a -> 'b) -> 'a list -> 'b list end
-val ok : string list = ["3"]
+val ok : string M.t = ["3"]
 |}]
 
 (** Various tests on the coercion between functor types. **)
@@ -811,7 +811,7 @@ module MyBool : sig type t = bool = false | true val not : bool -> bool end
 module type TBool =
   sig type t = bool = false | true val not : bool -> bool end
 val id_bool : (module B : TBool) -> B.t -> B.t = <fun>
-- : MyBool.t = MyBool.(false)
+- : MyBool.t = false
 |}]
 
 
@@ -1149,7 +1149,7 @@ Line 8, characters 28-29:
                                 ^
 Warning 26 [unused-var]: unused variable "x".
 
-val raise_principality_warning : int -> int = <fun>
+val raise_principality_warning : T.t -> T.t = <fun>
 |}]
 
 let test_instance_nondep f =
@@ -1208,8 +1208,8 @@ let fa1_applied = fa1 ()
 
 [%%expect{|
 module type M_arrow1 = sig type 'a t = int -> 'a end
-val fa1 : unit -> (module M : M_arrow1) -> 'a M.t = <fun>
-val fa1_applied : (module M : M_arrow1) -> 'a M.t = <fun>
+val fa1 : unit -> (module M_arrow1) -> int -> 'a = <fun>
+val fa1_applied : (module M_arrow1) -> int -> 'a = <fun>
 |}]
 
 module type M_arrow2 = sig
@@ -1222,8 +1222,8 @@ let fa2_applied = fa2 ()
 
 [%%expect{|
 module type M_arrow2 = sig type 'a t = 'a -> int end
-val fa2 : unit -> (module M : M_arrow2) -> 'a M.t = <fun>
-val fa2_applied : (module M : M_arrow2) -> '_weak4 M.t = <fun>
+val fa2 : unit -> (module M_arrow2) -> 'a -> int = <fun>
+val fa2_applied : (module M_arrow2) -> '_weak4 -> int = <fun>
 |}]
 
 module type Typ2 = sig
