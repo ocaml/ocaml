@@ -427,12 +427,6 @@ let emit_instr env i =
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
 
     | Lop(Iatomic_fetch_add) ->
-        (* LAAG R1, R3, D2(B2): Atomically load value at D2(B2) into R1,
-           add R3 to memory location, store result back.
-           R1 receives the ORIGINAL value (before addition).
-           - i.arg.(0) = pointer to atomic location
-           - i.arg.(1) = value to add
-           - i.res.(0) = result (original value) *)
         `	laag	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, 0({emit_reg i.arg.(0)})\n`
 
     | Lop(Ialloc { bytes = n; dbginfo }) ->

@@ -1161,19 +1161,14 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
            dbg)
 
   | Patomic_fetch_add ->
-      if Config.architecture = "s390x" then begin
-        let ptr = transl env arg1 in
-        let ofs = transl env arg2 in
-        let incr = transl env arg3 in
-        (* incr is a tagged integer (2*n+1). The atomic add must operate on
-           the tagged representation: add 2*n = incr - 1 to the field. *)
-        let raw_incr = Cop(Csubi, [incr; Cconst_int(1, dbg)], dbg) in
-        Cop(Catomic_fetch_add,
-            [field_address_computed ptr ofs dbg; raw_incr], dbg)
-      end else
-        (* Fall back to C runtime on architectures without native support *)
-        Cop(Cextcall("caml_atomic_fetch_add_field", typ_val, [], false),
-            [transl env arg1; transl env arg2; transl env arg3], dbg)
+      let ptr = transl env arg1 in
+      let ofs = transl env arg2 in
+      let incr = transl env arg3 in
+      (* incr is a tagged integer (2*n+1). The atomic add must operate on
+         the tagged representation: add 2*n = incr - 1 to the field. *)
+      let raw_incr = Cop(Csubi, [incr; Cconst_int(1, dbg)], dbg) in
+      Cop(Catomic_fetch_add,
+          [field_address_computed ptr ofs dbg; raw_incr], dbg)
 
   | Pperform | Pdls_get | Presume
   | Patomic_load

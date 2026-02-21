@@ -742,8 +742,8 @@ let emit_instr env fallthrough i =
   | Lop (Idls_get) ->
       I.mov (domain_field Domainstate.Domain_dls_root) (res i 0)
   | Lop (Iatomic_fetch_add) ->
-      (* TODO: implement with lock xadd *)
-      Misc.fatal_error "Iatomic_fetch_add not yet implemented for amd64"
+      I.mov (arg i 1) (res i 0);
+      I.lock_xadd (res i 0) (mem64 QWORD 0 (arg64 i 0))
   | Lop (Ireturn_addr) ->
       let offset = frame_size env - 8 in
       I.mov (mem64 QWORD offset RSP) (res i 0)
