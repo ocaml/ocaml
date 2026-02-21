@@ -398,9 +398,9 @@ let primitives_table =
     "%atomic_cas_loc", Atomic(Cas, Loc);
     "%atomic_fetch_add_loc", Atomic(Faa, Loc);
     "%runstack", Primitive (Prunstack, 3);
-    "%reperform", Primitive (Preperform, 3);
+    "%reperform", Primitive (Preperform, 2);
     "%perform", Primitive (Pperform, 1);
-    "%resume", Primitive (Presume, 4);
+    "%resume", Primitive (Presume, 3);
     "%dls_get", Primitive (Pdls_get, 1);
     "%poll", Primitive (Ppoll, 1);
   ]
