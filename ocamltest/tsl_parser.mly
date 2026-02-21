@@ -36,7 +36,9 @@ let mkenvstmt envstmt =
 %token <[`Above | `Below]> TSL_BEGIN_OCAML_STYLE
 %token TSL_END_OCAML_STYLE
 %token COMMA LEFT_BRACE RIGHT_BRACE SEMI
-%token NOT
+%token LEFT_PAREN RIGHT_PAREN
+%token AND OR NOT
+%token IF THEN ELSE
 %token EQUAL PLUSEQUAL
 /* %token COLON */
 %token INCLUDE SET UNSET WITH
@@ -62,10 +64,36 @@ statement_list:
 | { [] }
 | statement statement_list { $1 :: $2 }
 
+action:
+| identifier with_environment_modifiers { { name = $1; modifiers = $2 } }
+
+test:
+| test_if { $1 }
+
+test_if:
+| IF test_or THEN test_or { If ($2, $4, None) }
+| IF test_or THEN test_or ELSE test_if { If ($2, $4, Some $6) }
+| test_or { $1 }
+
+test_or:
+| test_and OR test_or { Or ($1, $3) }
+| test_and { $1 }
+
+test_and:
+| test_not AND test_and { And ($1, $3) }
+| test_not { $1 }
+
+test_not:
+| NOT test_atom { Not $2 }
+| test_atom { $1 }
+
+test_atom:
+| env_item { mkenvstmt $1 }
+| action   { Action $1 }
+| LEFT_PAREN test RIGHT_PAREN { $2 }
+
 statement:
-| env_item SEMI { $1 }
-|     identifier with_environment_modifiers SEMI { Test (Pos, $1, $2) }
-| NOT identifier with_environment_modifiers SEMI { Test (Neg, $2, $3) }
+| test SEMI { $1 }
 
 tsl_script:
 | TSL_BEGIN_C_STYLE node TSL_END_C_STYLE { $2 }
@@ -81,16 +109,16 @@ opt_environment_modifiers:
 
 env_item:
 | identifier EQUAL string
-    { mkenvstmt (Assignment (false, $1, $3)) }
+    { Assignment (false, $1, $3) }
 | identifier PLUSEQUAL string
-    { mkenvstmt (Append ($1, $3)) }
+    { Append ($1, $3) }
 | SET identifier EQUAL string
-    { mkenvstmt (Assignment (true, $2, $4)) }
+    { Assignment (true, $2, $4) }
 | UNSET identifier
-    { mkenvstmt (Unset $2) }
+    { Unset $2 }
 
 | INCLUDE identifier
-  { mkenvstmt (Include $2) }
+  { Include $2 }
 
 identifier: IDENTIFIER { mkidentifier $1 }
 

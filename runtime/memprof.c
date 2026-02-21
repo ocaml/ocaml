@@ -391,14 +391,23 @@ typedef struct memprof_orphan_table_s memprof_orphan_table_s,
 #define CONFIG_FIELD_LAST_CALLBACK CONFIG_FIELD_DEALLOC_MAJOR
 
 #define CONFIG_STATUS_SAMPLING 0
-#define CONFIG_STATUS_STOPPED 1
-#define CONFIG_STATUS_DISCARDED 2
+#define CONFIG_STATUS_SAMPLING_MIN 1
+#define CONFIG_STATUS_STOPPED 2
+#define CONFIG_STATUS_DISCARDED 3
+
+/* CONFIG_STATUS_SAMPLING_MIN is the case in which lambda is zero or
+ * so small that the calculation of 1/log(1-lambda) underflows, so we
+ * set it to -Inf. As far as the abstraction of "profiling" is
+ * concerned, we are still sampling, but we avoid doing any of the
+ * associated computation. */
 
 #define CONFIG_NONE Val_unit
 
-#define Status(config)          Int_val(Field(config, CONFIG_FIELD_STATUS))
-#define Sampling(config)        ((config != CONFIG_NONE) && \
-                                 (Status(config) == CONFIG_STATUS_SAMPLING))
+#define Status(config)       Int_val(Field(config, CONFIG_FIELD_STATUS))
+/* Sampling: notionally sampling, even if at min lambda */
+#define Sampling(config)     ((config != CONFIG_NONE) && \
+                              ((Status(config) == CONFIG_STATUS_SAMPLING) || \
+                               (Status(config) == CONFIG_STATUS_SAMPLING_MIN)))
 
 /* The 'status' field is the only one we ever update. */
 
@@ -412,14 +421,6 @@ typedef struct memprof_orphan_table_s memprof_orphan_table_s,
 /* 1/ln(1-lambda), pre-computed for use in the geometric RNG */
 #define One_log1m_lambda(config) \
   Double_val(Field(config, CONFIG_FIELD_1LOG1ML))
-
-/* If lambda is zero or very small, computing one_log1m_lambda
- * underflows.  It should always be treated as negative infinity in
- * that case, (effectively turning sampling off). */
-#define MIN_ONE_LOG1M_LAMBDA (-INFINITY)
-
-#define Min_lambda(config) \
-  (One_log1m_lambda(config) == MIN_ONE_LOG1M_LAMBDA)
 
 /* The number of stack frames to record for each allocation site */
 #define Callstack_size(config) \
@@ -905,6 +906,21 @@ static value thread_config(memprof_thread_t thread)
   return validated_config(&thread->entries);
 }
 
+/* Is the current thread currently actually sampling? */
+
+Caml_inline bool actually_sampling(memprof_domain_t domain)
+{
+  memprof_thread_t thread = domain->current;
+
+  if (thread && !thread->suspended) {
+    value config = thread_config(thread);
+    return
+      Sampling(config)
+      && (Status(config) != CONFIG_STATUS_SAMPLING_MIN);
+  }
+  return false;
+}
+
 /*** Create and destroy orphan tables ***/
 
 /* Orphan any surviving entries from a domain or its threads (after
@@ -1188,8 +1204,7 @@ static uintnat rand_geom(memprof_domain_t domain)
 static void rand_init(memprof_domain_t domain)
 {
   domain->rand_pos = RAND_BLOCK_SIZE;
-  if (domain->entries.config != CONFIG_NONE
-      && !Min_lambda(domain->entries.config)) {
+  if (actually_sampling(domain)) {
     /* next_rand_geom can be zero if the next word is to be sampled,
      * but rand_geom always returns a value >= 1. Subtract 1 to correct. */
     domain->next_rand_geom = rand_geom(domain) - 1;
@@ -1842,7 +1857,7 @@ static caml_result entries_run_callbacks_res(
       ++ es->active;
     } else if (!(e->callbacks & CB_MASK(CB_ALLOC))) {
       /* allocation callback hasn't been run */
-      if (Status(config) == CONFIG_STATUS_SAMPLING) {
+      if (Sampling(config)) {
         res = run_alloc_callback_res(thread, es, i);
         if (caml_result_is_exception(res)) break;
       } else {
@@ -1931,19 +1946,6 @@ caml_result caml_memprof_run_callbacks_res(void)
 
 /**** Sampling ****/
 
-/* Is the current thread currently sampling? */
-
-Caml_inline bool sampling(memprof_domain_t domain)
-{
-  memprof_thread_t thread = domain->current;
-
-  if (thread && !thread->suspended) {
-    value config = thread_config(thread);
-    return Sampling(config) && !Min_lambda(config);
-  }
-  return false;
-}
-
 /* Respond to the allocation of a block [block], size [wosize], with
  * [samples] samples. [src] is one of the [CAML_MEMPROF_SRC_] enum values
  * ([Gc.Memprof.allocation_source]). */
@@ -1975,7 +1977,7 @@ void caml_memprof_set_trigger(caml_domain_state *state)
   memprof_domain_t domain = state->memprof;
   CAMLassert(domain);
   value *trigger = state->young_start;
-  if (sampling(domain)) {
+  if (actually_sampling(domain)) {
     uintnat geom = rand_geom(domain);
     if (state->young_ptr - state->young_start > geom) {
       trigger = state->young_ptr - (geom - 1);
@@ -1997,7 +1999,7 @@ void caml_memprof_sample_block(value block,
   memprof_domain_t domain = Caml_state->memprof;
   CAMLassert(domain);
   CAMLassert(sampled_words >= allocated_words);
-  if (sampling(domain)) {
+  if (actually_sampling(domain)) {
     maybe_track_block(domain, block, rand_binom(domain, sampled_words),
                       allocated_words, source);
   }
@@ -2023,7 +2025,7 @@ void caml_memprof_sample_young(uintnat wosize, int from_caml,
 
   /* When a domain is not sampling, the memprof trigger is not
    * set, so we should not come into this function. */
-  CAMLassert(sampling(domain));
+  CAMLassert(actually_sampling(domain));
 
   if (!from_caml) {
     /* Not coming from Caml, so this isn't a comballoc. We know we're
@@ -2223,14 +2225,19 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker)
     caml_invalid_argument("Gc.Memprof.start");
 
   double one_log1m_lambda = lambda == 1.0 ? 0.0 : 1.0/caml_log1p(-lambda);
+  value status;
   /* Buggy implementations of caml_log1p could produce a
    * one_log1m_lambda which is positive infinity or NaN, which would
    * cause chaos in the RNG, so we check against this and set
-   * one_log1m_lambda to negative infinity (which we can test for). We
-   * preserve the user's value of Lambda for inspection or
-   * debugging. */
+   * one_log1m_lambda to negative infinity. We preserve the user's
+   * value of Lambda for inspection or debugging. */
   if (!(one_log1m_lambda <= 0.0)) { /* catches NaN, +Inf, +ve */
-    one_log1m_lambda = MIN_ONE_LOG1M_LAMBDA; /* negative infinity */
+    one_log1m_lambda = -INFINITY;
+  }
+  if (one_log1m_lambda == -INFINITY) {
+    status = Val_int(CONFIG_STATUS_SAMPLING_MIN);
+  } else {
+    status = Val_int(CONFIG_STATUS_SAMPLING);
   }
 
   lambda_v = caml_alloc_shr(Double_wosize, Double_tag);
@@ -2240,8 +2247,7 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker)
   Store_double_val(one_log1m_lambda_v, one_log1m_lambda);
 
   config = caml_alloc_shr(CONFIG_FIELDS, 0);
-  caml_initialize(&Field(config, CONFIG_FIELD_STATUS),
-                  Val_int(CONFIG_STATUS_SAMPLING));
+  caml_initialize(&Field(config, CONFIG_FIELD_STATUS), status);
   caml_initialize(&Field(config, CONFIG_FIELD_LAMBDA), lambda_v);
   caml_initialize(&Field(config, CONFIG_FIELD_1LOG1ML), one_log1m_lambda_v);
   caml_initialize(&Field(config, CONFIG_FIELD_STACK_FRAMES), szv);
@@ -2320,12 +2326,14 @@ CAMLprim value caml_memprof_discard(value config)
   uintnat status = Status(config);
   CAMLassert((status == CONFIG_STATUS_STOPPED) ||
              (status == CONFIG_STATUS_SAMPLING) ||
+             (status == CONFIG_STATUS_SAMPLING_MIN) ||
              (status == CONFIG_STATUS_DISCARDED));
 
   switch (status) {
   case CONFIG_STATUS_STOPPED: /* correct case */
     break;
-  case CONFIG_STATUS_SAMPLING:
+  case CONFIG_STATUS_SAMPLING: fallthrough;
+  case CONFIG_STATUS_SAMPLING_MIN:
     caml_failwith("Gc.Memprof.discard: profile not stopped.");
   case CONFIG_STATUS_DISCARDED:
     caml_failwith("Gc.Memprof.discard: profile already discarded.");

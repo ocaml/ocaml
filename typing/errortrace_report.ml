@@ -456,7 +456,7 @@ let warn_on_missing_def env ppf t =
               "@,@[<hov>Type %a was considered abstract@ when checking\
                @ constraints@ in this@ recursive module definition.@]"
               pp_path p
-        | Definition | Existential _ -> ()
+        | Equation _ | Definition | Existential _ -> ()
       end
   | _ -> ()
 
@@ -479,6 +479,62 @@ let warn_on_missing_defs env ppf = function
                      expected = {ty=te2; expanded=_} } ->
       warn_on_missing_def env ppf te1;
       warn_on_missing_def env ppf te2
+
+let pp_print_list_comma_and elt ppf l =
+  match List.rev l with
+  | [] -> ()
+  | [ single ] ->
+      fprintf ppf "%a" elt single
+  | fst :: rest ->
+      fprintf
+        ppf
+        "%a@ and %a"
+        (pp_print_list ~pp_sep:comma elt) (List.rev rest)
+        elt fst
+
+let quoted_ident ppf t =
+  Style.as_inline_code !Oprint.out_ident ppf t
+
+let pp_plural (singular, plural) ppf l =
+  match l with
+  | [ _ ] -> pp_print_string ppf singular
+  | _ -> pp_print_string ppf plural
+
+let explain_names env ppf =
+  let explanations = Internal_names.explain env in
+  List.iter
+    (function
+      | _, Internal_names.Equation { lhs; rhs; } ->
+          add_type_to_preparation lhs;
+          add_type_to_preparation rhs;
+      | _, Internal_names.Existential _ ->
+          ()
+    ) explanations;
+  List.iter
+    (fun (paths, explanation) ->
+       let paths = List.map tree_of_path paths in
+       match explanation with
+       | Internal_names.Equation { lhs; rhs; } ->
+           let rhseq = tree_of_typexp Type_scheme rhs in
+           let lhseq = tree_of_typexp Type_scheme lhs in
+           fprintf ppf
+             "@ @[<2>@{<hint>Hint@}:@ %a@ %a@ \
+              introduced in the equation@ %a = %a@]"
+             (pp_print_list_comma_and quoted_ident) paths
+             (pp_plural ("is a type variable", "are type variables")) paths
+             (Style.as_inline_code !Oprint.out_type)
+             lhseq
+             (Style.as_inline_code !Oprint.out_type)
+             rhseq
+       | Internal_names.Existential { constructor } ->
+           fprintf ppf
+             "@ @[<2>@{<hint>Hint@}:@ %a@ %a@ \
+              bound by the constructor@ %a.@]"
+             (pp_print_list_comma_and quoted_ident) paths
+             (pp_plural ("is an existential type", "are existential types"))
+             paths
+             Style.inline_code constructor
+    ) explanations
 
 (* [subst] comes out of equality, and is [[]] otherwise *)
 let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
@@ -510,7 +566,7 @@ let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
       in
       fprintf ppf
         "@[<v>\
-          @[%a%a@]%a%a\
+         @[%a%a@]%a%a\
          @]"
         pp_doc head_error
         pp_doc ty_expect_explanation
@@ -518,7 +574,7 @@ let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
         (pp_print_option pp_doc) mis;
       if env <> Env.empty
       then warn_on_missing_defs env ppf head;
-      Internal_names.print_explanations env ppf;
+      explain_names env ppf;
       Ident_conflicts.err_print ppf
     )
 
@@ -630,9 +686,6 @@ module Subtype = struct
 end
 
 let subtype = Subtype.error
-
-let quoted_ident ppf t =
-  Style.as_inline_code !Oprint.out_ident ppf t
 
 let type_path_expansion ppf = function
   | Same p -> quoted_ident ppf p

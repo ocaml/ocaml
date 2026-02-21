@@ -1,0 +1,50 @@
+Breakpoint 1 at 0x00000000000000
+Breakpoint 2 at 0x00000000000000
+Breakpoint 3 at 0x00000000000000: file meander_c.c, line XXX.
+Breakpoint 4 at 0x00000000000000: file meander.ml, line XXX.
+Breakpoint 1, <signal handler called>
+frame X: caml_start_program
+frame X: caml_startup_common
+frame X: caml_startup_common
+frame X: caml_startup
+frame X: caml_main
+frame X: main
+Breakpoint 2, 0x00000000000000 in caml_program ()
+frame X: caml_program
+frame X: caml_start_program
+frame X: caml_startup_common
+frame X: caml_startup_common
+frame X: caml_startup
+frame X: caml_main
+frame X: main
+Breakpoint 3, ocaml_to_c (unit=1) at meander_c.c:XX
+5	    caml_callback(*caml_named_value
+frame X: ocaml_to_c
+frame X: caml_c_call
+frame X: camlMeander.omain
+frame X: camlMeander.entry
+frame X: caml_program
+frame X: caml_start_program
+frame X: caml_startup_common
+frame X: caml_startup_common
+frame X: caml_startup
+frame X: caml_main
+frame X: main
+Breakpoint 4, camlMeander.c_to_ocaml () at meander.ml:5
+5	let c_to_ocaml () = raise E1
+frame X: camlMeander.c_to_ocaml
+frame X: caml_start_program
+frame X: caml_callback_exn
+frame X: caml_callback
+frame X: ocaml_to_c
+frame X: caml_c_call
+frame X: camlMeander.omain
+frame X: camlMeander.entry
+frame X: caml_program
+frame X: caml_start_program
+frame X: caml_startup_common
+frame X: caml_startup_common
+frame X: caml_startup
+frame X: caml_main
+frame X: main
+[Inferior 1 (process XXXX) exited normally]

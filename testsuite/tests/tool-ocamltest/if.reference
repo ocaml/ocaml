@@ -1,0 +1,63 @@
+Specified modules: if.test
+Source modules: if.test
+ ... testing 'if.test'Running test pass with 1 actions
+
+Running action 1/1 (pass)
+Action 1/1 (pass) => passed (the pass action always succeeds)
+Running test pass with 1 actions
+
+Running action 1/1 (pass)
+Action 1/1 (pass) => passed (the pass action always succeeds)
+Running test pass with 1 actions
+
+Running action 1/1 (pass)
+Action 1/1 (pass) => passed (the pass action always succeeds)
+Running test skip with 1 actions
+
+Running action 1/1 (skip)
+Action 1/1 (skip) => skipped (the skip action always skips)
+Running test pass with 1 actions
+
+Running action 1/1 (pass)
+Action 1/1 (pass) => passed (the pass action always succeeds)
+Running test pass with 1 actions
+
+Running action 1/1 (pass)
+Action 1/1 (pass) => passed (the pass action always succeeds)
+Running test skip with 1 actions
+
+Running action 1/1 (skip)
+Action 1/1 (skip) => skipped (the skip action always skips)
+Running test pass with 1 actions
+
+Running action 1/1 (pass)
+Action 1/1 (pass) => passed (the pass action always succeeds)
+Running test pass with 1 actions
+
+Running action 1/1 (pass)
+Action 1/1 (pass) => passed (the pass action always succeeds)
+Running test pass with 1 actions
+
+Running action 1/1 (pass)
+Action 1/1 (pass) => passed (the pass action always succeeds)
+Running test skip with 1 actions
+
+Running action 1/1 (skip)
+Action 1/1 (skip) => skipped (the skip action always skips)
+Running test pass with 1 actions
+
+Running action 1/1 (pass)
+Action 1/1 (pass) => passed (the pass action always succeeds)
+Running test pass with 1 actions
+
+Running action 1/1 (pass)
+Action 1/1 (pass) => passed (the pass action always succeeds)
+Running test skip with 1 actions
+
+Running action 1/1 (skip)
+Action 1/1 (skip) => skipped (the skip action always skips)
+Running test skip with 1 actions
+
+Running action 1/1 (skip)
+Action 1/1 (skip) => skipped (the skip action always skips)
+ => passed

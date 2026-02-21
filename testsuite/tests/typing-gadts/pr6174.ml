@@ -11,4 +11,6 @@ Line 3, characters 24-25:
 3 |  fun C k -> k (fun x -> x);;
                             ^
 Error: The value "x" has type "$0" but an expression was expected of type "$1" = "o"
+       Hint: "$0" and "$1" are type variables introduced in the equation
+         "a" = "$0 -> $1"
 |}];;

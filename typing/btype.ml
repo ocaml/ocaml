@@ -39,9 +39,11 @@ module TransientTypeMap = Map.Make(TransientTypeOps)
 module TypeMap = struct
   include TransientTypeMap
   let add ty = wrap_repr add ty
+  let add_to_list ty = wrap_repr add_to_list ty
   let find ty = wrap_repr find ty
   let singleton ty = wrap_repr singleton ty
   let fold f = TransientTypeMap.fold (wrap_type_expr f)
+  let update ty = wrap_repr update ty
 end
 module TypeHash = struct
   include TransientTypeHash

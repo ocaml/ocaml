@@ -313,7 +313,7 @@ val add_int64_be : t -> int64 -> unit
 *)
 
 val add_int64_le : t -> int64 -> unit
-(** [add_int64_ne b i] appends a binary little-endian 64-bit integer
+(** [add_int64_le b i] appends a binary little-endian 64-bit integer
     [i] to [b].
     @since 4.08
 *)

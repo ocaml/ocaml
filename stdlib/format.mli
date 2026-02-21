@@ -1422,7 +1422,7 @@ val sprintf : ('a, unit, string) format -> 'a
   Note that the pretty-printer queue is flushed at the end of {e each
   call} to [sprintf]. Note that you likely want to use {!asprintf} which can
   reuse [%a]-printers defined for {!fprintf}. Contrarily, [sprintf] requires to
-  redefine new [%a]-printers, and is kept only for backward compatility.
+  redefine new [%a]-printers, and is kept only for backward compatibility.
 
   In case of multiple and related calls to [sprintf] to output
   material on a single string, you should consider using [fprintf]

@@ -461,7 +461,16 @@ let save_cmt target binary_annots initial_env cmi shape =
            | None -> None
            | Some cmi -> Some (output_cmi temp_file_name oc cmi)
          in
-         let sourcefile = Unit_info.Artifact.source_file target in
+         (* We use the input_source_file because the human_source_file may not
+            exist (or may have changed), so computing the digest may fail or
+            produce inconsistent results. Merlin expects the cmt_sourcefile to
+            be the file we computed the digest of, which is why we use the
+            input_source_file for that as well.
+
+            Or from another perspective, cmt files are meant to be metadata
+            for a compiled file, which is why we want to associate it with
+            the input_source_file rather than the human_source_file. *)
+         let sourcefile = Unit_info.Artifact.input_source_file target in
          let cmt_ident_occurrences =
           if !Clflags.store_occurrences then
             index_occurrences binary_annots

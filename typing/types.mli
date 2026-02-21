@@ -587,6 +587,7 @@ and type_origin =
   | Rec_check_regularity       (* See Typedecl.transl_type_decl *)
   | Approx_recmod
   | Existential of string
+  | Equation of type_expr * type_expr
 
 and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)

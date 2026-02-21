@@ -159,10 +159,7 @@ The following environment variables are also consulted:
         the rest is directly counted against "custom_major_ratio".
         Default: 8192 bytes. Note:
         this only applies to values allocated with "caml_alloc_custom_mem".
-        \end{options}
-        The multiplier is "k", "M", or "G", for multiplication by $2^{10}$,
-        $2^{20}$, and $2^{30}$ respectively.
-  \item[o] ("space_overhead")  The major GC speed setting.
+  \item[o] ("space_overhead")  The main major GC speed setting.
         See the Gc module documentation for details.
   \item[p] (parser trace) Turn on debugging support for
         "ocamlyacc"-generated parsers.  When this option is on,
@@ -200,7 +197,10 @@ The following environment variables are also consulted:
     the completion of a major GC cycle
   \item[W] Print runtime warnings to stderr (such as Channel opened on file
     dies without being closed, unflushed data, etc.)
+  \end{options}
 
+  The multiplier is "k", "M", or "G", for multiplication by $2^{10}$,
+  $2^{20}$, and $2^{30}$ respectively.
   If the option letter is not recognized, the whole parameter is ignored;
   if the equal sign or the number is missing, the value is taken as 1;
   if the multiplier is not recognized, it is ignored.

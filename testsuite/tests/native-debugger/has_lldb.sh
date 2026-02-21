@@ -11,7 +11,7 @@ if ! which lldb > /dev/null 2>&1; then
     echo "lldb not available" > "${ocamltest_response}"
     exit ${TEST_SKIP}
 else
-    if [ "$OCAML_OS" = "macos" ]; then
+    if [ "$OCAML_OS" = "macosx" ]; then
         # macOS version
         LLDB_VERSION=$(lldb --version |head -n 1 | awk -F'-' '{print $2}')
         # We need XCode 15.3 or greater

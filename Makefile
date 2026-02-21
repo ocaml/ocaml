@@ -960,11 +960,14 @@ clean::
 # Build the manual latex files from the etex source files
 # (see manual/README.md)
 .PHONY: manual-pregen
-manual-pregen: opt.opt
-	cd manual; $(MAKE) clean && $(MAKE) pregen-etex
+manual-pregen: opt.opt | manual
+	$(MAKE) -C manual clean
+	$(MAKE) -C manual pregen-etex
 
+ifneq "$(wildcard manual)" ""
 clean::
 	$(MAKE) -C manual clean
+endif
 
 # The clean target
 clean:: partialclean
@@ -2033,6 +2036,11 @@ ocamltest_DEPEND_FILES := $(wildcard $(DEPDIR)/ocamltest/*.$(D))
 .PHONY: $(ocamltest_DEPEND_FILES)
 include $(ocamltest_DEPEND_FILES)
 
+ocamltest/ocamltest_unix.cmo: \
+  $(addsuffix .cmi, $(unix_library)) ocamltest/ocamltest_unix.cmi
+ocamltest/ocamltest_unix.cmx: \
+  $(addsuffix .cmx, $(unix_library)) ocamltest/ocamltest_unix.cmi
+
 ocamltest/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 
 ocamltest/%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
@@ -2177,7 +2185,8 @@ partialclean::
 ocamltest/ocamltest_config.ml ocamltest/ocamltest_unix.ml: config.status
 	./$< $@
 
-beforedepend:: ocamltest/ocamltest_config.ml ocamltest/ocamltest_unix.ml
+beforedepend:: ocamltest/ocamltest_config.ml ocamltest/tsl_lexer.ml \
+               ocamltest/tsl_parser.ml ocamltest/tsl_parser.mli
 
 # Documentation
 
@@ -2709,6 +2718,12 @@ partialclean::
 	$(V_OCAMLDEP)$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I $* $(INCLUDES) \
 	  $(OCAMLDEPFLAGS) $*/*.mli $*/*.ml > $@
 
+ocamltest.depend: beforedepend
+	$(V_OCAMLDEP)$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I ocamltest $(INCLUDES) \
+	  $(OCAMLDEPFLAGS) \
+	  $(filter-out ocamltest/ocamltest_unix.ml, \
+	               $(ocamltest_ML_FILES) $(ocamltest_MLI_FILES)) > $@
+
 asmcomp.depend:: beforedepend $(cvt_emit)
 	$(V_OCAMLDEP)$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I asmcomp $(INCLUDES) \
 	  $(OCAMLDEPFLAGS) $(filter-out $(ARCH_SPECIFIC) asmcomp/emit.ml, \
@@ -2778,7 +2793,9 @@ distclean: clean
 ifneq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
 	$(MAKE) -C flexdll distclean MSVC_DETECT=0
 endif
+ifneq "$(wildcard manual)" ""
 	$(MAKE) -C manual distclean
+endif
 	rm -f ocamldoc/META
 	rm -f $(addprefix ocamltest/,ocamltest_config.ml ocamltest_unix.ml)
 	rm -f otherlibs/dynlink/META otherlibs/dynlink/dynlink_config.ml \

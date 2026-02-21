@@ -10,6 +10,8 @@
 
 #if defined(__APPLE__)
 #define RE_FUNC_NAME "^[[:digit:]]+[[:space:]]+[[:alnum:]_\\.]+[[:space:]]+0x[[:xdigit:]]+[[:space:]]([[:alnum:]_\\$]+).*$"
+#elif defined(__FreeBSD__)
+#define RE_FUNC_NAME  "^0x[[:xdigit:]]+ <(.+)\\+0x[[:xdigit:]]+>.*$"
 #else
 #define RE_FUNC_NAME  "^.*\\((.+)\\+0x[[:xdigit:]]+\\) \\[0x[[:xdigit:]]+\\]$"
 #endif
@@ -29,6 +31,8 @@ typedef struct frame_info
  * or this on macOS:
  * 0   c_call.opt                          0x000000010e621079 camlC_call.entry + 57
  *
+ * or this on FreeBSD:
+ * 0x22eea7 <camlModule.fn_123+0xb7> at ./path/to/binary
  */
 static const char* backtrace_symbol(const struct frame_info* fi)
 {

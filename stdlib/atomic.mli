@@ -39,7 +39,9 @@ val make : 'a -> 'a t
     modifying these disjoint memory regions simultaneously becomes impossible,
     which can create a bottleneck. Hence, as a general guideline, if an atomic
     reference is experiencing contention, assigning it its own cache line may
-    enhance performance. *)
+    enhance performance.
+
+    @since 5.2 *)
 val make_contended : 'a -> 'a t
 
 (** Get the current value of the atomic reference. *)
@@ -68,7 +70,9 @@ val incr : int t -> unit
 (** [decr r] atomically decrements the value of [r] by [1]. *)
 val decr : int t -> unit
 
-(** Atomic "locations", such as record fields. *)
+(** Atomic "locations", such as record fields.
+
+    @since 5.4 *)
 module Loc : sig
   (** This module exposes a dedicated type ['a Atomic.Loc.t] for
       atomic locations (storing a value of type ['a]) inside objects

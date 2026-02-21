@@ -3271,12 +3271,12 @@ let () =
 let gen_annot target annots =
   let annot = Unit_info.annot target in
   Cmt2annot.gen_annot (Some (Unit_info.Artifact.filename annot))
-    ~sourcefile:(Unit_info.Artifact.source_file annot)
+    ~sourcefile:(Unit_info.Artifact.human_source_file annot)
     ~use_summaries:false
     annots
 
 let type_implementation target initial_env ast =
-  let sourcefile = Unit_info.source_file target in
+  let sourcefile = Unit_info.human_source_file target in
   let save_cmt target annots initial_env cmi shape =
     Cmt_format.save_cmt (Unit_info.cmt target)
       annots initial_env cmi shape;
@@ -3300,7 +3300,7 @@ let type_implementation target initial_env ast =
         let shape = Shape_reduce.local_reduce Env.empty shape in
         Printtyp.wrap_printing_env ~error:false initial_env
           Format.(fun () -> fprintf std_formatter "%a@."
-              (Printtyp.printed_signature @@ Unit_info.source_file target)
+              (Printtyp.printed_signature sourcefile)
               simple_sg
           );
         gen_annot target (Cmt_format.Implementation str);
@@ -3341,7 +3341,7 @@ let type_implementation target initial_env ast =
           }
         end else begin
           Location.prerr_warning
-            (Location.in_file (Unit_info.source_file target))
+            (Location.in_file sourcefile)
             Warnings.Missing_mli;
           let coercion, shape =
             Includemod.compunit initial_env ~mark:true

@@ -76,7 +76,7 @@ CAMLprim value caml_obj_block(value tag, value size)
   sz = Long_val(size);
   tg = Long_val(tag);
 
-  /* When [tg < No_scan_tag], [caml_alloc] returns an object whose fields are
+  /* When [Scannable_tag(tg)], [caml_alloc] returns an object whose fields are
    * initialised to [Val_unit]. Otherwise, the fields are uninitialised. We aim
    * to avoid inconsistent states in other cases, on a best-effort basis --
    * by default there is no initialization. */
@@ -140,7 +140,7 @@ CAMLprim value caml_obj_with_tag(value new_tag_v, value arg)
   sz = Wosize_val(arg);
   tg = (tag_t)Long_val(new_tag_v);
   if (sz == 0) CAMLreturn (Atom(tg));
-  if (tg >= No_scan_tag) {
+  if (!Scannable_tag(tg)) {
     res = caml_alloc(sz, tg);
     memcpy(Bp_val(res), Bp_val(arg), sz * sizeof(value));
   } else if (sz <= Max_young_wosize) {
@@ -353,7 +353,7 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
       Store_double_flat_field (dummy, i, Double_flat_field (newval, i));
     }
   } else {
-    CAMLassert (tag < No_scan_tag);
+    CAMLassert (Scannable_tag(tag));
     CAMLassert (Tag_val(dummy) != Infix_tag);
     Unsafe_store_tag_val(dummy, tag);
     size = Wosize_val(newval);

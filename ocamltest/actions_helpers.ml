@@ -77,12 +77,12 @@ let setup_symlinks test_source_directory build_directory files =
         else
           Sys.remove dst
     in
-      Unix.symlink src dst in
+      Ocamltest_unix.symlink src dst in
   let copy filename =
     let src = Filename.concat test_source_directory filename in
     let dst = Filename.concat build_directory filename in
     Sys.copy_file src dst in
-  let f = if Unix.has_symlink () then symlink else copy in
+  let f = if Ocamltest_unix.has_symlink () then symlink else copy in
   Sys.make_directory build_directory;
   List.iter f files
 

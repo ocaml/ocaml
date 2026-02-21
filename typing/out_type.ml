@@ -705,16 +705,17 @@ let printer_iter_type_expr f ty =
   | _ ->
       Btype.iter_type_expr f ty
 
-let quoted_ident ppf x =
-  Style.as_inline_code !Oprint.out_ident ppf x
-
 module Internal_names : sig
 
   val reset : unit -> unit
 
   val add : Path.t -> unit
 
-  val print_explanations : Env.t -> Fmt.formatter -> unit
+  type explanation =
+    | Existential of { constructor : string }
+    | Equation of { lhs : type_expr; rhs : type_expr }
+
+  val explain : Env.t -> (Path.t list * explanation) list
 
 end = struct
 
@@ -732,44 +733,75 @@ end = struct
         end
     | Pdot _ | Papply _ | Pextra_ty _ -> ()
 
-  let print_explanations env ppf =
-    let constrs =
+  type explanation =
+    | Existential of { constructor : string }
+    | Equation of { lhs : type_expr; rhs : type_expr }
+
+  let explain env =
+    let fold_type_origin f acc =
       Ident.Set.fold
         (fun id acc ->
-          let p = Pident id in
-          match Env.find_type p env with
-          | exception Not_found -> acc
-          | decl ->
-              match type_origin decl with
-              | Existential constr ->
-                  let prev = String.Map.find_opt constr acc in
-                  let prev = Option.value ~default:[] prev in
-                  String.Map.add constr (tree_of_path None p :: prev) acc
-              | Definition | Rec_check_regularity | Approx_recmod -> acc)
-        !names String.Map.empty
+           let p = Pident id in
+           match Env.find_type p env with
+           | exception Not_found -> acc
+           | decl ->
+               f p (type_origin decl) acc
+        ) !names acc
     in
-    String.Map.iter
-      (fun constr out_idents ->
-        match out_idents with
-        | [] -> ()
-        | [out_ident] ->
-            fprintf ppf
-              "@ @[<2>@{<hint>Hint@}:@ %a@ is an existential type@ \
-               bound by the constructor@ %a.@]"
-              quoted_ident out_ident
-              Style.inline_code constr
-        | out_ident :: out_idents ->
-            fprintf ppf
-              "@ @[<2>@{<hint>Hint@}:@ %a@ and %a@ are existential types@ \
-               bound by the constructor@ %a.@]"
-              (Fmt.pp_print_list
-                 ~pp_sep:(fun ppf () -> fprintf ppf ",@ ")
-                 quoted_ident)
-              (List.rev out_idents)
-              quoted_ident out_ident
-              Style.inline_code constr)
-      constrs
-
+    let constrs =
+      fold_type_origin
+        (fun p origin acc ->
+           match origin with
+           | Existential constr ->
+               String.Map.add_to_list constr p acc
+           | Approx_recmod | Definition | Equation _ | Rec_check_regularity ->
+               acc)
+        String.Map.empty
+    in
+    let existentials =
+      String.Map.fold
+        (fun constructor out_idents acc ->
+           match out_idents with
+           | [] -> acc
+           | idents ->
+               (idents, Existential { constructor }) :: acc)
+        constrs
+        []
+      |> List.rev
+    in
+    let eqns =
+      fold_type_origin
+        (fun p origin acc ->
+           match origin with
+           | Equation (t1, t2) ->
+               let t1, t2 =
+                 if get_id t1 < get_id t2 then t1, t2 else t2, t1
+               in
+               TypeMap.update
+                 t1
+                 (fun ps ->
+                    let ps = Option.value ~default:TypeMap.empty ps in
+                    Some (TypeMap.add_to_list t2 p ps)
+                 )
+                 acc
+           | Approx_recmod | Existential _
+           | Definition | Rec_check_regularity -> acc)
+        TypeMap.empty
+    in
+    let from_eqns =
+      TypeMap.fold
+        (fun lhsty rhs acc ->
+           TypeMap.fold
+             (fun rhsty out_idents acc ->
+                (List.rev out_idents, Equation { lhs = lhsty; rhs = rhsty })
+                :: acc
+             )
+             rhs acc
+        )
+        eqns []
+    in
+    existentials @ from_eqns
+    |> List.map (fun (ids, r) -> List.sort Path.compare ids, r)
 end
 
 module Variable_names : sig

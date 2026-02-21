@@ -981,7 +981,7 @@ static void verify_object(struct heap_verify_state* st, value v) {
     struct stack_info* stk = Ptr_val(Field(v, 0));
     if (stk != NULL)
       caml_scan_stack(verify_push, verify_scanning_flags, st, stk, 0);
-  } else if (Tag_val(v) < No_scan_tag) {
+  } else if (Scannable_val(v)) {
     int i = 0;
     if (Tag_val(v) == Closure_tag) {
       i = Start_env_closinfo(Closinfo_val(v));
@@ -1090,7 +1090,7 @@ static void compact_update_block(header_t* p)
       offset = Start_env_closinfo(Closinfo_val(Val_hp(p)));
     }
 
-    if (tag < No_scan_tag) {
+    if (Scannable_tag(tag)) {
       mlsize_t wosz = Wosize_hd(hd);
       for (mlsize_t i = offset; i < wosz; i++) {
         compact_update_value_at(&Field(Val_hp(p), i));
