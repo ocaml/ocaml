@@ -90,29 +90,29 @@ Exception: Invalid_argument "index out of bounds".
 
 Iarray.init 10 (fun x -> x * 2);;
 [%%expect{|
-- : int iarray = [|0; 2; 4; 6; 8; 10; 12; 14; 16; 18|]
+- : int Iarray.t = [|0; 2; 4; 6; 8; 10; 12; 14; 16; 18|]
 |}];;
 
 Iarray.append iarray iarray;;
 [%%expect{|
-- : int iarray = [|1; 2; 3; 4; 5; 1; 2; 3; 4; 5|]
+- : int Iarray.t = [|1; 2; 3; 4; 5; 1; 2; 3; 4; 5|]
 |}];;
 
 Iarray.concat [];;
 [%%expect{|
-- : 'a iarray = [||]
+- : 'a Iarray.t = [||]
 |}];;
 
 Iarray.concat [ Iarray.init 1 (fun x ->   1 + x)
               ; Iarray.init 2 (fun x ->  20 + x)
               ; Iarray.init 3 (fun x -> 300 + x) ];;
 [%%expect{|
-- : int iarray = [|1; 20; 21; 300; 301; 302|]
+- : int Iarray.t = [|1; 20; 21; 300; 301; 302|]
 |}];;
 
 Iarray.sub iarray ~pos:0 ~len:2, Iarray.sub iarray ~pos:2 ~len:3;;
 [%%expect{|
-- : int iarray * int iarray = ([|1; 2|], [|3; 4; 5|])
+- : int Iarray.t * int Iarray.t = ([|1; 2|], [|3; 4; 5|])
 |}];;
 
 Iarray.sub iarray ~pos:(-1) ~len:3;;
@@ -137,7 +137,7 @@ Iarray.to_list iarray;;
 
 Iarray.of_list [10;20;30];;
 [%%expect{|
-- : int iarray = [|10; 20; 30|]
+- : int Iarray.t = [|10; 20; 30|]
 |}];;
 
 
@@ -148,7 +148,7 @@ Iarray.to_array iarray;;
 
 Iarray.of_array mfarray;;
 [%%expect{|
-- : float iarray = [|1.5; 2.5; 3.5; 4.5; 5.5|]
+- : float Iarray.t = [|1.5; 2.5; 3.5; 4.5; 5.5|]
 |}];;
 
 (* [Iarray.to_array] creates a fresh mutable array every time *)
@@ -185,12 +185,12 @@ Iarray.iteri (fun i x -> total := !total + i*x) iarray;
 
 Iarray.map Int.neg iarray;;
 [%%expect{|
-- : int iarray = [|-1; -2; -3; -4; -5|]
+- : int Iarray.t = [|-1; -2; -3; -4; -5|]
 |}];;
 
 Iarray.mapi (fun i x -> i, 10.*.x) ifarray;;
 [%%expect{|
-- : (int * float) iarray =
+- : (int * float) Iarray.t =
 [|(0, 15.); (1, 25.); (2, 35.); (3, 45.); (4, 55.)|]
 |}];;
 
@@ -201,13 +201,13 @@ Iarray.fold_left (fun acc x -> -x :: acc) [] iarray;;
 
 Iarray.fold_left_map (fun acc x -> acc + x, string_of_int x) 0 iarray;;
 [%%expect{|
-- : int * string iarray = (15, [|"1"; "2"; "3"; "4"; "5"|])
+- : int * string Iarray.t = (15, [|"1"; "2"; "3"; "4"; "5"|])
 |}];;
 
 (* Confirm the function isn't called on the empty immutable array *)
 Iarray.fold_left_map (fun _ _ -> assert false) 0 [||];;
 [%%expect{|
-- : int * 'a iarray = (0, [||])
+- : int * 'a Iarray.t = (0, [||])
 |}];;
 
 Iarray.fold_right (fun x acc -> -.x :: acc) ifarray [];;
@@ -230,7 +230,7 @@ Iarray.iter2
 
 Iarray.map2 (fun i f -> f, i) iarray ifarray;;
 [%%expect{|
-- : (float * int) iarray =
+- : (float * int) Iarray.t =
 [|(1.5, 1); (2.5, 2); (3.5, 3); (4.5, 4); (5.5, 5)|]
 |}];;
 
@@ -333,23 +333,23 @@ Iarray.find_map (fun x -> if Float.rem x 7. = 0.5
 
 Iarray.split [| 1, "a"; 2, "b"; 3, "c" |];;
 [%%expect{|
-- : int iarray * string iarray = ([|1; 2; 3|], [|"a"; "b"; "c"|])
+- : int Iarray.t * string Iarray.t = ([|1; 2; 3|], [|"a"; "b"; "c"|])
 |}];;
 
 Iarray.split [||];;
 [%%expect{|
-- : 'a iarray * 'b iarray = ([||], [||])
+- : 'a Iarray.t * 'b Iarray.t = ([||], [||])
 |}];;
 
 Iarray.combine iarray ifarray;;
 [%%expect{|
-- : (int * float) iarray =
+- : (int * float) Iarray.t =
 [|(1, 1.5); (2, 2.5); (3, 3.5); (4, 4.5); (5, 5.5)|]
 |}];;
 
 Iarray.combine [||] [||];;
 [%%expect{|
-- : ('a * 'b) iarray = [||]
+- : ('a * 'b) Iarray.t = [||]
 |}];;
 
 Iarray.combine iarray [| "wrong length" |];;
@@ -360,14 +360,14 @@ Exception: Invalid_argument "Iarray.combine".
 Iarray.sort (Fun.flip Int.compare) iarray,
 Iarray.sort (Fun.flip Float.compare) ifarray;;
 [%%expect{|
-- : int iarray * Float.t iarray =
+- : int Iarray.t * Float.t Iarray.t =
 ([|5; 4; 3; 2; 1|], [|5.5; 4.5; 3.5; 2.5; 1.5|])
 |}];;
 
 Iarray.stable_sort (Fun.flip Int.compare) iarray,
 Iarray.stable_sort (Fun.flip Float.compare) ifarray;;
 [%%expect{|
-- : int iarray * Float.t iarray =
+- : int Iarray.t * Float.t Iarray.t =
 ([|5; 4; 3; 2; 1|], [|5.5; 4.5; 3.5; 2.5; 1.5|])
 |}];;
 
@@ -378,7 +378,7 @@ Iarray.stable_sort
      "five"; "six"; "seven"; "eight"; "nine";
      "ten" |];;
 [%%expect{|
-- : string iarray =
+- : string Iarray.t =
 [|"one"; "two"; "six"; "ten"; "zero"; "four"; "five"; "nine"; "three";
   "seven"; "eight"|]
 |}];;
@@ -386,7 +386,7 @@ Iarray.stable_sort
 Iarray.fast_sort (Fun.flip Int.compare) iarray,
 Iarray.fast_sort (Fun.flip Float.compare) ifarray;;
 [%%expect{|
-- : int iarray * Float.t iarray =
+- : int Iarray.t * Float.t Iarray.t =
 ([|5; 4; 3; 2; 1|], [|5.5; 4.5; 3.5; 2.5; 1.5|])
 |}];;
 
@@ -402,7 +402,7 @@ Iarray.to_seqi ifarray |> List.of_seq;;
 
 ["hello"; "world"] |> List.to_seq |> Iarray.of_seq;;
 [%%expect{|
-- : string iarray = [|"hello"; "world"|]
+- : string Iarray.t = [|"hello"; "world"|]
 |}];;
 
 (** Confirm that we haven't edited the immutable arrays, and that editing
