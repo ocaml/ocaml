@@ -1217,14 +1217,12 @@ and transl_handler ~scopes e body val_caselist exn_caselist eff_caselist =
   let eff_fun =
     let param = Typecore.name_cases "eff" eff_caselist in
     let cont = Ident.create_local "k" in
-    let cont_tail = Ident.create_local "ktail" in
     let eff_cases = transl_cases ~scopes ~cont eff_caselist in
     let body =
-      Matching.for_handler ~scopes e.exp_loc (Lvar param) (Lvar cont)
-        (Lvar cont_tail) eff_cases
+      Matching.for_handler ~scopes e.exp_loc (Lvar param) (Lvar cont) eff_cases
     in
     lfunction ~kind:Curried
-      ~params:[(param, Pgenval); (cont, Pgenval); (cont_tail, Pgenval)]
+      ~params:[(param, Pgenval); (cont, Pgenval)]
       ~return:Pgenval ~attr:default_function_attribute ~loc:Loc_unknown ~body
   in
   let (body_fun, arg) =
