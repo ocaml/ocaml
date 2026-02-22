@@ -604,7 +604,6 @@ void caml_free_gc_regs_buckets(value *gc_regs_buckets)
   }
 }
 
-
 CAMLprim value caml_continuation_use_noexc (value cont)
 {
   value v;
@@ -659,6 +658,24 @@ CAMLprim value caml_continuation_use_and_update_handler_noexc
   Stack_handle_exception(stk) = hexn;
   Stack_handle_effect(stk) = heff;
   return stack;
+}
+
+CAMLprim value caml_continuation_clear_handler_noexc (value cont)
+{
+  value stack;
+  struct stack_info* stk;
+
+  /* This function is called before the user code gets a handle to the
+     continuation. Hence,
+      (a) the continuation is not taken, and
+      (b) the continuation is not accessed concurrently. */
+  stack = Field (cont, 0);
+  stk = Ptr_val(stack);
+  CAMLassert (stk != NULL);
+  Stack_handle_value(stk) = Val_unit;
+  Stack_handle_exception(stk) = Val_unit;
+  Stack_handle_effect(stk) = Val_unit;
+  return Val_unit;
 }
 
 void caml_continuation_replace(value cont, struct stack_info* stk)

@@ -364,6 +364,9 @@ caml_result caml_do_pending_actions_res(void)
   result = caml_final_do_calls_res();
   if (caml_result_is_exception(result)) goto exception;
 
+  /* Call finalisers on continuations */
+  caml_final_cont_do_calls();
+
   /* Process external interrupts (e.g. preemptive systhread switching).
      By doing this last, we do not need to set the action pending flag
      in case a context switch happens: all actions have been processed

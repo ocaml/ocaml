@@ -34,6 +34,7 @@
 #include "caml/prims.h"
 #include "caml/signals.h"
 #include "caml/fiber.h"
+#include "caml/finalise.h"
 #include "caml/domain.h"
 #include "caml/globroots.h"
 #include "caml/startup.h"
@@ -1341,7 +1342,9 @@ do_resume: {
         goto raise_exception;
       }
 
-      Alloc_small(cont, 1, Cont_tag, Enter_gc);
+      Alloc_small(cont, 2, Cont_tag, Enter_gc);
+      Field(cont, 0) = Val_ptr(old_stack);
+      caml_final_cont_register (cont);
 
       sp -= 4;
       sp[0] = Val_long(domain_state->trap_sp_off);
@@ -1353,7 +1356,6 @@ do_resume: {
       domain_state->current_stack = parent_stack;
       sp = parent_stack->sp;
       Stack_parent(old_stack) = old_stack;
-      Field(cont, 0) = Val_ptr(old_stack);
 
       domain_state->trap_sp_off = Long_val(sp[0]);
       extra_args = Long_val(sp[1]);

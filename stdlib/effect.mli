@@ -33,6 +33,9 @@ exception Continuation_already_resumed
 (** Exception raised when a continuation is continued or discontinued more
     than once. *)
 
+exception Continuation_deadlocked
+(** Exception raised when a continuation becomes unreachable. *)
+
 external perform : 'a t -> 'a = "%perform"
 (** [perform e] performs an effect [e].
 

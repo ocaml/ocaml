@@ -20,6 +20,7 @@
 #include "caml/callback.h"
 #include "caml/runtime_events.h"
 #include "caml/fail.h"
+#include "caml/fiber.h"
 #include "caml/finalise.h"
 #include "caml/memory.h"
 #include "caml/minor_gc.h"
@@ -210,6 +211,9 @@ void caml_final_do_roots
   }
 }
 
+static void final_cont_do_young_roots
+  (scanning_action act, void* fdata, caml_domain_state* d);
+
 /* Called by minor gc for marking roots */
 void caml_final_do_young_roots
   (scanning_action act, scanning_action_flags fflags, void* fdata,
@@ -229,6 +233,8 @@ void caml_final_do_young_roots
     if (do_last_val)
       Call_action (act, fdata, f->last.table[i].val);
   }
+
+  final_cont_do_young_roots(act, fdata, d);
 }
 
 static void generic_final_minor_update
@@ -418,4 +424,104 @@ struct caml_final_info* caml_alloc_final_info (void)
   if(f != NULL)
     memset (f, 0, sizeof(struct caml_final_info));
   return f;
+}
+
+/******************************************************************************/
+/* Continuations */
+/******************************************************************************/
+
+static void cont_minor_clean_prefix (void)
+{
+  struct cont *cont = &Caml_state->final_info->cont;
+  while (cont->minor != (value) NULL && caml_is_continuation_used(cont->minor)) {
+    cont->minor = Cont_link(cont->minor);
+  }
+}
+
+value caml_final_cont_register (value cont)
+{
+  CAMLparam1(cont);
+  CAMLassert (Is_block(cont) && Tag_val(cont) == Cont_tag);
+  cont_minor_clean_prefix();
+  Cont_link(cont) = Caml_state->final_info->cont.minor;
+  Caml_state->final_info->cont.minor = cont;
+  CAMLreturn(Val_unit);
+}
+
+void caml_final_cont_register_major (value cont)
+{
+  CAMLassert (Is_block(cont) && Tag_val(cont) == Cont_tag);
+  Cont_link(cont) = Caml_state->final_info->cont.major;
+  Caml_state->final_info->cont.major = cont;
+}
+
+static void final_cont_do_young_roots
+  (scanning_action act, void* fdata, caml_domain_state* d)
+{
+  struct cont *cont = &d->final_info->cont;
+  while (cont->minor != (value) NULL) {
+    value c = cont->minor;
+    header_t hd = Hd_val(c);
+    if (hd != 0 && !caml_is_continuation_used(c)) {
+      Call_action (act, fdata, c);
+      /* Note: Don't use [cont->minor] for [c] above as [Call_action] will
+         update its value. */
+    }
+    cont->minor = Cont_link(cont->minor);
+  }
+}
+
+void caml_final_cont_update_major (caml_domain_state* d)
+{
+  struct cont *cont = &d->final_info->cont;
+
+  value *prevp = &cont->major;
+  value curr = cont->major;
+
+  /* Iterate through the major list */
+  while (curr != (value) NULL) {
+    value next = Cont_link(curr);
+
+    if (caml_is_continuation_used(curr)) {
+      /* Taken: drop it from the list */
+      *prevp = next;
+    } else if (is_unmarked(curr)) {
+      /* Unmarked and not taken: mark it and move it to [to_finalise] list */
+      caml_darken(d, curr, NULL);
+      *prevp = next;
+      Cont_link(curr) = cont->to_finalise;
+      cont->to_finalise = curr;
+    } else {
+      /* Marked and not taken: leave it in the major list */
+      prevp = (value*)&Cont_link(curr);
+    }
+
+    curr = next;
+  }
+}
+
+void caml_final_cont_do_calls(void)
+{
+  const value* deep_finalise = caml_named_value ("Effect.Deep.finalise");
+  const value* shallow_finalise = caml_named_value ("Effect.Shallow.finalise");
+  value c;
+  struct stack_info* stk;
+
+  struct cont *cont = &Caml_state->final_info->cont;
+  while (cont->to_finalise != (value) NULL) {
+    c = cont->to_finalise;
+    CAMLassert (Is_block(c) && !Is_young(c) && Tag_val(c) == Cont_tag);
+    CAMLassert (!caml_is_continuation_used(c));
+    stk = Ptr_val(Field(c, 0));
+    if (Stack_handle_effect(stk) != Val_unit) {
+      CAMLassert (deep_finalise != NULL);
+      caml_callback(*deep_finalise, c);
+    } else {
+      /* Effect handler was set to [Val_unit] by
+        [caml_continuation_clear_handler_noexc] */
+      CAMLassert (shallow_finalise != NULL);
+      caml_callback(*shallow_finalise, c);
+    }
+    cont->to_finalise = Cont_link(cont->to_finalise);
+  }
 }

@@ -328,6 +328,11 @@ value caml_make_unhandled_effect_exn (value effect);
 CAMLextern uintnat caml_live_stacks_memory(void);
 CAMLextern uintnat caml_current_stack_size(void);
 
+Caml_inline bool caml_is_continuation_used (value cont) {
+  value v = Op_atomic_val(cont)[0];
+  return v == Val_ptr(NULL);
+}
+
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_FIBER_H */

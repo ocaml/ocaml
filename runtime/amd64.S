@@ -145,6 +145,15 @@ G(name):
 #define SIZEOF_C_STACK_LINK     24
 #endif
 
+/* Continuation (see runtime/caml/finalise.h) */
+#define Cont_link                8
+
+/* struct caml_final_info
+   Layout: first(32) + updated_first(8) + last(32) + updated_last(8)
+           + todo_head(8) + todo_tail(8) + running_finalisation_function(8)
+           + cont(struct cont at offset 104) */
+#define Final_info_cont_minor   104
+
 /******************************************************************************/
 /* DWARF */
 /******************************************************************************/
@@ -1129,6 +1138,21 @@ CFI_STARTPROC
         movq    Caml_state(current_stack), %rsi /* %rsi := current_stack */
         leaq    1(%rsi), %rdi /* %rdi := Val_ptr(current_stack) */
         movq    %rdi, 0(%rbx) /* Initialise continuation */
+    /* Register continuation in minor list (caml_final_cont_register) */
+    /* Clean prefix of used continuations (cont_minor_clean_prefix) */
+        movq    Caml_state(final_info), %r11        /* Load final_info pointer */
+        movq    Final_info_cont_minor(%r11), %r9    /* Load cont.minor */
+LBL(113):
+        testq   %r9, %r9                            /* Check if NULL */
+        je      LBL(114)
+        cmpq    $1, 0(%r9)                          /* Check if Field(cont, 0) == Val_ptr(NULL) */
+        jne     LBL(114)
+        movq    Cont_link(%r9), %r9                 /* Advance to next: Cont_link(cont) */
+        jmp     LBL(113)
+LBL(114):
+    /* Link new continuation to minor list */
+        movq    %r9, Cont_link(%rbx)                /* Cont_link(new_cont) = cleaned list */
+        movq    %rbx, Final_info_cont_minor(%r11)   /* cont.minor = new_cont */
         movq    %rsi, %rdx /* %rdx := cont_head */
 LBL(do_perform):
     /*  %rdi: Val_ptr(current_stack)
@@ -1178,7 +1202,8 @@ LBL(do_perform):
 LBL(112):
     /* No parent stack. Switch back to original performer before raising
        Effect.Unhandled. */
-        movq    %rdx, %r10 /* %r10 := cont_head */
+        movq    $1, 0(%rbx) /* Use continuation */
+        movq    %rdx, %r10  /* %r10 := cont_head */
         SWITCH_OCAML_STACKS /* SWITCH_OCAML_STACK (source=%rsi, target=%r10) */
         ENTER_FUNCTION
 #if defined(WITH_THREAD_SANITIZER)

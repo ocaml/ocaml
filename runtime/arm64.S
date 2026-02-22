@@ -199,6 +199,15 @@ G(name):
 #define Handler_parent(reg)     [reg, #24]
 #define Handler_parent_offset   24
 
+/* Continuation (see runtime/caml/finalise.h) */
+#define Cont_link                8
+
+/* struct caml_final_info
+   Layout: first(32) + updated_first(8) + last(32) + updated_last(8)
+           + todo_head(8) + todo_tail(8) + running_finalisation_function(8)
+           + cont(struct cont at offset 104) */
+#define Final_info_cont_minor   104
+
 /* Switch from OCaml to C stack.
 
    If a C function is called which might call back into OCaml,
@@ -1067,6 +1076,21 @@ FUNCTION(caml_perform)
         ldr     x2, Caml_state(current_stack) /* x2 := current_stack */
         add     x3, x2, 1 /* x3 := Val_ptr(current_stack) */
         str     x3, [x1] /* Initialize continuation */
+    /* Register continuation in minor list (caml_final_cont_register) */
+    /* Clean prefix of used continuations (cont_minor_clean_prefix) */
+        ldr     x11, Caml_state(final_info)       /* Load final_info pointer */
+        ldr     x9, [x11, Final_info_cont_minor]  /* Load cont.minor */
+L(clean_prefix_loop):
+        cbz     x9, L(clean_prefix_done) /* Check if NULL */
+        ldr     x10, [x9]                /* Load Field(cont, 0) */
+        cmp     x10, 1                   /* Is Field(cont,0) == Val_ptr(NULL) */
+        bne     L(clean_prefix_done)
+        ldr     x9, [x9, Cont_link]      /* Advance to next: Cont_link(cont) */
+        b       L(clean_prefix_loop)
+L(clean_prefix_done):
+    /* Link new continuation to minor list */
+        str     x9, [x1, Cont_link]    /* Cont_link(new_cont) = cleaned list */
+        str     x1, [x11, Final_info_cont_minor]    /* cont.minor = new_cont */
         mov     x4, x2 /* x4 := cont_head */
 L(do_perform):
     /*  x0: effect to perform
@@ -1116,6 +1140,8 @@ L(do_perform):
 1:
     /*  No parent stack. Switch back to original performer before raising
         Effect.Unhandled. */
+        mov     x10, 1
+        str     x10, [x1] /* Use continuation */
         SWITCH_OCAML_STACKS x2, x4
     /*  Raise Effect.Unhandled. */
 #if defined(WITH_THREAD_SANITIZER)

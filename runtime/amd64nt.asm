@@ -209,6 +209,15 @@ SWITCH_OCAML_STACKS MACRO
         mov     Caml_state(exn_handler), r12
 ENDM
 
+; Continuation (see runtime/caml/finalise.h)
+Cont_link = 8
+
+; struct caml_final_info
+; Layout: first(32) + updated_first(8) + last(32) + updated_last(8)
+;         + todo_head(8) + todo_tail(8) + running_finalisation_function(8)
+;         + cont(struct cont at offset 104)
+Final_info_cont_minor = 104
+
         .CODE
 
 ; Allocation functions and GC interface.
@@ -550,6 +559,21 @@ caml_perform:
         mov     rsi, Caml_state(current_stack) ; %rsi := current_stack
         lea     rdi, [rsi + 1] ; %rdi := Val_ptr(current_stack)
         mov     qword ptr [rbx], rdi ; Initialise continuation
+    ; Register continuation in minor list (caml_final_cont_register)
+    ; Clean prefix of used continuations (cont_minor_clean_prefix)
+        mov     r11, Caml_state(final_info)        ; Load final_info pointer
+        mov     r9, qword ptr [r11+Final_info_cont_minor]  ; Load cont.minor
+L113:
+        test    r9, r9                             ; Check if NULL
+        je      L114
+        cmp     qword ptr [r9], 1                  ; Check if Field(cont, 0) == Val_ptr(NULL)
+        jne     L114
+        mov     r9, qword ptr [r9+Cont_link]       ; Advance to next: Cont_link(cont)
+        jmp     L113
+L114:
+    ; Link new continuation to minor list
+        mov     qword ptr [rbx+Cont_link], r9      ; Cont_link(new_cont) = cleaned list
+        mov     qword ptr [r11+Final_info_cont_minor], rbx  ; cont.minor = new_cont
         mov     rdx, rsi ; %rdx := cont_head
 do_perform:
     ;  %rdi: Val_ptr(current_stack)
@@ -569,6 +593,7 @@ do_perform:
 L112:
     ; No parent stack. Switch back to original performer before raising
     ; Effect.Unhandled.
+        mov     qword ptr [rbx], 1 ; Use continuation
         mov     r10, rdx ; %r10 := cont_head
         SWITCH_OCAML_STACKS ; SWITCH_OCAML_STACK (source=%rsi, target=%r10)
     ; No parent stack. Raise Effect.Unhandled.
