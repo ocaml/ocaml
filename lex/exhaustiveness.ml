@@ -92,41 +92,62 @@ let string_of_path (path : char list) =
   |> List.to_seq
   |> String.of_seq
 
-(* Local exception *)
-exception Missing_transition of int (* 0-256 *)
-
-(* This is Array.iteri but we start from the symbol for end-of-input (256,
-   last index in the array).
+(*
+   Fold over an array of transitions by starting with the transition
+   that doesn't consume an input character (eof) followed by the ordinary
+   character transitions.
    This allows us to find a shorter nonmatching string if a transition
-   is missing for both end-of-input and some character. *)
-let iter_symbols_in_preferred_order func ar =
+   is missing for both end-of-input and some character.
+*)
+let fold_transitions_in_preferred_order
+    (func : int -> 'elt -> 'acc -> 'acc)
+    (ar : 'elt array)
+    (init_acc : 'acc) : 'acc =
+  let acc = ref init_acc in
   let last = Array.length ar - 1 in
-  func last ar.(last);
+  acc := func last ar.(last) !acc;
   for i = 0 to last - 1 do
-    func i ar.(i)
-  done
-
-let find_missing_transition (state : Lexgen.automata) =
-  match get_transitions state with
-  | None ->
-      (* this is a final state without transitions *)
-      None
-  | Some transitions ->
-      (* must have a transition for each byte and for eof *)
-      try
-        iter_symbols_in_preferred_order
-          (fun trans ((dst : Lexgen.automata_move), _) ->
-             match dst with
-             | Backtrack ->
-                 raise (Missing_transition trans)
-             | Goto _state_id ->
-                 ()
-          ) transitions;
-        None
-      with Missing_transition trans -> Some trans
+    acc := func i ar.(i) !acc
+  done;
+  !acc
 
 (* Local exception *)
 exception Found_string of string
+
+(* Extend the sample path that led to this state with the symbol for the
+   transition.
+   If the transition is missing, raise an exception providing a sample
+   input string that is rejected by the automaton. *)
+let extend_path
+    visited_states
+    path
+    (trans_symbol : int)
+    ((dst : Lexgen.automata_move), _)
+    (extended_paths : char list DFA_state_map.t) : char list DFA_state_map.t =
+  match dst with
+  | Backtrack ->
+      (* We found a missing transition. Adding this character
+         or eof to the current path makes it a non-matching input *)
+      let failing_path =
+        if is_end_of_input trans_symbol then
+          path
+        else
+          (Char.chr trans_symbol) :: path
+      in
+      raise (Found_string (string_of_path failing_path))
+
+  | Goto dst_state_id ->
+      if is_end_of_input trans_symbol then
+        extended_paths
+      else if not (DFA_states.mem dst_state_id visited_states)
+           && not (DFA_state_map.mem
+                     dst_state_id extended_paths)
+      then
+        let extended_path = Char.chr trans_symbol :: path in
+        DFA_state_map.add
+          dst_state_id extended_path extended_paths
+      else
+        extended_paths
 
 (*
    Let us say that an automata state is 'total' if it matches any
@@ -182,62 +203,31 @@ let is_exhaustive
   if debug then
     printf "check initial state %i\n" initial_state;
   let rec bfs_visit
-      visited
+      visited_states
       (paths : char list DFA_state_map.t) =
-    let visited, extended_paths =
-      DFA_state_map.fold (fun state_id path (visited, extended_paths) ->
-        let visited = DFA_states.add state_id visited in
+    let visited_states, extended_paths =
+      DFA_state_map.fold (fun state_id path (visited_states, extended_paths) ->
+        let visited_states = DFA_states.add state_id visited_states in
         let state = states.(state_id) in
         if is_final state then
-          (visited, extended_paths)
+          (visited_states, extended_paths)
         else
           match get_transitions state with
           | None ->
-              (visited, extended_paths)
+              (visited_states, extended_paths)
           | Some transitions ->
-              match find_missing_transition state with
-              | Some symbol ->
-                  (* We found a missing transition. Adding this character
-                     or eof to the current path makes it a non-matching input *)
-                  let failing_path =
-                    if is_end_of_input symbol then
-                      path
-                    else
-                      (Char.chr symbol) :: path
-                  in
-                  raise (Found_string (string_of_path failing_path))
-              | None ->
-                  (* We didn't find a missing transition. Follow the transitions
-                     that land on a state that hasn't already been visited,
-                     extending the path with the character associated with
-                     the transition. *)
-                  let extended_paths = ref extended_paths in
-                  Array.iteri (fun symbol ((move : Lexgen.automata_move), _) ->
-                    match move with
-                    | Backtrack ->
-                        (* missing transition that would have raised an
-                           exception earlier *)
-                        assert false
-                    | Goto dst_state_id ->
-                        if is_end_of_input symbol then
-                          ()
-                        else if not (DFA_states.mem dst_state_id visited)
-                             && not (DFA_state_map.mem
-                                       dst_state_id !extended_paths)
-                        then
-                          let extended_path = Char.chr symbol :: path in
-                          extended_paths :=
-                            DFA_state_map.add
-                              dst_state_id extended_path !extended_paths
-                  ) transitions;
-                  (visited, !extended_paths)
-      ) paths (visited, DFA_state_map.empty)
+              let extended_paths =
+                fold_transitions_in_preferred_order
+                  (extend_path visited_states path) transitions extended_paths
+              in
+              (visited_states, extended_paths)
+      ) paths (visited_states, DFA_state_map.empty)
     in
     if DFA_state_map.is_empty extended_paths then
       (* We visited all the reachable nodes *)
       ()
     else
-      bfs_visit visited extended_paths
+      bfs_visit visited_states extended_paths
   in
   try
     bfs_visit DFA_states.empty (DFA_state_map.singleton initial_state []);
