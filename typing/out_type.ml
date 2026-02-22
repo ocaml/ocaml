@@ -665,8 +665,6 @@ module Proxy : sig
 
   val is_non_gen : type_or_scheme -> t -> bool
 
-  val id : t -> int
-
   val refresh : t -> t
 
   module Set : Stdlib.Set.S with type elt = t
@@ -683,7 +681,6 @@ end = struct
   let type_expr = Transient_expr.type_expr
 
   let desc t = t.desc
-  let id t = t.id
 
   let refresh t =
     make (type_expr t)
@@ -699,8 +696,6 @@ end = struct
     result
 
 end
-
-let _ = Proxy.id
 
 let proxy = Proxy.make
 
