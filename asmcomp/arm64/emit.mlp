@@ -33,6 +33,7 @@ let reg_domain_state_ptr = phys_reg 25 (* x28 *)
 let reg_trap_ptr = phys_reg 23 (* x26 *)
 let reg_alloc_ptr = phys_reg 24 (* x27 *)
 let reg_tmp1 = phys_reg 26 (* x16 *)
+let reg_tmp2 = phys_reg 27 (* x17 *)
 let reg_x8 = phys_reg 8 (* x8 *)
 let reg_stack_arg_begin = phys_reg 17  (* x20 *)
 let reg_stack_arg_end  = phys_reg 18 (* x21 *)
@@ -533,7 +534,7 @@ module Size = struct
     | Lop (Ispecific Imove32) -> 1
     | Lop (Ispecific (Isignext _)) -> 1
     | Lop (Idls_get) -> 1
-    | Lop (Iatomic_fetch_add) -> 1
+    | Lop (Iatomic_fetch_add) -> 4
     | Lop (Ireturn_addr) -> 1
     | Lreloadretaddr -> 0
     | Lreturn -> epilogue_size f + (if top_bits_ignore then 0 else 1)
@@ -1008,7 +1009,14 @@ let emit_instr env i =
         let offset = Domainstate.(idx_of_field Domain_dls_root) * 8 in
         `	ldr	{emit_reg i.res.(0)}, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`
     | Lop(Iatomic_fetch_add) ->
-        `	ldaddal	{emit_reg i.arg.(1)}, {emit_reg i.res.(0)}, [{emit_reg i.arg.(0)}]\n`
+        (* LL/SC loop — works on baseline ARMv8.0 (no LSE required).
+           x16 = sum (data), x17 = stlxr status (must differ per ARM spec) *)
+        let lbl = new_label() in
+        `{emit_label lbl}:\n`;
+        `	ldaxr	{emit_reg i.res.(0)}, [{emit_reg i.arg.(0)}]\n`;
+        `	add	{emit_reg reg_tmp1}, {emit_reg i.res.(0)}, {emit_reg i.arg.(1)}\n`;
+        `	stlxr	{emit_wreg reg_tmp2}, {emit_reg reg_tmp1}, [{emit_reg i.arg.(0)}]\n`;
+        `	cbnz	{emit_wreg reg_tmp2}, {emit_label lbl}\n`
     | Lop(Ireturn_addr) ->
         let n = frame_size env in
         if env.f.fun_frame_required then

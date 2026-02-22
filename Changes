@@ -26,7 +26,7 @@ Working version
 ### Code generation and optimizations:
 
 - #14524: Native Iatomic_fetch_add on all backends:
-  s390x (LAAG), amd64 (LOCK XADD), arm64 (LDADDAL),
+  s390x (LAAG), amd64 (LOCK XADD), arm64 (LDAXR/STLXR loop),
   riscv (AMOADD.D.AQRL), power (LDARX/STDCX. loop).
   TSan instrumentation via __tsan_atomic64_fetch_add.
   (Zane Hambly)

@@ -97,6 +97,8 @@ let phys_reg n =
   if n < 100 then hard_int_reg.(n) else hard_float_reg.(n - 100)
 
 let reg_x8 = phys_reg 8
+let reg_x16 = phys_reg 26
+let reg_x17 = phys_reg 27
 let reg_d7 = phys_reg 107
 
 let stack_slot slot ty =
@@ -267,6 +269,8 @@ let destroyed_at_oper = function
   | Iop( Iintoffloat | Ifloatofint
        | Iload{memory_chunk=Single; _} | Istore(Single, _, _)) ->
       [| reg_d7 |]            (* d7 / s7 destroyed *)
+  | Iop(Iatomic_fetch_add) ->
+      [| reg_x16; reg_x17 |]  (* x16=sum, x17=stlxr status in LL/SC loop *)
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
@@ -285,6 +289,7 @@ let max_register_pressure = function
   | Ialloc _ | Ipoll _ -> [| 22; 32 |]
   | Iintoffloat | Ifloatofint
   | Iload{memory_chunk=Single; _} | Istore(Single, _, _) -> [| 23; 31 |]
+  | Iatomic_fetch_add -> [| 21; 32 |]  (* x16+x17 used as scratch *)
   | _ -> [| 23; 32 |]
 
 (* Calling the assembler *)

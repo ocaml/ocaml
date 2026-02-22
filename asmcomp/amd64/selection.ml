@@ -125,6 +125,11 @@ let pseudoregs_for_operation op arg res =
       let _,is_swapped = float_cond_and_need_swap cond in
       (if is_swapped then [| arg.(0); treg |] else [| treg; arg.(1) |])
     , [| res.(0); treg |]
+  (* Atomic fetch-and-add: res.(0) holds the increment then receives the old
+     value via lock xadd.  Tying res.(0) to arg.(1) eliminates the mov in
+     emit and ensures arg.(0) (the address) gets a distinct register. *)
+  | Iatomic_fetch_add ->
+      ([| arg.(0); res.(0) |], res)
   (* Other instructions are regular *)
   | _ -> raise Use_default
 
