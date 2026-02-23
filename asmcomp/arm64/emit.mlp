@@ -308,11 +308,12 @@ let emit_addimm rd rs n =
 let emit_subimm rd rs n =
   emit_subimm_aux (fun () -> emit_reg rd) (fun () -> emit_reg rs) n
 
-let emit_addimm_ss rd rs n =
+let emit_addimm_fixed_regs rd rs n =
   emit_addimm_aux (fun () -> emit_string rd) (fun () -> emit_string rs) n
 
-let emit_addimm_rs rd rs n =
-  emit_addimm_aux (fun () -> emit_reg rd) (fun () -> emit_string rs) n
+let check_add_imm_offset ofs =
+  if ofs < -0xFFF || ofs > 0xFFF then
+    Misc.fatal_errorf "Offset %d out of range for add instruction" ofs
 
 let emit_cmpimm rs n =
   if n >= 0
@@ -463,7 +464,9 @@ module Size = struct
   let prologue_size f =
     let stk = initial_stack_offset f in
     (if stk > 0 then stack_adj_size (-stk) else 0)
-    + (if f.fun_frame_required then (if fp then 2 else 1) else 0)
+    + (if f.fun_frame_required
+       then (if fp then 1 + addsub_size (stk - 16) else 1)
+       else 0)
 
   let epilogue_size f =
     let stk = initial_stack_offset f in
@@ -707,7 +710,8 @@ let emit_stlr src base addr =
     match addr with
     | Iindexed 0 -> base
     | Iindexed ofs ->
-        emit_addimm reg_tmp1 base ofs;
+        check_add_imm_offset ofs;
+        `	add	{emit_reg reg_tmp1}, {emit_reg base}, #{emit_int ofs}\n`;
         reg_tmp1
     | Ibased _ -> assert false (* Ibased is not emitted under macOS *)
   in
@@ -733,7 +737,7 @@ let emit_instr env i =
       if n > 0 then begin
           emit_stack_adjustment (-n);
           if env.f.fun_frame_required && fp then
-            emit_addimm_ss "x29" "sp" (n-16);
+            emit_addimm_fixed_regs "x29" "sp" (n-16);
       end
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
@@ -792,7 +796,8 @@ let emit_instr env i =
     | Lop(Iextcall {func; alloc; stack_ofs}) ->
         if stack_ofs > 0 then begin
           `	mov	{emit_reg reg_stack_arg_begin}, sp\n`;
-          emit_addimm_rs reg_stack_arg_end "sp" (Misc.align stack_ofs 16);
+          check_add_imm_offset (Misc.align stack_ofs 16);
+          `	add	{emit_reg reg_stack_arg_end}, sp, #{emit_int (Misc.align stack_ofs 16)}\n`;
           emit_load_symbol_addr reg_x8 func;
           `	bl	{emit_symbol "caml_c_call_stack_args"}\n`;
           `{record_frame env i.live (Dbg_other i.dbg)}\n`
@@ -1098,7 +1103,8 @@ let emit_instr env i =
     | Lentertrap ->
        if fp then begin
          let delta = (frame_size env) - 16 (* return address + frame pointer *) in
-         emit_addimm_ss "x29" "sp" delta;
+         check_add_imm_offset delta;
+         `     add     x29, sp, #{emit_int delta}\n`
        end
     | Ladjust_trap_depth { delta_traps } ->
         (* each trap occupies 16 bytes on the stack *)
