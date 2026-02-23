@@ -1,0 +1,5 @@
+f(0): handling Foo
+f(1): handling Foo
+f(1): caught deadlock
+f(0): caught deadlock
+Ok
