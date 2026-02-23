@@ -81,6 +81,9 @@ Working version
 
 ### Bug fixes:
 
+- #14574, #14577: Fix arm64 additions with large immediates
+  (Vincent Laviron, report by Richard W.M. Jones, review by ...)
+
 OCaml 5.5.0
 -----------
 
