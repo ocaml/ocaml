@@ -506,13 +506,19 @@ void caml_final_cont_do_calls(void)
   const value* shallow_finalise = caml_named_value ("Effect.Shallow.finalise");
   value c;
   struct stack_info* stk;
+  struct caml_final_info* fi = Caml_state->final_info;
+  struct cont *cont = &fi->cont;
 
-  struct cont *cont = &Caml_state->final_info->cont;
+  if (fi->running_finalisation_function) return;
+
   while (cont->to_finalise != (value) NULL) {
     c = cont->to_finalise;
     CAMLassert (Is_block(c) && !Is_young(c) && Tag_val(c) == Cont_tag);
     CAMLassert (!caml_is_continuation_used(c));
+    cont->to_finalise = Cont_link(c);
     stk = Ptr_val(Field(c, 0));
+
+    fi->running_finalisation_function = 1;
     if (Stack_handle_effect(stk) != Val_unit) {
       CAMLassert (deep_finalise != NULL);
       caml_callback(*deep_finalise, c);
@@ -522,6 +528,6 @@ void caml_final_cont_do_calls(void)
       CAMLassert (shallow_finalise != NULL);
       caml_callback(*shallow_finalise, c);
     }
-    cont->to_finalise = Cont_link(cont->to_finalise);
+    fi->running_finalisation_function = 0;
   }
 }
