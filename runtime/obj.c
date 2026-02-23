@@ -130,39 +130,37 @@ CAMLprim value caml_obj_block(value tag, value size)
   return res;
 }
 
-CAMLprim value caml_obj_dup(value arg);
-
 CAMLprim value caml_obj_with_tag(value new_tag_v, value arg)
 {
   CAMLparam2 (new_tag_v, arg);
   CAMLlocal1 (res);
 
-  mlsize_t sz = Wosize_val(arg);
   tag_t new_tag = (tag_t)Long_val(new_tag_v);
   tag_t existing_tag = Tag_val(arg);
 
-  if (existing_tag == Infix_tag) {
-    if (new_tag != Infix_tag) {
-      caml_failwith("Cannot change tag of an existing closure.");
+  if (new_tag != existing_tag) {
+    if (new_tag == Infix_tag) {
+      caml_failwith ("Cannot change non-infix block to infix.");
     }
+    if (existing_tag == Infix_tag) {
+      caml_failwith ("Cannot change infix block to non-infix.");
+    }
+    /* Could also check for:
+       - changing non-scannable to scannable
+       - changing closure to non-closure scannnable
+       and maybe others, but we leave these as discipline for the caller. */
+  }
+
+  if (existing_tag == Infix_tag) {
     mlsize_t infix_offset = Infix_offset_val(arg);
-    CAMLassert (infix_offset > 0); /* infinite regress! */
-    res = caml_obj_dup(arg - infix_offset);
+    CAMLassert (infix_offset > 0);
+    arg -= infix_offset;
+    CAMLassert (Tag_val(arg) == Closure_tag);
+    res = caml_obj_with_tag(Val_long(Closure_tag), arg);
     CAMLreturn (res + infix_offset);
   }
 
-  if (new_tag != existing_tag) {
-    if (existing_tag == Closure_tag) {
-      caml_failwith("Cannot change tag of an existing closure.");
-    }
-    if ((new_tag == Closure_tag) ||
-        (new_tag == Infix_tag)) {
-      caml_failwith("Cannot make a closure from a non-closure.");
-    }
-    if (Scannable_tag(new_tag) && !Scannable_tag(existing_tag)) {
-      caml_failwith("Cannot change non-scannable object to scannable.");
-    }
-  }
+  mlsize_t sz = Wosize_val(arg);
 
   if (sz == 0) CAMLreturn (Atom(new_tag));
 
