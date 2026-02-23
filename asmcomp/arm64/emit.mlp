@@ -278,29 +278,41 @@ let output_epilogue env f =
 
 (* Output add-immediate / sub-immediate / cmp-immediate instructions *)
 
-let rec emit_addimm rd rs n =
-  if n < 0 then emit_subimm rd rs (-n)
+let rec emit_addimm_aux rd rs n =
+  if n < 0 then emit_subimm_aux rd rs (-n)
   else if n <= 0xFFF then
-    `	add	{emit_reg rd}, {emit_reg rs}, #{emit_int n}\n`
+    `	add	{rd ()}, {rs ()}, #{emit_int n}\n`
   else begin
     assert (n <= 0xFFF_FFF);
     let nl = n land 0xFFF and nh = n land 0xFFF_000 in
-    `	add	{emit_reg rd}, {emit_reg rs}, #{emit_int nh}\n`;
+    `	add	{rd ()}, {rs ()}, #{emit_int nh}\n`;
     if nl <> 0 then
-    `	add	{emit_reg rd}, {emit_reg rd}, #{emit_int nl}\n`
+    `	add	{rd ()}, {rd ()}, #{emit_int nl}\n`
   end
 
-and emit_subimm rd rs n =
-  if n < 0 then emit_addimm rd rs (-n)
+and emit_subimm_aux rd rs n =
+  if n < 0 then emit_addimm_aux rd rs (-n)
   else if n <= 0xFFF then
-    `	sub	{emit_reg rd}, {emit_reg rs}, #{emit_int n}\n`
+    `	sub	{rd ()}, {rs ()}, #{emit_int n}\n`
   else begin
     assert (n <= 0xFFF_FFF);
     let nl = n land 0xFFF and nh = n land 0xFFF_000 in
-    `	sub	{emit_reg rd}, {emit_reg rs}, #{emit_int nh}\n`;
+    `	sub	{rd ()}, {rs ()}, #{emit_int nh}\n`;
     if nl <> 0 then
-      `	sub	{emit_reg rd}, {emit_reg rd}, #{emit_int nl}\n`
+      `	sub	{rd ()}, {rd ()}, #{emit_int nl}\n`
   end
+
+let emit_addimm rd rs n =
+  emit_addimm_aux (fun () -> emit_reg rd) (fun () -> emit_reg rs) n
+
+let emit_subimm rd rs n =
+  emit_subimm_aux (fun () -> emit_reg rd) (fun () -> emit_reg rs) n
+
+let emit_addimm_ss rd rs n =
+  emit_addimm_aux (fun () -> emit_string rd) (fun () -> emit_string rs) n
+
+let emit_addimm_rs rd rs n =
+  emit_addimm_aux (fun () -> emit_reg rd) (fun () -> emit_string rs) n
 
 let emit_cmpimm rs n =
   if n >= 0
@@ -695,7 +707,7 @@ let emit_stlr src base addr =
     match addr with
     | Iindexed 0 -> base
     | Iindexed ofs ->
-        `	add	{emit_reg reg_tmp1}, {emit_reg base}, #{emit_int ofs}\n`;
+        emit_addimm reg_tmp1 base ofs;
         reg_tmp1
     | Ibased _ -> assert false (* Ibased is not emitted under macOS *)
   in
@@ -721,7 +733,7 @@ let emit_instr env i =
       if n > 0 then begin
           emit_stack_adjustment (-n);
           if env.f.fun_frame_required && fp then
-            `	add	x29,  sp, #{emit_int (n-16)}\n`;
+            emit_addimm_ss "x29" "sp" (n-16);
       end
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
@@ -780,7 +792,7 @@ let emit_instr env i =
     | Lop(Iextcall {func; alloc; stack_ofs}) ->
         if stack_ofs > 0 then begin
           `	mov	{emit_reg reg_stack_arg_begin}, sp\n`;
-          `	add	{emit_reg reg_stack_arg_end}, sp, #{emit_int (Misc.align stack_ofs 16)}\n`;
+          emit_addimm_rs reg_stack_arg_end "sp" (Misc.align stack_ofs 16);
           emit_load_symbol_addr reg_x8 func;
           `	bl	{emit_symbol "caml_c_call_stack_args"}\n`;
           `{record_frame env i.live (Dbg_other i.dbg)}\n`
@@ -1086,7 +1098,7 @@ let emit_instr env i =
     | Lentertrap ->
        if fp then begin
          let delta = (frame_size env) - 16 (* return address + frame pointer *) in
-         `	add	x29, sp, #{emit_int delta}\n`
+         emit_addimm_ss "x29" "sp" delta;
        end
     | Ladjust_trap_depth { delta_traps } ->
         (* each trap occupies 16 bytes on the stack *)
