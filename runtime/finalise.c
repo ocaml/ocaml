@@ -209,6 +209,13 @@ void caml_final_do_roots
       Call_action (act, fdata, todo->item[i].val);
     }
   }
+
+  /* Continuations to be finalised are considered roots. */
+  value cont = f->cont.to_finalise;
+  while (cont != (value) NULL) {
+    Call_action (act, fdata, cont);
+    cont = Cont_link(cont);
+  }
 }
 
 static void final_cont_do_young_roots
