@@ -1398,6 +1398,7 @@ module Float          = Float
 module Format         = Format
 module Fun            = Fun
 module Gc             = Gc
+module Hashset        = Hashset
 module Hashtbl        = Hashtbl
 module Iarray         = Iarray
 module In_channel     = In_channel
