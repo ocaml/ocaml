@@ -222,13 +222,6 @@ let fold f h init =
     flip_ongoing_traversal h;
     raise exn
 
-type statistics = {
-  num_bindings: int;
-  num_buckets: int;
-  max_bucket_length: int;
-  bucket_histogram: int array
-}
-
 let rec bucket_length accu = function
   | Empty -> accu
   | Cons{next} -> bucket_length (accu + 1) next
@@ -242,7 +235,7 @@ let stats h =
       let l = bucket_length 0 b in
       histo.(l) <- histo.(l) + 1)
     h.data;
-  { num_bindings = h.size;
+  Hashtbl.{ num_bindings = h.size;
     num_buckets = Array.length h.data;
     max_bucket_length = mbl;
     bucket_histogram = histo }
@@ -281,7 +274,7 @@ module type S =
     val filter_inplace: (elt -> bool) -> t -> unit
     val fold: (elt -> 'b -> 'b) -> t -> 'b -> 'b
     val length: t -> int
-    val stats: t -> statistics
+    val stats: t -> Hashtbl.statistics
     val to_seq : t -> elt Seq.t
     val add_seq : t -> elt Seq.t -> unit
     val of_seq : elt Seq.t -> t
@@ -302,7 +295,7 @@ module type SeededS =
     val filter_inplace: (elt -> bool) -> t -> unit
     val fold : (elt -> 'b -> 'b) -> t -> 'b -> 'b
     val length : t -> int
-    val stats: t -> statistics
+    val stats: t -> Hashtbl.statistics
     val to_seq : t -> elt Seq.t
     val add_seq : t -> elt Seq.t -> unit
     val of_seq : elt Seq.t -> t

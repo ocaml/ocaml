@@ -194,21 +194,7 @@ val rebuild : ?random (* thwart tools/sync_stdlib_docs *) :bool ->
     to produce a hash set for the current version of the {!Hashset}
     module. *)
 
-type statistics = {
-  num_bindings: int;
-    (** Number of elements present in the set.
-        Same value as returned by {!length}. *)
-  num_buckets: int;
-    (** Number of buckets in the set. *)
-  max_bucket_length: int;
-    (** Maximal number of elements per bucket. *)
-  bucket_histogram: int array
-    (** Histogram of bucket sizes.  This array [histo] has
-        length [max_bucket_length + 1].  The value of
-        [histo.(i)] is the number of buckets whose size is [i]. *)
-}
-
-val stats : 'a t -> statistics
+val stats : 'a t -> Hashtbl.statistics
 (** [Hashset.stats s] returns statistics about the set [s]:
    number of buckets, size of the biggest bucket, distribution of
    buckets by size. *)
@@ -277,7 +263,7 @@ module type S =
     val filter_inplace : (elt -> bool) -> t -> unit
     val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc
     val length : t -> int
-    val stats : t -> statistics
+    val stats : t -> Hashtbl.statistics
     val to_seq : t -> elt Seq.t
     val add_seq : t -> elt Seq.t -> unit
     val of_seq : elt Seq.t -> t
@@ -315,7 +301,7 @@ module type SeededS =
     val filter_inplace : (elt -> bool) -> t -> unit
     val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc
     val length : t -> int
-    val stats : t -> statistics
+    val stats : t -> Hashtbl.statistics
     val to_seq : t -> elt Seq.t
     val add_seq : t -> elt Seq.t -> unit
     val of_seq : elt Seq.t -> t
