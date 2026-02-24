@@ -29,7 +29,7 @@
    with linear time membership testing instead of constant time.
 
    The polymorphic {!t} hash set is useful in simpler cases or
-   in interactive environments. It uses the polymorphic {!hash} function
+   in interactive environments. It uses the polymorphic {!Hashtbl.hash} function
    defined in the OCaml runtime (at the time of writing, it's SipHash),
    as well as the polymorphic equality [(=)].
 *)
@@ -69,7 +69,7 @@ val create : ?random: (* thwart tools/sync_stdlib_docs *) bool ->
    execution of [Hashset.create] or deterministic over all executions.
 
    A hash set that is created with [~random] set to [false] uses a
-   fixed hash function ({!hash}) to distribute elements among
+   fixed hash function ({!Hashtbl.hash}) to distribute elements among
    buckets.  As a consequence, collisions between elements happen
    deterministically.  In Web-facing applications or other
    security-sensitive applications, the deterministic collision
@@ -78,7 +78,7 @@ val create : ?random: (* thwart tools/sync_stdlib_docs *) bool ->
    create many collisions in the set, slowing the application down.
 
    A hash set that is created with [~random] set to [true] uses the seeded
-   hash function {!seeded_hash} with a seed that is randomly chosen at hash
+   hash function {!Hashtbl.seeded_hash} with a seed that is randomly chosen at hash
    set creation time.  In effect, the hash function used is randomly
    selected among [2^{30}] different hash functions.  All these hash
    functions have different collision patterns, rendering ineffective the
@@ -319,41 +319,3 @@ module MakeSeeded (H : Hashtbl.SeededHashedType) : SeededS with type elt = H.t
     result structure supports the [~random] optional parameter
     and returns randomized hash sets if [~random:true] is passed
     or if randomization is globally on (see {!Hashset.randomize}). *)
-
-
-(** {1 The polymorphic hash functions} *)
-
-
-val hash : 'a -> int
-(** [Hashset.hash x] associates a nonnegative integer to any value of
-   any type. It is guaranteed that
-   if [x = y] or [Stdlib.compare x y = 0], then [hash x = hash y].
-   Moreover, [hash] always terminates, even on cyclic structures. *)
-
-val seeded_hash : int -> 'a -> int
-(** A variant of {!hash} that is further parameterized by
-   an integer seed. *)
-
-val hash_param : int -> int -> 'a -> int
-(** [Hashset.hash_param meaningful total x] computes a hash value for [x],
-   with the same properties as for [hash]. The two extra integer
-   parameters [meaningful] and [total] give more precise control over
-   hashing. Hashing performs a breadth-first, left-to-right traversal
-   of the structure [x], stopping after [meaningful] meaningful nodes
-   were encountered, or [total] nodes (meaningful or not) were
-   encountered.  If [total] as specified by the user exceeds a certain
-   value, currently 256, then it is capped to that value.
-   Meaningful nodes are: integers; floating-point
-   numbers; strings; characters; booleans; and constant
-   constructors. Larger values of [meaningful] and [total] means that
-   more nodes are taken into account to compute the final hash value,
-   and therefore collisions are less likely to happen.  However,
-   hashing takes longer. The parameters [meaningful] and [total]
-   govern the tradeoff between accuracy and speed.  As default
-   choices, {!hash} and {!seeded_hash} take
-   [meaningful = 10] and [total = 100]. *)
-
-val seeded_hash_param : int -> int -> int -> 'a -> int
-(** A variant of {!hash_param} that is further parameterized by
-   an integer seed.  Usage:
-   [Hashset.seeded_hash_param meaningful total seed x]. *)

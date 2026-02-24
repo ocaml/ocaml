@@ -397,20 +397,9 @@ module Make(H: Hashtbl.HashedType): (S with type elt = H.t) =
       tbl
   end
 
-(* Polymorphic hash function-based tables *)
-(* Code included below the functorial interface to guard against accidental
-   use - see #2202 *)
-
-external seeded_hash_param :
-  int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]
-
-let hash x = seeded_hash_param 10 100 0 x
-let hash_param n1 n2 x = seeded_hash_param n1 n2 0 x
-let seeded_hash seed x = seeded_hash_param 10 100 seed x
-
 let key_index h key =
   if Obj.size (Obj.repr h) >= 4
-  then (seeded_hash_param 10 100 h.seed key) land (Array.length h.data - 1)
+  then (Hashtbl.seeded_hash_param 10 100 h.seed key) land (Array.length h.data - 1)
   else invalid_arg "Hashset: unsupported hash table format"
 
 let rec remove_bucket h i key prec bucket =
