@@ -23,6 +23,8 @@ To add a new module, you must:
 * Run `make alldepend` to update all the `.depend` files. These files are not
   edited by hand.
 
+* Add the new module to link:../manual/src/library/stdlib-blurb.etex[].
+
 * Run `make clean` or `make partialclean`, then `make`.
 
 If you are adding multiple modules, follow the steps above and rebuild the
