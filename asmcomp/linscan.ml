@@ -106,11 +106,13 @@ let release_expired_inactive ci pos =
 
 (* Allocate a new stack slot to the interval. *)
 
-let allocate_stack_slot num_stack_slots i =
+let allocate_stack_slot ~reuse num_stack_slots i =
   let cl = Proc.register_class i.reg in
   let ci = active.(cl) in
   let ss =
-    match SlotSet.min_elt_opt ci.ci_free_slots with
+    match
+      if reuse then SlotSet.min_elt_opt ci.ci_free_slots else None
+    with
     | Some ss ->
         ci.ci_free_slots <- SlotSet.remove ss ci.ci_free_slots;
         ss
@@ -131,7 +133,7 @@ let allocate_free_register num_stack_slots i =
   begin match i.reg.loc, i.reg.spill with
     Unknown, true ->
       (* Allocate a stack slot for the already spilled interval *)
-      allocate_stack_slot num_stack_slots i
+      allocate_stack_slot ~reuse:true num_stack_slots i
   | Unknown, _ ->
       (* We need to allocate a register to this interval somehow *)
       let cl = Proc.register_class i.reg in
@@ -200,13 +202,15 @@ let allocate_blocked_register num_stack_slots i =
       i.reg.loc <- ilast.reg.loc;
       (* Remove the last interval from active and insert the current *)
       ci.ci_active <- IntervalSet.add i il;
-      (* Now get a new stack slot for the spilled register *)
-      allocate_stack_slot num_stack_slots ilast
+      (* Now get a new stack slot for the spilled register.
+         As [ilast] started before the current position, we must not reuse a
+         stack slot as it may not be available for the whole life of [ilast]. *)
+      allocate_stack_slot ~reuse:false num_stack_slots ilast
   | _ ->
       (* Either the current interval is last and we have to spill it,
          or there are no registers at all in the register class (i.e.
          floating point class on i386). *)
-      allocate_stack_slot num_stack_slots i
+      allocate_stack_slot ~reuse:true num_stack_slots i
 
 let walk_interval num_stack_slots i =
   let pos = i.ibegin land (lnot 0x01) in
