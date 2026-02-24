@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Sacha-Élie Ayoun, Soteria Tools Ltd.                  *)
 (*                                                                        *)
-(*   Copyright 2026, Soteria Tools Ltd.                                   *) 
+(*   Copyright 2026, Soteria Tools Ltd.                                   *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -78,8 +78,8 @@ val create : ?random: (* thwart tools/sync_stdlib_docs *) bool ->
    create many collisions in the set, slowing the application down.
 
    A hash set that is created with [~random] set to [true] uses the seeded
-   hash function {!Hashtbl.seeded_hash} with a seed that is randomly chosen at hash
-   set creation time.  In effect, the hash function used is randomly
+   hash function {!Hashtbl.seeded_hash} with a seed that is randomly chosen at
+   hash set creation time.  In effect, the hash function used is randomly
    selected among [2^{30}] different hash functions.  All these hash
    functions have different collision patterns, rendering ineffective the
    denial-of-service attack described above.  However, because of
@@ -218,7 +218,8 @@ val of_seq : 'a Seq.t -> 'a t
 
 (** The functorial interface allows the use of specific comparison
     and hash functions, either for performance/security concerns,
-    or because elements are not hashable/comparable with the polymorphic builtins.
+    or because elements are not hashable/comparable with the
+    polymorphic builtins.
 
     For instance, one might want to specialize a set for integer elements:
     {[

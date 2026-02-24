@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Sacha-Élie Ayoun, Soteria Tools Ltd.                  *)
 (*                                                                        *)
-(*   Copyright 2026, Soteria Tools Ltd.                                   *) 
+(*   Copyright 2026, Soteria Tools Ltd.                                   *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -13,18 +13,19 @@
 (**************************************************************************)
 
 (* This file is largely inspired / copied from the implementation of Hashtbl.
-   While hashsets can be implemented as ('a, unit) Hashtbl.t, this implementation
-   is more efficient as it avoids the need to store the dummy value.
-   
+   While hashsets can be implemented as ('a, unit) Hashtbl.t,
+   this implementation is more efficient as it avoids the need
+   to store the dummy value.
+
    Its interface is also adapted to the use case of sets. *)
 
 type 'a bucketlist =
     Empty
   | Cons of { mutable key: 'a;
-              mutable next: 'a bucketlist }   
-   
+              mutable next: 'a bucketlist }
+
 type 'a t =
-  { mutable size: int; 
+  { mutable size: int;
     mutable data: 'a bucketlist array;
     seed: int;
     mutable initial_size: int;
@@ -399,7 +400,9 @@ module Make(H: Hashtbl.HashedType): (S with type elt = H.t) =
 
 let key_index h key =
   if Obj.size (Obj.repr h) >= 4
-  then (Hashtbl.seeded_hash_param 10 100 h.seed key) land (Array.length h.data - 1)
+  then
+         (Hashtbl.seeded_hash_param 10 100 h.seed key)
+    land (Array.length h.data - 1)
   else invalid_arg "Hashset: unsupported hash table format"
 
 let rec remove_bucket h i key prec bucket =
