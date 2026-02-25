@@ -499,7 +499,19 @@ val hash : t -> int
 
 module Array : sig
   type t = floatarray
-  (** The type of float arrays with packed representation.
+  (** The type of "flat" float arrays.
+
+      A [floatarray] is an array data structure that contains a fixed number of
+      elements of type [float]. The elements of a [floatarray] are stored
+      contiguously in memory, without any boxing.
+
+      This is also the case for the built-in type [float array] if the compiler
+      has not been configured with [--disable-flat-float-array]. However,
+      [floatarray] is guaranteed to maintain an unboxed representation at runtime
+      even if the compiler is configured with [--disable-flat-float-array].
+      Furthermore, operations on [floatarray] are a bit more efficient than those
+      on [float array], which require an extra dynamic check.
+
       @since 4.08
     *)
 
@@ -882,7 +894,19 @@ end
 
 module ArrayLabels : sig
   type t = floatarray
-  (** The type of float arrays with packed representation.
+  (** The type of "flat" float arrays.
+
+      A [floatarray] is an array data structure that contains a fixed number of
+      elements of type [float]. The elements of a [floatarray] are stored
+      contiguously in memory, without any boxing.
+
+      This is also the case for the built-in type [float array] if the compiler
+      has not been configured with [--disable-flat-float-array]. However,
+      [floatarray] is guaranteed to maintain an unboxed representation at runtime
+      even if the compiler is configured with [--disable-flat-float-array].
+      Furthermore, operations on [floatarray] are a bit more efficient than those
+      on [float array], which require an extra dynamic check.
+
       @since 4.08
     *)
 
