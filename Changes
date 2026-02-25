@@ -231,6 +231,10 @@ OCaml 5.5.0
 
 ### Code generation and optimizations:
 
+- #14583: fix bug in linear scan spilling heuristic that in certain situations
+  could lead to miscompilations.
+  (Nicolás Ojeda Bär, review by Vincent Laviron)
+
 ### Standard library:
 
 - #14437: Add String.split_{first,last,all} and String.rsplit_all
