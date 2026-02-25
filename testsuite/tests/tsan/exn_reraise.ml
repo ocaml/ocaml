@@ -7,6 +7,9 @@
  tsan;
  readonly_files = "waitgroup_stubs.c";
  all_modules = "${readonly_files} waitgroup.ml exn_reraise.ml";
+ if macosx
+ then reference = "${test_source_directory}/exn_reraise.macosx.reference"
+ else reference = "${test_source_directory}/exn_reraise.not-macosx.reference";
  native;
 
 *)

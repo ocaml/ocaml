@@ -6,6 +6,12 @@
  tsan;
  readonly_files = "waitgroup_stubs.c";
  all_modules = "${readonly_files} waitgroup.ml raise_through_handler.ml";
+ if macosx
+ then
+   reference = "${test_source_directory}/raise_through_handler.macosx.reference"
+ else
+   reference =
+     "${test_source_directory}/raise_through_handler.not-macosx.reference";
  native;
 
 *)

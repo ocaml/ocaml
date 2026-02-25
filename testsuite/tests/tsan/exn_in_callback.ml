@@ -7,6 +7,10 @@
  tsan;
  readonly_files = "callbacks.c waitgroup_stubs.c";
  all_modules = "${readonly_files} waitgroup.ml exn_in_callback.ml";
+ if macosx
+ then reference = "${test_source_directory}/exn_in_callback.macosx.reference"
+ else
+   reference = "${test_source_directory}/exn_in_callback.not-macosx.reference";
  native;
 
 *)

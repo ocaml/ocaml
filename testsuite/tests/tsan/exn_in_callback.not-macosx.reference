@@ -6,8 +6,8 @@ Entering h
 Entering i
 Throwing ExnB...
 Caught an ExnB
-Raised by primitive operation at Exn_in_callback.g in file "exn_in_callback.ml", line 46, characters 2-27
-Called from Exn_in_callback.f in file "exn_in_callback.ml", line 52, characters 7-11
+Raised by primitive operation at Exn_in_callback.g in file "exn_in_callback.ml", line 50, characters 2-27
+Called from Exn_in_callback.f in file "exn_in_callback.ml", line 56, characters 7-11
 ==================
 WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
   Write of size 8 at <implemspecific> by thread T2 (mutexes: write M<implemspecific>):

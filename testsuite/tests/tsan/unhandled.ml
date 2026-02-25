@@ -6,6 +6,9 @@
  tsan;
  readonly_files = "waitgroup_stubs.c";
  all_modules = "${readonly_files} waitgroup.ml unhandled.ml";
+ if macosx
+ then reference = "${test_source_directory}/unhandled.macosx.reference"
+ else reference = "${test_source_directory}/unhandled.not-macosx.reference";
  native;
 
 *)

@@ -6,6 +6,9 @@
  tsan;
  readonly_files = "waitgroup_stubs.c";
  all_modules = "${readonly_files} waitgroup.ml perform.ml";
+ if macosx
+ then reference = "${test_source_directory}/perform.macosx.reference"
+ else reference = "${test_source_directory}/perform.not-macosx.reference";
  native;
 
 *)
