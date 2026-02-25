@@ -474,9 +474,9 @@ module Size = struct
     (if f.fun_frame_required then 1 else 0) +
     1
 
-  let instr_size env = function
+  let instr_size f = function
     | Lend -> 0
-    | Lprologue -> prologue_size env.f
+    | Lprologue -> prologue_size f
     | Lop (Imove | Ispill | Ireload) -> 1
     | Lop (Iconst_int n) ->
       num_instructions_for_intconst n
@@ -485,9 +485,9 @@ module Size = struct
     | Lop (Iconst_symbol _) -> 2
     | Lop (Icall_ind) -> 1
     | Lop (Icall_imm _) -> 1
-    | Lop (Itailcall_ind) -> epilogue_size env.f
+    | Lop (Itailcall_ind) -> epilogue_size f
     | Lop (Itailcall_imm { func; _ }) ->
-      if func = env.f.fun_name then 1 else epilogue_size env.f
+      if func = f.fun_name then 1 else epilogue_size f
     | Lop (Iextcall {alloc; stack_ofs} ) ->
       if stack_ofs > 0 then 5
       else if alloc then 3
@@ -511,8 +511,8 @@ module Size = struct
         | _ -> 0
       and store = match memory_chunk with Single -> 2 | _ -> 1 in
       based + pre_store + store
-    | Lop (Ialloc _) when env.f.fun_fast -> 5
-    | Lop (Ispecific (Ialloc_far _)) when env.f.fun_fast -> 6
+    | Lop (Ialloc _) when f.fun_fast -> 5
+    | Lop (Ispecific (Ialloc_far _)) when f.fun_fast -> 6
     | Lop (Ipoll {return_label=None}) -> 3
     | Lop (Ipoll {return_label=Some _}) -> 4
     | Lop (Ispecific (Ipoll_far {return_label=None})) -> 4
@@ -550,7 +550,7 @@ module Size = struct
     | Lop (Idls_get) -> 1
     | Lop (Ireturn_addr) -> 1
     | Lreloadretaddr -> 0
-    | Lreturn -> epilogue_size env.f + (if top_bits_ignore then 0 else 1)
+    | Lreturn -> epilogue_size f + (if top_bits_ignore then 0 else 1)
     | Llabel _ -> 0
     | Lbranch _ -> 1
     | Lcondbranch (tst, _) ->
@@ -568,8 +568,7 @@ module Size = struct
         + begin match lbl1 with None -> 0 | Some _ -> 1 end
         + begin match lbl2 with None -> 0 | Some _ -> 1 end
     | Lswitch jumptbl -> 3 + Array.length jumptbl
-    | Lentertrap ->
-      if fp then addsub_size ((frame_size env) - 16) else 0
+    | Lentertrap -> if fp then 1 else 0
     | Ladjust_trap_depth _ -> 0
     | Lpushtrap _ -> 3
     | Lpoptrap -> 1
@@ -1104,7 +1103,8 @@ let emit_instr env i =
     | Lentertrap ->
        if fp then begin
          let delta = (frame_size env) - 16 (* return address + frame pointer *) in
-         emit_addimm_fixed_regs "x29" "sp" delta
+         check_add_imm_offset delta;
+         `     add     x29, sp, #{emit_int delta}\n`
        end
     | Ladjust_trap_depth { delta_traps } ->
         (* each trap occupies 16 bytes on the stack *)
@@ -1142,7 +1142,7 @@ let emit_instr_debug env i =
   let lbl = new_label () in
   `{emit_label lbl}:\n`;
   emit_instr env i;
-  let sz = Size.instr_size env i.desc * 4 in
+  let sz = Size.instr_size env.f i.desc * 4 in
   `	.ifne (. - {emit_label lbl}) - {emit_int sz}\n`;
   `	.error \"Emit.instr_size: instruction length mismatch\"\n`;
   `	.endif\n`
@@ -1162,7 +1162,7 @@ let rec emit_all env lbl_start acc i =
        ()
   | _ ->
      if debug then emit_instr_debug env i else emit_instr env i;
-     emit_all env lbl_start (acc + Size.instr_size env i.desc) i.next
+     emit_all env lbl_start (acc + Size.instr_size env.f i.desc) i.next
 
 let emit_all env i =
   let lbl = new_label () in
