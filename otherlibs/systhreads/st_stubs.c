@@ -152,13 +152,22 @@ st_tlskey caml_thread_key;
 
 #define This_thread ((caml_thread_t) st_tls_get(caml_thread_key))
 
+/* States of the tick thread control fields. */
+enum tick_state {
+  Tick_uninitialized = 0,
+  Tick_run,
+  Tick_stop,
+};
+
 /* overall table for threads across domains */
 struct caml_thread_table {
   caml_thread_t active_thread;
   st_masterlock thread_lock;
-  int tick_thread_running;
   st_thread_id tick_thread_id;
-  atomic_uintnat tick_thread_stop;
+  /* The following 3 fields are the tick thread control fields */
+  caml_plat_mutex tick_mu;
+  caml_plat_cond tick_cond;
+  enum tick_state tick_state;
 };
 
 /* thread_table instance, up to caml_params->max_domains */
@@ -177,7 +186,9 @@ static void thread_lock_release(int dom_id)
 }
 
 /* Used to signal that the "tick" thread for this domain should be stopped. */
-#define Tick_thread_stop thread_table[Caml_state->id].tick_thread_stop
+#define Tick_thread_mu (thread_table[Caml_state->id].tick_mu)
+#define Tick_thread_cond (thread_table[Caml_state->id].tick_cond)
+#define Tick_thread_state (thread_table[Caml_state->id].tick_state)
 
 /* The remaining fields are accessed while holding the domain lock */
 
@@ -547,7 +558,11 @@ static value caml_thread_domain_initialize_hook_exn(void)
   value res = Val_unit;
   caml_thread_t new_thread;
 
-  atomic_store_release(&Tick_thread_stop, 0);
+  if (Tick_thread_state == Tick_uninitialized){
+    caml_plat_mutex_init (&Tick_thread_mu);
+    caml_plat_cond_init (&Tick_thread_cond);
+  }
+  Tick_thread_state = Tick_stop;
 
   int ret = st_masterlock_init(Thread_lock(Caml_state->id));
   if (ret != 0)
@@ -645,17 +660,16 @@ CAMLprim value caml_thread_initialize(value unit)
   return Val_unit;
 }
 
-/* Cleanup the thread machinery when the runtime is shut down. Joining the tick
-   thread take 25ms on average / 50ms in the worst case, so we don't do it on
-   program exit. (FIXME: not implemented in OCaml 5 yet) */
+/* Cleanup the thread machinery when the runtime is shut down. */
 
 CAMLprim value caml_thread_cleanup(value unit)
 {
-  if (Tick_thread_running){
-    atomic_store_release(&Tick_thread_stop, 1);
+  if (Tick_thread_state == Tick_run){
+    caml_plat_lock_blocking (&Tick_thread_mu);
+    Tick_thread_state = Tick_stop;
+    caml_plat_signal (&Tick_thread_cond);
+    caml_plat_unlock (&Tick_thread_mu);
     st_thread_join(Tick_thread_id);
-    atomic_store_release(&Tick_thread_stop, 0);
-    Tick_thread_running = 0;
   }
 
   return Val_unit;
@@ -724,36 +738,32 @@ caml_thread_start(void * v)
   return 0;
 }
 
-struct caml_thread_tick_args {
-  int domain_id;
-  atomic_uintnat* stop;
-};
-
 /* The tick thread: interrupt the domain periodically to force preemption  */
+
 static CAML_THREAD_FUNCTION caml_thread_tick(void * arg)
 {
-  struct caml_thread_tick_args* tick_thread_args =
-    (struct caml_thread_tick_args*) arg;
-  int domain_id = tick_thread_args->domain_id;
-  atomic_uintnat* stop = tick_thread_args->stop;
-  st_timeout t = st_timeout_of_msec(Thread_timeout_msec);
-  caml_stat_free(tick_thread_args);
+  int domain_id = (intptr_t) arg;
 
   caml_init_domain_self(domain_id);
   caml_domain_state *domain = Caml_state;
 
-  while(! atomic_load_acquire(stop)) {
-    st_msleep(&t);
-
+  caml_plat_lock_blocking (&Tick_thread_mu);
+  while (Tick_thread_state != Tick_stop){
+    (void) caml_plat_timedwait (&Tick_thread_cond, &Tick_thread_mu,
+                                Thread_timeout_msec);
     atomic_store_release(&domain->requested_external_interrupt, 1);
     caml_interrupt_self();
   }
+  caml_plat_unlock (&Tick_thread_mu);
+
   return 0;
 }
 
 static st_retcode create_tick_thread(void)
 {
-  if (Tick_thread_running) return 0;
+  if (Tick_thread_state == Tick_run) return 0;
+  CAMLassert (Tick_tread_state == Tick_stop);
+  Tick_thread_state = Tick_run;
 
 #ifdef POSIX_SIGNALS
   sigset_t mask, old_mask;
@@ -764,28 +774,14 @@ static st_retcode create_tick_thread(void)
   pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
 #endif
 
-  struct caml_thread_tick_args* tick_thread_args =
-    caml_stat_alloc_noexc(sizeof(struct caml_thread_tick_args));
-  if (tick_thread_args == NULL)
-    caml_fatal_error("create_tick_thread: failed to allocate thread args");
-
-  tick_thread_args->domain_id = Caml_state->id;
-  tick_thread_args->stop = &Tick_thread_stop;
-
   st_retcode err = st_thread_create(&Tick_thread_id, caml_thread_tick,
-                                    (void *)tick_thread_args);
+                                    (void *)(intptr_t)Caml_state->id);
 
 #ifdef POSIX_SIGNALS
   pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
 #endif
 
-  if (err != 0) {
-    caml_stat_free(tick_thread_args);
-    return err;
-  }
-
-  Tick_thread_running = 1;
-  return 0;
+  return err;
 }
 
 CAMLprim value caml_thread_new(value clos)

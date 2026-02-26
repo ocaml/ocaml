@@ -15,6 +15,8 @@
 
 /* POSIX thread implementation of the "st" interface */
 
+#include <time.h>
+
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>

@@ -23461,6 +23461,15 @@ fi
 
 done
 
+# pthread_condattr_getclock is not implemented on MacOS
+ac_fn_c_check_func "$LINENO" "pthread_condattr_getclock" "ac_cv_func_pthread_condattr_getclock"
+if test "x$ac_cv_func_pthread_condattr_getclock" = xyes
+then :
+  printf "%s\n" "#define HAVE_PTHREAD_CONDATTR_GETCLOCK 1" >>confdefs.h
+
+fi
+
+
 ## prctl
 
   for ac_func in prctl

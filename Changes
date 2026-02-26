@@ -86,6 +86,11 @@ Working version
 
 ### Bug fixes:
 
+- #12948, #13026: Fix Domain.join to stop the tick thread immediately
+  rather that wait for the next tick.
+  (Damien Doligez, report by Thomas Leonard, review by Guillaume
+   Munch-Maccagnoni and Edwin Török)
+
 OCaml 5.5.0
 -----------
 

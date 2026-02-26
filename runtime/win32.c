@@ -1496,6 +1496,32 @@ void caml_plat_wait(caml_plat_cond *cond, caml_plat_mutex* mut)
   check_err("wait", rc);
 }
 
+int caml_plat_timedwait(caml_plat_cond *cond, caml_plat_mutex* mut,
+                        unsigned long delay)
+{
+  caml_plat_assert_locked(mut);
+  DWORD self_tid = GetCurrentThreadId();
+  BOOL s;
+  int rc = 0;
+  if (mut->owner_tid == self_tid) {
+    mut->owner_tid = 0;
+    s = SleepConditionVariableSRW(cond, &mut->lock, delay, 0 /* exclusive */);
+    mut->owner_tid = self_tid;
+    if (!s){
+      unsigned long err = GetLastError();
+      if (err == ERROR_TIMEOUT){
+        rc = ETIMEDOUT;
+      }else{
+        rc = caml_posixerr_of_win32err(err);
+      }
+    }
+  } else {
+    rc = EPERM;
+  }
+  if (rc != ETIMEDOUT) check_err("timedwait", rc);
+  return rc;
+}
+
 void caml_plat_broadcast(caml_plat_cond* cond)
 {
   WakeAllConditionVariable(cond);

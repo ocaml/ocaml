@@ -428,6 +428,8 @@ char *caml_secure_getenv (char const *var)
 uint64_t caml_time_counter(void)
 {
 #if defined(HAS_CLOCK_GETTIME_NSEC_NP)
+  /* This is MacOS, where, unlike linux, CLOCK_MONOTONIC runs while
+     the system is asleep. The closest equivalent is CLOCK_UPTIME_RAW. */
   return (clock_gettime_nsec_np(CLOCK_UPTIME_RAW));
 #elif defined(HAS_POSIX_MONOTONIC_CLOCK)
   struct timespec t;
@@ -663,6 +665,14 @@ void caml_plat_mutex_free(caml_plat_mutex* m)
 
 /* Condition variables */
 
+#if defined(_POSIX_TIMERS) &&                   \
+  defined(_POSIX_MONOTONIC_CLOCK) &&            \
+  _POSIX_MONOTONIC_CLOCK != (-1)
+  #define CAML_CLOCKID CLOCK_MONOTONIC
+#else
+  #define CAML_CLOCKID CLOCK_REALTIME
+#endif
+
 static void caml_plat_cond_init_aux(caml_plat_cond *cond)
 {
   pthread_condattr_t attr;
@@ -670,7 +680,7 @@ static void caml_plat_cond_init_aux(caml_plat_cond *cond)
 #if defined(_POSIX_TIMERS) &&                   \
   defined(_POSIX_MONOTONIC_CLOCK) &&            \
   _POSIX_MONOTONIC_CLOCK != (-1)
-  pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+  pthread_condattr_setclock(&attr, CAML_CLOCKID);
 #endif
   pthread_cond_init(cond, &attr);
 }
@@ -684,6 +694,28 @@ void caml_plat_wait(caml_plat_cond* cond, caml_plat_mutex* mut)
 {
   caml_plat_assert_locked(mut);
   check_err("wait", pthread_cond_wait(cond, mut));
+}
+
+int caml_plat_timedwait(caml_plat_cond* cond, caml_plat_mutex* mut,
+                        unsigned long delay)
+{
+  struct timespec deadline;
+  int res;
+
+  clock_gettime (CAML_CLOCKID, &deadline);
+  if (delay > 1000){
+    deadline.tv_sec += delay / 1000;
+    delay = delay % 1000;
+  }
+  deadline.tv_nsec += 1000000 * delay;
+  if (deadline.tv_nsec > 1000000000){
+    deadline.tv_nsec -= 1000000000;
+    deadline.tv_sec += 1;
+  }
+  caml_plat_assert_locked(mut);
+  res = pthread_cond_timedwait(cond, mut, &deadline);
+  if (res != ETIMEDOUT) check_err("timedwait", res);
+  return res;
 }
 
 void caml_plat_broadcast(caml_plat_cond* cond)
