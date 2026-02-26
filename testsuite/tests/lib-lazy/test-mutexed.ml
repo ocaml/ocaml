@@ -1,37 +1,28 @@
 (* TEST
  hassysthreads;
- flags = "-I ${ocamlsrcdir}/otherlibs/unix -I ${ocamlsrcdir}/otherlibs/systhreads";
+ hasunix;
  include systhreads;
- expect;
+ flags = "-w -24";
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
-#load "unix.cma";;
-#load "threads.cma";;
-[%%expect{|
-|}]
-
 module LazyM = Lazy.Mutexed
-[%%expect{|
-module LazyM = Lazy.Mutexed
-|}]
 
 (* direct value return *)
 let it =
   let v = LazyM.from_val 42 in
   assert (LazyM.is_val v);
-  (LazyM.force v, LazyM.force v)
-[%%expect{|
-val it : int * int = (42, 42)
-|}]
+  Printf.printf "1: %d, %d\n%!" (LazyM.force v) (LazyM.force v)
 
 (* value return *)
 let it =
   let v = LazyM.from_fun (fun () -> 43) in
   assert (not (LazyM.is_val v));
-  (LazyM.force v, LazyM.force v)
-[%%expect{|
-val it : int * int = (43, 43)
-|}]
+  Printf.printf "2: %d, %d\n%!" (LazyM.force v) (LazyM.force v)
 
 
 (* exception case *)
@@ -43,10 +34,7 @@ let it =
       true
   | exception _ | _ -> false
   in
-  check () && check ()
-[%%expect{|
-val it : bool = true
-|}]
+  Printf.printf "3: %b\n%!" (check () && check ())
 
 (* sharing test *)
 let it =
@@ -57,19 +45,17 @@ let it =
   LazyM.force test;
   assert (LazyM.is_val test);
   LazyM.force test;
-  if !r = 1 then Ok () else Error !r
-[%%expect{|
-val it : (unit, int) result = Ok ()
-|}]
+  if !r = 1 then Printf.printf "4: Ok\n%!"
+  else (Printf.printf "5:Error %d\n%!" !r)
 
 (* Recursive forcing test *)
 let it =
   let thunk = ref (LazyM.from_val 0) in
   thunk := LazyM.from_fun (fun () -> LazyM.force !thunk + 1);
-  LazyM.force !thunk
-[%%expect{|
-Exception: Sys_error "Mutex.lock: Resource deadlock avoided".
-|}]
+  match LazyM.force !thunk with
+  | exception Sys_error s -> Printf.printf "5: exception Mutex.lock=%B\n%!"
+                   (String.starts_with ~prefix:"Mutex.lock" s)
+  | _ -> ()
 
 (* Concurrency test *)
 let it =
@@ -126,14 +112,7 @@ let it =
      has run once, returns the initial counter state [0], and all
      other count block and observe this value once available. *)
   let expected = List.init nb_threads (fun _ -> Ok 0) in
-  let status =
-    if results = expected then "pass" else "fail"
-  in
-  status, results
-
-[%%expect{|
-val it : string * (int, exn) result list = ("pass", [Ok 0; Ok 0; Ok 0])
-|}]
+  if results = expected then Printf.printf "6: pass\n%!"
 
 
 (* Check that the documentation examples are well-typed. *)
@@ -148,15 +127,6 @@ end) = struct
     | Some path -> Config.read_from_path path
   )
 end
-[%%expect{|
-module Example1 :
-  (Config : sig
-              type t
-              val default : unit -> t
-              val read_from_path : string -> t
-            end)
-    -> sig val config : Config.t Lazy.Mutexed.t end
-|}]
 
 module Example2 = struct
   let entropy =
@@ -167,6 +137,3 @@ module Example2 = struct
       )
     )
 end
-[%%expect {|
-module Example2 : sig val entropy : string option Lazy.Mutexed.t end
-|}]
