@@ -59,4 +59,10 @@ let _ =
   writefile f1 "abc";
   testfailure f1 (Filename.concat "nosuchdir" f2);
   print_newline();
+  print_string "Renaming to a read-only file: ";
+  writefile f1 "def";
+  writefile f2 "abc";
+  Unix.chmod f2 0o444;
+  testrename f1 f2 "def";
+  print_newline();
   safe_remove f1; safe_remove f2
