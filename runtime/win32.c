@@ -785,17 +785,24 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
 {
   /* First handle corner-case not handled by MoveFileEx:
      - dir to existing file - should fail */
-  DWORD new_attribs;
   DWORD old_attribs = GetFileAttributes(oldpath);
+  DWORD new_attribs = GetFileAttributes(newpath);
   if ((old_attribs != INVALID_FILE_ATTRIBUTES) &&
-      (old_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0) {
-    new_attribs = GetFileAttributes(newpath);
-    if ((new_attribs != INVALID_FILE_ATTRIBUTES) &&
-        (new_attribs & FILE_ATTRIBUTE_DIRECTORY) == 0) {
-        errno = ENOTDIR;
-        return -1;
-    }
+      (old_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0 &&
+      (new_attribs != INVALID_FILE_ATTRIBUTES) &&
+      (new_attribs & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+    errno = ENOTDIR;
+    return -1;
   }
+
+  /* Another cornercase not handled by MoveFileEx:
+     - file to existing read-only file - should succeed
+     remove read-only bit before trying to rename */
+  if ((new_attribs != INVALID_FILE_ATTRIBUTES) &&
+      (new_attribs & FILE_ATTRIBUTE_READONLY) != 0) {
+    SetFileAttributes(newpath, new_attribs & ~FILE_ATTRIBUTE_READONLY);
+  }
+
   /* MOVEFILE_REPLACE_EXISTING: to be closer to POSIX
      MOVEFILE_COPY_ALLOWED: MoveFile performs a copy if old and new
        paths are on different devices, so we do the same here for
