@@ -16,19 +16,31 @@
 
 # Commands to run for the 'other-configs' job on Inria's CI
 
-# Stop on error
-set -e
-
 mainjob=./tools/ci/inria/main
-main="${mainjob} -j8"
 
-echo "============== minimal build ================= `date`"
+build() {
+  name="$1"
+  shift
+  echo "==== $name ==== (`date`)"
+  t=$(mktemp)
+  if $mainjob -j8 $* >"$t" 2>&1
+  then :
+  else
+    cat "$t"
+    echo "==== Failure: $name"
+    echo "==== Configuration: $*"
+    exit 2
+  fi
+  rm -f "$t"
+}
+
 # The "MIN_BUILD" (formerly on Travis) builds with everything disabled (apart
 # from ocamltest). Its goals:
 #  - Ensure that the system builds correctly without native compilation
 #  - Ensure ocamltest builds correctly with Unix
 #  - Ensure the testsuite runs correctly with everything switched off
-${main} -conf --disable-native-compiler \
+build "minimal build" \
+        -conf --disable-native-compiler \
         -conf --disable-shared \
         -conf --disable-debug-runtime \
         -conf --disable-instrumented-runtime \
@@ -40,26 +52,27 @@ ${main} -conf --disable-native-compiler \
         -conf --disable-dependency-generation \
         -no-native
 
-echo "============== no naked pointers ================= `date`"
-${main} -conf --disable-naked-pointers
+build "no naked pointers" \
+        -conf --disable-naked-pointers
 
-echo "============ bootstrap, no flat float arrays, clang, C23 ===============\
- `date`"
-${main} -with-bootstrap \
+build "bootstrap, no flat float arrays, clang, C23" \
+        -with-bootstrap \
         -conf --disable-flat-float-array \
         -conf CC=clang-18 \
         -conf CFLAGS=-std=gnu2x
 
-echo "============== flambda, no-naked-pointers  ================= `date`"
-${main} -conf --enable-flambda -conf --disable-naked-pointers
+build "flambda, no-naked-pointers" \
+        -conf --enable-flambda \
+        -conf --disable-naked-pointers
 
-echo "============== reserved header bits ================= `date`"
-${main} -conf --enable-reserved-header-bits=27
+build "reserved header bits" \
+        -conf --enable-reserved-header-bits=27
 
-echo "============== cleanup at exit, clang ================= `date`"
-OCAMLRUNPARAM="c=1" ${main} -conf CC=clang-18
+OCAMLRUNPARAM="c=1" \
+build "cleanup at exit, clang" \
+        -conf CC=clang-18
 
-echo "============== pic ================= `date`"
-${main} -conf --with-pic
+build "pic" \
+        -conf --with-pic
 
-echo "============== done ================= `date`"
+echo "==== done (`date`)"
