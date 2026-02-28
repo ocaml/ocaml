@@ -774,6 +774,13 @@ CAMLexport wchar_t *caml_win32_getenv(wchar_t const *lpName)
   return lpBuffer;
 }
 
+Caml_inline BOOL check_attr(DWORD attrs, DWORD mask, BOOL expected)
+{
+  return
+    (attrs != INVALID_FILE_ATTRIBUTES) &&
+    (((attrs & mask) ? TRUE : FALSE) == expected);
+}
+
 /* The rename() implementation in MSVC's CRT is based on MoveFile()
    and therefore fails if the new name exists.  This is inconsistent
    with POSIX and a problem in practice.  Here we reimplement
@@ -787,10 +794,8 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
      - dir to existing file - should fail */
   DWORD old_attribs = GetFileAttributes(oldpath);
   DWORD new_attribs = GetFileAttributes(newpath);
-  if ((old_attribs != INVALID_FILE_ATTRIBUTES) &&
-      (old_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0 &&
-      (new_attribs != INVALID_FILE_ATTRIBUTES) &&
-      (new_attribs & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+  if (check_attr(old_attribs, FILE_ATTRIBUTE_DIRECTORY, TRUE) &&
+      check_attr(new_attribs, FILE_ATTRIBUTE_DIRECTORY, FALSE)) {
     errno = ENOTDIR;
     return -1;
   }
@@ -798,8 +803,7 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
   /* Another cornercase not handled by MoveFileEx:
      - file to existing read-only file - should succeed
      remove read-only bit before trying to rename */
-  if ((new_attribs != INVALID_FILE_ATTRIBUTES) &&
-      (new_attribs & FILE_ATTRIBUTE_READONLY) != 0) {
+  if (check_attr(new_attribs, FILE_ATTRIBUTE_READONLY, TRUE)) {
     SetFileAttributes(newpath, new_attribs & ~FILE_ATTRIBUTE_READONLY);
   }
 
@@ -816,10 +820,8 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
   }
   /* Another cornercase not handled by MoveFileEx:
      - dir to empty dir - positive - should succeed */
-  if ((old_attribs != INVALID_FILE_ATTRIBUTES) &&
-      (old_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0 &&
-      (new_attribs != INVALID_FILE_ATTRIBUTES) &&
-      (new_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0 &&
+  if (check_attr(old_attribs, FILE_ATTRIBUTE_DIRECTORY, TRUE) &&
+      check_attr(new_attribs, FILE_ATTRIBUTE_DIRECTORY, TRUE) &&
       !PathIsPrefix(oldpath, newpath)) {
     /* Try to delete: RemoveDirectoryW fails on non-empty dirs as intended.
        Then try again. */
