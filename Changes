@@ -1,6 +1,13 @@
 OCaml 4.14 maintenance version
 ------------------------------
 
+### Bug fixes:
+
+- #14599, #14606: on ARM64 platforms, ocamlopt was under-estimating
+  the sizes of some instructions.  This could lead to overflows in
+  relative branch offsets, reported as errors by the assembler.
+  (Xavier Leroy, review by Vincent Laviron, report by Raphaël Proust)
+
 ### Build system:
 
 - #12372, #14572: Pass option -no-execute-only to the linker for OpenBSD >= 7.3
