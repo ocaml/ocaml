@@ -440,6 +440,10 @@ module BR = Branch_relaxation.Make (struct
 
   let offset_pc_at_branch = 0
 
+  let addsub_size n =
+    let m = abs n in
+    if m <= 0xFFF then 1 else if m land 0xFFF = 0 then 1 else 2
+
   let prologue_size f =
     (if initial_stack_offset f > 0 then 2 else 0)
       + (if f.fun_contains_calls then 1 else 0)
@@ -473,8 +477,8 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Ialloc { bytes = num_bytes; _ })
     | Lop (Ispecific (Ifar_alloc { bytes = num_bytes; _ })) ->
       begin match num_bytes with
-      | 16 | 24 | 32 -> 1
-      | _ -> 1 + num_instructions_for_intconst (Nativeint.of_int num_bytes)
+      | 16 | 24 | 32 -> 2
+      | _ -> 2 + num_instructions_for_intconst (Nativeint.of_int num_bytes)
       end
     | Lop (Iintop (Icomp _)) -> 2
     | Lop (Iintop_imm (Icomp _, _)) -> 2
@@ -487,6 +491,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Iintop Imod) -> 2
     | Lop (Iintop Imulh) -> 1
     | Lop (Iintop _) -> 1
+    | Lop (Iintop_imm ((Iadd|Isub), n)) -> addsub_size n
     | Lop (Iintop_imm _) -> 1
     | Lop (Ifloatofint | Iintoffloat | Iabsf | Inegf | Ispecific Isqrtf) -> 1
     | Lop (Iaddf | Isubf | Imulf | Idivf | Ispecific Inegmulf) -> 1
