@@ -166,6 +166,9 @@ let ocamlc_default_flags = make ("ocamlc_default_flags",
 
 
 
+let ocamllex_exit_status = make ("ocamllex_exit_status",
+  "Expected exit status of ocamllex")
+
 let ocamllex_flags = make ("ocamllex_flags",
   "Flags passed to ocamllex")
 
@@ -248,6 +251,9 @@ let sharedobjext =
   Variables.make ("sharedobjext",
     "Extension of shared object files")
 
+let system = make ("system",
+  "The type of the target system")
+
 let use_runtime =
   Variables.make ("use_runtime",
     "Whether the -use-runtime option should be used" )
@@ -303,6 +309,7 @@ let _ = List.iter register_variable
     ocamlc_opt_exit_status;
     ocamlopt_opt_exit_status;
     ocamlrunparam;
+    ocamllex_exit_status;
     ocamllex_flags;
     ocamlyacc_flags;
     ocamldoc_flags;
@@ -316,5 +323,6 @@ let _ = List.iter register_variable
     plugins;
     shared_library_cflags;
     sharedobjext;
+    system;
     use_runtime;
   ]

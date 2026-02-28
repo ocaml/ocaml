@@ -5249,7 +5249,9 @@ and type_expect_
       let tv = newvar () in
       let (_, si, exp) =
         with_local_level_generalize begin fun () ->
-          let (si, newenv) = !type_str_item env si in
+          let (si, newenv) =
+            Typetexp.TyVarEnv.with_local_scope @@ fun () ->
+            !type_str_item env si in
           let exp = type_expect newenv e ty_expected_explained in
           (newenv, si, exp)
         end ~before_generalize: begin fun (newenv, _si, exp) ->

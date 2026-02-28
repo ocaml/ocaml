@@ -12,6 +12,22 @@ Working version
   information.
   (Tim McGilchrist, review by Gabriel Scherer)
 
+- #14494: Consistently use macro to test header promotion.
+  (Nick Barnes, review by Gabriel Scherer)
+
+- #14493: Use Scannable_* macros instead of comparisons to No_scan_tag, for
+  legibility and correctness (fixes one bug, in weak.c).
+  (Nick Barnes, review by Gabriel Scherer)
+
+* #14559: Remove `caml_fatal_error_arg` and `caml_fatal_error_arg2`
+  symbols from the runtime. The declarations were removed in 5.0.
+  (Antonin Décimo, review by Nicolás Ojeda Bär)
+
+- #14570: Distinguish between prefetching for read and write access in the
+  runtime. Significant performance benefit for some multi-domain programs. For
+  maximum benefit on AMD64, pass -mprfchw to the C compiler.
+  (Nick Barnes, review by Gabriel Scherer, Damien Doligez, and Antonin Décimo)
+
 ### Code generation and optimizations:
 
 * #13919: optimize `lazy v` when `v` is a structured constant
@@ -26,6 +42,9 @@ Working version
 
 - #14487: Add String.drop_{prefix,suffix}
   (Michael Neumann, review by Léo Andrès, Nicolás Ojeda Bär and Gabriel Scherer)
+
+- #14553: Add Array.fold_{left,right}2
+  (Clément Pottier, review by Nicolás Ojeda Bär and Vincent Laviron)
 
 ### Other libraries:
 
@@ -45,6 +64,11 @@ Working version
   and `if <action> then <action> [else <action>]`.
   (Gabriel Scherer, review by Olivier Nicole)
 
+- #14545: in ocamltest, support `system` variable that uses
+  the configure-time @System@ value. Rename the `macos` variable to
+  `macosx` to match the configure-time choice.
+  (Tim McGilchrist, review by Gabriel Scherer and Antonin Décimo)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:
@@ -52,6 +76,9 @@ Working version
 - #14205: Make inclusion check error message reference the user-written file
   when operating on a ppx-generated file.
   (Liam Stevenson, review by Florian Angeletti)
+
+- #14142: print GADT equations in error messages when they introduce a type
+  (Stefan Muenzel, review by Florian Angeletti)
 
 ### Internal/compiler-libs changes:
 
@@ -63,6 +90,8 @@ Working version
   by PLT lazy binding trampoline saving FPRs into OCaml's fiber stack.
   Replace @PLT calls with GOT-indirect calls in the s390x code emitter.
   (Zane Hambly, review by ...)
+- #14492: Fix Obj.dup on closures.
+  (Mark Shinwell and Nick Barnes, review by Gabriel Scherer and Damien Doligez)
 
 OCaml 5.5.0
 -----------
@@ -207,10 +236,11 @@ OCaml 5.5.0
   heaps and for a smooth start at program launch and after a forced major GC.
   (Damien Doligez, review by Stephen Dolan and Nick Barnes)
 
-- #14494: Consistently use macro to test header promotion.
-  (Nick Barnes, review by Gabriel Scherer)
-
 ### Code generation and optimizations:
+
+- #14583: fix bug in linear scan spilling heuristic that in certain situations
+  could lead to miscompilations.
+  (Nicolás Ojeda Bär, review by Vincent Laviron)
 
 ### Standard library:
 
@@ -273,6 +303,12 @@ OCaml 5.5.0
 - #13995: Add Option.blend.
   (Kate Deplaix, review by Daniel Bünzli, Gabriel Scherer,
    Nicolás Ojeda Bär, Florian Angeletti and Josh Berdine)
+
+- #14043, #14393: Lazy.Mutexed: simple mutex-protected lazy thunks,
+  that may block the entire domain/thread on initialization races.
+  (Gabriel Scherer, suggestion by Kate Deplaix and Pierre Chambart,
+  review by KC Sivaramakrishnan, Florian Angeletti, Kate Deplaix
+  and Daniel Bünzli)
 
 - #14086: Add Domain.count.
   (Nicolás Ojeda Bär, review by David Allsopp, Gabriel Scherer, Daniel Bünzli
@@ -430,6 +466,10 @@ OCaml 5.5.0
   executable (either from the RNTM section or by analysing the shebang lines)
   (David Allsopp, review by Damien Doligez and Samuel Hym)
 
+- #14448: ocamllex now prints a `missing-case` warning and shows an example
+  of nonmatching input if a rule is not exhaustive (Martin Jambon,
+  review by David Allsopp and Gabriel Scherer)
+
 ### Manual and documentation:
 
 - #14397: Improve documentation of type-directed disambiguation of array
@@ -554,7 +594,7 @@ OCaml 5.5.0
 - #13839, #14008: Reimplement `let open`, `let module` and `let exception` in
   terms of a single construct.
   (Nicolás Ojeda Bär, review by Gabriel Scherer, Samuel Vivien, Ulysse Gérard
-  and Vincent Laviron)
+  and Vincent Laviron, temporary regression reported by Antonio Monteiro)
 
 - #13911, #14117, #14127: Refactor the merging of signature constraints, by
   splitting the monolithic merge function into separate, specialized functions
@@ -629,8 +669,8 @@ OCaml 5.5.0
 - #13224: Clarify barriers and spin macros with delayed expansion.
   (Antonin Décimo, review by David Allsopp and Gabriel Scherer)
 
-- #14435, #14455: Add the not-root builtin ocamltest action. This allows to skip
-  tests that fail if the current user is root (superuser).
+- #14435, #14455, #14550: Add the not-root builtin ocamltest action. This
+  allows to skip tests that fail if the current user is root (superuser).
   (Kate Deplaix, review by Gabriel Scherer, Nicolás Ojeda Bär, and
    Antonin Décimo)
 
@@ -770,6 +810,10 @@ OCaml 5.5.0
 - #14519: Fix segfault when using `Runtime_events` under certain
   circumstances due to bad error checking when calling `mmap()`.
   (Mark Elvers, review by Nicolás Ojeda Bär)
+
+- private: robustify intern.c
+  (Xavier Leroy and Nicolás Ojeda Bär, review by Olivier Nicole, Mindy Preston,
+  Edwin Török, and Gabriel Scherer)
 
 OCaml 5.4.0 (9 October 2025)
 ----------------------------
@@ -1359,6 +1403,10 @@ OCaml 5.4.0 (9 October 2025)
   (David Allsopp, review by Antonin Décimo and Gabriel Scherer)
 
 ### Bug fixes:
+
+- #14574, #14577, #14589: Fix wrong assembly code generated for ARM64
+  with frame pointer support.
+  (Xavier Leroy, review by Vincent Laviron, report by Richard Jones)
 
 - #13819: Fix field initialisation bug in runtime events subsystem.
   (Nick Barnes, review by Gabriel Scherer).

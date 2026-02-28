@@ -485,10 +485,12 @@ stdlib__Int64.cmi : int64.mli
 stdlib__Lazy.cmo : lazy.ml \
     stdlib__Obj.cmi \
     camlinternalLazy.cmi \
+    stdlib__Atomic.cmi \
     stdlib__Lazy.cmi
 stdlib__Lazy.cmx : lazy.ml \
     stdlib__Obj.cmx \
     camlinternalLazy.cmx \
+    stdlib__Atomic.cmx \
     stdlib__Lazy.cmi
 stdlib__Lazy.cmi : lazy.mli \
     camlinternalLazy.cmi

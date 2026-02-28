@@ -220,7 +220,7 @@ module type S =
 
     val filter: (elt -> bool) -> t -> t
     (** [filter f s] returns the set of all elements in [s]
-        that satisfy predicate [f]. If [f] satisfies every element in [s],
+        that satisfy predicate [f]. If every element in [s] satisfies [f],
         [s] is returned unchanged (the result of the function is then
         physically equal to [s]).
         @before 4.03 Physical equality was not ensured.*)
@@ -318,7 +318,7 @@ module type S =
         @since 4.07 *)
 
     val of_seq : elt Seq.t -> t
-    (** Build a set from the given bindings
+    (** Build a set from the given elements
         @since 4.07 *)
   end
 (** Output signature of the functor {!Make}. *)

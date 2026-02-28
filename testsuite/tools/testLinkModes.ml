@@ -193,6 +193,17 @@ let link_with_main_in_c env ~use_shared_runtime ~linker_exit_code mode
     in
     clibs @ libraries
   in
+  let flags =
+    if Config.architecture = "riscv" then
+      (* Running linker relaxation over the objects produced by
+         -output-complete-obj far too readily hits quadratic behaviour in ld.
+         For the purposes of these tests, we simply disable it. Binutils 2.41+
+         supports a more specific --no-relax-gp, but we'd have to detect it in
+         configure. *)
+      "-Wl,--no-relax" :: flags
+    else
+      flags
+  in
   let exit_code =
     let summarise f () =
       let pp x =

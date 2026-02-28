@@ -148,7 +148,7 @@ define caml_search_pools
     if $caml_search_debug || $found_here
       printf " domain %d %s pool %lx-%lx sizeclass %d(%d)", \
              $domain_index, $arg0, $pool, ((char*)$pool)+$caml_pool_size, \
-             $pool->sz, wsize_sizeclass[$pool->sz]
+             $pool->sz, whsize_sizeclass[$pool->sz]
       if $caml_search_debug
         printf "\n"
       end

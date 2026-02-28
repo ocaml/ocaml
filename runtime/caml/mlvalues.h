@@ -250,7 +250,9 @@ CAMLno_tsan_for_perf Caml_inline header_t Hd_val(value val)
 
 /* The lowest tag for blocks containing no value. */
 #define No_scan_tag 251
-
+#define Scannable_tag(t)   ((t) < No_scan_tag)
+#define Scannable_hd(hd)   Scannable_tag(Tag_hd(hd))
+#define Scannable_val(val) Scannable_tag(Tag_val(val))
 
 /* 1- If tag < No_scan_tag : a tuple of fields.  */
 

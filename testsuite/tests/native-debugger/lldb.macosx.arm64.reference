@@ -20,13 +20,12 @@ Process XXXX stopped
     frame #0: 0x00000000000000 meander`caml_start_program
 Target 0: (meander) stopped.
 (lldb) backtrace
-frame 0: meander`caml_start_program
-frame 1: meander`caml_startup_common
-frame 2: meander`caml_startup_exn
-frame 3: meander`caml_startup
-frame 4: meander`caml_main
-frame 5: meander`main
-frame 6: dyld`start
+frame X: meander`caml_start_program
+frame X: meander`caml_startup_common
+frame X: meander`caml_startup
+frame X: meander`caml_main
+frame X: meander`main
+frame X: dyld`start
 (lldb) continue
 Process XXXX resuming
 Process XXXX stopped
@@ -34,14 +33,13 @@ Process XXXX stopped
     frame #0: 0x00000000000000 meander`caml_program
 Target 0: (meander) stopped.
 (lldb) backtrace
-frame 0: meander`caml_program
-frame 1: meander`caml_start_program
-frame 2: meander`caml_startup_common
-frame 3: meander`caml_startup_exn
-frame 4: meander`caml_startup
-frame 5: meander`caml_main
-frame 6: meander`main
-frame 7: dyld`start
+frame X: meander`caml_program
+frame X: meander`caml_start_program
+frame X: meander`caml_startup_common
+frame X: meander`caml_startup
+frame X: meander`caml_main
+frame X: meander`main
+frame X: dyld`start
 (lldb) continue
 Process XXXX resuming
 Process XXXX stopped
@@ -57,18 +55,17 @@ Process XXXX stopped
    8   	}
 Target 0: (meander) stopped.
 (lldb) backtrace
-frame 0: meander`ocaml_to_c
-frame 1: meander`caml_c_call
-frame 2: meander`camlMeander$omain
-frame 3: meander`camlMeander$entry
-frame 4: meander`caml_program
-frame 5: meander`caml_start_program
-frame 6: meander`caml_startup_common
-frame 7: meander`caml_startup_exn
-frame 8: meander`caml_startup
-frame 9: meander`caml_main
-frame 10: meander`main
-frame 11: dyld`start
+frame X: meander`ocaml_to_c
+frame X: meander`caml_c_call
+frame X: meander`camlMeander$omain
+frame X: meander`camlMeander$entry
+frame X: meander`caml_program
+frame X: meander`caml_start_program
+frame X: meander`caml_startup_common
+frame X: meander`caml_startup
+frame X: meander`caml_main
+frame X: meander`main
+frame X: dyld`start
 (lldb) continue
 Process XXXX resuming
 Process XXXX stopped
@@ -76,20 +73,19 @@ Process XXXX stopped
     frame #0: 0x00000000000000 meander`camlMeander$c_to_ocaml
 Target 0: (meander) stopped.
 (lldb) backtrace
-frame 0: meander`camlMeander$c_to_ocaml
-frame 1: meander`caml_start_program
-frame 2: meander`caml_callback_exn
-frame 3: meander`caml_callback
-frame 4: meander`ocaml_to_c
-frame 5: meander`caml_c_call
-frame 6: meander`camlMeander$omain
-frame 7: meander`camlMeander$entry
-frame 8: meander`caml_program
-frame 9: meander`caml_start_program
-frame 10: meander`caml_startup_common
-frame 11: meander`caml_startup_exn
-frame 12: meander`caml_startup
-frame 13: meander`caml_main
-frame 14: meander`main
-frame 15: dyld`start
+frame X: meander`camlMeander$c_to_ocaml
+frame X: meander`caml_start_program
+frame X: meander`caml_callback_exn
+frame X: meander`caml_callback
+frame X: meander`ocaml_to_c
+frame X: meander`caml_c_call
+frame X: meander`camlMeander$omain
+frame X: meander`camlMeander$entry
+frame X: meander`caml_program
+frame X: meander`caml_start_program
+frame X: meander`caml_startup_common
+frame X: meander`caml_startup
+frame X: meander`caml_main
+frame X: meander`main
+frame X: dyld`start
 (lldb) quit

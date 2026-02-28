@@ -438,7 +438,7 @@ Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, reserved_t reserved,
   }
 
 #ifdef DEBUG
-  if (tag < No_scan_tag) {
+  if (Scannable_tag(tag)) {
     for (mlsize_t i = 0; i < wosize; i++)
       Op_hp(v)[i] = Debug_uninit_major;
   }

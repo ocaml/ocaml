@@ -590,7 +590,9 @@ module Memprof :
     val is_sampling : unit -> bool
     (** Returns whether a profile is sampling in the current domain,
         if any. Returns [None] if the current domain is not
-        sampling. *)
+        sampling.
+
+        @since 5.5 *)
 
     val stop : unit -> unit
     (** Stop sampling for the current profile. Fails if no profile is
@@ -671,7 +673,9 @@ external ramp_down : suspended_collection_work -> unit
 
         OCAMLRUNPARAM='Xfoo=42'
 
-    Additionally, OCAMLRUNPARAM=Xhelp will show the available GC tweaks. *)
+    Additionally, OCAMLRUNPARAM=Xhelp will show the available GC tweaks.
+
+    @since 5.5 *)
 module Tweak : sig
   (** Change a parameter.
       Raises Invalid_argument if no such parameter exists *)

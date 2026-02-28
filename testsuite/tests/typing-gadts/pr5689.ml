@@ -109,4 +109,6 @@ Error: This constructor has type "[< inkind > `Nonlink ] inline_t"
        is not compatible with type "a" = "[< `Link | `Nonlink ]"
        The second variant type is bound to "$'a",
        it may not allow the tag(s) "`Nonlink"
+       Hint: "$'a" is a type variable introduced in the equation
+         "a" = "[< inkind ]"
 |}];;

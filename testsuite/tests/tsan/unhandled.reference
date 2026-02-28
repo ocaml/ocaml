@@ -2,41 +2,40 @@ Performing an unhandled effect from the main fiber
 ==================
 WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
   Write of size 8 at <implemspecific> by main thread (mutexes: write M<implemspecific>):
-    #0 camlUnhandled$race_<implemspecific> <implemspecific> (<implemspecific>)
-    #1 camlUnhandled$main_<implemspecific> <implemspecific> (<implemspecific>)
-    #2 camlUnhandled$entry <implemspecific> (<implemspecific>)
-    #3 caml_program <implemspecific> (<implemspecific>)
+    - camlUnhandled$race_<implemspecific> <implemspecific> (<implemspecific>)
+    - camlUnhandled$main_<implemspecific> <implemspecific> (<implemspecific>)
+    - camlUnhandled$entry <implemspecific> (<implemspecific>)
+    - caml_program <implemspecific> (<implemspecific>)
 
   Previous read of size 8 at <implemspecific> by thread T2 (mutexes: write M<implemspecific>):
-    #0 camlUnhandled$other_domain_<implemspecific> <implemspecific> (<implemspecific>)
-    #1 camlStdlib__Domain$body_<implemspecific> <implemspecific> (<implemspecific>)
+    - camlUnhandled$other_domain_<implemspecific> <implemspecific> (<implemspecific>)
+    - camlStdlib__Domain$body_<implemspecific> <implemspecific> (<implemspecific>)
 
   As if synchronized via sleep:
-    #0 nanosleep <implemspecific> (<implemspecific>)
-    #1 wg_wait <implemspecific> (<implemspecific>)
-    #2 camlUnhandled$entry <implemspecific> (<implemspecific>)
-    #3 caml_program <implemspecific> (<implemspecific>)
+    - nanosleep <implemspecific> (<implemspecific>)
+    - wg_wait <implemspecific> (<implemspecific>)
+    - camlUnhandled$entry <implemspecific> (<implemspecific>)
+    - caml_program <implemspecific> (<implemspecific>)
 
   Mutex M<implemspecific> (<implemspecific>) created at:
-    #0 pthread_mutex_init <implemspecific> (<implemspecific>)
-    #1 caml_plat_mutex_init <implemspecific> (<implemspecific>)
-    #2 caml_init_domains <implemspecific> (<implemspecific>)
-    #3 caml_init_gc <implemspecific> (<implemspecific>)
+    - pthread_mutex_init <implemspecific> (<implemspecific>)
+    - caml_plat_mutex_init <implemspecific> (<implemspecific>)
+    - caml_init_domains <implemspecific> (<implemspecific>)
+    - caml_init_gc <implemspecific> (<implemspecific>)
 
   Mutex M<implemspecific> (<implemspecific>) created at:
-    #0 pthread_mutex_init <implemspecific> (<implemspecific>)
-    #1 caml_plat_mutex_init <implemspecific> (<implemspecific>)
-    #2 caml_init_domains <implemspecific> (<implemspecific>)
-    #3 caml_init_gc <implemspecific> (<implemspecific>)
+    - pthread_mutex_init <implemspecific> (<implemspecific>)
+    - caml_plat_mutex_init <implemspecific> (<implemspecific>)
+    - caml_init_domains <implemspecific> (<implemspecific>)
+    - caml_init_gc <implemspecific> (<implemspecific>)
 
   Thread T2 (tid=<implemspecific>, running) created by main thread at:
-    #0 pthread_create <implemspecific> (<implemspecific>)
-    #1 caml_plat_thread_create <implemspecific> (<implemspecific>)
-    #2 caml_domain_spawn <implemspecific> (<implemspecific>)
-    #3 caml_c_call <implemspecific> (<implemspecific>)
-    #4 camlStdlib__Domain$spawn_<implemspecific> <implemspecific> (<implemspecific>)
-    #5 camlUnhandled$entry <implemspecific> (<implemspecific>)
-    #6 caml_program <implemspecific> (<implemspecific>)
+    - pthread_create <implemspecific> (<implemspecific>)
+    - caml_domain_spawn <implemspecific> (<implemspecific>)
+    - caml_c_call <implemspecific> (<implemspecific>)
+    - camlStdlib__Domain$spawn_<implemspecific> <implemspecific> (<implemspecific>)
+    - camlUnhandled$entry <implemspecific> (<implemspecific>)
+    - caml_program <implemspecific> (<implemspecific>)
 
 SUMMARY: ThreadSanitizer: data race (<systemspecific>:<implemspecific>) in camlUnhandled$race_<implemspecific>
 ==================
@@ -47,48 +46,47 @@ Entering h
 ==================
 WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
   Write of size 8 at <implemspecific> by main thread (mutexes: write M<implemspecific>):
-    #0 camlUnhandled$race_<implemspecific> <implemspecific> (<implemspecific>)
-    #1 camlUnhandled$h_<implemspecific> <implemspecific> (<implemspecific>)
-    #2 camlUnhandled$g_<implemspecific> <implemspecific> (<implemspecific>)
-    #3 camlUnhandled$f_<implemspecific> <implemspecific> (<implemspecific>)
-    #4 caml_runstack <implemspecific> (<implemspecific>)
-    #5 camlUnhandled$fiber2_<implemspecific> <implemspecific> (<implemspecific>)
-    #6 caml_runstack <implemspecific> (<implemspecific>)
-    #7 camlUnhandled$fiber1_<implemspecific> <implemspecific> (<implemspecific>)
-    #8 camlUnhandled$main_<implemspecific> <implemspecific> (<implemspecific>)
-    #9 camlUnhandled$entry <implemspecific> (<implemspecific>)
-    #10 caml_program <implemspecific> (<implemspecific>)
+    - camlUnhandled$race_<implemspecific> <implemspecific> (<implemspecific>)
+    - camlUnhandled$h_<implemspecific> <implemspecific> (<implemspecific>)
+    - camlUnhandled$g_<implemspecific> <implemspecific> (<implemspecific>)
+    - camlUnhandled$f_<implemspecific> <implemspecific> (<implemspecific>)
+    - caml_runstack <implemspecific> (<implemspecific>)
+    - camlUnhandled$fiber2_<implemspecific> <implemspecific> (<implemspecific>)
+    - caml_runstack <implemspecific> (<implemspecific>)
+    - camlUnhandled$fiber1_<implemspecific> <implemspecific> (<implemspecific>)
+    - camlUnhandled$main_<implemspecific> <implemspecific> (<implemspecific>)
+    - camlUnhandled$entry <implemspecific> (<implemspecific>)
+    - caml_program <implemspecific> (<implemspecific>)
 
   Previous read of size 8 at <implemspecific> by thread T2 (mutexes: write M<implemspecific>):
-    #0 camlUnhandled$other_domain_<implemspecific> <implemspecific> (<implemspecific>)
-    #1 camlStdlib__Domain$body_<implemspecific> <implemspecific> (<implemspecific>)
+    - camlUnhandled$other_domain_<implemspecific> <implemspecific> (<implemspecific>)
+    - camlStdlib__Domain$body_<implemspecific> <implemspecific> (<implemspecific>)
 
   As if synchronized via sleep:
-    #0 nanosleep <implemspecific> (<implemspecific>)
-    #1 wg_wait <implemspecific> (<implemspecific>)
-    #2 camlUnhandled$entry <implemspecific> (<implemspecific>)
-    #3 caml_program <implemspecific> (<implemspecific>)
+    - nanosleep <implemspecific> (<implemspecific>)
+    - wg_wait <implemspecific> (<implemspecific>)
+    - camlUnhandled$entry <implemspecific> (<implemspecific>)
+    - caml_program <implemspecific> (<implemspecific>)
 
   Mutex M<implemspecific> (<implemspecific>) created at:
-    #0 pthread_mutex_init <implemspecific> (<implemspecific>)
-    #1 caml_plat_mutex_init <implemspecific> (<implemspecific>)
-    #2 caml_init_domains <implemspecific> (<implemspecific>)
-    #3 caml_init_gc <implemspecific> (<implemspecific>)
+    - pthread_mutex_init <implemspecific> (<implemspecific>)
+    - caml_plat_mutex_init <implemspecific> (<implemspecific>)
+    - caml_init_domains <implemspecific> (<implemspecific>)
+    - caml_init_gc <implemspecific> (<implemspecific>)
 
   Mutex M<implemspecific> (<implemspecific>) created at:
-    #0 pthread_mutex_init <implemspecific> (<implemspecific>)
-    #1 caml_plat_mutex_init <implemspecific> (<implemspecific>)
-    #2 caml_init_domains <implemspecific> (<implemspecific>)
-    #3 caml_init_gc <implemspecific> (<implemspecific>)
+    - pthread_mutex_init <implemspecific> (<implemspecific>)
+    - caml_plat_mutex_init <implemspecific> (<implemspecific>)
+    - caml_init_domains <implemspecific> (<implemspecific>)
+    - caml_init_gc <implemspecific> (<implemspecific>)
 
   Thread T2 (tid=<implemspecific>, running) created by main thread at:
-    #0 pthread_create <implemspecific> (<implemspecific>)
-    #1 caml_plat_thread_create <implemspecific> (<implemspecific>)
-    #2 caml_domain_spawn <implemspecific> (<implemspecific>)
-    #3 caml_c_call <implemspecific> (<implemspecific>)
-    #4 camlStdlib__Domain$spawn_<implemspecific> <implemspecific> (<implemspecific>)
-    #5 camlUnhandled$entry <implemspecific> (<implemspecific>)
-    #6 caml_program <implemspecific> (<implemspecific>)
+    - pthread_create <implemspecific> (<implemspecific>)
+    - caml_domain_spawn <implemspecific> (<implemspecific>)
+    - caml_c_call <implemspecific> (<implemspecific>)
+    - camlStdlib__Domain$spawn_<implemspecific> <implemspecific> (<implemspecific>)
+    - camlUnhandled$entry <implemspecific> (<implemspecific>)
+    - caml_program <implemspecific> (<implemspecific>)
 
 SUMMARY: ThreadSanitizer: data race (<systemspecific>:<implemspecific>) in camlUnhandled$race_<implemspecific>
 ==================

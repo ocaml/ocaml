@@ -230,9 +230,14 @@ Caml_inline void prefetch_block(value v)
      already marked, not markable, or extremely short, then we waste
      somewhere between 1/8-1/2 of a prefetch operation (in expectation,
      depending on alignment, word size, and cache line size), which is
-     cheap enough to make this worthwhile. */
-  caml_prefetch((const void *)Hp_val(v));
-  caml_prefetch((const void *)&Field(v, 3));
+     cheap enough to make this worthwhile.
+
+     The prefetches are prefetchr (read), not prefetchw (write). The
+     major GC often writes mark bits but is readonly if no marking
+     need be done (because a block is already marked, or statically
+     allocated). In such cases, a prefetchw causes contention. */
+  caml_prefetchr((const void *)Hp_val(v));
+  caml_prefetchr((const void *)&Field(v, 3));
 }
 
 /*******************************************************************************
@@ -491,12 +496,11 @@ static intnat ephe_mark (intnat budget, uintnat round,
               goto ephemeron_again;
             }
           }
+        } else if (Tag_val (key) == Infix_tag) {
+          key -= Infix_offset_val (key);
         }
-        else {
-          if (Tag_val (key) == Infix_tag) key -= Infix_offset_val (key);
-          if (is_unmarked (key))
-            preserve_data = false;
-        }
+        if (is_unmarked (key))
+          preserve_data = false;
       }
     }
 
@@ -1358,7 +1362,7 @@ static intnat mark_stack_push_block(struct mark_stack* stk, value block)
   CAMLassert(Is_block(block));
   CAMLassert(!Is_young(block));
   CAMLassert(Tag_val(block) != Infix_tag);
-  CAMLassert(Tag_val(block) < No_scan_tag);
+  CAMLassert(Scannable_val(block));
   CAMLassert(Tag_val(block) != Cont_tag);
 
   /* Optimisation to avoid pushing small, unmarkable objects such as
@@ -1447,7 +1451,7 @@ static void mark_slice_darken(struct mark_stack* stk, value child,
             Hp_atomic_val(child),
             With_status_hd(chd, caml_global_heap_state.MARKED));
         }
-        if(Tag_hd(chd) < No_scan_tag){
+        if(Scannable_hd(chd)) {
           *work -= mark_stack_push_block(stk, child);
         } else {
           *work -= Wosize_hd(chd);
@@ -1514,7 +1518,7 @@ again:
       }
 
       budget--; /* header word */
-      if (Tag_hd(hd) >= No_scan_tag) {
+      if (!Scannable_hd(hd)) {
         /* Nothing to scan here */
         budget -= Wosize_hd(hd);
         continue;
@@ -1570,7 +1574,7 @@ again:
       /* Didn't finish scanning this object, either because budget <= 0,
          or the prefetch buffer filled up. Leave the rest on the stack. */
       mark_stack_push_range(stk, me.start, me.end);
-      caml_prefetch((void*)(me.start + 1));
+      caml_prefetchr((void*)(me.start + 1));
 
       if (pb_size(&pb) > PREFETCH_BUFFER_MIN) {
         /* We may have just discovered more work when we were about to run out.
@@ -1675,7 +1679,7 @@ void caml_darken(void* state, value v, volatile value* ignored) {
       atomic_store_relaxed(
          Hp_atomic_val(v),
          With_status_hd(hd, caml_global_heap_state.MARKED));
-      if (Tag_hd(hd) < No_scan_tag) {
+      if (Scannable_hd(hd)) {
         mark_stack_push_block(domain_state->mark_stack, v);
         Caml_state->mark_work_done_between_slices += 1; /* just the header */
       } else {

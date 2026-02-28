@@ -336,7 +336,7 @@ static void ephe_copy_and_darken(value from, value to)
   CAMLassert(Tag_val(from) != Infix_tag);
   CAMLassert(Wosize_val(from) == Wosize_val(to));
 
-  if (Tag_val(from) > No_scan_tag) {
+  if (!Scannable_val(from)) {
     i = Wosize_val(to);
   }
   else if (Tag_val(from) == Closure_tag) {

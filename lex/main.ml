@@ -15,11 +15,24 @@
 
 (* The lexer generator. Command-line parsing. *)
 
+open Printf
 open Syntax
 
 let ml_automata = ref false
 let source_name = ref None
 let output_name = ref None
+
+type warning_status = On | Off | Error
+let warn_missing_case = ref On
+
+(* A '-w' option that works like the '-w' option of ocamlc and ocamlopt.
+   This can be extended to support more warnings in the future. *)
+let read_warning_list str =
+  match str with
+  | "-missing-case" -> warn_missing_case := Off
+  | "+missing-case" -> warn_missing_case := On
+  | "@missing-case" -> warn_missing_case := Error
+  | _ -> raise (Arg.Bad (sprintf "Invalid warning list: %S" str))
 
 let usage = "Usage: ocamllex [options] sourcefile\nOptions are:"
 
@@ -42,6 +55,12 @@ let specs =
    "-v",  Arg.Unit print_version_string, " Print version and exit";
    "-version",  Arg.Unit print_version_string, " Print version and exit";
    "-vnum",  Arg.Unit print_version_num, " Print version number and exit";
+   "-w", Arg.String read_warning_list,
+   "<warning-list>  Enable, disable, or mark as fatal the warnings
+      specified by the argument warning-list using the same syntax as ocamlc
+      and ocamlopt. The only warning currently supported is 'missing-case'.
+      '-w -missing-case' will disable the warning, '-w +missing-case' will
+      turn it on (default), and '-w @missing-case' will make it a fatal error."
   ]
 
 let _ =
@@ -50,6 +69,7 @@ let _ =
     (fun name -> source_name := Some name)
     usage
 
+let exit_code_for_known_error = 3
 
 let main () =
 
@@ -74,6 +94,13 @@ let main () =
   try
     let def = Parser.lexer_definition Lexer.main lexbuf in
     let (entries, transitions) = Lexgen.make_dfa def.entrypoints in
+    (match !warn_missing_case with
+     | Off -> ()
+     | On -> Exhaustiveness.check transitions entries |> ignore
+     | Error ->
+         match Exhaustiveness.check ~fatal:true transitions entries with
+         | Ok () -> ()
+         | Error () -> exit exit_code_for_known_error);
     if !ml_automata then begin
       Outputbis.output_lexdef
         ic oc tr
@@ -95,31 +122,31 @@ let main () =
     begin match exn with
     | Cset.Bad ->
         let p = Lexing.lexeme_start_p lexbuf in
-        Printf.fprintf stderr
+        fprintf stderr
           "File \"%s\", line %d, character %d: character set expected.\n"
           p.Lexing.pos_fname p.Lexing.pos_lnum
           (p.Lexing.pos_cnum - p.Lexing.pos_bol)
     | Parsing.Parse_error ->
         let p = Lexing.lexeme_start_p lexbuf in
-        Printf.fprintf stderr
+        fprintf stderr
           "File \"%s\", line %d, character %d: syntax error.\n"
           p.Lexing.pos_fname p.Lexing.pos_lnum
           (p.Lexing.pos_cnum - p.Lexing.pos_bol)
     | Lexer.Lexical_error(msg, file, line, col) ->
-        Printf.fprintf stderr
+        fprintf stderr
           "File \"%s\", line %d, character %d: %s.\n"
           file line col msg
     | Lexgen.Memory_overflow ->
-        Printf.fprintf stderr
+        fprintf stderr
           "File \"%s\":\n Position memory overflow, too many bindings\n"
           source_name
     | Output.Table_overflow ->
-        Printf.fprintf stderr
+        fprintf stderr
           "File \"%s\":\ntransition table overflow, automaton is too big\n"
           source_name
     | _ ->
         Printexc.raise_with_backtrace exn bt
     end;
-    exit 3
+    exit exit_code_for_known_error
 
 let _ = main (); exit 0

@@ -240,6 +240,22 @@ val map2 : f:('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
    @raise Invalid_argument if the arrays are not the same size.
    @since 4.03 (4.05 in ArrayLabels) *)
 
+val fold_left2 : f:('acc -> 'a -> 'b -> 'acc) -> init:'acc -> 'a array ->
+   'b array -> 'acc
+(** [fold_left2 f init a b] is
+    [f (... (f (f init a.(0) b.(0)) a.(1) b.(1)) ...) a.(n-1) b.(n-1))],
+    where [n] is the common length of the arrays [a] and [b].
+    @raise Invalid_argument if the arrays do not have the same length.
+    @since 5.6 *)
+
+val fold_right2 : f:('a -> 'b -> 'acc -> 'acc) -> 'a array -> 'b array ->
+   init:'acc -> 'acc
+(** [fold_right2 f a b init] is
+    [f a.(0) b.(0) (f a.(1) b.(1) (... (f a.(n-1) b.(n-1) init) ...))],
+    where [n] is the common length of the arrays [a] and [b].
+    @raise Invalid_argument if the arrays do not have the same length.
+    @since 5.6 *)
+
 
 (** {1 Array scanning} *)
 

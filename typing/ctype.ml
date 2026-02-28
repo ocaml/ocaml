@@ -2700,11 +2700,16 @@ let deep_occur_list t0 tyl =
    of the constraint does not contain any Tvars.
    They need to be removed using this function.
    This function is called only in [Pattern] mode. *)
-let reify uenv t =
+let reify ?eqn uenv t =
   let fresh_constr_scope = get_equations_scope uenv in
+  let origin : type_origin =
+    match eqn with
+    | Some (lhs, rhs) -> Equation (lhs, rhs)
+    | None -> Definition
+  in
   let create_fresh_constr lev name =
     let name = match name with Some s -> "$'"^s | _ -> "$" in
-    let decl = new_local_type Definition in
+    let decl = new_local_type origin in
     let env = get_env uenv in
     let new_name =
       (* unique names are needed only for error messages *)
@@ -3176,8 +3181,8 @@ let unify3_var uenv t1' t2 t2' =
   match occur_univar_or_unscoped_for Unify (get_env uenv) t2 with
   | () -> link_type t1' t2
   | exception Unify_trace _ when in_pattern_mode uenv ->
-      reify uenv t1';
-      reify uenv t2';
+      reify ~eqn:(t1', t2') uenv t1';
+      reify ~eqn:(t1', t2') uenv t2';
       occur_univar_or_unscoped ~inj_only:true (get_env uenv) t2';
       record_equation uenv t1' t2'
 
@@ -3408,17 +3413,17 @@ and unify3 uenv t1 t1' t2 t2' =
           add_gadt_equation uenv source destination
       | (Tconstr (path,[],_), _)
         when in_pattern_mode uenv && is_instantiable (get_env uenv) path ->
-          reify uenv t2';
+          reify ~eqn:(t1', t2') uenv t2';
           record_equation uenv t1' t2';
           add_gadt_equation uenv path t2'
       | (_, Tconstr (path,[],_))
         when in_pattern_mode uenv && is_instantiable (get_env uenv) path ->
-          reify uenv t1';
+          reify ~eqn:(t1', t2') uenv t1';
           record_equation uenv t1' t2';
           add_gadt_equation uenv path t1'
       | (Tconstr (_,_,_), _) | (_, Tconstr (_,_,_)) when in_pattern_mode uenv ->
-          reify uenv t1';
-          reify uenv t2';
+          reify ~eqn:(t1',t2') uenv t1';
+          reify ~eqn:(t1',t2') uenv t2';
           mcomp_for Unify (get_env uenv) t1' t2';
           record_equation uenv t1' t2'
       | (Tobject (fi1, nm1), Tobject (fi2, _)) ->
@@ -3440,8 +3445,8 @@ and unify3 uenv t1 t1' t2 t2' =
             try unify_row uenv row1 row2
             with Unify_trace _ ->
               backtrack snap;
-              reify uenv t1';
-              reify uenv t2';
+              reify ~eqn:(t1', t2') uenv t1';
+              reify ~eqn:(t1', t2') uenv t2';
               mcomp_for Unify (get_env uenv) t1' t2';
               record_equation uenv t1' t2'
           end

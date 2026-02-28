@@ -193,38 +193,13 @@ After installation, do *not* strip the `ocamldebug` executables.
 
 == If something goes wrong
 
-Read the "common problems" and "machine-specific hints" section at the end of
-this file.
-
-Check the files `m.h` and `s.h` in `runtime/caml/`.
-Wrong endianness or alignment constraints in `m.h` will
-immediately crash the bytecode interpreter.
-
-If you get a "segmentation violation" signal, check the limits on the stack size
-and data segment size (type `limit` under csh or `ulimit -a` under bash). Make
-sure the limit on the stack size is at least 4M.
-
-Try recompiling the runtime system with optimizations turned off (change
-`OC_CFLAGS` in `Makefile.build_config`). The runtime system
-contains some complex, atypical pieces of C code which can uncover bugs in
-optimizing compilers.  Alternatively, try another C compiler (e.g. `gcc` instead
-of the vendor-supplied `cc`).
-
-You can also use the debug version of the runtime system which is
-normally built and installed by default. Run the bytecode program
-that causes troubles with `ocamlrund` rather than with `ocamlrun`.
-This version of the runtime system contains lots of assertions
-and sanity checks that could help you pinpoint the problem.
-
-== Common problems
-
 * The Makefiles assume that make executes commands by calling `/bin/sh`. They
   won't work if `/bin/csh` is called instead.  You may have to unset the `SHELL`
   environment variable, or set it to `/bin/sh`.
 
 * On some systems, localization causes build problems.  You should try to set
   the C locale (`export LC_ALL=C`) before compiling if you have strange errors
-  while compiling OCaml.
+  while compiling OCaml. If this occurs, please report it using the issue tracker.
 
 * In the unlikely case that a platform does not offer all C99 float operations
   that the runtime needs, a configuration error will result.  Users
@@ -234,6 +209,26 @@ and sanity checks that could help you pinpoint the problem.
   requirements for mathematical accuracy, numerical precision, and proper
   handling of mathematical corner cases and error conditions may need to
   consider running their code on a platform with better C99 support.
+
+* Check the files `m.h` and `s.h` in `runtime/caml/`. Wrong endianness or
+  alignment constraints in `m.h` will immediately crash the bytecode
+  interpreter.
+
+* If you get a "segmentation violation" signal, check the limits on the
+  stack size and data segment size (type `limit` under csh or `ulimit -a`
+  under bash). Make sure the limit on the stack size is at least 4M.
+
+* Try recompiling the runtime system with optimizations turned off (change
+  `OC_CFLAGS` in `Makefile.build_config`). The runtime system contains some
+  complex, atypical pieces of C code which can uncover bugs in optimizing
+  compilers.  Alternatively, try another C compiler (e.g. `gcc` instead of
+  the vendor-supplied `cc`).
+
+* You can also use the debug version of the runtime system which is normally
+  built and installed by default. Run the bytecode program that causes
+  troubles with `ocamlrund` rather than with `ocamlrun`. This version of the
+  runtime system contains lots of assertions and sanity checks that could
+  help you pinpoint the problem.
 
 == (experimental) Building a cross compiler
 

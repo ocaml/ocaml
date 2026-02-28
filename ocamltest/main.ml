@@ -108,7 +108,9 @@ let extract_rootenv (Ast (stmts, subs)) =
   (env, Ast (stmts, subs))
 
 let test_file test_filename =
-  let start = if Options.show_timings then Unix.gettimeofday () else 0.0 in
+  let start =
+    if Options.show_timings then Ocamltest_unix.gettimeofday () else 0.0
+  in
   let skip_test = List.mem test_filename !tests_to_skip in
   let tsl_ast = tsl_parse_file_safe test_filename in
   let (rootenv_statements, tsl_ast) = extract_rootenv tsl_ast in
@@ -207,7 +209,7 @@ let test_file test_filename =
        in
        Printf.printf " => %s%s\n%!" (Tsl_semantics.string_of_summary summary)
          (if Options.show_timings && summary = Pass then
-            let wall_clock_duration = Unix.gettimeofday () -. start in
+            let wall_clock_duration = Ocamltest_unix.gettimeofday () -. start in
             Printf.sprintf " (wall clock: %.02fs)" wall_clock_duration
           else "");
        if summary = Fail then

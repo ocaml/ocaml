@@ -169,8 +169,8 @@ let linux = make
 
 let macos_system = "macosx"
 
-let macos = make
-  ~name:"macos"
+let macosx = make
+  ~name:"macosx"
   ~description:"Pass if running on a MacOS system"
   (Actions_helpers.pass_or_skip (Ocamltest_config.system = macos_system)
     "on a MacOS system"
@@ -280,14 +280,14 @@ let tsan = make
 let has_symlink = make
   ~name:"has_symlink"
   ~description:"Pass if symbolic links are available"
-  (Actions_helpers.pass_or_skip (Unix.has_symlink () )
+  (Actions_helpers.pass_or_skip (Ocamltest_unix.has_symlink () )
     "symlinks available"
     "symlinks not available")
 
 let not_root = make
   ~name:"not-root"
   ~description:"Skip test if the current user is root"
-  (Actions_helpers.pass_or_skip (Unix.getuid () <> 0)
+  (Actions_helpers.pass_or_skip (Ocamltest_unix.getuid () <> 0)
     "current user is not root"
     "current user is root")
 
@@ -404,7 +404,7 @@ let _ =
     target_windows;
     bsd;
     linux;
-    macos;
+    macosx;
     not_macos_amd64_tsan;
     has_cxx;
     arch32;
