@@ -52,7 +52,7 @@ let emit_call s =
   else
    `	brasl	%r14, {emit_symbol s}\n`
 
-(* GOT-indirect call for runtime glue only — avoids PLT lazy binding
+(* GOT-indirect call for runtime glue only -- avoids PLT lazy binding
    trampoline which corrupts the heap when r15 points at the OCaml
    fiber stack instead of a C stack frame (see #13693). *)
 let emit_call_got s =
