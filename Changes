@@ -89,7 +89,7 @@ Working version
 - #13693, #14514: s390x: fix heap corruption with libasmrun_shared.so caused
   by PLT lazy binding trampoline saving FPRs into OCaml's fiber stack.
   Replace @PLT calls with GOT-indirect calls in the s390x code emitter.
-  (Zane Hambly, review by ...)
+  (Zane Hambly, review by David Allsopp and Xavier Leroy)
 - #14492: Fix Obj.dup on closures.
   (Mark Shinwell and Nick Barnes, review by Gabriel Scherer and Damien Doligez)
 
