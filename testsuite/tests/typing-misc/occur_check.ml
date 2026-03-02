@@ -72,8 +72,8 @@ Line 4, characters 2-22:
 Error: This expression has type "'a (|Seq.t|) Seq.t" = "unit -> 'a (|Seq.t|) Seq.node"
        but an expression was expected of type
          "'a Seq.t (|Seq.t|) Seq.t" = "unit -> 'a Seq.t (|Seq.t|) Seq.node"
-       Type "'a Seq.t" = "unit -> 'a Seq.node" is not compatible with type
-         "'a Seq.t Seq.t" = "unit -> 'a Seq.t Seq.node"
+       Type "'a (|Seq.t|)" = "unit -> 'a Seq.node" is not compatible with type
+         "'a Seq.t (|Seq.t|)" = "unit -> 'a Seq.t Seq.node"
 Hint: This function application is partial, maybe some arguments are missing.
 |}, Rectypes{|
 type 'a t = T of 'a
@@ -88,8 +88,8 @@ Line 1, characters 35-47:
 Error: This expression has type "'a (|Seq.t|) Seq.t" = "unit -> 'a (|Seq.t|) Seq.node"
        but an expression was expected of type
          "'a Seq.t (|Seq.t|) Seq.t" = "unit -> 'a Seq.t (|Seq.t|) Seq.node"
-       Type "'a Seq.t" = "unit -> 'a Seq.node" is not compatible with type
-         "'a Seq.t Seq.t" = "unit -> 'a Seq.t Seq.node"
+       Type "'a (|Seq.t|)" = "unit -> 'a Seq.node" is not compatible with type
+         "'a Seq.t (|Seq.t|)" = "unit -> 'a Seq.t Seq.node"
 Hint: This function application is partial, maybe some arguments are missing.
 |}, Rectypes{|
 val strange : (unit -> 'a Seq.node as 'a) -> 'a Seq.t list = <fun>

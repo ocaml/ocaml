@@ -98,7 +98,7 @@ Error: Signature mismatch:
        The type "< m : 'a. 'a * ('a * 'd) > as 'd" is not equal to the type
          "< m : 'b. 'b * ('b * < m : (|'c. 'c * 'e|) > as 'e) >"
        The method "m" has type "'a. 'a * ('a * < m : 'a. 'f >) as 'f",
-       but the expected method type was "'c. 'c * ('b * < m : 'c. 'g >) as 'g"
+       but the expected method type was "'c. 'c * ((|'b|) * < m : 'c. 'g >) as 'g"
        The universal variable "'b" would escape its scope
 |}];;
 
@@ -587,7 +587,7 @@ Error: Signature mismatch:
        is not compatible with the type
          "< m : 'b. 'b * < m : (|'c. 'c * 'e|) > as 'e > -> unit"
        The method "m" has type "'a. 'a * (|< m : 'a. 'f >|) as 'f",
-       but the expected method type was "'c. 'c * ('b (|*|) < m : 'c. 'g >) as 'g"
+       but the expected method type was "'c. 'c * ((|'b|) (|*|) < m : 'c. 'g >) as 'g"
        The universal variable "'b" would escape its scope
 |}];;
 

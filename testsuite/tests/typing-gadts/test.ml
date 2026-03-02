@@ -551,7 +551,7 @@ Line 4, characters 46-48:
                                                   ^^
 Error: This expression has type "(|int|) option"
        but an expression was expected of type "(|a|) option"
-       Type "int" is not compatible with type "a" = "int"
+       Type "int" is not compatible with type "(|a|)" = "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
        Hint (manual section 7.2): A type annotation may resolve the ambiguity,
@@ -717,6 +717,18 @@ Error: The value "o" has type "< m : (|a|); .. >"
        it would escape the scope of its equation
        Hint (manual section 7.2): A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
+|}, (Principal, Rectypes){|
+Line 2, characters 14-15:
+2 |   fun Eq o -> o
+                  ^
+Error: The value "o" has type "< m : (|a|); .. >"
+       but an expression was expected of type "< m : (|b|); .. >"
+       The method "m" has type "(|a|)", but the expected method type was "(|b|)"
+       Type "a" is not compatible with type "(|b|)" = "a"
+       This instance of "a" is ambiguous:
+       it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 let f (type a) (type b) (eq : (a,b) eq) (o : <m : a; ..>) : <m : b; ..> =
@@ -729,6 +741,18 @@ Error: The value "o" has type "< m : (|a|); .. >"
        but an expression was expected of type "< m : (|b|); .. >"
        The method "m" has type "(|a|)", but the expected method type was "(|b|)"
        Type "a" is not compatible with type "b" = "a"
+       This instance of "a" is ambiguous:
+       it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
+|}, (Principal, Rectypes){|
+Line 2, characters 22-23:
+2 |   match eq with Eq -> o ;; (* should fail *)
+                          ^
+Error: The value "o" has type "< m : (|a|); .. >"
+       but an expression was expected of type "< m : (|b|); .. >"
+       The method "m" has type "(|a|)", but the expected method type was "(|b|)"
+       Type "a" is not compatible with type "(|b|)" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
        Hint (manual section 7.2): A type annotation may resolve the ambiguity,
@@ -771,7 +795,7 @@ Line 4, characters 44-45:
 Error: The value "o" has type "< m : (|a|) >" but an expression was expected of type
          "< m : (|b|) >"
        The method "m" has type "(|a|)", but the expected method type was "(|b|)"
-       Type "a" is not compatible with type "b" = "a"
+       Type "a" is not compatible with type "(|b|)" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
        Hint (manual section 7.2): A type annotation may resolve the ambiguity,
@@ -795,6 +819,18 @@ Error: The value "o" has type "< m : (|a|); .. >"
        it would escape the scope of its equation
        Hint (manual section 7.2): A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
+|}, (Principal, Rectypes){|
+Line 3, characters 44-45:
+3 |     let r : < m : b > = match eq with Eq -> o in (* fail *)
+                                                ^
+Error: The value "o" has type "< m : (|a|); .. >"
+       but an expression was expected of type "< m : (|b|) >"
+       The method "m" has type "(|a|)", but the expected method type was "(|b|)"
+       Type "a" is not compatible with type "(|b|)" = "a"
+       This instance of "a" is ambiguous:
+       it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 let f : type a b. (a,b) eq -> [> `A of a] -> [> `A of b] =
@@ -810,6 +846,17 @@ Error: The value "o" has type "[> `A of (|a|) ]"
        it would escape the scope of its equation
        Hint (manual section 7.2): A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
+|}, (Principal, Rectypes){|
+Line 2, characters 14-15:
+2 |   fun Eq o -> o ;; (* fail *)
+                  ^
+Error: The value "o" has type "[> `A of (|a|) ]"
+       but an expression was expected of type "[> `A of (|b|) ]"
+       In tag "`A", type "a" is not compatible with type "(|b|)" = "a"
+       This instance of "a" is ambiguous:
+       it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 let f (type a b) (eq : (a,b) eq) (v : [> `A of a]) : [> `A of b] =
@@ -821,6 +868,17 @@ Line 2, characters 22-23:
 Error: The value "v" has type "[> `A of (|a|) ]"
        but an expression was expected of type "[> `A of (|b|) ]"
        In tag "`A", type "a" is not compatible with type "b" = "a"
+       This instance of "a" is ambiguous:
+       it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
+|}, (Principal, Rectypes){|
+Line 2, characters 22-23:
+2 |   match eq with Eq -> v ;; (* should fail *)
+                          ^
+Error: The value "v" has type "[> `A of (|a|) ]"
+       but an expression was expected of type "[> `A of (|b|) ]"
+       In tag "`A", type "a" is not compatible with type "(|b|)" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
        Hint (manual section 7.2): A type annotation may resolve the ambiguity,
@@ -880,7 +938,7 @@ Line 4, characters 49-50:
                                                      ^
 Error: The value "o" has type "[ `A of (|a|) | `B ]"
        but an expression was expected of type "[ `A of (|b|) | `B ]"
-       In tag "`A", type "a" is not compatible with type "b" = "a"
+       In tag "`A", type "a" is not compatible with type "(|b|)" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
        Hint (manual section 7.2): A type annotation may resolve the ambiguity,
@@ -898,7 +956,7 @@ Line 3, characters 49-50:
                                                      ^
 Error: The value "o" has type "[> `A of (|a|) | `B ]"
        but an expression was expected of type "[ `A of (|b|) | `B ]"
-       In tag "`A", type "a" is not compatible with type "b" = "a"
+       In tag "`A", type "a" is not compatible with type "(|b|)" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
        Hint (manual section 7.2): A type annotation may resolve the ambiguity,
