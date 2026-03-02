@@ -128,6 +128,13 @@ let check_for_unbound_unscoped_idents idl p =
     | () -> None
     | exception Escape id -> Some id
 
+let rec contains_unscoped_ident = function
+  | Pident id -> Ident.find_unscoped id <> None
+  | Pdot (p, _) -> contains_unscoped_ident p
+  | Papply (p1, p2) ->
+      contains_unscoped_ident p1 || contains_unscoped_ident p2
+  | Pextra_ty (p, _) -> contains_unscoped_ident p
+
 let kfalse _ = false
 
 let maybe_escape s =

@@ -869,6 +869,7 @@ let get_folded_desc ~keep_Tvar ty =
       (* Only re-instate an abbreviation if there is no risk to hide
          something *)
       match get_expand ty with
-      | Some (path, args) when not (List.exists (deep_occur ty) args) ->
+      | Some (path, args) when not (Path.contains_unscoped_ident path ||
+                                    List.exists (deep_occur ty) args) ->
           Tconstr (path, args, ref Mnil)
       | _ -> desc

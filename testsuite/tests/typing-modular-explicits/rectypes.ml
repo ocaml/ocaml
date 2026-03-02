@@ -68,6 +68,11 @@ let f (x : (module M : T with type t = int) ->
 val f :
   ((module M : T with type t = int) ->
    (M.t * ((module N : T with type t = int) -> 'a) as 'a)) ->
+  ((module O : T with type t = int) -> int * 'b as 'b) = <fun>
+|}, Principal{|
+val f :
+  ((module M : T with type t = int) ->
+   (M.t * ((module N : T with type t = int) -> 'a) as 'a)) ->
   ((module O : T with type t = int) -> O.t * 'b as 'b) = <fun>
 |}]
 

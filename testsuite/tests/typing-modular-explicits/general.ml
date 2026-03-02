@@ -158,7 +158,7 @@ let apply_labelled_success = labelled' ~y:3
 
 [%%expect{|
 val labelled' : (module M : Typ with type t = int) -> y:M.t -> M.t = <fun>
-val apply_labelled_success : (module Typ with type t = int) -> M.t = <fun>
+val apply_labelled_success : (module Typ with type t = int) -> int = <fun>
 |}]
 
 (* Check that the optionnal argument is removed correctly when applying a
@@ -249,7 +249,7 @@ This argument cannot be applied with label "~c"
 let x_from_struct = id (module struct type t = int end) 3
 
 [%%expect{|
-val x_from_struct : T.t = <external>
+val x_from_struct : int = 3
 |}]
 
 module F () : Typ = struct type t = int end
@@ -346,7 +346,7 @@ let s_list_arrayb =
       string_of_int [|[3; 2]; [2]; []|]
 
 [%%expect{|
-val s_list_arrayb : string M.t = [|["3"; "2"]; ["2"]; []|]
+val s_list_arrayb : string list array = [|["3"; "2"]; ["2"]; []|]
 |}]
 
 module F () : Map = struct
@@ -383,7 +383,7 @@ let ok = map (module F()) string_of_int [3]
 module F :
   () ->
     sig type 'a t = 'a list val map : ('a -> 'b) -> 'a list -> 'b list end
-val ok : string M.t = ["3"]
+val ok : string list = ["3"]
 |}]
 
 (** Various tests on the coercion between functor types. **)
@@ -1149,7 +1149,7 @@ Line 8, characters 28-29:
                                 ^
 Warning 26 [unused-var]: unused variable "x".
 
-val raise_principality_warning : T.t -> T.t = <fun>
+val raise_principality_warning : int -> int = <fun>
 |}]
 
 let test_instance_nondep f =
