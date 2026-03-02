@@ -870,6 +870,6 @@ let get_folded_desc ~keep_Tvar ty =
          something *)
       match get_expand ty with
       | Some (path, args) when not (Path.contains_unscoped_ident path ||
-                                    List.exists (deep_occur ty) args) ->
+                                    deep_occur_list ty args) ->
           Tconstr (path, args, ref Mnil)
       | _ -> desc
