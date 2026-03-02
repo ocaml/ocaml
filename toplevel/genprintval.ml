@@ -308,7 +308,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
            | Error msg -> Oval_stuff msg
            end
         | exception Not_found ->
-          match get_desc ty with
+          match Btype.get_constr_desc ty with
           | Tvar _ | Tunivar _ ->
               Oval_stuff "<poly>"
           | Tarrow _ | Tfunctor _ ->
