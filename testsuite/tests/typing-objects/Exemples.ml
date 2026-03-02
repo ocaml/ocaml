@@ -227,8 +227,7 @@ Error: Type
        is not a subtype of
          "point circle" =
            "< center : point; move : int -> unit; set_center : point -> unit >"
-       Type "point" is not a subtype of
-         "color_point" = "< color : string; get_x : int; move : int -> unit >"
+       Type "point" is not a subtype of "color_point"
        The first object type has no method "color"
 |}];;                 (* Fail *)
 fun x -> (x : color_point color_circle :> point circle);;

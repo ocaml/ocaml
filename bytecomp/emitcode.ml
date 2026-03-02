@@ -457,7 +457,7 @@ let to_file outchan artifact_info ~required_globals code =
   let () =
     (* Remove any cached abbreviation expansion before marshaling.
        See doc-comment for [Types.abbrev_memo] *)
-    Btype.cleanup_abbrev ();
+    Btype.cleanup_abbrev_memo ();
     marshal_to_channel_with_possibly_32bit_compat
       ~filename:(Unit_info.Artifact.filename artifact_info)
       ~kind:"bytecode unit"

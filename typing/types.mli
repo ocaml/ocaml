@@ -164,7 +164,7 @@ and fixed_explanation =
     tail.
 
     Note on marshalling: [abbrev_memo] must not appear in saved types.
-    [Btype], with [cleanup_abbrev] and [memo], takes care of tracking and
+    [Btype], with [cleanup_abbrev_memo] and [memo], takes care of tracking and
     removing abbreviations.
 *)
 and abbrev_memo =
@@ -251,12 +251,12 @@ val try_mark_node: type_mark -> type_expr -> bool
            Return false if it was already marked *)
 
 (** Handle kept abbreviations *)
-val get_expand: type_expr -> (Path.t * type_expr list) option
-val get_expand_scope: type_expr -> int
-  (* If [get_expand ty = Some (_, path, _)] then return the scope of [path]
+val get_abbrev: type_expr -> (Path.t * type_expr list) option
+val get_abbrev_scope: type_expr -> int
+  (* If [get_abbrev ty = Some (_, path, _)] then return the scope of [path]
      otherwise [Ident.lowest_scope] *)
-val iter_expand: (Path.t -> type_expr list -> unit) -> type_expr -> unit
-val forget_expand: type_expr -> unit
+val iter_abbrev: (Path.t -> type_expr list -> unit) -> type_expr -> unit
+val forget_abbrev: type_expr -> unit
 
 (** Transient [type_expr].
     Should only be used immediately after [Transient_expr.repr] *)
@@ -699,17 +699,17 @@ type snapshot
         (* A snapshot for backtracking *)
 val snapshot: unit -> snapshot
         (* Make a snapshot for later backtracking. Costs nothing *)
-val backtrack: cleanup_abbrev:(unit -> unit) -> snapshot -> unit
+val backtrack: cleanup:(unit -> unit) -> snapshot -> unit
         (* Backtrack to a given snapshot. Only possible if you have
            not already backtracked to a previous snapshot.
-           Calls [cleanup_abbrev] internally *)
+           Calls [cleanup] internally *)
 val undo_first_change_after: snapshot -> unit
         (* Backtrack only the first change after a snapshot.
            Does not update the list of changes *)
 val undo_compress: snapshot -> unit
         (* Backtrack only path compression. Only meaningful if you have
            not already backtracked to a previous snapshot.
-           Does not call [cleanup_abbrev] *)
+           Does not call [cleanup] *)
 
 (** Functions to use when modifying a type (only Ctype?).
     The old values are logged and reverted on backtracking.

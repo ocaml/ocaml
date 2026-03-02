@@ -175,7 +175,7 @@ let type_origin decl =
 let dummy_method = "*dummy method*"
 
 let get_constr_desc ty =
-  match get_expand ty with
+  match get_abbrev ty with
     Some (path, tyl) -> Tconstr (path, tyl, ref Mnil)
   | None -> get_desc ty
 
@@ -344,10 +344,10 @@ let fold_type_expr f init ty =
 let iter_type_expr f ty =
   fold_type_expr (fun () v -> f v) () ty
 
-let rec iter_abbrev f = function
+let rec iter_abbrev_memo f = function
     Mnil                   -> ()
-  | Mcons(_, _, ty, ty', rem) -> f ty; f ty'; iter_abbrev f rem
-  | Mlink rem              -> iter_abbrev f !rem
+  | Mcons(_, _, ty, ty', rem) -> f ty; f ty'; iter_abbrev_memo f rem
+  | Mlink rem              -> iter_abbrev_memo f !rem
 
 let iter_type_expr_cstr_args f = function
   | Cstr_tuple tl -> List.iter f tl
@@ -606,7 +606,7 @@ let rec check_expans visited ty =
 let memo = s_ref []
         (* Contains the list of saved abbreviation expansions. *)
 
-let cleanup_abbrev () =
+let cleanup_abbrev_memo () =
         (* Remove all memorized abbreviation expansions. *)
   List.iter (fun abbr -> abbr := Mnil) !memo;
   memo := []
@@ -629,7 +629,7 @@ let rec forget_abbrev_rec mem path =
       mem' := forget_abbrev_rec !mem' path;
       raise Exit
 
-let forget_abbrev mem path =
+let forget_abbrev_memo mem path =
   try mem := forget_abbrev_rec !mem path with Exit -> ()
 
 (* debug: check for invalid abbreviations
@@ -647,7 +647,7 @@ let check_memorized_abbrevs () =
 (* Re-export backtrack *)
 
 let snapshot = snapshot
-let backtrack = backtrack ~cleanup_abbrev
+let backtrack = backtrack ~cleanup:cleanup_abbrev_memo
 
                   (**********************************)
                   (*  Utilities for labels          *)
@@ -795,7 +795,7 @@ let rec deep_occur_rec mark t0 ty =
   if get_level ty >= get_level t0 && try_mark_node mark ty then begin
     if eq_type ty t0 then raise Occur;
     iter_type_expr (deep_occur_rec mark t0) ty;
-    iter_expand (fun _p tyl -> List.iter (deep_occur_rec mark t0) tyl) ty
+    iter_abbrev (fun _p tyl -> List.iter (deep_occur_rec mark t0) tyl) ty
   end
 
 let deep_occur t0 ty =
@@ -822,7 +822,7 @@ let get_folded_desc ~keep_Tvar ty =
   | _ ->
       (* Only re-instate an abbreviation if there is no risk to hide
          something *)
-      match get_expand ty with
-      | Some (path, args) when not (List.exists (deep_occur ty) args) ->
+      match get_abbrev ty with
+      | Some (path, args) when not (deep_occur_list ty args) ->
           Tconstr (path, args, ref Mnil)
       | _ -> desc

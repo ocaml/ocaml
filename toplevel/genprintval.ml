@@ -311,7 +311,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         try
           find_printer depth env ty obj
         with Not_found ->
-          match get_desc ty with
+          match Btype.get_constr_desc ty with
           | Tvar _ | Tunivar _ ->
               Oval_stuff "<poly>"
           | Tarrow _ ->

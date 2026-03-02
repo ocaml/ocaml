@@ -145,7 +145,7 @@ exception Incompatible
 let trace_gadt_instances = ref false
 let check_trace_gadt_instances ?(force=false) env =
   not !trace_gadt_instances && (force || Env.has_local_constraints env) &&
-  (trace_gadt_instances := true; cleanup_abbrev (); true)
+  (trace_gadt_instances := true; cleanup_abbrev_memo (); true)
 
 let reset_trace_gadt_instances b =
   if b then trace_gadt_instances := false
@@ -854,12 +854,12 @@ let update_scope_for tr_exn scope ty =
   with Escape e -> raise_for tr_exn (Escape e)
 
 let needs_expand env level path args =
-  let variance =
-    try (Env.find_type path env).type_variance
-    with Not_found -> List.map (fun _ -> Variance.unknown) args in
-  List.exists2
-    (fun var ty -> var = Variance.null && get_level ty > level)
-    variance args
+  try
+    let decl = Env.find_type path env in
+    List.exists2
+      (fun var ty -> var = Variance.null && get_level ty > level)
+      decl.type_variance args
+  with Not_found -> false
 
 (* Note: the level of a type constructor must be greater than its binding
     time. That way, a type constructor cannot escape the scope of its
@@ -900,7 +900,7 @@ let rec update_level env level expand ty =
         with Cannot_expand ->
           set_level ();
           iter_type_expr (update_level env level expand) ty;
-          update_level_get_expand env level expand ty
+          update_level_abbrev env level expand ty
         end
     | Tpackage ({pack_path = p} as pack) when level < Path.scope p ->
         let p' = normalize_package_path env p in
@@ -919,7 +919,7 @@ let rec update_level env level expand ty =
         end;
         set_level ();
         iter_type_expr (update_level env level expand) ty;
-        update_level_get_expand env level expand ty
+        update_level_abbrev env level expand ty
     | Tfield(lab, _, ty1, _)
       when lab = dummy_method && level < get_scope ty1 ->
         raise_escape_exn Self
@@ -927,17 +927,17 @@ let rec update_level env level expand ty =
         set_level ();
         (* XXX what about abbreviations in Tconstr ? *)
         iter_type_expr (update_level env level expand) ty;
-        update_level_get_expand env level expand ty
+        update_level_abbrev env level expand ty
   end
-  else if get_expand_scope ty > level then
-    update_level_get_expand env level expand ty
+  else if get_abbrev_scope ty > level then
+    update_level_abbrev env level expand ty
 
-and update_level_get_expand env level expand ty =
-  iter_expand
+and update_level_abbrev env level expand ty =
+  iter_abbrev
     (fun p args ->
-      if level < Path.scope p then forget_expand ty else
+      if level < Path.scope p then forget_abbrev ty else
       if List.for_all (fun ty -> get_level ty <= level) args then () else
-      if expand || needs_expand env level p args then forget_expand ty else
+      if expand || needs_expand env level p args then forget_abbrev ty else
       List.iter (update_level env level expand) args)
     ty
 
@@ -950,7 +950,7 @@ let update_level_expand env level ty =
 (* First try without expanding, then expand everything,
    to avoid combinatorial blow-up *)
 let update_level env level ty =
-  if get_level ty > level || get_expand_scope ty > level then begin
+  if get_level ty > level || get_abbrev_scope ty > level then begin
     let snap = snapshot () in
     try
       try_update_level env level ty
@@ -975,7 +975,7 @@ let rec lower_contravariant env var_level visited contra ty =
   in
   if must_visit then begin
     let visit () = Hashtbl.add visited (get_id ty) contra in
-    if get_expand ty = None then visit ();
+    if get_abbrev ty = None then visit ();
     let lower_rec = lower_contravariant env var_level visited in
     match get_constr_desc ty with
       Tvar _ -> if contra then set_level ty var_level
@@ -1002,7 +1002,7 @@ let rec lower_contravariant env var_level visited contra ty =
                   else lower_rec contra t)
               variance tyl in
           if maybe_expand then (* we expand cautiously to avoid missing cmis *)
-            if get_expand ty <> None then
+            if get_abbrev ty <> None then
               lower_rec contra Transient_expr.(type_expr (repr ty))
             else match !forward_try_expand_safe env ty with
             | ty -> visit (); lower_rec contra ty
@@ -1187,7 +1187,7 @@ let rec copy ?partial ?keep_names copy_scope ty =
     in
     if forget <> generic_level then newty2 ~level:forget (Tvar None) else
     let ty_scope = get_scope ty in
-    let ty_expand = get_expand ty in
+    let ty_expand = get_abbrev ty in
     let t = newstub ~scope:ty_scope in
     For_copy.redirect_desc copy_scope ty (Tsubst (t, None));
     let desc' =
@@ -1573,7 +1573,7 @@ let subst env level priv abbrev oty params args body =
             Tconstr (path, tl, _) ->
               let abbrev = proper_abbrevs tl abbrev in
               memorize_abbrev abbrev priv path ty body0;
-              fun () -> forget_abbrev abbrev path
+              fun () -> forget_abbrev_memo abbrev path
           | _ -> assert false
     in
     abbreviations := abbrev;
@@ -1618,7 +1618,7 @@ let previous_env = ref Env.empty
 let check_abbrev_env env =
   if not (Env.same_type_declarations env !previous_env) then begin
     (* prerr_endline "cleanup expansion cache"; *)
-    cleanup_abbrev ();
+    cleanup_abbrev_memo ();
     simple_abbrevs := Mnil;
     previous_env := env
   end
@@ -1663,7 +1663,7 @@ let expand_abbrev_gen ~link kind find_type_expansion env ty =
         Some ty'
     with Escape _ ->
       (* in case of Escape, discard the stale expansion and re-expand *)
-      forget_abbrev lookup_abbrev path;
+      forget_abbrev_memo lookup_abbrev path;
       None
   in
   let ty' = match expansion with
@@ -1716,7 +1716,7 @@ let safe_abbrev env ty =
       false
   | Escape _ ->
       Btype.backtrack snap;
-      cleanup_abbrev ();
+      cleanup_abbrev_memo ();
       false
 
 (* Expand the head of a type once.
@@ -1732,7 +1732,7 @@ let try_expand_safe ~link env ty =
   let snap = Btype.snapshot () in
   try try_expand_once ~link env ty
   with Escape _ ->
-    Btype.backtrack snap; cleanup_abbrev (); raise Cannot_expand
+    Btype.backtrack snap; cleanup_abbrev_memo (); raise Cannot_expand
 
 (* Fully expand the head of a type. *)
 let rec try_expand_head
@@ -2628,7 +2628,7 @@ let add_gadt_equation uenv source destination =
         type_origin
     in
     set_env uenv (Env.add_local_constraint source decl env);
-    cleanup_abbrev ()
+    cleanup_abbrev_memo ()
   end
 
 let eq_package_path env p1 p2 =
@@ -2855,7 +2855,7 @@ and unify2_expand uenv t1 t2 =
   update_scope_for Unify scope t1;
 
   if unify_eq uenv t1 t2 then () else
-  if get_expand t1 = None || get_expand t2 <> None then
+  if get_abbrev t1 = None || get_abbrev t2 <> None then
     unify3 uenv t1 t2
   else
     try unify3 uenv t2 t1 with Unify_trace trace ->
@@ -2904,8 +2904,8 @@ and unify3 uenv t1' t2' =
           else if in_current_module p1 (* || in_pervasives p1 *)
                || List.exists
                    (fun (p, _) -> expands_to_datatype (get_env uenv) p)
-                   (Option.to_list (get_expand t1') @
-                    Option.to_list (get_expand t2') @
+                   (Option.to_list (get_abbrev t1') @
+                    Option.to_list (get_abbrev t2') @
                     [p1, []])
           then
             unify_list uenv tl1 tl2
@@ -4153,7 +4153,7 @@ let all_distinct_vars env vars =
 let matches ~expand_error_trace env ty ty' =
   let snap = snapshot () in
   let vars = rigidify ty in
-  cleanup_abbrev ();
+  cleanup_abbrev_memo ();
   match unify env ty ty' with
   | () ->
       if not (all_distinct_vars env vars) then begin

@@ -993,7 +993,7 @@ let solve_constructor_annotation
               in
               Pattern_env.set_env penv env;
               (* We have changed the definition, so clean up *)
-              Btype.cleanup_abbrev ();
+              Btype.cleanup_abbrev_memo ();
               (* Since id is now abstract, this does not create a cycle *)
               unify_pat_types cty.ctyp_loc env (newgenty desc) tv';
               List.remove_assoc id rem
@@ -1029,7 +1029,7 @@ let solve_constructor_annotation
         in
         Pattern_env.set_env penv env)
       rem;
-    if rem <> [] then Btype.cleanup_abbrev ();
+    if rem <> [] then Btype.cleanup_abbrev_memo ();
   end;
   ty_args, Some (List.map fst ids_decls, cty)
 

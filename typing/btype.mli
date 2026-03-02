@@ -140,7 +140,7 @@ val fold_type_expr: ('a -> type_expr -> 'a) -> 'a -> type_expr -> 'a
 val iter_row: (type_expr -> unit) -> row_desc -> unit
         (* Iteration on types in a row *)
 val fold_row: ('a -> type_expr -> 'a) -> 'a -> row_desc -> 'a
-val iter_abbrev: (type_expr -> unit) -> abbrev_memo -> unit
+val iter_abbrev_memo: (type_expr -> unit) -> abbrev_memo -> unit
         (* Iteration on types in an abbreviation list *)
 val iter_type_expr_kind: (type_expr -> unit) -> (type_decl_kind -> unit)
 
@@ -225,7 +225,7 @@ end
 
 val find_expans: private_flag -> Path.t -> abbrev_memo -> type_expr option
         (* Look up a memorized abbreviation *)
-val cleanup_abbrev: unit -> unit
+val cleanup_abbrev_memo: unit -> unit
         (* Flush the cache of abbreviation expansions.
            When some types are saved (using [output_value]), this
            function MUST be called just before. *)
@@ -233,7 +233,7 @@ val memorize_abbrev:
         abbrev_memo ref ->
         private_flag -> Path.t -> type_expr -> type_expr -> unit
         (* Add an expansion in the cache *)
-val forget_abbrev:
+val forget_abbrev_memo:
         abbrev_memo ref -> Path.t -> unit
         (* Remove an abbreviation from the cache *)
 
