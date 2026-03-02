@@ -149,6 +149,16 @@ let print_path p =
 let print_tags ppf tags  =
   Fmt.(pp_print_list ~pp_sep:comma) print_tag ppf tags
 
+let both_side_diff f x =
+  { Errortrace.ctx = None; d = {got = f x; expected = f x} }
+
+let both_side x  = both_side_diff (highlight_type Independent) x
+let both_side_constructor p =
+  both_side_diff (fun p -> Some(Out_type.Type_constructor p) ) p
+
+
+let no_highlight = Errortrace.{ ctx = None; d = { got = None; expected = None} }
+
 let explain_fixed_row_case = function
   | Errortrace.Cannot_be_closed -> doc_printf "it cannot be closed"
   | Errortrace.Cannot_add_tags tags ->
@@ -157,6 +167,7 @@ let explain_fixed_row_case = function
 
 let pp_path ppf p =
   Style.as_inline_code Printtyp.Doc.path ppf p
+
 
 let explain_fixed_row pos expl = match expl with
   | Types.Fixed_private ->
@@ -175,6 +186,12 @@ let explain_fixed_row pos expl = match expl with
            print_path p ppf))
       p
   | Types.Rigid -> Format_doc.Doc.empty
+
+
+let highlight_fixed_row expl = match expl with
+  | Types.Fixed_private | Types.Rigid -> no_highlight
+  | Types.Univar x -> both_side x
+  | Types.Reified p -> both_side_constructor p
 
 
 let explain_variant (type variety) : variety Errortrace.variant -> _ = function
@@ -215,6 +232,16 @@ let explain_variant (type variety) : variety Errortrace.variant -> _ = function
              Errortrace.print_pos pos
              Errortrace.print_pos (Errortrace.swap_position pos))
 
+
+let highlight_variant (type variety) : variety Errortrace.variant -> _ =
+  function
+  | Errortrace.Arity_mismatch _
+  | Errortrace.No_intersection
+  | Errortrace.No_tags(_,_)
+  | Errortrace.Presence_not_guaranteed_for _
+  | Errortrace.Openness _ -> no_highlight
+  | Errortrace.Fixed_row (_, _, e) ->  highlight_fixed_row e
+
 let explain_escape pre = function
   | Errortrace.Univ u ->
       Variable_names.reserve u;
@@ -250,6 +277,15 @@ let explain_escape pre = function
       Some (doc_printf "%a@,Self type cannot escape its class" pp_doc pre)
   | Errortrace.Constraint ->
       None
+
+let highlight_escape = function
+  | Errortrace.Univ u -> both_side u
+  | Errortrace.Constructor p -> both_side_constructor p
+  | Errortrace.Module_type _
+  | Errortrace.Module _ -> no_highlight
+  | Errortrace.Equation Errortrace.{ty = _; expanded = t} -> both_side t
+  | Errortrace.Self
+  | Errortrace.Constraint -> no_highlight
 
 let explain_object (type variety) : variety Errortrace.obj -> _ = function
   | Errortrace.Missing_field (pos,f) -> Some(
@@ -348,6 +384,14 @@ let explain_univar = function
       let pp_sep _ () = () in
       doc_printf "%a" (pp_print_list ~pp_sep pp) delta
 
+let highlight_univar = function
+  | Errortrace.Var_mismatch { diff; order=_} -> both_side diff.got
+  | Errortrace.Quantification_mismatch delta ->
+    begin match delta with
+    | a :: _ -> both_side a
+    | [] -> no_highlight
+    end
+
 let explanation (type variety) intro
   : (Errortrace.expanded_type, variety) Errortrace.root -> _ = function
   | Errortrace.Escape {kind; context} ->
@@ -405,6 +449,22 @@ let explanation (type variety) intro
         *)
     end
   | Univar um -> Some (explain_univar um)
+
+let highlight_explanation (type variety)
+  : (Errortrace.expanded_type, variety) Errortrace.root -> _ = function
+  | Errortrace.Escape {kind; context = _ } -> highlight_escape kind
+  | Errortrace.Function_label_mismatch _
+  | Errortrace.Tuple_label_mismatch _ -> no_highlight
+  | Errortrace.Variant v -> highlight_variant v
+  | Errortrace.Obj _
+  | Errortrace.First_class_module _ -> no_highlight
+  | Errortrace.Rec_occur(x,y) ->
+
+      let got = highlight_type Paired x in
+      let expected = highlight_type Paired y in
+      { Errortrace.ctx = None; d = { got; expected} }
+  | Univar um -> highlight_univar um
+
 
 let mismatch intro expl =
   match expl with
@@ -527,7 +587,6 @@ let zip_cdiff x y =
 let highlight_type ty =
   let hty x = highlight_type Paired x.Errortrace.ty in
   Errortrace.map_cdiff hty ty
-let no_highlight = Errortrace.{ ctx = None; d = { got = None; expected = None} }
 
 let associate_htarget { Structured.top; tr; expl} =
   match top, tr with
@@ -537,7 +596,11 @@ let associate_htarget { Structured.top; tr; expl} =
       { Structured.top = Some (h, c); tr = []; expl }
   | Some (h,c), a :: q ->
       let top = Some (zip_cdiff h (highlight_type a), c) in
-      let htrace = List.map highlight_type q @ [no_highlight] in
+      let hexpl = match expl with
+        | None | Some (Structured.Promoted _) -> no_highlight
+        | Some (Structured.Standard std) -> highlight_explanation std
+      in
+      let htrace = List.map highlight_type q @ [hexpl] in
       let tr = List.map2 zip_cdiff tr htrace in
       { Structured.top; tr; expl }
 

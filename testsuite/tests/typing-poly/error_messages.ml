@@ -38,7 +38,7 @@ Line 4, characters 49-50:
                                                      ^
 Error: The value "y" has type "< a : 'a; b : (|'a|) >"
        but an expression was expected of type "< a : 'a; b : (|'a0. 'a0|) >"
-       The method "b" has type "'a", but the expected method type was "'a0. 'a0"
+       The method "b" has type "'a", but the expected method type was "'a0. (|'a0|)"
        The universal variable "'a0" would escape its scope
 |}]
 
@@ -61,7 +61,7 @@ Lines 5-7, characters 10-5:
 Error: This expression has type "< f : 'a (|->|) int >"
        but an expression was expected of type "t_a"
        The method "f" has type "'a -> int", but the expected method type was
-       "'a0. 'a0 -> int"
+       "'a0. (|'a0|) -> int"
        The universal variable "'a0" would escape its scope
 |}
 ]
@@ -80,7 +80,7 @@ Line 4, characters 11-49:
 Error: This expression has type "'a v" but an expression was expected of type
          "uv"
        The method "f" has type "'a -> int", but the expected method type was
-       "'a0. 'a0 -> int"
+       "'a0. (|'a0|) -> int"
        The universal variable "'a0" would escape its scope
 |}]
 

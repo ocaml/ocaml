@@ -467,8 +467,8 @@ Line 9, characters 41-42:
                                              ^
 Error: The value "x" has type "< m : (|'b. 'b -> 'b list|) >"
        but an expression was expected of type "< m : (|'b. 'b -> 'c|) >"
-       The method "m" has type "'b. 'b -> 'b list",
-       but the expected method type was "'b. 'b -> 'c"
+       The method "m" has type "'b. (|'b|) -> (|'b|) list",
+       but the expected method type was "'b. (|'b|) -> 'c"
        The universal variable "'b" would escape its scope
 |}];;
 
@@ -1203,9 +1203,9 @@ Error: The value "x" has type "< m : 'a. 'a * < m : 'a * 'b > > as 'b"
        but an expression was expected of type
          "< m : 'a. 'a * (< m : 'a * < m : (|'c. 'c * 'd|) > > as 'd) >"
        The method "m" has type
-       "'a. 'a * (< m : 'a * < m : 'c. 'c * 'd > > as 'd)",
+       "'a. (|'a|) * (< m : (|'a|) * < m : 'c. 'c * 'd > > as 'd)",
        but the expected method type was
-       "'c. 'c * < m : 'a * < m : 'c. 'e > > as 'e"
+       "'c. 'c * < m : (|'a|) * < m : 'c. 'e > > as 'e"
        The universal variable "'a" would escape its scope
 |}];;
 type 'a foo = <m: 'b. 'a * 'a foo>
@@ -1227,8 +1227,8 @@ Error: The value "x" has type "foo'" = "< m : 'a. 'a * 'a (|foo|) >"
          "'a bar" = "< m : 'a * < m : 'c. 'c * 'a bar > >"
        Type "'a foo" = "< m : 'a * 'a foo >" is not compatible with type
          "< m : 'c. 'c * 'a bar >"
-       The method "m" has type "'a * < m : 'c. 'c * 'a bar >",
-       but the expected method type was "'c. 'c * 'a bar"
+       The method "m" has type "(|'a|) * < m : 'c. 'c * (|'a|) bar >",
+       but the expected method type was "'c. 'c * (|'a|) bar"
        The universal variables "'a" and "'c" are distinct.
        The first type variable "'a" was introduced in an earlier universal
        quantification.
@@ -1243,9 +1243,9 @@ Line 2, characters 3-4:
 Error: The value "x" has type "< m : 'b. 'b * ('b * < m : (|'c. 'c * 'a|) > as 'a) >"
        but an expression was expected of type
          "< m : 'b. 'b * ('b * < m : (|'c. 'c * ('c * 'd)|) >) > as 'd"
-       The method "m" has type "'c. 'c * ('b * < m : 'c. 'e >) as 'e",
+       The method "m" has type "'c. 'c * ((|'b|) * < m : 'c. 'e >) as 'e",
        but the expected method type was
-       "'c. 'c * ('c * < m : 'b. 'b * ('b * < m : 'c. 'f >) >) as 'f"
+       "'c. 'c * ('c * < m : 'b. (|'b|) * ((|'b|) * < m : 'c. 'f >) >) as 'f"
        The universal variables "'b" and "'c" are distinct.
        The first type variable "'b" was introduced in an earlier universal
        quantification.
@@ -1260,9 +1260,9 @@ Error: The value "x" has type "< m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) >
        but an expression was expected of type
          "< m : 'b. 'b * ('b * < m : 'c. 'c * ('b * 'd) >) > as 'd"
        The method "m" has type
-       "'c. 'c * ('b * < m : 'b. 'b * ('b * < m : 'c. 'e >) >) as 'e",
+       "'c. 'c * ((|'b|) * < m : 'b. (|'b|) * ((|'b|) * < m : 'c. 'e >) >) as 'e",
        but the expected method type was
-       "'b. 'b * ('b * < m : 'c. 'c * ('b * < m : 'b. 'f >) >) as 'f"
+       "'b. (|'b|) * ((|'b|) * < m : 'c. 'c * ((|'b|) * < m : 'b. 'f >) >) as 'f"
        The universal variable "'b" would escape its scope
 |}];;
 fun (x : <m : 'a. 'a * ('a * 'foo)> as 'foo) ->
@@ -1274,8 +1274,8 @@ Line 2, characters 3-4:
 Error: The value "x" has type "< m : 'b. 'b * ('b * 'a) > as 'a"
        but an expression was expected of type
          "< m : 'b. 'b * ('b * < m : (|'c. 'c * 'd|) > as 'd) >"
-       The method "m" has type "'b. 'b * ('b * < m : 'c. 'c * 'd > as 'd)",
-       but the expected method type was "'c. 'c * ('b * < m : 'c. 'e >) as 'e"
+       The method "m" has type "'b. (|'b|) * ((|'b|) * < m : 'c. 'c * 'd > as 'd)",
+       but the expected method type was "'c. 'c * ((|'b|) * < m : 'c. 'e >) as 'e"
        The universal variable "'b" would escape its scope
 |}];;
 let f x =
@@ -1301,8 +1301,8 @@ Line 2, characters 3-4:
 Error: The value "x" has type "< x : (|'c 'a 'c0. 'c * 'a * 'a * 'c0|) >"
        but an expression was expected of type
          "< x : (|'a 'b 'c. 'c * 'a * 'b * 'b|) >"
-       The method "x" has type "'c 'a 'c0. 'c * 'a * 'a * 'c0",
-       but the expected method type was "'a 'b 'c. 'c * 'a * 'b * 'b"
+       The method "x" has type "'c 'a 'c0. 'c * (|'a|) * (|'a|) * 'c0",
+       but the expected method type was "'a 'b 'c. 'c * (|'a|) * 'b * 'b"
        The universal variables "'a" and "'b" are distinct.
 |}]
 
@@ -1314,7 +1314,7 @@ Line 2, characters 7-8:
            ^
 Error: The value "x" has type "< x : 'a. < x : (|'b. 'a * 'b|) > >"
        but an expression was expected of type "< x : 'b. < x : (|'a. 'a * 'b|) > >"
-       The method "x" has type "'b. 'a * 'b", but the expected method type was
+       The method "x" has type "'b. (|'a|) * 'b", but the expected method type was
        "'a0. 'a0 * 'b"
        The universal variables "'a" and "'a0" are distinct.
        The first type variable "'a" was introduced in an earlier universal
@@ -1329,7 +1329,7 @@ Line 2, characters 7-8:
            ^
 Error: The value "o" has type "< x : (|'a 'b. ('a * 'a) * 'b|) >"
        but an expression was expected of type "< x : (|'a. ('a * 'a) * 'a|) >"
-       The method "x" has type "'a 'b. ('a * 'a) * 'b",
+       The method "x" has type "'a 'b. ('a * 'a) * (|'b|)",
        but the expected method type was "'a. ('a * 'a) * 'a"
        The universal variables "'b" and "'a" are distinct.
 |}]
@@ -1356,7 +1356,7 @@ Error: Signature mismatch:
        is not compatible with the type
          "< m : 'b. 'b * ('b * < m : (|'c. 'c * 'e|) > as 'e) > -> unit"
        The method "m" has type "'a. 'a * ('a * < m : 'a. 'f >) as 'f",
-       but the expected method type was "'c. 'c * ('b * < m : 'c. 'g >) as 'g"
+       but the expected method type was "'c. 'c * ((|'b|) * < m : 'c. 'g >) as 'g"
        The universal variable "'b" would escape its scope
 |}];;
 module M
@@ -1378,7 +1378,7 @@ Error: Signature mismatch:
        The type "< m : 'a. 'a * ('a * 'd) > as 'd" is not equal to the type
          "< m : 'b. 'b * ('b * < m : (|'c. 'c * 'e|) > as 'e) >"
        The method "m" has type "'a. 'a * ('a * < m : 'a. 'f >) as 'f",
-       but the expected method type was "'c. 'c * ('b * < m : 'c. 'g >) as 'g"
+       but the expected method type was "'c. 'c * ((|'b|) * < m : 'c. 'g >) as 'g"
        The universal variable "'b" would escape its scope
 |}];;
 
@@ -2165,7 +2165,7 @@ Lines 1-3, characters 15-3:
 3 | end
 Error: This expression has type "< x : (|'b. 'b s list|) >"
        but an expression was expected of type "'a c"
-       The method "x" has type "'b. 'b s list", but the expected method type was
+       The method "x" has type "'b. (|'b|) s list", but the expected method type was
        "'a list"
        The universal variable "'b" would escape its scope
 |}]
@@ -2182,8 +2182,8 @@ Line 1, characters 17-18:
 1 | let f (x : u) = (x : v)
                      ^
 Error: The value "x" has type "u" but an expression was expected of type "v"
-       The method "m" has type "'a s list * < m : 'b > as 'b",
-       but the expected method type was "'a. 'a s list * < m : 'a. 'c > as 'c"
+       The method "m" has type "(|'a|) s list * < m : 'b > as 'b",
+       but the expected method type was "'a. (|'a|) s list * < m : 'a. 'c > as 'c"
        The universal variable "'a" would escape its scope
 |}]
 
@@ -2201,7 +2201,7 @@ Lines 1-3, characters 15-3:
 3 | end
 Error: This expression has type "< x : (|'b. 'b s list|) >"
        but an expression was expected of type "'a c"
-       The method "x" has type "'b. 'b s list", but the expected method type was
+       The method "x" has type "'b. (|'b|) s list", but the expected method type was
        "'a list"
        The universal variable "'b" would escape its scope
 |}]
