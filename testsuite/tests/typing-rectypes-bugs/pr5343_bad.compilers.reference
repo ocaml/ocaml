@@ -3,4 +3,5 @@ File "pr5343_bad.ml", line 11, characters 2-14:
        ^^^^^^^^^^^^
 Error: The definition of u contains a cycle:
          u = u t,
+         the type t is considered abstract,
          u t contains u

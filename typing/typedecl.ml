@@ -36,6 +36,7 @@ and reaching_type_step =
   | Expands_to of type_expr * type_expr
   | Contains of type_expr * type_expr
   | Parameter of Path.t * int * type_expr
+  | Considered_abstract of Path.t
 
 type error =
     Repeated_parameter
@@ -837,13 +838,16 @@ let reachable
     ~trace
     ty
   =
-  let iter_tl tl f =
+  let iter_tl ?(trace=trace) tl f =
     List.iter (fun t -> f ~trace:(Contains (ty, t) :: trace) t) tl
   in
   let iter_tl' tl f =
     List.iter (fun (_, t) -> f ~trace:(Contains (ty, t) :: trace) t) tl
   in
-  match Btype.get_constr_desc ty with
+  (* We must use get_desc here. get_constr_desc will cause us to
+     think we are dealing with a constructor, rather than a Texpand node.
+     We will then fail to expand the type, and assume that it is abstract. *)
+  match get_desc ty with
   | Tobject _ | Tfield _ | Tnil -> ()
   | Tvariant _ -> ()
   | Tvar _ | Tunivar _ -> ()
@@ -866,7 +870,7 @@ let reachable
         with
         | exception Ctype.Cannot_expand ->
             (* Abstract *)
-            iter_tl tl unguarded
+            iter_tl ~trace:(Considered_abstract path :: trace) tl unguarded
         | ty' ->
             unguarded ~trace:(Expands_to (ty, ty') :: trace) ty'
       end
@@ -924,7 +928,9 @@ let is_reachable
           begin match Path.Map.find_opt path !visited_paths with
           | None -> false
           | Some visited_tys ->
-              List.exists (Ctype.does_match abs_env ty') visited_tys
+              List.exists
+                (fun ty'' -> Ctype.is_equal abs_env false [ ty' ] [ ty'' ])
+                visited_tys
           end;
       | _ -> false
     then ()
@@ -2111,6 +2117,7 @@ module Reaching_path = struct
           List.iter Out_type.add_type_to_preparation [ty1; ty2]
       | Parameter (_, _, ty) ->
           Out_type.add_type_to_preparation ty
+      | Considered_abstract _ -> ()
     ) path
 
   module Fmt = Format_doc
@@ -2132,6 +2139,9 @@ module Reaching_path = struct
             (Misc.ordinal_suffix i)
             Style.inline_code (Path.name path)
             (Style.as_inline_code Out_type.prepared_type_expr) ty
+      | Considered_abstract path ->
+          Fmt.fprintf ppf "the type %a is considered abstract"
+            Style.inline_code (Path.name path)
     in
     Fmt.(pp_print_list ~pp_sep:comma) pp_step ppf reaching_path
 
