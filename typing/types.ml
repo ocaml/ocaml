@@ -581,7 +581,7 @@ let repr_link1 t d = function
    For instance, with "t1 -> t2" for [t1.desc = Tlink t2] and
    "t1 -(path,args)-> t2" for [t1.desc = Texpand (t2, path, args)], we have
    Before:
-      t -> t1 -(path1,args2)-> t2 -> t3 -(path2,args2)-> t'
+      t -> t1 -(path1,args1)-> t2 -> t3 -(path2,args2)-> t'
    After:
       t -(path1,args1)-> t'
    Before:
