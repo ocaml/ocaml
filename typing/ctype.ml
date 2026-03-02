@@ -895,12 +895,12 @@ let update_scope_for tr_exn scope ty =
   with Escape e -> raise_for tr_exn (Escape e)
 
 let needs_expand env level path args =
-  let variance =
-    try (Env.find_type path env).type_variance
-    with Not_found -> List.map (fun _ -> Variance.unknown) args in
-  List.exists2
-    (fun var ty -> var = Variance.null && get_level ty > level)
-    variance args
+  try
+    let decl = Env.find_type path env in
+    List.exists2
+      (fun var ty -> var = Variance.null && get_level ty > level)
+      decl.type_variance args
+  with Not_found -> false
 
 (* Note: the level of a type constructor must be greater than its binding
     time. That way, a type constructor cannot escape the scope of its
