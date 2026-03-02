@@ -80,6 +80,7 @@ and reaching_type_step =
   | Expands_to of type_expr * type_expr
   | Contains of type_expr * type_expr
   | Parameter of Path.t * int * type_expr
+  | Considered_abstract of Path.t
 
 type error =
     Repeated_parameter
