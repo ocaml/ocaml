@@ -51,7 +51,7 @@ the above 4 modules \\
 "Effect" & p.~\stdpageref{Effect} & effect handlers \\
 "Either" & p.~\stdpageref{Either} & either values \\
 "Hashtbl" & p.~\stdpageref{Hashtbl} & hash tables and hash functions \\
-"Hashset" & p.~\stdpageref{Hashset} & hash sets \\
+"Hash_set" & p.~\stdpageref{Hash_set} & hash sets \\
 "Random" & p.~\stdpageref{Random} & pseudo-random number generator \\
 "Set" & p.~\stdpageref{Set} & sets over ordered types \\
 "Map" & p.~\stdpageref{Map} & association tables over ordered types \\
@@ -151,7 +151,7 @@ representation of values \\
 \stddocitem{Fun}{function values}
 \stddocitem{Gc}{memory management control and statistics; finalized values}
 \stddocitem{Hashtbl}{hash tables and hash functions}
-\stddocitem{Hashset}{hash sets}
+\stddocitem{Hash_set}{hash sets}
 \stddocitem{In_channel}{input channels}
 \stddocitem{Int}{integers}
 \stddocitem{Int32}{32-bit integers}

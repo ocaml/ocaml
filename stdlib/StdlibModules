@@ -86,7 +86,7 @@ STDLIB_MODULE_BASENAMES = \
   bigarray \
   random \
   hashtbl \
-  hashset \
+  hash_set \
   weak \
   format \
   scanf \

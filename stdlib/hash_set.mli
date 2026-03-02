@@ -57,7 +57,7 @@ type !'a t
 
 val create : ?random: (* thwart tools/sync_stdlib_docs *) bool ->
              int -> 'a t
-(** [Hashset.create n] creates a new, empty hash set, with initial
+(** [Hash_set.create n] creates a new, empty hash set, with initial
    size greater or equal to the suggested size [n].  For best results,
    [n] should be on the order of the expected number of elements that
    will be in the set.  The set grows as needed, so [n] is just an
@@ -66,7 +66,7 @@ val create : ?random: (* thwart tools/sync_stdlib_docs *) bool ->
 
    The optional [~random] parameter (a boolean) controls whether
    the internal organization of the hash set is randomized at each
-   execution of [Hashset.create] or deterministic over all executions.
+   execution of [Hash_set.create] or deterministic over all executions.
 
    A hash set that is created with [~random] set to [false] uses a
    fixed hash function ({!Hashtbl.hash}) to distribute elements among
@@ -104,18 +104,18 @@ val copy : 'a t -> 'a t
 (** Return a copy of the given hash set. *)
 
 val add : 'a t -> 'a -> unit
-(** [Hashset.add s x] adds element [x] to set [s].
+(** [Hash_set.add s x] adds element [x] to set [s].
    If [x] is already present in [s], the set is unchanged. *)
 
 val remove : 'a t -> 'a -> unit
-(** [Hashset.remove s x] removes [x] from set [s].
+(** [Hash_set.remove s x] removes [x] from set [s].
    It does nothing if [x] is not present in [s]. *)
 
 val mem : 'a t -> 'a -> bool
-(** [Hashset.mem s x] checks if [x] is present in [s]. *)
+(** [Hash_set.mem s x] checks if [x] is present in [s]. *)
 
 val iter : ('a -> unit) -> 'a t -> unit
-(** [Hashset.iter f s] applies [f] to all elements in set [s].
+(** [Hash_set.iter f s] applies [f] to all elements in set [s].
    Each element is presented exactly once to [f].
 
    The order in which the elements are passed to [f] is unspecified.
@@ -131,13 +131,13 @@ val iter : ('a -> unit) -> 'a t -> unit
 *)
 
 val filter_inplace : ('a -> bool) -> 'a t -> unit
-(** [Hashset.filter_inplace f s] removes from [s] all elements [x]
+(** [Hash_set.filter_inplace f s] removes from [s] all elements [x]
     for which [f x] returns [false].
 
     Other comments for {!iter} apply as well. *)
 
 val fold : ('a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
-(** [Hashset.fold f s init] computes
+(** [Hash_set.fold f s init] computes
    [(f xN ... (f x1 init)...)],
    where [x1 ... xN] are the elements of [s].
    Each element is presented exactly once to [f].
@@ -155,11 +155,11 @@ val fold : ('a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
 *)
 
 val length : 'a t -> int
-(** [Hashset.length s] returns the number of elements in [s].
+(** [Hash_set.length s] returns the number of elements in [s].
    It takes constant time. *)
 
 val randomize : unit -> unit
-(** After a call to [Hashset.randomize()], hash sets are created in
+(** After a call to [Hash_set.randomize()], hash sets are created in
     randomized mode by default: {!create} returns randomized
     hash sets, unless the [~random:false] optional parameter is given.
     The same effect can be achieved by setting the [R] parameter in
@@ -167,13 +167,13 @@ val randomize : unit -> unit
 
     It is recommended that applications or Web frameworks that need to
     protect themselves against the denial-of-service attack described
-    in {!create} call [Hashset.randomize()] at initialization
+    in {!create} call [Hash_set.randomize()] at initialization
     time before any domains are created.
 
-    Note that once [Hashset.randomize()] was called, there is no way
+    Note that once [Hash_set.randomize()] was called, there is no way
     to revert to the non-randomized default behavior of {!create}.
     This is intentional.  Non-randomized hash sets can still be
-    created using [Hashset.create ~random:false]. *)
+    created using [Hash_set.create ~random:false]. *)
 
 val is_randomized : unit -> bool
 (** Return [true] if the sets are currently created in randomized mode
@@ -189,13 +189,13 @@ val rebuild : ?random (* thwart tools/sync_stdlib_docs *) :bool ->
     {!create} for more information.
 
     {!rebuild} can safely be used to import a hash set built
-    by an old version of the {!Hashset} module, then marshaled to
+    by an old version of the {!Hash_set} module, then marshaled to
     persistent storage.  After unmarshaling, apply {!rebuild}
-    to produce a hash set for the current version of the {!Hashset}
+    to produce a hash set for the current version of the {!Hash_set}
     module. *)
 
 val stats : 'a t -> Hashtbl.statistics
-(** [Hashset.stats s] returns statistics about the set [s]:
+(** [Hash_set.stats s] returns statistics about the set [s]:
    number of buckets, size of the biggest bucket, distribution of
    buckets by size. *)
 
@@ -230,19 +230,19 @@ val of_seq : 'a Seq.t -> 'a t
           let hash i = i land max_int
         end
 
-      module IntHashset = Hashset.Make(IntHash)
+      module Int_hash_set = Hash_set.Make(IntHash)
 
-      let s = IntHashset.create 17 in
-      IntHashset.add s 12
+      let s = Int_hash_set.create 17 in
+      Int_hash_set.add s 12
     ]}
 
-    This creates a new module [IntHashset], with a new type
-    [IntHashset.t] of sets of integers.
+    This creates a new module [Int_hash_set], with a new type
+    [Int_hash_set.t] of sets of integers.
 
-    Note that the new type [IntHashset.t] is not compatible with
-    the type ['a Hashset.t] of the generic interface. For
-    example, [Hashset.length s] would not type-check, you must use
-    [IntHashset.length].
+    Note that the new type [Int_hash_set.t] is not compatible with
+    the type ['a Hash_set.t] of the generic interface. For
+    example, [Hash_set.length s] would not type-check, you must use
+    [Int_hash_set.length].
 *)
 
 module type S =
@@ -273,7 +273,7 @@ module type S =
 
 module Make (H : Hashtbl.HashedType) : S with type elt = H.t
 (** Functor building an implementation of the hash set structure.
-    The functor [Hashset.Make] returns a structure containing
+    The functor [Hash_set.Make] returns a structure containing
     a type [elt] of elements and a type [t] of hash sets.
     The operations perform similarly to those of the generic
     interface, but use the hashing and equality functions
@@ -311,7 +311,7 @@ module type SeededS =
 
 module MakeSeeded (H : Hashtbl.SeededHashedType) : SeededS with type elt = H.t
 (** Functor building an implementation of the hash set structure.
-    The functor [Hashset.MakeSeeded] returns a structure containing
+    The functor [Hash_set.MakeSeeded] returns a structure containing
     a type [elt] of elements and a type [t] of hash sets.
     The operations perform similarly to those of the generic
     interface, but use the seeded hashing and equality functions
@@ -319,4 +319,4 @@ module MakeSeeded (H : Hashtbl.SeededHashedType) : SeededS with type elt = H.t
     equality and hashing.  The [create] operation of the
     result structure supports the [~random] optional parameter
     and returns randomized hash sets if [~random:true] is passed
-    or if randomization is globally on (see {!Hashset.randomize}). *)
+    or if randomization is globally on (see {!Hash_set.randomize}). *)
