@@ -151,6 +151,7 @@ static size_t get_callstack(struct stack_info* stack, intnat max_slots,
   char *sp;
   uintnat pc;
   caml_frame_descrs *fds = caml_get_frame_descrs();
+  struct stack_info* const starting_stack = stack;
   CAMLnoalloc;
 
   caml_get_stack_sp_pc(stack, &sp, &pc);
@@ -159,7 +160,7 @@ static size_t get_callstack(struct stack_info* stack, intnat max_slots,
     frame_descr *descr = caml_next_frame_descriptor(fds, &pc, &sp, stack);
     if (!descr) {
       stack = Stack_parent(stack);
-      if (!stack) break;
+      if (!stack || stack == starting_stack) break;
       caml_get_stack_sp_pc(stack, &sp, &pc);
     } else {
       if (slots == alloc_size) {
@@ -249,14 +250,15 @@ CAMLprim value caml_get_continuation_callstack (value cont, value max_frames)
   backtrace_slot *trace = NULL;
   size_t trace_size = 0;
   size_t slots;
-  struct stack_info* stack;
+  struct stack_info *cont_tail, *cont_head;
 
-  stack = Ptr_val(caml_continuation_use(cont));
+  cont_tail = Ptr_val(caml_continuation_use(cont));
+  cont_head = Stack_parent(cont_tail);
   {
     CAMLnoalloc;
-    slots = get_callstack(stack, max_frames, -1,
+    slots = get_callstack(cont_head, max_frames, -1,
                           &trace, &trace_size);
-    caml_continuation_replace(cont, stack);
+    caml_continuation_replace(cont, cont_tail);
   }
 
   return alloc_callstack(trace, slots);

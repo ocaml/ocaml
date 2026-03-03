@@ -136,6 +136,9 @@ OCaml 5.5.0
 
 ### Runtime system:
 
+- #14469: Make continuation objects have one field instead of two.
+  (KC Sivaramakrishnan, review by)
+
 - #14416: Spawned domains will record backtraces if the parent domain has
   enabled it.
   (Nathan Taylor, review by Gabriel Scherer)

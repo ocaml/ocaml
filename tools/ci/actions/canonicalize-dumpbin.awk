@@ -80,6 +80,9 @@ ENDFILE {
           sub(g,labels[g] "h")
         }
       }
+      # Normalize hex immediates by removing leading zeros from [0XXXh] patterns
+      # This handles patterns like [0A03h] -> [A03h]
+      gsub(/\[0+/, "[")
       if(!skip)
         print
     }

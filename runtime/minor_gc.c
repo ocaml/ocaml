@@ -275,7 +275,7 @@ static void oldify_one (void* st_v, value v, volatile value *p)
     if( try_update_object_header(v, p, result, 0) ) {
       struct stack_info* stk = Ptr_val(stack_value);
       Field(result, 0) = stack_value;
-      Field(result, 1) = Field(v, 1);
+      caml_final_cont_register_major(result);
       if (stk != NULL) {
         caml_scan_stack(&oldify_one, oldify_scanning_flags, st,
                         stk, 0);
@@ -284,7 +284,7 @@ static void oldify_one (void* st_v, value v, volatile value *p)
     else
     {
       /* Conflict - fix up what we allocated on the major heap */
-      *Hp_val(result) = Make_header(1, No_scan_tag,
+      *Hp_val(result) = Make_header(2, No_scan_tag,
                                     caml_allocation_status());
       #ifdef DEBUG
       Field(result, 0) = Val_long(1);

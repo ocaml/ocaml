@@ -48,6 +48,15 @@ struct final_todo {
   struct final item[/* size */]; /* flexible array member */
 };
 
+struct cont {
+  value minor;
+  value major;
+  value to_finalise;
+};
+
+#define CAML_CONT_LINK_OFFSET 1
+#define Cont_link(c) Field(c, CAML_CONT_LINK_OFFSET)
+
 /*
   todo_head: head of the list of finalisation functions that can be run.
   todo_tail: tail of the list of finalisation functions that can be run.
@@ -63,6 +72,7 @@ struct caml_final_info {
   struct final_todo *todo_head;
   struct final_todo *todo_tail;
   uintnat running_finalisation_function;
+  struct cont cont;
   struct caml_final_info* next; /* used for orphaned finalisers.
                                    See major_gc.c */
 };
@@ -81,6 +91,10 @@ void caml_final_do_young_roots (
 void caml_final_empty_young (caml_domain_state* d);
 void caml_final_update_last_minor (caml_domain_state* d);
 struct caml_final_info* caml_alloc_final_info(void);
+value caml_final_cont_register(value cont);
+void caml_final_cont_register_major(value cont);
+void caml_final_cont_do_calls(void);
+void caml_final_cont_update_major (caml_domain_state* d);
 
 #endif /* CAML_INTERNALS */
 

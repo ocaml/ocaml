@@ -654,7 +654,9 @@ void caml_orphan_finalisers (caml_domain_state* domain_state)
 {
   struct caml_final_info* f = domain_state->final_info;
 
-  if (f->todo_head != NULL || f->first.size != 0 || f->last.size != 0) {
+  if (f->todo_head != NULL || f->first.size != 0 || f->last.size != 0
+      || f->cont.major != (value) NULL || f->cont.to_finalise != (value) NULL
+      || f->cont.minor != (value) NULL) {
     /* have some final structures */
     (void)caml_atomic_counter_incr(&num_domains_orphaning_finalisers);
     /* At present, we only call this function (during
@@ -673,6 +675,7 @@ void caml_orphan_finalisers (caml_domain_state* domain_state)
                caml_gc_phase == Phase_sweep_and_mark_main);
     CAMLassert (!f->updated_first);
     CAMLassert (!f->updated_last);
+    CAMLassert (f->cont.minor == (value) NULL);
 
     /* Add the finalisers to [orph_structs] */
     caml_plat_lock_blocking(&orphaned_lock);
@@ -770,6 +773,27 @@ static void adopt_orphaned_work (int expected_status)
     }
     if (f->last.young > 0) {
       caml_final_merge_finalisable (&f->last, &myf->last);
+    }
+
+    CAMLassert (f->cont.minor == (value) NULL);
+
+    /* Adopt the continuation lists */
+    if (f->cont.major != (value) NULL) {
+      value c = f->cont.major;
+      while (Cont_link(c) != (value) NULL) {
+        c = Cont_link(c);
+      }
+      Cont_link(c) = myf->cont.major;
+      myf->cont.major = f->cont.major;
+    }
+
+    if (f->cont.to_finalise != (value) NULL) {
+      value c = f->cont.to_finalise;
+      while (Cont_link(c) != (value) NULL) {
+        c = Cont_link(c);
+      }
+      Cont_link(c) = myf->cont.to_finalise;
+      myf->cont.to_finalise = f->cont.to_finalise;
     }
 
     temp = f;
@@ -1960,6 +1984,7 @@ static void stw_cycle_all_domains(
   /* Finalisers */
   domain->final_info->updated_first = 0;
   domain->final_info->updated_last = 0;
+  CAMLassert (domain->final_info->cont.minor == (value) NULL);
 
   /* To ensure a mutator doesn't resume while global roots are being marked.
      Mutators can alter the set of global roots, to preserve its correctness,
@@ -2191,7 +2216,8 @@ mark_again:
      *   which don't allocate. */
 
     if (caml_gc_phase == Phase_mark_final &&
-        caml_final_update_first(domain_state)) {
+        (caml_final_cont_update_major (domain_state),
+         caml_final_update_first(domain_state))) {
       /* This domain has updated finalise first values */
       (void)caml_atomic_counter_decr(&num_domains_to_final_update_first);
       if (!domain_state->marking_done &&

@@ -37,11 +37,15 @@ let _ = Callback.register_exception "Effect.Continuation_already_resumed"
           Continuation_already_resumed
 
 type ('a, 'b) stack [@@immediate]
-type last_fiber [@@immediate]
 
 external resume :
-  ('a, 'b) stack -> ('c -> 'a) -> 'c -> last_fiber -> 'b = "%resume"
+  ('a, 'b) stack -> ('c -> 'a) -> 'c -> 'b = "%resume"
 external runstack : ('a, 'b) stack -> ('c -> 'a) -> 'c -> 'b = "%runstack"
+
+exception Continuation_deadlocked
+
+external register_named_value : string -> 'a -> unit
+                              = "caml_register_named_value"
 
 module Deep = struct
 
@@ -52,33 +56,30 @@ module Deep = struct
   external alloc_stack :
     ('a -> 'b) ->
     (exn -> 'b) ->
-    ('c t -> ('c, 'b) continuation -> last_fiber -> 'b) ->
+    ('c t -> ('c, 'b) continuation -> 'b) ->
     ('a, 'b) stack = "caml_alloc_stack"
-  external cont_last_fiber : ('a, 'b) continuation -> last_fiber = "%field1"
 
   let continue k v =
-    resume (take_cont_noexc k) (fun x -> x) v (cont_last_fiber k)
+    resume (take_cont_noexc k) (fun x -> x) v
 
   let discontinue k e =
-    resume (take_cont_noexc k) (fun e -> raise e) e (cont_last_fiber k)
+    resume (take_cont_noexc k) (fun e -> raise e) e
 
   let discontinue_with_backtrace k e bt =
-    resume (take_cont_noexc k) (fun e -> Printexc.raise_with_backtrace e bt)
-      e (cont_last_fiber k)
+    resume (take_cont_noexc k) (fun e -> Printexc.raise_with_backtrace e bt) e
 
   type ('a,'b) handler =
     { retc: 'a -> 'b;
       exnc: exn -> 'b;
       effc: 'c.'c t -> (('c,'b) continuation -> 'b) option }
 
-  external reperform :
-    'a t -> ('a, 'b) continuation -> last_fiber -> 'b = "%reperform"
+  external reperform : 'a t -> ('a, 'b) continuation -> 'b = "%reperform"
 
   let match_with comp arg handler =
-    let effc eff k last_fiber =
+    let effc eff k =
       match handler.effc eff with
       | Some f -> f k
-      | None -> reperform eff k last_fiber
+      | None -> reperform eff k
     in
     let s = alloc_stack handler.retc handler.exnc effc in
     runstack s comp arg
@@ -87,10 +88,10 @@ module Deep = struct
     { effc: 'b. 'b t -> (('b,'a) continuation -> 'a) option }
 
   let try_with comp arg handler =
-    let effc' eff k last_fiber =
+    let effc' eff k =
       match handler.effc eff with
       | Some f -> f k
-      | None -> reperform eff k last_fiber
+      | None -> reperform eff k
     in
     let s = alloc_stack (fun x -> x) (fun e -> raise e) effc' in
     runstack s comp arg
@@ -98,6 +99,19 @@ module Deep = struct
   external get_callstack :
     ('a,'b) continuation -> int -> Printexc.raw_backtrace =
     "caml_get_continuation_callstack"
+
+  let finalise k =
+    match discontinue k Continuation_deadlocked with
+    | _v -> assert false (* TODO: Is this a sensible behaviour? *)
+    | exception Continuation_deadlocked ->
+      (* Sensible case: only sensible behaviour of user code on seeing
+      [Continuation_deadlocked] is to cleanup and reraise the same exception. *)
+      ()
+    | exception _e -> assert false (* TODO: what to do here? *)
+    | effect _e, _k' -> assert false (* TODO: what to do here? *)
+
+  let _ = register_named_value "Effect.Deep.finalise" finalise
+
 end
 
 module Shallow = struct
@@ -107,24 +121,27 @@ module Shallow = struct
   external alloc_stack :
     ('a -> 'b) ->
     (exn -> 'b) ->
-    ('c t -> ('c, 'b) continuation -> last_fiber -> 'b) ->
+    ('c t -> ('c, 'b) continuation -> 'b) ->
     ('a, 'b) stack = "caml_alloc_stack"
 
-  external cont_last_fiber : ('a, 'b) continuation -> last_fiber = "%field1"
+  external clear_handler : ('a,'b) continuation -> unit =
+    "caml_continuation_clear_handler_noexc" [@@noalloc]
 
   let fiber : type a b. (a -> b) -> (a, b) continuation = fun f ->
     let module M = struct type _ t += Initial_setup__ : a t end in
     let exception E of (a,b) continuation in
     let f' () = f (perform M.Initial_setup__) in
     let error _ = failwith "impossible" in
-    let effc eff k _last_fiber =
+    let effc eff k =
       match eff with
       | M.Initial_setup__ -> raise_notrace (E k)
       | _ -> error ()
     in
     let s = alloc_stack error error effc in
     match runstack s f' () with
-    | exception E k -> k
+    | exception E k ->
+      clear_handler k;
+      k
     | _ -> error ()
 
   type ('a,'b) handler =
@@ -136,21 +153,22 @@ module Shallow = struct
     ('a,'b) continuation ->
     ('b -> 'c) ->
     (exn -> 'c) ->
-    ('d t -> ('d,'b) continuation -> last_fiber -> 'c) ->
+    ('d t -> ('d,'b) continuation -> 'c) ->
     ('a,'c) stack = "caml_continuation_use_and_update_handler_noexc" [@@noalloc]
 
-  external reperform :
-    'a t -> ('a, 'b) continuation -> last_fiber -> 'c = "%reperform"
+  external reperform : 'a t -> ('a, 'b) continuation -> 'c = "%reperform"
 
   let continue_gen k resume_fun v handler =
-    let effc eff k last_fiber =
+    let effc eff k =
       match handler.effc eff with
-      | Some f -> f k
-      | None -> reperform eff k last_fiber
+      | Some f ->
+          (* clear handler to avoid space leak *)
+          clear_handler k;
+          f k
+      | None -> reperform eff k
     in
-    let last_fiber = cont_last_fiber k in
     let stack = update_handler k handler.retc handler.exnc effc in
-    resume stack resume_fun v last_fiber
+    resume stack resume_fun v
 
   let continue_with k v handler =
     continue_gen k (fun x -> x) v handler
@@ -164,4 +182,18 @@ module Shallow = struct
   external get_callstack :
     ('a,'b) continuation -> int -> Printexc.raw_backtrace =
     "caml_get_continuation_callstack"
+
+  let finalise k =
+    discontinue_with k Continuation_deadlocked
+    { retc = (fun _ -> assert false);
+      exnc = (fun e ->
+        match e with
+        | Continuation_deadlocked -> ()
+        | _ -> assert false);
+      effc = (fun _ -> assert false) }
+
+  let _ = register_named_value "Effect.Shallow.finalise" finalise
+
+
 end
+

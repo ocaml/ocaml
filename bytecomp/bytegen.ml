@@ -696,38 +696,24 @@ let rec comp_expr stack_info env exp sz cont =
                  (Kmakeblock(List.length args, 0) ::
                   Kccall("caml_array_of_uniform_array", 1) :: cont)
       end
-  | Lprim(Presume, args, _) ->
+  | Lprim(Presume, args, _)
+  | Lprim(Prunstack, args, _) ->
       let nargs = List.length args - 1 in
-      assert (nargs = 3);
+      assert (nargs = 2);
       if is_tailcall cont then begin
-        (* Resumeterm itself only pushes 2 words, but perform adds another *)
-        check_stack stack_info 3;
+        (* Resumeterm pushes no extra words *)
         comp_args stack_info env args sz
           (Kresumeterm(sz + nargs) :: discard_dead_code cont)
       end else begin
-        (* Resume itself only pushes 2 words, but perform adds another *)
-        check_stack stack_info (sz + nargs + 3);
+        (* Resume itself pushes 3 words, and perform does not push any *)
+        check_stack stack_info (sz + 3);
         comp_args stack_info env args sz (Kresume :: cont)
-      end
-  | Lprim(Prunstack, args, _) ->
-      let nargs = List.length args in
-      assert (nargs = 3);
-      if is_tailcall cont then begin
-        (* Resumeterm itself only pushes 2 words, but perform adds another *)
-        check_stack stack_info 3;
-        Kconst const_unit :: Kpush ::
-          comp_args stack_info env args (sz + 1)
-          (Kresumeterm(sz + nargs) :: discard_dead_code cont)
-      end else begin
-        (* Resume itself only pushes 2 words, but perform adds another *)
-        check_stack stack_info (sz + nargs + 3);
-        Kconst const_unit :: Kpush ::
-          comp_args stack_info env args (sz + 1) (Kresume :: cont)
       end
   | Lprim(Preperform, args, _) ->
       let nargs = List.length args - 1 in
-      assert (nargs = 2);
-      check_stack stack_info (sz + 3);
+      assert (nargs = 1);
+      (* Reperformterm pushes at most 1 word *)
+      check_stack stack_info (sz + 1);
       if is_tailcall cont then
         comp_args stack_info env args sz
           (Kreperformterm(sz + nargs) :: discard_dead_code cont)
