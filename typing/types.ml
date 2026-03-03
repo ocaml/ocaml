@@ -642,15 +642,15 @@ let not_marked_node mark t =
   | Mark {mark} -> (repr t).scope land mark = 0
   | Hash {visited} -> not (TransientTypeHash.mem visited (repr t))
 
-let get_expand t =
+let get_abbrev t =
   ignore (repr t);
   match t.desc with Texpand (_, path, args) -> Some (path, args) | _ -> None
 
-let iter_expand f t =
+let iter_abbrev f t =
   ignore (repr t);
   match t.desc with Texpand (_, path, args) -> f path args | _ -> ()
 
-let get_expand_scope t =
+let get_abbrev_scope t =
   ignore (repr t);
   match t.desc with
     Texpand (_, path, _) -> Path.scope path
@@ -862,7 +862,7 @@ let link_expand ty ty' =
       Transient_expr.set_desc ty (Texpand (ty', path, args))
   | _ -> Misc.fatal_error "Types.link_expand"
 
-let forget_expand ty =
+let forget_abbrev ty =
   ignore (repr ty);
   match ty.desc with
     Texpand (ty', _, _) ->
@@ -982,12 +982,12 @@ let rec rev_log accu = function
       next := Invalid;
       rev_log (ch::accu) d
 
-let backtrack ~cleanup_abbrev (changes, old) =
+let backtrack ~cleanup (changes, old) =
   match !changes with
     Unchanged -> last_snapshot := old
   | Invalid -> failwith "Types.backtrack"
   | Change _ as change ->
-      cleanup_abbrev ();
+      cleanup ();
       let backlog = rev_log [] change in
       List.iter undo_change backlog;
       changes := Unchanged;

@@ -2021,7 +2021,7 @@ let print_items showval env x =
 
 let same_path t t' =
   let open Types in
-  eq_type t t' && get_expand t = None && get_expand t' = None ||
+  eq_type t t' && get_abbrev t = None && get_abbrev t' = None ||
   match printer_get_desc t, printer_get_desc t' with
     Tconstr(p,tl,_), Tconstr(p',tl',_) ->
       let (p1, s1) = best_type_path p and (p2, s2)  = best_type_path p' in
@@ -2044,7 +2044,7 @@ type expansion_diff =
 
 let trees_of_type_expansion mode Errortrace.{ty = t; expanded = t'} =
   let manifest =
-    match get_expand t with
+    match get_abbrev t with
     | None -> None
     | Some (tconstr, params) ->
         let should_use_manifest =

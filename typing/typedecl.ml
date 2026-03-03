@@ -845,7 +845,7 @@ let check_well_founded ~abs_env env loc path to_check visited ty0 =
   let rec check parents trace ty =
     let check_parent ty' =
       eq_type ty ty' &&
-      match get_expand ty, get_expand ty' with
+      match get_abbrev ty, get_abbrev ty' with
         Some (p, tl), Some (p', tl') -> p == p' && tl == tl'
       | None, None -> true
       | _ -> false
@@ -884,7 +884,7 @@ let check_well_founded ~abs_env env loc path to_check visited ty0 =
     if fini then () else
     let visited' = TypeMap.add ty parents !visited in
     visited := visited';
-    iter_expand
+    iter_abbrev
       (fun path args ->
         if args <> [] && to_check path then
         let rec_ok =
