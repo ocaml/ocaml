@@ -479,7 +479,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
             Oval_lazy v
           end
 
-      and tree_of_variant depth path ty type_params ty_list obj constr_list rep =
+      and tree_of_variant
+          depth path ty type_params ty_list obj constr_list rep =
         let unbx = (rep = Variant_unboxed) in
         let tag =
           if unbx then Cstr_unboxed

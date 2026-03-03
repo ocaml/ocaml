@@ -2059,7 +2059,8 @@ let trees_of_type_expansion mode Errortrace.{ty = t; expanded = t'} =
         in
         if not should_use_manifest then None
         else
-        Some (Otyp_constr (tree_of_path (Some Type) tconstr, tree_of_typlist mode params))
+        Some (Otyp_constr (tree_of_path (Some Type) tconstr,
+                           tree_of_typlist mode params))
   in
   Aliases.reset ();
   Aliases.mark_loops t;
