@@ -111,7 +111,7 @@ type highlight_target =
   | Type of Outcometree.highlight_kind * type_expr
   | Type_constructor of Path.t
 
-type highlight_hint = highlight_target option diff
+type highlight_hint = highlight_target list diff
 
 type ('a, 'variety) root =
   (* Common *)
@@ -156,7 +156,7 @@ val in_tag:
 val variant_arity_mismatch: string -> ('any, 'f) root
 
 val highlight_type:
-  Outcometree.highlight_kind -> Types.type_expr -> highlight_target option
+  Outcometree.highlight_kind -> Types.type_expr -> highlight_target list
 
 val swap_trace : ('a, 'variety) t -> ('a, 'variety) t
 

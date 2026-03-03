@@ -3335,8 +3335,8 @@ let unify_kind ?obj1 k1 ?obj2 k2 =
 
 let highlight_for k ~got ~expected =
   let h (d,t) = match d with
-    | Tconstr (p,_,_) -> Some (Errortrace.Type_constructor p)
-    | _ -> Some (Errortrace.Type (Paired,t))
+    | Tconstr (p,_,_) -> [Errortrace.Type_constructor p]
+    | _ -> [Errortrace.Type (Paired,t)]
   in
   let d = { Errortrace.got = h got; expected = h expected } in
   raise_for k (Highlight_hint d)
