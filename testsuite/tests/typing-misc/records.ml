@@ -197,7 +197,7 @@ Line 1, characters 0-40:
 Error: This variant or record definition does not match that of type
          "(int, [> `A ]) def"
        Their parameters differ
-       The type "int" is not equal to the type "'a"
+       The type "(|int|)" is not equal to the type "(|'a|)"
 |}]
 
 type ('a,'b) kind = ('a, 'b) def = A constraint 'b = [> `A];;
@@ -244,7 +244,7 @@ Error: This variant or record definition does not match that of type "d"
          "x : int;"
        is not the same as:
          "x : float;"
-       The type "int" is not equal to the type "float"
+       The type "(|int|)" is not equal to the type "(|float|)"
        2. An extra field, "y", is provided in the original definition.
 |}]
 

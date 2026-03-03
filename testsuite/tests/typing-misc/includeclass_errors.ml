@@ -111,7 +111,7 @@ Error: Signature mismatch:
            object constraint 'a = int method private id : 'a -> int end
        does not match
          class ['x, 'y] c : object  end
-       The 1st type parameter has type "int" but is expected to have type "'x"
+       The 1st type parameter has type "(|int|)" but is expected to have type "(|'x|)"
 |}]
 
 module M: sig
@@ -134,7 +134,7 @@ Error: Signature mismatch:
          class ['a] c : object  end
        does not match
          class ['a] c : object constraint 'a = int end
-       The 1st type parameter has type "'a" but is expected to have type "int"
+       The 1st type parameter has type "(|'a|)" but is expected to have type "(|int|)"
 |}]
 
 module M: sig
@@ -157,7 +157,7 @@ Error: Signature mismatch:
          class ['a, 'b] c : object  end
        does not match
          class ['a, 'b] c : object constraint 'b = int end
-       The 2nd type parameter has type "'b" but is expected to have type "int"
+       The 2nd type parameter has type "(|'b|)" but is expected to have type "(|int|)"
 |}]
 
 module M: sig
@@ -180,7 +180,7 @@ Error: Signature mismatch:
          class c : float -> object  end
        does not match
          class c : int -> object  end
-       The 1st parameter has type "float" but is expected to have type "int"
+       The 1st parameter has type "(|float|)" but is expected to have type "(|int|)"
 |}]
 
 module M: sig
@@ -203,7 +203,7 @@ Error: Signature mismatch:
          class c : int -> float -> object  end
        does not match
          class c : int -> int -> object  end
-       The 2nd parameter has type "float" but is expected to have type "int"
+       The 2nd parameter has type "(|float|)" but is expected to have type "(|int|)"
 |}]
 
 class virtual foo: foo_t =

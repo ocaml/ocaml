@@ -4763,6 +4763,8 @@ let rec moregen type_pairs env t1 t2 =
                 (get_level t2') pack2
           | (Tnil,  Tconstr _ ) -> raise_for Moregen (Obj (Abstract_row Second))
           | (Tconstr _,  Tnil ) -> raise_for Moregen (Obj (Abstract_row First))
+          | Tconstr _ as d1, d2 | d1, (Tconstr _ as d2) ->
+             highlight_for Moregen ~got:(d1,t1) ~expected:(d2,t2)
           | (Tvariant row1, Tvariant row2) ->
               moregen_row type_pairs env row1 row2
           | (Tobject (fi1, _nm1), Tobject (fi2, _nm2)) ->
@@ -5168,6 +5170,8 @@ let rec eqtype rename type_pairs subst env t1 t2 =
               raise_for Equality (Obj (Abstract_row Second))
           | (Tconstr _,  Tnil ) ->
               raise_for Equality (Obj (Abstract_row First))
+          | Tconstr _ as d1, d2 | d1, (Tconstr _ as d2) ->
+             highlight_for Equality ~got:(d1,t1) ~expected:(d2,t2)
           | (Tvariant row1, Tvariant row2) ->
               eqtype_row rename type_pairs subst env row1 row2
           | (Tobject (fi1, _nm1), Tobject (fi2, _nm2)) ->

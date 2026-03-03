@@ -1958,7 +1958,7 @@ Error: This application of the functor "H" is ill-typed.
             val f : 'a X.s -> 'a
           The type "'a X.s -> 'a (|X.s|)" is not compatible with the type
             "(|'a|) X.s -> (|'a|)"
-          Type "'a X.s" is not compatible with type "'a"
+          Type "'a (|X.s|)" is not compatible with type "(|'a|)"
 |}]
 
 
@@ -2001,7 +2001,7 @@ Error: Signature mismatch:
             type 'a t = 'a * 'a
           is not included in
             type 'a t = 'a list
-          The type "'a * 'a" is not equal to the type "'a list"
+          The type "'a (|*|) 'a" is not equal to the type "'a (|list|)"
        2. Module types $S2 and $T2 match
 |}]
 
@@ -2196,7 +2196,7 @@ Error: Signature mismatch:
        does not include
          $T1 = sig val f : t val g : Inner.t val h : float end
        Values do not match: val h : float is not included in val h : int
-       The type "float" is not compatible with the type "int"
+       The type "(|float|)" is not compatible with the type "(|int|)"
 |}]
 
 module M: sig
