@@ -785,14 +785,16 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
 {
   /* First handle corner-case not handled by MoveFileEx:
      - dir to existing file - should fail */
+  DWORD new_attribs;
   DWORD old_attribs = GetFileAttributes(oldpath);
   if ((old_attribs != INVALID_FILE_ATTRIBUTES) &&
       (old_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0) {
-    DWORD new_attribs = GetFileAttributes(newpath);
+    new_attribs = GetFileAttributes(newpath);
     if ((new_attribs != INVALID_FILE_ATTRIBUTES) &&
         (new_attribs & FILE_ATTRIBUTE_DIRECTORY) == 0) {
         errno = ENOTDIR;
         return -1;
+    }
   }
   /* MOVEFILE_REPLACE_EXISTING: to be closer to POSIX
      MOVEFILE_COPY_ALLOWED: MoveFile performs a copy if old and new
@@ -834,6 +836,7 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
       return 0;
     }
   }
+
   errno = caml_posixerr_of_win32err(GetLastError());
   if (errno == 0) errno = EINVAL;
   return -1;
