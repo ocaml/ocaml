@@ -324,7 +324,7 @@ Error: Signature mismatch:
          "A of float"
        is not the same as:
          "A of int"
-       The type "float" is not equal to the type "int"
+       The type "(|float|)" is not equal to the type "(|int|)"
 |}]
 
 module M : sig

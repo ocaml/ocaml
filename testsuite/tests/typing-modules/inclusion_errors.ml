@@ -179,7 +179,7 @@ Error: Signature mismatch:
          "Foo of (int * int) * float"
        is not the same as:
          "Foo of int * float"
-       The type "int * int" is not equal to the type "int"
+       The type "int (|*|) int" is not equal to the type "(|int|)"
 |}];;
 
 module M : sig
@@ -272,8 +272,8 @@ Error: Signature mismatch:
          type t = < m : float * int; n : int >
        The type "< m : (|int|); n : int >" is not equal to the type
          "< m : float (|*|) int; n : int >"
-       The method "m" has type "int", but the expected method type was
-       "float * int"
+       The method "m" has type "(|int|)", but the expected method type was
+       "float (|*|) int"
 |}];;
 
 module M4 : sig
@@ -639,7 +639,7 @@ Error: Signature mismatch:
        is not included in
          val f : 'a -> float
        The type "'a -> (|int|)" is not compatible with the type "'a -> (|float|)"
-       Type "int" is not compatible with type "float"
+       Type "(|int|)" is not compatible with type "(|float|)"
 |}]
 
 module M : sig
@@ -751,7 +751,7 @@ Error: Signature mismatch:
        is not included in
          val f : int -> float
        The type "int -> (|int|)" is not compatible with the type "int -> (|float|)"
-       Type "int" is not compatible with type "float"
+       Type "(|int|)" is not compatible with type "(|float|)"
 |}];;
 
 module M: sig
@@ -1208,7 +1208,7 @@ Error: Signature mismatch:
          type t = [ `A of float ]
        is not included in
          type t = private [> `A of int ]
-       The type "float" is not equal to the type "int"
+       The type "(|float|)" is not equal to the type "(|int|)"
 |}];;
 
 module M : sig
@@ -1322,7 +1322,7 @@ Error: Signature mismatch:
        is not included in
          type t = private < a : float; .. >
        The type "(|int|)" is not equal to the type "(|float|)"
-       Type "int" is not equal to type "float"
+       Type "(|int|)" is not equal to type "(|float|)"
 |}];;
 
 type w = private float
@@ -1351,7 +1351,7 @@ Error: Signature mismatch:
        is not included in
          type t = private int * (int * int)
        The type "int * (|q|)" is not equal to the type "int * (int (|*|) int)"
-       Type "q" is not equal to type "int * int"
+       Type "(|q|)" is not equal to type "int (|*|) int"
 |}];;
 
 type w = float
@@ -1381,7 +1381,7 @@ Error: Signature mismatch:
          type t = private int * (int * int)
        The type "int * (|q|)" is not equal to the type "int * (int (|*|) int)"
        Type "q" = "int * (|w|)" is not equal to type "int * (|int|)"
-       Type "w" = "float" is not equal to type "int"
+       Type "w" = "(|float|)" is not equal to type "(|int|)"
 |}];;
 
 type s = private int
@@ -1406,7 +1406,7 @@ Error: Signature mismatch:
          type t = private s
        is not included in
          type t = private float
-       The type "int" is not equal to the type "float"
+       The type "(|int|)" is not equal to the type "(|float|)"
 |}];;
 
 module M : sig

@@ -202,5 +202,5 @@ Error: Signature mismatch:
          "< x : (|'a. 'a -> x|) >"
        The method "x" has type "'a. 'a -> (|'a|)", but the expected method type was
        "'a. 'a -> (|x|)"
-       Type "'a" is not equal to type "x" = "M.x"
+       Type "(|'a|)" is not equal to type "x" = "(|M.x|)"
 |}]

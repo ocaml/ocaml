@@ -49,7 +49,7 @@ Error: Signature mismatch:
          type \#and = string
        is not included in
          type \#and = int
-       The type "string" is not equal to the type "int"
+       The type "(|string|)" is not equal to the type "(|int|)"
 |}]
 
 let x = (`\#let `\#and : [ `\#let of [ `\#and ] ])

@@ -96,7 +96,7 @@ Error: Signature mismatch:
        Type "[> `B of [> `BA | `BB of int (|list|) ] | `C of unit ]"
        is not compatible with type
          "t" = "[ `A of int | `B of [ `BA | `BB of unit list ] | `C of unit ]"
-       In tag "`BB", type "int list" is not compatible with type "unit list"
+       In tag "`BB", type "(|int|) list" is not compatible with type "(|unit|) list"
 |}, Principal{|
 Lines 8-27, characters 6-3:
  8 | ......struct
@@ -137,5 +137,5 @@ Error: Signature mismatch:
        Type "[> `B of [> `BA | `BB of int (|list|) ] | `C of unit ]"
        is not compatible with type
          "t" = "[ `A of int | `B of [ `BA | `BB of unit (|list|) ] | `C of unit ]"
-       In tag "`BB", type "int list" is not compatible with type "unit list"
+       In tag "`BB", type "(|int|) list" is not compatible with type "(|unit|) list"
 |}]

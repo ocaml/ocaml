@@ -151,12 +151,12 @@ Error: In this "with" constraint, the new definition of "t"
          "X of x"
        is not the same as:
          "X of int"
-       The type "x" is not equal to the type "int"
+       The type "(|x|)" is not equal to the type "(|int|)"
        2. Constructors do not match:
          "Y of y"
        is not the same as:
          "Y of float"
-       The type "y" is not equal to the type "float"
+       The type "(|y|)" is not equal to the type "(|float|)"
 |}]
 
 (** First class module types require an identity *)
@@ -587,5 +587,5 @@ Error: In this "with" constraint, the new definition of "A"
          type t = bool
        is not included in
          type t = int
-       The type "bool" is not equal to the type "int"
+       The type "(|bool|)" is not equal to the type "(|int|)"
 |}]

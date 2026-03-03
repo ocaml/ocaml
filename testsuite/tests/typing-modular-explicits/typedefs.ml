@@ -290,5 +290,5 @@ Error: This variant or record definition does not match that of type "typ1"
        The type "(module Add with type t = int) -> (|int|) -> int"
        is not equal to the type
          "(module A : Add with type t = int) -> (|float|) -> int"
-       Type "int" is not equal to type "float"
+       Type "(|int|)" is not equal to type "(|float|)"
 |}]

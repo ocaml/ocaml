@@ -31,7 +31,7 @@ Error: Signature mismatch:
          type t = A.t = A | B
        is not included in
          type t = int * string
-       The type "A.t" is not equal to the type "int * string"
+       The type "(|A.t|)" is not equal to the type "int (|*|) string"
 |}]
 
 module rec B : sig
@@ -63,7 +63,7 @@ Error: Signature mismatch:
          type 'a t = 'a B.t = A of 'a | B
        is not included in
          type 'a t = 'a
-       The type "'a B.t" is not equal to the type "'a"
+       The type "'a (|B.t|)" is not equal to the type "(|'a|)"
 |}];;
 
 module rec C : sig
@@ -128,7 +128,7 @@ Error: Signature mismatch:
          type 'a t = 'a D.t = A of 'a | B
        is not included in
          type 'a t = int
-       The type "'a D.t" is not equal to the type "int"
+       The type "'a (|D.t|)" is not equal to the type "(|int|)"
 |}];;
 
 module rec E : sig
@@ -192,7 +192,7 @@ Error: Signature mismatch:
          type 'a t = 'a E2.t = A of 'a | B
        is not included in
          type 'a t = [ `Foo ]
-       The type "'a E2.t" is not equal to the type "[ `Foo ]"
+       The type "'a (|E2.t|)" is not equal to the type "(|[ `Foo ]|)"
 |}];;
 
 module rec E3 : sig

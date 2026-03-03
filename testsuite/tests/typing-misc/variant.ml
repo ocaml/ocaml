@@ -25,7 +25,7 @@ Error: Signature mismatch:
          type t = X.t = A | B
        is not included in
          type t = int * bool
-       The type "X.t" is not equal to the type "int * bool"
+       The type "(|X.t|)" is not equal to the type "int (|*|) bool"
 |}];;
 
 
@@ -67,7 +67,7 @@ Line 1, characters 0-41:
 Error: This variant or record definition does not match that of type
          "(int, [> `A ]) def"
        Their parameters differ
-       The type "int" is not equal to the type "'a"
+       The type "(|int|)" is not equal to the type "(|'a|)"
 |}]
 
 type ('a,'b) kind = ('a, 'b) def = {a:int} constraint 'b = [> `A];;
@@ -102,7 +102,7 @@ Error: This variant or record definition does not match that of type "d"
          "X of int"
        is not the same as:
          "X of float"
-       The type "int" is not equal to the type "float"
+       The type "(|int|)" is not equal to the type "(|float|)"
        2. An extra constructor, "Y", is provided in the original definition.
 |}]
 

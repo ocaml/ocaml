@@ -380,7 +380,7 @@ Error: Signature mismatch:
        Values do not match: val f : p1 is not included in val f : p2
        The type "p1" = "(bool -> bool) -> int" is not compatible with the type
          "p2" = "('a. 'a -> 'a) -> int"
-       Type "bool" is not compatible with type "'a"
+       Type "(|bool|)" is not compatible with type "(|'a|)"
 |}, Principal{|
 Line 1, characters 59-60:
 1 | module Foo (X : sig val f : p1 end) : sig val f : p2 end = X
@@ -393,7 +393,7 @@ Error: Signature mismatch:
        Values do not match: val f : p1 is not included in val f : p2
        The type "p1" = "((|bool|) -> bool) -> int" is not compatible with the type
          "p2" = "('a. (|'a|) -> 'a) -> int"
-       Type "bool" is not compatible with type "'a"
+       Type "(|bool|)" is not compatible with type "(|'a|)"
 |}];;
 
 let foo (f : p1) : p2 = (fun id -> f id)

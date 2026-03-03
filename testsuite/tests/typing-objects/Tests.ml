@@ -1041,7 +1041,7 @@ Error: The class type object method a : int method b : 'a end
        is not matched by the class type
          object method a : 'a method b : 'a end
        The method a has type "(|int|)" but is expected to have type "(|'a|)"
-       Type "int" is not compatible with type "'a"
+       Type "(|int|)" is not compatible with type "(|'a|)"
 |}];;
 
 class type ['a] ct = object ('a) end

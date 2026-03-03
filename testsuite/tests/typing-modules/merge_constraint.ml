@@ -318,7 +318,7 @@ Error: This variant or record definition does not match that of type "s"
          "Foo of s"
        is not the same as:
          "Foo of M.r"
-       The type "s" is not equal to the type "M.r" = "M.t"
+       The type "(|s|)" is not equal to the type "M.r" = "(|M.t|)"
 |}]
 
 (* Should succeed *)
@@ -346,7 +346,7 @@ Error: In this "with" constraint, the new definition of "M.t"
        is not included in
          type t = private [ `Foo of M.r ]
        The type "(|s|)" is not equal to the type "[ `Foo of (|M.r|) ]"
-       In tag "`Foo", type "s" = "[ `Foo of s ]" is not equal to type "M.r" = "M.t"
+       In tag "`Foo", type "(|s|)" = "[ `Foo of (|s|) ]" is not equal to type "M.r" = "(|M.t|)"
 |}]
 
 (* Should succeed *)
@@ -384,7 +384,7 @@ Error: In this "with" constraint, the new definition of "M.N"
        is not included in
          type t = private [ `Foo of M.r ]
        The type "[ `Foo of (|t|) ]" is not equal to the type "[ `Foo of (|M.r|) ]"
-       In tag "`Foo", type "t" = "[ `Foo of t ]" is not equal to type "M.r" = "M.N.t"
+       In tag "`Foo", type "(|t|)" = "[ `Foo of (|t|) ]" is not equal to type "M.r" = "(|M.N.t|)"
 |}]
 
 (* Should succeed *)
@@ -418,7 +418,7 @@ Error: In this "with" constraint, the new definition of "M.N"
          type t = X.t
        is not included in
          type t = M.r
-       The type "X.t" is not equal to the type "M.r" = "M.N.s"
+       The type "(|X.t|)" is not equal to the type "M.r" = "(|M.N.s|)"
 |}]
 
 (* Module constraints with non-aliasable paths
