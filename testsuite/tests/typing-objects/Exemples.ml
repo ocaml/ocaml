@@ -586,11 +586,13 @@ Line 1, characters 25-27:
 Error: The value "c3" has type
          "int_comparable3" =
            "< cmp : int_comparable -> int; setx : int -> unit; x : int >"
-       but an expression was expected of type "#comparable"
+       but an expression was expected of type
+         "#comparable as 'a" = "< cmp : 'a -> int; .. >"
        Type
          "int_comparable" =
-           "< cmp : < cmp : 'a; x : int > -> int as 'a; x : int >"
-       is not compatible with type "#comparable"
+           "< cmp : < cmp : 'b; x : int > -> int as 'b; x : int >"
+       is not compatible with type
+         "#comparable as 'a" = "< cmp : 'a -> int; .. >"
        The first object type has no method "setx"
 |}];;   (* Error; strange message with -principal *)
 

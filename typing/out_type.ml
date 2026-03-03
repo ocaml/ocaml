@@ -2034,7 +2034,7 @@ let same_path t t' =
       | _ -> false
       end
   | Tconstr _, _ | _, Tconstr _ -> false
-  | _ -> true
+  | _ -> false
 
 type expansion_diff =
   { ty : out_type
@@ -2058,14 +2058,17 @@ let trees_of_type_expansion mode Errortrace.{ty = t; expanded = t'} =
           | _ -> true
         in
         if not should_use_manifest then None
-        else
-        Some (Otyp_constr (tree_of_path (Some Type) tconstr,
-                           tree_of_typlist mode params))
+        else begin
+          List.iter Aliases.mark_loops params;
+          Some (Otyp_constr (tree_of_path (Some Type) tconstr,
+                             tree_of_typlist mode params))
+        end
   in
   Aliases.reset ();
   Aliases.mark_loops t;
   if same_path t t'
-  then begin Aliases.add_delayed (proxy t);
+  then begin
+    Aliases.add_delayed (proxy t);
     { ty = tree_of_typexp mode t
     ; expanded = None
     ; manifest
