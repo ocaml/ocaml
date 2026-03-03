@@ -298,8 +298,12 @@ and record_representation =
   | Record_extension of Path.t          (* Inlined record under extension *)
 
 and variant_representation =
-    Variant_regular          (* Constant or boxed constructors *)
-  | Variant_unboxed          (* One unboxed single-field constructor *)
+    Variant_regular of variant_size     (* Constant or boxed constructors *)
+  | Variant_unboxed                     (* One unboxed single-field constructor *)
+
+and variant_size =
+    Variant_compact                     (* Encode constructor in tha tag *)
+  | Variant_expanded                    (* Encode constructor in an extra field *)
 
 and label_declaration =
   {

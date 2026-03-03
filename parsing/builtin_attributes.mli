@@ -24,6 +24,7 @@
     - ocaml.immediate64
     - ocaml.inline
     - ocaml.inlined
+    - ocaml.large_variant
     - ocaml.noalloc
     - ocaml.poll
     - ocaml.ppwarning
@@ -186,6 +187,8 @@ val immediate64: Parsetree.attributes -> bool
 
 val has_unboxed: Parsetree.attributes -> bool
 val has_boxed: Parsetree.attributes -> bool
+
+val has_large_variant: Parsetree.attributes -> bool
 
 val has_remove_aliases: Parsetree.attributes -> bool
 

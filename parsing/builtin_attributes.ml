@@ -66,6 +66,7 @@ let builtin_attrs =
   ; "immediate64"
   ; "inline"
   ; "inlined"
+  ; "large_variant"
   ; "noalloc"
   ; "poll"
   ; "ppwarning"
@@ -412,6 +413,8 @@ let immediate64 attrs = has_attribute "immediate64" attrs
 let has_unboxed attrs = has_attribute "unboxed" attrs
 
 let has_boxed attrs = has_attribute "boxed" attrs
+
+let has_large_variant attrs = has_attribute "large_variant" attrs
 
 let has_remove_aliases attrs = has_attribute "remove_aliases" attrs
 

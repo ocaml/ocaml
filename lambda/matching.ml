@@ -2054,9 +2054,14 @@ let get_expr_args_constr ~scopes head { arg; mut; _ } rem =
     { arg; binding_kind = Alias; mut } :: rem
   else
     match cstr.cstr_tag with
-    | Cstr_constant _
-    | Cstr_block _ ->
-        make_field_accesses Alias 0 (cstr.cstr_arity - 1) rem
+    | Cstr_constant _ -> rem
+    | Cstr_block (_, size) ->
+        let offset =
+          match size with
+          | Variant_compact -> 0
+          | Variant_expanded -> 1
+        in
+        make_field_accesses Alias offset (cstr.cstr_arity + offset - 1) rem
     | Cstr_unboxed -> { arg; binding_kind = Alias; mut } :: rem
     | Cstr_extension _ -> make_field_accesses Alias 1 cstr.cstr_arity rem
 
@@ -2101,11 +2106,14 @@ let divide_variant ~scopes row ctx { cases = cl; args; default = def } =
                 (make_matching get_expr_args_variant_constant head def ctx)
                 ( = ) (Cstr_constant tag) (patl, action) variants
           | Some pat ->
+              (* Note: the use of Variant_expanded below is not important.
+                 Using regular variant descriptors allows us to reuse the
+                 [split_cases] function, which ignores the block size. *)
               add_in_div
                 (make_matching
                    (get_expr_args_variant_nonconst ~scopes)
                    head def ctx)
-                ( = ) (Cstr_block tag)
+                ( = ) (Cstr_block (tag, Variant_expanded))
                 (pat :: patl, action)
                 variants
       )
@@ -3168,7 +3176,7 @@ let split_cases tag_lambda_list =
         let consts, nonconsts = split_rec rem in
         match cstr_tag with
         | Cstr_constant n -> ((n, act) :: consts, nonconsts)
-        | Cstr_block n -> (consts, (n, act) :: nonconsts)
+        | Cstr_block (n, _size) -> (consts, (n, act) :: nonconsts)
         | Cstr_unboxed -> (consts, (0, act) :: nonconsts)
         | Cstr_extension _ -> assert false
       )
@@ -3256,8 +3264,15 @@ let combine_regular_constructor loc arg cstr partial ctx def
       mk_failaction_pos partial constrs ctx def
   in
   let descr_lambda_list = fails @ descr_lambda_list in
-  let consts, nonconsts =
-    split_cases (List.map tag_lambda descr_lambda_list) in
+  let tag_lambda_list = List.map tag_lambda descr_lambda_list in
+  let consts, nonconsts = split_cases tag_lambda_list in
+  let is_large_variant =
+    (* Note: it might be safer to check that all [Cstr_block] constructors
+       agree on the size *)
+    List.exists
+      (function Cstr_block (_, Variant_expanded), _ -> true | _, _ -> false)
+      tag_lambda_list
+  in
   (* Our duty below is to generate code, for matching on a list of
      constructor+action cases, that is good for both bytecode and
      native-code compilation. (Optimizations that only work well
@@ -3333,18 +3348,30 @@ let combine_regular_constructor loc arg cstr partial ctx def
                       ~low:0 ~high:(n - 1) consts,
                     act )
             | None ->
-                (* In the general case, emit a switch. *)
-                let sw =
-                  { sw_numconsts = cstr.cstr_consts;
-                    sw_consts = consts;
-                    sw_numblocks = cstr.cstr_nonconsts;
-                    sw_blocks = nonconsts;
-                    sw_failaction = fail_opt
-                  }
-                in
-                let hs, sw = share_actions_sw sw in
-                let sw = reintroduce_fail sw in
-                hs (Lswitch (arg, sw, loc))
+                if is_large_variant then
+                  let non_const_tag = Ident.create_local "tag" in
+                  Lifthenelse
+                    ( Lprim (Pisint, [ arg ], loc),
+                      call_switcher loc fail_opt arg
+                        ~low:0 ~high:(cstr.cstr_consts - 1) consts,
+                      bind Alias non_const_tag
+                        (Lprim (Pfield (0, Immediate, Immutable),
+                                [ arg ], loc))
+                        (call_switcher loc fail_opt (Lvar non_const_tag)
+                           ~low:0 ~high:(cstr.cstr_nonconsts - 1) nonconsts))
+                else
+                  (* In the general case, emit a switch. *)
+                  let sw =
+                    { sw_numconsts = cstr.cstr_consts;
+                      sw_consts = consts;
+                      sw_numblocks = cstr.cstr_nonconsts;
+                      sw_blocks = nonconsts;
+                      sw_failaction = fail_opt
+                    }
+                  in
+                  let hs, sw = share_actions_sw sw in
+                  let sw = reintroduce_fail sw in
+                  hs (Lswitch (arg, sw, loc))
           )
       )
   in

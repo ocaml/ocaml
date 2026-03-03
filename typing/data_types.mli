@@ -38,7 +38,7 @@ type constructor_description =
 
 and constructor_tag =
     Cstr_constant of int                (* Constant constructor (an int) *)
-  | Cstr_block of int                   (* Regular constructor (a block) *)
+  | Cstr_block of int * variant_size    (* Regular constructor (a block) *)
   | Cstr_unboxed                        (* Constructor of an unboxed type *)
   | Cstr_extension of Path.t * bool     (* Extension constructor
                                            true if a constant false if a block*)

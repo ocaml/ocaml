@@ -759,14 +759,18 @@ module Variant_diffing = struct
     =
     let err = compare ~loc env params1 params2 cstrs1 cstrs2 in
     match err, rep1, rep2 with
-    | None, Variant_regular, Variant_regular
+    | None, Variant_regular Variant_compact, Variant_regular Variant_compact
+    | None, Variant_regular Variant_expanded, Variant_regular Variant_expanded
     | None, Variant_unboxed, Variant_unboxed ->
         None
     | Some err, _, _ ->
         Some (Variant_mismatch err)
-    | None, Variant_unboxed, Variant_regular ->
+    | None, Variant_regular Variant_compact, Variant_regular Variant_expanded
+    | None, Variant_regular Variant_expanded, Variant_regular Variant_compact ->
+        assert false (* TODO *)
+    | None, Variant_unboxed, Variant_regular _ ->
         Some (Unboxed_representation First)
-    | None, Variant_regular, Variant_unboxed ->
+    | None, Variant_regular _, Variant_unboxed ->
         Some (Unboxed_representation Second)
 end
 

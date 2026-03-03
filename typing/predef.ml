@@ -313,7 +313,7 @@ let decl_of_type_constr tconstr =
     }
   in
   let variant constrs =
-    Type_variant (constrs, Variant_regular) in
+    Type_variant (constrs, Variant_regular Variant_compact) in
   match tconstr with
   | `Int | `Char
     -> decl0 ~immediate:Always ()
