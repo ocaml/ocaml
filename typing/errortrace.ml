@@ -111,6 +111,12 @@ type univar =
   | Var_mismatch of { order:order; diff:type_expr diff }
   | Quantification_mismatch of type_expr list
 
+type highlight_target =
+  | Type of Outcometree.highlight_kind * type_expr
+  | Type_constructor of Path.t
+
+type highlight_hint = highlight_target option diff
+
 type ('a, 'variety) root  =
   (* Common *)
   | Variant : 'variety variant -> ('a, 'variety) root
@@ -120,6 +126,7 @@ type ('a, 'variety) root  =
   | Tuple_label_mismatch of string option diff
   | First_class_module: first_class_module -> ('a,_) root
   | Univar of univar
+  | Highlight_hint of highlight_hint
   (* Unification & Moregen; included in Equality for simplicity *)
   | Rec_occur : type_expr * type_expr -> ('a, _) root
 
@@ -130,7 +137,7 @@ type ('a, 'variety) t = {
 
 let root root = { root= Some root; path = [] }
 let empty_root = { root = None; path = [] }
-
+let no_ctx d = { ctx = None; d }
 type 'variety trace = (type_expr,     'variety) t
 type 'variety error = (expanded_type, 'variety) t
 
@@ -144,6 +151,7 @@ let map_root (type variety) f : ('a, variety) root -> ('b, variety) root =
   | Variant _ | Obj _ | Function_label_mismatch _ | Tuple_label_mismatch _
   | Rec_occur (_, _) | First_class_module _  as x -> x
   | Univar _  as x -> x
+  | Highlight_hint _ as x -> x
 
 let map f t ={
   path = List.map (map_cdiff f) t.path;
@@ -159,6 +167,8 @@ let in_tag ~l t = match t.path with
       { t with path = { ctx = Some(In_tag l); d } :: rem }
   | _ -> t
 let variant_arity_mismatch l = Variant (Arity_mismatch l)
+let highlight_type k ty = Some (Type(k,ty))
+
 
 let swap_root (type variety) : ('a, variety) root -> ('a, variety) root =
   function
@@ -174,6 +184,7 @@ let swap_root (type variety) : ('a, variety) root -> ('a, variety) root =
         diff = swap_diff d.diff
       })
   | Univar (Quantification_mismatch _) as x -> x
+  | Highlight_hint d -> Highlight_hint (swap_diff d)
   | x -> x
 
 let swap_trace t = {
@@ -237,8 +248,9 @@ module Structured = struct
 (** We extend the core explanation type with promoted explanation generated from
     the main trace *)
 type 'a extended_explanation =
-  | Promoted of Format_doc.t
   | Standard of 'a
+  | Promoted of highlight_hint option * Format_doc.t
+  | Hint of highlight_hint
 
 type ('a,'b,'c) s = {
   top: ('a ctx_diff * bool) option;
@@ -316,7 +328,25 @@ let segment status path expl = match path with
       | Context -> add_ctx x s
     ) (head_segment hd expl) tr
 
-let promoted x = Option.map (fun p -> Promoted p) x
+let promoted ?hint x = match x, hint with
+  | None, None -> None
+  | Some x, _ -> Some (Promoted (hint,x))
+  | None, Some h -> Some (Hint h)
+
+type 'a visibility =
+  | Visible of 'a
+  | Info of highlight_hint
+  | Invisible
+
+let explanation_visibility = function
+  | None -> Invisible
+  | Some (Highlight_hint h) -> Info h
+  | Some e -> Visible e
+
+let split_hint = function
+  | Highlight_hint h -> Hint h
+  | e -> Standard e
+
 let merge promote s =
   (* First, we commit the last contextualized segment of the trace to the trace
      if there one. We also discard the optional last element in this
@@ -328,14 +358,17 @@ let merge promote s =
   let rtr, expl =
     (* If there are no root explanation, we try to promote one from the last
        element*)
-    match s.expl, rtr, s.head with
-    | Some expl, _, _ -> rtr, Some (Standard expl)
-    | None, [], last | None, last :: _, _ -> rtr, promoted (promote last.d)
+    match explanation_visibility s.expl, rtr, s.head with
+    | Visible expl, _, _ -> rtr, Some (Standard expl)
+    | Invisible, [], last | Invisible, last :: _, _ ->
+        rtr, promoted (promote last.d)
+    | Info hint, [], last | Info hint, last :: _, _ ->
+        rtr, promoted ~hint (promote last.d)
   in
   (* Finally, we keep the last optional element only if there were no
      explanation at all.*)
   let tr = match expl, opt with
-    | None, Some opt -> List.rev (opt :: rtr)
+    | (None | Some (Hint _)), Some opt -> List.rev (opt :: rtr)
     | Some _, _ | None, None  -> List.rev rtr
   in
   (* We use a compact presentation for the top element only if the trace is
@@ -349,8 +382,8 @@ let merge promote s =
   let parse ~promote ~status s =
     match s.path with
     | [] ->
-        let expl = Option.map (fun s -> Standard s) s.root in
-        { top = None; tr = []; expl}
+        let expl = Option.map split_hint s.root in
+        { top = None; tr = []; expl }
     | path -> merge promote (segment status path s.root)
 
 end

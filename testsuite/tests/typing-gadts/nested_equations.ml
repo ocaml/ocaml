@@ -21,7 +21,7 @@ Line 2, characters 34-37:
                                       ^^^
 Error: This pattern matches values of type "(|int|) t"
        but a pattern was expected which matches values of type "(|bool|) t"
-       Type "int" is not compatible with type "bool"
+       Type "(|int|)" is not compatible with type "(|bool|)"
 |}];;
 
 let w_buffer : Buffer.t t = Obj.magic 0;;
@@ -40,7 +40,7 @@ Line 2, characters 38-41:
                                           ^^^
 Error: This pattern matches values of type "(|int|) t"
        but a pattern was expected which matches values of type "(|Arg.spec|) t"
-       Type "int" is not compatible with type "Arg.spec"
+       Type "(|int|)" is not compatible with type "Arg.spec" = "(|Arg.spec|)"
 |}];;
 
 module M : sig type u val w : u t val x : u end =

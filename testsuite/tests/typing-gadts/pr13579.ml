@@ -18,7 +18,7 @@ Line 6, characters 5-10:
          ^^^^^
 Error: The constructor "Equal" has type "((|m1|), (|m1|)) Type.eq"
        but an expression was expected of type "(m1, (|m2|)) Type.eq"
-       Type "m1" is not compatible with type "m2"
+       Type "(|m1|)" is not compatible with type "(|m2|)"
 |}]
 
 (* could cause unsoundness
@@ -88,9 +88,9 @@ let f (type a) (Equal : ('a M.p * a, 'b M.p * int) Type.eq) = ();;
 Line 1, characters 16-21:
 1 | let f (type a) (Equal : ('a M.p * a, 'b M.p * int) Type.eq) = ();;
                     ^^^^^
-Error: This pattern matches values of type "($'a M.p * a, $'a M.p * a) Type.eq"
+Error: This pattern matches values of type "((|$'a|) M.p * a, (|$'a|) M.p * a) Type.eq"
        but a pattern was expected which matches values of type
-         "($'a M.p * a, 'b M.p * int) Type.eq"
+         "((|$'a|) M.p * a, 'b M.p * int) Type.eq"
        The type constructor "$'a" would escape its scope
 |}]
 
@@ -129,5 +129,5 @@ Line 2, characters 52-53:
                                                         ^
 Error: The value "x" has type "(|$0|) M.t" but an expression was expected of type
          "(|b|) M.t"
-       Type "$0" is not compatible with type "b"
+       Type "(|$0|)" is not compatible with type "(|b|)"
 |}]

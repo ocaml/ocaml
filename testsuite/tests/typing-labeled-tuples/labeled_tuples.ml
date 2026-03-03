@@ -46,8 +46,8 @@ let (x : x:string * int) = ~x:1, 2
 Line 1, characters 30-31:
 1 | let (x : x:string * int) = ~x:1, 2
                                   ^
-Error: The constant "1" has type "int" but an expression was expected of type
-         "string"
+Error: The constant "1" has type "(|int|)" but an expression was expected of type
+         "(|string|)"
 |}]
 
 let (x : int * y:int) = ~x:1, 2
@@ -174,7 +174,7 @@ and b = 2, ~lbl:a
 Line 2, characters 16-17:
 2 | and b = 2, ~lbl:a
                     ^
-Error: The value "a" has type "int * lbl:(int * lbl:'a)"
+Error: The value "a" has type "int * lbl:(int * lbl:(|'a|))"
        but an expression was expected of type "'a"
        The type variable "'a" occurs inside "int * lbl:(int * lbl:'a)"
 |}]
@@ -238,7 +238,7 @@ let z = ~(x:string), ~y:"baz";;
 Line 1, characters 10-11:
 1 | let z = ~(x:string), ~y:"baz";;
               ^
-Error: The value "x" has type "int" but an expression was expected of type "string"
+Error: The value "x" has type "(|int|)" but an expression was expected of type "(|string|)"
 |}];;
 
 (* Take a [a:'a * b:'a] and an int, and returns a

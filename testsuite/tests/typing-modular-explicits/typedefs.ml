@@ -77,7 +77,7 @@ Line 1, characters 51-52:
                                                        ^
 Error: The value "x" has type "(module T : T) -> T.t -> (|int|)"
        but an expression was expected of type "(module T : T) -> T.t -> (|T.t|)"
-       Type "int" is not compatible with type "T.t"
+       Type "(|int|)" is not compatible with type "(|T.t|)"
 |}]
 
 type 'a t6bis_good = (module M : T with type t = int) -> (M.t as 'a)
@@ -87,7 +87,7 @@ type 'a t6bis_good = (module M : T with type t = int) -> (M.t as 'a)
 Line 1, characters 58-67:
 1 | type 'a t6bis_good = (module M : T with type t = int) -> (M.t as 'a)
                                                               ^^^^^^^^^
-Error: This type "'a" should be an instance of type "M.t"
+Error: This type "'a" should be an instance of type "(|M.t|)"
        The type constructor "M.t" would escape its scope
 |}]
 
@@ -97,7 +97,7 @@ type 'a t6_fail = (module M : T) -> (M.t as 'a)
 Line 1, characters 37-46:
 1 | type 'a t6_fail = (module M : T) -> (M.t as 'a)
                                          ^^^^^^^^^
-Error: This type "'a" should be an instance of type "M.t"
+Error: This type "'a" should be an instance of type "(|M.t|)"
        The type constructor "M.t" would escape its scope
 |}]
 

@@ -519,8 +519,8 @@ end
 Line 3, characters 12-17:
 3 |   method id x = x
                 ^^^^^
-Error: This method has type "'b -> 'b" which is less general than
-         "'b0. 'b0 -> 'b"
+Error: This method has type "(|'b|) -> (|'b|)" which is less general than
+         "'b0. 'b0 -> (|'b|)"
        The type variable "'b" is not generalizable to an universal
        type variable.
 |}];;
@@ -534,8 +534,8 @@ end
 Line 3, characters 12-17:
 3 |   method id x = x
                 ^^^^^
-Error: This method has type "'b -> 'b" which is less general than
-         "'b0. 'b0 -> 'b"
+Error: This method has type "(|'b|) -> (|'b|)" which is less general than
+         "'b0. 'b0 -> (|'b|)"
        The type variable "'b" is not generalizable to an universal
        type variable.
 |}];;
@@ -550,7 +550,7 @@ end
 Line 4, characters 12-17:
 4 |   method id _ = x
                 ^^^^^
-Error: This method has type "'a -> 'a" which is less general than
+Error: This method has type "(|'a|) -> (|'a|)" which is less general than
          "'a0. 'a0 -> 'a0"
        The type variable "'a" is not generalizable to an universal
        type variable.
@@ -571,7 +571,7 @@ Lines 4-7, characters 12-17:
 5 |     match r with
 6 |       None -> r <- Some x; x
 7 |     | Some y -> y
-Error: This method has type "'a -> 'a" which is less general than
+Error: This method has type "(|'a|) -> (|'a|)" which is less general than
          "'a0. 'a0 -> 'a0"
        The type variable "'a" is not generalizable to an universal
        type variable.
@@ -857,7 +857,7 @@ type bad = { bad : 'a. 'a option ref; }
 Line 2, characters 17-25:
 2 | let bad = {bad = ref None};;
                      ^^^^^^^^
-Error: This field value has type "'a option ref" which is less general than
+Error: This field value has type "(|'a|) option ref" which is less general than
          "'a0. 'a0 option ref"
        The type variable "'a" is not generalizable to an universal
        type variable.
@@ -871,7 +871,7 @@ val bad2 : bad2 = {bad2 = None}
 Line 3, characters 13-28:
 3 | bad2.bad2 <- Some (ref None);;
                  ^^^^^^^^^^^^^^^
-Error: This field value has type "'a option ref option"
+Error: This field value has type "(|'a|) option ref option"
        which is less general than "'a0. 'a0 option ref option"
        The type variable "'a" is not generalizable to an universal
        type variable.
@@ -1034,7 +1034,7 @@ Line 3, characters 13-29:
                  ^^^^^^^^^^^^^^^^
 Error: Constraints are not satisfied in this type.
        Type "((|float|), string) t" should be an instance of "((|int|), (|int|)) t"
-       Type "float" is not compatible with type "int"
+       Type "(|float|)" is not compatible with type "(|int|)"
 |}]
 
 (* Example of wrong expansion *)
@@ -1621,7 +1621,7 @@ let rec depth : 'a. 'a t -> _ =
 Line 2, characters 2-46:
 2 |   function Leaf x -> x | Node x -> 1 + depth x;; (* fails *)
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This definition has type "int t -> int" which is less general than
+Error: This definition has type "(|int|) t -> (|int|)" which is less general than
          "'a. 'a t -> int"
        The type "int" is not a type variable.
 |}];;
@@ -1631,7 +1631,7 @@ let rec depth : 'a. 'a t -> _ =
 Line 2, characters 2-42:
 2 |   function Leaf x -> x | Node x -> depth x;; (* fails *)
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This definition has type "'a t -> 'a" which is less general than
+Error: This definition has type "(|'a|) t -> (|'a|)" which is less general than
          "'a0. 'a0 t -> 'b"
        The type variable "'a" is not generalizable to an universal
        type variable.
@@ -1642,7 +1642,7 @@ let rec depth : 'a 'b. 'a t -> 'b =
 Line 2, characters 2-42:
 2 |   function Leaf x -> x | Node x -> depth x;; (* fails *)
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This definition has type "'b. 'b t -> 'b" which is less general than
+Error: This definition has type "'b. (|'b|) t -> (|'b|)" which is less general than
          "'a 'b. 'a t -> 'b"
        The universal type variable "'b" in the first type matches multiple
        distinct variables in the second type.
@@ -1731,7 +1731,7 @@ type t = { f : 'a. 'a -> unit; }
 Line 3, characters 19-20:
 3 | let f ?x y = y in {f};; (* fail *)
                        ^
-Error: This field value has type "unit -> unit" which is less general than
+Error: This field value has type "(|unit|) -> (|unit|)" which is less general than
          "'a. 'a -> unit"
        The type "unit" is not a type variable.
 |}];;
@@ -1831,7 +1831,7 @@ Line 2, characters 2-72:
 Error: This expression has type "< m : 'b 'x. ([< `Foo of (|'x|) ] as 'b) -> 'x >"
        but an expression was expected of type
          "< m : 'a. [< `Foo of (|int|) ] -> 'a >"
-       In tag "`Foo", type "'x" is not compatible with type "int"
+       In tag "`Foo", type "(|'x|)" is not compatible with type "(|int|)"
 |}];;
 (* fail *)
 let (n : 'b -> < m : 'a . ([< `Foo of int] as 'b) -> 'a >) = fun x ->
@@ -1843,7 +1843,7 @@ Line 2, characters 2-72:
 Error: This expression has type "< m : 'b 'x. ([< `Foo of (|'x|) ] as 'b) -> 'x >"
        but an expression was expected of type
          "< m : 'a. [< `Foo of (|int|) ] -> 'a >"
-       In tag "`Foo", type "'x" is not compatible with type "int"
+       In tag "`Foo", type "(|'x|)" is not compatible with type "(|int|)"
 |}];;
 (* ok *)
 let f (n : < m : 'a 'r. [< `Foo of 'a & int | `Bar] as 'r >) =
@@ -1863,7 +1863,7 @@ Line 2, characters 3-4:
 Error: The value "n" has type "< m : 'a 'c. [< `Bar | `Foo of (|'a|) & int ] as 'c >"
        but an expression was expected of type
          "< m : 'b 'd. [< `Bar | `Foo of (|int|) & 'b ] as 'd >"
-       In tag "`Foo", type "'a" is not compatible with type "int"
+       In tag "`Foo", type "(|'a|)" is not compatible with type "(|int|)"
 |}]
 (* ok (with implicit universal quantification) *)
 let f (n : < m : 'a. [< `Foo of 'a & int | `Bar] >) =
@@ -1882,7 +1882,7 @@ let f b (x: 'x) =
 Line 3, characters 19-22:
 3 |   if b then x else M.A;;
                        ^^^
-Error: The constructor "M.A" has type "M.t"
+Error: The constructor "M.A" has type "(|M.t|)"
        but an expression was expected of type "'x"
        The type constructor "M.t" would escape its scope
 |}];;
@@ -2138,7 +2138,7 @@ let rec foo : 'a . 'a -> 'd = fun x -> x
 Line 1, characters 30-40:
 1 | let rec foo : 'a . 'a -> 'd = fun x -> x
                                   ^^^^^^^^^^
-Error: This definition has type "'a -> 'a" which is less general than
+Error: This definition has type "(|'a|) -> (|'a|)" which is less general than
          "'a0. 'a0 -> 'b"
        The type variable "'a" is not generalizable to an universal
        type variable.
@@ -2215,7 +2215,7 @@ let f x =
 Line 2, characters 6-44:
 2 |   let ref : type a . a option ref = ref None in
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This definition has type "'a option ref" which is less general than
+Error: This definition has type "(|'a|) option ref" which is less general than
          "'a0. 'a0 option ref"
        The type variable "'a" is not generalizable to an universal
        type variable.
@@ -2228,7 +2228,7 @@ type pr = { foo : 'a. 'a option ref; }
 Line 2, characters 16-24:
 2 | let x = { foo = ref None }
                     ^^^^^^^^
-Error: This field value has type "'a option ref" which is less general than
+Error: This field value has type "(|'a|) option ref" which is less general than
          "'a0. 'a0 option ref"
        The type variable "'a" is not generalizable to an universal
        type variable.

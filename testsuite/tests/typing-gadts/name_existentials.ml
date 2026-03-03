@@ -148,8 +148,8 @@ let rec example : type a . a ty -> a = function
 Line 3, characters 54-72:
 3 | | Pair (type b c) (x, y : b ty * c ty) -> (example x, example (*error*)x)
                                                           ^^^^^^^^^^^^^^^^^^
-Error: This expression has type "b" = "$0" but an expression was expected of type
-         "$1"
+Error: This expression has type "b" = "(|$0|)" but an expression was expected of type
+         "(|$1|)"
        Hint: "$0" and "$1" are type variables introduced in the equation
          "a" = "$0 * $1"
 |}]
@@ -180,7 +180,7 @@ Line 2, characters 29-48:
                                  ^^^^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type "b * (b -> c (|option|))"
        but a pattern was expected which matches values of type "b * (b -> (|a|))"
-       Type "c option" is not compatible with type "a"
+       Type "c (|option|)" is not compatible with type "(|a|)"
 |}]
 (* Can only name fresh existentials *)
 let ko2 = function

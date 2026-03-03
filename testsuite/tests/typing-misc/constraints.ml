@@ -283,7 +283,7 @@ Line 3, characters 13-23:
 3 |   constraint 'a = float
                  ^^^^^^^^^^
 Error: The type constraints are not consistent.
-       Type "int" is not compatible with type "float"
+       Type "(|int|)" is not compatible with type "(|float|)"
 |}]
 
 type ('a,'b) t = T
@@ -296,7 +296,7 @@ Line 4, characters 13-20:
                  ^^^^^^^
 Error: The type constraints are not consistent.
        Type "(|int|) -> float" is not compatible with type "(|bool|) -> char"
-       Type "int" is not compatible with type "bool"
+       Type "(|int|)" is not compatible with type "(|bool|)"
 |}]
 
 class type ['a, 'b] a = object
@@ -310,7 +310,7 @@ Line 4, characters 2-31:
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The class constraints are not consistent.
        Type "(|int|) * int" is not compatible with type "(|float|) * float"
-       Type "int" is not compatible with type "float"
+       Type "(|int|)" is not compatible with type "(|float|)"
 |}]
 
 (* #11101 *)
@@ -434,8 +434,8 @@ and r = [s cstr t | `Bar]
 Line 1, characters 0-12:
 1 | type s = int
     ^^^^^^^^^^^^
-Error: This type constructor expands to type "s" = "int"
-       but is used here with type "float"
+Error: This type constructor expands to type "s" = "(|int|)"
+       but is used here with type "(|float|)"
 |}]
 
 
@@ -448,7 +448,7 @@ Line 1, characters 0-22:
 1 | type 'a t = 'a foo foo
     ^^^^^^^^^^^^^^^^^^^^^^
 Error: Constraints are not satisfied in this type.
-       Type "'a foo" should be an instance of "int"
+       Type "'a (|foo|)" should be an instance of "(|int|)"
        Type "foo" was considered abstract when checking constraints in this
        recursive type definition.
 |}]
@@ -473,7 +473,7 @@ type 'a t3 = < m : 'b. (int -> 'b) as 'a >
 Line 1, characters 23-40:
 1 | type 'a t3 = < m : 'b. (int -> 'b) as 'a >
                            ^^^^^^^^^^^^^^^^^
-Error: This type "'a" should be an instance of type "int -> 'b"
+Error: This type "'a" should be an instance of type "int -> (|'b|)"
        The universal variable "'b" would escape its scope
 |}]
 
@@ -483,7 +483,7 @@ type 'a t4 = < m : 'b. int -> ('b as 'a) > * 'a
 Line 1, characters 31-39:
 1 | type 'a t4 = < m : 'b. int -> ('b as 'a) > * 'a
                                    ^^^^^^^^
-Error: This type "'a" should be an instance of type "'b"
+Error: This type "'a" should be an instance of type "(|'b|)"
        The universal variable "'b" would escape its scope
 |}]
 
@@ -495,6 +495,6 @@ end
 Line 2, characters 17-34:
 2 |   method m : 'b. (int -> 'b) as 'a
                      ^^^^^^^^^^^^^^^^^
-Error: This type "'a" should be an instance of type "int -> 'b"
+Error: This type "'a" should be an instance of type "int -> (|'b|)"
        The universal variable "'b" would escape its scope
 |}]

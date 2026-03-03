@@ -25,8 +25,8 @@ Line 1, characters 28-48:
                                 ^^^^^^^^^^^^^^^^^^^^
 Error: This expression has type
          "('a, 'b, 'c, 'd, 'd, 'a) format6" =
-           "('a, 'b, 'c, 'd, 'd, 'a) CamlinternalFormatBasics.format6"
-       but an expression was expected of type "string"
+           "('a, 'b, 'c, 'd, 'd, 'a) (|CamlinternalFormatBasics.format6|)"
+       but an expression was expected of type "(|string|)"
 |}]
 ;;
 

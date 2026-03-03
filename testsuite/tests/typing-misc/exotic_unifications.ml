@@ -13,7 +13,7 @@ Line 4, characters 8-17:
 4 |         inherit t
             ^^^^^^^^^
 Error: The method "x" has type "(|int|)" but is expected to have type "(|float|)"
-       Type "int" is not compatible with type "float"
+       Type "(|int|)" is not compatible with type "(|float|)"
 |}]
 
 let x =

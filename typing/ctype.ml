@@ -3146,6 +3146,14 @@ let compare_package env unify_list lv1 pack1 lv2 pack2 =
       (!package_subtype env pack1 pack2)
       (fun () -> !package_subtype env pack2 pack1)
 
+let highlight_for k ~got ~expected =
+  let h (d,t) = match d with
+    | Tconstr (p,_,_) -> Some (Errortrace.Type_constructor p)
+    | _ -> Some (Errortrace.Type (Paired,t))
+  in
+  let d = { Errortrace.got = h got; expected = h expected } in
+  raise_for k (Highlight_hint d)
+
 (* force unification in Reither when one side has a non-conjunctive type *)
 (* Code smell: this could also be put in unification_environment.
    Only modified by expand_head_rigid, but the corresponding unification
@@ -3421,8 +3429,11 @@ and unify3 uenv t1 t1' t2 t2' =
       | (Tconstr (_,_,_), _) | (_, Tconstr (_,_,_)) when in_pattern_mode uenv ->
           reify ~eqn:(t1',t2') uenv t1';
           reify ~eqn:(t1',t2') uenv t2';
-          mcomp_for Unify (get_env uenv) t1' t2';
-          record_equation uenv t1' t2'
+          begin match mcomp (get_env uenv) t1' t2' with
+          | () -> record_equation uenv t1' t2'
+          | exception Incompatible ->
+             highlight_for Unify ~got:(d1,t1) ~expected:(d2,t2)
+          end
       | (Tobject (fi1, nm1), Tobject (fi2, _)) ->
           unify_fields uenv fi1 fi2;
           (* Type [t2'] may have been instantiated by [unify_fields] *)
@@ -3474,6 +3485,8 @@ and unify3 uenv t1 t1' t2 t2' =
           raise_for Unify (Obj (Abstract_row Second))
       | (Tconstr _,  Tnil ) ->
           raise_for Unify (Obj (Abstract_row First))
+      | Tconstr _, _ | _, Tconstr _ ->
+         highlight_for Unify ~got:(d1,t1) ~expected:(d2,t2)
       | (_, _) -> raise_unexplained_for Unify
       end;
       (* XXX Commentaires + changer "create_recursion"

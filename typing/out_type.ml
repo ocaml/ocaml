@@ -1115,18 +1115,13 @@ let alias_nongen_row mode px ty =
           Aliases.add_proxy px
     | _ -> ()
 
-type highlight_target =
-  | Type of Outcometree.highlight_kind * Types.type_expr
-  | Type_constructor of Path.t
-let highlight_type k ty = Some (Type(k,ty))
-
 let match_target target ty = match target with
   | None -> None
-  | Some (Type (k,tty)) ->
+  | Some (Errortrace.Type (k,tty)) ->
       if Types.Transient_expr.(TransientTypeOps.equal ty (repr tty)) then
         Some k
       else None
-  | Some (Type_constructor tp) -> match ty.desc with
+  | Some (Errortrace.Type_constructor tp) -> match ty.desc with
     | Tconstr (p,_,_) -> if Path.same p tp then Some Paired else None
     | _ -> None
 

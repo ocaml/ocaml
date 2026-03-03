@@ -2143,7 +2143,7 @@ let report_error_doc env ppf =
         in
         Out_type.add_type_to_preparation meth_ty;
         Out_type.add_type_to_preparation ty1;
-        let h = Out_type.highlight_type Independent ty0 in
+        let h = Errortrace.highlight_type Independent ty0 in
         fprintf ppf
           "The method %a@ has type@;<1 2>%a@ where@ %a@ is unbound"
           Style.inline_code meth

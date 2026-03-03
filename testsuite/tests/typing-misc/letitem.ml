@@ -9,7 +9,7 @@ let _ =
 Line 3, characters 2-3:
 3 |   A
       ^
-Error: The constructor "A" has type "t" but an expression was expected of type "'a"
+Error: The constructor "A" has type "(|t|)" but an expression was expected of type "'a"
        The type constructor "t" would escape its scope
 |}];;
 
@@ -21,7 +21,7 @@ let _ =
 Line 4, characters 2-3:
 4 |   A
       ^
-Error: The constructor "A" has type "t" but an expression was expected of type "'a"
+Error: The constructor "A" has type "(|t|)" but an expression was expected of type "'a"
        The type constructor "t" would escape its scope
 |}];;
 

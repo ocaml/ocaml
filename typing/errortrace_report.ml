@@ -152,9 +152,9 @@ let print_tags ppf tags  =
 let both_side_diff f x =
   { Errortrace.ctx = None; d = {got = f x; expected = f x} }
 
-let both_side x  = both_side_diff (highlight_type Independent) x
+let both_side x  = both_side_diff (Errortrace.highlight_type Independent) x
 let both_side_constructor p =
-  both_side_diff (fun p -> Some(Out_type.Type_constructor p) ) p
+  both_side_diff (fun p -> Some(Errortrace.Type_constructor p) ) p
 
 
 let no_highlight = Errortrace.{ ctx = None; d = { got = None; expected = None} }
@@ -449,8 +449,9 @@ let explanation (type variety) intro
         *)
     end
   | Univar um -> Some (explain_univar um)
+  | Highlight_hint _ -> None
 
-let highlight_explanation (type variety)
+let highlight_explanation_core (type variety)
   : (Errortrace.expanded_type, variety) Errortrace.root -> _ = function
   | Errortrace.Escape {kind; context = _ } -> highlight_escape kind
   | Errortrace.Function_label_mismatch _
@@ -459,17 +460,22 @@ let highlight_explanation (type variety)
   | Errortrace.Obj _
   | Errortrace.First_class_module _ -> no_highlight
   | Errortrace.Rec_occur(x,y) ->
+      let got = Errortrace.highlight_type Paired x in
+      let expected = Errortrace.highlight_type Paired y in
+      Errortrace.no_ctx { got; expected }
+  | Errortrace.Univar um -> highlight_univar um
+  | Errortrace.Highlight_hint h -> Errortrace.no_ctx h
 
-      let got = highlight_type Paired x in
-      let expected = highlight_type Paired y in
-      { Errortrace.ctx = None; d = { got; expected} }
-  | Univar um -> highlight_univar um
-
+let highlight_explanation = function
+  | None | Some (Structured.Promoted(None,_))-> no_highlight
+  | Some (Structured.Promoted (Some hint,_)) | Some (Structured.Hint hint) ->
+      Errortrace.no_ctx hint
+  | Some (Structured.Standard std) -> highlight_explanation_core std
 
 let mismatch intro expl =
   match expl with
-  | None -> None
-  | Some (Structured.Promoted msg) -> Some msg
+  | None | Some (Structured.Hint _) -> None
+  | Some (Structured.Promoted (_,msg)) -> Some msg
   | Some (Structured.Standard e) -> explanation intro e
 
 let warn_on_missing_def env ppf t =
@@ -585,21 +591,18 @@ let zip_cdiff x y =
   { ctx = x.ctx; d }
 
 let highlight_type ty =
-  let hty x = highlight_type Paired x.Errortrace.ty in
+  let hty x = Errortrace.highlight_type Paired x.Errortrace.ty in
   Errortrace.map_cdiff hty ty
 
 let associate_htarget { Structured.top; tr; expl} =
   match top, tr with
   | None, _ -> { Structured.top = None; tr = []; expl }
   | Some (h,c), [] ->
-      let h = Errortrace.map_cdiff (fun x -> x, None) h in
+      let h = zip_cdiff h (highlight_explanation expl) in
       { Structured.top = Some (h, c); tr = []; expl }
   | Some (h,c), a :: q ->
       let top = Some (zip_cdiff h (highlight_type a), c) in
-      let hexpl = match expl with
-        | None | Some (Structured.Promoted _) -> no_highlight
-        | Some (Structured.Standard std) -> highlight_explanation std
-      in
+      let hexpl = highlight_explanation expl in
       let htrace = List.map highlight_type q @ [hexpl] in
       let tr = List.map2 zip_cdiff tr htrace in
       { Structured.top; tr; expl }
@@ -705,7 +708,7 @@ module Subtype = struct
   let obj_only_trace (trace: _ Structured.s) =
     match trace.top, trace.tr, trace.expl with
     | None, [], Some (Standard (Obj _ | Variant _ | Escape _ ))
-    | None, [], None -> true
+    | None, [], (None | Some (Hint _)) -> true
     | _ -> false
 
   let error ppf env tr txt1 =

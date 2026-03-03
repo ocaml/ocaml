@@ -11,7 +11,7 @@ Error: The type of this class,
        "class virtual ['_a] c :
          object constraint '_a = [< `A of int & float ] as '_weak1 end",
        contains non-collapsible conjunctive types in constraints.
-       Type "int" is not compatible with type "float"
+       Type "(|int|)" is not compatible with type "(|float|)"
 |}]
 
 class type ct = object

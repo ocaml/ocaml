@@ -25,7 +25,7 @@ Line 11, characters 27-29:
 11 | let g (Aux(Second, f)) = f it;;
                                 ^^
 Error: The value "it" has type "[< `Bar | `Foo > `Bar ]"
-       but an expression was expected of type "[< `Bar | `Foo ]"
+       but an expression was expected of type "(|[< `Bar | `Foo ]|)"
        The second variant type is bound to "$a",
        it may not allow the tag(s) "`Bar"
        Hint: "$a" is an existential type bound by the constructor "Aux".

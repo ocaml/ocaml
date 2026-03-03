@@ -36,8 +36,8 @@ Line 11, characters 16-20:
                      ^^^^
 Error: The constructor "Refl" has type "((|a|), (|a|)) eq"
        but an expression was expected of type "(a, (|t|)) eq"
-       Type "a" is not compatible with type
-         "t" = "([ `Rec of 'a X.t ] as 'a) X/2.t"
+       Type "(|a|)" is not compatible with type
+         "t" = "([ `Rec of 'a X.t ] as 'a) (|X/2.t|)"
        Line 8, characters 2-14:
          Definition of module "X"
        Line 7, characters 12-13:
@@ -91,7 +91,7 @@ Line 4, characters 21-25:
 Error: The constructor "Refl" has type "((|a|), (|a|)) eq"
        but an expression was expected of type "(a, a X.t (|X.t|)) eq"
        Type "a" = "b X.t" is not compatible with type "a (|X.t|) X.t"
-       Type "b" is not compatible with type "a X.t"
+       Type "(|b|)" is not compatible with type "a (|X.t|)"
 |}, Principal{|
 Line 4, characters 21-25:
 4 |     fun Refl Refl -> Refl;;
@@ -99,5 +99,5 @@ Line 4, characters 21-25:
 Error: The constructor "Refl" has type "((|a|), (|a|)) eq"
        but an expression was expected of type "(a, a X.t (|X.t|)) eq"
        Type "a" = "(|b|) X.t" is not compatible with type "a (|X.t|) X.t"
-       Type "b" is not compatible with type "a X.t"
+       Type "(|b|)" is not compatible with type "a (|X.t|)"
 |}]

@@ -15,8 +15,8 @@ type foo1 = Foo : ('a * 'b * 'c * 'd * 'e * 'f) -> foo1
 Line 6, characters 13-14:
 6 |   | Foo a -> a + 1
                  ^
-Error: The value "a" has type "$a * $b * $c * $d * $e * $f"
-       but an expression was expected of type "int"
+Error: The value "a" has type "$a (|*|) $b (|*|) $c (|*|) $d (|*|) $e (|*|) $f"
+       but an expression was expected of type "(|int|)"
        Hint: "$a", "$b", "$c", "$d", "$e" and "$f" are existential types
          bound by the constructor "Foo".
 |}]
@@ -48,8 +48,8 @@ type foo2 =
 Line 13, characters 46-47:
 13 |       let x = (a1, a2, a3, a4, a5, a6, a7) in x + 1
                                                    ^
-Error: The value "x" has type "$a * $a1 * $a2 * $a3 * $a4 * $a5 * $a6"
-       but an expression was expected of type "int"
+Error: The value "x" has type "$a (|*|) $a1 (|*|) $a2 (|*|) $a3 (|*|) $a4 (|*|) $a5 (|*|) $a6"
+       but an expression was expected of type "(|int|)"
        Hint: "$a" is an existential type bound by the constructor "Foo1".
        Hint: "$a1" is an existential type bound by the constructor "Foo2".
        Hint: "$a2" is an existential type bound by the constructor "Foo3".
@@ -87,14 +87,14 @@ Line 13, characters 46-47:
 13 |       let x = (a1, a2, a3, a4, a5, a6, a7) in x + 1
                                                    ^
 Error: The value "x" has type
-         "($a * $b * $c * $d * $e * $f) *
-         ($a1 * $b1 * $c1 * $d1 * $e1 * $f1) *
-         ($a2 * $b2 * $c2 * $d2 * $e2 * $f2) *
-         ($a3 * $b3 * $c3 * $d3 * $e3 * $f3) *
-         ($a4 * $b4 * $c4 * $d4 * $e4 * $f4) *
-         ($a5 * $b5 * $c5 * $d5 * $e5 * $f5) *
+         "($a * $b * $c * $d * $e * $f) (|*|)
+         ($a1 * $b1 * $c1 * $d1 * $e1 * $f1) (|*|)
+         ($a2 * $b2 * $c2 * $d2 * $e2 * $f2) (|*|)
+         ($a3 * $b3 * $c3 * $d3 * $e3 * $f3) (|*|)
+         ($a4 * $b4 * $c4 * $d4 * $e4 * $f4) (|*|)
+         ($a5 * $b5 * $c5 * $d5 * $e5 * $f5) (|*|)
          ($a6 * $b6 * $c6 * $d6 * $e6 * $f6)"
-       but an expression was expected of type "int"
+       but an expression was expected of type "(|int|)"
        Hint: "$a", "$b", "$c", "$d", "$e" and "$f" are existential types
          bound by the constructor "Foo1".
        Hint: "$a1", "$b1", "$c1", "$d1", "$e1" and "$f1" are existential types

@@ -92,8 +92,8 @@ let invalid_arg2 = f 3 4 (module Int)
 Line 1, characters 23-24:
 1 | let invalid_arg2 = f 3 4 (module Int)
                            ^
-Error: The constant "4" has type "int" but an expression was expected of type
-         "(module Typ)"
+Error: The constant "4" has type "(|int|)" but an expression was expected of type
+         "((|module|) Typ)"
 |}]
 
 (* Here we cannot extract the type of m *)
@@ -827,7 +827,7 @@ val r : '_weak2 option ref = {contents = None}
 Line 6, characters 12-13:
 6 |   r := Some x
                 ^
-Error: The value "x" has type "T.t" but an expression was expected of type "'weak2"
+Error: The value "x" has type "(|T.t|)" but an expression was expected of type "'weak2"
        The type constructor "T.t" would escape its scope
 |}]
 
@@ -838,7 +838,7 @@ let f x (module A : Add) (y : A.t) = A.add x y
 Line 1, characters 43-44:
 1 | let f x (module A : Add) (y : A.t) = A.add x y
                                                ^
-Error: The value "x" has type "'a" but an expression was expected of type "A.t"
+Error: The value "x" has type "'a" but an expression was expected of type "(|A.t|)"
        The type constructor "A.t" would escape its scope
 |}]
 
@@ -1121,7 +1121,7 @@ module type S = sig type t = private int val f : t end
 Line 6, characters 50-53:
 6 | let check_escape : _ -> _ = fun (module M : S) -> M.f
                                                       ^^^
-Error: The value "M.f" has type "M.t" but an expression was expected of type "'a"
+Error: The value "M.f" has type "(|M.t|)" but an expression was expected of type "'a"
        The type constructor "M.t" would escape its scope
 |}]
 
@@ -1335,7 +1335,7 @@ Line 8, characters 4-5:
 Error: The value "x" has type "(module Int : Typ) -> int -> (|Stdlib.Int.t|)"
        but an expression was expected of type
          "(module Int : Typ) -> int -> (|Int.t|)"
-       Type "Int.t" = "int" is not compatible with type "Int.t"
+       Type "Int.t" = "(|int|)" is not compatible with type "(|Int.t|)"
 |}]
 
 (* At one point the implementation was not robust enough and linking

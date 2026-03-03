@@ -48,5 +48,5 @@ Line 1, characters 35-40:
                                        ^^^^^
 Error: This pattern matches values of type "(|float|) list"
        but a pattern was expected which matches values of type "(|string|) list"
-       Type "float" is not compatible with type "string"
+       Type "(|float|)" is not compatible with type "(|string|)"
 |}]

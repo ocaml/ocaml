@@ -25,7 +25,7 @@ Line 9, characters 11-18:
                ^^^^^^^
 Error: This pattern matches values of type "($x, 'a -> $x) elt"
        but a pattern was expected which matches values of type
-         "($x, 'a -> $'b -> nil) elt"
+         "($x, 'a -> (|$'b|) -> nil) elt"
        The type constructor "$'b" would escape its scope
        Hint: "$x" is an existential type bound by the constructor "Cons".
        Hint: "$'b" is a type variable introduced in the equation

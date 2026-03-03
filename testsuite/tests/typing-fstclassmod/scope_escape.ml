@@ -22,7 +22,7 @@ Lines 7-10, characters 2-22:
  8 |     type t = M.t
  9 |   end : S
 10 |     with type t = M.t)
-Error: This expression has type "(module S with type t = M.t)"
+Error: This expression has type "(module S with type t = (|M.t|))"
        but an expression was expected of type "(module S)"
        The type constructor "M.t" would escape its scope
 |}, Principal{|
@@ -56,7 +56,7 @@ Line 3, characters 41-42:
 3 |   let (module K : S with type t = A.t) = k in
                                              ^
 Error: The value "k" has type "'a" but an expression was expected of type
-         "(module S with type t = A.t)"
+         "(module S with type t = (|A.t|))"
        The type constructor "A.t" would escape its scope
 |}];;
 
@@ -112,6 +112,6 @@ module type S = sig type t val x : t end
 Line 15, characters 8-10:
 15 |   unify ()
              ^^
-Error: The constructor "()" has type "unit"
-       but an expression was expected of type "M.t"
+Error: The constructor "()" has type "(|unit|)"
+       but an expression was expected of type "(|M.t|)"
 |}];;

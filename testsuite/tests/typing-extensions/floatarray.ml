@@ -40,8 +40,8 @@ let f a = match a with [|_|] -> Float.Array.length a | _ -> assert false
 Line 1, characters 51-52:
 1 | let f a = match a with [|_|] -> Float.Array.length a | _ -> assert false
                                                        ^
-Error: The value "a" has type "'a array" but an expression was expected of type
-         "Float.Array.t" = "floatarray"
+Error: The value "a" has type "'a (|array|)" but an expression was expected of type
+         "Float.Array.t" = "(|floatarray|)"
 |}]
 
 type s = floatarray

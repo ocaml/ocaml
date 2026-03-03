@@ -26,8 +26,8 @@ Error: Unbound record field "z"
 Line 1, characters 6-14:
 1 | {x=3; contents=2};;
           ^^^^^^^^
-Error: The record field "contents" belongs to the type "'a ref"
-       but is mixed here with fields of type "t"
+Error: The record field "contents" belongs to the type "'a (|ref|)"
+       but is mixed here with fields of type "(|t|)"
 |}];;
 
 (* private types *)
@@ -98,8 +98,8 @@ type bar = { x : int; }
 Line 3, characters 20-21:
 3 | let f (r: bar) = ({ r with z = 3 } : foo)
                         ^
-Error: This expression has type "bar" but an expression was expected of type
-         "foo"
+Error: This expression has type "(|bar|)" but an expression was expected of type
+         "(|foo|)"
 |}];;
 
 type foo = { x: int };;
@@ -159,7 +159,7 @@ Line 3, characters 0-19:
     ^^^^^^^^^^^^^^^^^^^
 Error: This expression has type "(|string|) t"
        but an expression was expected of type "(|int|) t"
-       Type "string" is not compatible with type "int"
+       Type "(|string|)" is not compatible with type "(|int|)"
 |}]
 
 (* PR#7696 *)
