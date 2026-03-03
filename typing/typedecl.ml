@@ -2184,8 +2184,8 @@ let report_error ~loc = function
          All uses need to match the definition for the recursive type \
          to be regular.@]"
         Style.inline_code (Path.name definition)
-        quoted_out_type (Out_type.tree_of_typexp None Type defined_as)
-        quoted_out_type (Out_type.tree_of_typexp None Type used_as)
+        quoted_out_type (Out_type.tree_of_typexp [] Type defined_as)
+        quoted_out_type (Out_type.tree_of_typexp [] Type used_as)
         (fun pp ->
            let is_expansion = function Expands_to _ -> true | _ -> false in
            if List.exists is_expansion reaching_path then

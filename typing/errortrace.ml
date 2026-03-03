@@ -115,7 +115,7 @@ type highlight_target =
   | Type of Outcometree.highlight_kind * type_expr
   | Type_constructor of Path.t
 
-type highlight_hint = highlight_target option diff
+type highlight_hint = highlight_target list diff
 
 type ('a, 'variety) root  =
   (* Common *)
@@ -167,7 +167,7 @@ let in_tag ~l t = match t.path with
       { t with path = { ctx = Some(In_tag l); d } :: rem }
   | _ -> t
 let variant_arity_mismatch l = Variant (Arity_mismatch l)
-let highlight_type k ty = Some (Type(k,ty))
+let highlight_type k ty = [Type(k,ty)]
 
 
 let swap_root (type variety) : ('a, variety) root -> ('a, variety) root =

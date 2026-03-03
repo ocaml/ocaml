@@ -149,15 +149,14 @@ let print_path p =
 let print_tags ppf tags  =
   Fmt.(pp_print_list ~pp_sep:comma) print_tag ppf tags
 
-let both_side_diff f x =
-  { Errortrace.ctx = None; d = {got = f x; expected = f x} }
+let both_side_diff f x = Errortrace.no_ctx {got = f x; expected = f x}
 
 let both_side x  = both_side_diff (Errortrace.highlight_type Independent) x
 let both_side_constructor p =
-  both_side_diff (fun p -> Some(Errortrace.Type_constructor p) ) p
+  both_side_diff (fun p -> [Errortrace.Type_constructor p] ) p
 
 
-let no_highlight = Errortrace.{ ctx = None; d = { got = None; expected = None} }
+let no_highlight = Errortrace.no_ctx { Errortrace.got = []; expected = []}
 
 let explain_fixed_row_case = function
   | Errortrace.Cannot_be_closed -> doc_printf "it cannot be closed"
@@ -385,12 +384,12 @@ let explain_univar = function
       doc_printf "%a" (pp_print_list ~pp_sep pp) delta
 
 let highlight_univar = function
-  | Errortrace.Var_mismatch { diff; order=_} -> both_side diff.got
+  | Errortrace.Var_mismatch { diff; order=_} ->
+      Errortrace.no_ctx
+      @@ Errortrace.map_diff (Errortrace.highlight_type Independent) diff
   | Errortrace.Quantification_mismatch delta ->
-    begin match delta with
-    | a :: _ -> both_side a
-    | [] -> no_highlight
-    end
+      let delta = List.map (fun t -> Errortrace.Type(Independent,t)) delta in
+      Errortrace.no_ctx {Errortrace.got = delta; expected = delta }
 
 let explanation (type variety) intro
   : (Errortrace.expanded_type, variety) Errortrace.root -> _ = function
@@ -557,8 +556,8 @@ let explain_names env ppf =
        let paths = List.map tree_of_path paths in
        match explanation with
        | Internal_names.Equation { lhs; rhs; } ->
-           let rhseq = tree_of_typexp None Type_scheme rhs in
-           let lhseq = tree_of_typexp None Type_scheme lhs in
+           let rhseq = tree_of_typexp [] Type_scheme rhs in
+           let lhseq = tree_of_typexp [] Type_scheme lhs in
            fprintf ppf
              "@ @[<2>@{<hint>Hint@}:@ %a@ %a@ \
               introduced in the equation@ %a = %a@]"

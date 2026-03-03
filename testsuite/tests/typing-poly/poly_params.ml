@@ -296,7 +296,7 @@ Line 1, characters 24-25:
 1 | let foo (f : p1) : p2 = f
                             ^
 Error: The value "f" has type "p1" = "('a. (|'a|) -> (|'a|)) -> int"
-       but an expression was expected of type "p2" = "('a 'b. (|'a|) -> 'b) -> int"
+       but an expression was expected of type "p2" = "('a 'b. 'a -> (|'b|)) -> int"
        The universal variables "'a" and "'b" are distinct.
 |}];;
 
@@ -335,7 +335,7 @@ Error: Signature mismatch:
          sig val f : p2 end
        Values do not match: val f : p1 is not included in val f : p2
        The type "p1" = "('a. (|'a|) -> (|'a|)) -> int" is not compatible with the type
-         "p2" = "('a 'b. 'a -> 'b) -> int"
+         "p2" = "('a 'b. 'a -> (|'b|)) -> int"
        The universal variables "'a" and "'b" are distinct.
 |}];;
 

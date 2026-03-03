@@ -1024,8 +1024,8 @@ let report_error_doc loc env = function
         Location.errorf ~loc
           "This variant type contains a constructor %a@ \
            which should be@ %a"
-          pp_out_type (Out_type.tree_of_typexp None Type ty)
-          pp_out_type (Out_type.tree_of_typexp None Type ty')
+          pp_out_type (Out_type.tree_of_typexp [] Type ty)
+          pp_out_type (Out_type.tree_of_typexp [] Type ty')
         )
   | Not_a_variant ty ->
       Location.aligned_error_hint ~loc

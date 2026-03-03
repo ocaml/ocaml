@@ -95,14 +95,14 @@ val add_type_to_preparation: type_expr -> unit
 type type_or_scheme = Type | Type_scheme
 
 val tree_of_typexp:
-  Errortrace.highlight_target option -> type_or_scheme -> type_expr -> out_type
+  Errortrace.highlight_target list -> type_or_scheme -> type_expr -> out_type
 (** [tree_of_typexp] generate the [outcometree] for a prepared type
     expression.*)
 
 val prepared_type_scheme:
-  ?htarget:Errortrace.highlight_target -> type_expr printer
+  ?htarget:Errortrace.highlight_target list -> type_expr printer
 val prepared_type_expr:
-  ?htarget:Errortrace.highlight_target -> type_expr printer
+  ?htarget:Errortrace.highlight_target list -> type_expr printer
 (** The printers [prepared_type_expr] and [prepared_type_scheme] should only be
     used on prepared types. Types can be prepared by initially calling
     {!prepare_for_printing} or adding them later to the preparation with
@@ -117,12 +117,12 @@ val prepared_type_expr:
     "half-prepared" type expression should have had its names reserved (with
     {!Variable_names.reserve}), but should not have had its cycles marked. *)
 val type_expr_with_reserved_names:
-  ?htarget:Errortrace.highlight_target -> type_expr printer
+  ?htarget:Errortrace.highlight_target list -> type_expr printer
 
 type 'a diff = Same of 'a | Diff of 'a * 'a
 val trees_of_type_expansion:
   type_or_scheme
-  -> Errortrace.expanded_type * Errortrace.highlight_target option
+  -> Errortrace.expanded_type * Errortrace.highlight_target list
   -> out_type diff
 val prepare_expansion: Errortrace.expanded_type -> Errortrace.expanded_type
 val pp_type_expansion: out_type diff printer
