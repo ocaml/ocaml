@@ -117,8 +117,8 @@ Warning 16 [unerasable-optional-argument]: this optional argument cannot be eras
 Line 3, characters 2-9:
 3 |   warn_me + 0
       ^^^^^^^
-Error: The value "warn_me" has type "?arg:'a -> unit"
-       but an expression was expected of type "int"
+Error: The value "warn_me" has type "?arg:'a (|->|) unit"
+       but an expression was expected of type "(|int|)"
 |}]
 
 (* https://github.com/ocaml/ocaml/issues/14622 *)

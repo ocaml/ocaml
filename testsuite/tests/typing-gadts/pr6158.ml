@@ -18,7 +18,7 @@ Line 6, characters 45-49:
 Error: This pattern matches values of type "(int (|s|), int (|s|)) eq"
        but a pattern was expected which matches values of type
          "(int s, int (|t|)) eq"
-       Type "int s" is not compatible with type "int t"
+       Type "int (|s|)" is not compatible with type "int (|t|)"
 |}];;
 
 module M (S : sig type 'a t = T of 'a type 'a s = T of 'a end) =
@@ -27,9 +27,9 @@ struct let f : ('a S.s, 'a S.t) eq -> unit = function Refl -> () end;;
 Line 2, characters 54-58:
 2 | struct let f : ('a S.s, 'a S.t) eq -> unit = function Refl -> () end;;
                                                           ^^^^
-Error: This pattern matches values of type "($'a S.s, $'a S.s) eq"
+Error: This pattern matches values of type "((|$'a|) S.s, (|$'a|) S.s) eq"
        but a pattern was expected which matches values of type
-         "($'a S.s, $'a S.t) eq"
+         "((|$'a|) S.s, (|$'a|) S.t) eq"
        The type constructor "$'a" would escape its scope
        Hint: "$'a" is a type variable introduced in the equation
          "$'a S.s" = "$'a S.t"

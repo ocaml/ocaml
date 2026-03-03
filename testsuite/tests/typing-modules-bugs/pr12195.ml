@@ -39,6 +39,6 @@ Error: Signature mismatch:
          val created : '_weak1 Foo.t
        is not included in
          val created : s Foo.t
-       The type "'_weak1 Foo.t" is not compatible with the type "s Foo.t"
+       The type "'_weak1 Foo.t" is not compatible with the type "(|s|) Foo.t"
        The type constructor "s" would escape its scope
 |}]

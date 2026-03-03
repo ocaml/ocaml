@@ -25,5 +25,5 @@ Line 3, characters 20-28:
                         ^^^^^^^^
 Error: The type of this alias does not match that of the aliased primitive.
        Type "t -> (|int|)" is not compatible with type "'a -> (|'a|)"
-       Type "int" is not compatible with type "'a" = "t"
+       Type "(|int|)" is not compatible with type "'a" = "(|t|)"
 |}]

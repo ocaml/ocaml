@@ -327,7 +327,7 @@ Line 2, characters 4-13:
 Error: This pattern matches values of type "[< `A ] * unit * 'a (|option|)"
        but a pattern was expected which matches values of type
          "[< `A ] * unit * (|unit|)"
-       Type "'a option" is not compatible with type "unit"
+       Type "'a (|option|)" is not compatible with type "(|unit|)"
 |}]
 
 

@@ -27,9 +27,9 @@ let get1' = function
 Line 3, characters 4-7:
 3 |   | Nil -> assert false ;; (* ok *)
         ^^^
-Error: This pattern matches values of type "('b * 'a, 'b * 'a) t"
+Error: This pattern matches values of type "('b * (|'a|), 'b * (|'a|)) t"
        but a pattern was expected which matches values of type
-         "('b * 'a, 'a) t"
+         "('b (|*|) 'a, 'a) t"
        The type variable "'a" occurs inside "'b * 'a"
 |}, Rectypes{|
 val get1' : ('b * 'a as 'a, 'a) t -> 'b = <fun>

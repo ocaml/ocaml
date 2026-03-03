@@ -994,6 +994,7 @@ typing/envaux.cmi : \
 typing/errortrace.cmo : \
     typing/types.cmi \
     typing/path.cmi \
+    typing/outcometree.cmi \
     typing/ident.cmi \
     utils/format_doc.cmi \
     parsing/asttypes.cmi \
@@ -1001,6 +1002,7 @@ typing/errortrace.cmo : \
 typing/errortrace.cmx : \
     typing/types.cmx \
     typing/path.cmx \
+    typing/outcometree.cmi \
     typing/ident.cmx \
     utils/format_doc.cmx \
     parsing/asttypes.cmx \
@@ -1008,6 +1010,7 @@ typing/errortrace.cmx : \
 typing/errortrace.cmi : \
     typing/types.cmi \
     typing/path.cmi \
+    typing/outcometree.cmi \
     typing/ident.cmi \
     utils/format_doc.cmi \
     parsing/asttypes.cmi

@@ -783,7 +783,7 @@ fun (x : 'a t as 'a) -> ();;
 Line 1, characters 17-19:
 1 | fun (x : 'a t as 'a) -> ();;
                      ^^
-Error: This alias is bound to type "'a t" but is used as an instance of type "'a"
+Error: This alias is bound to type "(|'a|) t" but is used as an instance of type "'a"
        The type variable "'a" occurs inside "'a t"
 |}];;
 fun (x : 'a t) -> (x : 'a); ();;
@@ -791,7 +791,7 @@ fun (x : 'a t) -> (x : 'a); ();;
 Line 1, characters 19-20:
 1 | fun (x : 'a t) -> (x : 'a); ();;
                        ^
-Error: The value "x" has type "'a t" but an expression was expected of type "'a"
+Error: The value "x" has type "(|'a|) t" but an expression was expected of type "'a"
        The type variable "'a" occurs inside "'a t"
 |}];;
 fun ((x : 'a) | (x : 'a t)) -> ();;
@@ -799,7 +799,7 @@ fun ((x : 'a) | (x : 'a t)) -> ();;
 Line 1, characters 10-12:
 1 | fun ((x : 'a) | (x : 'a t)) -> ();;
               ^^
-Error: This type "'a t" should be an instance of type "'a"
+Error: This type "(|'a|) t" should be an instance of type "'a"
        The type variable "'a" occurs inside "'a t"
 |}];;
 fun ((x : 'a) | (x : 'a t)) -> ();;
@@ -807,7 +807,7 @@ fun ((x : 'a) | (x : 'a t)) -> ();;
 Line 1, characters 10-12:
 1 | fun ((x : 'a) | (x : 'a t)) -> ();;
               ^^
-Error: This type "'a t" should be an instance of type "'a"
+Error: This type "(|'a|) t" should be an instance of type "'a"
        The type variable "'a" occurs inside "'a t"
 |}];;
 type 'a t = < x : 'a >;;
@@ -1182,7 +1182,7 @@ Line 2, characters 12-32:
                 ^^^^^^^^^^^^^^^^^^^^
 Error: The type parameter "< foo : (|string|); .. >"
        does not meet its constraint: it should be "< foo : (|int|); .. >"
-       The method "foo" has type "string", but the expected method type was "int"
+       The method "foo" has type "(|string|)", but the expected method type was "(|int|)"
 |}];;
 
 (* Errors for undefined methods *)

@@ -14,7 +14,7 @@ let f (type a b) (w1 : (a, b -> b) eq) (w2 : (a, int -> int) eq) (g : a) =
 Line 2, characters 37-40:
 2 |    let Refl = w1 in let Refl = w2 in g 3;;
                                          ^^^
-Error: This expression has type "b" = "int"
+Error: This expression has type "(|b|)" = "int"
        but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
@@ -29,7 +29,7 @@ val f : ('a, 'b -> 'b) eq -> ('a, int -> int) eq -> 'a -> int = <fun>
 Line 2, characters 37-40:
 2 |    let Refl = w2 in let Refl = w1 in g 3;;
                                          ^^^
-Error: This expression has type "int" but an expression was expected of type "'a"
+Error: This expression has type "(|int|)" but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
        Hint (manual section 7.2): A type annotation may resolve the ambiguity,
@@ -78,7 +78,7 @@ val choose3 : 'a -> 'a -> 'a -> 'a = <fun>
 Line 20, characters 18-38:
 20 |         r := Some (choose3 x1 x2 x3 z);
                        ^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "a" but an expression was expected of type "'a"
+Error: This expression has type "(|a|)" but an expression was expected of type "'a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
        Hint (manual section 7.2): A type annotation may resolve the ambiguity,

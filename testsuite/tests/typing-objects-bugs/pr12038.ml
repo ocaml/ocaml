@@ -69,8 +69,8 @@ end
 Line 4, characters 34-37:
 4 |   method n (o : 'self) : string = o#m
                                       ^^^
-Error: The method call "o#m" has type "int"
-       but an expression was expected of type "string"
+Error: The method call "o#m" has type "(|int|)"
+       but an expression was expected of type "(|string|)"
 |}]
 
 class d = object(self : 'self)

@@ -89,5 +89,5 @@ Line 5, characters 19-25:
                        ^^^^^^
 Error: The type of this alias does not match that of the aliased primitive.
        Type "a -> (|b|)" is not compatible with type "'a -> (|'a|)"
-       Type "b" is not compatible with type "'a" = "a"
+       Type "(|b|)" is not compatible with type "'a" = "(|a|)"
 |}]

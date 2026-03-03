@@ -178,8 +178,8 @@ let f { \#false; \#true } = 0;;
 Line 4, characters 17-23:
 4 | let f { \#false; \#true } = 0
                      ^^^^^^
-Error: The record field "\#true" belongs to the type "u"
-       but is mixed here with fields of type "t"
+Error: The record field "\#true" belongs to the type "(|u|)"
+       but is mixed here with fields of type "(|t|)"
 |}]
 
 
@@ -264,8 +264,8 @@ let f (o : < \#if: int  ;\#let: int   > ) = o#\#if ^ "s";;
 Line 1, characters 35-41:
 1 | let f (o: <\#if:int; \#let:int>) = o#\#if ^ "s"
                                        ^^^^^^
-Error: The method call "o#\#if" has type "int"
-       but an expression was expected of type "string"
+Error: The method call "o#\#if" has type "(|int|)"
+       but an expression was expected of type "(|string|)"
 |}]
 
 

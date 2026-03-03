@@ -132,7 +132,7 @@ type t = (int * 'a) as 'a
 Line 1, characters 23-25:
 1 | type t = (int * 'a) as 'a
                            ^^
-Error: This alias is bound to type "int * 'a"
+Error: This alias is bound to type "int * (|'a|)"
        but is used as an instance of type "'a"
        The type variable "'a" occurs inside "int * 'a"
 |}, Rectypes{|

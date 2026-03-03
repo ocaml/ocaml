@@ -25,7 +25,7 @@ Lines 12-13, characters 35-18:
 13 | else `Right ()) xs
 Error: This expression has type "(|unit|) list * unit list"
        but an expression was expected of type "(|int|) list * int list"
-       Type "unit" is not compatible with type "int"
+       Type "(|unit|)" is not compatible with type "(|int|)"
 |}]
 
 module M : sig

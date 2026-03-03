@@ -25,7 +25,7 @@ Line 1, characters 27-28:
                                ^
 Error: The value "x" has type "(|a|) t" but an expression was expected of type
          "< .. > t"
-       Type "a" is not compatible with type "< .. >"
+       Type "(|a|)" is not compatible with type "< .. >"
 |}];;
 
 let _ = fun (x : a t) -> g x;;
@@ -35,7 +35,7 @@ Line 1, characters 27-28:
                                ^
 Error: The value "x" has type "(|a|) t" but an expression was expected of type
          "[< `b ] t"
-       Type "a" is not compatible with type "[< `b ]"
+       Type "(|a|)" is not compatible with type "[< `b ]"
 |}];;
 
 let _ = fun (x : a t) -> h x;;
@@ -45,5 +45,5 @@ Line 1, characters 27-28:
                                ^
 Error: The value "x" has type "(|a|) t" but an expression was expected of type
          "[> `b ] t"
-       Type "a" is not compatible with type "[> `b ]"
+       Type "(|a|)" is not compatible with type "[> `b ]"
 |}];;

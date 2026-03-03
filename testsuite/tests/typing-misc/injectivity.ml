@@ -550,5 +550,5 @@ Line 3, characters 79-84:
                                                                                    ^^^^^
 Error: The constructor "Equal" has type "((|a|), (|a|)) Type.eq"
        but an expression was expected of type "(a, (|b|)) Type.eq"
-       Type "a" is not compatible with type "b"
+       Type "(|a|)" is not compatible with type "(|b|)"
 |}]

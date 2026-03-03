@@ -79,8 +79,8 @@ let f = fun (~foo, ~bar:bar) : (foo:int * bar:int) -> foo * 10 + bar
 Line 1, characters 54-68:
 1 | let f = fun (~foo, ~bar:bar) : (foo:int * bar:int) -> foo * 10 + bar
                                                           ^^^^^^^^^^^^^^
-Error: This expression has type "int" but an expression was expected of type
-         "foo:int * bar:int"
+Error: This expression has type "(|int|)" but an expression was expected of type
+         "foo:int (|*|) bar:int"
 |}]
 
 (* Missing label *)
@@ -98,8 +98,8 @@ let f = fun (~foo, ~bar:bar) : (foo:int * int) -> foo * 10 + bar
 Line 1, characters 50-64:
 1 | let f = fun (~foo, ~bar:bar) : (foo:int * int) -> foo * 10 + bar
                                                       ^^^^^^^^^^^^^^
-Error: This expression has type "int" but an expression was expected of type
-         "foo:int * int"
+Error: This expression has type "(|int|)" but an expression was expected of type
+         "foo:int (|*|) int"
 |}]
 
 (* Wrong label *)
@@ -169,7 +169,7 @@ let f (~(x:float),y) = x + y
 Line 1, characters 23-24:
 1 | let f (~(x:float),y) = x + y
                            ^
-Error: The value "x" has type "float" but an expression was expected of type "int"
+Error: The value "x" has type "(|float|)" but an expression was expected of type "(|int|)"
 |}]
 (* Reordering in functions *)
 type xy = (x:int * y:int)
