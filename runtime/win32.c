@@ -800,14 +800,6 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
     errno = ENOTDIR;
     return -1;
   }
-  /* Another cornercase not handled by MoveFileEx:
-     - file to existing read-only file - should succeed
-     remove read-only bit before trying to rename */
-  bool removed_readonly = false;
-  if (check_attr(new_attribs, FILE_ATTRIBUTE_READONLY, true)) {
-    removed_readonly =
-      SetFileAttributes(newpath, new_attribs & ~FILE_ATTRIBUTE_READONLY);
-  }
   /* MOVEFILE_REPLACE_EXISTING: to be closer to POSIX
      MOVEFILE_COPY_ALLOWED: MoveFile performs a copy if old and new
        paths are on different devices, so we do the same here for
@@ -818,6 +810,18 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
                  MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
                  MOVEFILE_COPY_ALLOWED)) {
     return 0;
+  }
+  /* Another cornercase not handled by MoveFileEx:
+     - file to existing read-only file - should succeed */
+  if (GetLastError() == ERROR_ACCESS_DENIED &&
+      check_attr(new_attribs, FILE_ATTRIBUTE_READONLY, true)) {
+    /* Remove read-only bit before trying to rename */
+    SetFileAttributes(newpath, new_attribs & ~FILE_ATTRIBUTE_READONLY);
+    if (MoveFileEx(oldpath, newpath,
+                   MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
+                   MOVEFILE_COPY_ALLOWED)) {
+      return 0;
+    }
   }
   /* Another cornercase not handled by MoveFileEx:
      - dir to empty dir - positive - should succeed */
@@ -832,10 +836,6 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
                    MOVEFILE_COPY_ALLOWED)) {
       return 0;
     }
-  }
-  if (removed_readonly) {
-    /* Restore read-only bit if we failed to rename. */
-    SetFileAttributes(newpath, new_attribs);
   }
   errno = caml_posixerr_of_win32err(GetLastError());
   if (errno == 0) errno = EINVAL;
