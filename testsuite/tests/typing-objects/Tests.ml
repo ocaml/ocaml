@@ -716,7 +716,7 @@ Error: Signature mismatch:
        The type "(#c as 'a) -> 'a" is not compatible with the type "#c -> #c"
        Type "(|#c as 'a|)" = "< m : (|'a|); .. >" is not compatible with type
          "(|#c as 'b|)" = "< m : (|'b|); .. >"
-       Type "'a" is not compatible with type "'b"
+       Type "(|'a|)" is not compatible with type "(|'b|)"
 |}];;
 
 module M = struct type t = int class t () = object end end;;
@@ -1075,7 +1075,7 @@ Error: The class type object ('a) method m : < m : 'a; .. > as 'a end
          object method m : < m : 'a > as 'a end
        The method m has type "(|< m : (|'a|); .. > as 'a|)"
        but is expected to have type "(|< m : (|'b|) > as 'b|)"
-       Type "'a" is not compatible with type "<  >"
+       Type "(|'a|)" is not compatible with type "(|<  >|)"
 |}];;
 
 class c :
@@ -1135,7 +1135,7 @@ Error: The class type
        The method m has type "(< m : (|'a|) -> unit; .. > as 'a) -> unit"
        but is expected to have type
          "'b. (< m : 'c; x : int; .. > as 'b) -> unit as 'c"
-       Type "'a" is not compatible with type "< x : int; .. >"
+       Type "(|'a|)" is not compatible with type "(|< x : int; .. >|)"
 |}];;
 
 let is_empty (x : < >) = ()

@@ -4470,7 +4470,7 @@ let subject_level = generic_level - 1
    Update the level of [ty]. First check that the levels of generic
    variables from the subject are not lowered.
 *)
-let moregen_occur env level ty =
+let moregen_occur env ty0 level ty =
   with_type_mark begin fun mark ->
     let rec occur ty =
       let lv = get_level ty in
@@ -4481,7 +4481,7 @@ let moregen_occur env level ty =
     try
       occur ty
     with Occur ->
-      raise_unexplained_for Moregen
+      highlight_for Moregen ~got:(get_desc ty0,ty0) ~expected:(get_desc ty, ty)
   end;
   (* also check for free univars *)
   occur_univar_or_unscoped_for Moregen env ty;
@@ -4495,7 +4495,7 @@ let rec moregen type_pairs env t1 t2 =
   try
     match (get_desc t1, get_desc t2) with
       (Tvar _, _) when may_instantiate t1 ->
-        moregen_occur env (get_level t1) t2;
+        moregen_occur env t1 (get_level t1) t2;
         update_scope_for Moregen (get_scope t1) t2;
         occur_for Moregen (Expression {env; in_subst = false}) t1 t2;
         link_type t1 t2
@@ -4511,9 +4511,11 @@ let rec moregen type_pairs env t1 t2 =
           TypePairs.add type_pairs (t1', t2');
           match (get_desc t1', get_desc t2') with
             (Tvar _, _) when may_instantiate t1' ->
-              moregen_occur env (get_level t1') t2;
+              moregen_occur env t1' (get_level t1') t2;
               update_scope_for Moregen (get_scope t1') t2;
               link_type t1' t2
+          | Tvar _ as d1, d2 | d1, (Tvar _ as d2) ->
+             highlight_for Moregen ~got:(d1,t1) ~expected:(d2,t2)
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) ->
               eq_labels Moregen ~in_pattern_mode:false l1 l2;
               moregen type_pairs env t1 t2;
@@ -4667,7 +4669,7 @@ and moregen_row type_pairs env row1 row2 =
                     (create_row ~fields:r2 ~more:rm2 ~name:None
                        ~fixed:row2_fixed ~closed:row2_closed))
       in
-      moregen_occur env (get_level rm1) ext;
+      moregen_occur env rm1 (get_level rm1) ext;
       update_scope_for Moregen (get_scope rm1) ext;
       (* This [link_type] has to be undone if the rest of the function fails *)
       link_type rm1 ext
@@ -4875,13 +4877,21 @@ let expand_head_rigid env ty =
   let ty' = expand_head env ty in
   rigid_variants := old; ty'
 
+let eq_highlight l =
+  let typ t = Errortrace.Type (Independent, t) in
+  let l = List.map typ l in
+  raise_for Equality (Highlight_hint {got=l; expected=l})
+
 let eqtype_subst type_pairs subst t1 t2 =
   if List.exists
       (fun (t,t') ->
         let found1 = eq_type t1 t in
         let found2 = eq_type t2 t' in
-        if found1 && found2 then true else
-        if found1 || found2 then raise_unexplained_for Equality else false)
+        if found1 && found2 then true
+        else if found1 then eq_highlight [t1;t;t2]
+        else if found2 then eq_highlight [t1;t';t2]
+        else false
+      )
       !subst
   then ()
   else begin
@@ -4919,6 +4929,8 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           match (get_desc t1', get_desc t2') with
             (Tvar _, Tvar _) when rename ->
               eqtype_subst type_pairs subst t1' t2'
+          | Tvar _ as d1, d2 | d1, (Tvar _ as d2) ->
+             highlight_for Equality ~got:(d1,t1) ~expected:(d2,t2)
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) ->
               eq_labels Equality ~in_pattern_mode:false l1 l2;
               eqtype rename type_pairs subst env t1 t2;

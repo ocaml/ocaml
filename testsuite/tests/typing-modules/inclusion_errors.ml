@@ -24,7 +24,7 @@ Error: Signature mismatch:
        is not included in
          type ('a, 'b) t = 'a * 'b
        The type "'a * (|'a|)" is not equal to the type "'a * (|'b|)"
-       Type "'a" is not equal to type "'b"
+       Type "(|'a|)" is not equal to type "(|'b|)"
 |}];;
 
 module M : sig
@@ -47,7 +47,7 @@ Error: Signature mismatch:
        is not included in
          type ('a, 'b) t = 'a * 'a
        The type "'a * (|'b|)" is not equal to the type "'a * (|'a|)"
-       Type "'b" is not equal to type "'a"
+       Type "(|'b|)" is not equal to type "(|'a|)"
 |}];;
 
 type 'a x
@@ -73,7 +73,7 @@ Error: Signature mismatch:
          type ('a, 'b, 'c) t = ('a * 'b * 'c * 'b * 'a) x
        The type "('b * 'c * (|'a|) * 'c * (|'a|)) x" is not equal to the type
          "((|'b|) * 'c * 'a * 'c * (|'b|)) x"
-       Type "'a" is not equal to type "'b"
+       Type "(|'a|)" is not equal to type "(|'b|)"
 |}]
 
 module M : sig
@@ -662,7 +662,7 @@ Error: Signature mismatch:
        is not included in
          val x : 'a list ref
        The type "(|'_weak2|) list ref" is not compatible with the type "(|'a|) list ref"
-       Type "'_weak2" is not compatible with type "'a"
+       Type "(|'_weak2|)" is not compatible with type "(|'a|)"
 |}];;
 
 module M = struct let r = ref [] end;;
@@ -2106,4 +2106,22 @@ Error: Signature mismatch:
        Hint:    "mnox" is a close match.
        The value "vwxy" is required but not provided.
        Hint:     "vwxx" is a close match.
+|}]
+
+module M: sig val x: 'a list end = struct let x = [ 0 ] end
+[%%expect {|
+Line 1, characters 35-59:
+1 | module M: sig val x: 'a list end = struct let x = [ 0 ] end
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match:
+         sig val x : int list end
+       is not included in
+         sig val x : 'a list end
+       Values do not match:
+         val x : int list
+       is not included in
+         val x : 'a list
+       The type "(|int|) list" is not compatible with the type "(|'a|) list"
+       Type "(|int|)" is not compatible with type "(|'a|)"
 |}]

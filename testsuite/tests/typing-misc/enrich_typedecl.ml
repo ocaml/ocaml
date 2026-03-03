@@ -160,7 +160,7 @@ Error: Signature mismatch:
          type 'a t = 'a E.t = A of 'a | B
        is not included in
          type 'a t = 'a constraint 'a = [> `Foo ]
-       The type "'a" is not equal to the type "[> `Foo ]"
+       The type "(|'a|)" is not equal to the type "[> `Foo ]"
 |}];;
 
 module rec E2 : sig
@@ -224,7 +224,7 @@ Error: Signature mismatch:
          type 'a t = 'a E3.t = A of 'a | B
        is not included in
          type 'a t = 'a constraint 'a = [< `Foo ]
-       The type "'a" is not equal to the type "[< `Foo ]"
+       The type "(|'a|)" is not equal to the type "[< `Foo ]"
 |}];;
 
 
@@ -262,5 +262,5 @@ Error: Signature mismatch:
          "Foo of 'b"
        is not the same as:
          "Foo of 'a"
-       The type "'b" is not equal to the type "'a"
+       The type "(|'b|)" is not equal to the type "(|'a|)"
 |}];;
