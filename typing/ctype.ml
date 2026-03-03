@@ -5253,8 +5253,8 @@ let rec unalias_object ty =
       newty2 ~level desc
   | Tunivar _ ->
       ty
-  | Tconstr _ ->
-      newvar2 level
+  | Tconstr _ as desc ->
+      newty2 ~level desc
   | _ ->
       assert false
 

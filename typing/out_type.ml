@@ -1918,7 +1918,7 @@ let same_path t t' =
       | _ -> false
       end
   | Tconstr _, _ | _, Tconstr _ -> false
-  | _ -> true
+  | _ -> false
 
 type 'a diff = Same of 'a | Diff of 'a * 'a
 

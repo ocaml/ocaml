@@ -105,8 +105,8 @@ Line 7, characters 35-43:
                                        ^^^^^^^^
 Error: This constructor has type "[< inkind > `Nonlink ] inline_t"
        but an expression was expected of type "a inline_t"
-       Type "[< inkind > `Nonlink ]" is not compatible with type
-         "a" = "[< `Link | `Nonlink ]"
+       Type "[< inkind > `Nonlink ]" = "[< `Link | `Nonlink > `Nonlink ]"
+       is not compatible with type "a" = "[< `Link | `Nonlink ]"
        The second variant type is bound to "$'a",
        it may not allow the tag(s) "`Nonlink"
 |}];;
