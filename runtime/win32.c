@@ -40,6 +40,7 @@
 #include <string.h>
 #include <signal.h>
 #include <wchar.h>
+#include <stdbool.h>
 #include "caml/alloc.h"
 #include "caml/codefrag.h"
 #include "caml/fail.h"
@@ -774,11 +775,11 @@ CAMLexport wchar_t *caml_win32_getenv(wchar_t const *lpName)
   return lpBuffer;
 }
 
-Caml_inline BOOL check_attr(DWORD attrs, DWORD mask, BOOL expected)
+Caml_inline bool check_attr(DWORD attrs, DWORD mask, bool expected)
 {
   return
     (attrs != INVALID_FILE_ATTRIBUTES) &&
-    (((attrs & mask) ? TRUE : FALSE) == expected);
+    (((attrs & mask) ? true : false) == expected);
 }
 
 /* The rename() implementation in MSVC's CRT is based on MoveFile()
@@ -794,16 +795,16 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
      - dir to existing file - should fail */
   DWORD old_attribs = GetFileAttributes(oldpath);
   DWORD new_attribs = GetFileAttributes(newpath);
-  if (check_attr(old_attribs, FILE_ATTRIBUTE_DIRECTORY, TRUE) &&
-      check_attr(new_attribs, FILE_ATTRIBUTE_DIRECTORY, FALSE)) {
+  if (check_attr(old_attribs, FILE_ATTRIBUTE_DIRECTORY, true) &&
+      check_attr(new_attribs, FILE_ATTRIBUTE_DIRECTORY, false)) {
     errno = ENOTDIR;
     return -1;
   }
   /* Another cornercase not handled by MoveFileEx:
      - file to existing read-only file - should succeed
      remove read-only bit before trying to rename */
-  BOOL removed_readonly = FALSE;
-  if (check_attr(new_attribs, FILE_ATTRIBUTE_READONLY, TRUE)) {
+  bool removed_readonly = false;
+  if (check_attr(new_attribs, FILE_ATTRIBUTE_READONLY, true)) {
     removed_readonly =
       SetFileAttributes(newpath, new_attribs & ~FILE_ATTRIBUTE_READONLY);
   }
@@ -820,8 +821,8 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
   }
   /* Another cornercase not handled by MoveFileEx:
      - dir to empty dir - positive - should succeed */
-  if (check_attr(old_attribs, FILE_ATTRIBUTE_DIRECTORY, TRUE) &&
-      check_attr(new_attribs, FILE_ATTRIBUTE_DIRECTORY, TRUE) &&
+  if (check_attr(old_attribs, FILE_ATTRIBUTE_DIRECTORY, true) &&
+      check_attr(new_attribs, FILE_ATTRIBUTE_DIRECTORY, true) &&
       !PathIsPrefix(oldpath, newpath)) {
     /* Try to delete: RemoveDirectoryW fails on non-empty dirs as intended.
        Then try again. */
