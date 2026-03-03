@@ -24,7 +24,7 @@ Error: Signature mismatch:
        is not included in
          type ('a, 'b) t = 'a * 'b
        The type "'a * (|'a|)" is not equal to the type "'a * (|'b|)"
-       Type "'a" is not equal to type "'b"
+       Type "(|'a|)" is not equal to type "(|'b|)"
 |}];;
 
 module M : sig
@@ -47,7 +47,7 @@ Error: Signature mismatch:
        is not included in
          type ('a, 'b) t = 'a * 'a
        The type "'a * (|'b|)" is not equal to the type "'a * (|'a|)"
-       Type "'b" is not equal to type "'a"
+       Type "(|'b|)" is not equal to type "(|'a|)"
 |}];;
 
 type 'a x
@@ -73,7 +73,7 @@ Error: Signature mismatch:
          type ('a, 'b, 'c) t = ('a * 'b * 'c * 'b * 'a) x
        The type "('b * 'c * (|'a|) * 'c * (|'a|)) x" is not equal to the type
          "((|'b|) * 'c * 'a * 'c * (|'b|)) x"
-       Type "'a" is not equal to type "'b"
+       Type "(|'a|)" is not equal to type "(|'b|)"
 |}]
 
 module M : sig
@@ -662,7 +662,7 @@ Error: Signature mismatch:
        is not included in
          val x : 'a list ref
        The type "(|'_weak2|) list ref" is not compatible with the type "(|'a|) list ref"
-       Type "'_weak2" is not compatible with type "'a"
+       Type "(|'_weak2|)" is not compatible with type "(|'a|)"
 |}];;
 
 module M = struct let r = ref [] end;;

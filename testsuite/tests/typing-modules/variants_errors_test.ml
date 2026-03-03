@@ -174,7 +174,7 @@ Error: Signature mismatch:
          "A of 'b"
        is not the same as:
          "A of 'a"
-       The type "'b" is not equal to the type "'a"
+       The type "(|'b|)" is not equal to the type "(|'a|)"
 |}];;
 
 module M : sig
@@ -200,7 +200,7 @@ Error: Signature mismatch:
          "A of 'a"
        is not the same as:
          "A of 'a"
-       The type "'a" is not equal to the type "'b"
+       The type "(|'a|)" is not equal to the type "(|'b|)"
 |}];;
 
 
