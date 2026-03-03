@@ -517,4 +517,3 @@ let remove_option typ =
        ~level:(get_level typ)
        ~scope:(get_scope typ)
        ~id:(get_id typ))
-

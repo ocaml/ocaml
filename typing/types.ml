@@ -511,38 +511,31 @@ let commu_var () = Cvar {commu=Cunknown}
 
 (**** Representative of a type ****)
 
-let rec repr_link (t : type_expr) d : type_expr -> type_expr =
- function
-   {desc = Tlink t' | Texpand (t', _, _) as d'} ->
-     let d' = match d with
-     | Texpand (_, path, args) -> Texpand (t', path, args)
-           (* keep the original name and args if they exist *)
-           (* NB: Texpand is allocated at each recursion;
-              could be optimized *)
-     | _ -> d'
-     in
-     repr_link t d' t'
- | {desc = Tfield (_, k, _, t') as d'}
-   when field_kind_internal_repr k = FKabsent ->
-     repr_link t d' t'
-     (* In the case of Tfield, d does not contain an abbreviation,
-        thus we do not need a case analysis like above. *)
- | t' ->
-     log_change (Ccompress (t, t.desc, d));
-     t.desc <- d;
-     t'
+let repr_update t_orig d =
+  log_change (Ccompress (t_orig, t_orig.desc, d));
+  t_orig.desc <- d
 
-let repr_link1 t d = function
-   {desc = Tlink t' | Texpand (t', _, _) as d'} ->
-     let d' = match d with
-     | Texpand (_, path, args) -> Texpand (t', path, args)
-     | _ -> d'
-     in
-     repr_link t d' t'
- | {desc = Tfield (_, k, _, t') as d'}
-   when field_kind_internal_repr k = FKabsent ->
-     repr_link t d' t'
- | t' -> t'
+let rec repr_expand update t_orig t path args =
+  match t.desc with
+  | Tlink t' | Texpand (t', _, _) ->
+      repr_expand true t_orig t' path args
+  | Tfield (_, k, _, t') when field_kind_internal_repr k = FKabsent ->
+      repr_expand true t_orig t' path args
+  | _ ->
+      if update then repr_update t_orig (Texpand (t, path, args));
+      t
+
+let rec repr_link update t_orig t =
+  match t.desc with
+  | Tlink t' ->
+      repr_link true t_orig t'
+  | Texpand (t', path, args) ->
+      repr_expand true t_orig t' path args
+  | Tfield (_, k, _, t') when field_kind_internal_repr k = FKabsent ->
+      repr_link true t_orig t'
+  | _ ->
+      if update then repr_update t_orig (Tlink t);
+      t
 
 (* A non-normalized type may contain an arbitrarily long chain of
    [Tlink] or [Texpand] prefixing the actual node (neither
@@ -564,12 +557,13 @@ let repr_link1 t d = function
  *)
 
 let repr t =
-  let d = t.desc in
-  match d with
-    Tlink t' | Texpand (t', _, _) ->
-      repr_link1 t d t'
+  match t.desc with
+  | Tlink t' ->
+      repr_link false t t'
+  | Texpand (t', path, args) ->
+      repr_expand false t t' path args
   | Tfield (_, k, _, t') when field_kind_internal_repr k = FKabsent ->
-      repr_link1 t d t'
+      repr_link true t t'
   | _ -> t
 
 (* scope_field and marks *)
