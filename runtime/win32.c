@@ -40,7 +40,6 @@
 #include <string.h>
 #include <signal.h>
 #include <wchar.h>
-#include <stdbool.h>
 #include "caml/alloc.h"
 #include "caml/codefrag.h"
 #include "caml/fail.h"
@@ -775,13 +774,6 @@ CAMLexport wchar_t *caml_win32_getenv(wchar_t const *lpName)
   return lpBuffer;
 }
 
-Caml_inline bool check_attr(DWORD attrs, DWORD mask, bool expected)
-{
-  return
-    (attrs != INVALID_FILE_ATTRIBUTES) &&
-    (((attrs & mask) ? true : false) == expected);
-}
-
 /* The rename() implementation in MSVC's CRT is based on MoveFile()
    and therefore fails if the new name exists.  This is inconsistent
    with POSIX and a problem in practice.  Here we reimplement
@@ -794,11 +786,13 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
   /* First handle corner-case not handled by MoveFileEx:
      - dir to existing file - should fail */
   DWORD old_attribs = GetFileAttributes(oldpath);
-  DWORD new_attribs = GetFileAttributes(newpath);
-  if (check_attr(old_attribs, FILE_ATTRIBUTE_DIRECTORY, true) &&
-      check_attr(new_attribs, FILE_ATTRIBUTE_DIRECTORY, false)) {
-    errno = ENOTDIR;
-    return -1;
+  if ((old_attribs != INVALID_FILE_ATTRIBUTES) &&
+      (old_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+    DWORD new_attribs = GetFileAttributes(newpath);
+    if ((new_attribs != INVALID_FILE_ATTRIBUTES) &&
+        (new_attribs & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+        errno = ENOTDIR;
+        return -1;
   }
   /* MOVEFILE_REPLACE_EXISTING: to be closer to POSIX
      MOVEFILE_COPY_ALLOWED: MoveFile performs a copy if old and new
@@ -813,8 +807,9 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
   }
   /* Another cornercase not handled by MoveFileEx:
      - file to existing read-only file - should succeed */
-  if (GetLastError() == ERROR_ACCESS_DENIED &&
-      check_attr(new_attribs, FILE_ATTRIBUTE_READONLY, true)) {
+  if ((new_attribs != INVALID_FILE_ATTRIBUTES) &&
+      (new_attribs & FILE_ATTRIBUTE_READONLY) != 0 &&
+      (GetLastError() == ERROR_ACCESS_DENIED)) {
     /* Remove read-only bit before trying to rename */
     SetFileAttributes(newpath, new_attribs & ~FILE_ATTRIBUTE_READONLY);
     if (MoveFileEx(oldpath, newpath,
@@ -825,8 +820,10 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
   }
   /* Another cornercase not handled by MoveFileEx:
      - dir to empty dir - positive - should succeed */
-  if (check_attr(old_attribs, FILE_ATTRIBUTE_DIRECTORY, true) &&
-      check_attr(new_attribs, FILE_ATTRIBUTE_DIRECTORY, true) &&
+  if ((old_attribs != INVALID_FILE_ATTRIBUTES) &&
+      (old_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0 &&
+      (new_attribs != INVALID_FILE_ATTRIBUTES) &&
+      (new_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0 &&
       !PathIsPrefix(oldpath, newpath)) {
     /* Try to delete: RemoveDirectoryW fails on non-empty dirs as intended.
        Then try again. */
