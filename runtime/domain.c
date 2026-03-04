@@ -241,7 +241,6 @@ static atomic_uintnat /* dom_internal* */ stw_leader = 0;
 static uintnat stw_requests_suspended = 0; /* protected by all_domains_lock */
 static caml_plat_cond requests_suspended_cond = CAML_PLAT_COND_INITIALIZER;
 static dom_internal* all_domains;
-static atomic_intnat domains_exiting = 0;
 
 CAMLexport atomic_uintnat caml_num_domains_running = 0;
 
@@ -1061,7 +1060,6 @@ CAMLexport void caml_reset_domain_lock(void)
 
 void caml_init_domains(uintnat max_domains, uintnat minor_heap_wsz)
 {
-  atomic_store_relaxed(&domains_exiting, 0);
   atomic_store_relaxed(&caml_num_domains_running, 0);
 
   /* Use [caml_stat_calloc_noexc] to zero initialize [all_domains]. */
@@ -1481,10 +1479,6 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
   struct domain_startup_params p;
   caml_plat_thread th;
   int err;
-
-  if (atomic_load_relaxed(&domains_exiting) != 0) {
-    caml_failwith("domain creation not allowed during shutdown");
-  }
 
 #ifndef NATIVE_CODE
   if (caml_debugger_in_use)
