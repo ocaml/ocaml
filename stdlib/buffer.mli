@@ -36,19 +36,13 @@
     called the {b capacity}, is greater or equal to the number of
     characters stored in the buffer (its {b length}).
 
-    When an operation needs to add more characters than the remaining
-    capacity allows, the backing byte sequence is reallocated. The new
-    capacity is the smallest power-of-two multiple of the initial size [n]
-    (as given to {!create}) that is large enough to hold the resulting
-    contents. In other words, the capacity is always [n * 2{^k}] for
-    some non-negative integer [k], up to a maximum of
-    {!Sys.max_string_length}.
+    The implementation uses a standard exponential reallocation strategy which
+    guarantees amortized constant-time operation; in particular, the total
+    capacity of all backing byte sequences allocated over the lifetime of a
+    buffer is at worst proportional to the total number of characters added.
 
-    This exponential reallocation strategy ensures that appending
-    characters has amortized constant-time cost.
-
-    {!clear} preserves the current capacity, while {!reset} returns
-    the capacity to its initial value [n].
+    {!clear} preserves the current backing byte sequence, while {!reset}
+    restores the original backing byte sequence.
 *)
 
 (** {b Unsynchronized accesses} *)
