@@ -54,11 +54,12 @@ let rec consume buff cur max =
 let _ =
   let buff1 = create 20 0 and buff2 = create 30 0 in
   let ok1 = ref false and ok2 = ref false in
-  let _p1 = Domain.spawn (fun () -> produce buff1 0 10000)
-  and _p2 = Domain.spawn (fun () -> produce buff2 0 8000)
+  let p1 = Domain.spawn (fun () -> produce buff1 0 10000)
+  and p2 = Domain.spawn (fun () -> produce buff2 0 8000)
   and c1 = Domain.spawn (fun () -> ok1 := consume buff1 0 10000) in
   ok2 := consume buff2 0 8000;
   Domain.join c1;
   if !ok1 && !ok2
   then print_string "passed\n"
-  else print_string "FAILED\n"
+  else print_string "FAILED\n";
+  List.iter Domain.join [p1; p2]
