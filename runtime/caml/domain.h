@@ -264,9 +264,6 @@ void caml_global_barrier_release_as_final(barrier_status status);
  * Termination helpers.
  */
 
-/* Force all other domains to stop their operation. */
-void caml_stop_all_domains(void);
-
 /* Try and release all synchronisation resources set up by
    caml_init_domains(). Returns whether all resources could be released. */
 bool caml_free_domains(void);
