@@ -177,24 +177,36 @@ struct
 
   let enqueue k = Q.push pqueue k; Gc.minor ()
 
+  (* count the number of domains that are currently
+     active doing a task from the queue. *)
+  let active = Atomic.make 0
+
   let rec dequeue () =
     match Q.pop pqueue with
       | Some k ->
+          Atomic.incr active;
           continue k ()
       | None ->
-          ignore (Unix.select [] [] [] 0.01);
-          dequeue ()
+          (* If no task is available we can wait a bit and recheck if
+             another task has spawned new subtasks in the
+             meantime. But if no other task is active we know that if
+             are collectively done. *)
+          if Atomic.get active = 0 then ()
+          else begin
+            ignore (Unix.select [] [] [] 0.01);
+            dequeue ()
+          end
 
   let rec exec f =
     let pid = get_free_pid () in
       match_with f ()
-      { retc = (fun () -> dequeue ());
-        exnc = (fun e -> raise e);
+      { retc = (fun () -> return ());
+        exnc = (fun e -> fail e);
         effc = fun (type a) (e : a t) ->
           match e with
           | Suspend f -> Some (fun (k : (a, _) continuation) ->
               match f k with
-                | None -> dequeue ()
+                | None -> return ()
                 | Some v -> continue k v)
         | Resume (t, v) -> Some (fun (k : (a, _) continuation) ->
             enqueue k;
@@ -206,17 +218,28 @@ struct
             exec f)
         | Yield -> Some (fun (k : (a, _) continuation) ->
             enqueue k;
-            dequeue ())
+            return ())
         | _ -> None }
+
+  and return () =
+    Atomic.decr active;
+    (* when a task returns we immediately start working on a nother. *)
+    dequeue ()
+
+  and fail e =
+    Atomic.decr active;
+    raise e
 
   let num_threads = 2
 
   let start f =
+    let doms = Queue.create () in
     for i = 1 to num_threads - 1 do
-      ignore (Domain.spawn dequeue)
+      let dom = Domain.spawn dequeue in
+      Queue.push dom doms;
     done;
-    exec f
-
+    exec f;
+    Queue.iter Domain.join doms
 
 end
 
