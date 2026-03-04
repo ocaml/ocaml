@@ -230,8 +230,7 @@ CAMLexport void caml_shutdown(void)
   call_registered_value("Pervasives.do_at_exit");
   call_registered_value("Thread.at_shutdown");
   if (!caml_domain_alone()) {
-    caml_gc_log("Some domains have not been joined prior to shutdown");
-    caml_stop_all_domains();
+    caml_fatal_error("Some domains have not been joined prior to shutdown");
   } else {
     /* These calls are not safe to use if there are domains left running */
     caml_domain_terminate(true);
