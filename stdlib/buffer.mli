@@ -32,9 +32,9 @@
 
 (** {1:capacity Capacity and reallocation strategy}
 
-    Internally, a buffer uses a {b backing byte sequence} whose length,
-    called the {b capacity}, is greater or equal to the number of
-    characters stored in the buffer (its {b length}).
+    Internally, a buffer uses a {b backing byte sequence} whose size, called the
+    {b capacity}, is greater or equal to the number of characters stored in the
+    buffer (its {b length}).
 
     The implementation uses a standard exponential reallocation strategy which
     guarantees amortized constant-time operation; in particular, the total
