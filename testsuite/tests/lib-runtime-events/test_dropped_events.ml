@@ -33,7 +33,7 @@ let wait_ready () =
       Domain.cpu_relax ()
     done
 
-let _ =
+let producer_dom =
   Domain.spawn (fun () ->
     Runtime_events.start ();
     wait_ready ();
@@ -61,4 +61,5 @@ let ()
       Runtime_events.read_poll cursor callbacks None
       |> ignore
     done
-  done
+  done;
+  Domain.join producer_dom
