@@ -28,6 +28,6 @@ Line 3, characters 12-18:
                 ^^^^^^
 Error: This pattern matches values of type "((|'a|) * (|'a|), (|'a|) * (|'a|)) segment"
        but a pattern was expected which matches values of type
-         "('a (|*|) 'a, 'a) segment"
+         "((|'a|) * (|'a|), (|'a|)) segment"
        The type variable "'a" occurs inside "'a * 'a"
 |}]

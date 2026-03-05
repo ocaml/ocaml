@@ -29,6 +29,6 @@ Line 3, characters 4-7:
         ^^^
 Error: This pattern matches values of type "('b * (|'a|), 'b * (|'a|)) t"
        but a pattern was expected which matches values of type
-         "('b (|*|) 'a, 'a) t"
+         "('b * (|'a|), (|'a|)) t"
        The type variable "'a" occurs inside "'b * 'a"
 |}];;

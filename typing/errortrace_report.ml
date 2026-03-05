@@ -458,10 +458,9 @@ let highlight_explanation_core (type variety)
   | Errortrace.Variant v -> highlight_variant v
   | Errortrace.Obj _
   | Errortrace.First_class_module _ -> no_highlight
-  | Errortrace.Rec_occur(x,y) ->
-      let got = Errortrace.highlight_type Paired x in
-      let expected = Errortrace.highlight_type Paired y in
-      Errortrace.no_ctx { got; expected }
+  | Errortrace.Rec_occur(x,_) ->
+      let l = Errortrace.highlight_type Independent x in
+      Errortrace.no_ctx { got=l; expected=l }
   | Errortrace.Univar um -> highlight_univar um
   | Errortrace.Highlight_hint h -> Errortrace.no_ctx h
 
