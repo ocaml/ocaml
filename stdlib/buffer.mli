@@ -43,7 +43,7 @@
 
     {!clear} preserves the current backing store (so no memory is freed), while
     {!reset} frees the current backing store, releasing memory at the price of
-    potentially having to reallocate more memory later on.
+    potentially having to reallocate later on.
 *)
 
 (** {b Unsynchronized accesses} *)
