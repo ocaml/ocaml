@@ -32,17 +32,18 @@
 
 (** {1:capacity Capacity and reallocation strategy}
 
-    Internally, a buffer uses a {b backing byte sequence} whose size, called the
-    {b capacity}, is greater or equal to the number of characters stored in the
-    buffer (its {b length}).
+    Internally, a buffer uses a {b backing store} (a byte sequence) whose size,
+    called the {b capacity}, is greater or equal to the number of characters
+    stored in the buffer (its {b length}).
 
     The implementation uses a standard exponential reallocation strategy which
-    guarantees amortized constant-time operation; in particular, the total
-    capacity of all backing byte sequences allocated over the lifetime of a
-    buffer is at worst proportional to the total number of characters added.
+    guarantees amortized constant-time operation; in particular, the total size
+    of all backing stores allocated over the lifetime of a buffer is at worst
+    proportional to the total number of characters added.
 
-    {!clear} preserves the current backing byte sequence, while {!reset}
-    restores the original backing byte sequence.
+    {!clear} preserves the current backing store (so no memory is freed), while
+    {!reset} frees the current backing store, releasing memory at the price of
+    potentially having to reallocate more memory later on.
 *)
 
 (** {b Unsynchronized accesses} *)
