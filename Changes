@@ -845,6 +845,9 @@ OCaml 5.5.0
   (Gabriel Scherer and Stefan Muenzel, report by Brandon Stride,
    review by Florian Angeletti)
 
+- #14626: Handle module-dependent functions in warning 16 (Reported in #14622).
+  (Alistair O'Brien, review by Gabriel Scherer, report by Kate Deplaix)
+
 OCaml 5.4.0 (9 October 2025)
 ----------------------------
 
