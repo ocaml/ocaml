@@ -6221,6 +6221,7 @@ let arrow_spine env ty =
     then (
       match get_desc ty with
       | Tarrow (label, ty_arg, ty_ret, _commu) ->
+        (* FIXME: Tfunctor *)
         arrow_spine_rec ~mark ((label, ty_arg) :: labels) ty_ret
       | _ -> List.rev labels, `Return ty)
     else List.rev labels, `Cycle

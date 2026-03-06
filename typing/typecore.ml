@@ -3721,6 +3721,7 @@ let check_partial_application ~statement exp =
     let ty = get_desc (expand_head exp.exp_env exp.exp_type) in
     match ty with
     | Tarrow _ ->
+       (* FIXME: Tfunctor *)
         let rec check {exp_desc; exp_loc; exp_extra; _} =
           if List.exists (function
               | (Texp_constraint _, _, _) -> true
@@ -4373,7 +4374,8 @@ and type_expect_
         let ty = expand_head env ty_fun in
         if TypeSet.mem ty seen then () else
           match get_desc ty with
-            Tarrow (_l, ty_arg, ty_fun, _com) ->
+          | Tarrow (_l, ty_arg, ty_fun, _com) ->
+             (* FIXME: Tfunctor ? *)
               (try Ctype.unify_var env (newvar2 outer_level) ty_arg
                with Unify _ -> assert false);
               lower_args (TypeSet.add ty seen) ty_fun
@@ -6223,7 +6225,8 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
     let work () =
       let te = expand_head env ty_expected' in
       match get_desc te with
-        Tarrow(Nolabel,_,ty_res0,_) ->
+      | Tarrow(Nolabel,_,ty_res0,_) ->
+         (* FIXME: Tfunctor? *)
           Some (no_labels ty_res0, get_level te)
       | _ -> None
     in
@@ -6249,6 +6252,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
             in
             make_args ((l, Arg ty) :: args) ty_fun
         | Tarrow (l,_,ty_res',_) when l = Nolabel || !Clflags.classic ->
+           (* FIXME: Tfunctor? *)
             List.rev args, ty_fun, no_labels ty_res'
         | Tvar _ ->  List.rev args, ty_fun, false
         |  _ -> [], texp.exp_type, false
@@ -7498,6 +7502,7 @@ let report_partial_application = function
   | Some tr -> begin
       match get_desc tr.Errortrace.got.Errortrace.expanded with
       | Tarrow _ ->
+         (* FIXME: Tfunctor? *)
           [ Location.msg
               "@[@{<hint>Hint@}:@ This function application is partial,@ \
                maybe@ some@ arguments@ are missing.@]" ]
@@ -7703,7 +7708,8 @@ let report_error ~loc env = function
       funct; func_ty; res_ty; previous_arg_loc; extra_arg_loc
     } ->
       begin match get_desc func_ty with
-        Tarrow _ ->
+      | Tarrow _ ->
+         (* FIXME: Tfunctor? *)
           let returns_unit = match get_desc res_ty with
             | Tconstr (p, _, _) -> Path.same p Predef.path_unit
             | _ -> false

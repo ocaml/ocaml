@@ -530,9 +530,10 @@ module Analyser =
             in
             let real_type =
               match get_desc met_type with
-              Tarrow (_, _, t, _) ->
+              | Tarrow (_, _, t, _) ->
+                (* FIXME: Tfunctor? *)
                 t
-            |  _ ->
+              |  _ ->
                 (* ?!? : not an arrow type ! return the original type *)
                 met_type
           in

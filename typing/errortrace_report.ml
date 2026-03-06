@@ -135,6 +135,7 @@ let unifiable env ty1 ty2 =
   Btype.backtrack snap;
   res
 
+(* FIXME: consider the Tfunctor case *)
 let explanation_diff env t3 t4 =
   match Types.get_desc t3, Types.get_desc t4 with
   | Tarrow (_, ty1, ty2, _), _
