@@ -49,6 +49,9 @@
    The 3 numbers are 64 bits each, in big endian.
 */
 
+/* Maximum header size (6-bit field, max 63) */
+#define MAX_INTEXT_HEADER_SIZE 63
+
 /* Codes for the compact format */
 
 #define PREFIX_SMALL_BLOCK 0x80
@@ -146,7 +149,7 @@ CAMLextern value caml_input_value_from_malloc(char * data, intnat ofs);
      to the beginning of the buffer, and [ofs] is the offset of the
      beginning of the externed data in this buffer.  The buffer is
      deallocated with [free] on return, or if an exception is raised. */
-CAMLextern value caml_input_value_from_block(char * data, intnat len);
+CAMLextern value caml_input_value_from_block(const char * data, intnat len);
   /* Read a structured value from a user-provided buffer.  [data] points
      to the beginning of the externed data in this buffer,
      and [len] is the length in bytes of valid data in this buffer.

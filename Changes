@@ -1,6 +1,11 @@
 Working 4.05.x branch
 ---------------------
 
+- CVE-2026-28364: Add comprehensive bounds checking to Marshal
+  deserialization to prevent buffer over-reads when processing
+  malicious or truncated data
+  (Nicolás Ojeda Bär, Xavier Leroy, Caleb Wolfe)
+
 - MPR#7639, GPR#1371: fix configure script for correct detection of
   int64 alignment on Mac OS X 10.13 (High Sierra) and above; fix bug in
   configure script relating to such detection.
