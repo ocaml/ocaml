@@ -454,12 +454,21 @@ let glb_array_type t1 t2 =
 
 (* Specialize a primitive from available type information. *)
 
+let find_arrow_type ty =
+  (* Note: [external] declarations do not support module-dependent
+     functors for now, so we do not need to handle [Tfunctor] here. *)
+  match Types.get_desc ty with
+  | Tarrow (_lab, lhs, rhs, _commu) ->
+    Some (lhs, rhs)
+  | _ ->
+    None
+
 let specialize_primitive env ty ~has_constant_constructor prim =
   let param_tys =
-    match is_function_type env ty with
+    match find_arrow_type ty with
     | None -> []
     | Some (p1, rhs) ->
-      match is_function_type env rhs with
+      match find_arrow_type rhs with
       | None -> [p1]
       | Some (p2, _) -> [p1;p2]
   in
@@ -471,7 +480,7 @@ let specialize_primitive env ty ~has_constant_constructor prim =
     end
   | Primitive (Pfield (n, Pointer, mut), arity), _ ->
       (* try strength reduction based on the *result type* *)
-      let is_int = match is_function_type env ty with
+      let is_int = match find_arrow_type ty with
         | None -> Pointer
         | Some (_p1, rhs) -> maybe_pointer_type env rhs in
       Some (Primitive (Pfield (n, is_int, mut), arity))
