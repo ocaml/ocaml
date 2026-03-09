@@ -506,21 +506,22 @@ static value caml_floatarray_gather(intnat num_arrays,
   if (size == 0) {
     /* If total size = 0, just return empty array */
     res = Atom(0);
+  } else {
+    /* This is an array of floats.  We can use memcpy directly. */
+    if (size > Max_wosize/Double_wosize) caml_invalid_argument("Array.concat");
+    mlsize_t wsize = size * Double_wosize; /* total size, in words */
+    res = caml_alloc(wsize, Double_array_tag);
+    mlsize_t pos = 0;
+    for (mlsize_t i = 0; i < num_arrays; i++) {
+      /* [res] is freshly allocated, and no other domain has a reference to it.
+         Hence, a plain [memcpy] is sufficient. */
+      memcpy((double *)res + pos,
+             (double *)arrays[i] + offsets[i],
+             lengths[i] * sizeof(double));
+      pos += lengths[i];
+    }
+    CAMLassert(pos == size);
   }
-  /* This is an array of floats.  We can use memcpy directly. */
-  if (size > Max_wosize/Double_wosize) caml_invalid_argument("Array.concat");
-  mlsize_t wsize = size * Double_wosize; /* total size, in words */
-  res = caml_alloc(wsize, Double_array_tag);
-  mlsize_t pos = 0;
-  for (mlsize_t i = 0; i < num_arrays; i++) {
-    /* [res] is freshly allocated, and no other domain has a reference to it.
-       Hence, a plain [memcpy] is sufficient. */
-    memcpy((double *)res + pos,
-           (double *)arrays[i] + offsets[i],
-           lengths[i] * sizeof(double));
-    pos += lengths[i];
-  }
-  CAMLassert(pos == size);
   CAMLreturn(res);
 }
 
