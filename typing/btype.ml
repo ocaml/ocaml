@@ -301,7 +301,7 @@ let is_constr_row ~allow_ident t =
 (* TODO: where should this really be *)
 (* Set row_name in Env, cf. GPR#1204/1329 *)
 let set_static_row_name decl path =
-  match decl.type_manifest with
+  if decl.type_private = Public then match decl.type_manifest with
     None -> ()
   | Some ty ->
       match get_desc ty with

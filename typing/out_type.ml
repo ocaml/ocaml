@@ -1197,12 +1197,9 @@ let rec tree_of_typexp mode ty =
             let args = tree_of_typlist mode (apply_subst s tyl) in
             let out_variant =
               if is_nth s then List.hd args else Otyp_constr (id, args) in
-            if closed && all_present then
-              out_variant
-            else
-              let tags =
-                if all_present then None else Some (List.map fst present) in
-              Otyp_variant (Ovar_typ out_variant, closed, tags)
+            let tags =
+              if all_present then None else Some (List.map fst present) in
+            Otyp_variant (Ovar_typ out_variant, closed, tags)
         | _ ->
             let fields = List.map (tree_of_row_field mode) fields in
             let tags =
@@ -2033,7 +2030,6 @@ let same_path t t' =
           List.for_all2 eq_type tl tl'
       | _ -> false
       end
-  | Tconstr _, _ | _, Tconstr _ -> false
   | _ -> false
 
 type expansion_diff =
