@@ -2628,6 +2628,11 @@ bytecomp/opcodes.cmo : \
 bytecomp/opcodes.cmx : \
     bytecomp/opcodes.cmi
 bytecomp/opcodes.cmi :
+bytecomp/opnames.cmo : \
+    bytecomp/opnames.cmi
+bytecomp/opnames.cmx : \
+    bytecomp/opnames.cmi
+bytecomp/opnames.cmi :
 bytecomp/printinstr.cmo : \
     lambda/printlambda.cmi \
     parsing/location.cmi \
@@ -8055,7 +8060,7 @@ tools/cvt_emit.cmx : \
 tools/cvt_emit.cmi :
 tools/dumpobj.cmo : \
     bytecomp/symtable.cmi \
-    tools/opnames.cmi \
+    bytecomp/opnames.cmi \
     bytecomp/opcodes.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
@@ -8068,7 +8073,7 @@ tools/dumpobj.cmo : \
     tools/dumpobj.cmi
 tools/dumpobj.cmx : \
     bytecomp/symtable.cmx \
-    tools/opnames.cmx \
+    bytecomp/opnames.cmx \
     bytecomp/opcodes.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
@@ -8290,11 +8295,6 @@ tools/ocamltex.cmx : \
     parsing/ast_helper.cmx \
     tools/ocamltex.cmi
 tools/ocamltex.cmi :
-tools/opnames.cmo : \
-    tools/opnames.cmi
-tools/opnames.cmx : \
-    tools/opnames.cmi
-tools/opnames.cmi :
 tools/primreq.cmo : \
     utils/misc.cmi \
     utils/config.cmi \

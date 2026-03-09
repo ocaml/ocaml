@@ -210,6 +210,7 @@ ocamlcommon_SOURCES = \
 
 ocamlbytecomp_SOURCES = \
   bytecomp/byterntm.mll \
+  bytecomp/opnames.mli bytecomp/opnames.ml \
   bytecomp/instruct.mli bytecomp/instruct.ml \
   bytecomp/bytegen.mli bytecomp/bytegen.ml \
   bytecomp/printinstr.mli bytecomp/printinstr.ml \
@@ -2554,16 +2555,8 @@ ocamlcmt_SOURCES = tools/ocamlcmt.mli tools/ocamlcmt.ml
 
 dumpobj_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
 dumpobj_SOURCES = $(addprefix tools/, \
-  opnames.mli opnames.ml \
   dumpobj.mli dumpobj.ml)
 
-tools/opnames.ml: tools/opnames.ml.c runtime/caml/opcodes.h
-	$(V_GEN)$(CPP) -I runtime $< > $@
-
-clean::
-	rm -f tools/opnames.ml
-
-beforedepend:: tools/opnames.ml
 
 # Display info on compiled files
 
@@ -2686,10 +2679,13 @@ bytecomp/opcodes.ml: bytecomp/opcodes.ml.c runtime/caml/opcodes.h
 bytecomp/opcodes.mli: bytecomp/opcodes.ml
 	$(V_GEN)$(CAMLC) -i $< > $@
 
-partialclean::
-	rm -f bytecomp/opcodes.ml bytecomp/opcodes.mli
+bytecomp/opnames.ml: bytecomp/opnames.ml.c runtime/caml/opcodes.h
+	$(V_GEN)$(CPP) -I runtime $< > $@
 
-beforedepend:: bytecomp/opcodes.ml bytecomp/opcodes.mli
+partialclean::
+	rm -f bytecomp/opcodes.ml bytecomp/opcodes.mli bytecomp/opnames.ml
+
+beforedepend:: bytecomp/opcodes.ml bytecomp/opcodes.mli bytecomp/opnames.ml
 
 ifneq "$(wildcard .git)" ""
 include Makefile.dev
