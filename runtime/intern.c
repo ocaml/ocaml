@@ -663,7 +663,7 @@ static void intern_rec(struct caml_intern_state* s,
         header = (header_t) read32u(s);
         tag = Tag_hd(header);
         size = Wosize_hd(header);
-        if (CAMLunlikely(tag >= No_scan_tag
+        if (CAMLunlikely((tag >= No_scan_tag && size > 0)
                          || tag == Infix_tag || tag == Cont_tag))
           intern_cleanup_failwith2(s, fun_name, "invalid block32");
         goto read_block;
@@ -672,7 +672,7 @@ static void intern_rec(struct caml_intern_state* s,
         header = (header_t) read64u(s);
         tag = Tag_hd(header);
         size = Wosize_hd(header);
-        if (CAMLunlikely(tag >= No_scan_tag
+        if (CAMLunlikely((tag >= No_scan_tag && size > 0)
                          || tag == Infix_tag || tag == Cont_tag))
           intern_cleanup_failwith2(s, fun_name, "invalid block64");
         goto read_block;
