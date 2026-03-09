@@ -75,6 +75,9 @@ let match_simple_printer_type env ty ~is_old_style =
       then Some (Old ty_arg)
       else Some (Simple ty_arg)
 
+(* Note: these functions do not need to support
+   [Tfunctor] arrows (module-dependent functors),
+   as those do not occur in toplevel printer types. *)
 let filter_arrow env ty =
   let ty = Ctype.expand_head env ty in
   match Types.get_desc ty with
