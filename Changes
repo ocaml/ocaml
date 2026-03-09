@@ -105,6 +105,11 @@ Working version
 
 ### Bug fixes:
 
+- #14635: Fix a control-flow bug in `caml_floatarray_gather` that could make
+  empty `Float.Array.sub`, `Float.Array.append`, and `Float.Array.concat`
+  results use a non-canonical runtime representation.
+  (Marc Lasson, review by Gabriel Scherer)
+
 - #14492: Fix Obj.dup on closures.
   (Mark Shinwell and Nick Barnes, review by Gabriel Scherer and Damien Doligez)
 
