@@ -3987,6 +3987,7 @@ let rec is_inferred sexp =
   | Pexp_coerce _ | Pexp_send _ | Pexp_new _ | Pexp_pack (_, Some _) -> true
   | Pexp_sequence (_, e) -> is_inferred e
   | Pexp_ifthenelse (_, e1, Some e2) -> is_inferred e1 && is_inferred e2
+  | Pexp_struct_item( { pstr_desc= Pstr_open _; _ }, e ) -> is_inferred e
   | _ -> false
 
 (* check if the type of %apply or %revapply matches the type expected by
