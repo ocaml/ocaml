@@ -911,15 +911,31 @@ let is_reachable
     ty_path
   =
   let visited = ref TypeSet.empty in
-  (* We need to keeps paths since sometimes constraints can create a
-     fresh type with a constructor that we've already seen.
+  (* We need to keeps paths since [visited] is insufficient to detect
+     certain already visited types.
 
      For example:
-     type 'a v = [`A of u v] constraint 'a = t and t = u and u = t;;
+     {[
+       module PR_4261 = struct
+         module type S =
+         sig
+           type t
+         end
+
+         module type T =
+         sig
+           module D : S
+           type t = D.t
+         end
+
+         module rec U : T with type D.t = U'.t = U
+         and U' : S with type t = U'.t = U
+       end
+     ]}
 
      Those paths may not uniquely identify a type (since they may have
      different type parameters), so we save all types, and compare
-     thenm inside an abstract environment.
+     them inside an abstract environment.
   *)
   let visited_paths = ref Path.Map.empty in
   let raise_error ~trace =
