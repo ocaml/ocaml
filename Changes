@@ -107,7 +107,7 @@ Working version
 
 - #14635: Fix a bug in `caml_floatarray_gather` that would cause
   the result of `Float.Array.sub`, `Float.Array.append`, `Float.Array.concat`
-  (when empty) not to be equal (per `=` or `==`) to `[||]`.
+  (when empty) not to be equal to `[||]`.
   (Marc Lasson, review by Gabriel Scherer)
 
 - #14492: Fix Obj.dup on closures.
