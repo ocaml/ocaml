@@ -377,17 +377,32 @@ val filter_method: Env.t -> string -> type_expr -> type_expr
     indicating that the list of labels isn't necessarily exhaustive. *)
 val arrow_labels : Env.t -> type_expr -> arg_label list * is_ret_tvar:bool
 
+(** An argument in an arrow spine. *)
+type arrow_arg =
+  | Arg_value of type_expr
+    (** A regular value argument. *)
+  | Arg_module of Ident.Unscoped.t * package
+    (** A module dependent parameter. Consisting of a dependent module name
+        and a package type for the module. *)
+
+(** The return type of an arrow. *)
+type arrow_ret =
+  | Ret_cycle
+    (** The arrow is cyclic, its return type is ill-defined. *)
+  | Ret_type of type_expr
+    (** A regular return type. *)
+
 (** [arrow_spine env ty] expands [ty] as a arrow type in [env] and returns
     its arrow spine.
 
     If [ty] is [l1:ty1 -> ... -> ln:tyn -> rty], it returns
-    [([(l1, ty1); ...; (ln, tyn)], `Return rty)].
+    [([(l1, ty1); ...; (ln, tyn)], Ret_type rty)].
 
-    If [ty] is a {e cyclic} arrow type, it returns [([...], `Cycle)]. *)
+    If [ty] is a {e cyclic} arrow type, it returns [([...], Ret_cycle)]. *)
 val arrow_spine
   :  Env.t
   -> type_expr
-  -> (arg_label * type_expr) list * [ `Return of type_expr | `Cycle ]
+  -> (arg_label * arrow_arg) list * arrow_ret
 
 val occur_in: Env.t -> type_expr -> type_expr -> bool
 val deep_occur: type_expr -> type_expr -> bool

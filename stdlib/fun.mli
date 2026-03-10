@@ -75,7 +75,7 @@ exception Finally_raised of exn
 type todo
 [@@deprecated "Do not use this type as it may be removed in the future"]
 
-exception Todo of todo [@warning "-deprecated"]
+exception Todo of todo [@alert "-deprecated"]
 (** Exception raised when a functionality is unimplemented. Notably raised by
     {!Fun.todo}.
 

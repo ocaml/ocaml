@@ -31,7 +31,7 @@ let test_protect () =
   let double_raise () =
     let f () = raise Exit in
     try
-      Fun.protect ~finally:f f ()
+      Fun.protect ~finally:f f
     with
     | Exit -> ()
   in

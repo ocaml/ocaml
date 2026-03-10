@@ -146,7 +146,8 @@ OCaml 5.5.0
 ### Runtime system:
 
 - #14469: Make continuation objects have one field instead of two.
-  (KC Sivaramakrishnan, review by Olivier Nicole, Tim McGilchrist, Zane Hambly)
+  (KC Sivaramakrishnan, review by Olivier Nicole, Tim McGilchrist, Zane Hambly
+  and Ali Caglayan)
 
 - #14416: Spawned domains will record backtraces if the parent domain has
   enabled it.
@@ -847,6 +848,9 @@ OCaml 5.5.0
   polymorphic types and unboxed constructors.
   (Gabriel Scherer and Stefan Muenzel, report by Brandon Stride,
    review by Florian Angeletti)
+
+- #14626: Handle module-dependent functions in warning 16 (Reported in #14622).
+  (Alistair O'Brien, review by Gabriel Scherer, report by Kate Deplaix)
 
 - #14635: Fix a bug in `caml_floatarray_gather` that would cause
   the result of `Float.Array.sub`, `Float.Array.append`, `Float.Array.concat`

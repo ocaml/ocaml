@@ -6214,6 +6214,14 @@ let rec normalize_type_rec mark ty =
 let normalize_type ty =
   with_type_mark (fun mark -> normalize_type_rec mark ty)
 
+type arrow_arg =
+  | Arg_value of type_expr
+  | Arg_module of Ident.Unscoped.t * package
+
+type arrow_ret =
+  | Ret_cycle
+  | Ret_type of type_expr
+
 let arrow_spine env ty =
   let rec arrow_spine_rec ~mark labels ty_fun =
     let ty = expand_head env ty_fun in
@@ -6221,9 +6229,14 @@ let arrow_spine env ty =
     then (
       match get_desc ty with
       | Tarrow (label, ty_arg, ty_ret, _commu) ->
-        arrow_spine_rec ~mark ((label, ty_arg) :: labels) ty_ret
-      | _ -> List.rev labels, `Return ty)
-    else List.rev labels, `Cycle
+        arrow_spine_rec ~mark ((label, Arg_value ty_arg) :: labels) ty_ret
+      | Tfunctor (label, mod_id, package, ty_ret) ->
+        arrow_spine_rec
+          ~mark
+          ((label, Arg_module (mod_id, package)) :: labels)
+          ty_ret
+      | _ -> List.rev labels, Ret_type ty)
+    else List.rev labels, Ret_cycle
   in
   let snap = snapshot () in
   let result =
@@ -6237,8 +6250,8 @@ let arrow_labels env ty =
   let label_tys, ret_ty_or_cycle = arrow_spine env ty in
   let is_ret_tvar =
     match ret_ty_or_cycle with
-    | `Cycle -> false
-    | `Return ty -> is_Tvar ty
+    | Ret_cycle -> false
+    | Ret_type ty -> is_Tvar ty
   in
   List.map fst label_tys, ~is_ret_tvar
 

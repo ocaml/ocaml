@@ -120,3 +120,25 @@ Line 3, characters 2-9:
 Error: The value "warn_me" has type "?arg:'a -> unit"
        but an expression was expected of type "int"
 |}]
+
+(* https://github.com/ocaml/ocaml/issues/14622 *)
+module type Show = sig
+  type t
+
+  val show : t -> string
+end
+
+type 'a t =
+  | A :
+    { x : string option
+      ; show : 'a -> string
+      }
+    -> 'a t
+
+let test (type a) ?x (module M : Show with type t = a) =
+  A { x; show = M.show }
+[%%expect{|
+module type Show = sig type t val show : t -> string end
+type 'a t = A : { x : string option; show : 'a -> string; } -> 'a t
+val test : ?x:string -> (module M : Show with type t = 'a) -> M.t t = <fun>
+|}]

@@ -5652,13 +5652,13 @@ and type_function
            only call this when necessary. *)
         let label_tys, ret_ty_or_cycle = arrow_spine env ty in
         let is_spine_only_labels =
-          List.for_all (fun (label, _ty) -> label <> Nolabel) label_tys
+          List.for_all (fun (label, _arg_ty) -> label <> Nolabel) label_tys
         in
         if is_spine_only_labels
         then (
           match ret_ty_or_cycle with
-          | `Cycle -> Some `Not_tvar
-          | `Return ty ->
+          | Ret_cycle -> Some `Not_tvar
+          | Ret_type ty ->
               if is_Tvar ty
               then Some (`Tvar ty)
               else Some `Not_tvar )
