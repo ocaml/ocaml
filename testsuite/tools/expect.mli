@@ -17,9 +17,19 @@ type string_constant =
   ; tag : string
   }
 
+type clflags =
+  | Principal
+  | Rectypes
+  | RectypesPrincipal
+
+
+module Clmap : module type of Map.Make(struct
+    type t = clflags option
+    let compare = compare
+  end)
+
 type expectation =
   { extid_loc   : Location.t (* Location of "expect" in "[%%expect ...]" *)
-  ; payload_loc : Location.t  (* Location of the whole payload *)
-  ; normal      : string_constant  (* expectation without -principal *)
-  ; principal   : string_constant  (* expectation with -principal *)
+  ; payload_loc : Location.t (* Location of the whole payload *)
+  ; text        : string_constant Clmap.t
   }
