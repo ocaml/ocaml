@@ -381,6 +381,8 @@ let expr sub x =
           sub.expr sub exp,
           List.map (tuple2 id (Typedtree.map_apply_arg (sub.expr sub))) list
         )
+    | Texp_elide_opt_thunk r ->
+        Texp_elide_opt_thunk { r with f = sub.expr sub r.f }
     | Texp_match (exp, cases, eff_cases, p) ->
         Texp_match (
           sub.expr sub exp,

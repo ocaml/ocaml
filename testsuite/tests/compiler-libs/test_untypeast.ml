@@ -113,4 +113,22 @@ type t =
   | (::)
 let f (x : t) = match x with | (::) -> 4
 - : unit = ()
+|}];;
+
+
+run {|module type T = sig type t val x: t end
+let higher
+  (f: (module X:T with type t = int) -> X.t)
+  (module X:T with type t = int) =
+  f (module X)
+let g ?(x=()) (module M:T with type t = int) = M.x
+let tfunctor_coerced = higher g
+|}
+[%%expect{|
+module type T  = sig type t val x : t end
+let higher (f : (module X : T with type t = int) -> X.t)
+  (module X : T with type t = int) = f (module X)
+let g ?(x= ()) (module M : T with type t = int) = M.x
+let tfunctor_coerced = higher g
+- : unit = ()
 |}]

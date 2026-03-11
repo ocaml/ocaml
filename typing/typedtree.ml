@@ -149,6 +149,10 @@ and expression_desc =
   | Texp_unreachable
   | Texp_extension_constructor of Longident.t loc * Path.t
   | Texp_struct_item of structure_item * expression
+  | Texp_elide_opt_thunk of {
+      f:expression;
+      n_options:int;
+    }
 
 and meth =
   | Tmeth_name of string

@@ -252,6 +252,26 @@ and transl_exp0 ~in_new_scope ~scopes e =
       event_after ~scopes e
         (transl_apply ~scopes ~tailcall ~inlined ~specialised
            (transl_exp ~scopes funct) oargs (of_location ~scopes e.exp_loc))
+  | Texp_elide_opt_thunk { f; n_options } ->
+      (* [let arg = f in fun eta -> arg ?_:None ?_:None ... eta] *)
+      let param = Ident.create_local "eta" in
+      let def = Ident.create_local "arg" in
+      let none = Lconst (Const_int 0) in
+      let loc = of_location ~scopes e.exp_loc in
+      let body = Lapply {
+          ap_loc = loc;
+          ap_func = Lvar def;
+          ap_args = List.init n_options (fun _ -> none) @ [Lvar param];
+          ap_tailcall = Default_tailcall;
+          ap_inlined = Default_inline;
+          ap_specialised = Default_specialise
+        }
+      in
+      let eta_kind, return = Typeopt.function_kinds e.exp_env e.exp_type in
+      Llet(Strict, Pgenval, def, transl_exp ~scopes f,
+           lfunction ~kind:Curried ~params:[param, eta_kind]
+             ~return ~body ~attr:default_function_attribute ~loc
+          )
   | Texp_match(arg, pat_expr_list, [], partial) ->
       transl_match ~scopes e arg pat_expr_list partial
   | Texp_match(arg, pat_expr_list, eff_pat_expr_list, partial) ->

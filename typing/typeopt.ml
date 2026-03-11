@@ -190,6 +190,19 @@ let value_kind env ty =
         Pgenval
   end
 
+let function_kinds env f =
+  match scrape_ty env f with
+  | None -> Pgenval, Pgenval
+  | Some ty ->
+      match get_desc ty with
+      | Tarrow (_,x,y,_) -> value_kind env x, value_kind env y
+      | Tfunctor(_,id,arg,res) ->
+          Pgenval,
+          let loc = Location.none in
+          let env, ty = Ctype.open_tfunctor env ~loc id arg res in
+          value_kind env ty
+      | _ -> assert false
+
 (** The compilation of the expression [lazy e] depends on the form of e:
     in some cases we optimize it into [let x = e in lazy x], evaluating
     [e] right now (if it is equivalent) and avoiding creating a thunk.
@@ -252,7 +265,7 @@ let classify_lazy_argument e =
     | Texp_struct_item _ (* [let <structure item> in c] would be ok *)
       -> false
     (* (typically) not commutative *)
-    | Texp_apply _
+    | Texp_apply _ | Texp_elide_opt_thunk _
     | Texp_match _
     | Texp_try _
     | Texp_setfield _

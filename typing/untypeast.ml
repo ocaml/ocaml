@@ -458,6 +458,7 @@ let expression sub exp =
               | Omitted () -> list
               | Arg exp -> (label, sub.expr sub exp) :: list
           ) list [])
+    | Texp_elide_opt_thunk r -> (sub.expr sub r.f).pexp_desc
     | Texp_match (exp, cases, eff_cases, _) ->
       let merged_cases = List.map (sub.case sub) cases
         @ List.map
