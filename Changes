@@ -101,6 +101,9 @@ Working version
   constructor declarations.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #14641: Move `Opnames` into `ocamlbytecomp`.
+  (David Allsopp, review by Nicolás Ojeda Bär)
+
 ### Build system:
 
 ### Bug fixes:
