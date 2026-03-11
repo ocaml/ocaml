@@ -185,6 +185,10 @@ Working version
 - #14654: Fix non-exhaustive directive rule in lexer.
   (Antonin Décimo, review by Martin Jambon and Gabriel Scherer)
 
+- #14156: Introduce a new type for type proxies that are used in printing
+  types.
+  (Stefan Muenzel, review by ????)
+
 ### Build system:
 
 ### Bug fixes:
