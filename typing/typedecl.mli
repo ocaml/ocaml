@@ -65,8 +65,8 @@ val approx_type_decl:
       recursive module definitions.
 *)
 val check_recmod_typedecl:
-    abs_env:Env.t -> Env.t -> Location.t -> Ident.t list -> Path.t ->
-    type_declaration -> unit
+    abs_env:Env.t ->
+    Env.t -> Location.t -> Ident.t list -> Path.t -> type_declaration -> unit
 val check_coherence:
     Env.t -> Location.t -> Path.t -> type_declaration -> unit
 
@@ -79,6 +79,7 @@ type reaching_type_path = reaching_type_step list
 and reaching_type_step =
   | Expands_to of type_expr * type_expr
   | Contains of type_expr * type_expr
+  | Parameter of Path.t * int * type_expr
 
 type error =
     Repeated_parameter

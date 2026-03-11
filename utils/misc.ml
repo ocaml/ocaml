@@ -104,7 +104,14 @@ let rec split_last = function
 
 module Stdlib = struct
   module List = struct
-    type 'a t = 'a list
+    include Stdlib.List
+
+    let rec fold_left4 f accu l1 l2 l3 l4 =
+      match (l1, l2, l3, l4) with
+        ([], [], [], []) -> accu
+      | (a1::l1, a2::l2, a3::l3, a4::l4) ->
+          fold_left4 f (f accu a1 a2 a3 a4) l1 l2 l3 l4
+      | (_, _, _, _) -> invalid_arg "List.fold_left4"
 
     let rec compare cmp l1 l2 =
       match l1, l2 with

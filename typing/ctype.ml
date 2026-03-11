@@ -2032,6 +2032,12 @@ let try_expand_once_opt env ty =
     Tconstr _ -> expand_abbrev_opt env ty
   | _ -> raise Cannot_expand
 
+let try_expand_once_gen_nolink ~find_type_expansion env ty =
+  match get_desc ty with
+    Tconstr _ ->
+      expand_abbrev_gen ~link:false Private find_type_expansion env ty
+  | _ -> raise Cannot_expand
+
 let try_expand_safe_opt env ty =
   let snap = Btype.snapshot () in
   try try_expand_once_opt env ty
