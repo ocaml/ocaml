@@ -65,6 +65,7 @@ type reaching_type_path = reaching_type_step list
 and reaching_type_step =
   | Expands_to of type_expr * type_expr
   | Contains of type_expr * type_expr
+  | Parameter of Path.t * int * type_expr
 
 type error =
     Repeated_parameter
