@@ -21,6 +21,9 @@ Line 6, characters 6-20:
 Error: The definition of "d" contains a cycle:
          "d" = "d * d",
          "d * d" contains "d"
+|}, Rectypes{|
+type _ prod = Prod : ('a * 'y) prod
+val f : 't prod -> unit = <fun>
 |}];;
 
 (* #9314 by ccasin/alpha-convert: *)
@@ -112,6 +115,9 @@ Line 2, characters 0-11:
 Error: The definition of "u" contains a cycle:
          "u" = "u t",
          "u t" contains "u"
+|}, Rectypes{|
+type 'a t = Foo of 'a
+and u = u t
 |}];;
 
 (* well-founded *)
@@ -129,6 +135,8 @@ Line 1, characters 23-25:
 Error: This alias is bound to type "int * 'a"
        but is used as an instance of type "'a"
        The type variable "'a" occurs inside "int * 'a"
+|}, Rectypes{|
+type t = int * 'a as 'a
 |}];;
 
 (* well-founded *)
@@ -146,6 +154,8 @@ Line 1, characters 0-18:
 Error: The definition of "t" contains a cycle:
          "t" = "int * t",
          "int * t" contains "t"
+|}, Rectypes{|
+type t = int * t
 |}];;
 
 (* well-founded *)
@@ -163,6 +173,8 @@ Line 1, characters 0-45:
 Error: The definition of "M.t" contains a cycle:
          "M.t" = "int * M.t",
          "int * M.t" contains "M.t"
+|}, Rectypes{|
+module rec M : sig type t = int * M.t end
 |}];;
 
 module type T = sig type t end
@@ -192,4 +204,6 @@ Error: In the signature of this functor application:
          "Fixed.t" = "F(Fixed).t",
          "F(Fixed).t" = "int * Fixed.t",
          "int * Fixed.t" contains "Fixed.t"
+|}, Rectypes{|
+module M : sig module rec Fixed : sig type t = int * Fixed.t end end
 |}];;

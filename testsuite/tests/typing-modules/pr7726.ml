@@ -22,6 +22,8 @@ Error: In the signature of this functor application:
          "Fixed.t" = "F(Fixed).t",
          "F(Fixed).t" = "Fixed.t option",
          "Fixed.t option" contains "Fixed.t"
+|}, Rectypes{|
+module T1 : sig module rec Fixed : sig type t = Fixed.t option end end
 |}]
 module T2 = Fix(functor (X:sig type t end) -> struct type t = X.t end);;
 [%%expect{|

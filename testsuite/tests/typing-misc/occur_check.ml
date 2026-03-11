@@ -14,6 +14,9 @@ Line 2, characters 42-43:
 Error: The value "s" has type "'a list" but an expression was expected of type
          "'a t" = "'a"
        The type variable "'a" occurs inside "'a list"
+|}, Rectypes{|
+type 'a t = 'a
+val f : (('a list as 'a) list -> 'a t -> 'a) -> 'a -> 'a = <fun>
 |}];;
 
 let f (g : 'a * 'b -> 'a t -> 'a) s = g s s;;
@@ -24,6 +27,8 @@ Line 1, characters 42-43:
 Error: The value "s" has type "'a * 'b" but an expression was expected of type
          "'a t" = "'a"
        The type variable "'a" occurs inside "'a * 'b"
+|}, Rectypes{|
+val f : (('a * 'b as 'a) * 'b -> 'a t -> 'a) -> 'a -> 'a = <fun>
 |}];;
 
 (* #12971 *)
@@ -70,6 +75,9 @@ Error: This expression has type "'a Seq.t Seq.t" = "unit -> 'a Seq.t Seq.node"
        Type "'a Seq.t" = "unit -> 'a Seq.node" is not compatible with type
          "'a Seq.t Seq.t" = "unit -> 'a Seq.t Seq.node"
 Hint: This function application is partial, maybe some arguments are missing.
+|}, Rectypes{|
+type 'a t = T of 'a
+val wrong_to_seq : (unit -> 'a Seq.node as 'a) t -> 'a Seq.t = <fun>
 |}];;
 
 let strange x = Seq.[cons x empty; cons empty x];;
@@ -83,4 +91,6 @@ Error: This expression has type "'a Seq.t Seq.t" = "unit -> 'a Seq.t Seq.node"
        Type "'a Seq.t" = "unit -> 'a Seq.node" is not compatible with type
          "'a Seq.t Seq.t" = "unit -> 'a Seq.t Seq.node"
 Hint: This function application is partial, maybe some arguments are missing.
+|}, Rectypes{|
+val strange : (unit -> 'a Seq.node as 'a) -> 'a Seq.t list = <fun>
 |}];;

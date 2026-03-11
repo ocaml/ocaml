@@ -651,6 +651,10 @@ Line 9, characters 0-25:
 Error: The definition of "foo" contains a cycle:
          "'a foo" = "'a foo list",
          "'a foo list" contains "'a foo"
+|}, Rectypes{|
+class id2 : object method id : 'a -> 'a method mono : int -> int end
+val app : int * bool = (1, true)
+type 'a foo = 'a foo list
 |}];;
 
 class ['a] bar (x : 'a) = object end

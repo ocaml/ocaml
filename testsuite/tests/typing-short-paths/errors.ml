@@ -102,6 +102,23 @@ Error: The definition of "t" contains a cycle:
          "'a w list" contains "'a w",
          "'a w" = "'a option z",
          "'a option z" = "'a option t"
+|}, Rectypes{|
+Line 1, characters 0-16:
+1 | type 'a t = 'a u
+    ^^^^^^^^^^^^^^^^
+Error: This recursive type is not regular.
+       The type constructor "t" is defined as
+         type "'a t"
+       but it is used as
+         "'a option t"
+       after the following expansion(s):
+         "'a u" = "'a v * 'a",
+         "'a v * 'a" contains "'a v",
+         "'a v" = "'a w list",
+         "'a w list" contains "'a w",
+         "'a w" = "'a option z",
+         "'a option z" = "'a option t"
+       All uses need to match the definition for the recursive type to be regular.
 |}]
 
 
@@ -123,4 +140,7 @@ Error: The definition of "A.t" contains a cycle:
          "A.t" = "B.t -> int",
          "B.t -> int" contains "B.t",
          "B.t" = "A.t"
+|}, Rectypes{|
+module rec A : sig type t = B.t -> int end
+and B : sig type t = A.t end
 |}]

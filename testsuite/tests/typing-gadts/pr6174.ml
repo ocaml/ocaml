@@ -13,4 +13,15 @@ Line 3, characters 24-25:
 Error: The value "x" has type "$0" but an expression was expected of type "$1" = "o"
        Hint: "$0" and "$1" are type variables introduced in the equation
          "a" = "$0 -> $1"
+|}, Rectypes{|
+type _ t = C : ((('a -> 'o) -> 'o) -> ('b -> 'o) -> 'o) t
+Line 3, characters 24-25:
+3 |  fun C k -> k (fun x -> x);;
+                            ^
+Error: The value "x" has type "$0" but an expression was expected of type
+         "$1" = "($2 -> $1) -> $1"
+       Hint: "$0" and "$1" are type variables introduced in the equation
+         "a" = "$0 -> $1"
+       Hint: "$2" is a type variable introduced in the equation
+         "o" = "($2 -> $1) -> $1"
 |}];;

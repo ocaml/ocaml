@@ -250,6 +250,8 @@ Error: The definition of "t" contains a cycle:
          "t" = "t u * t u",
          "t u * t u" contains "t u",
          "t u" = "t"
+|}, Rectypes{|
+type t = t u * t u
 |}];;
 
 type t = <x : 'a> as 'a;;

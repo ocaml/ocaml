@@ -126,6 +126,9 @@ Error: The definition of "A.t" contains a cycle:
          "A.t" = "B.t -> int",
          "B.t -> int" contains "B.t",
          "B.t" = "A.t"
+|}, Rectypes{|
+module rec A : sig type t = B.t -> int end
+and B : sig type t = A.t end
 |}]
 
 (* Short paths are actually short *)
@@ -156,6 +159,20 @@ Error: In the signature of this functor application:
          "Fixed.t" = "Fixed.t",
          "Fixed.t" = "Atlas.t -> Fixed.t",
          "Atlas.t -> Fixed.t" contains "Fixed.t"
+|}, Rectypes{|
+type a__name__that__shall__not__be__printed
+module type T = sig type t end
+module Fix :
+  (F : T -> T) ->
+    sig
+      module Atlas : sig type t = a__name__that__shall__not__be__printed end
+      module rec Fixed : sig type t = F(Fixed).t end
+    end
+module Err :
+  sig
+    module Atlas : sig type t = a__name__that__shall__not__be__printed end
+    module rec Fixed : sig type t = Atlas.t -> Fixed.t end
+  end
 |}]
 
 module Constraint(F:sig type 'a t end-> sig type 'a t end) = struct
