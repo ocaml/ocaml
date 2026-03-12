@@ -3943,6 +3943,289 @@ let check_absent_variant env =
                      (duplicate_type pat.pat_type)
     | _ -> () }
 
+type 'k type_pattern =
+  'k pattern_category
+  -> lev:int
+  -> Env.t
+  -> Parsetree.pattern
+  -> type_expr
+  -> ?cont:Ident.t * Types.value_description
+  -> module_patterns_restriction
+  -> 'k general_pattern
+     * Env.t
+     * (unit -> unit) list
+     * pattern_variable list
+     * module_variables
+
+type ('k, 'case_data, 'ret) type_body =
+  'case_data
+  -> 'k general_pattern (* the typed pattern *)
+  -> when_env:Env.t (* environment with module/pattern variables *)
+  -> ext_env:Env.t (* when_env + continuation var*)
+  -> cont:(Ident.t * Types.value_description) option
+  -> ty_expected:type_expr (* type to check body in scope of *)
+  -> ty_infer:type_expr (* type to infer for body *)
+  -> contains_gadt:bool (* whether the pattern contains a GADT *)
+  -> 'ret
+
+(* Most of the arguments are the same as [type_cases].
+
+   Takes a callback which is responsible for typing the body of the case.
+   The arguments are documented inline in the type signature.
+
+   It takes a callback rather than returning the half-typed cases directly
+   because the typing of the body must take place at an increased level.
+
+   The overall function returns:
+     - The data returned by the callback
+     - Whether the cases' patterns are partial or total
+*)
+let map_half_typed_cases
+    : type k ret case_data.
+      ?additional_checks_for_split_cases:((_ * ret) list -> unit)
+      -> ?conts:_
+      -> k pattern_category
+      -> _
+      -> _
+      -> _
+      -> _
+      -> (untyped_case * case_data) list
+      -> type_pattern:k type_pattern
+      -> type_body:(k, case_data, ret) type_body
+      -> check_if_total:bool (* if false, assume Partial right away *)
+      -> ret list * partial
+  =
+  fun ?additional_checks_for_split_cases
+      ?conts
+      category
+      env
+      ty_arg
+      ty_res
+      loc
+      caselist
+      ~type_pattern
+      ~type_body
+      ~check_if_total ->
+  (* ty_arg is _fully_ generalized *)
+  let patterns = List.map (fun ((x : untyped_case), _) -> x.pattern) caselist in
+  let contains_polyvars = List.exists contains_polymorphic_variant patterns in
+  let erase_either = contains_polyvars && contains_variant_either ty_arg in
+  let may_contain_gadts = List.exists may_contain_gadts patterns in
+  let may_contain_modules = List.exists may_contain_modules patterns in
+  let create_inner_level = may_contain_gadts || may_contain_modules in
+  let ty_arg =
+    if (may_contain_gadts || erase_either) && not !Clflags.principal
+    then duplicate_type ty_arg else ty_arg
+  in
+  let rec is_var spat =
+    match spat.ppat_desc with
+      Ppat_any | Ppat_var _ -> true
+    | Ppat_alias (spat, _) -> is_var spat
+    | _ -> false in
+  let needs_exhaust_check =
+    match caselist with
+      [ ({ needs_refute = true }, _) ] -> true
+    | [ ({ pattern }, _) ] when is_var pattern -> false
+    | _ -> true
+  in
+  let outer_level = get_current_level () in
+  with_local_level_iter_if create_inner_level begin fun () ->
+  let lev = get_current_level () in
+  let allow_modules =
+    if may_contain_modules
+    then
+      (* The corresponding check for scope escape is done together with
+         the check for GADT-induced existentials by
+         [with_local_level_iter_if create_inner_level].
+      *)
+      Modules_allowed { scope = lev }
+    else Modules_rejected
+  in
+  let take_partial_instance =
+    if erase_either
+    then Some false else None
+  in
+  let map_conts f conts caselist = match conts with
+    | None -> List.map (fun c -> f c None) caselist
+    | Some conts -> List.map2 f caselist conts
+  in
+  let half_typed_cases, ty_res, do_copy_types, ty_arg' =
+   (* propagation of the argument *)
+    with_local_level_generalize begin fun () ->
+      let pattern_force = ref [] in
+      let half_typed_cases =
+        map_conts
+        (fun ({ Parmatch.pattern; _ } as untyped_case, case_data) cont ->
+          let htc =
+            with_local_level_generalize_structure_if_principal begin fun () ->
+              let ty_arg =
+                (* propagation of pattern *)
+                with_local_level_generalize_structure
+                  (fun () -> instance ?partial:take_partial_instance ty_arg)
+              in
+              let (pat, ext_env, force, pvs, mvs) =
+                type_pattern ?cont category ~lev env pattern ty_arg
+                  allow_modules
+              in
+              pattern_force := force @ !pattern_force;
+              { typed_pat = pat;
+                pat_type_for_unif = ty_arg;
+                untyped_case;
+                case_data;
+                branch_env = ext_env;
+                pat_vars = pvs;
+                module_vars = mvs;
+                contains_gadt = contains_gadt (as_comp_pattern category pat);
+              }
+            end
+          in
+          (* Ensure that no ambivalent pattern type escapes its branch *)
+          check_scope_escape htc.typed_pat.pat_loc env outer_level
+            htc.pat_type_for_unif;
+          let pat = htc.typed_pat in
+          {htc with typed_pat = { pat with pat_type = instance pat.pat_type }}
+        )
+        conts caselist in
+      let patl =
+        List.map (fun { typed_pat; _ } -> typed_pat) half_typed_cases in
+      let does_contain_gadt =
+        List.exists (fun { contains_gadt; _ } -> contains_gadt) half_typed_cases
+      in
+      let ty_res, do_copy_types =
+        if does_contain_gadt && not !Clflags.principal then
+          duplicate_type ty_res, Env.make_copy_of_types env
+        else ty_res, (fun env -> env)
+      in
+      (* Unify all cases (delayed to keep it order-free) *)
+      let ty_arg' = newvar () in
+      let unify_pats ty =
+        List.iter (fun { typed_pat = pat; pat_type_for_unif = pat_ty; _ } ->
+          unify_pat_types pat.pat_loc env pat_ty ty
+        ) half_typed_cases
+      in
+      unify_pats ty_arg';
+      (* Check for polymorphic variants to close *)
+      if List.exists has_variants patl then begin
+        Parmatch.pressure_variants_in_computation_pattern env
+          (List.map (as_comp_pattern category) patl);
+        List.iter finalize_variants patl
+      end;
+      (* `Contaminating' unifications start here *)
+      List.iter (fun f -> f()) !pattern_force;
+      (* Post-processing and generalization *)
+      if take_partial_instance <> None then unify_pats (instance ty_arg);
+      List.iter (fun { pat_vars; _ } ->
+        iter_pattern_variables_type (enforce_current_level env) pat_vars
+      ) half_typed_cases;
+      (half_typed_cases, ty_res, do_copy_types, ty_arg')
+    end
+  in
+  (* type bodies *)
+  let ty_res' = instance ty_res in
+  (* Why is it needed to keep the level of result raised ?  *)
+  let result = with_local_level_if_principal ~post:ignore begin fun () ->
+    map_conts
+    (fun { typed_pat = pat; branch_env = ext_env;
+           pat_vars = pvs; module_vars = mvs;
+           case_data; contains_gadt; _ } cont
+        ->
+        let ext_env =
+          if contains_gadt then
+            do_copy_types ext_env
+          else
+            ext_env
+        in
+        (* Before handing off the cases to the callback, first set up the the
+           branch environments by adding the variables (and module variables)
+           from the patterns.
+        *)
+        let cont_vars, pvs =
+          List.partition (fun pv -> pv.pv_kind = Continuation_var) pvs in
+        let add_pattern_vars = add_pattern_variables
+            ~check:(fun s -> Warnings.Unused_var_strict s)
+            ~check_as:(fun s -> Warnings.Unused_var s)
+        in
+        let when_env = add_pattern_vars ext_env pvs in
+        let when_env = add_module_variables when_env mvs in
+        let ext_env = add_pattern_vars when_env cont_vars in
+        let ty_expected =
+          if contains_gadt && not !Clflags.principal then
+            (* Take a generic copy of [ty_res] again to allow propagation of
+                type information from preceding branches *)
+            duplicate_type ty_res
+          else ty_res in
+        type_body case_data pat ~when_env ~ext_env ~cont ~ty_expected
+          ~ty_infer:ty_res' ~contains_gadt)
+    conts half_typed_cases
+  end in
+  let do_init = may_contain_gadts || needs_exhaust_check in
+  let ty_arg_check =
+    if do_init then
+      (* Hack: use for_saving to copy variables too *)
+      Subst.type_expr (Subst.for_saving Subst.identity) ty_arg'
+    else ty_arg'
+  in
+  (* Split the cases into val and exn cases so we can do the appropriate checks
+     for exhaustivity and unused variables.
+
+     The caller of this function can define custom checks. For some of these
+     checks, the half-typed case doesn't provide enough info on its own -- for
+     instance, the check for ambiguous bindings in when guards needs to know the
+     case body's expression -- so the code pairs each case with its
+     corresponding element in [result] before handing it off to the caller's
+     custom checks.
+  *)
+  let val_cases_with_result, exn_cases_with_result =
+    match category with
+    | Value ->
+        let val_cases =
+          List.map2
+            (fun htc res ->
+               { htc.untyped_case with pattern = htc.typed_pat }, res)
+            half_typed_cases
+            result
+        in
+        (val_cases : (pattern Parmatch.parmatch_case * ret) list), []
+    | Computation ->
+        split_half_typed_cases env (List.combine half_typed_cases result)
+  in
+  let val_cases = List.map fst val_cases_with_result in
+  let exn_cases = List.map fst exn_cases_with_result in
+  if val_cases = [] && exn_cases <> [] then
+    raise (Error (loc, env, No_value_clauses));
+  let partial =
+    if check_if_total then
+      check_partial ~lev env ty_arg_check loc val_cases
+    else
+      Partial
+  in
+  let unused_check delayed =
+    List.iter (fun { typed_pat; branch_env; _ } ->
+      check_absent_variant branch_env (as_comp_pattern category typed_pat)
+    ) half_typed_cases;
+    with_level_if delayed ~level:lev begin fun () ->
+      check_unused ~lev env ty_arg_check val_cases ;
+      check_unused ~lev env Predef.type_exn exn_cases ;
+    end;
+  in
+  if contains_polyvars then
+    add_delayed_check (fun () -> unused_check true)
+  else
+    (* Check for unused cases, do not delay because of gadts *)
+    unused_check false;
+  begin
+    match additional_checks_for_split_cases with
+    | None -> ()
+    | Some check ->
+        check val_cases_with_result;
+        check exn_cases_with_result;
+  end;
+  (result, partial), [ty_res']
+  end
+  (* Ensure that existential types do not escape *)
+  ~post:(fun ty_res' -> unify_exp_types loc env ty_res' (newvar ()))
+
+
 (* To find reasonable names for let-bound and lambda-bound idents *)
 
 let rec name_pattern default = function
@@ -5616,6 +5899,7 @@ and type_function
           ~check_if_total:true
           (* We don't make use of [case_data] here so we pass unit. *)
           [ { pattern = pat; has_guard = false; needs_refute = false }, () ]
+          ~type_pattern
           ~type_body:begin
             fun () pat ~when_env:_ ~ext_env ~cont:_ ~ty_expected ~ty_infer:_
               ~contains_gadt:param_contains_gadt ->
@@ -6598,258 +6882,6 @@ and type_statement ?explanation env sexp =
     end
   end
 
-(* Most of the arguments are the same as [type_cases].
-
-   Takes a callback which is responsible for typing the body of the case.
-   The arguments are documented inline in the type signature.
-
-   It takes a callback rather than returning the half-typed cases directly
-   because the typing of the body must take place at an increased level.
-
-   The overall function returns:
-     - The data returned by the callback
-     - Whether the cases' patterns are partial or total
-*)
-and map_half_typed_cases
-  : type k ret case_data.
-    ?additional_checks_for_split_cases:((_ * ret) list -> unit) -> ?conts:_
-    -> k pattern_category -> _ -> _ -> _ -> _
-    -> (untyped_case * case_data) list
-    -> type_body:(
-        case_data
-        -> k general_pattern (* the typed pattern *)
-        -> when_env:_ (* environment with module/pattern variables *)
-        -> ext_env:_ (* when_env + continuation var*)
-        -> cont:_
-        -> ty_expected:_ (* type to check body in scope of *)
-        -> ty_infer:_ (* type to infer for body *)
-        -> contains_gadt:_ (* whether the pattern contains a GADT *)
-        -> ret)
-    -> check_if_total:bool (* if false, assume Partial right away *)
-    -> ret list * partial
-  = fun ?additional_checks_for_split_cases ?conts
-    category env ty_arg ty_res loc caselist ~type_body ~check_if_total ->
-  (* ty_arg is _fully_ generalized *)
-  let patterns = List.map (fun ((x : untyped_case), _) -> x.pattern) caselist in
-  let contains_polyvars = List.exists contains_polymorphic_variant patterns in
-  let erase_either = contains_polyvars && contains_variant_either ty_arg in
-  let may_contain_gadts = List.exists may_contain_gadts patterns in
-  let may_contain_modules = List.exists may_contain_modules patterns in
-  let create_inner_level = may_contain_gadts || may_contain_modules in
-  let ty_arg =
-    if (may_contain_gadts || erase_either) && not !Clflags.principal
-    then duplicate_type ty_arg else ty_arg
-  in
-  let rec is_var spat =
-    match spat.ppat_desc with
-      Ppat_any | Ppat_var _ -> true
-    | Ppat_alias (spat, _) -> is_var spat
-    | _ -> false in
-  let needs_exhaust_check =
-    match caselist with
-      [ ({ needs_refute = true }, _) ] -> true
-    | [ ({ pattern }, _) ] when is_var pattern -> false
-    | _ -> true
-  in
-  let outer_level = get_current_level () in
-  with_local_level_iter_if create_inner_level begin fun () ->
-  let lev = get_current_level () in
-  let allow_modules =
-    if may_contain_modules
-    then
-      (* The corresponding check for scope escape is done together with
-         the check for GADT-induced existentials by
-         [with_local_level_iter_if create_inner_level].
-      *)
-      Modules_allowed { scope = lev }
-    else Modules_rejected
-  in
-  let take_partial_instance =
-    if erase_either
-    then Some false else None
-  in
-  let map_conts f conts caselist = match conts with
-    | None -> List.map (fun c -> f c None) caselist
-    | Some conts -> List.map2 f caselist conts
-  in
-  let half_typed_cases, ty_res, do_copy_types, ty_arg' =
-   (* propagation of the argument *)
-    with_local_level_generalize begin fun () ->
-      let pattern_force = ref [] in
-      (*  Format.printf "@[%i %i@ %a@]@." lev (get_current_level())
-          Printtyp.raw_type_expr ty_arg; *)
-      let half_typed_cases =
-        map_conts
-        (fun ({ Parmatch.pattern; _ } as untyped_case, case_data) cont ->
-          let htc =
-            with_local_level_generalize_structure_if_principal begin fun () ->
-              let ty_arg =
-                (* propagation of pattern *)
-                with_local_level_generalize_structure
-                  (fun () -> instance ?partial:take_partial_instance ty_arg)
-              in
-              let (pat, ext_env, force, pvs, mvs) =
-                type_pattern ?cont category ~lev env pattern ty_arg
-                  allow_modules
-              in
-              pattern_force := force @ !pattern_force;
-              { typed_pat = pat;
-                pat_type_for_unif = ty_arg;
-                untyped_case;
-                case_data;
-                branch_env = ext_env;
-                pat_vars = pvs;
-                module_vars = mvs;
-                contains_gadt = contains_gadt (as_comp_pattern category pat);
-              }
-            end
-          in
-          (* Ensure that no ambivalent pattern type escapes its branch *)
-          check_scope_escape htc.typed_pat.pat_loc env outer_level
-            htc.pat_type_for_unif;
-          let pat = htc.typed_pat in
-          {htc with typed_pat = { pat with pat_type = instance pat.pat_type }}
-        )
-        conts caselist in
-      let patl =
-        List.map (fun { typed_pat; _ } -> typed_pat) half_typed_cases in
-      let does_contain_gadt =
-        List.exists (fun { contains_gadt; _ } -> contains_gadt) half_typed_cases
-      in
-      let ty_res, do_copy_types =
-        if does_contain_gadt && not !Clflags.principal then
-          duplicate_type ty_res, Env.make_copy_of_types env
-        else ty_res, (fun env -> env)
-      in
-      (* Unify all cases (delayed to keep it order-free) *)
-      let ty_arg' = newvar () in
-      let unify_pats ty =
-        List.iter (fun { typed_pat = pat; pat_type_for_unif = pat_ty; _ } ->
-          unify_pat_types pat.pat_loc env pat_ty ty
-        ) half_typed_cases
-      in
-      unify_pats ty_arg';
-      (* Check for polymorphic variants to close *)
-      if List.exists has_variants patl then begin
-        Parmatch.pressure_variants_in_computation_pattern env
-          (List.map (as_comp_pattern category) patl);
-        List.iter finalize_variants patl
-      end;
-      (* `Contaminating' unifications start here *)
-      List.iter (fun f -> f()) !pattern_force;
-      (* Post-processing and generalization *)
-      if take_partial_instance <> None then unify_pats (instance ty_arg);
-      List.iter (fun { pat_vars; _ } ->
-        iter_pattern_variables_type (enforce_current_level env) pat_vars
-      ) half_typed_cases;
-      (half_typed_cases, ty_res, do_copy_types, ty_arg')
-    end
-  in
-  (* type bodies *)
-  let ty_res' = instance ty_res in
-  (* Why is it needed to keep the level of result raised ?  *)
-  let result = with_local_level_if_principal ~post:ignore begin fun () ->
-    map_conts
-    (fun { typed_pat = pat; branch_env = ext_env;
-           pat_vars = pvs; module_vars = mvs;
-           case_data; contains_gadt; _ } cont
-        ->
-        let ext_env =
-          if contains_gadt then
-            do_copy_types ext_env
-          else
-            ext_env
-        in
-        (* Before handing off the cases to the callback, first set up the the
-           branch environments by adding the variables (and module variables)
-           from the patterns.
-        *)
-        let cont_vars, pvs =
-          List.partition (fun pv -> pv.pv_kind = Continuation_var) pvs in
-        let add_pattern_vars = add_pattern_variables
-            ~check:(fun s -> Warnings.Unused_var_strict s)
-            ~check_as:(fun s -> Warnings.Unused_var s)
-        in
-        let when_env = add_pattern_vars ext_env pvs in
-        let when_env = add_module_variables when_env mvs in
-        let ext_env = add_pattern_vars when_env cont_vars in
-        let ty_expected =
-          if contains_gadt && not !Clflags.principal then
-            (* Take a generic copy of [ty_res] again to allow propagation of
-                type information from preceding branches *)
-            duplicate_type ty_res
-          else ty_res in
-        type_body case_data pat ~when_env ~ext_env ~cont ~ty_expected
-          ~ty_infer:ty_res' ~contains_gadt)
-    conts half_typed_cases
-  end in
-  let do_init = may_contain_gadts || needs_exhaust_check in
-  let ty_arg_check =
-    if do_init then
-      (* Hack: use for_saving to copy variables too *)
-      Subst.type_expr (Subst.for_saving Subst.identity) ty_arg'
-    else ty_arg'
-  in
-  (* Split the cases into val and exn cases so we can do the appropriate checks
-     for exhaustivity and unused variables.
-
-     The caller of this function can define custom checks. For some of these
-     checks, the half-typed case doesn't provide enough info on its own -- for
-     instance, the check for ambiguous bindings in when guards needs to know the
-     case body's expression -- so the code pairs each case with its
-     corresponding element in [result] before handing it off to the caller's
-     custom checks.
-  *)
-  let val_cases_with_result, exn_cases_with_result =
-    match category with
-    | Value ->
-        let val_cases =
-          List.map2
-            (fun htc res ->
-               { htc.untyped_case with pattern = htc.typed_pat }, res)
-            half_typed_cases
-            result
-        in
-        (val_cases : (pattern Parmatch.parmatch_case * ret) list), []
-    | Computation ->
-        split_half_typed_cases env (List.combine half_typed_cases result)
-  in
-  let val_cases = List.map fst val_cases_with_result in
-  let exn_cases = List.map fst exn_cases_with_result in
-  if val_cases = [] && exn_cases <> [] then
-    raise (Error (loc, env, No_value_clauses));
-  let partial =
-    if check_if_total then
-      check_partial ~lev env ty_arg_check loc val_cases
-    else
-      Partial
-  in
-  let unused_check delayed =
-    List.iter (fun { typed_pat; branch_env; _ } ->
-      check_absent_variant branch_env (as_comp_pattern category typed_pat)
-    ) half_typed_cases;
-    with_level_if delayed ~level:lev begin fun () ->
-      check_unused ~lev env ty_arg_check val_cases ;
-      check_unused ~lev env Predef.type_exn exn_cases ;
-    end;
-  in
-  if contains_polyvars then
-    add_delayed_check (fun () -> unused_check true)
-  else
-    (* Check for unused cases, do not delay because of gadts *)
-    unused_check false;
-  begin
-    match additional_checks_for_split_cases with
-    | None -> ()
-    | Some check ->
-        check val_cases_with_result;
-        check exn_cases_with_result;
-  end;
-  (result, partial), [ty_res']
-  end
-  (* Ensure that existential types do not escape *)
-  ~post:(fun ty_res' -> unify_exp_types loc env ty_res' (newvar ()))
-
 (* Typing of match cases *)
 and type_cases
     : type k . k pattern_category -> _ -> _ -> _ -> ?conts:_ ->
@@ -6867,6 +6899,7 @@ and type_cases
   *)
   map_half_typed_cases ?conts category env ty_arg ty_res loc caselist
     ~check_if_total
+    ~type_pattern
     ~type_body:begin
       fun { pc_guard; pc_rhs } pat ~when_env ~ext_env ~cont ~ty_expected
         ~ty_infer ~contains_gadt:_ ->
