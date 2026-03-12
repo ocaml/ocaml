@@ -314,6 +314,8 @@ let destroyed_at_oper = function
   | Iop(Iintoffloat | Ifloatofint
   | Iload(Single, _, _) | Istore(Single, _, _)) ->
       [| phys_reg 107 |]            (* d7 (s14-s15) destroyed *)
+  | Iswitch _ when !thumb ->
+      [| phys_reg 8 |]              (* r12 destroyed *)
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs

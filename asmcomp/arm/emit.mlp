@@ -797,39 +797,15 @@ let emit_instr env i =
         end;
         4
     | Lswitch jumptbl ->
-        if !arch > ARMv6 && !thumb then begin
-          (* The Thumb-2 TBH instruction supports only forward branches,
-             so we need to generate appropriate trampolines for all labels
-             that appear before this switch instruction (PR#5623) *)
-          let tramtbl = Array.copy jumptbl in
-          `	tbh	[pc, {emit_reg i.arg.(0)}, lsl #1]\n`;
-          for j = 0 to Array.length tramtbl - 1 do
-            let rec label i =
-              match i.desc with
-                Lend -> new_label()
-              | Llabel lbl when lbl = tramtbl.(j) -> lbl
-              | _ -> label i.next in
-            tramtbl.(j) <- label i.next;
-            `	.short	({emit_label tramtbl.(j)}-.)/2+{emit_int j}\n`
-          done;
-          let sz = ref (1 + (Array.length jumptbl + 1) / 2) in
-          (* Generate the necessary trampolines *)
-          for j = 0 to Array.length tramtbl - 1 do
-            if tramtbl.(j) <> jumptbl.(j) then begin
-              `{emit_label tramtbl.(j)}:	b	{emit_label jumptbl.(j)}\n`;
-              incr sz
-            end
-          done;
-          !sz
-        end else if not !Clflags.pic_code then begin
-          `	ldr	pc, [pc, {emit_reg i.arg.(0)}, lsl #2]\n`;
-          `	nop\n`;
+        if !thumb then begin
+          `	lsl	r12, {emit_reg i.arg.(0)}, #2\n`;
+          `	add	pc, r12\n`;   (* 16-bit encoding *)
+          `	nop\n`;               (* 16-bit encoding *)
           for j = 0 to Array.length jumptbl - 1 do
-            `	.word	{emit_label jumptbl.(j)}\n`
+            `	b.w	{emit_label jumptbl.(j)}\n` (* 32-bit encoding *)
           done;
           2 + Array.length jumptbl
         end else begin
-          (* Slightly slower, but position-independent *)
           `	add	pc, pc, {emit_reg i.arg.(0)}, lsl #2\n`;
           `	nop\n`;
           for j = 0 to Array.length jumptbl - 1 do
