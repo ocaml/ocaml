@@ -61,6 +61,8 @@ module Clflags_set = Set.Make(struct
     let compare = compare
   end)
 
+let original_clflags = ref Clflags_set.empty
+
 let get_clflags () =
   let open Clflags_set in
   union
@@ -234,12 +236,29 @@ let eval_expectation expectation ~output =
       Clmap.find (get_clflags ()) expectation.text
     with
     | Not_found ->
-        Clmap.find Clflags_set.empty expectation.text
+        try
+          Clmap.find Clflags_set.empty expectation.text
+        with
+        | Not_found -> { tag = ""; str = "" }
+  in
+  let current_clflags = get_clflags () in
+  let clflags_correction =
+    if Clflags_set.equal current_clflags !original_clflags
+    then None
+    else if Clmap.mem !original_clflags expectation.text
+    then Some
+        { expectation with text = Clmap.remove !original_clflags expectation.text }
+    else None
   in
   if s.str = output then
-    None
+    clflags_correction
   else
     let s = { s with str = output } in
+    let expectation =
+      match clflags_correction with
+      | None -> expectation
+      | Some correction -> correction
+    in
     Some (
       { expectation with
         text = Clmap.add (get_clflags ()) s expectation.text
@@ -362,7 +381,10 @@ let output_corrected oc ~file_contents correction =
     List.fold_left correction.corrected_expectations ~init:0
       ~f:(fun ofs c ->
         output_slice oc file_contents ofs c.payload_loc.loc_start.pos_cnum;
-        let normal = Clmap.find Clflags_set.empty c.text in
+        let normal =
+          Clmap.find_opt Clflags_set.empty c.text
+          |> Option.value ~default:{ str = ""; tag = "" }
+        in
         output_body oc normal;
         Clmap.iter
           (fun key body ->
@@ -409,6 +431,7 @@ let keep_original_error_size = ref false
 let main fname =
   if not !keep_original_error_size then
     Clflags.error_size := 0;
+  original_clflags := get_clflags ();
   Toploop.override_sys_argv
     (Array.sub Sys.argv ~pos:!Arg.current
        ~len:(Array.length Sys.argv - !Arg.current));
