@@ -247,7 +247,8 @@ let eval_expectation expectation ~output =
     then None
     else if Clmap.mem !original_clflags expectation.text
     then Some
-        { expectation with text = Clmap.remove !original_clflags expectation.text }
+        { expectation
+          with text = Clmap.remove !original_clflags expectation.text }
     else None
   in
   if s.str = output then
