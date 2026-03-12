@@ -42,12 +42,20 @@ let u () =
   ignore f
 
 [%%expect{|
-val f : x:string -> y:string -> 'a as 'a = <fun>
-val u : unit -> unit = <fun>
-|}, Principal{|
+Line 2, characters 49-50:
+2 |   fun (f : (x:string -> y:int -> 'a) as 'a) -> f 3;;
+                                                     ^
+Error: The function applied to this argument has type
+         x:string -> y:int -> x:string -> (y:int -> x:string -> 'a as 'a)
+This argument cannot be applied without label
+|}, Principal_Rectypes{|
 val f : x:string -> y:string -> (x:string -> y:string -> 'a as 'a) = <fun>
 val u : unit -> unit = <fun>
+|}, Rectypes{|
+val f : x:string -> y:string -> 'a as 'a = <fun>
+val u : unit -> unit = <fun>
 |}]
+
 
 let f g = g ?x:(g ?x:(Some g)) 0
 [%%expect{|
@@ -74,13 +82,26 @@ Line 1, characters 11-12:
 Warning 16 [unerasable-optional-argument]: this optional argument cannot be erased.
 
 val f : ?x:'b -> 'a as 'a = <fun>
-|}, Principal{|
 Line 1, characters 11-12:
 1 | let rec f ?x = f
                ^
 Warning 16 [unerasable-optional-argument]: this optional argument cannot be erased.
 
 val f : ?x:'a -> (?x:'a -> 'b as 'b) = <fun>
+|}, Principal_Rectypes{|
+Line 1, characters 11-12:
+1 | let rec f ?x = f
+               ^
+Warning 16 [unerasable-optional-argument]: this optional argument cannot be erased.
+
+val f : ?x:'a -> (?x:'a -> 'b as 'b) = <fun>
+|}, Rectypes{|
+Line 1, characters 11-12:
+1 | let rec f ?x = f
+               ^
+Warning 16 [unerasable-optional-argument]: this optional argument cannot be erased.
+
+val f : ?x:'b -> 'a as 'a = <fun>
 |}]
 
 let () = f 3
@@ -91,11 +112,24 @@ Line 1, characters 11-12:
 Error: The function applied to this argument has type
          ?x:'a -> ?x:'a -> (?x:'a -> 'b as 'b)
 This argument cannot be applied without label
-|}, Principal{|
 Line 1, characters 11-12:
 1 | let () = f 3
                ^
 Error: The function applied to this argument has type
          ?x:'a -> ?x:'a -> ?x:'a -> (?x:'a -> 'b as 'b)
+This argument cannot be applied without label
+|}, Principal_Rectypes{|
+Line 1, characters 11-12:
+1 | let () = f 3
+               ^
+Error: The function applied to this argument has type
+         ?x:'a -> ?x:'a -> ?x:'a -> (?x:'a -> 'b as 'b)
+This argument cannot be applied without label
+|}, Rectypes{|
+Line 1, characters 11-12:
+1 | let () = f 3
+               ^
+Error: The function applied to this argument has type
+         ?x:'a -> ?x:'a -> (?x:'a -> 'b as 'b)
 This argument cannot be applied without label
 |}]

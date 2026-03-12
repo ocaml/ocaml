@@ -17,13 +17,13 @@ type string_constant =
   ; tag : string
   }
 
-type clflags =
+type clflag =
   | Principal
   | Rectypes
-  | RectypesPrincipal
 
+module Clflags_set : Set.S with type elt = clflag
 
-module Clmap : Map.S with type key = clflags option
+module Clmap : Map.S with type key = Clflags_set.t
 
 type expectation =
   { extid_loc   : Location.t (* Location of "expect" in "[%%expect ...]" *)

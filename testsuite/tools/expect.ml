@@ -48,27 +48,41 @@ type string_constant =
   ; tag : string
   }
 
-type clflags =
+type clflag =
   | Principal
   | Rectypes
-  | RectypesPrincipal
 
-let get_clflags () =
-  match !Clflags.principal, !Clflags.recursive_types with
-  | false, false -> None
-  | true, false -> Some Principal
-  | false, true -> Some Rectypes
-  | true, true -> Some RectypesPrincipal
-
-let string_of_clflags = function
+let string_of_clflag = function
   | Principal -> "Principal"
   | Rectypes -> "Rectypes"
-  | RectypesPrincipal -> "RectypesPrincipal"
 
-module Clmap = Map.Make(struct
-    type t = clflags option
+module Clflags_set = Set.Make(struct
+    type t = clflag
     let compare = compare
   end)
+
+let get_clflags () =
+  let open Clflags_set in
+  union
+    (if !Clflags.principal then singleton Principal else empty)
+    (if !Clflags.recursive_types then singleton Rectypes else empty)
+
+let string_of_clflags c =
+  Clflags_set.fold (fun cl acc ->
+      (if acc = "" then "" else acc ^ "_") ^ string_of_clflag cl
+    ) c ""
+
+let clflags_of_string ~loc str =
+  let open Clflags_set in
+  List.fold_left
+    ~f:(fun acc s ->
+        match s with
+        | "Principal" -> add Principal acc
+        | "Rectypes" -> add Rectypes acc
+        | other -> Location.raise_errorf ~loc "unknown flag: %s" other)
+    ~init:empty (String.split_on_char ~sep:'_' str)
+
+module Clmap = Map.Make(Clflags_set)
 
 type expectation =
   { extid_loc   : Location.t (* Location of "expect" in "[%%expect ...]" *)
@@ -90,14 +104,14 @@ type correction =
 let match_expect_extension (ext : Parsetree.extension) =
   match ext with
   | ({Asttypes.txt="expect"|"ocaml.expect"; loc = extid_loc}, payload) ->
-    let invalid_payload () =
-      Location.raise_errorf ~loc:extid_loc "invalid [%%%%expect payload]"
+    let invalid_payload msg =
+      Location.raise_errorf ~loc:extid_loc "invalid [%%%%expect payload] (%s)" msg
     in
     let string_constant (e : Parsetree.expression) =
       match e.pexp_desc with
       | Pexp_constant {pconst_desc = Pconst_string (str, _, Some tag); _} ->
         { str; tag }
-      | _ -> invalid_payload ()
+      | _ -> invalid_payload "not a string"
     in
     let expectation =
       match payload with
@@ -113,23 +127,15 @@ let match_expect_extension (ext : Parsetree.extension) =
                         None
                       , { Parsetree.
                           pexp_desc = Pexp_construct
-                              ({ txt = Lident "Principal"; _}, Some b) }
-                        -> Some Principal, string_constant b
-                      | None
-                      , { Parsetree.
-                          pexp_desc = Pexp_construct
-                              ({ txt = Lident "Rectypes"; _}, Some b) }
-                        -> Some Rectypes, string_constant b
-                      | None
-                      , { Parsetree.
-                          pexp_desc = Pexp_construct
-                              ({ txt = Lident "RectypesPrincipal"; _}, Some b) }
-                        -> Some RectypesPrincipal, string_constant b
-                      | _ -> invalid_payload ())
+                              ({ txt = Lident clflags_s; _}, Some b) }
+                        -> clflags_of_string ~loc:b.pexp_loc clflags_s
+                         , string_constant b
+                      | _ -> invalid_payload "expected Constructor{|string|}")
                   rest
               in
-              Clmap.of_list ((None, string_constant normal)::rest)
-          | _ -> let s = string_constant e in Clmap.singleton None s
+              Clmap.of_list ((Clflags_set.empty, string_constant normal)::rest)
+          | _ ->
+              let s = string_constant e in Clmap.singleton Clflags_set.empty s
         in
         { extid_loc
         ; payload_loc = e.pexp_loc
@@ -139,9 +145,9 @@ let match_expect_extension (ext : Parsetree.extension) =
         let s = { tag = ""; str = "" } in
         { extid_loc
         ; payload_loc  = { extid_loc with loc_start = extid_loc.loc_end }
-        ; text = Clmap.singleton None s
+        ; text = Clmap.singleton Clflags_set.empty s
         }
-      | _ -> invalid_payload ()
+      | _ -> invalid_payload "not an expectation"
     in
     Some expectation
   | _ ->
@@ -227,7 +233,7 @@ let eval_expectation expectation ~output =
       Clmap.find (get_clflags ()) expectation.text
     with
     | Not_found ->
-        Clmap.find None expectation.text
+        Clmap.find Clflags_set.empty expectation.text
   in
   if s.str = output then
     None
@@ -355,23 +361,22 @@ let output_corrected oc ~file_contents correction =
     List.fold_left correction.corrected_expectations ~init:0
       ~f:(fun ofs c ->
         output_slice oc file_contents ofs c.payload_loc.loc_start.pos_cnum;
-        let normal = Clmap.find None c.text in
+        let normal = Clmap.find Clflags_set.empty c.text in
         output_body oc normal;
         Clmap.iter
           (fun key body ->
-             match key with
-             | None -> ()
-             | Some _ when normal.str = body.str -> ()
-             | Some RectypesPrincipal
-               when Clmap.find_opt (Some Principal) c.text |> Option.exists (
-                   fun { str; _ } ->
-                     str = body.str
-                 ) ->
-                 ()
-             | Some clflag ->
-                 output_string oc ", ";
-                 output_string oc (string_of_clflags clflag);
-                 output_body oc body
+             if Clflags_set.is_empty key then ()
+             else if normal.str = body.str then ()
+             else if Clflags_set.cardinal key > 1
+                  && Clflags_set.mem Principal key
+                  && Clmap.find_opt (Clflags_set.singleton Principal) c.text
+                     |> Option.exists (fun { str; _ } -> str = body.str)
+             then ()
+             else begin
+               output_string oc ", ";
+               output_string oc (string_of_clflags key);
+               output_body oc body
+             end
           )
           c.text;
         c.payload_loc.loc_end.pos_cnum)
