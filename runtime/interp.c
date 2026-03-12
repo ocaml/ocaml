@@ -1380,8 +1380,15 @@ do_resume: {
       sp[1] = Val_long(extra_args);
 
       if (parent == NULL) {
+        /* Save cont across the allocation in caml_make_unhandled_effect_exn */
+        sp -= 1;
+        sp[0] = cont;
         Setup_for_c_call;
         resume_arg = caml_make_unhandled_effect_exn(eff);
+        Restore_after_c_call;
+        cont = sp[0];
+        sp += 1;
+        Setup_for_c_call;
         accu = caml_continuation_use(cont);
         Restore_after_c_call;
         resume_fn = raise_unhandled_effect;
