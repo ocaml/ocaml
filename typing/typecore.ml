@@ -2611,6 +2611,17 @@ let rec check_counter_example_pat
     | Backtrack_or -> false
     | Refine_or {inside_nonsplit_or} -> inside_nonsplit_or
   in
+  (* Patterns must be match on a monotype (generally speaking),
+     therefore should not be [Tpoly].
+
+     The only exception to [Tpat_var] in the setting of `let` and
+     `let rec` bindings. However, the typing of these constructs does not
+     involve [check_counter_example_pat], so encountering [Tpoly] here
+     should not occur in practice.
+
+     TODO: Once [Tpoly] is removed from the typing of `let` and `let rec`,
+     this exception can be eliminated as well.*)
+  assert (not (is_poly_Tpoly tp.pat_type));
   match tp.pat_desc with
     Tpat_any | Tpat_var _ ->
       let k' () = mkp k tp.pat_desc in
@@ -5872,7 +5883,26 @@ and type_function
       *)
       let ty_arg_internal, default_arg =
         match default_arg with
-        | None -> ty_arg_mono, None
+        | None ->
+            (* HACK: In the case of [has_poly], [ty_arg_internal] is a fresh
+               monomorphic variable.
+
+               When calling [split_function_ty] on an unknown type (e.g.
+               [Tvar]), [ty_arg_mono] is [ty_param] when [has_poly] is [true].
+
+               ADR:
+
+               We later unify [ty_param] in [type_poly_pattern] with a
+               polytype, which would [ty_arg_mono] to a polytype!
+               This is not the intended behaviour, since [ty_arg_mono]
+               should be a monotype. We avoid this by introducing an
+               indirection via a fresh [newvar ()] here.
+
+               TODO: Both [split_function_ty] and [filter_arrow] could be
+               improved with a nicer interface that handles
+               'polyvars' (unification variables that must be [Tpoly])
+               abstractly. *)
+            (if has_poly then newvar () else ty_arg_mono), None
         | Some default ->
             assert (is_optional arg_label);
             let ty_default = newvar () in
@@ -5893,13 +5923,72 @@ and type_function
             let default = type_expect env default (mk_expected ty_default) in
             ty_default, Some default
       in
+      (* To type a 'poly pattern' (a pattern with a `Ptyp_poly` polymorphic
+         annotation), we instantiate the polytype and check the pattern against
+         that instance.
+
+         This is sound due to contravariance; for example:
+         {[
+          # let allowed = fun ([ x ] : 'a. 'a list) -> print_endline x;;
+
+          val allowed : ('a. 'a list) -> unit = <fun>
+         ]}
+
+         Also poly patterns may bind variables with generalized (polymorphic)
+         types. This is implemented by entering a new local region when typing
+         patterns (see [map_half_typed_cases]) and then taking the instance
+         of the polytype within this region. *)
+      let instance_tpoly ty =
+        let sch, univars = tpoly_get_poly ty in
+        instance_poly ~keep_names:true univars sch
+      in
+      let type_poly_pattern
+          category
+          ~lev
+          env
+          spat
+          ty_expected
+          ?cont
+          allowed_modules
+        =
+        match spat.ppat_desc with
+        | Ppat_constraint (spat, ({ ptyp_desc = Ptyp_poly _; _ } as sty)) ->
+          assert has_poly;
+          let cty, ty, force =
+            with_local_level_generalize_structure (fun () ->
+                Typetexp.transl_simple_type_delayed env sty)
+          in
+          let ty' = instance ty in
+          (* Unifies [ty_param] (the polytype variable) of the function.
+             This ensures [ty_arg_mono] is equal to [instance_tpoly ty']. *)
+          unify_pat_types spat.ppat_loc env ty' (instance ty_param);
+          unify_pat_types spat.ppat_loc env (instance_tpoly ty') ty_expected;
+          let p, env, force', pvs, mvs =
+            type_pattern
+              category
+              ~lev
+              env
+              spat
+              (instance_tpoly ty')
+              ?cont
+              allowed_modules
+          in
+          let extra = Tpat_constraint cty, loc, spat.ppat_attributes in
+          ( { p with pat_extra = extra :: p.pat_extra }
+          , env
+          , force :: force'
+          , pvs
+          , mvs )
+        | _ ->
+          type_pattern category ~lev env spat ty_expected ?cont allowed_modules
+      in
       let (pat, params, body, newtypes, contains_gadt), partial =
         (* Check everything else in the scope of the parameter. *)
         map_half_typed_cases Value env ty_arg_internal ty_ret pat.ppat_loc
           ~check_if_total:true
           (* We don't make use of [case_data] here so we pass unit. *)
           [ { pattern = pat; has_guard = false; needs_refute = false }, () ]
-          ~type_pattern
+          ~type_pattern:type_poly_pattern
           ~type_body:begin
             fun () pat ~when_env:_ ~ext_env ~cont:_ ~ty_expected ~ty_infer:_
               ~contains_gadt:param_contains_gadt ->
