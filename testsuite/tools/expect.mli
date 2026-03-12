@@ -23,10 +23,7 @@ type clflags =
   | RectypesPrincipal
 
 
-module Clmap : module type of Map.Make(struct
-    type t = clflags option
-    let compare = compare
-  end)
+module Clmap : Map.S with type key = clflags option
 
 type expectation =
   { extid_loc   : Location.t (* Location of "expect" in "[%%expect ...]" *)
