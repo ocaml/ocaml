@@ -493,6 +493,7 @@ static void prepare_for_ephe_sweeping (caml_domain_state *domain_state)
  * Returns the remaining budget.
  */
 
+static intnat mark(intnat budget);
 static intnat ephe_mark (intnat budget, uintnat round,
                          /* Forces ephemerons and their data to be alive */
                          bool force_alive)
@@ -567,6 +568,17 @@ static intnat ephe_mark (intnat budget, uintnat round,
       value data = Ephe_data(ephe);
       if (data != caml_ephe_none && Is_block(data)) {
         caml_darken (domain_state, data, 0);
+        if (!domain_state->marking_done) {
+          /* We try to mark the data fully (as budget allows); this
+             can mark the keys of some ephemerons that are later in
+             the todo list, which would otherwise have to wait for the
+             next round.
+             This is important in the happy path where ephemerons occur
+             in the list in dependency order, so a single round suffices
+             to mark all the live ones.
+          */
+          budget = mark(budget);
+        }
       }
       /* Move to 'live' list */
       caml_ephe_list_cons_inplace(ephe, &domain_state->ephe_info->live);
@@ -2288,6 +2300,7 @@ mark_again:
                (budget = get_major_slice_work(mode)) > 0) {
           intnat left = ephe_mark(budget, saved_ephe_round, EPHE_MARK_DEFAULT);
           intnat work_done = budget - left;
+          work_done += mark_work_done_between_slices();
           commit_major_slice_work (work_done);
 
           // FIXME: Can we delete this?
