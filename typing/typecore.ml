@@ -2621,7 +2621,7 @@ let rec check_counter_example_pat
 
      TODO: Once [Tpoly] is removed from the typing of `let` and `let rec`,
      this exception can be eliminated as well.*)
-  assert (not (is_poly_Tpoly tp.pat_type));
+  assert (not (is_poly_Tpoly expected_ty));
   match tp.pat_desc with
     Tpat_any | Tpat_var _ ->
       let k' () = mkp k tp.pat_desc in
