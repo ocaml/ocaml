@@ -331,6 +331,17 @@ static uintnat sweep_work_done_between_slices(void)
  * marked, and data values if they have any unmarked keys). Ephemeron
  * sweeping cannot mark blocks so does not need to take place in
  * rounds.
+ *
+ * Remark: if the data of ephemeron A is found to be alive before the
+ * data of ephemeron B in the current major GC cycle, then A will
+ * occur before B in the todo list for the next cycle. In other words,
+ * ephemerons dynamically get sorted in dependency order, which
+ * reduces the number of rounds necessary.
+ * In the details, this dependency order is preserved because
+ * `ephe_mark()` pushes the element of `todo` into `live`, which
+ * reverses their order, but then `ephe_sweep()` moves `live` into
+ * `todo` and pushes them into `live` again, which reverses their
+ * order a second time.
 */
 
 extern value caml_ephe_none; /* See weak.c */
