@@ -520,8 +520,7 @@ static intnat ephe_mark (intnat budget, uintnat round,
         caml_darken (domain_state, data, 0);
       }
       /* Move to 'live' list */
-      Ephe_link(ephe) = domain_state->ephe_info->live;
-      domain_state->ephe_info->live = ephe;
+      caml_ephe_list_cons_inplace(ephe, &domain_state->ephe_info->live);
       /* Remove from 'todo' list */
       *prev_linkp = next;
 
@@ -548,13 +547,11 @@ static intnat ephe_mark (intnat budget, uintnat round,
 
 static intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
 {
-  value ephe;
   CAMLassert (caml_gc_phase == Phase_sweep_ephe);
 
   while (domain_state->ephe_info->todo != 0 && budget > 0) {
     /* pop the first ephemeron from the todo list */
-    ephe = domain_state->ephe_info->todo;
-    domain_state->ephe_info->todo = Ephe_link(ephe);
+    value ephe = caml_ephe_list_pop(&domain_state->ephe_info->todo);
 
     CAMLassert (Tag_val(ephe) == Abstract_tag);
     if (is_unmarked(ephe)) {
@@ -563,8 +560,7 @@ static intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
     } else {
       caml_ephe_clean(ephe);
       /* Move to live list */
-      Ephe_link(ephe) = domain_state->ephe_info->live;
-      domain_state->ephe_info->live = ephe;
+      caml_ephe_list_cons_inplace(ephe, &domain_state->ephe_info->live);
       budget -= Whsize_val(ephe);
     }
   }
@@ -591,17 +587,6 @@ static struct {
 } orph_structs = {0, NULL};
 
 static caml_plat_mutex orphaned_lock = CAML_PLAT_MUTEX_INITIALIZER;
-
-Caml_inline value ephe_list_tail(value e)
-{
-  value last = 0;
-  while (e != 0) {
-    CAMLassert (Tag_val(e) == Abstract_tag);
-    last = e;
-    e = Ephe_link(e);
-  }
-  return last;
-}
 
 #ifdef DEBUG
 static void orph_ephe_list_verify_status (int status)
@@ -639,12 +624,11 @@ void caml_orphan_ephemerons (caml_domain_state* domain_state)
   CAMLassert (ephe_info->todo == 0);
 
   if (ephe_info->live) {
-    value live_tail = ephe_list_tail(ephe_info->live);
-    CAMLassert(Ephe_link(live_tail) == 0);
+    value live_tail = caml_ephe_list_tail(ephe_info->live);
 
     caml_plat_lock_blocking(&orphaned_lock);
-    Ephe_link(live_tail) = orph_structs.ephe_list_live;
-    orph_structs.ephe_list_live = ephe_info->live;
+    orph_structs.ephe_list_live = caml_ephe_list_append_seg(
+      ephe_info->live, live_tail, orph_structs.ephe_list_live);
     ephe_info->live = 0;
     caml_plat_unlock(&orphaned_lock);
   }
@@ -717,7 +701,7 @@ static int no_orphaned_work (void)
 static void adopt_orphaned_work (int expected_status)
 {
   caml_domain_state* domain_state = Caml_state;
-  value orph_ephe_list_live, last;
+  value orph_ephe_list_live;
   struct caml_final_info *f, *myf, *temp;
 
 #ifdef DEBUG
@@ -738,10 +722,9 @@ static void adopt_orphaned_work (int expected_status)
   caml_plat_unlock(&orphaned_lock);
 
   if (orph_ephe_list_live) {
-    last = ephe_list_tail(orph_ephe_list_live);
-    CAMLassert(Ephe_link(last) == 0);
-    Ephe_link(last) = domain_state->ephe_info->live;
-    domain_state->ephe_info->live = orph_ephe_list_live;
+    caml_ephe_list_append_inplace(
+      orph_ephe_list_live,
+      &domain_state->ephe_info->live);
   }
 
   while (f != NULL) {
@@ -2268,15 +2251,11 @@ mark_again:
            keys, which need to be cleaned. This code is executed exactly once
            per major cycle per domain. */
         domain_state->ephe_info->must_sweep_ephe = 0;
-
-        value e = ephe_list_tail (domain_state->ephe_info->todo);
-        if (e == (value)NULL) {
-          domain_state->ephe_info->todo = domain_state->ephe_info->live;
-        } else {
-          CAMLassert(Ephe_link(e) == (value)NULL);
-          Ephe_link(e) = domain_state->ephe_info->live;
-        }
-        domain_state->ephe_info->live = (value)NULL;
+        domain_state->ephe_info->todo = 
+          caml_ephe_list_append(
+            domain_state->ephe_info->todo,
+            domain_state->ephe_info->live);
+        domain_state->ephe_info->live = 0;
 
         /* If the todo list is empty, then the ephemeron has no sweeping work
          * to do. */
