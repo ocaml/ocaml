@@ -649,7 +649,9 @@ external ramp_up : (unit -> 'a) -> 'a * suspended_collection_work
     with it), the GC will never accelerate to recover the
     corresponding amount of memory. This is appropriate if the ramp-up
     work allocates long-lived memory that remains live until the end
-    of the program execution.
+    of the program execution. The suspended work should also be
+    discarded whenever the program calls {!Gc.major}, {!Gc.full_major},
+    or {!Gc.compact} because these functions reset the GC work counters.
 
     If the user knows that at a certain point in the program the live
     memory consumption has been reduced by the corresponding amount --
