@@ -67,3 +67,7 @@ let lsprintf (Format (fmt, _)) args =
     (Buffer.contents buf)
   in
   make_lprintf k End_of_acc fmt args
+
+module Syntax = struct
+  let ( ^^ ) = Format_string.(^^)
+end

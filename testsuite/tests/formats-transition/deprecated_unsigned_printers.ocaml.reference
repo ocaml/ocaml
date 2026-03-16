@@ -1,4 +1,4 @@
-val test : (int -> string, unit, string) format -> string = <fun>
+val test : (int -> string, unit, string) Format_string.t -> string = <fun>
 %n: true
 %l: true
 %N: true

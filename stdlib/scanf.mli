@@ -215,7 +215,7 @@ end
 (** {1 Type of formatted input functions} *)
 
 type ('a, 'b, 'c, 'd) scanner =
-     ('a, Scanning.in_channel, 'b, 'c, 'a -> 'd, 'd) format6 -> 'c
+     ('a, Scanning.in_channel, 'b, 'c, 'a -> 'd, 'd) Format_string.t6 -> 'c
 (** The type of formatted input scanners: [('a, 'b, 'c, 'd) scanner]
     is the type of a formatted input function that reads from some
     formatted input channel according to some format string; more
@@ -239,7 +239,8 @@ type ('a, 'b, 'c, 'd) scanner =
 *)
 
 type ('a, 'b, 'c, 'd) scanner_opt =
-     ('a, Scanning.in_channel, 'b, 'c, 'a -> 'd option, 'd) format6 -> 'c
+     ('a, Scanning.in_channel, 'b, 'c, 'a -> 'd option, 'd) Format_string.t6
+     -> 'c
 
 exception Scan_failure of string
 (** When the input can not be read according to the format string
@@ -521,8 +522,8 @@ val ksscanf :
 (** {1 Reading format strings from input} *)
 
 val bscanf_format :
-  Scanning.in_channel -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
-    (('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g) -> 'g
+  Scanning.in_channel -> ('a, 'b, 'c, 'd, 'e, 'f) Format_string.t6 ->
+    (('a, 'b, 'c, 'd, 'e, 'f) Format_string.t6 -> 'g) -> 'g
 (** [bscanf_format ic fmt f] reads a format string token from the formatted
     input channel [ic], according to the given format string [fmt], and
     applies [f] to the resulting format string value.
@@ -532,15 +533,16 @@ val bscanf_format :
 *)
 
 val sscanf_format :
-  string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
-    (('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g) -> 'g
+  string -> ('a, 'b, 'c, 'd, 'e, 'f) Format_string.t6 ->
+    (('a, 'b, 'c, 'd, 'e, 'f) Format_string.t6 -> 'g) -> 'g
 (** Same as {!Scanf.bscanf_format}, but reads from the given string.
     @since 3.09
 *)
 
 val format_from_string :
   string ->
-    ('a, 'b, 'c, 'd, 'e, 'f) format6 -> ('a, 'b, 'c, 'd, 'e, 'f) format6
+    ('a, 'b, 'c, 'd, 'e, 'f) Format_string.t6 ->
+    ('a, 'b, 'c, 'd, 'e, 'f) Format_string.t6
 (** [format_from_string s fmt] converts a string argument to a format string,
     according to the given format string [fmt].
     @raise Scan_failure if [s], considered as a format string, does not

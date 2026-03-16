@@ -10,7 +10,7 @@ let test fmt =
   kfprintf (fun ppf -> pp_close_box ppf (); pp_print_newline ppf ()) ppf fmt
 let newline ppf = Format.(pp_print_break ppf pp_infinity 0)
 [%%expect {|
-val test : ('a, Format.formatter, unit, unit) format4 -> 'a = <fun>
+val test : ('a, Format.formatter, unit, unit) Format_string.t4 -> 'a = <fun>
 val newline : Format.formatter -> unit = <fun>
 |}]
 

@@ -15,8 +15,8 @@
 
 (* The lexer generator. Command-line parsing. *)
 
-open Printf
 open Syntax
+open Printf
 
 let ml_automata = ref false
 let source_name = ref None

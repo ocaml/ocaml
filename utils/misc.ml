@@ -18,6 +18,7 @@
 exception Fatal_error
 
 let fatal_errorf fmt =
+  let (^^) = Format.Syntax.(^^) in
   Format.kfprintf
     (fun _ -> raise Fatal_error)
     Format.err_formatter

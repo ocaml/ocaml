@@ -19,7 +19,7 @@ type t = exn = ..
 
 let printers = Atomic.make []
 
-let locfmt = format_of_string "File \"%s\", line %d, characters %d-%d: %s"
+let locfmt = Format_string.id "File \"%s\", line %d, characters %d-%d: %s"
 
 let field x i =
   let f = Obj.field x i in
