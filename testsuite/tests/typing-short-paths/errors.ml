@@ -31,7 +31,7 @@ type c = M.c
 Line 7, characters 9-18:
 7 | let () = (new M.c)#bar
              ^^^^^^^^^
-Error: This expression has type "c"
+Error: This expression has type "c" = "< foo : int >"
        It has no method "bar"
 |}]
 

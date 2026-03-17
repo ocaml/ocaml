@@ -106,7 +106,7 @@ val f : Test2.t -> unit = <fun>
 Line 1, characters 8-15:
 1 | let a = Test2.A;; (* fail *)
             ^^^^^^^
-Error: Cannot create values of the private type Test2.t
+Error: Cannot create values of the private type Test2.t = Test.t
 Line 3, characters 40-63:
 3 | module Test2 : module type of Test with type t = private Test.t = Test;;
                                             ^^^^^^^^^^^^^^^^^^^^^^^

@@ -919,7 +919,7 @@ let rec update_level env level expand ty =
         end;
         set_level ();
         iter_type_expr (update_level env level expand) ty;
-        update_level_abbrev env level expand ty
+        update_level_get_expand env level expand ty
     | Tfield(lab, _, ty1, _)
       when lab = dummy_method && level < get_scope ty1 ->
         raise_escape_exn Self

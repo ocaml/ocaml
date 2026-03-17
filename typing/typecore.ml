@@ -6991,7 +6991,8 @@ let report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
     "@[<v>@[<2>%a@ %a@]\
      @ It is applied to too many arguments@]"
     (report_this_texp_has_type (Some "function")) funct
-    Printtyp.type_expr func_ty
+    (Printtyp.type_expansion Type)
+    func_ty
     ~sub:(
       let semicolon =
         if returns_unit then
@@ -7004,7 +7005,13 @@ let report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
 
 let msg = Fmt.doc_printf
 
-let report_error ~loc env = function
+let report_error ~loc env =
+  let print_expanded fmt ty =
+    let ty_exp = expand_type env ty in
+    let ty_exp = Out_type.prepare_expansion ty_exp in
+    (Printtyp.type_expansion Type) fmt ty_exp
+  in
+  function
   | Constructor_arity_mismatch(lid, expected, provided) ->
       Location.errorf ~loc
        "@[The constructor %a@ expects %i argument(s),@ \
@@ -7021,7 +7028,7 @@ let report_error ~loc env = function
       Location.errorf ~loc
         "This pattern was expected to match values of type@ %a,@ but it \
          contains an extra %a."
-        (Style.as_inline_code Printtyp.type_expr) typ
+        print_expanded typ
         (tuple_component ~print_article:false) lbl;
   | Missing_tuple_label (lbl, typ) ->
       let hint ppf () =
@@ -7034,7 +7041,7 @@ let report_error ~loc env = function
       Location.errorf ~loc
         "This pattern was expected to match values of type@ %a,@ but it is \
          missing %a.%a"
-        (Style.as_inline_code Printtyp.type_expr) typ
+        print_expanded typ
         (tuple_component ~print_article:true) lbl
         hint ()
   | Label_mismatch(lid, err) ->
@@ -7103,12 +7110,12 @@ let report_error ~loc env = function
        introduces the local type equation%t.\
        @]"
       syntactic_arity
-      (Style.as_inline_code Printtyp.type_expr) type_constraint
+      print_expanded type_constraint
       Style.inline_code "fun ... gadt_pat -> fun ..."
       Style.inline_code "gadt_pat"
       (fun ppf ->
          Option.iter
-           (fprintf ppf " on %a" (Style.as_inline_code Printtyp.type_expr))
+           (fprintf ppf " on %a" print_expanded)
            type_with_local_equation)
   | Apply_non_function {
       funct; func_ty; res_ty; previous_arg_loc; extra_arg_loc
@@ -7119,11 +7126,12 @@ let report_error ~loc env = function
             | Tconstr (p, _, _) -> Path.same p Predef.path_unit
             | _ -> false
           in
+          let func_ty = expand_type env func_ty in
           report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
             ~extra_arg_loc ~returns_unit loc
       | _ ->
           Location.errorf ~loc "@[<v>@[<2>This expression has type@ %a@]@ %s@]"
-            (Style.as_inline_code Printtyp.type_expr) func_ty
+            print_expanded func_ty
             "This is not a function; it cannot be applied."
       end
   | Apply_wrong_label (l, ty, extra_info) ->
@@ -7168,7 +7176,7 @@ let report_error ~loc env = function
              (spellcheck name.txt valid_names)
          else
            let intro ppf = Fmt.fprintf ppf "@[%s type@;<1 2>%a%a@]@\n"
-             eorp (Style.as_inline_code Printtyp.type_expr) ty
+             eorp print_expanded ty
              pp_doc (report_type_expected_explanation_opt explanation)
            in
            let main =
@@ -7207,14 +7215,14 @@ let report_error ~loc env = function
   | Not_an_object (ty, explanation) ->
     Location.errorf ~loc
       "This expression is not an object;@ it has type %a%a"
-      (Style.as_inline_code Printtyp.type_expr) ty
+      print_expanded ty
       pp_doc (report_type_expected_explanation_opt explanation)
   | Undefined_method (ty, me, valid_methods) ->
      Printtyp.wrap_printing_env ~error:true env (fun () ->
           let intro ppf =
             Fmt.fprintf ppf
               "@[<v>@[This expression has type@;<1 2>%a@]@,@]"
-              (Style.as_inline_code Printtyp.type_expr) ty
+              print_expanded ty
           in
           let main =
             Fmt.doc_printf "@{<ralign>It has no method @}%a"
@@ -7280,13 +7288,13 @@ let report_error ~loc env = function
       Location.errorf ~loc
         "This expression should not be a function,@ \
          the expected type is@ %a%a"
-        (Style.as_inline_code Printtyp.type_expr) ty
+        print_expanded ty
         pp_doc (report_type_expected_explanation_opt explanation)
   | Too_many_arguments (ty, explanation) ->
       Location.errorf ~loc
         "This function expects too many arguments,@ \
          it should have type@ %a%a"
-        (Style.as_inline_code Printtyp.type_expr) ty
+        print_expanded ty
         pp_doc (report_type_expected_explanation_opt explanation)
   | Abstract_wrong_label {got; expected; expected_type; explanation} ->
       let label ~long ppf = function
@@ -7304,7 +7312,7 @@ let report_error ~loc env = function
       Location.errorf ~loc
         "@[<v>@[<2>This function should have type@ %a%a@]@,\
          @[but its first argument is %a@ instead of %s%a@]@]"
-        (Style.as_inline_code Printtyp.type_expr) expected_type
+        print_expanded expected_type
         pp_doc (report_type_expected_explanation_opt explanation)
         (label ~long:true) got
         (if second_long then "being " else "")
@@ -7318,16 +7326,16 @@ let report_error ~loc env = function
         Style.inline_code id
   | Private_type ty ->
       Location.errorf ~loc "Cannot create values of the private type %a"
-        (Style.as_inline_code Printtyp.type_expr) ty
+        print_expanded ty
   | Private_label (lid, ty) ->
       Location.errorf ~loc "Cannot assign field %a of the private type %a"
         quoted_longident lid
-        (Style.as_inline_code Printtyp.type_expr) ty
+        print_expanded ty
   | Private_constructor (constr, ty) ->
       Location.errorf ~loc
         "Cannot use private constructor %a to create values of type %a"
         Style.inline_code constr.cstr_name
-        (Style.as_inline_code Printtyp.type_expr) ty
+        print_expanded ty
   | Not_a_polymorphic_variant_type lid ->
       Location.errorf ~loc "The type %a@ is not a variant type"
         quoted_longident lid
@@ -7348,7 +7356,7 @@ let report_error ~loc env = function
   | Not_a_packed_module ty ->
       Location.errorf ~loc
         "This expression is packed module, but the expected type is@ %a"
-        (Style.as_inline_code Printtyp.type_expr) ty
+        print_expanded ty
   | Unexpected_existential (reason, name) ->
       let reason_str =
          match reason with
@@ -7487,7 +7495,7 @@ let report_error ~loc env = function
         "can only be given to an existential variable"
         "introduced by this GADT constructor"
         "The type annotation tries to bind it to"
-        reason1 (Style.as_inline_code Printtyp.type_expr) ty reason2
+        reason1 print_expanded ty reason2
   | Missing_type_constraint ->
       Location.errorf ~loc
         "@[%s@ %s@]"
@@ -7510,13 +7518,13 @@ let report_error ~loc env = function
       Location.errorf ~loc
         "This %s should not be a %s,@ \
          the expected type is@ %a%a"
-        ctx sort (Style.as_inline_code Printtyp.type_expr) ty
+        ctx sort print_expanded ty
         pp_doc (report_type_expected_explanation_opt explanation)
   | Expr_not_a_record_type ty ->
       Location.errorf ~loc
         "This expression has type %a@ \
          which is not a record type."
-        (Style.as_inline_code Printtyp.type_expr) ty
+        print_expanded ty
   | Repeated_tuple_exp_label l ->
       Location.errorf ~loc
         "@[This tuple expression has two labels named %a@]"
