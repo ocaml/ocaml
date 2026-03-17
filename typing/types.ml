@@ -827,7 +827,7 @@ let forget_expand ty =
     Texpand (ty', _, _) ->
       log_type ty;
       ty.desc <- Tlink ty'
-  | _ -> Misc.fatal_error "Types.forget_expand"
+  | _ -> Misc.fatal_error "Types.forget_abbrev"
 
 let link_type ty ty' =
   let ty = repr ty in

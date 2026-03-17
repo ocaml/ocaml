@@ -919,7 +919,7 @@ let rec update_level env level expand ty =
         end;
         set_level ();
         iter_type_expr (update_level env level expand) ty;
-        update_level_get_expand env level expand ty
+        update_level_abbrev env level expand ty
     | Tfield(lab, _, ty1, _)
       when lab = dummy_method && level < get_scope ty1 ->
         raise_escape_exn Self
@@ -2605,21 +2605,6 @@ let mcomp_for tr_exn env t1 t2 =
 
 (* Real unification *)
 
-(*
-let find_lowest_level ty =
-  let lowest = ref generic_level in
-  with_type_mark begin fun mark ->
-    let rec find ty =
-      if try_mark_node mark ty then begin
-        let level = get_level ty in
-        if level < !lowest then lowest := level;
-        iter_type_expr find ty
-      end
-    in find ty
-  end;
-  !lowest
-*)
-
 (* This function can be called only in [Pattern] mode. *)
 let add_gadt_equation uenv source destination =
   (* Format.eprintf "@[add_gadt_equation %s %a@]@."
@@ -2784,7 +2769,8 @@ let rec unify uenv t1 t2 =
     type_changed := true;
     begin match (get_desc t1, get_desc t2) with
     (* Using deep_occur here causes non-termination
-       in pr9314.ml and constraints.ml
+       in pr9314.ml and constraints.ml, but it is
+       not neccessary for correctness.
       (Tvar _, Tconstr _) when deep_occur t1 t2 ->
         unify2 uenv t1 t2
     | (Tconstr _, Tvar _) when deep_occur t2 t1 ->
@@ -2852,10 +2838,13 @@ and unify2_rec uenv t1 t2 =
 
 and unify2_expand uenv t1 t2 =
   (* Second step: expansion of abbreviations *)
-  (* Expansion may change the representative of the types. *)
   let env = get_env uenv in
   ignore (expand_head_unif env t1);
   ignore (expand_head_unif env t2);
+  (* vouillon: expanding a type can perform some unification.
+     t1' might no longer be expanded after the computation of t2'.
+     But, because of caching, if we do the expansion a second time,
+     we get the right result. *)
   ignore (expand_head_unif env t1);
   ignore (expand_head_unif env t2);
   let lv = Int.min (get_level t1) (get_level t2) in
