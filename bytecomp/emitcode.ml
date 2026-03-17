@@ -334,7 +334,10 @@ let emit_instr = function
   | Kandint -> out opANDINT  | Korint -> out opORINT
   | Kxorint -> out opXORINT  | Klslint -> out opLSLINT
   | Klsrint -> out opLSRINT  | Kasrint -> out opASRINT
-  | Kintcomp c -> emit_comp c
+  | Kintcomp (c,physical_comparison) ->
+      if physical_comparison
+      then record_hint (Hint_physical_comparison);
+      emit_comp c
   | Koffsetint n -> out opOFFSETINT; out_int n
   | Koffsetref n -> out opOFFSETREF; out_int n
   | Kisint -> out opISINT
@@ -360,13 +363,13 @@ let rec emit = function
     [] -> ()
   (* Peephole optimizations *)
 (* optimization of integer tests *)
-  | Kpush::Kconst k::Kintcomp c::Kbranchif lbl::rem
+  | Kpush::Kconst k::Kintcomp (c,_)::Kbranchif lbl::rem
       when is_immed_const k ->
         emit_branch_comp c ;
         out_const k ;
         out_label lbl ;
         emit rem
-  | Kpush::Kconst k::Kintcomp c::Kbranchifnot lbl::rem
+  | Kpush::Kconst k::Kintcomp (c,_)::Kbranchifnot lbl::rem
       when is_immed_const k ->
         emit_branch_comp (negate_integer_comparison c) ;
         out_const k ;

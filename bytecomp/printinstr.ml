@@ -87,12 +87,12 @@ let instruction ppf = function
   | Klslint -> fprintf ppf "\tlslint"
   | Klsrint -> fprintf ppf "\tlsrint"
   | Kasrint -> fprintf ppf "\tasrint"
-  | Kintcomp Ceq -> fprintf ppf "\teqint"
-  | Kintcomp Cne -> fprintf ppf "\tneqint"
-  | Kintcomp Clt -> fprintf ppf "\tltint"
-  | Kintcomp Cgt -> fprintf ppf "\tgtint"
-  | Kintcomp Cle -> fprintf ppf "\tleint"
-  | Kintcomp Cge -> fprintf ppf "\tgeint"
+  | Kintcomp (Ceq,_) -> fprintf ppf "\teqint"
+  | Kintcomp (Cne,_) -> fprintf ppf "\tneqint"
+  | Kintcomp (Clt,_) -> fprintf ppf "\tltint"
+  | Kintcomp (Cgt,_) -> fprintf ppf "\tgtint"
+  | Kintcomp (Cle,_) -> fprintf ppf "\tleint"
+  | Kintcomp (Cge,_) -> fprintf ppf "\tgeint"
   | Koffsetint n -> fprintf ppf "\toffsetint %i" n
   | Koffsetref n -> fprintf ppf "\toffsetref %i" n
   | Kisint -> fprintf ppf "\tisint"

@@ -109,6 +109,7 @@ type optimization_hint =
     (* Closure allocations *)
   | Hint_ccall of ccall_hint
     (* C call *)
+  | Hint_physical_comparison
 
 (* Abstract machine instructions *)
 
@@ -159,7 +160,7 @@ type instruction =
   | Kccall of string * int * ccall_hint option
   | Knegint | Kaddint | Ksubint | Kmulint | Kdivint | Kmodint
   | Kandint | Korint | Kxorint | Klslint | Klsrint | Kasrint
-  | Kintcomp of integer_comparison
+  | Kintcomp of integer_comparison * bool
   | Koffsetint of int
   | Koffsetref of int
   | Kisint
