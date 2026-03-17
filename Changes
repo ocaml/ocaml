@@ -28,6 +28,9 @@ Working version
   maximum benefit on AMD64, pass -mprfchw to the C compiler.
   (Nick Barnes, review by Gabriel Scherer, Damien Doligez, and Antonin Décimo)
 
+- #14651: Remove S390x TSan (Thread Sanitizer) support.
+  (Tim McGilchrist, review by ???)
+
 ### Type system:
 
 - #14512: Improve check for warning 16 (unerasable-optional-argument)
