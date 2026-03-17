@@ -865,6 +865,10 @@ OCaml 5.5.0
   (when empty) not to be equal to `[||]`.
   (Marc Lasson, review by Gabriel Scherer)
 
+- #14644, #14647: Fix a bug related to unhandled effects in bytecode.
+  (Vincent Laviron, report by Thibaut Mattio,
+   review by Nicolás Ojeda Bär, Stephen Dolan and Olivier Nicole)
+
 OCaml 5.4.0 (9 October 2025)
 ----------------------------
 
