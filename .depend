@@ -10634,6 +10634,7 @@ testsuite/tools/expect.cmo : \
     parsing/pprintast.cmi \
     parsing/parsetree.cmi \
     parsing/parse.cmi \
+    typing/out_type.cmi \
     utils/misc.cmi \
     driver/main_args.cmi \
     parsing/location.cmi \
@@ -10652,6 +10653,7 @@ testsuite/tools/expect.cmx : \
     parsing/pprintast.cmx \
     parsing/parsetree.cmi \
     parsing/parse.cmx \
+    typing/out_type.cmx \
     utils/misc.cmx \
     driver/main_args.cmx \
     parsing/location.cmx \

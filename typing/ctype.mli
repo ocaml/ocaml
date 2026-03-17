@@ -293,6 +293,9 @@ val expand_head_opt: Env.t -> type_expr -> type_expr
 (** Expansion of types for error traces; lives here instead of in [Errortrace]
     because the expansion machinery lives here. *)
 
+val expand_type
+  : Env.t -> type_expr -> Errortrace.expanded_type
+
 (** Create an [Errortrace.Diff] by expanding the two types *)
 val expanded_diff :
   Env.t ->

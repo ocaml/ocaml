@@ -118,7 +118,7 @@ module PR6505a :
 Line 6, characters 13-22:
 6 | let _ = lazy PR6505a.y#bang;; (* fails *)
                  ^^^^^^^^^
-Error: This expression has type "<  >"
+Error: This expression has type "(<  >, <  >) PR6505a.abs" = "<  >"
        It has no method "bang"
 |}, Principal{|
 module PR6505a :
@@ -131,7 +131,7 @@ module PR6505a :
 Line 6, characters 13-22:
 6 | let _ = lazy PR6505a.y#bang;; (* fails *)
                  ^^^^^^^^^
-Error: This expression has type "<  >"
+Error: This expression has type "(<  >, <  >) PR6505a.abs" = "<  >"
        It has no method "bang"
 |}]
 
