@@ -94,6 +94,8 @@ val is_Tunivar: type_expr -> bool
 val is_Tconstr: type_expr -> bool
 val dummy_method: label
 val get_constr_desc: type_expr -> type_desc
+        (* Replaces any expansion at the head of the type_desc
+           with its abbreviation. *)
 val type_kind_is_abstract: type_declaration -> bool
 val type_origin: type_declaration -> type_origin
 

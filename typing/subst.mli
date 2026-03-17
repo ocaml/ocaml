@@ -25,7 +25,7 @@ open Types
    they are inferior to the maximum level of the new context.
 
    Substitutions can also be used to create a "clean" copy of a type.
-   Indeed, non-variable node of a type are duplicated, with their
+   Indeed, non-variable nodes of a type are duplicated, with their
    levels set to generic level.  That way, the resulting type is
    well-formed (decreasing levels), even if the original one was not.
 

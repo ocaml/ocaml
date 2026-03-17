@@ -242,6 +242,7 @@ module Core_inclusion = struct
   let value_descriptions ~loc env ~direction subst id vd1 vd2 =
     if Directionality.mark_as_used direction then
       Env.mark_value_used vd1.val_uid;
+    (* Using [Subst] reverts expansions *)
     let vd1 = Subst.value_description Subst.identity vd1 in
     let vd2 = Subst.value_description subst vd2 in
     try
