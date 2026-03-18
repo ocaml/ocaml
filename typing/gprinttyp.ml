@@ -509,9 +509,9 @@ module Digraph = struct
   let rec hyperedges_of_memo ty params id abbrev dg =
     match abbrev with
     | Types.Mnil -> dg
-    | Types.Mcons (_priv, _p, t1, t2, rem) ->
-        let s, dg = ty params t1 dg in
-        let exp, dg = ty params t2 dg in
+    | Types.Mcons { abbreviation; expansion; rem; _ } ->
+        let s, dg = ty params abbreviation dg in
+        let exp, dg = ty params expansion dg in
         dg |>
         add memo
           (Hyperedge
@@ -525,9 +525,9 @@ module Digraph = struct
   let rec edges_of_memo ty params abbrev dg =
     match abbrev with
     | Types.Mnil -> dg
-    | Types.Mcons (_priv, _p, t1, t2, rem) ->
-        let x, dg = ty params t1 dg in
-        let y, dg = ty params t2 dg in
+    | Types.Mcons { abbreviation; expansion; rem; _ } ->
+        let x, dg = ty params abbreviation dg in
+        let y, dg = ty params expansion dg in
         dg |> add memo (Edge (x,y)) |> edges_of_memo ty params rem
     | Types.Mlink rem -> edges_of_memo ty params !rem dg
 

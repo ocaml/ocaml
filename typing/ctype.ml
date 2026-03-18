@@ -1240,9 +1240,10 @@ let rec find_repr p1 =
   function
     Mnil ->
       None
-  | Mcons (Public, p2, ty, _, _) when Path.same_unsafe p1 p2 ->
-      Some ty
-  | Mcons (_, _, _, _, rem) ->
+  | Mcons { privacy = Public; path = p2; abbreviation; _ }
+    when Path.same_unsafe p1 p2 ->
+      Some abbreviation
+  | Mcons { rem; _ } ->
       find_repr p1 rem
   | Mlink {contents = rem} ->
       find_repr p1 rem
@@ -2661,7 +2662,7 @@ let reify_univars env ty =
 let rec has_cached_expansion p abbrev =
   match abbrev with
     Mnil                    -> false
-  | Mcons(_, p', _, _, rem) ->
+  | Mcons { path = p'; rem; _ } ->
       Path.same_unsafe p p' || has_cached_expansion p rem
   | Mlink rem               -> has_cached_expansion p !rem
 

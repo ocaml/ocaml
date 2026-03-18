@@ -74,8 +74,12 @@ and _ row_field_gen =
 
 and abbrev_memo =
     Mnil
-  | Mcons of private_flag * Path.t * type_expr * type_expr * abbrev_memo
-        (* NB: should use an inline record *)
+  | Mcons of
+      { privacy : private_flag;
+        path : Path.t;
+        abbreviation : type_expr;
+        expansion : type_expr;
+        rem: abbrev_memo }
   | Mlink of abbrev_memo ref
 
 and any = [`some | `none | `var]

@@ -48,7 +48,7 @@ let rec safe_repr v t =
 
 let rec list_of_memo = function
     Mnil -> []
-  | Mcons (_priv, p, _t1, _t2, rem) -> p :: list_of_memo rem
+  | Mcons { path; rem; _ } -> path :: list_of_memo rem
   | Mlink rem -> list_of_memo !rem
 
 let print_name ppf = function

@@ -176,11 +176,15 @@ and fixed_explanation =
 and abbrev_memo =
   | Mnil (** No known abbreviation *)
 
-  | Mcons of private_flag * Path.t * type_expr * type_expr * abbrev_memo
+  | Mcons of
+      { privacy : private_flag;
+        path : Path.t;
+        abbreviation : type_expr;
+        expansion : type_expr;
+        rem : abbrev_memo }
   (** Found one abbreviation.
       A valid abbreviation should be at least as visible and reachable by the
-      same path.
-      The first expression is the abbreviation and the second the expansion. *)
+      same path. *)
 
   | Mlink of abbrev_memo ref
   (** Abbreviations can be found after this indirection *)
