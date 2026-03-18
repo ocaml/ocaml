@@ -50,8 +50,8 @@ Working version
 ### Standard library:
 
 - #13554: Add `List.append_map` and `List.rev_append_map`.
-  (Sylvain Boilard and Hugo Heuzard, review by Nicolás Ojeda Bär, Daniel Bünzli
-   and Damien Doligez)
+  (Sylvain Boilard and Hugo Heuzard, review by Nicolás Ojeda Bär, Daniel Bünzli,
+   Damien Doligez and Jeremy Yallop)
 
 - #14487: Add String.drop_{prefix,suffix}
   (Michael Neumann, review by Léo Andrès, Nicolás Ojeda Bär and Gabriel Scherer)
