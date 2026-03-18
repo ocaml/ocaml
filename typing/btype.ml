@@ -39,9 +39,11 @@ module TransientTypeMap = Map.Make(TransientTypeOps)
 module TypeMap = struct
   include TransientTypeMap
   let add ty = wrap_repr add ty
+  let add_to_list ty = wrap_repr add_to_list ty
   let find ty = wrap_repr find ty
   let singleton ty = wrap_repr singleton ty
   let fold f = TransientTypeMap.fold (wrap_type_expr f)
+  let update ty = wrap_repr update ty
 end
 module TypeHash = struct
   include TransientTypeHash
@@ -352,8 +354,8 @@ let fold_type_expr f init ty =
       let result = f init ty1 in
       f result ty2
   | Tnil                -> init
-  | Tlink _
-  | Tsubst _            -> assert false
+  | Tlink _             -> assert false
+  | Tsubst _            -> init
   | Tunivar _           -> init
   | Tpoly (ty, tyl)     ->
       let result = f init ty in
@@ -361,6 +363,11 @@ let fold_type_expr f init ty =
   | Tpackage pack ->
       List.fold_left
         (fun result (_n, ty) -> f result ty) init pack.pack_constraints
+  | Tfunctor (_, _, pack, ty) ->
+      let res =
+        List.fold_left (fun result (_n, ty) -> f result ty) init
+          pack.pack_constraints in
+      f res ty
 
 let iter_type_expr f ty =
   fold_type_expr (fun () v -> f v) () ty
@@ -392,6 +399,12 @@ let iter_type_expr_kind f = function
       List.iter (fun d -> f d.ld_type) lbls
   | Type_open -> ()
   | Type_external _ -> ()
+
+let map_pack map_path map_type { pack_path; pack_constraints } =
+  {
+    pack_path = map_path pack_path;
+    pack_constraints = List.map (Pair.map_snd map_type) pack_constraints;
+  }
 
                   (**********************************)
                   (*     Utilities for marking      *)
@@ -506,6 +519,7 @@ let type_iterators mark =
     match get_desc ty with
       Tconstr (p, _, _)
     | Tobject (_, {contents=Some (p, _)})
+    | Tfunctor (_, _, {pack_path = p}, _)
     | Tpackage {pack_path = p} ->
         it.it_path p
     | Tvariant row ->
@@ -563,7 +577,10 @@ let rec copy_type_desc ?(keep_names=false) f = function
   | Tpackage pack       ->
       let pack_constraints =
         List.map (fun (n, ty) -> (n, f ty)) pack.pack_constraints in
-      Tpackage {pack with pack_constraints }
+      Tpackage {pack with pack_constraints}
+  | Tfunctor _ ->
+      (* doing this would break unicity of unscoped binding in Tfunctor *)
+      assert false
 
 (* TODO: rename to [module Copy_scope] *)
 module For_copy : sig

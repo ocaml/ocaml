@@ -99,7 +99,11 @@ type error =
     }
   | Null_arity_external
   | Missing_native_external
-  | Unbound_type_var of type_expr * type_declaration
+  | Unbound_type_var of {
+      var: type_expr;
+      params: type_expr list;
+      decl: type_declaration;
+    }
   | Cannot_extend_private_type of Path.t
   | Not_extensible_type of Path.t
   | Extension_mismatch of Path.t * Env.t * Includecore.type_mismatch
@@ -109,11 +113,11 @@ type error =
   | Rebind_private of Longident.t
   | Variance of Typedecl_variance.error
   | Unavailable_type_constructor of Path.t
-  | Unbound_type_var_ext of type_expr * extension_constructor
   | Val_in_structure
   | Multiple_native_repr_attributes
   | Cannot_unbox_or_untag_type of native_repr_kind
   | Deep_unbox_or_untag_attribute of native_repr_kind
+  | Type_cannot_be_external of type_expr
   | Immediacy of Typedecl_immediacy.error
   | Separability of Typedecl_separability.error
   | Bad_unboxed_attribute of string

@@ -493,10 +493,10 @@ reconfigure:
 	                                    $(ADDITIONAL_CONFIGURE_ARGS)
 
 utils/domainstate.ml: utils/domainstate.ml.c runtime/caml/domain_state.tbl
-	$(V_GEN)$(CPP) -I runtime/caml $< > $@
+	$(V_GEN)$(CPP) -I runtime $< > $@
 
 utils/domainstate.mli: utils/domainstate.mli.c runtime/caml/domain_state.tbl
-	$(V_GEN)$(CPP) -I runtime/caml $< > $@
+	$(V_GEN)$(CPP) -I runtime $< > $@
 
 configure: tools/autogen configure.ac aclocal.m4 build-aux/ocaml_version.m4
 	$<
@@ -960,11 +960,14 @@ clean::
 # Build the manual latex files from the etex source files
 # (see manual/README.md)
 .PHONY: manual-pregen
-manual-pregen: opt.opt
-	cd manual; $(MAKE) clean && $(MAKE) pregen-etex
+manual-pregen: opt.opt | manual
+	$(MAKE) -C manual clean
+	$(MAKE) -C manual pregen-etex
 
+ifneq "$(wildcard manual)" ""
 clean::
 	$(MAKE) -C manual clean
+endif
 
 # The clean target
 clean:: partialclean
@@ -1699,8 +1702,11 @@ clean::
 	rm -f $(addprefix runtime/, ocamlrun ocamlrund ocamlruni ocamlruns sak)
 	rm -f $(addprefix runtime/, \
 	  ocamlrun.exe ocamlrund.exe ocamlruni.exe ocamlruns.exe sak.exe)
+# jumptbl.h and opnames.h stopped being generated in #14488, but the two headers
+# continue to be removed as otherwise when switching between branches based
+# before this change the (stale) headers trip the C/C++ compatibility tests.
 	rm -f runtime/primitives runtime/primitives*.new runtime/prims.c \
-	  $(runtime_BUILT_HEADERS)
+	  $(runtime_BUILT_HEADERS) runtime/caml/jumptbl.h runtime/caml/opnames.h
 	rm -f runtime/domain_state.inc
 	rm -rf $(DEPDIR)
 	rm -f stdlib/libcamlrun.a stdlib/libcamlrun.lib
@@ -1765,6 +1771,7 @@ ocamllex_SOURCES = $(addprefix lex/,\
   lexgen.mli lexgen.ml \
   compact.mli compact.ml \
   common.mli common.ml \
+  exhaustiveness.mli exhaustiveness.ml \
   output.mli output.ml \
   outputbis.mli outputbis.ml \
   main.mli main.ml)
@@ -2030,6 +2037,11 @@ ocamltest_DEPEND_FILES := $(wildcard $(DEPDIR)/ocamltest/*.$(D))
 .PHONY: $(ocamltest_DEPEND_FILES)
 include $(ocamltest_DEPEND_FILES)
 
+ocamltest/ocamltest_unix.cmo: \
+  $(addsuffix .cmi, $(unix_library)) ocamltest/ocamltest_unix.cmi
+ocamltest/ocamltest_unix.cmx: \
+  $(addsuffix .cmx, $(unix_library)) ocamltest/ocamltest_unix.cmi
+
 ocamltest/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 
 ocamltest/%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
@@ -2174,7 +2186,8 @@ partialclean::
 ocamltest/ocamltest_config.ml ocamltest/ocamltest_unix.ml: config.status
 	./$< $@
 
-beforedepend:: ocamltest/ocamltest_config.ml ocamltest/ocamltest_unix.ml
+beforedepend:: ocamltest/ocamltest_config.ml ocamltest/tsl_lexer.ml \
+               ocamltest/tsl_parser.ml ocamltest/tsl_parser.mli
 
 # Documentation
 
@@ -2206,8 +2219,8 @@ partialclean::
 .PHONY: ocamltest-manual
 ocamltest-manual: ocamltest/ocamltest.html
 
-ocamltest/ocamltest.html: ocamltest/OCAMLTEST.org
-	pandoc -s --toc -N -f org -t html -o $@ $<
+ocamltest/ocamltest.html: ocamltest/OCAMLTEST.adoc
+	asciidoctor -o $@ $<
 
 # The extra libraries
 
@@ -2668,7 +2681,7 @@ toplevel/native/topeval.cmx: otherlibs/dynlink/dynlink.cmxa
 # The numeric opcodes
 
 bytecomp/opcodes.ml: bytecomp/opcodes.ml.c runtime/caml/opcodes.h
-	$(CPP) -I runtime $< > $@
+	$(V_GEN)$(CPP) -I runtime $< > $@
 
 bytecomp/opcodes.mli: bytecomp/opcodes.ml
 	$(V_GEN)$(CAMLC) -i $< > $@
@@ -2705,6 +2718,12 @@ partialclean::
 %.depend: beforedepend
 	$(V_OCAMLDEP)$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I $* $(INCLUDES) \
 	  $(OCAMLDEPFLAGS) $*/*.mli $*/*.ml > $@
+
+ocamltest.depend: beforedepend
+	$(V_OCAMLDEP)$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I ocamltest $(INCLUDES) \
+	  $(OCAMLDEPFLAGS) \
+	  $(filter-out ocamltest/ocamltest_unix.ml, \
+	               $(ocamltest_ML_FILES) $(ocamltest_MLI_FILES)) > $@
 
 asmcomp.depend:: beforedepend $(cvt_emit)
 	$(V_OCAMLDEP)$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I asmcomp $(INCLUDES) \
@@ -2775,7 +2794,9 @@ distclean: clean
 ifneq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
 	$(MAKE) -C flexdll distclean MSVC_DETECT=0
 endif
+ifneq "$(wildcard manual)" ""
 	$(MAKE) -C manual distclean
+endif
 	rm -f ocamldoc/META
 	rm -f $(addprefix ocamltest/,ocamltest_config.ml ocamltest_unix.ml)
 	rm -f otherlibs/dynlink/META otherlibs/dynlink/dynlink_config.ml \

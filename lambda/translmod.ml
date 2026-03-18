@@ -254,7 +254,7 @@ let init_shape id modl =
         let new_path = Pdot(path, Ident.name subid) in
         let init_v =
           match get_desc (Ctype.expand_head env ty) with
-            Tarrow(_,_,_,_) ->
+            Tarrow(_,_,_,_) | Tfunctor(_,_,_,_) ->
               const_int 0 (* camlinternalMod.Function *)
           | Tconstr(p, _, _) when Path.same p Predef.path_lazy_t ->
               const_int 1 (* camlinternalMod.Lazy *)

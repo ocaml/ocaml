@@ -191,6 +191,24 @@ let () =
   assert (String.drop_last 2 "" = "");
   assert (String.drop_last 2 "a" = "");
   assert (String.drop_last 2 "ab" = "");
+  (* String.drop_prefix *)
+  assert (String.drop_prefix ~prefix:"foob" "foobarbaz" = Some "arbaz");
+  assert (String.drop_prefix ~prefix:"" "foobarbaz" = Some "foobarbaz");
+  assert (String.drop_prefix ~prefix:"" "" = Some "");
+  assert (String.drop_prefix ~prefix:"foobar" "bar" = None);
+  assert (String.drop_prefix ~prefix:"foo" "" = None);
+  assert (String.drop_prefix ~prefix:"fool" "foobar" = None);
+  assert (String.drop_prefix ~prefix:"baz" "foobarbaz" = None);
+  assert (String.drop_prefix ~prefix:"foo" "foofoofoo" = Some "foofoo");
+  (* String.drop_suffix *)
+  assert (String.drop_suffix ~suffix:"baz" "foobarbaz" = Some "foobar");
+  assert (String.drop_suffix ~suffix:"" "foobarbaz" = Some "foobarbaz");
+  assert (String.drop_suffix ~suffix:"" "" = Some "");
+  assert (String.drop_suffix ~suffix:"bar" "bar" = Some "");
+  assert (String.drop_suffix ~suffix:"foobar" "bar" = None);
+  assert (String.drop_suffix ~suffix:"foo" "" = None);
+  assert (String.drop_suffix ~suffix:"foo" "foobarbaz" = None);
+  assert (String.drop_suffix ~suffix:"foo" "foofoofoo" = Some "foofoo");
   (* String.cut_first *)
   assert (String.cut_first (-1) "" = ("", ""));
   assert (String.cut_first (-1) "a" = ("", "a"));

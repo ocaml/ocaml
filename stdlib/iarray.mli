@@ -196,7 +196,7 @@ val exists2 : ('a -> 'b -> bool) -> 'a iarray -> 'b iarray -> bool
 
 val mem : 'a -> 'a iarray -> bool
 (** [mem a set] is true if and only if [a] is structurally equal
-    to an element of [l] (i.e. there is an [x] in [l] such that
+    to an element of [set] (i.e. there is an [x] in [set] such that
     [compare a x = 0]). *)
 
 val memq : 'a -> 'a iarray -> bool

@@ -74,6 +74,11 @@ end
 module Test (A : S) : sig end = struct
 
   (* auxiliary functions *)
+  let empty = A.create 0 in
+
+  let check_empty a =
+    assert (a = empty)
+  in
 
   let neg_zero = 1.0 /. neg_infinity in
 
@@ -126,6 +131,23 @@ module Test (A : S) : sig end = struct
   check_i a;
   check_inval (fun i -> A.init i Float.of_int) (-1);
   check_inval (fun i -> A.init i Float.of_int) (A.max_length + 1);
+
+  (* empty constructors *)
+  check_empty (A.create 0);
+  check_empty (A.make 0 42.0);
+  check_empty (A.init 0 (fun _ -> assert false));
+  check_empty (A.of_list []);
+  check_empty (A.of_seq Seq.empty);
+  check_empty (A.concat []); (* X *)
+  check_empty (A.concat [empty]); (* X *)
+  check_empty (A.append empty empty);
+  check_empty (A.sub (A.create 1) 0 0); (* X *)
+  check_empty (A.sub (A.create 1) 1 0); (* X *)
+  check_empty (A.copy empty);
+  check_empty (A.map (fun _ -> assert false) empty);
+  check_empty (A.mapi (fun _ _ -> assert false) empty);
+  check_empty (A.map2 (fun _ _ -> assert false) empty empty);
+  check_empty (A.map_from_array (fun _ -> assert false) [| |]);
 
   (* [make_matrix] *)
   let check_make_matrix m n =

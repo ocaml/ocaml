@@ -49,6 +49,8 @@ type t_env = (ident * ident_info) list
 type ('args,'action) automata_entry =
   { auto_name: string;
     auto_args: 'args ;
+    auto_shortest: bool;
+    auto_body_location: Syntax.location;
     auto_mem_size : int ;
     auto_initial_state: int * memory_action list ;
     auto_actions: (int * t_env * 'action) list }

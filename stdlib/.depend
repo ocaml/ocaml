@@ -377,10 +377,14 @@ stdlib__Format.cmi : format.mli \
     stdlib__Domain.cmi \
     stdlib__Buffer.cmi
 stdlib__Fun.cmo : fun.ml \
+    stdlib__Printf.cmi \
     stdlib__Printexc.cmi \
+    stdlib__Obj.cmi \
     stdlib__Fun.cmi
 stdlib__Fun.cmx : fun.ml \
+    stdlib__Printf.cmx \
     stdlib__Printexc.cmx \
+    stdlib__Obj.cmx \
     stdlib__Fun.cmi
 stdlib__Fun.cmi : fun.mli
 stdlib__Gc.cmo : gc.ml \
@@ -485,10 +489,12 @@ stdlib__Int64.cmi : int64.mli
 stdlib__Lazy.cmo : lazy.ml \
     stdlib__Obj.cmi \
     camlinternalLazy.cmi \
+    stdlib__Atomic.cmi \
     stdlib__Lazy.cmi
 stdlib__Lazy.cmx : lazy.ml \
     stdlib__Obj.cmx \
     camlinternalLazy.cmx \
+    stdlib__Atomic.cmx \
     stdlib__Lazy.cmi
 stdlib__Lazy.cmi : lazy.mli \
     camlinternalLazy.cmi

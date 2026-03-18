@@ -32,6 +32,7 @@
 # -patch1 file-name       apply patch with -p1
 # -no-native              do not build "opt" and "opt.opt"
 # -jNN                    pass "-jNN" option to make for parallel builds
+# -with-bootstrap         perform a bootstrap
 
 error () {
   echo "$1" >&2
@@ -165,11 +166,6 @@ init_submodule_flexdll=false
 
 memory_model_tests="tests/memory-model/forbidden.ml \
 tests/memory-model/publish.ml"
-
-# Until https://github.com/ocaml/ocaml/issues/14348 is resolved
-# As it happens, the Cygwin worker has a C++ compiler, so it doesn't matter
-# that it runs it.
-export OCAMLTEST_SKIP_TESTS="tests/lib-unix/unix-sockaddr/sockaddr_cxx.ml"
 
 case "${OCAML_ARCH}" in
   bsd|solaris)
@@ -317,8 +313,14 @@ main_build() {
   $make --warn-undefined-variables install
   case $confoptions in
     *--disable-unix-lib*) ;;         # test-in-prefix needs Unix lib
+    *--enable-tsan*) ;;              # tsan currently breaks test-in-prefix
+                                     # (see #14280)
     *)
-      $make -f Makefile.test -C testsuite/in_prefix test-in-prefix
+      if ! $make -f Makefile.test -C testsuite/in_prefix test-in-prefix; then
+        # Ensure the worker is cleaned up
+        rm -rf "$instdir"
+        exit 1
+      fi
       ;;
   esac
   rm -rf "$instdir"

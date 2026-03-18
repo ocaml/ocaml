@@ -121,6 +121,8 @@ let empty = TVarMap.empty
    example, the immediate sub-type-expressions of [int * (bool * 'a)]
    are [int] and [bool * 'a].
 
+   Should never be called on a [Tfunctor]
+
    Smaller components are extracted recursively in [check_type]. *)
 let rec immediate_subtypes : type_expr -> type_expr list = fun ty ->
   (* Note: Btype.fold_type_expr is not suitable here:
@@ -155,6 +157,9 @@ let rec immediate_subtypes : type_expr -> type_expr list = fun ty ->
   | Tvar _ | Tunivar _ -> []
   | Tpoly (pty, _) -> [pty]
   | Tconstr (_path, tys, _) -> tys
+  | Tfunctor _ ->
+    Misc.fatal_error
+      "[Typedecl_separability.immediate_subtypes] invalid argument"
 
 and immediate_subtypes_object_row acc ty = match get_desc ty with
   | Tnil -> acc
@@ -389,7 +394,7 @@ let worst_case ty =
 let check_type
   : Env.t -> type_expr -> mode -> context
   = fun env ty m ->
-  let rec check_type hyps ty m =
+  let rec check_type env hyps ty m =
     if Hyps.safe ty m hyps then empty
     else if Hyps.unsafe ty m hyps then worst_case ty
     else
@@ -410,6 +415,7 @@ let check_type
     | (Tvariant(_)        , Sep    )
     | (Tobject(_,_)       , Sep    )
     | ((Tnil | Tfield _)  , Sep    )
+    | (Tfunctor _         , Sep    )
     | (Tpackage _         , Sep    ) -> empty
     (* "Deeply separable" case for these same constructors. *)
     | (Tarrow _           , Deepsep)
@@ -420,8 +426,18 @@ let check_type
     | (Tpackage _         , Deepsep) ->
         let tys = immediate_subtypes ty in
         let on_subtype context ty =
-          context ++ check_type (Hyps.guard hyps) ty Deepsep in
+          context ++ check_type env (Hyps.guard hyps) ty Deepsep in
         List.fold_left on_subtype empty tys
+    (* "Deeply separable" case for the Tfunctor to update the environment. *)
+    | (Tfunctor (_, id_us, pack, ty), Deepsep) ->
+        let env' =
+          let mty = Ctype.modtype_of_package env Location.none pack in
+          Env.add_module (Ident.of_unscoped id_us) Mp_present mty env
+        in
+        let on_subtype context ty =
+          context ++ check_type env (Hyps.guard hyps) ty Deepsep in
+        List.fold_left on_subtype empty (List.map snd pack.pack_constraints)
+          ++ check_type env' (Hyps.guard hyps) ty Deepsep;
     (* Polymorphic type, and corresponding polymorphic variable.
 
        In theory, [Tpoly] (forall alpha. tau) would add a new variable
@@ -443,7 +459,7 @@ let check_type
        a scope violation), so they could be ignored if they occur
        under a separating type constructor. *)
     | (Tpoly(pty,_)       , m      ) ->
-        check_type hyps pty m
+        check_type env hyps pty m
     | (Tunivar(_)         , _      ) -> empty
     (* Type constructor case. *)
     | (Tconstr(path,tys,_), m      ) ->
@@ -453,10 +469,10 @@ let check_type
             | Ind -> Hyps.guard hyps
             | Sep -> hyps
             | Deepsep -> Hyps.poison hyps in
-          context ++ check_type hyps ty (compose m m_param) in
+          context ++ check_type env hyps ty (compose m m_param) in
         List.fold_left on_param empty (List.combine tys msig)
   in
-  check_type Hyps.empty ty m
+  check_type env Hyps.empty ty m
 
 let best_msig decl = List.map (fun _ -> Ind) decl.type_params
 let worst_msig decl = List.map (fun _ -> Deepsep) decl.type_params

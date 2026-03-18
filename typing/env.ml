@@ -522,6 +522,7 @@ type t = {
   not_aliasable: unit Ident.tbl;
   summary: summary;
   local_constraints: type_declaration Path.Map.t;
+  id_pairs: (Ident.Unscoped.t * Ident.Unscoped.t) list;
   flags: int;
 }
 
@@ -723,6 +724,7 @@ let empty = {
   modules = IdTbl.empty; modtypes = IdTbl.empty;
   classes = IdTbl.empty; cltypes = IdTbl.empty;
   summary = Env_empty; local_constraints = Path.Map.empty;
+  id_pairs = [];
   flags = 0;
   not_aliasable = Ident.empty;
  }
@@ -1426,6 +1428,16 @@ and expand_modtype_path env path =
   match (find_modtype_lazy path env).mtdl_type with
   | Some (MtyL_ident path) -> normalize_modtype_path env path
   | _ | exception Not_found -> path
+
+let try_normalize normalizer env path =
+  let path' = normalizer env path in
+  if Path.same path path' then None
+  else Some path'
+
+let try_normalize_type_path oloc env path =
+  try_normalize (normalize_type_path oloc) env path
+
+let try_normalize_modtype_path = try_normalize normalize_modtype_path
 
 let find_module path env =
   find_module ~alias:false path env
@@ -2355,6 +2367,10 @@ let enter_type ~scope name info env =
   let id = Ident.create_scoped ~scope name in
   let env = store_type ~check:true id info (Shape.leaf info.type_uid) env in
   (id, env)
+
+let reenter_type id info env =
+  let env = store_type ~check:true id info (Shape.leaf info.type_uid) env in
+  env
 
 let enter_extension ~scope ~rebind name ext env =
   let id = Ident.create_scoped ~scope name in
@@ -3604,6 +3620,13 @@ let env_of_only_summary env_from_summary env =
     local_constraints = env.local_constraints;
     flags = env.flags;
   }
+
+module Unscoped = struct
+  let with_pairs id_pairs env = {env with id_pairs}
+  let get_pairs env = env.id_pairs
+
+  let path_equiv env p1 p2 = Path.equiv env.id_pairs p1 p2
+end
 
 (* Error report *)
 

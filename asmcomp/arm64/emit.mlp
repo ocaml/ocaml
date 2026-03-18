@@ -54,9 +54,11 @@ let emit_label_type lbl ty =
 
 (* Output a pseudo-register *)
 
-let emit_reg = function
-    {loc = Reg r} -> emit_string (register_name r)
-  | _ -> fatal_error "Emit.emit_reg"
+let reg_name = function
+  | {loc = Reg r} -> register_name r
+  | _ -> fatal_error "Emit.reg_name"
+
+let emit_reg l = emit_string (reg_name l)
 
 (* Likewise, but with the 32-bit name of the register *)
 
@@ -249,16 +251,28 @@ let is_immediate_float bits =
   let mant = Int64.logand bits 0xF_FFFF_FFFF_FFFFL in
   exp >= -3 && exp <= 4 && Int64.logand mant 0xF_0000_0000_0000L = mant
 
+(* Set [rd] to [rs + n]. *)
+
+let emit_addimm_gen rd rs n =
+  let insn = if n >= 0 then "add" else "sub" in
+  let n = abs n in
+  if n <= 0xFFF then
+    `	{emit_string insn}	{emit_string rd}, {emit_string rs}, #{emit_int n}\n`
+  else begin
+    assert (n <= 0xFFF_FFF);
+    let nl = n land 0xFFF and nh = n land 0xFFF_000 in
+    `	{emit_string insn}	{emit_string rd}, {emit_string rs}, #{emit_int nh}\n`;
+    if nl <> 0 then
+    `	{emit_string insn}	{emit_string rd}, {emit_string rd}, #{emit_int nl}\n`
+  end
+
 (* Adjust sp (up or down) by the given byte amount *)
 
 let emit_stack_adjustment n =
-  let instr = if n < 0 then "sub" else "add" in
-  let m = abs n in
-  assert (m < 0x1_000_000);
-  let ml = m land 0xFFF and mh = m land 0xFFF_000 in
-  if mh <> 0 then `	{emit_string instr}	sp, sp, #{emit_int mh}\n`;
-  if ml <> 0 then `	{emit_string instr}	sp, sp, #{emit_int ml}\n`;
-  if n <> 0 then cfi_adjust_cfa_offset (-n)
+  if n <> 0 then begin
+    emit_addimm_gen "sp" "sp" n;
+    cfi_adjust_cfa_offset (-n)
+  end
 
 (* Deallocate the stack frame and reload the return address
    before a return or tail call *)
@@ -278,29 +292,11 @@ let output_epilogue env f =
 
 (* Output add-immediate / sub-immediate / cmp-immediate instructions *)
 
-let rec emit_addimm rd rs n =
-  if n < 0 then emit_subimm rd rs (-n)
-  else if n <= 0xFFF then
-    `	add	{emit_reg rd}, {emit_reg rs}, #{emit_int n}\n`
-  else begin
-    assert (n <= 0xFFF_FFF);
-    let nl = n land 0xFFF and nh = n land 0xFFF_000 in
-    `	add	{emit_reg rd}, {emit_reg rs}, #{emit_int nh}\n`;
-    if nl <> 0 then
-    `	add	{emit_reg rd}, {emit_reg rd}, #{emit_int nl}\n`
-  end
+let emit_addimm rd rs n =
+  emit_addimm_gen (reg_name rd) (reg_name rs) n
 
-and emit_subimm rd rs n =
-  if n < 0 then emit_addimm rd rs (-n)
-  else if n <= 0xFFF then
-    `	sub	{emit_reg rd}, {emit_reg rs}, #{emit_int n}\n`
-  else begin
-    assert (n <= 0xFFF_FFF);
-    let nl = n land 0xFFF and nh = n land 0xFFF_000 in
-    `	sub	{emit_reg rd}, {emit_reg rs}, #{emit_int nh}\n`;
-    if nl <> 0 then
-      `	sub	{emit_reg rd}, {emit_reg rd}, #{emit_int nl}\n`
-  end
+let emit_subimm rd rs n =
+  emit_addimm rd rs (-n)
 
 let emit_cmpimm rs n =
   if n >= 0
@@ -440,9 +436,7 @@ module Size = struct
   let addsub_size n =
     let m = abs n in
     assert (m < 0x1_000_000);
-    let ml = m land 0xFFF and mh = m land 0xFFF_000 in
-    max 1 ((if mh <> 0 then 1 else 0) +
-           (if ml <> 0 then 1 else 0))
+    if m <= 0xFFF then 1 else if m land 0xFFF = 0 then 1 else 2
 
   let stack_adj_size n =
     (* see emit_stack_adjustment *)
@@ -451,7 +445,9 @@ module Size = struct
   let prologue_size f =
     let stk = initial_stack_offset f in
     (if stk > 0 then stack_adj_size (-stk) else 0)
-    + (if f.fun_frame_required then (if fp then 2 else 1) else 0)
+    + (if f.fun_frame_required
+       then if fp then 1 + addsub_size (stk - 16) else 1
+       else 0)
 
   let epilogue_size f =
     let stk = initial_stack_offset f in
@@ -491,7 +487,7 @@ module Size = struct
       and pre_store =
         match memory_chunk, assignment, macosx, addressing_mode with
         | (Word_int | Word_val), true, true, Iindexed 0 -> 0
-        | (Word_int | Word_val), true, true, _ -> 1  (* Compute dest address *)
+        | (Word_int | Word_val), true, true, Iindexed n -> addsub_size n (* Compute dest address *)
         | (Word_int | Word_val), true, false, _ -> 1 (* Barrier instruction *)
         | _ -> 0
       and store = match memory_chunk with Single -> 2 | _ -> 1 in
@@ -553,7 +549,7 @@ module Size = struct
         + begin match lbl1 with None -> 0 | Some _ -> 1 end
         + begin match lbl2 with None -> 0 | Some _ -> 1 end
     | Lswitch jumptbl -> 3 + Array.length jumptbl
-    | Lentertrap -> if fp then 1 else 0
+    | Lentertrap -> if fp then 2 (* over-approximation *) else 0
     | Ladjust_trap_depth _ -> 0
     | Lpushtrap _ -> 3
     | Lpoptrap -> 1
@@ -694,9 +690,7 @@ let emit_stlr src base addr =
   let dest_reg =
     match addr with
     | Iindexed 0 -> base
-    | Iindexed ofs ->
-        `	add	{emit_reg reg_tmp1}, {emit_reg base}, #{emit_int ofs}\n`;
-        reg_tmp1
+    | Iindexed ofs -> emit_addimm reg_tmp1 base ofs; reg_tmp1
     | Ibased _ -> assert false (* Ibased is not emitted under macOS *)
   in
   `	stlr	{emit_reg src}, [{emit_reg dest_reg}]\n`
@@ -721,7 +715,7 @@ let emit_instr env i =
       if n > 0 then begin
           emit_stack_adjustment (-n);
           if env.f.fun_frame_required && fp then
-            `	add	x29,  sp, #{emit_int (n-16)}\n`;
+            emit_addimm_gen "x29" "sp" (n - 16)
       end
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
@@ -1086,7 +1080,7 @@ let emit_instr env i =
     | Lentertrap ->
        if fp then begin
          let delta = (frame_size env) - 16 (* return address + frame pointer *) in
-         `	add	x29, sp, #{emit_int delta}\n`
+         emit_addimm_gen "x29" "sp" delta
        end
     | Ladjust_trap_depth { delta_traps } ->
         (* each trap occupies 16 bytes on the stack *)
@@ -1125,7 +1119,7 @@ let emit_instr_debug env i =
   `{emit_label lbl}:\n`;
   emit_instr env i;
   let sz = Size.instr_size env.f i.desc * 4 in
-  `	.ifne (. - {emit_label lbl}) - {emit_int sz}\n`;
+  `	.ifgt (. - {emit_label lbl}) - {emit_int sz}\n`;
   `	.error \"Emit.instr_size: instruction length mismatch\"\n`;
   `	.endif\n`
 
@@ -1136,7 +1130,7 @@ let rec emit_all env lbl_start acc i =
      if debug then begin
        (* acc measures in units of 32-bit instructions *)
        let sz = acc * 4 in
-       `	.ifne (. - {emit_label lbl_start}) - {emit_int sz}\n`;
+       `	.ifgt (. - {emit_label lbl_start}) - {emit_int sz}\n`;
        `	.error \"Emit.instr_size: instruction length mismatch\"\n`;
        `	.endif\n`;
        end

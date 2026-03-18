@@ -66,3 +66,63 @@ let _ =
 [%%expect{|
 - : string = "OK"
 |}]
+
+
+(* PR#14554, a regression reported by Antonio Monteiro.
+   (The regressions or fixes are after 5.4, which is the last release
+   without the generic [Pexp_struct_item] typing rules of #13839).
+
+   In each example below, we expect the inferred type
+   {[
+     val dog : < bark : 'this -> unit > t as 'this
+   ]}
+   where the ['this] variable has been generalized,
+   it is not a weak variable like ['_this].
+*)
+
+type 'a t
+[%%expect{|
+type 'a t
+|}]
+
+(* This was correct in OCaml 5.4,
+   and was temporarily broken by #13839. *)
+let dog : 'this =
+  let module Dog = struct
+    external make
+      : bark:('self -> unit)
+      -> < bark : ('self -> unit) > t = "%identity"
+  end
+  in
+  Dog.make ~bark:(fun (o : 'this) -> ())
+[%%expect{|
+val dog : < bark : 'a -> unit > t as 'a = <abstr>
+|}]
+
+(* This variant from Samuel Vivien would also
+   suffer from the same regression. *)
+let dog : 'this =
+  let
+    external make
+      : bark:('self -> unit)
+      -> < bark : ('self -> unit) > t = "%identity"
+  in
+  make ~bark:(fun (o : 'this) -> ())
+[%%expect{|
+val dog : < bark : 'a -> unit > t as 'a = <abstr>
+|}]
+
+(* This variant from Gabriel Scherer was already wrong in OCaml 5.4,
+   and has been fixed at the same time as the other two. *)
+let dog : 'this =
+  let open struct
+    external make
+      : bark:('self -> unit)
+        -> < bark : ('self -> unit) > t = "%identity"
+  end in
+  make ~bark:(fun (o : 'this) -> ())
+[%%expect{|
+val dog : < bark : 'a -> unit > t as 'a = <abstr>
+|}]
+
+(* </end of #14554> *)

@@ -232,6 +232,12 @@ let rec core_type i ppf x =
   | Ttyp_open (path, _mod_ident, t) ->
       line i ppf "Ttyp_open %a\n" fmt_path path;
       core_type i ppf t
+  | Ttyp_functor (lab, id, { tpt_path = s; tpt_constraints = l}, ct) ->
+      line i ppf "Ttyp_functor\n";
+      arg_label i ppf lab;
+      line i ppf "module \"%a\" : %a" fmt_ident id.txt fmt_path s;
+      list i package_with ppf l;
+      core_type i ppf ct
 
 and labeled_core_type i ppf (l, t) =
   tuple_component_label i ppf l;

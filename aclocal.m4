@@ -656,22 +656,27 @@ AC_DEFUN([OCAML_CHECK_WINDOWS_TRIPLET], [
 # This macro is only used for ocamltest to call the C++11 compiler if the
 # default C compiler also can build C++.
 AC_DEFUN([OCAML_CXX_COMPILE_STDCXX_11], [
-  AC_CACHE_CHECK([for a C++11 compiler],
-    [ocaml_cv_prog_cxx], [
+  AC_MSG_CHECKING([for a C++11 compiler])
+  AC_CACHE_VAL([ocaml_cv_prog_cxx], [
     AS_CASE(["$ccomp_type"],
       [cc], [
         saved_CC="$CC"
-        CC="$CC -xc++"
+        saved_CFLAGS="$CFLAGS"
+        AS_IF([test x"$CXX" = x],
+          [CC="$CC -xc++"; CFLAGS="$CXXFLAGS"], [CC="$CXX"; CFLAGS="$CXXFLAGS"])
         AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #if !defined(__cplusplus) || __cplusplus < 201103L
 #error "No C++11 support"
 #endif
+#include <iostream>
           ]])],
           [ocaml_cv_prog_cxx="$CC"],
           [ocaml_cv_prog_cxx=""])
-        CC="$saved_CC"],
+        CC="$saved_CC"
+        CFLAGS="$saved_CFLAGS"],
       [msvc], [
         # cl.exe selects between C and C++ based on the file extension
         ocaml_cv_prog_cxx="$CC"],
       [ocaml_cv_prog_cxx=""])])
+  AC_MSG_RESULT([${ocaml_cv_prog_cxx:-none found}])
   ocamltest_CXX="$ocaml_cv_prog_cxx"])

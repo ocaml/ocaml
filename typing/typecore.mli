@@ -253,6 +253,8 @@ type error =
   | Repeated_tuple_exp_label of string
   | Repeated_tuple_pat_label of string
   | Optional_poly_param of string
+  | Cannot_unify_tfunctor_to_tarrow of Errortrace.unification_error
+  | Cannot_omit_tfunctor_argument of Ident.Unscoped.t * type_expr
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -282,6 +284,11 @@ val type_object:
 val type_package:
   (Env.t -> Parsetree.module_expr -> package ->
    Typedtree.module_expr * package) ref
+(* Forward declaration, to be filled in by Typemod.check_package_closed.
+   Ensures that the package type does not contain any type variable. *)
+val check_package_closed:
+  (loc:Location.t -> env:Env.t -> typ:type_expr ->
+   (string list * type_expr) list -> unit) ref
 
 val constant: Parsetree.constant -> (Asttypes.constant, error) result
 

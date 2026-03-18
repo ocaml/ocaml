@@ -456,6 +456,12 @@ val g : unit -> ('a. 'a -> 'a) -> unit = <fun>
 let rec f ([] : 'a. 'a list) = ()
 
 [%%expect{|
+Line 1, characters 11-27:
+1 | let rec f ([] : 'a. 'a list) = ()
+               ^^^^^^^^^^^^^^^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+  Here is an example of a case that is not matched: "_::_"
+
 val f : ('a. 'a list) -> unit = <fun>
 |}]
 
@@ -566,4 +572,35 @@ Error: The syntactic arity of the function doesn't match the type constraint:
           "fun ... gadt_pat -> fun ..."
           where "gadt_pat" is the pattern with the GADT constructor that
           introduces the local type equation on "a".
+|}]
+
+(* Exhaustiveness check works for annotated polymorphic
+   parameters.
+
+   See https://github.com/ocaml/ocaml/issues/14434 *)
+let should_not_be_exhaustive ([ bad ] : 'a. 'a list) = print_endline bad;;
+should_not_be_exhaustive []
+[%%expect{|
+Line 1, characters 30-51:
+1 | let should_not_be_exhaustive ([ bad ] : 'a. 'a list) = print_endline bad;;
+                                  ^^^^^^^^^^^^^^^^^^^^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+  Here is an example of a case that is not matched: "bad::_::_"
+
+val should_not_be_exhaustive : ('a. 'a list) -> unit = <fun>
+Exception: Match_failure ("", 1, 29).
+|}]
+
+let should_not_be_exhaustive : ('a. 'a list) -> unit =
+  fun [ bad ] -> print_endline bad;;
+should_not_be_exhaustive []
+[%%expect{|
+Line 2, characters 6-13:
+2 |   fun [ bad ] -> print_endline bad;;
+          ^^^^^^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+  Here is an example of a case that is not matched: "bad::_::_"
+
+val should_not_be_exhaustive : ('a. 'a list) -> unit = <fun>
+Exception: Match_failure ("", 2, 6).
 |}]

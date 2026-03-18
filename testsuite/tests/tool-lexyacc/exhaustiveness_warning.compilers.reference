@@ -1,0 +1,50 @@
+ocamllex warning [missing-case]:
+File "exhaustiveness_warning.mll", lines 14-15, characters 16-14: rule "longest0" is not exhaustive.
+Here is an example of nonmatching input:
+""
+Hint: consider adding '| "" { ... }'
+ocamllex warning [missing-case]:
+File "exhaustiveness_warning.mll", lines 18-20, characters 15-14: rule "longest1" is not exhaustive.
+Here is an example of nonmatching input:
+"\000"
+Hint: consider adding '| _ { ... }'
+ocamllex warning [missing-case]:
+File "exhaustiveness_warning.mll", lines 23-25, characters 15-15: rule "longest2" is not exhaustive.
+Here is an example of nonmatching input:
+"\000\000"
+ocamllex warning [missing-case]:
+File "exhaustiveness_warning.mll", lines 28-30, characters 16-14: rule "shortest0" is not exhaustive.
+Here is an example of nonmatching input:
+""
+Hint: consider adding '| eof { ... }'
+ocamllex warning [missing-case]:
+File "exhaustiveness_warning.mll", lines 33-35, characters 16-14: rule "shortest1" is not exhaustive.
+Here is an example of nonmatching input:
+"\000"
+Hint: consider adding '| _ eof { ... }'
+ocamllex warning [missing-case]:
+File "exhaustiveness_warning.mll", lines 52-58, characters 16-25: rule "not_hello" is not exhaustive.
+Here is an example of nonmatching input:
+"hello"
+ocamllex warning [missing-case]:
+File "exhaustiveness_warning.mll", lines 61-67, characters 25-25: rule "not_hello_shortest" is not exhaustive.
+Here is an example of nonmatching input:
+"hello"
+ocamllex warning [missing-case]:
+File "exhaustiveness_warning.mll", lines 70-71, characters 14-25: rule "string2" is not exhaustive.
+Here is an example of nonmatching input:
+"\000\000"
+ocamllex warning [missing-case]:
+File "exhaustiveness_warning.mll", lines 74-76, characters 23-14: rule "empty_char_class" is not exhaustive.
+Here is an example of nonmatching input:
+"\000"
+Hint: consider adding '| _ { ... }'
+ocamllex warning [missing-case]:
+File "exhaustiveness_warning.mll", lines 79-82, characters 10-23: rule "alt" is not exhaustive.
+Here is an example of nonmatching input:
+"\000a"
+ocamllex warning [missing-case]:
+File "exhaustiveness_warning.mll", line 85, characters 15-27: rule "oneliner" is not exhaustive.
+Here is an example of nonmatching input:
+"\000"
+Hint: consider adding '| _ { ... }'

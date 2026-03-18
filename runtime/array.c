@@ -505,7 +505,7 @@ static value caml_floatarray_gather(intnat num_arrays,
   }
   if (size == 0) {
     /* If total size = 0, just return empty array */
-    res = Atom(0);
+    CAMLreturn(Atom(0));
   }
   /* This is an array of floats.  We can use memcpy directly. */
   if (size > Max_wosize/Double_wosize) caml_invalid_argument("Array.concat");

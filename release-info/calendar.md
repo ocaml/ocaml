@@ -8,7 +8,7 @@ accident if this prospective calendar ever matches the real release calendar.
 
 
 # Main versions
-(Last updated on 22 January 2026)
+(Last updated on 25 February 2026)
 
 ## OCaml 5.7.0
 
@@ -30,7 +30,7 @@ accident if this prospective calendar ever matches the real release calendar.
 |    Release            | Expected (early)  | Expected (late)    | Actual        |
 |-----------------------|-------------------|--------------------|---------------|
 | Feature freeze        | 1st January 2026  |  (same)            |  22nd January |
-| 1st alpha release     | 7 February        | 22nd February      |               |
+| 1st alpha release     | 7 February        | 22nd February      | 25th February |
 | 1st beta release      | 1st March         |  1st May           |               |
 | 1st release candidate | 15th April        |  15th May          |               |
 | Release               | 1st May           |  1st June          |               |

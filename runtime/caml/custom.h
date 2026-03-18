@@ -47,6 +47,12 @@ struct custom_operations {
 
 #define Custom_ops_val(v) (*((const struct custom_operations **) (v)))
 
+/* Given a pointer [p] to the data part of a custom block
+   (as returned by [Data_custom_val]), return the size of this data part
+   (in words or in bytes). */
+#define Wsize_custom_data(p) (Wosize_hp((header_t *)(p) - 2) - 1)
+#define Bsize_custom_data(p) (Bsize_wsize(Wsize_custom_data(p)))
+
 #ifdef __cplusplus
 extern "C" {
 #endif

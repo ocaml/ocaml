@@ -27,3 +27,5 @@
       (run awk -f %{dep:expand_module_aliases.awk} %{input-file}))
       stdlib)
      )))
+
+(files :standard \ *.cm* *.o *.a)

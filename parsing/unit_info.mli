@@ -58,15 +58,28 @@ type t
     - the module name associated to the unit
     - the filename prefix (dirname + basename with all extensions stripped)
       for compilation artifacts
+    - the human-oriented name of the source file
     - the input source file
     For instance, when calling [ocamlopt dir/x.mli -o target/y.cmi],
     - the input source file is [dir/x.mli]
     - the module name is [Y]
     - the prefix is [target/y]
+
+    When calling, for example, [ocamlopt foo.pp.ml] (where foo.pp.ml is a
+    serialized, ppx-expanded AST of foo.ml), the "input" source file is
+    foo.pp.ml, while foo.ml is the "human" source file.
 *)
 
-(** [source_file u] is the source file of [u]. *)
-val source_file: t -> filename
+(** [human_source_file u] is the original source file of [u]. When calling,
+    for example, [ocamlopt foo.pp.ml] (where foo.pp.ml is a serialized,
+    ppx-expanded AST of foo.ml), foo.ml is the "original" source file. *)
+val human_source_file: t -> filename
+
+(** [input_source_file u] is the source file of [u] that was explicitly passed
+    to the compiler. When calling, for example, [ocamlopt foo.pp.ml] (where
+    foo.pp.ml is a serialized, ppx-expanded AST of foo.ml), foo.pp.ml is the
+    "input" source file.) *)
+val input_source_file: t -> filename
 
 (** [prefix u] is the filename prefix of the unit. *)
 val prefix: t -> file_prefix
@@ -94,6 +107,8 @@ val make:
     ?check_modname:bool -> source_file:filename ->
     intf_or_impl -> file_prefix -> t
 
+val update_human_source_file_name : t -> filename -> t
+
 (** {1:artifact_function Build artifacts }*)
 module Artifact: sig
   type t
@@ -103,8 +118,17 @@ module Artifact: sig
     - the input source file if it exists
 *)
 
-   (** [source_file a] is the source file of [a] if it exists. *)
-   val source_file: t -> filename option
+   (** [human_source_file a] is the original source file of [a] if it exists.
+       See [Unit_info.human_source_file] for a description of the distinction
+       of "human" vs "input" source file
+    *)
+   val human_source_file: t -> filename option
+
+   (** [input_source_file a] is the raw source file of [a] if it exists. See
+       [Unit_info.input_source_file] for a description of the distinction of
+       "human" vs "input" source file
+    *)
+   val input_source_file: t -> filename option
 
   (** [prefix a] is the filename prefix of the compilation artifact. *)
    val prefix: t ->  file_prefix

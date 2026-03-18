@@ -133,13 +133,13 @@ module O = struct
   module type s
   type t = A
   module M: sig val f: (module s) -> t -> t end =
-  struct module type s type t = B let f (module X:s) A = B end
+  struct module type s type t = B let f ((module X):(module s)) A = B end
 end;;
 
 [%%expect{|
-Line 5, characters 2-62:
-5 |   struct module type s type t = B let f (module X:s) A = B end
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Line 5, characters 2-73:
+5 |   struct module type s type t = B let f ((module X):(module s)) A = B end
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
          sig module type s type t = B val f : (module s) -> t/2 -> t end

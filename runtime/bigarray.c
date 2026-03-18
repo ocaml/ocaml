@@ -580,12 +580,16 @@ static void caml_ba_deserialize_longarray(void * dest, intnat num_elts)
 CAMLexport uintnat caml_ba_deserialize(void * dst)
 {
   struct caml_ba_array * b = dst;
-  uintnat num_elts, size;
+  uintnat num_elts, size, descriptor_size;
 
   /* Read back header information */
-  b->num_dims = caml_deserialize_uint_4();
-  if (b->num_dims < 0 || b->num_dims > CAML_BA_MAX_NUM_DIMS)
+  int num_dims = caml_deserialize_uint_4();
+  if (num_dims < 0 || num_dims > CAML_BA_MAX_NUM_DIMS)
     caml_deserialize_error("input_value: wrong number of bigarray dimensions");
+  descriptor_size = SIZEOF_BA_ARRAY + num_dims * sizeof(intnat);
+  if (descriptor_size > Bsize_custom_data(dst))
+    caml_deserialize_error("input_value: bigarray buffer overflow");
+  b->num_dims = num_dims;
   b->flags = caml_deserialize_uint_4() | CAML_BA_MANAGED;
   b->proxy = NULL;
   for (int i = 0; i < b->num_dims; i++) {
@@ -635,8 +639,7 @@ CAMLexport uintnat caml_ba_deserialize(void * dst)
     caml_ba_deserialize_longarray(b->data, num_elts); break;
   default: CAMLunreachable();
   }
-  /* PR#5516: use C99's flexible array types if possible */
-  return SIZEOF_BA_ARRAY + b->num_dims * sizeof(intnat);
+  return descriptor_size;
 }
 
 /* Allocate a bigarray from OCaml */

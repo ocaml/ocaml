@@ -216,7 +216,19 @@ let apply_type_function params args body =
           in
           Transient_expr.set_stub_desc t desc';
           t
-      | desc ->
+      | Tfunctor (l, id, {pack_path; pack_constraints}, t2) ->
+          let t = newgenstub ~scope:(get_scope ty) in
+          For_copy.redirect_desc copy_scope ty (Tsubst (t, None));
+          let pack' = {
+            pack_path;
+            pack_constraints =
+              List.map (fun (l, t) -> (l, copy t)) pack_constraints
+          } in
+          let desc' = Tfunctor (l, id, pack', copy t2) in
+          Transient_expr.set_stub_desc t desc';
+          t
+      | (Tvar _ | Tarrow _ | Ttuple _ | Tfield _ | Tnil | Tlink _ | Tunivar _
+            | Tpoly _ | Tconstr _ | Tobject _ | Tpackage _) as desc ->
           let t = newgenstub ~scope:(get_scope ty) in
           For_copy.redirect_desc copy_scope ty (Tsubst (t, None));
           let desc' = copy_type_desc copy desc in
@@ -275,13 +287,13 @@ let rec typexp copy_scope s ty =
          | Type_function { params; body } ->
             Tlink (apply_type_function params args body)
          end
-      | Tpackage {pack_path; pack_constraints} ->
-          Tpackage {
-            pack_path = modtype_path s pack_path;
-            pack_constraints =
-              List.map
-                (fun (n, ty) -> (n, typexp copy_scope s ty)) pack_constraints;
-          }
+      | Tpackage pack ->
+          Tpackage (package copy_scope s pack)
+      | Tfunctor(lbl, us, pack, ty) ->
+          let us' = Ident.Unscoped.refresh us in
+          let s' = add_module (Ident.of_unscoped us)
+                              (Pident (Ident.of_unscoped us')) s in
+          Tfunctor(lbl, us', package copy_scope s pack, typexp copy_scope s' ty)
       | Tobject (t1, name) ->
           let t1' = typexp copy_scope s t1 in
           let name' =
@@ -338,10 +350,18 @@ let rec typexp copy_scope s ty =
           end
       | Tfield(_label, kind, _t1, t2) when field_kind_repr kind = Fabsent ->
           Tlink (typexp copy_scope s t2)
-      | _ -> copy_type_desc (typexp copy_scope s) desc
+      | Tvar _ | Tarrow _ | Ttuple _ | Tfield _ | Tnil | Tlink _
+      | Tunivar _ | Tpoly _ | Tsubst _ ->
+          copy_type_desc (typexp copy_scope s) desc
     in
     Transient_expr.set_stub_desc ty' desc;
     ty'
+and package copy_scope s {pack_path; pack_constraints} =
+  {
+    pack_path = modtype_path s pack_path;
+    pack_constraints =
+      List.map (fun (n, ty) -> (n, typexp copy_scope s ty)) pack_constraints;
+  }
 
 (*
    Always make a copy of the type. If this is not done, type levels

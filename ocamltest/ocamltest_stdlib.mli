@@ -68,7 +68,3 @@ module Seq : sig
 
   val equal : 'a t -> 'a t -> bool
 end
-
-module Unix : sig
-  include module type of Ocamltest_unix
-end

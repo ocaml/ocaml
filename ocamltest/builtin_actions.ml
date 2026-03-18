@@ -169,8 +169,8 @@ let linux = make
 
 let macos_system = "macosx"
 
-let macos = make
-  ~name:"macos"
+let macosx = make
+  ~name:"macosx"
   ~description:"Pass if running on a MacOS system"
   (Actions_helpers.pass_or_skip (Ocamltest_config.system = macos_system)
     "on a MacOS system"
@@ -185,6 +185,13 @@ let not_macos_amd64_tsan = make
            && (Ocamltest_config.tsan)))
      "not on a MacOS amd64 system with TSan enabled"
      "on a MacOS amd64 system with TSan enabled")
+
+let has_cxx = make
+    ~name:"has-cxx"
+    ~description:"Pass if a C++ compiler is available"
+    (Actions_helpers.pass_or_skip (Ocamltest_config.cxx <> "")
+       "C++ compiler is available"
+       "C++ compiler not available")
 
 let arch32 = make
   ~name:"arch32"
@@ -273,14 +280,14 @@ let tsan = make
 let has_symlink = make
   ~name:"has_symlink"
   ~description:"Pass if symbolic links are available"
-  (Actions_helpers.pass_or_skip (Unix.has_symlink () )
+  (Actions_helpers.pass_or_skip (Ocamltest_unix.has_symlink () )
     "symlinks available"
     "symlinks not available")
 
 let not_root = make
   ~name:"not-root"
   ~description:"Skip test if the current user is root"
-  (Actions_helpers.pass_or_skip (Unix.getuid () <> 0)
+  (Actions_helpers.pass_or_skip (Ocamltest_unix.getuid () <> 0)
     "current user is not root"
     "current user is root")
 
@@ -397,8 +404,9 @@ let _ =
     target_windows;
     bsd;
     linux;
-    macos;
+    macosx;
     not_macos_amd64_tsan;
+    has_cxx;
     arch32;
     arch64;
     has_symlink;

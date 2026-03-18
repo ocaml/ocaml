@@ -421,7 +421,7 @@ let expr sub x =
           sub.expr sub exp2
         )
     | Texp_atomic_loc (exp, lid, ld) ->
-        Texp_atomic_loc (sub.expr sub exp, map_loc sub lid, ld)
+        Texp_atomic_loc (sub.expr sub exp, map_loc_lid sub lid, ld)
     | Texp_array (mut, list) ->
         Texp_array (mut, List.map (sub.expr sub) list)
     | Texp_ifthenelse (exp1, exp2, expo) ->
@@ -793,6 +793,9 @@ let typ sub x =
         Ttyp_package (sub.package_type sub pack)
     | Ttyp_open (path, mod_ident, t) ->
         Ttyp_open (path, map_loc_lid sub mod_ident, sub.typ sub t)
+    | Ttyp_functor (label, id, pack, t) ->
+        Ttyp_functor (label, map_loc sub id,
+                      sub.package_type sub pack, sub.typ sub t)
   in
   let ctyp_attributes = sub.attributes sub x.ctyp_attributes in
   {x with ctyp_loc; ctyp_desc; ctyp_env; ctyp_attributes}

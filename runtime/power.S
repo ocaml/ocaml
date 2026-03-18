@@ -924,22 +924,22 @@ ENDFUNCTION caml_callback3_asm
 
 /*
  * A continuation is a one word object that points to a fiber. A fiber [f] will
- * point to its parent at Handler_parent(Stack_handler(f)). In the following,
- * the [last_fiber] refers to the last fiber in the linked-list formed by the
- * parent pointer.
+ * point to its parent at Handler_parent(Stack_handler(f)).
  */
 
 FUNCTION caml_perform
   /* r3: effect to perform
      r4: freshly allocated continuation */
-        ld      5, Caml_state(current_stack) /* r5 := old stack */
-        addi    6, 5, 1  /* r6 := Val_ptr(old stack) */
+        ld      5, Caml_state(current_stack) /* r5 := current_stack */
+        addi    6, 5, 1  /* r6 := Val_ptr(current_stack) */
         std     6, 0(4)  /* Initialize continuation */
+        mr      7, 5     /* r7 := cont_head */
 .Ldo_perform:
   /* r3: effect to perform
      r4: continuation
-     r5: old_stack
-     r6: last_fiber */
+     r5: current_stack
+     r6: Val_ptr(current_stack)
+     r7: cont_head */
 #if defined(WITH_THREAD_SANITIZER)
   /* Signal to TSan all stack frames exited by the perform. */
         TSAN_SAVE_CALLER_REGS
@@ -952,50 +952,46 @@ FUNCTION caml_perform
         SWITCH_C_TO_OCAML
         TSAN_RESTORE_CALLER_REGS
 #endif
-        std     6, 8(4) /* Set the last fiber field in the continuation */
-        ld      7, Stack_handler(5)  /* r7 := old stack -> handler */
-        ld      8, Handler_parent(7) /* r8 := parent stack */
-        cmpdi   8, 0
+        ld      8, Stack_handler(5)  /* r8 := current_stack -> handler */
+        ld      9, Handler_parent(8) /* r9 := parent_stack */
+        cmpdi   9, 0 /* is parent_stack NULL? */
         beq     1f
 #if defined(WITH_THREAD_SANITIZER)
         SWITCH_OCAML_TO_C
-        TSAN_SETUP_C_CALL 48
-    /* Save non-callee-saved registers r3 to r8 */
+        TSAN_SETUP_C_CALL 56
+    /* Save non-callee-saved registers r3 to r9 */
         std     3, (RESERVED_STACK + 0)(SP)
         std     4, (RESERVED_STACK + 8)(SP)
         std     5, (RESERVED_STACK + 16)(SP)
         std     6, (RESERVED_STACK + 24)(SP)
         std     7, (RESERVED_STACK + 32)(SP)
         std     8, (RESERVED_STACK + 40)(SP)
+        std     9, (RESERVED_STACK + 48)(SP)
     /* Match the TSan-enter made from caml_runstack */
         Far_call(caml_tsan_func_exit_asm)
+        ld      9, (RESERVED_STACK + 48)(SP)
         ld      8, (RESERVED_STACK + 40)(SP)
         ld      7, (RESERVED_STACK + 32)(SP)
         ld      6, (RESERVED_STACK + 24)(SP)
         ld      5, (RESERVED_STACK + 16)(SP)
         ld      4, (RESERVED_STACK + 8)(SP)
         ld      3, (RESERVED_STACK + 0)(SP)
-        TSAN_CLEANUP_AFTER_C_CALL 48
+        TSAN_CLEANUP_AFTER_C_CALL 56
         SWITCH_C_TO_OCAML
 #endif
-        SWITCH_OCAML_STACKS 5, 8
-  /* We have to null the Handler_parent after the switch because
+        SWITCH_OCAML_STACKS 5, 9
+  /* We have to update the Handler_parent after the switch because
      the Handler_parent is needed to unwind the stack for backtraces */
-        li      0, 0
-        std     0, Handler_parent(7) /* Set parent of performer to NULL */
-        ld      0, Handler_effect(7)
-                                     /* 1st argument: effect to perform */
-                                     /* 2nd argument: continuation */
-        mr      5, 6                 /* 3rd argument: last_fiber */
-        mr      6, 0                 /* 4th argument: effect handler */
-        Far_tailcall(caml_apply3)
+        std     6, 0(4)  /* Update continuation with new cont_tail */
+        std     7, Handler_parent(8)   /* Connect new cont_tail to cont_head */
+        ld      5, Handler_effect(8)   /* r5 := effect handler (closure) */
+                                       /* r3 := effect to perform (1st arg) */
+                                       /* r4 := continuation (2nd arg) */
+        Far_tailcall(caml_apply2)
 1:
-  /* Switch back to original performer before raising Effect.Unhandled
-     (no-op unless this is a reperform) */
-        ld      10, 0(4) /* r10 := performer stack (loaded from continuation) */
-        addi    10, 10, -1 /* r10 := Ptr_val(r10) */
-        ld      9, Caml_state(current_stack)
-        SWITCH_OCAML_STACKS 9, 10
+  /* No parent stack. Switch back to original performer before raising
+     Effect.Unhandled. */
+        SWITCH_OCAML_STACKS 5, 7
   /* No parent stack. Raise Effect.Unhandled. */
 #if defined(WITH_THREAD_SANITIZER)
         /* We must let the TSan runtime know that we switched back to the
@@ -1007,7 +1003,7 @@ FUNCTION caml_perform
         TSAN_SAVE_CALLER_REGS
         mflr    3       /* arg1: PC of perform */
         mr      4, SP   /* arg2: SP of perform */
-        mr      5, 10   /* arg3: performer stack */
+        mr      5, 7    /* arg3: performer stack (cont_head) */
         SWITCH_OCAML_TO_C
         TSAN_SETUP_C_CALL 0
         Far_call(caml_tsan_entry_on_resume)
@@ -1024,39 +1020,42 @@ ENDFUNCTION caml_perform
 
 FUNCTION caml_reperform
   /* r3: effect to perform
-     r4: continuation
-     r5: last_fiber */
-        addi    5, 5, -1
-        ld      TMP, Stack_handler(5)
-        ld      5, Caml_state(current_stack) /* r5 := old stack */
-        std     5, Handler_parent(TMP) /* Append to last_fiber */
-        addi    6, 5, 1 /* r6 (last_fiber) := Val_ptr(old stack) */
+     r4: continuation */
+        ld      5, Caml_state(current_stack) /* r5 := current_stack */
+        ld      6, 0(4)                      /* r6 := Val_ptr(cont_tail) */
+        addi    6, 6, -1                     /* r6 := cont_tail */
+        ld      TMP, Stack_handler(6)
+        ld      7, Handler_parent(TMP) /* r7 := cont_head */
+        std     5, Handler_parent(TMP) /* parent(cont_tail) := current_stack */
+        addi    6, 5, 1 /* r6 := Val_ptr(current_stack) */
         b       .Ldo_perform
 ENDFUNCTION caml_reperform
 
 FUNCTION caml_resume
-  /* r3: new fiber
+  /* r3: Val_ptr(cont_tail)
      r4: fun
-     r5: arg
-     r6: last_fiber */
-        addi    3, 3, -1 /* r3 = Ptr_val(r3) */
+     r5: arg */
+        addi    3, 3, -1 /* r3 (cont_tail) = Ptr_val(r3) */
         ld      12, 0(4) /* r12 = code pointer */
         mtctr   12       /* CTR = code pointer */
     /* Check if stack is null, then already used */
         cmpdi   3, 0
         beq     1f
+   /* Load cont_head, the fiber at which we will resume */
+        ld      6, Stack_handler(3)
+        ld      6, Handler_parent(6) /* r6 = cont_head */
 #if defined(WITH_THREAD_SANITIZER)
         TSAN_SAVE_CALLER_REGS
         SWITCH_OCAML_TO_C
         TSAN_SETUP_C_CALL 16
-        std     3, (RESERVED_STACK + 0)(SP)
+    /* save r6 (cont_head) clobbered by first Far_call */
+        std     6, (RESERVED_STACK + 0)(SP)
     /* Necessary to include the caller of caml_resume in the TSan backtrace */
         mr      3, 0            /* arg1: return address in caller */
         Far_call(caml_tsan_func_entry_asm)
     /* Signal to TSan all stack frames exited by the perform. */
-        ld      3, (RESERVED_STACK + 0)(SP)
-        mr      5, 3            /* arg3: fiber */
-        ld      4, Stack_sp(3)  /* arg2: SP at perform */
+        ld      5, (RESERVED_STACK + 0)(SP) /* arg3: cont_head */
+        ld      4, Stack_sp(5)  /* arg2: SP at perform */
         ld      3, LR_SAVE(4)   /* arg1: PC of perform */
         Far_call(caml_tsan_entry_on_resume)
         TSAN_CLEANUP_AFTER_C_CALL 16
@@ -1067,12 +1066,11 @@ FUNCTION caml_resume
         mtctr   12       /* CTR = code pointer */
 #endif
     /* Add current stack to the end */
-        addi    6, 6, -1 /* r6 = Ptr_val(r6) */
-        ld      7, Stack_handler(6)
+        ld      7, Stack_handler(3)
         ld      8, Caml_state(current_stack)
         std     8, Handler_parent(7)
     /* Switch stacks and run code */
-        SWITCH_OCAML_STACKS 8, 3
+        SWITCH_OCAML_STACKS 8, 6
         mr      3, 5
         bctr
 1:      TSAN_ENTER_FUNCTION /* needed since we skip caml_c_call entry */

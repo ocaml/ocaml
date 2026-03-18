@@ -44,6 +44,10 @@
     # Replace line number when setting breakpoints in GDB.
     gsub(/line [0-9]+/, "line XXX")
 
+    # erase caml_startup_exn from stack traces, and remove frame numbers
+    gsub(/frame [0-9]+: .*caml_startup_exn/, "")
+    gsub(/frame [0-9]+/, "frame X")
+
     # Work around inconsistent name mangling
     gsub(/c_to_ocaml_[0-9]+/, "c_to_ocaml")
 

@@ -104,6 +104,7 @@ type prim =
   | Apply
   | Revapply
   | Atomic of atomic_op * atomic_kind
+  | Todo
 
 let used_primitives = Hashtbl.create 7
 let add_used_primitive loc env path =
@@ -398,11 +399,12 @@ let primitives_table =
     "%atomic_cas_loc", Atomic(Cas, Loc);
     "%atomic_fetch_add_loc", Atomic(Faa, Loc);
     "%runstack", Primitive (Prunstack, 3);
-    "%reperform", Primitive (Preperform, 3);
+    "%reperform", Primitive (Preperform, 2);
     "%perform", Primitive (Pperform, 1);
-    "%resume", Primitive (Presume, 4);
+    "%resume", Primitive (Presume, 3);
     "%dls_get", Primitive (Pdls_get, 1);
     "%poll", Primitive (Ppoll, 1);
+    "%todo", Todo;
   ]
 
 
@@ -763,6 +765,29 @@ let add_exception_ident id =
 let remove_exception_ident id =
   Hashtbl.remove try_ids id
 
+let raise_todo ~loc arg arg_exps =
+  let todo_exn_id =
+    transl_extension_path Loc_unknown Env.initial Predef.path_todo
+  in
+  let fname, line, _ =
+    let loc = Debuginfo.Scoped_location.to_location loc in
+    Location.get_pos_info loc.Location.loc_start
+  in
+  let arg =
+    match arg_exps with
+    | None -> arg
+    | Some [arg_exp] -> event_after loc arg_exp arg
+    | Some _ -> assert false
+  in
+  Lsequence (arg,
+    Lprim (
+      Praise Raise_regular,
+      [Lprim (Pmakeblock (0, Immutable, None),
+              [todo_exn_id;
+               Lconst (Const_block (0,
+                 [Const_immstring fname;
+                  Const_int line]))], loc)], loc))
+
 let lambda_of_prim prim_name prim loc args arg_exps =
   match prim, args with
   | Primitive (prim, arity), args when arity = List.length args ->
@@ -840,10 +865,12 @@ let lambda_of_prim prim_name prim loc args arg_exps =
       }
   | Atomic (op, kind), args ->
       lambda_of_atomic prim_name loc op kind args
+  | Todo, [arg] ->
+      raise_todo ~loc arg arg_exps
   | (Raise _ | Raise_with_backtrace
     | Lazy_force | Loc _ | Primitive _ | Sys_argv | Comparison _
     | Send | Send_self | Send_cache | Frame_pointers | Identity
-    | Apply | Revapply
+    | Apply | Revapply | Todo
     ), _ ->
       raise(Error(to_location loc, Wrong_arity_builtin_primitive prim_name))
 
@@ -865,6 +892,7 @@ let check_primitive_arity loc p =
     | Identity -> p.prim_arity = 1
     | Apply | Revapply -> p.prim_arity = 2
     | Atomic (op, kind) -> p.prim_arity = atomic_arity op kind
+    | Todo -> p.prim_arity = 1
   in
   if not ok then raise(Error(loc, Wrong_arity_builtin_primitive p.prim_name))
 
@@ -944,7 +972,7 @@ let primitive_needs_event_after = function
   | Raise _ | Raise_with_backtrace
   | Loc _
   | Frame_pointers | Identity
-  | Atomic (_, _)
+  | Atomic (_, _) | Todo
     -> false
 
 let transl_primitive_application loc p env ty path exp args arg_exps =

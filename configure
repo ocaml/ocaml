@@ -3648,10 +3648,6 @@ ac_config_files="$ac_config_files Makefile.config"
 
 ac_config_files="$ac_config_files stdlib/sys.ml"
 
-ac_config_files="$ac_config_files manual/src/version.tex"
-
-ac_config_files="$ac_config_files manual/src/html_processing/src/common.ml"
-
 ac_config_files="$ac_config_files otherlibs/dynlink/dynlink_config.ml"
 
 ac_config_files="$ac_config_files utils/config.common.ml"
@@ -3674,6 +3670,13 @@ ac_config_files="$ac_config_files otherlibs/runtime_events/META"
 
 ac_config_files="$ac_config_files stdlib/META"
 
+if test -d manual
+then :
+  ac_config_files="$ac_config_files manual/src/version.tex"
+
+  ac_config_files="$ac_config_files manual/src/html_processing/src/common.ml"
+
+fi
 
 # Definitions related to the version of OCaml
 printf "%s\n" "#define OCAML_VERSION_MAJOR 5" >>confdefs.h
@@ -18957,6 +18960,8 @@ case $target in #(
     has_native_backend=yes; arch=power; model=ppc64le; system=linux ;; #(
   powerpc64*-*-linux-musl*) :
     has_native_backend=yes; arch=power; model=ppc64; system=linux ;; #(
+  powerpc64*-*-linux*) :
+    arch=power; model=ppc64; system=linux ;; #(
   s390x*-*-linux*) :
     has_native_backend=yes; arch=s390x; model=z10; system=linux ;; #(
   # expected to match "gnueabihf" as well as "musleabihf"
@@ -23908,7 +23913,7 @@ fi
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for a C++11 compiler" >&5
 printf %s "checking for a C++11 compiler... " >&6; }
-if test ${ocaml_cv_prog_cxx+y}
+  if test ${ocaml_cv_prog_cxx+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
@@ -23917,13 +23922,20 @@ else $as_nop
   cc) :
 
         saved_CC="$CC"
-        CC="$CC -xc++"
+        saved_CFLAGS="$CFLAGS"
+        if test x"$CXX" = x
+then :
+  CC="$CC -xc++"; CFLAGS="$CXXFLAGS"
+else $as_nop
+  CC="$CXX"; CFLAGS="$CXXFLAGS"
+fi
         cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 #if !defined(__cplusplus) || __cplusplus < 201103L
 #error "No C++11 support"
 #endif
+#include <iostream>
 
 int
 main (void)
@@ -23940,7 +23952,8 @@ else $as_nop
   ocaml_cv_prog_cxx=""
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-        CC="$saved_CC" ;; #(
+        CC="$saved_CC"
+        CFLAGS="$saved_CFLAGS" ;; #(
   msvc) :
 
         # cl.exe selects between C and C++ based on the file extension
@@ -23949,8 +23962,9 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
     ocaml_cv_prog_cxx="" ;;
 esac
 fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ocaml_cv_prog_cxx" >&5
-printf "%s\n" "$ocaml_cv_prog_cxx" >&6; }
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ocaml_cv_prog_cxx:-none found}" >&5
+printf "%s\n" "${ocaml_cv_prog_cxx:-none found}" >&6; }
   ocamltest_CXX="$ocaml_cv_prog_cxx" ;; #(
   *) :
     build_ocamltest=false
@@ -25684,8 +25698,6 @@ do
     "Makefile.build_config") CONFIG_FILES="$CONFIG_FILES Makefile.build_config" ;;
     "Makefile.config") CONFIG_FILES="$CONFIG_FILES Makefile.config" ;;
     "stdlib/sys.ml") CONFIG_FILES="$CONFIG_FILES stdlib/sys.ml" ;;
-    "manual/src/version.tex") CONFIG_FILES="$CONFIG_FILES manual/src/version.tex" ;;
-    "manual/src/html_processing/src/common.ml") CONFIG_FILES="$CONFIG_FILES manual/src/html_processing/src/common.ml" ;;
     "otherlibs/dynlink/dynlink_config.ml") CONFIG_FILES="$CONFIG_FILES otherlibs/dynlink/dynlink_config.ml" ;;
     "utils/config.common.ml") CONFIG_FILES="$CONFIG_FILES utils/config.common.ml" ;;
     "utils/config.generated.ml") CONFIG_FILES="$CONFIG_FILES utils/config.generated.ml" ;;
@@ -25697,6 +25709,8 @@ do
     "otherlibs/dynlink/META") CONFIG_FILES="$CONFIG_FILES otherlibs/dynlink/META" ;;
     "otherlibs/runtime_events/META") CONFIG_FILES="$CONFIG_FILES otherlibs/runtime_events/META" ;;
     "stdlib/META") CONFIG_FILES="$CONFIG_FILES stdlib/META" ;;
+    "manual/src/version.tex") CONFIG_FILES="$CONFIG_FILES manual/src/version.tex" ;;
+    "manual/src/html_processing/src/common.ml") CONFIG_FILES="$CONFIG_FILES manual/src/html_processing/src/common.ml" ;;
     "native-symlinks") CONFIG_COMMANDS="$CONFIG_COMMANDS native-symlinks" ;;
     "ocamldoc/META") CONFIG_FILES="$CONFIG_FILES ocamldoc/META" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;

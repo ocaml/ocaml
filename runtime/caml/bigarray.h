@@ -16,6 +16,41 @@
 #ifndef CAML_BIGARRAY_H
 #define CAML_BIGARRAY_H
 
+/* ISO C++ doesn't permit flexible array members, but GCC, Clang and MSVC all
+   support them as compiler extensions. The pragmas below temporarily disable
+   the warnings which these compilers emit for this, which allows this public
+   header to be used in C++ in pedantic/non-permissive mode.
+
+   These macros are here, rather than misc.h, to discourage the potential future
+   use of flexible array members! */
+#ifdef __cplusplus
+  #if defined(__clang__)
+    #define CAML_flexible_array_member_start \
+      _Pragma("clang diagnostic push") \
+      _Pragma("GCC diagnostic ignored \"-Wc99-extensions\"")
+    #define CAML_flexible_array_member_end \
+      _Pragma("clang diagnostic pop")
+  #elif defined(__GNUC__)
+    #define CAML_flexible_array_member_start \
+      _Pragma("GCC diagnostic push") \
+      _Pragma("GCC diagnostic ignored \"-Wpedantic\"")
+    #define CAML_flexible_array_member_end \
+      _Pragma("GCC diagnostic pop")
+  #elif defined(_MSC_VER)
+    #define CAML_flexible_array_member_start \
+      _Pragma("warning(push)") \
+      _Pragma("warning(disable: 4200)")
+    #define CAML_flexible_array_member_end \
+      _Pragma("warning(pop)")
+  #else
+    #define CAML_flexible_array_member_start
+    #define CAML_flexible_array_member_end
+  #endif
+#else
+  #define CAML_flexible_array_member_start
+  #define CAML_flexible_array_member_end
+#endif
+
 #include "config.h"
 #include "mlvalues.h"
 #include "camlatomic.h"
@@ -83,35 +118,9 @@ struct caml_ba_array {
   intnat num_dims;            /* Number of dimensions */
   intnat flags;  /* Kind of element array + memory layout + allocation status */
   struct caml_ba_proxy * proxy; /* The proxy for sub-arrays, or NULL */
-
-  /* ISO C++ doesn't permit flexible array members, but GCC, Clang and MSVC all
-     support them as compiler extensions. The pragmas below temporarily disable
-     the warnings which these compilers emit for this, which allows this public
-     header to be used in C++ in pedantic/non-permissive mode. */
-#ifdef __cplusplus
-  #if defined(__clang__)
-    #pragma clang diagnostic push
-    #pragma clang diagnostic ignored "-Wc99-extensions"
-  #elif defined(__GNUC__)
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wpedantic"
-  #elif defined(_MSC_VER)
-    #pragma warning(push)
-    #pragma warning(disable: 4200)
-  #endif
-#endif
-
+CAML_flexible_array_member_start
   intnat dim[/* num_dims */]; /* Size in each dimension */
-
-#ifdef __cplusplus
-  #if defined(__clang__)
-    #pragma clang diagnostic pop
-  #elif defined(__GNUC__)
-    #pragma GCC diagnostic pop
-  #elif defined(_MSC_VER)
-    #pragma warning(pop)
-  #endif
-#endif
+CAML_flexible_array_member_end
 };
 
 /* Size of struct caml_ba_array, in bytes, without [dim] array */

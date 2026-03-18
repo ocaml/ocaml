@@ -682,6 +682,7 @@ and core_type_desc =
   | Ttyp_poly of string list * core_type
   | Ttyp_package of package_type
   | Ttyp_open of Path.t * Longident.t loc * core_type
+  | Ttyp_functor of arg_label * Ident.t loc * package_type * core_type
 
 and package_type = {
   tpt_path : Path.t;
@@ -942,3 +943,7 @@ val split_pattern:
 
 val map_apply_arg:
   ('a -> ' b) -> ('a, 'omitted) arg_or_omitted ->  ('b, 'omitted) arg_or_omitted
+
+val path_of_module : module_expr -> Path.t option
+
+val remove_module_constraint : module_expr -> module_expr

@@ -441,6 +441,16 @@ Error: Variant tags "`azdwbie" and "`c7diagq" have the same hash value.
        Change one of them.
 |}]
 
+let _ = object(_ : < x : [ `azdwbie ] -> unit; .. >)
+  method x : [ `c7diagq ] -> unit = fun _ -> ()
+end
+
+[%%expect{|
+Line 1:
+Error: In this program, variant constructors "`azdwbie" and "`c7diagq"
+       have the same hash value. Change one of them.
+|}]
+
 
 type t = {x:unit}
 type s = {y:unit}

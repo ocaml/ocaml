@@ -28,24 +28,66 @@ let print_tsl_ast ~compact oc ast =
     print_ast (indent ^ "  ") ast;
     pr "%s}" indent;
 
-  and print_statements indent stmts =
-    match stmts with
-    | Test (sign, name, mods) :: tl ->
-      pr (match sign with
-          | Pos -> ""
-          | Neg -> "not ");
-      pr "%s%s" indent name.node;
-      begin match mods with
+  and print_statement stmt =
+    let rec print_test test =
+      print_test_if test
+    and print_test_if test =
+      let print_self = print_test_if in
+      let print_next = print_test_or in
+      match test with
+      | If (t1, t2, t3) ->
+        pr "if "; print_next t1;
+        pr " then "; print_next t2;
+        begin match t3 with
+        | None -> ()
+        | Some t3 ->
+            pr " else "; print_self t3
+        end;
+      | other -> print_next other
+    and print_test_or test =
+      let print_self = print_test_or in
+      let print_next = print_test_and in
+      match test with
+      | Or (t1, t2) ->
+        print_self t1; pr " || "; print_self t2
+      | other -> print_next other
+    and print_test_and test =
+      let print_self = print_test_and in
+      let print_next = print_test_not in
+      match test with
+      | And (t1, t2) ->
+        print_self t1; pr " && "; print_self t2
+      | other -> print_next other
+    and print_test_not test =
+      let print_next = print_test_atom in
+      match test with
+      | Not t ->
+        pr "not "; print_next t
+      | other -> print_next other
+    and print_test_atom = function
+      | Action act -> print_action act
+      | Environment_statement env -> print_env env
+      | (
+        Not _ | And _ | Or _ | If _
+        ) as other -> pr "("; print_test other; pr ")"
+    and print_action { name; modifiers } =
+      pr "%s" name.node;
+      begin match modifiers with
       | m :: tl ->
         pr " with %s" m.node;
         List.iter (fun m -> pr ", %s" m.node) tl;
       | [] -> ()
       end;
+    in
+    print_test stmt
+
+  and print_statements indent stmts =
+    match stmts with
+    | stmt :: tl ->
+      pr "%s" indent;
+      print_statement stmt;
       pr ";\n";
       if tl <> [] && not compact then pr "\n";
-      print_statements indent tl;
-    | Environment_statement env :: tl->
-      print_env indent env;
       print_statements indent tl;
     | [] -> ()
 
@@ -56,17 +98,16 @@ let print_tsl_ast ~compact oc ast =
       pr "\n";
     end
 
-  and print_env indent e =
+  and print_env e =
     match e.node with
     | Assignment (set, variable, value) ->
-      pr "%s" indent;
       if set then pr "set ";
-      pr "%s = \"%s\";\n" variable.node value.node;
+      pr "%s = \"%s\"" variable.node value.node;
     | Append (variable, value) ->
-      pr "%s%s += \"%s\";\n" indent variable.node value.node;
+      pr "%s += \"%s\"" variable.node value.node;
     | Include ls ->
-      pr "%sinclude %s;\n" indent ls.node;
+      pr "include %s" ls.node;
     | Unset ls ->
-      pr "%sunset %s;\n" indent ls.node;
+      pr "unset %s" ls.node;
   in
   print_ast " " ast;

@@ -537,14 +537,14 @@ module O = struct
     val f: (module s) -> unit
   end = struct
     module type s
-    let f (module X:s) = ()
+    let f ((module X):(module s)) = ()
   end
 end;;
 [%%expect{|
 Lines 5-8, characters 8-5:
 5 | ........struct
 6 |     module type s
-7 |     let f (module X:s) = ()
+7 |     let f ((module X):(module s)) = ()
 8 |   end
 Error: Signature mismatch:
        Modules do not match:

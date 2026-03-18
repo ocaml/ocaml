@@ -144,10 +144,10 @@ external shift_right : int -> int -> int = "%asrint"
     [n > ]{!Sys.int_size}. *)
 
 external shift_right_logical : int -> int -> int = "%lsrint"
-(** [shift_right x n] shifts [x] to the right by [n] bits. This is a
-    logical shift: zeroes are inserted in the vacated bits regardless
-    of the sign of [x]. The result is unspecified if [n < 0] or
-    [n > ]{!Sys.int_size}. *)
+(** [shift_right_logical x n] shifts [x] to the right by [n] bits.
+    This is a logical shift: zeroes are inserted in the vacated bits
+    regardless of the sign of [x]. The result is unspecified if [n < 0]
+    or [n > ]{!Sys.int_size}. *)
 
 (** {1:preds Predicates and comparisons} *)
 
