@@ -265,11 +265,11 @@ module type S =
 
         @since 5.5 *)
 
-    val singleton_elt: t -> elt option
-    (** [singleton_elt s] is [Some x] if [s] has only the element [x]
+    val singleton_to_elt: t -> elt option
+    (** [singleton_to_elt s] is [Some x] if [s] has only the element [x]
         and [None] otherwise.
 
-        @since 5.5 *)
+        @since 5.6 *)
 
     val mem: elt -> t -> bool
     (** [mem x s] tests whether [x] belongs to the set [s]. *)
