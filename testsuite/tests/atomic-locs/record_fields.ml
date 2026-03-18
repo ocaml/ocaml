@@ -22,7 +22,7 @@ module Basic = struct
     Atomic.Loc.compare_and_set (get_loc r) oldv newv
 end
 [%%expect{|
-(apply (field_mut 1 (global Toploop!)) "Basic/339"
+(apply (field_mut 1 (global Toploop!)) "Basic/341"
   (let
     (get = (function r (atomic_load r 1))
      set = (function r v : int (ignore (caml_atomic_exchange_field r 1 v)))
@@ -147,7 +147,7 @@ end : sig
   type t = { mutable x : int [@atomic] }
 end)
 [%%expect{|
-(apply (field_mut 1 (global Toploop!)) "Ok/366" (makeblock 0))
+(apply (field_mut 1 (global Toploop!)) "Ok/368" (makeblock 0))
 module Ok : sig type t = { mutable x : int [@atomic]; } end
 |}];;
 
@@ -161,7 +161,7 @@ module Inline_record = struct
   let test : t -> int = fun (A r) -> r.x
 end
 [%%expect{|
-(apply (field_mut 1 (global Toploop!)) "Inline_record/374"
+(apply (field_mut 1 (global Toploop!)) "Inline_record/376"
   (let (test = (function param : int (atomic_load param 0)))
     (makeblock 0 test)))
 module Inline_record :
@@ -181,7 +181,7 @@ module Extension_with_inline_record = struct
   let () = assert (test (A { x = 42 }) = 42)
 end
 [%%expect{|
-(apply (field_mut 1 (global Toploop!)) "Extension_with_inline_record/382"
+(apply (field_mut 1 (global Toploop!)) "Extension_with_inline_record/384"
   (let
     (A =
        (makeblock 248 "Extension_with_inline_record.A" (caml_fresh_oo_id 0))
@@ -210,7 +210,7 @@ module Float_records = struct
   let get v = v.y
 end
 [%%expect{|
-(apply (field_mut 1 (global Toploop!)) "Float_records/397"
+(apply (field_mut 1 (global Toploop!)) "Float_records/399"
   (let
     (mk_t = (function x[float] y[float] (makemutable 0 (float,float) x y))
      get = (function v : float (atomic_load v 1)))
@@ -256,7 +256,7 @@ Line 5, characters 14-19:
 Warning 9 [missing-record-field-pattern]: the following labels are not bound
   in this record pattern: "y".
   Either bind these labels explicitly or add "; _" to the pattern.
-(apply (field_mut 1 (global Toploop!)) "Pattern_matching_wildcard/417"
+(apply (field_mut 1 (global Toploop!)) "Pattern_matching_wildcard/419"
   (let
     (warning = (function param : int (field_int 0 param))
      allowed = (function param : int (field_int 0 param)))

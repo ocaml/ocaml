@@ -155,7 +155,8 @@ let preserve_tailcall_for_prim = function
   | Pcompare_ints | Pcompare_floats | Pcompare_bints _
   | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
   | Pmakearray _ | Pduparray _ | Parraylength _ | Parrayrefu _ | Parraysetu _
-  | Parrayrefs _ | Parraysets _ | Pisint | Pisout | Pbintofint _ | Pintofbint _
+  | Parrayrefs _ | Parraysets _ | Pisint | Pisout | Pcheckbound
+  | Pbintofint _ | Pintofbint _
   | Pcvtbint _ | Pnegbint _ | Paddbint _ | Psubbint _ | Pmulbint _ | Pdivbint _
   | Pmodbint _ | Pandbint _ | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _
   | Pasrbint _ | Pbintcomp _ | Pbigarrayref _ | Pbigarrayset _ | Pbigarraydim _
@@ -461,6 +462,7 @@ let comp_primitive stack_info p sz args =
      Kccall(Printf.sprintf "caml_sys_const_%s" const_name, 1, None)
   | Pisint -> Kisint
   | Pisout -> Kisout
+  | Pcheckbound -> Kccall("caml_check_bound", 2, None)
   | Pbintofint bi -> comp_bint_primitive bi "of_int" args
   | Pintofbint bi -> comp_bint_primitive bi "to_int" args
   | Pcvtbint(src, dst) ->
@@ -752,8 +754,8 @@ let rec comp_expr stack_info env exp sz cont =
   | Lprim(Preperform, args, _) ->
       let nargs = List.length args - 1 in
       assert (nargs = 1);
-      (* Reperformterm pushes at most 1 word *)
-      check_stack stack_info (sz + 1);
+      (* Reperformterm resets the stack before pushing 3 words *)
+      check_stack stack_info 3;
       if is_tailcall cont then
         comp_args stack_info env args sz
           (Kreperformterm(sz + nargs) :: discard_dead_code cont)

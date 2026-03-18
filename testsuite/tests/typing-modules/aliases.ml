@@ -336,6 +336,7 @@ module StringSet :
     val split : elt -> t -> t * bool * t
     val is_empty : t -> bool
     val is_singleton : t -> bool
+    val singleton_to_elt : t -> elt option
     val mem : elt -> t -> bool
     val equal : t -> t -> bool
     val compare : t -> t -> int
@@ -385,6 +386,7 @@ module SSet :
     val split : elt -> t -> t * bool * t
     val is_empty : t -> bool
     val is_singleton : t -> bool
+    val singleton_to_elt : t -> elt option
     val mem : elt -> t -> bool
     val equal : t -> t -> bool
     val compare : t -> t -> int
@@ -466,6 +468,7 @@ module A :
         val split : elt -> t -> t * bool * t
         val is_empty : t -> bool
         val is_singleton : t -> bool
+        val singleton_to_elt : t -> elt option
         val mem : elt -> t -> bool
         val equal : t -> t -> bool
         val compare : t -> t -> int
@@ -599,6 +602,7 @@ module SInt :
     val split : elt -> t -> t * bool * t
     val is_empty : t -> bool
     val is_singleton : t -> bool
+    val singleton_to_elt : t -> elt option
     val mem : elt -> t -> bool
     val equal : t -> t -> bool
     val compare : t -> t -> int
