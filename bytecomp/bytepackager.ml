@@ -192,7 +192,7 @@ let rename_append_bytecode packagename oc state objfile compunit =
         seek_in ic compunit.cu_hint;
         let unit_hints =
           (Compression.input_value ic : (int * optimization_hint) list) in
-        rev_append_map
+        List.rev_append_map
           (relocate_hint state.offset)
           unit_hints
           state.hints
