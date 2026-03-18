@@ -90,7 +90,7 @@ Line 3, characters 4-12:
 3 |   | { a; _ } -> ();;
         ^^^^^^^^
 Error: This pattern should not be a record, the expected type is
-       "'b -> Record.t"
+       "'a -> Record.t"
 |}]
 
 let () =
@@ -101,7 +101,7 @@ Line 3, characters 4-8:
 3 |   | true -> ();;
         ^^^^
 Error: This pattern should not be a boolean literal, the expected type is
-       "'c -> Bool.t"
+       "'a -> Bool.t"
 |}]
 
 let () =
@@ -112,7 +112,7 @@ Line 3, characters 4-9:
 3 |   | false -> ();;
         ^^^^^
 Error: This pattern should not be a boolean literal, the expected type is
-       "'d -> Bool.t"
+       "'a -> Bool.t"
 |}]
 
 let () =
@@ -123,7 +123,7 @@ Line 3, characters 4-6:
 3 |   | [] -> ();;
         ^^
 Error: This pattern should not be a list literal, the expected type is
-       "'e -> 'f List.t"
+       "'a -> 'b List.t"
 |}]
 
 let () =
@@ -134,7 +134,7 @@ Line 3, characters 4-10:
 3 |   | _ :: _ -> ();;
         ^^^^^^
 Error: This pattern should not be a list literal, the expected type is
-       "'g -> 'h List.t"
+       "'a -> 'b List.t"
 |}]
 
 let () =
@@ -145,7 +145,7 @@ Line 3, characters 4-6:
 3 |   | () -> ();;
         ^^
 Error: This pattern should not be a unit literal, the expected type is
-       "'i -> Unit.t"
+       "'a -> Unit.t"
 |}]
 
 let () = Constr.put A;;
@@ -217,7 +217,7 @@ let () =
 Line 2, characters 10-25:
 2 |   ignore ((Record.get ()).a);;
               ^^^^^^^^^^^^^^^
-Error: This expression has type "'j -> Record.t" which is not a record type.
+Error: This expression has type "'a -> Record.t" which is not a record type.
 |}]
 
 let () =
@@ -226,7 +226,7 @@ let () =
 Line 2, characters 2-17:
 2 |   (Record.get ()).a <- 5;;
       ^^^^^^^^^^^^^^^
-Error: This expression has type "'k -> Record.t" which is not a record type.
+Error: This expression has type "'a -> Record.t" which is not a record type.
 |}]
 
 let () =
@@ -235,7 +235,7 @@ let () =
 Line 2, characters 11-26:
 2 |   ignore { (Record.get ()) with a = 5 };;
                ^^^^^^^^^^^^^^^
-Error: This expression has type "'l -> Record.t" which is not a record type.
+Error: This expression has type "'a -> Record.t" which is not a record type.
 |}]
 
 let foo x =

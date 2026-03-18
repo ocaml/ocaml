@@ -202,7 +202,7 @@ Line 3, characters 30-42:
                                   ^^^^^^^^^^^^
 Error: The local name "c" can only be given to an existential variable
        introduced by this GADT constructor.
-       The type annotation tries to bind it to the type "'b"
+       The type annotation tries to bind it to the type "'a"
        that is not a locally abstract type.
 |}]
 
