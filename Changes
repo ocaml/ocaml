@@ -55,7 +55,7 @@ Working version
 - #14553: Add Array.fold_{left,right}2
   (Clément Pottier, review by Nicolás Ojeda Bär and Vincent Laviron)
 
-- #14121: Add Set.S.singleton_elt and Map.S.singleton_binding
+- #14121: Add Set.S.singleton_to_elt and Map.S.singleton_to_binding
   (Vincent Laviron, review by Daniel Bünzli, Nicolás Ojeda Bär
    and Gabriel Scherer)
 
