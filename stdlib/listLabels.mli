@@ -205,7 +205,7 @@ val append_map : f:('a -> 'b) -> 'a list -> 'b list -> 'b list
  *)
 
 val rev_append_map : f:('a -> 'b) -> 'a list -> 'b list -> 'b list
-(** [rev_append_map ~f l1 l2] applies [f] to every element of [l1], reverse the
+(** [rev_append_map ~f l1 l2] applies [f] to every element of [l1], reverses the
     result and appends [l2] to it. This is {!rev_append}[ (]{!map}[ f l1) l2]
     but more efficient.
     @since 5.6
