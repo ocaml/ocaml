@@ -7587,6 +7587,7 @@ let msg = Fmt.doc_printf
 
 let report_error ~loc env =
   let print_expanded fmt ty =
+    Out_type.prepare_for_printing [];
     let ty_exp = expand_type env ty in
     let ty_exp = Out_type.prepare_expansion ty_exp in
     (Printtyp.type_expansion Type) fmt ty_exp

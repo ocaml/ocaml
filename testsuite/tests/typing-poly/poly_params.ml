@@ -561,7 +561,7 @@ Line 2, characters 2-23:
       ^^^^^^^^^^^^^^^^^^^^^
 Error: The syntactic arity of the function doesn't match the type constraint:
        This function has 3 syntactic arguments, but its type is constrained to
-         "unit -> (a, ('b0. 'b0 -> 'b0) -> int) Type.eq -> a".
+         "unit -> (a, ('b. 'b -> 'b) -> int) Type.eq -> a".
         Hint: consider splitting the function definition into
           "fun ... gadt_pat -> fun ..."
           where "gadt_pat" is the pattern with the GADT constructor that

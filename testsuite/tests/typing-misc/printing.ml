@@ -65,7 +65,7 @@ val zeros : < next : int * 'a > as 'a = <obj>
 Line 3, characters 8-15:
 3 | let x = X zeros;;
             ^^^^^^^
-Error: Cannot create values of the private type "(< next : int * 'b > as 'b) t"
+Error: Cannot create values of the private type "(< next : int * 'a > as 'a) t"
 |}]
 
 
