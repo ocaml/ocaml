@@ -981,7 +981,7 @@ module Map : sig
           @since 5.5 *)
 
       val singleton_to_binding: 'a t -> (key * 'a) option
-      (** [singleton_binding m] is [Some (k, v)] if [m] only binds [k] to [v]
+      (** [singleton_to_binding m] is [Some (k, v)] if [m] only binds [k] to [v]
           and [None] otherwise.
 
           @since 5.6 *)
@@ -1304,7 +1304,7 @@ module Set : sig
           @since 5.5 *)
 
       val singleton_to_elt: t -> elt option
-      (** [singleton_elt s] is [Some x] if [s] has only the element [x]
+      (** [singleton_to_elt s] is [Some x] if [s] has only the element [x]
           and [None] otherwise.
 
           @since 5.6 *)
