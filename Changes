@@ -21,6 +21,11 @@ Working version
 - #13629: Major GC ephemeron cleanup.
   (Nick Barnes, review by Stephen Dolan and Tim McGilchrist).
 
+- #14292: The value returned by `Hashtbl.is_randomized` is now reflected in the
+  `R` parameter of `Sys.runtime_parameters`.
+  (Antonin Décimo, David Allsopp, Hannes Mehnert, review by
+   Nicolás Ojeda Bär)
+
 - #14384: use the statmemprof status word, rather than a distinguished
    value of a boxed float, to identify a "not really sampling"
    profile.
@@ -63,10 +68,12 @@ Working version
 - #14651: Remove S390x TSan (Thread Sanitizer) support.
   (Tim McGilchrist, review by Olivier Nicole)
 
-- #14292: The value returned by `Hashtbl.is_randomized` is now reflected in the
-  `R` parameter of `Sys.runtime_parameters`.
-  (Antonin Décimo, David Allsopp, Hannes Mehnert, review by
-   Nicolás Ojeda Bär)
+- #14657, #14679: optimize garbage-collection of ephemerons that
+  contain long dependency chains: we may still observe quadratic
+  marking behavior, but typically only for a single major GC cycle
+  after the dependency chain is introduced.
+  (Gabriel Scherer, review by Olivier Nicole, Damien Doligez,
+   Stephen Dolan)
 
 - #14482: Add DWARF CFI support to POWER backend.
   (Tim McGilchrist, review by Xavier Leroy)
