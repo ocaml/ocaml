@@ -111,10 +111,15 @@ let rev_map f l =
 let[@tail_mod_cons] rec append_map f l1 l2 = match l1 with
   | [] -> l2
   | [ hd ] -> f hd :: l2
-  | [ hd1 ; hd2 ] -> f hd1 :: f hd2 :: l2
-  | [ hd1 ; hd2 ; hd3 ] -> f hd1 :: f hd2 :: f hd3 :: l2
+  | [ hd1 ; hd2 ] ->
+     let x1 = f hd1 in let x2 = f hd2 in
+     x1 :: x2 :: l2
+  | [ hd1 ; hd2 ; hd3 ] ->
+     let x1 = f hd1 in let x2 = f hd2 in let x3 = f hd3 in
+     x1 :: x2 :: x3 :: l2
   | hd1 :: hd2 :: hd3 :: hd4 :: tl ->
-     f hd1 :: f hd2 :: f hd3 :: f hd4 :: append_map f tl l2
+     let x1 = f hd1 in let x2 = f hd2 in let x3 = f hd3 in let x4 = f hd4 in
+     x1 :: x2 :: x3 :: x4 :: append_map f tl l2
 
 let rec rev_append_map f l1 l2 = match l1 with
   | [] -> l2
