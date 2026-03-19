@@ -293,6 +293,7 @@ caml_hot.code_end:
 
 .macro TSAN_CLEANUP_AFTER_C_CALL size
    /* Undo call frame. */
+        ld      2, TOC_SAVE(SP)
         addi    SP, SP, (RESERVED_STACK + \size)
         LEAVE_FUNCTION
 .endm
@@ -381,6 +382,18 @@ caml_hot.code_end:
        ld       TRAP_PTR, Caml_state(exn_handler)
 .endm
 
+/* Save return value registers. Covers all possible return registers: r3 or f1.
+ */
+.macro TSAN_PUSH_RETURN_REGS
+       std      3, (RESERVED_STACK + 0)(SP)
+       stfd     1, (RESERVED_STACK + 8)(SP)
+.endm
+
+.macro TSAN_POP_RETURN_REGS
+       lfd      1, (RESERVED_STACK + 8)(SP)
+       ld       3, (RESERVED_STACK + 0)(SP)
+.endm
+
 #else /* } { */
 
 .macro TSAN_ENTER_FUNCTION
@@ -390,6 +403,12 @@ caml_hot.code_end:
 .endm
 
 .macro TSAN_RESTORE_CALLER_REGS
+.endm
+
+.macro TSAN_PUSH_RETURN_REGS
+.endm
+
+.macro TSAN_POP_RETURN_REGS
 .endm
 
 #endif /* } WITH_THREAD_SANITIZER */
@@ -487,13 +506,9 @@ FUNCTION caml_c_call
         ld      TRAP_PTR, Caml_state(exn_handler)
 #if defined(WITH_THREAD_SANITIZER)
         TSAN_SETUP_C_CALL 16
-    /* Save return value registers. Since the called function could be anything,
-       it may have returned its result (if any) either in r3 or f1. */
-        std     3,  (RESERVED_STACK + 0)(SP)
-        stfd    1,  (RESERVED_STACK + 8)(SP)
+        TSAN_PUSH_RETURN_REGS /* Save return value. */
         Far_call(caml_tsan_func_exit_asm)
-        lfd     1,  (RESERVED_STACK + 8)(SP)
-        ld      3,  (RESERVED_STACK + 0)(SP)
+        TSAN_POP_RETURN_REGS
         TSAN_CLEANUP_AFTER_C_CALL 16
 #endif
     /* Switch from C to OCaml */
@@ -503,6 +518,13 @@ FUNCTION caml_c_call
 ENDFUNCTION caml_c_call
 
 FUNCTION caml_c_call_stack_args
+#if defined(WITH_THREAD_SANITIZER)
+    /* The amount of stack arguments is passed in STACK_ARG_BYTES, which is
+       callee-saved, thus doesn't need to be saved. */
+        TSAN_SAVE_CALLER_REGS
+        TSAN_ENTER_FUNCTION
+        TSAN_RESTORE_CALLER_REGS
+#endif
    /* Extra arguments to be passed on stack:
       STACK_ARG_BYTES at offsets 32 to 32 + STACK_ARG_BYTES from SP */
         mr      C_CALL_TMP, SP
@@ -515,7 +537,15 @@ FUNCTION caml_c_call_stack_args
         std     ALLOC_PTR, Caml_state(young_ptr)
         std     TRAP_PTR, Caml_state(exn_handler)
    /* Reserve STACK_ARG_BYTES bytes on the C stack */
+#if defined(WITH_THREAD_SANITIZER)
+        mr      TMP, SP
+#endif
         subfc   SP, STACK_ARG_BYTES, SP
+#if defined(WITH_THREAD_SANITIZER)
+   /* Create a proper stack frame for unwinding */
+        addi    SP, SP, -RESERVED_STACK
+        std     TMP, 0(SP)
+#endif
    /* Copy from OCaml SP + [32...32+STACK_ARG_BYTES)
            to C SP + [32...32+STACK_ARG_BYTES) */
         addi    TMP, STACK_ARG_BYTES, 32 - 8
@@ -532,11 +562,21 @@ FUNCTION caml_c_call_stack_args
         mr      2, C_CALL_TOC   /* restore current TOC */
     /* Pop the extra stack space used */
         add     SP, SP, STACK_ARG_BYTES
+#if defined(WITH_THREAD_SANITIZER)
+        addi    SP, SP, RESERVED_STACK
+#endif
     /* Restore return address (in register C_CALL_RET_ADDR, preserved by C) */
         mtlr    C_CALL_RET_ADDR
     /* Reload new allocation pointer and exception pointer */
         ld      ALLOC_PTR, Caml_state(young_ptr)
         ld      TRAP_PTR, Caml_state(exn_handler)
+#if defined(WITH_THREAD_SANITIZER)
+        TSAN_SETUP_C_CALL 16
+        TSAN_PUSH_RETURN_REGS
+        Far_call(caml_tsan_func_exit_asm)
+        TSAN_POP_RETURN_REGS
+        TSAN_CLEANUP_AFTER_C_CALL 16
+#endif
     /* Switch from C to OCaml */
         SWITCH_C_TO_OCAML
     /* Return to caller */
