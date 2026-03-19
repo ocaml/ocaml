@@ -77,7 +77,7 @@ val baz : unit -> ?x:'a -> unit = <fun>
 #rectypes
 
 let rec baz ?x = baz
-[%%expect{||}, Principal_Rectypes{|
+[%%expect{||}, Principal.Rectypes{|
 Line 1, characters 13-14:
 1 | let rec baz ?x = baz
                  ^
@@ -94,14 +94,7 @@ val baz : ?x:'b -> 'a as 'a = <fun>
 |}]
 
 let rec baz (type a) ?x = baz
-[%%expect{||}, Principal_Rectypes{|
-Line 1, characters 22-23:
-1 | let rec baz (type a) ?x = baz
-                          ^
-Warning 16 [unerasable-optional-argument]: this optional argument cannot be erased.
-
-val baz : ?x:'b -> 'a as 'a = <fun>
-|}, Rectypes{|
+[%%expect{||}, (Rectypes, Principal.Rectypes){|
 Line 1, characters 22-23:
 1 | let rec baz (type a) ?x = baz
                           ^
@@ -115,18 +108,7 @@ val baz : ?x:'b -> 'a as 'a = <fun>
 let _ =
   let warn_me ?arg = () in
   warn_me + 0
-[%%expect{||}, Principal_Rectypes{|
-Line 2, characters 15-18:
-2 |   let warn_me ?arg = () in
-                   ^^^
-Warning 16 [unerasable-optional-argument]: this optional argument cannot be erased.
-
-Line 3, characters 2-9:
-3 |   warn_me + 0
-      ^^^^^^^
-Error: The value "warn_me" has type "?arg:'a -> unit"
-       but an expression was expected of type "int"
-|}, Rectypes{|
+[%%expect{||}, (Rectypes, Principal.Rectypes){|
 Line 2, characters 15-18:
 2 |   let warn_me ?arg = () in
                    ^^^
@@ -155,11 +137,7 @@ type 'a t =
 
 let test (type a) ?x (module M : Show with type t = a) =
   A { x; show = M.show }
-[%%expect{||}, Principal_Rectypes{|
-module type Show = sig type t val show : t -> string end
-type 'a t = A : { x : string option; show : 'a -> string; } -> 'a t
-val test : ?x:string -> (module M : Show with type t = 'a) -> M.t t = <fun>
-|}, Rectypes{|
+[%%expect{||}, (Rectypes, Principal.Rectypes){|
 module type Show = sig type t val show : t -> string end
 type 'a t = A : { x : string option; show : 'a -> string; } -> 'a t
 val test : ?x:string -> (module M : Show with type t = 'a) -> M.t t = <fun>

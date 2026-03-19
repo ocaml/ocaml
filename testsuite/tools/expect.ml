@@ -71,10 +71,10 @@ let get_clflags () =
 
 let string_of_clflags c =
   Clflags_set.fold (fun cl acc ->
-      (if acc = "" then "" else acc ^ "_") ^ string_of_clflag cl
+      (if acc = "" then "" else acc ^ ".") ^ string_of_clflag cl
     ) c ""
 
-let clflags_of_string ~loc str =
+let clflags_of_longident ~loc lid =
   let open Clflags_set in
   List.fold_left
     ~f:(fun acc s ->
@@ -82,7 +82,7 @@ let clflags_of_string ~loc str =
         | "Principal" -> add Principal acc
         | "Rectypes" -> add Rectypes acc
         | other -> Location.raise_errorf ~loc "unknown flag: %s" other)
-    ~init:empty (String.split_on_char ~sep:'_' str)
+    ~init:empty (Longident.flatten lid)
 
 module Clmap = Map.Make(Clflags_set)
 
@@ -106,8 +106,8 @@ type correction =
 let match_expect_extension (ext : Parsetree.extension) =
   match ext with
   | ({Asttypes.txt="expect"|"ocaml.expect"; loc = extid_loc}, payload) ->
-    let invalid_payload msg =
-      Location.raise_errorf ~loc:extid_loc
+    let invalid_payload ?(loc = extid_loc) msg =
+      Location.raise_errorf ~loc
         "invalid [%%%%expect payload] (%s)" msg
     in
     let string_constant (e : Parsetree.expression) =
@@ -124,19 +124,49 @@ let match_expect_extension (ext : Parsetree.extension) =
           | Pexp_tuple
               ((None, normal)
                :: rest) ->
-              let rest =
-                List.map
-                  ~f:(function
-                        None
-                      , { Parsetree.
-                          pexp_desc = Pexp_construct
-                              ({ txt = Lident clflags_s; _}, Some b) }
-                        -> clflags_of_string ~loc:b.pexp_loc clflags_s
-                         , string_constant b
-                      | _ -> invalid_payload "expected Constructor{|string|}")
-                  rest
-              in
-              Clmap.of_list ((Clflags_set.empty, string_constant normal)::rest)
+              List.fold_left
+                ~f:(fun acc -> function
+                      None
+                    , { Parsetree.
+                        pexp_desc = Pexp_construct
+                            ({ txt = clflags_s; _}, Some b) }
+                    | None,
+                      { Parsetree.
+                        pexp_desc = Pexp_apply
+                            ({ pexp_desc = Pexp_construct
+                                ({ txt = clflags_s; _}, None) }
+                            , [ Nolabel, b ]) }
+                      ->
+                        Clmap.add
+                          (clflags_of_longident ~loc:b.pexp_loc clflags_s)
+                          (string_constant b)
+                          acc
+                    | None,
+                      { Parsetree.
+                        pexp_desc = Pexp_apply
+                            ({ pexp_desc = Pexp_tuple clflags_tuple; _ }
+                            , [ Nolabel, b ]) }
+                      ->
+                        let str = string_constant b in
+                        List.fold_left
+                          ~f:(fun acc ->
+                              function
+                              | None,
+                                { Parsetree.
+                                  pexp_desc = Pexp_construct
+                                      ({ txt = cl; _}, None) } ->
+                                  Clmap.add
+                                    (clflags_of_longident ~loc:b.pexp_loc cl)
+                                    str
+                                    acc
+                              | _ ->
+                                  invalid_payload
+                                    "expected Constructor"
+                            )
+                          ~init:acc clflags_tuple
+                    | _, pe -> invalid_payload ~loc:pe.Parsetree.pexp_loc "expected Constructor{|string|}")
+                ~init:(Clmap.singleton Clflags_set.empty (string_constant normal))
+                rest
           | _ ->
               let s = string_constant e in Clmap.singleton Clflags_set.empty s
         in
@@ -386,23 +416,32 @@ let output_corrected oc ~file_contents correction =
           Clmap.find_opt Clflags_set.empty c.text
           |> Option.value ~default:{ str = ""; tag = "" }
         in
+        let module Smap = Map.Make(String) in
+        let smap =
+          Clmap.fold
+            (fun key body acc ->
+               if body.str = normal.str then acc
+               else Smap.add_to_list body.str key acc
+            )
+            c.text
+            Smap.empty
+        in
         output_body oc normal;
-        Clmap.iter
-          (fun key body ->
-             if Clflags_set.is_empty key then ()
-             else if normal.str = body.str then ()
-             else if Clflags_set.cardinal key > 1
-                  && Clflags_set.mem Principal key
-                  && Clmap.find_opt (Clflags_set.singleton Principal) c.text
-                     |> Option.exists (fun { str; _ } -> str = body.str)
-             then ()
-             else begin
-               output_string oc ", ";
-               output_string oc (string_of_clflags key);
-               output_body oc body
-             end
+        Smap.iter
+          (fun str clflagss ->
+             output_string oc ", ";
+             let paren = List.length clflagss > 1 in
+             if paren then output_string oc "(";
+             List.iteri
+               ~f:(fun i clflags ->
+                   if i > 0 then
+                     output_string oc ", ";
+                   output_string oc (string_of_clflags clflags))
+               clflagss;
+             if paren then output_string oc ")";
+             output_body oc { str; tag = "" }
           )
-          c.text;
+          smap;
         c.payload_loc.loc_end.pos_cnum)
   in
   output_slice oc file_contents ofs (String.length file_contents);
