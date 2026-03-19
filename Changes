@@ -31,6 +31,11 @@ Working version
 - #14651: Remove S390x TSan (Thread Sanitizer) support.
   (Tim McGilchrist, review by Olivier Nicole)
 
+- #14292: The value returned by `Hashtbl.is_randomized` is now reflected in the
+  `R` parameter of `Sys.runtime_parameters`.
+  (Antonin Décimo, David Allsopp, Hannes Mehnert, review by
+   Nicolás Ojeda Bär)
+
 ### Type system:
 
 - #14512: Improve check for warning 16 (unerasable-optional-argument)
