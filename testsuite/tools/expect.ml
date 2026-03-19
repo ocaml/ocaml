@@ -164,8 +164,13 @@ let match_expect_extension (ext : Parsetree.extension) =
                                     "expected Constructor"
                             )
                           ~init:acc clflags_tuple
-                    | _, pe -> invalid_payload ~loc:pe.Parsetree.pexp_loc "expected Constructor{|string|}")
-                ~init:(Clmap.singleton Clflags_set.empty (string_constant normal))
+                    | _, pe ->
+                        invalid_payload
+                          ~loc:pe.Parsetree.pexp_loc
+                          "expected Constructor{|string|}"
+                  )
+                ~init:(Clmap.singleton
+                         Clflags_set.empty (string_constant normal))
                 rest
           | _ ->
               let s = string_constant e in Clmap.singleton Clflags_set.empty s
@@ -404,6 +409,8 @@ let eval_expect_file _fname ~file_contents =
 let output_slice oc s a b =
   output_string oc (String.sub s ~pos:a ~len:(b - a))
 
+module String_map = Map.Make(String)
+
 let output_corrected oc ~file_contents correction =
   let output_body oc { str; tag } =
     Printf.fprintf oc "{%s|%s|%s}" tag str tag
@@ -416,32 +423,42 @@ let output_corrected oc ~file_contents correction =
           Clmap.find_opt Clflags_set.empty c.text
           |> Option.value ~default:{ str = ""; tag = "" }
         in
-        let module Smap = Map.Make(String) in
         let smap =
           Clmap.fold
             (fun key body acc ->
                if body.str = normal.str then acc
-               else Smap.add_to_list body.str key acc
+               else String_map.add_to_list body.str key acc
             )
             c.text
-            Smap.empty
+            String_map.empty
+        in
+        let ordered_by_lowest_flag =
+          String_map.fold
+            (fun str clflagss acc ->
+               let clflagss =
+                 List.sort_uniq ~cmp:Clflags_set.compare clflagss
+               in
+               let low_flag = List.hd clflagss in
+               Clmap.add low_flag (clflagss, str) acc
+            )
+            smap
+            Clmap.empty
         in
         output_body oc normal;
-        Smap.iter
-          (fun str clflagss ->
+        Clmap.iter
+          (fun _ (clflagss, str) ->
              output_string oc ", ";
              let paren = List.length clflagss > 1 in
              if paren then output_string oc "(";
              List.iteri
                ~f:(fun i clflags ->
-                   if i > 0 then
-                     output_string oc ", ";
+                   if i > 0 then output_string oc ", ";
                    output_string oc (string_of_clflags clflags))
                clflagss;
              if paren then output_string oc ")";
              output_body oc { str; tag = "" }
           )
-          smap;
+          ordered_by_lowest_flag;
         c.payload_loc.loc_end.pos_cnum)
   in
   output_slice oc file_contents ofs (String.length file_contents);

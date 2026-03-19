@@ -94,7 +94,7 @@ val baz : ?x:'b -> 'a as 'a = <fun>
 |}]
 
 let rec baz (type a) ?x = baz
-[%%expect{||}, (Rectypes, Principal.Rectypes){|
+[%%expect{||}, (Principal.Rectypes, Rectypes){|
 Line 1, characters 22-23:
 1 | let rec baz (type a) ?x = baz
                           ^
@@ -108,7 +108,7 @@ val baz : ?x:'b -> 'a as 'a = <fun>
 let _ =
   let warn_me ?arg = () in
   warn_me + 0
-[%%expect{||}, (Rectypes, Principal.Rectypes){|
+[%%expect{||}, (Principal.Rectypes, Rectypes){|
 Line 2, characters 15-18:
 2 |   let warn_me ?arg = () in
                    ^^^
@@ -137,7 +137,7 @@ type 'a t =
 
 let test (type a) ?x (module M : Show with type t = a) =
   A { x; show = M.show }
-[%%expect{||}, (Rectypes, Principal.Rectypes){|
+[%%expect{||}, (Principal.Rectypes, Rectypes){|
 module type Show = sig type t val show : t -> string end
 type 'a t = A : { x : string option; show : 'a -> string; } -> 'a t
 val test : ?x:string -> (module M : Show with type t = 'a) -> M.t t = <fun>
