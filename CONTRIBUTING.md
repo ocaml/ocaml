@@ -1,6 +1,6 @@
 # How to contribute changes
 
-:+1::tada: First off, thank you for taking time to contribute! :tada::+1:
+👍🎉 First off, thank you for taking time to contribute! 👍🎉
 
 The following is a set of guidelines for proposing changes to the
 OCaml distribution. These are just guidelines, not rules, use your
@@ -77,6 +77,7 @@ The current list of maintainers is as follows:
 - @lthls Vincent Laviron
 - @maranget Luc Maranget
 - @mshinwell Mark Shinwell
+- @NickBarnes Nick Barnes
 - @nojb Nicolás Ojeda Bär
 - @Octachron Florian Angeletti
 - @OlivierNicole Olivier Nicole
@@ -308,6 +309,10 @@ log -u` to make sure the rebase patches make sense), but:
   changes, or an un-testable intermediary state) is a sure way to
   generate ill will.
 
+## Guidelines relevant to AI-assisted contributions
+
+See the dedicated [AI.md](AI.md).
+
 ## Contributing to the standard library
 
 Contributions to the standard library are very welcome.
@@ -372,7 +377,7 @@ example:
   our ability to change it in the future.
 
 Doing this collective maintenance work is a selfless task, and we
-typically have much fewer people willing to to do it than people
+typically have much fewer people willing to do it than people
 willing to submit new language features or generally evolve the
 codebase for their own specific needs. Without a collective effort to
 participate, we end up with a handful of people doing the vast

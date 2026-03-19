@@ -244,6 +244,7 @@ let compute_static_size lam =
     | Pbytessets
     | Parraysetu _
     | Parraysets _
+    | Pcheckbound
     | Pbigarrayset _
     | Pbytes_set_16 _
     | Pbytes_set_32 _

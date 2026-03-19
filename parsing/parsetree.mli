@@ -178,6 +178,9 @@ and core_type_desc =
   | Ptyp_package of package_type  (** [(module S)]. *)
   | Ptyp_open of Longident.t loc * core_type (** [M.(T)] *)
   | Ptyp_extension of extension  (** [[%id]]. *)
+  | Ptyp_functor of arg_label * string loc * package_type * core_type
+        (** [(module M : S) -> ...] : module-dependent arrow *)
+
 
 and package_type =
     {
@@ -572,6 +575,10 @@ and type_declaration =
                and [manifest]  is [Some T0],
  - [type t = ..]
               when [type_kind] is {{!type_kind.Ptype_open}[Ptype_open]},
+               and [manifest]  is [None].
+ - [type t = external "gmp"]
+              when [type_kind] is
+                 {{!type_kind.Ptype_external}[Ptype_external("gmp")]}
                and [manifest]  is [None].
 *)
 

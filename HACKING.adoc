@@ -1,4 +1,4 @@
-= Hacking the compiler :camel:
+= Hacking the compiler 🐫
 
 This document is a work-in-progress attempt to provide useful
 information for people willing to inspect or modify the compiler
@@ -8,10 +8,11 @@ proposals for it.
 If you already have a patch that you would like to contribute to the
 official distribution, please see link:CONTRIBUTING.md[].
 
-=== Your first compiler modification
+== Your first compiler modification
 
 1. Create a new git branch to store your changes.
 +
+[source,sh]
 ----
 git checkout -b my-modification
 ----
@@ -23,8 +24,9 @@ The `configure` step for the compiler recognises a development build from the
 not have this which causes some important development things to be disabled
 (ocamltest and converting C compiler warnings to errors).
 
-2. Consult link:INSTALL.adoc[] for build instructions. Here is the gist of it:
+2. Consult xref:INSTALL.adoc[] for build instructions. Here is the gist of it:
 +
+[source,sh]
 ----
 ./configure
 make -j 4
@@ -36,6 +38,7 @@ If you are on a release build and need development options, you can add
 3. Try the newly built compiler binaries `ocamlc`, `ocamlopt` or their
 `.opt` version. To try the toplevel, use:
 +
+[source,sh]
 ----
 make runtop
 ----
@@ -44,6 +47,7 @@ make runtop
 
 5. Run the testsuite from time to time.
 +
+[source,sh]
 ----
 make tests
 ----
@@ -53,7 +57,7 @@ make tests
 See also our <<tips,development tips and tricks>>, for example on how to
 <<opam-switch,create an opam switch>> to test your modified compiler.
 
-=== What to do
+== What to do
 
 There is always a lot of potential tasks, both for old and
 newcomers. Here are various potential projects:
@@ -76,7 +80,7 @@ newcomers. Here are various potential projects:
   clarifying comments can be an excellent contribution to help you,
   next time, and other code readers.
 
-* The https://github.com/ocaml/ocaml[github project] contains a lot of
+* The https://github.com/ocaml/ocaml[GitHub project] contains a lot of
   pull requests, many of them being in dire need of a review -- we
   have more people willing to contribute changes than to review
   someone else's change. Picking one of them, trying to understand the
@@ -109,7 +113,7 @@ of the compiler described below.
 
 Parses source files and produces an Abstract Syntax Tree (AST)
 (link:parsing/parsetree.mli[] has lot of helpful comments). See
-link:parsing/HACKING.adoc[].
+xref:parsing/HACKING.adoc[].
 
 The logic for Camlp4 and Ppx preprocessing is not in link:parsing/[],
 but in link:driver/[], see link:driver/pparse.mli[] and
@@ -119,7 +123,7 @@ link:driver/pparse.ml[].
 
 Type-checks the AST and produces a typed representation of the program
 (link:typing/typedtree.mli[] has some helpful comments). See
-link:typing/HACKING.adoc[].
+xref:typing/HACKING.adoc[].
 
 ==== The bytecode compiler -- link:bytecomp/[]
 
@@ -141,7 +145,7 @@ common. (See `runtime_COMMON_C_SOURCES`, `runtime_BYTECODE_ONLY_C_SOURCES`,
 and `runtime_NATIVE_ONLY_C_SOURCES` in link:Makefile[] for the list of common,
 bytecode-only, and native-only source files.)
 
-See link:runtime/HACKING.adoc[].
+See xref:runtime/HACKING.adoc[].
 
 === Libraries
 
@@ -156,6 +160,7 @@ link:manual/README.md[]. However, if you only modify the documentation
 comments in `.mli` files in the compiler codebase, you can observe the
 result by running
 
+[source,sh]
 ----
 make html_doc
 ----
@@ -172,58 +177,57 @@ link:lex/[]:: The `ocamllex` lexer generator.
 link:yacc/[]:: The `ocamlyacc` parser generator. We do not recommend
 using it for user projects in need of a parser generator. Please
 consider using and contributing to
-link:http://gallium.inria.fr/~fpottier/menhir/[menhir] instead, which
+link:https://gallium.inria.fr/~fpottier/menhir/[menhir] instead, which
 has tons of extra features, lets you write more readable grammars, and
 has excellent documentation.
 
 === Complete file listing
 
-  BOOTSTRAP.adoc::        instructions for bootstrapping
-  Changes::               what's new with each release
-  CONTRIBUTING.md::       how to contribute to OCaml
-  HACKING.adoc::          this file
-  INSTALL.adoc::          instructions for installation
-  LICENSE::               license and copyright notice
-  Makefile::              main Makefile
-  Makefile.common::       common Makefile definitions
-  README.adoc::           general information on the compiler distribution
-  README.win32.adoc::     general information on the Windows ports of OCaml
-  VERSION::               version string. Run `tools/autogen` after changing.
-  asmcomp/::              native-code compiler and linker
-  boot/::                 bootstrap compiler
-  build-aux/::            autotools support scripts
-  bytecomp/::             bytecode compiler and linker
-  compilerlibs/::         the OCaml compiler as a library
-  configure::             configure script
-  configure.ac::          autoconf input file
-  debugger/::             source-level replay debugger
-  driver/::               driver code for the compilers
-  flexdll/::              git submodule -- see link:README.win32.adoc[]
-  lex/::                  lexer generator
-  man/::                  man pages
-  manual/::               system to generate the manual
-  middle_end/::           the flambda optimisation phase
-  ocamldoc/::             documentation generator
-  ocamltest/::            test driver
-  otherlibs/::            several additional libraries
-  parsing/::              syntax analysis -- see link:parsing/HACKING.adoc[]
-  release-info/::         documentation and tools to prepare releases
-  runtime/::              bytecode interpreter and runtime systems
-  stdlib/::               standard library
-  testsuite/::            tests -- see link:testsuite/HACKING.adoc[]
-  tools/::                various utilities
-  toplevel/::             interactive system
-  typing/::               typechecking -- see link:typing/HACKING.adoc[]
-  utils/::                utility libraries
-  winpthreads/::          winpthreads submodule -- see <<winpthreads,further>>
-  yacc/::                 parser generator
+  xref:BOOTSTRAP.adoc[]::        instructions for bootstrapping
+  link:Changes[]::               what’s new with each release
+  link:CONTRIBUTING.md[]::       how to contribute to OCaml
+  xref:HACKING.adoc[]::          this file
+  xref:INSTALL.adoc[]::          instructions for installation
+  link:LICENSE[]::               license and copyright notice
+  link:Makefile[]::              main Makefile
+  link:Makefile.common[]::       common Makefile definitions
+  xref:README.adoc[]::           general information on the compiler distribution
+  xref:README.win32.adoc[]::     general information on the Windows ports of OCaml
+  link:VERSION[]::               version string. Run `make configure` after changing.
+  link:asmcomp/[]::              native-code compiler and linker
+  link:boot/[]::                 bootstrap compiler
+  link:build-aux/[]::            autotools support scripts
+  link:bytecomp/[]::             bytecode compiler and linker
+  link:compilerlibs/[]::         the OCaml compiler as a library
+  link:configure[]::             configure script
+  link:configure.ac[]::          autoconf input file
+  link:debugger/[]::             source-level replay debugger
+  link:driver/[]::               driver code for the compilers
+  link:flexdll/[]::              git submodule -- see xref:README.win32.adoc[]
+  link:lex/[]::                  lexer generator
+  link:man/[]::                  man pages
+  link:manual/[]::               system to generate the manual
+  link:middle_end/[]::           the flambda optimisation phase
+  link:ocamldoc/[]::             documentation generator
+  link:ocamltest/[]::            test driver
+  link:otherlibs/[]::            several additional libraries
+  link:parsing/[]::              syntax analysis -- see xref:parsing/HACKING.adoc[]
+  link:release-info/[]::         documentation and tools to prepare releases
+  link:runtime/[]::              bytecode interpreter and runtime systems
+  link:stdlib/[]::               standard library
+  link:testsuite/[]::            tests -- see xref:testsuite/HACKING.adoc[]
+  link:tools/[]::                various utilities
+  link:toplevel/[]::             interactive system
+  link:typing/[]::               typechecking -- see xref:typing/HACKING.adoc[]
+  link:utils/[]::                utility libraries
+  link:yacc/[]::                 parser generator
 
 [#tips]
 == Development tips and tricks
 
-=== Keep merge commits when merging and cherry-picking Github PRs
+=== Keep merge commits when merging and cherry-picking GitHub PRs
 
-Having the Github PR number show up in the git log is very useful for
+Having the GitHub PR number show up in the git log is very useful for
 later triaging. We recently disabled the "Rebase and merge" button,
 precisely because it does not produce a merge commit.
 
@@ -233,6 +237,7 @@ possible. (Picking a merge commit typically requires the `-m 1`
 option.) You should also use the `-x` option to include the hash of
 the original commit in the commit message.
 
+[source,sh]
 ----
 git cherry-pick -x -m 1 <merge-commit-hash>
 ----
@@ -248,11 +253,12 @@ https://editorconfig.org/#pre-installed[out-of-the-box], or with
 https://editorconfig.org/#download[plugins].
 
 [#opam-switch]
-=== Testing with `opam`
+=== Testing with opam
 
 If you are working on a development version of the compiler, you can create an
 opam switch from it by running the following from the development repository:
 
+[source,sh]
 -----
 opam switch create . --empty
 opam install .
@@ -262,12 +268,13 @@ If you want to test someone else's development version from a public
 git repository, you can build a switch directly (without cloning their
 work locally) by pinning:
 
+[source,sh]
 ----
 opam switch create my-switch-name --empty
-opam pin add ocaml-variants git+https://$REPO#branch
+opam pin add ocaml-variants "git+https://$REPO#branch"
 ----
 
-==== Incremental builds with `opam`
+==== Incremental builds with opam
 
 This section documents some tips to speed up your workflow when you need to
 alternate between testing your branch and patching the compiler.
@@ -276,10 +283,11 @@ We'll assume that you're currently in a clone of the compiler's source code.
 ===== Initial setup
 
 For the rest of the section to work, you'll need your compiler to be
-configured in the same way as `opam` would have configured it. The simplest
+configured in the same way as opam would have configured it. The simplest
 way is to run the normal commands for the switch initialization, with the extra
 `--inplace-build` flag:
 
+[source,sh]
 -----
 opam switch create . --empty
 opam install . --inplace-build
@@ -287,10 +295,11 @@ opam install . --inplace-build
 
 However, if you need specific configuration options, you can also configure it
 manually, as long as you make sure that the configuration prefix is the one
-where `opam` would install the compiler.
+where opam would install the compiler.
 You will then need to install the compiler, either from the working directory
 (that you must build yourself) or using the regular sandboxed builds.
 
+[source,sh]
 -----
 # Example with regular opam build
 opam switch create . --empty
@@ -298,6 +307,7 @@ opam install .
 ./configure --prefix=$(opam var prefix) # put extra configuration args here
 -----
 
+[source,sh]
 -----
 # Example with installation from the current directory
 opam switch create . --empty
@@ -309,9 +319,9 @@ opam install . --assume-built
 ===== Basic workflow
 
 We will assume that the workflow alternates between work on the compiler and
-external (`opam`-related) commands.
+external (opam-related) commands.
 As an example, debugging an issue in the compiler can be done by a first step
-that triggers the issue (by installing a given `opam` package), then adding
+that triggers the issue (by installing a given opam package), then adding
 some logging to the compiler, re-trigger the issue, and based on the logs either
 add more logging, or try a patch, and so on.
 
@@ -328,15 +338,16 @@ instructions https://gitlab.ocamlpro.com/louis/opam-custom-install[here].
 
 In our case, we need to build the compiler, and when we've built everything
 that we need then we run `opam custom-install ocaml-variants -- make install`.
-This will make `opam` remove the previously installed version of the compiler
+This will make opam remove the previously installed version of the compiler
 (if any), then install the new one in its stead.
 
+[source,sh]
 -----
 # reinstall the compiler, and rebuild all opam packages
 opam custom-install ocaml-variants -- make install
 -----
 
-Since most `opam` packages depend on the compiler, this will trigger a
+Since most opam packages depend on the compiler, this will trigger a
 reinstallation of all the packages in the switch.
 If you want to avoid that (for instance, your patch only adds some logging
 so you expect the core libraries and all the already compiled packages to be
@@ -345,6 +356,7 @@ There are no checks that it's safe to do so, so if your patch ends up
 changing even slightly one of the core libraries' files, you will likely
 get inconsistent assumptions errors later.
 
+[source,sh]
 -----
 # reinstall the compiler, leaving the opam packages untouched -- unsafe!
 opam custom-install --no-recompilations ocaml-variants -- make install
@@ -352,18 +364,19 @@ opam custom-install --no-recompilations ocaml-variants -- make install
 
 Note about the first installation:
 When you start from an empty switch, and install a compiler (in our case,
-the `ocaml-variants` package provided by the compiler's `opam` file), then
+the `ocaml-variants` package provided by the compiler's opam file), then
 a number of additional packages are installed to ensure that the switch
 will work correctly. Mainly, the `ocaml` package needs to be installed,
-and while it's done automatically when using regular `opam` commands, the
+and while it's done automatically when using regular opam commands, the
 `custom-install` plugin will not force installation of dependencies.
 Moreover, if you try to fix the problem by manually installing the `ocaml`
-package, `opam` will try to recompile `ocaml-variants`, using the default
+package, opam will try to recompile `ocaml-variants`, using the default
 instructions. You can get around this by running
 `opam reinstall --forget-pending` just after the `opam custom-install` command
 and just before the `opam install ocaml command`.
 Full example:
 
+[source,sh]
 -----
 opam switch create . --empty
 ./configure --prefix=$(opam var prefix) --disable-ocamldoc --disable-ocamltest
@@ -381,7 +394,7 @@ then with `opam-custom-install` you will end up in a state where only the
 bytecode tools are installed, whereas with a raw `make install` you will have
 stale native binaries remaining in your switch.
 Since it's significantly faster to build the bytecode version of the tools,
-and many `opam` packages will pick the native version of the compilers if
+and many opam packages will pick the native version of the compilers if
 present and the bytecode version otherwise, you can build your initial switch
 with the native versions (to get quickly to a state where a bug appears),
 then clean your working directory and start building bytecode tools only
@@ -389,7 +402,7 @@ for the actual debugging phase.
 
 ===== Without `opam-custom-install`
 
-You can achieve some improvements using built-in `opam` commands.
+You can achieve some improvements using built-in opam commands.
 
 Using `opam install . --assume-built` will simply remove the
 package for the compiler, then run the installation instructions
@@ -400,11 +413,11 @@ recompilation of your switch.
 
 You can also run `make install` manually, which will not trigger a
 recompilation, but will not remove the previous version either and can
-mess with `opam`'s tracking of installed files.
+mess with opam's tracking of installed files.
 
 === Useful Makefile targets and options
 
-Besides the targets listed in link:INSTALL.adoc[] for build and
+Besides the targets listed in xref:INSTALL.adoc[] for build and
 installation, the following targets may be of use:
 
 `make runtop` :: builds and runs the ocaml toplevel of the distribution
@@ -417,10 +430,10 @@ installation, the following targets may be of use:
 
 `make depend`:: Regenerate the `.depend` file. Should be used each time new dependencies are added between files.
 
-`make -C testsuite parallel`:: see link:testsuite/HACKING.adoc[]
+`make -C testsuite parallel`:: see xref:testsuite/HACKING.adoc[]
 
 You can use `make foo V=1` to build the target foo and show full
-commands instead of abbreviated names like OCAMLC, etc. This can be
+commands instead of abbreviated names like `OCAMLC`, etc. This can be
 useful to know the flags to use to manually rebuild a file.
 
 Additionally, there are some developer specific targets in link:Makefile.dev[].
@@ -468,13 +481,14 @@ included in the repository under the
 link:boot/[] directory. These bytecode images are used once the
 bytecode runtime (which is written in C) has been built to compile the
 standard library and then to build a fresh compiler. Details can be
-found in link:BOOTSTRAP.adoc[].
+found in xref:BOOTSTRAP.adoc[].
 
 === Speeding up builds
 
 Once you've built a natively-compiled `ocamlc.opt`, you can use it to
 speed up future builds by copying it to `boot`:
 
+[source,sh]
 ----
 cp ocamlc.opt boot/
 ----
@@ -498,9 +512,10 @@ the build will work all the time). Assuming you already have a recent OCaml
 version installed with merlin and dune, you can just run the following from the
 compiler sources:
 
+[source,sh]
 ----
 ./configure # if not already done
-make clean && dune build @libs
+make clean-for-dune && dune build @libs
 ----
 
 which will do a bytecode build of all the distribution (without linking
@@ -511,9 +526,12 @@ than trying to open the incompatible artefacts produced by a Makefile build. In
 particular, you need to repeat the dune build every time you change the interface
 of some compilation unit, so that merlin is aware of the new interface.
 
-You only need to run `configure` once, but you will need to run `make clean`
-every time you want to run `dune` after you built something with `make`;
-otherwise dune will complain that build artefacts are present among the sources.
+You only need to run `configure` once, but you will need to run
+`make clean-for-dune` every time you want to run `dune` after you built
+something with `make`; otherwise dune will complain that build
+artefacts are present among the sources. (Not all build artifacts need
+to be removed, `clean-for-dune` removes less than `clean` or
+`partialclean` and thus Make will rebuild faster.)
 
 Finally, there will be times where the compiler simply cannot be built with an
 older version of itself. One example of this is when a new primitive is added to
@@ -601,9 +619,9 @@ with GNU Autoconf installed.
 If you're using a version of GNU Autoconf that differs from our CI,
 then the generated `configure` script might differ too. The latest
 Ubuntu LTS packages may be used as a reasonable base to generate this
-file. Using a Docker image with GNU Autoconf installed, and `git
-rebase --exec`, one can properly regenerate the `configure` script for
-each commit in a branch.
+file. Using a Docker image with GNU Autoconf installed, and
+`git rebase --exec`, one can properly regenerate the `configure`
+script for each commit in a branch.
 
 [source,sh]
 ----
@@ -629,6 +647,7 @@ For example, if you want to reproduce the default build on your
 machine, you can use the configuration values and run command taken from
 link:tools/ci/actions/runner.sh[]:
 
+[source,sh]
 ----
 bash -ex tools/ci/actions/runner.sh configure
 ----
@@ -639,10 +658,8 @@ tests rely on ancillary data generated by GitHub Actions which you have to
 set explicitly to reproduce them locally.
 
 `Changes updated` checks that the link:Changes[] file has been modified
-(hopefully to add a new entry). It can be disabled by including "_(no change
-entry needed)_" in one of your commit messages -- but in general all patches
-submitted should come with a Changes entry; see the guidelines in
-link:CONTRIBUTING.md[].
+(hopefully to add a new entry). In general all patches submitted should come
+with a Changes entry; see the guidelines in link:CONTRIBUTING.md[].
 
 The Windows ports take a long time to test - INRIA's precheck service is the
 best to use when all 6 Windows ports need testing for a branch, but the
@@ -690,7 +707,7 @@ triggered by setting a label on the pull request. See below:
 INRIA provides a Jenkins continuous integration service that OCaml
 uses, see link:https://ci.inria.fr/ocaml/[]. It provides a wider
 architecture support (MSVC and MinGW, a zsystems s390x machine, and
-various MacOS versions) than the Travis/AppVeyor testing on github,
+various MacOS versions) than the Travis/AppVeyor testing on GitHub,
 but only runs on commits to the trunk or release branches, not on every
 PR.
 
@@ -708,7 +725,7 @@ https://sympa.inria.fr/sympa/info/ocaml-ci-notifications[its web page.]
 
 If you have suspicions that your changes may fail on exotic architectures
 (they touch the build system or the backend code generator,
-for example) and would like to get wider testing than github's CI
+for example) and would like to get wider testing than GitHub's CI
 provides, it is possible to manually start INRIA's CI on arbitrary git
 branches even before opening a pull request as follows:
 
@@ -726,7 +743,7 @@ OCaml's GitHub repository and then push "mybranch" to your fork.
 5. Visit https://ci.inria.fr/ocaml/job/precheck and log in. Click on
 "Build with parameters".
 
-6. Fill in the REPO_URL and BRANCH fields as appropriate and run the build.
+6. Fill in the `REPO_URL` and `BRANCH` fields as appropriate and run the build.
 
 7. You should receive a bunch of e-mails with the build logs for each
 slave and each tested configuration (with and without flambda) attached.
@@ -742,6 +759,7 @@ For instance, parallel builds are only tested for the "trunk"
 branch. In order to use "precheck" to test parallel build on a custom
 branch, add this at the beginning of tools/ci-build:
 
+[source,sh]
 ----
 OCAML_JOBS=10
 ----
@@ -751,37 +769,5 @@ OCAML_JOBS=10
 If you would like to receive email notifications of all commits made to the main
 git repository, you can subscribe to the caml-commits@inria.fr mailing list by
 visiting https://sympa.inria.fr/sympa/info/caml-commits[its web page.]
-
-[#winpthreads]
-=== The `winpthreads` library for the MSVC port
-
-The `winpthreads` library is used to emulate `pthread` for the MSVC
-port. Upstream bundles it along with all the MinGW libraries so our
-`winpthreads` submodule points to `git subtree` repository rather than
-upstream directly.
-
-To recreate the `winpthreads` repository from upstream, you can do:
-
-----
-git clone -o upstream https://git.code.sf.net/p/mingw-w64/mingw-w64 winpthreads
-cd winpthreads
-git checkout upstream/master
-git branch -D master
-git subtree -P mingw-w64-libraries/winpthreads split -b master
-----
-
-As subtree splitting is deterministic, repeating these operations later will
-allow to update `master`, for instance by:
-
-----
-git fetch upstream
-git checkout upstream/master
-git subtree -P mingw-w64-libraries/winpthreads split -b tmp
-git checkout master
-git merge --ff-only tmp
-git branch -d tmp
-----
-
-and then go on updating the `winpthreads` submodule in the `ocaml` repository.
 
 Happy Hacking!

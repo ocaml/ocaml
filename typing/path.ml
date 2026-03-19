@@ -22,21 +22,26 @@ and extra_ty =
   | Pcstr_ty of string
   | Pext_ty
 
-let rec same p1 p2 =
+let rec same_aux ident_cmp p1 p2 =
+  let same_aux p1 p2 = same_aux ident_cmp p1 p2 in
   p1 == p2
   || match (p1, p2) with
-    (Pident id1, Pident id2) -> Ident.same id1 id2
+    (Pident id1, Pident id2) -> ident_cmp id1 id2
   | (Pdot(p1, s1), Pdot(p2, s2)) ->
-      s1 = s2 && same p1 p2
+      s1 = s2 && same_aux p1 p2
   | (Papply(fun1, arg1), Papply(fun2, arg2)) ->
-      same fun1 fun2 && same arg1 arg2
+      same_aux fun1 fun2 && same_aux arg1 arg2
   | (Pextra_ty (p1, t1), Pextra_ty (p2, t2)) ->
       let same_extra = match t1, t2 with
         | (Pcstr_ty s1, Pcstr_ty s2) -> s1 = s2
         | (Pext_ty, Pext_ty) -> true
         | ((Pcstr_ty _ | Pext_ty), _) -> false
-      in same_extra && same p1 p2
+      in same_extra && same_aux p1 p2
   | (_, _) -> false
+
+let same p1 p2 = same_aux Ident.same p1 p2
+
+let equiv id_pairs p1 p2 = same_aux (Ident.equiv id_pairs) p1 p2
 
 let rec compare p1 p2 =
   if p1 == p2 then 0
@@ -87,6 +92,41 @@ let rec scope = function
     Pident id -> Ident.scope id
   | Pdot(p, _) | Pextra_ty (p, _) -> scope p
   | Papply(p1, p2) -> Int.max (scope p1) (scope p2)
+
+let subst id_map p =
+  if id_map = [] then
+    p
+  else
+    let changed = ref false in
+    let rec aux = function
+    | Pident id ->
+      begin match List.find (fun (i, _) -> Ident.same i id) id_map with
+        | (_, p) -> changed := true; p
+        | exception Not_found -> Pident id
+      end
+    | Pdot(p, s) -> Pdot(aux p, s)
+    | Pextra_ty(p, e) -> Pextra_ty(aux p, e)
+    | Papply(p1, p2) -> Papply(aux p1, aux p2)
+    in
+    let p' = aux p in
+    if !changed then p' else p
+
+let check_for_unbound_unscoped_idents idl p =
+  let exception Escape of Ident.Unscoped.t in
+  let rec aux = function
+      Pident id ->
+        begin match Ident.find_unscoped id with
+        | None -> ()
+        | Some us ->
+            if Ident.Unscoped.Set.exists (Ident.Unscoped.same us) idl
+            then ()
+            else raise (Escape us)
+        end
+    | Pdot (p, _) | Pextra_ty (p, _) -> aux p
+    | Papply (p1, p2) -> aux p1; aux p2
+  in match aux p with
+    | () -> None
+    | exception Escape id -> Some id
 
 let kfalse _ = false
 

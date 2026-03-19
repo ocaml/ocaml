@@ -46,7 +46,8 @@ fifth test are re-run and then the entire battery is executed a second time.
 During this second execution, the test harness does whatever is physically
 possible to allow these tests to proceed:
 - Environment variables `CAML_LD_LIBRARY_PATH` and `OCAMLLIB` are manipulated to
-  allow the compiler to operate
+  allow the compiler to operate (unless the compiler has been configured with
+  `--with-relative-libdir`)
 - Bytecode executables which will no longer be able to find `ocamlrun` are
   explicitly passed to `ocamlrun`. The harness always verifies that this step is
   required by first executing the binary and ensuring that it fails and then
@@ -70,11 +71,11 @@ Exercises:
 
 Shims:
 - On Unix, the bytecode toplevel contains the absolute location of `ocamlrun`,
-  so must be explicitly invoked via `ocamlrun`
+  so must be explicitly invoked via `ocamlrun`, unless the compiler is
+  configured with `--enable-runtime-search`
 - Both toplevels contain the absolute location of the Standard Library,
-  requiring `OCAMLLIB` to be set
-- `ld.conf` contains the absolute location of the `stublibs` directory,
-  requiring `CAML_LD_LIBRARY_PATH` to be adjusted
+  requiring `OCAMLLIB` to be set, unless the compiler was configured with
+  `--with-relative-libdir`
 
 ### Loading archives/plugins (.cma / .cmxs) with `Dynlink`
 
@@ -84,14 +85,13 @@ Shims:
 - For a bytecode-only build, `ocamlc` contains the absolute location of
   `ocamlrun`, so must be explicitly invoked via `ocamlrun` (if the native
   compiler is available, then both `ocamlc` and `ocamlopt` will be native
-  executables)
+  executables), unless the compiler is configured with `--enable-runtime-search`
 - Both compilers contain the absolute location of the Standard Library,
-  requiring `OCAMLLIB` to be set
+  requiring `OCAMLLIB` to be set, unless the comnpiler was configured with
+  `--with-relative-libdir`
 - The executable created by `ocamlc` contains the absolute location of
-  `ocamlrun`, so must be both explicitly invoked via `ocamlrun` and also have
-  `CAML_LD_LIBRARY_PATH` adjusted, as that `ocamlrun` will either not load
-  `ld.conf` or (with `OCAMLLIB` set) will be pointed to an `ld.conf` containing
-  the absolute location of the `stublibs` directory
+  `ocamlrun`, so must be explicitly invoked via `ocamlrun`, unless the
+  compiler is configured with `--enable-runtime-search-target`
 
 ### Executing installed bytecode binaries with `-vnum`
 
@@ -113,7 +113,8 @@ Exercises:
 
 Shims:
 - On builds with shared library support, all the executables will contain the
-  absolute location of `ocamlrun` and will fail to execute
+  absolute location of `ocamlrun` and will fail to execute, unless the compiler
+  was configured with `--enable-runtime-search`
 - On builds without shared library support, executables using libraries with
   C stubs (in particular, `ocamldebug` and `ocamldoc`) are compiled with
   `-custom` and do succeed
@@ -151,6 +152,8 @@ Exercises:
 
 Shims:
 - As with the `Dynlink` test, on bytecode-only builds the compiler must be
-  explicitly invoked via `ocamlrun`
+  explicitly invoked via `ocamlrun`, unless the compiler was configured with
+  `--enable-runtime-search`
 - The executable produced by `ocamlc` by default contains the absolute location
-  of `ocamlrun` and so has to be run explicitly via `ocamlrun`
+  of `ocamlrun` and so has to be run explicitly via `ocamlrun`, unless the
+  compiler was configured with `--enable-runtime-search-target`

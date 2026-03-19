@@ -335,6 +335,10 @@ let () =
          raise Not_found;
        let path = Data_types.cstr_res_type_path desc in
        let type_decl = Env.find_type path env in
+       let params =
+         if desc.cstr_generalized
+         then type_decl.type_params
+         else Data_types.cstr_res_type_params desc in
        if is_extension_constructor desc.cstr_tag then
          let ret_type =
            if desc.cstr_generalized then Some desc.cstr_res
@@ -342,7 +346,7 @@ let () =
          in
          let ext =
            { ext_type_path = path;
-             ext_type_params = type_decl.type_params;
+             ext_type_params = params;
              ext_args = Cstr_tuple desc.cstr_args;
              ext_ret_type = ret_type;
              ext_private = Asttypes.Public;

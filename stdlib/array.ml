@@ -24,7 +24,6 @@ external set: 'a array -> int -> 'a -> unit = "%array_safe_set"
 external unsafe_get: 'a array -> int -> 'a = "%array_unsafe_get"
 external unsafe_set: 'a array -> int -> 'a -> unit = "%array_unsafe_set"
 external make: int -> 'a -> 'a array = "caml_array_make"
-external create: int -> 'a -> 'a array = "caml_array_make"
 external unsafe_sub : 'a array -> int -> int -> 'a array = "caml_array_sub"
 external append_prim : 'a array -> 'a array -> 'a array = "caml_array_append"
 external concat : 'a array list -> 'a array = "caml_array_concat"
@@ -51,7 +50,7 @@ let init l f =
      We could also check for maximum array size, but this depends
      on whether we create a float array or a regular one... *)
   else
-   let res = create l (f 0) in
+   let res = make l (f 0) in
    for i = 1 to pred l do
      unsafe_set res i (f i)
    done;
@@ -60,10 +59,10 @@ let init l f =
 let make_matrix sx sy init =
   (* We raise even if [sx = 0 && sy < 0]: *)
   if sy < 0 then invalid_arg "Array.make_matrix";
-  let res = create sx [||] in
+  let res = make sx [||] in
   if sy > 0 then begin
     for x = 0 to pred sx do
-      unsafe_set res x (create sy init)
+      unsafe_set res x (make sy init)
     done;
   end;
   res
@@ -71,11 +70,11 @@ let make_matrix sx sy init =
 let init_matrix sx sy f =
   (* We raise even if [sx = 0 && sy < 0]: *)
   if sy < 0 then invalid_arg "Array.init_matrix";
-  let res = create sx [||] in
+  let res = make sx [||] in
   (* We must not evaluate [f x 0] when [sy <= 0]: *)
   if sy > 0 then begin
     for x = 0 to pred sx do
-      let row = create sy (f x 0) in
+      let row = make sy (f x 0) in
       for y = 1 to pred sy do
         unsafe_set row y (f x y)
       done;
@@ -121,7 +120,7 @@ let iter2 f a b =
 let map f a =
   let l = length a in
   if l = 0 then [||] else begin
-    let r = create l (f(unsafe_get a 0)) in
+    let r = make l (f(unsafe_get a 0)) in
     for i = 1 to l - 1 do
       unsafe_set r i (f(unsafe_get a i))
     done;
@@ -145,7 +144,7 @@ let map2 f a b =
     invalid_arg "Array.map2: arrays must have the same length"
   else begin
     if la = 0 then [||] else begin
-      let r = create la (f (unsafe_get a 0) (unsafe_get b 0)) in
+      let r = make la (f (unsafe_get a 0) (unsafe_get b 0)) in
       for i = 1 to la - 1 do
         unsafe_set r i (f (unsafe_get a i) (unsafe_get b i))
       done;
@@ -159,7 +158,7 @@ let iteri f a =
 let mapi f a =
   let l = length a in
   if l = 0 then [||] else begin
-    let r = create l (f 0 (unsafe_get a 0)) in
+    let r = make l (f 0 (unsafe_get a 0)) in
     for i = 1 to l - 1 do
       unsafe_set r i (f i (unsafe_get a i))
     done;
@@ -179,7 +178,7 @@ let rec list_length accu = function
 let of_list = function
     [] -> [||]
   | hd::tl as l ->
-      let a = create (list_length 0 l) hd in
+      let a = make (list_length 0 l) hd in
       let rec fill i = function
           [] -> a
         | hd::tl -> unsafe_set a i hd; fill (i+1) tl in
@@ -213,7 +212,7 @@ let fold_left_map f acc input_array =
   let len = length input_array in
   if len = 0 then (acc, [||]) else begin
     let acc, elt = f acc (unsafe_get input_array 0) in
-    let output_array = create len elt in
+    let output_array = make len elt in
     let acc = ref acc in
     for i = 1 to len - 1 do
       let acc', elt = f !acc (unsafe_get input_array i) in
@@ -227,6 +226,28 @@ let fold_right f a x =
   let r = ref x in
   for i = length a - 1 downto 0 do
     r := f (unsafe_get a i) !r
+  done;
+  !r
+
+let fold_left2 f x a b =
+  let n1 = length a in
+  let n2 = length b in
+  if n1 <> n2 then
+    invalid_arg "Array.fold_left2: arrays must have the same length";
+  let r = ref x in
+  for i = 0 to n1 - 1 do
+    r := f !r (unsafe_get a i) (unsafe_get b i)
+  done;
+  !r
+
+let fold_right2 f a b x =
+  let n1 = length a in
+  let n2 = length b in
+  if n1 <> n2 then
+    invalid_arg "Array.fold_right2: arrays must have the same length";
+  let r = ref x in
+  for i = n1 - 1 downto 0 do
+    r := f (unsafe_get a i) (unsafe_get b i) !r
   done;
   !r
 
@@ -328,8 +349,8 @@ let split x =
   else begin
     let a0, b0 = unsafe_get x 0 in
     let n = length x in
-    let a = create n a0 in
-    let b = create n b0 in
+    let a = make n a0 in
+    let b = make n b0 in
     for i = 1 to n - 1 do
       let ai, bi = unsafe_get x i in
       unsafe_set a i ai;
@@ -344,7 +365,7 @@ let combine a b =
   if na <> nb then invalid_arg "Array.combine";
   if na = 0 then [||]
   else begin
-    let x = create na (unsafe_get a 0, unsafe_get b 0) in
+    let x = make na (unsafe_get a 0, unsafe_get b 0) in
     for i = 1 to na - 1 do
       unsafe_set x i (unsafe_get a i, unsafe_get b i)
     done;
@@ -402,7 +423,7 @@ let sort cmp a =
 
 
 let cutoff = 5
-let stable_sort cmp a =
+let unsafe_stable_sort_sub cmp a init_ofs init_len =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
     let src1r = src1ofs + src1len and src2r = src2ofs + src2len in
     let rec loop i1 s1 i2 s2 d =
@@ -443,16 +464,24 @@ let stable_sort cmp a =
       merge (srcofs + l2) l1 dst (dstofs + l1) l2 dst dstofs;
     end;
   in
-  let l = length a in
-  if l <= cutoff then isortto 0 a 0 l else begin
+  let base = init_ofs in
+  let l = init_len in
+  if l <= cutoff then isortto base a base l else begin
     let l1 = l / 2 in
     let l2 = l - l1 in
-    let t = make l2 (get a 0) in
-    sortto l1 t 0 l2;
-    sortto 0 a l2 l1;
-    merge l2 l1 t 0 l2 a 0;
+    let t = make l2 (get a base) in
+    sortto (base + l1) t 0 l2;
+    sortto base a (base + l2) l1;
+    merge (base + l2) l1 t 0 l2 a base;
   end
 
+let stable_sort_sub cmp a ofs len =
+  if ofs < 0 || len < 0 || ofs > length a - len
+  then invalid_arg "Array.stable_sort_sub"
+  else unsafe_stable_sort_sub cmp a ofs len
+
+let stable_sort cmp a =
+  unsafe_stable_sort_sub cmp a 0 (length a)
 
 let fast_sort = stable_sort
 
@@ -498,7 +527,7 @@ let of_rev_list = function
     [] -> [||]
   | hd::tl as l ->
       let len = list_length 0 l in
-      let a = create len hd in
+      let a = make len hd in
       let rec fill i = function
           [] -> a
         | hd::tl -> unsafe_set a i hd; fill (i-1) tl

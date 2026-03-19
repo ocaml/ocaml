@@ -25,10 +25,8 @@ let mklib out files opts =
   Printf.sprintf "link -lib -nologo %s-out:%s %s %s" machine out opts files
   else Printf.sprintf "%s rcs %s %s %s" Config.ar out opts files
 
-(* PR#4783: under Windows, don't use absolute paths because we do
-   not know where the binary distribution will be installed. *)
 let compiler_path name =
-  if Sys.os_type = "Win32" then name else Filename.concat Config.bindir name
+  Filename.concat Config.bindir name
 
 let bytecode_objs = ref []  (* .cmo,.cma,.ml,.mli files to pass to ocamlc *)
 and native_objs = ref []    (* .cmx,.ml,.mli files to pass to ocamlopt *)
@@ -51,6 +49,7 @@ and output_c = ref ""       (* Output name for C part of library *)
 and rpath = ref []          (* rpath options *)
 and debug = ref false       (* -g option *)
 and verbose = ref false
+and suffixed = ref false    (* -suffixed option *)
 
 let starts_with s pref =
   String.length s >= String.length pref &&
@@ -164,6 +163,10 @@ let parse_arguments argv =
       c_opts := s :: !c_opts
     else if s = "-framework" then
       (let a = next_arg s in c_opts := a :: s :: !c_opts)
+    else if s = "-suffixed" then
+      suffixed := true
+    else if s = "-no-suffixed" then
+      suffixed := false
     else if starts_with s "-" then
       raise (Bad_argument("Unknown option " ^ s))
     else
@@ -210,6 +213,9 @@ Options are:
   -oc <name>     Generated C library is named dll<name>.so or lib<name>.a
   -rpath <dir>   Same as -dllpath <dir>
   -R<dir>        Same as -rpath
+  -suffixed      Append runtime ID to any generated shared libraries
+  -no-suffixed   Do not append runtime ID to any generated shared libraries
+                 (default)
   -verbose       Print commands before executing them
   -v             same as -verbose
   -version       Print version and exit
@@ -286,11 +292,17 @@ let flexdll_dirs =
 let build_libs () =
   if !c_objs <> [] then begin
     if !dynlink then begin
+      let dllname =
+        if !suffixed then
+          Misc.RuntimeID.stubslib !output_c
+        else
+          !output_c
+      in
       let retcode = command
           (Printf.sprintf "%s %s -o %s %s %s %s %s %s %s"
              Config.mkdll
              (if !debug then "-g" else "")
-             (prepostfix "dll" !output_c Config.ext_dll)
+             (prepostfix "dll" dllname Config.ext_dll)
              (String.concat " " !c_objs)
              (String.concat " " !c_opts)
              (String.concat " " !ld_opts)
@@ -308,7 +320,7 @@ let build_libs () =
   end;
   if !bytecode_objs <> [] then
     scommand
-      (sprintf "%s -a %s %s %s -o %s.cma %s %s -dllib -l%s -cclib -l%s \
+      (sprintf "%s -a %s %s %s -o %s.cma %s %s -dllib%s -l%s -cclib -l%s \
                    %s %s %s %s"
                   (transl_path !ocamlc)
                   (if !debug then "-g" else "")
@@ -317,6 +329,7 @@ let build_libs () =
                   !output
                   (String.concat " " !caml_opts)
                   (String.concat " " !bytecode_objs)
+                  (if !suffixed then "-suffixed" else "")
                   (Filename.basename !output_c)
                   (Filename.basename !output_c)
                   (String.concat " " (prefix_list "-ccopt " !c_opts))

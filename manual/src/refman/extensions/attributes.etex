@@ -245,7 +245,7 @@ Some attributes are understood by the compiler:
   only triggered for single argument constructor.
 \item
   "ocaml.tailcall" or "tailcall" can be applied to function application
-  in order to check that the call is tailcall optimized.  If it it not
+  in order to check that the call is tailcall optimized.  If it is not
   the case, a warning (51) is emitted.
 \item
   "ocaml.inline" or "inline" take either "never", "always" or nothing as

@@ -31,24 +31,24 @@ CAMLprim value caml_unix_accept(value cloexec, value sock)
   CAMLlocal1(a);
   int retcode;
   value res;
-  union sock_addr_union addr;
-  socklen_param_type addr_len;
+  struct sockaddr_storage addr;
+  socklen_t addr_len;
   int clo = caml_unix_cloexec_p(cloexec);
 
   addr_len = sizeof(addr);
   caml_enter_blocking_section();
 #if defined(HAS_ACCEPT4) && defined(SOCK_CLOEXEC)
-  retcode = accept4(Int_val(sock), &addr.s_gen, &addr_len,
+  retcode = accept4(Int_val(sock), (struct sockaddr *) &addr, &addr_len,
                     clo ? SOCK_CLOEXEC : 0);
 #else
-  retcode = accept(Int_val(sock), &addr.s_gen, &addr_len);
+  retcode = accept(Int_val(sock), (struct sockaddr *) &addr, &addr_len);
 #endif
   caml_leave_blocking_section();
   if (retcode == -1) caml_uerror("accept", Nothing);
 #if !(defined(HAS_ACCEPT4) && defined(SOCK_CLOEXEC))
   if (clo) caml_unix_set_cloexec(retcode, "accept", Nothing);
 #endif
-  a = caml_unix_alloc_sockaddr(&addr, addr_len, retcode);
+  a = caml_unix_alloc_sockaddr((struct sockaddr *) &addr, addr_len, retcode);
   res = caml_alloc_small(2, 0);
   Field(res, 0) = Val_int(retcode);
   Field(res, 1) = a;

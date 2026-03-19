@@ -126,8 +126,8 @@ Line 1, characters 0-75:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of "A.t" contains a cycle:
          "B.t -> int" contains "B.t",
-         "B.t" = "B.t",
-         "B.t" = "B.t -> int",
+         "B.t" = "A.t",
+         "A.t" = "B.t -> int",
          "B.t -> int" contains "B.t",
-         "B.t" = "B.t"
+         "B.t" = "A.t"
 |}]

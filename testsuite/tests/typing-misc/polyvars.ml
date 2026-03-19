@@ -314,3 +314,18 @@ Error: Type "[ `Foo of int ] list" is not a subtype of "[ `Bar | `Foo ] list"
        Type "[ `Foo of int ]" is not a subtype of "[ `Bar | `Foo ]"
        Types for tag "`Foo" are incompatible
 |}]
+
+(** When typing pattern match containing possibly absent polymorphic variants,
+    we temporarily forget non-generic type information *)
+let f (x: [< `A] * 'a * ' a ) = match x with
+  | `A , _, _ -> ()
+  | `B, (), (None|Some _) -> ()
+[%%expect {|
+Line 2, characters 4-13:
+2 |   | `A , _, _ -> ()
+        ^^^^^^^^^
+Error: This pattern matches values of type "[< `A ] * unit * 'a option"
+       but a pattern was expected which matches values of type
+         "[< `A ] * unit * unit"
+       Type "'a option" is not compatible with type "unit"
+|}]

@@ -1,0 +1,180 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#ifndef CAML_OPCODES_H
+#define CAML_OPCODES_H
+
+#ifdef CAML_INTERNALS
+
+/* The instruction set. */
+
+#define CAML_ZINC_OPCODES(OPCODE) \
+  OPCODE(ACC0) \
+  OPCODE(ACC1) \
+  OPCODE(ACC2) \
+  OPCODE(ACC3) \
+  OPCODE(ACC4) \
+  OPCODE(ACC5) \
+  OPCODE(ACC6) \
+  OPCODE(ACC7) \
+  OPCODE(ACC) \
+  OPCODE(PUSH) \
+  OPCODE(PUSHACC0) \
+  OPCODE(PUSHACC1) \
+  OPCODE(PUSHACC2) \
+  OPCODE(PUSHACC3) \
+  OPCODE(PUSHACC4) \
+  OPCODE(PUSHACC5) \
+  OPCODE(PUSHACC6) \
+  OPCODE(PUSHACC7) \
+  OPCODE(PUSHACC) \
+  OPCODE(POP) \
+  OPCODE(ASSIGN) \
+  OPCODE(ENVACC1) \
+  OPCODE(ENVACC2) \
+  OPCODE(ENVACC3) \
+  OPCODE(ENVACC4) \
+  OPCODE(ENVACC) \
+  OPCODE(PUSHENVACC1) \
+  OPCODE(PUSHENVACC2) \
+  OPCODE(PUSHENVACC3) \
+  OPCODE(PUSHENVACC4) \
+  OPCODE(PUSHENVACC) \
+  OPCODE(PUSH_RETADDR) \
+  OPCODE(APPLY) \
+  OPCODE(APPLY1) \
+  OPCODE(APPLY2) \
+  OPCODE(APPLY3) \
+  OPCODE(APPTERM) \
+  OPCODE(APPTERM1) \
+  OPCODE(APPTERM2) \
+  OPCODE(APPTERM3) \
+  OPCODE(RETURN) \
+  OPCODE(RESTART) \
+  OPCODE(GRAB) \
+  OPCODE(CLOSURE) \
+  OPCODE(CLOSUREREC) \
+  OPCODE(OFFSETCLOSUREM3) \
+  OPCODE(OFFSETCLOSURE0) \
+  OPCODE(OFFSETCLOSURE3) \
+  OPCODE(OFFSETCLOSURE) \
+  OPCODE(PUSHOFFSETCLOSUREM3) \
+  OPCODE(PUSHOFFSETCLOSURE0) \
+  OPCODE(PUSHOFFSETCLOSURE3) \
+  OPCODE(PUSHOFFSETCLOSURE) \
+  OPCODE(GETGLOBAL) \
+  OPCODE(PUSHGETGLOBAL) \
+  OPCODE(GETGLOBALFIELD) \
+  OPCODE(PUSHGETGLOBALFIELD) \
+  OPCODE(SETGLOBAL) \
+  OPCODE(ATOM0) \
+  OPCODE(ATOM) \
+  OPCODE(PUSHATOM0) \
+  OPCODE(PUSHATOM) \
+  OPCODE(MAKEBLOCK) \
+  OPCODE(MAKEBLOCK1) \
+  OPCODE(MAKEBLOCK2) \
+  OPCODE(MAKEBLOCK3) \
+  OPCODE(MAKEFLOATBLOCK) \
+  OPCODE(GETFIELD0) \
+  OPCODE(GETFIELD1) \
+  OPCODE(GETFIELD2) \
+  OPCODE(GETFIELD3) \
+  OPCODE(GETFIELD) \
+  OPCODE(GETFLOATFIELD) \
+  OPCODE(SETFIELD0) \
+  OPCODE(SETFIELD1) \
+  OPCODE(SETFIELD2) \
+  OPCODE(SETFIELD3) \
+  OPCODE(SETFIELD) \
+  OPCODE(SETFLOATFIELD) \
+  OPCODE(VECTLENGTH) \
+  OPCODE(GETVECTITEM) \
+  OPCODE(SETVECTITEM) \
+  OPCODE(GETBYTESCHAR) \
+  OPCODE(SETBYTESCHAR) \
+  OPCODE(BRANCH) \
+  OPCODE(BRANCHIF) \
+  OPCODE(BRANCHIFNOT) \
+  OPCODE(SWITCH) \
+  OPCODE(BOOLNOT) \
+  OPCODE(PUSHTRAP) \
+  OPCODE(POPTRAP) \
+  OPCODE(RAISE) \
+  OPCODE(CHECK_SIGNALS) \
+  OPCODE(C_CALL1) \
+  OPCODE(C_CALL2) \
+  OPCODE(C_CALL3) \
+  OPCODE(C_CALL4) \
+  OPCODE(C_CALL5) \
+  OPCODE(C_CALLN) \
+  OPCODE(CONST0) \
+  OPCODE(CONST1) \
+  OPCODE(CONST2) \
+  OPCODE(CONST3) \
+  OPCODE(CONSTINT) \
+  OPCODE(PUSHCONST0) \
+  OPCODE(PUSHCONST1) \
+  OPCODE(PUSHCONST2) \
+  OPCODE(PUSHCONST3) \
+  OPCODE(PUSHCONSTINT) \
+  OPCODE(NEGINT) \
+  OPCODE(ADDINT) \
+  OPCODE(SUBINT) \
+  OPCODE(MULINT) \
+  OPCODE(DIVINT) \
+  OPCODE(MODINT) \
+  OPCODE(ANDINT) \
+  OPCODE(ORINT) \
+  OPCODE(XORINT) \
+  OPCODE(LSLINT) \
+  OPCODE(LSRINT) \
+  OPCODE(ASRINT) \
+  OPCODE(EQ) \
+  OPCODE(NEQ) \
+  OPCODE(LTINT) \
+  OPCODE(LEINT) \
+  OPCODE(GTINT) \
+  OPCODE(GEINT) \
+  OPCODE(OFFSETINT) \
+  OPCODE(OFFSETREF) \
+  OPCODE(ISINT) \
+  OPCODE(GETMETHOD) \
+  OPCODE(BEQ) \
+  OPCODE(BNEQ) \
+  OPCODE(BLTINT) \
+  OPCODE(BLEINT) \
+  OPCODE(BGTINT) \
+  OPCODE(BGEINT) \
+  OPCODE(ULTINT) \
+  OPCODE(UGEINT) \
+  OPCODE(BULTINT) \
+  OPCODE(BUGEINT) \
+  OPCODE(GETPUBMET) \
+  OPCODE(GETDYNMET) \
+  OPCODE(STOP) \
+  OPCODE(EVENT) \
+  OPCODE(BREAK) \
+  OPCODE(RERAISE) \
+  OPCODE(RAISE_NOTRACE) \
+  OPCODE(GETSTRINGCHAR) \
+  OPCODE(PERFORM) \
+  OPCODE(RESUME) \
+  OPCODE(RESUMETERM) \
+  OPCODE(REPERFORMTERM)
+
+#endif /* CAML_INTERNALS */
+
+#endif /* CAML_OPCODES_H */

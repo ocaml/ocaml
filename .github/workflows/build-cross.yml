@@ -50,7 +50,7 @@ jobs:
           set -x
           ./configure --disable-warn-error --disable-ocamldoc \
               --disable-ocamltest --disable-stdlib-manpages \
-              --disable-dependency-generation --prefix="$PREFIX" || failed=$?
+              --prefix="$PREFIX" || failed=$?
           if ((failed)) ; then set +x
             echo ; echo "::group::config.log content ($(wc -l config.log) lines)"
             cat config.log ; echo '::endgroup::' ; exit $failed

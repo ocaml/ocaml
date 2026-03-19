@@ -278,4 +278,9 @@ let () =
   *)
 ;;
 
+let () =
+  assert (Array.fold_left2 (fun s x y -> x+y*s) 1 [|1;2;3|] [|4;5;6|] = 165);
+  assert (Array.fold_right2 (fun x y s -> x+y*s) [|1;2;3|] [|4;5;6|] 1 = 189)
+;;
+
 let () = print_endline "OK"

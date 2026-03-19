@@ -1,9 +1,9 @@
 (* TEST
  include systhreads;
  hassysthreads;
- not-bsd;
+ not bsd;
  hasunix;
- not-target-windows;
+ not target-windows;
  {
    bytecode;
  }{

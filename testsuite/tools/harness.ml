@@ -16,11 +16,15 @@ module Import = struct
   type launch_mode = Header_exe | Header_shebang
 
   type executable =
-  | Tendered of {header: launch_mode; dlls: bool; runtime: string}
+  | Tendered of {header: launch_mode;
+                 dlls: bool;
+                 runtime: string;
+                 id: Misc.RuntimeID.t option;
+                 search: Byterntm.search_method}
   | Custom
   | Vanilla
 
-  type phase = Original | Renamed
+  type phase = Original | Execution | Renamed
 
   type mode = Bytecode | Native
 
@@ -28,10 +32,11 @@ module Import = struct
     has_ocamlnat: bool;
     has_ocamlopt: bool;
     has_relative_libdir: string option;
-    has_runtime_search: bool option;
+    has_runtime_search: Config.search_method;
     launcher_searches_for_ocamlrun: bool;
     target_launcher_searches_for_ocamlrun: bool;
     bytecode_shebangs_by_default: bool;
+    filename_mangling: bool;
     libraries: string list list
   }
 end
@@ -78,7 +83,7 @@ let files_for ?(source_and_cmi = true) mode name files =
   |> add_if source_and_cmi (name ^ ".ml")
 
 let fail_because fmt =
-  Format.ksprintf (fun s -> prerr_endline s; exit 1) fmt
+  Format.ksprintf (fun s -> flush stdout; prerr_endline s; exit 1) fmt
 
 (* ocamlc cannot be directly executed after renaming the prefix if native
    compilation is disabled (because ocamlc will be ocamlc.byte, since ocamlc.opt

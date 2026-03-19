@@ -369,6 +369,74 @@ $ codesign -s - -v -f --entitlements =(echo -n
 
 For more details on entitlements and codesign consult Apple's documentation.
 
+\section{s:ocamlprof-freebsd}{Time profiling with FreeBSD pmcstat and dtrace}
+
+FreeBSD provides \texttt{pmcstat}, part of the hwpmc (Hardware Performance Monitoring Counters) framework, and \texttt{dtrace}, a comprehensive dynamic tracing framework ported from Solaris. Both support sampling-based performance profiling broadly equivalent to Linux's \texttt{perf} tool.
+
+The same prerequisites hold for time profiling with FreeBSD \texttt{pmcstat} or \texttt{dtrace} as for Linux \texttt{perf}. Consult ``Background'' (~\ref{s:ocamlprof-time-profiling-background}) from the previous section for an explanation of call graphs and follow the setup from ``Compiling for Profiling'' (~\ref{s:ocamlprof-compiling-perf}).
+
+Frame pointer support for OCaml on FreeBSD AMD64 and ARM64 is available from OCaml 5.5.
+
+The basic \texttt{pmcstat} command for profiling with call graphs is:
+
+\begin{verbatim}
+        pmcstat -S CPU_CYCLES -O profile.pmc -- PROGRAM
+\end{verbatim}
+
+The \texttt{-S CPU\_CYCLES} option selects CPU cycle sampling (use \texttt{pmcstat -L} to list available events on your system). The \texttt{-O profile.pmc} specifies the output file for the raw sampling data.
+
+\subsection{s:ocamlprof-freebsd-report}{Displaying profiling information}
+
+To generate a call graph report from the captured data:
+
+\begin{verbatim}
+        pmcstat -R profile.pmc -z16 -G profile.graph
+\end{verbatim}
+
+The \texttt{-z16} option sets the call graph depth to 16 frames. The \texttt{-G} option outputs a call graph suitable for processing with \texttt{gprof2dot} or similar tools.
+
+For a flat profile showing which functions consumed the most CPU time:
+
+\begin{verbatim}
+        pmcstat -R profile.pmc -g
+\end{verbatim}
+
+To generate output compatible with flame graph tools:
+
+\begin{verbatim}
+        pmcstat -R profile.pmc -F profile.stacks
+\end{verbatim}
+
+To generate flame graphs from pmcstat output, use the \texttt{stackcollapse-pmc.pl} script from the FlameGraph repository:
+
+\begin{verbatim}
+        git clone https://github.com/brendangregg/FlameGraph
+        cd FlameGraph
+        stackcollapse-pmc.pl profile.stacks | flamegraph.pl > flamegraph.svg
+\end{verbatim}
+
+For more information on \texttt{pmcstat}, consult \texttt{pmcstat(8)} and the FreeBSD Handbook chapter on performance monitoring.
+
+The basic \texttt{dtrace} command for time profiling is:
+
+\begin{verbatim}
+        dtrace -x ustackframes=100 -n 'profile-97 /pid == $target && arg1/ {
+            @[ustack()] = count();
+        } tick-60s { exit(0); }' -c PROGRAM -o out.stacks
+\end{verbatim}
+
+The \texttt{-x ustackframes=100} option sets the maximum stack depth. The \texttt{profile-97} probe samples at 97 Hz, and \texttt{arg1} filters for user-level stacks. The \texttt{-c} option runs and traces the specified program.
+
+To generate flame graphs from DTrace output, use the \texttt{stackcollapse.pl} script from the FlameGraph repository:
+
+\begin{verbatim}
+        git clone https://github.com/brendangregg/FlameGraph
+        cd FlameGraph
+        ./stackcollapse.pl out.stacks | ./flamegraph.pl > flamegraph.svg
+\end{verbatim}
+
+For more information on DTrace, consult \texttt{dtrace(1)} and the DTrace Guide.
+
 \section{s:ocamlprof-glossary}{Glossary}
 
 The following terminology is used in this chapter of the manual.

@@ -15,8 +15,6 @@
 
 (* A few extensions to OCaml's standard library *)
 
-module Unix = Ocamltest_unix
-
 let input_line_opt ic =
   try Some (input_line ic) with End_of_file -> None
 
@@ -104,7 +102,7 @@ module Sys = struct
     with Sys_error _ when Sys.win32 && Ocamltest_config.libunix <> None ->
       (* Deal with read-only attribute on Windows. Ignore any error from chmod
          so that the message always come from Sys.remove *)
-      let () = try Unix.chmod path 0o666 with Sys_error _ -> () in
+      let () = try Ocamltest_unix.chmod path 0o666 with Sys_error _ -> () in
       Sys.remove path
 
   let rm_rf path =

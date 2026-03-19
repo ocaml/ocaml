@@ -31,11 +31,9 @@
 #include <io.h> /* for _wopen and close */
 #else
 #include <sys/wait.h>
-#endif
-#include "caml/config.h"
-#ifndef _WIN32
 #include <unistd.h>
 #endif
+#include "caml/config.h"
 #ifdef HAS_TIMES
 #include <sys/times.h>
 #endif
@@ -66,6 +64,7 @@
 #include "caml/startup_aux.h"
 #include "caml/major_gc.h"
 #include "caml/shared_heap.h"
+#include "misc_internals.h"
 
 CAMLexport char * caml_strerror(int errnum, char * buf, size_t buflen)
 {
@@ -397,7 +396,7 @@ CAMLprim value caml_sys_getcwd(value unit)
   char_os buff[4096];
   char_os * ret;
 #ifdef HAS_GETCWD
-  ret = getcwd_os(buff, sizeof(buff)/sizeof(*buff));
+  ret = getcwd_os(buff, countof(buff));
 #else
   caml_invalid_argument("Sys.getcwd not implemented");
 #endif /* HAS_GETCWD */
@@ -736,6 +735,47 @@ CAMLprim value caml_sys_const_backend_type(value unit)
 {
   return Val_int(1); /* Bytecode backed */
 }
+
+/* The native code linker doesn't synthesise calls to this primitive, instead
+   putting the required string statically in caml_standard_library_nat if any of
+   the compilation units use %standard_library_default. The primitive is omitted
+   completely in libasmrun as there are no other existing instances in the
+   native runtime where OCAML_STDLIB_DIR ends up being embedded. */
+#ifndef NATIVE_CODE
+/* If this remains unset then caml_runtime_standard_library_default is used */
+char_os *caml_standard_library_default = NULL;
+
+CAMLprim value caml_sys_const_standard_library_default(value unit)
+{
+  return caml_copy_string_of_os(
+    caml_standard_library_default ? caml_standard_library_default
+                                  : caml_runtime_standard_library_default);
+}
+#endif
+
+CAMLprim value caml_sys_get_stdlib_dirs(value vstdlib_default)
+{
+  CAMLparam1(vstdlib_default);
+  CAMLlocal3(result, eff, root_dir);
+
+  char_os *stdlib_default = caml_stat_strdup_to_os(String_val(vstdlib_default));
+  char_os *root = NULL, *stdlib;
+
+  stdlib =
+    caml_locate_standard_library(caml_params->exe_name, stdlib_default, &root);
+
+  eff = caml_copy_string_of_os(stdlib);
+  if (root == NULL) {
+    root_dir = Val_none;
+  } else {
+    root_dir = caml_copy_string_of_os(root);
+    root_dir = caml_alloc_some(root_dir);
+  }
+  result = caml_alloc_2(0, eff, root_dir);
+
+  CAMLreturn(result);
+}
+
 CAMLprim value caml_sys_get_config(value unit)
 {
   CAMLparam0 ();   /* unit is unused */

@@ -197,7 +197,9 @@ val blit : src:'a t -> src_pos:int -> dst:'a t -> dst_pos:int -> len:int -> unit
 
     @raise Invalid_argument if [src_pos] and [len] do not designate
     a valid subarray of [src], or if [dst_pos] is strictly below [0]
-    or strictly above [length dst]. *)
+    or strictly above [length dst].
+
+    @since 5.3 *)
 
 (** {1:removing Removing elements} *)
 
@@ -626,7 +628,9 @@ val unsafe_to_iarray : capacity:int -> ('a t -> unit) -> 'a iarray
 
     This function is unsafe because type safety may be broken by concurrent
     writes to the dynarray from other domains, without proper synchronization,
-    before [f] returns. *)
+    before [f] returns.
+
+    @since 5.4 *)
 
 
 (** {1:examples Code examples}

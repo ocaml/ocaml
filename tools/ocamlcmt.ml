@@ -91,19 +91,20 @@ let print_info cmt =
     match cmt.cmt_source_digest with
       None -> ()
     | Some digest ->
-      Printf.fprintf oc "source digest: %s\n" (Digest.to_hex digest);
+      Printf.fprintf oc "source digest: %s\n" (Digest.BLAKE128.to_hex digest);
   end;
   begin
     match cmt.cmt_interface_digest with
       None -> ()
     | Some digest ->
-      Printf.fprintf oc "interface digest: %s\n" (Digest.to_hex digest);
+      Printf.fprintf oc "interface digest: %s\n"
+        (Digest.BLAKE128.to_hex digest);
   end;
   List.iter (fun (name, crco) ->
     let crc =
       match crco with
         None -> dummy_crc
-      | Some crc -> Digest.to_hex crc
+      | Some crc -> Digest.BLAKE128.to_hex crc
     in
     Printf.fprintf oc "import: %s %s\n" name crc;
   ) (List.sort compare cmt.cmt_imports);

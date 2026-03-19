@@ -42,13 +42,17 @@ val with_info :
    calling [with_info] several times.
 *)
 
+module Parse_result : sig
+  type 'a t = { ast : 'a; info : info }
+end
+
 (** {2 Interfaces} *)
 
-val parse_intf : info -> Parsetree.signature
+val parse_intf : info -> Parsetree.signature Parse_result.t
 (** [parse_intf info] parses an interface (usually an [.mli] file). *)
 
 val typecheck_intf :
-  info -> Parsetree.signature -> Misc.alerts * Typedtree.signature
+  Parsetree.signature Parse_result.t -> Misc.alerts * Typedtree.signature
 (** [typecheck_intf info parsetree] typechecks an interface and returns the
     typedtree of the associated signature, together with the alerts appearing at
     the top of the signature (before any other non-attribute item).
@@ -65,10 +69,11 @@ val interface : info -> unit
 
 (** {2 Implementations} *)
 
-val parse_impl : info -> Parsetree.structure
+val parse_impl : info -> Parsetree.structure Parse_result.t
 (** [parse_impl info] parses an implementation (usually an [.ml] file). *)
 
-val typecheck_impl : info -> Parsetree.structure -> Typedtree.implementation
+val typecheck_impl :
+  Parsetree.structure Parse_result.t -> Typedtree.implementation
 (** [typecheck_impl info parsetree] typechecks an implementation and returns
     the typedtree of the associated module, its public interface, and a
     coercion against that public interface.

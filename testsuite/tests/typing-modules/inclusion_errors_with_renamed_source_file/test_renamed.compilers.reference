@@ -1,0 +1,6 @@
+File "foo.ml", line 1:
+Error: The implementation foo.ml does not match the interface foo.mli: 
+       Values do not match: val foo : int is not included in val foo : unit
+       The type int is not compatible with the type unit
+       File "foo.mli", line 1, characters 0-14: Expected declaration
+       File "foo.ml", line 1, characters 4-7: Actual declaration

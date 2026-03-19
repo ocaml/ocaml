@@ -51,13 +51,13 @@ CAMLprim value caml_unix_recvfrom(value sock, value buff, value ofs, value len,
                              value flags)
 {
   CAMLparam1(buff);
-  CAMLlocal1(adr);
+  CAMLlocal1(vaddr);
   int ret, cv_flags;
   long numbytes;
   char iobuf[UNIX_BUFFER_SIZE];
   value res;
-  union sock_addr_union addr;
-  socklen_param_type addr_len;
+  struct sockaddr_storage addr;
+  socklen_t addr_len;
 
   cv_flags = caml_convert_flag_list(flags, msg_flag_table);
   numbytes = Long_val(len);
@@ -65,14 +65,14 @@ CAMLprim value caml_unix_recvfrom(value sock, value buff, value ofs, value len,
   addr_len = sizeof(addr);
   caml_enter_blocking_section();
   ret = recvfrom(Int_val(sock), iobuf, (int) numbytes, cv_flags,
-                 &addr.s_gen, &addr_len);
+                 (struct sockaddr *) &addr, &addr_len);
   caml_leave_blocking_section();
   if (ret == -1) caml_uerror("recvfrom", Nothing);
   memmove (&Byte(buff, Long_val(ofs)), iobuf, ret);
-  adr = caml_unix_alloc_sockaddr(&addr, addr_len, -1);
+  vaddr = caml_unix_alloc_sockaddr((struct sockaddr *) &addr, addr_len, -1);
   res = caml_alloc_small(2, 0);
   Field(res, 0) = Val_int(ret);
-  Field(res, 1) = adr;
+  Field(res, 1) = vaddr;
   CAMLreturn(res);
 }
 
@@ -100,8 +100,8 @@ CAMLprim value caml_unix_sendto_native(value sock, value buff, value ofs,
   int ret, cv_flags;
   long numbytes;
   char iobuf[UNIX_BUFFER_SIZE];
-  union sock_addr_union addr;
-  socklen_param_type addr_len;
+  struct sockaddr_storage addr;
+  socklen_t addr_len;
 
   cv_flags = caml_convert_flag_list(flags, msg_flag_table);
   caml_unix_get_sockaddr(dest, &addr, &addr_len);
@@ -110,7 +110,7 @@ CAMLprim value caml_unix_sendto_native(value sock, value buff, value ofs,
   memmove (iobuf, &Byte(buff, Long_val(ofs)), numbytes);
   caml_enter_blocking_section();
   ret = sendto(Int_val(sock), iobuf, (int) numbytes, cv_flags,
-               &addr.s_gen, addr_len);
+               (struct sockaddr *) &addr, addr_len);
   caml_leave_blocking_section();
   if (ret == -1) caml_uerror("sendto", Nothing);
   return Val_int(ret);

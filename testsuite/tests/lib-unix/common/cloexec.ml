@@ -18,7 +18,7 @@
      run;
      check-program-output;
    }{
-     not-target-windows; (* Unix.create_process doesn't pass fds on Windows *)
+     not target-windows; (* Unix.create_process doesn't pass fds on Windows *)
      arguments = "create_process";
      run;
      check-program-output;
@@ -38,7 +38,7 @@
      run;
      check-program-output;
    }{
-     not-target-windows; (* Unix.create_process doesn't pass fds on Windows *)
+     not target-windows; (* Unix.create_process doesn't pass fds on Windows *)
      arguments = "create_process";
      run;
      check-program-output;

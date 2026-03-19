@@ -22,6 +22,7 @@
 #include <caml/alloc.h>
 #include <caml/osdeps.h>
 #include "caml/unixsupport.h"
+#include "misc_internals.h"
 
 CAMLprim value caml_unix_error_message(value err)
 {
@@ -36,10 +37,10 @@ CAMLprim value caml_unix_error_message(value err)
                     -errnum,
                     0,
                     buffer,
-                    sizeof(buffer)/sizeof(wchar_t),
+                    countof(buffer),
                     NULL))
     return caml_copy_string_of_utf16(buffer);
-  swprintf(buffer, sizeof(buffer)/sizeof(wchar_t),
+  swprintf(buffer, countof(buffer),
            L"unknown error #%d", errnum);
   return caml_copy_string_of_utf16(buffer);
 }

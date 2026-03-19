@@ -46,7 +46,16 @@ let bytecode =
     check_program_output;
   ] @
   (if not Sys.win32 && Ocamltest_config.native_compiler then
-    opt_build @ [compare_bytecode_programs]
+    (* If the compiler is configured using --with-relative-libdir then at
+       present we can't compare the bytecode programs because ocamlc.opt and
+       ocamlrun are at different levels in the build tree, but they're both
+       configured with the same relative directory path.
+       This problem will disappear when ocamltest runs the testsuite against a
+       compiler in an install-tree like way. *)
+    if Ocamltest_config.has_relative_libdir then
+      opt_build
+    else
+      opt_build @ [compare_bytecode_programs]
   else
     []
   )

@@ -16,6 +16,8 @@
 # The main Makefile
 
 ROOTDIR = .
+SUBDIR_NAME =
+
 # NOTE: it is important that the OCAMLDEP and OCAMLLEX variables
 # are defined *before* Makefile.common gets included, so that
 # their local definitions here take precedence over their
@@ -52,8 +54,6 @@ PERVASIVES=$(STDLIB_MODULES) outcometree topprinters topdirs toploop
 
 LIBFILES=stdlib.cma std_exit.cmo *.cmi $(HEADER_NAME)
 
-COMPLIBDIR=$(LIBDIR)/compiler-libs
-
 TOPINCLUDES=$(addprefix -I otherlibs/,$(filter-out %threads,$(OTHERLIBRARIES)))
 
 expunge := expunge$(EXE)
@@ -85,6 +85,7 @@ utils_SOURCES = $(addprefix utils/, \
   lazy_backtrack.mli lazy_backtrack.ml \
   diffing.mli diffing.ml \
   diffing_with_keys.mli diffing_with_keys.ml \
+  stable_matching.mli stable_matching.ml \
   compression.mli compression.ml)
 
 parsing_SOURCES = $(addprefix parsing/, \
@@ -150,6 +151,7 @@ typing_SOURCES = \
   typing/cmt2annot.mli typing/cmt2annot.ml \
   typing/untypeast.mli typing/untypeast.ml \
   typing/includemod.mli typing/includemod.ml \
+  typing/signature_matching.mli typing/signature_matching.ml \
   typing/includemod_errorprinter.mli typing/includemod_errorprinter.ml \
   typing/typetexp.mli typing/typetexp.ml \
   typing/printpat.mli typing/printpat.ml \
@@ -165,7 +167,7 @@ typing_SOURCES = \
   typing/value_rec_check.mli typing/value_rec_check.ml \
   typing/typecore.mli typing/typecore.ml \
   typing/typeclass.mli typing/typeclass.ml \
-  typing/typemod.mli typing/typemod.ml
+  typing/typemod.mli typing/typemod.ml \
 
 lambda_SOURCES = $(addprefix lambda/, \
   debuginfo.mli debuginfo.ml \
@@ -207,6 +209,7 @@ ocamlcommon_SOURCES = \
   $(lambda_SOURCES) $(comp_SOURCES)
 
 ocamlbytecomp_SOURCES = \
+  bytecomp/byterntm.mll \
   bytecomp/instruct.mli bytecomp/instruct.ml \
   bytecomp/bytegen.mli bytecomp/bytegen.ml \
   bytecomp/printinstr.mli bytecomp/printinstr.ml \
@@ -483,15 +486,17 @@ utils/config_boot.ml: utils/config.fixed.ml utils/config.common.ml
 utils/config_main.ml: utils/config.generated.ml utils/config.common.ml
 	$(V_GEN)cat $^ > $@
 
+ADDITIONAL_CONFIGURE_ARGS ?=
 .PHONY: reconfigure
 reconfigure:
-	ac_read_git_config=true ./configure $(CONFIGURE_ARGS)
+	ac_read_git_config=true ./configure $(CONFIGURE_ARGS) \
+	                                    $(ADDITIONAL_CONFIGURE_ARGS)
 
 utils/domainstate.ml: utils/domainstate.ml.c runtime/caml/domain_state.tbl
-	$(V_GEN)$(CPP) -I runtime/caml $< > $@
+	$(V_GEN)$(CPP) -I runtime $< > $@
 
 utils/domainstate.mli: utils/domainstate.mli.c runtime/caml/domain_state.tbl
-	$(V_GEN)$(CPP) -I runtime/caml $< > $@
+	$(V_GEN)$(CPP) -I runtime $< > $@
 
 configure: tools/autogen configure.ac aclocal.m4 build-aux/ocaml_version.m4
 	$<
@@ -564,7 +569,7 @@ $(foreach PROGRAM, $(OCAML_PROGRAMS),\
 
 OCAML_BYTECODE_PROGRAMS = expunge \
   $(TOOLS_BYT_PROGRAMS) \
-  $(addprefix tools/, cvt_emit make_opcodes ocamltex) \
+  $(addprefix tools/, cvt_emit ocamltex) \
   debugger/ocamldebug \
   testsuite/tools/codegen testsuite/tools/expect
 
@@ -634,6 +639,20 @@ FLEXLINK_BUILD_ENV = \
   MSVCC_ROOT= \
   MSVC_DETECT=0 OCAML_CONFIG_FILE=../Makefile.config \
   CHAINS=$(FLEXDLL_CHAIN) ROOTDIR=..
+ifneq ($(RC),)
+FLEXLINK_BUILD_ENV += RC=$(RC)
+endif
+ifeq ($(FLEXDLL_CHAIN),cygwin64)
+FLEXLINK_BUILD_ENV += CYG64CC=$(CC)
+else ifeq ($(FLEXDLL_CHAIN),mingw)
+FLEXLINK_BUILD_ENV += MINCC=$(CC)
+else ifeq ($(FLEXDLL_CHAIN),mingw64)
+FLEXLINK_BUILD_ENV += MIN64CC=$(CC)
+else ifeq ($(FLEXDLL_CHAIN),msvc)
+FLEXLINK_BUILD_ENV += MSVCC=$(CC)
+else ifeq ($(FLEXDLL_CHAIN),msvc64)
+FLEXLINK_BUILD_ENV += MSVCC64=$(CC)
+endif
 FLEXDLL_SOURCES = \
   $(addprefix $(FLEXDLL_SOURCE_DIR)/, flexdll.c flexdll_initer.c flexdll.h) \
   $(wildcard $(FLEXDLL_SOURCE_DIR)/*.ml*)
@@ -645,7 +664,10 @@ flexlink.byte$(EXE): $(FLEXDLL_SOURCES)
 	rm -f $(FLEXDLL_SOURCE_DIR)/flexlink.exe
 	$(MAKE) -C $(FLEXDLL_SOURCE_DIR) $(FLEXLINK_BUILD_ENV) \
 	  OCAMLRUN='$$(ROOTDIR)/boot/ocamlrun$(EXE)' NATDYNLINK=false \
-	  OCAMLOPT='$(value BOOT_OCAMLC) $(USE_RUNTIME_PRIMS) $(USE_STDLIB)' \
+	  OCAMLOPT=$(call QUOTE_SINGLE,$(value BOOT_OCAMLC) \
+	                                 $(USE_RUNTIME_PRIMS) \
+	                                 $(BYTECODE_LAUNCHER_FLAGS) \
+	                                 $(USE_STDLIB)) \
 	  flexlink.exe support
 	cp $(FLEXDLL_SOURCE_DIR)/flexlink.exe $@
 	cp $(addprefix $(FLEXDLL_SOURCE_DIR)/, $(FLEXDLL_OBJECTS)) $(ROOTDIR)
@@ -885,7 +907,8 @@ flexlink.opt$(EXE): \
     $(FLEXDLL_SOURCES) | $(BYTE_BINDIR)/flexlink$(EXE) $(OPT_BINDIR)
 	rm -f $(FLEXDLL_SOURCE_DIR)/flexlink.exe
 	$(MAKE) -C $(FLEXDLL_SOURCE_DIR) $(FLEXLINK_BUILD_ENV) \
-	  OCAMLOPT='$(FLEXLINK_OCAMLOPT) -nostdlib -I ../stdlib' flexlink.exe
+	  OCAMLOPT='$(FLEXLINK_OCAMLOPT) $(USE_STDLIB) $(SET_RELATIVE_STDLIB)' \
+	  flexlink.exe
 	cp $(FLEXDLL_SOURCE_DIR)/flexlink.exe $@
 	rm -f $(OPT_BINDIR)/flexlink$(EXE)
 	cd $(OPT_BINDIR); $(LN) $(call ROOT_FROM, $(OPT_BINDIR))/$@ flexlink$(EXE)
@@ -914,8 +937,6 @@ partialclean::
 	rm -f flexlink.opt flexlink.opt.exe \
         $(OPT_BINDIR)/flexlink $(OPT_BINDIR)/flexlink.exe
 
-INSTALL_COMPLIBDIR = $(DESTDIR)$(COMPLIBDIR)
-INSTALL_FLEXDLLDIR = $(INSTALL_LIBDIR)/flexdll
 FLEXDLL_MANIFEST = default$(filter-out _i386,_$(ARCH)).manifest
 
 DOC_FILES=\
@@ -939,11 +960,14 @@ clean::
 # Build the manual latex files from the etex source files
 # (see manual/README.md)
 .PHONY: manual-pregen
-manual-pregen: opt.opt
-	cd manual; $(MAKE) clean && $(MAKE) pregen-etex
+manual-pregen: opt.opt | manual
+	$(MAKE) -C manual clean
+	$(MAKE) -C manual pregen-etex
 
+ifneq "$(wildcard manual)" ""
 clean::
 	$(MAKE) -C manual clean
+endif
 
 # The clean target
 clean:: partialclean
@@ -962,8 +986,12 @@ ocamlc_SOURCES = driver/main.mli driver/main.ml
 
 ocamlc_BYTECODE_LINKFLAGS = -compat-32 -g
 
+ifeq "$(IN_COREBOOT_CYCLE)" "true"
+ocamlc_BYTECODE_LINKFLAGS += -set-runtime-default standard_library_default=.
+endif
+
 partialclean::
-	rm -f ocamlc ocamlc.exe ocamlc.opt ocamlc.opt.exe
+	rm -f ocamlc ocamlc.exe ocamlc.opt ocamlc.opt.exe ocamlc*.stripped
 
 # The native-code compiler
 
@@ -974,7 +1002,7 @@ ocamlopt_SOURCES = driver/optmain.mli driver/optmain.ml
 ocamlopt_BYTECODE_LINKFLAGS = -g
 
 partialclean::
-	rm -f ocamlopt ocamlopt.exe ocamlopt.opt ocamlopt.opt.exe
+	rm -f ocamlopt ocamlopt.exe ocamlopt.opt ocamlopt.opt.exe ocamlopt*.stripped
 
 # The toplevel
 
@@ -1101,12 +1129,12 @@ otherlibs/dynlink.depend: beforedepend
 	  otherlibs/dynlink/native/dynlink.ml \
 	  >> $@
 
-# Cleanup the lexer
+# Cleanup the lexers
 
 partialclean::
-	rm -f parsing/lexer.ml
+	rm -f bytecomp/byterntm.ml parsing/lexer.ml
 
-beforedepend:: parsing/lexer.ml
+beforedepend:: bytecomp/byterntm.ml parsing/lexer.ml
 
 # The predefined exceptions and primitives
 
@@ -1175,15 +1203,6 @@ partialclean::
 # The runtime system
 
 ## Lists of source files
-
-ifneq "$(WINPTHREADS_SOURCE_DIR)" ""
-winpthreads_SOURCES = cond.c misc.c mutex.c rwlock.c sched.c spinlock.c thread.c
-
-winpthreads_OBJECTS = \
-  $(addprefix runtime/winpthreads/, $(winpthreads_SOURCES:.c=.$(O)))
-else
-winpthreads_OBJECTS =
-endif
 
 runtime_COMMON_C_SOURCES = \
   addrmap \
@@ -1268,27 +1287,25 @@ runtime_CONFIGURED_HEADERS = \
   $(addprefix runtime/caml/, exec.h m.h s.h version.h)
 
 ## Header files generated by make
-runtime_BUILT_HEADERS = $(addprefix runtime/, \
-  caml/opnames.h caml/jumptbl.h build_config.h)
+runtime_BUILT_HEADERS = runtime/build_config.h
 
 ## Targets to build and install
 
-runtime_PROGRAMS = runtime/ocamlrun$(EXE)
-runtime_BYTECODE_STATIC_LIBRARIES = $(addprefix runtime/, \
-  ld.conf libcamlrun.$(A))
+runtime_PROGRAMS = ocamlrun
+runtime_BYTECODE_STATIC_LIBRARIES = runtime/libcamlrun.$(A)
 runtime_BYTECODE_SHARED_LIBRARIES =
 runtime_NATIVE_STATIC_LIBRARIES = \
   runtime/libasmrun.$(A) runtime/libcomprmarsh.$(A)
 runtime_NATIVE_SHARED_LIBRARIES =
 
 ifeq "$(RUNTIMED)" "true"
-runtime_PROGRAMS += runtime/ocamlrund$(EXE)
+runtime_PROGRAMS += ocamlrund
 runtime_BYTECODE_STATIC_LIBRARIES += runtime/libcamlrund.$(A)
 runtime_NATIVE_STATIC_LIBRARIES += runtime/libasmrund.$(A)
 endif
 
 ifeq "$(INSTRUMENTED_RUNTIME)" "true"
-runtime_PROGRAMS += runtime/ocamlruni$(EXE)
+runtime_PROGRAMS += ocamlruni
 runtime_BYTECODE_STATIC_LIBRARIES += runtime/libcamlruni.$(A)
 runtime_NATIVE_STATIC_LIBRARIES += runtime/libasmruni.$(A)
 endif
@@ -1296,9 +1313,9 @@ endif
 ifeq "$(UNIX_OR_WIN32)" "unix"
 ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
 runtime_BYTECODE_STATIC_LIBRARIES += runtime/libcamlrun_pic.$(A)
-runtime_BYTECODE_SHARED_LIBRARIES += runtime/libcamlrun_shared.$(SO)
+runtime_BYTECODE_SHARED_LIBRARIES += camlrun
 runtime_NATIVE_STATIC_LIBRARIES += runtime/libasmrun_pic.$(A)
-runtime_NATIVE_SHARED_LIBRARIES += runtime/libasmrun_shared.$(SO)
+runtime_NATIVE_SHARED_LIBRARIES += asmrun
 endif
 endif
 
@@ -1306,35 +1323,32 @@ endif
 
 
 libcamlrun_OBJECTS = \
-  $(runtime_BYTECODE_C_SOURCES:.c=.b.$(O)) $(winpthreads_OBJECTS)
+  $(runtime_BYTECODE_C_SOURCES:.c=.b.$(O))
 
 libcamlrun_non_shared_OBJECTS = \
   $(subst $(UNIX_OR_WIN32).b.$(O),$(UNIX_OR_WIN32)_non_shared.b.$(O), \
           $(libcamlrun_OBJECTS))
 
 libcamlrund_OBJECTS = $(runtime_BYTECODE_C_SOURCES:.c=.bd.$(O)) \
-  $(winpthreads_OBJECTS) runtime/instrtrace.bd.$(O)
+  runtime/instrtrace.bd.$(O)
 
 libcamlruni_OBJECTS = \
-  $(runtime_BYTECODE_C_SOURCES:.c=.bi.$(O)) $(winpthreads_OBJECTS)
+  $(runtime_BYTECODE_C_SOURCES:.c=.bi.$(O))
 
 libcamlrunpic_OBJECTS = \
-  $(runtime_BYTECODE_C_SOURCES:.c=.bpic.$(O)) $(winpthreads_OBJECTS)
+  $(runtime_BYTECODE_C_SOURCES:.c=.bpic.$(O))
 
 libasmrun_OBJECTS = \
-  $(runtime_NATIVE_C_SOURCES:.c=.n.$(O)) $(runtime_ASM_OBJECTS) \
-  $(winpthreads_OBJECTS)
+  $(runtime_NATIVE_C_SOURCES:.c=.n.$(O)) $(runtime_ASM_OBJECTS)
 
 libasmrund_OBJECTS = \
-  $(runtime_NATIVE_C_SOURCES:.c=.nd.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.d.$(O)) \
-  $(winpthreads_OBJECTS)
+  $(runtime_NATIVE_C_SOURCES:.c=.nd.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.d.$(O))
 
 libasmruni_OBJECTS = \
-  $(runtime_NATIVE_C_SOURCES:.c=.ni.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.i.$(O)) \
-  $(winpthreads_OBJECTS)
+  $(runtime_NATIVE_C_SOURCES:.c=.ni.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.i.$(O))
 
 libasmrunpic_OBJECTS = $(runtime_NATIVE_C_SOURCES:.c=.npic.$(O)) \
-  $(runtime_ASM_OBJECTS:.$(O)=_libasmrunpic.$(O)) $(winpthreads_OBJECTS)
+  $(runtime_ASM_OBJECTS:.$(O)=_libasmrunpic.$(O))
 
 libcomprmarsh_OBJECTS = runtime/zstd.npic.$(O)
 
@@ -1349,23 +1363,95 @@ ocamlruni_CPPFLAGS = $(runtime_CPPFLAGS) -DCAML_INSTR
 
 .PHONY: runtime-all
 runtime-all: \
-  $(runtime_BYTECODE_STATIC_LIBRARIES) $(runtime_BYTECODE_SHARED_LIBRARIES) \
-  $(runtime_PROGRAMS) $(SAK)
+  $(runtime_BYTECODE_STATIC_LIBRARIES) \
+  $(runtime_BYTECODE_SHARED_LIBRARIES:%=runtime/lib%_shared$(EXT_DLL)) \
+  $(runtime_PROGRAMS:%=runtime/%$(EXE)) $(SAK)
+
+# If the compiler is configured with --enable-warn-error (which is the default
+# for development builds), then all the installed header files are tested with
+# more warnings enabled. The test also ensures that each header can be included
+# without any other headers.
+ifneq "$(EXTRA_WARNINGS_CFLAGS)" ""
+runtime-all: runtime-header-tests
+endif
+
+# As with the runtime-header-tests, if a C++ compiler is available, then we also
+# verify that the headers can be included in a C++ program without error.
+ifneq "$(EXTRA_WARNINGS_CXXFLAGS)" ""
+ifneq "$(TEST_CXX)" ""
+runtime-all: runtime-header-cxx-tests
+endif
+endif
+
+# Unlike in COMPILE_C_FILE, this is just a convenience test, so we don't do any
+# effort with the dependency computations worrying about DEP_CC and so forth,
+# because most _development_ is done with feature-rich C compilers!
+API_TESTING_DEP_FILES := $(wildcard runtime/api-testing/*.$(D))
+.PHONY: $(API_TESTING_DEP_FILES)
+include $(API_TESTING_DEP_FILES)
+
+ALL_PUBLIC_HEADER_FILES := $(notdir $(sort $(wildcard \
+  $(addsuffix /caml/*.h, $(addprefix otherlibs/, $(OTHERLIBS))) \
+  runtime/caml/*.h \
+  $(filter runtime/caml/%, $(runtime_BUILT_HEADERS)))))
+
+runtime-header-tests: \
+  $(addprefix runtime/api-testing/,$(ALL_PUBLIC_HEADER_FILES:.h=.t))
+
+runtime-header-cxx-tests: \
+  $(addprefix runtime/api-testing/,$(ALL_PUBLIC_HEADER_FILES:.h=.tpp))
+
+.PRECIOUS: runtime/api-testing
+runtime/api-testing:
+	$(MKDIR) $@
+
+runtime/api-testing/%.t: runtime/api-testing/%.c.$(O)
+	@touch $@
+
+runtime/api-testing/%.tpp: runtime/api-testing/%.cpp.$(O)
+	@touch $@
+
+runtime/api-testing/%.c.$(O): runtime/api-testing/%.c
+	$(V_CC)$(CC) \
+	  $(OC_CFLAGS) $(EXTRA_WARNINGS_CFLAGS) $(CFLAGS) \
+	  $(OC_CPPFLAGS) \
+	  $(call DEP_FLAGS,$@,$(@:.$(O)=.$(D))) \
+	  $(addprefix -I otherlibs/, $(OTHERLIBS)) $(CPPFLAGS) \
+	  $(OUTPUTOBJ)$@ -c $<
+
+runtime/api-testing/%.c: | runtime/api-testing
+	$(V_GEN){ \
+	  echo '#include <caml/$*.h>'; \
+	  echo '#include <caml/$*.h>'; \
+	  echo 'int answer = 42;'; \
+	} > $@
+
+runtime/api-testing/%.cpp.$(O): runtime/api-testing/%.cpp
+	$(V_CXX)$(TEST_CXX) \
+	  $(TEST_CXX_CXXFLAGS) $(EXTRA_WARNINGS_CXXFLAGS) $(CXXFLAGS) \
+	  $(TEST_CXX_CPPFLAGS) \
+	  $(call DEP_FLAGS,$@,$(@:.$(O)=.$(D))) \
+	  -I runtime $(addprefix -I otherlibs/, $(OTHERLIBS)) $(CPPFLAGS) \
+	  $(OUTPUTOBJ)$@ -c $<
+
+runtime/api-testing/%.cpp: | runtime/api-testing
+	$(V_GEN){ \
+	  echo '#include <caml/$*.h>'; \
+	  echo '#include <caml/$*.h>'; \
+	  echo 'int answer = 42;'; \
+	} > $@
 
 .PHONY: runtime-allopt
 ifeq "$(NATIVE_COMPILER)" "true"
 runtime-allopt: \
-  $(runtime_NATIVE_STATIC_LIBRARIES) $(runtime_NATIVE_SHARED_LIBRARIES)
+  $(runtime_NATIVE_STATIC_LIBRARIES) \
+  $(runtime_NATIVE_SHARED_LIBRARIES:%=runtime/lib%_shared$(EXT_DLL))
 else
 runtime-allopt:
 	$(error The build has been configured with --disable-native-compiler)
 endif
 
 ## Generated non-object files
-
-runtime/ld.conf: $(ROOTDIR)/Makefile.config
-	$(V_GEN)echo "$(STUBLIBDIR)" > $@ && \
-	echo "$(LIBDIR)" >> $@
 
 runtime/primitives: runtime/gen_primitives.sh $(runtime_BYTECODE_C_SOURCES)
 	$(V_GEN)runtime/gen_primitives.sh $@ $(runtime_BYTECODE_C_SOURCES)
@@ -1375,33 +1461,22 @@ runtime/prims.c: runtime/gen_primsc.sh runtime/primitives
                     runtime/primitives $(runtime_BYTECODE_C_SOURCES) \
                     > $@
 
-runtime/caml/opnames.h : runtime/caml/instruct.h
-	$(V_GEN)tr -d '\r' < $< | \
-	sed -e '/\/\*/d' \
-	    -e '/^#/d' \
-	    -e 's/enum /static char const * const names_of_/' \
-	    -e 's/{$$/[] = {/' \
-	    -e 's/\([[:upper:]][[:upper:]_0-9]*\)/"\1"/g' > $@
-
-# runtime/caml/jumptbl.h is required only if the C compiler supports
-# the labels as values extension.
-runtime/caml/jumptbl.h : runtime/caml/instruct.h
-	$(V_GEN)tr -d '\r' < $< | \
-	sed -n -e '/^  /s/ \([A-Z]\)/ \&\&lbl_\1/gp' \
-	       -e '/^}/q' > $@
-
 $(SAK): runtime/sak.c runtime/caml/misc.h runtime/caml/config.h
 	$(V_MKEXE)$(call SAK_BUILD,$@,$<)
 
-C_LITERAL = $(shell $(SAK) $(ENCODE_C_LITERAL) '$(1)')
+C_LITERAL = $(shell $(SAK) $(ENCODE_C_LITERAL) $(call QUOTE_SINGLE,$(1)))
 
-runtime/build_config.h: $(ROOTDIR)/Makefile.config $(SAK)
+runtime/build_config.h: $(ROOTDIR)/Makefile.config \
+                        $(ROOTDIR)/Makefile.build_config $(SAK)
 	$(V_GEN){ \
 	  echo '/* This file is generated from $(ROOTDIR)/Makefile.config */'; \
 	  printf '#define OCAML_STDLIB_DIR %s\n' \
-	         '$(call C_LITERAL,$(TARGET_LIBDIR))'; \
+	         $(call QUOTE_SINGLE,$(call C_LITERAL,$(TARGET_LIBDIR))); \
 	  echo '#define HOST "$(HOST)"'; \
+	  echo '#define BYTECODE_RUNTIME_ID "$(BYTECODE_RUNTIME_ID)"'; \
 	} > $@
+
+runtime/prims.$(O): runtime/build_config.h
 
 ## Runtime libraries and programs
 
@@ -1495,45 +1570,64 @@ runtime/%.npic.$(O): OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS) $(ocamlrun_CPPFLAGS)
 $(DEPDIR)/runtime/%.npic.$(D): \
   OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS) $(ocamlrun_CPPFLAGS)
 
-## Compilation of runtime C files
+## Compilation of C files
 
-# The COMPILE_C_FILE macro below receives as argument the pattern
-# that corresponds to the name of the generated object file
-# (without the extension, which is added by the macro)
-define COMPILE_C_FILE
+# There are two scenarios in which a C object may need to be rebuilt:
+# 1. The C source file is newer than the object
+# 2. A file #include'd by the C source file is newer than the object
+#
+# When the C source file is newer than the object, we do not have to care about
+# which included files are newer, we just have to be sure that all the files
+# which may be #include'd definitely exist.
+#
+# GCC and clang can both generate the precise dependency information
+# needed for (2) as part of compiling the C file. We therefore use C dependency
+# information lazily.
+
+# All C files must depend on the _presence_ of the $(runtime_BUILT_HEADERS). If
+# a C file actually uses one of these headers, then the dependency will be
+# recorded in the .d file (and becomes a real dependency, not an order-only
+# dependency).
+runtime_MISSING_BUILT_HEADERS = \
+  $(filter-out $(wildcard $(runtime_BUILT_HEADERS)), $(runtime_BUILT_HEADERS))
+
+# COMPILE_C_FILE generates the compilation rules for C objects
+#   $1 = target pattern for the generated object file (without the .$(O))
+#   $2 = source pattern for the C source file (without the .c)
+#   $3 = optional; if non-empty suppresses the generation of dependency rules
+define DO_COMPILE_C_FILE
 ifeq "$(COMPUTE_DEPS)" "true"
-ifneq "$(1)" "%"
-# -MG would ensure that the dependencies are generated even if the files listed
-# in $$(runtime_BUILT_HEADERS) haven't been assembled yet. However,
-# this goes subtly wrong if the user has the headers installed,
-# as gcc will pick up a dependency on those instead and the local
-# ones will not be generated. For this reason, we don't use -MG and
-# instead include $(runtime_BUILT_HEADERS) in the order only dependencies
-# to ensure that they exist before dependencies are computed.
-$(DEPDIR)/$(1).$(D): runtime/%.c | $(DEPDIR)/runtime $(runtime_BUILT_HEADERS)
-	$$(V_CCDEPS)$$(DEP_CC) $$(OC_CPPFLAGS) $$(CPPFLAGS) $$< -MT \
-	  'runtime/$$*$(subst runtime/%,,$(1)).$(O)' -MF $$@
-endif # ifneq "$(1)" "%"
-$(1).$(O): $(2).c
+# Secondary expansion means we can use @D to depend on the directory being
+# created.
+$(1).$(O): $(2).c \
+  $(if $(3),,| $(DEPDIR)/$$$$(@D) $(runtime_MISSING_BUILT_HEADERS))
 else
 $(1).$(O): $(2).c \
   $(runtime_CONFIGURED_HEADERS) $(runtime_BUILT_HEADERS) \
   $(RUNTIME_HEADERS)
 endif # ifeq "$(COMPUTE_DEPS)" "true"
 	$$(V_CC)$$(CC) $$(OC_CFLAGS) $$(CFLAGS) $$(OC_CPPFLAGS) $$(CPPFLAGS) \
-	  $$(OUTPUTOBJ)$$@ -c $$<
+	  $$(OUTPUTOBJ)$$@ \
+	  $(if $(3),,$(call DEP_FLAGS,$$@,$(DEPDIR)/$$(@:.$(O)=.$(D)))) \
+	  -c $$<
+# This is skipped if either $(COMPUTE_DEPS) is false or $(3) is non-empty
+ifeq "$(COMPUTE_DEPS)$(3)" "true"
+# MSVC doesn't emit usable dependency information, but if GCC is available
+# then it can instead be called in order to generate the .d file.
+ifneq "$(CC)" "$(DEP_CC)"
+	$$(V_CCDEPS)$$(DEP_CC) $(DEP_CPPFLAGS) $$(OC_CPPFLAGS) $$(CPPFLAGS) $$< \
+   -MM -MT $$@ -MF $(DEPDIR)/$$(@:.$(O)=.$(D))
+endif # ifneq "$(CC)" "$(DEP_CC)"
+endif # ifeq "$(COMPUTE_DEPS)$(3)" "true"
 endef
 
-runtime/winpthreads/%.$(O): $(WINPTHREADS_SOURCE_DIR)/src/%.c \
-                            $(wildcard $(WINPTHREADS_SOURCE_DIR)/include/*.h) \
-                              | runtime/winpthreads
-	$(V_CC)$(CC) $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
-	  $(OUTPUTOBJ)$@ -c $<
+# The additional call expands the optional $(3) to an empty string
+COMPILE_C_FILE = \
+  $(call DO_COMPILE_C_FILE,$(1),$(2),$\
+                           $(if $(filter-out undefined,$(origin 3)),$(3)))
 
-runtime/winpthreads:
-	$(MKDIR) $@
-
-$(DEPDIR)/runtime:
+.PRECIOUS: $(DEPDIR)/%
+$(DEPDIR)/%:
 	$(MKDIR) $@
 
 runtime_OBJECT_TYPES = % %.b %.bd %.bi %.bpic
@@ -1553,6 +1647,8 @@ $(eval $(call COMPILE_C_FILE,runtime/$(UNIX_OR_WIN32)_non_shared.%, \
 $(foreach runtime_OBJECT_TYPE,$(subst %,,$(runtime_OBJECT_TYPES)), \
   $(eval \
     runtime/dynlink$(runtime_OBJECT_TYPE).$(O): $(ROOTDIR)/Makefile.config))
+
+$(eval $(call COMPILE_C_FILE,yacc/%,yacc/%,no-deps))
 
 ## Compilation of runtime assembly files
 
@@ -1590,19 +1686,9 @@ runtime/%_libasmrunpic.obj: runtime/%.asm
 
 ## Runtime dependencies
 
-runtime_DEP_FILES := $(addsuffix .b, \
-  $(basename $(runtime_BYTECODE_C_SOURCES) runtime/instrtrace))
-ifeq "$(NATIVE_COMPILER)" "true"
-runtime_DEP_FILES += $(addsuffix .n, $(basename $(runtime_NATIVE_C_SOURCES)))
-endif
-runtime_DEP_FILES += $(addsuffix d, $(runtime_DEP_FILES)) \
-             $(addsuffix i, $(runtime_DEP_FILES)) \
-             $(addsuffix pic, $(runtime_DEP_FILES))
-runtime_DEP_FILES := $(addsuffix .$(D), $(runtime_DEP_FILES))
-
-ifeq "$(COMPUTE_DEPS)" "true"
-include $(addprefix $(DEPDIR)/, $(runtime_DEP_FILES))
-endif
+RUNTIME_DEP_FILES := $(wildcard $(DEPDIR)/runtime/*.$(D))
+.PHONY: $(RUNTIME_DEP_FILES)
+include $(RUNTIME_DEP_FILES)
 
 .PHONY: runtime
 runtime: stdlib/libcamlrun.$(A)
@@ -1612,14 +1698,17 @@ makeruntime: runtime-all
 stdlib/libcamlrun.$(A): runtime-all
 	cd stdlib; $(LN) ../runtime/libcamlrun.$(A) .
 clean::
-	rm -f $(addprefix runtime/, *.o *.obj *.a *.lib *.so *.dll ld.conf)
+	rm -f $(addprefix runtime/, *.o *.obj *.a *.lib *.so *.dll)
 	rm -f $(addprefix runtime/, ocamlrun ocamlrund ocamlruni ocamlruns sak)
 	rm -f $(addprefix runtime/, \
 	  ocamlrun.exe ocamlrund.exe ocamlruni.exe ocamlruns.exe sak.exe)
+# jumptbl.h and opnames.h stopped being generated in #14488, but the two headers
+# continue to be removed as otherwise when switching between branches based
+# before this change the (stale) headers trip the C/C++ compatibility tests.
 	rm -f runtime/primitives runtime/primitives*.new runtime/prims.c \
-	  $(runtime_BUILT_HEADERS)
+	  $(runtime_BUILT_HEADERS) runtime/caml/jumptbl.h runtime/caml/opnames.h
 	rm -f runtime/domain_state.inc
-	rm -rf $(DEPDIR) runtime/winpthreads
+	rm -rf $(DEPDIR)
 	rm -f stdlib/libcamlrun.a stdlib/libcamlrun.lib
 
 .PHONY: runtimeopt
@@ -1682,6 +1771,7 @@ ocamllex_SOURCES = $(addprefix lex/,\
   lexgen.mli lexgen.ml \
   compact.mli compact.ml \
   common.mli common.ml \
+  exhaustiveness.mli exhaustiveness.ml \
   output.mli output.ml \
   outputbis.mli outputbis.ml \
   main.mli main.ml)
@@ -1701,6 +1791,10 @@ ocamllex.opt: ocamlopt
 	$(MAKE) lex-allopt
 
 ocamllex_BYTECODE_LINKFLAGS = -compat-32
+
+ifeq "$(IN_COREBOOT_CYCLE)" "true"
+ocamllex_BYTECODE_LINKFLAGS += -set-runtime-default standard_library_default=.
+endif
 
 partialclean::
 	rm -f lex/*.cm* lex/*.o lex/*.obj \
@@ -1861,6 +1955,13 @@ OCAMLDOC_LIBCMTS=$(OCAMLDOC_LIBMLIS:.mli=.cmt) $(OCAMLDOC_LIBMLIS:.mli=.cmti)
 ocamldoc/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 ocamldoc/%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
 
+ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "false"
+# ocamldoc needs a custom runtime when building statically owing to the C stubs
+# in unix.cma and str.cma. This is specified explicitly to suppress the default
+# linking flags (see $(MAYBE_ADD_BYTECODE_LAUNCHER_FLAGS) in Makefile.common)
+ocamldoc/ocamldoc$(EXE): ocamldoc_BYTECODE_LINKFLAGS += -custom
+endif
+
 .PHONY: ocamldoc
 ocamldoc: ocamldoc/ocamldoc$(EXE) ocamldoc/odoc_test.cmo \
   ocamlc ocamlyacc ocamllex
@@ -1891,19 +1992,20 @@ ocamltest_CORE = \
   filecompare.mli filecompare.ml \
   variables.mli variables.ml \
   environments.mli environments.ml \
-  result.mli result.ml \
+  test_result.mli test_result.ml \
   actions.mli actions.ml \
   tests.mli tests.ml \
   strace.mli strace.ml \
   tsl_ast.mli tsl_ast.ml \
+  tsl_printer.mli tsl_printer.ml \
   tsl_parser.mly \
   tsl_lexer.mli tsl_lexer.mll \
   modifier_parser.mli modifier_parser.ml \
   tsl_semantics.mli tsl_semantics.ml \
+  tsl_query.mli tsl_query.ml \
   builtin_variables.mli builtin_variables.ml \
   actions_helpers.mli actions_helpers.ml \
-  builtin_actions.mli builtin_actions.ml \
-  translate.mli translate.ml
+  builtin_actions.mli builtin_actions.ml
 
 ocamltest_ocaml_PLUGIN = \
   ocaml_backends.mli ocaml_backends.ml \
@@ -1931,19 +2033,14 @@ ocamltest_SOURCES = $(addprefix ocamltest/, \
 $(eval $(call COMPILE_C_FILE,ocamltest/%.b,ocamltest/%))
 $(eval $(call COMPILE_C_FILE,ocamltest/%.n,ocamltest/%))
 
-ifeq "$(COMPUTE_DEPS)" "true"
-include $(addprefix $(DEPDIR)/, $(ocamltest_C_FILES:.c=.$(D)))
-endif
+ocamltest_DEPEND_FILES := $(wildcard $(DEPDIR)/ocamltest/*.$(D))
+.PHONY: $(ocamltest_DEPEND_FILES)
+include $(ocamltest_DEPEND_FILES)
 
-ocamltest_DEP_FILES = $(addprefix $(DEPDIR)/, $(ocamltest_C_FILES:.c=.$(D)))
-
-$(ocamltest_DEP_FILES): | $(DEPDIR)/ocamltest
-
-$(DEPDIR)/ocamltest:
-	$(MKDIR) $@
-
-$(ocamltest_DEP_FILES): $(DEPDIR)/ocamltest/%.$(D): ocamltest/%.c
-	$(V_CCDEPS)$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.$(O)' -MF $@
+ocamltest/ocamltest_unix.cmo: \
+  $(addsuffix .cmi, $(unix_library)) ocamltest/ocamltest_unix.cmi
+ocamltest/ocamltest_unix.cmx: \
+  $(addsuffix .cmx, $(unix_library)) ocamltest/ocamltest_unix.cmi
 
 ocamltest/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 
@@ -2008,7 +2105,24 @@ testsuite/tools/test_in_prefi%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 
 test_in_prefix_BYTECODE_LINKFLAGS += -custom
 
+ifeq "$(TARGET_LIBDIR_IS_RELATIVE)" "true"
+# testsuite/tools/test_in_prefix cannot use a relative stdlib because it is run
+# from testsuite/tools, not from the installation tree (the alternative would be
+# to compile it directly with the installed compiler)
+test_in_prefix_NATIVE_LINKFLAGS =
+test_in_prefix_COMMON_LINKFLAGS = \
+  -set-runtime-default 'standard_library_default=$(LIBDIR)'
+endif
+
 testsuite/tools/test_in_prefi%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
+
+testsuite/tools/poisonedruntime$(EXE): testsuite/tools/poisonedruntime.$(O)
+	$(V_MKEXE)$(call MKEXE_VIA_CC,$@,$^)
+
+$(eval $(call COMPILE_C_FILE,\
+  testsuite/tools/main_in_c,testsuite/tools/main_in_c,no-deps))
+$(eval $(call COMPILE_C_FILE,\
+  testsuite/tools/poisonedruntime,testsuite/tools/poisonedruntime,no-deps))
 
 ocamltest_BYTECODE_LINKFLAGS = -custom -g
 
@@ -2061,6 +2175,7 @@ partialclean::
 	rm -f $(addprefix testsuite/lib/*.,cm* o obj a lib)
 	rm -f $(addprefix testsuite/tools/*.,cm* o obj a lib)
 	rm -f testsuite/tools/codegen testsuite/tools/codegen.exe
+	rm -f testsuite/tools/poisonedruntime testsuite/tools/poisonedruntime.exe
 	rm -f testsuite/tools/expect testsuite/tools/expect.exe
 	rm -f testsuite/tools/test_in_prefix testsuite/tools/test_in_prefix.exe
 	rm -f testsuite/tools/test_in_prefix.opt \
@@ -2071,7 +2186,8 @@ partialclean::
 ocamltest/ocamltest_config.ml ocamltest/ocamltest_unix.ml: config.status
 	./$< $@
 
-beforedepend:: ocamltest/ocamltest_config.ml ocamltest/ocamltest_unix.ml
+beforedepend:: ocamltest/ocamltest_config.ml ocamltest/tsl_lexer.ml \
+               ocamltest/tsl_parser.ml ocamltest/tsl_parser.mli
 
 # Documentation
 
@@ -2103,8 +2219,8 @@ partialclean::
 .PHONY: ocamltest-manual
 ocamltest-manual: ocamltest/ocamltest.html
 
-ocamltest/ocamltest.html: ocamltest/OCAMLTEST.org
-	pandoc -s --toc -N -f org -t html -o $@ $<
+ocamltest/ocamltest.html: ocamltest/OCAMLTEST.adoc
+	asciidoctor -o $@ $<
 
 # The extra libraries
 
@@ -2219,6 +2335,13 @@ debugger/ocamldebug.cmo: $(ocamldebug_DEBUGGER_OBJECTS)
 
 debugger/ocamldebug_entry.cmo: debugger/ocamldebug.cmo
 
+ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "false"
+# ocamldebug needs a custom runtime when building statically owing to the
+# C stubs in unix.cma. This is specified explicitly to suppress the default
+# linking flags (see $(MAYBE_ADD_BYTECODE_LAUNCHER_FLAGS) in Makefile.common)
+debugger/ocamldebug$(EXE): ocamldebug_BYTECODE_LINKFLAGS += -custom
+endif
+
 clean::
 	rm -f debugger/ocamldebug debugger/ocamldebug.exe
 	rm -f debugger/debugger_lexer.ml
@@ -2242,6 +2365,7 @@ endif
 endif
 
 # Check that the stack limit is reasonable (Unix-only)
+$(eval $(call COMPILE_C_FILE,tools/checkstack,tools/checkstack,no-deps))
 .PHONY: checkstack
 ifeq "$(UNIX_OR_WIN32)" "unix"
 checkstack: tools/checkstack$(EXE)
@@ -2433,18 +2557,13 @@ dumpobj_SOURCES = $(addprefix tools/, \
   opnames.mli opnames.ml \
   dumpobj.mli dumpobj.ml)
 
-make_opcodes = tools/make_opcodes$(EXE)
-
-make_opcodes_LIBRARIES =
-make_opcodes_SOURCES = tools/make_opcodes.mli tools/make_opcodes.mll
-
-tools/opnames.ml: runtime/caml/instruct.h $(make_opcodes)
-	$(V_GEN)$(NEW_OCAMLRUN) $(make_opcodes) -opnames < $< > $@
+tools/opnames.ml: tools/opnames.ml.c runtime/caml/opcodes.h
+	$(V_GEN)$(CPP) -I runtime $< > $@
 
 clean::
-	rm -f $(addprefix tools/,opnames.ml make_opcodes.ml)
+	rm -f tools/opnames.ml
 
-beforedepend:: $(addprefix tools/,opnames.ml make_opcodes.ml)
+beforedepend:: tools/opnames.ml
 
 # Display info on compiled files
 
@@ -2486,6 +2605,13 @@ $(ocamltex): OC_COMMON_LINKFLAGS += -linkall
 $(ocamltex): VPATH += $(addprefix otherlibs/,str unix)
 
 tools/ocamltex.cmo: OC_COMMON_COMPFLAGS += -no-alias-deps
+
+ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "false"
+# ocamltex needs a custom runtime when building statically owing to the C stubs
+# in unix.cma and str.cma. This is specified explicitly to suppress the default
+# linking flags (see $(MAYBE_ADD_BYTECODE_LAUNCHER_FLAGS) in Makefile.common)
+tools/ocamltex$(EXE): ocamltex_BYTECODE_LINKFLAGS += -custom
+endif
 
 # we need str and unix which depend on the bytecode version of other tools
 # thus we use the othertools target
@@ -2554,15 +2680,14 @@ toplevel/native/topeval.cmx: otherlibs/dynlink/dynlink.cmxa
 
 # The numeric opcodes
 
-bytecomp/opcodes.ml: runtime/caml/instruct.h $(make_opcodes)
-	$(V_GEN)$(NEW_OCAMLRUN) $(make_opcodes) -opcodes < $< > $@
+bytecomp/opcodes.ml: bytecomp/opcodes.ml.c runtime/caml/opcodes.h
+	$(V_GEN)$(CPP) -I runtime $< > $@
 
 bytecomp/opcodes.mli: bytecomp/opcodes.ml
 	$(V_GEN)$(CAMLC) -i $< > $@
 
 partialclean::
-	rm -f bytecomp/opcodes.ml
-	rm -f bytecomp/opcodes.mli
+	rm -f bytecomp/opcodes.ml bytecomp/opcodes.mli
 
 beforedepend:: bytecomp/opcodes.ml bytecomp/opcodes.mli
 
@@ -2593,6 +2718,12 @@ partialclean::
 %.depend: beforedepend
 	$(V_OCAMLDEP)$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I $* $(INCLUDES) \
 	  $(OCAMLDEPFLAGS) $*/*.mli $*/*.ml > $@
+
+ocamltest.depend: beforedepend
+	$(V_OCAMLDEP)$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I ocamltest $(INCLUDES) \
+	  $(OCAMLDEPFLAGS) \
+	  $(filter-out ocamltest/ocamltest_unix.ml, \
+	               $(ocamltest_ML_FILES) $(ocamltest_MLI_FILES)) > $@
 
 asmcomp.depend:: beforedepend $(cvt_emit)
 	$(V_OCAMLDEP)$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I asmcomp $(INCLUDES) \
@@ -2663,7 +2794,9 @@ distclean: clean
 ifneq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
 	$(MAKE) -C flexdll distclean MSVC_DETECT=0
 endif
+ifneq "$(wildcard manual)" ""
 	$(MAKE) -C manual distclean
+endif
 	rm -f ocamldoc/META
 	rm -f $(addprefix ocamltest/,ocamltest_config.ml ocamltest_unix.ml)
 	rm -f otherlibs/dynlink/META otherlibs/dynlink/dynlink_config.ml \
@@ -2671,7 +2804,8 @@ endif
 	  otherlibs/dynlink/dynlink_cmxs_format.mli \
 	  otherlibs/dynlink/dynlink_platform_intf.mli
 	$(MAKE) -C otherlibs distclean
-	rm -f $(runtime_CONFIGURED_HEADERS)
+	rm -f $(runtime_CONFIGURED_HEADERS) runtime/ld.conf
+	rm -rf runtime/api-testing
 	$(MAKE) -C stdlib distclean
 	$(MAKE) -C testsuite distclean
 	rm -f tools/eventlog_metadata tools/*.bak
@@ -2681,325 +2815,344 @@ endif
 	      boot/flexdll_*.o boot/flexdll_*.obj \
 	      boot/*.cm* boot/libcamlrun.a boot/libcamlrun.lib boot/ocamlc.opt
 	rm -f Makefile.config Makefile.build_config
-	rm -rf autom4te.cache winpthreads-sources flexdll-sources \
+	rm -rf autom4te.cache flexdll-sources \
          $(BYTE_BUILD_TREE) $(OPT_BUILD_TREE)
 	rm -f config.log config.status libtool
 
-INSTALL_LIBDIR_DYNLINK = $(INSTALL_LIBDIR)/dynlink
+# COMPILER_ARTEFACT_DIRS adds the common compiler-libs directories as prefixes
+# to a sequence of patterns in the first argument, e.g.
+# $(call COMPILER_ARTEFACT_DIRS, *.cmi) expands to utils/*.cmi, parsing/*.cmi,
+# and so forth. Multiple wildcard patterns may be supplied. An optional second
+# argument includes additional directories beyond the common ones (e.g. asmcomp,
+# etc.)
+COMPILER_ARTEFACT_DIRS = \
+  $(foreach dir, \
+      utils parsing typing bytecomp file_formats lambda driver toplevel \
+      $(if $(filter-out undefined, $(origin 2)), $(2)), \
+    $(addprefix $(dir)/, $(1)))
+NATIVE_ARTEFACT_DIRS = \
+  asmcomp toplevel/native \
+  middle_end middle_end/closure middle_end/flambda middle_end/flambda/base_types
 
 # Installation
-.PHONY: install
-install:
-	$(MKDIR) "$(INSTALL_BINDIR)"
-	$(MKDIR) "$(INSTALL_LIBDIR)"
-	$(MKDIR) "$(INSTALL_STUBLIBDIR)"
-	$(MKDIR) "$(INSTALL_COMPLIBDIR)"
-	$(MKDIR) "$(INSTALL_DOCDIR)"
-	$(MKDIR) "$(INSTALL_INCDIR)"
-	$(MKDIR) "$(INSTALL_LIBDIR_PROFILING)"
-	$(INSTALL_PROG) $(runtime_PROGRAMS) "$(INSTALL_BINDIR)"
-	$(INSTALL_DATA) $(runtime_BYTECODE_STATIC_LIBRARIES) \
-	  "$(INSTALL_LIBDIR)"
-ifneq "$(runtime_BYTECODE_SHARED_LIBRARIES)" ""
-	$(INSTALL_PROG) $(runtime_BYTECODE_SHARED_LIBRARIES) \
-	  "$(INSTALL_LIBDIR)"
+# Historically, the install target dynamically installed what had been built,
+# for example, if only world had been built then make install simply didn't
+# install the native tools. That infrastructure is potentially convenient when
+# working on the compiler, but potentially masks bugs. It is better to have the
+# installation targets require everything configure mandated to have built.
+# There are three entry points to installation:
+#   install - installs everything
+#   installopt - installs the native code compiler _and_ the extra .opt tools
+#   installoptopt - installs just the extra .opt tools
+# The installopt targets have been maintained for now, but may be removed in the
+# future.
+
+ifeq "$(NATIVE_COMPILER)" "true"
+install: full-installoptopt
+	$(call INSTALL_END)
+else
+install: common-install
+	$(call INSTALL_END)
 endif
-	$(INSTALL_DATA) runtime/caml/domain_state.tbl runtime/caml/*.h \
-	  "$(INSTALL_INCDIR)"
-	$(INSTALL_PROG) ocaml$(EXE) "$(INSTALL_BINDIR)"
+
+# These three targets are the slightly esoteric special sauce that avoid
+# recursive make invocations in the install targets.
+# There are three basic install recipes:
+# - The old install target is available to common-install, but never recurses to
+#   installopt
+# - The old installopt target is available as both full-installopt and
+#   native-install
+# - The old installoptopt target is also available as full-installoptopt and
+#   installopt
+# These sets of recipes are then welded together by these three dependency
+# specifications
+# - When configured with --disable-native-compiler, the install target simply
+#   depends on common-install (see above)
+# - Otherwise, install depends on full-installoptopt (see above)
+# - The recipe for full-installoptopt installs the .opt versions of the tools,
+#   but it _depends on_ full-installopt.
+# - full-installopt installs the native compiler, but it _depends on_
+#   common-install
+installopt: native-install
+
+full-installopt:: common-install
+
+full-installoptopt: full-installopt
+
+.PHONY: common-install
+common-install::
+	$(call INSTALL_BEGIN)
+
+ifeq "$(SUFFIXING)" "true"
+MANGLE_RUNTIME_NAME = $(TARGET)-$(1)-$(BYTECODE_RUNTIME_ID)$(EXE)
+MANGLE_RUNTIME_DLL_NAME = lib$(1)-$(TARGET)-$($(2)_RUNTIME_ID)$(EXT_DLL)
+else
+MANGLE_RUNTIME_NAME = $(1)$(EXE)
+MANGLE_RUNTIME_DLL_NAME = lib$(1)_shared$(EXT_DLL)
+endif
+
+define INSTALL_RUNTIME
+common-install::
+	$$(call INSTALL_ITEM, runtime/$(1)$(EXE), bin, , \
+	  $(call MANGLE_RUNTIME_NAME,$(1)), $(if $(filter true, $(SUFFIXING)), \
+	    $(1)$(EXE) $(1)-$(ZINC_RUNTIME_ID)$(EXE)))
+endef
+define INSTALL_RUNTIME_LIB
+ifeq "$(2)" "BYTECODE"
+common-install::
+else
+full-installopt native-install::
+endif
+	$$(call INSTALL_ITEM, runtime/lib$(1)_shared$(EXT_DLL), libexec, , \
+	  $(call MANGLE_RUNTIME_DLL_NAME,$(1),$(2)), \
+	    $(if $(filter true, $(SUFFIXING)), lib$(1)_shared$(EXT_DLL)))
+endef
+
+$(foreach runtime, $(runtime_PROGRAMS), \
+  $(eval $(call INSTALL_RUNTIME,$(runtime))))
+
+common-install::
+	$(call INSTALL_ITEMS, runtime/ld.conf $(runtime_BYTECODE_STATIC_LIBRARIES), \
+	  lib)
+
+$(foreach shared_runtime, $(runtime_BYTECODE_SHARED_LIBRARIES), \
+  $(eval $(call INSTALL_RUNTIME_LIB,$(shared_runtime),BYTECODE)))
+
+common-install::
+	$(call INSTALL_ITEMS, \
+	    runtime/caml/domain_state.tbl runtime/caml/*.h, \
+	  lib, $(INSTALL_LIBDIR_CAML))
+	$(call INSTALL_ITEMS, ocaml$(EXE), bin)
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
-	$(call INSTALL_STRIPPED_BYTE_PROG,\
-               ocamlc$(EXE),"$(INSTALL_BINDIR)/ocamlc.byte$(EXE)")
+	$(call STRIP_BYTE_PROG, ocamlc$(EXE))
+ifeq "$(NATIVE_COMPILER)" "true"
+	$(call INSTALL_ITEM, \
+	  ocamlc$(EXE).stripped, bin, , ocamlc.byte$(EXE))
+else
+	$(call INSTALL_ITEM, \
+	  ocamlc$(EXE).stripped, bin, , ocamlc.byte$(EXE), ocamlc$(EXE))
+endif
 endif
 	$(MAKE) -C stdlib install
+
+define INSTALL_ONE_NAT_TOOL
+common-install::
+ifeq "$(NATIVE_COMPILER)" "true"
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
-	$(INSTALL_PROG) lex/ocamllex$(EXE) \
-	  "$(INSTALL_BINDIR)/ocamllex.byte$(EXE)"
-	for i in $(TOOLS_TO_INSTALL_NAT); \
-	do \
-	  $(INSTALL_PROG) "tools/$$i$(EXE)" "$(INSTALL_BINDIR)/$$i.byte$(EXE)";\
-	  if test -f "tools/$$i".opt$(EXE); then \
-	    $(INSTALL_PROG) "tools/$$i.opt$(EXE)" "$(INSTALL_BINDIR)" && \
-	    (cd "$(INSTALL_BINDIR)" && $(LN) "$$i.opt$(EXE)" "$$i$(EXE)"); \
-	  else \
-	    (cd "$(INSTALL_BINDIR)" && $(LN) "$$i.byte$(EXE)" "$$i$(EXE)"); \
-	  fi; \
-	done
+	$$(call INSTALL_ITEM, tools/$(1)$(EXE), bin, , $(1).byte$(EXE))
+endif
+	$$(call INSTALL_ITEM, tools/$(1).opt$(EXE), bin, , , $(1)$(EXE))
 else
-	for i in $(TOOLS_TO_INSTALL_NAT); \
-	do \
-	  if test -f "tools/$$i".opt$(EXE); then \
-	    $(INSTALL_PROG) "tools/$$i.opt$(EXE)" "$(INSTALL_BINDIR)"; \
-	    (cd "$(INSTALL_BINDIR)" && $(LN) "$$i.opt$(EXE)" "$$i$(EXE)"); \
-	  fi; \
-	done
+	$$(call INSTALL_ITEM, tools/$(1)$(EXE), bin, , $(1).byte$(EXE), $(1)$(EXE))
 endif
-	for i in $(TOOLS_TO_INSTALL_BYT); \
-	do \
-	  $(INSTALL_PROG) "tools/$$i$(EXE)" "$(INSTALL_BINDIR)";\
-	done
-	$(INSTALL_PROG) $(ocamlyacc_PROGRAM)$(EXE) "$(INSTALL_BINDIR)"
-	$(INSTALL_DATA) \
-	   utils/*.cmi \
-	   parsing/*.cmi \
-	   typing/*.cmi \
-	   bytecomp/*.cmi \
-	   file_formats/*.cmi \
-	   lambda/*.cmi \
-	   driver/*.cmi \
-	   toplevel/*.cmi \
-	   "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	   toplevel/byte/*.cmi \
-	   "$(INSTALL_COMPLIBDIR)"
+endef
+
+ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
+common-install::
+ifeq "$(NATIVE_COMPILER)" "true"
+	$(call INSTALL_ITEM, \
+	  lex/ocamllex$(EXE), bin, , ocamllex.byte$(EXE))
+else
+	$(call INSTALL_ITEM, \
+	  lex/ocamllex$(EXE), bin, , ocamllex.byte$(EXE), ocamllex$(EXE))
+endif
+endif
+
+$(foreach tool, $(TOOLS_TO_INSTALL_NAT), \
+  $(eval $(call INSTALL_ONE_NAT_TOOL,$(tool))))
+
+define INSTALL_ONE_BYT_TOOL
+common-install::
+	$$(call INSTALL_ITEMS, tools/$(1)$(EXE), bin)
+endef
+
+$(foreach tool, $(TOOLS_TO_INSTALL_BYT), \
+  $(eval $(call INSTALL_ONE_BYT_TOOL,$(tool))))
+
+common-install::
+	$(call INSTALL_ITEMS, $(ocamlyacc_PROGRAM)$(EXE), bin)
+	$(call INSTALL_ITEMS, \
+	    $(call COMPILER_ARTEFACT_DIRS, *.cmi), \
+	  lib, $(INSTALL_LIBDIR_COMPILERLIBS))
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
-	$(INSTALL_DATA) \
-	   utils/*.cmt utils/*.cmti utils/*.mli \
-	   parsing/*.cmt parsing/*.cmti parsing/*.mli \
-	   typing/*.cmt typing/*.cmti typing/*.mli \
-	   file_formats/*.cmt file_formats/*.cmti file_formats/*.mli \
-	   lambda/*.cmt lambda/*.cmti lambda/*.mli \
-	   bytecomp/*.cmt bytecomp/*.cmti bytecomp/*.mli \
-	   driver/*.cmt driver/*.cmti driver/*.mli \
-	   toplevel/*.cmt toplevel/*.cmti toplevel/*.mli \
-	   "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	   toplevel/byte/*.cmt \
-	   "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	  tools/profiling.cmt tools/profiling.cmti \
-	  "$(INSTALL_LIBDIR_PROFILING)"
+	$(call INSTALL_ITEMS, \
+	    $(call COMPILER_ARTEFACT_DIRS, *.cmt *.cmti *.mli), \
+	  lib, $(INSTALL_LIBDIR_COMPILERLIBS))
+	$(call INSTALL_ITEMS, toplevel/byte/*.cmt, \
+	  lib, $(INSTALL_LIBDIR_COMPILERLIBS))
+	$(call INSTALL_ITEMS, tools/profiling.cmt tools/profiling.cmti, \
+	  lib, $(INSTALL_LIBDIR_PROFILING))
 endif
-	$(INSTALL_DATA) \
-	  compilerlibs/*.cma compilerlibs/META \
-	  "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	   $(ocamlc_CMO_FILES) $(ocaml_CMO_FILES) \
-	   "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_PROG) $(expunge) "$(INSTALL_LIBDIR)"
+	$(call INSTALL_ITEMS, compilerlibs/*.cma compilerlibs/META, \
+	  lib, $(INSTALL_LIBDIR_COMPILERLIBS))
+	$(call INSTALL_ITEMS, $(ocamlc_CMO_FILES) $(ocaml_CMO_FILES), \
+	  lib, $(INSTALL_LIBDIR_COMPILERLIBS))
+	$(call INSTALL_ITEMS, $(expunge), libexec)
 # If installing over a previous OCaml version, ensure some modules are removed
 # from the previous installation.
-	rm -f "$(INSTALL_LIBDIR)"/topdirs.cm* "$(INSTALL_LIBDIR)/topdirs.mli"
-	rm -f "$(INSTALL_LIBDIR)"/profiling.cm* "$(INSTALL_LIBDIR)/profiling.$(O)"
-	$(INSTALL_DATA) \
-	  tools/profiling.cmi tools/profiling.cmo \
-	  "$(INSTALL_LIBDIR_PROFILING)"
+	$(call INSTALL_RM, \
+	  "$(INSTALL_LIBDIR)"/topdirs.cm* "$(INSTALL_LIBDIR)/topdirs.mli")
+	$(call INSTALL_RM, \
+	  "$(INSTALL_LIBDIR)"/profiling.cm* "$(INSTALL_LIBDIR)/profiling.$(O)")
+	$(call INSTALL_ITEMS, tools/profiling.cmi tools/profiling.cmo, \
+	  lib, $(INSTALL_LIBDIR_PROFILING))
 ifeq "$(UNIX_OR_WIN32)" "unix" # Install manual pages only on Unix
 	$(MAKE) -C man install
 endif
 # For dynlink, if installing over a previous OCaml version, ensure
 # dynlink is removed from the previous installation.
-	rm -f "$(INSTALL_LIBDIR)"/dynlink.cm* "$(INSTALL_LIBDIR)/dynlink.mli" \
-        "$(INSTALL_LIBDIR)/dynlink.$(A)" \
-        $(addprefix "$(INSTALL_LIBDIR)/", $(notdir $(dynlink_CMX_FILES)))
-	$(MKDIR) "$(INSTALL_LIBDIR_DYNLINK)"
-	$(INSTALL_DATA) \
-	  otherlibs/dynlink/dynlink.cmi otherlibs/dynlink/dynlink.cma \
-	  otherlibs/dynlink/META \
-	  "$(INSTALL_LIBDIR_DYNLINK)"
+	$(call INSTALL_RM, \
+	  "$(INSTALL_LIBDIR)"/dynlink.cm* \
+	  "$(INSTALL_LIBDIR)/dynlink.mli" \
+	  "$(INSTALL_LIBDIR)/dynlink.$(A)" \
+	  $(addprefix "$(INSTALL_LIBDIR)/", $(notdir $(dynlink_CMX_FILES))))
+	$(call INSTALL_ITEMS, \
+	    otherlibs/dynlink/dynlink.cmi otherlibs/dynlink/dynlink.cma \
+	    otherlibs/dynlink/META, \
+	  lib, $(INSTALL_LIBDIR_DYNLINK))
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
-	$(INSTALL_DATA) \
-	  otherlibs/dynlink/dynlink.cmti otherlibs/dynlink/dynlink.mli \
-	  "$(INSTALL_LIBDIR_DYNLINK)"
+	$(call INSTALL_ITEMS, \
+	    otherlibs/dynlink/dynlink.cmti otherlibs/dynlink/dynlink.mli, \
+	  lib, $(INSTALL_LIBDIR_DYNLINK))
 endif
 	for i in $(OTHERLIBS); do \
 	  $(MAKE) -C otherlibs/$$i install || exit $$?; \
 	done
 ifeq "$(build_ocamldoc)" "true"
-	$(MKDIR) "$(INSTALL_LIBDIR)/ocamldoc"
-	$(INSTALL_PROG) $(OCAMLDOC) "$(INSTALL_BINDIR)"
-	$(INSTALL_DATA) \
-	  ocamldoc/ocamldoc.hva ocamldoc/*.cmi ocamldoc/odoc_info.cma \
-	  ocamldoc/META \
-	  "$(INSTALL_LIBDIR)/ocamldoc"
-	$(INSTALL_DATA) \
-	  $(OCAMLDOC_LIBCMIS) \
-	  "$(INSTALL_LIBDIR)/ocamldoc"
+	$(call INSTALL_ITEMS, ocamldoc/ocamldoc$(EXE), bin)
+	$(call INSTALL_ITEMS, \
+	    ocamldoc/ocamldoc.hva ocamldoc/*.cmi ocamldoc/odoc_info.cma \
+	    ocamldoc/META, \
+	  lib, $(INSTALL_LIBDIR_OCAMLDOC))
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
-	$(INSTALL_DATA) \
-	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMTS) \
-	  "$(INSTALL_LIBDIR)/ocamldoc"
+	$(call INSTALL_ITEMS, $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMTS), \
+	  lib, $(INSTALL_LIBDIR_OCAMLDOC))
 endif
 endif
 ifeq "$(build_libraries_manpages)" "true"
 	$(MAKE) -C api_docgen install
 endif
-	if test -n "$(WITH_DEBUGGER)"; then \
-	  $(INSTALL_PROG) debugger/ocamldebug$(EXE) "$(INSTALL_BINDIR)"; \
-	fi
+ifneq "$(WITH_DEBUGGER)" ""
+	$(call INSTALL_ITEMS, debugger/ocamldebug$(EXE), bin)
+endif
 ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 ifeq "$(TOOLCHAIN)" "msvc"
-	$(INSTALL_DATA) $(FLEXDLL_SOURCE_DIR)/$(FLEXDLL_MANIFEST) \
-    "$(INSTALL_BINDIR)/"
+	# Technically this should not be installed with "executable"
+	# permissions, but in practice that request will be ignored.
+	$(call INSTALL_ITEMS, $(FLEXDLL_SOURCE_DIR)/$(FLEXDLL_MANIFEST), bin)
 endif
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
-	$(INSTALL_PROG) \
-	  flexlink.byte$(EXE) "$(INSTALL_BINDIR)"
-endif # ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
-	$(MKDIR) "$(INSTALL_FLEXDLLDIR)"
-	$(INSTALL_DATA) $(FLEXDLL_OBJECTS) "$(INSTALL_FLEXDLLDIR)"
-endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
-	$(INSTALL_DATA) Makefile.config "$(INSTALL_LIBDIR)"
-	$(INSTALL_DATA) $(DOC_FILES) "$(INSTALL_DOCDIR)"
-ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
-	if test -f ocamlopt$(EXE); then $(MAKE) installopt; else \
-	   cd "$(INSTALL_BINDIR)"; \
-	   $(LN) ocamlc.byte$(EXE) ocamlc$(EXE); \
-	   $(LN) ocamllex.byte$(EXE) ocamllex$(EXE); \
-	   (test -f flexlink.byte$(EXE) && \
-	      $(LN) flexlink.byte$(EXE) flexlink$(EXE)) || true; \
-	fi
+ifeq "$(NATIVE_COMPILER)" "true"
+	$(call INSTALL_ITEMS, flexlink.byte$(EXE), bin)
 else
-	if test -f ocamlopt$(EXE); then $(MAKE) installopt; fi
+	$(call INSTALL_ITEM, flexlink.byte$(EXE), bin, , , flexlink$(EXE))
 endif
+endif # ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
+	$(call INSTALL_ITEMS, $(FLEXDLL_OBJECTS), lib, $(INSTALL_LIBDIR_FLEXDLL))
+endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
+	$(call INSTALL_ITEMS, Makefile.config, lib)
+	$(call INSTALL_ITEMS, $(DOC_FILES), doc)
 
 # Installation of the native-code compiler
-.PHONY: installopt
-installopt:
-	$(INSTALL_DATA) $(runtime_NATIVE_STATIC_LIBRARIES) "$(INSTALL_LIBDIR)"
-ifneq "$(runtime_NATIVE_SHARED_LIBRARIES)" ""
-	$(INSTALL_PROG) $(runtime_NATIVE_SHARED_LIBRARIES) "$(INSTALL_LIBDIR)"
-endif
+.PHONY: full-installopt native-install
+full-installopt native-install::
+	$(call INSTALL_ITEMS, $(runtime_NATIVE_STATIC_LIBRARIES), lib)
+
+$(foreach shared_runtime, $(runtime_NATIVE_SHARED_LIBRARIES), \
+  $(eval $(call INSTALL_RUNTIME_LIB,$(shared_runtime),NATIVE)))
+
+full-installopt native-install::
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
-	$(call INSTALL_STRIPPED_BYTE_PROG,\
-               ocamlopt$(EXE),"$(INSTALL_BINDIR)/ocamlopt.byte$(EXE)")
+	$(call STRIP_BYTE_PROG, ocamlopt$(EXE))
+	$(call INSTALL_ITEM, ocamlopt$(EXE).stripped, bin, , ocamlopt.byte$(EXE))
 endif
 	$(MAKE) -C stdlib installopt
-	$(INSTALL_DATA) \
-	    middle_end/*.cmi \
-	    "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	    middle_end/closure/*.cmi \
-	    "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	    middle_end/flambda/*.cmi \
-	    "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	    middle_end/flambda/base_types/*.cmi \
-	    "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	    asmcomp/*.cmi \
-	    "$(INSTALL_COMPLIBDIR)"
+	$(call INSTALL_ITEMS, \
+	    middle_end/*.cmi, \
+	  lib, $(INSTALL_LIBDIR_COMPILERLIBS))
+	$(call INSTALL_ITEMS, \
+	    middle_end/closure/*.cmi, \
+	  lib, $(INSTALL_LIBDIR_COMPILERLIBS))
+	$(call INSTALL_ITEMS, \
+	    middle_end/flambda/*.cmi, \
+	  lib, $(INSTALL_LIBDIR_COMPILERLIBS))
+	$(call INSTALL_ITEMS, \
+	    middle_end/flambda/base_types/*.cmi, \
+	  lib, $(INSTALL_LIBDIR_COMPILERLIBS))
+	$(call INSTALL_ITEMS, \
+	    asmcomp/*.cmi, \
+	  lib, $(INSTALL_LIBDIR_COMPILERLIBS))
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
-	$(INSTALL_DATA) \
-	    middle_end/*.cmt middle_end/*.cmti \
-	    middle_end/*.mli \
-	    "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	    middle_end/closure/*.cmt middle_end/closure/*.cmti \
-	    middle_end/closure/*.mli \
-	    "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	    middle_end/flambda/*.cmt middle_end/flambda/*.cmti \
-	    middle_end/flambda/*.mli \
-	    "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	    middle_end/flambda/base_types/*.cmt \
-            middle_end/flambda/base_types/*.cmti \
-	    middle_end/flambda/base_types/*.mli \
-	    "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	    asmcomp/*.cmt asmcomp/*.cmti \
-	    asmcomp/*.mli \
-	    "$(INSTALL_COMPLIBDIR)"
+	$(call INSTALL_ITEMS, \
+	    $(addprefix middle_end/, *.cmt *.cmti *.mli), \
+	  lib, $(INSTALL_LIBDIR_COMPILERLIBS))
+	$(call INSTALL_ITEMS, \
+	    $(addprefix middle_end/closure/, *.cmt *.cmti *.mli), \
+	  lib, $(INSTALL_LIBDIR_COMPILERLIBS))
+	$(call INSTALL_ITEMS, \
+	    $(addprefix middle_end/flambda/, *.cmt *.cmti *.mli), \
+	  lib, $(INSTALL_LIBDIR_COMPILERLIBS))
+	$(call INSTALL_ITEMS, \
+	    $(addprefix middle_end/flambda/base_types/, *.cmt *.cmti *.mli), \
+	  lib, $(INSTALL_LIBDIR_COMPILERLIBS))
+	$(call INSTALL_ITEMS, \
+	    $(addprefix asmcomp/, *.cmt *.cmti *.mli), \
+	  lib, $(INSTALL_LIBDIR_COMPILERLIBS))
 endif
-	$(INSTALL_DATA) \
-	    $(ocamlopt_CMO_FILES) \
-	    "$(INSTALL_COMPLIBDIR)"
+	$(call INSTALL_ITEMS, $(ocamlopt_CMO_FILES), \
+	  lib, $(INSTALL_LIBDIR_COMPILERLIBS))
 ifeq "$(build_ocamldoc)" "true"
-	$(MKDIR) "$(INSTALL_LIBDIR)/ocamldoc"
-	$(INSTALL_PROG) $(OCAMLDOC_OPT) "$(INSTALL_BINDIR)"
-	$(INSTALL_DATA) \
-	  $(OCAMLDOC_LIBCMIS) \
-	  "$(INSTALL_LIBDIR)/ocamldoc"
-ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
-	$(INSTALL_DATA) \
-	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMTS) \
-	  "$(INSTALL_LIBDIR)/ocamldoc"
-endif
-	$(INSTALL_DATA) \
-	  ocamldoc/ocamldoc.hva ocamldoc/*.cmx ocamldoc/odoc_info.$(A) \
-	  ocamldoc/odoc_info.cmxa \
-	  "$(INSTALL_LIBDIR)/ocamldoc"
+	$(call INSTALL_ITEMS, ocamldoc/ocamldoc.opt$(EXE), bin)
+	$(call INSTALL_ITEMS, \
+	    ocamldoc/*.cmx ocamldoc/odoc_info.$(A) ocamldoc/odoc_info.cmxa, \
+	  lib, $(INSTALL_LIBDIR_OCAMLDOC))
 endif
 ifeq "$(strip $(NATDYNLINK))" "true"
-	$(INSTALL_DATA) \
-	  $(dynlink_CMX_FILES) otherlibs/dynlink/dynlink.cmxa \
-	  otherlibs/dynlink/dynlink.$(A) \
-	  "$(INSTALL_LIBDIR_DYNLINK)"
+	$(call INSTALL_ITEMS, \
+	    $(dynlink_CMX_FILES) otherlibs/dynlink/dynlink.cmxa \
+	    otherlibs/dynlink/dynlink.$(A), \
+	  lib, $(INSTALL_LIBDIR_DYNLINK))
 endif
 	for i in $(OTHERLIBS); do \
 	  $(MAKE) -C otherlibs/$$i installopt || exit $$?; \
 	done
-ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
-	if test -f ocamlopt.opt$(EXE); then $(MAKE) installoptopt; else \
-	   cd "$(INSTALL_BINDIR)"; \
-	   $(LN) ocamlc.byte$(EXE) ocamlc$(EXE); \
-	   $(LN) ocamlopt.byte$(EXE) ocamlopt$(EXE); \
-	   $(LN) ocamllex.byte$(EXE) ocamllex$(EXE); \
-	   (test -f flexlink.byte$(EXE) && \
-	     $(LN) flexlink.byte$(EXE) flexlink$(EXE)) || true; \
-	fi
-else
-	if test -f ocamlopt.opt$(EXE); then $(MAKE) installoptopt; fi
-endif
-	$(INSTALL_DATA) \
-          tools/profiling.cmx tools/profiling.$(O) \
-	  "$(INSTALL_LIBDIR_PROFILING)"
+	$(call INSTALL_ITEMS, tools/profiling.cmx tools/profiling.$(O), \
+	  lib, $(INSTALL_LIBDIR_PROFILING))
 
-.PHONY: installoptopt
-installoptopt:
-	$(INSTALL_PROG) ocamlc.opt$(EXE) "$(INSTALL_BINDIR)"
-	$(INSTALL_PROG) ocamlopt.opt$(EXE) "$(INSTALL_BINDIR)"
-	$(INSTALL_PROG) lex/ocamllex.opt$(EXE) "$(INSTALL_BINDIR)"
-	cd "$(INSTALL_BINDIR)"; \
-	   $(LN) ocamlc.opt$(EXE) ocamlc$(EXE); \
-	   $(LN) ocamlopt.opt$(EXE) ocamlopt$(EXE); \
-	   $(LN) ocamllex.opt$(EXE) ocamllex$(EXE)
+.PHONY: full-installoptopt installopt installoptopt
+full-installoptopt installopt installoptopt:
+	$(call INSTALL_ITEM, ocamlc.opt$(EXE), bin, , , ocamlc$(EXE))
+	$(call INSTALL_ITEM, ocamlopt.opt$(EXE), bin, , , ocamlopt$(EXE))
+	$(call INSTALL_ITEM, lex/ocamllex.opt$(EXE), bin, , , ocamllex$(EXE))
 ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
-	$(INSTALL_PROG) flexlink.opt$(EXE) "$(INSTALL_BINDIR)"
-	cd "$(INSTALL_BINDIR)"; \
-	  $(LN) flexlink.opt$(EXE) flexlink$(EXE)
+	$(call INSTALL_ITEM, flexlink.opt$(EXE), bin, , , flexlink$(EXE))
 endif
-	$(INSTALL_DATA) \
-	   utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
-	   toplevel/*.cmx toplevel/native/*.cmx \
-	   toplevel/native/tophooks.cmi \
-	   file_formats/*.cmx \
-	   lambda/*.cmx \
-	   driver/*.cmx asmcomp/*.cmx middle_end/*.cmx \
-           middle_end/closure/*.cmx \
-           middle_end/flambda/*.cmx \
-           middle_end/flambda/base_types/*.cmx \
-          "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	   compilerlibs/*.cmxa compilerlibs/*.$(A) \
-	   "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	   $(ocamlc_CMX_FILES) $(ocamlc_CMX_FILES:.cmx=.$(O)) \
-	   $(ocamlopt_CMX_FILES) $(ocamlopt_CMX_FILES:.cmx=.$(O)) \
-	   $(ocamlnat_CMX_FILES:.cmx=.$(O)) \
-	   "$(INSTALL_COMPLIBDIR)"
+	$(call INSTALL_ITEMS, \
+	    $(call COMPILER_ARTEFACT_DIRS, *.cmx, $(NATIVE_ARTEFACT_DIRS)) \
+	    toplevel/native/tophooks.cmi, \
+	  lib, $(INSTALL_LIBDIR_COMPILERLIBS))
+	$(call INSTALL_ITEMS, compilerlibs/*.cmxa compilerlibs/*.$(A), \
+	  lib, $(INSTALL_LIBDIR_COMPILERLIBS))
+	$(call INSTALL_ITEMS, \
+	    $(ocamlc_CMX_FILES:.cmx=.$(O)) \
+	    $(ocamlopt_CMX_FILES:.cmx=.$(O)) \
+	    $(ocamlnat_CMX_FILES:.cmx=.$(O)), \
+	  lib, $(INSTALL_LIBDIR_COMPILERLIBS))
 ifeq "$(INSTALL_OCAMLNAT)" "true"
-	  $(INSTALL_PROG) ocamlnat$(EXE) "$(INSTALL_BINDIR)"
+	  $(call INSTALL_ITEMS, ocamlnat$(EXE), bin)
 endif
 
 # Installation of the *.ml sources of compiler-libs
 .PHONY: install-compiler-sources
 install-compiler-sources:
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
-	$(INSTALL_DATA) \
-	   utils/*.ml parsing/*.ml typing/*.ml bytecomp/*.ml driver/*.ml \
-           file_formats/*.ml \
-           lambda/*.ml \
-	   toplevel/*.ml toplevel/byte/*.ml \
-	   middle_end/*.ml middle_end/closure/*.ml \
-     middle_end/flambda/*.ml middle_end/flambda/base_types/*.ml \
-	   asmcomp/*.ml \
-	   asmcmp/debug/*.ml \
-	   "$(INSTALL_COMPLIBDIR)"
+	$(call INSTALL_ITEMS, \
+	    $(call COMPILER_ARTEFACT_DIRS, *.ml, $(NATIVE_ARTEFACT_DIRS)) \
+	    toplevel/byte/*.ml, \
+	  lib, $(INSTALL_LIBDIR_COMPILERLIBS))
 endif
 
+.PHONY: .depend
 include .depend
 
 # Include the cross-compiler recipes only when relevant
@@ -3027,3 +3180,11 @@ config.status:
 # This is why this dependency is kept at the very end of this file
 
 $(ALL_CMX_FILES): ocamlopt$(EXE)
+
+# Allows dune to build without having to clean everything
+.PHONY: clean-for-dune
+clean-for-dune:
+	rm -f stdlib/stdlib.{a,cma,cmxa}
+	rm -f stdlib/std_exit.{o,cmo,cmx}
+	rm -f otherlibs/str/str.cma
+	rm -f otherlibs/unix/unix.cma

@@ -14,11 +14,6 @@
 
 #define CAML_INTERNALS
 
-/*
- * Windows Vista functions enabled
- */
-#undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0600
 
 #include <caml/mlvalues.h>
 #include <caml/memory.h>

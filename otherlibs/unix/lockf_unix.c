@@ -87,14 +87,7 @@ CAMLprim value caml_unix_lockf(value fd, value cmd, value span)
 #else
 
 #ifdef HAS_LOCKF
-#ifndef _WIN32
 #include <unistd.h>
-#else
-#define F_ULOCK 0
-#define F_LOCK 1
-#define F_TLOCK 2
-#define F_TEST 3
-#endif
 
 static const int lock_command_table[] = {
   F_ULOCK, F_LOCK, F_TLOCK, F_TEST, F_LOCK, F_TLOCK

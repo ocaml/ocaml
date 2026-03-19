@@ -136,12 +136,18 @@ type control =
         always [0]. *)
 
     space_overhead : int;
-    (** The major GC speed is computed from this parameter.
+    (** The major GC speed is computed from this parameter, along with
+        [small_heap_limit].
        This is the memory that will be "wasted" because the GC does not
        immediately collect unreachable blocks.  It is expressed as a
        percentage of the memory used for live data.
        The GC will work more (use more CPU time and collect
        blocks more eagerly) if [space_overhead] is smaller.
+       The amount of overhead space used by the GC is approximately:
+       - [(live data size) * space_overhead] when live data is greater than
+         [small_heap_limit]
+       - less than [small_heap_limit + (live data size) * space overhead]
+         when live data is smaller than [small_heap_limit]
        Default: 120. *)
 
     verbose : int;
@@ -241,6 +247,9 @@ type control =
     [ocamlrun]. *)
 
 external stat : unit -> stat = "caml_gc_stat"
+[@@alert deprecated
+    "Use full_major() followed by quick_stat()."
+]
 (** Return the current values of the memory management counters in a
     [stat] record that represents the program's total memory stats.
     The [heap_chunks], [free_blocks], [largest_free], and [stack_size] metrics
@@ -249,12 +258,14 @@ external stat : unit -> stat = "caml_gc_stat"
     This function causes a full major collection. *)
 
 external quick_stat : unit -> stat = "caml_gc_quick_stat"
-(** Returns a record with the current values of the memory management counters
-    like [stat]. Unlike [stat], [quick_stat] does not perform a full major
-    collection, and hence, is much faster. However, [quick_stat] reports the
-    counters sampled at the last minor collection or at the end of the last
-    major collection cycle (whichever is the latest). Hence, the memory stats
-    returned by [quick_stat] are not instantaneously accurate. *)
+(** Return the current values of the memory management counters in a
+    {!type:stat} record that represents the program's total memory
+    stats. Due to per-domain buffers it may only represent the state
+    of the program's total memory usage at the time of the last minor
+    collection or at the end of the last major collection cycle
+    (whichever is the latest). To get exact values, you need to call
+    {!full_major} (which takes a lot of time) immediately before
+    {!quick_stat}. *)
 
 external counters : unit -> float * float * float = "caml_gc_counters"
 (** Return [(minor_words, promoted_words, major_words)] for the current
@@ -584,7 +595,9 @@ module Memprof :
     val is_sampling : unit -> bool
     (** Returns whether a profile is sampling in the current domain,
         if any. Returns [None] if the current domain is not
-        sampling. *)
+        sampling.
+
+        @since 5.5 *)
 
     val stop : unit -> unit
     (** Stop sampling for the current profile. Fails if no profile is
@@ -656,3 +669,28 @@ external ramp_down : suspended_collection_work -> unit
   = "caml_ml_gc_ramp_down"
 (** Notify the GC about some amount of collection work that was
     suspended during a ramp-up phase, to be resumed now. *)
+
+(** GC Tweaks are unstable and undocumented configurable GC parameters,
+    primarily intended for use by GC developers.
+
+    As well as using Gc.Tweak.set "foo" 42, they can also be configured in
+    OCAMLRUNPARAM, using the following syntax:
+
+        OCAMLRUNPARAM='Xfoo=42'
+
+    Additionally, OCAMLRUNPARAM=Xhelp will show the available GC tweaks.
+
+    @since 5.5 *)
+module Tweak : sig
+  (** Change a parameter.
+      Raises Invalid_argument if no such parameter exists *)
+  val set : string -> int -> unit
+
+  (** Retrieve a parameter value.
+      Raises Invalid_argument if no such parameter exists *)
+  val get : string -> int
+
+  (** Returns the list of parameters and their values that currently
+      have non-default values *)
+  val list_active : unit -> (string * int) list
+end

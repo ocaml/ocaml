@@ -53,7 +53,7 @@ type can_load_cmis =
 
 type pers_struct = {
   ps_name: string;
-  ps_crcs: (string * Digest.t option) list;
+  ps_crcs: (string * Digest.BLAKE128.t option) list;
   ps_filename: string;
   ps_flags: pers_flags list;
   ps_visibility: Load_path.visibility;

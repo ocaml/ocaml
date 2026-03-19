@@ -875,10 +875,114 @@ module Utf8_lexeme: sig
       are not checked. *)
 end
 
+module RuntimeID : sig
+  (** Manipulation of the Runtime ID values used to mangle the filenames of
+      shared libraries and the bytecode interpreters.
+
+      @since 5.5 *)
+
+  (** Runtime IDs *)
+  type t = private {
+    dev: bool;
+      (** [true] if this not an unaltered official release of OCaml *)
+    release: int;
+      (** Release number (OCaml 5.5 is release 21) *)
+    reserved: int;
+      (** The number of reserved bits (0-31) in the {v value v} header *)
+    no_flat_float_array: bool;
+      (** [true] if float arrays must be boxed (i.e. configured with
+          {v --disable-flat-float-array v}) *)
+    fp: bool;
+      (** [true] if frame pointers are required (i.e. configured with
+          {v --enable-frame-pointers v} *)
+    tsan: bool;
+      (** [true] if ThreadSanitizer (TSAN) is required (i.e. configured with
+          {v --enable-tsan v}) *)
+    int31: bool;
+      (** [true] if the platform has 31-bit [int]s (i.e. 32-bit systems) *)
+    static: bool;
+      (** [true] if dynamic loading of libraries is not supported *)
+    no_compression: bool;
+      (** [true] if compressed marshalling is not supported *)
+    ansi: bool;
+      (** [true] if Unicode support on Windows is disabled *)
+  }
+
+  val make_zinc: ?dev:bool -> ?release:int
+    -> ?no_flat_float_array:bool
+    -> ?int31:bool -> ?static:bool -> ?no_compression:bool
+    -> unit -> t
+  (** Returns the Zinc Runtime ID for the given parameters (using default values
+      from {!Config} and {!Sys} as necessary) *)
+
+  val make_bytecode: ?dev:bool -> ?release:int
+    -> ?reserved:int -> ?no_flat_float_array:bool
+    -> ?int31:bool -> ?static:bool -> ?no_compression:bool
+    -> ?ansi:bool
+    -> unit -> t
+  (** Returns the Bytecode Runtime ID for the given parameters (using default
+      values from {!Config} and {!Sys} as necessary) *)
+
+  val make_native: ?dev:bool -> ?release:int
+    -> ?reserved:int -> ?no_flat_float_array:bool -> ?fp:bool -> ?tsan:bool
+    -> ?int31:bool -> ?static:bool -> ?no_compression:bool
+    -> ?ansi:bool
+    -> unit -> t
+  (** Returns the Native Runtime ID for the given parameters (using default
+      values from {!Config} and {!Sys} as necessary) *)
+
+  val is_zinc: t -> bool
+  (** [is_zinc t] is true if [t] can be used as a Zinc Runtime ID *)
+
+  val is_bytecode: t -> bool
+  (** [is_bytecode t] is true if [t] can be used as a Bytecode Runtime ID *)
+
+  val is_native: t -> bool
+  (** [is_native t] is true if [t] can be used as a Native Runtime ID *)
+
+  val to_string: t -> string
+  (** Returns the 4-character representation of a {!t} *)
+
+  val of_string: string -> t option
+  (** Converts the 4-character representation back to a {!t} *)
+
+  val of_zinc_hi: ?dev:bool -> ?release:int -> string -> t option
+  (** Converts hi 2 characters of the representation back to a {!t} (using the
+      default version information from {!Config}. *)
+
+  val ocamlrun: string -> t -> string
+  (** [ocamlrun variant runtime_id] returns the name for the runtime for the
+      given Zinc Runtime ID. *)
+
+  val shared_runtime: ?runtime_id:t -> ?host:string
+    -> ?prefix:string -> Sys.backend_type -> string
+  (** [shared_runtime ?runtime_id ?host ?prefix backend] returns the name of the
+      shared runtime for the given [backend]. [runtime_id] defaults to
+      {!make_bytecode} if [backend = Sys.Bytecode] and {!make_native} if
+      [backend = Sys.Native] and [host] to {!Config.target}. [prefix] defaults
+      to ["-l"] and the function does not append {!Config.ext_dll}.
+
+      e.g. [shared_runtime ~host:"x86_64-pc-linux-gnu" Native
+              = "-lasmrun-x86_64-pc-linux-gnu-b100"] for a default OCaml 5.5
+           build on a 64-bit system with shared library support and compressed
+           marshalling. *)
+
+  val stubslib: ?runtime_id:t -> ?host:string -> string -> string
+  (** [stublibs ?runtime_id ?host dllname] returns the name for the given DLL
+      basename. [dllname] should not include {!Config.ext_dll} (and the result
+      does not include it either). [host] and [runtime_id] default to
+      {!Config.target} and {!make_bytecode} respectively.
+
+      e.g. [stubslib ~host:"x86_64-pc-linux-gnu" "dllunixbyt"
+              = "dllunixbyt-x86_64-pc-linux-gnu-001b"] for a default OCaml 5.5
+           build on a 64-bit system with shared library support and compressed
+           marshalling. *)
+end
+
 (** {1 Miscellaneous type aliases} *)
 
 type filepath = string
 type modname = string
-type crcs = (modname * Digest.t option) list
+type crcs = (modname * Digest.BLAKE128.t option) list
 
 type alerts = string Stdlib.String.Map.t

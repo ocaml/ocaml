@@ -16,7 +16,7 @@
 (* Symbol table information for .cmo and .cma files *)
 
 type modname = string
-type crcs = (modname * Digest.t option) list
+type crcs = (modname * Digest.BLAKE128.t option) list
 
 (* Names of compilation units as represented in CMO files *)
 type compunit = Compunit of string [@@unboxed]
@@ -49,13 +49,16 @@ type compilation_unit =
     cu_primitives: string list;         (* Primitives declared inside *)
     mutable cu_force_link: bool;        (* Must be linked even if unref'ed *)
     mutable cu_debug: int;              (* Position of debugging info, or 0 *)
-    cu_debugsize: int }                 (* Length of debugging info *)
+    cu_debugsize: int;                  (* Length of debugging info *)
+    mutable cu_hint: int;               (* Position of hint info, or 0 *)
+    cu_hintsize: int }                  (* Length of hint info *)
 
 (* Format of a .cmo file:
      magic number (Config.cmo_magic_number)
      absolute offset of compilation unit descriptor
      block of relocatable bytecode
      debugging information if any
+     hint information if any
      compilation unit descriptor *)
 
 (* Descriptor for libraries *)
@@ -67,7 +70,7 @@ type library =
        how they end up being used on the command line. *)
     lib_ccobjs: string list;            (* C object files needed for -custom *)
     lib_ccopts: string list;            (* Extra opts to C compiler *)
-    lib_dllibs: string list }           (* DLLs needed *)
+    lib_dllibs: (suffixed:bool * string) list }  (* DLLs needed *)
 
 (* Format of a .cma file:
      magic number (Config.cma_magic_number)

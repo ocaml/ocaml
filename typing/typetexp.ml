@@ -47,6 +47,7 @@ type error =
   | Not_an_object of type_expr
   | Repeated_tuple_label of string
   | Polymorphic_optional_param of string
+  | Functor_optional_param of string
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -331,12 +332,12 @@ end = struct
         if flavor = Unification || is_in_scope name then
           let v = new_global_var () in
           let snap = Btype.snapshot () in
-          if try unify env v ty; true
-            with
-                Unify err when is_in_scope name ->
-                  raise (Error(loc, env, Type_mismatch err))
-              | _ -> Btype.backtrack snap; false
-          then match lookup_global_type_variable name with
+          match unify env v ty with
+          | exception Unify err when is_in_scope name ->
+            raise (Error(loc, env, Type_mismatch err))
+          | exception _ -> Btype.backtrack snap
+          | () ->
+            begin match lookup_global_type_variable name with
             | global_var ->
               r := (loc, v, global_var) :: !r;
               unused := false
@@ -347,7 +348,8 @@ end = struct
                                                   get_in_scope_names ())));
               let v2 = new_global_var () in
               r := (loc, v, v2) :: !r;
-              add ~unused name v2)
+              add ~unused name v2
+            end)
       !used_variables;
     used_variables := TyVarMap.empty;
     fun () ->
@@ -360,9 +362,22 @@ end
 
 (* Support for first-class modules. *)
 
+type 'a maybe_compute_mty =
+  | ComputeMType : Types.module_type maybe_compute_mty
+  | NoMType : unit maybe_compute_mty
+
+type forward_decl = {
+  mutable check_package_with_type_constraints :
+    'a. Location.t -> Env.t -> Types.module_type ->
+        'a maybe_compute_mty ->
+        (Longident.t Asttypes.loc * Typedtree.core_type) list -> 'a
+}
+
 let transl_modtype_longident = ref (fun _ -> assert false)
 let transl_modtype = ref (fun _ -> assert false)
-let check_package_with_type_constraints = ref (fun _ -> assert false)
+let forward_decl = {
+    check_package_with_type_constraints = (fun _ -> assert false);
+  }
 
 let sort_constraints_no_duplicates loc env l =
   List.sort
@@ -586,11 +601,14 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
       let mkfield l f =
         newty (Tvariant (create_row ~fields:[l,f] ~more:(newvar())
                            ~closed:true ~fixed:None ~name:None)) in
-      let hfields = Hashtbl.create 17 in
+      (* Using a reference to a map rather than a hash table gives us
+         a canonical order when iterating. *)
+      let module HMap = Numbers.Int.Map in
+      let hfields = ref HMap.empty in
       let add_typed_field loc l f =
         let h = Btype.hash_variant l in
         try
-          let (l',f') = Hashtbl.find hfields h in
+          let (l',f') = HMap.find h !hfields in
           (* Check for tag conflicts *)
           if l <> l' then raise(Error(styp.ptyp_loc, env, Variant_tags(l, l')));
           let ty = mkfield l f and ty' = mkfield l f' in
@@ -599,7 +617,7 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
           with Unify _trace ->
             raise(Error(loc, env, Constructor_mismatch (ty,ty')))
         with Not_found ->
-          Hashtbl.add hfields h (l,f)
+          hfields := HMap.add h (l, f) !hfields
       in
       let add_field row_context field =
         let rf_loc = field.prf_loc in
@@ -632,7 +650,7 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
                 Tconstr(p, tl, _) -> Some(p, tl)
               | _                 -> None
             in
-            name := if Hashtbl.length hfields <> 0 then None else nm;
+            name := if HMap.is_empty !hfields then nm else None;
             let fl = match get_desc (expand_head env cty.ctyp_type), nm with
               Tvariant row, _ when Btype.static_row row ->
                 row_fields row
@@ -662,7 +680,7 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
         if aliased then row_context else more_slot :: row_context
       in
       let tfields = List.map (add_field row_context) fields in
-      let fields = List.rev (Hashtbl.fold (fun _ p l -> p :: l) hfields []) in
+      let fields = HMap.fold (fun _ p l -> p :: l) !hfields [] in
       begin match present with None -> ()
       | Some present ->
           List.iter
@@ -699,16 +717,11 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
       unify_var env (newvar()) ty';
       ctyp (Ttyp_poly (vars, cty)) ty'
   | Ptyp_package ptyp ->
-      let path, ptys = transl_package env ~policy ~row_context ptyp in
-      let pack = {
-        pack_path = path;
-        pack_constraints = List.map (fun (s, cty) ->
-                         (Longident.flatten s.txt, cty.ctyp_type)) ptys
-      } in
-      let ty = newty (Tpackage pack)
-      in
+      let pack, (), ptys =
+        transl_package env ~policy ~row_context NoMType ptyp in
+      let ty = newty (Tpackage pack) in
       ctyp (Ttyp_package {
-            tpt_path = path;
+            tpt_path = pack.pack_path;
             tpt_type = pack;
             tpt_constraints = ptys;
             tpt_txt = ptyp.ppt_path;
@@ -721,18 +734,55 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
       ctyp (Ttyp_open (path, mod_ident, cty)) cty.ctyp_type
   | Ptyp_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
+  | Ptyp_functor (lbl, name, ptyp, st) ->
+    begin match lbl with
+      | Optional l ->
+        raise (Error (ptyp.ppt_loc, env, Functor_optional_param l));
+      | Nolabel | Labelled _ -> ()
+    end;
+    let pack, mty, ptys =
+      transl_package env ~policy ~row_context ComputeMType ptyp in
+    let t = newvar () in
+    let ident = Ident.Unscoped.create name.txt in
+    let scoped_ident, cty, ty =
+      with_local_level begin fun () ->
+        let scoped_ident =
+          Ident.create_scoped ~scope:(Ctype.get_current_level()) name.txt
+        in
+        let env = Env.add_module scoped_ident Mp_present mty env in
+        let cty = transl_type env ~policy ~row_context st in
+        let ctyp_type =
+          instance_funct ~p_out:(Pident (Ident.of_unscoped ident))
+                         ~id_in:scoped_ident ~fixed:false cty.ctyp_type
+        in
+        let ty = newty (Tfunctor (lbl, ident, pack, ctyp_type)) in
+        (* Here we reduce the level of [cty] before leaving the local level *)
+        let _ = try unify env ty t with Unify trace ->
+          raise (Error (loc, env, Type_mismatch trace))
+        in
+        scoped_ident, cty, ty
+      end in
+    ctyp (Ttyp_functor (lbl, {txt = scoped_ident; loc = name.loc}, {
+                tpt_path = pack.pack_path;
+                tpt_type = pack;
+                tpt_constraints = ptys;
+                tpt_txt = ptyp.ppt_path;
+                }, cty)) ty
 
 and transl_fields env ~policy ~row_context o fields =
-  let hfields = Hashtbl.create 17 in
+  (* Using a reference to a map rather than a hash table gives us
+     a canonical order when iterating. *)
+  let module HMap = Misc.Stdlib.String.Map in
+  let hfields = ref HMap.empty in
   let add_typed_field loc l ty =
     try
-      let ty' = Hashtbl.find hfields l in
+      let ty' = HMap.find l !hfields in
       if is_equal env false [ty] [ty'] then () else
         try unify env ty ty'
         with Unify _trace ->
           raise(Error(loc, env, Method_mismatch (l, ty, ty')))
     with Not_found ->
-      Hashtbl.add hfields l ty in
+      hfields := HMap.add l ty !hfields in
   let add_field {pof_desc; pof_loc; pof_attributes;} =
     let of_loc = pof_loc in
     let of_attributes = pof_attributes in
@@ -778,7 +828,7 @@ and transl_fields env ~policy ~row_context o fields =
     { of_desc; of_loc; of_attributes; }
   in
   let object_fields = List.map add_field fields in
-  let fields = Hashtbl.fold (fun s ty l -> (s, ty) :: l) hfields [] in
+  let fields = HMap.fold (fun s ty l -> (s, ty) :: l) !hfields [] in
   let ty_init =
      match o with
      | Closed -> newty Tnil
@@ -788,7 +838,10 @@ and transl_fields env ~policy ~row_context o fields =
       newty (Tfield (s, field_public, ty', ty))) ty_init fields in
   ty, object_fields
 
-and transl_package env ~policy ~row_context ptyp =
+and transl_package
+  : type a. Env.t -> policy:_ -> row_context:_ -> a maybe_compute_mty ->
+    Parsetree.package_type -> Types.package * a * _ list
+  = fun env ~policy ~row_context (maybe : a maybe_compute_mty) ptyp ->
   let loc = ptyp.ppt_loc in
   let l = sort_constraints_no_duplicates loc env ptyp.ppt_constraints in
   let mty = Ast_helper.Mty.mk ~loc (Pmty_ident ptyp.ppt_path) in
@@ -796,10 +849,19 @@ and transl_package env ~policy ~row_context ptyp =
   let ptys =
     List.map (fun (s, pty) -> s, transl_type env ~policy ~row_context pty) l
   in
-  if ptys <> [] then
-    !check_package_with_type_constraints loc env mty.mty_type ptys;
-  let path = !transl_modtype_longident loc env ptyp.ppt_path.txt in
-  path, ptys
+  let mty : a =
+    if ptys <> [] then
+      forward_decl.check_package_with_type_constraints
+        loc env mty.mty_type maybe ptys
+    else match maybe with
+      | ComputeMType -> mty.mty_type
+      | NoMType -> ()
+  in
+  let pack_path = !transl_modtype_longident loc env ptyp.ppt_path.txt in
+  let pack_constraints =
+    List.map (fun (s, cty) -> (Longident.flatten s.txt, cty.ctyp_type)) ptys
+  in
+  {pack_path; pack_constraints}, mty, ptys
 
 (* Make the rows "fixed" in this type, to make universal check easier *)
 let rec make_fixed_univars mark ty =
@@ -1021,6 +1083,10 @@ let report_error_doc loc env = function
         Style.inline_code l
   | Polymorphic_optional_param l ->
       Location.errorf ~loc "@[Optional parameter %a cannot be polymorphic@]"
+        Style.inline_code l
+  | Functor_optional_param l ->
+      Location.errorf ~loc
+        "@[Module-dependent parameter %a cannot be optional@]"
         Style.inline_code l
 
 let () =

@@ -49,13 +49,13 @@ let print_summary config header_size ~prefix ~bindir_suffix ~libdir_suffix
     \    @{<hint>libdir@} = [$prefix/]%s\n\
     \  - C compiler is %s [%s] for %s\n\
     \  - OCaml is %a%a; target binaries by default are %a\n\
-    \  - Executable header size is %.2fKiB (%d bytes)\n\
+    \  - Executable header size is %.2fKiB (%Ld bytes)\n\
     \  - Testing %s\n@?"
        prefix bindir_suffix libdir_suffix
        Config.c_compiler Config.c_compiler_vendor Config.target
        pp_relocatable relocatable pp_reproducible reproducible
        pp_relocatable target_relocatable
-       (float_of_int header_size /. 1024.0) header_size summary
+       (Int64.to_float header_size /. 1024.0) header_size summary
 
 let run_tests ~sh config env =
   TestDynlink.run config env Bytecode;
@@ -67,6 +67,10 @@ let run_tests ~sh config env =
   Test_ld_conf.run config env;
   TestBytecodeBinaries.run config env;
   TestLinkModes.run ~sh config env
+
+let rename_exe_in_test_root env from_base to_base =
+  Sys.rename (Environment.in_test_root env (Harness.exe from_base))
+             (Environment.in_test_root env (Harness.exe to_base))
 
 let () =
   let ~config, ~pwd, ~prefix, ~bindir:_, ~bindir_suffix, ~libdir,
@@ -115,21 +119,23 @@ let () =
     in
     List.map add_dependencies libraries
   in
-  let runtime_launch_info =
+  let header_size, filename_mangling =
     let file = Filename.concat libdir "runtime-launch-info" in
-    Bytelink.read_runtime_launch_info file in
-  let header_size =
-    let {Bytelink.buffer; executable_offset; _} = runtime_launch_info in
-    String.length buffer - executable_offset in
+    In_channel.with_open_bin file @@ fun ic ->
+      In_channel.length ic, (input_char ic <> '\000')
+  in
   let bytecode_shebangs_by_default =
-    runtime_launch_info.launcher <> Bytelink.Executable in
-  let launcher_searches_for_ocamlrun = Sys.win32 in
-  let target_launcher_searches_for_ocamlrun = Sys.win32 in
+    Config.launch_method <> Config.Executable in
+  let launcher_searches_for_ocamlrun =
+    (config.has_runtime_search <> Config.Disable) in
+  let target_launcher_searches_for_ocamlrun =
+    (Config.search_method <> Config.Disable) in
   let config =
     {config with libraries;
                  launcher_searches_for_ocamlrun;
                  target_launcher_searches_for_ocamlrun;
-                 bytecode_shebangs_by_default}
+                 bytecode_shebangs_by_default;
+                 filename_mangling}
   in
   (* A compiler distribution is _Relocatable_ if its build, for a given system,
      satisfies the following three properties:
@@ -144,12 +150,12 @@ let () =
 
      For the compiler's files to be reproducible, the compiler needs to be both
      relocatable and also required support from the assembler and C compiler. *)
-  let relocatable = false in
+  let relocatable =
+    config.has_relative_libdir <> None
+    && config.has_runtime_search <> Config.Disable
+  in
   let reproducible =
     relocatable
-    (* At present, the compiler build doesn't actually take advantage of this
-       configuration, but this does not matter because the compiler cannot yet
-       be relocatable! *)
     && (not config.has_ocamlopt
         || not Toolchain.assembler_embeds_build_path
         || Config.as_has_debug_prefix_map && Config.architecture <> "riscv")
@@ -157,7 +163,7 @@ let () =
     && (not Toolchain.c_compiler_always_embeds_build_path
         || not Toolchain.c_compiler_debug_paths_can_be_absolute)
   in
-  let target_relocatable = false in
+  let target_relocatable = (Config.search_method <> Config.Disable) in
   (* Use Harness.pp_path unless --verbose was specified *)
   let pp_path =
     if verbose then
@@ -219,11 +225,26 @@ let () =
                                          pp_path prefix;
     Sys.rename new_prefix prefix);
   let env =
-    make_env ~phase:Renamed ~prefix:new_prefix ~bindir_suffix ~libdir_suffix in
+    make_env ~phase:Execution ~prefix:new_prefix ~bindir_suffix ~libdir_suffix
+  in
   (* 3. Re-run the test programs compiled with the normal prefix *)
   Printf.printf "Re-running test programs\n%!";
-  List.iter
-    (function `Some f -> assert (f env = `None) | `None -> ()) programs;
+  (* Verify that the searching runtimes are searching the directory containing
+     the program itself first. *)
+  let runtime =
+    if config.filename_mangling then
+      Misc.RuntimeID.(ocamlrun "" (make_zinc ()))
+    else
+      "ocamlrun"
+  in
+  rename_exe_in_test_root env ("test-" ^ runtime) runtime;
+  Fun.protect
+    ~finally:(fun () -> rename_exe_in_test_root env runtime ("test-" ^ runtime))
+    (fun () ->
+      List.iter
+        (function `Some f -> assert (f env = `None) | `None -> ()) programs);
+  let env =
+    make_env ~phase:Renamed ~prefix:new_prefix ~bindir_suffix ~libdir_suffix in
   (* 4. Finally re-run the main test battery in the new prefix *)
   Compmisc.init_path ~standard_library:libdir ();
   let programs = run_tests env in

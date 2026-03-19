@@ -78,3 +78,68 @@ let map_val f x =
   if is_val x
   then from_val (f (force x))
   else lazy (f (force x))
+
+
+
+module Mutexed = struct
+  (* we define these as primitives to avoid a dependency on Printexc *)
+  type raw_backtrace
+  external get_raw_backtrace:
+    unit -> raw_backtrace = "caml_get_exception_raw_backtrace"
+  external raise_with_backtrace: exn -> raw_backtrace -> 'a
+    = "%raise_with_backtrace"
+
+  (* micro-module to avoid a dependency on Mutex *)
+  module Mutex = struct
+    type t
+    external create: unit -> t = "caml_ml_mutex_new"
+    external lock: t -> unit = "caml_ml_mutex_lock"
+    external unlock: t -> unit = "caml_ml_mutex_unlock"
+  end
+
+  type 'a state =
+    | Thunk of (unit -> 'a)
+    | Forcing of Mutex.t
+    | Result of ('a, exn * raw_backtrace) result
+
+  type 'a t = 'a state Atomic.t
+
+  let from_val v = Atomic.make (Result (Ok v))
+  let from_fun f = Atomic.make (Thunk f)
+
+  let is_val th =
+    match Atomic.get th with
+    | Result (Ok _) -> true
+    | _ -> false
+
+  let rec force th =
+    match Atomic.get th with
+    | Result (Ok v) -> v
+    | Result (Error (exn, bt)) ->
+      raise_with_backtrace exn bt
+    | Forcing mut ->
+        (* Taking the lock may fail if our domain already owns
+           it. This can happen if the thunk forces itself recursively,
+           or if two fibers on the same domain try to force
+           concurrently. We propagate the lower-level [Sys_error]
+           exception in this case. *)
+        Mutex.lock mut;
+        Mutex.unlock mut;
+        force th
+    | Thunk f as thunk ->
+        let mut = Mutex.create () in
+        Mutex.lock mut;
+        if not (Atomic.compare_and_set th thunk (Forcing mut)) then begin
+          Mutex.unlock mut;
+          force th (* retry *)
+        end else begin
+          begin match f () with
+          | v -> Atomic.set th (Result (Ok v))
+          | exception exn ->
+            let bt = get_raw_backtrace () in
+            Atomic.set th (Result (Error (exn, bt)))
+          end;
+          Mutex.unlock mut;
+          force th
+        end
+end

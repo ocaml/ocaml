@@ -1,8 +1,8 @@
 (* TEST
  modules = "opt.ml barrier.ml hist.ml shared.ml run.ml outcome.ml";
  multicore;
- not-bsd;
- no-tsan; (* tsan detects the intentional data races and fails *)
+ not bsd;
+ not tsan; (* tsan detects the intentional data races and fails *)
  {
    bytecode;
  }{

@@ -125,7 +125,15 @@ type _ t += A : int t
 type 'a t += A : int t
 |}];;
 
+type 'b t += B of 'b list;;
+[%%expect{|
+type 'b t += B of 'b list
+|}];;
 
+#show B;;
+[%%expect{|
+type 'b t += B of 'b list
+|}];;
 
 
 (* regression tests for #11533 *)

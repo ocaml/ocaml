@@ -531,17 +531,26 @@ type cursor
 
 module Timestamp : sig
     type t
-    (** Type for the int64 timestamp to allow for future changes. *)
+    (** Abstract timestamp included in events. *)
 
     val to_int64 : t -> int64
+    (** Convert a timestamp to a number of nanosecond.
+
+        Note that the starting point for timestamps in unspecified: the absolute
+        value is meaningless, only differences matter.
+
+        Also note that the precision of the underlying clock may be coarser than
+        nanoseconds: events may have equal timestamp if they are emitted within
+        the coarseness of the clock. *)
 
     val get_current : unit -> t
-    (** Access the current timestamp. The timestamp is incremented by one
-        every nanosecond, but the starting point is unspecified.
+    (** Access the current timestamp.
         @since 5.4 *)
 end
 
 module Type : sig
+  (** @since 5.1 *)
+
   type 'a t
   (** The type for a user event content type. *)
 
@@ -569,7 +578,9 @@ end
 module User : sig
   (** User events is a way for libraries to provide runtime events that can be
       consumed by other tools. These events can carry known data types or custom
-      values. The current maximum number of user events is 8192. *)
+      values. The current maximum number of user events is 8192.
+
+      @since 5.1 *)
 
   type tag = ..
   (** The type for a user event tag. Tags are used to discriminate between
@@ -630,7 +641,9 @@ module Callbacks : sig
                         t -> t
   (** [add_user_event ty callback t] extends [t] to additionally subscribe to
       user events of type [ty]. When such an event happens, [callback] is called
-      with the corresponding event and payload. *)
+      with the corresponding event and payload.
+
+      @since 5.1 *)
 end
 
 val start : unit -> unit
@@ -643,7 +656,9 @@ val start : unit -> unit
 
 val path : unit -> string option
 (** If runtime events are being collected, [path ()] returns [Some p] where [p]
-  is a path to the runtime events file. Otherwise, it returns None. *)
+  is a path to the runtime events file. Otherwise, it returns None.
+
+  @since 5.3 *)
 
 val pause : unit -> unit
 (** [pause ()] will pause the collection of events in the runtime.

@@ -23,7 +23,8 @@ let _ =
            window_size = g1.window_size;
            custom_major_ratio = custom_major_ratio;
            custom_minor_ratio = custom_minor_ratio;
-           custom_minor_max_size = custom_minor_max_size };
+           custom_minor_max_size = custom_minor_max_size;
+         };
   let g2 = Gc.get() in
   assert (g2.minor_heap_size = min_heap_sz);
   assert (g2.space_overhead = space_overhead);

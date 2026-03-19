@@ -177,15 +177,34 @@ CAMLdeprecated_typedef(addr, char *);
 /* Prefetching */
 
 #ifdef CAML_INTERNALS
+
 #if (__has_builtin(__builtin_prefetch) || defined(__GNUC__))
-#define caml_prefetch(p) __builtin_prefetch((p), 1, 3)
+#define caml_prefetchr(p) __builtin_prefetch((p), 0, 3)
+/* 0 = intent to read; 3 = all cache levels */
+#define caml_prefetchw(p) __builtin_prefetch((p), 1, 3)
 /* 1 = intent to write; 3 = all cache levels */
-#elif defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_AMD64))
+
+#elif defined(_MSC_VER)
 #include <intrin.h>
-#define caml_prefetch(p) _mm_prefetch((char const *) p, _MM_HINT_T0)
+#if (defined(_M_IX86) || defined(_M_AMD64))
+/* MSVC Intel. See #14570.
+   0 - PREFETCHNTA; 1 - PREFETCHT0; 2 - PREFETCHT1; 3 - PREFETCHT2
+   4 - PREFETCHW; 5 - PREFETCHNTA */
+#define caml_prefetchr(p) _mm_prefetch((char const *) p, _MM_HINT_T0)
 /* PreFetchCacheLine(PF_TEMPORAL_LEVEL_1, p) */
-#else
-#define caml_prefetch(p)
+#define caml_prefetchw(p) _mm_prefetch((char const *) p, 4)
+
+#elif defined(_M_ARM64)
+/* MSVC ARM64. See #14570 */
+#define caml_prefetchr(p) __prefetch2(p, 0)
+#define caml_prefetchw(p) __prefetch2(p, 16)
+#endif
+#endif
+
+#if !defined(caml_prefetchr)
+/* Not GCC or Clang or MSVC */
+#define caml_prefetchr(p) ((void)(p))
+#define caml_prefetchw(p) ((void)(p))
 #endif
 #endif /* CAML_INTERNALS */
 
@@ -773,14 +792,18 @@ CAMLextern int caml_snwprintf(wchar_t * buf,
 #else
 #  if defined(__SANITIZE_ADDRESS__)
 #    undef CAMLno_asan
-#    define CAMLno_asan __attribute__((no_sanitize_address))
+#    if (defined(_MSC_VER) && !defined(__clang__))
+#      define CAMLno_asan __declspec(no_sanitize_address)
+#    else
+#      define CAMLno_asan __attribute__((no_sanitize_address))
+#    endif
 #  endif
 #endif
 
-/* Generate a named symbol that is unique within the current macro expansion */
-#define CAML_GENSYM_3(name, l) caml__##name##_##l
-#define CAML_GENSYM_2(name, l) CAML_GENSYM_3(name, l)
-#define CAML_GENSYM(name) CAML_GENSYM_2(name, __LINE__)
+/* Generate a named symbol that is unique */
+#define CAML_GENSYM__(name, id) caml__##name##_##id
+#define CAML_GENSYM_(name, id) CAML_GENSYM__(name, id)
+#define CAML_GENSYM(name) CAML_GENSYM_(name, __COUNTER__)
 
 #define MSEC_PER_SEC  UINT64_C(1000)
 #define USEC_PER_MSEC UINT64_C(1000)

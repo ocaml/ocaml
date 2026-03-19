@@ -174,7 +174,7 @@ let instrument body =
       let loc_exp = Cvar (VP.var loc_id) in
       Clet
         ( loc_id,
-          loc,
+          aux loc,
           Csequence
             ( Cmm_helpers.return_unit dbg_none
                 (Cop
@@ -195,7 +195,7 @@ let instrument body =
               ret_typ,
               [],
               false ),
-          [loc; TSan_memory_order.seq_cst],
+          [aux loc; TSan_memory_order.seq_cst],
           dbginfo )
     | Cop
         (Cload { memory_chunk = _; mutability = Mutable; is_atomic = _ }, _, _)
@@ -217,10 +217,10 @@ let instrument body =
         let args = [loc_exp; v_exp] in
         Clet
           ( v_id,
-            v,
+            aux v,
             Clet
               ( loc_id,
-                loc,
+                aux loc,
                 Csequence
                   ( Cmm_helpers.return_unit dbg_none
                       (Cop
@@ -242,16 +242,23 @@ let instrument body =
     | Cop ((Cload { mutability = Immutable; _ } as op), es, dbg_none) ->
       (* Loads of immutable location require no instrumentation *)
       Cop (op, List.map aux es, dbg_none)
-    | Cop (Craise _, _, _) as raise ->
+    | Cop (Craise kind, [arg], dbg) ->
       (* Call a routine that will call [__tsan_func_exit] for every function
          about to be exited due to the exception *)
-      Csequence
-        (Cmm_helpers.return_unit dbg_none
-          (Cop (Capply typ_int,
-                [Cconst_symbol ("caml_tsan_exit_on_raise_asm", dbg_none);
-                  Cconst_int (0, dbg_none)],
-                dbg_none)),
-         raise)
+      let arg_id = VP.create (V.create_local "raise_arg") in
+      let arg_exp = Cvar (VP.var arg_id) in
+      Clet
+        ( arg_id,
+          aux arg,
+          Csequence
+            (Cmm_helpers.return_unit dbg_none
+               (Cop (Capply typ_int,
+                     [Cconst_symbol ("caml_tsan_exit_on_raise_asm", dbg_none);
+                      Cconst_int (0, dbg_none)],
+                     dbg_none)),
+             Cop (Craise kind, [arg_exp], dbg)))
+    | Cop (Craise _, ([] | _ :: _ :: _), _) ->
+      invalid_arg "instrument: wrong number of arguments for operation Craise"
     | Cop
         ( (( Capply _ | Caddi | Calloc | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
            | Cand | Cor | Cxor | Clsl | Clsr | Casr | Caddv | Cadda | Cnegf

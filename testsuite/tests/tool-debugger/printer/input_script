@@ -3,7 +3,11 @@ install_printer Printer.print_generic
 break @ Debuggee 18
 run
 p _d
+install_printer Printer.print_t
+print _d
 install_printer Printer.p
 set print_depth 2
 print x
+set print_depth 100
+print _d
 quit

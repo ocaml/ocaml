@@ -15,36 +15,25 @@
 
 (* Interpretation of TSL blocks and operations on test trees *)
 
-open Tsl_ast
-
-val apply_modifiers : Environments.t -> string located -> Environments.t
-
-val interpret_environment_statement :
-  Environments.t -> Tsl_ast.environment_statement Tsl_ast.located ->
-  Environments.t
-
 exception No_such_test_or_action of string
-val lookup_test : string located -> Tests.t
+val lookup_test : string Tsl_ast.located -> Tests.t
 
-type test_tree =
-  | Node of
-    (Tsl_ast.environment_statement located list) *
-    Tests.t *
-    string located list *
-    (test_tree list)
+type behavior =
+  | Skip_all
+  | Run
 
-val test_trees_of_tsl_block :
-  Tsl_ast.tsl_item list ->
-  Tsl_ast.environment_statement located list * test_tree list
+type summary = Test_result.status = Pass | Skip | Fail
+val string_of_summary : summary -> string
 
-val tsl_ast_of_test_trees :
-  Tsl_ast.environment_statement located list * test_tree list ->
-  Tsl_ast.t
+val run_environment_statement :
+  add_msg:(string -> unit) ->
+  report_error:(Location.t -> exn -> string -> string) ->
+  Environments.t ->
+  Tsl_ast.environment_statement Tsl_ast.located ->
+  (Environments.t, unit) result
 
-val tests_in_tree : Tsl_ast.t -> Tests.TestSet.t
-
-val actions_in_test : Tests.t -> Actions.ActionSet.t
-
-val actions_in_tests : Tests.TestSet.t -> Actions.ActionSet.t
-
-val print_tsl_ast : compact:bool -> out_channel -> Tsl_ast.t -> unit
+val run :
+  log:out_channel ->
+  add_msg:(string -> unit) ->
+  report_error:(Location.t -> exn -> string -> string) ->
+  behavior -> Environments.t -> summary -> Tsl_ast.t -> summary

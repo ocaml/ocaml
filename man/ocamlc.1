@@ -355,6 +355,15 @@ to be loaded dynamically by the run-time system
 .BR ocamlrun (1)
 at program start-up time.
 .TP
+.BI \-dllib\-suffixed\ \-l libname
+As for
+.BI \-dllib
+but the name recorded is mangled by
+.BR ocamlrun (1)
+at program start-up time. This is used for C stub libraries; see
+.B ocamlmklib\ \-suffixed
+for further information.
+.TP
 .BI \-dllpath " dir"
 Adds the directory
 .I dir
@@ -404,6 +413,11 @@ compiler. Also, since the output follows the syntax of interfaces, it
 can help in writing an explicit interface (.mli file) for a file: just
 redirect the standard output of the compiler to a .mli file, and edit
 that file to remove all declarations of unexported names.
+.TP
+.B \-i-variance
+Cause the compiler to print the computed variance of type parameters for
+every type declaration.  Without this option, variance is printed only for
+private types or types without a manifest (e.g., abstract types).
 .TP
 .BI \-cmi-file " filename"
 Type-check the source implementation to be compiled against the
@@ -473,6 +487,24 @@ source code.
 .B \-labels
 Labels are not ignored in types, labels may be used in applications,
 and labelled parameters can be given in any order.  This is the default.
+.TP
+.BI \-launch\-method " method"
+Specifies the mechanism used by normal bytecode executables to find the
+interpreter.
+The following methods are supported:
+
+.B exe
+A small executable stub launcher contained in the runtime-launch-info file is
+prepended to the bytecode image.
+
+.B sh
+A #! header is used. If the full path to the required interpreter is not
+suitable for a #! line, a small shell script is generated instead, using the sh
+interpreter found in PATH.
+
+.B /path/interpreter
+As for sh, but if the interpreter cannot be used in #! line then
+/path/intepreter is used instead of searching for sh in PATH.
 .TP
 .B \-linkall
 Force all modules contained in libraries to be linked in. If this
@@ -653,6 +685,25 @@ flag, you must use it again for all dependencies.
 Do no allow arbitrary recursive types during type-checking.
 This is the default.
 .TP
+.BI \-runtime\-search " method"
+Controls whether the header used by normal bytecode executables is permitted to
+search for the interpreter, or requires it to be at a fixed location.
+The following methods are supported:
+
+.B disable
+A fixed absolute path to the interpreter is used, and the executable will not
+launch if the interpreter is not found at this location.
+
+.B fallback
+A fixed absolute path to the interpreter is used, but if the executable cannot
+find the interpreter at this location then it will search first in the directory
+containing the executable and then in PATH.
+
+.B enable
+The executable searches for the interpreter first in the directory containing
+the executable and then in PATH. No absolute path to the interpreter is
+recorded.
+.TP
 .BI \-runtime\-variant " suffix"
 Add
 .I suffix
@@ -673,6 +724,15 @@ Do not use type information to optimize pattern-matching.
 This allows to detect match failures even if a pattern-matching was
 wrongly assumed to be exhaustive. This only impacts GADT and
 polymorphic variant compilation.
+.TP
+.BI \-set\-runtime\-default " setting=value"
+When linking an executable, override the default value for a runtime setting.
+The only currently supported setting is:
+
+.B standard_library_default
+Specifies the default location used by the executable to locate the Standard
+Library. By default, this is the absolute path to the Standard Library the
+compiler itself was configured with.
 .TP
 .B \-short\-paths
 When a type is visible under several module-paths, use the shortest

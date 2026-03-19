@@ -54,3 +54,5 @@ let runtime_flags env backend c_files =
 let toplevel_default_flags = "-noinit -no-version -noprompt"
 
 let ocamlobjinfo_default_flags = "-null-crc"
+
+let ocamltest_default_flags = ""

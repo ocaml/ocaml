@@ -46,7 +46,7 @@ let libdir_suffix {libdir_suffix; _} = libdir_suffix
 
 (* Derived properties *)
 
-let is_renamed {phase; _} = (phase = Renamed)
+let is_renamed {phase; _} = (phase <> Original)
 
 let bindir {prefix; bindir_suffix; _} =
   Filename.concat prefix bindir_suffix
@@ -67,19 +67,6 @@ let in_libdir env path =
 let in_test_root {test_root; _} path =
   Filename.concat test_root path
 
-(* Reverse the quoting of single quotes done by Filename.quote on Unix (which is
-   used for the runtime name when embedded in sh-scripts. Any single quote
-   characters are transformed to "'\\''". If the string is split on the single
-   quote characters, the sequence ["\\"; ""] is a single quote character in the
-   unescaped version. *)
-let dequote s =
-  let[@tail_mod_cons] rec loop = function
-  | "\\" :: "" :: rest -> "'" :: loop rest
-  | chunk :: rest -> chunk :: loop rest
-  | [] -> []
-  in
-  String.concat "" (loop (String.split_on_char '\'' s))
-
 (* [classify_executable file] determines if [file] is :
    - Tendered bytecode with an executable header
    - Scripted bytecode invoking ocamlrun with a #! header
@@ -91,49 +78,18 @@ let classify_executable file =
   try
     In_channel.with_open_bin file (fun ic ->
       let start = really_input_string ic 2 in
-      let is_RNTM = function
-      | Bytesections.{name = Name.RNTM; _} -> true
-      | _ -> false
-      in
+      let toc = Bytesections.read_toc ic in
+      let sections = Bytesections.all toc in
       let is_DLLS = function
       | Bytesections.{name = Name.DLLS; len} when len > 0 -> true
       | _ -> false
       in
-      let toc = Bytesections.read_toc ic in
-      let sections = Bytesections.all toc in
-      if start = "#!" then
-        let runtime =
-          seek_in ic 2;
-          let shebang = String.trim (input_line ic) in
-          if Filename.basename shebang = "sh" then
-            let exec_line = input_line ic in
-            if String.starts_with ~prefix:"exec '" exec_line
-               && String.ends_with ~suffix:"' \"$0\" \"$@\"" exec_line then
-              (* When the path to the runtime can't be directly used in a
-                 shebang, the shell is used instead, the next line is then:
-                   exec '<runtime>' "$0" "$@" *)
-              dequote (String.sub exec_line 6 (String.length exec_line - 17))
-            else
-              Harness.fail_because "%s contains an unexpected exec line: %S"
-                                   file exec_line
-          else
-            shebang
-        in
-        Tendered {header = Header_shebang;
-                  dlls = List.exists is_DLLS sections;
-                  runtime}
-      else if List.exists is_RNTM sections then
-        let rntm =
-          Bytesections.read_section_string toc ic Bytesections.Name.RNTM in
-        let len = String.length rntm in
-        if len = 0 || rntm.[len - 1] <> '\000' then
-          Harness.fail_because "%s contains corrupt RNTM: %S" file rntm;
-        let runtime = String.sub rntm 0 (len - 1) in
-        Tendered {header = Header_exe;
-                  dlls = List.exists is_DLLS sections;
-                  runtime}
-      else
-        Custom)
+      let tendered (runtime, id, search) =
+        let header = if start = "#!" then Header_shebang else Header_exe in
+        let dlls = List.exists is_DLLS sections in
+        Tendered {header; dlls; runtime; id; search}
+      in
+      Option.fold ~none:Custom ~some:tendered (Byterntm.read_runtime toc ic))
   with End_of_file | Bytesections.Bad_magic_number ->
     Vanilla
 
@@ -224,7 +180,7 @@ let make pp_path ~verbose ~test_root ~test_root_logical
     let value =
       String.sub binding (equals + 1) (String.length binding - equals - 1)
     in
-    if is_path_env name then
+    if phase <> Execution && is_path_env name then
       if Sys.win32 then
         if String.index_opt bindir ';' <> None then
           Printf.sprintf "%s=\"%s\";%s" name bindir value
@@ -270,7 +226,7 @@ let string_of_process_status = function
    highlighted. If argv0 is specified, then the original program executable is
    also shown. *)
 let display_execution level status pid ~runtime program argv0 args
-                      ({pp_path; verbose; serial; _} as env) =
+                      ({pp_path; verbose; serial; phase; _} as env) =
   let pp_program style program f = function
   | Some argv0 ->
       Format.fprintf f "@{<%s>%s (from %a)@}"
@@ -313,9 +269,11 @@ let display_execution level status pid ~runtime program argv0 args
   if serial <> !last_environment then begin
     last_environment := serial;
     Format.printf "\
-      @{<inline_code>> @}@{<loc>Environment@}\n\
-      @{<inline_code>> @}  @{<loc>PATH=%a:$PATH@}\n"
-      pp_path (bindir env);
+      @{<inline_code>> @}@{<loc>Environment@}\n";
+    if phase <> Execution then
+      Format.printf "\
+        @{<inline_code>> @}  @{<loc>PATH=%a:$PATH@}\n"
+        pp_path (bindir env);
     if not Sys.win32 then
       Format.printf "\
         @{<inline_code>> @}  @{<loc>%s=%a:$%s@}\n"
@@ -358,10 +316,9 @@ let run_one (~runtime, ~quiet, ~fails, ~program, ~argv0, ~args,
         (* Convert SIGABRT to exit code 134 *)
         Unix.WEXITED 134
     | Unix.WSIGNALED n
-      when n = Sys.sigsegv
-           && List.mem Config.architecture ["s390x"; "riscv"] ->
-        (* cf. ocaml/ocaml#13693 - s390x executables might segfault, so this
-           gets converted to Docker's exit code so it can be skipped *)
+      when n = Sys.sigsegv && Config.architecture = "riscv" ->
+        (* riscv executables might segfault, so this gets converted to Docker's
+           exit code so it can be skipped *)
         Unix.WEXITED 139
     | status ->
         status
@@ -395,7 +352,7 @@ let run_one (~runtime, ~quiet, ~fails, ~program, ~argv0, ~args,
   let lines =
     let ic = Unix.in_channel_of_descr stdout in
     (* Some of the tests send lines of text which end with '\r'. On native
-       Windows, this will _correctly_ cause "\r\r\n" to be be sent down
+       Windows, this will _correctly_ cause "\r\r\n" to be sent down
        the pipe and text mode will _correctly_ translate that to "\r\n"
        (and the caller receives a line ending with '\r').
        On Cygwin, where the process sending the text is a Unix process,
@@ -472,9 +429,9 @@ let run_process ?(runtime = false) ?(stubs = false) ?(stdlib = false)
       (* The tests are easier to write with the assumption that shims are
          simply ignored in the Original phase (otherwise they all begin
          [Env.is_renamed env && (* ... *)] *)
-      let runtime = runtime && phase = Renamed in
+      let runtime = runtime && phase <> Original in
       let env =
-        if phase = Renamed && (stubs || stdlib) then
+        if phase <> Original && (stubs || stdlib) then
           apply_shims ~stubs ~stdlib env
         else
           env
@@ -493,7 +450,7 @@ let run_process ?(runtime = false) ?(stubs = false) ?(stdlib = false)
        fails without each shim in turn. The final entry in the strategy must be
        the request itself. *)
     let test_without cond shim strategy =
-      if phase = Renamed && cond then
+      if phase <> Original && cond then
         shim env :: strategy
       else
         strategy

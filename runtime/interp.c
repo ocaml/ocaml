@@ -278,7 +278,6 @@ value caml_bytecode_interpreter(code_t prog, asize_t prog_size,
   volatile value raise_exn_bucket = Val_unit;
   struct longjmp_buffer raise_buf;
   value resume_fn, resume_arg;
-  struct stack_info* resume_tail;
   caml_domain_state* domain_state = Caml_state;
   struct caml_exception_context exception_ctx =
     { &raise_buf, domain_state->local_roots, &raise_exn_bucket};
@@ -287,9 +286,11 @@ value caml_bytecode_interpreter(code_t prog, asize_t prog_size,
 #endif
 
 #ifdef THREADED_CODE
+#define OPCODE_LABEL(name) &&lbl_ ## name,
   static const void * const jumptable[] = {
-#    include "caml/jumptbl.h"
+    CAML_ZINC_OPCODES(OPCODE_LABEL)
   };
+#undef OPCODE_LABEL
 #endif
 
   if (prog == NULL) {           /* Interpreter is initializing */
@@ -1283,8 +1284,7 @@ value caml_bytecode_interpreter(code_t prog, asize_t prog_size,
     Instruct(RESUME):
       resume_fn = sp[0];
       resume_arg = sp[1];
-      resume_tail = Ptr_val(sp[2]);
-      sp -= 2;
+      sp -= 3;
       sp[0] = Val_long(domain_state->trap_sp_off);
       sp[1] = Val_long(0);
       sp[2] = (value)pc;
@@ -1293,18 +1293,21 @@ value caml_bytecode_interpreter(code_t prog, asize_t prog_size,
       goto do_resume;
 
 do_resume: {
-      struct stack_info* stk = Ptr_val(accu);
-      if (stk == NULL) {
+      struct stack_info* cont_tail = Ptr_val(accu);
+      if (cont_tail == NULL) {
         Setup_for_c_call;
         caml_raise_continuation_already_resumed();
       }
-      if (resume_tail == NULL) {
-        resume_tail = stk;
+      struct stack_info* cont_head = Stack_parent(cont_tail);
+      if (cont_head == NULL) {
+        /* Freshly allocated stack; entering this computation for the first
+           time */
+        cont_head = cont_tail;
       }
-      Stack_parent(resume_tail) = Caml_state->current_stack;
+      Stack_parent(cont_tail) = Caml_state->current_stack;
 
       domain_state->current_stack->sp = sp;
-      domain_state->current_stack = stk;
+      domain_state->current_stack = cont_head;
       sp = domain_state->current_stack->sp;
 
       domain_state->trap_sp_off = Long_val(sp[0]);
@@ -1319,7 +1322,6 @@ do_resume: {
     Instruct(RESUMETERM):
       resume_fn = sp[0];
       resume_arg = sp[1];
-      resume_tail = Ptr_val(sp[2]);
       sp = sp + *pc - 2;
       sp[0] = Val_long(domain_state->trap_sp_off);
       sp[1] = Val_long(extra_args);
@@ -1339,7 +1341,7 @@ do_resume: {
         goto raise_exception;
       }
 
-      Alloc_small(cont, 2, Cont_tag, Enter_gc);
+      Alloc_small(cont, 1, Cont_tag, Enter_gc);
 
       sp -= 4;
       sp[0] = Val_long(domain_state->trap_sp_off);
@@ -1350,27 +1352,25 @@ do_resume: {
       old_stack->sp = sp;
       domain_state->current_stack = parent_stack;
       sp = parent_stack->sp;
-      Stack_parent(old_stack) = NULL;
+      Stack_parent(old_stack) = old_stack;
       Field(cont, 0) = Val_ptr(old_stack);
-      Field(cont, 1) = Val_ptr(old_stack);
 
       domain_state->trap_sp_off = Long_val(sp[0]);
       extra_args = Long_val(sp[1]);
-      sp--;
       sp[0] = accu;
       sp[1] = cont;
-      sp[2] = Val_ptr(old_stack);
       accu = Stack_handle_effect(old_stack);
       pc = Code_val(accu);
       env = accu;
-      extra_args += 2;
+      extra_args += 1;
       goto check_stacks;
     }
 
     Instruct(REPERFORMTERM): {
       value eff = accu;
       value cont = sp[0];
-      struct stack_info* cont_tail = Ptr_val(sp[1]);
+      struct stack_info* cont_tail = Ptr_val(Field(cont, 0));
+      struct stack_info* cont_head = Stack_parent(cont_tail);
       struct stack_info* self = domain_state->current_stack;
       struct stack_info* parent = Stack_parent(domain_state->current_stack);
 
@@ -1380,12 +1380,18 @@ do_resume: {
       sp[1] = Val_long(extra_args);
 
       if (parent == NULL) {
+        /* Save cont across the allocation in caml_make_unhandled_effect_exn */
+        sp -= 1;
+        sp[0] = cont;
         Setup_for_c_call;
         resume_arg = caml_make_unhandled_effect_exn(eff);
+        Restore_after_c_call;
+        cont = sp[0];
+        sp += 1;
+        Setup_for_c_call;
         accu = caml_continuation_use(cont);
         Restore_after_c_call;
         resume_fn = raise_unhandled_effect;
-        resume_tail = cont_tail;
 
         goto do_resume;
       }
@@ -1394,21 +1400,18 @@ do_resume: {
       domain_state->current_stack = parent;
       sp = parent->sp;
 
-      CAMLassert(Stack_parent(cont_tail) == NULL);
-      Stack_parent(self) = NULL;
+      Stack_parent(self) = cont_head;
       Stack_parent(cont_tail) = self;
-      Field(cont, 1) = Val_ptr(self);
+      Field(cont, 0) = Val_ptr(self);
 
       domain_state->trap_sp_off = Long_val(sp[0]);
       extra_args = Long_val(sp[1]);
-      sp--;
       sp[0] = eff;
       sp[1] = cont;
-      sp[2] = Val_ptr(self);
       accu = Stack_handle_effect(self);
       pc = Code_val(accu);
       env = accu;
-      extra_args += 2;
+      extra_args += 1;
       goto check_stacks;
     }
 

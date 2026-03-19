@@ -35,6 +35,7 @@
 #include <time.h>
 #include <winioctl.h>
 #include "caml/winsupport.h"
+#include "misc_internals.h"
 
 #ifndef S_IFLNK
 /*
@@ -100,7 +101,7 @@ static value stat_aux(int use_64, int64_t st_ino, struct _stat64 *buf)
   Store_field (v, 0, Val_int (buf->st_dev));
   Store_field (v, 1, Val_int (st_ino ? st_ino & Max_long : buf->st_ino));
   Store_field (v, 2, caml_unix_cst_to_constr (buf->st_mode & S_IFMT, file_kind_table,
-                                         sizeof(file_kind_table) / sizeof(int),
+                                         countof(file_kind_table),
                                          0));
   Store_field (v, 3, Val_int(buf->st_mode & 07777));
   Store_field (v, 4, Val_int (buf->st_nlink));

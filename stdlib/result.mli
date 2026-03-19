@@ -66,7 +66,7 @@ val map : ('a -> 'b) -> ('a, 'e) result -> ('b, 'e) result
 (** [map f r] is [Ok (f v)] if [r] is [Ok v] and [r] if [r] is [Error _]. *)
 
 val product : ('a, 'e) result -> ('b, 'e) result -> ('a * 'b, 'e) result
-(** [product r0 r1] is [Ok (v0, v1)] if [r0] is [Ok v0] and [r1] is [Ok v2]
+(** [product r0 r1] is [Ok (v0, v1)] if [r0] is [Ok v0] and [r1] is [Ok v1]
     and otherwise returns the error of [r0], if any, or the error of [r1].
 
     @since 5.4 *)

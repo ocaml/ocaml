@@ -180,5 +180,6 @@ int caml_is_special_exception(value exn) {
   f = caml_global_data;
   return exn == Field(f, MATCH_FAILURE_EXN)
       || exn == Field(f, ASSERT_FAILURE_EXN)
-      || exn == Field(f, UNDEFINED_RECURSIVE_MODULE_EXN);
+      || exn == Field(f, UNDEFINED_RECURSIVE_MODULE_EXN)
+      || exn == Field(f, TODO_EXN);
 }

@@ -240,6 +240,22 @@ val map2 : f:('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
    @raise Invalid_argument if the arrays are not the same size.
    @since 4.03 (4.05 in ArrayLabels) *)
 
+val fold_left2 : f:('acc -> 'a -> 'b -> 'acc) -> init:'acc -> 'a array ->
+   'b array -> 'acc
+(** [fold_left2 f init a b] is
+    [f (... (f (f init a.(0) b.(0)) a.(1) b.(1)) ...) a.(n-1) b.(n-1))],
+    where [n] is the common length of the arrays [a] and [b].
+    @raise Invalid_argument if the arrays do not have the same length.
+    @since 5.6 *)
+
+val fold_right2 : f:('a -> 'b -> 'acc -> 'acc) -> 'a array -> 'b array ->
+   init:'acc -> 'acc
+(** [fold_right2 f a b init] is
+    [f a.(0) b.(0) (f a.(1) b.(1) (... (f a.(n-1) b.(n-1) init) ...))],
+    where [n] is the common length of the arrays [a] and [b].
+    @raise Invalid_argument if the arrays do not have the same length.
+    @since 5.6 *)
+
 
 (** {1 Array scanning} *)
 
@@ -354,6 +370,20 @@ val stable_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
    length [n/2], where [n] is the length of the array.  It is usually faster
    than the current implementation of {!sort}.
 *)
+
+val stable_sort_sub :
+   cmp:('a -> 'a -> int) -> 'a array -> pos:int -> len:int -> unit
+(**[stable_sort_sub ~cmp a ~pos ~len] sorts the subarray of the array [a]
+   delimited by the start position [pos] and by the length [len]. The data
+   in this subarray is sorted in increasing order according to the comparison
+   function [cmp]. The data outside of this subarray is unaffected. The
+   sorting algorithm is stable; it is the same as in {!stable_sort}.
+
+   @raise Invalid_argument if [pos] and [len] do not
+   designate a valid subarray of [a]; that is, if
+   [pos < 0], or [len < 0], or [pos + len > length a].
+
+   @since 5.5 *)
 
 val fast_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
 (** Same as {!sort} or {!stable_sort}, whichever is

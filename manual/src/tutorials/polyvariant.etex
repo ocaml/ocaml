@@ -130,7 +130,7 @@ let f = function
   | #myvariant -> "myvariant"
   | `Tag3 -> "Tag3";;
 \end{caml_example}
-or combined with with aliases.
+or combined with aliases.
 \begin{caml_example}{toplevel}
 let g1 = function `Tag1 _ -> "Tag1" | `Tag2 _ -> "Tag2";;
 let g = function

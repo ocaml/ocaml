@@ -30,18 +30,6 @@ Error: Existential types are not allowed in grouped ("let ... and ...") bindings
 
 
 let () =
-  let rec Any x = Any () in
-  ()
-[%%expect {|
-Line 2, characters 10-15:
-2 |   let rec Any x = Any () in
-              ^^^^^
-Error: Existential types are not allowed in recursive bindings,
-       but the constructor "Any" introduces existential types.
-|}]
-
-
-let () =
   let[@attribute] Any x = Any () in
   ()
 [%%expect {|
@@ -105,19 +93,6 @@ Line 2, characters 6-11:
 Error: Existential types are not allowed in grouped ("let ... and ...") bindings,
        but the constructor "Any" introduces existential types.
 |}]
-
-
-let () =
-  let rec Any x = Any () in
-  ()
-[%%expect {|
-Line 2, characters 10-15:
-2 |   let rec Any x = Any () in
-              ^^^^^
-Error: Existential types are not allowed in recursive bindings,
-       but the constructor "Any" introduces existential types.
-|}]
-
 
 let () =
   let[@attribute] Any x = Any () in

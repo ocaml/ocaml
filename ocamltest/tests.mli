@@ -34,7 +34,7 @@ val default_tests : unit -> t list
 
 val lookup : string -> t option
 
-val run : out_channel -> Environments.t -> t -> Result.t * Environments.t
+val run : out_channel -> Environments.t -> t -> Test_result.t * Environments.t
 
 val test_of_action : Actions.t -> t
 

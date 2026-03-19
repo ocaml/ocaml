@@ -10,6 +10,7 @@ debug assertions.
 
 If you want to use the bytecode compiler:
 
+[source,sh]
 ----
 # build the runtime
 make runtime -j
@@ -23,6 +24,7 @@ make runtime -j
 
 If you want to use the native compiler:
 
+[source,sh]
 ----
 # build the native runtime
 make runtimeopt -j
@@ -45,6 +47,7 @@ documented in
 link:https://ocaml.org/manual/runtime.html#s:ocamlrun-options[].
 You can enable all printing with
 
+[source,sh]
 ----
 OCAMLRUNPARAM="v=0xffffffff" ./test
 ----
@@ -58,6 +61,7 @@ thread number, and it corresponds to the more precise setting
 Another useful OCAMLRUNPARAM setting is `V=1`, which enables
 additional sanity checks on the heap during major GC cycles.
 
+[source,sh]
 ----
 OCAMLRUNPARAM="V=1" ./test
 ----
@@ -85,8 +89,9 @@ If your system is also using `systemd-coredump`, then the command
 `coredumpctl dump` will show you information about the last "core
 dump".
 
+[source,console]
 ----
-$ $ coredumpctl dump
+$ coredumpctl dump
            PID: 678260 (Domain0)
            UID: 1000 (gasche)
            GID: 1000 (gasche)
@@ -108,6 +113,7 @@ Refusing to dump core to tty (use shell redirection or specify --output).
 
 You can get a full backtrace using `echo bt | coredumpctl debug`:
 
+[source,console]
 ----
 $ echo bt | coredumpctl debug
 [...]

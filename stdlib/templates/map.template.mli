@@ -257,7 +257,7 @@ module type S =
 
     val filter: f:(key -> 'a -> bool) -> 'a t -> 'a t
     (** [filter ~f m] returns the map with all the bindings in [m]
-        that satisfy predicate [p]. If every binding in [m] satisfies [f],
+        that satisfy predicate [f]. If every binding in [m] satisfies [f],
         [m] is returned unchanged (the result of the function is then
         physically equal to [m])
         @since 3.12
@@ -308,6 +308,12 @@ module type S =
     (** Test whether a map has exactly one element or not.
 
         @since 5.5 *)
+
+    val singleton_to_binding: 'a t -> (key * 'a) option
+    (** [singleton_to_binding m] is [Some (k, v)] if [m] only binds [k] to [v]
+        and [None] otherwise.
+
+        @since 5.6 *)
 
     val mem: key -> 'a t -> bool
     (** [mem x m] returns [true] if [m] contains a binding for [x],

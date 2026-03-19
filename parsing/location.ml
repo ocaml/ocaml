@@ -73,6 +73,8 @@ type 'a loc = {
 let mkloc txt loc = { txt ; loc }
 let mknoloc txt = mkloc txt none
 
+let map f x = { x with txt = f x.txt }
+
 (******************************************************************************)
 (* Input info *)
 

@@ -320,6 +320,8 @@ void caml_scan_stack(
   scanning_action f, scanning_action_flags fflags, void* fdata,
   struct stack_info* stack, value* gc_regs)
 {
+  struct stack_info* starting_stack = stack;
+
   while (stack != NULL) {
     scan_stack_frames(f, fflags, fdata, stack, gc_regs);
 
@@ -328,6 +330,7 @@ void caml_scan_stack(
     f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
 
     stack = Stack_parent(stack);
+    if (stack == starting_stack) break;  /* loop detected */
   }
 }
 
@@ -408,6 +411,8 @@ void caml_scan_stack(
 {
   value *low, *high;
 
+  struct stack_info* starting_stack = stack;
+
   while (stack != NULL) {
     CAMLassert(stack->magic == 42);
 
@@ -428,6 +433,7 @@ void caml_scan_stack(
       f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
 
     stack = Stack_parent(stack);
+    if (stack == starting_stack) break;  /* loop detected */
   }
 }
 
@@ -649,7 +655,6 @@ CAMLprim value caml_continuation_use_and_update_handler_noexc
     /* The continuation has already been taken */
     return stack;
   }
-  stk = Ptr_val(Field(cont, 1));
   Stack_handle_value(stk) = hval;
   Stack_handle_exception(stk) = hexn;
   Stack_handle_effect(stk) = heff;

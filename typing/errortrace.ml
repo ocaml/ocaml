@@ -55,6 +55,7 @@ type 'a escape_kind =
      we keep a [type_expr] to track renaming in {!Printtyp} *)
   | Self
   | Module_type of Path.t
+  | Module of Ident.t
   | Equation of 'a
   | Constraint
 
@@ -65,7 +66,8 @@ type 'a escape =
 let map_escape f esc =
   {esc with kind = match esc.kind with
      | Equation eq -> Equation (f eq)
-     | (Constructor _ | Univ _ | Self | Module_type _ | Constraint) as c -> c}
+     | (Constructor _ | Univ _ | Self | Module_type _
+        | Module _ | Constraint) as c -> c}
 
 let explain trace f =
   let rec explain = function
@@ -137,7 +139,8 @@ let map_elt (type variety) f : ('a, variety) elt -> ('b, variety) elt = function
   | Diff x -> Diff (map_diff f x)
   | Escape {kind = Equation x; context} ->
       Escape { kind = Equation (f x); context }
-  | Escape {kind = (Univ _ | Self | Constructor _ | Module_type _ | Constraint);
+  | Escape {kind = (Univ _ | Self | Constructor _
+      | Module_type _ | Module _ | Constraint);
             _}
   | Variant _ | Obj _ | Function_label_mismatch _ | Tuple_label_mismatch _
   | Incompatible_fields _

@@ -44,7 +44,8 @@ utils/clflags.cmx : \
     utils/clflags.cmi
 utils/clflags.cmi : \
     utils/profile.cmi \
-    utils/misc.cmi
+    utils/misc.cmi \
+    utils/config.cmi
 utils/compression.cmo : \
     utils/compression.cmi
 utils/compression.cmx : \
@@ -186,6 +187,11 @@ utils/profile.cmx : \
     utils/misc.cmx \
     utils/profile.cmi
 utils/profile.cmi :
+utils/stable_matching.cmo : \
+    utils/stable_matching.cmi
+utils/stable_matching.cmx : \
+    utils/stable_matching.cmi
+utils/stable_matching.cmi :
 utils/strongly_connected_components.cmo : \
     utils/numbers.cmi \
     utils/misc.cmi \
@@ -821,18 +827,21 @@ typing/envaux.cmi : \
 typing/errortrace.cmo : \
     typing/types.cmi \
     typing/path.cmi \
+    typing/ident.cmi \
     utils/format_doc.cmi \
     parsing/asttypes.cmi \
     typing/errortrace.cmi
 typing/errortrace.cmx : \
     typing/types.cmx \
     typing/path.cmx \
+    typing/ident.cmx \
     utils/format_doc.cmx \
     parsing/asttypes.cmx \
     typing/errortrace.cmi
 typing/errortrace.cmi : \
     typing/types.cmi \
     typing/path.cmi \
+    typing/ident.cmi \
     utils/format_doc.cmi \
     parsing/asttypes.cmi
 typing/errortrace_report.cmo : \
@@ -1009,7 +1018,6 @@ typing/includemod.cmo : \
     typing/env.cmi \
     utils/diffing.cmi \
     typing/ctype.cmi \
-    file_formats/cmt_format.cmi \
     parsing/builtin_attributes.cmi \
     typing/btype.cmi \
     typing/includemod.cmi
@@ -1033,7 +1041,6 @@ typing/includemod.cmx : \
     typing/env.cmx \
     utils/diffing.cmx \
     typing/ctype.cmx \
-    file_formats/cmt_format.cmx \
     parsing/builtin_attributes.cmx \
     typing/btype.cmx \
     typing/includemod.cmi
@@ -1054,6 +1061,7 @@ typing/includemod_errorprinter.cmo : \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/subst.cmi \
+    typing/signature_matching.cmi \
     typing/printtyp.cmi \
     typing/primitive.cmi \
     typing/path.cmi \
@@ -1074,6 +1082,7 @@ typing/includemod_errorprinter.cmx : \
     typing/types.cmx \
     typing/typedtree.cmx \
     typing/subst.cmx \
+    typing/signature_matching.cmx \
     typing/printtyp.cmx \
     typing/primitive.cmx \
     typing/path.cmx \
@@ -1463,6 +1472,7 @@ typing/rawprinttyp.cmo : \
     parsing/pprintast.cmi \
     typing/path.cmi \
     parsing/longident.cmi \
+    typing/ident.cmi \
     utils/format_doc.cmi \
     parsing/asttypes.cmi \
     typing/rawprinttyp.cmi
@@ -1471,6 +1481,7 @@ typing/rawprinttyp.cmx : \
     parsing/pprintast.cmx \
     typing/path.cmx \
     parsing/longident.cmx \
+    typing/ident.cmx \
     utils/format_doc.cmx \
     parsing/asttypes.cmx \
     typing/rawprinttyp.cmi
@@ -1498,17 +1509,20 @@ typing/shape.cmi : \
 typing/shape_reduce.cmo : \
     typing/shape.cmi \
     utils/local_store.cmi \
+    utils/identifiable.cmi \
     typing/ident.cmi \
     typing/env.cmi \
     typing/shape_reduce.cmi
 typing/shape_reduce.cmx : \
     typing/shape.cmx \
     utils/local_store.cmx \
+    utils/identifiable.cmx \
     typing/ident.cmx \
     typing/env.cmx \
     typing/shape_reduce.cmi
 typing/shape_reduce.cmi : \
     typing/shape.cmi \
+    typing/path.cmi \
     typing/env.cmi
 typing/signature_group.cmo : \
     typing/types.cmi \
@@ -1522,6 +1536,27 @@ typing/signature_group.cmx : \
     typing/signature_group.cmi
 typing/signature_group.cmi : \
     typing/types.cmi
+typing/signature_matching.cmo : \
+    typing/types.cmi \
+    typing/subst.cmi \
+    utils/stable_matching.cmi \
+    parsing/location.cmi \
+    typing/includemod.cmi \
+    typing/ident.cmi \
+    typing/signature_matching.cmi
+typing/signature_matching.cmx : \
+    typing/types.cmx \
+    typing/subst.cmx \
+    utils/stable_matching.cmx \
+    parsing/location.cmx \
+    typing/includemod.cmx \
+    typing/ident.cmx \
+    typing/signature_matching.cmi
+typing/signature_matching.cmi : \
+    typing/types.cmi \
+    parsing/location.cmi \
+    typing/includemod.cmi \
+    typing/ident.cmi
 typing/stypes.cmo : \
     typing/typedtree.cmi \
     typing/printtyp.cmi \
@@ -1933,7 +1968,9 @@ typing/typedecl_properties.cmi : \
 typing/typedecl_separability.cmo : \
     typing/types.cmi \
     typing/typedecl_properties.cmi \
+    utils/misc.cmi \
     parsing/location.cmi \
+    typing/ident.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
     utils/config.cmi \
@@ -1942,7 +1979,9 @@ typing/typedecl_separability.cmo : \
 typing/typedecl_separability.cmx : \
     typing/types.cmx \
     typing/typedecl_properties.cmx \
+    utils/misc.cmx \
     parsing/location.cmx \
+    typing/ident.cmx \
     typing/env.cmx \
     typing/ctype.cmx \
     utils/config.cmx \
@@ -2012,6 +2051,7 @@ typing/typedtree.cmo : \
     typing/ident.cmi \
     typing/env.cmi \
     typing/data_types.cmi \
+    utils/clflags.cmi \
     parsing/asttypes.cmi \
     typing/typedtree.cmi
 typing/typedtree.cmx : \
@@ -2026,6 +2066,7 @@ typing/typedtree.cmx : \
     typing/ident.cmx \
     typing/env.cmx \
     typing/data_types.cmx \
+    utils/clflags.cmx \
     parsing/asttypes.cmx \
     typing/typedtree.cmi
 typing/typedtree.cmi : \
@@ -2146,7 +2187,6 @@ typing/typeopt.cmo : \
     typing/ctype.cmi \
     utils/config.cmi \
     utils/clflags.cmi \
-    parsing/asttypes.cmi \
     typing/typeopt.cmi
 typing/typeopt.cmx : \
     typing/types.cmx \
@@ -2161,7 +2201,6 @@ typing/typeopt.cmx : \
     typing/ctype.cmx \
     utils/config.cmx \
     utils/clflags.cmx \
-    parsing/asttypes.cmx \
     typing/typeopt.cmi
 typing/typeopt.cmi : \
     typing/types.cmi \
@@ -2215,9 +2254,11 @@ typing/typetexp.cmo : \
     parsing/parsetree.cmi \
     typing/out_type.cmi \
     typing/oprint.cmi \
+    utils/numbers.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
+    typing/ident.cmi \
     utils/format_doc.cmi \
     typing/errortrace_report.cmi \
     typing/errortrace.cmi \
@@ -2239,9 +2280,11 @@ typing/typetexp.cmx : \
     parsing/parsetree.cmi \
     typing/out_type.cmx \
     typing/oprint.cmx \
+    utils/numbers.cmx \
     utils/misc.cmx \
     parsing/longident.cmx \
     parsing/location.cmx \
+    typing/ident.cmx \
     utils/format_doc.cmx \
     typing/errortrace_report.cmx \
     typing/errortrace.cmx \
@@ -2474,6 +2517,17 @@ bytecomp/bytepackager.cmi : \
     utils/format_doc.cmi \
     typing/env.cmi \
     file_formats/cmo_format.cmi
+bytecomp/byterntm.cmo : \
+    utils/misc.cmi \
+    bytecomp/bytesections.cmi \
+    bytecomp/byterntm.cmi
+bytecomp/byterntm.cmx : \
+    utils/misc.cmx \
+    bytecomp/bytesections.cmx \
+    bytecomp/byterntm.cmi
+bytecomp/byterntm.cmi : \
+    utils/misc.cmi \
+    bytecomp/bytesections.cmi
 bytecomp/bytesections.cmo : \
     utils/config.cmi \
     bytecomp/bytesections.cmi
@@ -2511,6 +2565,7 @@ bytecomp/emitcode.cmo : \
     utils/clflags.cmi \
     bytecomp/bytegen.cmi \
     typing/btype.cmi \
+    parsing/asttypes.cmi \
     bytecomp/emitcode.cmi
 bytecomp/emitcode.cmx : \
     parsing/unit_info.cmx \
@@ -2531,6 +2586,7 @@ bytecomp/emitcode.cmx : \
     utils/clflags.cmx \
     bytecomp/bytegen.cmx \
     typing/btype.cmx \
+    parsing/asttypes.cmx \
     bytecomp/emitcode.cmi
 bytecomp/emitcode.cmi : \
     parsing/unit_info.cmi \
@@ -2541,26 +2597,32 @@ bytecomp/emitcode.cmi : \
 bytecomp/instruct.cmo : \
     typing/types.cmi \
     typing/subst.cmi \
+    typing/primitive.cmi \
     parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
     typing/env.cmi \
+    parsing/asttypes.cmi \
     bytecomp/instruct.cmi
 bytecomp/instruct.cmx : \
     typing/types.cmx \
     typing/subst.cmx \
+    typing/primitive.cmx \
     parsing/location.cmx \
     lambda/lambda.cmx \
     typing/ident.cmx \
     typing/env.cmx \
+    parsing/asttypes.cmx \
     bytecomp/instruct.cmi
 bytecomp/instruct.cmi : \
     typing/types.cmi \
     typing/subst.cmi \
+    typing/primitive.cmi \
     parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
-    typing/env.cmi
+    typing/env.cmi \
+    parsing/asttypes.cmi
 bytecomp/meta.cmo : \
     bytecomp/instruct.cmi \
     bytecomp/meta.cmi
@@ -5228,6 +5290,7 @@ middle_end/flambda/closure_conversion.cmo : \
     lambda/debuginfo.cmi \
     middle_end/convert_primitives.cmi \
     utils/config.cmi \
+    middle_end/compilenv.cmi \
     middle_end/compilation_unit.cmi \
     middle_end/flambda/base_types/closure_origin.cmi \
     middle_end/flambda/base_types/closure_id.cmi \
@@ -5257,6 +5320,7 @@ middle_end/flambda/closure_conversion.cmx : \
     lambda/debuginfo.cmx \
     middle_end/convert_primitives.cmx \
     utils/config.cmx \
+    middle_end/compilenv.cmx \
     middle_end/compilation_unit.cmx \
     middle_end/flambda/base_types/closure_origin.cmx \
     middle_end/flambda/base_types/closure_id.cmx \
@@ -7008,6 +7072,7 @@ driver/compile_common.cmo : \
     parsing/pprintast.cmi \
     driver/pparse.cmi \
     utils/misc.cmi \
+    parsing/location.cmi \
     typing/includemod.cmi \
     typing/env.cmi \
     driver/compmisc.cmi \
@@ -7028,6 +7093,7 @@ driver/compile_common.cmx : \
     parsing/pprintast.cmx \
     driver/pparse.cmx \
     utils/misc.cmx \
+    parsing/location.cmx \
     typing/includemod.cmx \
     typing/env.cmx \
     driver/compmisc.cmx \
@@ -7049,6 +7115,7 @@ driver/compmisc.cmo : \
     utils/load_path.cmi \
     typing/ident.cmi \
     typing/env.cmi \
+    typing/ctype.cmi \
     utils/config.cmi \
     driver/compenv.cmi \
     utils/clflags.cmi \
@@ -7062,6 +7129,7 @@ driver/compmisc.cmx : \
     utils/load_path.cmx \
     typing/ident.cmx \
     typing/env.cmx \
+    typing/ctype.cmx \
     utils/config.cmx \
     driver/compenv.cmx \
     utils/clflags.cmx \
@@ -7873,6 +7941,17 @@ lex/cset.cmo : \
 lex/cset.cmx : \
     lex/cset.cmi
 lex/cset.cmi :
+lex/exhaustiveness.cmo : \
+    lex/syntax.cmi \
+    lex/lexgen.cmi \
+    lex/exhaustiveness.cmi
+lex/exhaustiveness.cmx : \
+    lex/syntax.cmx \
+    lex/lexgen.cmx \
+    lex/exhaustiveness.cmi
+lex/exhaustiveness.cmi : \
+    lex/syntax.cmi \
+    lex/lexgen.cmi
 lex/lexer.cmo : \
     lex/syntax.cmi \
     lex/parser.cmi \
@@ -7902,6 +7981,7 @@ lex/main.cmo : \
     lex/output.cmi \
     lex/lexgen.cmi \
     lex/lexer.cmi \
+    lex/exhaustiveness.cmi \
     lex/cset.cmi \
     lex/compact.cmi \
     lex/common.cmi \
@@ -7913,6 +7993,7 @@ lex/main.cmx : \
     lex/output.cmx \
     lex/lexgen.cmx \
     lex/lexer.cmx \
+    lex/exhaustiveness.cmx \
     lex/cset.cmx \
     lex/compact.cmx \
     lex/common.cmx \
@@ -7982,10 +8063,12 @@ tools/cvt_emit.cmx : \
 tools/cvt_emit.cmi :
 tools/dumpobj.cmo : \
     bytecomp/symtable.cmi \
+    typing/primitive.cmi \
     tools/opnames.cmi \
     bytecomp/opcodes.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
+    lambda/lambda.cmi \
     bytecomp/instruct.cmi \
     utils/format_doc.cmi \
     utils/config.cmi \
@@ -7995,10 +8078,12 @@ tools/dumpobj.cmo : \
     tools/dumpobj.cmi
 tools/dumpobj.cmx : \
     bytecomp/symtable.cmx \
+    typing/primitive.cmx \
     tools/opnames.cmx \
     bytecomp/opcodes.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
+    lambda/lambda.cmx \
     bytecomp/instruct.cmx \
     utils/format_doc.cmx \
     utils/config.cmx \
@@ -8034,11 +8119,6 @@ tools/lintapidiff.cmx : \
     typing/ident.cmx \
     tools/lintapidiff.cmi
 tools/lintapidiff.cmi :
-tools/make_opcodes.cmo : \
-    tools/make_opcodes.cmi
-tools/make_opcodes.cmx : \
-    tools/make_opcodes.cmi
-tools/make_opcodes.cmi :
 tools/objinfo.cmo : \
     typing/typedtree.cmi \
     bytecomp/symtable.cmi \
@@ -8053,6 +8133,7 @@ tools/objinfo.cmo : \
     typing/ident.cmi \
     utils/format_doc.cmi \
     middle_end/flambda/export_info.cmi \
+    utils/config.cmi \
     middle_end/compilation_unit.cmi \
     file_formats/cmxs_format.cmi \
     file_formats/cmx_format.cmi \
@@ -8060,6 +8141,7 @@ tools/objinfo.cmo : \
     file_formats/cmo_format.cmi \
     file_formats/cmi_format.cmi \
     bytecomp/bytesections.cmi \
+    bytecomp/byterntm.cmi \
     utils/binutils.cmi \
     tools/objinfo.cmi
 tools/objinfo.cmx : \
@@ -8076,6 +8158,7 @@ tools/objinfo.cmx : \
     typing/ident.cmx \
     utils/format_doc.cmx \
     middle_end/flambda/export_info.cmx \
+    utils/config.cmx \
     middle_end/compilation_unit.cmx \
     file_formats/cmxs_format.cmi \
     file_formats/cmx_format.cmi \
@@ -8083,6 +8166,7 @@ tools/objinfo.cmx : \
     file_formats/cmo_format.cmi \
     file_formats/cmi_format.cmx \
     bytecomp/bytesections.cmx \
+    bytecomp/byterntm.cmx \
     utils/binutils.cmx \
     tools/objinfo.cmi
 tools/objinfo.cmi :
@@ -9908,6 +9992,7 @@ ocamldoc/odoc_value.cmo : \
     ocamldoc/odoc_parameter.cmi \
     ocamldoc/odoc_name.cmi \
     ocamldoc/odoc_misc.cmi \
+    typing/ctype.cmi \
     parsing/asttypes.cmi \
     ocamldoc/odoc_value.cmi
 ocamldoc/odoc_value.cmx : \
@@ -9916,6 +10001,7 @@ ocamldoc/odoc_value.cmx : \
     ocamldoc/odoc_parameter.cmx \
     ocamldoc/odoc_name.cmx \
     ocamldoc/odoc_misc.cmx \
+    typing/ctype.cmx \
     parsing/asttypes.cmx \
     ocamldoc/odoc_value.cmi
 ocamldoc/odoc_value.cmi : \
@@ -9925,24 +10011,24 @@ ocamldoc/odoc_value.cmi : \
     ocamldoc/odoc_name.cmi
 ocamltest/actions.cmo : \
     ocamltest/variables.cmi \
-    ocamltest/result.cmi \
+    ocamltest/test_result.cmi \
     ocamltest/environments.cmi \
     ocamltest/actions.cmi
 ocamltest/actions.cmx : \
     ocamltest/variables.cmx \
-    ocamltest/result.cmx \
+    ocamltest/test_result.cmx \
     ocamltest/environments.cmx \
     ocamltest/actions.cmi
 ocamltest/actions.cmi : \
     ocamltest/variables.cmi \
-    ocamltest/result.cmi \
+    ocamltest/test_result.cmi \
     ocamltest/environments.cmi
 ocamltest/actions_helpers.cmo : \
     ocamltest/variables.cmi \
-    otherlibs/unix/unix.cmi \
+    ocamltest/test_result.cmi \
     ocamltest/strace.cmi \
     ocamltest/run_command.cmi \
-    ocamltest/result.cmi \
+    ocamltest/ocamltest_unix.cmi \
     ocamltest/ocamltest_stdlib.cmi \
     ocamltest/modifier_parser.cmi \
     ocamltest/filecompare.cmi \
@@ -9952,10 +10038,10 @@ ocamltest/actions_helpers.cmo : \
     ocamltest/actions_helpers.cmi
 ocamltest/actions_helpers.cmx : \
     ocamltest/variables.cmx \
-    otherlibs/unix/unix.cmx \
+    ocamltest/test_result.cmx \
     ocamltest/strace.cmx \
     ocamltest/run_command.cmx \
-    ocamltest/result.cmx \
+    ocamltest/ocamltest_unix.cmx \
     ocamltest/ocamltest_stdlib.cmx \
     ocamltest/modifier_parser.cmx \
     ocamltest/filecompare.cmx \
@@ -9965,12 +10051,12 @@ ocamltest/actions_helpers.cmx : \
     ocamltest/actions_helpers.cmi
 ocamltest/actions_helpers.cmi : \
     ocamltest/variables.cmi \
-    ocamltest/result.cmi \
+    ocamltest/test_result.cmi \
     ocamltest/environments.cmi \
     ocamltest/actions.cmi
 ocamltest/builtin_actions.cmo : \
-    otherlibs/unix/unix.cmi \
-    ocamltest/result.cmi \
+    ocamltest/test_result.cmi \
+    ocamltest/ocamltest_unix.cmi \
     ocamltest/ocamltest_stdlib.cmi \
     ocamltest/ocamltest_config.cmi \
     ocamltest/environments.cmi \
@@ -9979,8 +10065,8 @@ ocamltest/builtin_actions.cmo : \
     ocamltest/actions.cmi \
     ocamltest/builtin_actions.cmi
 ocamltest/builtin_actions.cmx : \
-    otherlibs/unix/unix.cmx \
-    ocamltest/result.cmx \
+    ocamltest/test_result.cmx \
+    ocamltest/ocamltest_unix.cmx \
     ocamltest/ocamltest_stdlib.cmx \
     ocamltest/ocamltest_config.cmx \
     ocamltest/environments.cmx \
@@ -9999,7 +10085,7 @@ ocamltest/builtin_variables.cmx : \
 ocamltest/builtin_variables.cmi : \
     ocamltest/variables.cmi
 ocamltest/debugger_actions.cmo : \
-    ocamltest/result.cmi \
+    ocamltest/test_result.cmi \
     ocamltest/ocamltest_stdlib.cmi \
     ocamltest/ocaml_variables.cmi \
     ocamltest/ocaml_directories.cmi \
@@ -10014,7 +10100,7 @@ ocamltest/debugger_actions.cmo : \
     ocamltest/actions.cmi \
     ocamltest/debugger_actions.cmi
 ocamltest/debugger_actions.cmx : \
-    ocamltest/result.cmx \
+    ocamltest/test_result.cmx \
     ocamltest/ocamltest_stdlib.cmx \
     ocamltest/ocaml_variables.cmx \
     ocamltest/ocaml_directories.cmx \
@@ -10070,15 +10156,14 @@ ocamltest/filecompare.cmx : \
 ocamltest/filecompare.cmi :
 ocamltest/main.cmo : \
     ocamltest/variables.cmi \
-    otherlibs/unix/unix.cmi \
     ocamltest/tsl_semantics.cmi \
+    ocamltest/tsl_query.cmi \
     ocamltest/tsl_parser.cmi \
     ocamltest/tsl_lexer.cmi \
     ocamltest/tsl_ast.cmi \
-    ocamltest/translate.cmi \
     ocamltest/tests.cmi \
-    ocamltest/result.cmi \
     ocamltest/options.cmi \
+    ocamltest/ocamltest_unix.cmi \
     ocamltest/ocamltest_stdlib.cmi \
     ocamltest/ocaml_actions.cmi \
     parsing/location.cmi \
@@ -10089,15 +10174,14 @@ ocamltest/main.cmo : \
     ocamltest/main.cmi
 ocamltest/main.cmx : \
     ocamltest/variables.cmx \
-    otherlibs/unix/unix.cmx \
     ocamltest/tsl_semantics.cmx \
+    ocamltest/tsl_query.cmx \
     ocamltest/tsl_parser.cmx \
     ocamltest/tsl_lexer.cmx \
     ocamltest/tsl_ast.cmx \
-    ocamltest/translate.cmx \
     ocamltest/tests.cmx \
-    ocamltest/result.cmx \
     ocamltest/options.cmx \
+    ocamltest/ocamltest_unix.cmx \
     ocamltest/ocamltest_stdlib.cmx \
     ocamltest/ocaml_actions.cmx \
     parsing/location.cmx \
@@ -10122,7 +10206,7 @@ ocamltest/modifier_parser.cmx : \
 ocamltest/modifier_parser.cmi : \
     ocamltest/environments.cmi
 ocamltest/ocaml_actions.cmo : \
-    ocamltest/result.cmi \
+    ocamltest/test_result.cmi \
     ocamltest/ocamltest_stdlib.cmi \
     ocamltest/ocamltest_config.cmi \
     ocamltest/ocaml_variables.cmi \
@@ -10147,7 +10231,7 @@ ocamltest/ocaml_actions.cmo : \
     ocamltest/actions.cmi \
     ocamltest/ocaml_actions.cmi
 ocamltest/ocaml_actions.cmx : \
-    ocamltest/result.cmx \
+    ocamltest/test_result.cmx \
     ocamltest/ocamltest_stdlib.cmx \
     ocamltest/ocamltest_config.cmx \
     ocamltest/ocaml_variables.cmx \
@@ -10356,24 +10440,10 @@ ocamltest/ocamltest_stdlib.cmx : \
     utils/misc.cmx \
     ocamltest/ocamltest_stdlib.cmi
 ocamltest/ocamltest_stdlib.cmi : \
-    ocamltest/ocamltest_unix.cmi \
     utils/misc.cmi
-ocamltest/ocamltest_unix.cmo : \
-    otherlibs/unix/unix.cmi \
-    ocamltest/ocamltest_unix.cmi
-ocamltest/ocamltest_unix.cmx : \
-    otherlibs/unix/unix.cmx \
-    ocamltest/ocamltest_unix.cmi
 ocamltest/ocamltest_unix.cmi :
-ocamltest/ocamltest_unix_dummy.cmo :
-ocamltest/ocamltest_unix_dummy.cmx :
-ocamltest/ocamltest_unix_real.cmo : \
-    otherlibs/unix/unix.cmi
-ocamltest/ocamltest_unix_real.cmx : \
-    otherlibs/unix/unix.cmx
 ocamltest/options.cmo : \
     ocamltest/variables.cmi \
-    ocamltest/translate.cmi \
     ocamltest/tests.cmi \
     utils/misc.cmi \
     driver/compmisc.cmi \
@@ -10382,20 +10452,13 @@ ocamltest/options.cmo : \
     ocamltest/options.cmi
 ocamltest/options.cmx : \
     ocamltest/variables.cmx \
-    ocamltest/translate.cmx \
     ocamltest/tests.cmx \
     utils/misc.cmx \
     driver/compmisc.cmx \
     utils/clflags.cmx \
     ocamltest/actions.cmx \
     ocamltest/options.cmi
-ocamltest/options.cmi : \
-    ocamltest/translate.cmi
-ocamltest/result.cmo : \
-    ocamltest/result.cmi
-ocamltest/result.cmx : \
-    ocamltest/result.cmi
-ocamltest/result.cmi :
+ocamltest/options.cmi :
 ocamltest/run_command.cmo : \
     ocamltest/ocamltest_stdlib.cmi \
     ocamltest/run_command.cmi
@@ -10411,33 +10474,23 @@ ocamltest/strace.cmx : \
     ocamltest/strace.cmi
 ocamltest/strace.cmi : \
     ocamltest/variables.cmi
+ocamltest/test_result.cmo : \
+    ocamltest/test_result.cmi
+ocamltest/test_result.cmx : \
+    ocamltest/test_result.cmi
+ocamltest/test_result.cmi :
 ocamltest/tests.cmo : \
-    ocamltest/result.cmi \
+    ocamltest/test_result.cmi \
     ocamltest/actions.cmi \
     ocamltest/tests.cmi
 ocamltest/tests.cmx : \
-    ocamltest/result.cmx \
+    ocamltest/test_result.cmx \
     ocamltest/actions.cmx \
     ocamltest/tests.cmi
 ocamltest/tests.cmi : \
-    ocamltest/result.cmi \
+    ocamltest/test_result.cmi \
     ocamltest/environments.cmi \
     ocamltest/actions.cmi
-ocamltest/translate.cmo : \
-    ocamltest/tsl_semantics.cmi \
-    ocamltest/tsl_parser.cmi \
-    ocamltest/tsl_lexer.cmi \
-    ocamltest/tsl_ast.cmi \
-    parsing/location.cmi \
-    ocamltest/translate.cmi
-ocamltest/translate.cmx : \
-    ocamltest/tsl_semantics.cmx \
-    ocamltest/tsl_parser.cmx \
-    ocamltest/tsl_lexer.cmx \
-    ocamltest/tsl_ast.cmx \
-    parsing/location.cmx \
-    ocamltest/translate.cmi
-ocamltest/translate.cmi :
 ocamltest/tsl_ast.cmo : \
     parsing/location.cmi \
     ocamltest/tsl_ast.cmi
@@ -10464,10 +10517,36 @@ ocamltest/tsl_parser.cmx : \
     ocamltest/tsl_parser.cmi
 ocamltest/tsl_parser.cmi : \
     ocamltest/tsl_ast.cmi
+ocamltest/tsl_printer.cmo : \
+    ocamltest/tsl_ast.cmi \
+    ocamltest/tsl_printer.cmi
+ocamltest/tsl_printer.cmx : \
+    ocamltest/tsl_ast.cmx \
+    ocamltest/tsl_printer.cmi
+ocamltest/tsl_printer.cmi : \
+    ocamltest/tsl_ast.cmi
+ocamltest/tsl_query.cmo : \
+    ocamltest/tsl_semantics.cmi \
+    ocamltest/tsl_ast.cmi \
+    ocamltest/tests.cmi \
+    ocamltest/actions.cmi \
+    ocamltest/tsl_query.cmi
+ocamltest/tsl_query.cmx : \
+    ocamltest/tsl_semantics.cmx \
+    ocamltest/tsl_ast.cmx \
+    ocamltest/tests.cmx \
+    ocamltest/actions.cmx \
+    ocamltest/tsl_query.cmi
+ocamltest/tsl_query.cmi : \
+    ocamltest/tsl_ast.cmi \
+    ocamltest/tests.cmi \
+    ocamltest/actions.cmi
 ocamltest/tsl_semantics.cmo : \
     ocamltest/variables.cmi \
     ocamltest/tsl_ast.cmi \
     ocamltest/tests.cmi \
+    ocamltest/test_result.cmi \
+    ocamltest/ocamltest_stdlib.cmi \
     parsing/location.cmi \
     ocamltest/environments.cmi \
     ocamltest/actions.cmi \
@@ -10476,6 +10555,8 @@ ocamltest/tsl_semantics.cmx : \
     ocamltest/variables.cmx \
     ocamltest/tsl_ast.cmx \
     ocamltest/tests.cmx \
+    ocamltest/test_result.cmx \
+    ocamltest/ocamltest_stdlib.cmx \
     parsing/location.cmx \
     ocamltest/environments.cmx \
     ocamltest/actions.cmx \
@@ -10483,8 +10564,9 @@ ocamltest/tsl_semantics.cmx : \
 ocamltest/tsl_semantics.cmi : \
     ocamltest/tsl_ast.cmi \
     ocamltest/tests.cmi \
-    ocamltest/environments.cmi \
-    ocamltest/actions.cmi
+    ocamltest/test_result.cmi \
+    parsing/location.cmi \
+    ocamltest/environments.cmi
 ocamltest/variables.cmo : \
     ocamltest/variables.cmi
 ocamltest/variables.cmx : \
@@ -10502,9 +10584,11 @@ testsuite/lib/testing.cmx : \
 testsuite/lib/testing.cmi :
 testsuite/tools/cmdline.cmo : \
     testsuite/tools/harness.cmi \
+    utils/config.cmi \
     testsuite/tools/cmdline.cmi
 testsuite/tools/cmdline.cmx : \
     testsuite/tools/harness.cmx \
+    utils/config.cmx \
     testsuite/tools/cmdline.cmi
 testsuite/tools/cmdline.cmi : \
     testsuite/tools/harness.cmi
@@ -10540,6 +10624,7 @@ testsuite/tools/environment.cmo : \
     file_formats/cmt_format.cmi \
     file_formats/cmo_format.cmi \
     bytecomp/bytesections.cmi \
+    bytecomp/byterntm.cmi \
     testsuite/tools/environment.cmi
 testsuite/tools/environment.cmx : \
     otherlibs/unix/unix.cmx \
@@ -10550,6 +10635,7 @@ testsuite/tools/environment.cmx : \
     file_formats/cmt_format.cmx \
     file_formats/cmo_format.cmi \
     bytecomp/bytesections.cmx \
+    bytecomp/byterntm.cmx \
     testsuite/tools/environment.cmi
 testsuite/tools/environment.cmi : \
     testsuite/tools/harness.cmi
@@ -10593,13 +10679,20 @@ testsuite/tools/expect.cmi : \
     parsing/location.cmi
 testsuite/tools/harness.cmo : \
     otherlibs/unix/unix.cmi \
+    utils/misc.cmi \
     utils/config.cmi \
+    bytecomp/byterntm.cmi \
     testsuite/tools/harness.cmi
 testsuite/tools/harness.cmx : \
     otherlibs/unix/unix.cmx \
+    utils/misc.cmx \
     utils/config.cmx \
+    bytecomp/byterntm.cmx \
     testsuite/tools/harness.cmi
-testsuite/tools/harness.cmi :
+testsuite/tools/harness.cmi : \
+    utils/misc.cmi \
+    utils/config.cmi \
+    bytecomp/byterntm.cmi
 testsuite/tools/lexcmm.cmo : \
     testsuite/tools/parsecmm.cmi \
     utils/misc.cmi \
@@ -10661,12 +10754,14 @@ testsuite/tools/parsecmmaux.cmi : \
     middle_end/backend_var.cmi
 testsuite/tools/testBytecodeBinaries.cmo : \
     otherlibs/unix/unix.cmi \
+    utils/misc.cmi \
     testsuite/tools/harness.cmi \
     testsuite/tools/environment.cmi \
     utils/config.cmi \
     testsuite/tools/testBytecodeBinaries.cmi
 testsuite/tools/testBytecodeBinaries.cmx : \
     otherlibs/unix/unix.cmx \
+    utils/misc.cmx \
     testsuite/tools/harness.cmx \
     testsuite/tools/environment.cmx \
     utils/config.cmx \
@@ -10752,7 +10847,6 @@ testsuite/tools/test_in_prefix.cmo : \
     driver/compmisc.cmi \
     testsuite/tools/cmdline.cmi \
     utils/clflags.cmi \
-    bytecomp/bytelink.cmi \
     testsuite/tools/test_in_prefix.cmi
 testsuite/tools/test_in_prefix.cmx : \
     otherlibs/unix/unix.cmx \
@@ -10770,15 +10864,16 @@ testsuite/tools/test_in_prefix.cmx : \
     driver/compmisc.cmx \
     testsuite/tools/cmdline.cmx \
     utils/clflags.cmx \
-    bytecomp/bytelink.cmx \
     testsuite/tools/test_in_prefix.cmi
 testsuite/tools/test_in_prefix.cmi :
 testsuite/tools/test_ld_conf.cmo : \
+    otherlibs/unix/unix.cmi \
     testsuite/tools/harness.cmi \
     testsuite/tools/environment.cmi \
     utils/config.cmi \
     testsuite/tools/test_ld_conf.cmi
 testsuite/tools/test_ld_conf.cmx : \
+    otherlibs/unix/unix.cmx \
     testsuite/tools/harness.cmx \
     testsuite/tools/environment.cmx \
     utils/config.cmx \

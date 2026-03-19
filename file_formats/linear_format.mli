@@ -35,4 +35,4 @@ type linear_unit_info =
    that currently consists of Cmm.label_counter.
 *)
 val save : string -> linear_unit_info -> unit
-val restore : string -> linear_unit_info * Digest.t
+val restore : string -> linear_unit_info * Digest.BLAKE128.t

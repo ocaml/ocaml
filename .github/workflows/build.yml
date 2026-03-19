@@ -59,7 +59,7 @@ jobs:
          '${{ github.event.repository.full_name }}'
       - name: Configure tree
         run: |
-          MAKE_ARG=-j CONFIG_ARG='--enable-flambda --enable-cmm-invariants --enable-codegen-invariants --enable-dependency-generation --enable-native-toplevel' OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh configure
+          MAKE_ARG=-j CONFIG_ARG='--enable-flambda --enable-cmm-invariants --enable-codegen-invariants --enable-dependency-generation --enable-native-toplevel --with-relative-libdir --enable-runtime-search --enable-runtime-search-target=fallback' OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh configure
       - name: Build
         run: |
           MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
@@ -78,6 +78,7 @@ jobs:
 #        debug runtime and minor heap verification.
 # debug-s4096: select testsuite run with the debug runtime and a small
 #              minor heap.
+# opam: constructs an opam local switch from the compiler.
   normal:
     name: ${{ matrix.name }}
     needs: [build, config]
@@ -88,6 +89,8 @@ jobs:
           - id: normal
             name: normal
             dependencies: texlive-latex-extra texlive-fonts-recommended texlive-luatex hevea sass gdb lldb
+          - id: opam
+            name: opam installation
           - id: debug
             name: extra (debug)
           - id: debug-s4096
@@ -134,11 +137,19 @@ jobs:
       - name: Install
         if: matrix.id == 'normal'
         run: |
-         MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh install
-      - name: Test in prefix
-        if: matrix.id == 'normal'
+          MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh install
+      - name: Create opam switch
+        if: matrix.id == 'opam'
         run: |
-         MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh test-in-prefix
+          MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh opam
+      - name: Test in prefix
+        if: matrix.id == 'normal' || matrix.id == 'opam'
+        run: |
+          MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh test-in-prefix
+      - name: Test in prefix (alternate configuration)
+        if: matrix.id == 'normal' && needs.config.outputs.full-matrix == 'true'
+        run: |
+          MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh re-test-in-prefix
       - name: Build the manual
         if: matrix.id == 'normal' && needs.build.outputs.manual_changed == 'true'
         run: |
@@ -152,9 +163,23 @@ jobs:
   config:
     runs-on: ubuntu-latest
     outputs:
+      full-matrix: ${{ steps.full.outputs.result }}
       jobs: ${{ steps.jobs.outputs.result }}
       skip-testsuite: ${{ steps.skip.outputs.result }}
     steps:
+      - name: Record if the build matrix is expanded
+        id: full
+        uses: actions/github-script@v7
+        with:
+          script: |
+            let full_matrix = false;
+            if (context.payload.pull_request) {
+              const { data: labels } =
+                await github.rest.issues.listLabelsOnIssue({...context.repo, issue_number: context.payload.pull_request.number});
+              full_matrix = labels.some(label => label.name === 'CI: Full matrix');
+            }
+            console.log('Full matrix: ' + full_matrix);
+            return full_matrix;
       - name: Compute matrix for the "others" job
         id: jobs
         uses: actions/github-script@v7
@@ -165,10 +190,12 @@ jobs:
               {name: 'linux-O0', os: 'ubuntu-latest',
                config_arg: "CFLAGS='-O0'"},
               {name: 'linux-arm64', os: 'ubuntu-24.04-arm',
+               config_arg: '--with-target-sh=exe --enable-runtime-search-target=fallback',
                'test-in-prefix': true},
-              {name: 'macos-x86_64', os: 'macos-13',
+              {name: 'macos-x86_64', os: 'macos-15-intel',
                'test-in-prefix': true},
-              {name: 'macos-arm64', os: 'macos-15',
+              {name: 'macos-arm64', os: 'macos-latest',
+               config_arg: '--with-relative-libdir --enable-runtime-search',
                'test-in-prefix': true}];
             // # If this is a pull request, see if the PR has the
             // # 'CI: Full matrix' label. This is done using an API request,
@@ -182,13 +209,16 @@ jobs:
                 await github.rest.issues.listLabelsOnIssue({...context.repo, issue_number: context.payload.pull_request.number});
               if (labels.some(label => label.name === 'CI: Full matrix')) {
                 console.log('Full matrix requested');
-                // # Add "static" and "minimal" jobs
+                // # Add "static", "minimal" and "unsuffixed" jobs
                 jobs = jobs.concat([
                   {name: 'static', os: 'ubuntu-latest',
                    config_arg: '--disable-native-toplevel --disable-shared',
                    'test-in-prefix': true},
                   {name: 'minimal', os: 'ubuntu-latest',
-                   config_arg: '--disable-native-toplevel --disable-native-compiler --disable-shared --disable-debug-runtime --disable-instrumented-runtime --disable-systhreads --disable-str-lib --disable-unix-lib --disable-ocamldoc'}]);
+                   config_arg: '--disable-native-toplevel --disable-native-compiler --disable-shared --disable-debug-runtime --disable-instrumented-runtime --disable-systhreads --disable-str-lib --disable-unix-lib --disable-ocamldoc'},
+                  {name: 'unsuffixed', os: 'ubuntu-latest',
+                   config_arg: '--disable-suffixing',
+                   'test-in-prefix': true}]);
               }
             }
             return jobs;
@@ -229,7 +259,7 @@ jobs:
           sudo DevToolsSecurity --enable
           spctl developer-mode enable-terminal
           # Select latest supported version
-          sudo xcode-select -s /Applications/Xcode_${{ matrix.os == 'macos-13' && '15.2' || '16.3' }}.app/Contents/Developer
+          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
           lldb --version
       - name: configure tree
         run: |
@@ -258,6 +288,10 @@ jobs:
         if: ${{ matrix.test-in-prefix }}
         run: |
           MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh test-in-prefix
+      - name: Test in prefix (alternate configuration)
+        if: ${{ matrix.test-in-prefix && needs.config.outputs.full-matrix == 'true' && !contains(matrix.config_arg, '--disable-suffixing') }}
+        run: |
+          MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh re-test-in-prefix
 
   i386:
     runs-on: ubuntu-latest
@@ -269,7 +303,7 @@ jobs:
       - name: OS Dependencies
         run: |
           apt-get update -y
-          apt-get install -y git gcc make parallel
+          apt-get install -y git gcc g++ make parallel
           adduser --disabled-password --gecos '' ocaml
       - name: Checkout
         # See https://github.com/actions/checkout/issues/334
@@ -290,4 +324,8 @@ jobs:
           su ocaml -c "bash -xe tools/ci/actions/runner.sh install"
       - name: Test in prefix
         run: |
-          su ocaml -c "bash -xe tools/ci/actions/runner.sh test-in-prefix"
+          MAKE_ARG=-j su ocaml -c "bash -xe tools/ci/actions/runner.sh test-in-prefix"
+      - name: Test in prefix (alternate configuration)
+        if: ${{ needs.config.outputs.full-matrix == 'true' }}
+        run: |
+          MAKE_ARG=-j su ocaml -c "bash -xe tools/ci/actions/runner.sh re-test-in-prefix"

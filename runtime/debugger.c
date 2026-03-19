@@ -63,13 +63,11 @@ CAMLexport void caml_debugger_cleanup_fork(void)
 
 #else
 
-#ifndef _WIN32
-#include <unistd.h>
-#endif
 #include <errno.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #ifndef _WIN32
+#include <unistd.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include <sys/un.h>

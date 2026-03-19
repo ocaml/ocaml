@@ -3,4 +3,8 @@ Loading program... done.
 Breakpoint: 1
 18   <|b|>for _i = 0 to x do
 _d: (int, Printer.t) Printer.v list = [D<0, Printer.A>; D<42, Printer.B>]
+_d: (int, Printer.t) Printer.v list = [D<0, ~A>; D<42, ~B>]
 x: int = S S O
+_d: (int, Printer.t) Printer.v list =
+  [D<O, ~A>;
+   D<S S S S S S S S S S S S S S S S S S S S S S S S S S S S S S S S S S S S S S S S S S O, ~B>]

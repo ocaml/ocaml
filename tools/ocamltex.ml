@@ -587,7 +587,15 @@ let format_input mode s =  match mode with
       | a :: q -> String.concat ~sep:"\n  " ((toplevel_prompt^a)::q)
 
 let process_file file =
-  let ic = try open_in file with _ -> failwith "Cannot read input file" in
+  let ic = try open_in_bin file with _ -> failwith "Cannot read input file" in
+  let input_line ic =
+    let line = input_line ic in
+    let last = String.length line - 1 in
+    if last >= 0 && line.[last] = '\r' then
+      String.sub line 0 last
+    else
+      line
+  in
   let phrase_start = ref 1 and phrase_stop = ref 1 in
   let incr_phrase_start () =
     incr phrase_start;

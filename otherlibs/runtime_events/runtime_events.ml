@@ -369,7 +369,7 @@ module Callbacks = struct
     lifecycle: (int -> Timestamp.t -> lifecycle
                 -> int option -> unit) option;
     lost_events: (int -> int -> unit) option;
-    (* user event callbacks is an array containing at each indice [i] a list
+    (* user event callbacks is an array containing at each index [i] a list
         of functions to call when an event of type id [i] happen *)
     user_events: any_callback list array;
   }

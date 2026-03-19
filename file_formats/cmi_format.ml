@@ -86,7 +86,7 @@ let output_cmi filename oc cmi =
   output_string oc Config.cmi_magic_number;
   Compression.output_value oc ((cmi.cmi_name, cmi.cmi_sign) : header);
   flush oc;
-  let crc = Digest.file filename in
+  let crc = Digest.BLAKE128.file filename in
   let crcs = (cmi.cmi_name, Some crc) :: cmi.cmi_crcs in
   output_value oc (crcs : crcs);
   output_value oc (cmi.cmi_flags : flags);

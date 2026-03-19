@@ -1,18 +1,19 @@
 #include <string.h>
 #ifdef _WIN32
 #include <windows.h>
-#define THREAD_FUNCTION DWORD WINAPI
+#include <process.h>
 #else
 #include <pthread.h>
-#define THREAD_FUNCTION void *
 #endif
+#define CAML_INTERNALS
 #include <caml/mlvalues.h>
 #include <caml/gc.h>
 #include <caml/memory.h>
 #include <caml/callback.h>
+#include <caml/platform.h>
 #include <caml/threads.h>
 
-THREAD_FUNCTION thread_func(void *fn) {
+static CAML_THREAD_FUNCTION thread_func(void *fn) {
   caml_c_thread_register();
   caml_acquire_runtime_system();
   caml_callback((value) fn, Val_unit);
@@ -24,7 +25,15 @@ THREAD_FUNCTION thread_func(void *fn) {
 value spawn_thread(value clos)
 {
 #ifdef _WIN32
-  CloseHandle(CreateThread(NULL, 0, &thread_func, (void *) clos, 0, NULL));
+  HANDLE thread = (HANDLE) _beginthreadex(
+    NULL, /* security: handle can't be inherited */
+    0,    /* stack size */
+    &thread_func,
+    (void *) clos,
+    0,    /* run immediately */
+    NULL  /* thread identifier */
+    );
+  CloseHandle(thread); /* detach */
 #else
   pthread_t thr;
   pthread_attr_t attr;

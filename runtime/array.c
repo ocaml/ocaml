@@ -27,6 +27,15 @@
 
 static const mlsize_t mlsize_t_max = CAML_UINTNAT_MAX;
 
+CAMLprim value caml_check_bound(value length, value index)
+{
+  intnat len = Long_val(length);
+  intnat idx = Long_val(index);
+  if (idx < 0 || idx >= len)
+    caml_array_bound_error();
+  return Val_unit;
+}
+
 /* returns number of elements (either fields or floats) */
 /* [ 'a array -> int ] */
 CAMLexport mlsize_t caml_array_length(value array)
@@ -505,7 +514,7 @@ static value caml_floatarray_gather(intnat num_arrays,
   }
   if (size == 0) {
     /* If total size = 0, just return empty array */
-    res = Atom(0);
+    CAMLreturn(Atom(0));
   }
   /* This is an array of floats.  We can use memcpy directly. */
   if (size > Max_wosize/Double_wosize) caml_invalid_argument("Array.concat");

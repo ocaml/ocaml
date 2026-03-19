@@ -18,7 +18,7 @@
 
 # It is not possible to wrap lines lines in .gitattributes files
 .gitattributes typo.long-line=may typo.non-ascii
-.gitmodules typo.long-line=may typo.tab=may
+.gitmodules typo.long-line=may typo.tab=may typo.missing-header=may
 
 .editorconfig typo.missing-header=may
 
@@ -43,6 +43,21 @@
 # instead of creating Changes conflict it would silently duplicate
 # the lines involved in the conflict, which is arguably worse
 #/Changes                 merge=union
+
+testsuite/Makefile       export-subst
+
+# Files and directories excluded from git-generated tarballs.
+.github                  export-ignore
+manual                   export-ignore
+release-info             export-ignore
+testsuite/tests          export-ignore
+tools/ci                 export-ignore
+.gitattributes           export-ignore
+.gitignore               export-ignore
+.gitmodules              export-ignore
+.mailmap                 export-ignore
+ocaml-variants.install   export-ignore
+ocaml-variants.opam      export-ignore
 
 # No header for text and META files (would be too obtrusive).
 *.md                     typo.missing-header
@@ -109,6 +124,7 @@ otherlibs/unix/symlink_win32.c     typo.long-line
 # Some Unicode characters here and there
 utils/misc.ml            typo.non-ascii
 runtime/sak.c            typo.non-ascii
+tools/opam/process.sh    typo.non-ascii
 
 testsuite/tests/**                                      typo.missing-header typo.long-line=may
 testsuite/tests/lib-bigarray-2/bigarrf.f                typo.tab linguist-language=Fortran
@@ -122,6 +138,7 @@ testsuite/tests/typing-unicode/*.ml                     typo.non-ascii
 testsuite/tests/tool-toplevel/strings.ml                typo.non-ascii
 testsuite/tests/win-unicode/*.ml                        typo.non-ascii
 testsuite/tests/unicode/見.ml                           typo.non-ascii
+testsuite/tests/unicode/utf8_lexeme.ml                  typo.non-ascii
 testsuite/tests/lib-format/unicode.ml                   typo.non-ascii
 testsuite/tests/lib-string/test_string.ml               typo.non-ascii
 testsuite/tests/lib-uchar/test.ml                       typo.non-ascii
@@ -132,6 +149,7 @@ testsuite/tools/*.S                                     typo.missing-header
 testsuite/tools/*.asm                                   typo.missing-header
 testsuite/tests/messages/highlight_tabs.ml              typo.tab
 testsuite/tests/tool-toplevel/multi_phrase_line.ml      typo.very-long-line
+testsuite/tests/misc/stable_matching_test.ml            typo.non-ascii
 
 # prune testsuite reference files
 testsuite/tests/**/*.reference               typo.prune

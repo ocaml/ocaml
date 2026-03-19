@@ -21,12 +21,23 @@
 
 #ifdef CAML_INTERNALS
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define ATOM ATOM_WS
+#include <windows.h>
+#undef ATOM
+#include <process.h>
+#else
 #include <pthread.h>
+#endif
+
 #include <errno.h>
 #include <string.h>
+#include <stdbool.h>
 #include "config.h"
 #include "mlvalues.h"
 #include "sys.h"
+#include "osdeps.h"
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
@@ -101,8 +112,171 @@ Caml_inline void cpu_relax(void) {
    functions from caml/sync.h should be used instead.
 */
 
+#ifdef _WIN32
+
+typedef struct {
+  SRWLOCK lock;
+  _Atomic DWORD owner_tid;      /* 0 if not owned */
+  /* The "owner_tid" field is not always protected by "lock"; it is
+   * also accessed without holding "lock". */
+} caml_plat_mutex;
+#define CAML_PLAT_MUTEX_INITIALIZER { SRWLOCK_INIT, 0 }
+
+typedef CONDITION_VARIABLE caml_plat_cond;
+#define CAML_PLAT_COND_INITIALIZER CONDITION_VARIABLE_INIT
+
+typedef HANDLE caml_plat_thread;
+typedef void * caml_plat_thread_attr;
+
+#define CAML_THREAD_FUNCTION unsigned WINAPI
+
+Caml_inline
+int caml_plat_thread_create(caml_plat_thread *restrict thread,
+                            const caml_plat_thread_attr *restrict attr,
+                            unsigned ( WINAPI *start_address )( void * ),
+                            void *restrict arg)
+{
+  (void) attr; /* unused */
+  *thread = (caml_plat_thread) _beginthreadex(
+    NULL, /* security: handle can't be inherited */
+    0,    /* stack size */
+    start_address,
+    arg,
+    0,    /* run immediately */
+    NULL  /* thread identifier */
+    );
+  return (*thread != 0) ? 0 : errno;
+}
+
+Caml_inline
+int caml_plat_thread_equal(caml_plat_thread t1, caml_plat_thread t2)
+{
+  DWORD id1 = GetThreadId(t1), id2 = GetThreadId(t2);
+  return id1 == 0 || id2 == 0 ? -1 : id1 == id2;
+}
+
+Caml_inline
+caml_plat_thread caml_plat_thread_self(void)
+{
+  /* A pseudo handle is a special constant that is interpreted as the
+   * current thread handle. The function cannot be used by one thread
+   * to create a handle that can be used by other threads to refer to
+   * the first thread. The handle is always interpreted as referring
+   * to the thread that is using it. */
+  return GetCurrentThread();
+}
+
+Caml_inline
+int caml_plat_thread_detach(caml_plat_thread thread)
+{
+  /* This works as the thread handle is never duplicated. */
+  if (CloseHandle(thread)) {
+    return 0;
+  } else {
+    int err = caml_posixerr_of_win32err(GetLastError());
+    return err == 0 ? EINVAL : err;
+  }
+}
+
+Caml_inline
+int caml_plat_thread_join(caml_plat_thread thread)
+{
+  DWORD rc = WaitForSingleObject(thread, INFINITE);
+  switch (rc) {
+  case WAIT_OBJECT_0:
+    return 0;
+  case WAIT_FAILED: {
+    int err = caml_posixerr_of_win32err(GetLastError());
+    return err == 0 ? EINVAL : err;
+  }
+  default:
+    CAMLunreachable();
+  }
+}
+
+Caml_inline
+void caml_plat_thread_exit(void)
+{
+  _endthreadex(0);
+  /* The noreturn annotation is missing on _endthreadex, which per the
+   * documentation ends with a call to ExitThread, itself noreturn. */
+  CAMLunreachable();
+}
+
+Caml_inline
+int caml_plat_thread_cancel(caml_plat_thread t)
+{
+  if (!TerminateThread(t, 0)) {
+    int err = caml_posixerr_of_win32err(GetLastError());
+    return err == 0 ? EINVAL : err;
+  }
+  return 0;
+}
+
+#else
+
 typedef pthread_mutex_t caml_plat_mutex;
 #define CAML_PLAT_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
+
+typedef pthread_cond_t caml_plat_cond;
+#define CAML_PLAT_COND_INITIALIZER PTHREAD_COND_INITIALIZER
+
+typedef pthread_t caml_plat_thread;
+typedef pthread_attr_t caml_plat_thread_attr;
+
+#define CAML_THREAD_FUNCTION void *
+
+Caml_inline
+int caml_plat_thread_create(caml_plat_thread *restrict thread,
+                            const caml_plat_thread_attr *restrict attr,
+                            void *(*start_routine)(void *),
+                            void *restrict arg)
+{
+  return pthread_create(thread, attr, start_routine, arg);
+}
+
+Caml_inline
+int caml_plat_thread_equal(caml_plat_thread t1, caml_plat_thread t2)
+{
+  return pthread_equal(t1, t2);
+}
+
+Caml_inline
+caml_plat_thread caml_plat_thread_self(void)
+{
+  return pthread_self();
+}
+
+Caml_inline
+int caml_plat_thread_detach(caml_plat_thread thread)
+{
+  return pthread_detach(thread);
+}
+
+Caml_inline
+int caml_plat_thread_join(caml_plat_thread thread)
+{
+  return pthread_join(thread, NULL);
+}
+
+Caml_inline
+void caml_plat_thread_exit(void)
+{
+  pthread_exit(NULL);
+}
+
+Caml_inline
+int caml_plat_thread_cancel(caml_plat_thread t)
+{
+#ifdef HAVE_PTHREAD_CANCEL
+  return pthread_cancel(t);
+#else
+  return 0;
+#endif
+}
+
+#endif  /* _WIN32 */
+
 CAMLextern void caml_plat_mutex_init(caml_plat_mutex*);
 Caml_inline void caml_plat_lock_blocking(caml_plat_mutex*);
 Caml_inline void caml_plat_lock_non_blocking(caml_plat_mutex*);
@@ -112,8 +286,6 @@ void caml_plat_assert_all_locks_unlocked(void);
 Caml_inline void caml_plat_unlock(caml_plat_mutex*);
 void caml_plat_mutex_free(caml_plat_mutex*);
 CAMLextern void caml_plat_mutex_reinit(caml_plat_mutex*);
-typedef pthread_cond_t caml_plat_cond;
-#define CAML_PLAT_COND_INITIALIZER PTHREAD_COND_INITIALIZER
 void caml_plat_cond_init(caml_plat_cond*);
 void caml_plat_wait(caml_plat_cond*, caml_plat_mutex*); /* blocking */
 void caml_plat_broadcast(caml_plat_cond*);
@@ -381,11 +553,13 @@ void caml_plat_barrier_wait_sense(caml_plat_barrier*,
 #define Max_spins_medium 300
 #define Max_spins_short 30
 
-#define SPIN_WAIT_NTIMES(N)                             \
-  unsigned CAML_GENSYM(spins) = 0;                      \
-  unsigned CAML_GENSYM(max_spins) = (N);                \
-  for (; CAML_GENSYM(spins) < CAML_GENSYM(max_spins);   \
-       cpu_relax(), ++CAML_GENSYM(spins))
+#define SPIN_WAIT_NTIMES_(/* symbols */ spins, max_spins, /* params */ N) \
+  const unsigned max_spins = (N);                                       \
+  for (unsigned spins = 0; spins < max_spins; cpu_relax(), ++spins)
+
+#define SPIN_WAIT_NTIMES(N)                                             \
+  SPIN_WAIT_NTIMES_(CAML_GENSYM(spins), CAML_GENSYM(max_spins), (N))
+
 #define SPIN_WAIT_BOUNDED SPIN_WAIT_NTIMES(Max_spins_medium)
 #define SPIN_WAIT SPIN_WAIT_BACK_OFF(Max_spins_long)
 
@@ -414,14 +588,18 @@ Caml_inline unsigned caml_plat_spin_step(unsigned spins,
   }
 }
 
-#define SPIN_WAIT_BACK_OFF(max_spins)                                   \
-  unsigned CAML_GENSYM(spins) = 0;                                      \
-  unsigned CAML_GENSYM(max_spins) = (max_spins);                        \
-  static const struct caml_plat_srcloc CAML_GENSYM(loc) = {             \
-    __FILE__, __LINE__, __func__                                        \
-  };                                                                    \
-  for (; 1; CAML_GENSYM(spins) = caml_plat_spin_step(                   \
-         CAML_GENSYM(spins), CAML_GENSYM(max_spins), &CAML_GENSYM(loc)))
+#define SPIN_WAIT_BACK_OFF_(/* symbols */ spins, max_spins, loc,  \
+                            /* params  */ N)                      \
+  const unsigned max_spins = (N);                                 \
+  static const struct caml_plat_srcloc loc =                      \
+    { __FILE__, __LINE__, __func__ };                             \
+  for (unsigned spins = 0;                                        \
+       true;                                                      \
+       spins = caml_plat_spin_step(spins, max_spins, &loc))
+
+#define SPIN_WAIT_BACK_OFF(N)                                     \
+  SPIN_WAIT_BACK_OFF_(CAML_GENSYM(spins), CAML_GENSYM(max_spins), \
+                      CAML_GENSYM(loc), (N))
 
 /* Memory management primitives (mmap) */
 
@@ -452,6 +630,45 @@ CAMLextern CAMLthread_local int caml_lockdepth;
 #define DEBUG_UNLOCK(m)
 #endif
 
+#ifdef _WIN32
+
+Caml_inline void caml_plat_lock_blocking(caml_plat_mutex* m)
+{
+  DWORD self_tid = GetCurrentThreadId();
+  if (m->owner_tid != self_tid) {
+    AcquireSRWLockExclusive(&m->lock);
+    m->owner_tid = self_tid;
+    DEBUG_LOCK(m);
+  } else {
+    check_err("lock", EDEADLK);
+  }
+}
+
+Caml_inline int caml_plat_try_lock(caml_plat_mutex* m)
+{
+  if (TryAcquireSRWLockExclusive(&m->lock)) {
+    m->owner_tid = GetCurrentThreadId();
+    DEBUG_LOCK(m);
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+Caml_inline void caml_plat_unlock(caml_plat_mutex* m)
+{
+  DWORD self_tid = GetCurrentThreadId();
+  DEBUG_UNLOCK(m);
+  if (m->owner_tid == self_tid) {
+    m->owner_tid = 0;
+    ReleaseSRWLockExclusive(&m->lock);
+  } else {
+    check_err("unlock", EPERM);
+  }
+}
+
+#else
+
 Caml_inline void caml_plat_lock_blocking(caml_plat_mutex* m)
 {
   check_err("lock", pthread_mutex_lock(m));
@@ -470,6 +687,14 @@ Caml_inline int caml_plat_try_lock(caml_plat_mutex* m)
   }
 }
 
+Caml_inline void caml_plat_unlock(caml_plat_mutex* m)
+{
+  DEBUG_UNLOCK(m);
+  check_err("unlock", pthread_mutex_unlock(m));
+}
+
+#endif  /* _WIN32 */
+
 CAMLextern void caml_plat_lock_non_blocking_actual(caml_plat_mutex* m);
 
 Caml_inline void caml_plat_lock_non_blocking(caml_plat_mutex* m)
@@ -477,12 +702,6 @@ Caml_inline void caml_plat_lock_non_blocking(caml_plat_mutex* m)
   if (!caml_plat_try_lock(m)) {
     caml_plat_lock_non_blocking_actual(m);
   }
-}
-
-Caml_inline void caml_plat_unlock(caml_plat_mutex* m)
-{
-  DEBUG_UNLOCK(m);
-  check_err("unlock", pthread_mutex_unlock(m));
 }
 
 extern intnat caml_plat_pagesize;

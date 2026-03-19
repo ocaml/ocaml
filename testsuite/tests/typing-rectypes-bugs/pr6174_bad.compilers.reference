@@ -3,3 +3,7 @@ File "pr6174_bad.ml", line 11, characters 24-25:
                              ^
 Error: The value x has type $0 but an expression was expected of type
          $1 = ($2 -> $1) -> $1
+       Hint: $0 and $1 are type variables introduced in the equation
+         a = $0 -> $1
+       Hint: $2 is a type variable introduced in the equation
+         o = ($2 -> $1) -> $1

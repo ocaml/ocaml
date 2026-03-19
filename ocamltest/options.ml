@@ -61,13 +61,14 @@ let list_tests = ref []
 
 let show_timings = ref false
 
-let translate = ref false
-let style = ref Translate.Plain
-let compact = ref false
-
-
 let add_to_list r x =
   r := !r @ [x]
+
+let translate_is_gone _ =
+  raise (Arg.Bad
+    "-translate and related options have been removed in OCaml 5.6")
+
+let translate_doc = " (removed in OCaml 5.6)"
 
 let commandline_options =
 [
@@ -90,14 +91,10 @@ let commandline_options =
    " List tests in given directory.");
   ("-keep-test-dir-on-success", Arg.Set keep_test_dir_on_success,
    " Keep the test directory (with the generated test artefacts) on success.");
-  ("-translate", Arg.Set translate,
-   " Translate the test script from old to new syntax");
-  ("-compact", Arg.Set compact,
-   " If translating, output the new script in compact mode.");
-  ("-keep-lines", Arg.Unit (fun () -> style := Translate.Lines),
-   " If translating, preserve line numbers in the output.");
-  ("-keep-chars", Arg.Unit (fun () -> style := Translate.Chars),
-   " If translating, preserve char offsets in the output.");
+  ("-translate", Arg.Unit translate_is_gone, translate_doc);
+  ("-compact", Arg.Unit translate_is_gone, translate_doc);
+  ("-keep-lines", Arg.Unit translate_is_gone, translate_doc);
+  ("-keep-chars", Arg.Unit translate_is_gone, translate_doc);
   ("-color",
    Arg.Symbol (["auto"; "always"; "never"],
      (Misc.set_or_ignore Clflags.color_reader.parse Clflags.color)),
@@ -132,6 +129,3 @@ let find_test_dirs = !find_test_dirs
 let list_tests = !list_tests
 let keep_test_dir_on_success = !keep_test_dir_on_success
 let show_timings = !show_timings
-let translate = !translate
-let style = !style
-let compact = !compact

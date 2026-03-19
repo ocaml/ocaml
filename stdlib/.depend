@@ -216,6 +216,7 @@ stdlib__Digest.cmi : digest.mli
 stdlib__Domain.cmo : domain.ml \
     stdlib__Sys.cmi \
     stdlib.cmi \
+    stdlib__Printexc.cmi \
     stdlib__Obj.cmi \
     stdlib__Mutex.cmi \
     stdlib__List.cmi \
@@ -226,6 +227,7 @@ stdlib__Domain.cmo : domain.ml \
 stdlib__Domain.cmx : domain.ml \
     stdlib__Sys.cmx \
     stdlib.cmx \
+    stdlib__Printexc.cmx \
     stdlib__Obj.cmx \
     stdlib__Mutex.cmx \
     stdlib__List.cmx \
@@ -375,10 +377,14 @@ stdlib__Format.cmi : format.mli \
     stdlib__Domain.cmi \
     stdlib__Buffer.cmi
 stdlib__Fun.cmo : fun.ml \
+    stdlib__Printf.cmi \
     stdlib__Printexc.cmi \
+    stdlib__Obj.cmi \
     stdlib__Fun.cmi
 stdlib__Fun.cmx : fun.ml \
+    stdlib__Printf.cmx \
     stdlib__Printexc.cmx \
+    stdlib__Obj.cmx \
     stdlib__Fun.cmi
 stdlib__Fun.cmi : fun.mli
 stdlib__Gc.cmo : gc.ml \
@@ -454,9 +460,11 @@ stdlib__In_channel.cmi : in_channel.mli \
     stdlib.cmi \
     stdlib__Bigarray.cmi
 stdlib__Int.cmo : int.ml \
+    stdlib__Sys.cmi \
     stdlib.cmi \
     stdlib__Int.cmi
 stdlib__Int.cmx : int.ml \
+    stdlib__Sys.cmx \
     stdlib.cmx \
     stdlib__Int.cmi
 stdlib__Int.cmi : int.mli
@@ -479,10 +487,12 @@ stdlib__Int64.cmi : int64.mli
 stdlib__Lazy.cmo : lazy.ml \
     stdlib__Obj.cmi \
     camlinternalLazy.cmi \
+    stdlib__Atomic.cmi \
     stdlib__Lazy.cmi
 stdlib__Lazy.cmx : lazy.ml \
     stdlib__Obj.cmx \
     camlinternalLazy.cmx \
+    stdlib__Atomic.cmx \
     stdlib__Lazy.cmi
 stdlib__Lazy.cmi : lazy.mli \
     camlinternalLazy.cmi
@@ -559,10 +569,14 @@ stdlib__Mutex.cmi : mutex.mli
 stdlib__Nativeint.cmo : nativeint.ml \
     stdlib__Sys.cmi \
     stdlib.cmi \
+    stdlib__Int64.cmi \
+    stdlib__Int32.cmi \
     stdlib__Nativeint.cmi
 stdlib__Nativeint.cmx : nativeint.ml \
     stdlib__Sys.cmx \
     stdlib.cmx \
+    stdlib__Int64.cmx \
+    stdlib__Int32.cmx \
     stdlib__Nativeint.cmi
 stdlib__Nativeint.cmi : nativeint.mli
 stdlib__Obj.cmo : obj.ml \
@@ -800,6 +814,7 @@ stdlib__String.cmo : string.ml \
     stdlib.cmi \
     stdlib__List.cmi \
     stdlib__Int.cmi \
+    stdlib__Char.cmi \
     stdlib__Bytes.cmi \
     stdlib__Array.cmi \
     stdlib__String.cmi
@@ -808,6 +823,7 @@ stdlib__String.cmx : string.ml \
     stdlib.cmx \
     stdlib__List.cmx \
     stdlib__Int.cmx \
+    stdlib__Char.cmx \
     stdlib__Bytes.cmx \
     stdlib__Array.cmx \
     stdlib__String.cmi

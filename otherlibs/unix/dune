@@ -12,14 +12,19 @@
 ;*                                                                        *
 ;**************************************************************************
 
+(files :standard \ *.cm* *.o *.a)
+
 (library
  (name unix)
  (wrapped false)
  (modes byte)
  (flags (:standard -nostdlib -nolabels))
- (c_flags (-I %{project_root}/runtime))
  (libraries stdlib)
- (c_names
+ (foreign_stubs
+  (language c)
+  (extra_deps %{project_root}/runtime/misc_internals.h)
+  (flags (:standard -I . -I %{project_root}/runtime))
+  (names
    accept access addrofstr alarm bind channels chdir chmod chown chroot close
    fsync closedir connect cst2constr cstringv dup dup2 envir errmsg execv execve
    execvp exit fchmod fchown fcntl fork ftruncate getaddrinfo getcwd getegid
@@ -30,7 +35,7 @@
    realpath rename rewinddir rmdir select sendrecv setgid setgroups setsid
    setuid shutdown signals sleep socket socketaddr socketpair sockopt stat
    strofaddr symlink termios time times truncate umask unixsupport unlink utimes
-   wait write))
+   wait write)))
 
 (rule
  (action (copy accept_unix.c accept.c))
@@ -78,9 +83,6 @@
  (enabled_if (<> %{os_type} "Win32")))
 (rule
  (action (copy realpath_unix.c realpath.c))
- (enabled_if (<> %{os_type} "Win32")))
-(rule
- (action (copy rename_unix.c rename.c))
  (enabled_if (<> %{os_type} "Win32")))
 (rule
  (action (copy select_unix.c select.c))
@@ -163,9 +165,6 @@
  (enabled_if (= %{os_type} "Win32")))
 (rule
  (action (copy realpath_win32.c realpath.c))
- (enabled_if (= %{os_type} "Win32")))
-(rule
- (action (copy rename_win32.c rename.c))
  (enabled_if (= %{os_type} "Win32")))
 (rule
  (action (copy select_win32.c select.c))

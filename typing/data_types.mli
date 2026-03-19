@@ -55,6 +55,9 @@ val may_equal_constr :
 (* Type constructor of the constructor's result type. *)
 val cstr_res_type_path : constructor_description -> Path.t
 
+(* Parameters of the type constructor *)
+val cstr_res_type_params : constructor_description -> type_expr list
+
 type label_description =
   { lbl_name: string;                   (* Short name *)
     lbl_res: type_expr;                 (* Type of the result (the record) *)

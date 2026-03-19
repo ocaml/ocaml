@@ -17,12 +17,9 @@
 
 /* Win32-specific stuff */
 
-/* FILE_INFO_BY_HANDLE_CLASS, FILE_NAME_INFO, and INIT_ONCE are only
-   available from Windows Vista onwards */
-#define _WIN32_WINNT 0x0600 /* _WIN32_WINNT_VISTA */
-
 #define WIN32_LEAN_AND_MEAN
 #define _CRT_RAND_S
+#include <windows.h>
 #include <wtypes.h>
 #include <winbase.h>
 #include <winsock2.h>
@@ -30,6 +27,7 @@
 #include <shlobj.h>
 #include <shlwapi.h>
 #include <direct.h>
+#include <process.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -41,6 +39,7 @@
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
+#include <wchar.h>
 #include "caml/alloc.h"
 #include "caml/codefrag.h"
 #include "caml/fail.h"
@@ -53,7 +52,7 @@
 #include "caml/winsupport.h"
 #include "caml/startup_aux.h"
 #include "caml/platform.h"
-
+#include "misc_internals.h"
 #include "caml/config.h"
 
 #if defined(SUPPORT_DYNAMIC_LINKING) && !defined(BUILDING_LIBCAMLRUNS)
@@ -82,7 +81,7 @@ CAMLnoret static void caml_win32_sys_error(int errnum)
                     errnum,
                     0,
                     buffer,
-                    sizeof(buffer)/sizeof(wchar_t),
+                    countof(buffer),
                     NULL)) {
     msg = caml_copy_string_of_utf16(buffer);
   } else {
@@ -557,7 +556,7 @@ static LONG CALLBACK
       faulting_address = exn_info->ExceptionRecord->ExceptionInformation[1];
 
       /* call caml_reset_stack(faulting_address) using the alternate stack */
-      alt_esp  = win32_alt_stack + sizeof(win32_alt_stack) / sizeof(uintnat);
+      alt_esp  = win32_alt_stack + countof(win32_alt_stack);
       *--alt_esp = faulting_address;
       *ctx_sp = (uintnat) (alt_esp - 1);
       *ctx_ip = (uintnat) &caml_reset_stack;
@@ -589,7 +588,7 @@ static LONG CALLBACK
       Caml_state->young_ptr = (value *) ctx->R15;
 
       /* call caml_reset_stack(faulting_address) using the alternate stack */
-      alt_rsp  = win32_alt_stack + sizeof(win32_alt_stack) / sizeof(uintnat);
+      alt_rsp  = win32_alt_stack + countof(win32_alt_stack);
       ctx->Rcx = faulting_address;
       ctx->Rsp = (uintnat) (alt_rsp - 4 - 1);
       ctx->Rip = (uintnat) &caml_reset_stack;
@@ -1341,4 +1340,173 @@ value caml_win32_get_temp_path(void)
   if (!get_temp_path(MAX_PATH+1, buf))
     caml_win32_sys_error(GetLastError());
   CAMLreturn(caml_copy_string_of_utf16(buf));
+}
+
+CAMLextern char_os* caml_locate_standard_library (const wchar_t *exe_name,
+                                                  const wchar_t *stdlib_default,
+                                                  wchar_t **dirname)
+{
+  if (Is_relative_dir(stdlib_default)) {
+    LPWSTR root = NULL, basename;
+    DWORD l = MAX_PATH + 1, buf_len;
+
+    do {
+      buf_len = l;
+      caml_stat_free(root);
+      root = caml_stat_alloc(buf_len * sizeof(WCHAR));
+      l = GetFullPathName(exe_name, buf_len, root, &basename);
+    } while (l >= buf_len);
+    /* It should be an Impossible Thing for exe_name (which will have been the
+       result of GetModuleFileName) to be unparsable by GetFullPathName */
+    if (l == 0) {
+      caml_stat_free(root);
+      return caml_stat_wcsdup(stdlib_default);
+    }
+
+    CAMLassert(basename && basename != root && Is_separator(*(basename - 1)));
+
+    /* Make root the dirname portion */
+    *(basename - 1) = 0;
+
+    LPWSTR candidate =
+      caml_stat_wcsconcat(3, root, CAML_DIR_SEP, stdlib_default);
+    HANDLE h =
+      CreateFile(candidate, 0,
+                 FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+                 OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (h == INVALID_HANDLE_VALUE) {
+      caml_stat_free(candidate);
+      return caml_stat_wcsdup(stdlib_default);
+    }
+
+    LPWSTR resolved_candidate = NULL;
+    l = MAX_PATH + 1;
+    do {
+      buf_len = l;
+      caml_stat_free(resolved_candidate);
+      resolved_candidate = caml_stat_alloc(buf_len * sizeof(WCHAR));
+      l = GetFinalPathNameByHandle(h, resolved_candidate, buf_len,
+                                   FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+    } while (l >= buf_len);
+
+    if (l > 0) {
+      /* GetFinalPathNameByHandle always returns \\?\ which needs stripping. */
+      CAMLassert(l > 4 && resolved_candidate[0] == '\\'
+                       && resolved_candidate[1] == '\\'
+                       && resolved_candidate[2] == '?'
+                       && resolved_candidate[3] == '\\');
+
+      caml_stat_free(candidate);
+
+      if (l >= 8 && resolved_candidate[4] == 'U'
+                 && resolved_candidate[5] == 'N'
+                 && resolved_candidate[6] == 'C'
+                 && resolved_candidate[7] == '\\') {
+        /* NT native UNC path (\\?\UNC\foo). We change the last C to a backslash
+           (\\?\UN\\foo) and then include that altered character and the
+           original final slash to create a normal UNC path. */
+        resolved_candidate[6] = '\\';
+        candidate = caml_stat_wcsdup(resolved_candidate + 6);
+      } else {
+        /* Local device path */
+        candidate = caml_stat_wcsdup(resolved_candidate + 4);
+      }
+    }
+
+    /* It should be another Impossible Thing for l == 0 in the above. If that
+       did happen, candidate will _not_ have been freed, and we'll return the
+       path returned by GetFullPathName */
+    caml_stat_free(resolved_candidate);
+
+    if (dirname != NULL)
+      *dirname = caml_stat_wcsdup(root);
+    caml_stat_free(root);
+    return candidate;
+  } else {
+    return caml_stat_wcsdup(stdlib_default);
+  }
+}
+
+/* Mutexes */
+
+CAMLexport void caml_plat_mutex_init(caml_plat_mutex * m)
+{
+  InitializeSRWLock(&m->lock);
+  m->owner_tid = 0;
+}
+
+void caml_plat_assert_locked(caml_plat_mutex *m)
+{
+#ifdef DEBUG
+  BOOLEAN r = TryAcquireSRWLockExclusive(&m->lock);
+  if (r == 0) {
+    /* ok, it was locked */
+    return;
+  } else {
+    caml_fatal_error("Required mutex not locked");
+  }
+#endif
+}
+
+CAMLexport void caml_plat_lock_non_blocking_actual(caml_plat_mutex* m)
+{
+  /* Avoid exceptions */
+  caml_enter_blocking_section_no_pending();
+  DWORD self_tid = GetCurrentThreadId();
+  if (m->owner_tid != self_tid) {
+    AcquireSRWLockExclusive(&m->lock);
+    m->owner_tid = self_tid;
+  } else {
+    check_err("lock_non_blocking", EDEADLK);
+  }
+  caml_leave_blocking_section();
+  DEBUG_LOCK(m);
+}
+
+void caml_plat_mutex_free(caml_plat_mutex* m)
+{
+  /* nothing to do */
+}
+
+/* Condition variables */
+
+void caml_plat_cond_init(caml_plat_cond *cond)
+{
+  InitializeConditionVariable(cond);
+}
+
+void caml_plat_wait(caml_plat_cond *cond, caml_plat_mutex* mut)
+{
+  caml_plat_assert_locked(mut);
+  DWORD self_tid = GetCurrentThreadId();
+  int rc = 0;
+  if (mut->owner_tid == self_tid) {
+    mut->owner_tid = 0;
+    if (SleepConditionVariableSRW(cond, &mut->lock, INFINITE,
+                                  0 /* exclusive */)) {
+      mut->owner_tid = self_tid;
+    } else {
+      rc = caml_posixerr_of_win32err(GetLastError());
+      /* Not clear if the thread owns the mutex or not, but there's a
+       * fatal error anyway.  */
+    }
+  } else {
+    rc = EPERM;
+  }
+  check_err("wait", rc);
+}
+
+void caml_plat_broadcast(caml_plat_cond* cond)
+{
+  WakeAllConditionVariable(cond);
+}
+
+void caml_plat_signal(caml_plat_cond* cond)
+{
+  WakeConditionVariable(cond);
+}
+
+void caml_plat_cond_free(caml_plat_cond* cond)
+{
+  /* nothing to do */
 }

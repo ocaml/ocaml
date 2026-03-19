@@ -1,0 +1,53 @@
+Entering f
+Entering g
+Entering h
+Entering i
+Calling print_and_raise_many_args...
+Hello from print_and_raise_many_args
+Caught Not_found
+Raised by primitive operation at Exn_from_c_stack_args.i in file "exn_from_c_stack_args.ml", line 41, characters 2-45
+Called from Exn_from_c_stack_args.h in file "exn_from_c_stack_args.ml", line 46, characters 2-6
+Called from Exn_from_c_stack_args.g in file "exn_from_c_stack_args.ml", line 51, characters 2-6
+Called from Exn_from_c_stack_args.f in file "exn_from_c_stack_args.ml", line 56, characters 7-11
+==================
+WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
+  Write of size 8 at <implemspecific> by thread T2 (mutexes: write M<implemspecific>):
+    - camlExn_from_c_stack_args$writer_<implemspecific> <implemspecific> (<implemspecific>)
+    - camlStdlib__Domain$body_<implemspecific> <implemspecific> (<implemspecific>)
+
+  Previous read of size 8 at <implemspecific> by main thread (mutexes: write M<implemspecific>):
+    - camlExn_from_c_stack_args$race_<implemspecific> <implemspecific> (<implemspecific>)
+    - camlExn_from_c_stack_args$f_<implemspecific> <implemspecific> (<implemspecific>)
+    - camlExn_from_c_stack_args$entry <implemspecific> (<implemspecific>)
+    - caml_program <implemspecific> (<implemspecific>)
+
+  As if synchronized via sleep:
+    - nanosleep <implemspecific> (<implemspecific>)
+    - wg_wait <implemspecific> (<implemspecific>)
+    - camlExn_from_c_stack_args$writer_<implemspecific> <implemspecific> (<implemspecific>)
+    - camlStdlib__Domain$body_<implemspecific> <implemspecific> (<implemspecific>)
+
+  Mutex M<implemspecific> (<implemspecific>) created at:
+    - pthread_mutex_init <implemspecific> (<implemspecific>)
+    - caml_plat_mutex_init <implemspecific> (<implemspecific>)
+    - caml_init_domains <implemspecific> (<implemspecific>)
+    - caml_init_gc <implemspecific> (<implemspecific>)
+
+  Mutex M<implemspecific> (<implemspecific>) created at:
+    - pthread_mutex_init <implemspecific> (<implemspecific>)
+    - caml_plat_mutex_init <implemspecific> (<implemspecific>)
+    - caml_init_domains <implemspecific> (<implemspecific>)
+    - caml_init_gc <implemspecific> (<implemspecific>)
+
+  Thread T2 (tid=<implemspecific>, running) created by main thread at:
+    - pthread_create <implemspecific> (<implemspecific>)
+    - caml_domain_spawn <implemspecific> (<implemspecific>)
+    - caml_c_call <implemspecific> (<implemspecific>)
+    - camlStdlib__Domain$spawn_<implemspecific> <implemspecific> (<implemspecific>)
+    - camlExn_from_c_stack_args$entry <implemspecific> (<implemspecific>)
+    - caml_program <implemspecific> (<implemspecific>)
+
+SUMMARY: ThreadSanitizer: data race (<systemspecific>:<implemspecific>) in camlExn_from_c_stack_args$writer_<implemspecific>
+==================
+Leaving f
+ThreadSanitizer: reported 1 warnings

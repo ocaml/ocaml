@@ -138,6 +138,9 @@ type type_desc =
   | Tpackage of package
   (** Type of a first-class module (a.k.a package). *)
 
+  | Tfunctor of arg_label * Ident.Unscoped.t * package * type_expr
+  (** Type of a dependent arrow *)
+
 (** [package] corresponds to the type of a first-class module *)
 and package =
   { pack_path : Path.t;
@@ -203,6 +206,12 @@ and abbrev_memo =
 val is_commu_ok: commutable -> bool
 val commu_ok: commutable
 val commu_var: unit -> commutable
+
+type tfunctor = {
+  id_us : Ident.Unscoped.t;
+  pack : package;
+  ty : type_expr;
+}
 
 (** [field_kind] indicates the accessibility of a method.
 
@@ -389,6 +398,8 @@ val row_name: row_desc -> (Path.t * type_expr list) option
 
 val set_row_name: row_desc -> (Path.t * type_expr list) option -> row_desc
 
+val subst_row_name_path: (Ident.t * Path.t) list -> row_desc -> row_desc
+
 val get_row_field: label -> row_desc -> row_field
 
 (** get all fields at once; different from the old [row_repr] *)
@@ -574,7 +585,9 @@ and ('lbl, 'cstr) type_kind =
 and type_origin =
     Definition
   | Rec_check_regularity       (* See Typedecl.transl_type_decl *)
+  | Approx_recmod
   | Existential of string
+  | Equation of type_expr * type_expr
 
 and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
@@ -726,6 +739,8 @@ val item_visibility : signature_item -> visibility
 val bound_value_identifiers: signature -> Ident.t list
 
 val signature_item_id : signature_item -> Ident.t
+val classify_signature_item:
+  signature_item -> Shape.Sig_component_kind.t * Ident.t * Location.t
 
 (**** Utilities for backtracking ****)
 
@@ -766,3 +781,5 @@ val set_univar: type_expr option ref -> type_expr -> unit
 val link_kind: inside:field_kind -> field_kind -> unit
 val link_commu: inside:commutable -> commutable -> unit
 val set_commu_ok: commutable -> unit
+
+val reset : unit -> unit

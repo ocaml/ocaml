@@ -19,15 +19,15 @@
    than compiled on its own *)
 
 let bindir = {@QS@|@ocaml_bindir@|@QS@}
-
-let standard_library_default = {@QS@|@ocaml_libdir@|@QS@}
+let target_bindir = {@QS@|@TARGET_BINDIR@|@QS@}
 
 let ccomp_type = {@QS@|@ccomp_type@|@QS@}
 let c_compiler = {@QS@|@CC@|@QS@}
 let c_compiler_vendor = {@QS@|@ocaml_cc_vendor@|@QS@}
 let c_output_obj = {@QS@|@outputobj@|@QS@}
 let c_has_debug_prefix_map = @cc_has_debug_prefix_map@
-let as_has_debug_prefix_map = @as_has_debug_prefix_map@
+let as_has_debug_prefix_map = @ocaml_cv_prog_as_debug_prefix_map@
+let as_is_cc = @as_is_cc@
 let bytecode_cflags = {@QS@|@bytecode_cflags@|@QS@}
 let bytecode_cppflags = {@QS@|@bytecode_cppflags@|@QS@}
 let native_cflags = {@QS@|@native_cflags@|@QS@}
@@ -71,6 +71,9 @@ let align_int64 = @align_int64@
 let function_sections = @function_sections@
 let afl_instrument = @afl@
 
+let bytecode_runtime_id = {@QS@|@bytecode_runtime_id@|@QS@}
+let native_runtime_id = {@QS@|@native_runtime_id@|@QS@}
+
 let native_compiler = @native_compiler@
 
 let architecture = {@QS@|@arch@|@QS@}
@@ -81,6 +84,7 @@ let target_os_type = {@QS@|@target_os_type@|@QS@}
 let asm = {@QS@|@AS@|@QS@}
 let asm_cfi_supported = @asm_cfi_supported@
 let asm_size_type_directives = @asm_size_type_directives@
+let asm_dwarf_version = @asm_dwarf_version@
 let with_frame_pointers = @frame_pointers@
 let reserved_header_bits = @reserved_header_bits@
 
@@ -102,3 +106,9 @@ let ar_supports_response_files = @ar_supports_response_files@
 let tsan = @tsan@
 
 let shebangscripts = @shebangscripts@
+
+let suffixing = @suffixing@
+
+let launch_method = {@QS@|@launch_method_target@|@QS@}
+
+let search_method = {@QS@|@runtime_search_target@|@QS@}

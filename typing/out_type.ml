@@ -248,7 +248,7 @@ let enable b = enabled := b
      type r = Avoid__me.t
    end
   }]
-  It is is important that in the definition of [t] that the outer type [t] is
+  It is important that in the definition of [t] that the outer type [t] is
   printed as [t/2] reserving the name [t] to the type being defined in the
   current recursive definition.
      Contrarily, in the definition of [r], one should not shorten the
@@ -705,16 +705,17 @@ let printer_iter_type_expr f ty =
   | _ ->
       Btype.iter_type_expr f ty
 
-let quoted_ident ppf x =
-  Style.as_inline_code !Oprint.out_ident ppf x
-
 module Internal_names : sig
 
   val reset : unit -> unit
 
   val add : Path.t -> unit
 
-  val print_explanations : Env.t -> Fmt.formatter -> unit
+  type explanation =
+    | Existential of { constructor : string }
+    | Equation of { lhs : type_expr; rhs : type_expr }
+
+  val explain : Env.t -> (Path.t list * explanation) list
 
 end = struct
 
@@ -732,44 +733,75 @@ end = struct
         end
     | Pdot _ | Papply _ | Pextra_ty _ -> ()
 
-  let print_explanations env ppf =
-    let constrs =
+  type explanation =
+    | Existential of { constructor : string }
+    | Equation of { lhs : type_expr; rhs : type_expr }
+
+  let explain env =
+    let fold_type_origin f acc =
       Ident.Set.fold
         (fun id acc ->
-          let p = Pident id in
-          match Env.find_type p env with
-          | exception Not_found -> acc
-          | decl ->
-              match type_origin decl with
-              | Existential constr ->
-                  let prev = String.Map.find_opt constr acc in
-                  let prev = Option.value ~default:[] prev in
-                  String.Map.add constr (tree_of_path None p :: prev) acc
-              | Definition | Rec_check_regularity -> acc)
-        !names String.Map.empty
+           let p = Pident id in
+           match Env.find_type p env with
+           | exception Not_found -> acc
+           | decl ->
+               f p (type_origin decl) acc
+        ) !names acc
     in
-    String.Map.iter
-      (fun constr out_idents ->
-        match out_idents with
-        | [] -> ()
-        | [out_ident] ->
-            fprintf ppf
-              "@ @[<2>@{<hint>Hint@}:@ %a@ is an existential type@ \
-               bound by the constructor@ %a.@]"
-              quoted_ident out_ident
-              Style.inline_code constr
-        | out_ident :: out_idents ->
-            fprintf ppf
-              "@ @[<2>@{<hint>Hint@}:@ %a@ and %a@ are existential types@ \
-               bound by the constructor@ %a.@]"
-              (Fmt.pp_print_list
-                 ~pp_sep:(fun ppf () -> fprintf ppf ",@ ")
-                 quoted_ident)
-              (List.rev out_idents)
-              quoted_ident out_ident
-              Style.inline_code constr)
-      constrs
-
+    let constrs =
+      fold_type_origin
+        (fun p origin acc ->
+           match origin with
+           | Existential constr ->
+               String.Map.add_to_list constr p acc
+           | Approx_recmod | Definition | Equation _ | Rec_check_regularity ->
+               acc)
+        String.Map.empty
+    in
+    let existentials =
+      String.Map.fold
+        (fun constructor out_idents acc ->
+           match out_idents with
+           | [] -> acc
+           | idents ->
+               (idents, Existential { constructor }) :: acc)
+        constrs
+        []
+      |> List.rev
+    in
+    let eqns =
+      fold_type_origin
+        (fun p origin acc ->
+           match origin with
+           | Equation (t1, t2) ->
+               let t1, t2 =
+                 if get_id t1 < get_id t2 then t1, t2 else t2, t1
+               in
+               TypeMap.update
+                 t1
+                 (fun ps ->
+                    let ps = Option.value ~default:TypeMap.empty ps in
+                    Some (TypeMap.add_to_list t2 p ps)
+                 )
+                 acc
+           | Approx_recmod | Existential _
+           | Definition | Rec_check_regularity -> acc)
+        TypeMap.empty
+    in
+    let from_eqns =
+      TypeMap.fold
+        (fun lhsty rhs acc ->
+           TypeMap.fold
+             (fun rhsty out_idents acc ->
+                (List.rev out_idents, Equation { lhs = lhsty; rhs = rhsty })
+                :: acc
+             )
+             rhs acc
+        )
+        eqns []
+    in
+    existentials @ from_eqns
+    |> List.map (fun (ids, r) -> List.sort Path.compare ids, r)
 end
 
 module Variable_names : sig
@@ -1042,6 +1074,35 @@ let prepare_for_printing tyl =
 
 let add_type_to_preparation = prepare_type
 
+let wrap_env ?(keep_short_paths = false) fenv ftree arg =
+  (* We save the current value of the short-path cache *)
+  (* From keys *)
+  let env = !printing_env in
+  let old_pers = !printing_pers in
+  (* to data *)
+  let old_map = !printing_map in
+  let old_depth = !printing_depth in
+  let old_cont = !printing_cont in
+  if keep_short_paths then
+    printing_env := fenv env
+  else
+    set_printing_env (fenv env);
+  let tree = ftree arg in
+  if !Clflags.real_paths
+     || same_printing_env env then ()
+   (* our cached key is still live in the cache, and we want to keep all
+      progress made on the computation of the [printing_map] *)
+  else begin
+    (* we restore the snapshotted cache before calling set_printing_env *)
+    printing_old := env;
+    printing_pers := old_pers;
+    printing_depth := old_depth;
+    printing_cont := old_cont;
+    printing_map := old_map
+  end;
+  set_printing_env env;
+  tree
+
 (* Disabled in classic mode when printing an unification error *)
 let print_labels = ref true
 let with_labels b f = Misc.protect_refs [R (print_labels,b)] f
@@ -1088,6 +1149,20 @@ let rec tree_of_typexp mode ty =
             else Otyp_stuff "<hidden>"
           else tree_of_typexp mode ty1 in
         Otyp_arrow (lab, t1, tree_of_typexp mode ty2)
+    | Tfunctor (l, id, pack, ty) ->
+        let lab =
+          if !print_labels || is_optional l then l else Nolabel
+        in
+        let fenv env =
+          (* We compute an approximation of the signature. *)
+          let mty = Mty_ident pack.pack_path in
+          Env.add_module ~noalias:true (Ident.of_unscoped id) Mp_present mty env
+        in
+        let ty =
+          wrap_env ~keep_short_paths:true fenv (tree_of_typexp mode) ty
+        in
+        Otyp_functor (lab, Oide_ident { printed_name = Ident.Unscoped.name id },
+                      tree_of_package mode pack, ty)
     | Ttuple tyl ->
         Otyp_tuple (tree_of_labeled_typlist mode tyl)
     | Tconstr(p, tyl, _abbrev) ->
@@ -1288,6 +1363,24 @@ let filter_params tyl =
       [] tyl
   in List.rev params
 
+(* When printing the variance of a type parameter,
+   we need to translate the computed variance ([Variance.t])
+   back into the corresponding syntactic node ([Asttypes.variance]).
+   [Typedecl_variance.transl_variance] is half inverse to this operation. *)
+let syntactic_variance
+    ?(with_variance=(!Clflags.print_variance))
+    ?(with_injectivity=(!Clflags.print_variance)) vi =
+  let open Variance in let open Asttypes in
+  let v = if not with_variance then NoVariance else
+  match mem May_pos vi, mem May_neg vi with
+  | false, false -> Bivariant
+  | true, false -> Covariant
+  | false, true -> Contravariant
+  | true, true -> NoVariance in
+  let i = if not with_injectivity then NoInjectivity else
+  if mem Inj vi then Injective else NoInjectivity in
+  (v, i)
+
 let prepare_type_constructor_arguments = function
   | Cstr_tuple l -> List.iter prepare_type l
   | Cstr_record l -> List.iter (fun l -> prepare_type l.ld_type) l
@@ -1410,23 +1503,18 @@ let tree_of_type_decl id decl =
       List.map2
         (fun ty v ->
           let is_var = is_Tvar ty in
-          if !Clflags.print_variance || abstr || not is_var then
-            let inj =
-              !Clflags.print_variance && Variance.mem Inj v ||
-              type_kind_is_abstract decl && Variance.mem Inj v &&
-              match decl.type_manifest with
-              | None -> true
-              | Some ty -> (* only abstract or private row types *)
-                  decl.type_private = Private &&
-                  Btype.is_constr_row ~allow_ident:true (Btype.row_of_type ty)
-            and (co, cn) = Variance.get_upper v in
-            (match co, cn with
-            | false, false -> Bivariant
-            | true, false -> Covariant
-            | false, true -> Contravariant
-            | true, true -> NoVariance),
-            (if inj then Injective else NoInjectivity)
-          else (NoVariance, NoInjectivity))
+          let with_variance = !Clflags.print_variance || abstr || not is_var in
+          let with_injectivity =
+            !Clflags.print_variance ||
+            (abstr || not is_var) &&
+            type_kind_is_abstract decl &&
+            match decl.type_manifest with
+            | None -> true
+            | Some ty -> (* only abstract or private row types *)
+                decl.type_private = Private &&
+                Btype.is_constr_row ~allow_ident:true (Btype.row_of_type ty)
+          in
+          syntactic_variance ~with_variance ~with_injectivity v)
         decl.type_params decl.type_variance
     in
     (Ident.name id,
@@ -1535,15 +1623,25 @@ let extension_constructor_args_and_ret_type_subtree ext_args ext_ret_type =
   let args = tree_of_constructor_arguments ext_args in
   (args, ret)
 
-let prepared_tree_of_extension_constructor
-   id ext es
-  =
+let prepared_tree_of_extension_constructor id ext es =
   let ty_name = Path.name ext.ext_type_path in
   let ty_params = filter_params ext.ext_type_params in
-  let type_param =
+  let ty_variances =
+    try
+      let variances =
+        (Env.find_type ext.ext_type_path !printing_env).type_variance in
+      List.map syntactic_variance variances
+    with Not_found ->
+      List.map (fun _ -> NoVariance, NoInjectivity) ty_params
+  in
+  let type_param ot_variance =
     function
-    | Otyp_var (_, id) -> id
-    | _ -> "?"
+    | Otyp_var (_ot_non_gen, ot_name) ->
+        {ot_non_gen=false; ot_name; ot_variance}
+        (* NB(#14315): simply using the given ot_non_gen here
+           does not break the testsuite *)
+    | _ ->
+        {ot_non_gen=false; ot_name="?"; ot_variance=NoVariance,NoInjectivity}
   in
   let param_scope f =
     match ext.ext_ret_type with
@@ -1558,7 +1656,8 @@ let prepared_tree_of_extension_constructor
     param_scope
       (fun () ->
          List.iter (Aliases.add_printed ~non_gen:false) ty_params;
-         List.map (fun ty -> type_param (tree_of_typexp Type ty)) ty_params
+         List.map2 (fun v ty -> type_param v (tree_of_typexp Type ty))
+          ty_variances ty_params
       )
   in
   let name = Ident.name id in
@@ -1714,22 +1813,11 @@ let rec tree_of_class_type mode params =
 
 
 let tree_of_class_param param variance =
-  let ot_variance =
-    if is_Tvar param then Asttypes.(NoVariance, NoInjectivity) else variance in
+  let ot_variance = syntactic_variance variance
+      ~with_variance:(!Clflags.print_variance || not (is_Tvar param)) in
   match tree_of_typexp Type_scheme param with
     Otyp_var (ot_non_gen, ot_name) -> {ot_non_gen; ot_name; ot_variance}
   | _ -> {ot_non_gen=false; ot_name="?"; ot_variance}
-
-let class_variance =
-  let open Variance in let open Asttypes in
-  List.map (fun v ->
-    let inj = !Clflags.print_variance && Variance.mem Inj v in
-    (match mem May_pos v, mem May_neg v with
-    | false, false -> Bivariant
-    | true, false -> Covariant
-    | false, true -> Contravariant
-    | true, true -> NoVariance),
-    (if inj then Injective else NoInjectivity))
 
 let tree_of_class_declaration id cl rs =
   let params = filter_params cl.cty_params in
@@ -1747,7 +1835,7 @@ let tree_of_class_declaration id cl rs =
   let vir_flag = cl.cty_new = None in
   Osig_class
     (vir_flag, Ident.name id,
-     List.map2 tree_of_class_param params (class_variance cl.cty_variance),
+     List.map2 tree_of_class_param params cl.cty_variance,
      tree_of_class_type Type_scheme params cl.cty_type,
      tree_of_rec rs)
 
@@ -1774,37 +1862,11 @@ let tree_of_cltype_declaration id cl rs =
   in
   Osig_class_type
     (has_virtual_vars || has_virtual_meths, Ident.name id,
-     List.map2 tree_of_class_param params (class_variance cl.clty_variance),
+     List.map2 tree_of_class_param params cl.clty_variance,
      tree_of_class_type Type_scheme params cl.clty_type,
      tree_of_rec rs)
 
 (* Print a module type *)
-
-let wrap_env fenv ftree arg =
-  (* We save the current value of the short-path cache *)
-  (* From keys *)
-  let env = !printing_env in
-  let old_pers = !printing_pers in
-  (* to data *)
-  let old_map = !printing_map in
-  let old_depth = !printing_depth in
-  let old_cont = !printing_cont in
-  set_printing_env (fenv env);
-  let tree = ftree arg in
-  if !Clflags.real_paths
-     || same_printing_env env then ()
-   (* our cached key is still live in the cache, and we want to keep all
-      progress made on the computation of the [printing_map] *)
-  else begin
-    (* we restore the snapshotted cache before calling set_printing_env *)
-    printing_old := env;
-    printing_pers := old_pers;
-    printing_depth := old_depth;
-    printing_cont := old_cont;
-    printing_map := old_map
-  end;
-  set_printing_env env;
-  tree
 
 let dummy =
   {

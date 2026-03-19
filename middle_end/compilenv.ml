@@ -88,7 +88,8 @@ let current_unit =
     ui_send_fun = [];
     ui_force_link = false;
     ui_export_info = default_ui_export_info;
-    ui_for_pack = None }
+    ui_for_pack = None;
+    ui_need_stdlib = false }
 
 let linuxlike_mangling = match Config.system with
   | "macosx"
@@ -118,6 +119,12 @@ let current_unit_linkage_name () =
   Linkage_name.create (make_symbol ~unitname:current_unit.ui_symbol None)
 
 let reset ?packname name =
+  let packname =
+    Option.map
+      (Misc.replace_substring ~before:"."
+         ~after:(String.make 1 symbol_separator))
+      packname
+  in
   Hashtbl.clear global_infos_table;
   Set_of_closures_id.Tbl.clear imported_sets_of_closures_table;
   let symbol = symbolname_for_pack packname name in
@@ -131,6 +138,7 @@ let reset ?packname name =
   current_unit.ui_send_fun <- [];
   current_unit.ui_force_link <- !Clflags.link_everything;
   current_unit.ui_for_pack <- packname;
+  current_unit.ui_need_stdlib <- false;
   Hashtbl.clear exported_constants;
   structured_constants := structured_constants_empty;
   current_unit.ui_export_info <- default_ui_export_info;
@@ -149,15 +157,6 @@ let current_unit_infos () =
 let current_unit_name () =
   current_unit.ui_name
 
-let symbol_in_current_unit name =
-  let prefix = "caml" ^ current_unit.ui_symbol in
-  name = prefix ||
-  (let lp = String.length prefix in
-   String.length name >= 2 + lp
-   && String.sub name 0 lp = prefix
-   && name.[lp] = '_'
-   && name.[lp + 1] = '_')
-
 let read_unit_info filename =
   let ic = open_in_bin filename in
   try
@@ -167,7 +166,7 @@ let read_unit_info filename =
       raise(Error(Not_a_unit_info filename))
     end;
     let ui = (input_value ic : unit_infos) in
-    let crc = Digest.input ic in
+    let crc = Digest.BLAKE128.input ic in
     close_in ic;
     (ui, crc)
   with End_of_file | Failure _ ->
@@ -190,7 +189,7 @@ let read_library_info filename =
    ultimately end up in the same pack, including through nested packs. *)
 let is_import_from_same_pack ~imported ~current =
   String.equal imported current
-  || String.starts_with ~prefix:(imported ^ ".") current
+  || String.starts_with ~prefix:(concat_symbol imported "") current
 
 let get_global_info global_ident = (
   let modname = Ident.name global_ident in
@@ -261,11 +260,16 @@ let global_approx id =
       | None -> Clambda.Value_unknown
       | Some ui -> get_clambda_approx ui
 
+(* The name of the symbol defined globally for %standard_library_default *)
+let stdlib_symbol_name = Ident.create_persistent "caml_standard_library_nat"
+
 (* Return the symbol used to refer to a global identifier *)
 
 let symbol_for_global id =
   if Ident.is_predef id then
     "caml_exn_" ^ Ident.name id
+  else if Ident.same stdlib_symbol_name id then
+    Ident.name id
   else begin
     let unitname = Ident.name id in
     match
@@ -293,7 +297,7 @@ let is_predefined_exception sym =
 
 let symbol_for_global' id =
   let sym_label = Linkage_name.create (symbol_for_global id) in
-  if Ident.is_predef id then
+  if Ident.is_predef id || Ident.same stdlib_symbol_name id then
     Symbol.of_global_linkage predefined_exception_compilation_unit sym_label
   else
     Symbol.of_global_linkage (unit_for_global id) sym_label
@@ -351,6 +355,11 @@ let need_send_fun n =
   if not (List.mem n current_unit.ui_send_fun) then
     current_unit.ui_send_fun <- n :: current_unit.ui_send_fun
 
+(* Record that caml_standard_library_nat is needed *)
+
+let need_stdlib_location () =
+  current_unit.ui_need_stdlib <- true
+
 (* Write the description of the current unit *)
 
 let write_unit_info info filename =
@@ -358,8 +367,8 @@ let write_unit_info info filename =
   output_string oc cmx_magic_number;
   output_value oc info;
   flush oc;
-  let crc = Digest.file filename in
-  Digest.output oc crc;
+  let crc = Digest.BLAKE128.file filename in
+  Digest.BLAKE128.output oc crc;
   close_out oc
 
 let save_unit_info filename =

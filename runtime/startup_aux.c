@@ -19,6 +19,11 @@
    and native code. */
 
 #include <stdio.h>
+#ifdef __MINGW32__
+/* See caml_startup_aux */
+#include <pthread.h>
+#endif
+#include <string.h>
 #include "caml/backtrace.h"
 #include "caml/memory.h"
 #include "caml/callback.h"
@@ -34,6 +39,7 @@
 #include "caml/startup_aux.h"
 #include "caml/prims.h"
 #include "caml/signals.h"
+#include "caml/gc_ctrl.h"
 
 #ifdef _WIN32
 extern void caml_win32_unregister_overflow_detection (void);
@@ -75,12 +81,12 @@ static void init_startup_params(void)
   params.event_trace = 0;
 }
 
-static void scanmult (char_os *opt, uintnat *var)
+static void scanmult (char *opt, uintnat *var)
 {
-  char_os mult = ' ';
+  char mult = ' ';
   unsigned int val = 1;
-  sscanf_os (opt, T("=%u%c"), &val, &mult);
-  sscanf_os (opt, T("=0x%x%c"), &val, &mult);
+  sscanf (opt, "=%u%c", &val, &mult);
+  sscanf (opt, "=0x%x%c", &val, &mult);
   switch (mult) {
   case 'k':   *var = (uintnat) val * 1024; break;
   case 'M':   *var = (uintnat) val * (1024 * 1024); break;
@@ -93,9 +99,12 @@ void caml_parse_ocamlrunparam(void)
 {
   init_startup_params();
   uintnat val;
+  caml_init_gc_tweaks();
 
-  char_os *opt = caml_secure_getenv (T("OCAMLRUNPARAM"));
-  if (opt == NULL) opt = caml_secure_getenv (T("CAMLRUNPARAM"));
+  char_os *opt_os = caml_secure_getenv (T("OCAMLRUNPARAM"));
+  if (opt_os == NULL) opt_os = caml_secure_getenv (T("CAMLRUNPARAM"));
+  char *opt_tofree = opt_os ? caml_stat_strdup_noexc_of_os(opt_os) : NULL;
+  char *opt = opt_tofree;
 
   if (opt != NULL){
     while (*opt != '\0'){
@@ -122,6 +131,27 @@ void caml_parse_ocamlrunparam(void)
         break;
       case 'V': scanmult (opt, &params.verify_heap); break;
       case 'W': scanmult (opt, &caml_runtime_warnings); break;
+      case 'X': {
+        char *name = opt;
+        while (*opt != '=' && *opt != ',' && *opt != '\0') opt++;
+        if (opt - name == strlen("help") &&
+            memcmp(name, "help", opt - name) == 0) {
+          fprintf(stderr, "Known GC tweaks:\n");
+          caml_print_gc_tweaks();
+        } else {
+          atomic_uintnat* p = caml_lookup_gc_tweak(name, opt - name);
+          if (p == NULL) {
+            fprintf(stderr, "Ignored unknown GC tweak '%.*s'. "
+                    "Use 'Xhelp' to list known tweaks\n",
+                    (int)(opt - name), name);
+          } else {
+            scanmult(opt, &val);
+            *p = val;
+          }
+        }
+
+        break;
+      }
       case ',': continue;
       }
       while (*opt != '\0'){
@@ -129,6 +159,8 @@ void caml_parse_ocamlrunparam(void)
       }
     }
   }
+
+  caml_stat_free(opt_tofree);
 
   /* Validate */
   if (params.max_domains < 1) {
@@ -150,6 +182,13 @@ static int shutdown_happened = 0;
 
 int caml_startup_aux(int pooling)
 {
+#ifdef __MINGW32__
+  /* On mingw-w64 only, this dummy call ensures that thread.o from winpthreads
+     is linked. This is done to ensure that pthreads calls synthesised by GCC
+     for TLS are linked statically. */
+  (void) pthread_getconcurrency();
+#endif
+
   if (shutdown_happened == 1)
     caml_fatal_error("caml_startup was called after the runtime "
                      "was shut down with caml_shutdown");

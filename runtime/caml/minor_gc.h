@@ -72,6 +72,13 @@ struct caml_minor_tables {
   struct caml_custom_table custom;
 };
 
+/* Setting this to a different value can be useful for debugging
+ * although may cause some slowdown. It must be a header value not
+ * otherwise found on the minor heap, not using Infix_tag, and not
+ * equal to In_progress_hd.  I suggest Make_header(0 ,0, 0x200). */
+#define Promoted_hd (Make_header(0, 0, 0))
+#define Is_promoted_hd(hd) ((hd) == Promoted_hd)
+
 CAMLextern void caml_minor_collection (void);
 
 #ifdef __cplusplus
@@ -88,7 +95,6 @@ extern void caml_empty_minor_heaps_once(void); /* out STW */
 void caml_alloc_small_dispatch (caml_domain_state* domain,
                                 intnat wosize, int flags,
                                 int nallocs, unsigned char* encoded_alloc_lens);
-header_t caml_get_header_val(value v);
 void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv);
 extern void caml_realloc_ref_table (struct caml_ref_table *);
 extern void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *);

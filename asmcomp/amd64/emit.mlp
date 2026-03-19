@@ -1019,7 +1019,7 @@ let begin_assembly() =
 
   emit_named_text_section (Compilenv.make_symbol (Some "code_begin"));
   emit_global_label "code_begin";
-  if system = S_macosx then I.nop (); (* PR#4690 *)
+  if system = S_macosx || system = S_freebsd then I.nop (); (* PR#4690 *)
   ()
 
 let end_assembly() =

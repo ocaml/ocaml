@@ -33,9 +33,11 @@ module TypeMap : sig
   include Map.S with type key = transient_expr
                      and type 'a t = 'a TransientTypeMap.t
   val add: type_expr -> 'a -> 'a t -> 'a t
+  val add_to_list: type_expr -> 'a -> 'a list t -> 'a list t
   val find: type_expr -> 'a t -> 'a
   val singleton: type_expr -> 'a -> 'a t
   val fold: (type_expr -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+  val update : type_expr -> ('a option -> 'a option) -> 'a t -> 'a t
 end
 module TypeHash : sig
   include Hashtbl.S with type key = transient_expr
@@ -160,6 +162,9 @@ val iter_type_expr_cstr_args: (type_expr -> unit) ->
   (constructor_arguments -> unit)
 val map_type_expr_cstr_args: (type_expr -> type_expr) ->
   (constructor_arguments -> constructor_arguments)
+
+val map_pack : (Path.t -> Path.t) -> (type_expr -> type_expr) -> package ->
+  package
 
 (**** Utilities for type marking ****)
 

@@ -67,10 +67,6 @@ val make_symbol: ?unitname:string -> string option -> string
            corresponds to symbol [id] in the compilation unit [u]
            (or the current unit). *)
 
-val symbol_in_current_unit: string -> bool
-        (* Return true if the given asm symbol belongs to the
-           current compilation unit, false otherwise. *)
-
 val is_predefined_exception: Symbol.t -> bool
         (* flambda-only *)
 
@@ -108,6 +104,14 @@ val need_send_fun: int -> unit
         (* Record the need of a currying (resp. application,
            message sending) function with the given arity *)
 
+val need_stdlib_location: unit -> unit
+        (* Record that caml_standard_library_nat needs to be initialised if this
+           unit is linked. *)
+
+val stdlib_symbol_name: Ident.t
+        (* The name of the symbol defined globally for
+           %standard_library_default *)
+
 val new_const_symbol : unit -> string
 val closure_symbol : Closure_id.t -> Symbol.t
         (* Symbol of a function if the function is
@@ -137,7 +141,7 @@ val snapshot: unit -> structured_constants
 val backtrack: structured_constants -> unit
         (* clambda-only *)
 
-val read_unit_info: string -> unit_infos * Digest.t
+val read_unit_info: string -> unit_infos * Digest.BLAKE128.t
         (* Read infos and MD5 from a [.cmx] file. *)
 val write_unit_info: unit_infos -> string -> unit
         (* Save the given infos in the given file *)

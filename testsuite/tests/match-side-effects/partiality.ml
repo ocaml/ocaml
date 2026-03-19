@@ -376,12 +376,18 @@ type t =
   | C of string
   | D of string
 
+(* use primitives directly rather than Int.compare, String.compare to
+   avoid offset number churns in the -dlambda test output when new
+   functions get added to the stdlib. *)
+external compare_int : int -> int -> int = "%compare"
+external compare_string : string -> string -> int = "%compare"
+
 let compare t1 t2 =
   match t1, t2 with
-  | A i, A j -> Int.compare i j
-  | B l1, B l2 -> String.compare l1 l2
-  | C l1, C l2 -> String.compare l1 l2
-  | D l1, D l2 -> String.compare l1 l2
+  | A i, A j -> compare_int i j
+  | B l1, B l2 -> compare_string l1 l2
+  | C l1, C l2 -> compare_string l1 l2
+  | D l1, D l2 -> compare_string l1 l2
   | A _, (B _ | C _ | D _ ) -> -1
   | (B _ | C _ | D _ ), A _ -> 1
   | B _, (C _ | D _) -> -1
@@ -392,6 +398,10 @@ let compare t1 t2 =
 [%%expect {|
 0
 type t = A of int | B of string | C of string | D of string
+0
+external compare_int : int -> int -> int = "%compare"
+0
+external compare_string : string -> string -> int = "%compare"
 (let
   (compare/0 =
      (function t1/0 t2/0 : int
@@ -399,17 +409,14 @@ type t = A of int | B of string | C of string | D of string
          (switch* t1/0
           case tag 0:
            (switch t2/0
-            case tag 0:
-             (apply (field_imm 8 (global Stdlib__Int!)) (field_imm 0 t1/0)
-               (field_imm 0 t2/0))
+            case tag 0: (compare_ints (field_imm 0 t1/0) (field_imm 0 t2/0))
             default: -1)
           case tag 1:
            (catch
              (switch* t2/0
               case tag 0: (exit 31)
               case tag 1:
-               (apply (field_imm 9 (global Stdlib__String!))
-                 (field_imm 0 t1/0) (field_imm 0 t2/0))
+               (caml_string_compare (field_imm 0 t1/0) (field_imm 0 t2/0))
               case tag 2: (exit 36)
               case tag 3: (exit 36))
             with (36) -1)
@@ -418,8 +425,7 @@ type t = A of int | B of string | C of string | D of string
             case tag 0: (exit 31)
             case tag 1: (exit 31)
             case tag 2:
-             (apply (field_imm 9 (global Stdlib__String!)) (field_imm 0 t1/0)
-               (field_imm 0 t2/0))
+             (caml_string_compare (field_imm 0 t1/0) (field_imm 0 t2/0))
             case tag 3: -1)
           case tag 3:
            (switch* t2/0
@@ -427,8 +433,7 @@ type t = A of int | B of string | C of string | D of string
             case tag 1: (exit 31)
             case tag 2: 1
             case tag 3:
-             (apply (field_imm 9 (global Stdlib__String!)) (field_imm 0 t1/0)
-               (field_imm 0 t2/0))))
+             (caml_string_compare (field_imm 0 t1/0) (field_imm 0 t2/0))))
         with (31) (switch* t2/0 case tag 0: 1
                                 case tag 1: 1))))
   (apply (field_mut 1 (global Toploop!)) "compare" compare/0))

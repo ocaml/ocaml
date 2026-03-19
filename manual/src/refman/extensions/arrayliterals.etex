@@ -4,9 +4,9 @@
 (Introduced in OCaml 5.4)
 
 Since OCaml 5.4, array literal syntax @"[|" e1 ';' e2 ';' ... ';' eN "|]"@ can
-be used to denote values of type "floatarray" as well as "'a array", both in
-expression and pattern positions. This syntax is also used to display
-"floatarray" values in the toplevel.
+be used to denote values of type "floatarray" or "'a Iarray.t" as well as "'a
+array", both in expression and pattern positions. This syntax is also used to
+display "floatarray" and "'a Iarray.t" values in the toplevel.
 
 The compiler matches the expected type of the expression or pattern with the
 type of the literal, in a manner analogous to the disambiguation of constructors
@@ -21,6 +21,15 @@ In the following examples, the array literals are assigned type "floatarray":
 let _ : floatarray = [|42.|];;
 let _ = ([|42.|] : floatarray);;
 let _ = Float.Array.length [|42.|];;
+\end{caml_example}
+
+Immutable arrays (here "int Iarray.t") can be constructed in exactly the same
+way:
+
+\begin{caml_example}{verbatim}
+let _ : _ Iarray.t = [|42|];;
+let _ = ([|42|] : _ Iarray.t );;
+let _ = Iarray.length [|42|];;
 \end{caml_example}
 
 The same disambiguation mechanism is used for array literals appearing in

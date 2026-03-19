@@ -10,7 +10,7 @@
    - Compiling libc with -H liba allows the compiler to see the type definitions
      in liba, but doesn't allow c.ml to reference it directly.
 
-   - If -H and -I are are passed for two different versions of liba, the -I one
+   - If -H and -I are passed for two different versions of liba, the -I one
      takes priority.
 
    - If -H is passed twice with two different versions of liba, the first takes
@@ -93,7 +93,7 @@ ocamlc.byte;
   ocamlc.byte;
 }
 {
-  not-target-windows;
+  not target-windows;
   flags = "-H liba -I liba_alt -I libb -nocwd";
   module = "libc/c1.ml";
   setup-ocamlc.byte-build-env;
@@ -104,7 +104,7 @@ ocamlc.byte;
   check-ocamlc.byte-output;
 }
 {
-  not-target-windows;
+  not target-windows;
   flags = "-I liba_alt -H liba -I libb -nocwd";
   module = "libc/c1.ml";
   setup-ocamlc.byte-build-env;
@@ -117,7 +117,7 @@ ocamlc.byte;
 
 (* The next two tests show that earlier -Hs take priority over later -Hs *)
 {
-  not-target-windows;
+  not target-windows;
   flags = "-H liba_alt -H liba -I libb -nocwd";
   module = "libc/c1.ml";
   setup-ocamlc.byte-build-env;

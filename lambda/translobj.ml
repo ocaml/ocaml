@@ -89,10 +89,17 @@ let prim_makearray =
 (* Also use it for required globals *)
 let transl_label_init_general f =
   let expr = f () in
-  let expr =
+  (* We go through a Map first to ensure that the bindings are placed
+     in an order that doesn't depend on the hash table iteration order *)
+  let all_consts =
     Hashtbl.fold
-      (fun c id expr -> Llet(Alias, Pgenval, id, Lconst c, expr))
-      consts expr
+      (fun c id all_consts -> Ident.Map.add id c all_consts)
+      consts Ident.Map.empty
+  in
+  let expr =
+    Ident.Map.fold
+      (fun id c expr -> Llet(Alias, Pgenval, id, Lconst c, expr))
+      all_consts expr
   in
   (*let expr =
     List.fold_right

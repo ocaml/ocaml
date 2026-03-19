@@ -31,4 +31,6 @@ Error: This pattern matches values of type "($'a S.s, $'a S.s) eq"
        but a pattern was expected which matches values of type
          "($'a S.s, $'a S.t) eq"
        The type constructor "$'a" would escape its scope
+       Hint: "$'a" is a type variable introduced in the equation
+         "$'a S.s" = "$'a S.t"
 |}];;

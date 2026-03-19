@@ -72,6 +72,8 @@
 
 #undef HAS_TIMES
 
+#undef HAS_STRLCPY
+
 #undef HAS_SECURE_GETENV
 
 #undef HAS___SECURE_GETENV
@@ -92,11 +94,6 @@
 
 /* Define HAS_SOCKETPAIR if you have the socketpair function. Only
    relevant on Windows. */
-
-#undef HAS_SOCKLEN_T
-
-/* Define HAS_SOCKLEN_T if the type socklen_t is defined in
-   /usr/include/sys/socket.h. */
 
 #undef HAS_AFUNIX_H
 
@@ -120,6 +117,10 @@
 #undef HAS_SETTHREADDESCRIPTION
 
 #undef HAS_DECL_SETTHREADDESCRIPTION
+
+#undef HAS_LIBGEN_H
+
+/* Define HAS_LIBGEN_H if you have /usr/include/libgen.h. */
 
 #undef HAS_DIRENT
 
@@ -225,6 +226,9 @@
 
 /* Define HAS_MKTIME if you have mktime(). */
 
+#undef HAVE_GMTIME_R
+#undef HAVE_LOCALTIME_R
+
 #undef HAS_SETSID
 
 /* Define HAS_SETSID if you have setsid(). */
@@ -322,6 +326,11 @@
 #undef HAS_ZSTD
 
 #undef HAVE_MAX_ALIGN_T
+
+#undef HAVE_GETGRNAM_R
+#undef HAVE_GETGRGID_R
+#undef HAVE_GETPWNAM_R
+#undef HAVE_GETPWUID_R
 
 /* 3. Language extensions. */
 

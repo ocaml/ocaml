@@ -28,4 +28,6 @@ Error: This pattern matches values of type "($x, 'a -> $x) elt"
          "($x, 'a -> $'b -> nil) elt"
        The type constructor "$'b" would escape its scope
        Hint: "$x" is an existential type bound by the constructor "Cons".
+       Hint: "$'b" is a type variable introduced in the equation
+         "$x" = "$'b -> nil"
 |}];;

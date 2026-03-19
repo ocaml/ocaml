@@ -330,7 +330,7 @@ static void runtime_events_create_from_stw_single(void) {
                         mmap(NULL, current_ring_total_size,
                             PROT_READ | PROT_WRITE, MAP_SHARED, ring_fd, 0);
 
-    if (current_metadata == NULL) {
+    if (current_metadata == MAP_FAILED) {
       caml_fatal_error("Unable to mmap ring buffer");
     }
 

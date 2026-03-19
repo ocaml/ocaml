@@ -16,6 +16,8 @@
 #ifndef CAML_THREADS_H
 #define CAML_THREADS_H
 
+#include <caml/misc.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -51,17 +53,24 @@ CAMLextern void caml_leave_blocking_section (void);
 */
 
 CAMLextern int caml_c_thread_register(void);
+CAMLextern int caml_c_thread_register_in_domain(uintnat dom_unique_id);
 CAMLextern int caml_c_thread_unregister(void);
 
 /* If a thread is created by C code (instead of by OCaml itself),
    it must be registered with the OCaml runtime system before
    being able to call back into OCaml code or use other runtime system
-   functions.  Just call [caml_c_thread_register] once. The domain lock
-   is not held when [caml_c_thread_register] returns.
+   functions. Just call [caml_c_thread_register_in_domain] once. The domain lock
+   is not held when caml_c_thread_register_in_domain] returns.
    Before the thread finishes, it must call [caml_c_thread_unregister]
    (without holding the domain lock).
    Both functions return 1 on success, 0 on error.
-   Note that threads registered by C code belong to the domain 0.
+   Threads registered by [caml_c_thread_register_in_domain] belong to
+   the domain given by the unique id which must be running when calling this
+   function. After a call to [caml_c_thread_unregister], it is unsupported to
+   call [caml_c_thread_register_in_domain] with a different domain.
+   The function [caml_c_thread_register] is an alias for
+   [caml_c_thread_register_in_domain(0)] (where 0 is the identifier
+   of the main domain).
 */
 
 #ifdef __cplusplus

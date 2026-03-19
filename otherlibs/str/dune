@@ -12,9 +12,13 @@
 ;*                                                                        *
 ;**************************************************************************
 
+(files :standard \ *.cm* *.o *.a)
+
 (library
  (name str)
  (modes byte)
  (flags (:standard -nostdlib))
  (libraries stdlib)
- (c_names strstubs))
+ (foreign_stubs
+  (language c)
+  (names strstubs)))

@@ -336,10 +336,9 @@ and transl_exp0 ~in_new_scope ~scopes e =
       transl_record ~scopes e.exp_loc e.exp_env
         fields representation extended_expression
   | Texp_atomic_loc (arg, _, lbl) ->
-      let shape = Some [Typeopt.value_kind arg.exp_env arg.exp_type; Pintval] in
-      let (arg, lbl) = transl_atomic_loc ~scopes arg lbl in
       let loc = of_location ~scopes e.exp_loc in
-      Lprim (Pmakeblock (0, Immutable, shape), [arg; lbl], loc)
+      let (arg, lbl) = transl_atomic_loc ~scopes arg lbl in
+      make_atomic_loc ~loc arg lbl
   | Texp_field (arg, _, ({ lbl_atomic = Atomic; _ } as lbl)) ->
       let arg, lbl = transl_atomic_loc ~scopes arg lbl in
       let loc = of_location ~scopes e.exp_loc in
@@ -528,23 +527,14 @@ and transl_exp0 ~in_new_scope ~scopes e =
       else Lifthenelse (transl_exp ~scopes cond, lambda_unit,
                         assert_failed loc ~scopes e)
   | Texp_lazy e ->
-      (* when e needs no computation (constants, identifiers, ...), we
-         optimize the translation just as Lazy.lazy_from_val would
-         do *)
       begin match Typeopt.classify_lazy_argument e with
-      | `Constant_or_function ->
-        (* A constant expr (of type <> float if [Config.flat_float_array] is
-           true) gets compiled as itself. *)
+      | Eager Shortcut ->
          transl_exp ~scopes e
-      | `Float_that_cannot_be_shortcut
-      | `Identifier `Forward_value ->
+      | Eager Forward ->
          Lprim (Pmakelazyblock Forward_tag,
                 [transl_exp ~scopes e],
                 of_location ~scopes e.exp_loc)
-      | `Identifier `Other ->
-         transl_exp ~scopes e
-      | `Other ->
-         (* other cases compile to a lazy block holding a function *)
+      | Lazy_thunk ->
          let fn = lfunction ~kind:Curried
                             ~params:[Ident.create_local "param", Pgenval]
                             ~return:Pgenval
@@ -1226,14 +1216,12 @@ and transl_handler ~scopes e body val_caselist exn_caselist eff_caselist =
   let eff_fun =
     let param = Typecore.name_cases "eff" eff_caselist in
     let cont = Ident.create_local "k" in
-    let cont_tail = Ident.create_local "ktail" in
     let eff_cases = transl_cases ~scopes ~cont eff_caselist in
     let body =
-      Matching.for_handler ~scopes e.exp_loc (Lvar param) (Lvar cont)
-        (Lvar cont_tail) eff_cases
+      Matching.for_handler ~scopes e.exp_loc (Lvar param) (Lvar cont) eff_cases
     in
     lfunction ~kind:Curried
-      ~params:[(param, Pgenval); (cont, Pgenval); (cont_tail, Pgenval)]
+      ~params:[(param, Pgenval); (cont, Pgenval)]
       ~return:Pgenval ~attr:default_function_attribute ~loc:Loc_unknown ~body
   in
   let (body_fun, arg) =

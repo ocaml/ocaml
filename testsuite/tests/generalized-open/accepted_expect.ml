@@ -37,6 +37,7 @@ val partition : (elt -> bool) -> t -> t * t = <fun>
 val split : elt -> t -> t * bool * t = <fun>
 val is_empty : t -> bool = <fun>
 val is_singleton : t -> bool = <fun>
+val singleton_to_elt : t -> elt option = <fun>
 val mem : elt -> t -> bool = <fun>
 val equal : t -> t -> bool = <fun>
 val compare : t -> t -> int = <fun>

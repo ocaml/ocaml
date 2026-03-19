@@ -3,7 +3,7 @@
  include unix;
  set OCAML_RUNTIME_EVENTS_PRESERVE = "1";
  hasunix;
- not-target-windows;
+ not target-windows;
  {
    bytecode;
  }{

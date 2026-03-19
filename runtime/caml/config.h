@@ -65,7 +65,7 @@
   #define __USE_MINGW_ANSI_STDIO 0
 #endif
 
-#if defined(__MINGW32__) && !__USE_MINGW_ANSI_STDIO && !defined(_UCRT)
+#if defined(__MINGW32__)
 #define ARCH_SIZET_PRINTF_FORMAT "I"
 #else
 #define ARCH_SIZET_PRINTF_FORMAT "z"
@@ -160,7 +160,7 @@ typedef uintptr_t uintnat;
 
 /* The size of a page for memory management (in bytes) is [1 << Page_log].
    [Page_size] must be a multiple of [sizeof (value)].
-   [Page_log] must be be >= 8 and <= 20.
+   [Page_log] must be >= 8 and <= 20.
    Do not change the definition of [Page_size]. */
 #define Page_log 12             /* A page is 4 kilobytes. */
 #define Page_size (1 << Page_log)
@@ -211,6 +211,11 @@ typedef uintptr_t uintnat;
    the dead objects and the free list represent this percentage of the
    total size of live objects. */
 #define Percent_free_def 120
+
+/* Default "small heap mode" setting for the major GC.  The GC will
+   add an Idle phase when the sweeping work for a cycle is smaller than
+   this limit. */
+#define Small_heap_limit_def 262144
 
 /* Default setting for the major GC slice smoothing window: 1
    (i.e. no smoothing)

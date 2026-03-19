@@ -9,11 +9,11 @@ handlers that are used for all the error reporting in the compiler.
 
 link:parser.mly[parser.mly]:: This file contains the grammar used to
 generated the parser -- using the
-link:http://gallium.inria.fr/~fpottier/menhir/[menhir] parser
+link:https://gallium.inria.fr/~fpottier/menhir/[menhir] parser
 generator, which is an external tool that you need to install if you
 wish to modify the parser.
 
-=== Working on the parser grammar
+== Working on the parser grammar
 
 To avoid depending on an external tool, the compiler build system does
 not rebuild the parser from the source grammar link:parser.mly[] each
@@ -25,7 +25,7 @@ target of the root Makefile to rebuild the compiler parser. See
 link:../Makefile.menhir[] for the details of the various
 Menhir-related targets and their use.
 
-==== Testing the grammar
+=== Testing the grammar
 
 The root Makefile contains a `build-all-asts` target that will build,
 for each source `.ml` or `.mli` file in the repository, a `.ml.ast` or
@@ -34,6 +34,7 @@ for each source `.ml` or `.mli` file in the repository, a `.ml.ast` or
 This rule is rather slow to run, and can safely be run in parallel, so
 we recommend using `-j` (without a number) to maximize parallelism:
 
+[source,sh]
 ----
 make -j build-all-asts
 ----
@@ -56,6 +57,7 @@ those that should not modify the parsed AST at all:
    completely (unless you plan to check further changes) -- you can
    run `make clean-all-asts` to remove them.
 
+[source,sh]
 ----
 # save pre-change ASTs
 make -j build-all-asts

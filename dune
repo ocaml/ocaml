@@ -46,7 +46,7 @@
    clflags profile terminfo ccomp format_doc warnings consistbl
    strongly_connected_components targetint load_path
    int_replace_polymorphic_compare binutils local_store lazy_backtrack diffing
-   diffing_with_keys unit_info compression linkdeps
+   diffing_with_keys unit_info compression linkdeps stable_matching
 
    ;; PARSING
    location longident docstrings syntaxerr ast_helper camlinternalMenhirLib
@@ -60,7 +60,7 @@
    datarepr cmi_format persistent_env env type_immediacy errortrace
    typedtree printtyped ctype printtyp rawprinttyp includeclass mtype envaux
    includecore tast_iterator tast_mapper signature_group cmt_format untypeast
-   includemod includemod_errorprinter errortrace_report
+   includemod signature_matching includemod_errorprinter errortrace_report
    typetexp patterns printpat parmatch stypes typeopt typedecl value_rec_check
    typecore
    typeclass typemod typedecl_variance typedecl_properties typedecl_immediacy

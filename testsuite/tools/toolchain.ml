@@ -39,7 +39,7 @@ let linker_propagates_debug_information =
 
 let c_compiler_always_embeds_build_path =
   (* .obj files always contain the build path, regardless of flags *)
-  is_msvc
+  is_msvc && not is_clang
 
 let asmrun_assembled_with_cc =
   (* The MSVC port directly assembles amd64nt.asm; all other systems use the C
@@ -47,25 +47,10 @@ let asmrun_assembled_with_cc =
   not is_msvc
 
 let assembler_embeds_build_path =
-  if is_clang_assembler && Config.system = "macosx" then
-    (* Xcode 16 targeting macOS 15 or later uses DWARF v5 and embeds build
-       paths by default, cf. https://developer.apple.com/documentation/xcode-release-notes/xcode-16-release-notes *)
-    match String.split_on_char '-' Config.c_compiler_vendor,
-          String.split_on_char '-' Config.target with
-    | ["clang"; major; _], [_; "apple"; darwin]
-      when String.starts_with ~prefix:"darwin" darwin ->
-        (* Xcode 16.0 shipped with clang-16.00.0.26.3
-           macOS 15 uses Darwin 24.x *)
-        let clang_major =
-          Scanf.sscanf_opt major "%u%!" (fun x -> x >= 16)
-          |> Option.value ~default:true (* Assume up-to-date *)
-        and darwin_major =
-          Scanf.sscanf_opt darwin "darwin%u." (fun x -> x >= 24)
-          |> Option.value ~default:true (* Assume up-to-date *)
-        in
-        clang_major && darwin_major
-    | _ ->
-        false
+  (* The clang internal assembler only embeds build paths when called by
+     ocamlopt if clang is emitting DWARF v5 by default. *)
+  if is_clang_assembler then
+    Option.exists (fun version -> version > 4) Config.asm_dwarf_version
   else
     (* The clang internal assembler does not embed build paths when called by
        ocamlopt and neither does the GNU assembler on Windows. *)

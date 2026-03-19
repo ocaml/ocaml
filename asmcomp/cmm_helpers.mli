@@ -610,7 +610,11 @@ val reference_symbols: string list -> phrase
 
 (** Generate the caml_globals_map structure, as a marshalled string constant *)
 val globals_map:
-  (string * Digest.t option * Digest.t option * string list) list -> phrase
+  (string *
+   Digest.BLAKE128.t option *
+   Digest.BLAKE128.t option *
+   string list) list
+  -> phrase
 
 (** Generate the caml_frametable table, referencing the frametables
     from the given compilation units *)
@@ -624,7 +628,10 @@ val code_segment_table: string list -> phrase
 (** Generate data for a predefined exception *)
 val predef_exception: int -> string -> phrase
 
-val plugin_header: (Cmx_format.unit_infos * Digest.t) list -> phrase
+(** Generate data for a global string constant *)
+val emit_global_string_constant: string -> string -> phrase
+
+val plugin_header: (Cmx_format.unit_infos * Digest.BLAKE128.t) list -> phrase
 
 (** Emit constant symbols *)
 

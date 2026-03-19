@@ -40,7 +40,7 @@ let f = function
 ident: (letter || "_") { letter || "0"\ldots"9" || "_" || "'" } ;
 capitalized-ident: uppercase-letter { letter || "0"\ldots"9" || "_" || "'" } ;
 lowercase-ident:
-   (lowercase-letter || "_") { letter || "0"\ldots"9" || "_" || "'" } ;
+   ("\#")? (lowercase-letter || "_") { letter || "0"\ldots"9" || "_" || "'" } ;
 letter: uppercase-letter || lowercase-letter ;
 lowercase-letter:
 "a"\ldots"z"  || 'U+00DF' \ldots 'U+00F6' || 'U+00F8' \dots 'U+00FF' || 'U+0153' || 'U+0161' || 'U+017E'  ;
@@ -68,6 +68,10 @@ In many places, OCaml makes a distinction between capitalized
 identifiers and identifiers that begin with a lowercase letter.  The
 underscore character is considered a lowercase letter for this
 purpose.
+
+An identifier starting with "\\#" is called a \emph{raw identifier} and is
+equivalent to the identifier obtained by dropping the "\\#" prefix, except that
+the result is never interpreted as a keyword (see section~\ref{sss:keywords}).
 
 \subsubsection*{sss:integer-literals}{Integer literals}
 
@@ -335,24 +339,25 @@ expressions, but otherwise behave like normal identifiers.
 
 \subsubsection*{sss:keywords}{Keywords}
 
-The identifiers below are reserved as keywords, and cannot be employed
-otherwise:
+The identifiers below are reserved as keywords, and must be prefixed with
+"\\#" to be used otherwise (see section~\ref{sss:lex:identifiers}):
 \begin{verbatim}
       and         as          assert      asr         begin       class
-      constraint  do          done        downto      else        end
-      exception   external    false       for         fun         function
-      functor     if          in          include     inherit     initializer
-      land        lazy        let         lor         lsl         lsr
-      lxor        match       method      mod         module      mutable
-      new         nonrec      object      of          open        or
-      private     rec         sig         struct      then        to
-      true        try         type        val         virtual     when
-      while       with
+      constraint  do          done        downto      effect      else
+      end         exception   external    false       for         fun
+      function    functor     if          in          include     inherit
+      initializer land        lazy        let         lor         lsl
+      lsr         lxor        match       method      mod         module
+      mutable     new         nonrec      object      of          open
+      or          private     rec         sig         struct      then
+      to          true        try         type        val         virtual
+      when        while       with
 \end{verbatim}
 %
 \goodbreak%
 %
-The following character sequences are also keywords:
+The following character sequences are also keywords (and unlike the above
+identifiers, they are always reserved):
 %
 %% FIXME the token >] is not used anywhere in the syntax
 %
@@ -363,8 +368,12 @@ The following character sequences are also keywords:
 "    ]     _     `     {     {<    |     |]    ||    }     ~"
 \end{alltt}
 %
-Note that the following identifiers are keywords of the now unmaintained Camlp4
-system and should be avoided for backwards compatibility reasons.
+Note that the exact set of keywords can be modified by using the
+"-keywords" command-line compiler flag (see section~\ref{s:comp-options}).
+%
+Finally, note that the following identifiers are keywords of the now
+unmaintained Camlp4 system and should be avoided for backwards compatibility
+reasons.
 %
 \begin{verbatim}
     parser    value    $     $$    $:    <:    <<    >>    ??

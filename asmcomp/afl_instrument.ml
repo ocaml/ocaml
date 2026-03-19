@@ -35,7 +35,7 @@ let rec with_afl_logging b dbg =
          prev_location = cur_location >> 1;
 
        See http://lcamtuf.coredump.cx/afl/technical_details.txt or
-       docs/technical_details.txt in afl-fuzz source for for a full
+       docs/technical_details.txt in afl-fuzz source for a full
        description of what's going on. *)
     let cur_location = Random.int afl_map_size in
     let cur_pos = V.create_local "pos" in

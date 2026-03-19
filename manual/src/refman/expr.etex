@@ -62,14 +62,12 @@ expr:
   | 'fun' {{ parameter }} [ ':' typexpr ] '->' expr
   | 'try' expr 'with' pattern-matching
   | 'let' ['rec'] let-binding { 'and' let-binding } 'in' expr
-  | "let" "exception" constr-decl "in" expr
-  | 'let' 'module' module-name { '(' module-name ':' module-type ')' }
-    [ ':' module-type ] \\ '=' module-expr 'in' expr
+  | 'let' local-definition "in" expr
   | '(' expr ':>' typexpr ')'
   | '(' expr ':' typexpr ':>' typexpr ')'
   | 'assert' expr
   | 'lazy' expr
-  | local-open
+  | local-open-shorthand
   | object-expr
 ;
 %BEGIN LATEX
@@ -102,8 +100,7 @@ parameter:
   | '?' label-name ':' pattern
   | '?' label-name ':' '(' pattern [':' typexpr] ['=' expr] ')'
 ;
-local-open:
-  | "let" "open" module-path "in" expr
+local-open-shorthand:
   | module-path '.(' expr ')'
   | module-path '.[' expr ']'
   | module-path '.[|' expr '|]'
@@ -555,30 +552,6 @@ implementation-dependent. The current implementation also supports
 a certain class of recursive definitions of non-functional values,
 as explained in section~\ref{s:letrecvalues}.
 
-\subsubsection{sss:expr-let-exception}{Local exceptions}
-(Introduced in OCaml 4.04)
-
-It is possible to define local exceptions in expressions:
-@ "let" exception constr-decl "in" expr @ .
-
-\begin{caml_example}{toplevel}
-let map_empty_on_negative f l =
-  let exception Negative in
-  let aux x = if x < 0 then raise Negative else f x in
-    try List.map aux l with Negative -> [];;
-\end{caml_example}
-
-The syntactic scope of the exception constructor is the inner
-expression, but nothing prevents exception values created with this
-constructor from escaping this scope.  Two executions of the definition
-above result in two incompatible exception constructors (as for any
-exception definition). For instance:
-
-\begin{caml_example}{toplevel}
-let gen () = let exception A in A
-
-let () = assert(gen () = gen ());;
-\end{caml_example}
 
 \subsubsection{sss:expr-explicit-polytype}{Explicit polymorphic type annotations}
 (Introduced in OCaml 3.12)
@@ -658,7 +631,7 @@ selected.
 let rec sum l =
   match l with
   | [] -> 0
-  | h :: t -> h + sum t;; 
+  | h :: t -> h + sum t;;
 \end{caml_example}
 
 If none of the patterns match the value of @expr@, the
@@ -1294,6 +1267,133 @@ For abstract and private types, the variance must be given explicitly
 otherwise the default is nonvariant. This is also the case for
 constrained arguments in type definitions.
 
+\subsection{ss:expr-local-items}{Local structure items}
+(General case introduced in OCaml 5.5, "let" "open", "let" "exception", and
+"let" "module" were supported earlier.)
+
+The form @"let" local-definition "in" expr@ brings the structure item
+(see~\ref{ss:mexpr-structures}) @local-definition@ into scope during the
+evaluation of @expr@.
+
+This construction is equivalent to locally introducing the structure
+\begin{center}
+@"struct" local-definition "let" body "=" expr "end"@
+\end{center}
+in the context of the "let" expression and returning the value of "body" as
+result.
+
+The rest of this section contains remarks and examples specific to particular
+cases of this construction.
+
+\subsubsection*{sss:local-opens}{Local opens}
+\ikwd{let\@\texttt{let}}
+\ikwd{open\@\texttt{open}}
+
+The expressions @"let" "open" module-path "in" expr@ and
+@module-path'.('expr')'@ are strictly equivalent. These
+constructions locally open the module referred to by the module path
+@module-path@ in the respective scope of the expression @expr@.
+
+\begin{caml_example}{toplevel}
+let map_3d_matrix f m =
+  let open Array in
+    map (map (map f)) m
+
+let map_3d_matrix' f =
+  Array.(map (map (map f)));;
+\end{caml_example}
+
+When the body of a local open expression is delimited by
+@'[' ']'@,  @'[|' '|]'@,  or @'{' '}'@, the parentheses can be omitted.
+For expression, parentheses can also be omitted for @'{<' '>}'@.
+For example, @module-path'.['expr']'@ is equivalent to
+@module-path'.(['expr'])'@, and @module-path'.[|' expr '|]'@ is
+equivalent to @module-path'.([|' expr '|])'@.
+
+\begin{caml_example}{toplevel}
+let vector = Random.[|int 255; int 255; int 255; int 255|];;
+\end{caml_example}
+
+\subsubsection*{sss:expr-local-modules}{Local modules}
+\ikwd{let\@\texttt{let}}
+\ikwd{module\@\texttt{module}}
+
+The expression @"let" module-definition "in" expr@ locally binds the module
+definition @module-definition@ during the evaluation of the expression @expr@.
+It then returns the value of @expr@.  For example:
+\begin{caml_example}{toplevel}
+let remove_duplicates comparison_fun string_list =
+  let module StringSet =
+    Set.Make(struct type t = string
+                    let compare = comparison_fun end)
+  in
+    StringSet.elements
+      (List.fold_right StringSet.add string_list StringSet.empty);;
+\end{caml_example}
+
+\subsubsection{sss:expr-let-exception}{Local exceptions}
+(Introduced in OCaml 4.04)
+
+It is possible to define local exceptions in expressions:
+@ "let" exception constr-decl "in" expr @ .
+
+\begin{caml_example}{toplevel}
+let map_empty_on_negative f l =
+  let exception Negative in
+  let aux x = if x < 0 then raise Negative else f x in
+    try List.map aux l with Negative -> [];;
+\end{caml_example}
+
+The syntactic scope of the exception constructor is the inner
+expression, but nothing prevents exception values created with this
+constructor from escaping this scope.  Two executions of the definition
+above result in two incompatible exception constructors (as for any
+exception definition). For instance:
+
+\begin{caml_example}{toplevel}
+let gen () = let exception A in A
+
+let () = assert(gen () = gen ());;
+\end{caml_example}
+
+Extensible variant types (see~\ref{s:extensible-variants}) can also be
+introduced in this way. The example below exhibits a function that uses a local
+effect to convert an iterator into a sequence (``inversion of control'').
+
+\begin{caml_example}{toplevel}
+let invert (type a) ~(iter : (a -> unit) -> unit) : a Seq.t =
+  let type _ Effect.t += Yield : a -> unit Effect.t in
+  let yield v = Effect.perform (Yield v) in
+  fun () -> match iter yield with
+  | () -> Seq.Nil
+  | effect Yield v, k -> Seq.Cons (v, Effect.Deep.continue k)
+;;
+\end{caml_example}
+
+\subsubsection{sss:expr-let-type}{Local types}
+\ikwd{let\@\texttt{type}}
+
+The form @"let" type-definition "in" expr@ introduces a
+type (or a collection of mutually recursive types) in the scope of an
+expression:
+
+\begin{caml_example}{toplevel}
+let f x y =
+  let type t = {x: float; y: float} in
+  let norm p = p.x *. p.x +. p.y *. p.y in
+  norm {x; y}
+;;
+\end{caml_example}
+
+The compiler checks that values created from this type do not escape this scope:
+
+\begin{caml_example}{toplevel}
+let f x y =
+  let type t = {x: float; y: float} in
+  let twice p = {x = p.x +. p.x; y = p.y +. p.y} in
+  twice {x; y}
+[@@expect error];;
+\end{caml_example}
 
 \subsection{ss:expr-other}{Other}
 
@@ -1314,7 +1414,7 @@ this case, @expr@ is not evaluated at all.
 \begin{caml_example}{toplevel}
 let f a b c =
   assert (a <= b && b <= c);
-  (b -. a) /. (c -. b);; 
+  (b -. a) /. (c -. b);;
 \end{caml_example}
 
 As a special case, @"assert false"@ is reduced to
@@ -1348,54 +1448,5 @@ let lazy_greeter = lazy (print_string "Hello, World!\n");;
 
 Lazy.force lazy_greeter;;
 \end{caml_example}
-
-\subsubsection*{sss:expr-local-modules}{Local modules}
-\ikwd{let\@\texttt{let}}
-\ikwd{module\@\texttt{module}}
-
-The expression
-@"let" "module" module-name "=" module-expr "in" expr@
-locally binds the module expression @module-expr@ to the identifier
-@module-name@ during the evaluation of the expression @expr@.
-It then returns the value of @expr@.  For example:
-\begin{caml_example}{toplevel}
-let remove_duplicates comparison_fun string_list =
-  let module StringSet =
-    Set.Make(struct type t = string
-                    let compare = comparison_fun end)
-  in
-    StringSet.elements
-      (List.fold_right StringSet.add string_list StringSet.empty);;
-\end{caml_example}
-
-\subsubsection*{sss:local-opens}{Local opens}
-\ikwd{let\@\texttt{let}}
-\ikwd{module\@\texttt{open}}
-
-The expressions @"let" "open" module-path "in" expr@ and
-@module-path'.('expr')'@ are strictly equivalent. These
-constructions locally open the module referred to by the module path
-@module-path@ in the respective scope of the expression @expr@.
-
-\begin{caml_example}{toplevel}
-let map_3d_matrix f m =
-  let open Array in
-    map (map (map f)) m
-
-let map_3d_matrix' f =
-  Array.(map (map (map f)));;
-\end{caml_example}
-
-When the body of a local open expression is delimited by
-@'[' ']'@,  @'[|' '|]'@,  or @'{' '}'@, the parentheses can be omitted.
-For expression, parentheses can also be omitted for @'{<' '>}'@.
-For example, @module-path'.['expr']'@ is equivalent to
-@module-path'.(['expr'])'@, and @module-path'.[|' expr '|]'@ is
-equivalent to @module-path'.([|' expr '|])'@.
-
-\begin{caml_example}{toplevel}
-let vector = Random.[|int 255; int 255; int 255; int 255|];;
-\end{caml_example}
-
 
 %% \newpage

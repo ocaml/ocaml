@@ -309,6 +309,17 @@ and print_out_type_1 ppf =
       pp_print_space ppf ();
       print_out_type_1 ppf ty2;
       pp_close_box ppf ()
+  | Otyp_functor (lab, id, pack, ty) ->
+      pp_open_box ppf 0;
+      print_arg_label ppf lab;
+      pp_print_string ppf "(module ";
+      print_ident ppf id;
+      pp_print_string ppf " : ";
+      print_package ppf pack;
+      pp_print_string ppf ") ->";
+      pp_print_space  ppf ();
+      print_out_type_1 ppf ty;
+      pp_close_box ppf ()
   | ty -> print_out_type_2 ~arg:false ppf ty
 and print_out_type_2 ~arg ppf =
   function
@@ -363,7 +374,8 @@ and print_simple_out_type ppf =
          else if tags = None then "> " else "? ")
         print_fields row_fields
         print_present tags
-  | Otyp_alias _ | Otyp_poly _ | Otyp_arrow _ | Otyp_tuple _ as ty ->
+  | Otyp_alias _ | Otyp_poly _ | Otyp_arrow _
+  | Otyp_functor _ | Otyp_tuple _ as ty ->
       pp_open_box ppf 1;
       pp_print_char ppf '(';
       print_out_type ppf ty;
@@ -808,12 +820,12 @@ and print_out_extension_constructor ppf ext =
         [] -> fprintf ppf "%a" print_lident ext.oext_type_name
       | [ty_param] ->
         fprintf ppf "@[%a@ %a@]"
-          (print_type_parameter ~non_gen:false)
+          type_parameter
           ty_param
           print_lident ext.oext_type_name
       | _ ->
         fprintf ppf "@[(@[%a)@]@ %a@]"
-          (print_list print_type_parameter (fun ppf -> fprintf ppf ",@ "))
+          (print_list type_parameter (fun ppf -> fprintf ppf ",@ "))
           ext.oext_type_params
           print_lident ext.oext_type_name
   in
@@ -829,11 +841,11 @@ and print_out_type_extension ppf te =
       [] -> fprintf ppf "%a" print_lident te.otyext_name
     | [param] ->
       fprintf ppf "@[%a@ %a@]"
-        (print_type_parameter ~non_gen:false) param
+        type_parameter param
         print_lident te.otyext_name
     | _ ->
         fprintf ppf "@[(@[%a)@]@ %a@]"
-          (print_list print_type_parameter (fun ppf -> fprintf ppf ",@ "))
+          (print_list type_parameter (fun ppf -> fprintf ppf ",@ "))
           te.otyext_params
           print_lident te.otyext_name
   in

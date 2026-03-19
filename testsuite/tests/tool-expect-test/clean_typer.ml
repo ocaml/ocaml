@@ -25,14 +25,14 @@ module type Foo = sig
   val x : foo M.t -> unit
 end
 
-let ffoo t (module F : Foo) =
+let ffoo t ((module F) : (module Foo)) =
   F.x t
 
 module type Bar = sig
   val x : bar M.t -> unit
 end
 
-let fbar t (module B : Bar) =
+let fbar t ((module B) : (module Bar)) =
   B.x t
 
 let (foo : foo M.t) = M.foo ()

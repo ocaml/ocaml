@@ -417,8 +417,8 @@ let simplify_lets lam =
           end
       | _ -> no_opt ()
       end
-  | Lfunction {body} ->
-      count Ident.Map.empty body
+  | Lfunction fn ->
+      count_lfunction fn
   | Llet(_str, _k, v, Lvar w, l2) when optimize ->
       (* v will be replaced by w in l2, so each occurrence of v in l2
          increases w's refcount *)
@@ -432,7 +432,7 @@ let simplify_lets lam =
      count bv l1;
      count bv l2
   | Lletrec(bindings, body) ->
-      List.iter (fun { def } -> count bv def.body) bindings;
+      List.iter (fun { def } -> count_lfunction def) bindings;
       count bv body
   | Lprim(_p, ll, _) -> List.iter (count bv) ll
   | Lswitch(l, sw, _loc) ->
@@ -467,6 +467,9 @@ let simplify_lets lam =
   | Levent(l, _) -> count bv l
   | Lifused(v, l) ->
       if count_var v > 0 then count bv l
+
+  and count_lfunction fn =
+    count Ident.Map.empty fn.body
 
   and count_default bv sw = match sw.sw_failaction with
   | None -> ()
@@ -820,7 +823,7 @@ let simplify_local_functions lam =
   let static_id = Hashtbl.create 16 in (* function id -> static id *)
   let static = LamTbl.create 16 in (* scope -> static function on that scope *)
   (* We keep track of the current "tail scope", identified
-     by the outermost lambda for which the the current lambda
+     by the outermost lambda for which the current lambda
      is in tail position. *)
   let current_scope = ref lam in
   (* PR11383: We will only apply the transformation if we don't have to move

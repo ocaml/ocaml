@@ -109,6 +109,10 @@ let use_silently ppf input =
 
 let load_file = load_file false
 
+let load_explicit_ocamlinit ppf f =
+  if Sys.file_exists f then ignore (use_silently ppf (File f) )
+  else fprintf ppf "Init file not found: \"%s\".@." f
+
 (* Execute a script.  If [name] is "", read the script from stdin. *)
 
 let run_script ppf name args =
@@ -128,6 +132,7 @@ let run_script ppf name args =
     else filename)
     | (Stdin | String _) as x -> x
   in
+  Option.iter (load_explicit_ocamlinit ppf) !Clflags.init_file;
   use_silently ppf explicit_name
 
 (* Toplevel initialization. Performed here instead of at the
@@ -263,9 +268,7 @@ let find_ocamlinit () =
 let load_ocamlinit ppf =
   if !Clflags.noinit then ()
   else match !Clflags.init_file with
-  | Some f ->
-    if Sys.file_exists f then ignore (use_silently ppf (File f) )
-    else fprintf ppf "Init file not found: \"%s\".@." f
+  | Some f -> load_explicit_ocamlinit ppf f
   | None ->
       match find_ocamlinit () with
       | None -> ()

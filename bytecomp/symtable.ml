@@ -339,7 +339,7 @@ let update_global_table () =
 
 type bytecode_sections =
   { symb: GlobalMap.t;
-    crcs: (string * Digest.t option) list;
+    crcs: (string * Digest.BLAKE128.t option) list;
     prim: string list;
     dlpt: string list }
 

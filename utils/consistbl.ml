@@ -24,7 +24,7 @@ module Make (Module_name : sig
   module Tbl : Hashtbl.S with type key = t
   val compare : t -> t -> int
 end) = struct
-  type t = (Digest.t * filepath) Module_name.Tbl.t
+  type t = (Digest.BLAKE128.t * filepath) Module_name.Tbl.t
 
   let create () = Module_name.Tbl.create 13
 

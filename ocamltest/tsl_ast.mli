@@ -20,26 +20,36 @@ type 'a located = {
   loc : Location.t
 }
 
-type environment_statement =
-  | Assignment of bool * string located * string located (* variable = value *)
-  | Append of string located * string located (* variable += value *)
-  | Include of string located (* include named environment *)
-  | Unset of string located (* clear environment variable *)
+type environment_statement = (* <env update> ::= *)
+  | Assignment of bool * string located * string located
+    (* <variable> = <value> *)
+  | Append of string located * string located
+    (* <variable> += <value> *)
+  | Include of string located
+    (* include <named environment> *)
+  | Unset of string located
+    (* clear <variable> *)
 
-(* old syntax *)
-type tsl_item =
-  | Environment_statement of environment_statement located
-  | Test of
-    int (* test depth *) *
-    string located (* test name *) *
-    string located list (* environment modifiers *)
+type action = {
+  name: string located;
+  modifiers: string located list;
+} (* <action> ::= <name> [with <named environment>, <named environment>....] *)
 
-type tsl_block = tsl_item list
+type statement =
+  | Environment_statement of environment_statement located (* <env update> *)
+  | Action of action (* <action> *)
+  | Not of statement (* not <statement> *)
+  | And of statement * statement (* <statement> && <statement> *)
+  | Or of statement * statement (* <statement> || <statement> *)
+  | If of statement * statement * statement option
+    (* if <statement> then <statement> [else <statement>] *)
 
-(* New syntax *)
-type t = Ast of tsl_item list * t list
+type t = Ast of statement list * t list
+(* <block> ::=
+     <statement>; <statement>; ...; { <block> } { <block> } ... *)
+
 val split_env :
-  tsl_item list -> environment_statement located list * tsl_item list
+  statement list -> environment_statement located list * statement list
 
 val make_identifier : ?loc:Location.t -> string -> string located
 val make_string : ?loc:Location.t -> string -> string located

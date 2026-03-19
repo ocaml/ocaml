@@ -83,10 +83,13 @@ module Error: sig
   and signature_symptom = {
     env: Env.t;
     subst: Subst.t;
+    sig1: signature;
+    sig2: signature;
     missings: Types.signature_item list;
-    incompatibles: (Ident.t * sigitem_symptom) list;
+    incompatibles: (Types.signature_item * sigitem_symptom) list;
     oks: (int * Typedtree.module_coercion) list;
-    leftovers: ((Types.signature_item as 'it) * 'it * int) list
+    additions: signature_item list;
+    untypables: ((Types.signature_item as 'it) * 'it * int) list;
     (** signature items that could not be compared due to type divergence *)
   }
   and sigitem_symptom =
@@ -136,6 +139,7 @@ val field_desc: field_kind -> Ident.t -> field_desc
 module FieldMap: Map.S with type key = field_desc
 
 val item_ident_name: Types.signature_item -> Ident.t * Location.t * field_desc
+val item_subst: Ident.t -> Types.signature_item -> Subst.t -> Subst.t
 val is_runtime_component: Types.signature_item -> bool
 
 
@@ -180,7 +184,9 @@ val check_modtype_inclusion :
 val check_modtype_equiv:
   loc:Location.t -> Env.t -> Ident.t -> module_type -> module_type -> unit
 
-val signatures: Env.t -> mark:bool -> signature -> signature -> module_coercion
+val signatures:
+  Env.t -> ?subst:Subst.t -> mark:bool ->
+  signature -> signature -> module_coercion
 
 (** Check an implementation against an interface *)
 val check_implementation: Env.t -> signature -> signature -> unit
@@ -239,6 +245,8 @@ exception Apply_error of {
 
 val expand_module_alias: strengthen:bool -> Env.t -> Path.t -> Types.module_type
 
+(** Error message functions *)
+
 module Functor_inclusion_diff: sig
   module Defs: sig
     type left = Types.functor_parameter
@@ -267,4 +275,16 @@ module Functor_app_diff: sig
     f:Types.module_type ->
     args:(Error.functor_arg_descr * Types.module_type) list ->
     Diffing.Define(Defs).patch
+end
+
+(* Typechecking with subst *)
+module Check: sig
+  type 'a compatibility_test = Env.t -> Subst.t -> 'a -> 'a -> bool
+  val values : Types.value_description compatibility_test
+  val types: Types.type_declaration compatibility_test
+  val class_types : Types.class_type_declaration compatibility_test
+  val classes: Types.class_declaration compatibility_test
+  val modules: Types.module_declaration compatibility_test
+  val module_types: Types.modtype_declaration compatibility_test
+  val extensions: Types.extension_constructor compatibility_test
 end

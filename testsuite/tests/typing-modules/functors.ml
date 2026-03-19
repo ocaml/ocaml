@@ -723,7 +723,8 @@ Error: Signature mismatch:
                $S2 = sig type yb end
              does not include
                $T2 = sig type ybb end
-             The type "yb" is required but not provided
+             The type "yb" is required but not provided.
+             Hint:    "ybb" is a close match.
        3. Module types do not match:
             $S3 = (A : sig type za end) (B : sig type zbb end) -> sig end
           does not include
@@ -865,7 +866,8 @@ Error: Signature mismatch:
                $S1 = sig type xa end
              does not include
                $T1 = sig type xaa end
-             The type "xa" is required but not provided
+             The type "xa" is required but not provided.
+             Hint:    "xaa" is a close match.
           2. Module types $S2 and $T2 match
        2. Module types do not match:
             $S2 = (A : sig type ya end) (B : sig type ybb end) -> sig end
@@ -1021,7 +1023,8 @@ Error: Signature mismatch:
             $S2 = sig type y' end
           does not include
             $T2 = sig type y end
-          The type "y'" is required but not provided
+          The type "y'" is required but not provided.
+          Hint:    "y" is a close match.
        3. An argument appears to be missing with module type
               $T3 = sig type z end
        4. Module types $S4 and $T4 match
@@ -1146,7 +1149,8 @@ Error: Signature mismatch:
               type meet
               type again
             end
-          The type "tree" is required but not provided
+          The type "tree" is required but not provided.
+          Hint:    "three" is a close match.
        2. Module types do not match:
             $S2 =
             sig type in_ val thunder : in_ val lightning : in_ type pain end

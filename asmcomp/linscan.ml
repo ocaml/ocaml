@@ -104,13 +104,17 @@ let release_expired_inactive ci pos =
   ci.ci_inactive <- inactive;
   ci.ci_active <- IntervalSet.union active ci.ci_active
 
-(* Allocate a new stack slot to the interval. *)
+(* Allocate a stack slot to the interval. [existing] indicates whether we are
+   spilling an already allocated interval (which requires a new stack slot) or
+   spilling a new interval, in which case we may reuse an expired stack slot. *)
 
-let allocate_stack_slot num_stack_slots i =
+let allocate_stack_slot ~existing num_stack_slots i =
   let cl = Proc.register_class i.reg in
   let ci = active.(cl) in
   let ss =
-    match SlotSet.min_elt_opt ci.ci_free_slots with
+    match
+      if existing then None else SlotSet.min_elt_opt ci.ci_free_slots
+    with
     | Some ss ->
         ci.ci_free_slots <- SlotSet.remove ss ci.ci_free_slots;
         ss
@@ -131,7 +135,7 @@ let allocate_free_register num_stack_slots i =
   begin match i.reg.loc, i.reg.spill with
     Unknown, true ->
       (* Allocate a stack slot for the already spilled interval *)
-      allocate_stack_slot num_stack_slots i
+      allocate_stack_slot ~existing:false num_stack_slots i
   | Unknown, _ ->
       (* We need to allocate a register to this interval somehow *)
       let cl = Proc.register_class i.reg in
@@ -201,12 +205,12 @@ let allocate_blocked_register num_stack_slots i =
       (* Remove the last interval from active and insert the current *)
       ci.ci_active <- IntervalSet.add i il;
       (* Now get a new stack slot for the spilled register *)
-      allocate_stack_slot num_stack_slots ilast
+      allocate_stack_slot ~existing:true num_stack_slots ilast
   | _ ->
       (* Either the current interval is last and we have to spill it,
          or there are no registers at all in the register class (i.e.
          floating point class on i386). *)
-      allocate_stack_slot num_stack_slots i
+      allocate_stack_slot ~existing:false num_stack_slots i
 
 let walk_interval num_stack_slots i =
   let pos = i.ibegin land (lnot 0x01) in

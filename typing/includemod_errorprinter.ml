@@ -738,6 +738,26 @@ let missing_field ppf item =
     (Style.as_inline_code Printtyp.ident) id
     (show_loc "Expected declaration") loc
 
+let suggest_renaming_field ppf (suggested_name, item) =
+  let {Location.txt = left_id; loc = left_loc} = suggested_name in
+  let right_id, right_loc, kind = Includemod.item_ident_name item in
+  let main =
+    Fmt.doc_printf "The %s@{<ralign> @}%a is required but not provided."
+      (Includemod.kind_of_field_desc kind)
+      Style.inline_code (Ident.name right_id)
+  in
+  let hint =
+    Fmt.doc_printf
+      "@{<hint>Hint@}: @{<ralign>@}%a is a close match.%a%a"
+      Style.inline_code (Ident.name left_id)
+      (show_loc "Expected declaration") right_loc
+      (show_loc "Possible match") left_loc
+  in
+  let main, hint = Misc.align_hint ~prefix:"" ~main ~hint in
+  Fmt.pp_doc ppf main;
+  Fmt.pp_print_cut ppf ();
+  Fmt.pp_doc ppf hint
+
 let module_types {Err.got=mty1; expected=mty2} =
   Fmt.dprintf
     "@[<hv 2>Modules do not match:@ \
@@ -879,21 +899,28 @@ and functor_symptom ~expansion_token ~env ~before ~ctx = function
   | Params d -> functor_params ~expansion_token ~env ~before ~ctx d
 
 and signature ~expansion_token ~env:_ ~before ~ctx sgs =
+  let suggestion_text ppf suggestion =
+    let open Signature_matching.Suggestion in
+    match suggestion.alteration with
+    | Missing_item -> missing_field ppf suggestion.subject
+    | Possible_match suggested_ident ->
+        suggest_renaming_field ppf (suggested_ident, suggestion.subject)
+  in
   Printtyp.wrap_printing_env ~error:true sgs.env (fun () ->
-      match sgs.missings, sgs.incompatibles with
-      | _ :: _ as missings, _ ->
-          if expansion_token then
-            let init_missings, last_missing = Misc.split_last missings in
-            List.map (Location.msg "%a" missing_field) init_missings
-            @ with_context ctx missing_field last_missing
-            :: before
-          else
-            before
-      | [], a :: _ ->
-          let env = {i_env=sgs.env; i_subst=sgs.subst } in
-          sigitem ~expansion_token ~env ~before ~ctx a
-      | [], [] -> assert false
+      match Signature_matching.suggest sgs with
+      | { alterations = _ :: _ as alts ; _  }  ->
+          if not expansion_token then before else
+            let init, last = Misc.split_last alts in
+            List.map (Location.msg "%a" suggestion_text) init
+            @ with_context ctx suggestion_text last
+              :: before
+      | { alterations= []; incompatibles = a :: _  } ->
+          let env = { i_env = sgs.env; i_subst = sgs.subst } in
+          sigitem ~expansion_token ~env ~before ~ctx
+            (Types.signature_item_id a.subject, a.alteration)
+      | { alterations = []; incompatibles = [] } -> assert false
     )
+
 and sigitem ~expansion_token ~env ~before ~ctx (name,s) = match s with
   | Core c ->
       dwith_context ctx (core env.i_env name c) :: before
@@ -932,6 +959,7 @@ and module_type_decl ~expansion_token ~env ~before ~ctx id diff =
             (mty,c)
           :: before
       end
+
 
 and functor_arg_diff ~expansion_token env (patch: _ Diffing.change) =
   match patch with
