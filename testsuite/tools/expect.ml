@@ -177,7 +177,8 @@ let match_expect_extension (ext : Parsetree.extension) =
                          Clflag.Set.empty (string_constant normal))
                 rest
           | _ ->
-              let s = string_constant e in Clflag.Set.Map.singleton Clflag.Set.empty s
+              let s = string_constant e in
+              Clflag.Set.Map.singleton Clflag.Set.empty s
         in
         { extid_loc
         ; payload_loc = e.pexp_loc
