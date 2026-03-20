@@ -102,6 +102,10 @@ Working version
 
 - #14598: Add `@since` annotations to `Runtime_events`. (Raphaël Proust)
 
+- #13590: Document automatic command-line expansion of `*` and `?` wildcards by
+  the runtime under Windows.
+  (Benjamin Sigonneau, review by Nicolás Ojeda Bär)
+
 ### Compiler user-interface and warnings:
 
 - #14205: Make inclusion check error message reference the user-written file
