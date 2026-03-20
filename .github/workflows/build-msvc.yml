@@ -16,43 +16,91 @@ on:
   # Fully print commands executed by Make
   # MAKEFLAGS: V=1
 
+defaults:
+  run:
+    shell: bash -eo pipefail -o igncr {0}
+
 jobs:
+  config:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.result}}
+      skip-testsuite: ${{ steps.skip.outputs.result }}
+    steps:
+      - name: Compute matrix for the "build" job
+        id: matrix
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // # Always test cl and clang-cl
+            let compilers = ['clang-cl'];
+            // # Also test i686 MSVC
+            let include = [
+              {os: 'windows-latest', cc: 'cl', arch: 'i686', opam: 'false', prefix: '$PROGRAMFILES/Бактріан🐫', libdir: 'relative'},
+              {os: 'windows-2025', cc: 'cl', arch: 'x86_64', opam: 'true', prefix: 'C:\\\\Бактріан🐫'},
+              {os: 'windows-2025', cc: 'cl', arch: 'i686', opam: 'true', prefix: 'C:\\\\Бактріан🐫'}];
+            let libdir = ['absolute'];
+            // # If this is a pull request, see if the PR has the
+            // # 'CI: Full matrix' label. This is done using an API request,
+            // # rather than from context.payload.pull_request.labels, since we
+            // # want the _current_ list of labels. This allows the labelling to
+            // # be changed, and then forcing a re-run of the workflow, rather
+            // # than having labelling triggering a fresh workflow event (which
+            // # is wasteful).
+            if (context.payload.pull_request) {
+              const { data: labels } =
+                await github.rest.issues.listLabelsOnIssue({...context.repo, issue_number: context.payload.pull_request.number});
+              if (labels.some(label => label.name === 'CI: Full matrix')) {
+                console.log('Full matrix requested');
+                // # Test Cygwin as well
+                compilers.push('gcc');
+                // # Test bytecode-only Cygwin
+                include.push({os: 'windows-latest', prefix: '$PROGRAMFILES/Бактріан🐫', opam: ['false'], cc: 'gcc', arch: 'x86_64', libdir: 'absolute', config_arg: '--disable-native-toplevel --disable-native-compiler'});
+                // # Test i686 MSVC absolute
+                include.push({os: 'windows-latest', prefix: '$PROGRAMFILES/Бактріан🐫', opam: ['false'], cc: 'cl', arch: 'i686', libdir: 'absolute'});
+                // # Expand the main matrix to include relative testing
+                libdir.push('relative');
+              }
+            }
+            return {os: ['windows-latest'], prefix: ['$PROGRAMFILES/Бактріан🐫'], opam: ['false'], config_arg: [''], arch: ['x86_64'], cc: compilers, libdir: libdir, include: include};
+      - name: Determine if the testsuite should be skipped
+        id: skip
+        uses: actions/github-script@v7
+        with:
+          script: |
+            let skip_testsuite = false;
+            if (context.payload.pull_request) {
+              const { data: labels } =
+                await github.rest.issues.listLabelsOnIssue({...context.repo, issue_number: context.payload.pull_request.number});
+              skip_testsuite = labels.some(label => label.name === 'CI: Skip testsuite');
+            }
+            console.log('Skip testsuite: ' + skip_testsuite);
+            return skip_testsuite;
+
   build:
     permissions: {}
 
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
 
-    timeout-minutes: 60
+    needs: config
 
-    name: ${{ matrix.cc == 'cl' && 'MSVC' || 'clang-cl' }} ${{ matrix.x86_64 && '64 bits' || '32 bits' }}
+    timeout-minutes: ${{ matrix.cc == 'gcc' && 90 || 60 }}
+
+    name: ${{ matrix.cc == 'cl' && 'MSVC' || matrix.cc == 'gcc' && 'Cygwin' || 'clang-cl' }} ${{ matrix.arch }} ${{ matrix.libdir }} ${{ matrix.config_arg != '' && format('({0})', matrix.config_arg) || '' }}
 
     strategy:
-      matrix:
-        x86_64: [true, false]
-        cc: [cl, clang-cl]
-        exclude:
-          - cc: clang-cl
-            x86_64: false
+      matrix: ${{ fromJSON(needs.config.outputs.matrix) }}
+      fail-fast: true
 
     steps:
-      - name: Save pristine PATH
-        run: |
-          echo "PRISTINE_PATH=${env:Path}" >> "${env:GITHUB_ENV}"
-
-      - name: Set up MSVC
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: ${{ matrix.x86_64 && 'x64' || 'x86' }}
 
       - name: Fetch OCaml
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: true
 
       - name: Restore Cygwin cache
         uses: actions/cache/restore@v4
-        env:
-          PATH: ${{ env.PRISTINE_PATH }}
         with:
           path: |
             C:\cygwin-packages
@@ -61,78 +109,126 @@ jobs:
       - name: Install Cygwin
         uses: cygwin/cygwin-install-action@v3
         with:
-          packages: make,bash,mingw64-x86_64-gcc-core
+          packages: make,${{ matrix.cc != 'gcc' && 'mingw64-x86_64-' || 'gcc-g++,gcc-fortran,' }}gcc-core,rsync,unzip
           install-dir: 'D:\cygwin'
 
       - name: Save Cygwin cache
         uses: actions/cache/save@v4
-        env:
-          PATH: ${{ env.PRISTINE_PATH }}
         with:
           path: |
             C:\cygwin-packages
           key: cygwin-packages
 
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.arch == 'x86_64' && 'x64' || 'x86' }}
+        if: matrix.cc != 'gcc'
+
+      - name: Install opam
+        if: matrix.opam == 'true'
+        shell: pwsh
+        run: |
+          winget install opam --accept-source-agreements
+          Add-Content -Path $env:GITHUB_PATH -Value "$env:LOCALAPPDATA\Microsoft\WinGet\Links"
+
       - name: Compute a key to cache configure results
-        shell: bash
+        id: autoconf-cache-key
         env:
-          HOST: ${{ matrix.x86_64 && 'x86_64-pc-windows' || 'i686-pc-windows' }}
-          CC: ${{ matrix.cc }}
-        run: >-
-          echo "AUTOCONF_CACHE_KEY=$HOST-$CC-$({ cat configure; uname; } | sha1sum | cut -c 1-7)" >> $GITHUB_ENV
+          HOST: ${{ format('{0}-pc-{1}', matrix.arch, (matrix.cc == 'gcc' && 'cygwin' || 'windows')) }}
+        run: |
+          echo "key=${{ env.HOST }}-${{ matrix.cc }}-${{ hashFiles('configure') }}" >> $GITHUB_OUTPUT
 
       - name: Restore Autoconf cache
         uses: actions/cache/restore@v4
         with:
           path: |
             config.cache
-          key: ${{ env.AUTOCONF_CACHE_KEY }}
+          key: ${{ steps.autoconf-cache-key.outputs.key }}
 
-      - name: Build OCaml
-        shell: bash
+      - name: Configure tree
         env:
-          HOST: ${{ matrix.x86_64 && 'x86_64-pc-windows' || 'i686-pc-windows' }}
-          CC: ${{ matrix.cc }}
-        run: >-
-          eval $(tools/msvs-promote-path) ;
-          if ! ./configure --cache-file=config.cache --host=$HOST CC=$CC ; then
-          rm -rf config.cache ;
-          failed=0 ;
-          ./configure --cache-file=config.cache --host=$HOST CC=$CC \
-          || failed=$?;
-          if ((failed)) ; then cat config.log ; exit $failed ; fi ;
-          fi ;
-          make -j || failed=$? ;
-          if ((failed)) ; then make -j1 V=1 ; exit $failed ; fi ;
-          runtime/ocamlrun ocamlc -config ;
-        # Don't add indentation or comments, it breaks Bash on
-        # Windows when the yaml text block scalar is processed as a
-        # single line.
+          CONFIG_ARGS: >-
+            --cache-file=config.cache
+            --prefix ${{ matrix.cc != 'gcc' && format('"{0}/_opam"', matrix.prefix) || format('"$(cygpath "{0}")"', matrix.prefix) }}
+            --docdir ${{ format((matrix.cc != 'gcc' && '"{0}/_opam/doc/ocaml"' || '"$(cygpath "{0}/doc/ocaml")"'), matrix.prefix) }}
+            ${{ matrix.cc != 'gcc' && format('--host={0}-pc-windows', matrix.arch) || '' }}
+            ${{ matrix.cc != 'gcc' && format('CC={0}', matrix.cc) || '' }}
+            --enable-ocamltest
+            ${{ endsWith(matrix.arch, '64') && '--enable-native-toplevel' || '--disable-native-toplevel' }}
+            ${{ matrix.libdir == 'relative' && '--with-relative-libdir' || '--without-relative-libdir' }}
+            ${{ matrix.libdir == 'relative' && '--enable-runtime-search --enable-runtime-search-target=fallback' || '--disable-runtime-search --disable-runtime-search-target' }}
+            ${{ matrix.config_arg }}
+        run: |
+          eval $(tools/msvs-promote-path)
+          if ! ./configure ${{ env.CONFIG_ARGS }} ; then
+            rm -rf config.cache
+            failed=0
+            ./configure ${{ env.CONFIG_ARGS }} || failed=$?
+            if ((failed)) ; then
+              echo
+              echo "::group::config.log content ($(wc -l config.log) lines)"
+              cat config.log
+              echo '::endgroup::'
+              exit $failed
+            fi
+          fi
 
       - name: Save Autoconf cache
         uses: actions/cache/save@v4
         with:
           path: |
             config.cache
-          key: ${{ env.AUTOCONF_CACHE_KEY }}
+          key: ${{ steps.autoconf-cache-key.outputs.key }}
 
-      - name: Assemble backend with MinGW GASM and compare
-        shell: bash
-        run: >-
-          x86_64-w64-mingw32-gcc -c -I./runtime  -I ./flexdll -D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE -DWINDOWS_UNICODE=1 -DCAMLDLLIMPORT= -DIN_CAML_RUNTIME -DNATIVE_CODE -DTARGET_amd64 -DMODEL_default -DSYS_mingw64 -o runtime/amd64.o runtime/amd64.S ;
-          dumpbin /disasm:nobytes runtime/amd64nt.obj > runtime/amd64nt.dump ;
-          awk -f tools/ci/actions/canonicalize-dumpbin.awk runtime/amd64nt.dump runtime/amd64nt.dump > runtime/amd64nt.canonical ;
-          dumpbin /disasm:nobytes runtime/amd64.o > runtime/amd64.dump ;
-          awk -f tools/ci/actions/canonicalize-dumpbin.awk runtime/amd64.dump runtime/amd64.dump > runtime/amd64.canonical ;
-          git diff --no-index -- runtime/amd64*.canonical ;
-          wc -l runtime/amd64*.dump runtime/amd64*.canonical ;
+      - name: Build OCaml
+        run: |
+          eval $(tools/msvs-promote-path)
+          make -j || failed=$?
+          if ((failed)) ; then make -j1 V=1 ; exit $failed ; fi
+          test -e runtime/libcamlrun.lib || tools/check-symbol-names runtime/*.a otherlibs/*/lib*.a
+          runtime/ocamlrun ocamlc -config
+
+      - name: Assemble backend with mingw-w64 GASM and compare
+        run: |
+          x86_64-w64-mingw32-gcc -c -I./runtime  -I ./flexdll -D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE -DWINDOWS_UNICODE=1 -DCAMLDLLIMPORT= -DIN_CAML_RUNTIME -DNATIVE_CODE -DTARGET_amd64 -DMODEL_default -DSYS_mingw64 -o runtime/amd64.o runtime/amd64.S
+          dumpbin /disasm:nobytes runtime/amd64nt.obj > runtime/amd64nt.dump
+          awk -f tools/ci/actions/canonicalize-dumpbin.awk runtime/amd64nt.dump runtime/amd64nt.dump > runtime/amd64nt.canonical
+          dumpbin /disasm:nobytes runtime/amd64.o > runtime/amd64.dump
+          awk -f tools/ci/actions/canonicalize-dumpbin.awk runtime/amd64.dump runtime/amd64.dump > runtime/amd64.canonical
+          git diff --no-index -- runtime/amd64*.canonical
+          wc -l runtime/amd64*.dump runtime/amd64*.canonical
         # ^ The final wc is there to make sure that the canonical files are
         # reasonable cleaned-up versions of the raw dumpbins and not simply
         # empty
-        if: matrix.x86_64
+        if: endsWith(matrix.arch, '64') && matrix.cc != 'gcc'
 
       - name: Run the test suite
-        shell: bash
-        run: >-
-          eval $(tools/msvs-promote-path) ;
-          make -j tests ;
+        if: ${{ needs.config.outputs.skip-testsuite != 'true' }}
+        run: |
+          eval $(tools/msvs-promote-path)
+          make tests
+
+      - name: Install the compiler
+        if: matrix.opam != 'true'
+        run: make install
+
+      - name: Create opam switch
+        if: matrix.opam == 'true'
+        env:
+          OPAMSWITCH: ${{ matrix.prefix }}
+        run: |
+          make OPAM_PACKAGE_NAME=ocaml-variants INSTALL_MODE=opam install
+          opam init --cli=2.4 --bare --yes --disable-sandboxing --auto-setup --cygwin-local-install
+          # These commands intentionally run using opam's "default" CLI
+          opam switch create '${{ env.OPAMSWITCH }}' --empty
+          opam pin add --no-action --kind=path ocaml-variants .
+          opam pin add --no-action flexdll flexdll
+          opam install --yes flexdll
+          opam install --yes --assume-built ocaml-variants
+          opam exec -- ocamlc -v
+
+      - name: Test in prefix
+        run: |
+          eval $(tools/msvs-promote-path)
+          make -f Makefile.test -C testsuite/in_prefix test-in-prefix

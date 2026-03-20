@@ -76,8 +76,9 @@ let match_expect_extension (ext : Parsetree.extension) =
         let normal, principal =
           match e.pexp_desc with
           | Pexp_tuple
-              [ a
-              ; { pexp_desc = Pexp_construct
+              [ None, a
+              ; None,
+                { pexp_desc = Pexp_construct
                                 ({ txt = Lident "Principal"; _ }, Some b) }
               ] ->
             (string_constant a, string_constant b)
@@ -215,6 +216,13 @@ function
   | (Ptop_dir _  | Ptop_def []) :: l -> min_line_number l
   | Ptop_def (st :: _) :: _ -> Some st.pstr_loc.loc_start.pos_lnum
 
+
+let visible_inline_code () =
+  let open Misc.Style in
+  let default = get_styles () in
+  let inline_code = { ansi = []; text_open = {|"|}; text_close={|"|} } in
+  set_styles { default with inline_code }
+
 let eval_expect_file _fname ~file_contents =
   Warnings.reset_fatal ();
   let chunks, trailing_code =
@@ -222,7 +230,9 @@ let eval_expect_file _fname ~file_contents =
   in
   let buf = Buffer.create 1024 in
   let ppf = Format.formatter_of_buffer buf in
-  let () = Misc.Style.set_tag_handling ppf in
+  let () =
+    visible_inline_code ();
+    Misc.Style.set_tag_handling ppf in
   let exec_phrases phrases =
     let phrases =
       match min_line_number phrases with
@@ -231,22 +241,29 @@ let eval_expect_file _fname ~file_contents =
     in
     (* For formatting purposes *)
     Buffer.add_char buf '\n';
-    let _ : bool =
-      List.fold_left phrases ~init:true ~f:(fun acc phrase ->
-        acc &&
-        let snap = Btype.snapshot () in
-        try
-          exec_phrase ppf phrase
-        with exn ->
-          let bt = Printexc.get_raw_backtrace () in
-          begin try Location.report_exception ppf exn
-          with _ ->
-            Format.fprintf ppf "Uncaught exception: %s\n%s\n"
-              (Printexc.to_string exn)
-              (Printexc.raw_backtrace_to_string bt)
-          end;
-          Btype.backtrack snap;
-          false
+    let skipped_phrases =
+      List.fold_left phrases ~init:None ~f:(fun acc phrase ->
+          match (phrase : Parsetree.toplevel_phrase) with
+          | Ptop_def [] -> acc
+          | _ ->
+          match acc with
+          | Some i -> Some (i + 1)
+          | None ->
+              let snap = Btype.snapshot () in
+              try
+                if exec_phrase ppf phrase
+                then acc
+                else Some 0
+              with exn ->
+                let bt = Printexc.get_raw_backtrace () in
+                begin try Location.report_exception ppf exn
+                with _ ->
+                  Format.fprintf ppf "Uncaught exception: %s\n%s\n"
+                    (Printexc.to_string exn)
+                    (Printexc.raw_backtrace_to_string bt)
+                end;
+                Btype.backtrack snap;
+                Some 0
       )
     in
     Format.pp_print_flush ppf ();
@@ -254,6 +271,13 @@ let eval_expect_file _fname ~file_contents =
     if len > 0 && Buffer.nth buf (len - 1) <> '\n' then
       (* For formatting purposes *)
       Buffer.add_char buf '\n';
+    begin match skipped_phrases with
+    | None | Some 0 -> ()
+    | Some i ->
+        Format.fprintf ppf
+          "Unexecuted phrases: %i phrases did not execute due to an error\n" i
+    end;
+    Format.pp_print_flush ppf ();
     let s = Buffer.contents buf in
     Buffer.clear buf;
     Misc.delete_eol_spaces s

@@ -34,17 +34,17 @@
 extern const int caml_unix_socket_domain_table[]; /* from socket.c */
 extern const int caml_unix_socket_type_table[];   /* from socket.c */
 
-static value convert_addrinfo(struct addrinfo * a)
+static value convert_addrinfo(const struct addrinfo * a)
 {
   CAMLparam0();
   CAMLlocal3(vres,vaddr,vcanonname);
-  union sock_addr_union sa;
-  socklen_param_type len;
+  struct sockaddr_storage addr;
+  socklen_t len;
 
   len = a->ai_addrlen;
-  if (len > sizeof(sa)) len = sizeof(sa);
-  memcpy(&sa.s_gen, a->ai_addr, len);
-  vaddr = caml_unix_alloc_sockaddr(&sa, len, -1);
+  if (len > sizeof(addr)) len = sizeof(addr);
+  memcpy(&addr, a->ai_addr, len);
+  vaddr = caml_unix_alloc_sockaddr((struct sockaddr *) &addr, len, -1);
   vcanonname = caml_copy_string(a->ai_canonname == NULL ? "" : a->ai_canonname);
   vres = caml_alloc_small(5, 0);
   Field(vres, 0) =

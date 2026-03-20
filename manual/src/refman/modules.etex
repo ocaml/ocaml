@@ -30,19 +30,25 @@ module-expr:
 module-items:
         { ';;' } ( definition || expr ) { { ';;' } ( definition || ';;' expr) } { ';;' }
 ;
-%\end{syntax} \begin{syntax}
-definition:
-          'let' ['rec'] let-binding { 'and' let-binding }
-        | 'external' value-name ':' typexpr '=' external-declaration
+module-definition:
+          'module' module-name { '(' module-name ':' module-type ')' }
+                   [ ':' module-type ] \\ '=' module-expr
+;
+local-definition:
+          'external' value-name ':' typexpr '=' external-declaration
         | type-definition
         | exception-definition
         | class-definition
         | classtype-definition
-        | 'module' module-name { '(' module-name ':' module-type ')' }
-                   [ ':' module-type ] \\ '=' module-expr
+        | module-definition
         | 'module' 'type' modtype-name '=' module-type
         | 'open' module-path
+;
+definition:
+          'let' ['rec'] let-binding { 'and' let-binding }
         | 'include' module-expr
+        | local-definition
+;
 \end{syntax}
 See also the following language extensions:
 \hyperref[s:recursive-modules]{recursive modules},

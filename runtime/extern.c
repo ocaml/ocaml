@@ -1305,7 +1305,7 @@ CAMLprim value caml_obj_reachable_words(value v)
       extern_record_location(s, v, h);
       /* The block contributes to the total size */
       size += 1 + sz;           /* header word included */
-      if (tag < No_scan_tag) {
+      if (Scannable_tag(tag)) {
         /* i is the position of the first field to traverse recursively */
         uintnat i =
           tag == Closure_tag ? Start_env_closinfo(Closinfo_val(v)) : 0;

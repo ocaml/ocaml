@@ -1,6 +1,6 @@
 File "pr6899_second_bad.ml", line 12, characters 6-9:
 12 |   let bar = wrap ()
            ^^^
-Error: The type of this expression, "([< `Test ] as '_weak1) -> unit",
-       contains the non-generalizable type variable(s): "'_weak1".
+Error: The type of this expression, ([< `Test ] as '_weak1) -> unit,
+       contains the non-generalizable type variable(s): '_weak1.
        (see manual section 6.1.2)

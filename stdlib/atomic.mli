@@ -39,7 +39,9 @@ val make : 'a -> 'a t
     modifying these disjoint memory regions simultaneously becomes impossible,
     which can create a bottleneck. Hence, as a general guideline, if an atomic
     reference is experiencing contention, assigning it its own cache line may
-    enhance performance. *)
+    enhance performance.
+
+    @since 5.2 *)
 val make_contended : 'a -> 'a t
 
 (** Get the current value of the atomic reference. *)
@@ -67,6 +69,77 @@ val incr : int t -> unit
 
 (** [decr r] atomically decrements the value of [r] by [1]. *)
 val decr : int t -> unit
+
+(** Atomic "locations", such as record fields.
+
+    @since 5.4 *)
+module Loc : sig
+  (** This module exposes a dedicated type ['a Atomic.Loc.t] for
+      atomic locations (storing a value of type ['a]) inside objects
+      that may not be atomic references. It is used in particular for
+      atomic record fields: if a record [r] has an atomic field [f] of
+      type [foo], then [[%atomic.loc r.f]] has type [foo Atomic.Loc.t].
+
+      The API below mirrors the API to access {{!t}atomic references},
+      see the documentation above for more information. *)
+  type 'a t = 'a atomic_loc
+
+  (* exposing 'external' primitives directly helps reasoning about
+     performance: it guarantees that all versions of the compiler
+     (including bytecode) remove the pair construction on direct
+     calls:
+       Atomic.Loc.foo [%atomic.loc r.x] ...  *)
+  external get : 'a t -> 'a = "%atomic_load_loc"
+  val set : 'a t -> 'a -> unit
+  external exchange : 'a t -> 'a -> 'a = "%atomic_exchange_loc"
+  external compare_and_set : 'a t -> 'a -> 'a -> bool = "%atomic_cas_loc"
+  external fetch_and_add : int t -> int -> int = "%atomic_fetch_add_loc"
+  val incr : int t -> unit
+  val decr : int t -> unit
+end
+
+
+(** A bare-bones submodules of atomic arrays. *)
+module Array : sig
+  type !'a t
+
+  val make :
+    int -> 'a -> 'a t
+
+  val init :
+    int -> (int -> 'a) -> 'a t
+
+  val length :
+    'a t -> int
+
+  (** The API below mirrors the API to access {{!t}atomic references},
+      see the documentation above for more information. *)
+
+  val unsafe_get :
+    'a t -> int -> 'a
+  val get :
+    'a t -> int -> 'a
+
+  val unsafe_set :
+    'a t -> int -> 'a -> unit
+  val set :
+    'a t -> int -> 'a -> unit
+
+  val unsafe_exchange :
+    'a t -> int -> 'a -> 'a
+  val exchange :
+    'a t -> int -> 'a -> 'a
+
+  val unsafe_compare_and_set :
+    'a t -> int -> 'a -> 'a -> bool
+  val compare_and_set :
+    'a t -> int -> 'a -> 'a -> bool
+
+  val unsafe_fetch_and_add :
+    int t -> int -> int -> int
+  val fetch_and_add :
+    int t -> int -> int -> int
+end
 
 (** {1:examples Examples}
 

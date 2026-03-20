@@ -37,14 +37,32 @@
     gsub(/.c:[0-9]+:[0-9]+/, ".c:XX")
     gsub(/.c:[0-9]+/, ".c:XX")
 
+    # GDB doesn't print these lines with musl.
+    gsub(/\[Thread debugging using libthread_db enabled\]/, "")
+    gsub(/Using host libthread_db library.*/, "")
+
     # Replace line number when setting breakpoints in GDB.
     gsub(/line [0-9]+/, "line XXX")
+
+    # erase caml_startup_exn from stack traces, and remove frame numbers
+    gsub(/frame [0-9]+: .*caml_startup_exn/, "")
+    gsub(/frame [0-9]+/, "frame X")
 
     # Work around inconsistent name mangling
     gsub(/c_to_ocaml_[0-9]+/, "c_to_ocaml")
 
+    # Work around symbol versioning
+    gsub(/__libc_start_main_impl$/, "__libc_start_mainXXXX")
+    gsub(/__libc_start_main@@GLIBC_[0-9]+.[0-9]+$/, "__libc_start_mainXXXX")
+
     gsub("warning: This version of LLDB", "This version of LLDB")
+    gsub("This version of LLDB has no plugin for the language \"assembler\". Inspection of frame variables will be limited.", "")
     # Replace printed match results
     gsub("1 match found in /(.*):$", "1 match found in \"XXXX\":")
-    print $0
+
+    # Remove trailing blanks
+    gsub(/[ \t\r]+$/, "")
+
+    if ($0 != "")
+      print $0
 }

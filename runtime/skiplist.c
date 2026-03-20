@@ -63,7 +63,7 @@ void caml_skiplist_init(struct skiplist * sk)
 
 /* Search a skip list */
 
-int caml_skiplist_find(struct skiplist * sk, uintnat key, uintnat * data)
+uintnat* caml_skiplist_find_ptr(struct skiplist * sk, uintnat key)
 {
   struct skipcell ** e, * f;
 
@@ -73,14 +73,25 @@ int caml_skiplist_find(struct skiplist * sk, uintnat key, uintnat * data)
       f = e[i];
       if (f == NULL || f->key > key) break;
       if (f->key == key) {
-        *data = f->data;
-        return 1;
+        return &f->data;
       }
       e = f->forward;
     }
   }
-  return 0;
+  return NULL;
 }
+
+int caml_skiplist_find(struct skiplist * sk, uintnat key, uintnat * data)
+{
+  uintnat* p = caml_skiplist_find_ptr(sk, key);
+  if (p == NULL) {
+    return 0;
+  } else {
+    *data = *p;
+    return 1;
+  }
+}
+
 
 int caml_skiplist_find_below(struct skiplist * sk, uintnat k,
                              uintnat * key, uintnat * data)
@@ -136,8 +147,10 @@ int caml_skiplist_insert(struct skiplist * sk,
       update[i] = &sk->forward[i];
     sk->level = new_level;
   }
-  f = caml_stat_alloc(SIZEOF_SKIPCELL +
-                      (new_level + 1) * sizeof(struct skipcell *));
+  f = caml_stat_alloc_noexc(SIZEOF_SKIPCELL +
+                            (new_level + 1) * sizeof(struct skipcell *));
+  if (f == NULL)
+    caml_fatal_error("caml_skiplist_insert: out of memory");
   f->key = key;
   f->data = data;
   for (int i = 0; i <= new_level; i++) {

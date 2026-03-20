@@ -47,12 +47,26 @@ val transl_with_constraint:
 val transl_package_constraint:
   loc:Location.t -> Env.t -> type_expr -> Types.type_declaration
 
-val abstract_type_decl: injective:bool -> int -> type_declaration
+val abstract_type_decl:
+    injective:bool -> explanation:Types.type_origin -> int -> type_declaration
+
+(** Approximate a list of type declarations with abstract types of the
+    given origin. *)
 val approx_type_decl:
-    Parsetree.type_declaration list ->
+    explanation:Types.type_origin -> Parsetree.type_declaration list ->
                                   (Ident.t * type_declaration) list
+
+(** [check_recmod_typedecl ~abs_env env loc recmod_ids path decl]
+   - [recmod_ids] is the list of recursively-defined module idents.
+   - [path, decl] is the type declaration to be checked.
+   - [abs_env] is an abstract environment without physical cycles. It is used
+      as a printing environment.
+   - [env] is the main environment, which may contain cycles introduced by the
+      recursive module definitions.
+*)
 val check_recmod_typedecl:
-    Env.t -> Location.t -> Ident.t list -> Path.t -> type_declaration -> unit
+    abs_env:Env.t -> Env.t -> Location.t -> Ident.t list -> Path.t ->
+    type_declaration -> unit
 val check_coherence:
     Env.t -> Location.t -> Path.t -> type_declaration -> unit
 
@@ -85,7 +99,11 @@ type error =
     }
   | Null_arity_external
   | Missing_native_external
-  | Unbound_type_var of type_expr * type_declaration
+  | Unbound_type_var of {
+      var: type_expr;
+      params: type_expr list;
+      decl: type_declaration;
+    }
   | Cannot_extend_private_type of Path.t
   | Not_extensible_type of Path.t
   | Extension_mismatch of Path.t * Env.t * Includecore.type_mismatch
@@ -95,19 +113,20 @@ type error =
   | Rebind_private of Longident.t
   | Variance of Typedecl_variance.error
   | Unavailable_type_constructor of Path.t
-  | Unbound_type_var_ext of type_expr * extension_constructor
   | Val_in_structure
   | Multiple_native_repr_attributes
   | Cannot_unbox_or_untag_type of native_repr_kind
   | Deep_unbox_or_untag_attribute of native_repr_kind
+  | Type_cannot_be_external of type_expr
   | Immediacy of Typedecl_immediacy.error
   | Separability of Typedecl_separability.error
   | Bad_unboxed_attribute of string
   | Boxed_and_unboxed
   | Nonrec_gadt
   | Invalid_private_row_declaration of type_expr
+  | Atomic_field_must_be_mutable of string
+  | External_with_non_syntactic_arity
 
 exception Error of Location.t * error
 
-val report_error: error Format_doc.format_printer
-val report_error_doc: error Format_doc.printer
+val report_error: loc:Location.t -> error -> Location.report

@@ -1,33 +1,22 @@
 (* TEST
  flags = "-w -a";
+ if target-windows
+ then reference = "${test_source_directory}/syserror.win32.reference"
+ else reference = "${test_source_directory}/syserror.unix.reference";
  {
    setup-ocamlc.byte-build-env;
    ocamlc.byte;
    exit_status = "2";
    run;
-   {
-     libunix;
-     reference = "${test_source_directory}/syserror.unix.reference";
-     check-program-output;
-   }{
-     libwin32unix;
-     reference = "${test_source_directory}/syserror.win32.reference";
-     check-program-output;
-   }
+   hasunix;
+   check-program-output;
  }{
    setup-ocamlopt.byte-build-env;
    ocamlopt.byte;
    exit_status = "2";
    run;
-   {
-     libunix;
-     reference = "${test_source_directory}/syserror.unix.reference";
-     check-program-output;
-   }{
-     libwin32unix;
-     reference = "${test_source_directory}/syserror.win32.reference";
-     check-program-output;
-   }
+   hasunix;
+   check-program-output;
  }
 *)
 

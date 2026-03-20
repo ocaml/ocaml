@@ -214,7 +214,7 @@ let rec nondep_mty_with_presence env va ids pres mty =
       let res_env =
         match param with
         | None -> env
-        | Some param -> Env.add_module ~arg:true param Mp_present arg env
+        | Some param -> Env.add_module ~noalias:true param Mp_present arg env
       in
       let mty =
         Mty_functor(Named (param, nondep_mty env var_inv ids arg),
@@ -238,14 +238,7 @@ and nondep_sig_item env va ids = function
       let pres, mty = nondep_mty_with_presence env va ids pres md.md_type in
       Sig_module(id, pres, {md with md_type = mty}, rs, vis)
   | Sig_modtype(id, d, vis) ->
-      begin try
-        Sig_modtype(id, nondep_modtype_decl env ids d, vis)
-      with Ctype.Nondep_cannot_erase _ as exn ->
-        match va with
-          Co -> Sig_modtype(id, {mtd_type=None; mtd_loc=Location.none;
-                                 mtd_attributes=[]; mtd_uid = d.mtd_uid}, vis)
-        | _  -> raise exn
-      end
+      Sig_modtype(id, nondep_modtype_decl env ids d, vis)
   | Sig_class(id, d, rs, vis) ->
       Sig_class(id, Ctype.nondep_class_declaration env ids d, rs, vis)
   | Sig_class_type(id, d, rs, vis) ->

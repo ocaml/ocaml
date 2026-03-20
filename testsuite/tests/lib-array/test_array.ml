@@ -20,12 +20,10 @@ a;;
 [|None; None; Some 42; Some 0; Some 42; None; None; None|]
 |}]
 let _ = Array.fill a 3 6 None;;
-a;;
 [%%expect{|
 Exception: Invalid_argument "Array.fill".
 |}]
 let _ = Array.fill a (-1) 2 None;;
-a;;
 [%%expect{|
 Exception: Invalid_argument "Array.fill".
 |}]
@@ -194,4 +192,48 @@ val a : string array array =
 let a = Array.init_matrix 2 3 (fun i j -> 10 * i + j);;
 [%%expect{|
 val a : int array array = [|[|0; 1; 2|]; [|10; 11; 12|]|]
+|}]
+
+let () = (* Array.equal *)
+  let test a b ~eq =
+    assert (Array.equal Int.equal a b = eq);
+    assert (Array.equal Int.equal b a = eq)
+  in
+  test [||] [||] ~eq:true;
+  test [||] [|1|] ~eq:false;
+  test [|1;2|] [|1;2|] ~eq:true;
+  test [|1;2|] [|1;2;3|] ~eq:false;
+  test [|1;2|] [|1;2;3|] ~eq:false;
+  ()
+[%%expect{|
+|}]
+
+let () = (* Array.compare *)
+  let test a b ~cmp =
+    assert (Array.compare Int.compare a b = cmp);
+    assert (Array.compare Int.compare b a = -1 * cmp);
+  in
+  test [||] [||] ~cmp:0;
+  test [||] [|0;1|] ~cmp:~-1;
+  test [|0|] [||] ~cmp:1;
+  test [|0|] [|0;1|] ~cmp:~-1;
+  test [|0;1|] [|0;1|] ~cmp:0;
+  test [|0;1|] [|0;2|] ~cmp:~-1;
+  test [|0;1|] [|0;0|] ~cmp:1;
+  test [|0;1|] [|0;1|] ~cmp:0;
+  test [|1;0|] [|0;1|] ~cmp:1;
+  test [|0;1;2|] [|0;1;2|] ~cmp:0;
+  test [|0;2;2|] [|0;1;2|] ~cmp:1;
+  test [|0;1;2|] [|0;1|] ~cmp:1;
+  (* Check that the result of compare is normalized in -1,0,1 on large
+     array length differences. *)
+  test [|0;1;2;2;2|] [|0;1|] ~cmp:1;
+  test [|0;1|] [|0;1;2;2;2|] ~cmp:~-1;
+  (* If the length is different it is sufficient to order arrays and
+     we do not compare elements. This tests that so that
+     a possible behaviour change in the future can be detected *)
+  assert (Array.compare (fun _ _ -> assert false) [|0;1|] [|0;1;2|] = -1);
+  assert (Array.compare (fun _ _ -> assert false) [|0;1;2|] [|0;1|] = 1);
+  ()
+[%%expect{|
 |}]

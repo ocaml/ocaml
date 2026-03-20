@@ -20,6 +20,7 @@ module type Common_options = sig
   val _absname : unit -> unit
   val _no_absname : unit -> unit
   val _alert : string -> unit
+  val _i_variance : unit -> unit
   val _I : string -> unit
   val _H : string -> unit
   val _labels : unit -> unit
@@ -33,6 +34,7 @@ module type Common_options = sig
   val _nocwd : unit -> unit
   val _open : string -> unit
   val _ppx : string -> unit
+  val _keywords: string -> unit
   val _principal : unit -> unit
   val _no_principal : unit -> unit
   val _rectypes : unit -> unit
@@ -62,10 +64,13 @@ module type Core_options = sig
 
   val _dno_unique_ids : unit -> unit
   val _dunique_ids : unit -> unit
+  val _dno_canonical_ids : unit -> unit
+  val _dcanonical_ids : unit -> unit
   val _dno_locations : unit -> unit
   val _dlocations : unit -> unit
   val _dsource : unit -> unit
   val _dparsetree : unit -> unit
+  val _dparsetree_loc_ghost_invariants : unit -> unit
   val _dtypedtree : unit -> unit
   val _dshape : unit -> unit
   val _dmatchcomp : unit -> unit
@@ -91,6 +96,7 @@ module type Compiler_options = sig
   val _no_g : unit -> unit
   val _stop_after : string -> unit
   val _i : unit -> unit
+  val _i_variance : unit -> unit
   val _impl : string -> unit
   val _intf : string -> unit
   val _intf_suffix : string -> unit
@@ -113,6 +119,7 @@ module type Compiler_options = sig
   val _runtime_variant : string -> unit
   val _with_runtime : unit -> unit
   val _without_runtime : unit -> unit
+  val _set_runtime_default : string -> unit
   val _short_paths : unit -> unit
   val _thread : unit -> unit
   val _v : unit -> unit
@@ -154,11 +161,15 @@ module type Bytecomp_options = sig
   val _custom : unit -> unit
   val _no_check_prims : unit -> unit
   val _dllib : string -> unit
+  val _dllib_suffixed : string -> unit
   val _dllpath : string -> unit
   val _make_runtime : unit -> unit
   val _vmthread : unit -> unit
   val _use_runtime : string -> unit
+  val _launch_method : string -> unit
+  val _search_method : string -> unit
   val _output_complete_exe : unit -> unit
+  val _bytecode_hints : unit -> unit
 
   val _dinstr : unit -> unit
   val _dcamlprimc : unit -> unit

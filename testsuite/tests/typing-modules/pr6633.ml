@@ -26,7 +26,7 @@ Line 2, characters 26-32:
 2 | module Foo = functor (E : EqualF) -> struct end;;
                               ^^^^^^
 Error: Unbound module type "EqualF"
-Hint: Did you mean "Equals"?
+Hint:         Did you mean "Equals"?
 |}]
 
 (* If a module is used as a module type it should trigger the hint
@@ -49,9 +49,9 @@ module type S = sig type t val show: t -> string end
 let f (x: S.t ) = ();;
 [%%expect{|
 module type S = sig type t val show : t -> string end
-Line 2, characters 10-13:
+Line 2, characters 10-11:
 2 | let f (x: S.t ) = ();;
-              ^^^
+              ^
 Error: Unbound module "S"
 Hint: There is a module type named "S", but module types are not modules
 |}]
@@ -65,5 +65,5 @@ Line 2, characters 25-27:
 2 | class c = object inherit ct end
                              ^^
 Error: Unbound class "ct"
-Hint: There is a class type named "ct", but classes are not class types
+Hint: There is a class type named "ct", but classes are not class types.
 |}]

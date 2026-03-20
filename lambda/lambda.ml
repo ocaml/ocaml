@@ -25,6 +25,7 @@ type compile_time_constant =
   | Ostype_win32
   | Ostype_cygwin
   | Backend_type
+  | Standard_library_default
 
 type immediate_or_pointer =
   | Immediate
@@ -39,6 +40,14 @@ type is_safe =
   | Safe
   | Unsafe
 
+type lazy_block_tag =
+  | Lazy_tag
+  | Forward_tag
+
+let tag_of_lazy_tag = function
+  | Lazy_tag -> Config.lazy_tag
+  | Forward_tag -> Obj.forward_tag
+
 type primitive =
   | Pbytes_to_string
   | Pbytes_of_string
@@ -48,6 +57,7 @@ type primitive =
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag * block_shape
+  | Pmakelazyblock of lazy_block_tag
   | Pfield of int * immediate_or_pointer * mutable_flag
   | Pfield_computed
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
@@ -95,6 +105,7 @@ type primitive =
   | Pisint
   (* Test if the (integer) argument is outside an interval *)
   | Pisout
+  | Pcheckbound
   (* Operations on boxed integers (Nativeint.t, Int32.t, Int64.t) *)
   | Pbintofint of boxed_integer
   | Pintofbint of boxed_integer
@@ -206,7 +217,12 @@ let equal_value_kind x y =
 
 
 type structured_constant =
-    Const_base of constant
+    Const_int of int
+  | Const_char of char
+  | Const_float of string
+  | Const_int32 of int32
+  | Const_int64 of int64
+  | Const_nativeint of nativeint
   | Const_block of int * structured_constant list
   | Const_float_array of string list
   | Const_immstring of string
@@ -360,11 +376,21 @@ type program =
     required_globals : Ident.Set.t;
     code : lambda }
 
-let const_int n = Const_base (Const_int n)
+let const_int n = Const_int n
 
 let const_unit = const_int 0
 
 let dummy_constant = Lconst (const_int (0xBBBB / 2))
+
+let lambda_of_const (c : Asttypes.constant) =
+  match c with
+  | Const_int n -> Lconst (Const_int n)
+  | Const_char c -> Lconst (Const_char c)
+  | Const_float f -> Lconst (Const_float f)
+  | Const_int32 n -> Lconst (Const_int32 n)
+  | Const_int64 n -> Lconst (Const_int64 n)
+  | Const_nativeint n -> Lconst (Const_nativeint n)
+  | Const_string (s, _, _) -> Lconst (Const_immstring s)
 
 let max_arity () =
   if !Clflags.native_code then 126 else max_int
@@ -425,9 +451,6 @@ let make_key e =
         try Ident.find_same id env
         with Not_found -> e
       end
-    | Lconst  (Const_base (Const_string _)) ->
-        (* Mutable constants are not shared *)
-        raise Not_simple
     | Lconst _ -> e
     | Lapply ap ->
         Lapply {ap with ap_func = tr_rec env ap.ap_func;
@@ -718,14 +741,18 @@ let transl_extension_path loc env path =
 let transl_class_path loc env path =
   transl_path Env.find_class_address loc env path
 
-let transl_prim mod_name name =
-  let pers = Ident.create_persistent mod_name in
-  let env = Env.add_persistent_structure pers Env.empty in
-  let lid = Longident.Ldot (Longident.Lident mod_name, name) in
-  match Env.find_value_by_name lid env with
-  | path, _ -> transl_value_path Loc_unknown env path
-  | exception Not_found ->
-      fatal_error ("Primitive " ^ name ^ " not found.")
+let transl_prim modname field =
+  let mod_ident = Ident.create_persistent modname in
+  let env = Env.add_persistent_structure mod_ident Env.initial in
+  match Env.open_pers_signature modname env with
+  | Error `Not_found ->
+      fatal_errorf "Module %s unavailable." modname
+  | Ok env -> (
+      match Env.find_value_by_name (Longident.Lident field) env with
+      | exception Not_found ->
+          fatal_errorf "Primitive %s.%s not found." modname field
+      | path, _ -> transl_value_path Loc_unknown env path
+    )
 
 (* Compile a sequence of expressions *)
 
@@ -734,6 +761,10 @@ let rec make_sequence fn = function
   | [x] -> fn x
   | x::rem ->
       let lam = fn x in Lsequence(lam, make_sequence fn rem)
+
+let make_atomic_loc ~loc arg field =
+  let shape = Some [Pgenval; Pintval] in
+  Lprim (Pmakeblock (0, Immutable, shape), [arg; field], loc)
 
 (* Apply a substitution to a lambda-term.
    Assumes that the image of the substitution is out of reach

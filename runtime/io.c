@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include "caml/config.h"
-#ifdef HAS_UNISTD
+#ifndef _WIN32
 #include <unistd.h>
 #endif
 #ifdef __CYGWIN__
@@ -247,11 +247,19 @@ CAMLexport int caml_channel_binary_mode(struct channel *channel)
    end of the flush, or false if some data remains in the buffer.
  */
 
-CAMLexport int caml_flush_partial(struct channel *channel)
+static bool flush_partial(struct channel *channel, bool exn_if_closed)
 {
   int towrite, written;
  again:
   check_pending(channel);
+  if (channel->fd == -1) {
+    if (exn_if_closed) {
+      errno = EBADF;
+      caml_sys_io_error(NO_ARG);
+    } else {
+      return true;
+    }
+  }
 
   towrite = channel->curr - channel->buff;
   CAMLassert (towrite >= 0);
@@ -275,6 +283,11 @@ CAMLexport int caml_flush_partial(struct channel *channel)
     channel->curr -= written;
   }
   return (channel->curr == channel->buff);
+}
+
+CAMLexport int caml_flush_partial(struct channel *channel)
+{
+  return flush_partial(channel, true);
 }
 
 /* Flush completely the buffer. */
@@ -663,6 +676,12 @@ CAMLprim value caml_ml_out_channels_list (value unit)
   struct channel_list *channel_list = NULL, *cl_tmp;
   mlsize_t num_channels = 0;
 
+  /* We cannot use [caml_plat_lock_non_blocking] inside
+     [caml_finalize_channel], so instead we must be careful here not
+     to trigger a STW while holding [caml_all_opened_channels_mutex].
+     This is why we allocate a temporary list with malloc. This is
+     unsatisfactory because the critical section inside
+     caml_ml_out_channels_list is not guaranteed to be short.*/
   caml_plat_lock_blocking(&caml_all_opened_channels_mutex);
   for (struct channel *channel = caml_all_opened_channels;
        channel != NULL;
@@ -819,8 +838,7 @@ CAMLprim value caml_ml_flush(value vchannel)
   struct channel * channel = Channel(vchannel);
 
   caml_channel_lock(channel);
-  if (channel->fd != -1)
-    caml_flush(channel);
+  while (! flush_partial(channel, false)) continue;
   caml_channel_unlock(channel);
   CAMLreturn (Val_unit);
 }

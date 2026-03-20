@@ -74,13 +74,18 @@ Line 1, characters 0-40:
 Error: This type cannot be unboxed because it has more than one constructor.
 |}];;
 type t7 = I of string | J of bool [@@ocaml.unboxed];;
-
-type t8 = { h : bool; i : int } [@@ocaml.unboxed];;  (* more than one field *)
 [%%expect{|
 Line 1, characters 0-51:
 1 | type t7 = I of string | J of bool [@@ocaml.unboxed];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because it has more than one constructor.
+|}];;
+type t8 = { h : bool; i : int } [@@ocaml.unboxed];;  (* more than one field *)
+[%%expect{|
+Line 1, characters 0-49:
+1 | type t8 = { h : bool; i : int } [@@ocaml.unboxed];;  (* more than one field *)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This type cannot be unboxed because it has more than one field.
 |}];;
 type t9 = K of { j : string; l : int } [@@ocaml.unboxed];;
 [%%expect{|

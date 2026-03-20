@@ -15,8 +15,8 @@
 
 /* Trace the instructions executed */
 
-#ifndef _instrtrace_
-#define _instrtrace_
+#ifndef CAML_INSTRTRACE_H
+#define CAML_INSTRTRACE_H
 
 #ifdef CAML_INTERNALS
 
@@ -33,4 +33,4 @@ void caml_event_trace (code_t pc);
 
 #endif /* CAML_INTERNALS */
 
-#endif
+#endif /* CAML_INSTRTRACE_H */

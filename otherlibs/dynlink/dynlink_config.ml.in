@@ -24,3 +24,7 @@ let ext_dll = "." ^ {@QS@|@SO@|@QS@}
 and cmo_magic_number = {magic|@CMO_MAGIC_NUMBER@|magic}
 and cma_magic_number = {magic|@CMA_MAGIC_NUMBER@|magic}
 and cmxs_magic_number = {magic|@CMXS_MAGIC_NUMBER@|magic}
+
+let bytecode_runtime_id = {@QS@|@bytecode_runtime_id@|@QS@}
+
+let target = {@QS@|@target@|@QS@}

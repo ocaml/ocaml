@@ -14,6 +14,7 @@
 #**************************************************************************
 # Used by included Makefiles
 ROOTDIR = ../..
+SUBDIR_NAME = api_docgen/ocamldoc
 include ../Makefile.common
 vpath %.mli ../../stdlib $(DOC_COMPILERLIBS_DIRS)  $(DOC_STDLIB_DIRS)
 
@@ -89,6 +90,7 @@ build/latex/Stdlib.tex: $(ALL_COMPILED_DOC) | build/latex
 	$(V_OCAMLDOC)$(OCAMLDOC_RUN) -latex -o build/latex/all.tex \
 	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
 	-sepfiles \
+	-latex-escape-underscore "false" \
 	-latextitle "1,subsection*" \
 	-latextitle "2,subsubsection*" \
 	-latex-type-prefix "TYP" \
@@ -120,7 +122,4 @@ build/latex/compilerlibs_input.tex: | build/latex
 
 .PHONY: install
 install:
-	$(MKDIR) "$(INSTALL_LIBRARIES_MAN_DIR)"
-	if test -d build/man; then \
-	  $(INSTALL_DATA) build/man/*.3o "$(INSTALL_LIBRARIES_MAN_DIR)"; \
-	fi
+	$(call INSTALL_ITEMS_OPT, build/man/*.3o, man, $(INSTALL_MANDIR_LIBRARIES))

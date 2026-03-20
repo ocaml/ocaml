@@ -660,7 +660,7 @@ module Kn = struct
       let equal c k =
         let len  = Array.length k in
         let len' = length c in
-        if len != len' then GenHashTable.EFalse
+        if len <> len' then GenHashTable.EFalse
         else
           let rec equal_array k c i =
             if i < 0 then GenHashTable.ETrue

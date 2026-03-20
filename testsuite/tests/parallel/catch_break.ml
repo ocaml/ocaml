@@ -1,8 +1,8 @@
 (* TEST
 hassysthreads;
 include systhreads;
-not-windows;
-no-tsan;
+not target-windows;
+not tsan;
 {
   bytecode;
 }{

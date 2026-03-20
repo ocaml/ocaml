@@ -15,6 +15,10 @@
 #ifndef CAML_TSAN_H
 #define CAML_TSAN_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Macro used to deactivate thread sanitizer on some functions. */
 #define CAMLno_tsan
 /* `__has_feature` is present in Clang and recent GCCs (14 and later). Older
@@ -72,6 +76,9 @@ extern void AnnotateHappensAfter(const char *f, int l, void *addr);
 #  define CAMLno_tsan_for_perf CAMLno_tsan
 #endif
 
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef CAML_INTERNALS
 
@@ -86,10 +93,36 @@ CAMLextern void caml_tsan_exit_on_perform(uintnat pc, char* sp);
 CAMLextern void caml_tsan_entry_on_resume(uintnat pc, char* sp,
     struct stack_info const* stack);
 
+
+#if defined(WITH_THREAD_SANITIZER)
+
+// __tsan_func_exit can have either of the 2 signatures (#14082)
+#if defined(HAVE___TSAN_FUNC_EXIT_VOID_VOID_P)
 extern void __tsan_func_exit(void*);
+#elif defined(HAVE___TSAN_FUNC_EXIT_VOID_VOID)
+extern void __tsan_func_exit(void);
+#endif
+
 extern void __tsan_func_entry(void*);
 void __tsan_write8(void *location);
 
+CAMLno_tsan Caml_inline void caml_tsan_func_exit(void) {
+#if defined(HAVE___TSAN_FUNC_EXIT_VOID_VOID_P)
+  __tsan_func_exit(NULL);
+#elif defined(HAVE___TSAN_FUNC_EXIT_VOID_VOID)
+  __tsan_func_exit();
+  #endif
+}
+
+CAMLno_tsan Caml_inline void caml_tsan_func_entry(void *retaddr) {
+  __tsan_func_entry(retaddr);
+}
+
+CAMLno_tsan Caml_inline void caml_tsan_write8(void *location) {
+  __tsan_write8(location);
+}
+
+#endif /* WITH_THREAD_SANITIZER */
 
 #endif /* CAML_INTERNALS */
 

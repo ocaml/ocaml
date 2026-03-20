@@ -41,6 +41,8 @@ val latex_attribute_prefix : string ref
 
 val latex_method_prefix : string ref
 
+val latex_escape_underscore: bool ref
+
 module Generator :
   sig
     class latex :

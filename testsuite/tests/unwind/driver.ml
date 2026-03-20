@@ -1,7 +1,7 @@
 (* TEST
  script = "sh ${test_source_directory}/check-linker-version.sh";
  readonly_files = "mylib.mli mylib.ml stack_walker.c";
- macos;
+ macosx;
  script;
  setup-ocamlopt.byte-build-env;
  flags = "-opaque";

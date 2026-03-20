@@ -87,6 +87,36 @@ let () =
   let a = A.of_list [1; 2; 3] in
   assert (A.fold_right List.cons a [] = [1; 2; 3]);;
 
+(* exists2 *)
+let () =
+  let a = A.of_list [1; 2; 3] in
+  assert (A.exists2 (=) a a);
+  assert (not (A.exists2 (=) (A.of_list []) (A.of_list [])));
+  assert (A.exists2 (=) a (A.of_list [1; 4; 3]));
+  assert (match A.exists2 (=) a (A.of_list [1; 2]) with
+    | exception (Invalid_argument _) -> true
+    | _ -> false
+  );
+  assert (match A.exists2 (=) (A.of_list [1; 2]) a with
+    | exception (Invalid_argument _) -> true
+    | _ -> false
+  );;
+
+(* for_all2 *)
+let () =
+  let a = A.of_list [1; 2; 3] in
+  assert (A.for_all2 (=) a a);
+  assert (A.for_all2 (=) (A.of_list []) (A.of_list []));
+  assert (not (A.for_all2 (=) a (A.of_list [1; 4; 3])));
+  assert (match A.for_all2 (=) a (A.of_list [1; 2]) with
+    | exception (Invalid_argument _) -> true
+    | _ -> false
+  );
+  assert (match A.for_all2 (=) (A.of_list [1; 2]) a with
+    | exception (Invalid_argument _) -> true
+    | _ -> false
+  );;
+
 (** {1:adding Adding elements} *)
 
 (** add_last was tested above *)
@@ -245,6 +275,20 @@ let () =
 
 
 (** {1:iteration Iteration} *)
+
+(** iter, rev_iter *)
+
+let () =
+  let a = A.of_list [1; 2; 3] in
+  let seen = ref [] in
+  A.iter (fun i -> seen := i :: !seen) a;
+  assert (!seen = [3; 2; 1])
+
+let () =
+  let a = A.of_list [1; 2; 3] in
+  let seen = ref [] in
+  A.rev_iter (fun i -> seen := i :: !seen) a;
+  assert (!seen = [1; 2; 3])
 
 (** map *)
 
@@ -498,6 +542,51 @@ let () =
   A.fit_capacity a;
   assert (A.length a = 201);
   assert (A.length a = A.capacity a);;
+
+(** unsafe_to_iarray *)
+
+let () =
+  let n = 42 in
+  (* With unchanged capacity *)
+  let a = A.unsafe_to_iarray ~capacity:n (fun t ->
+    for i = 0 to n - 1 do
+      A.add_last t i
+    done)
+  in
+  for i = 0 to n - 1 do
+    assert (Iarray.get a i = i)
+  done;
+  (* With a change in capacity *)
+  let a = A.unsafe_to_iarray ~capacity:n (fun t ->
+    for i = 0 to n + 5 do
+      A.add_last t i
+    done)
+  in
+  for i = 0 to n + 5 do
+    assert (Iarray.get a i = i)
+  done;
+  let a = A.unsafe_to_iarray ~capacity:n (fun t ->
+    for i = 0 to n / 2 do
+      A.add_last t i
+    done;
+    A.fit_capacity t)
+  in
+  for i = 0 to n / 2 do
+    assert (Iarray.get a i = i)
+  done;;
+
+(** unsafe_to_iarray with float *)
+
+let () =
+  let n = 42 in
+  let a = A.unsafe_to_iarray ~capacity:n (fun t ->
+    for i = 0 to n - 1 do
+      A.add_last t (Float.of_int i)
+    done)
+  in
+  for i = 0 to n - 1 do
+    assert (Float.equal (Iarray.get a i) (Float.of_int i))
+  done;;
 
 
 (** check that comparisons and marshalling-with-sharing work as

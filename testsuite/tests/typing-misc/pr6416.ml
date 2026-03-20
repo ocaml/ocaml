@@ -133,13 +133,13 @@ module O = struct
   module type s
   type t = A
   module M: sig val f: (module s) -> t -> t end =
-  struct module type s type t = B let f (module X:s) A = B end
+  struct module type s type t = B let f ((module X):(module s)) A = B end
 end;;
 
 [%%expect{|
-Line 5, characters 2-62:
-5 |   struct module type s type t = B let f (module X:s) A = B end
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Line 5, characters 2-73:
+5 |   struct module type s type t = B let f ((module X):(module s)) A = B end
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
          sig module type s type t = B val f : (module s) -> t/2 -> t end
@@ -396,9 +396,9 @@ module Foo : sig type info = { doc : unit; } type t = { info : info; } end
 Line 5, characters 38-41:
 5 | let add_extra_info arg = arg.Foo.info.doc
                                           ^^^
-Warning 40 [name-out-of-scope]: doc was selected from type Foo.info.
-It is not visible in the current scope, and will not
-be selected if the type becomes unknown.
+Warning 40 [name-out-of-scope]: "doc" was selected from type "Foo.info".
+  It is not visible in the current scope, and will not be selected
+  if the type becomes unknown.
 
 val add_extra_info : Foo.t -> unit = <fun>
 |}]
@@ -419,9 +419,9 @@ module Bar : sig end
 Line 8, characters 38-41:
 8 | let add_extra_info arg = arg.Foo.info.doc
                                           ^^^
-Warning 40 [name-out-of-scope]: doc was selected from type Bar/2.info.
-It is not visible in the current scope, and will not
-be selected if the type becomes unknown.
+Warning 40 [name-out-of-scope]: "doc" was selected from type "Bar/2.info".
+  It is not visible in the current scope, and will not be selected
+  if the type becomes unknown.
 
 val add_extra_info : Foo.t -> unit = <fun>
 |}]

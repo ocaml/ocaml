@@ -1,13 +1,13 @@
 File "pr6323.ml", line 1:
-Warning 63 [erroneous-printed-signature]: The printed interface differs from the inferred interface.
-The inferred interface contained items which could not be printed
-properly due to name collisions between identifiers.
-File "pr6323.ml", line 15, characters 2-24:
+Warning 63 [erroneous-printed-signature]: The printed interface differs from
+  the inferred interface. The inferred interface contained items which could
+  not be printed properly due to name collisions between identifiers.
+  File "pr6323.ml", line 15, characters 2-24:
   Definition of type t
 File "pr6323.ml", line 8, characters 0-26:
   Definition of type t/2
-Beware that this warning is purely informational and will not catch
-all instances of erroneous printed interface.
+  Beware that this warning is purely informational and will not catch all
+  instances of erroneous printed interface.
 type 'a t = B of 'a t list
 val foo : 'a -> 'b t list -> 'c t list
 module DT :

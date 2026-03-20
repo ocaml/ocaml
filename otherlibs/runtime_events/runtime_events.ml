@@ -42,6 +42,8 @@ type runtime_counter =
 | EV_C_MAJOR_ALLOC_COUNTER
 | EV_C_MAJOR_SLICE_TARGET
 | EV_C_MAJOR_SLICE_BUDGET
+| EV_C_MINOR_ALLOCATED_WORDS
+| EV_C_MINOR_PROMOTED_WORDS
 
 type runtime_phase =
 | EV_EXPLICIT_GC_SET
@@ -111,7 +113,9 @@ let runtime_counter_name counter =
   | EV_C_FORCE_MINOR_SET_MINOR_HEAP_SIZE -> "force_minor_set_minor_heap_size"
   | EV_C_FORCE_MINOR_MEMPROF -> "force_minor_memprof"
   | EV_C_MINOR_PROMOTED -> "minor_promoted"
+  | EV_C_MINOR_PROMOTED_WORDS -> "minor_promoted_words"
   | EV_C_MINOR_ALLOCATED -> "minor_allocated"
+  | EV_C_MINOR_ALLOCATED_WORDS -> "minor_allocated_words"
   | EV_C_REQUEST_MAJOR_ALLOC_SHR -> "request_major_alloc_shr"
   | EV_C_REQUEST_MAJOR_ADJUST_GC_SPEED -> "request_major_adjust_gc_speed"
   | EV_C_REQUEST_MINOR_REALLOC_REF_TABLE -> "request_minor_realloc_ref_table"
@@ -221,6 +225,11 @@ module Timestamp = struct
 
   let to_int64 t =
     t
+
+  external get_current : unit -> (t [@unboxed]) =
+    "caml_ml_runtime_current_timestamp"
+    "caml_ml_runtime_current_timestamp_unboxed"
+    [@@noalloc]
 end
 
 module Type = struct
@@ -360,7 +369,7 @@ module Callbacks = struct
     lifecycle: (int -> Timestamp.t -> lifecycle
                 -> int option -> unit) option;
     lost_events: (int -> int -> unit) option;
-    (* user event callbacks is an array containing at each indice [i] a list
+    (* user event callbacks is an array containing at each index [i] a list
         of functions to call when an event of type id [i] happen *)
     user_events: any_callback list array;
   }

@@ -14,15 +14,18 @@
 
 (library
  (name stdlib)
+ (libraries dune_support)
  (stdlib
    (exit_module std_exit)
    (internal_modules Camlinternal*)
    (modules_before_stdlib
      camlinternalFormatBasics))
- (flags (:standard -w -9 -nolabels))
+ (flags (:standard -w -9 -nolabels -open New_predef_types))
  (preprocess
    (per_module
     ((action
       (run awk -f %{dep:expand_module_aliases.awk} %{input-file}))
       stdlib)
      )))
+
+(files :standard \ *.cm* *.o *.a)

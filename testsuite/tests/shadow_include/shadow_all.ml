@@ -156,27 +156,25 @@ Line 3, characters 2-26:
 |}]
 
 
-module type Module_type = sig
+module type Module_type_fail = sig
   include S
   module type U = T
   include S
 end
 ;;
 [%%expect{|
-module type Module_type =
-  sig
-    module type U
-    type t
-    val unit : unit
-    external e : unit -> unit = "%identity"
-    module M : sig type t end
-    module type T
-    exception E
-    type ext = ..
-    type ext += C
-    class c : object  end
-    class type ct = object  end
-  end
+Line 4, characters 2-11:
+4 |   include S
+      ^^^^^^^^^
+Error: Illegal shadowing of included module type "T/2" by "T".
+Line 2, characters 2-11:
+2 |   include S
+      ^^^^^^^^^
+  Module type "T/2" came from this include.
+Line 3, characters 2-19:
+3 |   module type U = T
+      ^^^^^^^^^^^^^^^^^
+  The module type "U" has no valid type if "T/2" is shadowed.
 |}]
 
 module type Module_type_fail = sig

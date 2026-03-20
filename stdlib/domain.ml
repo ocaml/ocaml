@@ -25,7 +25,8 @@ module Raw = struct
 
   type 'a state =
     | Running
-    | Finished of ('a, exn) result [@warning "-unused-constructor"]
+    | Finished of ('a, exn * Printexc.raw_backtrace) result
+    [@warning "-unused-constructor"]
 
   type 'a term_sync = {
     (* protected by [mut] *)
@@ -40,6 +41,8 @@ module Raw = struct
     = "caml_ml_domain_id" [@@noalloc]
   external cpu_relax : unit -> unit
     = "caml_ml_domain_cpu_relax"
+  external get_domain_count: unit -> int
+    = "caml_domain_count" [@@noalloc]
   external get_recommended_domain_count: unit -> int
     = "caml_recommended_domain_count" [@@noalloc]
 end
@@ -252,7 +255,8 @@ let spawn f =
   do_before_first_spawn ();
   let pk = DLS.get_initial_keys () in
 
-  (* [term_sync] is used to synchronize with the joining domains *)
+  (* [term_sync] is used to synchronize with the joining domains.
+     Accessed from C code: runtime/domain.c. *)
   let term_sync =
     Raw.{ state = Running ;
           mut = Mutex.create () ;
@@ -296,6 +300,7 @@ let join { term_sync ; _ } =
   in
   match Mutex.protect term_sync.mut loop with
   | Ok x -> x
-  | Error ex -> raise ex
+  | Error (ex, bt) -> Printexc.raise_with_backtrace ex bt
 
+let count = Raw.get_domain_count
 let recommended_domain_count = Raw.get_recommended_domain_count

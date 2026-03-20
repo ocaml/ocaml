@@ -2,5 +2,5 @@ type _ eff += E : unit eff
 Line 5, characters 32-33:
 5 |    | effect E, k when (continue k (); false) -> assert false
                                     ^
-Error: Unbound value "k"
+Error: Unbound value k
 

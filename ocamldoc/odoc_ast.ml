@@ -51,7 +51,7 @@ module Typedtree_search =
     let iter_val_pattern = function
       | Typedtree.Tpat_any -> None
       | Typedtree.Tpat_var (name, _, _)
-      | Typedtree.Tpat_alias (_, name, _, _)  -> Some (Name.from_ident name)
+      | Typedtree.Tpat_alias (_, name, _, _, _)  -> Some (Name.from_ident name)
       | Typedtree.Tpat_tuple _ -> None (* FIXME when we will handle tuples *)
       | _ -> None
 
@@ -259,12 +259,12 @@ module Analyser =
                           sn_type = Odoc_env.subst_type env pat.pat_type
                         }
 
-        | Typedtree.Tpat_alias (pat, _, _, _) ->
+        | Typedtree.Tpat_alias (pat, _, _, _, _) ->
             iter_pattern pat
 
         | Typedtree.Tpat_tuple patlist ->
             Tuple
-              (List.map iter_pattern patlist,
+              (List.map (fun (_, p) -> iter_pattern p) patlist,
                Odoc_env.subst_type env pat.pat_type)
 
         | Typedtree.Tpat_construct (_, cons_desc, _, _) when
@@ -335,7 +335,7 @@ module Analyser =
        let (pat, exp) = pat_exp in
        let comment_opt = Odoc_sig.analyze_alerts comment_opt attrs in
        match pat.pat_desc with
-       | Tpat_var (ident, _, _) | Tpat_alias (_, ident, _, _) ->
+       | Tpat_var (ident, _, _) | Tpat_alias (_, ident, _, _, _) ->
           begin match exp.exp_desc with
           | Texp_function (params, body) ->
 
@@ -709,7 +709,7 @@ module Analyser =
             in
            (parameter :: params, k)
 
-      | (Parsetree.Pcl_apply (p_class_expr2, _), Tcl_apply (tt_class_expr2, exp_opt_optional_list)) ->
+      | (Parsetree.Pcl_apply (p_class_expr2, _), Tcl_apply (tt_class_expr2, arg_list)) ->
           let applied_name =
             (* we want an ident, or else the class applied will appear in the form object ... end,
                because if the class applied has no name, the code is kinda ugly, isn't it ? *)
@@ -724,13 +724,10 @@ module Analyser =
                 |  _ ->
                     Odoc_messages.object_end
           in
-          let param_exps = List.fold_left
-              (fun acc -> fun (_, exp_opt) ->
-                match exp_opt with
-                  None -> acc
-                | Some e -> acc @ [e])
-              []
-              exp_opt_optional_list
+          let param_exps = List.filter_map (function
+              | _, Omitted () -> None
+              | _, Arg e -> Some e)
+            arg_list
           in
           let param_types = List.map (fun e -> e.Typedtree.exp_type) param_exps in
           let params_code =

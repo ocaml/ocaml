@@ -2,5 +2,4 @@ File "pr7284_bad.ml", line 35, characters 30-62:
 35 |    let f : X.v1 wit -> unit = function V1 s -> print_endline s
                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error (warning 8 [partial-match]): this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-V2 _
+  Here is an example of a case that is not matched: V2 _

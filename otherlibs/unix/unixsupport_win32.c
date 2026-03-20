@@ -26,6 +26,7 @@
 #include <caml/osdeps.h>
 #include "caml/unixsupport.h"
 #include "cst2constr.h"
+#include "misc_internals.h"
 #include <errno.h>
 
 /* Heap-allocation of Windows file handles */
@@ -200,7 +201,7 @@ value caml_unix_error_of_code (int errcode)
 
   errconstr =
       caml_unix_cst_to_constr(errcode, error_table,
-                         sizeof(error_table)/sizeof(int), -1);
+                         countof(error_table), -1);
   if (errconstr == Val_int(-1)) {
     err = caml_alloc_small(1, 0);
     Field(err, 0) = Val_int(errcode);

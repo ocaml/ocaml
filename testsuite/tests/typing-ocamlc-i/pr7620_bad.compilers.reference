@@ -1,6 +1,6 @@
 File "pr7620_bad.ml", line 10, characters 17-19:
 10 |   (function `A | `B -> () : 'a) (`A : [`A]);
                       ^^
-Error: This pattern matches values of type "[? `B ]"
-       but a pattern was expected which matches values of type "[ `A ]"
-       The second variant type does not allow tag(s) "`B"
+Error: This pattern matches values of type [? `B ]
+       but a pattern was expected which matches values of type [ `A ]
+       The second variant type does not allow tag(s) `B

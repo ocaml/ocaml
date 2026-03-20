@@ -26,18 +26,18 @@ Line 1, characters 21-23:
 1 | let no_hex_digits = "\u{}" ;;
                          ^^
 Warning 14 [illegal-backslash]: illegal backslash escape in string.
-Hint: Single backslashes \ are reserved for escape sequences
-(\n, \r, ...). Did you check the list of OCaml escape sequences?
-To get a backslash character, escape it with a second backslash: \\.
+  Hint: Single backslashes \ are reserved for escape sequences (\n, \r, ...).
+  Did you check the list of OCaml escape sequences?
+  To get a backslash character, escape it with a second backslash: \\.
 
 val no_hex_digits : string = "\\u{}"
 Line 1, characters 25-27:
 1 | let illegal_hex_digit = "\u{u}" ;;
                              ^^
 Warning 14 [illegal-backslash]: illegal backslash escape in string.
-Hint: Single backslashes \ are reserved for escape sequences
-(\n, \r, ...). Did you check the list of OCaml escape sequences?
-To get a backslash character, escape it with a second backslash: \\.
+  Hint: Single backslashes \ are reserved for escape sequences (\n, \r, ...).
+  Did you check the list of OCaml escape sequences?
+  To get a backslash character, escape it with a second backslash: \\.
 
 val illegal_hex_digit : string = "\\u{u}"
 

@@ -1,3 +1,4 @@
+set disable-randomization off
 break *(&caml_start_program+0)
 break caml_program
 break ocaml_to_c

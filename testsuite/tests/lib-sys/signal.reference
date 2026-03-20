@@ -1,0 +1,2 @@
+SIGHUP platform_no: 1 ocaml_no: -4
+Sys.set_signal works!

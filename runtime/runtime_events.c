@@ -40,10 +40,6 @@
 #include <wtypes.h>
 #else
 #include <sys/mman.h>
-#endif
-
-
-#if defined(HAS_UNISTD)
 #include <unistd.h>
 #endif
 
@@ -334,7 +330,7 @@ static void runtime_events_create_from_stw_single(void) {
                         mmap(NULL, current_ring_total_size,
                             PROT_READ | PROT_WRITE, MAP_SHARED, ring_fd, 0);
 
-    if (current_metadata == NULL) {
+    if (current_metadata == MAP_FAILED) {
       caml_fatal_error("Unable to mmap ring buffer");
     }
 
@@ -380,6 +376,7 @@ static void runtime_events_create_from_stw_single(void) {
 
     // at the same instant: snapshot user_events list and set
     // runtime_events_enabled to 1
+    /* calling from STW */
     caml_plat_lock_blocking(&user_events_lock);
     value current_user_event = user_events;
     atomic_store_release(&runtime_events_enabled, 1);
@@ -488,18 +485,17 @@ CAMLprim value caml_ml_runtime_events_resume(value vunit) {
 
 CAMLprim value caml_ml_runtime_events_path(value vunit) {
   CAMLparam0();
-  CAMLlocal1 (res);
+  CAMLlocal2 (res, str);
   res = Val_none;
   if (atomic_load_acquire(&runtime_events_enabled)) {
-    res = caml_alloc_small(1, Tag_some);
     /* The allocation might GC, which could allow another domain to
-     * nuke current_ring_loc, so we check again. */
-    if (atomic_load_acquire(&runtime_events_enabled)) {
-      Field(res, 0) = caml_copy_string_of_os(current_ring_loc);
-    } else {
-      res = Val_none;
-    }
+     * nuke current_ring_loc, so we snapshot it first. */
+    char_os *current_ring_loc_str = caml_stat_strdup_os(current_ring_loc);
+    str = caml_copy_string_of_os(current_ring_loc_str);
+    caml_stat_free(current_ring_loc_str);
+    res = caml_alloc_some(str);
   }
+
   CAMLreturn(res);
 }
 
@@ -596,11 +592,12 @@ static void write_to_ring(ev_category category, ev_message_type type,
      of event headers.
   */
 
-  ring_ptr[ring_tail_offset++] = RUNTIME_EVENTS_HEADER(
-                                  length_with_header_ts,
-                                  category == EV_RUNTIME,
-                                  (type.runtime | type.user),
-                                  event_id);
+  ring_ptr[ring_tail_offset++] =
+    RUNTIME_EVENTS_HEADER(
+      length_with_header_ts,
+      category == EV_RUNTIME,
+      (category == EV_RUNTIME ? type.runtime : type.user),
+      event_id);
 
   ring_ptr[ring_tail_offset++] = timestamp;
   if (content != NULL) {
@@ -720,6 +717,12 @@ CAMLprim value caml_runtime_events_user_register(value event_name,
   Field(event, 3) = event_tag;
 
 
+  /* Pre-allocate to avoid STW while holding [user_events_lock]. */
+  list_item = caml_alloc_small(2, 0);
+
+  /* [user_events_lock] can be acquired during STW, so we must use
+     caml_plat_lock_blocking and be careful to avoid triggering any
+     STW while holding it */
   caml_plat_lock_blocking(&user_events_lock);
   // critical section: when we update the user_events list we need to make sure
   // it is not updated while we construct the pointer to the next element
@@ -730,7 +733,6 @@ CAMLprim value caml_runtime_events_user_register(value event_name,
   }
 
   // event is added to the list of known events
-  list_item = caml_alloc_small(2, 0);
   Field(list_item, 0) = event;
   Field(list_item, 1) = user_events;
   caml_modify_generational_global_root(&user_events, list_item);

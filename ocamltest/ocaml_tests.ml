@@ -46,7 +46,16 @@ let bytecode =
     check_program_output;
   ] @
   (if not Sys.win32 && Ocamltest_config.native_compiler then
-    opt_build @ [compare_bytecode_programs]
+    (* If the compiler is configured using --with-relative-libdir then at
+       present we can't compare the bytecode programs because ocamlc.opt and
+       ocamlrun are at different levels in the build tree, but they're both
+       configured with the same relative directory path.
+       This problem will disappear when ocamltest runs the testsuite against a
+       compiler in an install-tree like way. *)
+    if Ocamltest_config.has_relative_libdir then
+      opt_build
+    else
+      opt_build @ [compare_bytecode_programs]
   else
     []
   )
@@ -153,7 +162,7 @@ let asmgen_skip_on_bytecode_only =
   Actions_helpers.skip_with_reason "native compiler disabled"
 
 let msvc64 =
-  Ocamltest_config.ccomptype = "msvc" && Ocamltest_config.arch="amd64"
+  Ocamltest_config.ccomp_type = "msvc" && Ocamltest_config.arch="amd64"
 
 let asmgen_skip_on_msvc64 =
   Actions_helpers.skip_with_reason "not ported to MSVC64 yet"

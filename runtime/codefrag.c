@@ -130,7 +130,14 @@ unsigned char *caml_digest_of_code_fragment(struct code_fragment *cf) {
   /* Note: this approach is a bit heavy-handed as we take a lock in
      all cases. It would be possible to take a lock only in the
      DIGEST_LATER case, which occurs at most once per fragment, by
-     using double-checked locking -- see #11791. */
+     using double-checked locking -- see #11791.
+
+     Note: we use [caml_plat_lock_blocking] despite holding the domain
+     lock because this is called by intern.c and extern.c, both of
+     which share state between threads of the same domain. The
+     critical section must therefore remain short and not allocate
+     (nor cause other potential STW).
+  */
   caml_plat_lock_blocking(&cf->mutex);
   {
     if (cf->digest_status == DIGEST_IGNORE) {

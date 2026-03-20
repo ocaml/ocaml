@@ -17,7 +17,7 @@
 module Int_base = Identifiable.Make (struct
   type t = int
 
-  let compare x y = x - y
+  let compare = Int.compare
   let output oc x = Printf.fprintf oc "%i" x
   let hash i = i
   let equal (i : int) j = i = j

@@ -15,14 +15,38 @@ module C = Char
 - : char = 'B'
 module C' :
   sig
+    type t = char
     external code : char -> int = "%identity"
     val chr : int -> char
     val escaped : char -> string
-    val lowercase_ascii : char -> char
-    val uppercase_ascii : char -> char
-    type t = char
     val compare : t -> t -> int
     val equal : t -> t -> bool
+    module Ascii :
+      sig
+        val min : char
+        val max : char
+        val is_valid : char -> bool
+        val is_upper : char -> bool
+        val is_lower : char -> bool
+        val is_letter : char -> bool
+        val is_alphanum : char -> bool
+        val is_white : char -> bool
+        val is_blank : char -> bool
+        val is_graphic : char -> bool
+        val is_print : char -> bool
+        val is_control : char -> bool
+        val is_digit : char -> bool
+        val digit_to_int : char -> int
+        val digit_of_int : int -> char
+        val is_hex_digit : char -> bool
+        val hex_digit_to_int : char -> int
+        val lower_hex_digit_of_int : int -> char
+        val upper_hex_digit_of_int : int -> char
+        val uppercase : char -> char
+        val lowercase : char -> char
+      end
+    val lowercase_ascii : char -> char
+    val uppercase_ascii : char -> char
     val seeded_hash : int -> t -> int
     val hash : t -> int
     external unsafe_chr : int -> char = "%identity"
@@ -30,14 +54,15 @@ module C' :
 - : char = 'B'
 module C3 :
   sig
+    type t = char
     external code : char -> int = "%identity"
     val chr : int -> char
     val escaped : char -> string
-    val lowercase_ascii : char -> char
-    val uppercase_ascii : char -> char
-    type t = char
     val compare : t -> t -> int
     val equal : t -> t -> bool
+    module Ascii = Char.Ascii
+    val lowercase_ascii : char -> char
+    val uppercase_ascii : char -> char
     val seeded_hash : int -> t -> int
     val hash : t -> int
     external unsafe_chr : int -> char = "%identity"
@@ -59,28 +84,30 @@ C4.chr 66;;
 module F :
   (X : sig end) ->
     sig
+      type t = char
       external code : char -> int = "%identity"
       val chr : int -> char
       val escaped : char -> string
-      val lowercase_ascii : char -> char
-      val uppercase_ascii : char -> char
-      type t = char
       val compare : t -> t -> int
       val equal : t -> t -> bool
+      module Ascii = Char.Ascii
+      val lowercase_ascii : char -> char
+      val uppercase_ascii : char -> char
       val seeded_hash : int -> t -> int
       val hash : t -> int
       external unsafe_chr : int -> char = "%identity"
     end
 module C4 :
   sig
+    type t = char
     external code : char -> int = "%identity"
     val chr : int -> char
     val escaped : char -> string
-    val lowercase_ascii : char -> char
-    val uppercase_ascii : char -> char
-    type t = char
     val compare : t -> t -> int
     val equal : t -> t -> bool
+    module Ascii = Char.Ascii
+    val lowercase_ascii : char -> char
+    val uppercase_ascii : char -> char
     val seeded_hash : int -> t -> int
     val hash : t -> int
     external unsafe_chr : int -> char = "%identity"
@@ -308,6 +335,8 @@ module StringSet :
     val partition : (elt -> bool) -> t -> t * t
     val split : elt -> t -> t * bool * t
     val is_empty : t -> bool
+    val is_singleton : t -> bool
+    val singleton_to_elt : t -> elt option
     val mem : elt -> t -> bool
     val equal : t -> t -> bool
     val compare : t -> t -> int
@@ -356,6 +385,8 @@ module SSet :
     val partition : (elt -> bool) -> t -> t * t
     val split : elt -> t -> t * bool * t
     val is_empty : t -> bool
+    val is_singleton : t -> bool
+    val singleton_to_elt : t -> elt option
     val mem : elt -> t -> bool
     val equal : t -> t -> bool
     val compare : t -> t -> int
@@ -436,6 +467,8 @@ module A :
         val partition : (elt -> bool) -> t -> t * t
         val split : elt -> t -> t * bool * t
         val is_empty : t -> bool
+        val is_singleton : t -> bool
+        val singleton_to_elt : t -> elt option
         val mem : elt -> t -> bool
         val equal : t -> t -> bool
         val compare : t -> t -> int
@@ -568,6 +601,8 @@ module SInt :
     val partition : (elt -> bool) -> t -> t * t
     val split : elt -> t -> t * bool * t
     val is_empty : t -> bool
+    val is_singleton : t -> bool
+    val singleton_to_elt : t -> elt option
     val mem : elt -> t -> bool
     val equal : t -> t -> bool
     val compare : t -> t -> int
@@ -683,23 +718,18 @@ module type S' = sig module M : sig type t = H.t = A val x : t end end
 (* PR#6376 *)
 module type Alias = sig module N : sig end module M = N end;;
 module F (X : sig end) = struct type t end;;
-module type A = Alias with module N := F(List);;
-module rec Bad : A = Bad;;
+module S = struct
+  module type A = Alias with module N := F(List)
+  module rec Bad : A = Bad
+end;;
 [%%expect{|
 module type Alias = sig module N : sig end module M = N end
 module F : (X : sig end) -> sig type t end
-Line 1:
-Error: Module type declarations do not match:
-         module type A = sig module M = F(List) end
-       does not match
-         module type A = sig module M = F(List) end
-       At position "module type A = <here>"
-       Module types do not match:
-         sig module M = F(List) end
-       is not equal to
-         sig module M = F(List) end
-       At position "module type A = sig module M : <here> end"
-       Module "F(List)" cannot be aliased
+Line 4, characters 18-48:
+4 |   module type A = Alias with module N := F(List)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this "with" constraint, replacing "N" by "F(Stdlib.List)" would
+       introduce an invalid alias at "M"
 |}];;
 
 (* Shinwell 2014-04-23 *)
@@ -883,4 +913,30 @@ module M :
   end
 module N : sig val s : string end
 val s : string = "hello"
+|}]
+
+
+(* Aliases of a recursive module (within the definition) are disallowed *)
+module rec X1 : sig end = struct
+  module Inner : sig module X = X2 end = struct end
+end
+and X2 : sig end = struct end
+[%%expect {|
+Line 2, characters 21-34:
+2 |   module Inner : sig module X = X2 end = struct end
+                         ^^^^^^^^^^^^^
+Error: Functor arguments and recursive modules (within the
+       recursive definition), such as "X2", cannot be aliased
+|}]
+
+
+(* Aliases of a recursive module (outside of the definition) are allowed *)
+module rec X1 : sig end = struct end
+and X2 : sig end = struct end
+
+module X3 : sig module Inner = X1 end = struct module Inner = X1 end
+[%%expect {|
+module rec X1 : sig end
+and X2 : sig end
+module X3 : sig module Inner = X1 end
 |}]

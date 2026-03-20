@@ -16,9 +16,7 @@
 #include <caml/fail.h>
 #include <caml/mlvalues.h>
 #include "caml/unixsupport.h"
-#ifdef HAS_UNISTD
 #include <unistd.h>
-#endif
 
 CAMLprim value caml_unix_setsid(value unit)
 {

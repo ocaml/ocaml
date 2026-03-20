@@ -42,8 +42,15 @@ void printtab(double tab[DIMX][DIMY])
 value c_filltab(value unit)
 {
   filltab();
+#if defined(_MSC_VER) && !defined(__clang__)
+#pragma warning(push)
+#pragma warning(disable : 5287)
+#endif
   return caml_ba_alloc_dims(CAML_BA_FLOAT64 | CAML_BA_C_LAYOUT,
                             2, ctab, (intnat)DIMX, (intnat)DIMY);
+#if defined(_MSC_VER) && !defined(__clang__)
+#pragma warning(pop)
+#endif
 }
 
 value c_printtab(value ba)

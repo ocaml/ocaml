@@ -87,7 +87,7 @@ let rec discard_dead_code n =
     (* This dead instruction cannot be replaced by Ladjust_trap_depth,
        because the units don't match: the argument of Istackoffset is in bytes,
        whereas the argument of Ladjust_trap_depth is in trap frames,
-       and the size of trap frames is machine-dependant and therefore not
+       and the size of trap frames is machine-dependent and therefore not
        available here.  *)
     { n with next = discard_dead_code n.next; }
   | _ -> discard_dead_code n.next

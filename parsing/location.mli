@@ -26,7 +26,31 @@ type t = Warnings.loc = {
   loc_start: Lexing.position;
   loc_end: Lexing.position;
   loc_ghost: bool;
-}
+  }
+(** [t] represents a range of characters in the source code.
+
+    loc_ghost=false whenever the AST described by the location can be parsed
+    from the location. In all other cases, loc_ghost must be true. Most
+    locations produced by the parser have loc_ghost=false.
+    When loc_ghost=true, the location is usually a best effort approximation.
+
+    This info is used by tools like merlin that want to relate source code with
+    parsetrees or later asts. ocamlprof skips instrumentation of ghost nodes.
+
+    Example: in `let f x = x`, we have:
+    - a structure item at location "let f x = x"
+    - a pattern "f" at location "f"
+    - an expression "fun x -> x" at location "x = x" with loc_ghost=true
+    - a pattern "x" at location "x"
+    - an expression "x" at location "x"
+    In this case, every node has loc_ghost=false, except the node "fun x -> x",
+    since [Parser.expression (Lexing.from_string "x = x")] would fail to parse.
+    By contrast, in `let f = fun x -> x`, every node has loc_ghost=false.
+
+    Line directives can modify the filenames and line numbers arbitrarily,
+    which is orthogonal to loc_ghost, which describes the range of characters
+    from loc_start.pos_cnum to loc_end.pos_cnum in the parsed string.
+ *)
 
 (** Note on the use of Lexing.position in this module.
    If [pos_fname = ""], then use [!input_name] instead.
@@ -70,6 +94,7 @@ type 'a loc = {
 
 val mknoloc : 'a -> 'a loc
 val mkloc : 'a -> t -> 'a loc
+val map : ('a -> 'b) -> 'a loc -> 'b loc
 
 
 (** {1 Input info} *)
@@ -230,7 +255,7 @@ type report_printer = {
     Format.formatter -> Format_doc.t -> unit;
 }
 (** A printer for [report]s, defined using open-recursion.
-    The goal is to make it easy to define new printers by re-using code from
+    The goal is to make it easy to define new printers by reusing code from
     existing ones.
 *)
 
@@ -334,6 +359,13 @@ val error: ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg -> string -> error
 
 val errorf: ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg ->
   ('a, Format_doc.formatter, unit, error) format4 -> 'a
+
+val aligned_error_hint:
+  ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg ->
+  ('a, Format_doc.formatter, unit, Format_doc.t option ->  error) format4 -> 'a
+(** [aligned_error_hint ?loc ?sub ?footnote fmt ... aligned_hint] produces an
+    error report where the potential [aligned_hint] message has been aligned
+    with the main error message before being added to the list of submessages.*)
 
 val error_of_printer: ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg ->
   (Format_doc.formatter -> 'a -> unit) -> 'a -> error

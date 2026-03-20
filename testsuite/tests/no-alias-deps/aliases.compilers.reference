@@ -6,5 +6,6 @@ Warning 49 [no-cmi-file]: no cmi file was found in path for module A
 File "aliases.ml", line 18, characters 12-13:
 18 | module B' = B (* broken b.cmi *)
                  ^
-Warning 49 [no-cmi-file]: no valid cmi file was found in path for module B. b.cmi
+Warning 49 [no-cmi-file]: no valid cmi file was found in path for module B.
+  b.cmi
 is not a compiled interface

@@ -23,10 +23,9 @@
 #include <caml/platform.h>
 #include "caml/unixsupport.h"
 #include "cst2constr.h"
+#include "misc_internals.h"
 #include <errno.h>
-#ifdef HAS_UNISTD
 #include <unistd.h>
-#endif
 #include <fcntl.h>
 
 #ifndef E2BIG
@@ -268,7 +267,7 @@ value caml_unix_error_of_code (int errcode)
 
   errconstr =
       caml_unix_cst_to_constr(errcode, error_table,
-                         sizeof(error_table)/sizeof(int), -1);
+                         countof(error_table), -1);
   if (errconstr == Val_int(-1)) {
     err = caml_alloc_small(1, 0);
     Field(err, 0) = Val_int(errcode);

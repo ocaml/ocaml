@@ -118,6 +118,7 @@ module Search =
             | Type_variant l ->
                 List.flatten (List.map (fun rf -> search_const t rf v) l)
             | Type_open -> []
+            | Type_external _ -> []
       in
       if ok then (Res_type t) :: l else l
 

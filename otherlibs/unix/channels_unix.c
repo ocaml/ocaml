@@ -46,7 +46,7 @@ static int caml_unix_check_stream_semantics(int fd)
 #ifdef HAS_SOCKETS
   case S_IFSOCK: {
     int so_type;
-    socklen_param_type so_type_len = sizeof(so_type);
+    socklen_t so_type_len = sizeof(so_type);
     if (getsockopt(fd, SOL_SOCKET, SO_TYPE, &so_type, &so_type_len) == -1)
       return errno;
     switch (so_type) {

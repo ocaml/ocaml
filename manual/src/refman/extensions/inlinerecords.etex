@@ -1,3 +1,6 @@
+\section{s:inline-records}{Inline records}
+%HEVEA\cutname{inlinerecords.html}
+
 (Introduced in OCaml 4.03)
 \begin{syntax}
   constr-args:

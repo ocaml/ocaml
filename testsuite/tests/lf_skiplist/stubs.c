@@ -3,7 +3,6 @@
 #include <caml/lf_skiplist.h>
 #include <caml/memory.h>
 #include <assert.h>
-#define FMT ARCH_INTNAT_PRINTF_FORMAT
 
 CAMLprim value test_skiplist_serial(value val) {
   CAMLparam0();
@@ -85,8 +84,9 @@ CAMLprim value clean_skiplist(value val) {
     int len = get_len(atomic_load(&the_list.garbage_head),the_list.head) ;
     if (v >= 0) {
       if (len != v) {
-        fprintf(stderr,"len=%d, and v=%" FMT "d differ, space leak detected\n",
-                        len,v);
+        fprintf(stderr,
+                "len=%d, and v=%" CAML_PRIdNAT " differ, space leak detected\n",
+                len,v);
       }
     }
   }
@@ -137,7 +137,7 @@ CAMLprim value insert_skiplist(value turn_val,value ndoms_val,value domain_id_va
   uintnat turn = Long_val(turn_val);
   uintnat k = calc_key(domain_id,turn) ;
   uintnat v =  calc_value(domain_id) ;
-  //  fprintf(stderr,"I: %" FMT "u -> %" FMT "u\n",k,v);
+  //  fprintf(stderr,"I: %" CAML_PRIuNAT " -> %" FMT "u\n",k,v);
   int r = caml_lf_skiplist_insert(&the_list, k, v) ;
   assert(r);
   CAMLreturn(Val_unit);

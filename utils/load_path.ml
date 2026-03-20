@@ -131,11 +131,13 @@ let remove_dir dir =
   let hidden = List.filter (fun d -> Dir.path d <> dir) !hidden_dirs in
   if    List.compare_lengths visible !visible_dirs <> 0
      || List.compare_lengths hidden !hidden_dirs <> 0 then begin
+    let saved_auto_include = !auto_include_callback in
     reset ();
     visible_dirs := visible;
     hidden_dirs := hidden;
     List.iter prepend_add hidden;
-    List.iter prepend_add visible
+    List.iter prepend_add visible;
+    auto_include_callback := saved_auto_include
   end
 
 (* General purpose version of function to add a new entry to load path: We only

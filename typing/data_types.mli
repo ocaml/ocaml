@@ -55,11 +55,16 @@ val may_equal_constr :
 (* Type constructor of the constructor's result type. *)
 val cstr_res_type_path : constructor_description -> Path.t
 
+(* Parameters of the type constructor *)
+val cstr_res_type_params : constructor_description -> type_expr list
+
 type label_description =
   { lbl_name: string;                   (* Short name *)
-    lbl_res: type_expr;                 (* Type of the result *)
-    lbl_arg: type_expr;                 (* Type of the argument *)
+    lbl_res: type_expr;                 (* Type of the result (the record) *)
+    lbl_arg: type_expr;                 (* Type of the argument
+                                           (the field value) *)
     lbl_mut: mutable_flag;              (* Is this a mutable field? *)
+    lbl_atomic: atomic_flag;            (* Is this an atomic field? *)
     lbl_pos: int;                       (* Position in block *)
     lbl_all: label_description array;   (* All the labels in this type *)
     lbl_repres: record_representation;  (* Representation for this record *)
@@ -68,3 +73,6 @@ type label_description =
     lbl_attributes: Parsetree.attributes;
     lbl_uid: Uid.t;
   }
+
+(* Type constructor of the label record type. *)
+val lbl_res_type_path : label_description -> Path.t

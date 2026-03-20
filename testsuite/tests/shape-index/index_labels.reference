@@ -1,19 +1,14 @@
 Indexed shapes:
-Resolved: Index_labels.2 :
+Resolved: Index_labels.2:
   b (File "index_labels.ml", line 26, characters 14-15)
-Resolved: Index_labels.1 :
-  a (File "index_labels.ml", line 26, characters 6-7)
-Resolved: Index_labels.3 :
-  x (File "index_labels.ml", line 23, characters 2-3)
-Resolved: Index_labels.1 :
-  a (File "index_labels.ml", line 23, characters 4-5)
-Resolved: Index_labels.3 :
-  x (File "index_labels.ml", line 22, characters 2-3)
-Resolved: Index_labels.1 :
-  a (File "index_labels.ml", line 22, characters 4-5)
-Resolved: Index_labels.2 :
+Resolved: Index_labels.1: a (File "index_labels.ml", line 26, characters 6-7)
+Resolved: Index_labels.3: x (File "index_labels.ml", line 23, characters 2-3)
+Resolved: Index_labels.1: a (File "index_labels.ml", line 23, characters 4-5)
+Resolved: Index_labels.3: x (File "index_labels.ml", line 22, characters 2-3)
+Resolved: Index_labels.1: a (File "index_labels.ml", line 22, characters 4-5)
+Resolved: Index_labels.2:
   b (File "index_labels.ml", line 20, characters 18-19)
-Resolved: Index_labels.1 :
+Resolved: Index_labels.1:
   a (File "index_labels.ml", line 20, characters 10-11)
 
 Uid of decls:

@@ -6,7 +6,7 @@ File "tupled_function_calls.ml", lines 16-21, characters 46-57:
 20 |       let pair = (f, xs) in
 21 |       f x :: (tupled_map_not_direct[@tailcall true]) pair
 Warning 71 [unused-tmc-attribute]: This function is marked @tail_mod_cons
-but is never applied in TMC position.
+  but is never applied in TMC position.
 
 File "tupled_function_calls.ml", line 21, characters 13-57:
 21 |       f x :: (tupled_map_not_direct[@tailcall true]) pair

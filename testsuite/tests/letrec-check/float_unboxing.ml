@@ -23,15 +23,17 @@ Error: This kind of expression is not allowed as right-hand side of "let rec"
 
 (* same example, with object instance variables
    instead of record fields *)
-class c = object
-  val mutable f = 0.0
-  method m =
-    let rec x = (f <- y; ()) and y = 2.0 in f
-end;;
-let _ = print_float (new c)#m;;
+module S = struct
+  class c = object
+    val mutable f = 0.0
+    method m =
+      let rec x = (f <- y; ()) and y = 2.0 in f
+  end
+  let _ = print_float (new c)#m
+end
 [%%expect{|
-Line 4, characters 16-28:
-4 |     let rec x = (f <- y; ()) and y = 2.0 in f
-                    ^^^^^^^^^^^^
+Line 5, characters 18-30:
+5 |       let rec x = (f <- y; ()) and y = 2.0 in f
+                      ^^^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;

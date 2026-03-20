@@ -39,7 +39,7 @@ type out_attribute =
   { oattr_name: string }
 
 type out_value =
-  | Oval_array of out_value list
+  | Oval_array of out_value list * Asttypes.mutable_flag
   | Oval_char of char
   | Oval_constr of out_ident * out_value list
   | Oval_ellipsis
@@ -53,7 +53,7 @@ type out_value =
   | Oval_record of (out_ident * out_value) list
   | Oval_string of string * int * out_string (* string, size-to-print, kind *)
   | Oval_stuff of string
-  | Oval_tuple of out_value list
+  | Oval_tuple of (string option * out_value) list
   | Oval_variant of string * out_value option
   | Oval_lazy of out_value
   | Oval_floatarray of floatarray
@@ -72,20 +72,28 @@ type out_type =
   | Otyp_class of out_ident * out_type list
   | Otyp_constr of out_ident * out_type list
   | Otyp_manifest of out_type * out_type
-  | Otyp_object of { fields: (string * out_type) list; open_row:bool}
+  | Otyp_object of { fields: (string * out_type) list; row: out_row}
   | Otyp_record of out_label list
   | Otyp_stuff of string
   | Otyp_sum of out_constructor list
-  | Otyp_tuple of out_type list
+  | Otyp_tuple of (string option * out_type) list
   | Otyp_var of bool * string
   | Otyp_variant of out_variant * bool * (string list) option
   | Otyp_poly of string list * out_type
-  | Otyp_module of out_ident * (string * out_type) list
+  | Otyp_module of out_package
   | Otyp_attribute of out_type * out_attribute
+  | Otyp_external of string
+  | Otyp_functor of Asttypes.arg_label * out_ident * out_package * out_type
+
+and out_row =
+  | Orow_closed
+  | Orow_open_anonymous
+  | Orow_open of out_type
 
 and out_label = {
   olab_name: string;
   olab_mut: Asttypes.mutable_flag;
+  olab_atomic: Asttypes.atomic_flag;
   olab_type: out_type;
 }
 
@@ -93,6 +101,11 @@ and out_constructor = {
   ocstr_name: string;
   ocstr_args: out_type list;
   ocstr_return_type: out_type option;
+}
+
+and out_package = {
+  opack_path: out_ident;
+  opack_constraints: (string * out_type) list;
 }
 
 and out_variant =
@@ -134,17 +147,17 @@ and out_type_decl =
     otype_private: Asttypes.private_flag;
     otype_immediate: Type_immediacy.t;
     otype_unboxed: bool;
-    otype_cstrs: (out_type * out_type) list }
+    otype_constraints: (out_type * out_type) list }
 and out_extension_constructor =
   { oext_name: string;
     oext_type_name: string;
-    oext_type_params: string list;
+    oext_type_params: out_type_param list;
     oext_args: out_type list;
     oext_ret_type: out_type option;
     oext_private: Asttypes.private_flag }
 and out_type_extension =
   { otyext_name: string;
-    otyext_params: string list;
+    otyext_params: out_type_param list;
     otyext_constructors: out_constructor list;
     otyext_private: Asttypes.private_flag }
 and out_val_decl =

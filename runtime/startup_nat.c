@@ -42,7 +42,7 @@
 extern char caml_system__code_begin, caml_system__code_end;
 /* The two symbols above are defined in runtime/$ARCH.S.
    They use the old `__` separator convention because the new convention
-   gives `caml_system.code_begin`, which is not a valid C identifier. */
+   gives `caml_system$code_begin`, which is not a valid C identifier. */
 
 /* Initialize the static data and code area limits. */
 
@@ -122,7 +122,7 @@ value caml_startup_common(char_os **argv, int pooling)
     exe_name = proc_self_exe;
   else
     exe_name = caml_search_exe_in_path(exe_name);
-  caml_sys_init(exe_name, argv);
+  caml_sys_init(proc_self_exe, exe_name, argv);
   caml_maybe_expand_stack();
   res = caml_start_program(Caml_state);
   caml_terminate_signals();

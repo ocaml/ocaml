@@ -165,22 +165,22 @@ double caml_int64_float_of_bits_unboxed(int64_t i)
 To write C code that operates on OCaml values, the following
 include files are provided:
 \begin{tableau}{|l|p{12cm}|}{Include file}{Provides}
-\entree{"caml/mlvalues.h"}{definition of the "value" type, and conversion
+\entree{"<caml/mlvalues.h>"}{definition of the "value" type, and conversion
 macros}
-\entree{"caml/alloc.h"}{allocation functions (to create structured OCaml
+\entree{"<caml/alloc.h>"}{allocation functions (to create structured OCaml
 objects)}
-\entree{"caml/memory.h"}{miscellaneous memory-related functions
+\entree{"<caml/memory.h>"}{miscellaneous memory-related functions
 and macros (for GC interface, in-place modification of structures, etc).}
-\entree{"caml/fail.h"}{functions for raising exceptions
+\entree{"<caml/fail.h>"}{functions for raising exceptions
 (see section~\ref{ss:c-exceptions})}
-\entree{"caml/callback.h"}{callback from C to OCaml (see
+\entree{"<caml/callback.h>"}{callback from C to OCaml (see
 section~\ref{s:c-callback}).}
-\entree{"caml/custom.h"}{operations on custom blocks (see
+\entree{"<caml/custom.h>"}{operations on custom blocks (see
 section~\ref{s:c-custom}).}
-\entree{"caml/intext.h"}{operations for writing user-defined
+\entree{"<caml/intext.h>"}{operations for writing user-defined
 serialization and deserialization functions for custom blocks
 (see section~\ref{s:c-custom}).}
-\entree{"caml/threads.h"}{operations for interfacing in the presence
+\entree{"<caml/threads.h>"}{operations for interfacing in the presence
   of multiple threads (see section~\ref{s:C-multithreading}).}
 \end{tableau}
 These files reside in the "caml/" subdirectory of the OCaml
@@ -414,7 +414,7 @@ bytecode executable (so that the bytecode from "unix.cma" and
 \section{s:c-value}{The \texttt{value} type}
 
 All OCaml objects are represented by the C type "value",
-defined in the include file "caml/mlvalues.h", along with macros to
+defined in the include file "<caml/mlvalues.h>", along with macros to
 manipulate values of that type. An object of type "value" is either:
 \begin{itemize}
 \item an unboxed integer;
@@ -615,7 +615,7 @@ fields contain its arguments. Example:
 contains "h", second field "t".}
 \end{tableau}
 
-As a convenience, "caml/mlvalues.h" defines the macros "Val_unit",
+As a convenience, "<caml/mlvalues.h>" defines the macros "Val_unit",
 "Val_false", "Val_true" and "Val_emptylist" to refer to "()",
 "false", "true" and "[]".
 
@@ -658,7 +658,7 @@ Since public method tags are hashed in the same way as variant tags,
 and methods are functions taking self as first argument, if you want
 to do the method call "foo#bar" from the C side, you should call:
 \begin{verbatim}
-  callback(caml_get_public_method(foo, hash_variant("bar")), foo);
+  callback(caml_get_public_method(foo, caml_hash_variant("bar")), foo);
 \end{verbatim}
 
 \subsection{ss:c-polyvar}{Polymorphic variants}
@@ -668,14 +668,14 @@ as integers (for polymorphic variants without argument), or as blocks
 (for polymorphic variants with an argument).  Unlike constructed
 terms, variant constructors are not numbered starting from 0, but
 identified by a hash value (an OCaml integer), as computed by the C function
-"hash_variant" (declared in "<caml/mlvalues.h>"):
+"caml_hash_variant" (declared in "<caml/mlvalues.h>"):
 the hash value for a variant constructor named, say, "VConstr"
-is "hash_variant(\"VConstr\")".
+is "caml_hash_variant(\"VConstr\")".
 
 The variant value "`VConstr" is represented by
-"hash_variant(\"VConstr\")".  The variant value "`VConstr("\var{v}")" is
+"caml_hash_variant(\"VConstr\")".  The variant value "`VConstr("\var{v}")" is
 represented by a block of size 2 and tag 0, with field number 0
-containing "hash_variant(\"VConstr\")" and field number 1 containing
+containing "caml_hash_variant(\"VConstr\")" and field number 1 containing
 \var{v}.
 
 Unlike constructed values, polymorphic variant values taking several
@@ -701,17 +701,24 @@ type) corresponds to the "Some" constructor.
 
 \subsection{ss:c-int-ops}{Operations on integers}
 
+The header "<caml/config.h>" defines a C integer type "intnat" of signed 64-bit
+integers (32-bit integers on 32-bit architectures). This type is used to
+represent the integer encoded by a "value" corresponding to an unboxed integer
+without truncation.
+
 \begin{itemize}
-\item "Val_long("\var{l}")" returns the value encoding the "long int" \var{l}.
-\item "Long_val("\var{v}")" returns the "long int" encoded in value \var{v}.
+\item "Val_long("\var{n}")" returns the value encoding the "intnat" \var{n}.
+\item "Long_val("\var{v}")" returns the "intnat" encoded in value \var{v}.
 \item "Val_int("\var{i}")" returns the value encoding the "int" \var{i}.
-\item "Int_val("\var{v}")" returns the "int" encoded in value \var{v}.
+\item "Int_val("\var{v}")" returns the "int" encoded in value \var{v}. Note that
+this operation may result in a truncated value since "int" is 32-bit wide on
+64-bit architectures.
 \item "Val_bool("\var{x}")" returns the OCaml boolean representing the
 truth value of the C integer \var{x}.
 \item "Bool_val("\var{v}")" returns 0 if \var{v} is the OCaml boolean
 "false", 1 if \var{v} is "true".
 \item "Val_true", "Val_false" represent the OCaml booleans "true" and "false".
-\item "Val_emptylist", "Val_emptylist" represents the empty list.
+\item "Val_emptylist" represents the empty list.
 \item "Val_none" represents the OCaml value "None".
 \end{itemize}
 
@@ -774,7 +781,7 @@ of a value \var{v} of any boxed type (record or concrete data type).
 \item "caml_field_unboxable("\var{v}")" calls either
 "caml_field_unboxed" or "caml_field_boxed" according to the default
 representation of unboxable types in the current version of OCaml.
-\item "Some_val("\var{v}")" returns the argument "\var{x}" of a value \var{v} of
+\item "Some_val("\var{v}")" returns the argument \var{x} of a value \var{v} of
 the form "Some("\var{x}")".
 \end{itemize}
 The expressions "Field("\var{v}", "\var{n}")",
@@ -857,7 +864,7 @@ From the standpoint of the allocation functions, blocks are divided
 according to their size as zero-sized blocks, small blocks (with size
 less than or equal to \verb"Max_young_wosize"), and large blocks (with
 size greater than \verb"Max_young_wosize"). The constant
-\verb"Max_young_wosize" is declared in the include file "mlvalues.h". It
+\verb"Max_young_wosize" is declared in the include file "<caml/mlvalues.h>". It
 is guaranteed to be at least 64 (words), so that any block with
 constant size less than or equal to 64 can be assumed to be small. For
 blocks whose size is computed at run-time, the size must be compared
@@ -928,8 +935,20 @@ manipulates heap-allocated blocks.
 
 \subsection{ss:c-simple-gc-harmony}{Simple interface}
 
+In general, any variable in C code that references a heap-allocated OCaml value
+must be known to the runtime when the GC runs, as references to any objects
+moved by the GC need to be updated. Modifications of mutable fields must also be
+tracked by the GC for correctness. Listed below are simple rules to achieve
+this. In some cases, the rules dictate registration of variables that may not be
+technically needed (eg because the referenced OCaml value is an immediate, or
+because the GC is guaranteed not to be invoked during the lifetime of the
+variable). However, trying to optimize root registration is a common source of
+safety bugs, so it is strongly recommended to follow the rules below in most
+cases. The implementation of the root registration mechanism is efficient and
+will not typically result in any performance penalty.
+
 All the macros described in this section are declared in the
-"memory.h" header file.
+"<caml/memory.h>" header file.
 
 \begin{gcrule}
 A function that has parameters or local variables of type "value" must
@@ -1528,22 +1547,22 @@ re-raising the exception (if any) or continuing the computation.
 "caml_result" values can be manipulated using the following functions
 and macros:
 \begin{itemize}
-\item "value caml_get_value_or_raise(caml_result \var{res})"
-  (in "fail.h") returns the value contained in \var{res} or reraises
+\item "value caml_get_value_or_raise(caml_result "\var{res}")"
+  (in "<caml/fail.h>") returns the value contained in \var{res} or reraises
   the exception it contains. In particular,
   "(void)caml_get_value_or_raise(res)" can be used to ignore an OCaml
   result of type "unit", yet propagate exceptions to the caller.
 
-\item "Result_value(value \var{v})" (in "mlvalues.h") is the result
+\item "Result_value(value "\var{v}")" (in "<caml/mlvalues.h>") is the result
   that represents returning the value \var{v}.
 
-\item "Result_exception(value \var{exn})" (in "mlvalues.h") is the
+\item "Result_exception(value "\var{exn}")" (in "<caml/mlvalues.h>") is the
   result that represents raising the exception \var{exn}.
 
-\item "int caml_result_is_exception(caml_result \var{res})"
-  (in "mlvalues.h") is true if \var{res} represents an exception.
+\item "int caml_result_is_exception(caml_result "\var{res}")"
+  (in "<caml/mlvalues.h>") is true if \var{res} represents an exception.
 
-\item The macro "CAMLlocalresult(foo)" (in "memory.h") is the
+\item The macro "CAMLlocalresult(foo)" (in "<caml/memory.h>") is the
   "caml_result" counterpart of "CAMLlocal1": it declares a local
   variable of type "caml_result", whose content is tracked by the
   OCaml GC. Just like "CAMLlocal1", it can only be used between
@@ -1879,7 +1898,7 @@ turned on programmatically.   This can be achieved from the OCaml side
 by calling "Printexc.record_backtrace true" in the initialization of
 one of the OCaml modules.  This can also be achieved from the C side
 by calling "caml_record_backtraces(1);" in the OCaml-C glue code.
-("caml_record_backtraces" is declared in "backtrace.h")
+("caml_record_backtraces" is declared in "<caml/backtrace.h>")
 
 \paragraph{Unloading the runtime.}
 
@@ -1899,7 +1918,7 @@ descriptors, which are to be released.
 including "dynlink" plugins.
 \item Freeing the memory blocks that were allocated by the runtime with
 "malloc". Inside C primitives, it is advised to use "caml_stat_*" functions
-from "memory.h" for managing static (that is, non-moving) blocks of heap
+from "<caml/memory.h>" for managing static (that is, non-moving) blocks of heap
 memory, as all the blocks allocated with these functions are automatically
 freed by "caml_shutdown". For ensuring compatibility with legacy C stubs that
 have used "caml_stat_*" incorrectly, this behaviour is only enabled if the
@@ -1934,7 +1953,7 @@ following "mod.ml" OCaml source:
 \begin{verbatim}
 (* File mod.ml -- some "useful" OCaml functions *)
 
-let rec fib n = if n < 2 then 1 else fib(n-1) + fib(n-2)
+let rec fib n = if n < 2 then n else fib(n-1) + fib(n-2)
 
 let format_result n = Printf.sprintf "Result is: %d\n" n
 
@@ -2045,11 +2064,9 @@ when the block becomes unreachable and is about to be reclaimed.
 The block is passed as first argument to the function.
 The "finalize" field can also be "custom_finalize_default" to indicate that no
 finalization function is associated with the block.
-Note the caution below: there are many restrictions on the behaviour
-of these custom block finalizers; they must not allocate on the Caml
-heap, or call OCaml code or allow it to be called (for example, they
-should not call "caml_release_runtime_system()"). For more powerful
-and flexible finalization, use "Gc.finalise" (see \stdmoduleref{Gc}).
+Note the caution below: there are many restrictions on the
+behaviour of these custom block finalizers. For more powerful and
+flexible finalization, use "Gc.finalise" (see \stdmoduleref{Gc}).
 
 \item "int (*compare)(value v1, value v2)" \\
 The "compare" field contains a pointer to a C function that is
@@ -2139,16 +2156,25 @@ specified in the "fixed_length" structure, and do not consume space in
 the serialized output.
 \end{itemize}
 
-\emph{Caution}: the "finalize", "compare", "hash", "serialize", and "deserialize"
-functions attached to custom blocks descriptors are only allowed limited
-interactions with the OCaml runtime. Within these functions, do not call any of
-the OCaml allocation functions, and do not perform any callback into OCaml
-code. Do not use "CAMLparam" to register the parameters to these functions, and
-do not use "CAMLreturn" to return the result. Do not raise exceptions (to
-signal an error during deserialization, use "caml_deserialize_error"). Do not
-remove global roots. When in doubt, err on the side of caution. Within
-"serialize" and "deserialize" functions, use of the corresponding functions
-from section~\ref{ss:c-custom-serialization} is allowed (and even recommended).
+\emph{Caution}: the "finalize", "compare", "hash", "serialize", and
+"deserialize" functions attached to custom block descriptors are allowed
+only limited interactions with the OCaml runtime. Within these functions, do
+not call any of the OCaml allocation functions, and do not perform any
+callback into OCaml code or allow it to be called (for example, do not call
+"caml_release_runtime_system()"). Do not use "CAMLparam" to register the
+parameters to these functions, do not use "CAMLlocal" to register their
+local variables, and do not use "CAMLreturn" to return the result. Do not
+raise exceptions. To signal an error during deserialization, use
+"caml_deserialize_error", and "serialize" and "deserialize" functions may
+freely use the functions from section~\ref{ss:c-custom-serialization}.
+There are especially stringent restrictions on the behavior of custom block
+finalizers. In addition to the restrictions above, finalizers must not
+access the OCaml heap, or mutate the OCaml heap or any memory reachable from
+OCaml GC roots. However, note that "finalize" functions may freely use
+"caml_remove_global_root" and "caml_remove_generational_global_root". In
+short, if a custom block finalizer does anything with the "value" it
+receives other than call "Data_custom_val" on it, then it is probably
+unsafe. When in doubt, err on the side of caution.
 
 \subsection{ss:c-custom-alloc}{Allocating custom blocks}
 
@@ -2593,6 +2619,15 @@ system.  The following functions are declared in the include file
 run-time system.  Returns 1 on success, 0 on error.  Registering an
 already-registered thread does nothing and returns 0.
 \item
+"caml_c_thread_register_in_domain(uintnat dom_unique_id)" registers the
+calling thread with the OCaml run-time system in the domain with
+identifier "dom_unique_id" as provided by "Domain.self" and "Domain.get_id".
+The domain must be running when this function is called.  Registering an
+already-registered thread does nothing and returns 0, even if it was
+previously registered in another domain. Registering a thread in one
+domain, unregistering it, and then registering it later in a different
+domain is not supported.
+\item
 "caml_c_thread_unregister()"  must be called before the thread
   terminates, to unregister it from the OCaml run-time system.
 Returns 1 on success, 0 on error.  If the calling thread was not
@@ -2991,14 +3026,14 @@ Since OCaml 4.04, it is possible to get access to every part of the internal
 runtime API by defining the "CAML_INTERNALS" macro before loading caml header files.
 If this macro is not defined, parts of the internal runtime API are hidden.
 
-If you are using internal C variables, do not redefine them by hand. You should
+If you are using internal C variables, do not redeclare them by hand. You should
 import those variables by including the corresponding header files. The
 representation of those variables has already changed once in OCaml 4.10, and is
 still under evolution.
 If your code relies on such internal and brittle properties, it will be broken
 at some point in time.
 
-For instance, rather than redefining "caml_young_limit":
+For instance, rather than redeclaring "caml_young_limit":
 \begin{verbatim}
 extern int caml_young_limit;
 \end{verbatim}
@@ -3009,7 +3044,7 @@ which breaks in OCaml $\ge$ 4.10, you should include the "minor_gc" header:
 
 \subsection{ss:c-internal-macros}{OCaml version macros}
 Finally, if including the right headers is not enough, or if you need to support
-version older than OCaml 4.04, the header file "caml/version.h" should help
+version older than OCaml 4.04, the header file "<caml/version.h>" should help
 you to define your own compatibility layer.
 This file provides few macros defining the current OCaml version.
 In particular, the "OCAML_VERSION" macro describes the current version,

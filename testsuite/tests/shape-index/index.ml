@@ -39,7 +39,7 @@ open A
 
 let y = A.x + Auxiliaire.z
 
-let () = print_int y
+let () = print_int (Stdlib.(+) y 0)
 
 let a = (module A : AS)
 module _ = (val a)
@@ -67,3 +67,9 @@ module type MSB = sig
   include AS with type t := u
   module G := A
 end
+
+module Out = struct module In = struct let x = () end end
+
+let () = Out.
+  In
+  .x

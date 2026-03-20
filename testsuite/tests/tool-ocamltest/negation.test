@@ -1,0 +1,10 @@
+(* TEST
+{
+not pass;
+fail;
+}
+{
+not skip;
+pass;
+}
+*)

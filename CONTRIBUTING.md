@@ -1,6 +1,6 @@
 # How to contribute changes
 
-:+1::tada: First off, thank you for taking time to contribute! :tada::+1:
+👍🎉 First off, thank you for taking time to contribute! 👍🎉
 
 The following is a set of guidelines for proposing changes to the
 OCaml distribution. These are just guidelines, not rules, use your
@@ -77,6 +77,7 @@ The current list of maintainers is as follows:
 - @lthls Vincent Laviron
 - @maranget Luc Maranget
 - @mshinwell Mark Shinwell
+- @NickBarnes Nick Barnes
 - @nojb Nicolás Ojeda Bär
 - @Octachron Florian Angeletti
 - @OlivierNicole Olivier Nicole
@@ -91,6 +92,22 @@ The current list of maintainers is as follows:
 page](https://github.com/orgs/ocaml/teams/ocaml-dev/members), plus
 Anil as co-owner of the github/ocaml/ organization. Oddly enough,
 Github does not make the page publicly accessible. -->
+
+### OCaml Language Committee
+
+Sometimes, consensus or decisions might be elusive during the review process, or
+you might feel that some of the proposed design choices might warrant a wider
+discussion.
+
+For those situations, we are experimenting with a new OCaml Language Committee
+as a collegial instance for shepherding deliberations on the evolution of the
+OCaml language and its standard library in a timely fashion.
+
+If you think that your PR or issue might be a good fit for consideration by the
+OCaml Language Committee (see
+https://github.com/ocaml/RFCs/blob/master/Committee.md for a more detailed
+description), you just have to mention it to the current chair (@Octachron) in
+the PR or issue.
 
 ### Releases
 
@@ -292,6 +309,10 @@ log -u` to make sure the rebase patches make sense), but:
   changes, or an un-testable intermediary state) is a sure way to
   generate ill will.
 
+## Guidelines relevant to AI-assisted contributions
+
+See the dedicated [AI.md](AI.md).
+
 ## Contributing to the standard library
 
 Contributions to the standard library are very welcome.
@@ -356,7 +377,7 @@ example:
   our ability to change it in the future.
 
 Doing this collective maintenance work is a selfless task, and we
-typically have much fewer people willing to to do it than people
+typically have much fewer people willing to do it than people
 willing to submit new language features or generally evolve the
 codebase for their own specific needs. Without a collective effort to
 participate, we end up with a handful of people doing the vast

@@ -38,9 +38,11 @@ module Float_arg_helper = Arg_helper.Make (struct
   end
 end)
 
-let objfiles = ref ([] : string list)   (* .cmo and .cma files *)
-and ccobjs = ref ([] : string list)     (* .o, .a, .so and -cclib -lxxx *)
-and dllibs = ref ([] : string list)     (* .so and -dllib -lxxx *)
+let objfiles = ref ([] : string list)         (* .cmo and .cma files *)
+and ccobjs = ref ([] : string list)           (* .o, .a, .so and -cclib -lxxx *)
+and dllibs = ref ([] : (suffixed:bool * string) list)
+                                              (* .so, -dllib -lxxx and
+                                                 -dllib-suffixed -lxxx *)
 
 let cmi_file = ref None
 
@@ -48,9 +50,11 @@ let compile_only = ref false            (* -c *)
 and output_name = ref (None : string option) (* -o *)
 and include_dirs = ref ([] : string list) (* -I *)
 and hidden_include_dirs = ref ([] : string list) (* -H *)
+and standard_library_default = ref None (* -set-runtime-default *)
 and no_std_include = ref false          (* -nostdlib *)
 and no_cwd = ref false                  (* -nocwd *)
 and print_types = ref false             (* -i *)
+and print_variance = ref false          (* -i-variance *)
 and make_archive = ref false            (* -a *)
 and debug = ref false                   (* -g *)
 and debug_full = ref false              (* For full DWARF support *)
@@ -85,6 +89,12 @@ and noinit = ref false                  (* -noinit *)
 and open_modules = ref []               (* -open *)
 and use_prims = ref ""                  (* -use-prims ... *)
 and use_runtime = ref ""                (* -use-runtime ... *)
+and target_bindir =                     (* -launch-method ... *)
+  ref Config.target_bindir
+and launch_method =
+  ref Config.launch_method
+and search_method =                     (* -search-method ... *)
+  ref Config.search_method
 and plugin = ref false                  (* -plugin ... *)
 and principal = ref false               (* -principal *)
 and real_paths = ref true               (* -short-paths *)
@@ -100,8 +110,10 @@ and make_package = ref false            (* -pack *)
 and for_package = ref (None: string option) (* -for-pack *)
 and error_size = ref 500                (* -error-size *)
 and float_const_prop = ref true         (* -no-float-const-prop *)
-and transparent_modules = ref false     (* -trans-mod *)
-let unique_ids = ref true               (* -d(no-)unique-ds *)
+and no_alias_deps = ref false           (* -no-alias-deps *)
+let bytecode_hints = ref false          (* -no-bytecode-hints *)
+let unique_ids = ref true               (* -d(no-)unique-ids *)
+let canonical_ids = ref false           (* -d(no-)canonical-ids *)
 let locations = ref true                (* -d(no-)locations *)
 let dump_source = ref false             (* -dsource *)
 let dump_parsetree = ref false          (* -dparsetree *)
@@ -118,6 +130,8 @@ and dump_flambda_let = ref (None : int option) (* -dflambda-let=... *)
 and dump_flambda_verbose = ref false    (* -dflambda-verbose *)
 and dump_instr = ref false              (* -dinstr *)
 and keep_camlprimc_file = ref false     (* -dcamlprimc *)
+
+let keyword_edition: string option ref = ref None
 
 let keep_asm_file = ref false           (* -S *)
 let optimize_for_speed = ref true       (* -compact *)
@@ -146,6 +160,9 @@ let force_slash = ref false             (* for ocamldep *)
 let clambda_checks = ref false          (* -clambda-checks *)
 let cmm_invariants =
   ref Config.with_cmm_invariants        (* -dcmm-invariants *)
+
+let parsetree_ghost_loc_invariant = ref false
+  (* -dparsetree-ghost-loc-invariant *)
 
 let flambda_invariant_checks =
   ref Config.with_flambda_invariants    (* -flambda-(no-)invariants *)
@@ -742,6 +759,23 @@ module Dump_option = struct
     | Backend ->
         check_native
 end
+
+let parse_keyword_edition s =
+  let parse_version s =
+  let bad_version () =
+    raise (Arg.Bad "Ill-formed version in keywords flag,\n\
+                    the supported format is <major>.<minor>, for example 5.2 .")
+  in
+  if s = "" then None else match String.split_on_char '.' s with
+  | [] | [_] | _ :: _ :: _ :: _ -> bad_version ()
+  | [major;minor] -> match int_of_string_opt major, int_of_string_opt minor with
+    | Some major, Some minor -> Some (major,minor)
+    | _ -> bad_version ()
+  in
+  match String.split_on_char '+' s with
+  | [] -> None, []
+  | [s] -> parse_version s, []
+  | v :: rest -> parse_version v, rest
 
 module String = Misc.Stdlib.String
 

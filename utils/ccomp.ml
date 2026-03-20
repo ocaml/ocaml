@@ -90,7 +90,13 @@ let compile_file ?output ?(opt="") ?stable_name name =
       ("", "") in
   let debug_prefix_map =
     match stable_name with
-    | Some stable when Config.c_has_debug_prefix_map ->
+    | Some stable
+      when Config.c_has_debug_prefix_map
+           && not (String.starts_with ~prefix:"mingw" Config.system) ->
+      (* -fdebug-prefix-map exists on mingw-w64 but at present it is not used
+         for BUILD_PATH_PREFIX_MAP because there isn't yet a good story for how
+         to deal with Cygwin, where the paths are Cygwin-style paths and MSYS2,
+         where they are native Windows paths. *)
       Printf.sprintf " -fdebug-prefix-map=%s=%s" name stable
     | Some _ | None -> "" in
   let exit =

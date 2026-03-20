@@ -35,7 +35,7 @@ open Types
    safe and unsafe variant. Only unsafe substitutions may expand a module type
    path into a generic module type. *)
 
-(** Type familly for substitutions *)
+(** Type family for substitutions *)
 type +'k subst
 
 type safe = [`Safe]

@@ -1,5 +1,5 @@
 File "pr6946_bad.ml", line 10, characters 8-11:
 10 | let _ = foo ();;
              ^^^
-Error: This expression has type "int"
+Error: This expression has type int
        This is not a function; it cannot be applied.

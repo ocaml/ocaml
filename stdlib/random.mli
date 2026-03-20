@@ -39,11 +39,11 @@ val full_init : int array -> unit
 (** Same as {!Random.init} but takes more data as seed. *)
 
 val self_init : unit -> unit
-(** Initialize the domain-local generator with a random seed chosen
-    in a system-dependent way.  If [/dev/urandom] is available on the host
-    machine, it is used to provide a highly random initial seed.  Otherwise, a
-    less random seed is computed from system parameters (current time, process
-    IDs, domain-local state). *)
+(** Initialize the domain-local generator with a random seed chosen in a
+    system-dependent way.  If a cryptographically secure pseudorandom number
+    generator is available on the host machine, it is used to provide a highly
+    random initial seed.  Otherwise, a less random seed is computed from system
+    parameters (current time, process IDs, domain-local state). *)
 
 val bits : unit -> int
 (** Return 30 random bits in a nonnegative integer.
@@ -254,7 +254,14 @@ end
 
 val get_state : unit -> State.t
 (** [get_state()] returns a fresh copy of the current state of the
-    domain-local generator (which is used by the basic functions). *)
+    domain-local generator (which is used by the basic functions).
+
+    The current state is unchanged, which means that random numbers
+    generated from multiple calls to [get_state ()] will be identical.
+
+    See {!Random.State.make_self_init} and {!Random.split} instead to obtain
+    a fresh state that is not shared.
+ *)
 
 val set_state : State.t -> unit
 (** [set_state s] updates the current state of the domain-local

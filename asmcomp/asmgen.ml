@@ -306,7 +306,7 @@ let compile_implementation_linear target =
     ~asm_filename:(asm_filename output_prefix) ~keep_asm:!keep_asm_file
     ~obj_filename:(output_prefix ^ ext_obj)
     (fun () ->
-      linear_gen_implementation (Unit_info.source_file target))
+      linear_gen_implementation (Unit_info.input_source_file target))
 
 (* Error report *)
 module Style = Misc.Style

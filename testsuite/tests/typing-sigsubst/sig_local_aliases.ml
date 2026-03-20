@@ -50,16 +50,16 @@ Line 2, characters 14-22:
 2 |   module M := Funct(M)
                   ^^^^^^^^
 Error: Unbound module "Funct"
-Hint: Did you mean "Fun"?
+Hint:    Did you mean "Fun"?
 |}]
 
 module type Reject2 = sig
   module M := F(N)
 end;;
 [%%expect{|
-Line 2, characters 14-18:
+Line 2, characters 16-17:
 2 |   module M := F(N)
-                  ^^^^
+                    ^
 Error: Unbound module "N"
 |}]
 

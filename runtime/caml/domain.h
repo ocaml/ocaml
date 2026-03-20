@@ -17,10 +17,6 @@
 #ifndef CAML_DOMAIN_H
 #define CAML_DOMAIN_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifdef CAML_INTERNALS
 
 #include <stdbool.h>
@@ -29,6 +25,10 @@ extern "C" {
 #include "config.h"
 #include "mlvalues.h"
 #include "domain_state.h"
+
+/* See caml_c_thread_register_in_domain_index */
+CAMLextern bool caml_thread_running_on_expected_domain(uintnat);
+CAMLextern void caml_thread_record_domain_id(uintnat);
 
 #ifdef ARCH_SIXTYFOUR
 #define Max_domains_def 128
@@ -58,7 +58,7 @@ Caml_inline int caml_check_gc_interrupt(caml_domain_state * dom_st)
   (CAMLunlikely(caml_check_gc_interrupt(dom_st)))
 
 asize_t caml_norm_minor_heap_size (intnat);
-int caml_reallocate_minor_heap(asize_t);
+int caml_reallocate_minor_heap_arena(asize_t);
 void caml_update_minor_heap_max(uintnat minor_heap_wsz);
 
 /* is there a STW interrupt queued that needs servicing */
@@ -85,7 +85,7 @@ CAMLextern void caml_release_domain_lock(void);
 
 /* These hooks are not modified after other domains are spawned. */
 CAMLextern void (*caml_atfork_hook)(void);
-CAMLextern void (*caml_domain_initialize_hook)(void);
+CAMLextern value (*caml_domain_initialize_hook_exn)(void);
 CAMLextern void (*caml_domain_stop_hook)(void);
 CAMLextern void (*caml_domain_external_interrupt_hook)(void);
 
@@ -96,6 +96,25 @@ CAMLextern uintnat caml_minor_heap_max_wsz;
 
 CAMLextern atomic_uintnat caml_num_domains_running;
 
+/*  Given domain unique id, return the index of the domain.
+ *  If the domain unique id is unknown, return -1.
+*/
+CAMLextern intnat caml_find_index_of_running_domain(uintnat dom_unique_id);
+
+/* When [caml_domain_alone()] is true, there is a single domain
+   running. In particular, if the test passes while holding the domain
+   lock, then we know that no other domain is running concurrently,
+   and we can use fast paths with fewer synchronization operations.
+
+      // if you hold the domain lock:
+      if (caml_domain_alone()) {
+        // sequential fast path
+        ...
+      } else {
+        // slower concurrent version
+        ...
+      }
+*/
 Caml_inline intnat caml_domain_alone(void)
 {
   return atomic_load_acquire(&caml_num_domains_running) == 1;
@@ -125,14 +144,14 @@ int caml_try_run_on_all_domains_with_spin_work(
   int sync,
   void (*handler)(caml_domain_state*, void*, int, caml_domain_state**),
   void* data,
-  void (*leader_setup)(caml_domain_state*),
+  void (*leader_setup)(caml_domain_state*, void *),
   /* return nonzero if there may still be useful work to do while spinning */
   int (*enter_spin_callback)(caml_domain_state*, void*),
   void* enter_spin_data);
 int caml_try_run_on_all_domains(
   void (*handler)(caml_domain_state*, void*, int, caml_domain_state**),
   void*,
-  void (*leader_setup)(caml_domain_state*));
+  void (*leader_setup)(caml_domain_state*, void *));
 
 /* Function naming conventions for STW callbacks and STW critical sections.
 
@@ -224,18 +243,22 @@ void caml_global_barrier_release_as_final(barrier_status status);
    Note: this expands to an [if] and [for] header, do not exit the body using
    jumps or returns, and do not put an [else] immediately after.
  */
-#define Caml_global_barrier_if_final(num_participating)                 \
+#define Caml_global_barrier_if_final_(/* symbols */ alone, b, go,       \
+                                      /* params  */ num_participating)  \
   /* fast path when alone */                                            \
-  int CAML_GENSYM(alone) = (num_participating) == 1;                    \
-  barrier_status CAML_GENSYM(b) = 0;                                    \
-  if (CAML_GENSYM(alone) ||                                             \
-      (CAML_GENSYM(b)                                                   \
-       = caml_global_barrier_and_check_final(num_participating)))       \
-    for (int CAML_GENSYM(continue) = 1; CAML_GENSYM(continue);          \
+  bool alone = (num_participating) == 1;                                \
+  barrier_status b = 0;                                                 \
+  if (alone ||                                                          \
+      (b = caml_global_barrier_and_check_final(num_participating)))     \
+    for (bool go = true; go;                                            \
          /* release the barrier after the body has executed once */     \
-         ((CAML_GENSYM(alone) ? (void)0 :                               \
-           caml_global_barrier_release_as_final(CAML_GENSYM(b))),       \
-          CAML_GENSYM(continue) = 0))
+         (alone ? (void)0 :                                             \
+          caml_global_barrier_release_as_final(b)),                     \
+         go = false)
+
+#define Caml_global_barrier_if_final(num_participating)               \
+  Caml_global_barrier_if_final_(CAML_GENSYM(alone), CAML_GENSYM(b),   \
+                                CAML_GENSYM(go), (num_participating))
 
 /*
  * Termination helpers.
@@ -249,9 +272,5 @@ void caml_stop_all_domains(void);
 bool caml_free_domains(void);
 
 #endif /* CAML_INTERNALS */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* CAML_DOMAIN_H */

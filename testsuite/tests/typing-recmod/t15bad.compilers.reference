@@ -1,5 +1,5 @@
 File "t15bad.ml", line 11, characters 0-61:
 11 | module rec M : S' with type t = M.t = struct type t = M.t end;;
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation "M.t" is cyclic:
-         "M.t" = "M.t"
+Error: The type abbreviation M.t is cyclic:
+         M.t = M.t

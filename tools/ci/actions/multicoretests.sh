@@ -32,7 +32,10 @@ build_ocaml() {
   cd "$OCAMLDIR"
   if ! ./configure --disable-warn-error --disable-stdlib-manpages \
       --disable-ocamltest --disable-ocamldoc --prefix="$PREFIX" ; then
+    echo
+    echo "::group::config.log content ($(wc -l config.log) lines)"
     cat config.log
+    echo '::endgroup::'
     exit 1
   fi
 

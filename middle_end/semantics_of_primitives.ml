@@ -21,7 +21,7 @@ type coeffects = No_coeffects | Has_coeffects
 
 let for_primitive (prim : Clambda_primitives.primitive) =
   match prim with
-  | Pmakeblock _
+  | Pmakeblock _ | Pmakelazyblock _
   | Pmakearray (_, Mutable) -> Only_generative_effects, No_coeffects
   | Pmakearray (_, Immutable) -> No_effects, No_coeffects
   | Pduparray (_, Immutable) ->
@@ -105,6 +105,7 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Pbigstring_load (_, Unsafe) ->
       No_effects, Has_coeffects
   | Parrayrefs _
+  | Pcheckbound
   | Pstringrefs
   | Pbytesrefs
   | Pstring_load (_, Safe)

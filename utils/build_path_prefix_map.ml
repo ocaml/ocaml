@@ -116,3 +116,14 @@ let rewrite prefix_map path =
   match rewrite_first prefix_map path with
   | None -> path
   | Some path -> path
+
+let make_source path : pair option -> path option = function
+  | None -> None
+  | Some { target; source } ->
+    if String.starts_with ~prefix:target path then
+      Some (source ^ (String.sub path (String.length target)
+                        (String.length path - String.length target)))
+    else None
+
+let invert_all prefix_map path =
+  List.filter_map (make_source path) (List.rev prefix_map)

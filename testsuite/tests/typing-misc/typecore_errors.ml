@@ -74,18 +74,18 @@ Error: Uninterpreted extension 'ext'.
 
 let rec f x = ( (), () : _ -> _ -> _ )
 [%%expect{|
-Line 3, characters 14-38:
+Line 3, characters 16-22:
 3 | let rec f x = ( (), () : _ -> _ -> _ )
-                  ^^^^^^^^^^^^^^^^^^^^^^^^
+                    ^^^^^^
 Error: This expression has type "'a * 'b"
        but an expression was expected of type "'c -> 'd -> 'e"
 |}]
 
 let rec g x = ( ((), ()) : _ -> _ :> _ )
 [%%expect{|
-Line 1, characters 14-40:
+Line 1, characters 16-24:
 1 | let rec g x = ( ((), ()) : _ -> _ :> _ )
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+                    ^^^^^^^^
 Error: This expression has type "'a * 'b"
        but an expression was expected of type "'c -> 'd"
 |}]
@@ -307,6 +307,17 @@ Line 2, characters 8-11:
 Error: Only variables are allowed as left-hand side of "let rec"
 |}]
 
+(** Alias pattern in let rec
+    (accepted in OCaml versions up to and including 5.4) *)
+let rec (_ as f) = fun () -> f ()
+
+[%%expect {|
+Line 1, characters 8-16:
+1 | let rec (_ as f) = fun () -> f ()
+            ^^^^^^^^
+Error: Only variables are allowed as left-hand side of "let rec"
+|}]
+
 (** Non-linear pattern *)
 
 let quadratic (x,x) = x * x
@@ -430,6 +441,16 @@ Error: Variant tags "`azdwbie" and "`c7diagq" have the same hash value.
        Change one of them.
 |}]
 
+let _ = object(_ : < x : [ `azdwbie ] -> unit; .. >)
+  method x : [ `c7diagq ] -> unit = fun _ -> ()
+end
+
+[%%expect{|
+Line 1:
+Error: In this program, variant constructors "`azdwbie" and "`c7diagq"
+       have the same hash value. Change one of them.
+|}]
+
 
 type t = {x:unit}
 type s = {y:unit}
@@ -461,4 +482,24 @@ Line 1, characters 8-19:
 1 | let f [%ocaml.error "Pattern error"] = ()
             ^^^^^^^^^^^
 Error: Pattern error
+|}]
+
+type u0 = int * int -> unit
+type u = u0 -> unit
+type v0 = float * float -> unit
+type v = v0 -> unit
+let f = (g: u -> unit :> v -> unit)
+[%%expect {|
+type u0 = int * int -> unit
+type u = u0 -> unit
+type v0 = float * float -> unit
+type v = v0 -> unit
+Line 5, characters 8-35:
+5 | let f = (g: u -> unit :> v -> unit)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Type "u -> unit" is not a subtype of "v -> unit"
+       Type "v" = "v0 -> unit" is not a subtype of "u" = "u0 -> unit"
+       Type "u0" = "int * int -> unit" is not a subtype of
+         "v0" = "float * float -> unit"
+       Type "float" is not a subtype of "int"
 |}]

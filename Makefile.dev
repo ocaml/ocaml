@@ -21,6 +21,14 @@ SOURCE_FILES=$(shell git ls-files '*.ml' '*.mli' | grep -v boot/menhir/parser)
 
 AST_FILES=$(addsuffix .ast,$(SOURCE_FILES))
 
+# Note: some shells do not support command-lines that contain the full
+# list of source files ("too many argument"). We ensure that
+# AST_FILES is only passed inside a shell command in explicit targets
+# from this Makefile, and not in targets common to other makefiles
+# that would be executed unconditionally. We previously had
+# a `partialclean::` target performing `clean-all-asts` and that
+# resulted in annoying failures for some users, see #13817.
+
 build-all-asts:
 # Recursive invocation ensures that `git ls-files` is not executed on every
 # invocation of make
@@ -44,5 +52,6 @@ CAMLC_DPARSETREE := \
 list-all-asts:
 	@for f in $(AST_FILES); do echo "'$$f'"; done
 
-partialclean::
+.PHONY: clean-all-asts
+clean-all-asts:
 	@rm -f $(AST_FILES)

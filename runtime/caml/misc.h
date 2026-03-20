@@ -27,8 +27,6 @@
 #include <stdarg.h>
 #include <limits.h>
 
-#include "camlatomic.h"
-
 /* Detection of available C attributes and compiler extensions */
 
 #ifndef __has_c_attribute
@@ -79,6 +77,17 @@
 /* Basic types and constants */
 
 typedef size_t asize_t;
+#ifdef __cplusplus
+extern "C++" {
+#include <atomic>
+typedef std::atomic<uintnat> atomic_uintnat;
+typedef std::atomic<intnat> atomic_intnat;
+}
+#else
+#include <stdatomic.h>
+typedef _Atomic uintnat atomic_uintnat;
+typedef _Atomic intnat atomic_intnat;
+#endif
 
 #ifndef NULL
 #define NULL 0
@@ -157,7 +166,9 @@ CAMLdeprecated_typedef(addr, char *);
 #endif
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L || \
-    defined(__cplusplus)
+    defined(__cplusplus) && !defined(__CYGWIN__)
+    /* #14220: flexlink does not support C++11 's thread_local,
+       so prefer _Thread_local on Cygwin systems. */
 #define CAMLthread_local thread_local
 #else
 #define CAMLthread_local _Thread_local
@@ -166,17 +177,34 @@ CAMLdeprecated_typedef(addr, char *);
 /* Prefetching */
 
 #ifdef CAML_INTERNALS
-#if (__has_builtin(__builtin_prefetch) || defined(__GNUC__)) && \
-    (defined(__i386__) || defined(__x86_64__) || \
-     defined(_M_IX86) || defined(_M_AMD64))
-#define caml_prefetch(p) __builtin_prefetch((p), 1, 3)
+
+#if (__has_builtin(__builtin_prefetch) || defined(__GNUC__))
+#define caml_prefetchr(p) __builtin_prefetch((p), 0, 3)
+/* 0 = intent to read; 3 = all cache levels */
+#define caml_prefetchw(p) __builtin_prefetch((p), 1, 3)
 /* 1 = intent to write; 3 = all cache levels */
-#elif defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_AMD64))
+
+#elif defined(_MSC_VER)
 #include <intrin.h>
-#define caml_prefetch(p) _mm_prefetch((char const *) p, _MM_HINT_T0)
+#if (defined(_M_IX86) || defined(_M_AMD64))
+/* MSVC Intel. See #14570.
+   0 - PREFETCHNTA; 1 - PREFETCHT0; 2 - PREFETCHT1; 3 - PREFETCHT2
+   4 - PREFETCHW; 5 - PREFETCHNTA */
+#define caml_prefetchr(p) _mm_prefetch((char const *) p, _MM_HINT_T0)
 /* PreFetchCacheLine(PF_TEMPORAL_LEVEL_1, p) */
-#else
-#define caml_prefetch(p)
+#define caml_prefetchw(p) _mm_prefetch((char const *) p, 4)
+
+#elif defined(_M_ARM64)
+/* MSVC ARM64. See #14570 */
+#define caml_prefetchr(p) __prefetch2(p, 0)
+#define caml_prefetchw(p) __prefetch2(p, 16)
+#endif
+#endif
+
+#if !defined(caml_prefetchr)
+/* Not GCC or Clang or MSVC */
+#define caml_prefetchr(p) ((void)(p))
+#define caml_prefetchw(p) ((void)(p))
 #endif
 #endif /* CAML_INTERNALS */
 
@@ -236,17 +264,17 @@ CAMLdeprecated_typedef(addr, char *);
 /* [CAMLrealloc(n)] indicates that the function is [realloc]-like, and implies
    that the [n]-th argument number equals the number of available bytes at the
    returned pointer. */
-#define CAMLrealloc(alloc_size_N,...)                           \
+#define CAMLrealloc(alloc_size_N)                                       \
   __attribute__ ((warn_unused_result,alloc_size(alloc_size_N)))
 
 /* [CAMLalloc(dealloc, p)] indicates that the function allocates a resource,
    which must be deallocated by passing it as the [p]-th argument of the
    function [dealloc]. */
 #if defined(__GNUC__) && !defined(__llvm__)
-#define CAMLalloc(deallocator,ptr_index,...)                            \
+#define CAMLalloc(deallocator,ptr_index)                                \
   __attribute__ ((malloc,malloc(deallocator,ptr_index),warn_unused_result))
 #else
-#define CAMLalloc(deallocator,ptr_index,...)    \
+#define CAMLalloc(deallocator,ptr_index)      \
   __attribute__ ((malloc,warn_unused_result))
 #endif
 
@@ -254,15 +282,15 @@ CAMLdeprecated_typedef(addr, char *);
    implies that it allocates a memory block whose size is set by the function's
    [n]-th argument, and which must be deallocated by passing it as the [p]-th
    argument of the function [dealloc]. */
-#define CAMLmalloc(deallocator,ptr_index,alloc_size_N,...)      \
-  CAMLalloc(deallocator,ptr_index)                              \
+#define CAMLmalloc(deallocator,ptr_index,alloc_size_N)  \
+  CAMLalloc(deallocator,ptr_index)                      \
     __attribute__ ((alloc_size(alloc_size_N)))
 
 /* [CAMLcalloc(dealloc, p, n, m)] indicates that the function is [calloc]-like,
    and implies that it allocates a memory block whose size is set by the product
    of the function's [n]-th and [m]-th arguments, and which must be deallocated
    by passing it as the [p]-th argument of the function [dealloc]. */
-#define CAMLcalloc(deallocator,ptr_index,alloc_size_N,alloc_size_M,...) \
+#define CAMLcalloc(deallocator,ptr_index,alloc_size_N,alloc_size_M)     \
   CAMLalloc(deallocator,ptr_index)                                      \
     __attribute__ ((alloc_size(alloc_size_N,alloc_size_M)))
 
@@ -271,17 +299,17 @@ CAMLdeprecated_typedef(addr, char *);
    is set by the function's [n]-th argument, aligned on a boundary given by the
    function's [a]-th argument, and which must be deallocated by passing it as
    the [p]-th argument of the function [dealloc]. */
-#define CAMLaligned_alloc(deallocator,ptr_index,alloc_size_N,alloc_align_,...) \
+#define CAMLaligned_alloc(deallocator,ptr_index,alloc_size_N,alloc_align_) \
   CAMLmalloc(deallocator,ptr_index,alloc_size_N)                        \
     __attribute__ ((alloc_align(alloc_align_)))
 
 #else
 #define CAMLreturns_nonnull()
-#define CAMLrealloc(...)
-#define CAMLalloc(...)
-#define CAMLmalloc(...)
-#define CAMLcalloc(...)
-#define CAMLaligned_alloc(...)
+#define CAMLrealloc(asN)
+#define CAMLalloc(d,pi)
+#define CAMLmalloc(d,pi,asN)
+#define CAMLcalloc(d,pi,asN,asM)
+#define CAMLaligned_alloc(d,pi,asN,aa)
 #endif
 
 /* GC timing hooks. These can be assigned by the user. These hooks
@@ -289,6 +317,8 @@ CAMLdeprecated_typedef(addr, char *);
    can obtain the domain id with Caml_state->id. These functions must
    be reentrant. */
 #ifndef __cplusplus
+#include <stdatomic.h>
+
 typedef void (*caml_timing_hook) (void);
 extern _Atomic caml_timing_hook caml_major_slice_begin_hook;
 extern _Atomic caml_timing_hook caml_major_slice_end_hook;
@@ -523,8 +553,11 @@ extern double caml_log1p(double);
 #define caml_stat_strconcat_os caml_stat_wcsconcat
 
 #define caml_stat_strdup_to_os caml_stat_strdup_to_utf16
+#define caml_stat_strdup_noexc_to_os caml_stat_strdup_noexc_to_utf16
 #define caml_stat_strdup_of_os caml_stat_strdup_of_utf16
 #define caml_stat_strdup_noexc_of_os caml_stat_strdup_noexc_of_utf16
+#define caml_stat_char_array_to_os caml_stat_char_array_to_utf16
+#define caml_stat_char_array_of_os caml_stat_char_array_of_utf16
 #define caml_copy_string_of_os caml_copy_string_of_utf16
 
 #else /* _WIN32 */
@@ -565,8 +598,11 @@ extern double caml_log1p(double);
 #define caml_stat_strconcat_os caml_stat_strconcat
 
 #define caml_stat_strdup_to_os caml_stat_strdup
+#define caml_stat_strdup_noexc_to_os caml_stat_strdup_noexc
 #define caml_stat_strdup_of_os caml_stat_strdup
 #define caml_stat_strdup_noexc_of_os caml_stat_strdup_noexc
+#define caml_stat_char_array_to_os caml_stat_memdup
+#define caml_stat_char_array_of_os caml_stat_memdup
 #define caml_copy_string_of_os caml_copy_string
 
 #endif /* _WIN32 */
@@ -682,7 +718,7 @@ void caml_gc_log (const char *, ...)
 
 /* Runtime warnings */
 extern uintnat caml_runtime_warnings;
-int caml_runtime_warnings_active(void);
+CAMLextern int caml_runtime_warnings_active(void);
 
 #ifdef DEBUG
 #ifdef ARCH_SIXTYFOUR
@@ -756,14 +792,39 @@ CAMLextern int caml_snwprintf(wchar_t * buf,
 #else
 #  if defined(__SANITIZE_ADDRESS__)
 #    undef CAMLno_asan
-#    define CAMLno_asan __attribute__((no_sanitize_address))
+#    if (defined(_MSC_VER) && !defined(__clang__))
+#      define CAMLno_asan __declspec(no_sanitize_address)
+#    else
+#      define CAMLno_asan __attribute__((no_sanitize_address))
+#    endif
 #  endif
 #endif
 
-/* Generate a named symbol that is unique within the current macro expansion */
-#define CAML_GENSYM_3(name, l) caml__##name##_##l
-#define CAML_GENSYM_2(name, l) CAML_GENSYM_3(name, l)
-#define CAML_GENSYM(name) CAML_GENSYM_2(name, __LINE__)
+/* Generate a named symbol that is unique */
+#define CAML_GENSYM__(name, id) caml__##name##_##id
+#define CAML_GENSYM_(name, id) CAML_GENSYM__(name, id)
+#define CAML_GENSYM(name) CAML_GENSYM_(name, __COUNTER__)
+
+#define MSEC_PER_SEC  UINT64_C(1000)
+#define USEC_PER_MSEC UINT64_C(1000)
+#define USEC_PER_SEC  UINT64_C(1000000)
+#define NSEC_PER_USEC UINT64_C(1000)
+#define NSEC_PER_MSEC UINT64_C(1000000)
+#define NSEC_PER_SEC  UINT64_C(1000000000)
+
+#include <time.h>
+
+Caml_inline struct timespec caml_timespec_of_nsec(uint64_t nsec)
+{
+  return (struct timespec)
+    { .tv_sec = (time_t) (nsec / NSEC_PER_SEC),
+#if __STDC_VERSION__ >= 202311L
+      .tv_nsec = (typeof((struct timespec){0}.tv_nsec))
+#else
+      .tv_nsec = (long)
+#endif
+        (nsec % NSEC_PER_SEC) };
+}
 
 #endif /* CAML_INTERNALS */
 
@@ -776,6 +837,14 @@ CAMLextern int caml_snwprintf(wchar_t * buf,
  * so it is just exposed as a [void *].
  */
 typedef void * backtrace_slot;
+
+#ifndef IO_BUFFER_SIZE
+#define IO_BUFFER_SIZE 65536
+#endif
+
+/* GC policy settings */
+typedef intnat caml_gc_policy;
+#define CAML_GC_RAMP_UP             0x0001
 
 #ifdef __cplusplus
 }

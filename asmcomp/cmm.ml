@@ -142,6 +142,7 @@ type memory_chunk =
   | Sixteen_signed
   | Thirtytwo_unsigned
   | Thirtytwo_signed
+  | Sixtyfour
   | Word_int
   | Word_val
   | Single
@@ -177,6 +178,7 @@ type expression =
   | Cconst_float of float * Debuginfo.t
   | Cconst_symbol of string * Debuginfo.t
   | Cvar of Backend_var.t
+  | Cvar_mut of Backend_var.t
   | Clet of Backend_var.With_provenance.t * expression * expression
   | Clet_mut of Backend_var.With_provenance.t * machtype
                 * expression * expression
@@ -266,6 +268,7 @@ let iter_shallow_tail f = function
   | Cconst_float _
   | Cconst_symbol _
   | Cvar _
+  | Cvar_mut _
   | Cassign _
   | Ctuple _
   | Cop _
@@ -303,6 +306,7 @@ let rec map_tail f = function
   | Cconst_float _
   | Cconst_symbol _
   | Cvar _
+  | Cvar_mut _
   | Cassign _
   | Ctuple _
   | Creturn_addr
@@ -340,6 +344,7 @@ let map_shallow f = function
   | Cconst_float _
   | Cconst_symbol _
   | Cvar _
+  | Cvar_mut _
   | Creturn_addr
     as c ->
       c

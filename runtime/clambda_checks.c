@@ -58,15 +58,14 @@ value caml_check_field_access(value v, value pos, value v_descr)
   value orig_v = v;
   if (v == (value) 0) {
     fprintf(stderr,
-      "Access to field %" ARCH_INT64_PRINTF_FORMAT
-      "u of NULL: %s\n", (ARCH_UINT64_TYPE) Long_val(pos), descr);
+      "Access to field %" PRIu64 " of NULL: %s\n",
+      (uint64_t) Long_val(pos), descr);
     abort();
   }
   if (!Is_block(v)) {
     fprintf(stderr,
-      "Access to field %" ARCH_INT64_PRINTF_FORMAT
-      "u of non-boxed value %p is illegal: %s\n",
-      (ARCH_UINT64_TYPE) Long_val(pos), (void*) v, descr);
+      "Access to field %" PRIu64 " of non-boxed value %p is illegal: %s\n",
+      (uint64_t) Long_val(pos), (void*) v, descr);
     abort();
   }
   if (Tag_val(v) == Infix_tag) {
@@ -77,11 +76,9 @@ value caml_check_field_access(value v, value pos, value v_descr)
   CAMLassert(Long_val(pos) >= 0);
   if (Long_val(pos) >= Wosize_val(v)) {
     fprintf(stderr,
-      "Access to field %" ARCH_INT64_PRINTF_FORMAT
-      "u of value %p of size %" ARCH_INT64_PRINTF_FORMAT "u is illegal: %s\n",
-      (ARCH_UINT64_TYPE) Long_val(pos), (void*) v,
-      (ARCH_UINT64_TYPE) Wosize_val(v),
-      descr);
+      "Access to field %" PRIu64 " of value %p of size "
+      "%" PRIu64 " is illegal: %s\n",
+      (uint64_t) Long_val(pos), (void*) v, (uint64_t) Wosize_val(v), descr);
     abort();
   }
   return orig_v;

@@ -60,7 +60,7 @@ val transl_const: Lambda.structured_constant -> Obj.t
 
 (* Functions for the toplevel *)
 
-val init_toplevel: unit -> (string * Digest.t option) list
+val init_toplevel: unit -> (string * Digest.BLAKE128.t option) list
 val update_global_table: unit -> unit
 val get_global_value: Global.t -> Obj.t
 val is_global_defined: Global.t -> bool

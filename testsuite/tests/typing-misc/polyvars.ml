@@ -75,16 +75,15 @@ Line 9, characters 0-41:
 9 | function (`A|`B), _ -> 0 | _,(`A|`B) -> 1;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-(`AnyOtherTag, `AnyOtherTag)
+  Here is an example of a case that is not matched:
+    "(`AnyOtherTag, `AnyOtherTag)"
 
 - : [> `A | `B ] * [> `A | `B ] -> int = <fun>
 Line 10, characters 0-29:
 10 | function `B,1 -> 1 | _,1 -> 2;;
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-(_, 0)
+  Here is an example of a case that is not matched: "(_, 0)"
 
 Line 10, characters 21-24:
 10 | function `B,1 -> 1 | _,1 -> 2;;
@@ -96,8 +95,7 @@ Line 11, characters 0-29:
 11 | function 1,`B -> 1 | 1,_ -> 2;;
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-(0, _)
+  Here is an example of a case that is not matched: "(0, _)"
 
 Line 11, characters 21-24:
 11 | function 1,`B -> 1 | 1,_ -> 2;;
@@ -121,12 +119,19 @@ val f : 'a -> [< `Foo ] -> 'a = <fun>
 
 (* PR#6124 *)
 let f : ([`A | `B ] as 'a) -> [> 'a] -> unit = fun x (y : [> 'a]) -> ();;
-let f (x : [`A | `B] as 'a) (y : [> 'a]) = ();;
 [%%expect{|
 Line 1, characters 61-63:
 1 | let f : ([`A | `B ] as 'a) -> [> 'a] -> unit = fun x (y : [> 'a]) -> ();;
                                                                  ^^
-Error: The type "'a" does not expand to a polymorphic variant type
+Error:    The type "'a" does not expand to a polymorphic variant type
+Hint: Did you mean "`a"?
+|}]
+let f (x : [`A | `B] as 'a) (y : [> 'a]) = ();;
+[%%expect{|
+Line 1, characters 36-38:
+1 | let f (x : [`A | `B] as 'a) (y : [> 'a]) = ();;
+                                        ^^
+Error:    The type "'a" does not expand to a polymorphic variant type
 Hint: Did you mean "`a"?
 |}]
 
@@ -145,8 +150,7 @@ Line 2, characters 0-24:
 2 | function (`A x : t) -> x;;
     ^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-`<some private tag>
+  Here is an example of a case that is not matched: "`<some private tag>"
 
 - : t -> string = <fun>
 |}]
@@ -157,8 +161,8 @@ Line 1, characters 8-76:
 1 | let f = function `AnyOtherTag, _ -> 1 | _, (`AnyOtherTag|`AnyOtherTag') -> 2;;
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-(`AnyOtherTag', `AnyOtherTag'')
+  Here is an example of a case that is not matched:
+    "(`AnyOtherTag', `AnyOtherTag'')"
 
 val f : [> `AnyOtherTag ] * [> `AnyOtherTag | `AnyOtherTag' ] -> int = <fun>
 |}]
@@ -286,4 +290,42 @@ Error: The value "x" has type "[ `A | `R of rt ]"
        Type "rt" = "[ `A | `B of string | `R of rt ]" is not compatible with type
          "[< `A | `R of 'a ] as 'a"
        The second variant type does not allow tag(s) "`B"
+|}]
+
+
+(** [subtype_row] errors *)
+
+(* #13706 *)
+let f x = (x : [ `Foo of int ] :> [ `Foo | `Bar ])
+[%%expect{|
+Line 4, characters 10-50:
+4 | let f x = (x : [ `Foo of int ] :> [ `Foo | `Bar ])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Type "[ `Foo of int ]" is not a subtype of "[ `Bar | `Foo ]"
+       Types for tag "`Foo" are incompatible
+|}]
+
+let f x = (x : [ `Foo of int ] list :> [ `Foo | `Bar ] list)
+[%%expect{|
+Line 1, characters 10-60:
+1 | let f x = (x : [ `Foo of int ] list :> [ `Foo | `Bar ] list)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Type "[ `Foo of int ] list" is not a subtype of "[ `Bar | `Foo ] list"
+       Type "[ `Foo of int ]" is not a subtype of "[ `Bar | `Foo ]"
+       Types for tag "`Foo" are incompatible
+|}]
+
+(** When typing pattern match containing possibly absent polymorphic variants,
+    we temporarily forget non-generic type information *)
+let f (x: [< `A] * 'a * ' a ) = match x with
+  | `A , _, _ -> ()
+  | `B, (), (None|Some _) -> ()
+[%%expect {|
+Line 2, characters 4-13:
+2 |   | `A , _, _ -> ()
+        ^^^^^^^^^
+Error: This pattern matches values of type "[< `A ] * unit * 'a option"
+       but a pattern was expected which matches values of type
+         "[< `A ] * unit * unit"
+       Type "'a option" is not compatible with type "unit"
 |}]

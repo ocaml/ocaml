@@ -16,8 +16,6 @@
 #ifndef _WINWORKER_H
 #define _WINWORKER_H
 
-#undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0400
 #include "caml/unixsupport.h"
 #include <windows.h>
 

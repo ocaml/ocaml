@@ -26,6 +26,7 @@
 #include <caml/io.h>
 #include "caml/unixsupport.h"
 #include "cst2constr.h"
+#include "misc_internals.h"
 
 #ifndef S_IFLNK
 #define S_IFLNK 0
@@ -60,7 +61,7 @@ static double stat_timestamp(time_t sec, long nsec)
   double s = (double) sec;
   /* The conversion of nsec to fraction of seconds can round.
      Still, we have 0 <= n < 1.0. */
-  double n = (double) nsec / 1e9;
+  double n = (double) nsec / NSEC_PER_SEC;
   /* The sum s + n can round up, hence s <= t + <= s + 1.0 */
   double t = s + n;
   /* Detect the "round up to s + 1" case and decrease t so that
@@ -95,7 +96,7 @@ static value stat_aux(int use_64, struct stat *buf)
   Field (v, 0) = Val_int (buf->st_dev);
   Field (v, 1) = Val_int (buf->st_ino);
   Field (v, 2) = caml_unix_cst_to_constr(buf->st_mode & S_IFMT, file_kind_table,
-                                    sizeof(file_kind_table) / sizeof(int), 0);
+                                    countof(file_kind_table), 0);
   Field (v, 3) = Val_int (buf->st_mode & 07777);
   Field (v, 4) = Val_int (buf->st_nlink);
   Field (v, 5) = Val_int (buf->st_uid);

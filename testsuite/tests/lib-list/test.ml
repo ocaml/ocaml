@@ -8,6 +8,12 @@ let string_of_even_opt x =
   else
     None
 
+let string_of_add_even_opt i x =
+  if is_even ( i + x) then
+    Some (string_of_int (i + x))
+  else
+    None
+
 let string_of_even_or_int x =
   if is_even x then
     Either.Left (string_of_int x)
@@ -68,13 +74,13 @@ let () =
   assert (List.take 3 [1; 2; 3; 4; 5] = [1; 2; 3]);
   assert (List.take 3 [1; 2] = [1; 2]);
   assert (List.take 3 [] = []);
-  assert ((try List.take (-1) [1; 2] with Invalid_argument _ -> [999]) = [999]);
+  assert (List.take (-1) [1; 2] = []);
   assert (List.take 0 [1; 2] = []);
   assert (List.drop 6 hello_world = world);
   assert (List.drop 3 [1; 2; 3; 4; 5] = [4; 5]);
   assert (List.drop 3 [1; 2] = []);
   assert (List.drop 3 [] = []);
-  assert ((try List.drop (-1) [1; 2] with Invalid_argument _ -> [999]) = [999]);
+  assert (List.drop (-1) [1; 2] = [1; 2]);
   assert (List.drop 0 [1; 2] = [1; 2]);
   assert (List.take_while (fun x -> x < 3) [1; 2; 3; 4; 1; 2; 3; 4]
           = [1; 2]);
@@ -109,6 +115,9 @@ let () =
   assert (not (List.is_empty [1]));
 
   assert (List.filter_map string_of_even_opt l = ["0";"2";"4";"6";"8"]);
+  assert
+    ( List.filter_mapi string_of_add_even_opt l
+    = ["0";"2";"4";"6";"8";"10";"12";"14";"16";"18"]);
   assert (List.concat_map (fun i -> [i; i+1]) [1; 5] = [1; 2; 5; 6]);
   assert (
     let count = ref 0 in
@@ -143,6 +152,39 @@ let () =
   ()
 ;;
 
+(* Check that List.sort_uniq keeps first occurrences of duplicates. *)
+let () =
+  let keep_first_duplicates l =
+    let tagged = List.combine l (List.init (List.length l) Fun.id) in
+    let sorted =
+      List.sort_uniq (fun c1 c2 -> Int.compare (fst c1) (fst c2)) tagged
+    in
+    let is_first_tag (x, y) =
+      (* Check whether the second component of the argument is the element
+         first associated by [tagged] with the first component of the
+         argument. *)
+      List.assoc x tagged = y
+    in
+    List.for_all is_first_tag sorted
+  in
+  let randlist maxlen =
+    let len = Random.int maxlen in
+    (* Take values in [0, (3 * len) / 2] to have some collisions. *)
+    List.init len (fun _ -> Random.int ( 1 + (3 * len) / 2 ))
+  in
+  for _ = 0 to 20 do
+    let l = randlist 99 in
+    if not (keep_first_duplicates l) then (
+      Format.printf
+        "List.sort_uniq did not keep first duplicates when sorting the list@ \
+         @[<hov>[%a]@]@."
+        Format.(
+          pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ") pp_print_int)
+        l;
+      assert false)
+  done
+;;
+
 (* Empty test case *)
 let () =
   assert ((List.init 0 (fun x -> x)) = []);
@@ -168,6 +210,14 @@ let () =
   let threshold = 10_000 in
   test threshold; (* Non tail-recursive case *)
   test (threshold + 1) (* Tail-recursive case *)
+;;
+
+let () =
+  let result = ref [] in
+  let lst = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9] in
+  let lst' = List.append_map (fun x -> result := x :: !result; x) lst [] in
+  assert (lst' = lst);
+  assert (!result = List.rev lst) (* check evaluation order is left-to-right *)
 ;;
 
 let () = print_endline "OK";;

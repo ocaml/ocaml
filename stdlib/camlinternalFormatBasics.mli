@@ -325,3 +325,15 @@ val concat_fmt :
     ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
     ('f, 'b, 'c, 'e, 'g, 'h) fmt ->
     ('a, 'b, 'c, 'd, 'g, 'h) fmt
+
+type neutral_concat =
+  { f:
+      'a 'b 'c 'd 'e 'f. [`String of string | `Char of char ] ->
+      ('a,'b,'c,'d,'e,'f) fmt -> ('a,'b,'c,'d,'e,'f) fmt
+  }
+
+val string_concat_map:
+  neutral_concat ->
+   ('a, 'b, 'c, 'd, 'e, 'f) fmt -> ('a, 'b, 'c, 'd, 'e, 'f) fmt
+(** Helper function for splitting format string and char literal.
+    @since 5.4 *)

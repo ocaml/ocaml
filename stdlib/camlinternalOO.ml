@@ -113,7 +113,7 @@ let dummy_table =
     initializers = [];
     size = 0 }
 
-let table_count = ref 0
+let table_count = Atomic.make 0
 
 (* dummy_met should be a pointer, so use an atom *)
 let dummy_met : item = Obj.obj (Obj.new_block 0 0)
@@ -125,7 +125,7 @@ let rec fit_size n =
   fit_size ((n+1)/2) * 2
 
 let new_table pub_labels =
-  incr table_count;
+  Atomic.incr table_count;
   let len = Array.length pub_labels in
   let methods = Array.make (len*2+2) dummy_met in
   methods.(0) <- Obj.magic len;
@@ -154,8 +154,8 @@ let put array label element =
 
 (**** Classes ****)
 
-let method_count = ref 0
-let inst_var_count = ref 0
+let method_count = Atomic.make 0
+let inst_var_count = Atomic.make 0
 
 (* type t *)
 type meth = item
@@ -178,7 +178,7 @@ let get_method_labels table names =
   Array.map (get_method_label table) names
 
 let set_method table label element =
-  incr method_count;
+  Atomic.incr method_count;
   if Labs.find label table.methods_by_label then
     put table label element
   else
@@ -309,7 +309,7 @@ let create_table public_methods =
   table
 
 let init_class table =
-  inst_var_count := !inst_var_count + table.size - 1;
+  ignore (Atomic.fetch_and_add inst_var_count (table.size - 1));
   table.initializers <- List.rev table.initializers;
   resize table (3 + Obj.magic table.methods.(1) * 16 / Sys.word_size)
 
@@ -608,5 +608,6 @@ type stats =
   { classes: int; methods: int; inst_vars: int; }
 
 let stats () =
-  { classes = !table_count;
-    methods = !method_count; inst_vars = !inst_var_count; }
+  { classes = Atomic.get table_count;
+    methods = Atomic.get method_count;
+    inst_vars = Atomic.get inst_var_count; }

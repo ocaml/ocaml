@@ -1,3 +1,6 @@
+\section{s:extension-syntax}{Extension-only syntax}
+%HEVEA\cutname{extensionsyntax.html}
+
 (Introduced in OCaml 4.02.2, extended in 4.03)
 
 Some syntactic constructions are accepted during parsing and rejected

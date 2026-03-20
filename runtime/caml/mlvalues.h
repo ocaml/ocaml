@@ -19,6 +19,7 @@
 #include "config.h"
 #include "misc.h"
 #include "tsan.h"
+#include "camlatomic.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -249,7 +250,9 @@ CAMLno_tsan_for_perf Caml_inline header_t Hd_val(value val)
 
 /* The lowest tag for blocks containing no value. */
 #define No_scan_tag 251
-
+#define Scannable_tag(t)   ((t) < No_scan_tag)
+#define Scannable_hd(hd)   Scannable_tag(Tag_hd(hd))
+#define Scannable_val(val) Scannable_tag(Tag_val(val))
 
 /* 1- If tag < No_scan_tag : a tuple of fields.  */
 
@@ -501,7 +504,7 @@ CAMLextern value caml_set_oo_id(value obj);
         Caml_out_of_heap_header_with_reserved(wosize, tag, 0)
 
 
-/* Obsolete -- suppport for unsafe encoded exceptions.
+/* Obsolete -- support for unsafe encoded exceptions.
 
    Before caml_result was available, we used an unsafe encoding of it
    into the 'value' type, where encoded exceptions have their second

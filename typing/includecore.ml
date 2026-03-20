@@ -99,7 +99,7 @@ let value_descriptions ~loc env name
     loc
     vd1.val_attributes vd2.val_attributes
     name;
-  match Ctype.moregeneral env true vd1.val_type vd2.val_type with
+  match Ctype.moregeneral env vd1.val_type vd2.val_type with
   | exception Ctype.Moregen err -> raise (Dont_match (Type err))
   | () -> value_descriptions_consistency env vd1 vd2
 
@@ -143,18 +143,21 @@ type type_kind =
   | Kind_record
   | Kind_variant
   | Kind_open
+  | Kind_external of string
 
 let of_kind = function
   | Type_abstract _ -> Kind_abstract
   | Type_record (_, _) -> Kind_record
   | Type_variant (_, _) -> Kind_variant
   | Type_open -> Kind_open
+  | Type_external name -> Kind_external name
 
 type kind_mismatch = type_kind * type_kind
 
 type label_mismatch =
   | Type of Errortrace.equality_error
   | Mutability of position
+  | Atomicity of position
 
 type record_change =
   (Types.label_declaration, Types.label_declaration, label_mismatch)
@@ -270,6 +273,10 @@ let report_label_mismatch first second env ppf err =
       report_type_inequality env ppf err
   | Mutability ord ->
       Format_doc.fprintf ppf "%s is mutable and %s is not."
+        (String.capitalize_ascii (choose ord first second))
+        (choose_other ord first second)
+  | Atomicity ord ->
+      Format_doc.fprintf ppf "%s is atomic and %s is not."
         (String.capitalize_ascii (choose ord first second))
         (choose_other ord first second)
 
@@ -424,7 +431,8 @@ let report_kind_mismatch first second ppf (kind1, kind2) =
   | Kind_abstract -> "abstract"
   | Kind_record -> "a record"
   | Kind_variant -> "a variant"
-  | Kind_open -> "an extensible variant" in
+  | Kind_open -> "an extensible variant"
+  | Kind_external name -> Printf.sprintf "external %S" name in
   pr "%s is %s, but %s is %s."
     (String.capitalize_ascii first)
     (kind_to_string kind1)
@@ -433,7 +441,6 @@ let report_kind_mismatch first second ppf (kind1, kind2) =
 
 let report_type_mismatch first second decl env ppf err =
   let pr fmt = Fmt.fprintf ppf fmt in
-  pr "@ ";
   match err with
   | Arity ->
       pr "They have different arities."
@@ -481,6 +488,14 @@ module Record_diffing = struct
     then
       let ord = if ld1.ld_mutable = Asttypes.Mutable then First else Second in
       Some (Mutability  ord)
+    else if ld1.ld_atomic <> ld2.ld_atomic
+    then
+      let ord =
+        match ld1.ld_atomic with
+        | Atomic -> First
+        | Nonatomic -> Second
+      in
+      Some (Atomicity  ord)
     else
     let tl1 = params1 @ [ld1.ld_type] in
     let tl2 = params2 @ [ld2.ld_type] in
@@ -969,7 +984,9 @@ let type_declarations ?(equality = false) ~loc env ~mark name
     | (Type_variant (cstrs1, rep1), Type_variant (cstrs2, rep2)) ->
         if mark then begin
           let mark usage cstrs =
-            List.iter (Env.mark_constructor_used usage) cstrs
+            List.iter (fun cstr ->
+              Env.mark_constructor_used usage cstr.Types.cd_uid
+            ) cstrs
           in
           let usage : Env.constructor_usage =
             if decl2.type_private = Public then Env.Exported
@@ -988,7 +1005,9 @@ let type_declarations ?(equality = false) ~loc env ~mark name
     | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
         if mark then begin
           let mark usage lbls =
-            List.iter (Env.mark_label_used usage) lbls
+            List.iter (fun lbl ->
+              Env.mark_label_used usage lbl.Types.ld_uid
+            ) lbls
           in
           let usage : Env.label_usage =
             if decl2.type_private = Public then Env.Exported
@@ -1002,6 +1021,7 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           labels1 labels2
           rep1 rep2
     | (Type_open, Type_open) -> None
+    | (Type_external n1, Type_external n2) when n1 = n2 -> None
     | (_, _) -> Some (Kind (of_kind decl1.type_kind, of_kind decl2.type_kind))
   in
   if err <> None then err else
@@ -1019,10 +1039,21 @@ let type_declarations ?(equality = false) ~loc env ~mark name
       | Error violation -> Some (Immediate violation)
   in
   if err <> None then err else
+  (* We need to check coherence of internal and exported variance  either
+     * when the export type is abstract, as there is no manifest to get
+       the minimal variance from
+     * when the export type is private, as the private manifest may be
+       result of expansions within Ctype.equal_private, forgetting
+       an explicit variance annotation in the internal type
+     * when the internal type is private, but this is already included
+       in the above two cases (a private type can only be exported as
+       abstract or private)
+     * when the internal type is open, as we do not allow changing the
+       variance in that case  *)
+  let abstr' = abstr || decl2.type_private = Private in
   let need_variance =
-    abstr || decl1.type_private = Private || decl1.type_kind = Type_open in
+    abstr' || decl1.type_private = Private || decl1.type_kind = Type_open in
   if not need_variance then None else
-  let abstr = abstr || decl2.type_private = Private in
   let opn = decl2.type_kind = Type_open && decl2.type_manifest = None in
   let constrained ty = not (Btype.is_Tvar ty) in
   if List.for_all2
@@ -1030,10 +1061,13 @@ let type_declarations ?(equality = false) ~loc env ~mark name
         let open Variance in
         let imp a b = not a || b in
         let (co1,cn1) = get_upper v1 and (co2,cn2) = get_upper v2 in
-        (if abstr then (imp co1 co2 && imp cn1 cn2)
+        (if abstr' then (imp co1 co2 && imp cn1 cn2)
          else if opn || constrained ty then (co1 = co2 && cn1 = cn2)
          else true) &&
         let (p1,n1,j1) = get_lower v1 and (p2,n2,j2) = get_lower v2 in
+        (* Only check the lower bound for abstract types.
+           For private types, the lower bound can be inferred, and
+           the internal one may be wrong in the result of functors. *)
         imp abstr (imp p2 p1 && imp n2 n1 && imp j2 j1))
       decl2.type_params (List.combine decl1.type_variance decl2.type_variance)
   then None else Some Variance
@@ -1046,7 +1080,7 @@ let extension_constructors ~loc env ~mark id ext1 ext2 =
       if ext2.ext_private = Public then Env.Exported
       else Env.Exported_private
     in
-    Env.mark_extension_used usage ext1
+    Env.mark_extension_used usage ext1.ext_uid
   end;
   let ty1 =
     Btype.newgenty (Tconstr(ext1.ext_type_path, ext1.ext_type_params, ref Mnil))

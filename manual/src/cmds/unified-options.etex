@@ -229,6 +229,14 @@ Arrange for the C shared library "dll"\var{libname}".so"
 by the run-time system "ocamlrun" at program start-up time.
 }%comp
 
+\comp{
+\item["-dllib-suffixed" "-l"\var{libname}]
+As for "-dllib" but the name recorded is mangled with the Runtime ID and host of
+the interpreter before being loaded by the run-time system "ocamlrun" at program
+start-up time. Ths is used for C stub libraries, for example by DLLs produced
+with "ocamlmklib -suffixed".
+}%comp
+
 \comp{\item["-dllpath" \var{dir}]
 Adds the directory \var{dir} to the run-time search path for shared
 C libraries.  At link-time, shared libraries are searched in the
@@ -277,6 +285,11 @@ can help in writing an explicit interface (".mli" file) for a file:
 just redirect the standard output of the compiler to a ".mli" file,
 and edit that file to remove all declarations of unexported names.
 }%notop
+
+\item["-i-variance"]
+Cause the compiler to print the computed variance of type parameters for
+every type declaration.  Without this option, variance is printed only for
+private types or types without a manifest (e.g., abstract types).
 
 \item["-I" \var{directory}]
 Add the given directory to the list of directories searched for
@@ -363,9 +376,40 @@ Recognize file names ending with \var{string} as interface files
 (instead of the default ".mli").
 }%\notop
 
+\item["-keywords" \var{version+list}]
+Set keywords according to the \var{version+list}
+specification.
+
+This specification starts with an optional version number, defining the base set
+of keywords, followed by a \var{+}-separated list of additional keywords to add
+to this base set.
+
+Without an explicit version number, the base set of keywords is the
+set of keywords in the current version of OCaml.
+Additional keywords that do not match any known keyword in the current
+version of the language trigger an error whenever they are present in the
+source code.
+
 \item["-labels"]
 Labels are not ignored in types, labels may be used in applications,
 and labelled parameters can be given in any order.  This is the default.
+
+\comp{%
+\item["-launch-method" \var{method}]
+Specifies the mechanism used by normal bytecode executables to find the
+interpreter.
+The following methods are supported:
+\begin{description}
+  \item["exe"] A small executable stub launcher contained in the
+    runtime-launch-info file is prepended to the bytecode image.
+  \item["sh"] A "#!" header is used. If the full path to the required
+    interpreter is not suitable for a "#!" line, a small shell script is
+    generated instead, using the "sh" interpreter found in "PATH".
+  \item["/path/interpreter"] As for "sh", but if the interpreter cannot be used
+    in "#!" line then "/path/intepreter" is used instead of searching for "sh"
+    in "PATH".
+\end{description}
+}%comp
 
 \notop{%
 \item["-linkall"]
@@ -629,7 +673,7 @@ After parsing, pipe the abstract syntax tree through the preprocessor
 \ifouthtml
 chapter~\ref{c:parsinglib}:
 \ahref{compilerlibref/Ast\_mapper.html}{ \texttt{Ast_mapper} }
-\else section~\ref{Ast-underscoremapper}\fi,
+\else section~\ref{Ast_mapper}\fi,
 implements the external interface of a preprocessor.
 
 \item["-principal"]
@@ -648,6 +692,23 @@ Allow arbitrary recursive types during type-checking.  By default,
 only recursive types where the recursion goes through an object type
 are supported. \notop{Note that once you have created an interface using this
 flag, you must use it again for all dependencies.}
+
+\comp{%
+\item["-runtime-search" \var{method}]
+Controls whether the header used by normal bytecode executables is permitted to
+search for the interpreter, or requires it to be at a fixed location.
+The following methods are supported:
+\begin{description}
+  \item["disable"] A fixed absolute path to the interpreter is used, and the
+  executable will not launch if the interpreter is not found at this location.
+  \item["fallback"] A fixed absolute path to the interpreter is used, but if the
+  executable cannot find the interpreter at this location then it will search
+  first in the directory containing the executable and then in "PATH".
+  \item["enable"] The executable searches for the interpreter first in the
+  directory containing the executable and then in "PATH". No absolute path to
+  the interpreter is recorded.
+\end{description}
+}%comp
 
 \notop{%
 \item["-runtime-variant" \var{suffix}]
@@ -688,9 +749,20 @@ compiler's intermediate representation of the program
 using "compiler-libs" library (see
 \ifouthtml chapter~\ref{c:parsinglib} and
 \ahref{compilerlibref/Compiler\_libs.html}{ \texttt{Compiler_libs} }
-\else section~\ref{Compiler-underscorelibs}\fi
+\else section~\ref{Compiler_libs}\fi
 ).
 }%nat
+
+\notop{%
+\item["-set-runtime-default" \var{name=value}]
+When linking an executable, override the default value for a runtime setting.
+The currently supported settings are:
+\begin{description}
+  \item["standard_library_default"] Specifies the default location used by the
+    executable to locate the Standard Library. By default, this is the absolute
+    path to the Standard Library the compiler itself was configured with.
+\end{description}
+}%notop
 
 \nat{%
 \item["-shared"]

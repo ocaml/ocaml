@@ -23,11 +23,43 @@
 val version: string
 (** The current version number of the system *)
 
+val release_number: int
+(** The release number for the compiler
+
+    @since 5.5 *)
+
+val is_official_release: bool
+(** True if the compiler is an unmodified official OCaml release
+
+    @since 5.5 *)
+
 val bindir: string
-(** The directory containing the binary programs *)
+(** The directory containing the binary programs. If the compiler was configured
+    with [--with-relative-libdir] then this will be the directory containing the
+    currently executing runtime. *)
+
+val standard_library_relative: string option
+(** The explicit relative path from the compiler binaries to the standard
+    libraries directory if the compiler was configured with
+    [--with-relative-libdir], or [None] otherwise.
+
+    @since 5.5 *)
+
+val target_bindir: string
+(** The directory containing the runtime binaries on the target system
+
+    @since 5.5 *)
+
+val standard_library_default: string
+(** The effective value for the default directory containing the standard
+    libraries. This is always an absolute path, computed using
+    {!standard_library_relative} if necessary.
+
+    @since 5.5 *)
 
 val standard_library: string
-(** The directory containing the standard libraries *)
+(** The effective directory containing the standard libraries, taking CAMLLIB
+    and OCAMLLIB into account. *)
 
 val ccomp_type: string
 (** The "kind" of the C compiler, assembler and linker used: one of
@@ -36,6 +68,29 @@ val ccomp_type: string
 
 val c_compiler: string
 (** The compiler to use for compiling C files *)
+
+val c_compiler_vendor: string
+(** The vendor and version of the C compiler. Consists of hyphenated values
+    where the first part indicates the C compiler's vendor and remaining parts
+    indicate the version of the C compiler, as reported by that C compiler's
+    preprocessor.
+
+    Possible values are:
+    - {v msvc v} - Windows, using Microsoft Visual Studio. {v _MSC_VER v}
+                   follows and optionally {v clang- v} if {v clang-cl v},
+                   rather than Visual Studio itself, is in use.
+    - {v icc v} - Intel C Compiler.
+    - {v mingw v} - Windows, using the mingw-w64 project. The major and minor
+                    version of mingw-w64 itself follow and then either
+                    {v gcc- v} or {v clang- v} indicating which C compiler is in
+                    use.
+    - {v clang v} - Clang LLVM C Compiler.
+    - {v gcc v} - GNU Compiler Collection C Compiler.
+    - {v xlc v} - IBM XL C Compiler.
+    - {v sunc v} - Oracle Solaris Studio.
+    - {v unknown v} - unknown compiler vendor. No additional version info.
+
+    @since 5.5 *)
 
 val c_output_obj: string
 (** Name of the option of the C compiler for specifying the output
@@ -46,6 +101,12 @@ val c_has_debug_prefix_map : bool
 
 val as_has_debug_prefix_map : bool
 (** Whether the assembler supports --debug-prefix-map *)
+
+val as_is_cc : bool
+(** Whether the assembler is actually an assembler, or whether we are really
+    assembling files via the C compiler
+
+    @since 5.5 *)
 
 val bytecode_cflags : string
 (** The flags ocamlc should pass to the C compiler *)
@@ -65,8 +126,20 @@ val bytecomp_c_libraries: string
 val native_c_libraries: string
 (** The C libraries to link with native-code programs *)
 
+val compression_c_libraries: string
+(** The C libraries needed with -lcomprmarsh (should appear before
+    {!native_c_libraries} in a call to the C compiler)
+
+    @since 5.4 *)
+
 val native_ldflags : string
 (* Flags to pass to the system linker *)
+
+val with_nonexecstack_note : bool
+(** Whether an explicit ".note.GNU-stack" section is to be added to indicate
+    the stack should not be executable
+
+    @since 5.4 *)
 
 val native_pack_linker: string
 (** The linker to use for packaging (ocamlopt -pack) and for partial
@@ -163,12 +236,47 @@ val model: string
 val system: string
 (** Name of operating system for the native-code compiler *)
 
+val target_os_type: string
+(** Operating system targeted by the native-code compiler. One of
+-  ["Unix"] (for all Unix versions, including Linux and macOS),
+-  ["Win32"] (for MS-Windows, OCaml compiled with MSVC++ or MinGW-w64),
+-  ["Cygwin"] (for MS-Windows, OCaml compiled with Cygwin).
+
+    @since 5.4 *)
+
+val target_unix: bool
+(** True if [target_os_type = "Unix"]
+
+    @since 5.5 *)
+
+val target_win32: bool
+(** True if [target_os_type = "Win32"]
+
+    @since 5.5 *)
+
+val target_cygwin: bool
+(** True if [target_os_type = "Cygwin"]
+
+    @since 5.5 *)
+
 val asm: string
 (** The assembler (and flags) to use for assembling
     ocamlopt-generated code. *)
 
 val asm_cfi_supported: bool
 (** Whether assembler understands CFI directives *)
+
+val asm_size_type_directives: bool
+(** Whether the [.size] and [.type] assembler directives can be used
+
+    @since 5.4 *)
+
+val asm_dwarf_version : int option
+(** The DWARF Version emitted by the {!asm} command. At present this is only
+    implemented for the clang internal assembler, all other assemblers have
+    [None].
+
+    @since 5.5 *)
 
 val with_frame_pointers : bool
 (** Whether assembler should maintain frame pointers *)
@@ -215,6 +323,9 @@ val with_flambda_invariants : bool
 val with_cmm_invariants : bool
 (** Whether the invariants checks for Cmm are enabled *)
 
+val with_codegen_invariants : bool
+(** Whether the invariant checks for native code generation are enabled. *)
+
 val reserved_header_bits : int
 (** How many bits of a block's header are reserved *)
 
@@ -259,6 +370,62 @@ val ar_supports_response_files: bool
 
 val tsan : bool
 (** Whether ThreadSanitizer instrumentation is enabled *)
+
+(** Launch mechanisms for bytecode executables
+
+    @since 5.5 *)
+type launch_method =
+| Executable
+    (** Use the executable launcher stub *)
+| Shebang of string option
+    (** Use a shebang-style launcher. Whenever possible, the interpreter will be
+        the runtime itself, but if the path to the runtime is not valid for a
+        shebang line, then a shell script is generated. When this is necessary,
+        the parameter in [Shebang (Some sh)] is the full path to [sh]; if the
+        parameter is [None], then the linker searches PATH for [sh]. *)
+
+val launch_method : launch_method
+(** Default launch mechanism for bytecode executables
+
+    @since 5.5 *)
+
+(** Mechanisms used by tendered bytecode executables to locate the interpreter
+
+    @since 5.5 *)
+type search_method =
+| Disable
+    (** Interpreter searching disabled - check fixed absolute location only *)
+| Fallback
+    (** Check fixed absolute location first, but fall back to a search if that
+        fails *)
+| Enable
+    (** Always search for the interpreter *)
+
+val search_method : search_method
+(** Default search mechanism for bytecode executables
+
+    @since 5.5 *)
+
+val shebangscripts : bool
+(** Whether the target supports shebang scripts
+
+    @since 5.5 *)
+
+val suffixing : bool
+(** Whether the runtime executable and shared library filenames and C stub
+    library filenames are being mangled with Runtime IDs and the {!target}.
+
+    @since 5.5 *)
+
+val bytecode_runtime_id : string
+(** The Runtime ID for this build of the bytecode runtime system
+
+    @since 5.5 *)
+
+val native_runtime_id : string
+(** The Runtime ID for this build of the native runtime system
+
+    @since 5.5 *)
 
 (** Access to configuration values *)
 val print_config : out_channel -> unit

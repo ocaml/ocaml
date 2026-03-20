@@ -18,8 +18,8 @@ module type S' = sig
   val eq : (t, unit t_aux) eq
 end;;
 
-let cast_type_under_equality (type t) (module M : S' with type t = t) :
-    (module S with type t = t) =
+let cast_type_under_equality (type t) ((module M) : (module S' with type t = t))
+    : (module S with type t = t) =
   let Refl = M.eq in
   (module M);;
 [%%expect {|
@@ -43,8 +43,8 @@ module type S' = sig
   val x : t
 end;;
 
-let cast_value_under_equality (type t) (module M : S' with type t = t) :
-    (module S with type t = t) =
+let cast_value_under_equality (type t)
+    ((module M) : (module S' with type t = t)) : (module S with type t = t) =
   let Refl = M.eq in
   (module M);;
 [%%expect {|
@@ -71,8 +71,8 @@ module type S' = sig
   val x : u
 end;;
 
-let cast_value_under_manifest_equality (type t) (module M : S' with type t = t)
-    : (module S with type t = t) =
+let cast_value_under_manifest_equality (type t)
+    ((module M) : (module S' with type t = t)) : (module S with type t = t) =
   let Refl = M.eq in
   (module M);;
 [%%expect {|
@@ -103,8 +103,8 @@ module type S' = sig
   type u = A of unit t_aux
 end;;
 
-let cast_constructor_under_equality (type t) (module M : S' with type t = t) :
-    (module S with type t = t) =
+let cast_constructor_under_equality (type t)
+    ((module M) : (module S' with type t = t)) : (module S with type t = t) =
   let Refl = M.eq in
   (module M);;
 [%%expect {|
@@ -137,7 +137,7 @@ module type S' = sig
 end;;
 
 let cast_extension_constructor_under_equality (type t)
-    (module M : S' with type t = t) : (module S with type t = t) =
+    ((module M) : (module S' with type t = t)) : (module S with type t = t) =
   let Refl = M.eq in
   (module M);;
 [%%expect {|
@@ -168,8 +168,8 @@ module type S' = sig
   type u = { x : unit t_aux }
 end;;
 
-let cast_record_under_equality (type t) (module M : S' with type t = t) :
-    (module S with type t = t) =
+let cast_record_under_equality (type t)
+    ((module M) : (module S' with type t = t)) : (module S with type t = t) =
   let Refl = M.eq in
   (module M);;
 [%%expect {|
@@ -197,7 +197,7 @@ module type S' = sig
 end;;
 
 let cast_indirect_under_equality (type t)
-    (module M : S' with type t = t) : (module S with type t = t)
+    ((module M) : (module S' with type t = t)) : (module S with type t = t)
     =
   let module N : S' with type 'a t_aux = 'a M.t_aux = M in
   let Refl = M.eq in
@@ -224,8 +224,8 @@ module type S' = sig
 end;;
 
 let cast_functor_argument_under_equality (type t)
-    (module M : S' with type t = t) (module F : F) : (module S with type t = t)
-    =
+    ((module M) : (module S' with type t = t)) ((module F) : (module F))
+    : (module S with type t = t) =
   let Refl = M.eq in
   (module F (M))
 [%%expect {|
@@ -255,8 +255,8 @@ module type S' = sig
 end;;
 
 let cast_functor_argument_signature_under_equality (type t)
-    (module M : S' with type t = t) (module F : F) : (module S with type t = t)
-    =
+    ((module M) : (module S' with type t = t)) ((module F) : (module F))
+    : (module S with type t = t) =
   let Refl = M.eq in
   (module M : F(M).S)
 [%%expect {|
@@ -269,8 +269,8 @@ val cast_functor_argument_signature_under_equality :
 |}]
 
 let cast_double_functor_argument_signature_under_equality (type t)
-    (module M : S' with type t = t) (module F : F) : (module S with type t = t)
-    =
+    ((module M) : (module S' with type t = t)) ((module F) : (module F))
+    : (module S with type t = t) =
   let Refl = M.eq in
   let module N : F(M).S = M in
   let module O : F(N).S = N in
@@ -300,8 +300,8 @@ module type S' = sig
   end
 end;;
 
-let cast_module_type_under_equality (type t) (module M : S' with type t = t) :
-    (module S with type t = t) =
+let cast_module_type_under_equality (type t)
+    ((module M) : (module S' with type t = t)) : (module S with type t = t) =
   let Refl = M.eq in
   (module M)
 [%%expect {|
@@ -329,8 +329,8 @@ module type S' = sig
   val eq : (t, unit t_aux) eq
 end;;
 
-let cast_via_module_type_under_equality (type t) (module M : S' with type t = t)
-    : (module S with type t = t) =
+let cast_via_module_type_under_equality (type t)
+    ((module M) : (module S' with type t = t)) : (module S with type t = t) =
   let Refl = M.eq in
   let module N = struct
     module M : S' with type t = t = M
@@ -343,8 +343,8 @@ val cast_via_module_type_under_equality :
   (module S' with type t = 't) -> (module S with type t = 't) = <fun>
 |}]
 
-let cast_via_module_type_under_equality2 (type t) (module M : S' with type t = t)
-    : (module S with type t = t) =
+let cast_via_module_type_under_equality2 (type t)
+    ((module M) : (module S' with type t = t)) : (module S with type t = t) =
   let Refl = M.eq in
   let module N = struct
     module M : S' with type t = M.t = M
@@ -437,7 +437,7 @@ module type S = sig
   val g : a
 end;;
 let f (type a b) (w1 : (a, b -> b) eq) (w2 : (a, int -> int) eq)
-    (module M : S with type a = a) =
+    ((module M) : (module S with type a = a)) =
   let Refl = w1 in let Refl = w2 in M.g 3
 [%%expect {|
 module type S = sig type a val g : a end
@@ -455,7 +455,7 @@ Error: This expression has type "b" = "int"
        it would escape the scope of its equation
 |}]
 let f (type a b) (w1 : (a, b -> b) eq) (w2 : (a, int -> int) eq)
-    (module M : S with type a = a) =
+    ((module M) : (module S with type a = a)) =
   let Refl = w2 in let Refl = w1 in M.g 3
 [%%expect{|
 val f :

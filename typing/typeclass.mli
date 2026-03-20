@@ -123,6 +123,7 @@ type error =
   | No_overriding of string * string
   | Duplicate of string * string
   | Closing_self_type of class_signature
+  | Polymorphic_class_parameter
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error

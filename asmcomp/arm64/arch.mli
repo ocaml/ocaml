@@ -19,6 +19,9 @@
 (* Specific operations for the ARM processor, 64-bit mode *)
 
 val macosx : bool
+val freebsd : bool
+
+val top_bits_ignore : bool
 
 (* Machine-specific command-line options *)
 

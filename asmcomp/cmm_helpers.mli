@@ -24,10 +24,6 @@ val bind :
 val bind_load :
   string -> expression -> (expression -> expression) -> expression
 
-(** Same as [bind], but does not treat variables as simple *)
-val bind_nonvar :
-  string -> expression -> (expression -> expression) -> expression
-
 (** Headers *)
 
 (** A null header with GC bits set to black *)
@@ -203,16 +199,23 @@ val mk_load_atomic : memory_chunk -> operation
     [n]th field of the block pointed to by [ptr] *)
 val field_address : expression -> int -> Debuginfo.t -> expression
 
-(** [get_field_gen mut ptr n dbg] returns an expression for the access to the
-    [n]th field of the block pointed to by [ptr] *)
+(** [get_field_gen ?memory_chunk mut ptr n dbg] returns an expression for
+    the access to the [n]th field of the block pointed to by [ptr]. *)
 val get_field_gen :
-  Asttypes.mutable_flag -> expression -> int -> Debuginfo.t -> expression
+  ?memory_chunk:memory_chunk -> Asttypes.mutable_flag -> expression -> int ->
+  Debuginfo.t -> expression
 
 (** [set_field ptr n newval init dbg] returns an expression for setting the
     [n]th field of the block pointed to by [ptr] to [newval] *)
 val set_field :
   expression -> int -> expression -> Lambda.initialization_or_assignment ->
   Debuginfo.t -> expression
+
+(** [field_address_computed ptr ofs dbg] returns an expression for the address
+    at offset [ofs] (in machine words) of the block pointed to by [ptr].
+    The resulting expression is a derived pointer of type [Addr]. *)
+val field_address_computed :
+  expression -> expression -> Debuginfo.t -> expression
 
 (** Load a block's header *)
 val get_header : expression -> Debuginfo.t -> expression
@@ -607,7 +610,11 @@ val reference_symbols: string list -> phrase
 
 (** Generate the caml_globals_map structure, as a marshalled string constant *)
 val globals_map:
-  (string * Digest.t option * Digest.t option * string list) list -> phrase
+  (string *
+   Digest.BLAKE128.t option *
+   Digest.BLAKE128.t option *
+   string list) list
+  -> phrase
 
 (** Generate the caml_frametable table, referencing the frametables
     from the given compilation units *)
@@ -621,7 +628,10 @@ val code_segment_table: string list -> phrase
 (** Generate data for a predefined exception *)
 val predef_exception: int -> string -> phrase
 
-val plugin_header: (Cmx_format.unit_infos * Digest.t) list -> phrase
+(** Generate data for a global string constant *)
+val emit_global_string_constant: string -> string -> phrase
+
+val plugin_header: (Cmx_format.unit_infos * Digest.BLAKE128.t) list -> phrase
 
 (** Emit constant symbols *)
 

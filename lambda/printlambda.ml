@@ -21,14 +21,13 @@ open Lambda
 
 
 let rec struct_const ppf = function
-  | Const_base(Const_int n) -> fprintf ppf "%i" n
-  | Const_base(Const_char c) -> fprintf ppf "%C" c
-  | Const_base(Const_string (s, _, _)) -> fprintf ppf "%S" s
-  | Const_immstring s -> fprintf ppf "#%S" s
-  | Const_base(Const_float f) -> fprintf ppf "%s" f
-  | Const_base(Const_int32 n) -> fprintf ppf "%lil" n
-  | Const_base(Const_int64 n) -> fprintf ppf "%LiL" n
-  | Const_base(Const_nativeint n) -> fprintf ppf "%nin" n
+  | Const_int n -> fprintf ppf "%i" n
+  | Const_char c -> fprintf ppf "%C" c
+  | Const_immstring s -> fprintf ppf "%S" s
+  | Const_float f -> fprintf ppf "%s" f
+  | Const_int32 n -> fprintf ppf "%lil" n
+  | Const_int64 n -> fprintf ppf "%LiL" n
+  | Const_nativeint n -> fprintf ppf "%nin" n
   | Const_block(tag, []) ->
       fprintf ppf "[%i]" tag
   | Const_block(tag, sc1::scl) ->
@@ -156,6 +155,10 @@ let primitive ppf = function
       fprintf ppf "makeblock %i%a" tag block_shape shape
   | Pmakeblock(tag, Mutable, shape) ->
       fprintf ppf "makemutable %i%a" tag block_shape shape
+  | Pmakelazyblock Lazy_tag ->
+      fprintf ppf "makelazyblock"
+  | Pmakelazyblock Forward_tag ->
+      fprintf ppf "makeforwardblock"
   | Pfield(n, ptr, mut) ->
       let instr =
         match ptr, mut with
@@ -266,10 +269,12 @@ let primitive ppf = function
        | Ostype_unix -> "ostype_unix"
        | Ostype_win32 -> "ostype_win32"
        | Ostype_cygwin -> "ostype_cygwin"
-       | Backend_type -> "backend_type" in
+       | Backend_type -> "backend_type"
+       | Standard_library_default -> "standard_library_default" in
      fprintf ppf "sys.constant_%s" const_name
   | Pisint -> fprintf ppf "isint"
   | Pisout -> fprintf ppf "isout"
+  | Pcheckbound -> fprintf ppf "checkbound"
   | Pbintofint bi -> print_boxed_integer "of_int" ppf bi
   | Pintofbint bi -> print_boxed_integer "to_int" ppf bi
   | Pcvtbint (bi1, bi2) -> print_boxed_integer_conversion ppf bi1 bi2
@@ -362,6 +367,7 @@ let name_of_primitive = function
   | Pgetglobal _ -> "Pgetglobal"
   | Psetglobal _ -> "Psetglobal"
   | Pmakeblock _ -> "Pmakeblock"
+  | Pmakelazyblock _ -> "Pmakelazyblock"
   | Pfield _ -> "Pfield"
   | Pfield_computed -> "Pfield_computed"
   | Psetfield _ -> "Psetfield"
@@ -419,6 +425,7 @@ let name_of_primitive = function
   | Pctconst _ -> "Pctconst"
   | Pisint -> "Pisint"
   | Pisout -> "Pisout"
+  | Pcheckbound -> "Pcheckbound"
   | Pbintofint _ -> "Pbintofint"
   | Pintofbint _ -> "Pintofbint"
   | Pcvtbint _ -> "Pcvtbint"

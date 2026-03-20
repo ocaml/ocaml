@@ -37,7 +37,7 @@ let string_of_variance t v =
     ""
 let rec is_arrow_type t =
   match Types.get_desc t with
-    Types.Tarrow _ -> true
+    Types.Tarrow _ | Types.Tfunctor _ -> true
   | Types.Tlink t2 -> is_arrow_type t2
   | Types.Ttuple _
   | Types.Tconstr _
@@ -48,7 +48,7 @@ let rec is_arrow_type t =
 
 let rec need_parent t =
   match Types.get_desc t with
-    Types.Tarrow _ | Types.Ttuple _ -> true
+    Types.Tarrow _ | Types.Ttuple _ | Types.Tfunctor _ -> true
   | Types.Tlink t2 -> need_parent t2
   | Types.Tconstr _
   | Types.Tvar _ | Types.Tunivar _ | Types.Tobject _ | Types.Tpoly _
@@ -168,9 +168,10 @@ let string_of_record l =
   P.sprintf "{\n%s\n}" (
     String.concat "\n" (
       List.map (fun field ->
-          P.sprintf "   %s%s : %s;%s"
+          P.sprintf "   %s%s : %s%s;%s"
             (if field.M.rf_mutable then "mutable " else "") field.M.rf_name
             (Odoc_print.string_of_type_expr field.M.rf_type)
+            (if field.M.rf_atomic then " [@atomic]" else "")
             (field_doc_str field.M.rf_text)
         ) l
     )
@@ -243,6 +244,9 @@ let string_of_type t =
   | M.Type_record l ->
      P.sprintf "= %s{\n%s\n}\n" (if priv then "private " else "")
        (string_of_record l)
+
+  | M.Type_external name ->
+      P.sprintf "= external %S" name
  in
  P.sprintf "type %s %s %s%s%s" parameters_str (Name.simple t.M.ty_name)
    manifest_str type_kind_str

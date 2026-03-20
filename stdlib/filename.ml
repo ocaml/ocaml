@@ -78,7 +78,6 @@ module type SYSDEPS = sig
   val is_relative : string -> bool
   val is_implicit : string -> bool
   val check_suffix : string -> string -> bool
-  val chop_suffix_opt : suffix:string -> string -> string option
   val temp_dir_name : string
   val quote : string -> string
   val quote_command :
@@ -97,21 +96,10 @@ module Unix : SYSDEPS = struct
   let is_relative n = String.length n < 1 || n.[0] <> '/'
   let is_implicit n =
     is_relative n
-    && (String.length n < 2 || String.sub n 0 2 <> "./")
-    && (String.length n < 3 || String.sub n 0 3 <> "../")
+    && not (String.starts_with ~prefix:"./" n)
+    && not (String.starts_with ~prefix:"../" n)
   let check_suffix name suff =
     String.ends_with ~suffix:suff name
-
-  let chop_suffix_opt ~suffix filename =
-    let len_s = String.length suffix and len_f = String.length filename in
-    if len_f >= len_s then
-      let r = String.sub filename (len_f - len_s) len_s in
-      if r = suffix then
-        Some (String.sub filename 0 (len_f - len_s))
-      else
-        None
-    else
-      None
 
   let temp_dir_name =
     try Sys.getenv "TMPDIR" with Not_found -> "/tmp"
@@ -139,26 +127,17 @@ module Win32 : SYSDEPS = struct
     && (String.length n < 2 || n.[1] <> ':')
   let is_implicit n =
     is_relative n
-    && (String.length n < 2 || String.sub n 0 2 <> "./")
-    && (String.length n < 2 || String.sub n 0 2 <> ".\\")
-    && (String.length n < 3 || String.sub n 0 3 <> "../")
-    && (String.length n < 3 || String.sub n 0 3 <> "..\\")
-  let check_suffix name suff =
-   String.length name >= String.length suff &&
-   (let s = String.sub name (String.length name - String.length suff)
-                            (String.length suff) in
-    String.lowercase_ascii s = String.lowercase_ascii suff)
-
-  let chop_suffix_opt ~suffix filename =
+    && not (String.starts_with ~prefix:"./" n)
+    && not (String.starts_with ~prefix:".\\" n)
+    && not (String.starts_with ~prefix:"../" n)
+    && not (String.starts_with ~prefix:"..\\" n)
+  let check_suffix filename suffix =
     let len_s = String.length suffix and len_f = String.length filename in
     if len_f >= len_s then
       let r = String.sub filename (len_f - len_s) len_s in
-      if String.lowercase_ascii r = String.lowercase_ascii suffix then
-        Some (String.sub filename 0 (len_f - len_s))
-      else
-        None
+      String.lowercase_ascii r = String.lowercase_ascii suffix
     else
-      None
+      false
 
   external temp_dir_name: unit -> string = "caml_sys_temp_dir_name"
   let temp_dir_name = temp_dir_name ()
@@ -277,7 +256,6 @@ module Cygwin : SYSDEPS = struct
   let is_relative = Win32.is_relative
   let is_implicit = Win32.is_implicit
   let check_suffix = Win32.check_suffix
-  let chop_suffix_opt = Win32.chop_suffix_opt
   let temp_dir_name = Unix.temp_dir_name
   let quote = Unix.quote
   let quote_command = Unix.quote_command
@@ -303,6 +281,11 @@ let chop_suffix name suff =
   if check_suffix name suff
   then String.sub name 0 (String.length name - String.length suff)
   else invalid_arg "Filename.chop_suffix"
+
+let chop_suffix_opt ~suffix name =
+  if check_suffix name suffix
+  then Some (String.sub name 0 (String.length name - String.length suffix))
+  else None
 
 let extension_len name =
   let rec check i0 i =

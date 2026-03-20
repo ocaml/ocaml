@@ -357,7 +357,7 @@ let compute_inner_cell tbl i j =
        the element order [[P_0;...; P_n]].
 
        This is why we choose to start with the [Del] case since path ending with
-       [Del+] suffix are likely to correspond to parital application in the
+       [Del+] suffix are likely to correspond to partial application in the
        functor application case.
        Similarly, large block of deletions or insertions at the end of the
        definitions might point toward incomplete definitions.

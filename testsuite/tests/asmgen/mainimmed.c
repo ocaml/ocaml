@@ -17,12 +17,11 @@ void caml_ml_array_bound_error(void)
 
 /* One round of testing */
 
-#define FMT ARCH_INTNAT_PRINTF_FORMAT
-
 static void check(int i, intnat x, intnat result, intnat expected)
 {
   if (result != expected) {
-    printf("Test %d, argument %"FMT"d: got %"FMT"d, expected %"FMT"d\n",
+    printf("Test %d, argument %" CAML_PRIdNAT ": got %" CAML_PRIdNAT ", "
+           "expected %" CAML_PRIdNAT "\n",
            i, x, result, expected);
   }
 }

@@ -158,6 +158,22 @@ val of_list : 'a list -> 'a array
    @raise Invalid_argument if the length of [l] is greater than
    [Sys.max_array_length]. *)
 
+(** {1:comparison Comparison} *)
+
+val equal : eq:('a -> 'a -> bool) -> 'a array -> 'a array -> bool
+(** [equal eq a b] is [true] if and only if [a] and [b] have the
+    same length [n] and for all [i] in \[[0];[n-1]\], [eq a.(i) b.(i)]
+    is [true].
+
+    @since 5.4 *)
+
+val compare : cmp:('a -> 'a -> int) -> 'a array -> 'a array -> int
+(** [compare cmp a b] compares [a] and [b] according to the shortlex order,
+    that is, shorter arrays are smaller and equal-sized arrays are compared
+    in lexicographic order using [cmp] to compare elements.
+
+    @since 5.4 *)
+
 (** {1 Iterators} *)
 
 val iter : f:('a -> unit) -> 'a array -> unit
@@ -223,6 +239,22 @@ val map2 : f:('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
    [[| f a.(0) b.(0); ...; f a.(length a - 1) b.(length b - 1)|]].
    @raise Invalid_argument if the arrays are not the same size.
    @since 4.03 (4.05 in ArrayLabels) *)
+
+val fold_left2 : f:('acc -> 'a -> 'b -> 'acc) -> init:'acc -> 'a array ->
+   'b array -> 'acc
+(** [fold_left2 f init a b] is
+    [f (... (f (f init a.(0) b.(0)) a.(1) b.(1)) ...) a.(n-1) b.(n-1))],
+    where [n] is the common length of the arrays [a] and [b].
+    @raise Invalid_argument if the arrays do not have the same length.
+    @since 5.6 *)
+
+val fold_right2 : f:('a -> 'b -> 'acc -> 'acc) -> 'a array -> 'b array ->
+   init:'acc -> 'acc
+(** [fold_right2 f a b init] is
+    [f a.(0) b.(0) (f a.(1) b.(1) (... (f a.(n-1) b.(n-1) init) ...))],
+    where [n] is the common length of the arrays [a] and [b].
+    @raise Invalid_argument if the arrays do not have the same length.
+    @since 5.6 *)
 
 
 (** {1 Array scanning} *)
@@ -338,6 +370,20 @@ val stable_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
    length [n/2], where [n] is the length of the array.  It is usually faster
    than the current implementation of {!sort}.
 *)
+
+val stable_sort_sub :
+   cmp:('a -> 'a -> int) -> 'a array -> pos:int -> len:int -> unit
+(**[stable_sort_sub ~cmp a ~pos ~len] sorts the subarray of the array [a]
+   delimited by the start position [pos] and by the length [len]. The data
+   in this subarray is sorted in increasing order according to the comparison
+   function [cmp]. The data outside of this subarray is unaffected. The
+   sorting algorithm is stable; it is the same as in {!stable_sort}.
+
+   @raise Invalid_argument if [pos] and [len] do not
+   designate a valid subarray of [a]; that is, if
+   [pos < 0], or [len < 0], or [pos + len > length a].
+
+   @since 5.5 *)
 
 val fast_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
 (** Same as {!sort} or {!stable_sort}, whichever is

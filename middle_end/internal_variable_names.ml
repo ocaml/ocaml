@@ -128,12 +128,14 @@ let pintofbint = "Pintofbint"
 let pintoffloat = "Pintoffloat"
 let pisint = "Pisint"
 let pisout = "Pisout"
+let pcheckbound = "Pcheckbound"
 let plslbint = "Plslbint"
 let plslint = "Plslint"
 let plsrbint = "Plsrbint"
 let plsrint = "Plsrint"
 let pmakearray = "Pmakearray"
 let pmakeblock = "Pmakeblock"
+let pmakelazyblock = "Pmakelazyblock"
 let pmodbint = "Pmodbint"
 let pmodint = "Pmodint"
 let pmulbint = "Pmulbint"
@@ -235,12 +237,14 @@ let pintofbint_arg = "Pintofbint_arg"
 let pintoffloat_arg = "Pintoffloat_arg"
 let pisint_arg = "Pisint_arg"
 let pisout_arg = "Pisout_arg"
+let pcheckbound_arg = "Pcheckbound_arg"
 let plslbint_arg = "Plslbint_arg"
 let plslint_arg = "Plslint_arg"
 let plsrbint_arg = "Plsrbint_arg"
 let plsrint_arg = "Plsrint_arg"
 let pmakearray_arg = "Pmakearray_arg"
 let pmakeblock_arg = "Pmakeblock_arg"
+let pmakelazyblock_arg = "Pmakelazyblock_arg"
 let pmodbint_arg = "Pmodbint_arg"
 let pmodint_arg = "Pmodint_arg"
 let pmulbint_arg = "Pmulbint_arg"
@@ -326,6 +330,7 @@ let of_primitive : Lambda.primitive -> string = function
   | Pgetglobal _ -> pgetglobal
   | Psetglobal _ -> psetglobal
   | Pmakeblock _ -> pmakeblock
+  | Pmakelazyblock _ -> pmakelazyblock
   | Pfield _ -> pfield
   | Pfield_computed -> pfield_computed
   | Psetfield _ -> psetfield
@@ -383,6 +388,7 @@ let of_primitive : Lambda.primitive -> string = function
   | Pctconst _ -> pctconst
   | Pisint -> pisint
   | Pisout -> pisout
+  | Pcheckbound -> pcheckbound
   | Pbintofint _ -> pbintofint
   | Pintofbint _ -> pintofbint
   | Pcvtbint _ -> pcvtbint
@@ -436,6 +442,7 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Pgetglobal _ -> pgetglobal_arg
   | Psetglobal _ -> psetglobal_arg
   | Pmakeblock _ -> pmakeblock_arg
+  | Pmakelazyblock _ -> pmakelazyblock_arg
   | Pfield _ -> pfield_arg
   | Pfield_computed -> pfield_computed_arg
   | Psetfield _ -> psetfield_arg
@@ -493,6 +500,7 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Pctconst _ -> pctconst_arg
   | Pisint -> pisint_arg
   | Pisout -> pisout_arg
+  | Pcheckbound -> pcheckbound_arg
   | Pbintofint _ -> pbintofint_arg
   | Pintofbint _ -> pintofbint_arg
   | Pcvtbint _ -> pcvtbint_arg

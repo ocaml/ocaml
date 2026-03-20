@@ -29,7 +29,6 @@
 #define CAML_RUNTIME_EVENTS_H
 
 #include "mlvalues.h"
-#include <stdint.h>
 
 #ifdef CAML_INSTR
 #define CAML_EV_ALLOC(s) caml_ev_alloc(s)
@@ -121,7 +120,8 @@ typedef enum {
     EV_COMPACT_EVACUATE,
     EV_COMPACT_FORWARD,
     EV_COMPACT_RELEASE,
-    EV_EMPTY_MINOR
+    EV_EMPTY_MINOR,
+    EV_MINOR_EPHE_CLEAN,
 } ev_runtime_phase;
 
 typedef enum {
@@ -154,7 +154,11 @@ typedef enum {
     EV_C_MAJOR_WORK_COUNTER,
     EV_C_MAJOR_ALLOC_COUNTER,
     EV_C_MAJOR_SLICE_TARGET,
-    EV_C_MAJOR_SLICE_BUDGET
+    EV_C_MAJOR_SLICE_BUDGET,
+
+    EV_C_MINOR_ALLOCATED_WORDS,
+    EV_C_MINOR_PROMOTED_WORDS
+
 } ev_runtime_counter;
 
 typedef enum {
@@ -177,6 +181,10 @@ typedef enum {
   E_CURSOR_POLL_BUSY = -8,
 } runtime_events_error;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Starts runtime_events. Needs to be called before
    [caml_runtime_events_create_cursor]. Needs the runtime lock held to call and
    will trigger a stop-the-world pause. */
@@ -198,11 +206,22 @@ CAMLextern void caml_runtime_events_resume(void);
    [0] otherwise. */
 CAMLextern int caml_runtime_events_are_active(void);
 
+#ifdef __cplusplus
+}
+#endif
+
 #ifdef CAML_INTERNALS
 
+/* Force alignment to prevent GCC note on i686. Standard C alignas
+   isn't enough to silence the note. */
+#if defined(__GNUC__) && __has_attribute(aligned)
+#undef CAMLalign
+#define CAMLalign(n) __attribute__ ((aligned(n)))
+#endif
+
 struct runtime_events_buffer_header {
-  atomic_uint_fast64_t ring_head;
-  atomic_uint_fast64_t ring_tail;
+  CAMLalign(8) atomic_uint_fast64_t ring_head;
+  CAMLalign(8) atomic_uint_fast64_t ring_tail;
   uint64_t padding[8]; /* Padding so headers don't share cache lines. Eight
                           words guarantees that buffer headers don't share
                           cache lines, even for non-aligned allocations. */
@@ -340,4 +359,4 @@ CAMLextern value caml_runtime_events_user_resolve(char* event_name,
 
 #endif /* CAML_INTERNALS */
 
-#endif /*CAML_RUNTIME_EVENTS_H*/
+#endif /* CAML_RUNTIME_EVENTS_H */

@@ -1,0 +1,27 @@
+(* TEST
+{
+if pass then pass;
+pass;
+}
+{
+if skip then fail;
+pass;
+}
+{
+if pass then skip;
+fail;
+}
+
+{
+if pass then pass else fail;
+pass;
+}
+{
+if skip then fail else pass;
+pass;
+}
+{
+if skip then pass else skip;
+fail;
+}
+*)

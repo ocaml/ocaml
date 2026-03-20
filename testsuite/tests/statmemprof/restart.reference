@@ -1,0 +1,7 @@
+domain 0 is_sampling (): false.
+domain 0 is_sampling (): true.
+domain 1 is_sampling (): true.
+domain 1 is_sampling (): true.
+domain 1 is_sampling (): false.
+domain 0 is_sampling (): true.
+2, 1

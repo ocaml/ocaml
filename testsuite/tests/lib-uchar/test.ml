@@ -94,6 +94,15 @@ let test_utf_decode () =
   assert (Uchar.equal (Uchar.utf_decode_uchar invalid) Uchar.rep);
   ()
 
+let test_utf_8_decode_length_of_byte () =
+  assert (Uchar.utf_8_decode_length_of_byte "a".[0] = 1);
+  assert (Uchar.utf_8_decode_length_of_byte "é".[0] = 2);
+  assert (Uchar.utf_8_decode_length_of_byte "‘".[0] = 3);
+  assert (Uchar.utf_8_decode_length_of_byte "🐫".[0] =
+          Uchar.max_utf_8_decode_length);
+  assert (Uchar.utf_8_decode_length_of_byte "\xFF".[0] = 0);
+  ()
+
 let test_utf_x_byte_length () =
   assert (Uchar.utf_8_byte_length Uchar.min = 1);
   assert (Uchar.utf_16_byte_length Uchar.min = 2);
@@ -119,6 +128,7 @@ let tests () =
   test_compare ();
   test_hash ();
   test_utf_decode ();
+  test_utf_8_decode_length_of_byte ();
   test_utf_x_byte_length ();
   ()
 

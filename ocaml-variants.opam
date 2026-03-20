@@ -1,5 +1,5 @@
 opam-version: "2.0"
-version: "5.4.0+trunk"
+version: "5.6.0+trunk"
 license: "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception"
 synopsis: "OCaml development version"
 maintainer: "caml-list@inria.fr"
@@ -9,13 +9,14 @@ authors: [
   "Alain Frisch"
   "Jacques Garrigue"
   "Didier Rémy"
+  "KC Sivaramakrishnan"
   "Jérôme Vouillon"
 ]
 homepage: "https://github.com/ocaml/ocaml/"
 bug-reports: "https://github.com/ocaml/ocaml/issues"
 depends: [
-  # This is OCaml 5.4.0
-  "ocaml" {= "5.4.0" & post}
+  # This is OCaml 5.6.0
+  "ocaml" {= "5.6.0" & post}
 
   # General base- packages
   "base-unix" {post}
@@ -38,18 +39,18 @@ depends: [
   # facility is not yet available for other platforms.
   "host-arch-x86_32" {os != "win32" & arch = "x86_32" & post}
   ("host-arch-x86_64" {os != "win32" & arch = "x86_64" & post} |
-   ("host-arch-x86_32" {os != "win32" & arch = "x86_64" & post} & "ocaml-option-32bit" {os != "win32" & arch = "x86_64"}))
+   ("host-arch-x86_32" {os != "win32" & arch = "x86_64" & post} & "ocaml-option-32bit" {build & os != "win32" & arch = "x86_64"}))
   "host-arch-unknown" {os != "win32" & arch != "arm32" & arch != "arm64" & arch != "ppc64" & arch != "riscv64" & arch != "s390x" & arch != "x86_32" & arch != "x86_64" & post}
 
   # Port selection (Windows)
   # amd64 mingw-w64 / MSVC
-  (("arch-x86_64" {os = "win32" & arch = "x86_64"} &
-     (("system-mingw" & "mingw-w64-shims" {os-distribution = "cygwin" & build}) |
-      ("system-msvc" & "winpthreads" & "ocaml-option-no-compression" {os = "win32"}))) |
+  (("arch-x86_64" {build & os = "win32" & arch = "x86_64"} &
+     (("system-mingw" {build} & "mingw-w64-shims" {os-distribution = "cygwin" & build}) |
+      ("system-msvc" {build} & "ocaml-option-no-compression" {build & os = "win32"}))) |
   # i686 mingw-w64 / MSVC
-   ("arch-x86_32" {os = "win32"} & "ocaml-option-bytecode-only" {os = "win32"} &
-     (("system-mingw" & "mingw-w64-shims" {os-distribution = "cygwin" & build}) |
-      ("system-msvc" & "winpthreads" & "ocaml-option-no-compression" {os = "win32"}))) |
+   ("arch-x86_32" {build & os = "win32"} & "ocaml-option-bytecode-only" {build & os = "win32"} &
+     (("system-mingw" {build} & "mingw-w64-shims" {os-distribution = "cygwin" & build}) |
+      ("system-msvc" {build} & "ocaml-option-no-compression" {build & os = "win32"}))) |
   # Non-Windows systems
    "host-system-other" {os != "win32" & post})
 
@@ -57,9 +58,12 @@ depends: [
   "ocaml-option-bytecode-only" {arch != "arm64" & arch != "x86_64" & arch != "s390x" & arch != "riscv64" & arch != "ppc64"}
 
   # Support Packages
-  "flexdll" {>= "0.42" & os = "win32"}
+  "flexdll" {>= "0.44" & os = "win32"}
 ]
 conflict-class: "ocaml-core-compiler"
+conflicts: [
+  "ocaml-compiler"
+]
 flags: compiler
 build-env: [
   [MSYS2_ARG_CONV_EXCL = "*"]
@@ -75,8 +79,11 @@ build: [
     "--host=i686-w64-mingw32"   {os-distribution = "cygwin" & system-mingw:installed & arch-x86_32:installed}
     "--prefix=%{prefix}%"
     "--docdir=%{doc}%/ocaml"
+    "--with-additional-stublibsdir"
+    "--with-relative-libdir"
+    "--enable-runtime-search"
+    "--enable-runtime-search-target=fallback"
     "--with-flexdll=%{flexdll:share}%" {os = "win32" & flexdll:installed}
-    "--with-winpthreads-msvc=%{winpthreads:share}%" {system-msvc:installed}
     "-C"
     "--with-afl" {ocaml-option-afl:installed}
     "--disable-native-compiler" {ocaml-option-bytecode-only:installed}
@@ -102,8 +109,9 @@ build: [
     "--disable-warn-error"
   ]
   [make "-j%{jobs}%"]
+  [make "INSTALL_MODE=opam" "install"]
 ]
-install: [make "install"]
+install: ["sh" "./%{name}%-fixup.sh" prefix]
 depopts: [
   "ocaml-option-32bit"
   "ocaml-option-afl"

@@ -120,7 +120,7 @@ module type S = sig
 end
 
 (* TEST
- flags = "-dparsetree";
+ flags = "-dparsetree -dparsetree-loc-ghost-invariants";
  ocamlc_byte_exit_status = "2";
  setup-ocamlc.byte-build-env;
  ocamlc.byte;

@@ -9,7 +9,7 @@ if ! which gdb > /dev/null 2>&1; then
     exit ${TEST_SKIP}
 else
     # Linux check for GDB version
-    GDB_VERSION=$(gdb --version |head -n 1 | awk -F' ' '{print $5}')
+    GDB_VERSION=$(gdb --version | head -n 1 | sed -E 's/^GNU gdb \(.*\) (.*)$/\1/')
     if [ $(version "$GDB_VERSION") -ge $(version "12.1") ]; then
         exit ${TEST_PASS}
     else

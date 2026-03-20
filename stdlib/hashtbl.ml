@@ -46,15 +46,26 @@ let flip_ongoing_traversal h =
 
 (* To pick random seeds if requested *)
 
-let randomized_default =
-  let params =
-    try Sys.getenv "OCAMLRUNPARAM" with Not_found ->
-    try Sys.getenv "CAMLRUNPARAM" with Not_found -> "" in
-  String.contains params 'R'
+(* The runtime stores the initial value of "R" in
+   caml_runtime_hashtbl_randomized. We choose to copy this initial value here
+   and then keep then in sync in order to avoid adding a C call to every call to
+   Hashtbl.create. *)
+external randomized : unit -> bool =
+  "caml_runtime_hashtbl_is_randomized" [@@noalloc]
+let randomized = Atomic.make (randomized ())
 
-let randomized = Atomic.make randomized_default
+external randomize : unit -> unit = "caml_runtime_hashtbl_randomize" [@@noalloc]
+let randomize () =
+  Atomic.set randomized true;
+  (* Update the runtime's value so that the result from Sys.runtime_parameters
+     includes "R". There is technically a race here where Hashtbl.create ()
+     creates randomized hash tables, but Sys.runtime_parameters doesn't yet
+     return R=1. We choose not to care - Hashtbl.is_randomized will always
+     return the correct value, and making Sys.runtime_parameters always be in
+     sync would either add a C call to every Hashtbl.create call or would
+     introduce a complicated dependency cycle between Sys and Hashtbl *)
+  randomize ()
 
-let randomize () = Atomic.set randomized true
 let is_randomized () = Atomic.get randomized
 
 let prng_key = Domain.DLS.new_key Random.State.make_self_init
@@ -297,10 +308,12 @@ module type S =
     val copy: 'a t -> 'a t
     val add: 'a t -> key -> 'a -> unit
     val remove: 'a t -> key -> unit
+    val find_and_remove: 'a t -> key -> 'a option
     val find: 'a t -> key -> 'a
     val find_opt: 'a t -> key -> 'a option
     val find_all: 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
+    val find_and_replace : 'a t -> key -> 'a -> 'a option
     val mem : 'a t -> key -> bool
     val iter: (key -> 'a -> unit) -> 'a t -> unit
     val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
@@ -325,10 +338,12 @@ module type SeededS =
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
+    val find_and_remove : 'a t -> key -> 'a option
     val find : 'a t -> key -> 'a
     val find_opt: 'a t -> key -> 'a option
     val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
+    val find_and_replace :'a t -> key -> 'a -> 'a option
     val mem : 'a t -> key -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
     val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
@@ -363,22 +378,32 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
       h.size <- h.size + 1;
       if h.size > Array.length h.data lsl 1 then resize key_index h
 
-    let rec remove_bucket h i key prec = function
+    let rec remove_bucket h i key prec bucket =
+      match bucket with
       | Empty ->
-          ()
-      | (Cons {key=k; next}) as c ->
+          bucket
+      | Cons {key=k; next; _} ->
           if H.equal k key
           then begin
             h.size <- h.size - 1;
-            match prec with
+            begin match prec with
             | Empty -> h.data.(i) <- next
             | Cons c -> c.next <- next
+            end;
+            bucket
           end
-          else remove_bucket h i key c next
+          else remove_bucket h i key bucket next
+
+    let find_and_remove h key =
+      let i = key_index h key in
+      let bucket = remove_bucket h i key Empty h.data.(i) in
+      match bucket with
+      | Empty -> None
+      | Cons {data; _} -> Some data
 
     let remove h key =
       let i = key_index h key in
-      remove_bucket h i key Empty h.data.(i)
+      ignore (remove_bucket h i key Empty h.data.(i))
 
     let rec find_rec key = function
       | Empty ->
@@ -430,22 +455,40 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
           else find_in_bucket next in
       find_in_bucket h.data.(key_index h key)
 
-    let rec replace_bucket key data = function
+    let rec retrieve_bucket key bucket =
+      match bucket with
       | Empty ->
-          true
-      | Cons ({key=k; next} as slot) ->
+          bucket
+      | Cons {key=k; next} ->
           if H.equal k key
-          then (slot.key <- key; slot.data <- data; false)
-          else replace_bucket key data next
+          then bucket
+          else retrieve_bucket key next
+
+    let replace_bucket h key i l data = function
+      | Empty ->
+        h.data.(i) <- Cons{key; data; next=l};
+        h.size <- h.size + 1;
+        if h.size > Array.length h.data lsl 1 then resize key_index h
+      | Cons slot -> slot.key <- key; slot.data <- data
+
+    let find_and_replace h key data =
+      let i = key_index h key in
+      let l = h.data.(i) in
+      let bucket = retrieve_bucket key l in
+      let old_data = match bucket with
+        | Cons {data; _} -> Some data
+        | Empty -> None
+      in
+      replace_bucket h key i l data bucket;
+      old_data
 
     let replace h key data =
       let i = key_index h key in
       let l = h.data.(i) in
-      if replace_bucket key data l then begin
-        h.data.(i) <- Cons{key; data; next=l};
-        h.size <- h.size + 1;
-        if h.size > Array.length h.data lsl 1 then resize key_index h
-      end
+      let bucket = retrieve_bucket key l in
+      replace_bucket h key i l data bucket
+
+    (* Iterators *)
 
     let rec mem_in_bucket key = function
       | Empty ->
@@ -514,22 +557,32 @@ let add h key data =
   h.size <- h.size + 1;
   if h.size > Array.length h.data lsl 1 then resize key_index h
 
-let rec remove_bucket h i key prec = function
+let rec remove_bucket h i key prec bucket =
+  match bucket with
   | Empty ->
-      ()
-  | (Cons {key=k; next}) as c ->
+      bucket
+  | Cons {key=k; next; _} ->
       if compare k key = 0
       then begin
         h.size <- h.size - 1;
-        match prec with
+        begin match prec with
         | Empty -> h.data.(i) <- next
         | Cons c -> c.next <- next
+        end;
+        bucket
       end
-      else remove_bucket h i key c next
+      else remove_bucket h i key bucket next
+
+let find_and_remove h key =
+  let i = key_index h key in
+  let bucket = remove_bucket h i key Empty h.data.(i) in
+  match bucket with
+  | Empty -> None
+  | Cons {data; _} -> Some data
 
 let remove h key =
   let i = key_index h key in
-  remove_bucket h i key Empty h.data.(i)
+  ignore (remove_bucket h i key Empty h.data.(i))
 
 let rec find_rec key = function
   | Empty ->
@@ -581,22 +634,39 @@ let find_all h key =
       else find_in_bucket next in
   find_in_bucket h.data.(key_index h key)
 
-let rec replace_bucket key data = function
+let rec retrieve_bucket key bucket =
+  match bucket with
   | Empty ->
-      true
-  | Cons ({key=k; next} as slot) ->
+      bucket
+  | Cons {key=k; next} ->
       if compare k key = 0
-      then (slot.key <- key; slot.data <- data; false)
-      else replace_bucket key data next
+      then bucket
+      else retrieve_bucket key next
+
+let replace_bucket h key i l data bucket =
+  match bucket with
+  | Empty ->
+    h.data.(i) <- Cons{key; data; next=l};
+    h.size <- h.size + 1;
+    if h.size > Array.length h.data lsl 1 then resize key_index h
+  | Cons (_ as slot) -> slot.key <- key; slot.data <- data
+
+let find_and_replace h key data =
+  let i = key_index h key in
+  let l = h.data.(i) in
+  let bucket = retrieve_bucket key l in
+  let old_data = match bucket with
+    | Cons {data; _} -> Some data
+    | Empty -> None
+  in
+  replace_bucket h key i l data bucket;
+  old_data
 
 let replace h key data =
   let i = key_index h key in
   let l = h.data.(i) in
-  if replace_bucket key data l then begin
-    h.data.(i) <- Cons{key; data; next=l};
-    h.size <- h.size + 1;
-    if h.size > Array.length h.data lsl 1 then resize key_index h
-  end
+  let bucket = retrieve_bucket key l in
+  replace_bucket h key i l data bucket
 
 let rec mem_in_bucket key = function
   | Empty ->

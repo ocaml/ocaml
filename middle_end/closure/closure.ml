@@ -108,6 +108,7 @@ let prim_size prim args =
   match prim with
   | Pread_symbol _ -> 1
   | Pmakeblock _ -> 5 + List.length args
+  | Pmakelazyblock _ -> 6
   | Pfield _ -> 1
   | Psetfield(_f, isptr, init) ->
     begin match init with
@@ -773,6 +774,22 @@ let bind_params { backend; mutable_vars; _ } loc fdesc params args funct body =
   in
   aux V.Map.empty params args body
 
+let bind_args_right_to_left env args fn =
+  let rec aux prev_args_rev next_args fn =
+    match next_args with
+    | [] -> fn (List.rev prev_args_rev)
+    | arg :: next_args ->
+        if is_substituable ~mutable_vars:env.mutable_vars arg
+        then aux (arg :: prev_args_rev) next_args fn
+        else
+          let id = V.create_local "arg" in
+          let fn args =
+            Ulet(Immutable, Pgenval, VP.create id, arg, fn args)
+          in
+          aux (Uvar id :: prev_args_rev) next_args fn
+  in
+  aux [] args fn
+
 let warning_if_forced_inline ~loc ~attribute warning =
   if attribute = Always_inline then
     Location.prerr_warning (Debuginfo.Scoped_location.to_location loc)
@@ -792,26 +809,14 @@ let direct_apply env fundesc ufunct uargs ~loc ~attribute =
      else if not fundesc.fun_closed &&
                is_substituable ~mutable_vars:env.mutable_vars ufunct then
        Udirect_apply(fundesc.fun_label, uargs @ [ufunct], dbg)
-     else begin
-       let args = List.map (fun arg ->
-         if is_substituable ~mutable_vars:env.mutable_vars arg then
-           None, arg
-         else
-           let id = V.create_local "arg" in
-           Some (VP.create id, arg), Uvar id) uargs in
-       let app_args = List.map snd args in
-       List.fold_left (fun app (binding,_) ->
-           match binding with
-           | None -> app
-           | Some (v, e) -> Ulet(Immutable, Pgenval, v, e, app))
-         (if fundesc.fun_closed then
+     else
+       bind_args_right_to_left env uargs (fun app_args ->
+          if fundesc.fun_closed then
             Usequence (ufunct, Udirect_apply (fundesc.fun_label, app_args, dbg))
           else
             let clos = V.create_local "clos" in
             Ulet(Immutable, Pgenval, VP.create clos, ufunct,
                  Udirect_apply(fundesc.fun_label, app_args @ [Uvar clos], dbg)))
-         args
-       end
   | Some(params, body), _  ->
      bind_params env loc fundesc params uargs ufunct body
 
@@ -900,8 +905,8 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
         Uconst_ref (name, Some cst)
       in
       let rec transl = function
-        | Const_base(Const_int n) -> Uconst_int n
-        | Const_base(Const_char c) -> Uconst_int (Char.code c)
+        | Const_int n -> Uconst_int n
+        | Const_char c -> Uconst_int (Char.code c)
         | Const_block (tag, fields) ->
             str (Uconst_block (tag, List.map transl fields))
         | Const_float_array sl ->
@@ -909,12 +914,10 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
             str (Uconst_float_array (List.map float_of_string sl))
         | Const_immstring s ->
             str (Uconst_string s)
-        | Const_base (Const_string (s, _, _)) ->
-            str (Uconst_string s)
-        | Const_base(Const_float x) -> str (Uconst_float (float_of_string x))
-        | Const_base(Const_int32 x) -> str (Uconst_int32 x)
-        | Const_base(Const_int64 x) -> str (Uconst_int64 x)
-        | Const_base(Const_nativeint x) -> str (Uconst_nativeint x)
+        | Const_float x -> str (Uconst_float (float_of_string x))
+        | Const_int32 x -> str (Uconst_int32 x)
+        | Const_int64 x -> str (Uconst_int64 x)
+        | Const_nativeint x -> str (Uconst_nativeint x)
       in
       make_const (transl cst)
   | Lfunction funct ->
@@ -1004,7 +1007,9 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
       | ((ufunct, _), uargs) ->
           let dbg = Debuginfo.from_location loc in
           warning_if_forced_inline ~loc ~attribute "Unknown function";
-          (Ugeneric_apply(ufunct, uargs, dbg), Value_unknown)
+          (bind_args_right_to_left env uargs (fun uargs ->
+              Ugeneric_apply(ufunct, uargs, dbg)),
+           Value_unknown)
       end
   | Lsend(kind, met, obj, args, loc) ->
       let (umet, _) = close env met in
@@ -1051,22 +1056,29 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
               None ubody),
        approx)
   (* Compile-time constants *)
-  | Lprim(Pctconst c, [arg], _loc) ->
-      let cst, approx =
-        match c with
-        | Big_endian -> make_const_bool B.big_endian
-        | Word_size -> make_const_int (8*B.size_int)
-        | Int_size -> make_const_int (8*B.size_int - 1)
-        | Max_wosize -> make_const_int ((1 lsl ((8*B.size_int) - 10)) - 1 )
-        | Ostype_unix -> make_const_bool (Sys.os_type = "Unix")
-        | Ostype_win32 -> make_const_bool (Sys.os_type = "Win32")
-        | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
-        | Backend_type ->
-            make_const_int 0 (* tag 0 is the same as Native here *)
+  | Lprim(Pctconst c, [arg], loc) ->
+      let cst f v =
+        let cst, approx = f v in
+        let arg, _approx = close env arg in
+        let id = Ident.create_local "dummy" in
+        Ulet(Immutable, Pgenval, VP.create id, arg, cst), approx
       in
-      let arg, _approx = close env arg in
-      let id = Ident.create_local "dummy" in
-      Ulet(Immutable, Pgenval, VP.create id, arg, cst), approx
+      begin match c with
+      | Big_endian -> cst make_const_bool B.big_endian
+      | Word_size -> cst make_const_int (8*B.size_int)
+      | Int_size -> cst make_const_int (8*B.size_int - 1)
+      | Max_wosize -> cst make_const_int ((1 lsl ((8*B.size_int) - 10)) - 1)
+      | Ostype_unix -> cst make_const_bool (Config.target_os_type = "Unix")
+      | Ostype_win32 -> cst make_const_bool (Config.target_os_type = "Win32")
+      | Ostype_cygwin -> cst make_const_bool (Config.target_os_type = "Cygwin")
+      | Backend_type ->
+          cst make_const_int 0 (* tag 0 is the same as Native here *)
+      | Standard_library_default ->
+          Compilenv.need_stdlib_location ();
+          let dbg = Debuginfo.from_location loc in
+          let id = Ident.name Compilenv.stdlib_symbol_name in
+          Uprim(P.Pread_symbol id, [], dbg), Value_const (Uconst_ref (id, None))
+      end
   | Lprim(Pignore, [arg], _loc) ->
       let expr, approx = make_const_int 0 in
       Usequence(fst (close env arg), expr), approx
@@ -1458,7 +1470,9 @@ let collect_exported_structured_constants a =
     | Uconst_ref (s, (Some c)) ->
         Compilenv.add_exported_constant s;
         structured_constant c
-    | Uconst_ref (_s, None) -> assert false (* Cannot be generated *)
+    | Uconst_ref (s, None) ->
+        (* Only generated in one context *)
+        assert (s = Ident.name Compilenv.stdlib_symbol_name)
     | Uconst_int _ -> ()
   and structured_constant = function
     | Uconst_block (_, ul) -> List.iter const ul

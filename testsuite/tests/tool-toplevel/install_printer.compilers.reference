@@ -11,6 +11,12 @@ type ('a, 'b) v = D of 'a * 'b
 type 'a printer = Format.formatter -> 'a -> unit
 val print_generic : 'a printer -> 'b printer -> ('a, 'b) v printer = <fun>
 - : (int, t) v list = [D<0, ~A>; D<42, ~B>]
+val pp_option_ref : Format.formatter -> '_weak1 option ref -> unit = <fun>
+- : int option ref = {contents = Some 0}
+- : Format.formatter -> '_weak1 option ref -> unit = <fun>
+- : Format.formatter -> int option ref -> unit = <fun>
+- : int option ref = Something
+val x : '_weak2 option ref = {contents = None}
 Unbound value name_that_does_not_exist.
 List.map has the wrong type for a printing function.
 Unbound value name_that_does_not_exist.

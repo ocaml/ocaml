@@ -2,7 +2,6 @@
  include dynlink;
  libraries = "";
  readonly_files = "store.ml main.ml Plugin_0.ml Plugin_0_0.ml Plugin_0_0_0.ml Plugin_0_0_0_0.ml Plugin_0_0_0_1.ml Plugin_0_0_0_2.ml Plugin_1.ml Plugin_1_0.ml Plugin_1_0_0.ml Plugin_1_0_0_0.ml Plugin_1_1.ml Plugin_1_2.ml Plugin_1_2_0.ml Plugin_1_2_0_0.ml Plugin_1_2_1.ml Plugin_1_2_2.ml Plugin_1_2_2_0.ml Plugin_1_2_3.ml Plugin_1_2_3_0.ml";
- not-windows;
  {
    shared-libraries;
    setup-ocamlc.byte-build-env;

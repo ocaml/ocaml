@@ -17,6 +17,7 @@
 #include <caml/alloc.h>
 #include <caml/fail.h>
 #include "caml/unixsupport.h"
+#include "misc_internals.h"
 
 #ifdef HAS_TERMIOS
 
@@ -188,8 +189,6 @@ static const struct {
 #endif
 };
 
-#define NSPEEDS (sizeof(speedtable) / sizeof(speedtable[0]))
-
 static void encode_terminal_status(volatile value *dst, struct termios *src)
 {
   for(const long * pc = terminal_io_descr; *pc != End; dst++) {
@@ -222,7 +221,7 @@ static void encode_terminal_status(volatile value *dst, struct termios *src)
         case Input:
           speed = cfgetispeed(src); break;
         }
-        for (int i = 0; i < NSPEEDS; i++) {
+        for (int i = 0; i < countof(speedtable); i++) {
           if (speed == speedtable[i].speed) {
             *dst = Val_int(speedtable[i].baud);
             break;
@@ -266,7 +265,7 @@ static void decode_terminal_status(struct termios *dst, volatile value *src)
       { int which = *pc++;
         int baud = Int_val(*src);
         int res = 0;
-        for (int i = 0; i < NSPEEDS; i++) {
+        for (int i = 0; i < countof(speedtable); i++) {
           if (baud == speedtable[i].baud) {
             switch (which) {
             case Output:

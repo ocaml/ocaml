@@ -61,6 +61,10 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
       fprintf ppf "makeblock %i%a" tag Printlambda.block_shape shape
   | Pmakeblock(tag, Mutable, shape) ->
       fprintf ppf "makemutable %i%a" tag Printlambda.block_shape shape
+  | Pmakelazyblock Lazy_tag ->
+      fprintf ppf "makelazyblock"
+  | Pmakelazyblock Forward_tag ->
+      fprintf ppf "makeforwardblock"
   | Pfield(n, ptr, mut) ->
       let instr =
         match ptr, mut with
@@ -165,6 +169,7 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
   | Parraysets k -> fprintf ppf "array.set[%s]" (array_kind k)
   | Pisint -> fprintf ppf "isint"
   | Pisout -> fprintf ppf "isout"
+  | Pcheckbound -> fprintf ppf "checkbound"
   | Pbintofint bi -> print_boxed_integer "of_int" ppf bi
   | Pintofbint bi -> print_boxed_integer "to_int" ppf bi
   | Pcvtbint (bi1, bi2) ->

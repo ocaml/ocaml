@@ -13,6 +13,7 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
@@ -36,14 +37,14 @@ CAMLprim value caml_unix_times(value unit)
 
   getrusage (RUSAGE_SELF, &ru);
   Store_double_flat_field(res, 0,
-                          ru.ru_utime.tv_sec + ru.ru_utime.tv_usec / 1e6);
+    ru.ru_utime.tv_sec + (double) ru.ru_utime.tv_usec / USEC_PER_SEC);
   Store_double_flat_field(res, 1,
-                          ru.ru_stime.tv_sec + ru.ru_stime.tv_usec / 1e6);
+    ru.ru_stime.tv_sec + (double) ru.ru_stime.tv_usec / USEC_PER_SEC);
   getrusage (RUSAGE_CHILDREN, &ru);
   Store_double_flat_field(res, 2,
-                          ru.ru_utime.tv_sec + ru.ru_utime.tv_usec / 1e6);
+    ru.ru_utime.tv_sec + (double) ru.ru_utime.tv_usec / USEC_PER_SEC);
   Store_double_flat_field(res, 3,
-                          ru.ru_stime.tv_sec + ru.ru_stime.tv_usec / 1e6);
+    ru.ru_stime.tv_sec + (double) ru.ru_stime.tv_usec / USEC_PER_SEC);
   return res;
 
 #else

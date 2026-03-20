@@ -1,7 +1,8 @@
 (* TEST
  modules = "fakeclock.c";
  include unix;
- libwin32unix;
+ hasunix;
+ target-windows;
  {
    bytecode;
  }{

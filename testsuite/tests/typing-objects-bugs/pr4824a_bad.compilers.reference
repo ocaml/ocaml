@@ -7,4 +7,4 @@ Error: Signature mismatch:
          class c : 'a -> object val x : 'a end
        does not match
          class c : 'a -> object val x : 'b end
-       The instance variable x has type "'a" but is expected to have type "'b"
+       The instance variable x has type 'a but is expected to have type 'b

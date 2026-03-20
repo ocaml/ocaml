@@ -36,8 +36,7 @@ type v = Cons
 Line 3, characters 18-22:
 3 | let _ = print_int Cons
                       ^^^^
-Error: The constructor "Cons" has type "v" but an expression was expected of type
-         "int"
+Error: This expression should not be a constructor, the expected type is "int"
 |}]
 
 let _ = print_int `Cons

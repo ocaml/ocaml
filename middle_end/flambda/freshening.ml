@@ -373,7 +373,7 @@ module Project_var = struct
   module Compose (T : Identifiable.S) = struct
     let compose ~earlier ~later =
       if (T.Map.equal T.equal) earlier later
-        || T.Map.cardinal later = 0
+        || T.Map.is_empty later
       then
         earlier
       else

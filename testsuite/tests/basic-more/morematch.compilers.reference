@@ -59,8 +59,7 @@ File "morematch.ml", lines 1050-1053, characters 8-10:
 1052 |   | B (`B,`D) -> 1
 1053 |   | C -> 2
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-A `D
+  Here is an example of a case that is not matched: A `D
 
 File "morematch.ml", line 1084, characters 5-51:
 1084 |   |  _, _, _, _, _, A, _, _, _, _, B, _, _, _, _, _ -> "11"

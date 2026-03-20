@@ -107,6 +107,7 @@ type error =
   | No_overriding of string * string
   | Duplicate of string * string
   | Closing_self_type of class_signature
+  | Polymorphic_class_parameter
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -192,6 +193,7 @@ let rec constructor_type constr cty =
   | Cty_signature _ ->
       constr
   | Cty_arrow (l, ty, cty) ->
+      let ty = Ctype.newmono ty in
       Ctype.newty (Tarrow (l, ty, constructor_type constr cty, commu_ok))
 
                 (***********************************)
@@ -773,12 +775,11 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
                match get_desc ty with
                | Tvar _ ->
                    let ty' = Ctype.newvar () in
-                   Ctype.unify val_env (Ctype.newty (Tpoly (ty', []))) ty;
-                   Ctype.unify val_env (type_approx val_env sbody) ty'
+                   Ctype.unify val_env (Ctype.newmono ty') ty;
+                   type_approx val_env sbody ty'
                | Tpoly (ty1, tl) ->
-                   let _, ty1' = Ctype.instance_poly ~fixed:false tl ty1 in
-                   let ty2 = type_approx val_env sbody in
-                   Ctype.unify val_env ty2 ty1'
+                   let ty1' = Ctype.instance_poly tl ty1 in
+                   type_approx val_env sbody ty1'
                | _ -> assert false
              with Ctype.Unify err ->
                raise(Error(loc, val_env,
@@ -907,10 +908,10 @@ and class_field_second_pass cl_num sign met_env field =
       Warnings.with_state warning_state
         (fun () ->
            let ty = Btype.method_type label.txt sign in
-           let self_type = sign.Types.csig_self in
+           let self_param_type = Btype.newgenmono sign.Types.csig_self in
            let meth_type =
              mk_expected
-               (Btype.newgenty (Tarrow(Nolabel, self_type, ty, commu_ok)))
+               (Btype.newgenty (Tarrow(Nolabel, self_param_type, ty, commu_ok)))
            in
            let texp =
              Ctype.with_raised_nongen_level
@@ -925,10 +926,10 @@ and class_field_second_pass cl_num sign met_env field =
       Warnings.with_state warning_state
         (fun () ->
            let unit_type = Ctype.instance Predef.type_unit in
-           let self_type = sign.Types.csig_self in
+           let self_param_type = Ctype.newmono sign.Types.csig_self in
            let meth_type =
-             mk_expected
-               (Ctype.newty (Tarrow (Nolabel, self_type, unit_type, commu_ok)))
+             mk_expected (Ctype.newty
+              (Tarrow (Nolabel, self_param_type, unit_type, commu_ok)))
            in
            let texp =
              Ctype.with_raised_nongen_level
@@ -1117,24 +1118,29 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
           cl_attributes = scl.pcl_attributes;
          }
   | Pcl_fun (l, Some default, spat, sbody) ->
+      if has_poly_constraint spat then
+        raise(Error(spat.ppat_loc, val_env, Polymorphic_class_parameter));
       let loc = default.pexp_loc in
       let open Ast_helper in
       let scases = [
         Exp.case
           (Pat.construct ~loc
-             (mknoloc (Longident.(Ldot (Lident "*predef*", "Some"))))
+             (mknoloc (Longident.(Ldot (mknoloc (Lident "*predef*"),
+                                        mknoloc "Some"))))
              (Some ([], Pat.var ~loc (mknoloc "*sth*"))))
           (Exp.ident ~loc (mknoloc (Longident.Lident "*sth*")));
 
         Exp.case
           (Pat.construct ~loc
-             (mknoloc (Longident.(Ldot (Lident "*predef*", "None"))))
+             (mknoloc (Longident.(Ldot (mknoloc (Lident "*predef*"),
+                                                mknoloc "None"))))
              None)
           default;
        ]
       in
       let smatch =
-        Exp.match_ ~loc (Exp.ident ~loc (mknoloc (Longident.Lident "*opt*")))
+        Exp.match_ ~loc
+          (Exp.ident ~loc (mknoloc (Longident.Lident "*opt*")))
           scases
       in
       let sfun =
@@ -1147,6 +1153,8 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
       in
       class_expr cl_num val_env met_env virt self_scope sfun
   | Pcl_fun (l, None, spat, scl') ->
+      if has_poly_constraint spat then
+        raise(Error(spat.ppat_loc, val_env, Polymorphic_class_parameter));
       let (pat, pv, val_env', met_env) =
         Ctype.with_local_level_generalize_structure_if_principal
           (fun () ->
@@ -1160,7 +1168,8 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
             let vd = Env.find_value path val_env' in
             (id,
              {exp_desc =
-              Texp_ident(path, mknoloc (Longident.Lident (Ident.name id)), vd);
+              Texp_ident(path, mknoloc
+                (Longident.Lident (Ident.name id)), vd);
               exp_loc = Location.none; exp_extra = [];
               exp_type = Ctype.instance vd.val_type;
               exp_attributes = []; (* check *)
@@ -1226,7 +1235,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
             let name = Btype.label_name l
             and optional = Btype.is_optional l in
             let use_arg sarg l' =
-              Some (
+              Arg (
                 if not optional || Btype.is_optional l' then
                   type_argument val_env sarg ty ty0
                 else
@@ -1237,7 +1246,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
               )
             in
             let eliminate_optional_arg () =
-              Some (option_none val_env ty0 Location.none)
+              Arg (option_none val_env ty0 Location.none)
             in
             let remaining_sargs, arg =
               if ignore_labels then begin
@@ -1269,9 +1278,13 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
                     if Btype.is_optional l && List.mem_assoc Nolabel sargs then
                       eliminate_optional_arg ()
                     else
-                      None
+                      Omitted ()
             in
-            let omitted = if arg = None then (l,ty0) :: omitted else omitted in
+            let omitted =
+              match arg with
+              | Omitted () -> (l,ty0) :: omitted
+              | Arg _ -> omitted
+            in
             type_args ((l,arg)::args) omitted ty_fun ty_fun0 remaining_sargs
         | _ ->
             match sargs with
@@ -1311,7 +1324,8 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
              in
              let expr =
                {exp_desc =
-                Texp_ident(path, mknoloc(Longident.Lident (Ident.name id)),vd);
+                Texp_ident(path, mknoloc(
+                  Longident.Lident (Ident.name id)),vd);
                 exp_loc = Location.none; exp_extra = [];
                 exp_type = ty;
                 exp_attributes = [];
@@ -1415,6 +1429,7 @@ let rec approx_declaration cl =
       let arg =
         if Btype.is_optional l then Ctype.instance var_option
         else Ctype.newvar () in
+      let arg = Ctype.newmono arg in
       Ctype.newty (Tarrow (l, arg, approx_declaration cl, commu_ok))
   | Pcl_let (_, _, cl) ->
       approx_declaration cl
@@ -1428,6 +1443,7 @@ let rec approx_description ct =
       let arg =
         if Btype.is_optional l then Ctype.instance var_option
         else Ctype.newvar () in
+      let arg = Ctype.newmono arg in
       Ctype.newty (Tarrow (l, arg, approx_description ct, commu_ok))
   | _ -> Ctype.newvar ()
 
@@ -1928,30 +1944,45 @@ let () =
 (*******************************)
 
 (* Check that there is no references through recursive modules (GPR#6491) *)
-let rec check_recmod_class_type env cty =
+let rec check_recmod_class_type env name cty =
   match cty.pcty_desc with
   | Pcty_constr(lid, _) ->
-      ignore (Env.lookup_cltype ~use:false ~loc:lid.loc lid.txt env)
+      begin try
+        ignore (Env.lookup_cltype ~use:false ~loc:lid.loc lid.txt env)
+      with
+      | Env.Error
+          (Lookup_error
+             (location, env,
+              Illegal_reference_to_recursive_module { container; unbound; })) ->
+          Env.lookup_error
+            location env
+            (Illegal_reference_to_recursive_class_type
+               { container;
+                 unbound;
+                 unbound_class_type = lid.txt;
+                 container_class_type = name.txt;
+               })
+      end
   | Pcty_extension _ -> ()
   | Pcty_arrow(_, _, cty) ->
-      check_recmod_class_type env cty
+      check_recmod_class_type env name cty
   | Pcty_open(od, cty) ->
       let _, env = !type_open_descr env od in
-      check_recmod_class_type env cty
+      check_recmod_class_type env name cty
   | Pcty_signature csig ->
-      check_recmod_class_sig env csig
+      check_recmod_class_sig env name csig
 
-and check_recmod_class_sig env csig =
+and check_recmod_class_sig env name csig =
   List.iter
     (fun ctf ->
        match ctf.pctf_desc with
-       | Pctf_inherit cty -> check_recmod_class_type env cty
+       | Pctf_inherit cty -> check_recmod_class_type env name cty
        | Pctf_val _ | Pctf_method _
        | Pctf_constraint _ | Pctf_attribute _ | Pctf_extension _ -> ())
     csig.pcsig_fields
 
 let check_recmod_decl env sdecl =
-  check_recmod_class_type env sdecl.pci_expr
+  check_recmod_class_type env sdecl.pci_name sdecl.pci_expr
 
 (* Approximate the class declaration as class ['params] id = object end *)
 let approx_class sdecl =
@@ -1964,6 +1995,8 @@ let approx_class_declarations env sdecls =
   let decls, env = class_type_declarations env (List.map approx_class sdecls) in
   List.iter (check_recmod_decl env) sdecls;
   decls, env
+
+
 
 (*******************************)
 
@@ -2078,24 +2111,24 @@ let report_error_doc env ppf =
       Errortrace_report.unification ppf env err
         (msg  "The type parameter")
         (msg "does not meet its constraint: it should be")
-  | Bad_parameters (id, params, cstrs) ->
-      Out_type.prepare_for_printing (params @ cstrs);
+  | Bad_parameters (id, params, constraints) ->
+      Out_type.prepare_for_printing (params @ constraints);
       fprintf ppf
         "@[The abbreviation %a@ is used with parameter(s)@ %a@ \
            which are incompatible with constraint(s)@ %a@]"
         (Style.as_inline_code Printtyp.ident) id
         pp_args params
-        pp_args cstrs
-  | Bad_class_type_parameters (id, params, cstrs) ->
+        pp_args constraints
+  | Bad_class_type_parameters (id, params, constraints) ->
       let pp_hash ppf id = fprintf ppf "#%a" Printtyp.ident id in
-      Out_type.prepare_for_printing (params @ cstrs);
+      Out_type.prepare_for_printing (params @ constraints);
       fprintf ppf
         "@[The class type %a@ is used with parameter(s)@ %a,@ \
            whereas the class type definition@ constrains@ \
            those parameters to be@ %a@]"
         (Style.as_inline_code pp_hash) id
        pp_args params
-       pp_args cstrs
+       pp_args constraints
   | Class_match_failure error ->
       Includeclass.report_error_doc Type ppf error
   | Unbound_val lab ->
@@ -2178,6 +2211,9 @@ let report_error_doc env ppf =
        it has been unified with the self type of a class that is not yet@ \
        completely defined.@]"
       (Style.as_inline_code Printtyp.type_scheme) sign.csig_self
+  | Polymorphic_class_parameter ->
+      fprintf ppf
+        "Class parameters cannot be polymorphic."
 
 let report_error_doc env ppf err =
   Printtyp.wrap_printing_env ~error:true

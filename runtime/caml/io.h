@@ -23,25 +23,10 @@
 #include "camlatomic.h"
 #include "misc.h"
 #include "mlvalues.h"
-
-#ifndef _MSC_VER
 #include "platform.h"
-#else
-/* We avoid including platform.h (which is really only necessary here to declare
-   caml_plat_mutex) because that would end up pulling in pthread.h but we want
-   to hide it on the MSVC port as it is not the native way to handle threads.
-   So we inline here just the implementation of caml_plat_mutex on that port,
-   this should be kept in sync */
-#include <stdint.h>
-typedef intptr_t caml_plat_mutex;
-#endif
-
-#ifndef IO_BUFFER_SIZE
-#define IO_BUFFER_SIZE 65536
-#endif
 
 #if defined(_WIN32)
-typedef __int64 file_offset;
+typedef int64_t file_offset;
 #else
 #include <sys/types.h>
 typedef off_t file_offset;
@@ -63,8 +48,12 @@ struct channel {
 
 enum {
   CHANNEL_FLAG_FROM_SOCKET = 1,  /* For Windows */
-  CHANNEL_FLAG_MANAGED_BY_GC = 4,  /* Free and close using GC finalization */
-  CHANNEL_TEXT_MODE = 8,           /* "Text mode" for Windows and Cygwin */
+  CHANNEL_FLAG_MANAGED_BY_GC = 4,  /* Free and close using GC finalization. */
+  /* Note: For backwards-compatibility, channels without the flag
+     CHANNEL_FLAG_MANAGED_BY_GC can be used inside single-threaded
+     programs without locking. As a consequence, using such a channel
+     from an asynchronous callback can result in deadlocks. */
+  CHANNEL_TEXT_MODE = 8, /* "Text mode" for Windows and Cygwin */
   CHANNEL_FLAG_UNBUFFERED = 16     /* Unbuffered (for output channels only) */
 };
 

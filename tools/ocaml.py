@@ -98,6 +98,9 @@
 #
 #     double_array(size): an array of double-precision floating point
 #       members, as a debugger-native array.
+#
+#     pointer_index(index): treating the value as a pointer p, returning
+#       p[index] as a value. TODO: switch to __getitem__.
 
 MAX_BLOCK_SLOTS = 8
 MAX_STRING_LEN = 80
@@ -480,11 +483,12 @@ class Value:
 POOL_WSIZE = 4096
 
 class Finder:
+    debug = False # Settable interactively from debugger.
+
     def __init__(self, target):
         self._sizeclasses = None
         self._wsize_sizeclass = None
         self._target = target
-        self.debug = False
 
     def sizeclasses(self):
         if self._sizeclasses is None:
@@ -556,6 +560,9 @@ class Finder:
 
     def search_heap(self, description, heap_state_p):
         "Searches a single `struct caml_heap_state *` for self.address."
+        if heap_state_p.unsigned() == 0:
+            self._log(f"shared heap for {description} is NULL")
+            return
         heap_state = heap_state_p.dereference().struct()
         if self.keep_going:
             self.search_pools(f"{description} avail",
@@ -576,18 +583,18 @@ class Finder:
             self.search_large(f"{description} unswept",
                               heap_state['unswept_large'])
 
-    def search_domain(self, index, dom_state_p):
+    def search_domain(self, index, caml_state_p):
         "Search a single domain's heap for `self.address`."
-        dom_state = dom_state_p.dereference().struct()
-        young_start = dom_state['young_start'].unsigned()
-        young_end = dom_state['young_end'].unsigned()
+        caml_state = caml_state_p.dereference().struct()
+        young_start = caml_state['young_start'].unsigned()
+        young_end = caml_state['young_end'].unsigned()
         description = f"domain {index}"
         self._log(f"searching {description}")
         if self.keep_going and (young_start <= self.address <= young_end):
                 self._found(f"{description} minor heap "
                             f"0x{young_start:x}-0x{young_end:x}")
         if self.keep_going:
-            self.search_heap(description, dom_state['shared_heap'])
+            self.search_heap(description, caml_state['shared_heap'])
 
     def find(self, expr, val):
         if not val.valid:
@@ -612,14 +619,17 @@ class Finder:
 
         # Search per-domain heaps.
         all_domains = self._target.global_variable('all_domains')
-        Max_domains = all_domains.array_size()
-        self._log(f"{Max_domains} domains.")
-        for i in range(Max_domains):
-            dom = all_domains.sub(i).struct()
-            dom_state_p = dom['state']
-            if dom_state_p.unsigned() == 0: # null pointer: no domain
+        caml_params = (self._target.global_variable('caml_params')
+                       .dereference().struct())
+        max_domains = caml_params['max_domains'].unsigned()
+        self._log(f"{max_domains} domains.")
+        for i in range(max_domains):
+            dom_internal = all_domains.pointer_index(i).struct()
+            caml_state_p = dom_internal['state']
+            if caml_state_p.unsigned() == 0: # null pointer: no domain
+                self._log(f"caml_state for domain {i} is NULL")
                 continue
-            self.search_domain(i, dom_state_p)
+            self.search_domain(i, caml_state_p)
             if not self.keep_going:
                 break
 
@@ -641,5 +651,3 @@ class Finder:
                 print(f"  {where}")
         else:
             print(f"{expr} {str(val)} not found on heap")
-
-        self.debug = True

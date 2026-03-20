@@ -38,6 +38,7 @@
    ../Makefile.config_if_required
    ../Makefile.common Makefile
    (glob_files caml/*.h)
+   misc_internals.h
    ; matches the line structure of files in Makefile/BYTECODE_C_SOURCES
    interp.c misc.c fix_code.c startup_aux.c startup_byt.c freelist.c
      major_gc.c
@@ -61,9 +62,9 @@
   (modes byte)
   (wrapped false)
   (modules runtime)
+  (foreign_archives camlrun)
   (flags (-nostdlib -nopervasives))
-  (library_flags -cclib "-I runtime")
-  (self_build_stubs_archive (runtime)))
+  (library_flags -cclib "-I runtime"))
 
 (rule
   (targets libruntime_stubs.a)

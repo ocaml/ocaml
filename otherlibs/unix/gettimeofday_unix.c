@@ -13,6 +13,7 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/fail.h>
@@ -24,7 +25,7 @@ double caml_unix_gettimeofday_unboxed(value unit)
 {
   struct timeval tp;
   gettimeofday(&tp, NULL);
-  return ((double) tp.tv_sec + (double) tp.tv_usec / 1e6);
+  return ((double) tp.tv_sec + (double) tp.tv_usec / USEC_PER_SEC);
 }
 
 CAMLprim value caml_unix_gettimeofday(value unit)

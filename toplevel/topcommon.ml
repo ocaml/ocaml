@@ -119,8 +119,12 @@ module MakeEvalPrinter (E: EVAL_BASE) = struct
   let eval_class_path env path =
     eval_path Env.find_class_address env path
 
-
-  module Printer = Genprintval.Make(Obj)(struct
+  module My_obj = struct
+    include Obj
+    let base_obj = obj
+    let obj v = Ok (obj v)
+  end
+  module Printer = Genprintval.Make(My_obj)(struct
       type valu = Obj.t
       exception Error
       let eval_address addr =
@@ -154,15 +158,6 @@ module MakeEvalPrinter (E: EVAL_BASE) = struct
       | Some b ->
           print_string b;
           backtrace := None
-
-  type ('a, 'b) gen_printer = ('a, 'b) Genprintval.gen_printer =
-    | Zero of 'b
-    | Succ of ('a -> ('a, 'b) gen_printer)
-
-  let install_printer = Printer.install_printer
-  let install_generic_printer = Printer.install_generic_printer
-  let install_generic_printer' = Printer.install_generic_printer'
-  let remove_printer = Printer.remove_printer
 
 end
 
@@ -358,11 +353,14 @@ let inline_code = Format_doc.compat Style.inline_code
 let try_run_directive ppf dir_name pdir_arg =
   begin match get_directive dir_name with
   | None ->
-      fprintf ppf "Unknown directive %a." inline_code dir_name;
-      let directives = all_directive_names () in
-      Format_doc.compat Misc.did_you_mean ppf
-        (fun () -> Misc.spellcheck directives dir_name);
-      fprintf ppf "@.";
+      let print ppf () =
+        let directives = all_directive_names () in
+        Misc.aligned_hint ~prefix:"" ppf
+          "@{<ralign>Unknown directive @}%a."
+          Style.inline_code dir_name
+          (Misc.did_you_mean (Misc.spellcheck directives dir_name))
+      in
+      fprintf ppf "%a@." (Format_doc.compat print) ();
       false
   | Some d ->
       match d, pdir_arg with
@@ -403,7 +401,7 @@ let try_run_directive ppf dir_name pdir_arg =
           | `String ->
               Format.fprintf ppf "a %a literal" inline_code "string"
           | `Int ->
-              Format.fprintf ppf "an %a literal" inline_code "string"
+              Format.fprintf ppf "an %a literal" inline_code "int"
           | `Ident ->
               Format.fprintf ppf "an identifier"
           | `Bool ->

@@ -52,10 +52,7 @@ val type_open_:
         Env.t -> Location.t -> Longident.t Asttypes.loc -> Path.t * Env.t
         *)
 val modtype_of_package:
-        Env.t -> Location.t ->
-        Path.t -> (Longident.t * type_expr) list -> module_type
-
-val path_of_module : Typedtree.module_expr -> Path.t option
+        Env.t -> Location.t -> package -> module_type
 
 val save_signature:
   Unit_info.t -> Typedtree.signature -> Env.t ->
@@ -114,6 +111,7 @@ type error =
   | With_makes_applicative_functor_ill_typed of
       Longident.t * Path.t * Includemod.explanation
   | With_changes_module_alias of Longident.t * Ident.t * Path.t
+  | With_creates_invalid_aliases of Ident.t * Path.t * Path.t
   | With_cannot_remove_constrained_type
   | With_package_manifest of Longident.t * type_expr
   | Repeated_name of Sig_component_kind.t * string

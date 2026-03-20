@@ -47,7 +47,7 @@ module Exp :
 
 module List =
   struct
-    type zero
+    type zero = Zero
     type _ t =
       | Nil : zero t
       | Cons : 'a * 'b t -> ('a * 'b) t
@@ -66,7 +66,7 @@ module List =
 [%%expect{|
 module List :
   sig
-    type zero
+    type zero = Zero
     type _ t = Nil : zero t | Cons : 'a * 'b t -> ('a * 'b) t
     val head : ('a * 'b) t -> 'a
     val tail : ('a * 'b) t -> 'b t
@@ -107,16 +107,14 @@ Lines 11-12, characters 6-19:
 11 | ......function
 12 |         | C2 x -> x
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-C1 _
+  Here is an example of a case that is not matched: "C1 _"
 
 Lines 24-26, characters 6-30:
 24 | ......function
 25 |         | Foo _ , Foo _ -> true
 26 |         | Bar _, Bar _ -> true
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-(Foo _, Bar _)
+  Here is an example of a case that is not matched: "(Foo _, Bar _)"
 
 module Nonexhaustive :
   sig
@@ -163,15 +161,13 @@ Line 2, characters 10-18:
 2 |   class c (Some x) = object method x : int = x end
               ^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-None
+  Here is an example of a case that is not matched: "None"
 
 Line 4, characters 10-18:
 4 |   class d (Just x) = object method x : int = x end
               ^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Nothing
+  Here is an example of a case that is not matched: "Nothing"
 
 module PR6862 :
   sig
@@ -200,7 +196,7 @@ Line 4, characters 43-44:
 4 |   let g : int t -> int = function I -> 1 | _ -> 2 (* warn *)
                                                ^
 Warning 56 [unreachable-case]: this match case is unreachable.
-Consider replacing it with a refutation case '<pat> -> .'
+  Consider replacing it with a refutation case "<pat> -> ."
 
 module PR6220 :
   sig
@@ -269,8 +265,7 @@ Lines 8-9, characters 4-33:
 8 | ....match x with
 9 |     | String s -> print_endline s.................
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Any
+  Here is an example of a case that is not matched: "Any"
 
 module PR6801 :
   sig
@@ -406,8 +401,7 @@ end;;
 Line 5, characters 6-9:
 5 |       Foo -> 5
           ^^^
-Error: This pattern matches values of type "'a t"
-       but a pattern was expected which matches values of type "int"
+Error: This pattern should not be a constructor, the expected type is "int"
 |}];;
 
 type _ t = Int : int t ;;
@@ -812,11 +806,13 @@ Lines 1-2, characters 4-15:
 1 | ....f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
 2 |   fun Eq o -> o..............
 Error: This definition has type
-         "'c 'd. ('d, 'd) eq -> ([< `A of 'd | `B ] as 'c) -> 'c"
+         "'c 'b. ('b, 'b) eq -> ([< `A of 'b | `B ] as 'c) -> 'c"
        which is less general than
-         "'e 'f 'a 'b.
+         "'d 'e 'a 'b.
            ('a, 'b) eq ->
-           ([< `A of 'a | `B ] as 'f) -> ([< `A of 'b | `B ] as 'e)"
+           ([< `A of 'a | `B ] as 'e) -> ([< `A of 'b | `B ] as 'd)"
+       The universal type variable "'b" in the first type matches multiple
+       distinct variables in the second type.
 |}];;
 
 let f : type a b. (a,b) eq -> [`A of a | `B] -> [`A of b | `B] =
@@ -933,8 +929,7 @@ Lines 2-8, characters 2-16:
 7 |   | TA, D 0 -> -1
 8 |   | TA, D z -> z
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-(TE TC, D [| 0. |])
+  Here is an example of a case that is not matched: "(TE TC, D [| 0. |])"
 
 val f : 'a ty -> 'a t -> int = <fun>
 |}];;
@@ -998,8 +993,8 @@ Lines 4-10, characters 2-29:
  9 |   | {left=TA; right=D 0} -> -1
 10 |   | {left=TA; right=D z} -> z
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-{left=TE TC; right=D [| 0. |]}
+  Here is an example of a case that is not matched:
+    "{left=TE TC; right=D [| 0. |]}"
 
 val f : 'a ty -> 'a t -> int = <fun>
 |}];;
@@ -1074,10 +1069,14 @@ type _ int_bar = IB_constr : < bar : int; .. > int_bar
 Line 10, characters 3-4:
 10 |   (x:<foo:int>)
         ^
-Error: The value "x" has type "t" = "< foo : int; .. >"
+Error: The value "x" has type "t" = "< foo : int; .. as $0 >"
        but an expression was expected of type "< foo : int >"
-       Type "$0" = "< bar : int; .. >" is not compatible with type "<  >"
+       Type "$0" = "< bar : int; .. as $1 >" is not compatible with type "<  >"
        The second object type has no method "bar"
+       Hint: "$1" is a type variable introduced in the equation
+         "$0" = "< bar : int; .. as $1 >"
+       Hint: "$0" is a type variable introduced in the equation
+         "t" = "< foo : int; .. as $0 >"
 |}];;
 
 let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
@@ -1088,10 +1087,15 @@ let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
 Line 3, characters 3-4:
 3 |   (x:<foo:int;bar:int>)
        ^
-Error: The value "x" has type "t" = "< foo : int; .. >"
+Error: The value "x" has type "t" = "< foo : int; .. as $0 >"
        but an expression was expected of type "< bar : int; foo : int >"
-       Type "$0" = "< bar : int; .. >" is not compatible with type "< bar : int >"
+       Type "$0" = "< bar : int; .. as $1 >" is not compatible with type
+         "< bar : int >"
        The first object type has an abstract row, it cannot be closed
+       Hint: "$1" is a type variable introduced in the equation
+         "$0" = "< bar : int; .. as $1 >"
+       Hint: "$0" is a type variable introduced in the equation
+         "t" = "< foo : int; .. as $0 >"
 |}];;
 
 let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
@@ -1102,17 +1106,21 @@ let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
 Line 3, characters 2-26:
 3 |   (x:<foo:int;bar:int;..>)
       ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "< bar : int; foo : int; .. >"
+Error: This expression has type "< bar : int; foo : int; .. as $1 >"
        but an expression was expected of type "'a"
        The type constructor "$1" would escape its scope
+       Hint: "$1" is a type variable introduced in the equation
+         "$0" = "< bar : int; .. as $1 >"
 |}, Principal{|
 Line 3, characters 2-26:
 3 |   (x:<foo:int;bar:int;..>)
       ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "< bar : int; foo : int; .. >"
+Error: This expression has type "< bar : int; foo : int; .. as $1 >"
        but an expression was expected of type "'a"
        This instance of "$1" is ambiguous:
        it would escape the scope of its equation
+       Hint: "$1" is a type variable introduced in the equation
+         "$0" = "< bar : int; .. as $1 >"
 |}];;
 
 let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) : t =

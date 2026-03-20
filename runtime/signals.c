@@ -36,6 +36,7 @@
 #include "caml/sys.h"
 #include "caml/memprof.h"
 #include "caml/finalise.h"
+#include "misc_internals.h"
 
 /* The set of pending signals (received but not yet processed).
    It is represented as a bit vector.
@@ -254,6 +255,12 @@ void caml_request_major_slice (int global)
   }else{
     Caml_state->requested_major_slice = 1;
   }
+  if (atomic_load_relaxed(&caml_gc_mark_phase_requested)) {
+    /* Beginning the mark phase requires emptying the minor heap, so
+     * that there are no pointers from minor to major. */
+    Caml_state->requested_minor_gc = 1;
+  }
+
   caml_interrupt_self();
 }
 
@@ -499,27 +506,43 @@ CAMLexport value caml_process_pending_actions_exn(void)
 #ifndef SIGXFSZ
 #define SIGXFSZ -1
 #endif
+#ifndef SIGIO
+#define SIGIO -1
+#endif
+#ifndef SIGWINCH
+#define SIGWINCH -1
+#endif
 
 static const int posix_signals[] = {
   SIGABRT, SIGALRM, SIGFPE, SIGHUP, SIGILL, SIGINT, SIGKILL, SIGPIPE,
   SIGQUIT, SIGSEGV, SIGTERM, SIGUSR1, SIGUSR2, SIGCHLD, SIGCONT,
   SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU, SIGVTALRM, SIGPROF, SIGBUS,
-  SIGPOLL, SIGSYS, SIGTRAP, SIGURG, SIGXCPU, SIGXFSZ
+  SIGPOLL, SIGSYS, SIGTRAP, SIGURG, SIGXCPU, SIGXFSZ, SIGIO, SIGWINCH
 };
 
 CAMLexport int caml_convert_signal_number(int signo)
 {
-  if (signo < 0 && signo >= -(int)(sizeof(posix_signals) / sizeof(int)))
+  if (signo < 0 && signo >= -(int) countof(posix_signals))
     return posix_signals[-signo-1];
   else
     return signo;
 }
 
+CAMLprim value caml_sys_convert_signal_number(value signo)
+{
+  return Val_int(caml_convert_signal_number(Int_val(signo)));
+}
+
 CAMLexport int caml_rev_convert_signal_number(int signo)
 {
-  for (int i = 0; i < (int)(sizeof(posix_signals) / sizeof(int)); i++)
+  for (int i = 0; i < (int) countof(posix_signals); i++)
     if (signo == posix_signals[i]) return -i - 1;
   return signo;
+}
+
+CAMLprim value caml_sys_rev_convert_signal_number(value signo)
+{
+  return Val_int(caml_rev_convert_signal_number(Int_val(signo)));
 }
 
 void * caml_init_signal_stack(void)
@@ -687,6 +710,8 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     act = 2;
     break;
   }
+  caml_plat_lock_non_blocking(&signal_install_mutex);
+  /* Note: no safepoint for calling signals in this critical section */
   oldact = caml_set_signal_action(sig, act);
   switch (oldact) {
   case 0:                       /* was Signal_default */
@@ -700,24 +725,19 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     Field(res, 0) = Field(caml_signal_handlers, sig);
     break;
   default:                      /* error in caml_set_signal_action */
-    caml_sys_error(NO_ARG);
+    goto err;
   }
   if (Is_block(action)) {
-    /* Speculatively allocate this so we don't hold the lock for
-       a GC */
     if (caml_signal_handlers == 0) {
-      tmp_signal_handlers = caml_alloc(NSIG, 0);
-    }
-    caml_plat_lock_blocking(&signal_install_mutex);
-    if (caml_signal_handlers == 0) {
-      /* caml_alloc cannot raise asynchronous exceptions from signals
-         so this is safe */
-      caml_signal_handlers = tmp_signal_handlers;
+      caml_signal_handlers = caml_alloc(NSIG, 0);
       caml_register_global_root(&caml_signal_handlers);
     }
     caml_modify(&Field(caml_signal_handlers, sig), Field(action, 0));
-    caml_plat_unlock(&signal_install_mutex);
   }
+  caml_plat_unlock(&signal_install_mutex);
   caml_get_value_or_raise(caml_process_pending_signals_res());
   CAMLreturn (res);
+ err:
+  caml_plat_unlock(&signal_install_mutex);
+  caml_sys_error(NO_ARG);
 }

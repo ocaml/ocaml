@@ -35,10 +35,12 @@ let uid_deps = ref false
 
 module Magic_number = Misc.Magic_number
 
+let yesno_of_bool oc b = output_string oc (if b then "YES" else "no")
+
 let dummy_crc = String.make 32 '-'
 let null_crc = String.make 32 '0'
 
-let string_of_crc crc = if !no_crc then null_crc else Digest.to_hex crc
+let string_of_crc crc = if !no_crc then null_crc else Digest.BLAKE128.to_hex crc
 
 let print_name_crc (name, crco) =
   let crc =
@@ -67,13 +69,19 @@ let print_cmo_infos cu =
         printf "YES\n";
         printf "Primitives declared in this module:\n";
         List.iter print_line l);
-  printf "Force link: %s\n" (if cu.cu_force_link then "YES" else "no")
+  printf "Force link: %a\n" yesno_of_bool cu.cu_force_link
 
 let print_spaced_string s =
   printf " %s" s
 
+let dllib (~suffixed, name) =
+  if suffixed then
+    Printf.sprintf "%s-<target>-<bytecode-runtime-id>" name
+  else
+    name
+
 let print_cma_infos (lib : Cmo_format.library) =
-  printf "Force custom: %s\n" (if lib.lib_custom then "YES" else "no");
+  printf "Force custom: %a\n" yesno_of_bool lib.lib_custom;
   printf "Extra C object files:";
   (* PR#4949: print in linking order *)
   List.iter print_spaced_string (List.rev lib.lib_ccobjs);
@@ -81,7 +89,7 @@ let print_cma_infos (lib : Cmo_format.library) =
   List.iter print_spaced_string (List.rev lib.lib_ccopts);
   printf "\n";
   print_string "Extra dynamically-loaded libraries:";
-  List.iter print_spaced_string (List.rev lib.lib_dllibs);
+  List.iter print_spaced_string (List.rev_map dllib lib.lib_dllibs);
   printf "\n";
   List.iter print_cmo_infos lib.lib_units
 
@@ -141,7 +149,7 @@ let print_cmt_infos cmt =
     in
     Format.printf "@[<v>";
     Array.iter (fun (rk, u1, u2) ->
-      let rk = match rk with
+      let rk = match (rk : Shape.Uid.Deps.kind) with
         | Definition_to_declaration -> "<-"
         | Declaration_to_declaration -> "<->"
       in
@@ -150,6 +158,7 @@ let print_cmt_infos cmt =
         rk
         Shape.Uid.print u2) arr;
     Format.printf "@]";
+    Format.print_flush ()
   end;
   if !decls then begin
     printf "\nUid of decls:\n";
@@ -249,11 +258,13 @@ let print_cmx_infos (ui, crc) =
   printf "Currying functions:%a\n" pr_funs ui.ui_curry_fun;
   printf "Apply functions:%a\n" pr_funs ui.ui_apply_fun;
   printf "Send functions:%a\n" pr_funs ui.ui_send_fun;
-  printf "Force link: %s\n" (if ui.ui_force_link then "YES" else "no");
+  printf "Force link: %a\n" yesno_of_bool ui.ui_force_link;
   printf "For pack: %s\n"
     (match ui.ui_for_pack with
      | None -> "no"
-     | Some pack -> "YES: " ^ pack)
+     | Some pack -> "YES: " ^ pack);
+  printf
+    "Requires caml_standard_library_nat: %a\n" yesno_of_bool ui.ui_need_stdlib
 
 let print_cmxa_infos (lib : Cmx_format.library_infos) =
   printf "Extra C object files:";
@@ -288,15 +299,63 @@ let p_list title print = function
       p_title title;
       List.iter print l
 
+let p_runtime_id ({Misc.RuntimeID.dev; release; no_flat_float_array; fp; tsan;
+                   int31; static; no_compression; ansi; reserved} as t) =
+  let version =
+    if release > Config.release_number then
+      ""
+    else
+      if release = 0 then
+        " (Objective Caml 3.12)"
+      else if release < 16 then
+        Printf.sprintf " (OCaml 4.%02d)" (release - 1)
+      else
+        Printf.sprintf " (OCaml 5.%d)" (release - 16)
+  in
+  printf "\t%s = Release %d%s%s\n"
+    (Misc.RuntimeID.to_string t)
+    release version (if dev then " - development/altered version" else "");
+  if reserved > 0 then
+    printf "\t  - %d reserved header bit%s\n"
+      reserved (if reserved = 1 then "" else "s");
+  if no_flat_float_array then
+    printf "\t  - Flat float array representation disabled\n";
+  if fp then
+    printf "\t  - Frame pointers enabled\n";
+  if tsan then
+    printf "\t  - TSAN enabled\n";
+  if int31 then
+    printf "\t  - Compiled without 64-bit support\n";
+  if static then
+    printf "\t  - Compiled without support dynamic loading\n";
+  if no_compression then
+    printf "\t  - Compiled without support for compressed marshalling\n";
+  if ansi then
+    printf "\t  - Windows Unicode support disabled\n"
+
+let p_runtime (runtime, id, search) =
+  let runtime =
+    let some id = runtime ^ "-" ^ Misc.RuntimeID.to_string id in
+    Option.fold ~none:runtime ~some id
+  in
+  let runtime =
+    match search with
+    | Byterntm.Enable -> runtime
+    | Byterntm.Disable dir -> dir ^ runtime
+    | Byterntm.Fallback dir -> Printf.sprintf "[%s]%s" dir runtime
+  in
+  printf "Runtime:\n\t%s\n" runtime;
+  Option.iter p_runtime_id id
+
 let dump_byte ic =
   let toc = Bytesections.read_toc ic in
-  let all = Bytesections.all toc in
+  Option.iter p_runtime (Byterntm.read_runtime toc ic);
   List.iter
     (fun {Bytesections.name = section; len; _} ->
        try
          if len > 0 then match section with
            | CRCS ->
-               let imported_units : (string * Digest.t option) list =
+               let imported_units : (string * Digest.BLAKE128.t option) list =
                  Bytesections.read_section_struct toc ic section in
                p_section "Imported units" imported_units
            | DLLS ->
@@ -317,10 +376,15 @@ let dump_byte ic =
            | SYMB ->
                let symb = Bytesections.read_section_struct toc ic section in
                print_global_table symb
+           | OSLD ->
+               let caml_standard_library_default =
+                 Bytesections.read_section_string toc ic section in
+               printf "caml_standard_library_default: %s\n"
+                      caml_standard_library_default
            | _ -> ()
        with _ -> ()
     )
-    all
+    (Bytesections.all toc)
 
 let find_dyn_offset filename =
   match Binutils.read filename with
@@ -377,7 +441,7 @@ let dump_obj_by_kind filename ic obj_kind =
        end
     | Cmx _config ->
        let ui = (input_value ic : unit_infos) in
-       let crc = Digest.input ic in
+       let crc = Digest.BLAKE128.input ic in
        close_in ic;
        print_cmx_infos (ui, crc)
     | Cmxa _config ->

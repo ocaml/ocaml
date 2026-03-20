@@ -19,6 +19,10 @@
 
 #define CAML_INTERNALS
 
+#ifdef __CYGWIN__
+#include <windows.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -31,6 +35,7 @@
 #include "caml/memory.h"
 #include "caml/io.h"
 #include "caml/osdeps.h"
+#include <caml/fail.h>
 
 /* cstringvect: inspired by similar function in otherlibs/unix/cstringv.c */
 static array cstringvect(value arg)
@@ -108,4 +113,56 @@ CAMLprim value caml_run_command(value caml_settings)
   caml_stat_free(settings.stdout_filename);
   caml_stat_free(settings.stderr_filename);
   CAMLreturn(Val_int(res));
+}
+
+CAMLprim value caml_drop_privilege(value name)
+{
+#ifdef __CYGWIN__
+  LUID privilege_luid;
+  DWORD dwReturnLength;
+
+  if (!LookupPrivilegeValue(NULL, String_val(name), &privilege_luid))
+    caml_raise_not_found();
+
+  /* Search through the primary token and, if this privilege is found, remove
+     it. */
+  if (!GetTokenInformation(GetCurrentProcessToken(), TokenPrivileges, NULL, 0,
+                           &dwReturnLength)
+      && GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
+    TOKEN_PRIVILEGES* process_privileges;
+
+    if (!(process_privileges = (TOKEN_PRIVILEGES*)malloc(dwReturnLength)))
+      caml_raise_out_of_memory();
+
+    if (GetTokenInformation(GetCurrentProcessToken(),
+                            TokenPrivileges, process_privileges,
+                            dwReturnLength, &dwReturnLength)) {
+      LUID_AND_ATTRIBUTES* privilege = process_privileges->Privileges;
+
+      for (int i = 0; i < process_privileges->PrivilegeCount; i++) {
+        if (privilege->Luid.HighPart == privilege_luid.HighPart &&
+            privilege->Luid.LowPart == privilege_luid.LowPart) {
+          HANDLE hToken;
+          if (OpenProcessToken(GetCurrentProcess(),
+                               TOKEN_ADJUST_PRIVILEGES | TOKEN_DUPLICATE,
+                               &hToken)) {
+            TOKEN_PRIVILEGES adjustment;
+            adjustment.PrivilegeCount = 1;
+            adjustment.Privileges->Luid = privilege_luid;
+            adjustment.Privileges->Attributes = SE_PRIVILEGE_REMOVED;
+            AdjustTokenPrivileges(hToken, FALSE, &adjustment,
+                                  sizeof(TOKEN_PRIVILEGES), NULL, NULL);
+            CloseHandle(hToken);
+          }
+
+          break;
+        }
+        privilege++;
+      }
+    }
+
+    free(process_privileges);
+  }
+#endif
+  return Val_unit;
 }

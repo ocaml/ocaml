@@ -64,9 +64,11 @@
 # You can ignore a rule by giving the option -<rule> on the command
 # line (before any file names).
 
-# Files which include the utf8 rule will be validated using grep and line-length
-# computations will take UTF-8 sequences into account. As a special case, UTF-8
-# sequences are always allowed in the copyright headers.
+# Files which include the non-ascii rule will be validated using grep and
+# line-length computations will take UTF-8 sequences into account. As a special
+# case, UTF-8 sequences are always allowed in the copyright headers. Files which
+# include the non-ascii rule must still be valid UTF-8 (the only alternative is
+# to mark the file as binary).
 
 # First prevent i18n from messing up everything.
 export LC_ALL=C
@@ -74,7 +76,7 @@ export LC_ALL=C
 OCAML_CT_CAT=${OCAML_CT_CAT:-cat}
 OCAML_CT_LS_FILES=${OCAML_CT_LS_FILES:-git ls-files}
 OCAML_CT_HEAD=${OCAML_CT_HEAD:-HEAD}
-OCAML_CT_AWK=${OCAML_CT_AWK:-awk}
+OCAML_CT_AWK=${OCAML_CT_AWK:-gawk}
 if [ -z "${OCAML_CT_GIT_INDEX+x}" ] ; then
   OCAML_CT_GIT_INDEX=
 else
@@ -236,17 +238,14 @@ EXIT_CODE=0
     rules=" $(echo $rules) "
     attr_rules=" $(echo $attr_rules) "
 
-    if test -n "$(echo "$rules $attr_rules" | grep " utf8 ")"
-    then
-        # grep -a is used to force the file to be considered as text and -x
-        # requires the entire line to match. This specifically detects the
-        # presence of lines containing malformed UTF-8. It may be tested using
-        # https://www.cl.cam.ac.uk/~mgk25/ucs/examples/UTF-8-test.txt
-        if $OCAML_CT_CAT "$OCAML_CT_PREFIX$f" \
-             | LC_ALL=en_US.UTF8 grep -qaxv '.*' ; then
-          echo "File \"$f\" is not correctly encoded in UTF-8"
-          exit 2
-        fi
+    # grep -a is used to force the file to be considered as text and -x
+    # requires the entire line to match. This specifically detects the
+    # presence of lines containing malformed UTF-8. It may be tested using
+    # https://www.cl.cam.ac.uk/~mgk25/ucs/examples/UTF-8-test.txt
+    if $OCAML_CT_CAT "$OCAML_CT_PREFIX$f" \
+         | LC_ALL=C.UTF-8 grep -qaxv '.*' ; then
+      echo "File \"$f\" is not correctly encoded in UTF-8"
+      exit 2
     fi
     if ! \
     ($OCAML_CT_CAT "$OCAML_CT_PREFIX$f" | tr -d '\r'; echo) \
@@ -294,14 +293,14 @@ EXIT_CODE=0
         }
 
         function utf8_decode(str) {
-          if (is_err("utf8")) {
+          if (is_err("non-ascii")) {
             return str;
           } else {
             # This script assumes that the UTF-8 has been externally validated
             t = str;
             gsub(/[\300-\367][\200-\277]+/, "?", t);
             if (t != str) {
-              ++ counts["utf8"];
+              ++ counts["non-ascii"];
             }
             return t;
           }
@@ -365,14 +364,10 @@ EXIT_CODE=0
 
         match($0, /[\200-\377]/) \
         && state != "authors" && state != "copyright" {
-          if (is_err("utf8")) {
+          if (is_err("non-ascii")) {
             err("non-ascii", "non-ASCII character(s)");
-            if (header_utf8 && !is_err("non-ascii")) {
-              err("non-ascii-utf8", \
-                  "non-ASCII character(s) AND UTF-8 encountered");
-            }
           } else {
-            ++ counts["utf8"];
+            ++ counts["non-ascii"];
           }
         }
 
@@ -419,16 +414,6 @@ EXIT_CODE=0
           sub(/https?:[A-Za-z0-9._~:\/?#\[\]@!$&\047()*+,;=%-]{125,}/, "", t);
           if (length(t) > 132) {
             err("very-long-line", "line is over 132 columns");
-          }
-        }
-
-        # Record that the header contained UTF-8 sequences
-        match($0, /[\300-\367][\200-\277]+/) \
-        && (state == "authors" || state == "copyright") {
-          header_utf8 = 1;
-          if (counts["non-ascii"] > 0 && is_err("non-ascii")) {
-            err("non-ascii-utf8", \
-                "non-ASCII character(s) AND UTF-8 encountered");
           }
         }
 

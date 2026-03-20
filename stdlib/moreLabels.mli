@@ -68,7 +68,7 @@ module Hashtbl : sig
 
    (**
       Unsynchronized accesses to a hash table may lead to an invalid hash table
-      state. Thus, concurrent accesses to a hash tables must be synchronized
+      state. Thus, concurrent accesses to a hash table must be synchronized
       (for instance with a {!Mutex.t}).
   *)
 
@@ -166,12 +166,20 @@ module Hashtbl : sig
      restoring the previous binding if it exists.
      It does nothing if [x] is not bound in [tbl]. *)
 
+  val find_and_remove : ('a, 'b) t -> 'a -> 'b option
+  (** Same as {!remove} but returns the previous binding, if any.
+      @since 5.5 *)
+
   val replace : ('a, 'b) t -> key:'a -> data:'b -> unit
   (** [Hashtbl.replace tbl ~key ~data] replaces the current binding of [key]
      in [tbl] by a binding of [key] to [data].  If [key] is unbound in [tbl],
      a binding of [key] to [data] is added to [tbl].
      This is functionally equivalent to {!remove}[ tbl key]
      followed by {!add}[ tbl key data]. *)
+
+  val find_and_replace : ('a, 'b) t -> key:'a -> data:'b -> 'b option
+  (** Same as {!replace} but returns the previous binding, if any.
+      @since 5.5 *)
 
   val iter : f:(key:'a -> data:'b -> unit) -> ('a, 'b) t -> unit
   (** [Hashtbl.iter ~f tbl] applies [f] to all bindings in table [tbl].
@@ -196,9 +204,9 @@ module Hashtbl : sig
   val filter_map_inplace: f:(key:'a -> data:'b -> 'b option) -> ('a, 'b) t ->
       unit
   (** [Hashtbl.filter_map_inplace ~f tbl] applies [f] to all bindings in
-      table [tbl] and update each binding depending on the result of
+      table [tbl] and updates each binding depending on the result of
       [f].  If [f] returns [None], the binding is discarded.  If it
-      returns [Some new_val], the binding is update to associate the key
+      returns [Some new_val], the binding is updated to associate the key
       to [new_val].
 
       Other comments for {!iter} apply as well.
@@ -397,12 +405,18 @@ module Hashtbl : sig
       val copy : 'a t -> 'a t
       val add : 'a t -> key:key -> data:'a -> unit
       val remove : 'a t -> key -> unit
+      val find_and_remove : 'a t -> key -> 'a option
+      (** @since 5.5 *)
+
       val find : 'a t -> key -> 'a
       val find_opt : 'a t -> key -> 'a option
       (** @since 4.05 *)
 
       val find_all : 'a t -> key -> 'a list
       val replace : 'a t -> key:key -> data:'a -> unit
+      val find_and_replace : 'a t -> key:key -> data:'a -> 'a option
+      (** @since 5.5 *)
+
       val mem : 'a t -> key -> bool
       val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
       val filter_map_inplace: f:(key:key -> data:'a -> 'a option) -> 'a t ->
@@ -477,11 +491,17 @@ module Hashtbl : sig
       val copy : 'a t -> 'a t
       val add : 'a t -> key:key -> data:'a -> unit
       val remove : 'a t -> key -> unit
+      val find_and_remove : 'a t -> key -> 'a option
+      (** @since 5.5 *)
+
       val find : 'a t -> key -> 'a
       val find_opt : 'a t -> key -> 'a option (** @since 4.05 *)
 
       val find_all : 'a t -> key -> 'a list
       val replace : 'a t -> key:key -> data:'a -> unit
+      val find_and_replace : 'a t -> key:key -> data:'a -> 'a option
+      (** @since 5.5 *)
+
       val mem : 'a t -> key -> bool
       val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
       val filter_map_inplace: f:(key:key -> data:'a -> 'a option) -> 'a t ->
@@ -739,7 +759,7 @@ module Map : sig
       val add_to_list: key:key -> data:'a -> 'a list t -> 'a list t
       (** [add_to_list ~key ~data m] is [m] with [key] mapped to [l] such
           that [l] is [data :: Map.find key m] if [key] was bound in
-          [m] and [[v]] otherwise.
+          [m] and [[data]] otherwise.
           @since 5.1 *)
 
       val update: key:key -> f:('a option -> 'a option) -> 'a t -> 'a t
@@ -908,7 +928,7 @@ module Map : sig
 
       val filter: f:(key -> 'a -> bool) -> 'a t -> 'a t
       (** [filter ~f m] returns the map with all the bindings in [m]
-          that satisfy predicate [p]. If every binding in [m] satisfies [f],
+          that satisfy predicate [f]. If every binding in [m] satisfies [f],
           [m] is returned unchanged (the result of the function is then
           physically equal to [m])
           @since 3.12
@@ -954,6 +974,17 @@ module Map : sig
 
       val is_empty: 'a t -> bool
       (** Test whether a map is empty or not. *)
+
+      val is_singleton: 'a t -> bool
+      (** Test whether a map has exactly one element or not.
+
+          @since 5.5 *)
+
+      val singleton_to_binding: 'a t -> (key * 'a) option
+      (** [singleton_to_binding m] is [Some (k, v)] if [m] only binds [k] to [v]
+          and [None] otherwise.
+
+          @since 5.6 *)
 
       val mem: key -> 'a t -> bool
       (** [mem x m] returns [true] if [m] contains a binding for [x],
@@ -1208,7 +1239,7 @@ module Set : sig
           with respect to the ordering over the type of the elements. *)
 
       val fold: f:(elt -> 'acc -> 'acc) -> t -> init:'acc -> 'acc
-      (** [fold ~f s init] computes [(f xN ... (f x2 (f x1 init))...)],
+      (** [fold ~f s ~init] computes [(f xN ... (f x2 (f x1 init))...)],
           where [x1 ... xN] are the elements of [s], in increasing order. *)
 
       (** {1:transforming Transforming} *)
@@ -1227,7 +1258,7 @@ module Set : sig
 
       val filter: f:(elt -> bool) -> t -> t
       (** [filter ~f s] returns the set of all elements in [s]
-          that satisfy predicate [f]. If [f] satisfies every element in [s],
+          that satisfy predicate [f]. If every element in [s] satisfies [f],
           [s] is returned unchanged (the result of the function is then
           physically equal to [s]).
           @before 4.03 Physical equality was not ensured.*)
@@ -1266,6 +1297,17 @@ module Set : sig
 
       val is_empty: t -> bool
       (** Test whether a set is empty or not. *)
+
+      val is_singleton: t -> bool
+      (** Test whether a set has exactly one element or not.
+
+          @since 5.5 *)
+
+      val singleton_to_elt: t -> elt option
+      (** [singleton_to_elt s] is [Some x] if [s] has only the element [x]
+          and [None] otherwise.
+
+          @since 5.6 *)
 
       val mem: elt -> t -> bool
       (** [mem x s] tests whether [x] belongs to the set [s]. *)
@@ -1320,7 +1362,7 @@ module Set : sig
           @since 4.07 *)
 
       val of_seq : elt Seq.t -> t
-      (** Build a set from the given bindings
+      (** Build a set from the given elements
           @since 4.07 *)
     end
   (** Output signature of the functor {!Make}. *)

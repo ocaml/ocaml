@@ -1,5 +1,5 @@
 File "testloc.ml", line 3, characters 12-13:
 3 | let error = 1 2
                 ^
-Error: This expression has type "int"
+Error: This expression has type int
        This is not a function; it cannot be applied.

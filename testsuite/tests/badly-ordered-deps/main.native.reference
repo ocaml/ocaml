@@ -1,7 +1,7 @@
 File "_none_", line 1:
-Error: Wrong link order: "Lib" (lib.cmx) depends on "Main" (main.cmx)
+Error: Wrong link order: Lib (lib.cmx) depends on Main (main.cmx)
 File "_none_", line 1:
-Error: Wrong link order: "Lib" (lib.cmx) depends on "Main" (main.cmx)
+Error: Wrong link order: Lib (lib.cmx) depends on Main (main.cmx)
 File "_none_", line 1:
 Error: No implementation provided for the following modules:
-         "Main" referenced from "Lib" (lib.cmx)
+         Main referenced from Lib (lib.cmx)

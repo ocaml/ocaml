@@ -17,9 +17,20 @@ let test_value () =
 
 let test_get_ok_error () =
   assert (Result.get_ok (Ok 3) = 3);
+  assert (Result.get_ok' (Ok 3) = 3);
   assert_raise_invalid_argument Result.get_ok (Error "ha!");
+  (match Result.get_ok' (Error "ha!") with
+   exception Invalid_argument "ha!" [@warning "-52"] -> ();
+   | _ -> assert false);
   assert (Result.get_error (Error "ha!") = "ha!");
   assert_raise_invalid_argument Result.get_error (Ok 2);
+  ()
+
+let test_error_to_failure () =
+  assert (Result.error_to_failure (Ok 3) = 3);
+  (match Result.error_to_failure (Error "ha") with
+   exception Failure "ha" [@warning "-52"] -> ();
+   | _ -> assert false);
   ()
 
 let test_bind () =
@@ -42,11 +53,23 @@ let test_maps () =
   assert (Result.map_error succ (Ok 2) = Ok 2);
   ()
 
+let test_product () =
+  assert (Result.product (Ok "a") (Ok 3) = Ok ("a", 3));
+  assert (Result.product (Ok "a") (Error "ha") = Error "ha");
+  assert (Result.product (Error "hi") (Error "ha") = Error "hi");
+  assert (Result.product (Error "hi") (Ok 3) = Error "hi");
+  ()
+
 let test_fold () =
   assert (Result.fold ~ok:succ ~error:succ (Ok 1) = 2);
   assert (Result.fold ~ok:succ ~error:succ (Error 1) = 2);
   assert (Result.(fold ~ok ~error) (Ok 1) = (Ok 1));
   assert (Result.(fold ~ok ~error) (Error "ha!") = (Error "ha!"));
+  ()
+
+let test_retract () =
+  assert (Result.retract (Ok 3) = 3);
+  assert (Result.retract (Error 2) = 2);
   ()
 
 let test_iters () =
@@ -110,19 +133,40 @@ let test_to_option_list_seq () =
   assert ((Result.to_seq (Error "ha!")) () = Seq.Nil);
   ()
 
+let test_syntax () =
+  let open Result.Syntax in
+  assert (Ok 5 =
+          let parse n = Ok n in
+          let* n0 = parse 3 in
+          let* n1 = parse 2 in
+          Ok (n0 + n1));
+  assert (Ok 3 =
+          let+ one = Ok 1
+          and+ two = Ok 2 in
+          one + two);
+  assert (Ok 1 =
+          let* three = Ok 3 in
+          let+ two = Ok 2 in
+          three - two);
+  ()
+
 let tests () =
   test_ok_error ();
   test_value ();
   test_get_ok_error ();
+  test_error_to_failure ();
   test_bind ();
   test_join ();
   test_maps ();
+  test_product ();
   test_fold ();
+  test_retract ();
   test_iters ();
   test_is_ok_error ();
   test_equal ();
   test_compare ();
   test_to_option_list_seq ();
+  test_syntax ();
   ()
 
 let () =

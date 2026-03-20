@@ -88,7 +88,7 @@ module type S =
     val add_to_list: key -> 'a -> 'a list t -> 'a list t
     (** [add_to_list key data m] is [m] with [key] mapped to [l] such
         that [l] is [data :: Map.find key m] if [key] was bound in
-        [m] and [[v]] otherwise.
+        [m] and [[data]] otherwise.
         @since 5.1 *)
 
     val update: key -> ('a option -> 'a option) -> 'a t -> 'a t
@@ -257,7 +257,7 @@ module type S =
 
     val filter: (key -> 'a -> bool) -> 'a t -> 'a t
     (** [filter f m] returns the map with all the bindings in [m]
-        that satisfy predicate [p]. If every binding in [m] satisfies [f],
+        that satisfy predicate [f]. If every binding in [m] satisfies [f],
         [m] is returned unchanged (the result of the function is then
         physically equal to [m])
         @since 3.12
@@ -303,6 +303,17 @@ module type S =
 
     val is_empty: 'a t -> bool
     (** Test whether a map is empty or not. *)
+
+    val is_singleton: 'a t -> bool
+    (** Test whether a map has exactly one element or not.
+
+        @since 5.5 *)
+
+    val singleton_to_binding: 'a t -> (key * 'a) option
+    (** [singleton_to_binding m] is [Some (k, v)] if [m] only binds [k] to [v]
+        and [None] otherwise.
+
+        @since 5.6 *)
 
     val mem: key -> 'a t -> bool
     (** [mem x m] returns [true] if [m] contains a binding for [x],

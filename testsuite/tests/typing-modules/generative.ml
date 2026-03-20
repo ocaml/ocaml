@@ -51,7 +51,7 @@ Line 3, characters 14-24:
 3 | module M2 = F(struct end);; (* accepted with a warning *)
                   ^^^^^^^^^^
 Warning 73 [generative-application-expects-unit]: A generative functor
-should be applied to '()'; using '(struct end)' is deprecated.
+  should be applied to "()"; using "(struct end)" is deprecated.
 
 module M2 : S
 |}];;

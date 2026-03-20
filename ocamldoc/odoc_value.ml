@@ -65,6 +65,8 @@ let parameter_list_from_arrows typ =
     match Types.get_desc t with
       Types.Tarrow (l, t1, t2, _) ->
         (l, t1) :: (iter t2)
+    | Types.Tfunctor (l, _, pack, t2) ->
+        (l, Ctype.newty (Types.Tpackage pack)) :: (iter t2)
     | Types.Tlink texp
     | Types.Tpoly (texp, _) -> iter texp
     | Types.Tvar _
@@ -91,7 +93,7 @@ let dummy_parameter_list typ =
         let open Asttypes in
         if label = Nolabel then
           Odoc_parameter.Tuple
-            (List.map (fun t2 -> iter (Nolabel, t2)) l, t)
+            (List.map (fun t2 -> iter (Nolabel, t2)) (List.map snd l), t)
         else
           (* if there is a label, then we don't want to decompose the tuple *)
           Odoc_parameter.Simple_name

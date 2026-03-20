@@ -56,6 +56,7 @@ type iterator = {
   module_type_declaration: iterator -> module_type_declaration -> unit;
   open_declaration: iterator -> open_declaration -> unit;
   open_description: iterator -> open_description -> unit;
+  package_type: iterator -> package_type -> unit;
   pat: iterator -> pattern -> unit;
   payload: iterator -> payload -> unit;
   signature: iterator -> signature -> unit;
@@ -86,7 +87,32 @@ let iter_tuple f1 f2 (x, y) = f1 x; f2 y
 let iter_tuple3 f1 f2 f3 (x, y, z) = f1 x; f2 y; f3 z
 let iter_opt f = function None -> () | Some x -> f x
 
-let iter_loc sub {loc; txt = _} = sub.location sub loc
+let iter_loc iter_txt sub {loc; txt} =
+  sub.location sub loc;
+  iter_txt sub txt
+
+(* using 'iter_loc iter_string' is more robust than 'iter_loc ignore',
+   as it forces us to reconsider the code if the datatype change and
+   the new data requires deeper iteration. *)
+let iter_string _sub (_ : string) =
+  ()
+
+let iter_string_opt _sub (_ : string option) =
+  ()
+
+let rec iter_lid sub lid =
+  let open Longident in
+  match lid with
+  | Lident _ -> ()
+  | Ldot (lid, id) ->
+    iter_loc_lid sub lid;
+    iter_loc iter_string sub id
+  | Lapply (lid, lid') ->
+    iter_loc_lid sub lid;
+    iter_loc_lid sub lid'
+
+and iter_loc_lid sub loc_lid =
+  iter_loc iter_lid sub loc_lid
 
 module T = struct
   (* Type expressions for the core language *)
@@ -121,37 +147,40 @@ module T = struct
     | Ptyp_var _ -> ()
     | Ptyp_arrow (_lab, t1, t2) ->
         sub.typ sub t1; sub.typ sub t2
-    | Ptyp_tuple tyl -> List.iter (sub.typ sub) tyl
+    | Ptyp_tuple tyl -> List.iter (fun (_, e) -> sub.typ sub e) tyl
     | Ptyp_constr (lid, tl) ->
-        iter_loc sub lid; List.iter (sub.typ sub) tl
+        iter_loc_lid sub lid; List.iter (sub.typ sub) tl
     | Ptyp_object (ol, _o) ->
         List.iter (object_field sub) ol
     | Ptyp_class (lid, tl) ->
-        iter_loc sub lid; List.iter (sub.typ sub) tl
+        iter_loc_lid sub lid; List.iter (sub.typ sub) tl
     | Ptyp_alias (t, _) -> sub.typ sub t
     | Ptyp_variant (rl, _b, _ll) ->
         List.iter (row_field sub) rl
     | Ptyp_poly (_, t) -> sub.typ sub t
-    | Ptyp_package (lid, l) ->
-        iter_loc sub lid;
-        List.iter (iter_tuple (iter_loc sub) (sub.typ sub)) l
+    | Ptyp_package ptyp ->
+        sub.package_type sub ptyp
     | Ptyp_open (mod_ident, t) ->
-        iter_loc sub mod_ident;
+        iter_loc_lid sub mod_ident;
         sub.typ sub t
     | Ptyp_extension x -> sub.extension sub x
+    | Ptyp_functor (_lab, s, ptyp, t2) ->
+      iter_loc iter_string sub s;
+      sub.package_type sub ptyp;
+      sub.typ sub t2
 
   let iter_type_declaration sub
-      {ptype_name; ptype_params; ptype_cstrs;
+      {ptype_name; ptype_params; ptype_constraints;
        ptype_kind;
        ptype_private = _;
        ptype_manifest;
        ptype_attributes;
        ptype_loc} =
-    iter_loc sub ptype_name;
+    iter_loc iter_string sub ptype_name;
     List.iter (iter_fst (sub.typ sub)) ptype_params;
     List.iter
       (iter_tuple3 (sub.typ sub) (sub.typ sub) (sub.location sub))
-      ptype_cstrs;
+      ptype_constraints;
     sub.type_kind sub ptype_kind;
     iter_opt (sub.typ sub) ptype_manifest;
     sub.location sub ptype_loc;
@@ -163,6 +192,7 @@ module T = struct
         List.iter (sub.constructor_declaration sub) l
     | Ptype_record l -> List.iter (sub.label_declaration sub) l
     | Ptype_open -> ()
+    | Ptype_external _ -> ()
 
   let iter_constructor_arguments sub = function
     | Pcstr_tuple l -> List.iter (sub.typ sub) l
@@ -175,7 +205,7 @@ module T = struct
        ptyext_private = _;
        ptyext_loc;
        ptyext_attributes} =
-    iter_loc sub ptyext_path;
+    iter_loc_lid sub ptyext_path;
     List.iter (sub.extension_constructor sub) ptyext_constructors;
     List.iter (iter_fst (sub.typ sub)) ptyext_params;
     sub.location sub ptyext_loc;
@@ -189,21 +219,27 @@ module T = struct
 
   let iter_extension_constructor_kind sub = function
       Pext_decl(vars, ctl, cto) ->
-        List.iter (iter_loc sub) vars;
+        List.iter (iter_loc iter_string sub) vars;
         iter_constructor_arguments sub ctl;
         iter_opt (sub.typ sub) cto
     | Pext_rebind li ->
-        iter_loc sub li
+        iter_loc_lid sub li
 
   let iter_extension_constructor sub
       {pext_name;
        pext_kind;
        pext_loc;
        pext_attributes} =
-    iter_loc sub pext_name;
+    iter_loc iter_string sub pext_name;
     iter_extension_constructor_kind sub pext_kind;
     sub.location sub pext_loc;
     sub.attributes sub pext_attributes
+
+  let iter_package_type sub {ppt_path; ppt_constraints; ppt_loc; ppt_attrs} =
+    sub.location sub ppt_loc;
+    iter_loc_lid sub ppt_path;
+    List.iter (iter_tuple (iter_loc_lid sub) (sub.typ sub)) ppt_constraints;
+    sub.attributes sub ppt_attrs
 
 end
 
@@ -215,7 +251,7 @@ module CT = struct
     sub.attributes sub attrs;
     match desc with
     | Pcty_constr (lid, tys) ->
-        iter_loc sub lid; List.iter (sub.typ sub) tys
+        iter_loc_lid sub lid; List.iter (sub.typ sub) tys
     | Pcty_signature x -> sub.class_signature sub x
     | Pcty_arrow (_lab, t, ct) ->
         sub.typ sub t; sub.class_type sub ct
@@ -244,7 +280,7 @@ end
 let iter_functor_param sub = function
   | Unit -> ()
   | Named (name, mty) ->
-    iter_loc sub name;
+    iter_loc iter_string_opt sub name;
     sub.module_type sub mty
 
 module MT = struct
@@ -254,8 +290,8 @@ module MT = struct
     sub.location sub loc;
     sub.attributes sub attrs;
     match desc with
-    | Pmty_ident s -> iter_loc sub s
-    | Pmty_alias s -> iter_loc sub s
+    | Pmty_ident s -> iter_loc_lid sub s
+    | Pmty_alias s -> iter_loc_lid sub s
     | Pmty_signature sg -> sub.signature sub sg
     | Pmty_functor (param, mt2) ->
         iter_functor_param sub param;
@@ -268,17 +304,17 @@ module MT = struct
 
   let iter_with_constraint sub = function
     | Pwith_type (lid, d) ->
-        iter_loc sub lid; sub.type_declaration sub d
+        iter_loc_lid sub lid; sub.type_declaration sub d
     | Pwith_module (lid, lid2) ->
-        iter_loc sub lid; iter_loc sub lid2
+        iter_loc_lid sub lid; iter_loc_lid sub lid2
     | Pwith_modtype (lid, mty) ->
-        iter_loc sub lid; sub.module_type sub mty
+        iter_loc_lid sub lid; sub.module_type sub mty
     | Pwith_typesubst (lid, d) ->
-        iter_loc sub lid; sub.type_declaration sub d
+        iter_loc_lid sub lid; sub.type_declaration sub d
     | Pwith_modsubst (s, lid) ->
-        iter_loc sub s; iter_loc sub lid
+        iter_loc_lid sub s; iter_loc_lid sub lid
     | Pwith_modtypesubst (lid, mty) ->
-        iter_loc sub lid; sub.module_type sub mty
+        iter_loc_lid sub lid; sub.module_type sub mty
 
   let iter_signature_item sub {psig_desc = desc; psig_loc = loc} =
     sub.location sub loc;
@@ -313,7 +349,7 @@ module M = struct
     sub.location sub loc;
     sub.attributes sub attrs;
     match desc with
-    | Pmod_ident x -> iter_loc sub x
+    | Pmod_ident x -> iter_loc_lid sub x
     | Pmod_structure str -> sub.structure sub str
     | Pmod_functor (param, body) ->
         iter_functor_param sub param;
@@ -361,7 +397,7 @@ module E = struct
         iter_opt (sub.expr sub) def;
         sub.pat sub p
     | Pparam_newtype ty ->
-        iter_loc sub ty
+        iter_loc iter_string sub ty
 
   let iter_body sub body =
     match body with
@@ -384,7 +420,7 @@ module E = struct
     sub.location sub loc;
     sub.attributes sub attrs;
     match desc with
-    | Pexp_ident x -> iter_loc sub x
+    | Pexp_ident x -> iter_loc_lid sub x
     | Pexp_constant _ -> ()
     | Pexp_let (_r, vbs, e) ->
         List.iter (sub.value_binding sub) vbs;
@@ -398,18 +434,18 @@ module E = struct
     | Pexp_match (e, pel) ->
         sub.expr sub e; sub.cases sub pel
     | Pexp_try (e, pel) -> sub.expr sub e; sub.cases sub pel
-    | Pexp_tuple el -> List.iter (sub.expr sub) el
+    | Pexp_tuple el -> List.iter (fun (_, e) -> sub.expr sub e) el
     | Pexp_construct (lid, arg) ->
-        iter_loc sub lid; iter_opt (sub.expr sub) arg
+        iter_loc_lid sub lid; iter_opt (sub.expr sub) arg
     | Pexp_variant (_lab, eo) ->
         iter_opt (sub.expr sub) eo
     | Pexp_record (l, eo) ->
-        List.iter (iter_tuple (iter_loc sub) (sub.expr sub)) l;
+        List.iter (iter_tuple (iter_loc_lid sub) (sub.expr sub)) l;
         iter_opt (sub.expr sub) eo
     | Pexp_field (e, lid) ->
-        sub.expr sub e; iter_loc sub lid
+        sub.expr sub e; iter_loc_lid sub lid
     | Pexp_setfield (e1, lid, e2) ->
-        sub.expr sub e1; iter_loc sub lid;
+        sub.expr sub e1; iter_loc_lid sub lid;
         sub.expr sub e2
     | Pexp_array el -> List.iter (sub.expr sub) el
     | Pexp_ifthenelse (e1, e2, e3) ->
@@ -428,35 +464,31 @@ module E = struct
     | Pexp_constraint (e, t) ->
         sub.expr sub e; sub.typ sub t
     | Pexp_send (e, _s) -> sub.expr sub e
-    | Pexp_new lid -> iter_loc sub lid
+    | Pexp_new lid -> iter_loc_lid sub lid
     | Pexp_setinstvar (s, e) ->
-        iter_loc sub s; sub.expr sub e
+        iter_loc iter_string sub s; sub.expr sub e
     | Pexp_override sel ->
-        List.iter (iter_tuple (iter_loc sub) (sub.expr sub)) sel
-    | Pexp_letmodule (s, me, e) ->
-        iter_loc sub s; sub.module_expr sub me;
-        sub.expr sub e
-    | Pexp_letexception (cd, e) ->
-        sub.extension_constructor sub cd;
-        sub.expr sub e
+        List.iter (iter_tuple (iter_loc iter_string sub) (sub.expr sub)) sel
     | Pexp_assert e -> sub.expr sub e
     | Pexp_lazy e -> sub.expr sub e
     | Pexp_poly (e, t) ->
         sub.expr sub e; iter_opt (sub.typ sub) t
     | Pexp_object cls -> sub.class_structure sub cls
     | Pexp_newtype (_s, e) -> sub.expr sub e
-    | Pexp_pack me -> sub.module_expr sub me
-    | Pexp_open (o, e) ->
-        sub.open_declaration sub o; sub.expr sub e
+    | Pexp_pack (me, optyp) ->
+        sub.module_expr sub me;
+        Option.iter (sub.package_type sub) optyp
     | Pexp_letop {let_; ands; body} ->
         sub.binding_op sub let_;
         List.iter (sub.binding_op sub) ands;
         sub.expr sub body
     | Pexp_extension x -> sub.extension sub x
     | Pexp_unreachable -> ()
+    | Pexp_struct_item (si, e) ->
+        sub.structure_item sub si; sub.expr sub e
 
   let iter_binding_op sub {pbop_op; pbop_pat; pbop_exp; pbop_loc} =
-    iter_loc sub pbop_op;
+    iter_loc iter_string sub pbop_op;
     sub.pat sub pbop_pat;
     sub.expr sub pbop_exp;
     sub.location sub pbop_loc
@@ -471,33 +503,35 @@ module P = struct
     sub.attributes sub attrs;
     match desc with
     | Ppat_any -> ()
-    | Ppat_var s -> iter_loc sub s
-    | Ppat_alias (p, s) -> sub.pat sub p; iter_loc sub s
+    | Ppat_var s -> iter_loc iter_string sub s
+    | Ppat_alias (p, s) -> sub.pat sub p; iter_loc iter_string sub s
     | Ppat_constant _ -> ()
     | Ppat_interval _ -> ()
-    | Ppat_tuple pl -> List.iter (sub.pat sub) pl
+    | Ppat_tuple (pl, _) -> List.iter (fun (_, p) -> sub.pat sub p) pl
     | Ppat_construct (l, p) ->
-        iter_loc sub l;
+        iter_loc_lid sub l;
         iter_opt
           (fun (vl,p) ->
-            List.iter (iter_loc sub) vl;
+            List.iter (iter_loc iter_string sub) vl;
             sub.pat sub p)
           p
     | Ppat_variant (_l, p) -> iter_opt (sub.pat sub) p
     | Ppat_record (lpl, _cf) ->
-        List.iter (iter_tuple (iter_loc sub) (sub.pat sub)) lpl
+        List.iter (iter_tuple (iter_loc_lid sub) (sub.pat sub)) lpl
     | Ppat_array pl -> List.iter (sub.pat sub) pl
     | Ppat_or (p1, p2) -> sub.pat sub p1; sub.pat sub p2
     | Ppat_constraint (p, t) ->
         sub.pat sub p; sub.typ sub t
-    | Ppat_type s -> iter_loc sub s
+    | Ppat_type s -> iter_loc_lid sub s
     | Ppat_lazy p -> sub.pat sub p
-    | Ppat_unpack s -> iter_loc sub s
+    | Ppat_unpack (s, ptyp) ->
+        iter_loc iter_string_opt sub s;
+        iter_opt (sub.package_type sub) ptyp
     | Ppat_effect (p1,p2) -> sub.pat sub p1; sub.pat sub p2
     | Ppat_exception p -> sub.pat sub p
     | Ppat_extension x -> sub.extension sub x
     | Ppat_open (lid, p) ->
-        iter_loc sub lid; sub.pat sub p
+        iter_loc_lid sub lid; sub.pat sub p
 
 end
 
@@ -509,7 +543,7 @@ module CE = struct
     sub.attributes sub attrs;
     match desc with
     | Pcl_constr (lid, tys) ->
-        iter_loc sub lid; List.iter (sub.typ sub) tys
+        iter_loc_lid sub lid; List.iter (sub.typ sub) tys
     | Pcl_structure s ->
         sub.class_structure sub s
     | Pcl_fun (_lab, e, p, ce) ->
@@ -537,9 +571,9 @@ module CE = struct
     sub.attributes sub attrs;
     match desc with
     | Pcf_inherit (_o, ce, _s) -> sub.class_expr sub ce
-    | Pcf_val (s, _m, k) -> iter_loc sub s; iter_kind sub k
+    | Pcf_val (s, _m, k) -> iter_loc iter_string sub s; iter_kind sub k
     | Pcf_method (s, _p, k) ->
-        iter_loc sub s; iter_kind sub k
+        iter_loc iter_string sub s; iter_kind sub k
     | Pcf_constraint (t1, t2) ->
         sub.typ sub t1; sub.typ sub t2
     | Pcf_initializer e -> sub.expr sub e
@@ -553,7 +587,7 @@ module CE = struct
   let class_infos sub f {pci_virt = _; pci_params = pl; pci_name; pci_expr;
                          pci_loc; pci_attributes} =
     List.iter (iter_fst (sub.typ sub)) pl;
-    iter_loc sub pci_name;
+    iter_loc iter_string sub pci_name;
     f pci_expr;
     sub.location sub pci_loc;
     sub.attributes sub pci_attributes
@@ -592,10 +626,11 @@ let default_iterator =
     type_extension = T.iter_type_extension;
     type_exception = T.iter_type_exception;
     extension_constructor = T.iter_extension_constructor;
+    package_type = T.iter_package_type;
     value_description =
       (fun this {pval_name; pval_type; pval_prim = _; pval_loc;
                  pval_attributes} ->
-        iter_loc this pval_name;
+        iter_loc iter_string this pval_name;
         this.typ this pval_type;
         this.location this pval_loc;
         this.attributes this pval_attributes;
@@ -607,7 +642,7 @@ let default_iterator =
 
     module_declaration =
       (fun this {pmd_name; pmd_type; pmd_attributes; pmd_loc} ->
-         iter_loc this pmd_name;
+         iter_loc iter_string_opt this pmd_name;
          this.module_type this pmd_type;
          this.location this pmd_loc;
          this.attributes this pmd_attributes;
@@ -615,15 +650,15 @@ let default_iterator =
 
     module_substitution =
       (fun this {pms_name; pms_manifest; pms_attributes; pms_loc} ->
-         iter_loc this pms_name;
-         iter_loc this pms_manifest;
+         iter_loc iter_string this pms_name;
+         iter_loc_lid this pms_manifest;
          this.location this pms_loc;
          this.attributes this pms_attributes;
       );
 
     module_type_declaration =
       (fun this {pmtd_name; pmtd_type; pmtd_attributes; pmtd_loc} ->
-         iter_loc this pmtd_name;
+         iter_loc iter_string this pmtd_name;
          iter_opt (this.module_type this) pmtd_type;
          this.location this pmtd_loc;
          this.attributes this pmtd_attributes;
@@ -631,7 +666,8 @@ let default_iterator =
 
     module_binding =
       (fun this {pmb_name; pmb_expr; pmb_attributes; pmb_loc} ->
-         iter_loc this pmb_name; this.module_expr this pmb_expr;
+         iter_loc iter_string_opt this pmb_name;
+         this.module_expr this pmb_expr;
          this.location this pmb_loc;
          this.attributes this pmb_attributes;
       );
@@ -645,7 +681,7 @@ let default_iterator =
 
     open_description =
       (fun this {popen_expr; popen_override = _; popen_attributes; popen_loc} ->
-         iter_loc this popen_expr;
+         iter_loc_lid this popen_expr;
          this.location this popen_loc;
          this.attributes this popen_attributes
       );
@@ -672,7 +708,7 @@ let default_iterator =
          this.expr this pvb_expr;
          Option.iter (function
              | Parsetree.Pvc_constraint {locally_abstract_univars=vars; typ} ->
-                 List.iter (iter_loc this) vars;
+                 List.iter (iter_loc iter_string this) vars;
                  this.typ this typ
              | Pvc_coercion { ground; coercion } ->
                  Option.iter (this.typ this) ground;
@@ -686,8 +722,8 @@ let default_iterator =
     constructor_declaration =
       (fun this {pcd_name; pcd_vars; pcd_args;
                  pcd_res; pcd_loc; pcd_attributes} ->
-         iter_loc this pcd_name;
-         List.iter (iter_loc this) pcd_vars;
+         iter_loc iter_string this pcd_name;
+         List.iter (iter_loc iter_string this) pcd_vars;
          T.iter_constructor_arguments this pcd_args;
          iter_opt (this.typ this) pcd_res;
          this.location this pcd_loc;
@@ -696,7 +732,7 @@ let default_iterator =
 
     label_declaration =
       (fun this {pld_name; pld_type; pld_loc; pld_mutable = _; pld_attributes}->
-         iter_loc this pld_name;
+         iter_loc iter_string this pld_name;
          this.typ this pld_type;
          this.location this pld_loc;
          this.attributes this pld_attributes
@@ -712,9 +748,12 @@ let default_iterator =
 
     location = (fun _this _l -> ());
 
-    extension = (fun this (s, e) -> iter_loc this s; this.payload this e);
+    extension = (fun this (s, e) ->
+      iter_loc iter_string this s;
+      this.payload this e
+    );
     attribute = (fun this a ->
-      iter_loc this a.attr_name;
+      iter_loc iter_string this a.attr_name;
       this.payload this a.attr_payload;
       this.location this a.attr_loc
     );
@@ -729,12 +768,15 @@ let default_iterator =
 
     directive_argument =
       (fun this a ->
-         this.location this a.pdira_loc
+         this.location this a.pdira_loc;
+         match a.pdira_desc with
+         | Pdir_ident lid -> iter_lid this lid
+         | Pdir_int _ | Pdir_string _ | Pdir_bool _ -> ()
       );
 
     toplevel_directive =
       (fun this d ->
-         iter_loc this d.pdir_name;
+         iter_loc iter_string this d.pdir_name;
          iter_opt (this.directive_argument this) d.pdir_arg;
          this.location this d.pdir_loc
       );

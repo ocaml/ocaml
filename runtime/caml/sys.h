@@ -20,10 +20,6 @@
 
 #include "misc.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 CAMLextern char * caml_strerror(int errnum, char * buf, size_t buflen);
 
 #define NO_ARG Val_int(0)
@@ -33,13 +29,15 @@ CAMLnoret CAMLextern void caml_sys_error (value);
 CAMLnoret CAMLextern void caml_sys_io_error (value);
 
 CAMLextern double caml_sys_time_unboxed(value);
-CAMLextern void caml_sys_init (const char_os * exe_name, char_os ** argv);
+CAMLextern void caml_sys_init (const char_os * proc_self_exe,
+                               const char_os * exe_name,
+                               char_os ** argv);
 
 CAMLnoret CAMLextern void caml_do_exit (int);
 
-#ifdef __cplusplus
-}
-#endif
+/* The default location of the Standard Library as used by the
+   %standard_library_default primitive */
+extern char_os *caml_standard_library_default;
 
 #endif /* CAML_INTERNALS */
 

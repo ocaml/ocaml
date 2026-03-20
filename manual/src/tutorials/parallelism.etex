@@ -63,7 +63,7 @@ number is given below.
 (* fib.ml *)
 let n = try int_of_string Sys.argv.(1) with _ -> 1
 
-let rec fib n = if n < 2 then 1 else fib (n - 1) + fib (n - 2)
+let rec fib n = if n < 2 then n else fib (n - 1) + fib (n - 2)
 
 let main () =
   let r = fib n in
@@ -77,7 +77,7 @@ The program can be compiled and benchmarked as follows:
 \begin{verbatim}
 $ ocamlopt -o fib.exe fib.ml
 $ ./fib.exe 42
-fib(42) = 433494437
+fib(42) = 267914296
 $ hyperfine './fib.exe 42' # Benchmarking
 Benchmark 1: ./fib.exe 42
   Time (mean ± sd):     1.193 s ±  0.006 s    [User: 1.186 s, System: 0.003 s]
@@ -94,7 +94,7 @@ computes the $n$th Fibonacci number twice in parallel.
 (* fib_twice.ml *)
 let n = int_of_string Sys.argv.(1)
 
-let rec fib n = if n < 2 then 1 else fib (n - 1) + fib (n - 2)
+let rec fib n = if n < 2 then n else fib (n - 1) + fib (n - 2)
 
 let main () =
   let d1 = Domain.spawn (fun _ -> fib n) in
@@ -115,8 +115,8 @@ computation runs to completion.
 \begin{verbatim}
 $ ocamlopt -o fib_twice.exe fib_twice.ml
 $ ./fib_twice.exe 42
-fib(42) = 433494437
-fib(42) = 433494437
+fib(42) = 267914296
+fib(42) = 267914296
 $ hyperfine './fib_twice.exe 42'
 Benchmark 1: ./fib_twice.exe 42
   Time (mean ± sd):     1.249 s ±  0.025 s    [User: 2.451 s, System: 0.012 s]
@@ -137,7 +137,7 @@ by spawning domains for each one will not work as it spawns too many domains.
 let n = try int_of_string Sys.argv.(1) with _ -> 1
 
 let rec fib n =
-  if n < 2 then 1 else begin
+  if n < 2 then n else begin
     let d1 = Domain.spawn (fun _ -> fib (n - 1)) in
     let d2 = Domain.spawn (fun _ -> fib (n - 2)) in
     Domain.join d1 + Domain.join d2
@@ -184,7 +184,7 @@ of the Fibonacci program follows:
 let num_domains = int_of_string Sys.argv.(1)
 let n = int_of_string Sys.argv.(2)
 
-let rec fib n = if n < 2 then 1 else fib (n - 1) + fib (n - 2)
+let rec fib n = if n < 2 then n else fib (n - 1) + fib (n - 2)
 
 module T = Domainslib.Task
 
@@ -232,7 +232,7 @@ programs that use libraries installed through
 \begin{verbatim}
 $ ocamlfind ocamlopt -package domainslib -linkpkg -o fib_par2.exe fib_par2.ml
 $ ./fib_par2.exe 1 42
-fib(42) = 433494437
+fib(42) = 267914296
 $ hyperfine './fib.exe 42' './fib_par2.exe 2 42' \
             './fib_par2.exe 4 42' './fib_par2.exe 8 42'
 Benchmark 1: ./fib.exe 42
@@ -595,6 +595,10 @@ systhread identifiers uniquely identify systhreads in the program. The initial
 domain gets the domain id 0 and thread id 0. The newly spawned domain gets
 the domain id 1.
 
+Note that all the systhreads belonging to a particular domain are joined when
+the domain is joined. In particular, if such a systhread is running an infinite
+loop, then joining the domain will never return.
+
 \section{s:par_c_bindings}{Interaction with C bindings}
 
 During parallel execution with multiple domains, C code running on a domain may
@@ -738,5 +742,54 @@ If the "compare_and_set" fails, then some other domain is also attempting to
 update the atomic reference at the same time. In this case, the "push" and
 "pop" operations call "Domain.cpu_relax" to back off for a short duration
 allowing competing domains to make progress before retrying the failed
-operation. This lock-free stack implementation is called a 
+operation. This lock-free stack implementation is called a
 \href{https://en.wikipedia.org/wiki/Treiber_stack}{Treiber stack}.
+
+
+\subsection{s:atomic-record-fields}{Atomic record fields}
+
+The type "'a Atomic.t" is the atomic counterpart of the type of OCaml
+references, "'a ref". Since OCaml 5.4, we also support atomic record
+fields, which must be mutable, via the "[@atomic]" attribute.
+
+For example:
+\begin{caml_example*}{verbatim}
+type 'a refcounted = {
+  value : 'a;
+  mutable readers : int [@atomic];
+}
+\end{caml_example*}
+
+The field "readers" is atomic, so that reading and writing to this
+field are atomic operations similar to "Atomic.get" and
+"Atomic.set". It is possible to perform other atomic operations on
+this field by using a built-in extension node, "%atomic.loc": if
+"rc" is a value of type "foo refcounted", then "[%atomic.loc rc.readers]"
+is an expression of the built-in type "foo Atomic.Loc.t", which allows
+atomic operations defined in the the \stdmoduleref{Atomic}.Loc module
+of the standard library, mirroring the operations exposed for atomic
+references in the \stdmoduleref{Atomic} module:
+
+\begin{caml_example}{toplevel}
+let add_reader rc =
+  Atomic.Loc.fetch_and_add [%atomic.loc rc.readers] 1;;
+
+#show Atomic.Loc;;
+\end{caml_example}
+
+\paragraph{Limitation} Currently there is no analogue of
+"Atomic.make_contended" for atomic record fields. If false sharing is
+an issue for a specific record field, the best supported approach is
+to use a field of type "Atomic.t". We hope to implement support for
+on-demand padding of record fields in the future.
+
+\paragraph{Performance note} Internally "[%atomic.loc rc.readers]"
+is represented as a pair of the record value and a field
+offset. Whenever this expression is directly applied to an atomic
+primitive of the \stdmoduleref{Atomic}.Loc module, the compiler will
+optimize away the creation of the pair; it passes the value and the
+offset as separate parameters to an underlying runtime primitive. On
+the other hand, storing an atomic location in a data-structure or
+passing it to another, non-inlined function may allocate a pair. When
+in doubt, you can inspect the "-dcmm" intermediate representation of
+your code.

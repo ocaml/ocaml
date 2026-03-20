@@ -1,3 +1,5 @@
+= README
+
 [CAUTION]
 ====
 The developer team released OCaml 5.0.0 in December 2022. OCaml 5.x features a
@@ -12,33 +14,31 @@ performance degradations on our issue tracker.
 ====
 
 |=====
-| Branch `trunk` | Branch `5.3` | Branch `5.2` | Branch `5.1` | Branch `4.14`
+| Branch `trunk` | Branch `5.5` | Branch `5.4` | Branch `5.3` | Branch `4.14`
 
-| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=trunk["Github CI Build Status (trunk branch)",
+| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=trunk["GitHub CI Build Status (trunk branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
-  image:https://github.com/ocaml/ocaml/workflows/Hygiene/badge.svg?branch=trunk["Github CI Hygiene Status (trunk branch)",
+  image:https://github.com/ocaml/ocaml/workflows/Hygiene/badge.svg?branch=trunk["GitHub CI Hygiene Status (trunk branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3AHygiene"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=trunk&svg=true["AppVeyor Build Status (trunk branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=5.3["Github CI Build Status (5.3 branch)",
+| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=5.5["GitHub CI Build Status (5.5 branch)",
+     link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=5.4&svg=true["AppVeyor Build Status (5.5 branch)",
+     link="https://ci.appveyor.com/project/avsm/ocaml"]
+| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=5.4["GitHub CI Build Status (5.4 branch)",
+     link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=5.4&svg=true["AppVeyor Build Status (5.4 branch)",
+     link="https://ci.appveyor.com/project/avsm/ocaml"]
+| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=5.3["GitHub CI Build Status (5.3 branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=5.3&svg=true["AppVeyor Build Status (5.3 branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=5.2["Github CI Build Status (5.2 branch)",
-     link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=5.2&svg=true["AppVeyor Build Status (5.2 branch)",
-     link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=5.1["Github CI Build Status (5.1 branch)",
-     link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=5.1&svg=true["AppVeyor Build Status (5.1 branch)",
-     link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=4.14["Github CI Build Status (4.14 branch)",
+| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=4.14["GitHub CI Build Status (4.14 branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.14&svg=true["AppVeyor Build Status (4.14 branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
 |=====
-
-= README =
 
 == Overview
 
@@ -63,7 +63,7 @@ compiler currently runs on the following platforms:
 |====
 |                |  Tier 1 (actively maintained)   | Tier 2 (maintained when possible)
 
-| x86 64 bits    | Linux, macOS, Windows, FreeBSD  |  NetBSD, OpenBSD, OmniOS (Solaris)
+| x86 64 bits    | Linux, macOS, Windows, FreeBSD  |  NetBSD, OpenBSD, DragonFly, OmniOS (Solaris)
 | ARM 64 bits    | Linux, macOS                    |  FreeBSD, OpenBSD, NetBSD
 | Power 64 bits  | Linux (little-endian, ABIv2)    |  Linux (big-endian, ABIv2)
 | RISC-V 64 bits | Linux                           |
@@ -86,9 +86,9 @@ file LICENSE.
 
 == Installation
 
-See the file link:INSTALL.adoc[] for installation instructions on
+See the file xref:INSTALL.adoc[] for installation instructions on
 machines running Unix, Linux, macOS, WSL and Cygwin.  For native Microsoft
-Windows, see link:README.win32.adoc[].
+Windows, see xref:README.win32.adoc[].
 
 == Documentation
 
@@ -146,17 +146,17 @@ using (machine type, etc).
 
 == Contributing
 
-For information on contributing to OCaml, see link:HACKING.adoc[] and
+For information on contributing to OCaml, see xref:HACKING.adoc[] and
 link:CONTRIBUTING.md[].
 
 == Separately maintained components
 
 Some libraries and tools which used to be part of the OCaml distribution are
-now maintained separately and distributed as OPAM packages.
+now maintained separately and distributed as opam packages.
 Please use the issue trackers at their respective new homes:
 
 |====
-| Library           |  Removed since    |  OPAM package
+| Library           |  Removed since    |  opam package
 
 | https://github.com/ocaml/camlp-streams/issues[The Stream and Genlex standard library modules] | OCaml 5.0 | `camlp-streams`
 | https://github.com/ocaml/graphics/issues[The Graphics library] | OCaml 4.09 | `graphics`
@@ -166,4 +166,4 @@ Please use the issue trackers at their respective new homes:
 | https://github.com/garrigue/labltk/issues[The LablTk library] | OCaml 4.02 | `labltk`
 | https://github.com/ocaml/dbm/issues[The CamlDBM library] | OCaml 4.00 | `dbm`
 | https://github.com/xavierleroy/ocamltopwin/issues[The OCamlWinTop Windows toplevel] | OCaml 4.00 | none
-|=====
+|====

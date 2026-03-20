@@ -213,8 +213,8 @@ end = struct
     | Tpat_any
     | Tpat_var _ ->
         p
-    | Tpat_alias (q, id, s, uid) ->
-        { p with pat_desc = Tpat_alias (simpl_under_orpat q, id, s, uid) }
+    | Tpat_alias (q, id, s, uid, ty) ->
+        { p with pat_desc = Tpat_alias (simpl_under_orpat q, id, s, uid, ty) }
     | Tpat_or (p1, p2, o) ->
         let p1, p2 = (simpl_under_orpat p1, simpl_under_orpat p2) in
         if le_pat p1 p2 then
@@ -237,8 +237,9 @@ end = struct
       in
       match p.pat_desc with
       | `Any -> stop p `Any
-      | `Var (id, s, uid) -> continue p (`Alias (Patterns.omega, id, s, uid))
-      | `Alias (p, id, _, _) ->
+      | `Var (id, s, uid) ->
+          continue p (`Alias (Patterns.omega, id, s, uid, p.pat_type))
+      | `Alias (p, id, _, _, _) ->
           aux
             ( (General.view p, patl),
               bind_alias p id ~arg ~action )
@@ -287,7 +288,8 @@ end = struct
       match p.pat_desc with
       | `Any -> `Any
       | `Constant cst -> `Constant cst
-      | `Tuple ps -> `Tuple (List.map (alpha_pat env) ps)
+      | `Tuple ps ->
+          `Tuple (List.map (fun (label, p) -> label, alpha_pat env p) ps)
       | `Construct (cstr, cst_descr, args) ->
           `Construct (cstr, cst_descr, List.map (alpha_pat env) args)
       | `Variant (cstr, argo, row_desc) ->
@@ -295,7 +297,7 @@ end = struct
       | `Record (fields, closed) ->
           let alpha_field env (lid, l, p) = (lid, l, alpha_pat env p) in
           `Record (List.map (alpha_field env) fields, closed)
-      | `Array ps -> `Array (List.map (alpha_pat env) ps)
+      | `Array (am, ps) -> `Array (am, List.map (alpha_pat env) ps)
       | `Lazy p -> `Lazy (alpha_pat env p)
     in
     { p with pat_desc }
@@ -332,10 +334,11 @@ end = struct
       match p.pat_desc with
       | `Or (p1, p2, _) ->
           split_explode p1 aliases (split_explode p2 aliases rem)
-      | `Alias (p, id, _, _) -> split_explode p (id :: aliases) rem
+      | `Alias (p, id, _, _, _) -> split_explode p (id :: aliases) rem
       | `Var (id, str, uid) ->
           explode
-            { p with pat_desc = `Alias (Patterns.omega, id, str, uid) }
+            { p with pat_desc =
+                       `Alias (Patterns.omega, id, str, uid, p.pat_type) }
             aliases rem
       | #view as view ->
           (* We are doing two things here:
@@ -446,7 +449,7 @@ let matcher discr (p : Simple.pattern) rem =
   | Variant _, (Constant _ | Construct _ | Lazy | Array _ | Record _ | Tuple _)
     ->
       no ()
-  | Array n1, Array n2 -> yesif (n1 = n2)
+  | Array (am1, n1), Array (am2, n2) -> yesif (am1 = am2 && n1 = n2)
   | Array _, (Constant _ | Construct _ | Variant _ | Lazy | Record _ | Tuple _)
     ->
       no ()
@@ -594,7 +597,7 @@ end = struct
           match p.pat_desc with
           | `Or (p1, p2, _) ->
               filter_rec ((left, p1, right) :: (left, p2, right) :: rem)
-          | `Alias (p, _, _, _) -> filter_rec ((left, p, right) :: rem)
+          | `Alias (p, _, _, _, _) -> filter_rec ((left, p, right) :: rem)
           | `Var _ -> filter_rec ((left, Patterns.omega, right) :: rem)
           | #Simple.view as view -> (
               let p = { p with pat_desc = view } in
@@ -641,10 +644,10 @@ end
 let rec flatten_pat_line size p k =
   match p.pat_desc with
   | Tpat_any | Tpat_var _ -> Patterns.omegas size :: k
-  | Tpat_tuple args -> args :: k
+  | Tpat_tuple args -> (List.map snd args) :: k
   | Tpat_or (p1, p2, _) ->
       flatten_pat_line size p1 (flatten_pat_line size p2 k)
-  | Tpat_alias (p, _, _, _) ->
+  | Tpat_alias (p, _, _, _, _) ->
       (* Note: we are only called from flatten_matrix,
          which is itself only ever used in places
          where variables do not matter (default environments,
@@ -736,7 +739,7 @@ end = struct
       | (p, ps) :: rem -> (
           let p = General.view p in
           match p.pat_desc with
-          | `Alias (p, _, _, _) -> filter_rec ((p, ps) :: rem)
+          | `Alias (p, _, _, _, _) -> filter_rec ((p, ps) :: rem)
           | `Var _ -> filter_rec ((Patterns.omega, ps) :: rem)
           | `Or (p1, p2, _) -> filter_rec_or p1 p2 ps rem
           | #Simple.view as view -> (
@@ -1431,7 +1434,7 @@ let rec omega_like p =
   | Tpat_any
   | Tpat_var _ ->
       true
-  | Tpat_alias (p, _, _, _) -> omega_like p
+  | Tpat_alias (p, _, _, _, _) -> omega_like p
   | Tpat_or (p1, p2, _) -> omega_like p1 || omega_like p2
   | _ -> false
 
@@ -2139,25 +2142,11 @@ let get_pat_args_lazy p rem =
 
 let prim_obj_tag = Primitive.simple ~name:"caml_obj_tag" ~arity:1 ~alloc:false
 
-let get_mod_field modname field =
-  lazy
-    (let mod_ident = Ident.create_persistent modname in
-     let env =
-       Env.add_persistent_structure mod_ident Env.initial
-     in
-     match Env.open_pers_signature modname env with
-     | Error `Not_found ->
-         fatal_errorf "Module %s unavailable." modname
-     | Ok env -> (
-         match Env.find_value_by_name (Longident.Lident field) env with
-         | exception Not_found ->
-             fatal_errorf "Primitive %s.%s not found." modname field
-         | path, _ -> transl_value_path Loc_unknown env path
-       ))
+let code_force_lazy_block =
+  lazy (transl_prim "CamlinternalLazy" "force_lazy_block")
 
-let code_force_lazy_block = get_mod_field "CamlinternalLazy" "force_lazy_block"
-
-let code_force_lazy = get_mod_field "CamlinternalLazy" "force_gen"
+let code_force_lazy =
+  lazy (transl_prim "CamlinternalLazy" "force_gen")
 
 (* inline_lazy_force inlines the beginning of the code of Lazy.force. When
    the value argument is tagged as:
@@ -2190,7 +2179,7 @@ let inline_lazy_force_cond arg loc =
   let varg = Lvar idarg in
   let tag = Ident.create_local "tag" in
   let test_tag t =
-    Lprim(Pintcomp Ceq, [Lvar tag; Lconst(Const_base(Const_int t))], loc)
+    Lprim(Pintcomp Ceq, [Lvar tag; Lconst(Const_int t)], loc)
   in
 
   Llet
@@ -2255,7 +2244,7 @@ let inline_lazy_force arg loc =
       { ap_tailcall = Default_tailcall;
         ap_loc = loc;
         ap_func = Lazy.force code_force_lazy;
-        ap_args = [ Lconst (Const_base (Const_int 0)); arg ];
+        ap_args = [ Lconst (Const_int 0); arg ];
         ap_inlined = Never_inline;
         ap_specialised = Default_specialise
       }
@@ -2288,7 +2277,7 @@ let divide_lazy ~scopes head ctx pm =
 let get_pat_args_tuple arity p rem =
   match p with
   | { pat_desc = Tpat_any } -> Patterns.omegas arity @ rem
-  | { pat_desc = Tpat_tuple args } -> args @ rem
+  | { pat_desc = Tpat_tuple args } -> (List.map snd args) @ rem
   | _ -> assert false
 
 let get_expr_args_tuple ~scopes head { arg; mut; _ } rem =
@@ -2381,19 +2370,19 @@ let divide_record all_labels ~scopes head ctx pm =
 (* Matching against an array pattern *)
 
 let get_key_array = function
-  | { pat_desc = Tpat_array patl } -> List.length patl
+  | { pat_desc = Tpat_array (_, patl) } -> List.length patl
   | _ -> assert false
 
 let get_pat_args_array p rem =
   match p with
-  | { pat_desc = Tpat_array patl } -> patl @ rem
+  | { pat_desc = Tpat_array (_, patl) } -> patl @ rem
   | _ -> assert false
 
-let get_expr_args_array ~scopes kind head { arg; mut; _ } rem =
-  let len =
+let get_expr_args_array ~scopes kind head { arg; mut } rem =
+  let am, len =
     let open Patterns.Head in
     match head.pat_desc with
-    | Array len -> len
+    | Array (am, len) -> am, len
     | _ -> assert false
   in
   let loc = head_loc ~scopes head in
@@ -2404,12 +2393,15 @@ let get_expr_args_array ~scopes kind head { arg; mut; _ } rem =
       let arg =
         Lprim
           (Parrayrefu kind,
-           [ arg; Lconst (Const_base (Const_int pos)) ], loc)
+           [ arg; Lconst (Const_int pos) ], loc)
       in
       {
         arg;
-        binding_kind = StrictOpt;
-        mut = compose_mut mut Mutable;
+        binding_kind =
+          (match am with
+          | Mutable   -> StrictOpt
+          | Immutable -> Alias);
+        mut = compose_mut mut am;
       } :: make_args (pos + 1)
   in
   make_args 0
@@ -2484,7 +2476,7 @@ let rec split k xs =
         let xs, y0, ys = split (k - 2) xs in
         (x0 :: xs, y0, ys)
 
-let zero_lam = Lconst (Const_base (Const_int 0))
+let zero_lam = Lconst (Const_int 0)
 
 let tree_way_test loc arg lt eq gt =
   Lifthenelse
@@ -2583,7 +2575,7 @@ let rec do_tests_fail loc fail tst arg = function
   | [] -> fail
   | (c, act) :: rem ->
       Lifthenelse
-        ( Lprim (tst, [ arg; Lconst (Const_base c) ], loc),
+        ( Lprim (tst, [ arg; lambda_of_const c ], loc),
           do_tests_fail loc fail tst arg rem,
           act )
 
@@ -2592,7 +2584,7 @@ let rec do_tests_nofail loc tst arg = function
   | [ (_, act) ] -> act
   | (c, act) :: rem ->
       Lifthenelse
-        ( Lprim (tst, [ arg; Lconst (Const_base c) ], loc),
+        ( Lprim (tst, [ arg; lambda_of_const c ], loc),
           do_tests_nofail loc tst arg rem,
           act )
 
@@ -2613,7 +2605,7 @@ let make_test_sequence loc fail tst lt_tst arg const_lambda_list =
       rev_split_at (List.length const_lambda_list / 2) const_lambda_list
     in
     Lifthenelse
-      ( Lprim (lt_tst, [ arg; Lconst (Const_base (fst (List.hd list2))) ], loc),
+      ( Lprim (lt_tst, [ arg; lambda_of_const (fst (List.hd list2)) ], loc),
         make_test_sequence list1,
         make_test_sequence list2 )
   in
@@ -2656,7 +2648,7 @@ module SArg = struct
     in
     bind Alias newvar arg (body newarg)
 
-  let make_const i = Lconst (Const_base (Const_int i))
+  let make_const i = Lconst (Const_int i)
 
   let make_isout h arg = Lprim (Pisout, [ h; arg ], Loc_unknown)
 
@@ -2665,7 +2657,7 @@ module SArg = struct
   let make_is_nonzero arg =
     if !Clflags.native_code then
       Lprim (Pintcomp Cne,
-             [arg; Lconst (Const_base (Const_int 0))],
+             [arg; Lconst (Const_int 0)],
              Loc_unknown)
     else
       arg
@@ -2759,15 +2751,21 @@ let reintroduce_fail sw =
       in
       List.iter seen sw.sw_consts;
       List.iter seen sw.sw_blocks;
-      let i_max = ref (-1) and max = ref (-1) in
+      let c_max = ref (-1) in
+      let i_max = ref max_int in
       Hashtbl.iter
         (fun i c ->
-          if c > !max then (
+          if c > !c_max then (
             i_max := i;
-            max := c
+            c_max := c
+          ) else if c = !c_max then (
+           (* Pick the minimal [i] which has maximal [c], and not just
+              the first [i], as the Hashtbl iteration order is not
+              deterministic: see #14088. *)
+            i_max := min i !i_max;
           ))
         t;
-      if !max >= 3 then
+      if !c_max >= 3 then
         let default = !i_max in
         let remove =
           List.filter (fun (_, lam) ->
@@ -3107,12 +3105,12 @@ let combine_constant loc arg cst partial ctx def
     (const_lambda_list, total, _pats) =
   let fail, local_jumps = mk_failaction_neg partial ctx def in
   let lambda1 =
-    match cst with
+    match (cst : Asttypes.constant) with
     | Const_int _ ->
         let int_lambda_list =
           List.map
             (function
-              | Const_int n, l -> (n, l)
+              | Asttypes.Const_int n, l -> (n, l)
               | _ -> assert false)
             const_lambda_list
         in
@@ -3121,7 +3119,7 @@ let combine_constant loc arg cst partial ctx def
         let int_lambda_list =
           List.map
             (function
-              | Const_char c, l -> (Char.code c, l)
+              | Asttypes.Const_char c, l -> (Char.code c, l)
               | _ -> assert false)
             const_lambda_list
         in
@@ -3647,7 +3645,7 @@ let rec name_pattern default = function
   | ((pat, _), _) :: rem -> (
       match pat.pat_desc with
       | Tpat_var (id, _, _) -> id
-      | Tpat_alias (_, id, _, _) -> id
+      | Tpat_alias (_, id, _, _, _) -> id
       | _ -> name_pattern default rem
     )
   | _ -> Ident.create_local default
@@ -4012,9 +4010,9 @@ let failure_handler ~scopes loc ~failer () =
                 Lconst
                   (Const_block
                      ( 0,
-                       [ Const_base (Const_string (fname, loc, None));
-                         Const_base (Const_int line);
-                         Const_base (Const_int char)
+                       [ Const_immstring fname;
+                         Const_int line;
+                         Const_int char
                        ] ))
               ],
               sloc )
@@ -4093,9 +4091,9 @@ let for_trywith ~scopes loc param pat_act_list =
   compile_matching ~scopes loc ~failer:(Reraise_noloc param)
     None param pat_act_list Partial
 
-let for_handler ~scopes loc param cont cont_tail pat_act_list =
+let for_handler ~scopes loc param cont pat_act_list =
   compile_matching ~scopes loc
-    ~failer:(Reperform_noloc [param; cont; cont_tail])
+    ~failer:(Reperform_noloc [param; cont])
     None param pat_act_list Partial
 
 let simple_for_let ~scopes loc param pat body =
@@ -4204,10 +4202,12 @@ let assign_pat ~scopes opt nraise catch_ids loc pat lam =
     match (pat.pat_desc, lam) with
     | Tpat_tuple patl, Lprim (Pmakeblock _, lams, _) ->
         opt := true;
-        List.fold_left2 collect acc patl lams
+        List.fold_left2
+          (fun acc (_, pat) lam -> collect acc pat lam)
+          acc patl lams
     | Tpat_tuple patl, Lconst (Const_block (_, scl)) ->
         opt := true;
-        let collect_const acc pat sc = collect acc pat (Lconst sc) in
+        let collect_const acc (_, pat) sc = collect acc pat (Lconst sc) in
         List.fold_left2 collect_const acc patl scl
     | _ ->
         (* pattern idents will be bound in staticcatch (let body), so we
@@ -4240,14 +4240,8 @@ let for_let ~scopes loc param pat body =
       (* This eliminates a useless variable (and stack slot in bytecode)
          for "let _ = ...". See #6865. *)
       Lsequence (param, body)
-  | Tpat_var (id, _, _) | Tpat_alias ({ pat_desc = Tpat_any }, id, _, _) ->
-      (* Fast path, and keep track of simple bindings to unboxable numbers.
-
-         Note: the (Tpat_alias (Tpat_any, id)) case needs to be
-         supported as well because the type-checker emits a typedtree
-         of this shape in presence of type constraints -- see the
-         non-polymorphic Ppat_constraint case in type_pat_aux.
-      *)
+  | Tpat_var (id, _, _) ->
+      (* Fast path, and keep track of simple bindings to unboxable numbers. *)
       let k = Typeopt.value_kind pat.pat_env pat.pat_type in
       Llet (Strict, k, id, param, body)
   | _ ->
@@ -4282,13 +4276,13 @@ let for_tupled_function ~scopes loc paraml pats_act_list partial =
 
 let flatten_pattern size p =
   match p.pat_desc with
-  | Tpat_tuple args -> args
+  | Tpat_tuple args -> List.map snd args
   | Tpat_any -> Patterns.omegas size
   | _ -> raise Cannot_flatten
 
 let flatten_simple_pattern size (p : Simple.pattern) =
   match p.pat_desc with
-  | `Tuple args -> args
+  | `Tuple args -> (List.map snd args)
   | `Any -> Patterns.omegas size
   | `Array _
   | `Variant _

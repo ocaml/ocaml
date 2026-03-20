@@ -47,6 +47,9 @@ let mk_binannot_occurrences f =
     features such as project-wide occurrences. This flag has\n\
     no effect in the absence of '-bin-annot'."
 
+let mk_bytecode_hints f =
+  "-bytecode-hints", Arg.Unit f, " Include bytecode hints in executable"
+
 let mk_c f =
   "-c", Arg.Unit f, " Compile only (do not link)"
 
@@ -88,6 +91,11 @@ let mk_custom f =
 
 let mk_dllib f =
   "-dllib", Arg.String f, "<lib>  Use the dynamically-loaded library <lib>"
+
+let mk_dllib_suffixed f =
+  "-dllib-suffixed", Arg.String f,
+  "<lib>  Use the dynamically-loaded library <lib>, with the runtime suffix \
+          appended to the name"
 
 let mk_dllpath f =
   "-dllpath", Arg.String f,
@@ -152,6 +160,9 @@ let mk_no_g f =
 let mk_i f =
   "-i", Arg.Unit f, " Print inferred interface"
 
+let mk_i_variance f =
+  "-i-variance", Arg.Unit f, " Print inferred variances"
+
 let mk_I f =
   "-I", Arg.String f, "<dir>  Add <dir> to the list of include directories"
 
@@ -159,6 +170,10 @@ let mk_H f =
   "-H", Arg.String f,
   "<dir>  Add <dir> to the list of \"hidden\" include directories\n\
  \     (Like -I, but the program can not directly reference these dependencies)"
+
+let mk_set_runtime_default f =
+  "-set-runtime-default", Arg.String f, "<param>=<value>  Set the default for \
+      runtime parameter <param> to <value> (see the manual for further details)"
 
 let mk_impl f =
   "-impl", Arg.String f, "<file>  Compile <file> as a .ml file"
@@ -407,6 +422,15 @@ let mk_ppx f =
   "-ppx", Arg.String f,
   "<command>  Pipe abstract syntax trees through preprocessor <command>"
 
+let mk_keywords f =
+  "-keywords", Arg.String f,
+  "<version+list>  set keywords following the <version+list> spec:\n
+  \                -<version> if present specifies the base set of keywords\n
+  \                  (if absent the current set of keywords is used)
+  \                -<list> is a \"+\"-separated list of keywords to add to\n
+  \                  the base set of keywords.
+  "
+
 let mk_plugin f =
   "-plugin", Arg.String f,
   "<plugin>  (no longer supported)"
@@ -507,6 +531,25 @@ let mk_unsafe_string =
    raise (Arg.Bad "-unsafe-string is not available since OCaml 5.0")
  in
  "-unsafe-string", Arg.Unit err, " (option not available)"
+
+let mk_launch_method f =
+  "-launch-method", Arg.String f,
+  "<method>  Specify the mechanism for the bytecode launcher:\n\
+  \          exe - use the executable launcher in runtime-launch-info\n\
+  \          sh - use a #!, using sh if the interpreter path cannot be used\n\
+  \          /path/interpreter - use #!, or the given sh-compatible \n\
+  \            interpreter if the interpreter path cannot be used"
+
+let mk_search_method f =
+  "-runtime-search", Arg.Symbol (["disable"; "fallback"; "enable"], f),
+  Printf.sprintf
+    "  Control the way the bytecode header searches for the interpreter\n\
+    \    The following settings are supported:\n\
+    \      disable  use a fixed absolute path to the interpreter\n\
+    \      fallback search for interpreter only if not found at the absolute \
+                    path\n\
+    \      enable   always search for the interpreter\n\
+    \    The default setting is 'disable'."
 
 let mk_use_runtime f =
   "-use-runtime", Arg.String f,
@@ -631,6 +674,12 @@ let mk_dno_unique_ids f =
 let mk_dunique_ids f =
   "-dunique-ids", Arg.Unit f, " (undocumented)"
 
+let mk_dno_canonical_ids f =
+  "-dno-canonical-ids", Arg.Unit f, " (undocumented)"
+
+let mk_dcanonical_ids f =
+  "-dcanonical-ids", Arg.Unit f, " (undocumented)"
+
 let mk_dno_locations f =
   "-dno-locations", Arg.Unit f, " (undocumented)"
 
@@ -722,6 +771,9 @@ let mk_dlinear f =
 let mk_dinterval f =
   "-dinterval", Arg.Unit f, " (undocumented)"
 
+let mk_dparsetree_loc_ghost_invariants f =
+  "-dparsetree-loc-ghost-invariants", Arg.Unit f, " (undocumented)"
+
 let mk_dstartup f =
   "-dstartup", Arg.Unit f, " (undocumented)"
 
@@ -772,6 +824,7 @@ module type Common_options = sig
   val _absname : unit -> unit
   val _no_absname : unit -> unit
   val _alert : string -> unit
+  val _i_variance : unit -> unit
   val _I : string -> unit
   val _H : string -> unit
   val _labels : unit -> unit
@@ -785,6 +838,7 @@ module type Common_options = sig
   val _nocwd : unit -> unit
   val _open : string -> unit
   val _ppx : string -> unit
+  val _keywords: string -> unit
   val _principal : unit -> unit
   val _no_principal : unit -> unit
   val _rectypes : unit -> unit
@@ -814,11 +868,14 @@ module type Core_options = sig
 
   val _dno_unique_ids : unit -> unit
   val _dunique_ids : unit -> unit
+  val _dno_canonical_ids : unit -> unit
+  val _dcanonical_ids : unit -> unit
   val _dno_locations : unit -> unit
   val _dlocations : unit -> unit
 
   val _dsource : unit -> unit
   val _dparsetree : unit -> unit
+  val _dparsetree_loc_ghost_invariants : unit -> unit
   val _dtypedtree : unit -> unit
   val _dshape : unit -> unit
   val _dmatchcomp : unit -> unit
@@ -844,6 +901,7 @@ module type Compiler_options = sig
   val _no_g : unit -> unit
   val _stop_after : string -> unit
   val _i : unit -> unit
+  val _i_variance : unit -> unit
   val _impl : string -> unit
   val _intf : string -> unit
   val _intf_suffix : string -> unit
@@ -866,6 +924,7 @@ module type Compiler_options = sig
   val _runtime_variant : string -> unit
   val _with_runtime : unit -> unit
   val _without_runtime : unit -> unit
+  val _set_runtime_default : string -> unit
   val _short_paths : unit -> unit
   val _thread : unit -> unit
   val _v : unit -> unit
@@ -906,11 +965,15 @@ module type Bytecomp_options = sig
   val _custom : unit -> unit
   val _no_check_prims : unit -> unit
   val _dllib : string -> unit
+  val _dllib_suffixed : string -> unit
   val _dllpath : string -> unit
   val _make_runtime : unit -> unit
   val _vmthread : unit -> unit
   val _use_runtime : string -> unit
+  val _launch_method : string -> unit
+  val _search_method : string -> unit
   val _output_complete_exe : unit -> unit
+  val _bytecode_hints : unit -> unit
 
   val _dinstr : unit -> unit
   val _dcamlprimc : unit -> unit
@@ -1028,6 +1091,7 @@ struct
     mk_annot F._annot;
     mk_binannot F._binannot;
     mk_binannot_occurrences F._binannot_occurrences;
+    mk_bytecode_hints F._bytecode_hints;
     mk_c F._c;
     mk_cc F._cc;
     mk_cclib F._cclib;
@@ -1040,6 +1104,7 @@ struct
     mk_config_var F._config_var;
     mk_custom F._custom;
     mk_dllib F._dllib;
+    mk_dllib_suffixed F._dllib_suffixed;
     mk_dllpath F._dllpath;
     mk_dtypes F._annot;
     mk_for_pack_byt F._for_pack;
@@ -1047,6 +1112,7 @@ struct
     mk_no_g F._no_g;
     mk_stop_after ~native:false F._stop_after;
     mk_i F._i;
+    mk_i_variance F._i_variance;
     mk_I F._I;
     mk_H F._H;
     mk_impl F._impl;
@@ -1057,6 +1123,7 @@ struct
     mk_no_keep_docs F._no_keep_docs;
     mk_keep_locs F._keep_locs;
     mk_no_keep_locs F._no_keep_locs;
+    mk_keywords F._keywords;
     mk_labels F._labels;
     mk_linkall F._linkall;
     mk_make_runtime F._make_runtime;
@@ -1092,6 +1159,7 @@ struct
     mk_without_runtime F._without_runtime;
     mk_safe_string;
     mk_safer_matching F._safer_matching;
+    mk_set_runtime_default F._set_runtime_default;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
     mk_no_strict_sequence F._no_strict_sequence;
@@ -1104,6 +1172,8 @@ struct
     mk_unsafe_string;
     mk_use_runtime F._use_runtime;
     mk_use_runtime_2 F._use_runtime;
+    mk_launch_method F._launch_method;
+    mk_search_method F._search_method;
     mk_v F._v;
     mk_verbose F._verbose;
     mk_version F._version;
@@ -1120,10 +1190,13 @@ struct
     mk_use_prims F._use_prims;
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
+    mk_dno_canonical_ids F._dno_canonical_ids;
+    mk_dcanonical_ids F._dcanonical_ids;
     mk_dno_locations F._dno_locations;
     mk_dlocations F._dlocations;
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
+    mk_dparsetree_loc_ghost_invariants F._dparsetree_loc_ghost_invariants;
     mk_dtypedtree F._dtypedtree;
     mk_dshape F._dshape;
     mk_dmatchcomp F._dmatchcomp;
@@ -1147,6 +1220,7 @@ struct
     mk_absname F._absname;
     mk_no_absname F._no_absname;
     mk_alert F._alert;
+    mk_i_variance F._i_variance;
     mk_I F._I;
     mk_H F._H;
     mk_init F._init;
@@ -1166,6 +1240,7 @@ struct
     mk_nopervasives F._nopervasives;
     mk_open F._open;
     mk_ppx F._ppx;
+    mk_keywords F._keywords;
     mk_principal F._principal;
     mk_no_principal F._no_principal;
     mk_rectypes F._rectypes;
@@ -1195,10 +1270,13 @@ struct
 
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
+    mk_dno_canonical_ids F._dno_canonical_ids;
+    mk_dcanonical_ids F._dcanonical_ids;
     mk_dno_locations F._dno_locations;
     mk_dlocations F._dlocations;
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
+    mk_dparsetree_loc_ghost_invariants F._dparsetree_loc_ghost_invariants;
     mk_dtypedtree F._dtypedtree;
     mk_dshape F._dshape;
     mk_dmatchcomp F._dmatchcomp;
@@ -1245,6 +1323,7 @@ struct
     mk_stop_after ~native:true F._stop_after;
     mk_save_ir_after ~native:true F._save_ir_after;
     mk_i F._i;
+    mk_i_variance F._i_variance;
     mk_I F._I;
     mk_H F._H;
     mk_impl F._impl;
@@ -1264,6 +1343,7 @@ struct
     mk_no_keep_docs F._no_keep_docs;
     mk_keep_locs F._keep_locs;
     mk_no_keep_locs F._no_keep_locs;
+    mk_keywords F._keywords;
     mk_labels F._labels;
     mk_linkall F._linkall;
     mk_inline_max_depth F._inline_max_depth;
@@ -1307,6 +1387,7 @@ struct
     mk_S F._S;
     mk_safe_string;
     mk_safer_matching F._safer_matching;
+    mk_set_runtime_default F._set_runtime_default;
     mk_shared F._shared;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
@@ -1335,10 +1416,13 @@ struct
     mk_match_context_rows F._match_context_rows;
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
+    mk_dno_canonical_ids F._dno_canonical_ids;
+    mk_dcanonical_ids F._dcanonical_ids;
     mk_dno_locations F._dno_locations;
     mk_dlocations F._dlocations;
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
+    mk_dparsetree_loc_ghost_invariants F._dparsetree_loc_ghost_invariants;
     mk_dtypedtree F._dtypedtree;
     mk_dshape F._dshape;
     mk_dmatchcomp F._dmatchcomp;
@@ -1385,6 +1469,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_no_absname F._no_absname;
     mk_alert F._alert;
     mk_compact F._compact;
+    mk_i_variance F._i_variance;
     mk_I F._I;
     mk_H F._H;
     mk_init F._init;
@@ -1401,6 +1486,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_inline_indirect_cost F._inline_indirect_cost;
     mk_inline_lifting_benefit F._inline_lifting_benefit;
     mk_inline_branch_factor F._inline_branch_factor;
+    mk_keywords F._keywords;
     mk_labels F._labels;
     mk_alias_deps F._alias_deps;
     mk_no_alias_deps F._no_alias_deps;
@@ -1457,6 +1543,7 @@ module Make_opttop_options (F : Opttop_options) = struct
 
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
+    mk_dparsetree_loc_ghost_invariants F._dparsetree_loc_ghost_invariants;
     mk_dtypedtree F._dtypedtree;
     mk_dshape F._dshape;
     mk_dmatchcomp F._dmatchcomp;
@@ -1493,12 +1580,14 @@ struct
     mk_absname F._absname;
     mk_no_absname F._no_absname;
     mk_alert F._alert;
+    mk_i_variance F._i_variance;
     mk_I F._I;
     mk_H F._H;
     mk_impl F._impl;
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
     mk_intf_suffix_2 F._intf_suffix;
+    mk_keywords F._keywords;
     mk_labels F._labels;
     mk_modern F._labels;
     mk_alias_deps F._alias_deps;
@@ -1590,11 +1679,12 @@ module Default = struct
   module Common = struct
     let _absname = set Clflags.absname
     let _alert = Warnings.parse_alert_option
-    let _alias_deps = clear transparent_modules
+    let _alias_deps = clear no_alias_deps
     let _app_funct = set applicative_functors
+    let _i_variance = set print_variance
     let _labels = clear classic
     let _no_absname = clear Clflags.absname
-    let _no_alias_deps = set transparent_modules
+    let _no_alias_deps = set no_alias_deps
     let _no_app_funct = clear applicative_functors
     let _no_principal = clear principal
     let _no_rectypes = clear recursive_types
@@ -1627,6 +1717,7 @@ module Default = struct
     let _color = Misc.set_or_ignore color_reader.parse color
     let _dlambda = set dump_lambda
     let _dparsetree = set dump_parsetree
+    let _dparsetree_loc_ghost_invariants = set parsetree_ghost_loc_invariant
     let _drawlambda = set dump_rawlambda
     let _dsource = set dump_source
     let _dtypedtree = set dump_typedtree
@@ -1634,12 +1725,15 @@ module Default = struct
     let _dmatchcomp = set dump_matchcomp
     let _dunique_ids = set unique_ids
     let _dno_unique_ids = clear unique_ids
+    let _dcanonical_ids = set canonical_ids
+    let _dno_canonical_ids = clear canonical_ids
     let _dlocations = set locations
     let _dno_locations = clear locations
     let _error_style =
       Misc.set_or_ignore error_style_reader.parse error_style
     let _nopervasives = set nopervasives
     let _ppx s = Compenv.first_ppx := (s :: (!Compenv.first_ppx))
+    let _keywords s = Clflags.keyword_edition := (Some s)
     let _unsafe = set unsafe
     let _warn_error s =
       Warnings.parse_options true s |> Option.iter Location.(prerr_alert none)
@@ -1787,6 +1881,7 @@ module Default = struct
     let _plugin _p = plugin := true
     let _pp s = preprocessor := (Some s)
     let _runtime_variant s = runtime_variant := s
+    let _set_runtime_default s = Compenv.parse_runtime_parameter s
     let _stop_after pass =
       let module P = Compiler_pass in
         match P.of_string pass with
@@ -1893,6 +1988,7 @@ module Default = struct
     let _intf_suffix s = Config.interface_suffix := s
     let _pp s = Clflags.preprocessor := (Some s)
     let _ppx s = Clflags.all_ppx := (s :: (!Clflags.all_ppx))
+    let _keywords s = Clflags.keyword_edition := Some s
     let _thread = set Clflags.use_threads
     let _v () = Compenv.print_version_and_library "documentation generator"
     let _verbose = set Clflags.verbose
@@ -1911,11 +2007,14 @@ third-party libraries such as Lwt, but with a different API."
 
     include Core
     include Compiler
+    let _bytecode_hints = set bytecode_hints
     let _compat_32 = set bytecode_compatible_32
     let _custom = set custom_runtime
     let _dcamlprimc = set keep_camlprimc_file
     let _dinstr = set dump_instr
-    let _dllib s = Compenv.defer (ProcessDLLs (Misc.rev_split_words s))
+    let _dllib s = Compenv.defer (ProcessDLLs (false, Misc.rev_split_words s))
+    let _dllib_suffixed s =
+      Compenv.defer (ProcessDLLs (true, Misc.rev_split_words s))
     let _dllpath s = dllpaths := ((!dllpaths) @ [s])
     let _make_runtime () =
       custom_runtime := true; make_runtime := true; link_everything := true
@@ -1929,6 +2028,34 @@ third-party libraries such as Lwt, but with a different API."
     let _output_obj () = output_c_object := true; custom_runtime := true
     let _use_prims s = use_prims := s
     let _use_runtime s = use_runtime := s
+    let _launch_method s =
+      let setting =
+        try
+          let s, bindir = Misc.cut_at s ' ' in
+          target_bindir := bindir;
+          s
+        with Not_found ->
+          s
+      in
+      match setting with
+      | "exe" ->
+          launch_method := Config.Executable;
+      | "sh" ->
+          launch_method := Config.Shebang None
+      | s when s <> "" && s.[0] = '/' ->
+          launch_method := Config.Shebang (Some s)
+      | _ ->
+          Compenv.fatal
+            "-launch-method: expect sh, exe or an absolute path for <method>"
+    let _search_method = function
+    | "disable" ->
+        search_method := Config.Disable
+    | "fallback" ->
+        search_method := Config.Fallback
+    | "enable" ->
+        search_method := Config.Enable
+    | _ ->
+        assert false
     let _v () = Compenv.print_version_and_library "compiler"
     let _vmthread () = Compenv.fatal vmthread_removed_message
   end

@@ -11,5 +11,6 @@ module type S1 = sig end
 Line 2, characters 41-53:
 2 | module type S2 = functor (X : S1) -> sig module M = X end
                                              ^^^^^^^^^^^^
-Error: Functor arguments, such as "X", cannot be aliased
+Error: Functor arguments and recursive modules (within the
+       recursive definition), such as "X", cannot be aliased
 |}]

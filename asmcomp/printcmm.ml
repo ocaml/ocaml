@@ -81,6 +81,7 @@ let chunk = function
   | Sixteen_signed -> "signed int16"
   | Thirtytwo_unsigned -> "unsigned int32"
   | Thirtytwo_signed -> "signed int32"
+  | Sixtyfour -> "int64"
   | Word_int -> "int"
   | Word_val -> "val"
   | Single -> "float32"
@@ -117,10 +118,15 @@ let operation d = function
   | Capply _ty -> "app" ^ location d
   | Cextcall(lbl, _ty_res, _ty_args, _alloc) ->
       Printf.sprintf "extcall \"%s\"%s" lbl (location d)
-  | Cload {memory_chunk; mutability} -> (
-    match mutability with
-    | Asttypes.Immutable -> Printf.sprintf "load %s" (chunk memory_chunk)
-    | Asttypes.Mutable   -> Printf.sprintf "load_mut %s" (chunk memory_chunk))
+  | Cload {memory_chunk; mutability; is_atomic} ->
+      let op =
+        ["load"]
+        @ (match mutability with
+         | Asttypes.Immutable -> []
+         | Asttypes.Mutable -> ["mut"])
+        @ (if is_atomic then ["atomic"] else [])
+      in
+      Printf.sprintf "%s %s" (String.concat "_" op) (chunk memory_chunk)
   | Calloc -> "alloc" ^ location d
   | Cstore (c, init) ->
     let init =
@@ -168,6 +174,7 @@ let rec expr ppf = function
   | Cconst_float (n, _dbg) -> fprintf ppf "%F" n
   | Cconst_symbol (s, _dbg) -> fprintf ppf "\"%s\"" s
   | Cvar id -> V.print ppf id
+  | Cvar_mut id -> fprintf ppf "!%a" V.print id
   | Creturn_addr -> fprintf ppf "return_addr"
   | Clet(id, def, (Clet(_, _, _) as body)) ->
       let print_binding id ppf def =

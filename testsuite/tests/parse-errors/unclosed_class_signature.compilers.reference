@@ -1,6 +1,6 @@
 File "unclosed_class_signature.mli", line 11, characters 0-0:
-Error: Syntax error: "end" expected
+Error: Syntax error: end expected
 File "unclosed_class_signature.mli", line 10, characters 10-16:
 10 | class c : object
                ^^^^^^
-  This "object" might be unmatched
+  This object might be unmatched

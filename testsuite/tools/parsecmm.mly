@@ -191,7 +191,7 @@ params:
   | /**/                { [] }
 ;
 oneparam:
-    IDENT COLON machtype { (bind_ident $1, $3) }
+    IDENT COLON machtype { (bind_ident $1 Immutable, $3) }
 ;
 machtype:
     UNIT                        { [||] }
@@ -211,11 +211,11 @@ expr:
     INTCONST    { Cconst_int ($1, debuginfo ()) }
   | FLOATCONST  { Cconst_float (float_of_string $1, debuginfo ()) }
   | STRING      { Cconst_symbol ($1, debuginfo ()) }
-  | IDENT       { Cvar(find_ident $1) }
+  | IDENT       { find_ident $1 }
   | LBRACKET RBRACKET { Ctuple [] }
   | LPAREN LET letdef sequence RPAREN { make_letdef $3 $4 }
   | LPAREN LETMUT letmutdef sequence RPAREN { make_letmutdef $3 $4 }
-  | LPAREN ASSIGN IDENT expr RPAREN { Cassign(find_ident $3, $4) }
+  | LPAREN ASSIGN IDENT expr RPAREN { Cassign(find_mut_ident $3, $4) }
   | LPAREN APPLY location expr exprlist machtype RPAREN
                 { Cop(Capply $6, $4 :: List.rev $5, debuginfo ?loc:$3 ()) }
   | LPAREN EXTCALL STRING exprlist machtype RPAREN
@@ -304,7 +304,7 @@ letdefmult:
   | oneletdef letdefmult        { $1 :: $2 }
 ;
 oneletdef:
-    IDENT expr                  { (bind_ident $1, $2) }
+    IDENT expr                  { (bind_ident $1 Immutable, $2) }
 ;
 letmutdef:
     oneletmutdef                { [$1] }
@@ -315,7 +315,7 @@ letmutdefmult:
   | oneletmutdef letmutdefmult  { $1 :: $2 }
 ;
 oneletmutdef:
-    IDENT machtype expr         { (bind_ident $1, $2, $3) }
+    IDENT machtype expr         { (bind_ident $1 Mutable, $2, $3) }
 ;
 chunk:
     UNSIGNED BYTE               { Byte_unsigned }
@@ -396,7 +396,7 @@ onecase:
   | CASE INTCONST COLON         { [$2] }
 ;
 bind_ident:
-    IDENT                       { bind_ident $1 }
+    IDENT                       { bind_ident $1 Immutable }
 ;
 datadecl:
     LPAREN datalist RPAREN      { List.rev $2 }

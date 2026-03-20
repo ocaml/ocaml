@@ -547,12 +547,12 @@ module Make (T : S) = struct
     let set_of_closures = t.set_of_closures in
     let fun_var = for_one_function.fun_var in
     let function_decl = for_one_function.function_decl in
-    let num_definitions =
-      Variable.Map.cardinal for_one_function.
+    let has_no_definition =
+      Variable.Map.is_empty for_one_function.
         new_definitions_indexed_by_new_inner_vars
     in
     if function_decl.stub
-      || num_definitions < 1
+      || has_no_definition
       || Variable.Map.mem fun_var set_of_closures.direct_call_surrogates
     then
       None

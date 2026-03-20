@@ -1,5 +1,5 @@
 File "tool-ocamlc-open-error.ml", line 1:
-Warning 24 [bad-module-name]: bad source file name: "Tool-ocamlc-open-error" is not a valid module name.
+Warning 24 [bad-module-name]: bad source file name: Tool-ocamlc-open-error is not a valid module name.
 
 File "command line argument: -open "F("", line 1, characters 1-2:
 Error: Syntax error

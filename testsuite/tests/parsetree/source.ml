@@ -7473,14 +7473,84 @@ module M = struct
   class \#let = object
     inherit \#val \#let as \#mutable
   end
+  let \#true = 0
+  let \#mod = 0
+  type \#mod = [ `A | `B ]
+
+  class \#mod = object end
+
 end
 
 let x = new M.\#begin
 
 let f = fun x (type \#begin) (type \#end) -> 1
 
+let f: type \#if. \#if -> \#if = fun x -> x
+
+let mlet = M.\#let
+let mtrue = M.\#true
+let mmod = M.\#mod
+type tmod = M.\#mod
+type tlet = M.\#let
+type ttrue = M.\#true
+type t = { \#mod:int }
+let f ({\#mod=_} as x) = x.\#mod, {\#mod}
+let f x = x#\#mod
+
+class \#mod = object val mutable \#mod=0  method \#mod = \#mod<- 1; (mod) end
+let f: #M.\#mod -> _ =  new \#mod, new M.\#mod
+
+class type \#mod = object end
+class type \#let = \#mod
+
+module type \#mod = sig type \#mod module type \#mod  end
+
+module type t =
+  \#mod with type \#mod = M.\#mod
+         and module type \#mod = M.\#mod
+
+type \#mod = [`A | `B ]
+let g = function #\#mod | #M.\#mod -> ()
+
+type \#mod = ..
+type M.\#mod += A
+
+type t = true of int
+let x = true 0
+
 (* check pretty-printing of local module open in core_type *)
 type t = String.( t )
 
 (* Utf8 identifier *)
 let là = function ça -> ça
+
+(* PR #14008 *)
+let () =
+  (let module M = N in ());
+  (let open M in ())
+
+(* PR #14040 *)
+
+let () =
+  let [%%foo] [@@bar] in
+  let [@@@attr] in
+  let external foo: unit -> unit = "foo" [@@unboxed] in
+  let type 'a t = int in
+  let type 'a s in
+  let type 'a u = {a: int} [@@bar] in
+  let type 'a v = A of int | B [@@bar] in
+  let type 'a w = .. in
+  let type 'b w += A in
+  let exception A of int [@@bar] in
+  let exception A : int -> exn in
+  let module rec A : S = M and B : T = P in
+  let class ['a] c = object method f = 12 end [@@bar] in
+  let class type%foo ct = object method f : int end in
+  let module type A = sig end in
+  let open B in
+  let module%foo M = P(A) [@@foo] in
+  let%e[@foo] x = 12 in
+  ()
+
+(* 5.5 Features *)
+type t = external "foo"

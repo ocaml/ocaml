@@ -16,16 +16,14 @@
 (* Loading and installation of user-defined printer functions *)
 
 open Misc
-open Types
 
 (* Error report *)
 
-type error =
-  | Load_failure of Dynlink.error
-  | Unbound_identifier of Longident.t
-  | Unavailable_module of string * Longident.t
-  | Wrong_type of Longident.t
-  | No_active_printer of Longident.t
+type error = [
+    Topprinters.error
+  | `Load_failure of Dynlink.error
+  | `Unavailable_module of string * Longident.t
+]
 
 exception Error of error
 
@@ -61,7 +59,7 @@ let rec loadfiles ppf name =
       fprintf ppf "%s: %s@." name msg;
       false
   | Dynlink.Error e ->
-      raise(Error(Load_failure e))
+      raise(Error(`Load_failure e))
 
 let loadfile ppf name =
   ignore(loadfiles ppf name)
@@ -91,50 +89,21 @@ let eval_value_path env path =
 
 (* Install, remove a printer (as in toplevel/topdirs) *)
 
-let match_printer_type desc make_printer_type =
-  Ctype.with_local_level_generalize begin fun () ->
-    let ty_arg = Ctype.newvar() in
-    Ctype.unify Env.empty
-      (make_printer_type ty_arg)
-      (Ctype.instance desc.val_type);
-    ty_arg
-  end
-
-let find_printer_type lid =
-  match Env.find_value_by_name lid Env.empty with
-  | (path, desc) -> begin
-      match match_printer_type desc Topprinters.printer_type_new with
-      | ty_arg -> (ty_arg, path, false)
-      | exception Ctype.Unify _ -> begin
-          match match_printer_type desc Topprinters.printer_type_old with
-          | ty_arg -> (ty_arg, path, true)
-          | exception Ctype.Unify _ -> raise(Error(Wrong_type lid))
-        end
-    end
-  | exception Not_found ->
-      raise(Error(Unbound_identifier lid))
-
-let install_printer ppf lid =
-  let (ty_arg, path, is_old_style) = find_printer_type lid in
-  let v =
+let install_printer lid =
+  let eval_value_path env path =
     try
-      eval_value_path Env.empty path
+      eval_value_path env path
     with Symtable.Error(Symtable.Undefined_global global) ->
       let s = Symtable.Global.name global in
-      raise(Error(Unavailable_module(s, lid))) in
-  let print_function =
-    if is_old_style then
-      (fun _formatter repr -> Obj.obj v (Obj.obj repr))
-    else
-      (fun formatter repr -> Obj.obj v formatter (Obj.obj repr)) in
-  Printval.install_printer path ty_arg ppf print_function
+      raise (Error (`Unavailable_module(s, lid))) in
+  match Topprinters.install eval_value_path Env.empty lid with
+  | Error error -> raise (Error (error :> error))
+  | Ok () -> ()
 
 let remove_printer lid =
-  let (_ty_arg, path, _is_old_style) = find_printer_type lid in
-  try
-    Printval.remove_printer path
-  with Not_found ->
-    raise(Error(No_active_printer lid))
+  match Topprinters.remove Env.empty lid with
+  | Error error -> raise (Error (error :> error))
+  | Ok () -> ()
 
 (* Error report *)
 
@@ -144,20 +113,20 @@ let quoted_longident =
   Format_doc.compat @@ Style.as_inline_code Printtyp.Doc.longident
 
 let report_error ppf = function
-  | Load_failure e ->
+  | `Load_failure e ->
       fprintf ppf "@[Error during code loading: %s@]@."
         (Dynlink.error_message e)
-  | Unbound_identifier lid ->
+  | `Unbound_identifier lid ->
       fprintf ppf "@[Unbound identifier %a@]@."
         quoted_longident lid
-  | Unavailable_module(md, lid) ->
+  | `Unavailable_module(md, lid) ->
       fprintf ppf
         "@[The debugger does not contain the code for@ %a.@ \
          Please load an implementation of %s first.@]@."
         quoted_longident lid md
-  | Wrong_type lid ->
+  | `Wrong_type lid ->
       fprintf ppf "@[%a has the wrong type for a printing function.@]@."
         quoted_longident lid
-  | No_active_printer lid ->
+  | `No_active_printer path ->
       fprintf ppf "@[%a is not currently active as a printing function.@]@."
-        quoted_longident lid
+        Printtyp.path path

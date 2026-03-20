@@ -55,6 +55,8 @@ module type S =
     val partition: (elt -> bool) -> t -> t * t
     val split: elt -> t -> t * bool * t
     val is_empty: t -> bool
+    val is_singleton: t -> bool
+    val singleton_to_elt: t -> elt option
     val mem: elt -> t -> bool
     val equal: t -> t -> bool
     val compare: t -> t -> int
@@ -243,6 +245,14 @@ module Make(Ord: OrderedType) =
     let empty = Empty
 
     let is_empty = function Empty -> true | _ -> false
+
+    let is_singleton = function
+      | Node{l=Empty; r=Empty} -> true
+      | Empty | Node _ -> false
+
+    let singleton_to_elt = function
+      | Node{l=Empty; v; r=Empty} -> Some v
+      | Empty | Node _ -> None
 
     let rec mem x = function
         Empty -> false

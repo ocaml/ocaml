@@ -15,74 +15,47 @@
 
 (* Interpretation of TSL blocks and operations on test trees *)
 
+open Ocamltest_stdlib
 open Tsl_ast
-
-let string_of_location loc =
-  let buf = Buffer.create 64 in
-  let fmt = Format.formatter_of_buffer buf in
-  Location.print_loc fmt loc;
-  Format.pp_print_flush fmt ();
-  Buffer.contents buf
 
 let apply_modifiers env modifiers_name =
   let name = modifiers_name.node in
   let modifier = Environments.Include name in
   Environments.apply_modifier env modifier
 
-let rec add_to_env decl loc variable_name value env =
-  match (Variables.find_variable variable_name, decl) with
-    | (None, true) ->
-      let newvar = Variables.make (variable_name,"User variable") in
-      Variables.register_variable newvar;
-      add_to_env false loc variable_name value env
-    | (Some variable, false) ->
-      Environments.add variable value env
-    | (None, false) ->
-      raise (Variables.No_such_variable variable_name)
-    | (Some _, true) ->
-      raise (Variables.Variable_already_registered variable_name)
+(* `decl` is true iff the variable is being assigned with `set`. *)
+let add_to_env decl variable_name value env =
+  let var = Variables.from_name variable_name in
+  let builtin = Option.is_some (Variables.find_variable variable_name) in
+  let defined = Environments.is_variable_defined var env in
+  let known = builtin || defined in
+  if decl then begin
+    (* Defining a new variable with `set var = value` *)
+    if known then raise (Variables.Variable_already_registered variable_name)
+  end else begin
+    (* Changing the value of an existing variable with `var = value` *)
+    if not known then raise (Variables.No_such_variable variable_name)
+  end;
+  Environments.add var value env
 
 let append_to_env variable_name value env =
-  let variable =
-    match Variables.find_variable variable_name with
-    | None ->
-        raise (Variables.No_such_variable variable_name)
-    | Some variable ->
-        variable
-  in
-  Environments.append variable value env
+  let variable = Variables.from_name variable_name in
+  let builtin = Option.is_some (Variables.find_variable variable_name) in
+  let defined = Environments.is_variable_defined variable env in
+  if builtin || defined then
+    Environments.append variable value env
+  else
+    raise (Variables.No_such_variable variable_name)
 
 let interpret_environment_statement env statement = match statement.node with
   | Assignment (decl, var, value) ->
-      add_to_env decl statement.loc var.node value.node env
+      add_to_env decl var.node value.node env
   | Append (var, value) ->
       append_to_env var.node value.node env
   | Include modifiers_name ->
       apply_modifiers env modifiers_name
   | Unset var ->
-      let var =
-        match Variables.find_variable var.node with
-        | None -> Variables.make (var.node,"User variable")
-        | Some var -> var
-      in
-      Environments.unsetenv var env
-
-type test_tree =
-  | Node of
-    (Tsl_ast.environment_statement located list) *
-    Tests.t *
-    string located list *
-    (test_tree list)
-
-let too_deep testname max_level real_level =
-  Printf.eprintf "Test %s should have depth atmost %d but has depth %d\n%!"
-    testname max_level real_level;
-  exit 2
-
-let unexpected_environment_statement s =
-  let locstr = string_of_location s.loc in
-  Printf.eprintf "%s\nUnexpected environment statement\n%!" locstr;
-  exit 2
+      Environments.unsetenv (Variables.from_name var.node) env
 
 exception No_such_test_or_action of string
 
@@ -97,135 +70,131 @@ let lookup_test located_name =
     end
   | Some test -> test
 
-let test_trees_of_tsl_block tsl_block =
-  let rec env_of_lines = function
-    | [] -> ([], [])
-    | Environment_statement s :: lines ->
-      let (env', remaining_lines) = env_of_lines lines in
-      (s :: env', remaining_lines)
-    | lines -> ([], lines)
-  and tree_of_lines depth = function
-    | [] -> (None, [])
-    | line::remaining_lines as l ->
-      begin match line with
-        | Environment_statement s -> unexpected_environment_statement s
-        | Test (test_depth, located_name, env_modifiers) ->
-          begin
-            let name = located_name.node in
-            if test_depth > depth then too_deep name depth test_depth
-            else if test_depth < depth then (None, l)
-            else
-              let (env, rem) = env_of_lines remaining_lines in
-              let (trees, rem) = trees_of_lines (depth+1) rem in
-              let test = lookup_test located_name in
-              (Some (Node (env, test, env_modifiers, trees)), rem)
-          end
+type behavior =
+  | Skip_all
+  | Run
+
+type summary = Test_result.status = Pass | Skip | Fail
+let string_of_summary = Test_result.string_of_status
+
+(* 'not' preserves failure and negates skips *)
+let skip_negation = function
+  | Fail -> Fail
+  | Pass -> Skip
+  | Skip -> Pass
+
+(* The sequential join passes if both tests pass.
+
+   This implies that a linear sequence of actions, a path along the
+   test tree, is considered successful if all actions passed. *)
+let join_sequential r1 r2 =
+  match r1, r2 with
+  | Fail, _ | _, Fail -> Fail
+  | Pass, Pass -> Pass
+  | Skip, _ | _, Skip -> Skip
+
+(* The parallel join passes if either test passes.
+
+   This implies that a test formed of several parallel branches is
+   considered successful if at least one of the branches is successful.
+*)
+let join_parallel r1 r2 =
+  match r1, r2 with
+  | Fail, _ | _, Fail -> Fail
+  | Pass, _ | _, Pass -> Pass
+  | Skip, Skip -> Skip
+
+let run_environment_statement ~add_msg ~report_error env s =
+  match interpret_environment_statement env s with
+  | env -> Ok env
+  | exception e ->
+    let bt = Printexc.get_backtrace () in
+    let line = s.loc.Location.loc_start.Lexing.pos_lnum in
+    Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e bt);
+    Error ()
+
+let run ~log ~add_msg ~report_error behavior env summ ast =
+  let rec run_test behavior env stmt =
+    let open Result.Syntax in
+    match stmt with
+    | Environment_statement s ->
+      begin match run_environment_statement ~add_msg ~report_error env s with
+      | Ok env' -> Ok (env', Pass)
+      | Error () -> Error ()
       end
-  and trees_of_lines depth lines =
-    let remaining_lines = ref lines in
-    let trees = ref [] in
-    let continue = ref true in
-    while !continue; do
-      let (tree, rem) = tree_of_lines depth !remaining_lines in
-      remaining_lines := rem;
-      match tree with
-        | None -> continue := false
-        | Some t -> trees := t :: !trees
-    done;
-    (List.rev !trees, !remaining_lines) in
-  let (env, rem) = env_of_lines tsl_block in
-  let (trees, rem) = trees_of_lines 1 rem in
-  match rem with
-    | [] -> (env, trees)
-    | (Environment_statement s)::_ -> unexpected_environment_statement s
-    | _ -> assert false
-
-let tests_in_stmt set stmt =
-  match stmt with
-  | Environment_statement _ -> set
-  | Test (_, name, _) ->
-    begin match lookup_test name with
-    | t -> Tests.TestSet.add t set
-    | exception No_such_test_or_action _ -> set
-    end
-
-let rec tests_in_tree_aux set (Tsl_ast.Ast (stmts, subs)) =
-  let set1 = List.fold_left tests_in_stmt set stmts in
-  List.fold_left tests_in_tree_aux set1 subs
-
-let tests_in_tree t = tests_in_tree_aux Tests.TestSet.empty t
-
-let actions_in_test test =
-  let add action_set action = Actions.ActionSet.add action action_set in
-  List.fold_left add Actions.ActionSet.empty test.Tests.test_actions
-
-let actions_in_tests tests =
-  let f test action_set =
-    Actions.ActionSet.union (actions_in_test test) action_set in
-  Tests.TestSet.fold f tests Actions.ActionSet.empty
-
-let rec ast_of_tree (Node (env, test, mods, subs)) =
-  let tst = [Test (0, Tsl_ast.make_identifier test.Tests.test_name, mods)] in
-  ast_of_tree_aux env tst subs
-
-and ast_of_tree_aux env tst subs =
-  let env = List.map (fun x -> Environment_statement x) env in
-  match List.map ast_of_tree subs with
-  | [ Ast (stmts, subs) ] -> Ast (env @ tst @ stmts, subs)
-  | asts -> Ast (env @ tst, asts)
-
-let tsl_ast_of_test_trees (env, trees) = ast_of_tree_aux env [] trees
-
-open Printf
-
-let print_tsl_ast ~compact oc ast =
-  let pr fmt (*args*) = fprintf oc fmt (*args*) in
-
-  let rec print_ast indent (Ast (stmts, subs)) =
-    print_statements indent stmts;
-    print_forest indent subs;
-
-  and print_sub indent ast =
-    pr "{\n";
-    print_ast (indent ^ "  ") ast;
-    pr "%s}" indent;
-
-  and print_statements indent stmts =
-    match stmts with
-    | Test (_, name, mods) :: tl ->
-      pr "%s%s" indent name.node;
-      begin match mods with
-      | m :: tl ->
-        pr " with %s" m.node;
-        List.iter (fun m -> pr ", %s" m.node) tl;
-      | [] -> ()
-      end;
-      pr ";\n";
-      if tl <> [] && not compact then pr "\n";
-      print_statements indent tl;
-    | Environment_statement env :: tl->
-      print_env indent env;
-      print_statements indent tl;
-    | [] -> ()
-
-  and print_forest indent subs =
-    if subs <> [] then begin
-      pr "%s" indent;
-      List.iter (print_sub indent) subs;
-      pr "\n";
-    end
-
-  and print_env indent e =
-    match e.node with
-    | Assignment (set, variable, value) ->
-      pr "%s" indent;
-      if set then pr "set ";
-      pr "%s = \"%s\";\n" variable.node value.node;
-    | Append (variable, value) ->
-      pr "%s%s += \"%s\";\n" indent variable.node value.node;
-    | Include ls ->
-      pr "%sinclude %s;\n" indent ls.node;
-    | Unset ls ->
-      pr "%sunset %s;\n" indent ls.node;
+    | Not test ->
+      let+ (env', status) = run_test behavior env test in
+      (env', skip_negation status)
+    | And (t1, t2) ->
+      let* (env', status1) = run_test behavior env t1 in
+      begin match status1 with
+      | Fail | Skip -> Ok (env', status1)
+      | Pass -> run_test behavior env' t2
+      end
+    | Or (t1, t2) ->
+      let* (env', status1) = run_test behavior env t1 in
+      begin match status1 with
+      | Fail | Pass -> Ok (env', status1)
+      | Skip -> run_test behavior env' t2
+      end
+    | If (t1, t2, t3) ->
+      let* (env', status1) = run_test behavior env t1 in
+      begin match status1, t3 with
+      | Fail, _ -> Ok (env', status1)
+      | Pass, _ -> run_test behavior env' t2
+      | Skip, Some t3 -> run_test behavior env' t3
+      | Skip, None -> Ok (env', Pass)
+      end
+    | Action { name; modifiers } ->
+      let (msg, env', result) =
+        match behavior with
+        | Skip_all -> ("=> n/a", env, Test_result.skip)
+        | Run ->
+          begin try
+            let testenv = List.fold_left apply_modifiers env modifiers in
+            let test = lookup_test name in
+            let (result, newenv) = Tests.run log testenv test in
+            let msg = Test_result.string_of_result result in
+            (msg, newenv, result)
+          with e ->
+            let bt = Printexc.get_backtrace () in
+            (report_error name.loc e bt, env, Test_result.fail)
+          end
+      in
+      let locstr =
+        if name.loc = Location.none then
+          "default"
+        else
+          Printf.sprintf "line %d" name.loc.Location.loc_start.Lexing.pos_lnum
+      in
+      Printf.ksprintf add_msg "%s (%s) %s" locstr name.node msg;
+      Ok (env', result.status)
   in
-  print_ast " " ast;
+  let run_statement (behavior, env, summ) stmt =
+    match run_test behavior env stmt with
+    | Error () -> Error Fail
+    | Ok (env', status) ->
+      let behavior' =
+        match behavior, status with
+        | Skip_all, _ -> Skip_all
+        | Run, Pass -> Run
+        | Run, (Fail | Skip) -> Skip_all
+      in
+      let summ' = join_sequential summ status in
+      Ok (behavior', env', summ')
+  in
+  let rec run_tree behavior env summ (Ast (stmts, subs)) =
+    match List.fold_left_result run_statement (behavior, env, summ) stmts with
+    | Error e -> e
+    | Ok (behavior, env, summ) ->
+        (* If [subs] is empty, there are no further test actions to
+           perform: we are at the end of a test path and can report
+           our current summary. Otherwise we continue with each
+           branch, and parallel-join the result summaries. *)
+        begin match subs with
+        | [] -> summ
+        | _ ->
+            List.fold_left join_parallel Skip
+              (List.map (run_tree behavior env summ) subs)
+        end
+  in run_tree behavior env summ ast

@@ -21,9 +21,7 @@
 #ifdef HAS_GETGROUPS
 
 #include <sys/types.h>
-#ifdef HAS_UNISTD
 #include <unistd.h>
-#endif
 #include <errno.h>
 #include "caml/unixsupport.h"
 

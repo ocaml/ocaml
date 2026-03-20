@@ -131,7 +131,7 @@ let variable_and_symbol_invariants (program : Flambda.program) =
       var_env, mut_var_env, Symbol.Set.add sym sym_env
   in
   let add_binding_occurrences env vars =
-    List.fold_left (fun env var -> add_binding_occurrence env var) env vars
+    List.fold_left (fun env (var, _) -> add_binding_occurrence env var) env vars
   in
   let check_variable_is_bound (var_env, _, _) var =
     if not (Variable.Set.mem var var_env) then raise (Unbound_variable var)

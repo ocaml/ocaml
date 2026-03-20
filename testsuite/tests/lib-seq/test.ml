@@ -20,6 +20,16 @@ let () =
   ()
 ;;
 
+(* filteri *)
+let () =
+  assert
+    ([5;4] =
+      (List.to_seq [5;4;3;2;1;]
+      |> Seq.filteri (fun i _ -> i < 2)
+     |> List.of_seq));
+  ()
+;;
+
 (* unfold *)
 let () =
   let range first last =
@@ -309,5 +319,15 @@ let () =
   (* Check the first column of the transposed matrix. *)
   assert (!!(Seq.(take 3 (map head matrix))) = [(0, 0); (0, 1); (0, 2)]);
   ()
+
+(* delay *)
+let () =
+  let do_not_force_too_much =
+    Seq.cons
+      (Seq.return ())
+      (Seq.delay @@ fun () -> Seq.return (assert false)) in
+  match Seq.concat do_not_force_too_much () with
+  | Seq.Nil -> assert false
+  | Seq.Cons ((), seq) -> ignore seq
 
 let () = print_endline "OK";;

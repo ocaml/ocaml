@@ -29,16 +29,16 @@ Error: The class type
        is not matched by the class type
          object method eval : (string, exp) Hashtbl.t -> expr end
        The method eval has type
-         "(string, exp) Hashtbl.t ->
+         (string, exp) Hashtbl.t ->
          ([> `App of [ `Abs of string * 'a | `App of expr * expr ] * exp ]
-          as 'a)"
-       but is expected to have type "(string, exp) Hashtbl.t -> expr"
+          as 'a)
+       but is expected to have type (string, exp) Hashtbl.t -> expr
        Type
-         "[> `App of [ `Abs of string * 'a | `App of expr * expr ] * exp ]
-         as 'a"
+         [> `App of [ `Abs of string * 'a | `App of expr * expr ] * exp ]
+         as 'a
        is not compatible with type
-         "expr" = "[ `Abs of string * expr | `App of expr * expr ]"
-       Type "exp" = "< eval : (string, exp) Hashtbl.t -> expr >"
+         expr = [ `Abs of string * expr | `App of expr * expr ]
+       Type exp = < eval : (string, exp) Hashtbl.t -> expr >
        is not compatible with type
-         "expr" = "[ `Abs of string * expr | `App of expr * expr ]"
-       Types for tag "`App" are incompatible
+         expr = [ `Abs of string * expr | `App of expr * expr ]
+       Types for tag `App are incompatible

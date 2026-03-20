@@ -1,14 +1,17 @@
 File "w55.ml", line 33, characters 10-26:
 33 | let h x = (j [@inlined]) x
                ^^^^^^^^^^^^^^^^
-Warning 55 [inlining-impossible]: Cannot inline: [@inlined] attributes may not be used on partial applications
+Warning 55 [inlining-impossible]: Cannot inline:
+  [@inlined] attributes may not be used on partial applications
 
 File "w55.ml", line 29, characters 10-27:
 29 | let i x = (!r [@inlined]) x
                ^^^^^^^^^^^^^^^^^
-Warning 55 [inlining-impossible]: Cannot inline: [@inlined] attribute was not used on this function application (the optimizer did not know what function was being applied)
+Warning 55 [inlining-impossible]: Cannot inline:
+  [@inlined] attribute was not used on this function application (the optimizer did not know what function was being applied)
 
 File "w55.ml", line 39, characters 12-30:
 39 | let b x y = (a [@inlined]) x y
                  ^^^^^^^^^^^^^^^^^^
-Warning 55 [inlining-impossible]: Cannot inline: [@inlined] attribute was not used on this function application (the optimizer did not know what function was being applied)
+Warning 55 [inlining-impossible]: Cannot inline:
+  [@inlined] attribute was not used on this function application (the optimizer did not know what function was being applied)

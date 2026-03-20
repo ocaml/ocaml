@@ -10,8 +10,8 @@ File "t12bad.ml", lines 10-21, characters 0-7:
 20 |       end
 21 |     end..
 Error: This recursive type is not regular.
-       The type constructor "M.c" is defined as
-         type "'a M.c"
+       The type constructor M.c is defined as
+         type 'a M.c
        but it is used as
-         "'b M.c".
+         'b M.c.
        All uses need to match the definition for the recursive type to be regular.

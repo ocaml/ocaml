@@ -16,7 +16,7 @@
 (* Format of .cmxs files *)
 
 type modname = string
-type crcs = (modname * Digest.t option) list
+type crcs = (modname * Digest.BLAKE128.t option) list
 
 (* Each .cmxs dynamically-loaded plugin contains a symbol
    "caml_plugin_header" containing the following info
@@ -24,7 +24,7 @@ type crcs = (modname * Digest.t option) list
 
 type dynunit = {
   dynu_name: modname;
-  dynu_crc: Digest.t;
+  dynu_crc: Digest.BLAKE128.t;
   dynu_imports_cmi: crcs;
   dynu_imports_cmx: crcs;
   dynu_defines: string list;

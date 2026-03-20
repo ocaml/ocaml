@@ -1,19 +1,21 @@
 Indexed shapes:
-Resolved: Index_constrs.1 :
+Resolved: Index_constrs.2:
+  M (File "index_constrs.ml", line 32, characters 32-33)
+Resolved: Index_constrs.1:
   M.F (File "index_constrs.ml", line 32, characters 32-35)
-Resolved: Index_constrs.0 :
+Resolved: Index_constrs.0:
   E (File "index_constrs.ml", line 29, characters 14-15)
-Resolved: Index_constrs.4 :
+Resolved: Index_constrs.4:
   E (File "index_constrs.ml", line 28, characters 4-5)
-Resolved: Index_constrs.7 :
+Resolved: Index_constrs.7:
   x (File "index_constrs.ml", line 27, characters 16-17)
-Resolved: Index_constrs.0 :
+Resolved: Index_constrs.0:
   E (File "index_constrs.ml", line 26, characters 15-16)
-Unresolved: CU Stdlib . "raise"[value]  :
+Unresolved: CU Stdlib . "raise"[value] :
   raise (File "index_constrs.ml", line 26, characters 9-14)
-Resolved: Index_constrs.4 :
+Resolved: Index_constrs.4:
   E (File "index_constrs.ml", line 25, characters 9-10)
-Resolved: Index_constrs.0 :
+Resolved: Index_constrs.0:
   E (File "index_constrs.ml", line 20, characters 16-17)
 
 Uid of decls:

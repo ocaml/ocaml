@@ -304,9 +304,9 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
       List.map (subst_var env) args)
   | Static_catch (static_exn, vars, body, handler) ->
     let env_handler, ids =
-      List.fold_right (fun var (env, ids) ->
+      List.fold_right (fun (var, kind) (env, ids) ->
           let id, env = Env.add_fresh_ident env var in
-          env, (VP.create id, Lambda.Pgenval) :: ids)
+          env, (VP.create id, kind) :: ids)
         vars (env, [])
     in
     Ucatch (Static_exception.to_int static_exn, ids,
@@ -402,7 +402,7 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
 
 and to_clambda_switch t env cases num_keys default =
   let num_keys =
-    if Numbers.Int.Set.cardinal num_keys = 0 then 0
+    if Numbers.Int.Set.is_empty num_keys then 0
     else Numbers.Int.Set.max_elt num_keys + 1
   in
   let store = Flambda_utils.Switch_storer.mk_store () in

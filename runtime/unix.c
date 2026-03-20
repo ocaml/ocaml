@@ -41,7 +41,7 @@
 #include <dlfcn.h>
 #endif
 #endif
-#ifdef HAS_UNISTD
+#ifndef _WIN32
 #include <unistd.h>
 #endif
 #ifdef HAS_POSIX_MONOTONIC_CLOCK
@@ -53,6 +53,9 @@
 #include <dirent.h>
 #else
 #include <sys/dir.h>
+#endif
+#ifdef HAS_LIBGEN_H
+#include <libgen.h>
 #endif
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
@@ -430,14 +433,14 @@ uint64_t caml_time_counter(void)
   struct timespec t;
   clock_gettime(CLOCK_MONOTONIC, &t);
   return
-    (uint64_t)t.tv_sec  * (uint64_t)1000000000 +
-    (uint64_t)t.tv_nsec;
+    (uint64_t) t.tv_sec  * NSEC_PER_SEC +
+    (uint64_t) t.tv_nsec;
 #elif defined(HAS_GETTIMEOFDAY)
   struct timeval t;
   gettimeofday(&t, 0);
   return
-    (uint64_t)t.tv_sec  * (uint64_t)1000000000 +
-    (uint64_t)t.tv_usec * (uint64_t)1000;
+    (uint64_t) t.tv_sec  * NSEC_PER_SEC +
+    (uint64_t) t.tv_usec * NSEC_PER_USEC;
 #else
 # error "No timesource available"
 #endif
@@ -541,4 +544,159 @@ void caml_plat_mem_unmap(void* mem, uintnat size)
 {
   if (munmap(mem, size) != 0)
     CAMLassert(0);
+}
+
+static char * caml_dirname (const char * path)
+{
+#ifdef HAS_LIBGEN_H
+  char *dir, *res;
+  dir = caml_stat_strdup(path);
+  res = caml_stat_strdup(dirname(dir));
+  caml_stat_free(dir);
+  return res;
+#else
+  /* See Filename.generic_dirname */
+  ptrdiff_t n = strlen(path) - 1;
+  char *res;
+  if (n < 0) /* path is "" */
+    return caml_stat_strdup(".");
+  while (n >= 0 && path[n] == '/')
+    n--;
+  if (n < 0) /* path is entirely slashes */
+    return caml_stat_strdup("/");
+  while (n >= 0 && path[n] != '/')
+    n--;
+  if (n < 0) /* path is relative */
+    return caml_stat_strdup(".");
+  while (n >= 0 && path[n] == '/')
+    n--;
+  if (n < 0) /* path is a file at root */
+    return caml_stat_strdup("/");
+  /* n is the _index_ of the last character of the dirname */
+  res = caml_stat_alloc(n + 2);
+  memcpy(res, path, n + 1);
+  res[n + 1] = 0;
+  return res;
+#endif
+}
+
+CAMLextern char_os* caml_locate_standard_library (const char *exe_name,
+                                                  const char *stdlib_default,
+                                                  char **dirname)
+{
+  if (Is_relative_dir(stdlib_default)) {
+    char * root = caml_dirname(exe_name);
+    char * candidate =
+      caml_stat_strconcat(3, root, CAML_DIR_SEP, stdlib_default);
+    /* In practice, a system which can be configured --with-relative-libdir will
+       also have realpath. The directory is normalised here for consistency with
+       the behaviour on Windows, which doesn't have a direct equivalent of
+       dirname and performs the equivalent of realpath as a side-effect of
+       determining the root path. */
+#ifdef HAS_REALPATH
+    char * resolved_candidate = realpath(candidate, NULL);
+    /* If realpath fails, use the non-normalised path for error messages. */
+    if (resolved_candidate != NULL) {
+      caml_stat_free(candidate);
+      /* realpath uses malloc */
+      candidate = caml_stat_strdup(resolved_candidate);
+      free(resolved_candidate);
+    }
+#endif
+    if (dirname == NULL)
+      caml_stat_free(root);
+    else
+      *dirname = root;
+    return candidate;
+  } else {
+    return caml_stat_strdup(stdlib_default);
+  }
+}
+
+/* Mutexes */
+
+CAMLexport void caml_plat_mutex_init(caml_plat_mutex * m)
+{
+  int rc;
+  pthread_mutexattr_t attr;
+  rc = pthread_mutexattr_init(&attr);
+  if (rc != 0) goto error1;
+  rc = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+  if (rc != 0) goto error2;
+  rc = pthread_mutex_init(m, &attr);
+  // fall through
+error2:
+  pthread_mutexattr_destroy(&attr);
+error1:
+  check_err("mutex_init", rc);
+}
+
+void caml_plat_assert_locked(caml_plat_mutex* m)
+{
+#ifdef DEBUG
+  int r = pthread_mutex_trylock(m);
+  if (r == EBUSY) {
+    /* ok, it was locked */
+    return;
+  } else if (r == 0) {
+    caml_fatal_error("Required mutex not locked");
+  } else {
+    check_err("assert_locked", r);
+  }
+#endif
+}
+
+CAMLexport void caml_plat_lock_non_blocking_actual(caml_plat_mutex* m)
+{
+  /* Avoid exceptions */
+  caml_enter_blocking_section_no_pending();
+  int rc = pthread_mutex_lock(m);
+  caml_leave_blocking_section();
+  check_err("lock_non_blocking", rc);
+  DEBUG_LOCK(m);
+}
+
+void caml_plat_mutex_free(caml_plat_mutex* m)
+{
+  check_err("mutex_free", pthread_mutex_destroy(m));
+}
+
+/* Condition variables */
+
+static void caml_plat_cond_init_aux(caml_plat_cond *cond)
+{
+  pthread_condattr_t attr;
+  pthread_condattr_init(&attr);
+#if defined(_POSIX_TIMERS) &&                   \
+  defined(_POSIX_MONOTONIC_CLOCK) &&            \
+  _POSIX_MONOTONIC_CLOCK != (-1)
+  pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+#endif
+  pthread_cond_init(cond, &attr);
+}
+
+void caml_plat_cond_init(caml_plat_cond* cond)
+{
+  caml_plat_cond_init_aux(cond);
+}
+
+void caml_plat_wait(caml_plat_cond* cond, caml_plat_mutex* mut)
+{
+  caml_plat_assert_locked(mut);
+  check_err("wait", pthread_cond_wait(cond, mut));
+}
+
+void caml_plat_broadcast(caml_plat_cond* cond)
+{
+  check_err("cond_broadcast", pthread_cond_broadcast(cond));
+}
+
+void caml_plat_signal(caml_plat_cond* cond)
+{
+  check_err("cond_signal", pthread_cond_signal(cond));
+}
+
+void caml_plat_cond_free(caml_plat_cond* cond)
+{
+  check_err("cond_free", pthread_cond_destroy(cond));
 }

@@ -17,6 +17,7 @@ module Uid = struct
   type t =
     | Compilation_unit of string
     | Item of { comp_unit: string; id: int; from: Unit_info.intf_or_impl }
+    | Local_opaque_item of { comp_unit: string; id: int }
     | Internal
     | Predef of string
 
@@ -37,6 +38,8 @@ module Uid = struct
       | Compilation_unit s -> Format.pp_print_string fmt s
       | Item { comp_unit; id; from } ->
           Format.fprintf fmt "%a%s.%d" pp_intf_or_impl from comp_unit id
+      | Local_opaque_item { comp_unit; id } ->
+          Format.fprintf fmt "[L]%s.%d" comp_unit id
 
     let output oc t =
       let fmt = Format.formatter_of_out_channel oc in
@@ -44,8 +47,11 @@ module Uid = struct
   end)
 
   let id = ref (-1)
+  let id_param = ref (-1)
 
-  let reinit () = id := (-1)
+  let reinit () =
+    id := (-1);
+    id_param := (-1)
 
   let mk  ~current_unit =
       let comp_unit, from =
@@ -56,6 +62,16 @@ module Uid = struct
       in
       incr id;
       Item { comp_unit; id = !id; from }
+
+  let mk_local_opaque ~current_unit =
+    let comp_unit =
+      let open Unit_info in
+      match current_unit with
+      | None -> ""
+      | Some ui -> modname ui
+    in
+    incr id_param;
+    Local_opaque_item { comp_unit; id = !id_param }
 
   let of_compilation_unit_id id =
     if not (Ident.persistent id) then
@@ -72,6 +88,20 @@ module Uid = struct
   let for_actual_declaration = function
     | Item _ -> true
     | _ -> false
+
+  module Deps = struct
+    type kind = Definition_to_declaration | Declaration_to_declaration
+
+    let uids_deps : (kind * t * t) list ref = ref []
+
+    let clear () = uids_deps := []
+
+    let get () = !uids_deps
+
+    let record_declaration_dependency (rk, uid1, uid2) =
+      if not (equal uid1 uid2) then
+        uids_deps := (rk, uid1, uid2) :: !uids_deps
+    end
 end
 
 module Sig_component_kind = struct
@@ -152,6 +182,7 @@ and desc =
   | Abs of var * t
   | App of t * t
   | Struct of t Item.Map.t
+  | Pack of Ident.t
   | Alias of t
   | Leaf
   | Proj of t * Item.t
@@ -212,6 +243,8 @@ let print fmt t =
           Format.fprintf fmt "@[<hv>{%a}@]" print_uid_opt uid
         else
           Format.fprintf fmt "{@[<v>%a@,%a@]}" print_uid_opt uid print_map map
+    | Pack id ->
+        Format.fprintf fmt "@[<hv>{Pack:%a}@]" Ident.print id
     | Alias t ->
         Format.fprintf fmt "Alias@[(@[<v>%a@,%a@])@]" print_uid_opt uid aux t
     | Error s ->
@@ -276,26 +309,22 @@ let dummy_mod =
 let of_path ~find_shape ~namespace path =
   (* We need to handle the following cases:
     Path of constructor:
-      M.t.C
+      M.t.C [Pextra_ty("M.t", "C")]
     Path of label:
-      M.t.lbl
+      M.t.lbl [Pextra_ty("M.t", "lbl")]
     Path of label of inline record:
-      M.t.C.lbl *)
+      M.t.C.lbl [Pextra_ty(Pextra_ty("M.t", "C"), "lbl")] *)
   let rec aux : Sig_component_kind.t -> Path.t -> t = fun ns -> function
     | Pident id -> find_shape ns id
-    | Pdot (path, name) ->
-        let namespace :  Sig_component_kind.t =
-          match (ns : Sig_component_kind.t) with
-          | Constructor -> Type
-          | Label -> Type
-          | _ -> Module
-        in
-        proj (aux namespace path) (name, ns)
+    | Pdot (path, name) -> proj (aux Module path) (name, ns)
     | Papply (p1, p2) -> app (aux Module p1) ~arg:(aux Module p2)
     | Pextra_ty (path, extra) -> begin
-        match extra with
-          Pcstr_ty name -> proj (aux Type path) (name, Constructor)
-        | Pext_ty -> aux Extension_constructor path
+        match extra, ns, path with
+        | Pcstr_ty name, Label, Pextra_ty _ ->
+            (* Handle the M.t.C.lbl case *)
+            proj (aux Constructor path) (name, ns)
+        | Pcstr_ty name, _, _ -> proj (aux Type path) (name, ns)
+        | Pext_ty, _, _ -> aux Extension_constructor path
       end
   in
   aux namespace path
@@ -304,7 +333,9 @@ let for_persistent_unit s =
   { uid = Some (Uid.of_compilation_unit_id (Ident.create_persistent s));
     desc = Comp_unit s; approximated = false }
 
-let leaf_for_unpack = { uid = None; desc = Leaf; approximated = false }
+let leaf_for_unpack () =
+  let desc = Pack (Ident.create_local "Pkg") in
+  { uid = None; desc; approximated = false }
 
 let set_uid_if_none t uid =
   match t.uid with

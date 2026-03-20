@@ -80,6 +80,21 @@ Process \var{file} as a ".ml" file.
 \item["-intf" \var{file}]
 Process \var{file} as a ".mli" file.
 
+
+\item["-keywords" \var{version+list}]
+Set keywords according to the \var{version+list}
+specification.
+
+This specification starts with an optional version number, defining the base set
+of keywords, followed by a \var{+}-separated list of additional keywords to add
+to this base set.
+
+Without an explicit version number, the base set of keywords is the
+set of keywords in the current version of OCaml.
+Additional keywords that do not match any known keyword in the current
+version of the language trigger an error whenever they are present in the
+source code.
+
 \item["-map" \var{file}]
 Read and propagate the delayed dependencies for module aliases in
 \var{file}, so that the following files will depend on the

@@ -18,19 +18,10 @@
 #ifndef CAML_OSDEPS_H
 #define CAML_OSDEPS_H
 
-#ifdef _WIN32
-#include <time.h>
-
-extern unsigned short caml_win32_major;
-extern unsigned short caml_win32_minor;
-extern unsigned short caml_win32_build;
-extern unsigned short caml_win32_revision;
-#endif
-
-#ifdef CAML_INTERNALS
-
 #include "misc.h"
 #include "memory.h"
+
+#ifdef CAML_INTERNALS
 
 /* Read at most [n] bytes from file descriptor [fd] into buffer [buf].
    [flags] indicates whether [fd] is a socket
@@ -105,13 +96,31 @@ void *caml_plat_mem_commit(void *, uintnat);
 void caml_plat_mem_decommit(void *, uintnat);
 void caml_plat_mem_unmap(void *, uintnat);
 
+/* caml_locate_standard_library(exe_name, stdlib_default, dirname) returns the
+   location of the Standard Library. The location returned is absolute, if
+   stdlib_default is a relative path then the result is computed relative to the
+   directory portion of exe_name.
+
+   If dirname is not NULL and stdlib_default is a relative path, a copy of the
+   directory name part of exe_name is returned in dirname. If stdlib_default is
+   an absolute path, dirname is never changed.
+
+   Both strings are allocated with [caml_stat_alloc], so should be freed using
+   [caml_stat_free].
+*/
+CAMLextern char_os *caml_locate_standard_library (const char_os *exe_name,
+                                                  const char_os *stdlib_default,
+                                                  char_os **dirname);
+
 #ifdef _WIN32
+
+#include <time.h>
 
 /* Map a Win32 error code (as returned by GetLastError) to a POSIX error code
    (from <errno.h>).  Return 0 if no POSIX error code matches. */
 CAMLextern int caml_posixerr_of_win32err(unsigned int win32err);
 
-extern int caml_win32_rename(const wchar_t *, const wchar_t *);
+CAMLextern int caml_win32_rename(const wchar_t *, const wchar_t *);
 CAMLextern int caml_win32_unlink(const wchar_t *);
 
 extern void caml_probe_win32_version(void);
@@ -145,6 +154,14 @@ CAMLextern value caml_win32_xdg_defaults(void);
 
 CAMLextern value caml_win32_get_temp_path(void);
 
+#define CAML_DIR_SEP T("\\")
+#define Is_separator(c) (c == '\\' || c == '/')
+
+#else
+
+#define CAML_DIR_SEP T("/")
+#define Is_separator(c) (c == '/')
+
 #endif /* _WIN32 */
 
 /* Returns the current value of a counter that increments once per nanosecond.
@@ -154,51 +171,137 @@ CAMLextern value caml_win32_get_temp_path(void);
    millisecond). This makes it useful for benchmarking and timeouts, but not
    for telling the time. The units are always nanoseconds, but the achieved
    resolution may be less. The starting point is unspecified. */
-extern uint64_t caml_time_counter(void);
+CAMLextern uint64_t caml_time_counter(void);
 
 extern void caml_init_os_params(void);
+
+/* True if:
+   - dir equals "."
+   - dir equals ".."
+   - dir begins "./"
+   - dir begins "../"
+   The tests for null avoid the need to call strlen_os. */
+#define Is_relative_dir(dir) \
+  (dir[0] == '.' \
+   && (dir[1] == '\0' \
+       || Is_separator(dir[1]) \
+       || (dir[1] == '.' && (dir[2] == '\0' || Is_separator(dir[2])))))
 
 #endif /* CAML_INTERNALS */
 
 #ifdef _WIN32
 
-/* [caml_stat_strdup_to_utf16(s)] returns a null-terminated copy of [s],
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern unsigned short caml_win32_major;
+extern unsigned short caml_win32_minor;
+extern unsigned short caml_win32_build;
+extern unsigned short caml_win32_revision;
+
+/* [caml_stat_strdup_noexc_to_utf16(s)] returns a NUL-terminated copy of [s],
    re-encoded in UTF-16.  The encoding of [s] is assumed to be UTF-8 if
    [caml_windows_unicode_runtime_enabled] is non-zero **and** [s] is valid
    UTF-8, or the current Windows code page otherwise.
 
-   The returned string is allocated with [caml_stat_alloc], so it should be free
-   using [caml_stat_free].
+   The returned string is allocated with [caml_stat_alloc_noexc], so it should
+   be freed using [caml_stat_free].
+
+   If allocation fails, this returns NULL. This function never raises any
+   exceptions when [s] is valid UTF-8 but may raise [Sys_error] if it is not.
 */
+CAMLalloc(caml_stat_free, 1)
+CAMLextern wchar_t* caml_stat_strdup_noexc_to_utf16(const char *s);
+
+/* [caml_stat_strdup_to_utf16(s)] returns a NUL-terminated copy of [s],
+   re-encoded in UTF-16.  The encoding of [s] is assumed to be UTF-8 if
+   [caml_windows_unicode_runtime_enabled] is non-zero **and** [s] is valid
+   UTF-8, or the current Windows code page otherwise.
+
+   The returned string is allocated with [caml_stat_alloc], so it should be
+   freed using [caml_stat_free].
+
+   If allocation fails, this raises Out_of_memory. This function may also raise
+   [Sys_error] if [s] is not valid UTF-8.
+*/
+CAMLalloc(caml_stat_free, 1) CAMLreturns_nonnull()
 CAMLextern wchar_t* caml_stat_strdup_to_utf16(const char *s);
 
-/* [caml_stat_strdup_noexc_of_utf16(s)] returns a null-terminated copy of [s],
+/* [caml_stat_strdup_noexc_of_utf16(s)] returns a NUL-terminated copy of [s],
    re-encoded in UTF-8 if [caml_windows_unicode_runtime_enabled] is non-zero or
    the current Windows code page otherwise.
 
-   The returned string is allocated with [caml_stat_alloc_noexc], so
-   it should be freed using [caml_stat_free].
+   The returned string is allocated with [caml_stat_alloc_noexc], so it should
+   be freed using [caml_stat_free].
 
-   If allocation fails, this returns NULL.
+   If allocation fails, this returns NULL. This function never raises any
+   exceptions when [s] is valid UTF-16 but may raise [Sys_error] if it is not.
 */
+CAMLalloc(caml_stat_free, 1)
 CAMLextern char* caml_stat_strdup_noexc_of_utf16(const wchar_t *s);
 
-/* [caml_stat_strdup_of_utf16(s)] returns a null-terminated copy of [s],
+/* [caml_stat_strdup_of_utf16(s)] returns a NUL-terminated copy of [s],
    re-encoded in UTF-8 if [caml_windows_unicode_runtime_enabled] is non-zero or
    the current Windows code page otherwise.
 
-   The returned string is allocated with [caml_stat_alloc_noexc], so
-   it should be freed using [caml_stat_free].
+   The returned string is allocated with [caml_stat_alloc], so it should be
+   freed using [caml_stat_free].
 
-   If allocation fails, this raises Out_of_memory.
+   If allocation fails, this raises Out_of_memory. This function may also raise
+   [Sys_error] if [s] is not valid UTF-16.
 */
+CAMLalloc(caml_stat_free, 1) CAMLreturns_nonnull()
 CAMLextern char* caml_stat_strdup_of_utf16(const wchar_t *s);
+
+/* [caml_stat_char_array_to_utf16(s, size, &out_size)] returns a copy of the
+   first [size] bytes of [s] re-encoded in UTF-16. [s] does not have to be NUL-
+   terminated and may contain embedded NUL characters. The encoding of [s] is
+   assumed to be UTF-8 if [caml_windows_unicode_runtime_enabled] is non-zero
+   **and** [s] is valid UTF-8, or the current Windows code page otherwise. If
+   [out_size] is not [NULL], then the number of UTF-16 code units in the result
+   is recorded in [*out_size].
+
+   [size] must be greater than zero.
+
+   The returned buffer is allocated with [caml_stat_alloc], so it should be
+   freed using [caml_stat_free].
+
+   If allocation fails, this raises Out_of_memory. This function may also raise
+   [Sys_error] if [s] is not valid UTF-8.
+*/
+CAMLmalloc(caml_stat_free, 1, 2) CAMLreturns_nonnull()
+CAMLextern wchar_t *caml_stat_char_array_to_utf16(const char *s, size_t size,
+                                                  size_t *out_size);
+
+/* [caml_stat_char_array_of_utf16(s, size, &out_size)] returns a copy of the
+   first [size] UTF-16 code units of [s] re-encoded in UTF-8 if
+   [caml_windows_unicode_runtime_enabled] is non-zero or the current Windows
+   code page otherwise. [s] does not have to be NUL-terminated and may contain
+   embedded NUL characters. If [out_size] is not [NULL], then the size of the
+   result in bytes recorded in [*out_size].
+
+   [size] must be greater than zero.
+
+   The returned buffer is allocated with [caml_stat_alloc], so it should be
+   freed using [caml_stat_free].
+
+   If allocation fails, this raises Out_of_memory. This function may also raise
+   [Sys_error] if [s] is not valid UTF-16.
+*/
+CAMLalloc(caml_stat_free, 1) CAMLreturns_nonnull()
+CAMLextern char *caml_stat_char_array_of_utf16(const wchar_t *s, size_t size,
+                                               size_t *out_size);
 
 /* [caml_copy_string_of_utf16(s)] returns an OCaml string containing a copy of
    [s] re-encoded in UTF-8 if [caml_windows_unicode_runtime_enabled] is non-zero
    or in the current code page otherwise.
 */
 CAMLextern value caml_copy_string_of_utf16(const wchar_t *s);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _WIN32 */
 

@@ -11,10 +11,10 @@
 
 
 
-
 *)
 
 let f x =
+  let _d = Printer.[D (0, A); D (42, B)] in
   for _i = 0 to x do
     print_endline "..."
   done

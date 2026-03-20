@@ -46,15 +46,16 @@
 /* Size of the gc_regs structure, in words.
    See power.S and power/proc.ml for the indices */
 #define Wosize_gc_regs (23 /* int regs */ + 14 /* caller-save float regs */)
-#define Saved_return_address(sp) *((intnat *)((sp) + 16))
+#define Saved_return_address_raw(sp) *((intnat *)((sp) + 16))
 #define First_frame(sp) (sp)
 #define Saved_gc_regs(sp) (*(value **)((sp) + 32 + 16 + 8))
 #define Stack_header_size (32 + 16 + 16)
+#define CODE_POINTER_MARK_BIT 0
 #endif
 
 #ifdef TARGET_s390x
 #define Wosize_gc_regs (2 + 9 /* int regs */ + 16 /* float regs */)
-#define Saved_return_address(sp) *((intnat *)((sp) - 8))
+#define Saved_return_address_raw(sp) *((intnat *)((sp) - 8))
 #define First_frame(sp) ((sp) + 8)
 #define Saved_gc_regs(sp) (*(value **)((sp) + 24))
 #define Stack_header_size 32
@@ -64,7 +65,7 @@
 /* Size of the gc_regs structure, in words.
    See amd64.S and amd64/proc.ml for the indices */
 #define Wosize_gc_regs (13 /* int regs */ + 16 /* float regs */)
-#define Saved_return_address(sp) *((intnat *)((sp) - 8))
+#define Saved_return_address_raw(sp) *((intnat *)((sp) - 8))
 #ifdef WITH_FRAME_POINTERS
 #define First_frame(sp) ((sp) + 16)
 #else
@@ -78,20 +79,34 @@
 /* Size of the gc_regs structure, in words.
    See arm64.S and arm64/proc.ml for the indices */
 #define Wosize_gc_regs (2 + 24 /* int regs */ + 24 /* float regs */)
-#define Saved_return_address(sp) *((intnat *)((sp) - 8))
+#define Saved_return_address_raw(sp) *((intnat *)((sp) - 8))
 #define First_frame(sp) ((sp) + 16)
 #define Saved_gc_regs(sp) (*(value **)((sp) + 24))
 #define Stack_header_size 32
+#define CODE_POINTER_MARK_BIT 60
 #endif
 
 #ifdef TARGET_riscv
 /* Size of the gc_regs structure, in words.
    See riscv.S and riscv/proc.ml for the indices */
 #define Wosize_gc_regs (2 + 22 /* int regs */ + 20 /* float regs */)
-#define Saved_return_address(sp) *((intnat *)((sp) - 8))
+#define Saved_return_address_raw(sp) *((intnat *)((sp) - 8))
 #define First_frame(sp) ((sp) + 16)
 #define Saved_gc_regs(sp) (*(value **)((sp) + 24))
 #define Stack_header_size 32
+#define CODE_POINTER_MARK_BIT 0
+#endif
+
+#ifdef CODE_POINTER_MARK_BIT
+#define CODE_POINTER_MARK_MASK ((uintnat) 1 << CODE_POINTER_MARK_BIT)
+#define Already_scanned(sp, retaddr) ((retaddr) & CODE_POINTER_MARK_MASK)
+#define Mask_already_scanned(retaddr) ((retaddr) & ~CODE_POINTER_MARK_MASK)
+#define Saved_return_address(sp) \
+  Mask_already_scanned(Saved_return_address_raw(sp))
+#define Mark_scanned(sp, retaddr) \
+  Saved_return_address_raw(sp) = (retaddr) | CODE_POINTER_MARK_MASK
+#else
+#define Saved_return_address Saved_return_address_raw
 #endif
 
 /* Declaration of variables used in the asm code */

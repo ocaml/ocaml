@@ -201,7 +201,7 @@ Caml_inline void caml_tsan_debug_log_pc(const char* msg, uintnat pc)
 #endif
 }
 
-/* This function is called by `caml_raise_exn` or `caml_tsan_raise_notrace_exn`
+/* This function is called by `caml_raise_exn` or `caml_tsan_exit_on_raise_asm`
  from an OCaml stack.
  - [pc] is the program counter where `caml_raise_exn` would return, i.e. the
  next instruction after `caml_raise_exn` in the function that raised the
@@ -210,6 +210,10 @@ Caml_inline void caml_tsan_debug_log_pc(const char* msg, uintnat pc)
   [pc].
  - [trapsp] is the address of the next exception handler.
 
+ It can also be called by `caml_raise_exception` which is called from C.
+ In that case it discards the C stack and works on the OCaml stack underneath,
+ as if `caml_raise_exn` was raised directly from there.
+
  This function iterates over every function stack frame between [sp] and
  [trapsp], calling `__tsan_func_exit` for each function. */
 void caml_tsan_exit_on_raise(uintnat pc, char* sp, char* trapsp)
@@ -217,6 +221,12 @@ void caml_tsan_exit_on_raise(uintnat pc, char* sp, char* trapsp)
   caml_domain_state* domain_state = Caml_state;
   caml_frame_descrs* fds = caml_get_frame_descrs();
   uintnat next_pc = pc;
+
+#ifdef Mask_already_scanned
+  // If we come from [caml_raise_exception], the [pc] comes from an
+  // OCaml stack that may have been scanned by the GC.
+  next_pc = Mask_already_scanned(next_pc);
+#endif
 
   /* iterate on each frame  */
   while (1) {
@@ -233,7 +243,7 @@ void caml_tsan_exit_on_raise(uintnat pc, char* sp, char* trapsp)
     }
 
     caml_tsan_debug_log_pc("forced__tsan_func_exit for", pc);
-    __tsan_func_exit(NULL);
+    caml_tsan_func_exit();
     pc = next_pc;
   }
 }
@@ -248,7 +258,6 @@ void caml_tsan_exit_on_raise_c(char* limit)
 {
   unw_context_t uc;
   unw_cursor_t cursor;
-  unw_word_t sp;
 #ifdef TSAN_DEBUG
   unw_word_t prev_pc;
 #endif
@@ -261,12 +270,23 @@ void caml_tsan_exit_on_raise_c(char* limit)
   if (ret != 0)
     caml_fatal_error("unw_init_local failed with code %d", ret);
 
-  while (1) {
+  unw_word_t initial_sp;
+  ret = unw_get_reg(&cursor, UNW_REG_SP, &initial_sp);
+  if (ret != 0)
+    caml_fatal_error("unw_get_reg SP failed with code %d", ret);
+
+  /* Unwind each call in the stack fragment between `initial_sp` and `limit`. */
+  for(unw_word_t sp = initial_sp; initial_sp <= sp && (char*)sp < limit; ) {
+
 #ifdef TSAN_DEBUG
     if (unw_get_reg(&cursor, UNW_REG_IP, &prev_pc) < 0) {
       caml_fatal_error("unw_get_reg IP failed with code %d", ret);
     }
+
+    caml_tsan_debug_log_pc("forced__tsan_func_exit for", prev_pc);
 #endif
+    /* Still on the C stack, pop on the TSan shadow stack. */
+    caml_tsan_func_exit();
 
     ret = unw_step(&cursor);
     if (ret < 0) {
@@ -279,14 +299,6 @@ void caml_tsan_exit_on_raise_c(char* limit)
     ret = unw_get_reg(&cursor, UNW_REG_SP, &sp);
     if (ret != 0)
       caml_fatal_error("unw_get_reg SP failed with code %d", ret);
-#ifdef TSAN_DEBUG
-    caml_tsan_debug_log_pc("forced__tsan_func_exit for", prev_pc);
-#endif
-    __tsan_func_exit(NULL);
-
-    if ((char*)sp >= limit) {
-      break;
-    }
   }
 }
 
@@ -302,6 +314,12 @@ void caml_tsan_exit_on_perform(uintnat pc, char* sp)
   caml_frame_descrs* fds = caml_get_frame_descrs();
   uintnat next_pc = pc;
 
+#ifdef Mask_already_scanned
+  // [caml_perform] may be a tail-call, in which case [pc] was the
+  // return address of the caller, which may have been scanned.
+  next_pc = Mask_already_scanned(next_pc);
+#endif
+
   /* iterate on each frame  */
   while (1) {
     frame_descr* descr = caml_next_frame_descriptor(fds, &next_pc, &sp, stack);
@@ -310,7 +328,7 @@ void caml_tsan_exit_on_perform(uintnat pc, char* sp)
     }
 
     caml_tsan_debug_log_pc("forced__tsan_func_exit for", pc);
-    __tsan_func_exit(NULL);
+    caml_tsan_func_exit();
 
     pc = next_pc;
   }
@@ -327,16 +345,23 @@ void caml_tsan_exit_on_perform(uintnat pc, char* sp)
    of iteration.
    - [pc] is the program counter where `caml_perform` was called.
    - [sp] is the stack pointer at the perform point. */
-CAMLno_tsan void caml_tsan_entry_on_resume(uintnat pc, char* sp,
-    struct stack_info const* stack)
+static CAMLno_tsan void caml_tsan_entry_on_resume_rec(uintnat pc, char* sp,
+    struct stack_info const* stack,
+    struct stack_info const* starting_stack)
 {
   caml_frame_descrs* fds = caml_get_frame_descrs();
   uintnat next_pc = pc;
 
+#ifdef Mask_already_scanned
+  // the stack to resume may have been scanned by the GC after
+  // [caml_perform] suspended it, so it may be marked.
+  next_pc = Mask_already_scanned(next_pc);
+#endif
+
   caml_next_frame_descriptor(fds, &next_pc, &sp, (struct stack_info*)stack);
   if (next_pc == 0) {
     stack = stack->handler->parent;
-    if (!stack) {
+    if (!stack || stack == starting_stack) {
       return;
     }
 
@@ -344,9 +369,15 @@ CAMLno_tsan void caml_tsan_entry_on_resume(uintnat pc, char* sp,
     next_pc = Saved_return_address(sp);
   }
 
-  caml_tsan_entry_on_resume(next_pc, sp, stack);
+  caml_tsan_entry_on_resume_rec(next_pc, sp, stack, starting_stack);
   caml_tsan_debug_log_pc("forced__tsan_func_entry for", pc);
-  __tsan_func_entry((void*)next_pc);
+  caml_tsan_func_entry((void*)next_pc);
+}
+
+CAMLno_tsan void caml_tsan_entry_on_resume(uintnat pc, char* sp,
+    struct stack_info const* stack)
+{
+  caml_tsan_entry_on_resume_rec(pc, sp, stack, stack);
 }
 
 #endif // NATIVE_CODE
@@ -445,3 +476,17 @@ CAMLno_tsan void __tsan_unaligned_volatile_write16(void *ptr)
 {
   __tsan_write16(ptr);
 }
+
+CAMLno_tsan void caml_tsan_func_exit_asm(void) {
+#if defined(HAVE___TSAN_FUNC_EXIT_VOID_VOID_P)
+  __tsan_func_exit(NULL);
+#elif defined(HAVE___TSAN_FUNC_EXIT_VOID_VOID)
+  __tsan_func_exit();
+  #endif
+}
+
+CAMLno_tsan void caml_tsan_func_entry_asm(void *retaddr) {
+  __tsan_func_entry(retaddr);
+}
+
+// caml_tsan_write8 is never used in .S files

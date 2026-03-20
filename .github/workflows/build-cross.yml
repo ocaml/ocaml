@@ -1,0 +1,288 @@
+name: Cross compilers
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  workflow_dispatch:
+
+# Restrict the GITHUB_TOKEN
+permissions: {}
+
+# See build.yml
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'pull_request' || github.sha }}
+  cancel-in-progress: true
+
+env:
+  failed: 0
+  TESTDIR: >-
+    C:\Бактріан🐫
+  STR_UTF8: >-
+    "C:\\Бактріан🐫"
+  STR_UTF16: >-
+    L"C:\\\x0411\x0430\x043a\x0442\x0440\x0456\x0430\x043d\xd83d\xdc2b"
+  EXAMPLE_PROGRAM: |
+    let _ =
+      Printf.printf "Version: %s\nOS: %s\nUnix: %b\nWin: %b\nCygwin: %b\n"
+        Sys.ocaml_version Sys.os_type Sys.unix Sys.win32 Sys.cygwin
+  COMPLIBS_PROG_X86_64: |
+    let _ =
+      Printf.printf "allow_unaligned_access = %b\n" Arch.allow_unaligned_access;
+      Printf.printf "win64 = %b\n" Arch.win64
+  COMPLIBS_PROG_AARCH64: |
+    let _ =
+      Printf.printf "allow_unaligned_access = %b\n" Arch.allow_unaligned_access;
+      Printf.printf "macosx = %b\n" Arch.macosx
+
+jobs:
+  non-cross:
+    if: contains(github.event.pull_request.labels.*.name, 'run-crosscompiler-tests')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout OCaml
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Configure, build and install OCaml
+        run: |
+          PREFIX="$HOME/.local"
+          echo "$PREFIX/bin" >> "$GITHUB_PATH"
+          set -x
+          ./configure --disable-warn-error --disable-ocamldoc \
+              --disable-ocamltest --disable-stdlib-manpages \
+              --prefix="$PREFIX" || failed=$?
+          if ((failed)) ; then set +x
+            echo ; echo "::group::config.log content ($(wc -l config.log) lines)"
+            cat config.log ; echo '::endgroup::' ; exit $failed
+          fi
+          make -j
+          make install
+          cd "$HOME"
+          tar caf /tmp/ocaml.tar.zst .local
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: non-cross-ocaml
+          path: /tmp/ocaml.tar.zst
+          retention-days: 1
+
+  cross-windows:
+    runs-on: ubuntu-latest
+    needs: non-cross
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: non-cross-ocaml
+      - name: Install non-cross OCaml and set up environment
+        run: |
+          set -x
+          tar xaf ocaml.tar.zst -C "$HOME"
+          rm -f ocaml.tar.zst
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          sudo apt-get update -y
+          sudo apt-get install -y gcc-mingw-w64-x86-64
+      - name: Checkout OCaml
+        uses: actions/checkout@v5
+        with:
+          submodules: true
+          persist-credentials: false
+      - name: Configure, build and install Linux-to-Windows OCaml
+        run: |
+          set -x
+          ./configure --prefix="$HOME/cross" --target=x86_64-w64-mingw32 \
+              TARGET_LIBDIR="$TESTDIR" || failed=$?
+          if ((failed)) ; then set +x
+            echo ; echo "::group::config.log content ($(wc -l config.log) lines)"
+            cat config.log ; echo '::endgroup::' ; exit $failed
+          fi
+          # The OOM-killer may be triggered if the number of parallel
+          # jobs isn't limited.
+          make crossopt -j$(nproc)
+          make installcross
+          ln -sr "$HOME/cross/bin/flexlink.opt.exe" "$HOME/.local/bin/flexlink"
+      - name: Show opt.opt configuration
+        run: |
+          set -x
+          $HOME/cross/bin/ocamlopt.opt.exe -config
+          cat runtime/build_config.h
+      - name: Cross compile a small program
+        run: |
+          printf %s "$EXAMPLE_PROGRAM$COMPLIBS_PROG_X86_64" > example.ml
+          set -x
+          cat example.ml
+          $HOME/cross/bin/ocamlopt.opt.exe -I $HOME/cross/lib/ocaml/compiler-libs/ ocamlcommon.cmxa ocamloptcomp.cmxa example.ml -o example.exe -verbose
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-executable
+          path: example.exe
+          retention-days: 1
+      - name: Test cross sak
+        run: |
+          printf %s "$STR_UTF16" > utf16.ref
+          printf %s "$STR_UTF8" > utf8.ref
+          set -x
+          runtime/sak encode-C-utf16-literal "$TESTDIR" > utf16
+          git diff --no-index utf16.ref utf16
+          runtime/sak encode-C-utf8-literal "$TESTDIR" > utf8
+          git diff --no-index utf8.ref utf8
+
+  run-windows:
+    runs-on: windows-latest
+    needs: cross-windows
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-executable
+      - name: Run example program
+        run: |
+          .\example.exe
+
+  cross-arm-linux:
+    runs-on: ubuntu-latest
+    needs: non-cross
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: non-cross-ocaml
+      - name: Install non-cross OCaml and set up environment
+        run: |
+          set -x
+          tar xaf ocaml.tar.zst -C "$HOME"
+          rm -f ocaml.tar.zst
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          sudo apt-get update -y
+          sudo apt-get install -y gcc-aarch64-linux-gnu qemu-user
+      - name: Checkout OCaml
+        uses: actions/checkout@v5
+        with:
+          submodules: true
+          persist-credentials: false
+      - name: Configure, build and install Linux-to-Windows OCaml
+        run: |
+          set -x
+          ./configure --prefix="$HOME/cross" --target=aarch64-linux-gnu \
+              || failed=$?
+          if ((failed)) ; then set +x
+            echo ; echo "::group::config.log content ($(wc -l config.log) lines)"
+            cat config.log ; echo '::endgroup::' ; exit $failed
+          fi
+          make crossopt -j
+          make installcross
+      - name: Show opt.opt configuration
+        run: |
+          set -x
+          $HOME/cross/bin/ocamlopt.opt -config
+          cat runtime/build_config.h
+      - name: Cross compile a small program
+        run: |
+          printf %s "$EXAMPLE_PROGRAM$COMPLIBS_PROG_AARCH64" > example.ml
+          set -x
+          cat example.ml
+          $HOME/cross/bin/ocamlopt.opt -I $HOME/cross/lib/ocaml/compiler-libs/ ocamlcommon.cmxa ocamloptcomp.cmxa example.ml -o example -verbose
+      - name: Run the small example program
+        run: |
+          set -x
+          qemu-aarch64 -L /usr/aarch64-linux-gnu example
+      - name: Test cross sak
+        run: |
+          printf %s "$STR_UTF16" > utf16.ref
+          printf %s "$STR_UTF8" > utf8.ref
+          set -x
+          runtime/sak encode-C-utf16-literal "$TESTDIR" > utf16
+          git diff --no-index utf16.ref utf16
+          runtime/sak encode-C-utf8-literal "$TESTDIR" > utf8
+          git diff --no-index utf8.ref utf8
+
+  cross-android:
+    runs-on: ubuntu-latest
+    needs: non-cross
+    env:
+      # https://developer.android.com/ndk/downloads#lts-downloads
+      NDK: r27d # Latest LTS Version
+      API_LEVEL: 21
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: non-cross-ocaml
+      - name: Install non-cross OCaml
+        run: |
+          set -x
+          tar xaf ocaml.tar.zst -C "$HOME"
+          rm -f ocaml.tar.zst
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Restore the Android NDK from cache
+        uses: actions/cache/restore@v4
+        id: cache
+        with:
+          path: |
+            /home/runner/android
+          key: android-ndk-${{ env.NDK }}
+      - name: Download the Android NDK
+        run: |
+          set -x
+          mkdir -p "$HOME/android"
+          cd "$HOME/android"
+          wget --no-verbose "https://dl.google.com/android/repository/android-ndk-$NDK-linux.zip"
+          unzip android-ndk-$NDK-linux.zip
+          rm android-ndk-$NDK-linux.zip
+        if: steps.cache.outputs.cache-hit != 'true'
+      - name: Save the Android NDK to cache
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            /home/runner/android
+          key: android-ndk-${{ env.NDK }}
+        if: steps.cache.outputs.cache-hit != 'true'
+      - name: Checkout OCaml
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Configure, build and install Linux-to-Android OCaml
+        env:
+          TARGET: x86_64-linux-android${{ env.API_LEVEL }}
+          TOOLDIR: android-ndk-${{ env.NDK }}/toolchains/llvm/prebuilt/linux-x86_64/bin
+        run: |
+          DIR="$HOME/android/$TOOLDIR"
+          set -x
+          # `pthread_cancel` isn't available on Android, so the result
+          # program should _not_ be run with cleanup on exit (so no
+          # `c=1` in `OCAMLRUNPARAM`)
+          ./configure --prefix="$HOME/cross" --target=$TARGET \
+              TARGET_LIBDIR="/dummy/directory" \
+              CC="$DIR/clang --target=$TARGET" \
+              AR="$DIR/llvm-ar" \
+              PARTIALLD="$DIR/ld -r" \
+              RANLIB="$DIR/llvm-ranlib" \
+              STRIP="$DIR/llvm-strip" || failed=$?
+          if ((failed)) ; then set +x
+            echo ; echo "::group::config.log content ($(wc -l config.log) lines)"
+            cat config.log ; echo '::endgroup::' ; exit $failed
+          fi
+          make crossopt -j
+          make installcross
+      - name: Show opt.opt configuration
+        run: |
+          set -x
+          $HOME/cross/bin/ocamlopt.opt -config
+          cat runtime/build_config.h
+      - name: Cross compile a small program
+        run: |
+          printf %s "$EXAMPLE_PROGRAM" > example.ml
+          set -x
+          cat example.ml
+          $HOME/cross/bin/ocamlopt.opt example.ml -o example -verbose
+          file example
+      - name: Run example
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ env.API_LEVEL }}
+          arch: x86_64
+          disable-animations: true
+          script: |
+            adb push example /data/local/tmp/example
+            adb shell /data/local/tmp/example

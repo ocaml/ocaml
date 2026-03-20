@@ -16,15 +16,15 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@alert unstable
-    "The Domain interface may change in incompatible ways in the future."
-]
-
 (** Domains.
 
     See 'Parallel programming' chapter in the manual.
 
     @since 5.0 *)
+
+[@@@alert unstable
+    "The Domain interface may change in incompatible ways in the future."
+]
 
 type !'a t
 (** A domain of type ['a t] runs independently, eventually producing a
@@ -40,7 +40,11 @@ val spawn : (unit -> 'a) -> 'a t
 val join : 'a t -> 'a
 (** [join d] blocks until domain [d] runs to completion. If [d] results in a
     value, then that is returned by [join d]. If [d] raises an uncaught
-    exception, then that is re-raised by [join d]. *)
+    exception, then that is re-raised by [join d].
+
+    If the domain has created any systhreads (via {!Thread.create}), then it
+    tries to join those systhreads (same as calling {!Thread.join}) before
+    returning. *)
 
 type id = private int
 (** Domains have unique integer identifiers *)
@@ -84,6 +88,12 @@ val cpu_relax : unit -> unit
 
 val is_main_domain : unit -> bool
 (** [is_main_domain ()] returns true if called from the initial domain. *)
+
+val count : unit -> int
+(** The number of domains that have been spawned (including the initial domain)
+    and have not yet terminated.
+
+    @since 5.5 *)
 
 val recommended_domain_count : unit -> int
 (** The recommended maximum number of domains which should be running

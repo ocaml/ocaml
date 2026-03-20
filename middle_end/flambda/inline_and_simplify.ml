@@ -1160,17 +1160,17 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
           | Static_raise (j, args) ->
             assert (Static_exception.equal i j);
             let handler =
-              List.fold_left2 (fun body var arg ->
+              List.fold_left2 (fun body (var, _) arg ->
                   Flambda.create_let var (Expr (Var arg)) body)
                 handler vars args
             in
             let r = R.exit_scope_catch r i in
             simplify env r handler
           | _ ->
-            let vars, sb = Freshening.add_variables' (E.freshening env) vars in
+            let vars, sb = Freshening.add_variables (E.freshening env) vars in
             let approx = R.approx r in
             let env =
-              List.fold_left (fun env id ->
+              List.fold_left (fun env (id, _) ->
                   E.add env id (A.value_unknown Other))
                 (E.set_freshening env sb) vars
             in
@@ -1532,7 +1532,7 @@ let simplify_constant_defining_value
       in
       r, constant_defining_value, A.value_block tag (Array.of_list fields)
     | Set_of_closures set_of_closures ->
-      if Variable.Map.cardinal set_of_closures.free_vars <> 0 then begin
+      if not (Variable.Map.is_empty set_of_closures.free_vars) then begin
         Misc.fatal_errorf "Set of closures bound by [Let_symbol] is not \
                            closed: %a"
           Flambda.print_set_of_closures set_of_closures

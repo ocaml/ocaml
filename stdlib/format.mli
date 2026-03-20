@@ -45,7 +45,8 @@
 
    {b Warning}: Since {{!section:formatter}formatters} contain
    mutable state, it is not thread-safe to use the same formatter on multiple
-   domains in parallel without synchronization.
+   domains in parallel without synchronization. This may result in
+   [Invalid_argument] being raised or an unspecified behavior.
 
    If multiple domains write to the same output channel using the
    predefined formatters (as obtained by {!get_std_formatter} or
@@ -861,6 +862,7 @@ val get_formatter_output_functions :
 
 type formatter_out_functions = {
   out_string : string -> int -> int -> unit;
+  out_width: string -> pos:int -> len:int -> int; (** @since 5.4 *)
   out_flush : unit -> unit;
   out_newline : unit -> unit;
   out_spaces : int -> unit;
@@ -871,6 +873,13 @@ type formatter_out_functions = {
   It is called with a string [s], a start position [p], and a number of
   characters [n]; it is supposed to output characters [p] to [p + n - 1] of
   [s].
+- the [out_width] function informs the formatting engine of the width of the
+  substring as rendered on the output device. Explicit width information as
+  provided by [@<n>], {!pp_print_as} or {!pp_print_substring_as} takes priority
+  over this function. Moreover, the formatting engine evaluates the width of the
+  string arguments of {!pp_print_string} and substring arguments of
+  {!pp_print_substring} as a whole. Consequently, [out_width] can be used to
+  compute an approximative width for unicode substrings.
 - the [out_flush] function flushes the pretty-printer output device.
 - [out_newline] is called to open a new line when the pretty-printer splits
   the line.
@@ -885,6 +894,8 @@ type formatter_out_functions = {
   (e.g. {!Stdlib.output_string} and {!Stdlib.flush} for a
    {!Stdlib.out_channel} device, or [Buffer.add_substring] and
    {!Stdlib.ignore} for a [Buffer.t] output device),
+- field [out_width] is the number of unicode scalar values
+  (see {!utf_8_scalar_width}) in the substring.
 - field [out_newline] is equivalent to [out_string "\n" 0 1];
 - fields [out_spaces] and [out_indent] are equivalent to
   [out_string (String.make n ' ') 0 n].
@@ -903,9 +914,9 @@ val set_formatter_out_functions : formatter_out_functions -> unit
   lines opening (which can be connected to any other action needed by the
   application at hand).
 
-  Reasonable defaults for functions [out_spaces] and [out_newline] are
-  respectively [out_funs.out_string (String.make n ' ') 0 n] and
-  [out_funs.out_string "\n" 0 1].
+  Reasonable defaults for functions [out_spaces], [out_newline], and [out_width]
+  are respectively [out_funs.out_string (String.make n ' ') 0 n],
+  [out_funs.out_string "\n" 0 1] and {!utf_8_scalar_width}.
   @since 4.01
 *)
 
@@ -917,6 +928,18 @@ val get_formatter_out_functions : unit -> formatter_out_functions
   current setting and restore it afterwards.
   @since 4.01
 *)
+
+val utf_8_scalar_width: string -> pos:int -> len:int -> int
+(** [utf_8_scalar_width s ~pos ~len] is the number of unicode scalar values in
+    the substring [String.sub s pos len]. Invalid byte sequences are implicitly
+    replaced by [U+FFFD] since this yields a better width approximation for
+    other ascii-based encoding scheme like ISO-8859-15. This is the default
+    [out_width] function since OCaml 5.4.
+    @since 5.4 *)
+
+val ascii_width: string -> pos:int -> len:int -> int
+(** [ascii_width s ~pos ~len] is [len].
+    @since 5.4 *)
 
 (** {1:tagsmeaning Redefining semantic tag operations} *)
 
@@ -1246,6 +1269,20 @@ val pp_print_text : formatter -> string -> unit
   @since 4.02
 *)
 
+val format_text: ('a,'b,'c,'d,'e,'f) format6 -> ('a,'b,'c,'d,'e,'f) format6
+(** [format_text fmt] replaces spaces and newlines in the format string literal
+    [fmt] with hint breaks or forced newlines:
+  - Blank lines (lines made only of spaces ([U+0020])) are replaced by ["\@n"].
+  - Sequences of spaces and a newline ([U+000A]) preceding a blank line are
+    replaced by ["\@n"]: blank lines remain blank lines in the output.
+  - Remaining sequences made of [k] spaces and newlines are replaced
+    by ["@;<0 k'>"] where [k' = max 1 k] is at least [1].
+  - Breaks can be avoided using non-breaking space characters ([U+00A0]).
+  - Lines can be forced by using ["@\n"]
+@since 5.4
+*)
+
+
 val pp_print_option :
   ?none:(formatter -> unit -> unit) ->
   (formatter -> 'a -> unit) -> (formatter -> 'a option -> unit)
@@ -1380,11 +1417,12 @@ val eprintf : ('a, formatter, unit) format -> 'a
 *)
 
 val sprintf : ('a, unit, string) format -> 'a
-(** Same as [printf] above, but instead of printing on a formatter,
+(** Same as {!printf} above, but instead of printing on a formatter,
   returns a string containing the result of formatting the arguments.
   Note that the pretty-printer queue is flushed at the end of {e each
-  call} to [sprintf]. Note that if your format string contains a [%a],
-  you should use [asprintf].
+  call} to [sprintf]. Note that you likely want to use {!asprintf} which can
+  reuse [%a]-printers defined for {!fprintf}. Contrarily, [sprintf] requires to
+  redefine new [%a]-printers, and is kept only for backward compatibility.
 
   In case of multiple and related calls to [sprintf] to output
   material on a single string, you should consider using [fprintf]
@@ -1470,6 +1508,111 @@ val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
   passes it to the first argument.
 
   @since 4.03
+*)
+
+(** Formatted Pretty-Printing with heterogeneous argument lists.
+
+  The following functions behave the same as their non-'l' counter-parts, but
+  receive their arguments bundled in a single heterogeneous list.
+
+  The heterogeneous list serves as a syntactically-delimited
+  collection of arguments, eliminating the need for continuation variants.
+  This approach also improves the clarity of type error messages,
+  especially when there is a mismatch between the format string and the
+  number of arguments provided.
+
+  For example:
+  {[
+    Format.lprintf "%s %d %.02f %c\n" [ "ocaml"; 42; 3.14; 'c' ]
+  ]}
+*)
+
+module Args : sig
+  type ('a, 'r) t =
+    | [] : ('r, 'r) t
+    | (::) : 'a * ('b, 'r) t -> ('a -> 'b, 'r) t
+
+  val apply : 'a -> ('a, 'r) t -> 'r
+
+  val ( @ ) : ('a, 'r1) t -> ('r1, 'r2) t -> ('a, 'r2) t
+end
+(** The [Args] module defines a heterogeneous list type, which can be
+    used as the argument of [printf]-like functions.
+
+    It is not required to open this module when using the functions
+    that accept an [Args.t]. Thanks to type-based disambiguation, the type
+    is inferred automatically, so the list syntax [[x; y; z]] can be used
+    directly for heterogeneous lists.
+
+    An example:
+  {[
+    (* without opening Args *)
+    Format.lprintf "%s %d %.02f@." [ "ocaml"; 42; 3.14 ]
+
+    (* or with explicit construction *)
+    let lst = let open Format.Args in "ocaml" :: [ 42; 3.14 ] @ [ 'c' ] in
+    Format.lprintf "%s %d %.02f %c@." lst
+  ]}
+
+  @since 5.5
+*)
+
+val lfprintf :
+  formatter -> ('a, formatter, unit) format ->
+  ('a, unit) Args.t -> unit
+(** Same as [fprintf] above, but with the arguments bundled in a single
+    heterogeneous list.
+
+    For example:
+  {[
+    let out = Format.formatter_of_out_channel @@ open_out "some/file.txt" in
+    Format.lfprintf out "@[%s@ %d@]@." [ "x ="; 1 ]
+  ]}
+
+  @since 5.5
+*)
+
+val lprintf :
+  ('a, formatter, unit) format ->
+  ('a, unit) Args.t -> unit
+(** Same as [printf] above, but with the arguments bundled in a single
+    heterogeneous list.
+
+  @since 5.5
+*)
+
+val leprintf :
+  ('a, formatter, unit) format ->
+  ('a, unit) Args.t -> unit
+(** Same as [eprintf] above, but with the arguments bundled in a single
+    heterogeneous list.
+
+  @since 5.5
+*)
+
+val lasprintf :
+  ('a, formatter, unit, string) format4 ->
+  ('a, string) Args.t -> string
+(** Same as [asprintf] above, but with the arguments bundled in a single
+    heterogeneous list.
+
+  @since 5.5
+*)
+
+val ldprintf :
+  ('a, formatter, unit, unit) format4 ->
+  ('a, unit) Args.t -> formatter -> unit
+(** Same as [dprintf] above, but with the arguments bundled in a single
+    heterogeneous list.
+
+    For example:
+  {[
+    let t = Format.ldprintf "%i@ %i@ %i" [ 1; 2; 3 ] in
+    ...
+    Format.lprintf "@[<v>%t@]" [ t ]
+  ]}
+
+  @since 5.5
 *)
 
 (** {1:examples Examples}

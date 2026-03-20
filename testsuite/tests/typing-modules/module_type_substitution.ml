@@ -367,3 +367,225 @@ Error: The module type "t" is not a valid type for a packed module:
        it is defined as a local substitution (temporary name)
        for an anonymous module type. (see manual section 12.7.3)
 |}]
+
+(** Approximation and substitutions **)
+
+(* Approximating a signature with a constraint should merge the approximated
+   constraint (abstract, non destructive case) *)
+module type Test_Abstract = sig
+  module type S := sig
+    module type A
+    module X' : A
+  end
+
+  module rec X : (S with module type A = sig type t end)
+  and Y : sig type u = X.X'.t end
+end
+[%%expect {|
+module type Test_Abstract =
+  sig
+    module rec X : sig module type A = sig type t end module X' : A end
+    and Y : sig type u = X.X'.t end
+  end
+|}]
+
+
+(* Approximating a signature with a constraint should merge the approximated
+   constraint (abstract, destructive case) *)
+module type Test_Abstract_Destructive = sig
+  module type S := sig
+    module type A
+    module X' : A
+  end
+
+  module rec X : (S with module type A := sig type t end)
+  and Y : sig type u = X.X'.t end
+end
+[%%expect {|
+module type Test_Abstract_Destructive =
+  sig
+    module rec X : sig module X' : sig type t end end
+    and Y : sig type u = X.X'.t end
+  end
+|}]
+
+
+(* Approximating a signature with a constraint should merge the approximated
+   constraint (concrete, non destructive case) *)
+module type Test_Concrete = sig
+  module type S := sig
+    module type A = sig type t type u end
+    module X' : A
+  end
+
+  module rec X : (S with module type A = sig type u type t end)
+  and Y : sig type v = X.X'.t end
+end
+[%%expect {|
+module type Test_Concrete =
+  sig
+    module rec X :
+      sig module type A = sig type u type t end module X' : A end
+    and Y : sig type v = X.X'.t end
+  end
+|}]
+
+(* Approximating a signature with a constraint should merge the approximated
+   constraint (concrete, destructive case) *)
+module type Test_Concrete_Destructive = sig
+  module type S := sig
+    module type A = sig type t type u end
+    module X' : A
+  end
+
+  module rec X : (S with module type A := sig type u type t end)
+  and Y : sig type v = X.X'.t end
+end
+[%%expect {|
+module type Test_Concrete_Destructive =
+  sig
+    module rec X : sig module X' : sig type u type t end end
+    and Y : sig type v = X.X'.t end
+  end
+|}]
+
+
+(* Approximating a signature with a constraint should merge the approximated
+   constraint (deep, abstract, non destructive case) *)
+module type Test_Deep_Abstract = sig
+  module type S := sig
+    module M : sig
+      module type A
+      module X1 : A
+    end
+    module X2 : M.A
+  end
+
+  module rec X : (S with module type M.A = sig type t end)
+  and Y : sig type u = X.X2.t * X.M.X1.t end
+end
+[%%expect {|
+module type Test_Deep_Abstract =
+  sig
+    module rec X :
+      sig
+        module M : sig module type A = sig type t end module X1 : A end
+        module X2 : M.A
+      end
+    and Y : sig type u = X.X2.t * X.M.X1.t end
+  end
+|}]
+
+
+(* Approximating a signature with a constraint should merge the approximated
+   constraint (deep, abstract, destructive case) *)
+module type Test_Deep_Abstract_Destructive = sig
+  module type S := sig
+    module M : sig
+      module type A
+      module X1 : A
+    end
+    module X2 : M.A
+  end
+
+  module rec X : (S with module type M.A := sig type t end)
+  and Y : sig type u = X.X2.t * X.M.X1.t end
+end
+[%%expect {|
+module type Test_Deep_Abstract_Destructive =
+  sig
+    module rec X :
+      sig
+        module M : sig module X1 : sig type t end end
+        module X2 : sig type t end
+      end
+    and Y : sig type u = X.X2.t * X.M.X1.t end
+  end
+|}]
+
+
+(* Approximating a signature with a constraint should merge the approximated
+   constraint (deep, concrete, non destructive case) *)
+module type Test_Deep_Concrete = sig
+  module type S := sig
+    module M : sig
+      module type A = sig type t type u end
+      module X1 : A
+    end
+    module X2 : M.A
+  end
+
+  module rec X : (S with module type M.A = sig type u type t end)
+  and Y : sig type u = X.X2.t * X.M.X1.t end
+end
+[%%expect {|
+module type Test_Deep_Concrete =
+  sig
+    module rec X :
+      sig
+        module M :
+          sig module type A = sig type u type t end module X1 : A end
+        module X2 : M.A
+      end
+    and Y : sig type u = X.X2.t * X.M.X1.t end
+  end
+|}]
+
+
+(* Approximating a signature with a constraint should merge the approximated
+   constraint (deep, concrete, destructive case) *)
+module type Test_Deep_Concrete_Destructive = sig
+  module type S := sig
+    module M : sig
+      module type A = sig type t type u end
+      module X1 : A
+    end
+    module X2 : M.A
+  end
+
+  module rec X : (S with module type M.A := sig type u type t end)
+  and Y : sig type u = X.X2.t * X.M.X1.t end
+end
+[%%expect {|
+module type Test_Deep_Concrete_Destructive =
+  sig
+    module rec X :
+      sig
+        module M : sig module X1 : sig type u type t end end
+        module X2 : sig type u type t end
+      end
+    and Y : sig type u = X.X2.t * X.M.X1.t end
+  end
+|}]
+
+
+(* Invalid substitutions might be accepted during the approximation phase, but
+   should be rejected during typechecking of signatures (before typechecking of
+   module bodies) *)
+module type Test = sig
+  module rec X : (sig
+      module type A = sig type t = bool end
+      module X' : A
+    end with module type A = sig type t = int end)
+  and Y : sig type u = X.X'.t end
+end
+[%%expect {|
+Lines 2-5, characters 18-49:
+2 | ..................sig
+3 |       module type A = sig type t = bool end
+4 |       module X' : A
+5 |     end with module type A = sig type t = int end.
+Error: In this "with" constraint, the new definition of "A"
+       does not match its original definition in the constrained signature:
+       At position "module type A = <here>"
+       Module types do not match:
+         sig type t = bool end
+       is not equal to
+         sig type t = int end
+       At position "module type A = <here>"
+       Type declarations do not match:
+         type t = bool
+       is not included in
+         type t = int
+       The type "bool" is not equal to the type "int"
+|}]

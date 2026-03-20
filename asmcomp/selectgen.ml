@@ -110,7 +110,7 @@ let size_expr (env:environment) exp =
     | Cconst_symbol _ ->
         Arch.size_addr
     | Cconst_float _ -> Arch.size_float
-    | Cvar id ->
+    | Cvar id | Cvar_mut id ->
         begin try
           V.Map.find id localenv
         with Not_found ->
@@ -336,7 +336,7 @@ method is_simple_expr = function
           List.for_all self#is_simple_expr args
       end
   | Cassign _ | Cifthenelse _ | Cswitch _ | Ccatch _ | Cexit _
-  | Ctrywith _ -> false
+  | Ctrywith _ | Cvar_mut _ -> false
 
 (* Analyses the effects and coeffects of an expression.  This is used across
    a whole list of expressions with a view to determining which expressions
@@ -355,6 +355,7 @@ method effects_of exp =
   match exp with
   | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
   | Cvar _ | Creturn_addr -> EC.none
+  | Cvar_mut _ -> EC.coeffect_only Coeffect.Read_mutable
   | Ctuple el -> EC.join_list_map el self#effects_of
   | Clet (_id, arg, body) | Clet_mut (_id, _, arg, body) ->
     EC.join (self#effects_of arg) (self#effects_of body)
@@ -605,7 +606,7 @@ method emit_expr (env:environment) exp =
   | Creturn_addr ->
       let r = self#regs_for typ_int in
       Some(self#insert_op env Ireturn_addr [||] r)
-  | Cvar v ->
+  | Cvar v | Cvar_mut v ->
       begin try
         Some(env_find v env)
       with Not_found ->
@@ -1122,7 +1123,7 @@ method emit_tail (env:environment) exp =
       end
   | Cop _
   | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
-  | Cvar _
+  | Cvar _ | Cvar_mut _
   | Creturn_addr
   | Cassign _
   | Ctuple _

@@ -33,9 +33,11 @@ module TypeMap : sig
   include Map.S with type key = transient_expr
                      and type 'a t = 'a TransientTypeMap.t
   val add: type_expr -> 'a -> 'a t -> 'a t
+  val add_to_list: type_expr -> 'a -> 'a list t -> 'a list t
   val find: type_expr -> 'a t -> 'a
   val singleton: type_expr -> 'a -> 'a t
   val fold: (type_expr -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+  val update : type_expr -> ('a option -> 'a option) -> 'a t -> 'a t
 end
 module TypeHash : sig
   include Hashtbl.S with type key = transient_expr
@@ -77,6 +79,8 @@ val newty2: level:int -> type_desc -> type_expr
 
 val newgenty: type_desc -> type_expr
         (* Create a generic type *)
+val newgenmono: type_expr -> type_expr
+        (* Create a new generic type wrapped inside a [Tpoly(x,[])] *)
 val newgenvar: ?name:string -> unit -> type_expr
         (* Return a fresh generic variable *)
 val newgenstub: scope:int -> type_expr
@@ -88,10 +92,23 @@ val newgenstub: scope:int -> type_expr
 val is_Tvar: type_expr -> bool
 val is_Tunivar: type_expr -> bool
 val is_Tconstr: type_expr -> bool
-val is_poly_Tpoly: type_expr -> bool
 val dummy_method: label
 val type_kind_is_abstract: type_declaration -> bool
 val type_origin: type_declaration -> type_origin
+
+(**** Utilities for poly types ****)
+
+val is_Tpoly: type_expr -> bool
+
+(* This function is used for polymorphic records where we don't have the
+   invariant that the type of record fields are Tpoly *)
+val is_poly_Tpoly: type_expr -> bool
+
+(* These four functions can only be called on [Tpoly] nodes. *)
+val tpoly_is_mono : type_expr -> bool
+val tpoly_get_mono : type_expr -> type_expr
+val tpoly_get_poly : type_expr -> type_expr * type_expr list
+val tpoly_get_mono_opt : type_expr -> type_expr option
 
 (**** polymorphic variants ****)
 
@@ -145,6 +162,9 @@ val iter_type_expr_cstr_args: (type_expr -> unit) ->
   (constructor_arguments -> unit)
 val map_type_expr_cstr_args: (type_expr -> type_expr) ->
   (constructor_arguments -> constructor_arguments)
+
+val map_pack : (Path.t -> Path.t) -> (type_expr -> type_expr) -> package ->
+  package
 
 (**** Utilities for type marking ****)
 

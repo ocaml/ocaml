@@ -1,3 +1,8 @@
+\section{s:locally-abstract}{Locally abstract types}
+%HEVEA\cutname{locallyabstract.html}
+\ikwd{type\@\texttt{type}}
+\ikwd{fun\@\texttt{fun}}
+
 (Introduced in OCaml 3.12, short syntax added in 4.03)
 
 \begin{syntax}

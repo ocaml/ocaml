@@ -231,6 +231,12 @@ let diff files =
   let temporary_file = Filename.temp_file "ocamltest" "diff" in
   let diff = Ocamltest_config.diff in
   let diff_flags = String.words Ocamltest_config.diff_flags in
+  let diff_flags =
+    if Ocamltest_config.diff_supports_color then
+      (if Misc.Color.is_enabled () then "--color=always" else "--color=never")
+      :: diff_flags
+    else diff_flags
+  in
   let diff_files = [files.reference_filename; files.output_filename] in
   let diff_commandline =
     Filename.quote_command diff ~stdout:temporary_file

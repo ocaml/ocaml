@@ -28,7 +28,7 @@ let pass = make
   ~description:"Always succeed"
   (fun _log env ->
     let reason = reason_with_fallback env "the pass action always succeeds" in
-    let result = Result.pass_with_reason reason in
+    let result = Test_result.pass_with_reason reason in
     (result, env))
 
 let skip = make
@@ -36,7 +36,7 @@ let skip = make
   ~description:"Always skip the test"
   (fun _log env ->
     let reason = reason_with_fallback env "the skip action always skips" in
-    let result = Result.skip_with_reason reason in
+    let result = Test_result.skip_with_reason reason in
     (result, env))
 
 let fail = make
@@ -44,7 +44,7 @@ let fail = make
   ~description:"Always fail"
   (fun _log env ->
     let reason = reason_with_fallback env "the fail action always fails" in
-    let result = Result.fail_with_reason reason in
+    let result = Test_result.fail_with_reason reason in
     (result, env))
 
 let cd = make
@@ -54,10 +54,10 @@ let cd = make
     let cwd = Environments.safe_lookup Builtin_variables.cwd env in
     begin
       try
-        Sys.chdir cwd; (Result.pass, env)
+        Sys.chdir cwd; (Test_result.pass, env)
       with _ ->
-        let reason = "Could not chidir to \"" ^ cwd ^ "\"" in
-        let result = Result.fail_with_reason reason in
+        let reason = "Could not chdir to \"" ^ cwd ^ "\"" in
+        let result = Test_result.fail_with_reason reason in
         (result, env)
     end)
 
@@ -65,7 +65,7 @@ let dumpenv = make
   ~name:"dumpenv"
   ~description:"Dump the environment"
   (fun log env ->
-    Environments.dump log env; (Result.pass, env))
+    Environments.dump log env; (Test_result.pass, env))
 
 let hasunix = make
   ~name:"hasunix"
@@ -102,6 +102,13 @@ let hasstr = make
     "str library available"
     "str library not available")
 
+let multicore = make
+  ~name:"multicore"
+  ~description:"Pass if running on multicore"
+  (Actions_helpers.pass_or_skip (Domain.recommended_domain_count () >= 2)
+    "running on multicore"
+    "not running on multicore")
+
 let windows_OS = "Windows_NT"
 
 let get_OS () = Sys.safe_getenv "OS"
@@ -113,19 +120,31 @@ let windows = make
     "running on Windows"
     "not running on Windows")
 
-let not_windows = make
-  ~name:"not-windows"
-  ~description:"Pass if not running on Windows"
-  (Actions_helpers.pass_or_skip (get_OS () <> windows_OS)
-    "not running on Windows"
-    "running on Windows")
+let msvc = make
+  ~name:"msvc"
+  ~description:"Pass if using MSVC / clang-cl"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.ccomp_type = "msvc")
+    "using MSVC / clang-cl"
+    "not using MSVC / clang-cl")
 
-let not_msvc = make
-  ~name:"not-msvc"
-  ~description:"Pass if not using MSVC / clang-cl"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.ccomptype <> "msvc")
-    "not using MSVC / clang-cl"
-    "using MSVC / clang-cl")
+let is_clang =
+  List.mem "clang" (String.split_on_char '-' Ocamltest_config.c_compiler_vendor)
+
+let clang = make
+  ~name:"clang"
+  ~description:"Pass if using clang"
+  (Actions_helpers.pass_or_skip is_clang
+    "using clang"
+    "not using clang")
+
+(* windows _passes_ on Cygwin; target_windows _skips_ for Cygwin *)
+
+let target_windows = make
+  ~name:"target-windows"
+  ~description:"Pass if the compiler does targets native Windows"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.target_os_type = "Win32")
+    "targeting native Windows"
+    "not targeting native Windows")
 
 let is_bsd_system s =
   match s with
@@ -139,13 +158,6 @@ let bsd = make
     "on a BSD system"
     "not on a BSD system")
 
-let not_bsd = make
-  ~name:"not-bsd"
-  ~description:"Pass if not running on a BSD system"
-  (Actions_helpers.pass_or_skip (not (is_bsd_system Ocamltest_config.system))
-    "not on a BSD system"
-    "on a BSD system")
-
 let linux_system = "linux"
 
 let linux = make
@@ -157,8 +169,8 @@ let linux = make
 
 let macos_system = "macosx"
 
-let macos = make
-  ~name:"macos"
+let macosx = make
+  ~name:"macosx"
   ~description:"Pass if running on a MacOS system"
   (Actions_helpers.pass_or_skip (Ocamltest_config.system = macos_system)
     "on a MacOS system"
@@ -173,6 +185,13 @@ let not_macos_amd64_tsan = make
            && (Ocamltest_config.tsan)))
      "not on a MacOS amd64 system with TSan enabled"
      "on a MacOS amd64 system with TSan enabled")
+
+let has_cxx = make
+    ~name:"has-cxx"
+    ~description:"Pass if a C++ compiler is available"
+    (Actions_helpers.pass_or_skip (Ocamltest_config.cxx <> "")
+       "C++ compiler is available"
+       "C++ compiler not available")
 
 let arch32 = make
   ~name:"arch32"
@@ -258,19 +277,19 @@ let tsan = make
      "tsan available"
      "tsan not available")
 
-let no_tsan = make
-  ~name:"no-tsan"
-  ~description:"Pass if thread sanitizer is not supported"
-  (Actions_helpers.pass_or_skip (not Ocamltest_config.tsan)
-     "tsan not available"
-     "tsan available")
-
 let has_symlink = make
   ~name:"has_symlink"
   ~description:"Pass if symbolic links are available"
-  (Actions_helpers.pass_or_skip (Unix.has_symlink () )
+  (Actions_helpers.pass_or_skip (Ocamltest_unix.has_symlink () )
     "symlinks available"
     "symlinks not available")
+
+let not_root = make
+  ~name:"not-root"
+  ~description:"Skip test if the current user is root"
+  (Actions_helpers.pass_or_skip (Ocamltest_unix.getuid () <> 0)
+    "current user is not root"
+    "current user is root")
 
 let setup_build_env = make
   ~name:"setup-build-env"
@@ -304,21 +323,21 @@ let file_exists_action _log env =
   match Environments.lookup Builtin_variables.file env with
     | None ->
       let reason = reason_with_fallback env "the file variable is undefined" in
-      let result = Result.fail_with_reason reason in
+      let result = Test_result.fail_with_reason reason in
       (result, env)
     | Some filename ->
       if Sys.file_exists filename
       then begin
         let default_reason = Printf.sprintf "File %s exists" filename in
         let reason = reason_with_fallback env default_reason in
-        let result = Result.pass_with_reason reason in
+        let result = Test_result.pass_with_reason reason in
         (result, env)
       end else begin
         let default_reason =
           Printf.sprintf "File %s does not exist" filename
         in
         let reason = reason_with_fallback env default_reason in
-        let result = Result.fail_with_reason reason in
+        let result = Test_result.fail_with_reason reason in
         (result, env)
       end
 let file_exists = make
@@ -342,7 +361,7 @@ let copy_action log env =
   match (src, dst) with
     | (None, _) | (_, None) ->
       let reason = reason_with_fallback env "src or dst are undefined" in
-      let result = Result.fail_with_reason reason in
+      let result = Test_result.fail_with_reason reason in
       (result, env)
     | (Some src, Some dst) ->
       let f =
@@ -351,7 +370,7 @@ let copy_action log env =
         else fun src -> do_copy src dst
       in
       List.iter f (String.words src);
-      (Result.pass, env)
+      (Test_result.pass, env)
 
 let copy = make ~name:"copy" ~description:"Copy a file" copy_action
 
@@ -376,19 +395,22 @@ let _ =
     hasunix;
     hassysthreads;
     hasstr;
+    multicore;
     libunix;
     libwin32unix;
     windows;
-    not_windows;
-    not_msvc;
+    msvc;
+    clang;
+    target_windows;
     bsd;
-    not_bsd;
     linux;
-    macos;
+    macosx;
     not_macos_amd64_tsan;
+    has_cxx;
     arch32;
     arch64;
     has_symlink;
+    not_root;
     setup_build_env;
     setup_simple_build_env;
     run;
@@ -406,5 +428,4 @@ let _ =
     file_exists;
     copy;
     tsan;
-    no_tsan;
   ]

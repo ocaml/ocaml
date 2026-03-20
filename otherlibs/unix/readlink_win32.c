@@ -21,7 +21,6 @@
 #include <caml/signals.h>
 #include <caml/osdeps.h>
 #include "caml/unixsupport.h"
-#include <errno.h>
 #include <winioctl.h>
 #include <caml/winsupport.h>
 
@@ -46,8 +45,7 @@ CAMLprim value caml_unix_readlink(value opath)
   }
   else if (!(attributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
     caml_stat_free(path);
-    errno = EINVAL;
-    caml_uerror("readlink", opath);
+    caml_unix_error(EINVAL, "readlink", opath);
   }
   else {
     caml_enter_blocking_section();
@@ -60,8 +58,7 @@ CAMLprim value caml_unix_readlink(value opath)
                         NULL)) == INVALID_HANDLE_VALUE) {
       caml_leave_blocking_section();
       caml_stat_free(path);
-      errno = ENOENT;
-      caml_uerror("readlink", opath);
+      caml_unix_error(ENOENT, "readlink", opath);
     }
     else {
       char buffer[16384];
@@ -89,9 +86,8 @@ CAMLprim value caml_unix_readlink(value opath)
           CloseHandle(h);
         }
         else {
-          errno = EINVAL;
           CloseHandle(h);
-          caml_uerror("readlink", opath);
+          caml_unix_error(EINVAL, "readlink", opath);
         }
       }
       else {

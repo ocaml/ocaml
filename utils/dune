@@ -23,23 +23,19 @@
 (rule
  (targets domainstate.ml)
  (mode    fallback)
- (deps    (:conf ../Makefile.config)
-          (:c domainstate.ml.c)
-          (:tbl ../runtime/caml/domain_state.tbl))
+ (deps    ../runtime/caml/domain_state.tbl)
  (action
    (with-stdout-to %{targets}
-     (bash
-       "`grep '^CPP=' %{conf} | cut -d'=' -f2` -I ../runtime/caml %{c}"
+     (system
+       "%{read-lines:../build-aux/cpp} -I ../runtime %{dep:domainstate.ml.c}"
        ))))
 
 (rule
  (targets domainstate.mli)
  (mode    fallback)
- (deps    (:conf ../Makefile.config)
-          (:c domainstate.mli.c)
-          (:tbl ../runtime/caml/domain_state.tbl))
+ (deps    ../runtime/caml/domain_state.tbl)
  (action
    (with-stdout-to %{targets}
-     (bash
-       "`grep '^CPP=' %{conf} | cut -d'=' -f2` -I ../runtime/caml %{c}"
+     (system
+       "%{read-lines:../build-aux/cpp} -I ../runtime %{dep:domainstate.mli.c}"
        ))))

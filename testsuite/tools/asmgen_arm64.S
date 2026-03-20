@@ -13,6 +13,9 @@
 /*                                                                        */
 /**************************************************************************/
 
+#include "caml/m.h"
+#include "caml/asm.h"
+
 #if defined(SYS_macosx)
 #define G(sym) _##sym
 #else
@@ -60,7 +63,4 @@ G(call_gen_code):
 G(caml_c_call):
         br      x15
 
-#if !defined(SYS_macosx)
-/* Mark stack as non-executable */
-        .section .note.GNU-stack,"",%progbits
-#endif
+        NONEXECSTACK_NOTE

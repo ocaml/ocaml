@@ -35,9 +35,9 @@ let fmt_location f loc =
 let rec fmt_longident_aux f x =
   match x with
   | Longident.Lident (s) -> fprintf f "%s" s;
-  | Longident.Ldot (y, s) -> fprintf f "%a.%s" fmt_longident_aux y s;
+  | Longident.Ldot (y, s) -> fprintf f "%a.%s" fmt_longident_aux y.txt s.txt;
   | Longident.Lapply (y, z) ->
-      fprintf f "%a(%a)" fmt_longident_aux y fmt_longident_aux z
+      fprintf f "%a(%a)" fmt_longident_aux y.txt fmt_longident_aux z.txt
 
 let fmt_longident f x = fprintf f "\"%a\"" fmt_longident_aux x.txt
 
@@ -76,6 +76,11 @@ let fmt_mutable_flag f x =
   | Immutable -> fprintf f "Immutable"
   | Mutable -> fprintf f "Mutable"
 
+let fmt_atomic_flag f x =
+  match x with
+  | Nonatomic -> fprintf f "Nonatomic"
+  | Atomic -> fprintf f "Atomic"
+
 let fmt_virtual_flag f x =
   match x with
   | Virtual -> fprintf f "Virtual"
@@ -110,6 +115,11 @@ let fmt_partiality f x =
   match x with
   | Total -> ()
   | Partial -> fprintf f " (Partial)"
+
+let fmt_presence f x =
+  match x with
+  | Types.Mp_present -> fprintf f "(Present)"
+  | Types.Mp_absent -> fprintf f "(Absent)"
 
 let line i f s (*...*) =
   fprintf f "%s" (String.make (2*i) ' ');
@@ -146,6 +156,10 @@ let arg_label i ppf = function
   | Optional s -> line i ppf "Optional \"%s\"\n" s
   | Labelled s -> line i ppf "Labelled \"%s\"\n" s
 
+let tuple_component_label i ppf = function
+  | None -> line i ppf "Label: None\n"
+  | Some s -> line i ppf "Label: Some \"%s\"\n" s
+
 let typevars ppf vs =
   List.iter (fun x -> fprintf ppf " %a" Pprintast.tyvar x.txt) vs
 
@@ -181,7 +195,7 @@ let rec core_type i ppf x =
       core_type i ppf ct2;
   | Ttyp_tuple l ->
       line i ppf "Ttyp_tuple\n";
-      list i core_type ppf l;
+      list i labeled_core_type ppf l;
   | Ttyp_constr (li, _, l) ->
       line i ppf "Ttyp_constr %a\n" fmt_path li;
       list i core_type ppf l;
@@ -212,12 +226,26 @@ let rec core_type i ppf x =
       line i ppf "Ttyp_poly%a\n"
         (fun ppf -> List.iter (fun x -> fprintf ppf " '%s" x)) sl;
       core_type i ppf ct;
-  | Ttyp_package { pack_path = s; pack_fields = l } ->
-      line i ppf "Ttyp_package %a\n" fmt_path s;
-      list i package_with ppf l;
+  | Ttyp_package pack_ty ->
+      line i ppf "Ttyp_package\n";
+      package_type i ppf pack_ty
   | Ttyp_open (path, _mod_ident, t) ->
       line i ppf "Ttyp_open %a\n" fmt_path path;
       core_type i ppf t
+  | Ttyp_functor (lab, id, { tpt_path = s; tpt_constraints = l}, ct) ->
+      line i ppf "Ttyp_functor\n";
+      arg_label i ppf lab;
+      line i ppf "module \"%a\" : %a" fmt_ident id.txt fmt_path s;
+      list i package_with ppf l;
+      core_type i ppf ct
+
+and labeled_core_type i ppf (l, t) =
+  tuple_component_label i ppf l;
+  core_type i ppf t
+
+and package_type i ppf { tpt_path; tpt_constraints } =
+  line i ppf "package_type %a\n" fmt_path tpt_path;
+  list (i+1) package_with ppf tpt_constraints;
 
 and package_with i ppf (s, t) =
   line i ppf "with type %a\n" fmt_longident s;
@@ -227,22 +255,17 @@ and pattern : type k . _ -> _ -> k general_pattern -> unit = fun i ppf x ->
   line i ppf "pattern %a\n" fmt_location x.pat_loc;
   attributes i ppf x.pat_attributes;
   let i = i+1 in
-  begin match x.pat_extra with
-  | [] -> ()
-  | extra ->
-    line i ppf "extra\n";
-    List.iter (pattern_extra (i+1) ppf) extra;
-  end;
+  List.iter (pattern_extra i ppf) x.pat_extra;
   match x.pat_desc with
   | Tpat_any -> line i ppf "Tpat_any\n";
   | Tpat_var (s,_,_) -> line i ppf "Tpat_var \"%a\"\n" fmt_ident s;
-  | Tpat_alias (p, s,_,_) ->
+  | Tpat_alias (p, s,_,_,_) ->
       line i ppf "Tpat_alias \"%a\"\n" fmt_ident s;
       pattern i ppf p;
   | Tpat_constant (c) -> line i ppf "Tpat_constant %a\n" fmt_constant c;
   | Tpat_tuple (l) ->
       line i ppf "Tpat_tuple\n";
-      list i pattern ppf l;
+      list i labeled_pattern ppf l;
   | Tpat_construct (li, _, po, vto) ->
       line i ppf "Tpat_construct %a\n" fmt_longident li;
       list i pattern ppf po;
@@ -258,8 +281,8 @@ and pattern : type k . _ -> _ -> k general_pattern -> unit = fun i ppf x ->
   | Tpat_record (l, _c) ->
       line i ppf "Tpat_record\n";
       list i longident_x_pattern ppf l;
-  | Tpat_array (l) ->
-      line i ppf "Tpat_array\n";
+  | Tpat_array (am, l) ->
+      line i ppf "Tpat_array %a\n" fmt_mutable_flag am;
       list i pattern ppf l;
   | Tpat_lazy p ->
       line i ppf "Tpat_lazy\n";
@@ -275,11 +298,20 @@ and pattern : type k . _ -> _ -> k general_pattern -> unit = fun i ppf x ->
       pattern i ppf p1;
       pattern i ppf p2;
 
-and pattern_extra i ppf (extra_pat, _, attrs) =
+and labeled_pattern
+  : type k . _ -> _ -> string option * k general_pattern -> unit =
+  fun i ppf (label, x) ->
+    tuple_component_label i ppf label;
+    pattern i ppf x
+
+and pattern_extra i ppf (extra_pat, loc, attrs) =
+  line i ppf "extra %a\n" fmt_location loc;
+  let i = i + 1 in
   match extra_pat with
-  | Tpat_unpack ->
+  | Tpat_unpack ptyp ->
      line i ppf "Tpat_extra_unpack\n";
      attributes i ppf attrs;
+     option i package_type ppf ptyp;
   | Tpat_constraint cty ->
      line i ppf "Tpat_extra_constraint\n";
      attributes i ppf attrs;
@@ -302,12 +334,15 @@ and function_body i ppf (body : function_body) =
       line i ppf "Tfunction_cases%a %a\n"
         fmt_partiality partial
         fmt_location loc;
-      attributes (i+1) ppf attrs;
-      Option.iter (fun e -> expression_extra (i+1) ppf e []) exp_extra;
-      list (i+1) case ppf cases
+      let i = i+1 in
+      attributes i ppf attrs;
+      Option.iter (fun e -> expression_extra i ppf (e, loc, [])) exp_extra;
+      list i case ppf cases
 
-and expression_extra i ppf x attrs =
-  match x with
+and expression_extra i ppf (extra, loc, attrs) =
+  line i ppf "extra %a\n" fmt_location loc;
+  let i = i + 1 in
+  match extra with
   | Texp_constraint ct ->
       line i ppf "Texp_constraint\n";
       attributes i ppf attrs;
@@ -329,12 +364,7 @@ and expression i ppf x =
   line i ppf "expression %a\n" fmt_location x.exp_loc;
   attributes i ppf x.exp_attributes;
   let i = i+1 in
-  begin match x.exp_extra with
-  | [] -> ()
-  | extra ->
-    line i ppf "extra\n";
-    List.iter (fun (x, _, attrs) -> expression_extra (i+1) ppf x attrs) extra;
-  end;
+  List.iter (expression_extra i ppf) x.exp_extra;
   match x.exp_desc with
   | Texp_ident (li,_,_) -> line i ppf "Texp_ident %a\n" fmt_path li;
   | Texp_instvar (_, li,_) -> line i ppf "Texp_instvar %a\n" fmt_path li;
@@ -350,7 +380,7 @@ and expression i ppf x =
   | Texp_apply (e, l) ->
       line i ppf "Texp_apply\n";
       expression i ppf e;
-      list i label_x_expression ppf l;
+      list i label_x_apply_arg ppf l;
   | Texp_match (e, l1, l2, partial) ->
       line i ppf "Texp_match%a\n" fmt_partiality partial;
       expression i ppf e;
@@ -363,7 +393,7 @@ and expression i ppf x =
       list i case ppf l2;
   | Texp_tuple (l) ->
       line i ppf "Texp_tuple\n";
-      list i expression ppf l;
+      list i labeled_expression ppf l;
   | Texp_construct (li, _, eo) ->
       line i ppf "Texp_construct %a\n" fmt_longident li;
       list i expression ppf eo;
@@ -388,8 +418,12 @@ and expression i ppf x =
       expression i ppf e1;
       longident i ppf li;
       expression i ppf e2;
-  | Texp_array (l) ->
-      line i ppf "Texp_array\n";
+  | Texp_atomic_loc (e, li, _) ->
+      line i ppf "Texp_atomic_loc\n";
+      expression i ppf e;
+      longident i ppf li;
+  | Texp_array (mut, l) ->
+      line i ppf "Texp_array %a\n" fmt_mutable_flag mut;
       list i expression ppf l;
   | Texp_ifthenelse (e1, e2, eo) ->
       line i ppf "Texp_ifthenelse\n";
@@ -425,14 +459,6 @@ and expression i ppf x =
   | Texp_override (_, l) ->
       line i ppf "Texp_override\n";
       list i string_x_expression ppf l;
-  | Texp_letmodule (s, _, _, me, e) ->
-      line i ppf "Texp_letmodule \"%a\"\n" fmt_modname s;
-      module_expr i ppf me;
-      expression i ppf e;
-  | Texp_letexception (cd, e) ->
-      line i ppf "Texp_letexception\n";
-      extension_constructor i ppf cd;
-      expression i ppf e;
   | Texp_assert (e, _) ->
       line i ppf "Texp_assert";
       expression i ppf e;
@@ -455,11 +481,9 @@ and expression i ppf x =
       line i ppf "Texp_unreachable"
   | Texp_extension_constructor (li, _) ->
       line i ppf "Texp_extension_constructor %a" fmt_longident li
-  | Texp_open (o, e) ->
-      line i ppf "Texp_open %a\n"
-        fmt_override_flag o.open_override;
-      module_expr i ppf o.open_expr;
-      attributes i ppf o.open_attributes;
+  | Texp_struct_item (si, e) ->
+      line i ppf "Texp_struct_item\n";
+      structure_item i ppf si;
       expression i ppf e;
 
 and value_description i ppf x =
@@ -497,8 +521,8 @@ and type_declaration i ppf x =
   let i = i+1 in
   line i ppf "ptype_params =\n";
   list (i+1) type_parameter ppf x.typ_params;
-  line i ppf "ptype_cstrs =\n";
-  list (i+1) core_type_x_core_type_x_location ppf x.typ_cstrs;
+  line i ppf "ptype_constraints =\n";
+  list (i+1) core_type_x_core_type_x_location ppf x.typ_constraints;
   line i ppf "ptype_kind =\n";
   type_kind (i+1) ppf x.typ_kind;
   line i ppf "ptype_private = %a\n" fmt_private_flag x.typ_private;
@@ -517,6 +541,8 @@ and type_kind i ppf x =
       list (i+1) label_decl ppf l;
   | Ttype_open ->
       line i ppf "Ttype_open\n"
+  | Ttype_external name ->
+      line i ppf "Ttype_external %S\n" name
 
 and type_extension i ppf x =
   line i ppf "type_extension\n";
@@ -646,7 +672,7 @@ and class_expr i ppf x =
   | Tcl_apply (ce, l) ->
       line i ppf "Tcl_apply\n";
       class_expr i ppf ce;
-      list i label_x_expression ppf l;
+      list i label_x_apply_arg ppf l;
   | Tcl_let (rf, l1, l2, ce) ->
       line i ppf "Tcl_let %a\n" fmt_rec_flag rf;
       list i (value_binding rf) ppf l1;
@@ -758,9 +784,8 @@ and signature_item i ppf x =
       line i ppf "Tsig_exception\n";
       type_exception i ppf ext
   | Tsig_module md ->
-      line i ppf "Tsig_module \"%a\"\n" fmt_modname md.md_id;
-      attributes i ppf md.md_attributes;
-      module_type i ppf md.md_type
+      line i ppf "Tsig_module %a\n" fmt_presence md.md_presence;
+      module_declaration i ppf md
   | Tsig_modsubst ms ->
       line i ppf "Tsig_modsubst \"%a\" = %a\n"
         fmt_ident ms.ms_id fmt_path ms.ms_manifest;
@@ -795,7 +820,7 @@ and signature_item i ppf x =
       attribute i ppf "Tsig_attribute" a
 
 and module_declaration i ppf md =
-  line i ppf "%a" fmt_modname md.md_id;
+  line i ppf "%a\n" fmt_modname md.md_id;
   attributes i ppf md.md_attributes;
   module_type (i+1) ppf md.md_type;
 
@@ -883,7 +908,7 @@ and structure_item i ppf x =
       line i ppf "Tstr_exception\n";
       type_exception i ppf ext;
   | Tstr_module x ->
-      line i ppf "Tstr_module\n";
+      line i ppf "Tstr_module %a\n" fmt_presence x.mb_presence;
       module_binding i ppf x
   | Tstr_recmodule bindings ->
       line i ppf "Tstr_recmodule\n";
@@ -932,11 +957,12 @@ and constructor_arguments i ppf = function
   | Cstr_tuple l -> list i core_type ppf l
   | Cstr_record l -> list i label_decl ppf l
 
-and label_decl i ppf {ld_id; ld_name = _; ld_mutable; ld_type; ld_loc;
+and label_decl i ppf {ld_id; ld_name= _; ld_mutable; ld_atomic; ld_type; ld_loc;
                       ld_attributes} =
   line i ppf "%a\n" fmt_location ld_loc;
   attributes i ppf ld_attributes;
   line (i+1) ppf "%a\n" fmt_mutable_flag ld_mutable;
+  line (i+1) ppf "%a\n" fmt_atomic_flag ld_atomic;
   line (i+1) ppf "%a" fmt_ident ld_id;
   core_type (i+1) ppf ld_type
 
@@ -976,10 +1002,14 @@ and record_field i ppf = function
   | _, Kept _ ->
       line i ppf "<kept>"
 
-and label_x_expression i ppf (l, e) =
+and label_x_apply_arg i ppf (l, e) =
   line i ppf "<arg>\n";
   arg_label (i+1) ppf l;
-  (match e with None -> () | Some e -> expression (i+1) ppf e)
+  (match e with Omitted () -> () | Arg e -> expression (i+1) ppf e)
+
+and labeled_expression i ppf (l, e) =
+  tuple_component_label i ppf l;
+  expression (i+1) ppf e;
 
 and ident_x_expression_def i ppf (l, e) =
   line i ppf "<def> \"%a\"\n" fmt_ident l;

@@ -326,6 +326,7 @@ static void remove_frame_descriptors(
   void *frametable;
   caml_frametable_list ** previous;
 
+  /* cannot release the domain lock here (e.g. custom block finaliser) */
   caml_plat_lock_blocking(&table->mutex);
 
   previous = &table->frametables;

@@ -258,7 +258,7 @@ module Generator :
           ?cls:string ->
           ?indent:bool -> Buffer.t -> Odoc_types.info option -> unit
         method html_of_info_first_sentence :
-          Buffer.t -> Odoc_info.info option -> unit
+          with_p:bool -> Buffer.t -> Odoc_info.info option -> unit
         method html_of_method : Buffer.t -> Odoc_info.Value.t_method -> unit
         method html_of_modtype :
           Buffer.t ->
@@ -555,7 +555,7 @@ module type Html_generator =
           ?cls:string ->
           ?indent:bool -> Buffer.t -> Odoc_types.info option -> unit
         method html_of_info_first_sentence :
-          Buffer.t -> Odoc_info.info option -> unit
+          with_p:bool -> Buffer.t -> Odoc_info.info option -> unit
         method html_of_method : Buffer.t -> Odoc_info.Value.t_method -> unit
         method html_of_modtype :
           Buffer.t ->

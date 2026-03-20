@@ -15,7 +15,24 @@
 (**************************************************************************)
 
 type t = floatarray
-(** The type of float arrays with packed representation.
+(** The type of "flat" float arrays.
+
+    A [floatarray] is an array data structure that contains a fixed number
+    of elements of type [float]. The elements of a [floatarray] are
+    guaranteed to be stored contiguously in memory, without any boxing.
+
+    Currently, the built-in type [float array] is optimized by default to
+    also use an unboxed representation. However, this optimization may be
+    disabled at configure-time when building the compiler. Furthermore,
+    operations on [floatarray] are a bit more efficient than those on
+    [float array], which require an extra dynamic check.
+
+    Array literals of type [floatarray] can be written using the same syntax
+    as those of type [float array] as long as there is enough typing
+    information in the environment so that the compiler can disambiguate
+    between the two cases. See Section 12.25 'Type-directed disambiguation
+    of array literals' of the manual for more details.
+
     @since 4.08
   *)
 
@@ -117,6 +134,22 @@ val of_list : float list -> t
     @raise Invalid_argument if the length of [l] is greater than
     [Sys.max_floatarray_length].*)
 
+(** {1:comparison Comparison} *)
+
+val equal : eq:(float -> float -> bool) -> t -> t -> bool
+(** [equal ~eq a b] is [true] if and only if [a] and [b] have the
+    same length [n] and for all [i] in \[[0];[n-1]\], [eq a.(i) b.(i)]
+    is [true].
+
+    @since 5.4 *)
+
+val compare : cmp:(float -> float -> int) -> t -> t -> int
+(** [compare ~cmp a b] compares [a] and [b] according to the shortlex order,
+    that is, shorter arrays are smaller and equal-sized arrays are compared
+    in lexicographic order using [cmp] to compare elements.
+
+    @since 5.4 *)
+
 (** {1 Iterators} *)
 
 val iter : f:(float -> unit) -> t -> unit
@@ -134,7 +167,7 @@ val map : f:(float -> float) -> t -> t
     and builds a floatarray with the results returned by [f]. *)
 
 val map_inplace : f:(float -> float) -> t -> unit
-(** [map_inplace f a] applies function [f] to all elements of [a],
+(** [map_inplace ~f a] applies function [f] to all elements of [a],
     and updates their values in place.
     @since 5.1 *)
 
@@ -149,19 +182,19 @@ val mapi_inplace : f:(int -> float -> float) -> t -> unit
     @since 5.1 *)
 
 val fold_left : f:('acc -> float -> 'acc) -> init:'acc -> t -> 'acc
-(** [fold_left ~f x ~init] computes
-    [f (... (f (f x init.(0)) init.(1)) ...) init.(n-1)],
-    where [n] is the length of the floatarray [init]. *)
+(** [fold_left ~f ~init a] computes
+    [f (... (f (f init a.(0)) a.(1)) ...) a.(n-1)],
+    where [n] is the length of the floatarray [a]. *)
 
 val fold_right : f:(float -> 'acc -> 'acc) -> t -> init:'acc -> 'acc
-(** [fold_right f a init] computes
+(** [fold_right ~f a ~init] computes
     [f a.(0) (f a.(1) ( ... (f a.(n-1) init) ...))],
     where [n] is the length of the floatarray [a]. *)
 
 (** {1 Iterators on two arrays} *)
 
 val iter2 : f:(float -> float -> unit) -> t -> t -> unit
-(** [Array.iter2 ~f a b] applies function [f] to all the elements of [a]
+(** [iter2 ~f a b] applies function [f] to all the elements of [a]
     and [b].
     @raise Invalid_argument if the floatarrays are not the same size. *)
 
@@ -179,7 +212,7 @@ val for_all : f:(float -> bool) -> t -> bool
     [(f a1) && (f a2) && ... && (f an)]. *)
 
 val exists : f:(float -> bool) -> t -> bool
-(** [exists f [|a1; ...; an|]] checks if at least one element of
+(** [exists ~f [|a1; ...; an|]] checks if at least one element of
     the floatarray satisfies the predicate [f]. That is, it returns
     [(f a1) || (f a2) || ... || (f an)]. *)
 

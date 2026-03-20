@@ -8,6 +8,7 @@ serve_locations_while_translati
 
 (* Structures *)
 {%%M.foo| <hello>{x} |}
+{%%M.foo  | <hello>{x} |}
 {%%M.foo bar| <hello>{|x|} |bar}
 
 (* Signatures *)
@@ -23,6 +24,11 @@ let {%M.foo| <hello>{x} |}
 let {%M.foo bar| <hello>{|x|} |bar}
   : {%M.foo bar| <hello>{|x|} |bar}
   = {%M.foo bar| <hello>{|x|} |bar}
+
+let {%M.foo | <hello>{u|x|u} |}
+  : {%M.foo | <hello>{u|x|u} |}
+  = {%M.foo | <hello>{u|x|u} |}
+
 
 (* Multiline *)
 {%%M.foo|

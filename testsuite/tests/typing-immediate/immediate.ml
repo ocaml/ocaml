@@ -155,7 +155,6 @@ Error: Signature mismatch:
 
 (* Same as above but with explicit signature *)
 module M_invalid : S = struct type t = string end;;
-module FM_invalid = F (struct type t = string end);;
 [%%expect{|
 Line 1, characters 23-49:
 1 | module M_invalid : S = struct type t = string end;;
@@ -167,6 +166,19 @@ Error: Signature mismatch:
        is not included in
          type t [@@immediate]
        The first is not an immediate type.
+|}];;
+module FM_invalid = F (struct type t = string end);;
+[%%expect{|
+Line 1, characters 20-50:
+1 | module FM_invalid = F (struct type t = string end);;
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Modules do not match: sig type t = string end is not included in
+       S
+     Type declarations do not match:
+       type t = string
+     is not included in
+       type t [@@immediate]
+     The first is not an immediate type.
 |}];;
 
 (* Can't use a non-immediate type even if mutually recursive *)

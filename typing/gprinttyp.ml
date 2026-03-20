@@ -139,16 +139,29 @@ module Index: sig
     | Main of int
     | Synthetic of int
     | Named_subnode of { id:int; synth:bool; name:string }
+  type level_and_scope = { level:int; scope: int }
+  type 'a desc = {
+    id: 'a;
+    color: Decoration.color option;
+    desc: Types.type_desc;
+    lvl:level_and_scope;
+  }
   val subnode: name:string -> t -> t
   val either_ext: Types.row_field_cell ->  t
-  val split:
-    params -> Types.type_expr -> t * Decoration.color option * Types.type_desc
+  val split: params -> Types.type_expr -> t desc
   val colorize: params -> t -> Decoration.color option
 end = struct
   type t =
     | Main of int
     | Synthetic of int
     | Named_subnode of { id:int; synth:bool; name:string }
+  type level_and_scope = { level:int; scope: int }
+  type 'a desc = {
+    id: 'a;
+    color: Decoration.color option;
+    desc: Types.type_desc;
+    lvl:level_and_scope;
+  }
 
   type name_map = {
     (* We keep the main and synthetic and index space separate to avoid index
@@ -186,7 +199,7 @@ end = struct
           Hashtbl.replace id_map.tbl id last;
           Main last
 
-  (** Generate color from the node id to keep the color stable inbetween
+  (** Generate color from the node id to keep the color stable in between
       different calls to the typechecker on the same input. *)
   let colorize_id params id =
     if not params.colorize then None
@@ -221,7 +234,13 @@ end = struct
   let split params x =
     let x = repr params x in
     let color = colorize_id params x.id in
-    pretty_id params x.id, color, x.desc
+    let scope = Types.Transient_expr.get_scope x in
+    let level = x.level in
+    { id = pretty_id params x.id;
+      color;
+      desc = x.desc;
+      lvl = {level;scope}
+    }
 
   let subnode ~name x = match x with
     | Main id -> Named_subnode {id;name;synth=false}
@@ -303,8 +322,9 @@ module Pp = struct
   let seq ~sep = pp_print_seq ~pp_sep:sep
   let rec longident ppf = function
     | Longident.Lident s -> fprintf ppf "%s" s
-    | Longident.Ldot (l,s) -> fprintf ppf "%a.%s"  longident l s
-    | Longident.Lapply(f,x) -> fprintf ppf "%a(%a)" longident f  longident x
+    | Longident.Ldot (l,s) -> fprintf ppf "%a.%s"  longident l.txt s.txt
+    | Longident.Lapply(f,x) ->
+        fprintf ppf "%a(%a)" longident f.txt longident x.txt
 
   let color ppf = function
     | Decoration.Named s -> fprintf ppf "%s" s
@@ -521,8 +541,49 @@ module Digraph = struct
   let labelf fmt = labelk Fun.id fmt
   let labelr fmt = labelk Decoration.make fmt
 
-  let add_node explicit_d color id tynode dg =
-    let d = labelf "<SUB>%a</SUB>" Pp.prettier_index id in
+  (* Use unicode superscript digit to circumvent graphviz limited support for
+     superscript. *)
+  let superscript_digit ppf n =
+    let s = match n with
+    | 1 -> "¹"
+    | 2 -> "²"
+    | 3 -> "³"
+    | 0 -> "⁰"
+    | 4 -> "⁴"
+    | 5 -> "⁵"
+    | 6 -> "⁶"
+    | 7 -> "⁷"
+    | 8 -> "⁸"
+    | 9 -> "⁹"
+    | _ -> assert false
+    in
+    Format.pp_print_string ppf s
+
+  let rec superscript ppf n =
+    if n < 10 then
+      superscript_digit ppf n
+    else begin
+      superscript ppf (n/10);
+      superscript_digit ppf (n mod 10)
+    end
+
+  let superscript_level ppf lvl =
+    (* avoid a dependency on Btype *)
+    if lvl = Ident.highest_scope then Format.pp_print_string ppf "᪲"
+    else superscript ppf lvl
+
+  let add_node explicit_d color id ?lvl tynode dg =
+    let d = match lvl with
+      | None -> labelf "<SUB>%a</SUB>" Pp.prettier_index id
+      | Some {Index.level; scope=0} ->
+          labelf "<SUB>%a %a</SUB>"
+            Pp.prettier_index id superscript_level level
+      | Some {Index.level; scope} ->
+          labelf "<SUB>%a %a⁺%a</SUB>"
+            Pp.prettier_index id
+            superscript_level level
+            superscript scope
+    in
     let d = match color with
     | None -> Decoration.make d
     | Some x -> Decoration.(make (filled x :: d))
@@ -564,9 +625,10 @@ module Digraph = struct
       dg |> add std (Edge(id0,id))
 
   let split_fresh_typ params ty0 g =
-    let (id, color, desc) = Index.split params ty0 in
+    let {Index.id; _ } as desc = Index.split params ty0 in
     let tynode = Node id in
-    if Elt_map.mem tynode g then id, None else id, Some (tynode,color,desc)
+    if Elt_map.mem tynode g then id, None
+    else id, Some { desc with id = tynode }
 
   let pp_path = Format_doc.compat Path.print
 
@@ -574,8 +636,8 @@ module Digraph = struct
     let id, next = split_fresh_typ params ty0 dg.elts in
     match next with
     | None -> id, dg
-    | Some (tynode,color,desc) ->
-        id, node params color id tynode desc dg
+    | Some Index.{id=tynode; color; desc; lvl} ->
+        id, node params color ~lvl id tynode desc dg
   and edge params id0 lbl ty gh =
     let id, gh = inject_typ params ty gh in
     add lbl (Edge(id0,id)) gh
@@ -594,8 +656,24 @@ module Digraph = struct
     snd @@ List.fold_left
       (numbered_edge params id0)
       (0,gh) l
-  and node params color id tynode desc dg =
-    let add_tynode l = add_node l color id tynode dg in
+  and labeled_edge params id0 (i,gh) (l,ty) =
+    let l =
+      match l with
+      | None -> labelr "%d" i
+      | Some l -> labelr "%d<SUP>%s</SUP>" i l
+    in
+    i + 1, edge params id0 l ty gh
+  and labeled_edges params id0 l gh =
+    snd @@ List.fold_left
+      (labeled_edge params id0)
+      (0,gh) l
+  and package_constraint params id0 gh (l, ty) =
+    let l = labelr "%a =" Pp.longident (Option.get @@ Longident.unflatten l) in
+    edge params id0 l ty gh
+  and package_constraints params id0 l gh =
+    List.fold_left (package_constraint params id0) gh l
+  and node params color ~lvl id tynode desc dg =
+    let add_tynode l = add_node l color ~lvl id tynode dg in
     let mk fmt = labelk (fun l -> add_tynode (Decoration.make l)) fmt in
     let numbered = numbered_edges params id in
     let edge = edge params id in
@@ -604,8 +682,14 @@ module Digraph = struct
     | Types.Tvar name -> mk "%a" Pp.pretty_var name
     | Types.Tarrow(l,t1,t2,_) ->
        mk "→%a" Pp.exponent_of_label l |> numbered [t1; t2]
+    | Types.Tfunctor(l,us,{pack_path; pack_constraints},t2) ->
+        mk "→%a (%s : %a)" Pp.exponent_of_label l
+                    (Ident.Unscoped.name us)
+                    pp_path pack_path
+          |> package_constraints params id pack_constraints
+          |> numbered [t2]
     | Types.Ttuple tl ->
-        mk "*" |> numbered tl
+        mk "*" |> labeled_edges params id tl
     | Types.Tconstr (p,tl,abbrevs) ->
         let constr = mk "%a" pp_path p |> numbered tl in
         if not params.follow_expansions then
@@ -630,13 +714,13 @@ module Digraph = struct
         in
         begin match split_fresh_typ params t dg.elts with
         | _, None -> dg
-        | next_id, Some (_, color, desc) ->
-            group_fields ~params ~prev_id:id
+        | next_id, Some {Index.color; desc; lvl; _ } ->
+            group_fields ~params ~prev_id:id ~lvl
               dg.elts dg.graph empty_subgraph
               ~id:next_id ~color ~desc
         end
     | Types.Tfield _ ->
-        group_fields ~params ~prev_id:id
+        group_fields ~params ~prev_id:id ~lvl
           dg.elts dg.graph empty_subgraph
           ~color ~id ~desc
     | Types.Tnil -> mk "[Nil]"
@@ -669,12 +753,10 @@ module Digraph = struct
             fields
         in
         { elts; graph = add_subgraph (labelr "polyvar", fields) main }
-    | Types.Tpackage (p, fl) ->
-        let types = List.map snd fl in
-        mk "[mod %a with %a]"
-          pp_path p
-          Pp.(list ~sep:semi longident) (List.map fst fl)
-        |> numbered types
+    | Types.Tpackage {pack_path; pack_constraints} ->
+        mk "[mod %a]"
+          pp_path pack_path
+        |> package_constraints params id pack_constraints
   and variant params id0 (elts,main,fields) (name,rf)  =
     let id = Index.subnode ~name id0 in
     let fnode = Node id in
@@ -713,7 +795,7 @@ module Digraph = struct
         )
       rf
   and group_fields ~params ~prev_id elts main fields
-      ~color ~id ~desc =
+      ~color ~lvl ~id ~desc =
     let add_tynode dg l = add_node l color id (Node id) dg in
     let mk dg fmt = labelk (fun l -> add_tynode dg (Decoration.make l)) fmt in
     let merge elts ~main ~fields =
@@ -731,8 +813,8 @@ module Digraph = struct
         let id_next, next = split_fresh_typ params next elts in
         begin match next with
         | None -> {elts; graph=main}
-        | Some (_,color,desc) ->
-            group_fields ~params ~prev_id:id
+        | Some {Index.color; desc; lvl; _} ->
+            group_fields ~params ~prev_id:id ~lvl
               elts main fields
               ~id:id_next ~desc ~color
         end
@@ -745,7 +827,7 @@ module Digraph = struct
     | Types.Tnil -> merge elts ~main ~fields
     | _ ->
         let dg = merge elts ~main ~fields in
-        node params color id (Node id) desc dg
+        node params color ~lvl id (Node id) desc dg
 end
 
 let params

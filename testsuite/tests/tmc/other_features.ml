@@ -22,8 +22,8 @@ Lines 6-11, characters 30-40:
  9 |     | C (a, b) ->
 10 |         let map' l = map f l in
 11 |         C (map' a, (map' [@tailcall]) b)
-Warning 71 [unused-tmc-attribute]: This function is marked @tail_mod_cons
-but is never applied in TMC position.
+Warning 71 [unused-tmc-attribute]: This function is marked "@tail_mod_cons"
+  but is never applied in TMC position.
 
 Line 11, characters 19-39:
 11 |         C (map' a, (map' [@tailcall]) b)

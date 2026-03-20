@@ -28,6 +28,7 @@ void caml_init_gc (void);
 value caml_gc_stat(value);
 value caml_gc_major(value);
 
+extern atomic_bool caml_runtime_hashtbl_randomized;
 
 #define caml_stat_top_heap_wsz caml_top_heap_words(Caml_state->shared_heap)
 #define caml_stat_compactions 0
@@ -42,6 +43,17 @@ value caml_gc_major(value);
 #ifdef DEBUG
 void caml_heap_check (void);
 #endif
+
+/* See the documentation of [Gc.ramp_up] in the standard library. */
+caml_result caml_gc_ramp_up(value callback, uintnat *out_suspended_work);
+
+/* See the documentation of [Gc.ramp_down] in the standard library. */
+void caml_gc_ramp_down(uintnat suspended_ramp_up_words);
+
+/* See the [Gc.Tweak] module in the standard library */
+void caml_init_gc_tweaks(void);
+atomic_uintnat* caml_lookup_gc_tweak(const char* name, uintnat len);
+void caml_print_gc_tweaks(void);
 
 #endif /* CAML_INTERNALS */
 

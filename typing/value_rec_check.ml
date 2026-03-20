@@ -119,9 +119,9 @@ let is_ref : Types.value_description -> bool = function
 
 (* See the note on abstracted arguments in the documentation for
     Typedtree.Texp_apply *)
-let is_abstracted_arg : arg_label * expression option -> bool = function
-  | (_, None) -> true
-  | (_, Some _) -> false
+let is_abstracted_arg : arg_label * apply_arg -> bool = function
+  | (_, Omitted ()) -> true
+  | (_, Arg _) -> false
 
 let classify_expression : Typedtree.expression -> sd =
   (* We need to keep track of the size of expressions
@@ -150,23 +150,12 @@ let classify_expression : Typedtree.expression -> sd =
     | Texp_let (rec_flag, vb, e) ->
         let env = classify_value_bindings rec_flag env vb in
         classify_expression env e
-    | Texp_letmodule (Some mid, _, _, mexp, e) ->
-        (* Note on module presence:
-           For absent modules (i.e. module aliases), the module being bound
-           does not have a physical representation, but its size can still be
-           derived from the alias itself, so we can reuse the same code as
-           for modules that are present. *)
-        let size = classify_module_expression env mexp in
-        let env = Ident.add mid size env in
-        classify_expression env e
     | Texp_ident (path, _, _) ->
         classify_path env path
 
     (* non-binding cases *)
-    | Texp_open (_, e)
-    | Texp_letmodule (None, _, _, _, e)
     | Texp_sequence (_, e)
-    | Texp_letexception (_, e) ->
+    | Texp_struct_item (_, e) ->
         classify_expression env e
 
     | Texp_construct (_, {cstr_tag = Cstr_unboxed}, [e]) ->
@@ -182,6 +171,7 @@ let classify_expression : Typedtree.expression -> sd =
 
     | Texp_variant _
     | Texp_tuple _
+    | Texp_atomic_loc _
     | Texp_extension_constructor _
     | Texp_constant _ ->
         Static
@@ -212,20 +202,15 @@ let classify_expression : Typedtree.expression -> sd =
     | Texp_function _ ->
         Static
     | Texp_lazy e ->
-      (* The code below was copied (in part) from translcore.ml *)
       begin match Typeopt.classify_lazy_argument e with
-      | `Constant_or_function ->
-        (* A constant expr (of type <> float if [Config.flat_float_array] is
-           true) gets compiled as itself. *)
+      | Eager Shortcut ->
+          (* compiled to [e] directly. *)
           classify_expression env e
-      | `Float_that_cannot_be_shortcut
-      | `Identifier `Forward_value ->
-          (* Forward blocks *)
+      | Eager Forward ->
+          (* [e] is placed inside a Forward block *)
           Static
-      | `Identifier `Other ->
-          classify_expression env e
-      | `Other ->
-          (* other cases compile to a lazy block holding a function *)
+      | Lazy_thunk ->
+          (* [e] is placed inside a Lazy thunk. *)
           Static
       end
 
@@ -550,8 +535,6 @@ let array : 'a. ('a -> term_judg) -> 'a array -> term_judg =
     Array.fold_left (fun env item -> Env.join env (f item m)) Env.empty ar
 
 let single : Ident.t -> term_judg = Env.single
-let remove_id : Ident.t -> term_judg -> term_judg =
-  fun id f m -> Env.remove id (f m)
 let remove_ids : Ident.t list -> term_judg -> term_judg =
   fun ids f m -> Env.remove_list ids (f m)
 
@@ -590,8 +573,6 @@ let rec expression : Typedtree.expression -> term_judg =
          G |- let <bindings> in body : m
       *)
       value_bindings rec_flag bindings >> expression body
-    | Texp_letmodule (x, _, _, mexp, e) ->
-      module_binding (x, mexp) >> expression e
     | Texp_match (e, cases, eff_cases, _) ->
       (* TODO: update comment below for eff_cases
          (Gi; mi |- pi -> ei : m)^i
@@ -632,7 +613,7 @@ let rec expression : Typedtree.expression -> term_judg =
       path pth << Dereference
     | Texp_instvar (self_path, pth, _inst_var) ->
         join [path self_path << Dereference; path pth]
-    | Texp_apply ({exp_desc = Texp_ident (_, _, vd)}, [_, Some arg])
+    | Texp_apply ({exp_desc = Texp_ident (_, _, vd)}, [_, Arg arg])
       when is_ref vd ->
       (*
         G |- e: m[Guard]
@@ -652,8 +633,8 @@ let rec expression : Typedtree.expression -> term_judg =
            function is stored in the closure without being called. *)
         let rec split_args ~has_omitted_arg = function
           | [] -> [], []
-          | (_, None) :: rest -> split_args ~has_omitted_arg:true rest
-          | (_, Some arg) :: rest ->
+          | (_, Omitted ()) :: rest -> split_args ~has_omitted_arg:true rest
+          | (_, Arg arg) :: rest ->
             let applied, delayed = split_args ~has_omitted_arg rest in
             if has_omitted_arg
             then applied, arg :: delayed
@@ -669,8 +650,10 @@ let rec expression : Typedtree.expression -> term_judg =
               list expression applied << Dereference;
               list expression delayed << Guard]
     | Texp_tuple exprs ->
-      list expression exprs << Guard
-    | Texp_array exprs ->
+      list expression (List.map snd exprs) << Guard
+    | Texp_atomic_loc (expr, _, _) ->
+      expression expr << Guard
+    | Texp_array (_, exprs) ->
       let array_mode = match Typeopt.array_kind exp with
         | Lambda.Pfloatarray ->
             (* (flat) float arrays unbox their elements *)
@@ -805,12 +788,6 @@ let rec expression : Typedtree.expression -> term_judg =
         path pth << Dereference;
         expression e << Dereference;
       ]
-    | Texp_letexception ({ext_id}, e) ->
-      (* G |- e: m
-         ----------------------------
-         G |- let exception A in e: m
-      *)
-      remove_id ext_id (expression e)
     | Texp_assert (e, _) ->
       (*
         G |- e: m[Dereference]
@@ -917,11 +894,12 @@ let rec expression : Typedtree.expression -> term_judg =
         G |- lazy e: m
       *)
       let lazy_mode = match Typeopt.classify_lazy_argument e with
-        | `Constant_or_function
-        | `Identifier _
-        | `Float_that_cannot_be_shortcut ->
+        | Eager _ ->
+          (* We pessimize [Eager Forward] into [Return] instead of [Guarded],
+             so that this check remains robust to adding more shortcutting
+             in the future. *)
           Return
-        | `Other ->
+        | Lazy_thunk ->
           Delay
       in
       expression e << lazy_mode
@@ -939,8 +917,8 @@ let rec expression : Typedtree.expression -> term_judg =
       empty
     | Texp_extension_constructor (_lid, pth) ->
       path pth << Dereference
-    | Texp_open (od, e) ->
-      open_declaration od >> expression e
+    | Texp_struct_item (si, e) ->
+      structure_item si >> expression e
 
 (* Function bodies.
 
@@ -1189,7 +1167,11 @@ and class_expr : Typedtree.class_expr -> term_judg =
         let ids = List.map fst args in
         remove_ids ids (class_expr ce << Delay)
     | Tcl_apply (ce, args) ->
-        let arg (_label, eo) = option expression eo in
+        let arg (_, arg) =
+          match arg with
+          | Omitted () -> empty
+          | Arg e -> expression e
+        in
         join [
           class_expr ce << Dereference;
           list arg args << Dereference;
@@ -1345,7 +1327,7 @@ and is_destructuring_pattern : type k . k general_pattern -> bool =
   fun pat -> match pat.pat_desc with
     | Tpat_any -> false
     | Tpat_var (_, _, _) -> false
-    | Tpat_alias (pat, _, _, _) -> is_destructuring_pattern pat
+    | Tpat_alias (pat, _, _, _, _) -> is_destructuring_pattern pat
     | Tpat_constant _ -> true
     | Tpat_tuple _ -> true
     | Tpat_construct _ -> true

@@ -85,6 +85,45 @@ val unsigned_rem : nativeint -> nativeint -> nativeint
 
     @since 4.08 *)
 
+val fdiv : nativeint -> nativeint -> nativeint
+(** Floor division.
+    [fdiv x y] is the real quotient [x / y] rounded down to an integer.
+    We have [fdiv x y <= div x y <= cdiv x y] and [cdiv x y - fdiv x y <= 1].
+
+    @raise Division_by_zero if the second argument is 0.
+    @since 5.5
+*)
+
+val cdiv : nativeint -> nativeint -> nativeint
+(** Ceil division.
+    [cdiv x y] is the real quotient [x / y] rounded up to an integer.
+    We have [fdiv x y <= div x y <= cdiv x y] and [cdiv x y - fdiv x y <= 1].
+
+    @raise Division_by_zero if the second argument is 0.
+    @since 5.5
+*)
+
+val ediv : nativeint -> nativeint -> nativeint
+(** Euclidean division.
+    [ediv x y] is the real quotient [x / y] rounded down to an integer
+    if [y > 0] and rounded up to an integer if [y < 0].
+    The remainder [erem x y = x - ediv x y * y] is always non-negative.
+    Moreover, [ediv x (-y)] = [- ediv x y].
+
+    @raise Division_by_zero if the second argument is 0.
+    @since 5.5
+*)
+
+val erem : nativeint -> nativeint -> nativeint
+(** Euclidean remainder.  If [y] is not zero, we have
+    [x = ediv x y * y + erem x y] and [0 <= erem x y <= abs y - 1].
+    The result of [erem x y] is always non-negative,
+    unlike the result of [rem x y], which has the sign of [x].
+
+    @raise Division_by_zero if the second argument is 0.
+    @since 5.5
+*)
+
 val succ : nativeint -> nativeint
 (** Successor.
    [Nativeint.succ x] is [Nativeint.add x Nativeint.one]. *)
@@ -235,6 +274,59 @@ val max: t -> t -> t
 (** Return the greater of the two arguments.
     @since 4.13
  *)
+
+val popcount: t -> int
+(** Population count, also known as Hamming weight.
+    [popcount n] is the number of 1 bits in the binary representation of [n].
+    Negative [n] are represented in two's complement.
+
+    @since 5.5 *)
+
+val unsigned_bitsize: t -> int
+(** [unsigned_bitsize n] is the minimal number of bits needed to represent
+    [n] as an unsigned binary number.  It is the smallest integer [i]
+    between 0 and [size] inclusive such that [0 <= n < 2{^i}] (unsigned).
+
+    @since 5.5 *)
+
+val signed_bitsize: t -> int
+(** [signed_bitsize n] is the minimal number of bits needed to represent
+    [n] as a signed, two's complement binary number.
+    It is the smallest integer [i] between 1 and [size] inclusive such that
+    [-2{^i-1} <= n < 2{^i-1}] (signed).
+
+    @since 5.5 *)
+
+val leading_zeros: t -> int
+(** [leading_zeros n] is the number of leading (most significant) 0 bits in
+    the binary representation of [n].
+    It is an integer between 0 and 64 inclusive.
+    If [n] is negative, [leading_zeros n = 0] since the most significant
+    bit of [n] is 1.  [leading_zeros n = size] if and only if [n = zero].
+    Note that [leading_zeros n + unsigned_bitsize n = size].
+
+    @since 5.5 *)
+
+val leading_sign_bits: t -> int
+(** [leading_sign_bits n] is the number of leading (most significant)
+    sign bits in the binary representation of [n],
+    excluding the sign bit itself.
+    It is an integer between 0 and 63 inclusive.
+    For positive [n], it is the number of leading zero bits minus one.
+    For negative [n], it is the number of leading one bits minus one.
+    Note that [leading_sign_bits n + signed_bitsize n = size].
+
+    @since 5.5 *)
+
+val trailing_zeros: t -> int
+(** [trailing_zeros n] is the number of trailing (least significant) 0 bits in
+    the binary representation of [n].
+    It is an integer between 0 and [size] inclusive.
+    It is the largest integer [i <= size] such that [2{^i}] divides [n] evenly.
+    For example, [trailing_zeros n = 0] if and only if [n] is odd,
+    and [trailing_zeros n = size] if and only if [n = zero].
+
+    @since 5.5 *)
 
 val seeded_hash : int -> t -> int
 (** A seeded hash function for native ints, with the same output value as

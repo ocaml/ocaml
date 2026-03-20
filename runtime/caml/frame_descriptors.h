@@ -31,7 +31,7 @@
  *
  * - frame_return_to_C(): Whether the return is to C from OCaml, in
  *   which case there is no actual stack frame, GC roots, allocation
- *   sizes, or debug info.  See caml_system.frametable in the various
+ *   sizes, or debug info.  See caml_system$frametable in the various
  *   architecture-specific OCaml/C interfaces.
  *
  * - frame_size(): The stack frame size, in bytes. All stack frames
@@ -119,7 +119,8 @@ void* caml_copy_and_register_frametable(void *table, int size);
 
 /* The unregistered frametables can still be in use after calling
    this function. Thus, you should not free their memory.
-   Note: it may reorder the content of the array 'tables' */
+   Note: it may reorder the content of the array 'tables'.
+   This can be called from a custom block finalizer. */
 void caml_unregister_frametables(void **tables, int ntables);
 void caml_unregister_frametable(void *table);
 

@@ -126,13 +126,13 @@ make tests
 #   4.07.0+dev8-2018-06-19 => 4.07.0+dev9-2018-06-26
 # for production releases: check and change the Changes header
 #  (remove "next version" and add a date)
-make -B configure
+tools/autogen
 git commit -a -m "last commit before tagging $VERSION"
 
 # update build-aux/ocaml_version.m4 with the new release; for example,
 #   4.07.0+dev9-2018-06-26 => 4.07.0+rc2
 # Update ocaml-variants.opam with new version.
-make -B configure
+tools/autogen
 # For a production release
 make coreboot -j5
 make coreboot -j5 # must say "Fixpoint reached, bootstrap succeeded."
@@ -144,7 +144,7 @@ git tag -m "release $VERSION" $TAGVERSION
 # for testing candidates, use N+dev(D+2) instead; for example,
 #   4.07.0+rc2 => 4.07.0+dev10-2018-06-26
 # Revert ocaml-variants.opam to its "trunk" version.
-make -B configure
+tools/autogen
 git commit -m "increment version number after tagging $VERSION" build-aux/ocaml_version.m4 VERSION configure ocaml-variants.opam
 git push
 git push --tags
@@ -159,14 +159,18 @@ This needs to be more tested, tread with care.
 #   4.07.0+dev0-2018-06-19 => 4.07.0+dev1-2018-06-26
 # Rename the "Working version" header in Changes
 # to "OCaml $BRANCH"
-make -B configure
+tools/autogen
 git commit -a -m "last commit before branching $BRANCH"
 git branch $BRANCH
 
 # update build-aux/ocaml_version.m4 with the new future branch,
 #   4.07.0+dev1-2018-06-26 => 4.08.0+dev0-2018-06-30
+# Also increment OCAML__RELEASE_NUMBER in build-aux/ocaml_version.m4
+#   If the major version number is changing, the logic in p_runtime_id in
+#   tools/objinfo.ml mapping release number to major/minor version will need
+#   altering.
 # Update ocaml-variants.opam with new version.
-make -B configure
+tools/autogen
 # Add a "Working version" section" to Changes
 # Add common subsections in Changes, see Changelog.
 git commit -m "first commit after branching $BRANCH" -a
@@ -176,7 +180,7 @@ git push
 git checkout $BRANCH
 # increment VERSION, for instance
 #   4.07.0+dev1-2018-06-26 => 4.07.0+dev2-2018-06-30
-make -B configure
+tools/autogen
 git commit -m "first commit on branch $BRANCH" -a
 git push --set-upstream origin $BRANCH
 ```
@@ -410,7 +414,7 @@ Try to propagate the new compiler to external open source tools
 See https://github.com/compiler-explorer/compiler-explorer/pull/6735
 and https://github.com/compiler-explorer/infra/pull/1359 as examples.
 
-This should be expanded, once we have more experince with the process
+This should be expanded, once we have more experience with the process
 
 # Appendix
 

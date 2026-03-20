@@ -7,14 +7,13 @@ File "w01.ml", line 20, characters 0-3:
 20 | f 1; f 1;;
      ^^^
 Warning 5 [ignored-partial-application]: this function application is partial,
-maybe some arguments are missing.
+  maybe some arguments are missing.
 
 File "w01.ml", line 30, characters 4-5:
 30 | let 1 = 1;;
          ^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-0
+  Here is an example of a case that is not matched: 0
 
 File "w01.ml", line 35, characters 0-1:
 35 | 1; 1;;

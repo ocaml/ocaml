@@ -106,18 +106,11 @@ module Make2 (T' : S) : sig module Id : sig end module Id2 = Id end
   module Id2 = Id
 end;;
 [%%expect{|
-Lines 2-5, characters 57-3:
-2 | .........................................................struct
-3 |   module Id = T'.T.Id
-4 |   module Id2 = Id
-5 | end..
-Error: Signature mismatch:
-       Modules do not match:
-         sig module Id : sig end module Id2 = Id end
-       is not included in
-         sig module Id2 = T'.Term0.Id end
-       In module "Id2":
-       Module "T'.Term0.Id" cannot be aliased
+Lines 1-2, characters 24-53:
+1 | ........................sig module Id : sig end module Id2 = Id end
+2 |                         with module Id := T'.Term0.Id..........
+Error: In this "with" constraint, replacing "Id" by "T'.Term0.Id" would
+       introduce an invalid alias at "Id2"
 |}]
 
 module Make3 (T' : S) = struct
@@ -219,9 +212,6 @@ module M' = F(M);;
 module type S' = module type of M';;
 module Asc = struct type t = int let compare x y = x - y end;;
 module Desc = struct type t = int let compare x y = y - x end;;
-module rec M1 : S' with module Term0 := Asc and module T := Desc = M1;;
-(* And now we have a witness of MkT(Asc).t = MkT(Desc).t ... *)
-let (E eq : M1.u) = (E Eq : M1.t);;
 [%%expect{|
 type (_, _) eq = Eq : ('a, 'a) eq
 module MkT :
@@ -259,6 +249,8 @@ module MkT :
       val partition : (elt -> bool) -> t -> t * t
       val split : elt -> t -> t * bool * t
       val is_empty : t -> bool
+      val is_singleton : t -> bool
+      val singleton_to_elt : t -> elt option
       val mem : elt -> t -> bool
       val equal : t -> t -> bool
       val compare : t -> t -> int
@@ -311,9 +303,16 @@ module type S' =
   end
 module Asc : sig type t = int val compare : int -> int -> int end
 module Desc : sig type t = int val compare : int -> int -> int end
-Line 15, characters 0-69:
-15 | module rec M1 : S' with module Term0 := Asc and module T := Desc = M1;;
-     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+|}]
+module S = struct
+  module rec M1 : S' with module Term0 := Asc and module T := Desc = M1
+  (* And now we have a witness of MkT(Asc).t = MkT(Desc).t ... *)
+  let (E eq : M1.u) = (E Eq : M1.t)
+end
+[%%expect{|
+Line 2, characters 2-71:
+2 |   module rec M1 : S' with module Term0 := Asc and module T := Desc = M1
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type "M.t"
        Constructors do not match:
          "E of (MkT(M.T).t, MkT(M.T).t) eq"

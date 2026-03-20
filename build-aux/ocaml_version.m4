@@ -29,14 +29,17 @@ m4_define([OCAML__DEVELOPMENT_VERSION], [true])
 
 # The three following components (major, minor and patch level) MUST be
 # integers. They MUST NOT be left-padded with zeros and all of them,
-# including the patchlevel, are mandatory.
+# including the patchlevel, are mandatory. OCAML__RELEASE_NUMBER must be
+# incremented with each minor release, and likewise must be an unpadded integer.
 
 m4_define([OCAML__VERSION_MAJOR], [5])
-m4_define([OCAML__VERSION_MINOR], [4])
+m4_define([OCAML__VERSION_MINOR], [6])
+m4_define([OCAML__RELEASE_NUMBER], [22])
 m4_define([OCAML__VERSION_PATCHLEVEL], [0])
+
 # Note that the OCAML__VERSION_EXTRA string defined below is always empty
 # for officially-released versions of OCaml.
-m4_define([OCAML__VERSION_EXTRA], [dev0-2024-08-25])
+m4_define([OCAML__VERSION_EXTRA], [dev0-2026-01-26])
 
 # The OCAML__VERSION_EXTRA_PREFIX macro defined below should be a
 # single character:
@@ -97,7 +100,7 @@ m4_define([OCAML__RELEASE_EXTRA],
 # - A 3-bytes version number
 
 m4_define([MAGIC_NUMBER__PREFIX], [Caml1999])
-m4_define([MAGIC_NUMBER__VERSION], [035])
+m4_define([MAGIC_NUMBER__VERSION], [038])
 
 # The following macro is used to define all our magic numbers
 # Its first argument is the name of the file type described by that

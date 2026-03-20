@@ -1,3 +1,9 @@
+\section{s:signature-substitution}{Substituting inside a signature}
+%HEVEA\cutname{signaturesubstitution.html}
+\ikwd{with\@\texttt{with}}
+\ikwd{module\@\texttt{module}}
+\ikwd{type\@\texttt{type}}
+
 \subsection{ss:destructive-substitution}{Destructive substitutions}
 
 (Introduced in OCaml 3.12, generalized in 4.06)

@@ -47,7 +47,7 @@
 *)
 
 (** The type for counter events emitted by the runtime. Counter events are used
-  to measure a quantity at a point in time or record the occurence of an event.
+  to measure a quantity at a point in time or record the occurrence of an event.
   In the latter case their value will be one. *)
 type runtime_counter =
 | EV_C_FORCE_MINOR_ALLOC_SMALL
@@ -72,13 +72,14 @@ Triggering of a minor collection during memprof young sampling.
 *)
 | EV_C_MINOR_PROMOTED
 (**
-Total words promoted from the minor heap to the major in the last minor
-collection.
+Total {b bytes} promoted from the minor heap of this Domain to the major heap
+in the last minor collection.
 @since 5.0
 *)
 | EV_C_MINOR_ALLOCATED
 (**
-Total {b bytes} allocated in the minor heap in the last minor collection.
+Total {b bytes} allocated in the minor heap of this Domain in the
+last minor collection.
 @since 5.0
 *)
 | EV_C_REQUEST_MAJOR_ALLOC_SHR
@@ -108,16 +109,16 @@ Triggering of a minor collection due to custom table reallocation.
 *)
 | EV_C_MAJOR_HEAP_POOL_WORDS
 (**
-Total words in a Domain's major heap pools. This is the sum of unallocated and
-live words in each pool.
+Total {b words} in a Domain's major heap pools. This is the sum of
+unallocated and live words in each pool.
 @since 5.1 *)
 | EV_C_MAJOR_HEAP_POOL_LIVE_WORDS
 (**
-Current live words in a Domain's major heap pools.
+Current live {b words} in a Domain's major heap pools.
 @since 5.1 *)
 | EV_C_MAJOR_HEAP_LARGE_WORDS
 (**
-Total words of a Domain's major heap large allocations.
+Total {b words} of a Domain's major heap large allocations.
 A large allocation is an allocation larger than the largest sized pool.
 @since 5.1 *)
 | EV_C_MAJOR_HEAP_POOL_FRAG_WORDS
@@ -136,18 +137,18 @@ Live blocks of a Domain's major heap large allocations.
 @since 5.1 *)
 | EV_C_MAJOR_HEAP_WORDS
 (**
-Major heap size in words of a Domain.
+Major heap size in {b words} of a Domain.
 @since 5.3 *)
 | EV_C_MAJOR_ALLOCATED_WORDS
 (**
-Allocations to the major heap of this Domain in words, since the last major
+Allocations to the major heap of this Domain in {b words}, since the last major
 slice.
 @since 5.3
 *)
 | EV_C_MAJOR_ALLOCATED_WORK
 (**
 The amount of major GC 'work' needing to be done as a result of allocations to
-the major heap of this Domain in words, since the last major slice.
+the major heap of this Domain in {b words}, since the last major slice.
 @since 5.3
 *)
 | EV_C_MAJOR_DEPENDENT_WORK
@@ -173,8 +174,8 @@ began.
 *)
 | EV_C_MAJOR_ALLOC_COUNTER
 (**
-The global words of major GC allocations done by all domains since the program
-began.
+The global {b words} of major GC allocations done by all domains since the
+program began.
 @since 5.3
 *)
 | EV_C_MAJOR_SLICE_TARGET
@@ -187,6 +188,18 @@ end of the major slice (see EV_C_MAJOR_SLICE_COUNTER).
 (**
 The budget in 'work' that a domain has to do during the major slice.
 @since 5.3
+ *)
+| EV_C_MINOR_ALLOCATED_WORDS
+(**
+Total {b words} allocated in the minor heap of this Domain in the
+last minor collection.
+@since 5.4
+*)
+| EV_C_MINOR_PROMOTED_WORDS
+(**
+Total {b words} promoted from the minor heap of this Domain to the major heap
+in the last minor collection.
+@since 5.4
 *)
 
 (** The type for span events emitted by the runtime. *)
@@ -518,12 +531,26 @@ type cursor
 
 module Timestamp : sig
     type t
-    (** Type for the int64 timestamp to allow for future changes. *)
+    (** Abstract timestamp included in events. *)
 
     val to_int64 : t -> int64
+    (** Convert a timestamp to a number of nanosecond.
+
+        Note that the starting point for timestamps in unspecified: the absolute
+        value is meaningless, only differences matter.
+
+        Also note that the precision of the underlying clock may be coarser than
+        nanoseconds: events may have equal timestamp if they are emitted within
+        the coarseness of the clock. *)
+
+    val get_current : unit -> t
+    (** Access the current timestamp.
+        @since 5.4 *)
 end
 
 module Type : sig
+  (** @since 5.1 *)
+
   type 'a t
   (** The type for a user event content type. *)
 
@@ -551,7 +578,9 @@ end
 module User : sig
   (** User events is a way for libraries to provide runtime events that can be
       consumed by other tools. These events can carry known data types or custom
-      values. The current maximum number of user events is 8192. *)
+      values. The current maximum number of user events is 8192.
+
+      @since 5.1 *)
 
   type tag = ..
   (** The type for a user event tag. Tags are used to discriminate between
@@ -612,7 +641,9 @@ module Callbacks : sig
                         t -> t
   (** [add_user_event ty callback t] extends [t] to additionally subscribe to
       user events of type [ty]. When such an event happens, [callback] is called
-      with the corresponding event and payload. *)
+      with the corresponding event and payload.
+
+      @since 5.1 *)
 end
 
 val start : unit -> unit
@@ -625,7 +656,9 @@ val start : unit -> unit
 
 val path : unit -> string option
 (** If runtime events are being collected, [path ()] returns [Some p] where [p]
-  is a path to the runtime events file. Otherwise, it returns None. *)
+  is a path to the runtime events file. Otherwise, it returns None.
+
+  @since 5.3 *)
 
 val pause : unit -> unit
 (** [pause ()] will pause the collection of events in the runtime.

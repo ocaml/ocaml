@@ -22,7 +22,7 @@
 
 chcp 65001 > nul
 set BUILD_PREFIX=🐫реализация
-set OCAMLROOT=%PROGRAMFILES%\Бактріан🐫
+set OCAMLROOT=C:\Бактріан🐫
 
 if "%1" neq "install" goto %1
 setlocal enabledelayedexpansion
@@ -61,14 +61,21 @@ if %ERRORLEVEL% equ 1 (
 goto :EOF
 
 :UpgradeCygwin
+set CYGWIN_FLAGS=
 if %CYGWIN_UPGRADE_REQUIRED% equ 1 (
-  set CYGWIN_FLAGS=--upgrade-also
-  set CYGWIN_UPGRADE_REQUIRED=0
-) else (
-  set CYGWIN_FLAGS=
+  if "%CYGWIN_INSTALL_PACKAGES%" neq "" (
+    set CYGWIN_FLAGS=--upgrade-also
+    set CYGWIN_UPGRADE_REQUIRED=0
+  )
 )
 if "%CYGWIN_INSTALL_PACKAGES%" neq "" "%CYG_ROOT%\setup-x86_64.exe" --quiet-mode --no-shortcuts --no-startmenu --no-desktop --only-site --root "%CYG_ROOT%" --site "%CYG_MIRROR%" --local-package-dir "%CYG_CACHE%" %CYGWIN_FLAGS% --packages %CYGWIN_INSTALL_PACKAGES:~1%
-for %%P in (%CYGWIN_COMMANDS%) do "%CYG_ROOT%\bin\%%P.exe" --version 2> nul > nul || set CYGWIN_UPGRADE_REQUIRED=1
+for %%P in (%CYGWIN_COMMANDS%) do (
+  if %%P equ unzip (
+    "%CYG_ROOT%\bin\%%P.exe" -v 2> nul > nul || set CYGWIN_UPGRADE_REQUIRED=1
+  ) else (
+    "%CYG_ROOT%\bin\%%P.exe" --version 2> nul > nul || set CYGWIN_UPGRADE_REQUIRED=1
+  )
+)
 "%CYG_ROOT%\bin\bash.exe" -lc "cygcheck -dc %CYGWIN_PACKAGES%"
 if %CYGWIN_UPGRADE_REQUIRED% equ 1 (
   echo Cygwin package upgrade required - please go and drink coffee
@@ -86,6 +93,11 @@ if not defined SDK (
   if "%PORT%" equ "mingw32" set SDK=call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars32.bat"
 )
 %SDK%
+rem The environment block becomes very large on AppVeyor, which can cause
+rem problems for xargs in Cygwin. These two environment variables from the SDK
+rem infrastructure can be safely junked to reduce the size of the block.
+set __VSCMD_PREINIT_PATH=
+set EXTERNAL_INCLUDE=
 goto :EOF
 
 :install
@@ -102,6 +114,9 @@ if "%BOOTSTRAP_FLEXDLL%" equ "true" (
 cd "%APPVEYOR_BUILD_FOLDER%"
 appveyor DownloadFile "https://github.com/ocaml/flexdll/archive/%FLEXDLL_VERSION%.tar.gz" -FileName "flexdll.tar.gz" || exit /b 1
 appveyor DownloadFile "https://github.com/ocaml/flexdll/releases/download/%FLEXDLL_VERSION%/flexdll-bin-%FLEXDLL_VERSION%.zip" -FileName "flexdll.zip" || exit /b 1
+appveyor DownloadFile "https://github.com/ocaml/opam/releases/download/2.4.1/opam-2.4.1-x86_64-windows.exe" -FileName "opam.exe" || exit /b 1
+md "%PROGRAMFILES%\flexdll"
+move opam.exe "%PROGRAMFILES%\flexdll"
 rem flexdll.zip is processed here, rather than in appveyor_build.sh because the
 rem unzip command comes from MSYS2 (via Git for Windows) and it has to be
 rem invoked via cmd /c in a bash script which is weird(er).
@@ -114,8 +129,8 @@ rem in the list just so that the Cygwin version is always displayed on the log).
 rem CYGWIN_COMMANDS is a corresponding command to run with --version to test
 rem whether the package works. This is used to verify whether the installation
 rem needs upgrading.
-set CYGWIN_PACKAGES=cygwin make diffutils
-set CYGWIN_COMMANDS=cygcheck make diff
+set CYGWIN_PACKAGES=cygwin make diffutils unzip
+set CYGWIN_COMMANDS=cygcheck make diff unzip
 if "%PORT%" equ "mingw32" (
   rem mingw64-i686-runtime does not need explicitly installing, but it's useful
   rem to have the version reported.
@@ -123,8 +138,10 @@ if "%PORT%" equ "mingw32" (
   set CYGWIN_COMMANDS=%CYGWIN_COMMANDS% i686-w64-mingw32-gcc cygcheck
 )
 if "%PORT%" equ "mingw64" (
-  set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% mingw64-x86_64-gcc-core
-  set CYGWIN_COMMANDS=%CYGWIN_COMMANDS% x86_64-w64-mingw32-gcc
+  rem mingw64-x86_64-runtime does not need explicitly installing, but it's
+  rem useful to have the version reported.
+  set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% mingw64-x86_64-gcc-core mingw64-x86_64-runtime
+  set CYGWIN_COMMANDS=%CYGWIN_COMMANDS% x86_64-w64-mingw32-gcc cygcheck
 )
 if "%PORT%" equ "cygwin32" (
   set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% cygwin32-gcc-core flexdll

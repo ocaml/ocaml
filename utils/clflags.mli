@@ -70,12 +70,13 @@ val use_inlining_arguments_set : ?round:int -> inlining_arguments -> unit
 
 val objfiles : string list ref
 val ccobjs : string list ref
-val dllibs : string list ref
+val dllibs : (suffixed:bool * string) list ref
 val cmi_file : string option ref
 val compile_only : bool ref
 val output_name : string option ref
 val include_dirs : string list ref
 val hidden_include_dirs : string list ref
+val standard_library_default : string option ref
 val no_std_include : bool ref
 val no_cwd : bool ref
 val print_types : bool ref
@@ -113,8 +114,12 @@ val noinit : bool ref
 val noversion : bool ref
 val use_prims : string ref
 val use_runtime : string ref
+val target_bindir : string ref
+val launch_method : Config.launch_method ref
+val search_method : Config.search_method ref
 val plugin : bool ref
 val principal : bool ref
+val print_variance : bool ref
 val real_paths : bool ref
 val recursive_types : bool ref
 val strict_sequence : bool ref
@@ -128,8 +133,10 @@ val make_package : bool ref
 val for_package : string option ref
 val error_size : int ref
 val float_const_prop : bool ref
-val transparent_modules : bool ref
+val no_alias_deps : bool ref
+val bytecode_hints : bool ref
 val unique_ids : bool ref
+val canonical_ids : bool ref
 val locations : bool ref
 val dump_source : bool ref
 val dump_parsetree : bool ref
@@ -208,6 +215,7 @@ val unbox_free_vars_of_closures : bool ref
 val unbox_specialised_args : bool ref
 val clambda_checks : bool ref
 val cmm_invariants : bool ref
+val parsetree_ghost_loc_invariant : bool ref
 val default_inline_max_depth : int
 val inline_max_depth : Int_arg_helper.parsed ref
 val remove_unused_arguments : bool ref
@@ -223,6 +231,9 @@ val set_dumped_pass : string -> bool -> unit
 
 val dump_into_file : bool ref
 val dump_dir : string option ref
+
+val keyword_edition: string option ref
+val parse_keyword_edition: string -> (int*int) option * string list
 
 (* Support for flags that can also be set from an environment variable *)
 type 'a env_reader = {

@@ -26,7 +26,8 @@ type value_unbound_reason =
   | Val_unbound_ghost_recursive of Location.t
 
 type module_unbound_reason =
-  | Mod_unbound_illegal_recursion
+  | Mod_unbound_illegal_recursion of
+      { container : string option; unbound: string }
 
 type summary =
     Env_empty
@@ -40,7 +41,7 @@ type summary =
   | Env_open of summary * Path.t
   (** The string set argument of [Env_open] represents a list of module names
       to skip, i.e. that won't be imported in the toplevel namespace. *)
-  | Env_functor_arg of summary * Ident.t
+  | Env_not_aliasable of summary * Ident.t
   | Env_constraints of summary * type_declaration Path.Map.t
   | Env_copy_types of summary
   | Env_persistent of summary * Ident.t
@@ -112,11 +113,18 @@ val find_module_address: Path.t -> t -> address
 val find_class_address: Path.t -> t -> address
 val find_constructor_address: Path.t -> t -> address
 
+(** Lookup an item in the environment and returns its Uid. *)
+val find_uid : Shape.Sig_component_kind.t -> Path.t -> t -> Uid.t option
+
 val shape_of_path:
   namespace:Shape.Sig_component_kind.t -> t -> Path.t -> Shape.t
 
-val add_functor_arg: Ident.t -> t -> t
-val is_functor_arg: Path.t -> t -> bool
+(** Indicates if a path [p] can be aliased, i.e. if
+    - it does not contain functor applications
+    - it does not start with a functor parameter
+    - it does not start with a recursive module (inside the recursive
+    definition) *)
+val is_aliasable: Path.t -> t -> bool
 
 val normalize_module_path: Location.t option -> t -> Path.t -> Path.t
 (* Normalize the path to a concrete module.
@@ -127,11 +135,18 @@ val normalize_module_path: Location.t option -> t -> Path.t -> Path.t
 val normalize_type_path: Location.t option -> t -> Path.t -> Path.t
 (* Normalize the prefix part of the type path *)
 
+val try_normalize_type_path: Location.t option -> t -> Path.t -> Path.t option
+(* Normalize the prefix part of the type path,
+   returns None if the path did not change *)
+
 val normalize_value_path: Location.t option -> t -> Path.t -> Path.t
 (* Normalize the prefix part of the value path *)
 
 val normalize_modtype_path: t -> Path.t -> Path.t
 (* Normalize a module type path *)
+
+val try_normalize_modtype_path: t -> Path.t -> Path.t option
+(* Normalize a module type path, returns None if the path did not change *)
 
 val reset_required_globals: unit -> unit
 val get_required_globals: unit -> Ident.t list
@@ -146,14 +161,14 @@ val mark_type_used: Uid.t -> unit
 
 type constructor_usage = Positive | Pattern | Exported_private | Exported
 val mark_constructor_used:
-    constructor_usage -> constructor_declaration -> unit
+    constructor_usage -> Uid.t -> unit
 val mark_extension_used:
-    constructor_usage -> extension_constructor -> unit
+    constructor_usage -> Uid.t -> unit
 
 type label_usage =
     Projection | Mutation | Construct | Exported_private | Exported
 val mark_label_used:
-    label_usage -> label_declaration -> unit
+    label_usage -> Uid.t -> unit
 
 (* Lookup by long identifiers *)
 
@@ -182,7 +197,14 @@ type lookup_error =
   | Functor_used_as_structure of Longident.t
   | Abstract_used_as_structure of Longident.t
   | Generative_used_as_applicative of Longident.t
-  | Illegal_reference_to_recursive_module
+  | Illegal_reference_to_recursive_module of
+      { container : string option; unbound : string }
+  | Illegal_reference_to_recursive_class_type of
+      { container : string option;
+        unbound : string;
+        unbound_class_type : Longident.t;
+        container_class_type : string
+      }
   | Cannot_scrape_alias of Longident.t * Path.t
 
 val lookup_error: Location.t -> t -> lookup_error -> 'a
@@ -302,11 +324,11 @@ val add_type:
 val add_extension:
   check:bool -> ?shape:Shape.t -> rebind:bool -> Ident.t ->
   extension_constructor -> t -> t
-val add_module: ?arg:bool -> ?shape:Shape.t ->
+val add_module: ?noalias:bool -> ?shape:Shape.t ->
   Ident.t -> module_presence -> module_type -> t -> t
 val add_module_lazy: update_summary:bool ->
   Ident.t -> module_presence -> Subst.Lazy.modtype -> t -> t
-val add_module_declaration: ?arg:bool -> ?shape:Shape.t -> check:bool ->
+val add_module_declaration: ?noalias:bool -> ?shape:Shape.t -> check:bool ->
   Ident.t -> module_presence -> module_declaration -> t -> t
 val add_module_declaration_lazy: update_summary:bool ->
   Ident.t -> module_presence -> Subst.Lazy.module_decl -> t -> t
@@ -359,14 +381,15 @@ val enter_value:
     ?check:(string -> Warnings.t) ->
     string -> value_description -> t -> Ident.t * t
 val enter_type: scope:int -> string -> type_declaration -> t -> Ident.t * t
+val reenter_type: Ident.t -> type_declaration -> t -> t
 val enter_extension:
   scope:int -> rebind:bool -> string ->
   extension_constructor -> t -> Ident.t * t
 val enter_module:
-  scope:int -> ?arg:bool -> string -> module_presence ->
+  scope:int -> ?noalias:bool -> string -> module_presence ->
   module_type -> t -> Ident.t * t
 val enter_module_declaration:
-  scope:int -> ?arg:bool -> ?shape:Shape.t -> string -> module_presence ->
+  scope:int -> ?noalias:bool -> ?shape:Shape.t -> string -> module_presence ->
   module_declaration -> t -> Ident.t * t
 val enter_modtype:
   scope:int -> string -> modtype_declaration -> t -> Ident.t * t
@@ -414,7 +437,7 @@ val save_signature_with_imports:
            imported units with their CRCs. *)
 
 (* Return the CRC of the interface of the given compilation unit *)
-val crc_of_unit: modname -> Digest.t
+val crc_of_unit: modname -> Digest.BLAKE128.t
 
 (* Return the set of compilation units imported, with their CRC *)
 val imports: unit -> crcs
@@ -440,6 +463,21 @@ val summary: t -> summary
 val keep_only_summary : t -> t
 val env_of_only_summary : (summary -> Subst.t -> t) -> t -> t
 
+(* Equivalence of unscoped identifiers *)
+
+module Unscoped : sig
+  val with_pairs : (Ident.Unscoped.t * Ident.Unscoped.t) list -> t -> t
+  val get_pairs : t -> (Ident.Unscoped.t * Ident.Unscoped.t) list
+  val path_equiv : t -> Path.t -> Path.t -> bool
+end
+[@@alert dangerous "
+It is unsafe to use the common [Path.same] function in contexts where
+[Unscoped.with_pairs] has been used to enrich the environment with
+unscoped equalities; [Path.equiv] must be used instead. See [ctype.ml]
+for an example of careful usage of [Unscoped], by locally shadowing
+[Path] to hide [Path.same].
+"]
+
 (* Error report *)
 
 type error =
@@ -449,14 +487,6 @@ type error =
 
 exception Error of error
 
-
-val report_error: error Format_doc.format_printer
-val report_error_doc: error Format_doc.printer
-
-val report_lookup_error:
-  Location.t -> t -> lookup_error Format_doc.format_printer
-val report_lookup_error_doc:
-  Location.t -> t -> lookup_error Format_doc.printer
 val in_signature: bool -> t -> t
 
 val is_in_signature: t -> bool

@@ -168,6 +168,7 @@ type formatter = {
   mutable pp_ellipsis : string;
   (* Output function. *)
   mutable pp_out_string : string -> int -> int -> unit;
+  mutable pp_out_width : string -> pos:int -> len:int -> int;
   (* Flushing function. *)
   mutable pp_out_flush : unit -> unit;
   (* Output of new lines. *)
@@ -202,6 +203,7 @@ type formatter_stag_functions = {
 (* The formatter functions to output material. *)
 type formatter_out_functions = {
   out_string : string -> int -> int -> unit;
+  out_width: string -> pos:int -> len:int -> int;
   out_flush : unit -> unit;
   out_newline : unit -> unit;
   out_spaces : int -> unit;
@@ -228,11 +230,11 @@ let pp_clear_queue state =
 
 (* Pp_infinity: large value for default tokens size.
 
-   Pp_infinity is documented as being greater than 1e10; to avoid
+   Pp_infinity is documented as being greater than 1e9; to avoid
    confusion about the word 'greater', we choose pp_infinity greater
-   than 1e10 + 1; for correct handling of tests in the algorithm,
-   pp_infinity must be even one more than 1e10 + 1; let's stand on the
-   safe side by choosing 1.e10+10.
+   than 1e9 + 1; for correct handling of tests in the algorithm,
+   pp_infinity must be even one more than 1e9 + 1; let's stand on the
+   safe side by choosing 1e9 + 10.
 
    Pp_infinity could probably be 1073741823 that is 2^30 - 1, that is
    the minimal upper bound for integers; now that max_int is defined,
@@ -242,7 +244,7 @@ let pp_clear_queue state =
    must carefully double-check all the integer arithmetic operations
    that involve pp_infinity, since any overflow would wreck havoc the
    pretty-printing algorithm's invariants. Given that this arithmetic
-   correctness check is difficult and error prone and given that 1e10
+   correctness check is difficult and error prone and given that 1e9
    + 1 is in practice large enough, there is no need to attempt to set
    pp_infinity to the theoretically maximum limit. It is not worth the
    burden ! *)
@@ -250,8 +252,10 @@ let pp_infinity = 1000000010
 
 (* Output functions for the formatter. *)
 let pp_output_string state s = state.pp_out_string s 0 (String.length s)
+let pp_string_width state s = state.pp_out_width s ~pos:0 ~len:(String.length s)
 and pp_output_substring state ~pos ~len s =
   state.pp_out_string s pos len
+and pp_substring_width state ~pos ~len s = state.pp_out_width s ~pos ~len
 and pp_output_newline state = state.pp_out_newline ()
 and pp_output_spaces state n = state.pp_out_spaces n
 and pp_output_indent state n = state.pp_out_indent n
@@ -270,7 +274,7 @@ let format_pp_substring state size ~pos ~len source =
 
 (* Format a string by its length, if not empty *)
 let format_string state s =
-  if s <> "" then format_pp_text state (String.length s) s
+  if s <> "" then format_pp_text state (pp_string_width state s) s
 
 (* To format a break, indenting a new line. *)
 let break_new_line state (before, offset, after) width =
@@ -390,7 +394,7 @@ let format_pp_token state size = function
     end
 
   | Pp_if_newline ->
-    if state.pp_current_indent != state.pp_margin - state.pp_space_left
+    if state.pp_current_indent <> state.pp_margin - state.pp_space_left
     then pp_skip_token state
 
   | Pp_break { fits; breaks } ->
@@ -400,13 +404,13 @@ let format_pp_token state size = function
     | Some { box_type; width } ->
       begin match box_type with
       | Pp_hovbox ->
-        if size + String.length before > state.pp_space_left
+        if size + pp_string_width state before > state.pp_space_left
         then break_new_line state breaks width
         else break_same_line state fits
       | Pp_box ->
         (* Have the line just been broken here ? *)
         if state.pp_is_new_line then break_same_line state fits else
-        if size + String.length before > state.pp_space_left
+        if size + pp_string_width state before > state.pp_space_left
           then break_new_line state breaks width else
         (* break the line here leads to new indentation ? *)
         if state.pp_current_indent > state.pp_margin - width + off
@@ -442,11 +446,15 @@ let rec advance_left state =
   | Some { size; token; length } ->
     let pending_count = state.pp_right_total - state.pp_left_total in
     if Size.is_known size || pending_count >= state.pp_space_left then begin
-      Queue.take state.pp_queue |> ignore; (* Not empty: we peek into it *)
-      let size = if Size.is_known size then Size.to_int size else pp_infinity in
-      format_pp_token state size token;
-      state.pp_left_total <- length + state.pp_left_total;
-      (advance_left [@tailcall]) state
+      match Queue.take_opt state.pp_queue with
+      | None -> invalid_arg "Format: Unsynchronized access to formatter"
+      | Some _ ->  (* Not empty: we peek into it *)
+        let size =
+          if Size.is_known size then Size.to_int size else pp_infinity
+        in
+        format_pp_token state size token;
+        state.pp_left_total <- length + state.pp_left_total;
+        (advance_left [@tailcall]) state
     end
 
 
@@ -464,7 +472,8 @@ let enqueue_substring_as ~pos ~len state size source =
   enqueue_advance state { size; token; length = Size.to_int size }
 
 let enqueue_string state s =
-  enqueue_string_as state (Size.of_int (String.length s)) s
+  let size = pp_string_width state s in
+  enqueue_string_as state (Size.of_int size) s
 
 
 (* Routines for scan stack
@@ -477,7 +486,7 @@ let initialize_scan_stack stack =
   Stack.push { left_total = -1; queue_elem } stack
 
 (* Setting the size of boxes on scan stack:
-   if ty = true then size of break is set else size of box is set;
+   if [break_hint = true] then size of break is set else size of box is set;
    in each case pp_scan_stack is popped.
 
    Note:
@@ -485,7 +494,7 @@ let initialize_scan_stack stack =
    empty.
    Pattern matching on token in scan stack is also exhaustive,
    since scan_push is used on breaks and opening of boxes. *)
-let set_size state ty =
+let set_size state ~break_hint =
   match Stack.top_opt state.pp_scan_stack with
   | None -> () (* scan_stack is never empty. *)
   | Some { left_total; queue_elem } ->
@@ -496,12 +505,12 @@ let set_size state ty =
     else
       match queue_elem.token with
       | Pp_break _ | Pp_tbreak (_, _) ->
-        if ty then begin
+        if break_hint then begin
           queue_elem.size <- Size.of_int (state.pp_right_total + size);
           Stack.pop_opt state.pp_scan_stack |> ignore
         end
       | Pp_begin (_, _) ->
-        if not ty then begin
+        if not break_hint then begin
           queue_elem.size <- Size.of_int (state.pp_right_total + size);
           Stack.pop_opt state.pp_scan_stack |> ignore
         end
@@ -510,11 +519,18 @@ let set_size state ty =
         () (* scan_push is only used for breaks and boxes. *)
 
 
+(* Enter a break hint in the pretty-printer queue, taking care of increasing the
+   rightward position *after* we update the pending break *)
+let pp_enqueue_break state token =
+  Queue.add token state.pp_queue;
+  set_size state ~break_hint:true;
+  state.pp_right_total <- state.pp_right_total + token.length
+
 (* Push a token on pretty-printer scanning stack.
    If b is true set_size is called. *)
-let scan_push state b token =
-  pp_enqueue state token;
-  if b then set_size state true;
+let scan_push state ~break_hint token =
+  if break_hint then pp_enqueue_break state token
+  else pp_enqueue state token;
   let elem = { left_total = state.pp_right_total; queue_elem = token } in
   Stack.push elem state.pp_scan_stack
 
@@ -527,7 +543,7 @@ let pp_open_box_gen state indent br_ty =
   if state.pp_curr_depth < state.pp_max_boxes then
     let size = Size.of_int (- state.pp_right_total) in
     let elem = { size; token = Pp_begin (indent, br_ty); length = 0 } in
-    scan_push state false elem else
+    scan_push state ~break_hint:false elem else
   if state.pp_curr_depth = state.pp_max_boxes
   then enqueue_string state state.pp_ellipsis
 
@@ -542,7 +558,7 @@ let pp_close_box state () =
     if state.pp_curr_depth < state.pp_max_boxes then
     begin
       pp_enqueue state { size = Size.zero; token = Pp_end; length = 0 };
-      set_size state true; set_size state false
+      set_size state ~break_hint:true; set_size state ~break_hint:false
     end;
     state.pp_curr_depth <- state.pp_curr_depth - 1;
   end
@@ -644,14 +660,15 @@ let pp_print_as state isize s =
 
 
 let pp_print_string state s =
-  pp_print_as state (String.length s) s
+  pp_print_as state (pp_string_width state s) s
 
 let pp_print_substring_as ~pos ~len state size s =
   if state.pp_curr_depth < state.pp_max_boxes
   then enqueue_substring_as ~pos ~len state (Size.of_int size) s
 
 let pp_print_substring ~pos ~len state s =
-  pp_print_substring_as ~pos ~len state len s
+  let width = pp_substring_width state ~pos ~len s in
+  pp_print_substring_as ~pos ~len state width s
 
 let pp_print_bytes state s =
   pp_print_as state (Bytes.length s) (Bytes.to_string s)
@@ -715,9 +732,13 @@ let pp_print_custom_break state ~fits ~breaks =
   if state.pp_curr_depth < state.pp_max_boxes then
     let size = Size.of_int (- state.pp_right_total) in
     let token = Pp_break { fits; breaks } in
-    let length = String.length before + width + String.length after in
+    let length =
+      pp_string_width state before
+      + width
+      + pp_string_width state after
+    in
     let elem = { size; token; length } in
-    scan_push state true elem
+    scan_push state ~break_hint:true elem
 
 (* Printing break hints:
    A break hint indicates where a box may be broken.
@@ -762,7 +783,7 @@ let pp_print_tbreak state width offset =
   if state.pp_curr_depth < state.pp_max_boxes then
     let size = Size.of_int (- state.pp_right_total) in
     let elem = { size; token = Pp_tbreak (width, offset); length = width } in
-    scan_push state true elem
+    scan_push state ~break_hint:true elem
 
 
 let pp_print_tab state () = pp_print_tbreak state 0 0
@@ -883,12 +904,14 @@ let pp_update_geometry state update =
 (* Setting a formatter basic output functions. *)
 let pp_set_formatter_out_functions state {
       out_string = f;
+      out_width = f2;
       out_flush = g;
       out_newline = h;
       out_spaces = i;
       out_indent = j;
     } =
   state.pp_out_string <- f;
+  state.pp_out_width <- f2;
   state.pp_out_flush <- g;
   state.pp_out_newline <- h;
   state.pp_out_spaces <- i;
@@ -896,6 +919,7 @@ let pp_set_formatter_out_functions state {
 
 let pp_get_formatter_out_functions state () = {
   out_string = state.pp_out_string;
+  out_width = state.pp_out_width;
   out_flush = state.pp_out_flush;
   out_newline = state.pp_out_newline;
   out_spaces = state.pp_out_spaces;
@@ -953,6 +977,18 @@ let default_pp_mark_close_tag = function
 let default_pp_print_open_tag = ignore
 let default_pp_print_close_tag = ignore
 
+let utf_8_scalar_width s ~pos ~len =
+  let rec width s count current stop =
+    if current >= stop then count
+    else
+      let decode = String.get_utf_8_uchar s current in
+      let advance = Uchar.utf_decode_length decode in
+      width s (count + 1) (current+advance) stop
+  in
+  width s 0 pos (pos + len)
+
+let ascii_width _ ~pos:_ ~len = len
+
 (* Building a formatter given its basic output functions.
    Other fields get reasonable default values. *)
 let pp_make_formatter f g h i j =
@@ -964,6 +1000,7 @@ let pp_make_formatter f g h i j =
   let scan_stack = Stack.create () in
   initialize_scan_stack scan_stack;
   Stack.push { left_total = 1; queue_elem = sys_tok } scan_stack;
+  let pp_out_width = utf_8_scalar_width in
   let pp_margin = 78
   and pp_min_space_left = 10 in
   {
@@ -988,6 +1025,7 @@ let pp_make_formatter f g h i j =
     pp_out_newline = h;
     pp_out_spaces = i;
     pp_out_indent = j;
+    pp_out_width;
     pp_print_tags = false;
     pp_mark_tags = false;
     pp_mark_open_tag = default_pp_mark_open_tag;
@@ -1320,6 +1358,53 @@ let pp_print_text ppf s =
   done;
   if !left <> len then flush ()
 
+(* To format free-flowing text *)
+let format_text fmt6 =
+  let open CamlinternalFormatBasics in
+  let Format(fmt,_) = fmt6 in
+  let cons_space ~spaces fmt = Formatting_lit (Break("",spaces,0), fmt) in
+  let rec skip_and_count_whites spaces newlines len s pos =
+    if pos >= len then pos, spaces, newlines else
+    match s.[pos] with
+    | ' ' -> skip_and_count_whites (1+spaces) newlines len s (1+pos)
+    | '\n' -> skip_and_count_whites spaces (1+newlines) len s (1+pos)
+    | _ -> pos, spaces, newlines
+  in
+  let[@tail_mod_cons] rec split len s pos fmt =
+    if pos >= len then fmt
+    else
+      let space = String.index_from_opt s pos ' ' in
+      let newline = String.index_from_opt s pos '\n' in
+      let first = match space, newline with
+        | Some x, Some y -> Some (min x y)
+        | None, x | x, None -> x
+      in
+      match first with
+      | None ->
+          String_literal(String.sub s pos (len-pos), fmt)
+      | Some sep ->
+          let before = String.sub s pos (sep-pos) in
+          let pos, spaces, newlines = skip_and_count_whites 0 0 len s sep in
+          let repeat, break =
+            match newlines, spaces with
+            | (0|1), spaces -> 1, Break("", max spaces 1, 0)
+            | bl, _ -> bl, Force_newline
+          in
+          String_literal(before, cons ~repeat break len s pos fmt)
+  and[@tail_mod_cons] cons ~repeat break len s pos fmt =
+    if repeat = 0 then
+      split len s pos fmt
+    else
+      Formatting_lit (break, cons ~repeat:(repeat-1) break len s pos fmt)
+  in
+  let concat s fmt = match s with
+    | `Char (' '|'\n') -> cons_space ~spaces:1 fmt
+    | `Char c -> Char_literal(c,fmt)
+    | `String s -> split (String.length s) s 0 fmt in
+  let fmt = string_concat_map {f=concat} fmt in
+  Format(fmt, CamlinternalFormat.string_of_fmt fmt)
+
+
 let pp_print_option ?(none = fun _ () -> ()) pp_v ppf = function
 | None -> none ppf ()
 | Some v -> pp_v ppf v
@@ -1490,6 +1575,31 @@ let kasprintf k (Format (fmt, _)) =
 
 
 let asprintf fmt = kasprintf id fmt
+
+(*
+
+  Defining heterogeneous list flavours of functions defined above
+
+*)
+
+module Args = Args
+
+let lfprintf ppf (Format (fmt, _)) args =
+  make_lprintf (output_acc ppf) End_of_acc fmt args
+
+let lprintf fmt args =
+  lfprintf (DLS.get std_formatter_key) fmt args
+
+let leprintf fmt args =
+  lfprintf (DLS.get err_formatter_key) fmt args
+
+let lasprintf (Format (fmt, _)) args =
+  let b = pp_make_buffer () in
+  let ppf = formatter_of_buffer b in
+  let k acc = output_acc ppf acc; flush_buffer_formatter b ppf in
+  make_lprintf k End_of_acc fmt args
+
+let ldprintf fmt args ppf = lfprintf ppf fmt args
 
 (* Flushing standard formatters at end of execution. *)
 

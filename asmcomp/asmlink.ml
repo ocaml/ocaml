@@ -105,17 +105,23 @@ let add_ccobjs origin l =
   end
 
 let runtime_lib () =
-  let libname = "libasmrun" ^ !Clflags.runtime_variant ^ ext_lib in
-  try
-    if !Clflags.nopervasives || not !Clflags.with_runtime then []
-    else [ Load_path.find libname ]
-  with Not_found ->
-    raise(Error(File_not_found libname))
+  if !Clflags.runtime_variant = "_shared" then
+    if Config.suffixing then
+      [Misc.RuntimeID.shared_runtime Sys.Native]
+    else
+      ["-lasmrun_shared"]
+  else
+    let libname = "libasmrun" ^ !Clflags.runtime_variant ^ ext_lib in
+    try
+      if !Clflags.nopervasives || not !Clflags.with_runtime then []
+      else [ Load_path.find libname ]
+    with Not_found ->
+      raise(Error(File_not_found libname))
 
 (* First pass: determine which units are needed *)
 
 type file =
-  | Unit of string * unit_infos * Digest.t
+  | Unit of string * unit_infos * Digest.BLAKE128.t
   | Library of string * library_infos
 
 let object_file_name_of_file = function
@@ -156,7 +162,7 @@ let scan_file ldeps file tolink = match file with
       (* This is a .cmx file. It must be linked in any case. *)
       Linkdeps.add ldeps
         ~filename:file_name ~compunit:info.ui_name
-        ~provides:info.ui_defines
+        ~provides:[info.ui_name]
         ~requires:(List.map fst info.ui_imports_cmx);
       (info, file_name, crc) :: tolink
   | Library (file_name,infos) ->
@@ -171,7 +177,7 @@ let scan_file ldeps file tolink = match file with
            then begin
              Linkdeps.add ldeps
                ~filename:file_name ~compunit:info.ui_name
-               ~provides:info.ui_defines
+               ~provides:[info.ui_name]
                ~requires:(List.map fst info.ui_imports_cmx);
              (info, file_name, crc) :: reqd
            end else
@@ -198,6 +204,10 @@ let make_globals_map units_list ~crc_interfaces =
     crc_interfaces defined
 
 let make_startup_file ~ppf_dump units_list ~crc_interfaces =
+  let need_stdlib =
+    let needs_stdlib ({ui_need_stdlib; _}, _, _) = ui_need_stdlib in
+    List.exists needs_stdlib units_list
+  in
   let compile_phrase p = Asmgen.compile_phrase ~ppf_dump p in
   Location.input_name := "caml_startup"; (* set name of "current" input *)
   Compilenv.reset "_startup";
@@ -224,6 +234,14 @@ let make_startup_file ~ppf_dump units_list ~crc_interfaces =
   Array.iteri
     (fun i name -> compile_phrase (Cmm_helpers.predef_exception i name))
     Runtimedef.builtin_exceptions;
+  if need_stdlib then begin
+    let standard_library_default =
+      Option.value ~default:Config.standard_library_default
+                   !Clflags.standard_library_default in
+    compile_phrase
+      (Cmm_helpers.emit_global_string_constant
+        "caml_standard_library_nat" standard_library_default)
+  end;
   compile_phrase (Cmm_helpers.global_table name_list);
   let globals_map = make_globals_map units_list ~crc_interfaces in
   compile_phrase (Cmm_helpers.globals_map globals_map);

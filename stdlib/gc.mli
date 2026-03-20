@@ -91,15 +91,23 @@ type stat =
     (** Maximum size reached by the major heap, in words. *)
 
     stack_size: int;
-    (** Current size of the stack, in words.
-        This metric is currently not available in OCaml 5: the field value is
-        always [0].
-        @since 3.12 *)
-
+    (** Current size of the current OCaml stack, in words.
+        @since 3.12
+        @since 5.0 not implemented
+        @since 5.5 restored for the current stack
+    *)
     forced_major_collections: int;
     (** Number of forced full major collections completed since the program
         was started.
         @since 4.12 *)
+
+    live_stacks_words: int;
+    (** Total space allocated outside of the OCaml heap for stack fragments.
+        This includes stack metadata and stack fragments stored inside the stack
+        fragment cache.
+        @since 5.5
+    *)
+
 }
 (** The memory management counters are returned in a [stat] record. These
    counters give values for the whole program.
@@ -128,12 +136,18 @@ type control =
         always [0]. *)
 
     space_overhead : int;
-    (** The major GC speed is computed from this parameter.
+    (** The major GC speed is computed from this parameter, along with
+        [small_heap_limit].
        This is the memory that will be "wasted" because the GC does not
        immediately collect unreachable blocks.  It is expressed as a
        percentage of the memory used for live data.
        The GC will work more (use more CPU time and collect
        blocks more eagerly) if [space_overhead] is smaller.
+       The amount of overhead space used by the GC is approximately:
+       - [(live data size) * space_overhead] when live data is greater than
+         [small_heap_limit]
+       - less than [small_heap_limit + (live data size) * space overhead]
+         when live data is smaller than [small_heap_limit]
        Default: 120. *)
 
     verbose : int;
@@ -233,6 +247,9 @@ type control =
     [ocamlrun]. *)
 
 external stat : unit -> stat = "caml_gc_stat"
+[@@alert deprecated
+    "Use full_major() followed by quick_stat()."
+]
 (** Return the current values of the memory management counters in a
     [stat] record that represents the program's total memory stats.
     The [heap_chunks], [free_blocks], [largest_free], and [stack_size] metrics
@@ -241,12 +258,14 @@ external stat : unit -> stat = "caml_gc_stat"
     This function causes a full major collection. *)
 
 external quick_stat : unit -> stat = "caml_gc_quick_stat"
-(** Returns a record with the current values of the memory management counters
-    like [stat]. Unlike [stat], [quick_stat] does not perform a full major
-    collection, and hence, is much faster. However, [quick_stat] reports the
-    counters sampled at the last minor collection or at the end of the last
-    major collection cycle (whichever is the latest). Hence, the memory stats
-    returned by [quick_stat] are not instantaneously accurate. *)
+(** Return the current values of the memory management counters in a
+    {!type:stat} record that represents the program's total memory
+    stats. Due to per-domain buffers it may only represent the state
+    of the program's total memory usage at the time of the last minor
+    collection or at the end of the last major collection cycle
+    (whichever is the latest). To get exact values, you need to call
+    {!full_major} (which takes a lot of time) immediately before
+    {!quick_stat}. *)
 
 external counters : unit -> float * float * float = "caml_gc_counters"
 (** Return [(minor_words, promoted_words, major_words)] for the current
@@ -474,7 +493,9 @@ module Memprof :
     type t
     (** the type of a profile *)
 
-    type allocation_source = Normal | Marshal | Custom
+    type allocation_source = Normal | Marshal | Custom | Map_file
+    val string_of_allocation_source : allocation_source -> string
+
     type allocation = private
       { n_samples : int;
         (** The number of samples in this block (>= 1). *)
@@ -520,8 +541,7 @@ module Memprof :
       ?callstack_size:int ->
       ('minor, 'major) tracker ->
       t
-    (** Start a profile with the given parameters. Raises an exception
-       if a profile is already sampling in the current domain.
+    (** Start a profile with the given parameters.
 
        Sampling begins immediately. The parameter [sampling_rate] is
        the sampling rate in samples per word (including headers).
@@ -548,10 +568,11 @@ module Memprof :
        have evolved between the allocation and the call to the
        callback.
 
-       If a new thread or domain is created when the current domain is
-       sampling for a profile, the child thread or domain joins that
-       profile (using the same [sampling_rate], [callstack_size], and
-       [tracker] callbacks).
+       All the threads belonging to a domain share the same profile
+       (using the same [sampling_rate], [callstack_size], and
+       [tracker] callbacks). In addition, if a new domain is spawned
+       by the current domain while sampling for a profile, then the
+       child domain likewise shares that profile with its parent.
 
        An allocation callback is always run by the thread which
        allocated the block. If the thread exits or the profile is
@@ -564,7 +585,19 @@ module Memprof :
        by a different domain.
 
        Different domains may sample for different profiles
-       simultaneously.  *)
+       simultaneously.
+
+       If a profile is already sampling in the current domain, then
+       calling [start] replaces it with a new profile in this domain.
+       If the old profile was sampling in other domains, it continues
+       doing so. *)
+
+    val is_sampling : unit -> bool
+    (** Returns whether a profile is sampling in the current domain,
+        if any. Returns [None] if the current domain is not
+        sampling.
+
+        @since 5.5 *)
 
     val stop : unit -> unit
     (** Stop sampling for the current profile. Fails if no profile is
@@ -584,4 +617,80 @@ module Memprof :
        prevents any more callbacks for it. Raises an exception if
        called on a profile which has not been stopped.
        *)
+end
+
+
+type suspended_collection_work
+
+external ramp_up : (unit -> 'a) -> 'a * suspended_collection_work
+  = "caml_ml_gc_ramp_up"
+(** In general, the OCaml GC assumes that the program runs in
+    a "steady state" where peak memory usage remains constant: for
+    each newly allocated work, it assumes that one work has become
+    unreachable and will try to collect it during the next GC slice.
+
+    This assumption is incorrect at the points during program
+    execution where the live memory increases instead of remaining
+    stable: the steady-state assumption will make the GC work harder
+    at no benefit as it will not find more memory to collect.
+
+    [ramp_up f] puts the current domain in a "ramp-up" phase for the
+    duration of the evaluation of [f ()], letting the GC know that the
+    steady-state assumption does not hold; it should be used when you
+    know that the live memory of the program will increase
+    significantly.
+
+    During a ramp-up phase, the GC will not try to work harder for new
+    allocations: the corresponding collection work is "suspended". The
+    total amount of suspended collection work is returned by [ramp_up]
+    along with the result of the function.
+
+    If the user discards this suspended work (by doing nothing
+    with it), the GC will never accelerate to recover the
+    corresponding amount of memory. This is appropriate if the ramp-up
+    work allocates long-lived memory that remains live until the end
+    of the program execution.
+
+    If the user knows that at a certain point in the program the live
+    memory consumption has been reduced by the corresponding amount --
+    typically, because the memory allocated during [ramp_up] has become
+    unused -- then they should call {!ramp_down} below to have the GC
+    "resume" this collection work.
+
+    If [f ()] raises an exception, the ramp-up phase terminates, the
+    collection work that was suspended is resumed, and the exception
+    is re-raised.
+
+    If [f ()] performs an effect, the effect is not handled and an
+    [Effect.Unhandled] exception is thrown instead.
+*)
+
+external ramp_down : suspended_collection_work -> unit
+  = "caml_ml_gc_ramp_down"
+(** Notify the GC about some amount of collection work that was
+    suspended during a ramp-up phase, to be resumed now. *)
+
+(** GC Tweaks are unstable and undocumented configurable GC parameters,
+    primarily intended for use by GC developers.
+
+    As well as using Gc.Tweak.set "foo" 42, they can also be configured in
+    OCAMLRUNPARAM, using the following syntax:
+
+        OCAMLRUNPARAM='Xfoo=42'
+
+    Additionally, OCAMLRUNPARAM=Xhelp will show the available GC tweaks.
+
+    @since 5.5 *)
+module Tweak : sig
+  (** Change a parameter.
+      Raises Invalid_argument if no such parameter exists *)
+  val set : string -> int -> unit
+
+  (** Retrieve a parameter value.
+      Raises Invalid_argument if no such parameter exists *)
+  val get : string -> int
+
+  (** Returns the list of parameters and their values that currently
+      have non-default values *)
+  val list_active : unit -> (string * int) list
 end

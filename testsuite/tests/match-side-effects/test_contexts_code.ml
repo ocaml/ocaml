@@ -1,6 +1,6 @@
 (* TEST
  readonly_files = "contexts_1.ml contexts_2.ml contexts_3.ml";
- flags = "-dsource -dlambda";
+ flags = "-dsource -dlambda -dcanonical-ids";
  expect;
 *)
 
@@ -31,24 +31,24 @@ let example_1 () =
       Result.Error 3
   | { a = true; b = Either.Left y } -> Result.Ok y;;
 (let
-  (example_1/311 =
-     (function param/335[int]
-       (let (input/313 = (makemutable 0 (int,*) 1 [0: 1]))
-         (if (field_int 0 input/313)
-           (let (*match*/338 =o (field_mut 1 input/313))
-             (switch* *match*/338
+  (example_1/0 =
+     (function param/0[int]
+       (let (input/0 = (makemutable 0 (int,*) 1 [0: 1]))
+         (if (field_int 0 input/0)
+           (let (*match*/0 =o (field_mut 1 input/0))
+             (switch* *match*/0
               case tag 0:
-               (if (seq (setfield_ptr 1 input/313 [1: 3]) 0) [1: 3]
-                 (let (*match*/340 =o (field_mut 1 input/313))
-                   (switch* *match*/340
-                    case tag 0: (makeblock 0 (int) (field_imm 0 *match*/340))
+               (if (seq (setfield_ptr 1 input/0 [1: 3]) 0) [1: 3]
+                 (let (*match*/1 =o (field_mut 1 input/0))
+                   (switch* *match*/1
+                    case tag 0: (makeblock 0 (int) (field_imm 0 *match*/1))
                     case tag 1:
                      (raise
-                       (makeblock 0 (global Match_failure/20!)
+                       (makeblock 0 (global Match_failure/0!)
                          [0: "contexts_1.ml" 17 2])))))
               case tag 1: [1: 2]))
            [1: 1]))))
-  (apply (field_mut 1 (global Toploop!)) "example_1" example_1/311))
+  (apply (field_mut 1 (global Toploop!)) "example_1" example_1/0))
 val example_1 : unit -> (bool, int) Result.t = <fun>
 |}]
 
@@ -77,25 +77,25 @@ let example_2 () =
       Result.Error 3
   | { a = true; b = { mut = Either.Left y } } -> Result.Ok y;;
 (let
-  (example_2/347 =
-     (function param/351[int]
-       (let (input/349 = (makeblock 0 (int,*) 1 (makemutable 0 [0: 1])))
-         (if (field_int 0 input/349)
-           (let (*match*/355 =o (field_mut 0 (field_imm 1 input/349)))
-             (switch* *match*/355
+  (example_2/0 =
+     (function param/1[int]
+       (let (input/1 = (makeblock 0 (int,*) 1 (makemutable 0 [0: 1])))
+         (if (field_int 0 input/1)
+           (let (*match*/2 =o (field_mut 0 (field_imm 1 input/1)))
+             (switch* *match*/2
               case tag 0:
-               (if (seq (setfield_ptr 0 (field_imm 1 input/349) [1: 3]) 0)
+               (if (seq (setfield_ptr 0 (field_imm 1 input/1) [1: 3]) 0)
                  [1: 3]
-                 (let (*match*/358 =o (field_mut 0 (field_imm 1 input/349)))
-                   (switch* *match*/358
-                    case tag 0: (makeblock 0 (int) (field_imm 0 *match*/358))
+                 (let (*match*/3 =o (field_mut 0 (field_imm 1 input/1)))
+                   (switch* *match*/3
+                    case tag 0: (makeblock 0 (int) (field_imm 0 *match*/3))
                     case tag 1:
                      (raise
-                       (makeblock 0 (global Match_failure/20!)
+                       (makeblock 0 (global Match_failure/0!)
                          [0: "contexts_2.ml" 11 2])))))
               case tag 1: [1: 2]))
            [1: 1]))))
-  (apply (field_mut 1 (global Toploop!)) "example_2" example_2/347))
+  (apply (field_mut 1 (global Toploop!)) "example_2" example_2/0))
 val example_2 : unit -> (bool, int) Result.t = <fun>
 |}]
 
@@ -122,16 +122,16 @@ let example_3 () =
       Result.Error 3
   | { mut = (true, Either.Left y) } -> Result.Ok y;;
 (let
-  (example_3/364 =
-     (function param/368[int]
-       (let (input/366 =mut [0: 1 [0: 1]] *match*/369 =o *input/366)
-         (if (field_imm 0 *match*/369)
-           (switch* (field_imm 1 *match*/369)
+  (example_3/0 =
+     (function param/2[int]
+       (let (input/2 =mut [0: 1 [0: 1]] *match*/4 =o *input/2)
+         (if (field_imm 0 *match*/4)
+           (switch* (field_imm 1 *match*/4)
             case tag 0:
-             (if (seq (assign input/366 [0: 1 [1: 3]]) 0) [1: 3]
-               (makeblock 0 (int) (field_imm 0 (field_imm 1 *match*/369))))
+             (if (seq (assign input/2 [0: 1 [1: 3]]) 0) [1: 3]
+               (makeblock 0 (int) (field_imm 0 (field_imm 1 *match*/4))))
             case tag 1: [1: 2])
            [1: 1]))))
-  (apply (field_mut 1 (global Toploop!)) "example_3" example_3/364))
+  (apply (field_mut 1 (global Toploop!)) "example_3" example_3/0))
 val example_3 : unit -> (bool, int) Result.t = <fun>
 |}]

@@ -251,6 +251,82 @@ module Doc = struct
 
   let msg fmt = kmsg Fun.id fmt
 
+
+  let ralign_tag = Format.String_tag "ralign"
+
+  let rec split_on_open_tag tag rbefore = function
+    | [] -> rbefore, []
+    | Open_tag t :: rest when t = tag ->
+       rbefore, rest
+    | elt :: rest ->
+        split_on_open_tag tag (elt::rbefore) rest
+
+  let rec split_on_close opened rbefore = function
+    | [] -> rbefore, []
+    | Open_tag _ as elt :: rest ->
+        split_on_close (opened+1) (elt::rbefore) rest
+    | Close_tag as elt :: rest ->
+        if opened = 0 then rbefore, rest
+        else split_on_close (opened-1) (elt::rbefore) rest
+    | elt :: rest ->
+        split_on_close opened (elt::rbefore) rest
+
+   let rec approx_len acc = function
+     | [] -> Some acc
+     | Text x :: r->
+         let len = Format.utf_8_scalar_width ~pos:0 ~len:(String.length x) x in
+         approx_len (acc + len) r
+     | With_size n :: Text _ :: r -> approx_len (acc + n) r
+     | (Open_box _ | Close_box | Open_tag _ | Close_tag
+        | Open_tbox | Close_tbox | Set_tab | With_size _
+       ) :: r ->
+        approx_len acc r
+    | (Tab_break _ | Break _ | Simple_break _ | Flush _ | Newline | If_newline
+       | Deprecated _ ) :: _ ->
+        None
+
+   type ralign_split = {
+       close_pos:int;
+       before: element list;
+       mid: element list;
+       after: element list;
+     }
+
+   let split_ralign (doc, shift) =
+     let l = to_list doc in
+     let before, rest =
+       split_on_open_tag ralign_tag [] l in
+     let mid, after = split_on_close 0 [] rest in
+     let len = Option.bind (approx_len 0 before) (fun n -> approx_len n mid) in
+     match len with
+     | None -> Error doc
+     | Some len ->
+         Ok { close_pos= shift + len; before; mid; after }
+
+   let align_doc max_pos r =
+     let aligned_before =
+       let before = Open_tag ralign_tag :: r.before in
+       if r.close_pos >= max_pos then before
+       else Text (String.make (max_pos - r.close_pos) ' ') :: before
+     in
+     let mid_to_start = Close_tag :: r.mid @ aligned_before in
+     { rev = List.rev_append r.after mid_to_start }
+
+   let align_prefix l =
+     let l = List.map split_ralign l in
+     let max_pos =
+       List.fold_left (fun mx r ->
+           match r with
+           | Ok r -> max mx r.close_pos
+           | Error _ -> mx
+         ) 0 l
+     in
+     List.map (Result.fold ~ok:(align_doc max_pos) ~error:Fun.id) l
+
+   let align_prefix2 x y = match align_prefix [x;y] with
+     | [x;y] -> x, y
+     | _ -> assert false
+
 end
 
 (** Compatibility interface *)

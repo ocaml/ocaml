@@ -56,7 +56,7 @@ $(DIRS):
 
 pdf: files latex_files | texstuff
 	cd texstuff \
-	  && TEXINPUTS=$(TEXINPUTS) pdflatex manual.tex
+	  && TEXINPUTS=$(TEXINPUTS) lualatex manual.tex
 
 index: | texstuff
 	cd texstuff \

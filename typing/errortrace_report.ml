@@ -117,10 +117,14 @@ let print_tag ppf s = Style.inline_code ppf ("`" ^ s)
 let print_tags ppf tags  =
   Fmt.(pp_print_list ~pp_sep:comma) print_tag ppf tags
 
-let is_unit env ty =
-  match Types.get_desc (Ctype.expand_head env ty) with
-  | Tconstr (p, _, _) -> Path.same p Predef.path_unit
-  | _ -> false
+let is_unit_param env ty =
+  let ty, vars = Btype.tpoly_get_poly ty in
+  if vars <> [] then false
+  else begin
+    match Types.get_desc (Ctype.expand_head env ty) with
+    | Tconstr (p, _, _) -> Path.same p Predef.path_unit
+    | _ -> false
+  end
 
 let unifiable env ty1 ty2 =
   let snap = Btype.snapshot () in
@@ -134,13 +138,13 @@ let unifiable env ty1 ty2 =
 let explanation_diff env t3 t4 =
   match Types.get_desc t3, Types.get_desc t4 with
   | Tarrow (_, ty1, ty2, _), _
-    when is_unit env ty1 && unifiable env ty2 t4 ->
+    when is_unit_param env ty1 && unifiable env ty2 t4 ->
       Some (doc_printf
           "@,@[@{<hint>Hint@}: Did you forget to provide %a as argument?@]"
           Style.inline_code "()"
         )
   | _, Tarrow (_, ty1, ty2, _)
-    when is_unit env ty1 && unifiable env t3 ty2 ->
+    when is_unit_param env ty1 && unifiable env t3 ty2 ->
       Some (doc_printf
           "@,@[@{<hint>Hint@}: Did you forget to wrap the expression using \
            %a?@]"
@@ -233,6 +237,11 @@ let explain_escape pre = function
         "%a@,@[The module type@;<1 2>%a@ would escape its scope@]"
         pp_doc pre pp_path p
     )
+  | Errortrace.Module id -> Some(
+      doc_printf
+        "%a@,@[The module@;<1 2>%a@ would escape its scope@]"
+        pp_doc pre pp_path (Path.Pident id)
+    )
   | Errortrace.Equation Errortrace.{ty = _; expanded = t} ->
       Variable_names.reserve t;
       Some(
@@ -271,16 +280,14 @@ let explain_incompatible_fields name (diff: Types.type_expr Errortrace.diff) =
     (Style.as_inline_code type_expr_with_reserved_names) diff.expected
 
 
-let explain_label_mismatch ~got ~expected =
+let explain_label_mismatch ~missing_label_msg  {Errortrace.got;expected} =
   let quoted_label ppf l = Style.inline_code ppf (Asttypes.string_of_label l) in
   match got, expected with
   | Asttypes.Nolabel, Asttypes.(Labelled _ | Optional _ )  ->
       doc_printf "@,@[A label@ %a@ was expected@]"
         quoted_label expected
   | Asttypes.(Labelled _|Optional _), Asttypes.Nolabel  ->
-      doc_printf
-        "@,@[The first argument is labeled@ %a,@ \
-         but an unlabeled argument was expected@]"
+      doc_printf missing_label_msg
         quoted_label got
  | Asttypes.Labelled g, Asttypes.Optional e when g = e ->
       doc_printf
@@ -309,6 +316,58 @@ let explain_first_class_module = function
   | Errortrace.Package_coercion pr ->
       Some(doc_printf "@,@[%a@]" Fmt.pp_doc pr)
 
+let explain_univar prev = function
+  | Errortrace.Var_mismatch { diff; order} ->
+      let prev = match prev with
+        | Some (Errortrace.Incompatible_fields f) ->
+            explain_incompatible_fields f.name f.diff
+        | _ -> Fmt.Doc.empty
+      in
+      add_type_to_preparation diff.got;
+      add_type_to_preparation diff.expected;
+      let more = match order with
+        | Equal ->  Fmt.Doc.empty
+        | Less ->
+          Fmt.doc_printf
+            "@ The first type variable %a was introduced in@ an@ earlier@ \
+             universal@ quantification."
+              (Style.as_inline_code prepared_type_expr) diff.got
+        | More ->
+            Fmt.doc_printf
+              "@ The second type variable %a was introduced in@ an@ earlier@ \
+               universal@ quantification."
+              (Style.as_inline_code prepared_type_expr) diff.expected
+      in
+      doc_printf
+        "%a@,@[The universal variables@ %a and@ %a@ are distinct.%a@]"
+        Fmt.pp_doc prev
+        (Style.as_inline_code prepared_type_expr) diff.got
+        (Style.as_inline_code prepared_type_expr) diff.expected
+        pp_doc more
+  | Errortrace.Quantification_mismatch delta ->
+      let qp ppf x = Style.as_inline_code prepared_type_expr ppf x in
+      let pp ppf ty =
+        add_type_to_preparation ty;
+        match Types.get_desc ty with
+        | Tunivar None -> ()
+        | Tunivar (Some name) ->
+            Fmt.fprintf ppf
+              "@,@[The universal type variable %a in the first@ type@ matches@ \
+               multiple@ distinct@ variables in the second type.@]"
+              Style.inline_code ("'" ^ name)
+        | Tvar _ ->
+              Fmt.fprintf ppf
+                "@,@[The type variable %a is not generalizable@ to@ an@ \
+                 universal@ type variable.@]"
+                qp ty
+        | _ ->
+              Fmt.fprintf ppf
+                "@,@[The type %a is not a type variable.@]"
+                qp ty
+      in
+      let pp_sep _ () = () in
+      doc_printf "%a" (pp_print_list ~pp_sep pp) delta
+
 let explanation (type variety) intro prev env
   : (Errortrace.expanded_type, variety) Errortrace.elt -> _ = function
   | Errortrace.Diff {got; expected} ->
@@ -328,7 +387,24 @@ let explanation (type variety) intro prev env
   | Errortrace.Incompatible_fields { name; diff} ->
     Some(explain_incompatible_fields name diff)
   | Errortrace.Function_label_mismatch diff ->
-    Some(explain_label_mismatch ~got:diff.got ~expected:diff.expected)
+    let missing_label_msg =
+      format_of_string
+        "@,@[The first argument is labeled@ %a,@ \
+         but an unlabeled argument was expected@]"
+    in
+    Some(explain_label_mismatch ~missing_label_msg diff)
+  | Errortrace.Tuple_label_mismatch diff ->
+    let ast_label = function
+      | None -> Asttypes.Nolabel
+      | Some x -> Asttypes.Labelled x
+    in
+    let diff = Errortrace.map_diff ast_label diff in
+    let missing_label_msg =
+      format_of_string
+        "@,@[The first tuple element is labeled@ %a,@ \
+         but an unlabeled element was expected@]"
+    in
+    Some(explain_label_mismatch ~missing_label_msg diff)
   | Errortrace.Variant v ->
     explain_variant v
   | Errortrace.Obj o ->
@@ -354,6 +430,7 @@ let explanation (type variety) intro prev env
              {[ The type int occurs inside int list -> 'a |}
         *)
     end
+  | Univar um -> Some (explain_univar prev um)
 
 let mismatch intro env trace =
   Errortrace.explain trace (fun ~prev h -> explanation intro prev env h)
@@ -374,7 +451,12 @@ let warn_on_missing_def env ppf t =
               "@,@[<hov>Type %a was considered abstract@ when checking\
                @ constraints@ in this@ recursive type definition.@]"
               pp_path p
-        | Definition | Existential _ -> ()
+        | Approx_recmod ->
+            fprintf ppf
+              "@,@[<hov>Type %a was considered abstract@ when checking\
+               @ constraints@ in this@ recursive module definition.@]"
+              pp_path p
+        | Equation _ | Definition | Existential _ -> ()
       end
   | _ -> ()
 
@@ -397,6 +479,62 @@ let warn_on_missing_defs env ppf = function
                      expected = {ty=te2; expanded=_} } ->
       warn_on_missing_def env ppf te1;
       warn_on_missing_def env ppf te2
+
+let pp_print_list_comma_and elt ppf l =
+  match List.rev l with
+  | [] -> ()
+  | [ single ] ->
+      fprintf ppf "%a" elt single
+  | fst :: rest ->
+      fprintf
+        ppf
+        "%a@ and %a"
+        (pp_print_list ~pp_sep:comma elt) (List.rev rest)
+        elt fst
+
+let quoted_ident ppf t =
+  Style.as_inline_code !Oprint.out_ident ppf t
+
+let pp_plural (singular, plural) ppf l =
+  match l with
+  | [ _ ] -> pp_print_string ppf singular
+  | _ -> pp_print_string ppf plural
+
+let explain_names env ppf =
+  let explanations = Internal_names.explain env in
+  List.iter
+    (function
+      | _, Internal_names.Equation { lhs; rhs; } ->
+          add_type_to_preparation lhs;
+          add_type_to_preparation rhs;
+      | _, Internal_names.Existential _ ->
+          ()
+    ) explanations;
+  List.iter
+    (fun (paths, explanation) ->
+       let paths = List.map tree_of_path paths in
+       match explanation with
+       | Internal_names.Equation { lhs; rhs; } ->
+           let rhseq = tree_of_typexp Type_scheme rhs in
+           let lhseq = tree_of_typexp Type_scheme lhs in
+           fprintf ppf
+             "@ @[<2>@{<hint>Hint@}:@ %a@ %a@ \
+              introduced in the equation@ %a = %a@]"
+             (pp_print_list_comma_and quoted_ident) paths
+             (pp_plural ("is a type variable", "are type variables")) paths
+             (Style.as_inline_code !Oprint.out_type)
+             lhseq
+             (Style.as_inline_code !Oprint.out_type)
+             rhseq
+       | Internal_names.Existential { constructor } ->
+           fprintf ppf
+             "@ @[<2>@{<hint>Hint@}:@ %a@ %a@ \
+              bound by the constructor@ %a.@]"
+             (pp_print_list_comma_and quoted_ident) paths
+             (pp_plural ("is an existential type", "are existential types"))
+             paths
+             Style.inline_code constructor
+    ) explanations
 
 (* [subst] comes out of equality, and is [[]] otherwise *)
 let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
@@ -425,10 +563,10 @@ let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
       let tr = match mis, last with
         | None, Some elt -> tr @ [elt]
         | Some _, _ | _, None -> tr
-       in
-       fprintf ppf
+      in
+      fprintf ppf
         "@[<v>\
-          @[%a%a@]%a%a\
+         @[%a%a@]%a%a\
          @]"
         pp_doc head_error
         pp_doc ty_expect_explanation
@@ -436,8 +574,8 @@ let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
         (pp_print_option pp_doc) mis;
       if env <> Env.empty
       then warn_on_missing_defs env ppf head;
-       Internal_names.print_explanations env ppf;
-       Ident_conflicts.err_print ppf
+      explain_names env ppf;
+      Ident_conflicts.err_print ppf
     )
 
 let report_error trace_format ppf mode env tr
@@ -548,9 +686,6 @@ module Subtype = struct
 end
 
 let subtype = Subtype.error
-
-let quoted_ident ppf t =
-  Style.as_inline_code !Oprint.out_ident ppf t
 
 let type_path_expansion ppf = function
   | Same p -> quoted_ident ppf p

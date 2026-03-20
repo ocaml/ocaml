@@ -17,7 +17,10 @@
 * text=auto
 
 # It is not possible to wrap lines lines in .gitattributes files
-.gitattributes typo.long-line=may typo.utf8
+.gitattributes typo.long-line=may typo.non-ascii
+.gitmodules typo.long-line=may typo.tab=may typo.missing-header=may
+
+.editorconfig typo.missing-header=may
 
 # Binary files
 /boot/ocamlc binary
@@ -41,6 +44,21 @@
 # the lines involved in the conflict, which is arguably worse
 #/Changes                 merge=union
 
+testsuite/Makefile       export-subst
+
+# Files and directories excluded from git-generated tarballs.
+.github                  export-ignore
+manual                   export-ignore
+release-info             export-ignore
+testsuite/tests          export-ignore
+tools/ci                 export-ignore
+.gitattributes           export-ignore
+.gitignore               export-ignore
+.gitmodules              export-ignore
+.mailmap                 export-ignore
+ocaml-variants.install   export-ignore
+ocaml-variants.opam      export-ignore
+
 # No header for text and META files (would be too obtrusive).
 *.md                     typo.missing-header
 README*                  typo.missing-header
@@ -52,18 +70,17 @@ tools/mantis2gh_stripped.csv typo.missing-header
 META.in                  typo.missing-header
 
 # Hyperlinks and other markup features cause long lines
-*.adoc                   typo.long-line=may typo.very-long-line=may
-*.md                     typo.long-line=may typo.very-long-line=may
+*.adoc                   typo.long-line=may typo.very-long-line=may typo.non-ascii=may
+*.md                     typo.long-line=may typo.very-long-line=may typo.non-ascii=may
 
 # Github templates and scripts lack headers, have long lines
 /.github/**              typo.missing-header typo.long-line=may typo.very-long-line=may
+/.github/workflows/*.yml typo.non-ascii=may
 
 /.mailmap                typo.long-line typo.missing-header typo.non-ascii
-/CONTRIBUTING.md         typo.non-ascii=may
-/README.adoc             typo.non-ascii=may
-/README.win32.adoc       typo.non-ascii=may
-/Changes                 typo.utf8 typo.missing-header
-/release-info/News       typo.utf8 typo.missing-header
+/CONTRIBUTING.md         typo.non-ascii
+/Changes                 typo.non-ascii typo.missing-header
+/release-info/News       typo.non-ascii typo.missing-header
 /LICENSE                 typo.very-long-line typo.missing-header
 # tools/ci/appveyor/appveyor_build.cmd only has missing-header because
 # dra27 too lazy to update check-typo to interpret Cmd-style comments!
@@ -81,8 +98,8 @@ Makefile*                typo.makefile-whitespace=may
 asmcomp/*/emit.mlp       typo.tab=may typo.long-line=may
 
 # Unicode character used for graphical debugging and box drawing
-typing/gprinttyp.mli     typo.utf8
-typing/gprinttyp.ml      typo.utf8
+typing/gprinttyp.mli     typo.non-ascii
+typing/gprinttyp.ml      typo.non-ascii
 
 # The build-aux directory contains bundled files so do not check it
 build-aux                typo.prune
@@ -105,20 +122,26 @@ otherlibs/unix/stat_win32.c        typo.long-line
 otherlibs/unix/symlink_win32.c     typo.long-line
 
 # Some Unicode characters here and there
-utils/misc.ml            typo.utf8
+utils/misc.ml            typo.non-ascii
 runtime/sak.c            typo.non-ascii
+tools/opam/process.sh    typo.non-ascii
 
 testsuite/tests/**                                      typo.missing-header typo.long-line=may
 testsuite/tests/lib-bigarray-2/bigarrf.f                typo.tab linguist-language=Fortran
 testsuite/tests/lib-unix/win-stat/fakeclock.c           typo.missing-header=false
 testsuite/tests/misc-unsafe/almabench.ml                typo.long-line
-testsuite/tests/parsing/latin9.ml                       typo.utf8 typo.very-long-line
-testsuite/tests/tool-ocamldoc/Latin9.ml                 typo.utf8
-testsuite/tests/parsetree/source.ml                     typo.utf8
-testsuite/tests/typing-unicode/*.ml                     typo.utf8
-testsuite/tests/tool-toplevel/strings.ml                typo.utf8
-testsuite/tests/win-unicode/*.ml                        typo.utf8
-testsuite/tests/unicode/見.ml                           typo.utf8
+testsuite/tests/parsing/latin9.ml                       typo.non-ascii typo.very-long-line
+testsuite/tests/parsing/comments.ml                     typo.non-ascii
+testsuite/tests/tool-ocamldoc/Latin9.ml                 typo.non-ascii
+testsuite/tests/parsetree/source.ml                     typo.non-ascii
+testsuite/tests/typing-unicode/*.ml                     typo.non-ascii
+testsuite/tests/tool-toplevel/strings.ml                typo.non-ascii
+testsuite/tests/win-unicode/*.ml                        typo.non-ascii
+testsuite/tests/unicode/見.ml                           typo.non-ascii
+testsuite/tests/unicode/utf8_lexeme.ml                  typo.non-ascii
+testsuite/tests/lib-format/unicode.ml                   typo.non-ascii
+testsuite/tests/lib-string/test_string.ml               typo.non-ascii
+testsuite/tests/lib-uchar/test.ml                       typo.non-ascii
 testsuite/tests/lexing/reject_bad_encoding.ml           typo.prune
 testsuite/tests/asmgen/immediates.cmm                   typo.very-long-line
 testsuite/tests/generated-parse-errors/errors.*         typo.very-long-line
@@ -126,6 +149,7 @@ testsuite/tools/*.S                                     typo.missing-header
 testsuite/tools/*.asm                                   typo.missing-header
 testsuite/tests/messages/highlight_tabs.ml              typo.tab
 testsuite/tests/tool-toplevel/multi_phrase_line.ml      typo.very-long-line
+testsuite/tests/misc/stable_matching_test.ml            typo.non-ascii
 
 # prune testsuite reference files
 testsuite/tests/**/*.reference               typo.prune
@@ -149,7 +173,7 @@ tools/magic                       typo.missing-header
 /boot/menhir/** typo.long-line=may typo.very-long-line=may
 /boot/menhir/** typo.missing-header=may
 /boot/menhir/** typo.white-at-eol=may
-/boot/menhir/** typo.utf8=may
+/boot/menhir/** typo.non-ascii=may
 
 # Line-ending specifications, for Windows interoperability
 *.sh text eol=lf
@@ -178,12 +202,10 @@ aclocal.m4 typo.tab -linguist-vendored linguist-language=M4Sugar
 configure.ac text eol=lf
 # These scripts are all parts of autoconf and are tagged linguist-generated
 # to suppress inclusion in PR diffs.
-build-aux/compile linguist-generated text eol=lf
 build-aux/config.guess linguist-generated text eol=lf
 build-aux/config.sub linguist-generated text eol=lf
 build-aux/install-sh linguist-generated text eol=lf
 build-aux/ltmain.sh linguist-generated text eol=lf
-build-aux/missing linguist-generated text eol=lf
 build-aux/*.m4 linguist-vendored
 build-aux/ocaml_version.m4 -linguist-vendored linguist-language=M4Sugar
 ocamltest/OCAMLTEST.org typo.long-line=may typo.missing-header

@@ -20,6 +20,10 @@ let err = Syntaxerr.ill_formed_ast
 
 let empty_record loc = err loc "Records cannot be empty."
 let invalid_tuple loc = err loc "Tuples must have at least 2 components."
+let empty_open_tuple_pat loc =
+  err loc "Open tuple patterns must have at least one component."
+let short_closed_tuple_pat loc =
+  err loc "Closed tuple patterns must have at least two components."
 let no_args loc = err loc "Function application with no argument."
 let empty_let loc = err loc "Let with no bindings."
 let empty_type loc = err loc "Type declarations cannot be empty."
@@ -30,14 +34,27 @@ let module_type_substitution_missing_rhs loc =
   err loc "Module type substitution with no right hand side"
 let function_without_value_parameters loc =
   err loc "Function without any value parameters"
+let invalid_struct_item loc =
+  err loc "This kind of structure item is not allowed in this context."
+
+let optional_label_on_functor loc =
+  err loc "Optional argument for a module dependent function."
 
 let simple_longident id =
   let rec is_simple = function
     | Longident.Lident _ -> true
-    | Longident.Ldot (id, _) -> is_simple id
+    | Longident.Ldot (id, _) -> is_simple id.txt
     | Longident.Lapply _ -> false
   in
   if not (is_simple id.txt) then complex_id id.loc
+
+let not_optional_label loc l =
+  let is_optional =
+    match l with
+    | Optional _ -> true
+    | _ -> false
+  in
+  if is_optional then optional_label_on_functor loc
 
 let iterator =
   let super = Ast_iterator.default_iterator in
@@ -53,8 +70,11 @@ let iterator =
     let loc = ty.ptyp_loc in
     match ty.ptyp_desc with
     | Ptyp_tuple ([] | [_]) -> invalid_tuple loc
-    | Ptyp_package (_, cstrs) ->
-      List.iter (fun (id, _) -> simple_longident id) cstrs
+    | Ptyp_package ptyp ->
+      List.iter (fun (id, _) -> simple_longident id) ptyp.ppt_constraints
+    | Ptyp_functor  (l, _, ptyp, _) ->
+      not_optional_label loc l;
+      List.iter (fun (id, _) -> simple_longident id) ptyp.ppt_constraints
     | Ptyp_poly([],_) -> empty_poly_binder loc
     | _ -> ()
   in
@@ -68,7 +88,8 @@ let iterator =
     end;
     let loc = pat.ppat_loc in
     match pat.ppat_desc with
-    | Ppat_tuple ([] | [_]) -> invalid_tuple loc
+    | Ppat_tuple (([] | [_]), Closed) -> short_closed_tuple_pat loc
+    | Ppat_tuple ([], Open) -> empty_open_tuple_pat loc
     | Ppat_record ([], _) -> empty_record loc
     | Ppat_construct (id, _) -> simple_longident id
     | Ppat_record (fields, _) ->
@@ -104,6 +125,11 @@ let iterator =
               | { pparam_desc = Pparam_val _ } -> false)
             params
         then function_without_value_parameters loc
+    | Pexp_struct_item ({pstr_loc = loc;
+                         pstr_desc = Pstr_eval _
+                                   | Pstr_value _
+                                   | Pstr_include _}, _) ->
+        invalid_struct_item loc
     | _ -> ()
   in
   let extension_constructor self ec =
@@ -211,3 +237,88 @@ let iterator =
 
 let structure st = iterator.structure iterator st
 let signature sg = iterator.signature iterator sg
+
+let check_loc_ghost meth v ~source_contents =
+  let equal_modulo_loc =
+    let no_locs =
+      { Ast_mapper.default_mapper
+        with location = (fun _ _ -> Location.none);
+             attributes = (fun _ _ -> []);
+        (* type z = (int [@foo]) create int at location "int" instead of
+           "int [@foo]". I'd rather loosen the check than worsen the location
+           for type errors. *)
+      }
+    in
+    fun meth node1 node2 ->
+      let norm1 = (meth no_locs) no_locs node1 in
+      let norm2 = (meth no_locs) no_locs node2 in
+      Stdlib.(=) norm1 norm2
+  in
+  let super = Ast_iterator.default_iterator in
+  let depth = ref 0 in
+  let limit_quadratic_complexity meth f =
+    fun self v ->
+      if !depth < 1000 then (
+        depth := !depth + 1;
+        (meth super) self v;
+        depth := !depth -1 ;
+        f v;
+    )
+  in
+  let check ?print ?(wrap = Fun.id) meth parse ast1 (loc : Location.t) =
+    let source_fragment =
+      wrap (
+          String.sub source_contents
+            loc.loc_start.pos_cnum
+            (loc.loc_end.pos_cnum - loc.loc_start.pos_cnum)
+        )
+    in
+    let lexbuf = Lexing.from_string source_fragment in
+    let should_be_loc_ghost, error_if_not =
+      match parse lexbuf with
+      | exception Parsing.Parse_error | exception _ ->
+         true, "non-ghost location points to a non parsable range"
+      | ast2 ->
+         if equal_modulo_loc meth ast1 ast2
+         then false, "ghost location should be non-ghost"
+         else true, "non-ghost location points to a range of source \
+                     code that contains the wrong ast"
+    in
+    if loc.loc_ghost <> should_be_loc_ghost
+    then (
+      Format.eprintf "@[<2>%a: %s%t@]@." Location.print_loc loc error_if_not
+        (fun f ->
+          match print with
+          | None -> ()
+          | Some print -> Format.fprintf f "@\n%a" print ast1)
+    )
+  in
+  let self =
+    { super with
+      expr =
+        limit_quadratic_complexity (fun s -> s.expr)
+          (fun v ->
+            check (fun s -> s.expr) Parse.expression v v.pexp_loc
+              (* ~print:(fun f ty -> Printast.expression 0 f ty) *)
+              (* Add parens because in 1 + 2, + gets assigned a non-ghost
+                 location, but + without parens is not a valid expression. *)
+              ~wrap:(fun s -> "( " ^ s ^ " )"))
+    ; pat =
+        limit_quadratic_complexity (fun s -> s.pat)
+          (fun v -> check (fun s -> s.pat) Parse.pattern v v.ppat_loc )
+    ; typ =
+        limit_quadratic_complexity (fun s -> s.typ)
+          (fun v ->
+            check
+              (* ~print:(fun f ty -> Printast.payload 0 f (PTyp ty)) *)
+              (fun s -> s.typ) Parse.core_type v v.ptyp_loc )
+    ; attribute = (fun self attr ->
+      (* Doc comments would probably need some special case to check they are
+         correctly placed. *)
+      if attr.attr_name.txt = "ocaml.doc"
+         || attr.attr_name.txt = "ocaml.text"
+      then ()
+      else super.attribute self attr)
+    }
+  in
+  (meth self) self v

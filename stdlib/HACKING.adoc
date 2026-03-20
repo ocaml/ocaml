@@ -6,7 +6,7 @@ link:CONTRIBUTING.md[].
 Note: All paths are given relative to the root of the repository.
 
 First, build the compiler. Run `./configure`, then `make`. See
-link:../HACKING.adoc[].
+xref:../HACKING.adoc[].
 
 To add a new module, you must:
 

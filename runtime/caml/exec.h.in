@@ -20,6 +20,8 @@
 
 #ifdef CAML_INTERNALS
 
+#include <stdint.h>
+
 /* Executable bytecode files are composed of a number of sections,
    identified by 4-character names.  A table of contents at the
    end of the file lists the section names along with their sizes,

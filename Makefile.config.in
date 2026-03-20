@@ -46,7 +46,7 @@ BINDIR=@bindir@
 
 datarootdir=@datarootdir@
 
-### Where to install the standard library
+### Where to install the standard library on host
 LIBDIR=@libdir@
 
 ### Where to install the stub code for the standard library
@@ -67,7 +67,7 @@ TOOLPREF=@ac_tool_prefix@
 CC=@CC@
 
 CC_HAS_DEBUG_PREFIX_MAP=@cc_has_debug_prefix_map@
-AS_HAS_DEBUG_PREFIX_MAP=@as_has_debug_prefix_map@
+AS_HAS_DEBUG_PREFIX_MAP=@ocaml_cv_prog_as_debug_prefix_map@
 
 LDFLAGS?=@LDFLAGS@
 
@@ -166,7 +166,7 @@ BYTECODE_CFLAGS=@bytecode_cflags@
 BYTECODE_CPPFLAGS=@bytecode_cppflags@
 ZSTD_LIBS=@zstd_libs@
 BYTECCLIBS=@zstd_libs@ @cclibs@
-EXE=@exeext@
+EXE=@EXEEXT@
 OUTPUTEXE=@outputexe@$(EMPTY)
 SUPPORTS_SHARED_LIBRARIES=@supports_shared_libraries@
 MKSHAREDLIBRPATH=@mksharedlibrpath@
@@ -186,7 +186,7 @@ NATIVECCLIBS=@cclibs@
 SYSTHREAD_SUPPORT=@systhread_support@
 STRIP=@STRIP@
 PACKLD=@PACKLD@$(EMPTY)
-CCOMPTYPE=@ccomptype@
+CCOMPTYPE=@ccomp_type@
 TOOLCHAIN=@toolchain@
 CMXS=@cmxs@
 
@@ -210,6 +210,7 @@ HOST=@host@
 FLAMBDA=@flambda@
 WITH_FLAMBDA_INVARIANTS=@flambda_invariants@
 WITH_CMM_INVARIANTS=@cmm_invariants@
+WITH_CODEGEN_INVARIANTS=@codegen_invariants@
 FORCE_SAFE_STRING=true
 DEFAULT_SAFE_STRING=true
 WINDOWS_UNICODE=@windows_unicode@
@@ -219,7 +220,18 @@ FUNCTION_SECTIONS=@function_sections@
 AWK=@AWK@
 NAKED_POINTERS=false
 
+# Runtime ID values
+BYTECODE_RUNTIME_ID=@bytecode_runtime_id@
+NATIVE_RUNTIME_ID=@native_runtime_id@
+
 # Deprecated variables
+
+## Variables deprecated since OCaml 5.3
+
+OCAMLC_CFLAGS=@bytecode_cflags@
+OCAMLOPT_CFLAGS=@native_cflags@
+OCAMLC_CPPFLAGS=@bytecode_cppflags@
+OCAMLOPT_CPPFLAGS=@native_cppflags@
 
 ## Variables deprecated since OCaml 5.2
 

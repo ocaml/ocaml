@@ -568,7 +568,7 @@ let emit_instr env fallthrough i =
   | Lop(Iload { memory_chunk; addressing_mode; _ }) ->
       let dest = res i 0 in
       begin match memory_chunk with
-      | Word_int | Word_val ->
+      | Word_int | Word_val | Sixtyfour ->
           I.mov (addressing addressing_mode QWORD i 0) dest
       | Byte_unsigned ->
           I.movzx (addressing addressing_mode BYTE i 0) dest
@@ -583,13 +583,14 @@ let emit_instr env fallthrough i =
       | Thirtytwo_signed ->
           I.movsxd (addressing addressing_mode DWORD i 0) dest
       | Single ->
+          I.xorpd dest dest; (* avoid partial register stall *)
           I.cvtss2sd (addressing addressing_mode REAL4 i 0) dest
       | Double ->
           I.movsd (addressing addressing_mode REAL8 i 0) dest
       end
   | Lop(Istore(chunk, addr, _)) ->
       begin match chunk with
-      | Word_int | Word_val ->
+      | Word_int | Word_val | Sixtyfour ->
           I.mov (arg i 0) (addressing addr QWORD i 1)
       | Byte_unsigned | Byte_signed ->
           I.mov (arg8 i 0) (addressing addr BYTE i 1)
@@ -703,6 +704,7 @@ let emit_instr env fallthrough i =
   | Lop(Iaddf | Isubf | Imulf | Idivf as floatop) ->
       instr_for_floatop floatop (arg i 1) (res i 0)
   | Lop(Ifloatofint) ->
+      I.xorpd (res i 0) (res i 0); (* avoid partial register stall *)
       I.cvtsi2sd  (arg i 0)  (res i 0)
   | Lop(Iintoffloat) ->
       I.cvttsd2si (arg i 0) (res i 0)
@@ -941,14 +943,12 @@ let fundecl fundecl =
     end;
   end;
   cfi_endproc ();
-  begin match system with
-  | S_gnu | S_linux ->
+  if Config.asm_size_type_directives then begin
       D.type_ (emit_symbol fundecl.fun_name) "@function";
       D.size (emit_symbol fundecl.fun_name)
         (ConstSub (
             ConstThis,
             ConstLabel (emit_symbol fundecl.fun_name)))
-  | _ -> ()
   end
 
 (* Emission of data *)
@@ -1019,7 +1019,7 @@ let begin_assembly() =
 
   emit_named_text_section (Compilenv.make_symbol (Some "code_begin"));
   emit_global_label "code_begin";
-  if system = S_macosx then I.nop (); (* PR#4690 *)
+  if system = S_macosx || system = S_freebsd then I.nop (); (* PR#4690 *)
   ()
 
 let end_assembly() =
@@ -1078,12 +1078,13 @@ let end_assembly() =
       efa_string = (fun s -> D.bytes (s ^ "\000"))
     };
 
-  if system = S_linux || system = S_freebsd || system = S_netbsd || system = S_openbsd then begin
+  if Config.asm_size_type_directives then begin
     let frametable = emit_symbol (Compilenv.make_symbol (Some "frametable")) in
+    D.type_ frametable "@object";
     D.size frametable (ConstSub (ConstThis, ConstLabel frametable))
   end;
 
-  if system = S_linux || system = S_freebsd then
+  if Config.with_nonexecstack_note then
     (* Mark stack as non-executable, PR#4564 *)
     D.section [".note.GNU-stack"] (Some "") [ "%progbits" ];
 

@@ -6,11 +6,12 @@
 #include <string.h>
 
 #include <caml/mlvalues.h>
-
-#define ARR_SIZE(a)    (sizeof(a) / sizeof(*(a)))
+#include "misc_internals.h"
 
 #if defined(__APPLE__)
-#define RE_FUNC_NAME "^[[:digit:]]+[[:space:]]+[[:alnum:]_\\.]+[[:space:]]+0x[[:xdigit:]]+[[:space:]]([[:alnum:]_\\.]+).*$"
+#define RE_FUNC_NAME "^[[:digit:]]+[[:space:]]+[[:alnum:]_\\.]+[[:space:]]+0x[[:xdigit:]]+[[:space:]]([[:alnum:]_\\$]+).*$"
+#elif defined(__FreeBSD__)
+#define RE_FUNC_NAME  "^0x[[:xdigit:]]+ <(.+)\\+0x[[:xdigit:]]+>.*$"
 #else
 #define RE_FUNC_NAME  "^.*\\((.+)\\+0x[[:xdigit:]]+\\) \\[0x[[:xdigit:]]+\\]$"
 #endif
@@ -30,6 +31,8 @@ typedef struct frame_info
  * or this on macOS:
  * 0   c_call.opt                          0x000000010e621079 camlC_call.entry + 57
  *
+ * or this on FreeBSD:
+ * 0x22eea7 <camlModule.fn_123+0xb7> at ./path/to/binary
  */
 static const char* backtrace_symbol(const struct frame_info* fi)
 {
@@ -53,12 +56,12 @@ static regmatch_t func_name_from_symbol(const char* symbol)
 
   err = regcomp(&regex, RE_FUNC_NAME, REG_EXTENDED);
   if (err) {
-    regerror(err, &regex, errbuf, ARR_SIZE(errbuf));
+    regerror(err, &regex, errbuf, countof(errbuf));
     fprintf(stderr, "regcomp: %s\n", errbuf);
     return match[0];
   }
 
-  err = regexec(&regex, symbol, ARR_SIZE(match), match, 0);
+  err = regexec(&regex, symbol, countof(match), match, 0);
   if (err == REG_NOMATCH)
     return match[0];
 
@@ -80,13 +83,13 @@ static regmatch_t trim_func_name(const char* symbol, const regmatch_t* funcname)
 
   err = regcomp(&regex, RE_TRIM_FUNC, REG_EXTENDED);
   if (err) {
-    regerror(err, &regex, errbuf, ARR_SIZE(errbuf));
+    regerror(err, &regex, errbuf, countof(errbuf));
     fprintf(stderr, "regcomp: %s\n", errbuf);
     return match[0];
   }
 
   match[0] = *funcname;
-  err = regexec(&regex, symbol, ARR_SIZE(match), match, REG_STARTEND);
+  err = regexec(&regex, symbol, countof(match), match, REG_STARTEND);
   if (err == REG_NOMATCH) {
     /* match[0] has already been overwritten to hold the function full name for
        regexec */
@@ -101,13 +104,24 @@ static void print_symbol(const char* symbol, const regmatch_t* match)
   regoff_t off = match->rm_so;
   regoff_t len = match->rm_eo - match->rm_so;
 
+#if defined(__APPLE__)
+  /* Replace $ with . to normalize symbol names across platforms.
+     None of the examples require escaping so we can safely
+     replace just the character.
+  */
+  for (regoff_t i = 0; i < len; i++) {
+    char c = symbol[off + i];
+    fputc(c == '$' ? '.' : c, stdout);
+  }
+  fputc('\n', stdout);
+#else
   fprintf(stdout, "%.*s\n", (int)len, symbol + off);
+#endif
   fflush(stdout);
 }
 
-void fp_backtrace(value argv0)
+void fp_backtrace(CAMLunused value argv0)
 {
-  const char* execname = String_val(argv0);
   const char* symbol = NULL;
 
   for (struct frame_info *fi = __builtin_frame_address(0), *next = NULL;

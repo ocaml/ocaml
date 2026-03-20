@@ -48,14 +48,16 @@ Error: In the definition
 
 (* Another (more direct) instance using polymorphic variants *)
 (* PR#6275 *)
-type 'x t = A of 'a constraint 'x = [< `X of 'a ] ;; (* fail *)
-let magic (x : int) : bool  =
-  let A x = A x in
-  x;; (* fail *)
+module S = struct
+  type 'x t = A of 'a constraint 'x = [< `X of 'a ] (* fail *)
+  let magic (x : int) : bool  =
+    let A x = A x in
+    x (* fail *)
+end;;
 [%%expect{|
-Line 1, characters 0-49:
-1 | type 'x t = A of 'a constraint 'x = [< `X of 'a ] ;; (* fail *)
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Line 2, characters 2-51:
+2 |   type 'x t = A of 'a constraint 'x = [< `X of 'a ] (* fail *)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the definition
          "type 'b t = A of 'a constraint 'b = [< `X of 'a ]"
        the type variable "'a" cannot be deduced from the type parameters.

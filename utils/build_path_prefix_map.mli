@@ -59,3 +59,10 @@ val rewrite : map -> path -> path
 (** [rewrite path] uses [rewrite_first] to try to find a
     mapping for path. If found, it returns that, otherwise
     it just returns [path]. *)
+
+val invert_all : map -> path -> path list
+(** [invert_all map path] finds all targets in [map] that are a prefix
+    of the input [path]. For each matching target, in priority order,
+    it replaces this prefix with the corresponding source and adds the
+    result to the returned list. If there are no matches, it just
+    returns [[]]. *)

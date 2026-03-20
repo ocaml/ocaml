@@ -84,7 +84,7 @@ module Doc = struct
 
   let constructor_arguments ppf a =
     let tys = tree_of_constructor_arguments a in
-    !Oprint.out_type ppf (Otyp_tuple tys)
+    !Oprint.out_type ppf (Otyp_tuple (List.map (fun t -> None, t) tys))
 
   let label ppf l =
     prepare_for_printing [l.Types.ld_type];

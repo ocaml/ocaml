@@ -17,7 +17,7 @@ end;;
 Line 8, characters 8-9:
 8 |     let y = 5 in ()
             ^
-Warning 26 [unused-var]: unused variable y.
+Warning 26 [unused-var]: unused variable "y".
 
 class c : object val a : unit val x : unit end
 |}];;
@@ -36,7 +36,7 @@ end;;
 Line 8, characters 8-9:
 8 |     let y = 5 in ()
             ^
-Warning 26 [unused-var]: unused variable y.
+Warning 26 [unused-var]: unused variable "y".
 
 class c : object method a : unit method x : unit end
 |}];;
@@ -55,7 +55,7 @@ end;;
 Line 8, characters 8-9:
 8 |     let y = 5 in ()
             ^
-Warning 26 [unused-var]: unused variable y.
+Warning 26 [unused-var]: unused variable "y".
 
 class c : object  end
 |}];;
@@ -85,7 +85,7 @@ end;;
 Line 4, characters 8-9:
 4 |     let b = 5 in ()
             ^
-Warning 26 [unused-var]: unused variable b.
+Warning 26 [unused-var]: unused variable "b".
 
 class c : object val a : unit val x : unit end
 |}];;

@@ -61,7 +61,10 @@ module Bytecode = struct
   end
 
   type handle =
-    Stdlib.in_channel * filename * Digest.t * Symtable.global_map option
+    Stdlib.in_channel *
+    filename *
+    Digest.BLAKE128.t *
+    Symtable.global_map option
 
   let default_crcs = ref []
   let default_global_map = ref Symtable.empty_global_map
@@ -99,8 +102,6 @@ module Bytecode = struct
         f acc ~compunit ~interface ~implementation ~defined_symbols)
       init
       !default_crcs
-
-  let run_shared_startup _ = ()
 
   let with_lock lock f =
     Mutex.lock lock;
@@ -150,7 +151,7 @@ module Bytecode = struct
            Unit name is needed for .cma files, which produce several code
            fragments. *)
         let unit_name = Symtable.Compunit.name compunit.cu_name in
-        let digest = Digest.string (file_digest ^ unit_name) in
+        let digest = Digest.BLAKE128.string (file_digest ^ unit_name) in
         let events =
           if compunit.cu_debug = 0 then [| |]
           else begin
@@ -176,7 +177,7 @@ module Bytecode = struct
       with exc -> raise (DT.Error (Cannot_open_dynamic_library exc))
     in
     try
-      let file_digest = Digest.channel ic (-1) in
+      let file_digest = Digest.BLAKE128.channel ic (-1) in
       seek_in ic 0;
       let buffer =
         try really_input_string ic (String.length Config.cmo_magic_number)

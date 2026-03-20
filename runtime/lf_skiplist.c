@@ -96,15 +96,19 @@ void caml_lf_skiplist_init(struct lf_skiplist *sk) {
   /* This concurrent skip list has two sentinel nodes, the first [head] is
   less than any possible key in the data structure and the second [tail] is
   greater than any key. */
-  sk->head = caml_stat_alloc(SIZEOF_LF_SKIPCELL +
-                             NUM_LEVELS * sizeof(struct lf_skipcell *));
+  sk->head = caml_stat_alloc_noexc(SIZEOF_LF_SKIPCELL +
+                                   NUM_LEVELS * sizeof(struct lf_skipcell *));
+  if (sk->head == NULL)
+    caml_fatal_error("caml_lf_skiplist_init: out of memory");
   sk->head->key = 0;
   sk->head->data = 0;
   sk->head->garbage_next = NULL;
   sk->head->top_level = NUM_LEVELS - 1;
 
-  sk->tail = caml_stat_alloc(SIZEOF_LF_SKIPCELL +
-                             NUM_LEVELS * sizeof(struct lf_skipcell *));
+  sk->tail = caml_stat_alloc_noexc(SIZEOF_LF_SKIPCELL +
+                                   NUM_LEVELS * sizeof(struct lf_skipcell *));
+  if (sk->tail == NULL)
+    caml_fatal_error("caml_lf_skiplist_init: out of memory");
   sk->tail->key = CAML_UINTNAT_MAX;
   sk->tail->data = 0;
   sk->tail->garbage_next = NULL;
@@ -352,12 +356,11 @@ int caml_lf_skiplist_insert(struct lf_skiplist *sk, uintnat key, uintnat data) {
        * [top_level] and goes to 0. Each entry will point to the successors in
          the [succ] array for that level. */
       int top_level = random_level();
-      /* attentive readers will have noticed that we assume memory is aligned to
-       * atleast even addresses. This is certainly the case on glibc amd64 and
-       * Visual C++ on Windows though I can find no guarantees for other
-         platforms. */
-      struct lf_skipcell *new_cell = caml_stat_alloc(
+      /* sufficiently aligned for LF_SK_MARK/UNMARK */
+      struct lf_skipcell *new_cell = caml_stat_alloc_noexc(
           SIZEOF_LF_SKIPCELL + (top_level + 1) * sizeof(struct lf_skipcell *));
+      if (new_cell == NULL)
+        caml_fatal_error("caml_lf_skiplist_insert: out of memory");
       new_cell->top_level = top_level;
       new_cell->key = key;
       new_cell->data = data;

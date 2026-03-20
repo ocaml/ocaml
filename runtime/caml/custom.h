@@ -47,12 +47,17 @@ struct custom_operations {
 
 #define Custom_ops_val(v) (*((const struct custom_operations **) (v)))
 
+/* Given a pointer [p] to the data part of a custom block
+   (as returned by [Data_custom_val]), return the size of this data part
+   (in words or in bytes). */
+#define Wsize_custom_data(p) (Wosize_hp((header_t *)(p) - 2) - 1)
+#define Bsize_custom_data(p) (Bsize_wsize(Wsize_custom_data(p)))
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
-CAMLextern uintnat caml_custom_major_ratio;
+CAMLextern atomic_uintnat caml_custom_major_ratio;
 
 CAMLextern value caml_alloc_custom(const struct custom_operations * ops,
                                    uintnat size, /*size in bytes*/
@@ -76,6 +81,10 @@ CAMLextern mlsize_t caml_custom_get_max_major (void);
 /* Global variable moved to Caml_state in 4.10 */
 #define caml_compare_unordered (Caml_state_field(compare_unordered))
 
+#ifdef __cplusplus
+}
+#endif
+
 #ifdef CAML_INTERNALS
 extern struct custom_operations *
           caml_find_custom_operations(const char * ident);
@@ -89,9 +98,5 @@ extern const struct custom_operations caml_int32_ops;
 extern const struct custom_operations caml_int64_ops;
 extern const struct custom_operations caml_ba_ops;
 #endif /* CAML_INTERNALS */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* CAML_CUSTOM_H */

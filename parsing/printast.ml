@@ -38,9 +38,9 @@ let fmt_location f loc =
 let rec fmt_longident_aux f x =
   match x with
   | Longident.Lident (s) -> fprintf f "%s" s
-  | Longident.Ldot (y, s) -> fprintf f "%a.%s" fmt_longident_aux y s
+  | Longident.Ldot (y, s) -> fprintf f "%a.%s" fmt_longident_aux y.txt s.txt
   | Longident.Lapply (y, z) ->
-      fprintf f "%a(%a)" fmt_longident_aux y fmt_longident_aux z
+      fprintf f "%a(%a)" fmt_longident_aux y.txt fmt_longident_aux z.txt
 
 let fmt_longident f x = fprintf f "\"%a\"" fmt_longident_aux x
 
@@ -135,6 +135,10 @@ let arg_label i ppf = function
 let typevars ppf vs =
   List.iter (fun x -> fprintf ppf " %a" Pprintast.tyvar x.txt) vs
 
+let labeled_tuple_element f i ppf (l, ct) =
+  option i string ppf l;
+  f i ppf ct
+
 let rec core_type i ppf x =
   line i ppf "core_type %a\n" fmt_location x.ptyp_loc;
   attributes i ppf x.ptyp_attributes;
@@ -149,7 +153,7 @@ let rec core_type i ppf x =
       core_type i ppf ct2;
   | Ptyp_tuple l ->
       line i ppf "Ptyp_tuple\n";
-      list i core_type ppf l;
+      list i (labeled_tuple_element core_type) ppf l;
   | Ptyp_constr (li, l) ->
       line i ppf "Ptyp_constr %a\n" fmt_longident_loc li;
       list i core_type ppf l;
@@ -179,15 +183,27 @@ let rec core_type i ppf x =
   | Ptyp_poly (sl, ct) ->
       line i ppf "Ptyp_poly%a\n" typevars sl;
       core_type i ppf ct;
-  | Ptyp_package (s, l) ->
-      line i ppf "Ptyp_package %a\n" fmt_longident_loc s;
-      list i package_with ppf l;
+  | Ptyp_package ptyp ->
+      line i ppf "Ptyp_package\n";
+      package_type i ppf ptyp;
   | Ptyp_open (mod_ident, t) ->
       line i ppf "Ptyp_open \"%a\"\n" fmt_longident_loc mod_ident;
       core_type i ppf t
   | Ptyp_extension (s, arg) ->
       line i ppf "Ptyp_extension \"%s\"\n" s.txt;
       payload i ppf arg
+  | Ptyp_functor (label, name, ptyp, ct2) ->
+      line i ppf "Ptyp_functor\n";
+      arg_label i ppf label;
+      line i ppf "\"%s\"\n" name.txt;
+      package_type i ppf ptyp;
+      core_type i ppf ct2
+
+and package_type i ppf ptyp =
+  let i = i + 1 in
+  line i ppf "package_type %a\n" fmt_longident_loc ptyp.ppt_path;
+  list i package_with ppf ptyp.ppt_constraints;
+  attributes i ppf ptyp.ppt_attrs
 
 and package_with i ppf (s, t) =
   line i ppf "with type %a\n" fmt_longident_loc s;
@@ -210,9 +226,9 @@ and pattern i ppf x =
       line i ppf "Ppat_interval\n";
       fmt_constant i ppf c1;
       fmt_constant i ppf c2;
-  | Ppat_tuple (l) ->
-      line i ppf "Ppat_tuple\n";
-      list i pattern ppf l;
+  | Ppat_tuple (l, c) ->
+      line i ppf "Ppat_tuple\n %a\n" fmt_closed_flag c;
+      list i (labeled_tuple_element pattern) ppf l;
   | Ppat_construct (li, po) ->
       line i ppf "Ppat_construct %a\n" fmt_longident_loc li;
       option i
@@ -243,8 +259,9 @@ and pattern i ppf x =
   | Ppat_type (li) ->
       line i ppf "Ppat_type\n";
       longident_loc i ppf li
-  | Ppat_unpack s ->
+  | Ppat_unpack (s, ptyp) ->
       line i ppf "Ppat_unpack %a\n" fmt_str_opt_loc s;
+      option i package_type ppf ptyp;
   | Ppat_exception p ->
       line i ppf "Ppat_exception\n";
       pattern i ppf p
@@ -291,7 +308,7 @@ and expression i ppf x =
       list i case ppf l;
   | Pexp_tuple (l) ->
       line i ppf "Pexp_tuple\n";
-      list i expression ppf l;
+      list i (labeled_tuple_element expression) ppf l;
   | Pexp_construct (li, eo) ->
       line i ppf "Pexp_construct %a\n" fmt_longident_loc li;
       option i expression ppf eo;
@@ -352,14 +369,6 @@ and expression i ppf x =
   | Pexp_override (l) ->
       line i ppf "Pexp_override\n";
       list i string_x_expression ppf l;
-  | Pexp_letmodule (s, me, e) ->
-      line i ppf "Pexp_letmodule %a\n" fmt_str_opt_loc s;
-      module_expr i ppf me;
-      expression i ppf e;
-  | Pexp_letexception (cd, e) ->
-      line i ppf "Pexp_letexception\n";
-      extension_constructor i ppf cd;
-      expression i ppf e;
   | Pexp_assert (e) ->
       line i ppf "Pexp_assert\n";
       expression i ppf e;
@@ -376,13 +385,10 @@ and expression i ppf x =
   | Pexp_newtype (s, e) ->
       line i ppf "Pexp_newtype \"%s\"\n" s.txt;
       expression i ppf e
-  | Pexp_pack me ->
+  | Pexp_pack (me, optyp) ->
       line i ppf "Pexp_pack\n";
-      module_expr i ppf me
-  | Pexp_open (o, e) ->
-      line i ppf "Pexp_open %a\n" fmt_override_flag o.popen_override;
-      module_expr i ppf o.popen_expr;
-      expression i ppf e
+      module_expr i ppf me;
+      option i package_type ppf optyp
   | Pexp_letop {let_; ands; body} ->
       line i ppf "Pexp_letop\n";
       binding_op i ppf let_;
@@ -393,6 +399,10 @@ and expression i ppf x =
       payload i ppf arg
   | Pexp_unreachable ->
       line i ppf "Pexp_unreachable"
+  | Pexp_struct_item (si, e) ->
+      line i ppf "Pexp_struct_item\n";
+      structure_item i ppf si;
+      expression i ppf e
 
 and function_param i ppf { pparam_desc = desc; pparam_loc = loc } =
   match desc with
@@ -440,8 +450,8 @@ and type_declaration i ppf x =
   let i = i+1 in
   line i ppf "ptype_params =\n";
   list (i+1) type_parameter ppf x.ptype_params;
-  line i ppf "ptype_cstrs =\n";
-  list (i+1) core_type_x_core_type_x_location ppf x.ptype_cstrs;
+  line i ppf "ptype_constraints =\n";
+  list (i+1) core_type_x_core_type_x_location ppf x.ptype_constraints;
   line i ppf "ptype_kind =\n";
   type_kind (i+1) ppf x.ptype_kind;
   line i ppf "ptype_private = %a\n" fmt_private_flag x.ptype_private;
@@ -482,6 +492,8 @@ and type_kind i ppf x =
       list (i+1) label_decl ppf l;
   | Ptype_open ->
       line i ppf "Ptype_open\n";
+  | Ptype_external name ->
+      line i ppf "Ptype_external %S\n" name;
 
 and type_extension i ppf x =
   line i ppf "type_extension\n";

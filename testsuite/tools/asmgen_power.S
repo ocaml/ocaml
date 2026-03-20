@@ -10,6 +10,9 @@
 /*                                                                   */
 /*********************************************************************/
 
+#include "caml/m.h"
+#include "caml/asm.h"
+
 #define RESERVED_STACK 32
 #define LR_SAVE_AREA 16
 
@@ -131,5 +134,4 @@ FUNCTION(caml_c_call)
         mr      12, 28
         bctr
 
-/* Mark stack as non-executable */
-        .section .note.GNU-stack,"",%progbits
+        NONEXECSTACK_NOTE

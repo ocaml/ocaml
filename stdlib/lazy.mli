@@ -139,3 +139,107 @@ val force_val : 'a t -> 'a
 
     @raise Undefined (see {!Undefined}).
 *)
+
+module Mutexed : sig
+  (** Simple mutex-protected lazy thunks, which can be accessed from
+      several domains or several threads.
+
+      This implementation has two downsides:
+      - It is less optimized than [Lazy.t].
+      - It uses a standard library {!Mutex} to wait on concurrent
+        initialization, so it does not interoperate well with user-level
+        fiber/task abstractions (see the {!Lazy.Mutexed.force} documentation
+        for a dangerous example).
+
+      A typical use-case is optional library initialization code that
+      is moderately expensive, or acquires resources. The library
+      author does not want to do this work on startup, because it may
+      not be needed, but using ['a Lazy.t] is incorrect if the library
+      may be used in concurrent settings. ['a Lazy.Mutexed.t]
+      can be used, as long as the blocking behavior is acceptable.
+
+     {b Note}: ['a Lazy.t] contains a protection against recursively
+     forcing a thunk, it will raise {!Undefined}. On the other hand,
+     ['a Lazy.Mutexed.t] will try to lock the mutex
+     recursively, which will raise [Sys_error].
+
+     See {{!examples} the examples} below.
+
+     @since 5.5
+  *)
+
+  type !'a t
+  (* A value of type ['a Lazy.Mutexed.t] is similar to a value
+     of type ['a Lazy.t], it represents a deferred computation, but it can
+     safely be used in concurrent settings as it is protected by a mutex
+     during forcing. *)
+
+  val is_val : 'a t -> bool
+  (** [is_val x] returns [true] if the deferred computation [x] has
+      already been forced and its result is a value, not an
+      exception. *)
+
+  val from_val : 'a -> 'a t
+  (** [from_val v] is a deferred computation which is already
+      finished and whose result is the value [v]. *)
+
+  val from_fun : (unit -> 'a) -> 'a t
+  (** [from_fun f] is a deferred computation that will take a mutex
+      and call [f] when forced. *)
+
+  val force : 'a t -> 'a
+  (** [force x] forces the suspension [x]. If [x] has already been
+      forced, [Lazy.force x] returns the same value again without
+      recomputing it. If it raised an exception, the same exception is
+      raised again.
+
+      If a concurrent call to [force] happens while the result is
+      being computed, the caller will block on a {!Mutex}.
+
+      @raise Sys_error if the suspension is forced on a thread where
+        it is already being forced. This can happen if the thunk tries
+        to force itself recursively, but it can also happen if the
+        thunk code contains a `yield()` operation for a user-level
+        fiber/task abstraction, and two fibers/tasks try to force the
+        thunk in parallel on the same domain:
+      {[
+        (* This is wrong, a mutex-protected thunk should not yield control. *)
+        let thunk = Lazy.Mutexed.from_fun (fun () -> ... Fiber.yield () ...)
+
+        (* It may result in a same-thread [Sys_error] exception below. *)
+        let wrong =
+          Fiber.both
+            (fun () -> Lazy.Mutexed.force thunk)
+            (fun () -> Lazy.Mutexed.force thunk)
+      ]}
+
+      To avoid such errors, you should ensure that mutex-protected
+      thunks never yield control outside of their sub-computation --
+      by not using a user-level thread library within it, or by using
+      appropriate blocking/masking functions if available. *)
+
+
+  (** {1:examples Examples}
+
+      A typical use-case is to initialize some library-local
+      state that is used by library functions.
+
+      {[
+        let config = Lazy.Mutexed.from_fun (fun () ->
+          match Sys.getenv_opt "MYLIB_CONFIG_PATH" with
+          | None | Some "" -> Config.default ()
+          | Some path -> Config.read_from_path path
+        )
+      ]}
+
+      {[
+        let entropy =
+          (* we use a mibibyte of random data from /dev/urandom *)
+          Lazy.Mutexed.from_fun (fun () ->
+            In_channel.with_open_bin "/dev/urandom" (fun chan ->
+              In_channel.really_input_string chan (1024 * 1024)
+            )
+          )
+      ]}
+ *)
+end

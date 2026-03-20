@@ -27,6 +27,15 @@
 
 static const mlsize_t mlsize_t_max = CAML_UINTNAT_MAX;
 
+CAMLprim value caml_check_bound(value length, value index)
+{
+  intnat len = Long_val(length);
+  intnat idx = Long_val(index);
+  if (idx < 0 || idx >= len)
+    caml_array_bound_error();
+  return Val_unit;
+}
+
 /* returns number of elements (either fields or floats) */
 /* [ 'a array -> int ] */
 CAMLexport mlsize_t caml_array_length(value array)
@@ -64,7 +73,7 @@ CAMLprim value caml_floatarray_get(value array, value index)
   double d;
   value res;
 
-  CAMLassert (Tag_val(array) == Double_array_tag);
+  CAMLassert (Wosize_val(array) == 0 || Tag_val(array) == Double_array_tag);
   if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
     caml_array_bound_error();
   d = Double_flat_field(array, idx);
@@ -99,7 +108,7 @@ CAMLprim value caml_floatarray_set(value array, value index, value newval)
 {
   intnat idx = Long_val(index);
   double d = Double_val (newval);
-  CAMLassert (Tag_val(array) == Double_array_tag);
+  CAMLassert (Wosize_val(array) == 0 || Tag_val(array) == Double_array_tag);
   if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
     caml_array_bound_error();
   Store_double_flat_field(array, idx, d);
@@ -125,7 +134,7 @@ CAMLprim value caml_floatarray_unsafe_get(value array, value index)
   double d;
   value res;
 
-  CAMLassert (Tag_val(array) == Double_array_tag);
+  CAMLassert (Wosize_val(array) == 0 || Tag_val(array) == Double_array_tag);
   d = Double_flat_field(array, idx);
   Alloc_small(res, Double_wosize, Double_tag, Alloc_small_enter_GC);
   Store_double_val(res, d);
@@ -161,6 +170,7 @@ CAMLprim value caml_floatarray_unsafe_set(value array, value index,value newval)
 {
   intnat idx = Long_val(index);
   double d = Double_val (newval);
+  CAMLassert (Wosize_val(array) == 0 || Tag_val(array) == Double_array_tag);
   Store_double_flat_field(array, idx, d);
   return Val_unit;
 }
@@ -458,6 +468,32 @@ CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
 
 /* generic [gather] functions for extraction and concatenation of sub-arrays */
 
+/* [wo_memcpy] copies [nvals] values from [src] to [dst], assuming no
+   overlapping. If there is a single domain running, then we use [memcpy].
+   Otherwise, we copy one word at a time.
+
+   Since the [memcpy] implementation does not guarantee that the reads are
+   always word-sized, we explicitly perform word-sized reads of the relaxed
+   kind to avoid tearing (see #13950). Performing relaxed reads should be
+   sufficient to prevent smart compilers from coalescing the reads into vector
+   reads, and hence prevent tearing.
+
+   Note that unlike [wo_memmove], the writes are plain writes and no acquire
+   fence is emitted; to comply with OCaml's memory model, this should only be
+   used to write into unpublished values. [MM]
+   */
+static void wo_memcpy(value * const dst,
+                      atomic_value * const src,
+                      mlsize_t nvals)
+{
+  if (caml_domain_alone ()) {
+    memcpy((value*)dst, (value*)src, nvals * sizeof (value));
+  } else {
+    for (mlsize_t i = 0; i < nvals; i++)
+      dst[i] = atomic_load_relaxed(&src[i]);
+  }
+}
+
 /* The lengths are specified in number of floats,
    as returned by [caml_array_length]. */
 static value caml_floatarray_gather(intnat num_arrays,
@@ -478,7 +514,7 @@ static value caml_floatarray_gather(intnat num_arrays,
   }
   if (size == 0) {
     /* If total size = 0, just return empty array */
-    res = Atom(0);
+    CAMLreturn(Atom(0));
   }
   /* This is an array of floats.  We can use memcpy directly. */
   if (size > Max_wosize/Double_wosize) caml_invalid_argument("Array.concat");
@@ -517,16 +553,15 @@ static value caml_uniform_array_gather(intnat num_arrays,
     res = Atom(0);
   }
   else if (size <= Max_young_wosize) {
-    /* Array of values, small enough to fit in young generation.
-       We can use memcpy directly. */
+    /* Array of values, small enough to fit in young generation. */
     res = caml_alloc_small(size, 0);
     mlsize_t pos = 0;
     for (mlsize_t i = 0; i < num_arrays; i++) {
-      /* [res] is freshly allocated, and no other domain has a reference to it.
-         Hence, a plain [memcpy] is sufficient. */
-      memcpy((value*)&Field(res, pos),
-             (value*)&Field(arrays[i], offsets[i]),
-             lengths[i] * sizeof(value));
+      /* Here we can do a direct copy since this cannot create old-to-young
+         pointers, nor mess up with the incremental major GC. */
+      value *dst = (value *) &Field(res, pos);
+      atomic_value *src = (atomic_value *) &Field(arrays[i], offsets[i]);
+      wo_memcpy(dst, src, lengths[i]);
       pos += lengths[i];
     }
     CAMLassert(pos == size);
@@ -631,7 +666,13 @@ CAMLprim value caml_array_append(value a1, value a2)
   return caml_array_gather(2, arrays, offsets, lengths);
 }
 
-CAMLprim value caml_array_concat(value al)
+/* Function pointer type for the [caml_*_gather] functions. */
+typedef value (*gather_impl)(intnat num_arrays,
+                             value arrays[/*num_arrays*/],
+                             intnat offsets[/*num_arrays*/],
+                             intnat lengths[/*num_arrays*/]);
+
+static value generic_array_concat(gather_impl gather, value al)
 {
 #define STATIC_SIZE 16
   value static_arrays[STATIC_SIZE], * arrays;
@@ -654,21 +695,21 @@ CAMLprim value caml_array_concat(value al)
       caml_stat_free(arrays);
       caml_raise_out_of_memory();
     }
-    lengths = caml_stat_alloc_noexc(n * sizeof(value));
+    lengths = caml_stat_alloc_noexc(n * sizeof(intnat));
     if (lengths == NULL) {
       caml_stat_free(offsets);
       caml_stat_free(arrays);
       caml_raise_out_of_memory();
     }
   }
-  /* Build the parameters to caml_array_gather */
+  /* Build the parameters for the [gather] function. */
   for (i = 0, l = al; l != Val_emptylist; l = Field(l, 1), i++) {
     arrays[i] = Field(l, 0);
     offsets[i] = 0;
     lengths[i] = caml_array_length(Field(l, 0));
   }
-  /* Do the concatenation */
-  res = caml_array_gather(n, arrays, offsets, lengths);
+  /* Call the [gather] function. */
+  res = (*gather)(n, arrays, offsets, lengths);
   /* Free the extra storage if needed */
   if (n > STATIC_SIZE) {
     caml_stat_free(arrays);
@@ -676,6 +717,21 @@ CAMLprim value caml_array_concat(value al)
     caml_stat_free(lengths);
   }
   return res;
+}
+
+CAMLprim value caml_floatarray_concat(value al)
+{
+  return generic_array_concat(&caml_floatarray_gather, al);
+}
+
+CAMLprim value caml_uniform_array_concat(value al)
+{
+  return generic_array_concat(&caml_uniform_array_gather, al);
+}
+
+CAMLprim value caml_array_concat(value al)
+{
+  return generic_array_concat(&caml_array_gather, al);
 }
 
 CAMLprim value caml_floatarray_fill_unboxed(
@@ -714,7 +770,8 @@ CAMLprim value caml_uniform_array_fill(
       *fp = val;
       if (Is_block(old)) {
         if (Is_young(old)) continue;
-        caml_darken(Caml_state, old, NULL);
+        if (caml_marking_started())
+          caml_darken(Caml_state, old, NULL);
       }
       if (is_val_young_block)
         Ref_table_add(&Caml_state->minor_tables->major_ref, fp);

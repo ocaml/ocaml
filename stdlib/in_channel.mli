@@ -16,6 +16,8 @@
 (** Input channels.
 
     This module provides functions for working with input channels.
+    For example, you can use this module to read files or get user
+    input from the terminal.
 
     See {{!examples} the example section} below.
 

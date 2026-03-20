@@ -1,5 +1,6 @@
 (* TEST
  include unix;
+ multicore;
  hasunix;
  {
    bytecode;

@@ -41,7 +41,7 @@ open Outcometree
 
 val wrap_printing_env: error:bool -> Env.t -> (unit -> 'a) -> 'a
 (** Call the function using the environment for type path shortening
-    This affects all the printing and tree cration functions functions below
+    This affects all the printing and tree creation functions below
     Also, if [~error:true], then disable the loading of cmis *)
 
 
@@ -249,7 +249,12 @@ end
 module Internal_names: sig
   val add: Path.t -> unit
   val reset: unit -> unit
-  val print_explanations: Env.t -> formatter -> unit
+
+  type explanation =
+    | Existential of { constructor : string }
+    | Equation of { lhs : type_expr; rhs : type_expr }
+
+  val explain : Env.t -> (Path.t list * explanation) list
 end
 
 (** Reset all contexts *)

@@ -23,7 +23,12 @@
 
 export OCAMLTEST_SKIP_TESTS="tests/afl-instrumentation/afltest.ml \
 tests/afl-instrumentation/afl-fuzz-test.ml \
-tests/runtime-errors/stackoverflow.ml"
+tests/runtime-errors/stackoverflow.ml \
+tests/native-debugger/linux-gdb-amd64.ml \
+tests/native-debugger/linux-lldb-amd64.ml \
+tests/native-debugger/linux-gdb-arm64.ml \
+tests/native-debugger/linux-lldb-arm64.ml \
+tests/native-debugger/linux-gdb-riscv.ml"
 
 jobs=-j8
 make=make
@@ -86,7 +91,7 @@ export UBSAN_OPTIONS="print_stacktrace=1"
 # Don't optimize too much to get better backtraces of errors
 CFLAGS="-Og -g -fno-omit-frame-pointer $sanitizers"
 LDFLAGS="$sanitizers -Og -g"
-CC=$clang
+CC="$clang -Og -g"
 
 # Test that UBSAN works
 cat >ubsan.c <<EOF

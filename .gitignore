@@ -26,11 +26,12 @@
 *.cmx[as]
 *.cmti
 *.annot
+*.stripped
 *.exe
 *.exe.manifest
 .DS_Store
 *.out
-*.out.dSYM
+*.dSYM/
 *.swp
 _ocamltest
 _ocamltestd
@@ -83,6 +84,7 @@ META
 
 /bytecomp/opcodes.ml
 /bytecomp/opcodes.mli
+/bytecomp/byterntm.ml
 
 /debugger/debugger_lexer.ml
 /debugger/debugger_parser.ml
@@ -233,15 +235,14 @@ META
 /parsing/camlinternalMenhirLib.ml
 /parsing/camlinternalMenhirLib.mli
 
+/runtime/api-testing
 /runtime/domain_state.inc
-/runtime/caml/jumptbl.h
 /runtime/caml/m.h
 /runtime/caml/s.h
 /runtime/primitives
 /runtime/primitives*.new
 /runtime/prims.c
 /runtime/caml/exec.h
-/runtime/caml/opnames.h
 /runtime/caml/version.h
 /runtime/ocamlrun
 /runtime/ocamlrund
@@ -251,13 +252,10 @@ META
 /runtime/build_config.h
 /runtime/sak
 
-/stdlib/runtime.info
 /stdlib/runtime-launch-info
 /stdlib/labelled-*
 /stdlib/caml
 /stdlib/sys.ml
-/stdlib/target_runtime.info
-/stdlib/target_runtime-launch-info
 
 /testsuite/**/*.result
 /testsuite/**/*.opt_result
@@ -271,11 +269,14 @@ META
 /testsuite/_retries
 
 /testsuite/tools/codegen
+/testsuite/tools/poisonedruntime
 /testsuite/tools/expect
 /testsuite/tools/lexcmm.ml
 /testsuite/tools/parsecmm.ml
 /testsuite/tools/parsecmm.mli
 /testsuite/tools/parsecmm.output
+/testsuite/tools/test_in_prefix
+/testsuite/tools/test_in_prefix.opt
 
 /tools/ocamldep
 /tools/ocamldep.opt
@@ -305,8 +306,6 @@ META
 /tools/cmpbyt.opt
 /tools/stripdebug
 /tools/stripdebug.opt
-/tools/make_opcodes
-/tools/make_opcodes.ml
 /tools/ocamltex
 /tools/eventlog_metadata
 /tools/lintapidiff.opt

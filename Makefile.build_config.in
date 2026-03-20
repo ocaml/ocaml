@@ -29,6 +29,8 @@ INSTALL ?= @INSTALL@ -p
 INSTALL_DATA ?= @INSTALL_DATA@
 INSTALL_PROG ?= @INSTALL_PROGRAM@
 
+SRCDIR_ABS = @ocamlsrcdir@
+
 # Whether to build certain libraries and tools
 
 build_ocamldebug = @build_ocamldebug@
@@ -70,26 +72,48 @@ OPTIONAL_NATIVE_TOOLS = @optional_native_tools@
 INSTALL_OCAMLNAT = @install_ocamlnat@
 
 # The command to generate C dependency information
-DEP_CC=@DEP_CC@ -MM
+DEP_CC=@DEP_CC@
+DEP_CPPFLAGS=@DEP_CPPFLAGS@
+ifeq "@compute_deps@-$(CC)" "true-$(DEP_CC)"
+DEP_FLAGS = $(addprefix @DEP_CC_PREFIX@,-MMD -MT $(1) -MF $(2))
+else
+DEP_FLAGS =
+endif
 COMPUTE_DEPS=@compute_deps@
 
+TEST_CXX = @ocamltest_CXX@
+TEST_CXX_CXXFLAGS = @common_cflags@
+TEST_CXX_CPPFLAGS = @common_cppflags@
+CXXFLAGS ?=
+
+BUILD_PATH_LOGICAL = @srcdir_abs@
+BUILD_PATH_PHYSICAL = @srcdir_abs_real@
+BUILD_MAP_FLAGS = @build_map_flags@
+BUILD_MAP_CFLAGS = $(foreach flag, $(BUILD_MAP_FLAGS), \
+  $(call QUOTE_SINGLE,$(flag)$(BUILD_PATH_LOGICAL)=+build) \
+  $(if $(BUILD_PATH_PHYSICAL), \
+    $(call $(QUOTE_SINGLE),$(flag)$(BUILD_PATH_PHYSICAL)=+build)))
+
 # Default flags to use to compile C files
-OC_CFLAGS = @oc_cflags@
+OC_CFLAGS = @oc_cflags@ $(BUILD_MAP_CFLAGS)
 
 # Flags to use when compiling C files to be linked with bytecode
-OC_BYTECODE_CFLAGS = @oc_bytecode_cflags@
+OC_BYTECODE_CFLAGS = @oc_bytecode_cflags@ $(BUILD_MAP_CFLAGS)
 
 # Flags to use when compiling C files to be linked with native code
-OC_NATIVE_CFLAGS = @oc_native_cflags@
+OC_NATIVE_CFLAGS = @oc_native_cflags@ $(BUILD_MAP_CFLAGS)
 
 # The submodules should be searched *before* any other external -I paths
 OC_INCLUDES = $(addprefix -I $(ROOTDIR)/, \
-  runtime @flexdll_source_dir@ @winpthreads_source_include_dir@)
+  runtime @flexdll_source_dir@)
 OC_CPPFLAGS = $(OC_INCLUDES) @oc_cppflags@
 
 OC_BYTECODE_CPPFLAGS = $(OC_INCLUDES) @oc_bytecode_cppflags@
 
 OC_NATIVE_CPPFLAGS = $(OC_INCLUDES) @oc_native_cppflags@
+
+EXTRA_WARNINGS_CFLAGS = @cc_extra_warnings@
+EXTRA_WARNINGS_CXXFLAGS = @cxx_extra_warnings@
 
 # Additional link-time options
 # To support dynamic loading of shared libraries (they need to look at
@@ -99,10 +123,24 @@ OC_DLL_LDFLAGS=@oc_dll_ldflags@
 
 MKEXE_VIA_CC=$(CC) @mkexe_via_cc_ldflags@ @mkexe_via_cc_extra_cmd@
 
+LAUNCH_METHOD = @launch_method@
+SUFFIXING = @suffixing@
+
+# How to build sak
+SAK_BUILD=@SAK_BUILD@
+# How to invoke sak
+SAK=@SAK@
+
+# sak command to encode C literals
+ENCODE_C_LITERAL=@encode_C_literal@
+
 # Which tool to use to display differences between files
 DIFF=@DIFF@
 # Which flags to pass to the diff tool
 DIFF_FLAGS=@DIFF_FLAGS@
+
+# The resource compiler (Windows targets)
+RC=@RC@
 
 # The rlwrap command (for the *runtop targets)
 RLWRAP=@rlwrap@
@@ -119,14 +157,14 @@ DOCUMENTATION_TOOL_CMD=@documentation_tool_cmd@
 FLEXDLL_SOURCE_DIR=@flexdll_source_dir@
 BOOTSTRAPPING_FLEXDLL=@bootstrapping_flexdll@
 
-# The location of the Winpthreads sources to use (usually provided as the
-# winpthreads Git submodule)
-WINPTHREADS_SOURCE_DIR=@winpthreads_source_dir@
-
 ### Where to install documentation
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 datarootdir = @datarootdir@
 DOCDIR=@docdir@
+
+### Where to look for the standard library on target
+TARGET_LIBDIR=@TARGET_LIBDIR@
+TARGET_LIBDIR_IS_RELATIVE=@target_libdir_is_relative@
 
 unix_directory = @unix_directory@
 unix_library = @unix_library@
@@ -156,8 +194,8 @@ DEFAULT_BUILD_TARGET = @default_build_target@
 # added to both XXX_YYY_COMPFLAGS and XXX_YYY_LINKFLAGS.
 
 OC_COMMON_COMPFLAGS = -g -strict-sequence -principal -absname \
-  -w +a-4-9-40-41-42-44-45-48 -warn-error +a -bin-annot \
-  -strict-formats
+  -w +a-4-9-40-41-42-44-45-48 -warn-error +a -alert @ocaml_deprecated_cli \
+  -bin-annot -strict-formats
 OC_COMMON_LINKFLAGS = $(INCLUDES)
 
 OC_BYTECODE_LINKFLAGS =
@@ -166,8 +204,18 @@ OC_NATIVE_COMPFLAGS = @oc_native_compflags@
 
 OC_NATIVE_LINKFLAGS = -g
 
+BUILD_TRIPLET = @build@
+
+# Zinc Runtime ID is needed for installation only
+ZINC_RUNTIME_ID_HI = @zinc_runtime_id_hi@
+ZINC_RUNTIME_ID = @zinc_runtime_id_lo@$(ZINC_RUNTIME_ID_HI)
+
 # Platform-dependent command to create symbolic links
 LN = @ln@
+
+# Tool to generate manifests for managed assemblies and unmanaged side-by-side
+# assemblies, for the Windows targets.
+MANIFEST_TOOL = @MANIFEST_TOOL@
 
 # Platform-dependent assembler files to use to build the runtime
 runtime_ASM_OBJECTS = $(addprefix runtime/,@runtime_asm_objects@)
@@ -183,3 +231,5 @@ TSAN=@tsan@
 # Contains TSan-specific runtime files, or nothing if TSan support is
 # disabled
 TSAN_NATIVE_RUNTIME_C_SOURCES = @tsan_native_runtime_c_sources@
+
+RUNTIME_SEARCH = @runtime_search@

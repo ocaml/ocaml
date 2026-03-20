@@ -57,7 +57,9 @@ let constructor_existentials cd_args cd_res =
     match cd_res with
     | None -> []
     | Some type_ret ->
-        let arg_vars_set = free_vars (newgenty (Ttuple tyl)) in
+        let arg_vars_set =
+          free_vars (newgenty (Ttuple (List.map (fun ty -> None, ty) tyl)))
+        in
         let res_vars = free_vars type_ret in
         TypeSet.elements (TypeSet.diff arg_vars_set res_vars)
   in
@@ -68,7 +70,10 @@ let constructor_args ~current_unit priv cd_args cd_res path rep =
   match cd_args with
   | Cstr_tuple l -> existentials, l, None
   | Cstr_record lbls ->
-      let arg_vars_set = free_vars ~param:true (newgenty (Ttuple tyl)) in
+      let arg_vars_set =
+        free_vars ~param:true
+          (newgenty (Ttuple (List.map (fun ty -> None, ty) tyl)))
+      in
       let type_params = TypeSet.elements arg_vars_set in
       let arity = List.length type_params in
       let tdecl =
@@ -179,7 +184,8 @@ let none =
     (* Clearly ill-formed type *)
 
 let dummy_label =
-  { lbl_name = ""; lbl_res = none; lbl_arg = none; lbl_mut = Immutable;
+  { lbl_name = ""; lbl_res = none; lbl_arg = none;
+    lbl_mut = Immutable; lbl_atomic = Nonatomic;
     lbl_pos = (-1); lbl_all = [||]; lbl_repres = Record_regular;
     lbl_private = Public;
     lbl_loc = Location.none;
@@ -197,6 +203,7 @@ let label_descrs ty_res lbls repres priv =
             lbl_res = ty_res;
             lbl_arg = l.ld_type;
             lbl_mut = l.ld_mutable;
+            lbl_atomic = l.ld_atomic;
             lbl_pos = num;
             lbl_all = all_labels;
             lbl_repres = repres;
@@ -230,11 +237,11 @@ let constructors_of_type ~current_unit ty_path decl =
   match decl.type_kind with
   | Type_variant (cstrs,rep) ->
      constructor_descrs ~current_unit ty_path decl cstrs rep
-  | Type_record _ | Type_abstract _ | Type_open -> []
+  | Type_record _ | Type_abstract _ | Type_open | Type_external _ -> []
 
 let labels_of_type ty_path decl =
   match decl.type_kind with
   | Type_record(labels, rep) ->
       label_descrs (newgenconstr ty_path decl.type_params)
         labels rep decl.type_private
-  | Type_variant _ | Type_abstract _ | Type_open -> []
+  | Type_variant _ | Type_abstract _ | Type_open | Type_external _ -> []

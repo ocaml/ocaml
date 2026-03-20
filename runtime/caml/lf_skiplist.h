@@ -100,7 +100,7 @@ extern void caml_lf_skiplist_free_garbage(struct lf_skiplist *sk);
    [var] designates the current element.
    [action] can refer to [var->key] and [var->data].
    [action] can safely remove the current element, i.e. call
-   [caml_skiplist_remove] on [var->key].  The traversal will
+   [caml_lf_skiplist_remove] on [var->key].  The traversal will
    continue with the skiplist element following the removed element.
    Other operations performed over the skiplist during its traversal have
    unspecified effects on the traversal. */

@@ -1000,7 +1000,7 @@ let instr_load_printer ppf lexbuf =
 let instr_install_printer ppf lexbuf =
   let lid = longident_eol Lexer.lexeme lexbuf in
   try
-    Loadprinter.install_printer ppf lid
+    Loadprinter.install_printer lid
   with Loadprinter.Error e ->
     Loadprinter.report_error ppf e; raise Toplevel
 

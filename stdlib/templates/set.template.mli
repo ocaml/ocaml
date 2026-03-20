@@ -201,7 +201,7 @@ module type S =
         with respect to the ordering over the type of the elements. *)
 
     val fold: f:(elt -> 'acc -> 'acc) -> t -> init:'acc -> 'acc
-    (** [fold ~f s init] computes [(f xN ... (f x2 (f x1 init))...)],
+    (** [fold ~f s ~init] computes [(f xN ... (f x2 (f x1 init))...)],
         where [x1 ... xN] are the elements of [s], in increasing order. *)
 
     (** {1:transforming Transforming} *)
@@ -220,7 +220,7 @@ module type S =
 
     val filter: f:(elt -> bool) -> t -> t
     (** [filter ~f s] returns the set of all elements in [s]
-        that satisfy predicate [f]. If [f] satisfies every element in [s],
+        that satisfy predicate [f]. If every element in [s] satisfies [f],
         [s] is returned unchanged (the result of the function is then
         physically equal to [s]).
         @before 4.03 Physical equality was not ensured.*)
@@ -259,6 +259,17 @@ module type S =
 
     val is_empty: t -> bool
     (** Test whether a set is empty or not. *)
+
+    val is_singleton: t -> bool
+    (** Test whether a set has exactly one element or not.
+
+        @since 5.5 *)
+
+    val singleton_to_elt: t -> elt option
+    (** [singleton_to_elt s] is [Some x] if [s] has only the element [x]
+        and [None] otherwise.
+
+        @since 5.6 *)
 
     val mem: elt -> t -> bool
     (** [mem x s] tests whether [x] belongs to the set [s]. *)
@@ -313,7 +324,7 @@ module type S =
         @since 4.07 *)
 
     val of_seq : elt Seq.t -> t
-    (** Build a set from the given bindings
+    (** Build a set from the given elements
         @since 4.07 *)
   end
 (** Output signature of the functor {!Make}. *)

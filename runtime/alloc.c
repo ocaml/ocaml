@@ -42,13 +42,13 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
     }else{
       Caml_check_caml_state();
       Alloc_small (result, wosize, tag, Alloc_small_enter_GC);
-      if (tag < No_scan_tag){
+      if (Scannable_tag(tag)){
         for (mlsize_t i = 0; i < wosize; i++) Field (result, i) = Val_unit;
       }
     }
   } else {
     result = caml_alloc_shr (wosize, tag);
-    if (tag < No_scan_tag) {
+    if (Scannable_tag(tag)) {
       for (mlsize_t i = 0; i < wosize; i++) Field (result, i) = Val_unit;
     }
     result = caml_check_urgent_gc (result);
@@ -66,7 +66,7 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
 #ifdef NATIVE_CODE
 CAMLexport value caml_alloc_shr_check_gc (mlsize_t wosize, tag_t tag)
 {
-  CAMLassert(tag < No_scan_tag);
+  CAMLassert(Scannable_tag(tag));
   caml_check_urgent_gc (Val_unit);
   value result = caml_alloc_shr (wosize, tag);
   for (mlsize_t i = 0; i < wosize; i++) Field (result, i) = Val_unit;
@@ -276,101 +276,6 @@ CAMLexport int caml_convert_flag_list(value list, const int *flags)
   for (/*nothing*/; list != Val_emptylist; list = Field(list, 1))
     res |= flags[Int_val(Field(list, 0))];
   return res;
-}
-
-/* For compiling let rec over values */
-
-/* [size] is a [value] representing number of words (fields) */
-CAMLprim value caml_alloc_dummy(value size)
-{
-  mlsize_t wosize = Long_val(size);
-  return caml_alloc (wosize, 0);
-}
-
-/* [size] is a [value] representing number of words (fields) */
-CAMLprim value caml_alloc_dummy_function(value size,value arity)
-{
-  /* the arity argument is used by the js_of_ocaml runtime */
-  return caml_alloc_dummy(size);
-}
-
-/* [size] is a [value] representing number of floats. */
-CAMLprim value caml_alloc_dummy_float (value size)
-{
-  mlsize_t wosize = Long_val(size) * Double_wosize;
-  return caml_alloc (wosize, 0);
-}
-
-CAMLprim value caml_alloc_dummy_infix(value vsize, value voffset)
-{
-  mlsize_t wosize = Long_val(vsize), offset = Long_val(voffset);
-  value v = caml_alloc(wosize, Closure_tag);
-  /* The following choice of closure info causes the GC to skip
-     the whole block contents.  This is correct since the dummy
-     block contains no pointers into the heap.  However, the block
-     cannot be marshaled or hashed, because not all closinfo fields
-     and infix header fields are correctly initialized. */
-  Closinfo_val(v) = Make_closinfo(0, wosize);
-  if (offset > 0) {
-    v += Bsize_wsize(offset);
-    (((header_t *) (v)) [-1]) = Make_header(offset, Infix_tag, 0);
-  }
-  return v;
-}
-
-CAMLprim value caml_update_dummy(value dummy, value newval)
-{
-  mlsize_t size;
-  tag_t tag;
-
-  tag = Tag_val (newval);
-
-  if (Wosize_val(dummy) == 0) {
-      /* Size-0 blocks are statically-allocated atoms. We cannot
-         mutate them, but there is no need:
-         - All atoms used in the runtime to represent OCaml values
-           have tag 0 --- including empty flat float arrays, or other
-           types that use a non-0 tag for non-atom blocks.
-         - The dummy was already created with tag 0.
-         So doing nothing suffices. */
-      CAMLassert(Wosize_val(newval) == 0);
-      CAMLassert(Tag_val(dummy) == Tag_val(newval));
-  } else if (tag == Double_array_tag){
-    CAMLassert (Wosize_val(newval) == Wosize_val(dummy));
-    CAMLassert (Tag_val(dummy) != Infix_tag);
-    Unsafe_store_tag_val(dummy, Double_array_tag);
-    size = Wosize_val (newval) / Double_wosize;
-    for (mlsize_t i = 0; i < size; i++) {
-      Store_double_flat_field (dummy, i, Double_flat_field (newval, i));
-    }
-  } else if (tag == Infix_tag) {
-    value clos = newval - Infix_offset_hd(Hd_val(newval));
-    CAMLassert (Tag_val(clos) == Closure_tag);
-    CAMLassert (Tag_val(dummy) == Infix_tag);
-    CAMLassert (Infix_offset_val(dummy) == Infix_offset_val(newval));
-    dummy = dummy - Infix_offset_val(dummy);
-    size = Wosize_val(clos);
-    CAMLassert (size == Wosize_val(dummy));
-    /* It is safe to use [caml_modify] to copy code pointers
-       from [clos] to [dummy], because the value being overwritten is
-       an integer, and the new "value" is a pointer outside the minor
-       heap. */
-    for (mlsize_t i = 0; i < size; i++) {
-      caml_modify (&Field(dummy, i), Field(clos, i));
-    }
-  } else {
-    CAMLassert (tag < No_scan_tag);
-    CAMLassert (Tag_val(dummy) != Infix_tag);
-    Unsafe_store_tag_val(dummy, tag);
-    size = Wosize_val(newval);
-    CAMLassert (size == Wosize_val(dummy));
-    /* See comment above why this is safe even if [tag == Closure_tag]
-       and some of the "values" being copied are actually code pointers. */
-    for (mlsize_t i = 0; i < size; i++){
-      caml_modify (&Field(dummy, i), Field(newval, i));
-    }
-  }
-  return Val_unit;
 }
 
 CAMLexport value caml_alloc_some(value v)

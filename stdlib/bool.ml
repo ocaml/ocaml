@@ -18,6 +18,9 @@ type t = bool = false | true
 external not : bool -> bool = "%boolnot"
 external ( && ) : bool -> bool -> bool = "%sequand"
 external ( || ) : bool -> bool -> bool = "%sequor"
+external logand : bool -> bool -> bool = "%andint"
+external logor : bool -> bool -> bool = "%orint"
+external logxor : bool -> bool -> bool = "%xorint"
 let equal : bool -> bool -> bool = ( = )
 let compare : bool -> bool -> int = Stdlib.compare
 external to_int : bool -> int = "%identity"

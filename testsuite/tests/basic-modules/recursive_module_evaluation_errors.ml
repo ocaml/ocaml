@@ -117,3 +117,87 @@ and N:sig val x: int end = struct let x = M.f () end;;
 [%%expect {|
 Exception: Undefined_recursive_module ("", 1, 43).
 |}]
+
+module F = struct
+  module type LIST = sig
+    type elt
+    type t
+    val nil : t
+    val compare : t -> t -> int
+  end
+
+  module Make_list (M : sig
+    type t
+    val compare : t -> t -> int
+  end) : LIST with type elt = M.t = struct
+    type elt = M.t
+    type t = elt list
+    let nil = []                     (* This definition will be flagged as unsafe. *)
+    let compare = List.compare M.compare
+  end
+
+  module rec M0 : sig
+    type t = { m1s : M1.List.t }
+    module List : LIST with type elt = t
+  end = struct
+    type t = { m1s : M1.List.t }
+    let compare t0 t1 = M1.List.compare t0.m1s t1.m1s
+    module List = Make_list (struct
+      type nonrec t = t
+      let compare = compare
+    end)
+  end
+  and M1 : sig
+    type t = { m0s : M0.List.t }
+    module List : LIST with type elt = t
+  end = struct
+    type t = { m0s : M0.List.t }
+    let compare t0 t1 = M0.List.compare t0.m0s t1.m0s
+    module List = Make_list (struct
+      type nonrec t = t
+      let compare = compare
+    end)
+  end
+end
+[%%expect {|
+Lines 22-29, characters 8-5:
+22 | ........struct
+23 |     type t = { m1s : M1.List.t }
+24 |     let compare t0 t1 = M1.List.compare t0.m1s t1.m1s
+25 |     module List = Make_list (struct
+26 |       type nonrec t = t
+27 |       let compare = compare
+28 |     end)
+29 |   end
+Error: Cannot safely evaluate the definition of the following cycle
+       of recursively-defined modules: M0 -> M1 -> M0.
+       There are no safe modules in this cycle (see manual section 12.2).
+Line 5, characters 4-15:
+5 |     val nil : t
+        ^^^^^^^^^^^
+  Module "M0" defines an unsafe value, "List.nil" .
+Line 5, characters 4-15:
+5 |     val nil : t
+        ^^^^^^^^^^^
+  Module "M1" defines an unsafe value, "List.nil" .
+|}]
+
+module rec F : functor (X:sig type t end) -> sig
+  type t = X.t * X.t
+  type u = [`C of F(X).u]
+
+  val unsafe : int
+end = F;;
+
+[%%expect{|
+Line 6, characters 6-7:
+6 | end = F;;
+          ^
+Error: Cannot safely evaluate the definition of the following cycle
+       of recursively-defined modules: F -> F.
+       There are no safe modules in this cycle (see manual section 12.2).
+Line 6, characters 6-7:
+6 | end = F;;
+          ^
+  Module "F" defines an unsafe functor, "F" .
+|}]

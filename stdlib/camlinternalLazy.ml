@@ -103,3 +103,18 @@ let force_gen ~only_val (lzv : 'arg lazy_t) =
   else if t = Obj.forcing_tag then raise Undefined
   else if t <> Obj.lazy_tag then (Obj.obj x : 'arg)
   else force_gen_lazy_block ~only_val lzv
+
+(* If [lzv] is already forced, then [indirect lzv] is [lzv].
+   Otherwise it returns a fresh thunk that, when forced, will force [lzv].
+
+   This provides a way to copy/move [lzv] that works correctly even if
+   [lzv] is being forced concurrently.
+*)
+let indirect (lzv : 'arg lazy_t) =
+  (* Sys.opaque_identity: see [force_gen] comment above. *)
+  let lzv = Sys.opaque_identity lzv in
+  let x = Obj.repr lzv in
+  let t = Obj.tag x in
+  if t = Obj.lazy_tag || t = Obj.forcing_tag
+  then lazy (force_lazy_block lzv)
+  else lzv

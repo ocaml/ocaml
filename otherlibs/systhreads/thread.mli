@@ -45,6 +45,17 @@ val id : t -> int
    is an integer that identifies uniquely the thread.
    It can be used to build data structures indexed by threads. *)
 
+val set_current_thread_name : string -> unit
+(** Set the thread's name. This should be called from within the thread
+    function. Setting thread name is available on most systems.
+
+    This does nothing if the functionality is not implemented but will
+    print a warning on the standard error if enabled.
+
+    Likewise, a warning is printed if the operation fails.
+
+    @since 5.4 *)
+
 exception Exit
 (** Exception raised by user code to initiate termination of the
     current thread.

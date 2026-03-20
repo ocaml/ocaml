@@ -59,7 +59,6 @@ module Error: sig
     | Mt_core of core_module_type_symptom
     | Signature of signature_symptom
     | Functor of functor_symptom
-    | Invalid_module_alias of Path.t
     | After_alias_expansion of module_type_diff
 
 
@@ -77,14 +76,20 @@ module Error: sig
     (Types.functor_parameter, Ident.t) functor_param_symptom
 
   and functor_params_diff =
-    (Types.functor_parameter list * Types.module_type) core_diff
+    functor_params_info core_diff
+   and functor_params_info =
+     { params: functor_parameter list; res: module_type }
 
   and signature_symptom = {
     env: Env.t;
+    subst: Subst.t;
+    sig1: signature;
+    sig2: signature;
     missings: Types.signature_item list;
-    incompatibles: (Ident.t * sigitem_symptom) list;
+    incompatibles: (Types.signature_item * sigitem_symptom) list;
     oks: (int * Typedtree.module_coercion) list;
-    leftovers: ((Types.signature_item as 'it) * 'it * int) list
+    additions: signature_item list;
+    untypables: ((Types.signature_item as 'it) * 'it * int) list;
     (** signature items that could not be compared due to type divergence *)
   }
   and sigitem_symptom =
@@ -134,6 +139,7 @@ val field_desc: field_kind -> Ident.t -> field_desc
 module FieldMap: Map.S with type key = field_desc
 
 val item_ident_name: Types.signature_item -> Ident.t * Location.t * field_desc
+val item_subst: Ident.t -> Types.signature_item -> Subst.t -> Subst.t
 val is_runtime_component: Types.signature_item -> bool
 
 
@@ -146,7 +152,21 @@ val modtypes:
 val modtypes_consistency:
   loc:Location.t -> Env.t -> module_type -> module_type -> unit
 
-val modtypes_with_shape:
+(** [modtypes_constraint ~shape ~loc env ~mark exp_modtype constraint_modtype]
+    checks that [exp_modtype] is a subtype of [constraint_modtype], and returns
+    the module coercion and the shape of the constrained module.
+
+    It also marks as used paired items in positive position in [exp_modtype],
+    and also paired items in negative position in [constraint_modtype].
+
+    This marking in negative position allows to raise an [unused item] warning
+    whenever an item in a functor parameter in [constraint_modtype] does not
+    exist in [exp_modtypes]. This behaviour differs from the one in
+    {!check_implementation} and {!compunit} which assumes that is not
+    appropriate to raise warning about the interface file while typechecking the
+    implementation file.
+*)
+val modtypes_constraint:
   shape:Shape.t -> loc:Location.t -> Env.t -> mark:bool ->
   module_type -> module_type -> module_coercion * Shape.t
 
@@ -164,7 +184,9 @@ val check_modtype_inclusion :
 val check_modtype_equiv:
   loc:Location.t -> Env.t -> Ident.t -> module_type -> module_type -> unit
 
-val signatures: Env.t -> mark:bool -> signature -> signature -> module_coercion
+val signatures:
+  Env.t -> ?subst:Subst.t -> mark:bool ->
+  signature -> signature -> module_coercion
 
 (** Check an implementation against an interface *)
 val check_implementation: Env.t -> signature -> signature -> unit
@@ -199,7 +221,6 @@ type symptom =
       Ident.t * class_declaration * class_declaration *
       Ctype.class_match_failure list
   | Unbound_module_path of Path.t
-  | Invalid_module_alias of Path.t
 
 type pos =
   | Module of Ident.t
@@ -224,6 +245,8 @@ exception Apply_error of {
 
 val expand_module_alias: strengthen:bool -> Env.t -> Path.t -> Types.module_type
 
+(** Error message functions *)
+
 module Functor_inclusion_diff: sig
   module Defs: sig
     type left = Types.functor_parameter
@@ -232,7 +255,8 @@ module Functor_inclusion_diff: sig
     type diff = (Types.functor_parameter, unit) Error.functor_param_symptom
     type state
   end
-  val diff: Env.t ->
+  type inclusion_env = { i_env:Env.t; i_subst:Subst.t }
+  val diff: inclusion_env ->
     Types.functor_parameter list * Types.module_type ->
     Types.functor_parameter list * Types.module_type ->
     Diffing.Define(Defs).patch
@@ -251,4 +275,16 @@ module Functor_app_diff: sig
     f:Types.module_type ->
     args:(Error.functor_arg_descr * Types.module_type) list ->
     Diffing.Define(Defs).patch
+end
+
+(* Typechecking with subst *)
+module Check: sig
+  type 'a compatibility_test = Env.t -> Subst.t -> 'a -> 'a -> bool
+  val values : Types.value_description compatibility_test
+  val types: Types.type_declaration compatibility_test
+  val class_types : Types.class_type_declaration compatibility_test
+  val classes: Types.class_declaration compatibility_test
+  val modules: Types.module_declaration compatibility_test
+  val module_types: Types.modtype_declaration compatibility_test
+  val extensions: Types.extension_constructor compatibility_test
 end

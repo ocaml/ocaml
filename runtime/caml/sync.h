@@ -34,9 +34,6 @@ typedef caml_plat_cond * sync_condvar;
 #define Mutex_val(v) (* ((sync_mutex *) Data_custom_val(v)))
 #define Condition_val(v) (* (sync_condvar *) Data_custom_val(v))
 
-CAMLextern int caml_mutex_lock(sync_mutex mut);
-CAMLextern int caml_mutex_unlock(sync_mutex mut);
-
 value caml_ml_mutex_lock(value wrapper);
 value caml_ml_mutex_unlock(value wrapper);
 value caml_ml_condition_broadcast(value wrapper);

@@ -14,12 +14,17 @@
 #**************************************************************************
 
 ROOTDIR = ..
+SUBDIR_NAME = stdlib
 # NOTE: it is important that the OCAMLDEP variable is defined *before*
 # Makefile.common gets included, so that its local definition here
 # take precedence over its general shared definitions in Makefile.common.
 OCAMLDEP ?= $(BOOT_OCAMLDEP)
 
 include $(ROOTDIR)/Makefile.common
+
+%.$(O): %.c $(REQUIRED_HEADERS)
+	$(V_CC)$(CC) $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	  $(OUTPUTOBJ)$@ -c $<
 
 # There are three ways the Standard Library is compiled in bytecode:
 # 1. During coldstart
@@ -40,12 +45,16 @@ else
 CAMLC = $(BOOT_OCAMLC)
 endif
 COMPFLAGS = -strict-sequence -absname -w +a-4-9-41-42-44-45-48 \
-            -g -warn-error +A -bin-annot -nostdlib -principal
+            -g -warn-error +A -alert @ocaml_deprecated_cli \
+            -bin-annot -nostdlib -principal
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS += -O3
 endif
 OPTCOMPILER=$(ROOTDIR)/ocamlopt$(EXE)
 CAMLOPT=$(OCAMLRUN) $(OPTCOMPILER)
+
+# At present, only META is installed to the package directory
+LIBNAME = stdlib
 
 include StdlibModules
 
@@ -54,49 +63,72 @@ NOSTDLIB= camlinternalFormatBasics.cmo stdlib.cmo
 OTHERS=$(filter-out $(NOSTDLIB),$(OBJS))
 
 .PHONY: all
-all: stdlib.cma std_exit.cmo $(HEADER_NAME) target_$(HEADER_NAME)
+all: stdlib.cma std_exit.cmo $(HEADER_NAME)
 
 .PHONY: allopt opt.opt # allopt and opt.opt are synonyms
 allopt: stdlib.cmxa std_exit.cmx
 opt.opt: allopt
 
-INSTALL_STDLIB_META_DIR=$(DESTDIR)$(LIBDIR)/stdlib
-
 .PHONY: install
 install::
-	$(INSTALL_DATA) \
-	  stdlib.cma std_exit.cmo *.cmi "$(INSTALL_LIBDIR)"
-	$(MKDIR) "$(INSTALL_STDLIB_META_DIR)"
-	$(INSTALL_DATA) META "$(INSTALL_STDLIB_META_DIR)"
+	$(call INSTALL_ITEMS, stdlib.cma std_exit.cmo *.cmi, lib)
+	$(call INSTALL_ITEMS, META, lib, $(LIBNAME))
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
-	$(INSTALL_DATA) \
-	  *.cmt *.cmti *.mli *.ml *.ml.in \
-	  "$(INSTALL_LIBDIR)"
+	$(call INSTALL_ITEMS, *.cmt *.cmti *.mli *.ml *.ml.in, lib)
 endif
-	$(INSTALL_DATA) target_$(HEADER_NAME) "$(INSTALL_LIBDIR)/$(HEADER_NAME)"
+	$(call INSTALL_ITEMS, $(HEADER_NAME), lib)
 
 .PHONY: installopt
 installopt: installopt-default
 
 .PHONY: installopt-default
 installopt-default:
-	$(INSTALL_DATA) \
-	  stdlib.cmxa stdlib.$(A) std_exit.$(O) *.cmx \
-	  "$(INSTALL_LIBDIR)"
+	$(call INSTALL_ITEMS, stdlib.cmxa stdlib.$(A) std_exit.$(O) *.cmx, lib)
 
-ifeq "$(UNIX_OR_WIN32)" "unix"
-HEADERPROGRAM = header
-else # Windows
-HEADERPROGRAM = headernt
+MANGLING = $(filter true,$(SUFFIXING))
+runtime-launch-info: tmpheader.exe
+	@{ printf '$(if $(MANGLING),$(ZINC_RUNTIME_ID_HI),\000)'; \
+	   cat $^; } > $@
+
+# The mingw-w64 and MSVC versions of tmpheader.exe are linked with special flags
+# to reduce their size (considerably). In particular, the entry point is
+# overridden, which prevents the linking of crt0.
+ifeq "$(TOOLCHAIN)" "mingw"
+# mingw-w64: optimise header.o for space and remove all unused sections during
+# linking.
+header.o: OC_CFLAGS += -Os
+ifeq "$(SYSTEM)" "mingw"
+  ENTRYPOINT = _wmainCRTStartup
+else
+  ENTRYPOINT = wmainCRTStartup
+endif
+# Certainly for GCC, -nostdlib automatically adds -nostartfiles (clang's
+# documentation is not explicit on this point, but it would be unusual for clang
+# and GCC to differ). --gc-sections removes unreferenced code and data sections.
+tmpheader.exe: OC_LDFLAGS += \
+  -nostdlib -nostartfiles -Wl,--gc-sections -Wl,-e,$(ENTRYPOINT)
+HEADERLIBS = -lkernel32
+else ifeq "$(TOOLCHAIN)" "msvc"
+# MSVC: Optimise header.obj for space. cl doesn't have an equivalent of
+# -nostdlib, however it also doesn't have default libraries in the same way as
+# GCC - the equivalent of crt0.o is linked because it provides the entry point
+# symbol, rather than by being explicitly added to the linking command line.
+# /GS- disables compilation of runtime security checks and /NOCOFFGRPINFO is an
+# undocumented linker flag which removes the debug directory from the PE+ image.
+header.obj: OC_CFLAGS += /GS- /Os
+tmpheader.exe: OC_LDFLAGS += /NOCOFFGRPINFO /subsystem:console
+HEADERLIBS = kernel32.lib
+else
+HEADERLIBS =
 endif
 
-%-launch-info: %.info tmpheader.exe
-	@cat $^ >> $@
-
 .INTERMEDIATE: tmpheader.exe
-tmpheader.exe: $(HEADERPROGRAM).$(O)
-	$(V_MKEXE)$(call MKEXE_VIA_CC,$@,$^)
+tmpheader.exe: header.$(O)
+	$(V_MKEXE)$(call MKEXE_VIA_CC,$@,$^ $(HEADERLIBS))
+# Do not strip the header produced by cl
+ifneq "$(TOOLCHAIN)" "msvc"
 	$(STRIP) $@
+endif
 
 stdlib.cma: $(OBJS)
 	$(V_LINKC)$(CAMLC) -a -o $@ $^
@@ -106,11 +138,11 @@ stdlib.cmxa: $(OBJS:.cmo=.cmx)
 
 .PHONY: distclean
 distclean: clean
-	rm -f sys.ml META runtime.info target_runtime.info
+	rm -f sys.ml META
 
 .PHONY: clean
 clean::
-	rm -f $(HEADER_NAME) target_$(HEADER_NAME)
+	rm -f $(HEADER_NAME)
 
 export AWK
 
@@ -157,6 +189,7 @@ $(OTHERS:.cmo=.cmx) std_exit.cmx: stdlib.cmx
 clean::
 	rm -f *.cm* *.o *.obj *.a *.lib *.odoc
 
+.PHONY: .depend
 include .depend
 
 STDLIB_NAMESPACE_MODULES = $(subst $(SPACE),|,$(STDLIB_PREFIXED_MODULES))

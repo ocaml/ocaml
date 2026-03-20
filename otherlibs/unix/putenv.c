@@ -53,3 +53,31 @@ CAMLprim value caml_unix_putenv(value name, value val)
 { caml_invalid_argument("putenv not implemented"); }
 
 #endif
+
+#if defined(_WIN32) || defined(HAS_SETENV_UNSETENV)
+
+CAMLprim value caml_unix_unsetenv(value name)
+{
+  int ret;
+
+  if (! caml_string_is_c_safe(name))
+    caml_unix_error(EINVAL, "unsetenv", name);
+#ifdef _WIN32
+  char_os * s = caml_stat_strdup_to_utf16(String_val(name));
+  ret = _wputenv_s(s, L"");
+  caml_stat_free(s);
+#else
+  ret = unsetenv(String_val(name));
+#endif
+  if (ret == -1) {
+    caml_uerror("unsetenv", name);
+  }
+  return Val_unit;
+}
+
+#else
+
+CAMLprim value caml_unix_unsetenv(value name)
+{ caml_invalid_argument("unsetenv not implemented"); }
+
+#endif

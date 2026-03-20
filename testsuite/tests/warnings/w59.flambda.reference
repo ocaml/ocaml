@@ -1,34 +1,34 @@
 File "w59.ml", line 47, characters 2-43:
 47 |   Obj.set_field (Obj.repr o) 0 (Obj.repr 3);
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 59 [flambda-assignment-to-non-mutable-value]: A potential assignment to a non-mutable value was detected 
-in this source file.  Such assignments may generate incorrect code 
-when using Flambda.
+Warning 59 [flambda-assignment-to-non-mutable-value]: A potential assignment
+  to a non-mutable value was detected in this source file. Such assignments
+  may generate incorrect code when using Flambda.
 
 File "w59.ml", line 48, characters 2-43:
 48 |   Obj.set_field (Obj.repr p) 0 (Obj.repr 3);
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 59 [flambda-assignment-to-non-mutable-value]: A potential assignment to a non-mutable value was detected 
-in this source file.  Such assignments may generate incorrect code 
-when using Flambda.
+Warning 59 [flambda-assignment-to-non-mutable-value]: A potential assignment
+  to a non-mutable value was detected in this source file. Such assignments
+  may generate incorrect code when using Flambda.
 
 File "w59.ml", line 49, characters 2-43:
 49 |   Obj.set_field (Obj.repr q) 0 (Obj.repr 3);
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 59 [flambda-assignment-to-non-mutable-value]: A potential assignment to a non-mutable value was detected 
-in this source file.  Such assignments may generate incorrect code 
-when using Flambda.
+Warning 59 [flambda-assignment-to-non-mutable-value]: A potential assignment
+  to a non-mutable value was detected in this source file. Such assignments
+  may generate incorrect code when using Flambda.
 
 File "w59.ml", line 50, characters 2-43:
 50 |   Obj.set_field (Obj.repr r) 0 (Obj.repr 3)
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 59 [flambda-assignment-to-non-mutable-value]: A potential assignment to a non-mutable value was detected 
-in this source file.  Such assignments may generate incorrect code 
-when using Flambda.
+Warning 59 [flambda-assignment-to-non-mutable-value]: A potential assignment
+  to a non-mutable value was detected in this source file. Such assignments
+  may generate incorrect code when using Flambda.
 
 File "w59.ml", line 57, characters 2-7:
 57 |   set o
        ^^^^^
-Warning 59 [flambda-assignment-to-non-mutable-value]: A potential assignment to a non-mutable value was detected 
-in this source file.  Such assignments may generate incorrect code 
-when using Flambda.
+Warning 59 [flambda-assignment-to-non-mutable-value]: A potential assignment
+  to a non-mutable value was detected in this source file. Such assignments
+  may generate incorrect code when using Flambda.

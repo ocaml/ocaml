@@ -19,40 +19,49 @@
 #define CAML_WEAK_H
 
 #include "mlvalues.h"
-#include "memory.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-extern value caml_ephe_none;
+
+extern value caml_ephe_none, caml_ephe_locked;
+
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef CAML_INTERNALS
 
 struct caml_ephe_info {
   value todo;
-  /* These are ephemerons which need to be marked and swept in the current
-     cycle. If the ephemeron is alive, after marking, they go into the live
-     list after cleaning them off the unreachable keys and releasing the data
-     if any of the keys are unreachable. */
+  /* Ephemerons which need to be marked and swept in the current
+     cycle. An ephemeron which is alive, after marking, goes into the
+     live list after cleaning it of keys and releasing the data if any
+     of the keys is unreachable. */
 
   value live;
-  /* These are ephemerons are alive (marked). The keys of these ephemerons may
-     be unmarked if these ephemerons were the target of a blit operation. The
-     data field is never unmarked. */
+  /* Ephemerons which are alive (marked). The keys of these ephemerons
+     may be unmarked if these ephemerons were the target of a blit
+     operation. The data field is never unmarked. */
 
   int must_sweep_ephe;
-  /* At the beginning of [Phase_sweep_ephe] the [live] list is moved to the
-     [todo] list since the ephemerons in the [live] list may contain unmarked
-     keys if the blit operation was performed in earlier phases
-     ([Phase_mark_final] or [Phase_sweep_and_mark_main]). This move is done
-     exactly once per major cycle per domain. This field keeps track of whether
-     this move has been done for the current cycle. */
+  /* At the beginning of [Phase_sweep_ephe] the [live] list is moved
+     to the [todo] list since the ephemerons in the [live] list may
+     contain unmarked keys if the blit operation was performed in
+     earlier phases. This move is done exactly once per major cycle
+     per domain. This field keeps track of whether this move has been
+     done for the current cycle. */
 
-  uintnat cycle;
+  uintnat round;
+  /* Records the number of the round of ephemeron marking most
+   * recently completed in the current cycle. */
   struct {
     value* todop;
-    uintnat cycle;
+    uintnat round;
   } cursor;
+  /* This "cursor" structure records progress when marking ephemerons
+   * for some ephemeron round; `todop` indicates a pointer in the
+   * `todo` list above, and `round` is the round number. */
 };
 
 /** The first field 0:  weak list;
@@ -62,8 +71,6 @@ struct caml_ephe_info {
     A weak pointer is an ephemeron with the data at caml_ephe_none
     If fields are added, don't forget to update weak.ml, [additional_values],
     and obj.ml, [Ephemeron.additional_values].
-
-
  */
 
 #define CAML_EPHE_LINK_OFFSET 0
@@ -73,14 +80,22 @@ struct caml_ephe_info {
 
 #define Ephe_link(e) (*(Op_val(e) + CAML_EPHE_LINK_OFFSET))
 #define Ephe_data(e) (*(Op_val(e) + CAML_EPHE_DATA_OFFSET))
+#define Ephe_data_addr(e) (Op_atomic_val(e) + CAML_EPHE_DATA_OFFSET)
+
+value caml_ephe_await_key(value ephe, uintnat i);
+
+Caml_inline value Ephe_key(value ephe, uintnat i)
+{
+  value v = atomic_load_acquire(Op_atomic_val(ephe) + i);
+  if (v == caml_ephe_locked)
+    return caml_ephe_await_key(ephe, i);
+  else
+    return v;
+}
 
 struct caml_ephe_info* caml_alloc_ephe_info (void);
 void caml_ephe_clean(value e);
 
 #endif /* CAML_INTERNALS */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* CAML_WEAK_H */

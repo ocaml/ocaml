@@ -27,6 +27,7 @@ val interface : formatter -> signature_item list -> unit
 val implementation : formatter -> structure_item list -> unit
 val top_phrase : formatter -> toplevel_phrase -> unit
 
+val pattern: int -> formatter -> pattern -> unit
 val expression: int -> formatter -> expression -> unit
 val structure: int -> formatter -> structure -> unit
 val payload: int -> formatter -> payload -> unit

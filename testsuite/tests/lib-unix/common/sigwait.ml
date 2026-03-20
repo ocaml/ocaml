@@ -1,6 +1,7 @@
 (* TEST
  include unix;
- libunix;
+ hasunix;
+ not target-windows;
  {
    bytecode;
  }{

@@ -129,8 +129,11 @@ val type_expect:
         Env.t -> Parsetree.expression -> type_expected -> Typedtree.expression
 val type_exp:
         Env.t -> Parsetree.expression -> Typedtree.expression
+
+(** [type_approx env exp ty_expectd] approximates the type of the expression
+    [expr] and unifies the result with [ty_expected]. *)
 val type_approx:
-        Env.t -> Parsetree.expression -> type_expr
+        Env.t -> Parsetree.expression -> type_expr -> unit
 val type_argument:
         Env.t -> Parsetree.expression ->
         type_expr -> type_expr -> Typedtree.expression
@@ -141,6 +144,8 @@ val extract_option_type: Env.t -> type_expr -> type_expr
 val generalizable: int -> type_expr -> bool
 val reset_delayed_checks: unit -> unit
 val force_delayed_checks: unit -> unit
+
+val has_poly_constraint : Parsetree.pattern -> bool
 
 val name_pattern : string -> Typedtree.pattern list -> Ident.t
 val name_cases : string -> Typedtree.value Typedtree.case list -> Ident.t
@@ -206,7 +211,6 @@ type error =
       ; expected_type : type_expr
       ; explanation   : type_forcing_context option
       }
-  | Scoping_let_module of string * type_expr
   | Not_a_polymorphic_variant_type of Longident.t
   | Incoherent_label_order
   | Less_general of string * Errortrace.unification_error
@@ -226,6 +230,9 @@ type error =
   | Unrefuted_pattern of Typedtree.pattern
   | Invalid_extension_constructor_payload
   | Not_an_extension_constructor
+  | Invalid_atomic_loc_payload
+  | Label_not_atomic of Longident.t
+  | Atomic_in_pattern of Longident.t
   | Literal_overflow of string
   | Unknown_literal of string * char
   | Illegal_letrec_pat
@@ -239,6 +246,15 @@ type error =
   | Missing_type_constraint
   | Wrong_expected_kind of wrong_kind_sort * wrong_kind_context * type_expr
   | Expr_not_a_record_type of type_expr
+  | Constructor_labeled_arg
+  | Partial_tuple_pattern_bad_type
+  | Extra_tuple_label of string option * type_expr
+  | Missing_tuple_label of string option * type_expr
+  | Repeated_tuple_exp_label of string
+  | Repeated_tuple_pat_label of string
+  | Optional_poly_param of string
+  | Cannot_unify_tfunctor_to_tarrow of Errortrace.unification_error
+  | Cannot_omit_tfunctor_argument of Ident.Unscoped.t * type_expr
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -249,6 +265,8 @@ val report_error: loc:Location.t -> Env.t -> error -> Location.error
 (* Forward declaration, to be filled in by Typemod.type_module *)
 val type_module:
   (Env.t -> Parsetree.module_expr -> Typedtree.module_expr * Shape.t) ref
+val type_str_item:
+  (Env.t -> Parsetree.structure_item -> Typedtree.structure_item * Env.t) ref
 (* Forward declaration, to be filled in by Typemod.type_open *)
 val type_open:
   (?used_slot:bool ref -> override_flag -> Env.t -> Location.t ->
@@ -264,8 +282,13 @@ val type_object:
   (Env.t -> Location.t -> Parsetree.class_structure ->
    Typedtree.class_structure * string list) ref
 val type_package:
-  (Env.t -> Parsetree.module_expr -> Path.t -> (Longident.t * type_expr) list ->
-  Typedtree.module_expr * (Longident.t * type_expr) list) ref
+  (Env.t -> Parsetree.module_expr -> package ->
+   Typedtree.module_expr * package) ref
+(* Forward declaration, to be filled in by Typemod.check_package_closed.
+   Ensures that the package type does not contain any type variable. *)
+val check_package_closed:
+  (loc:Location.t -> env:Env.t -> typ:type_expr ->
+   (string list * type_expr) list -> unit) ref
 
 val constant: Parsetree.constant -> (Asttypes.constant, error) result
 

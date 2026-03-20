@@ -20,17 +20,14 @@
 #include <caml/memory.h>
 #include <caml/osdeps.h>
 #include "caml/unixsupport.h"
-#include <errno.h>
 #include <windows.h>
 
 CAMLprim value caml_unix_link(value follow, value path1, value path2)
 {
   BOOL result;
   wchar_t * wpath1, * wpath2;
-  if (Is_some(follow) && !Bool_val(Some_val(follow))) {
-    errno = ENOSYS;
-    caml_uerror("link", path2);
-  }
+  if (Is_some(follow) && !Bool_val(Some_val(follow)))
+    caml_unix_error(ENOSYS, "link", path2);
   caml_unix_check_path(path1, "link");
   caml_unix_check_path(path2, "link");
 

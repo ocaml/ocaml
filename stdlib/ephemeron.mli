@@ -73,8 +73,8 @@
 
 (**
     Unsynchronized accesses to a weak hash table may lead to an invalid
-    weak hash table state. Thus, concurrent accesses to a buffer must be
-    synchronized (for instance with a {!Mutex.t}).
+    weak hash table state. Thus, concurrent accesses to a weak hash table
+    must be synchronized (for instance with a {!Mutex.t}).
 *)
 
 module type S = sig

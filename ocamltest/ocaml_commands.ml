@@ -43,3 +43,8 @@ let ocamlrun_ocamlmklib =
 
 let ocamlrun_codegen =
   ocamlrun Ocaml_files.codegen
+
+let ocamltest =
+  (* ocamltest is compiled with -custom,
+     one should not use ocamlrun. *)
+  Ocaml_files.ocamltest

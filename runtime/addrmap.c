@@ -57,7 +57,7 @@ value caml_addrmap_lookup(struct addrmap* t, value key)
   for (uintnat pos = pos_initial(t, key); ; pos = pos_next(t, pos)) {
     CAMLassert(t->entries[pos].key != ADDRMAP_INVALID_KEY);
     if (t->entries[pos].key == key)
-      return t->entries[pos].value;
+      return t->entries[pos].val;
   }
 }
 
@@ -68,7 +68,7 @@ static void addrmap_alloc(struct addrmap* t, uintnat sz)
   t->size = sz;
   for (uintnat i = 0; i < sz; i++) {
     t->entries[i].key = ADDRMAP_INVALID_KEY;
-    t->entries[i].value = ADDRMAP_NOT_PRESENT;
+    t->entries[i].val = ADDRMAP_NOT_PRESENT;
   }
 }
 
@@ -98,7 +98,7 @@ value* caml_addrmap_insert_pos(struct addrmap* t, value key) {
       t->entries[pos].key = key;
     }
     if (t->entries[pos].key == key) {
-      return &t->entries[pos].value;
+      return &t->entries[pos].val;
     }
   }
   /* failed to insert, rehash and try again */
@@ -110,7 +110,7 @@ value* caml_addrmap_insert_pos(struct addrmap* t, value key) {
       if (old_table[i].key != ADDRMAP_INVALID_KEY) {
         value* p = caml_addrmap_insert_pos(t, old_table[i].key);
         CAMLassert(*p == ADDRMAP_NOT_PRESENT);
-        *p = old_table[i].value;
+        *p = old_table[i].val;
       }
     }
     caml_stat_free(old_table);

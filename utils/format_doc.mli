@@ -140,6 +140,14 @@ module Doc: sig
   val result: ok:'a printer -> error:'e printer -> ('a,'e) result printer
   val either: left:'a printer -> right:'b printer -> ('a,'b) Either.t printer
 
+  (** {1 Alignment functions } *)
+
+  (** Align the right side of one ["@{<ralign>...@}"] tag box by inserting
+      spaces at the beginning of boxes. Those function do nothing if the tag box
+      appears after a break hint. *)
+  val align_prefix: (t * int) list -> t list
+  val align_prefix2: (t * int) -> (t * int) -> t * t
+
 end
 
 (** {1 Compatibility API} *)
@@ -164,7 +172,7 @@ val compat: 'a printer -> 'a format_printer
 val compat1: ('p1 -> 'a printer) -> ('p1 -> 'a format_printer)
 val compat2: ('p1 -> 'p2 -> 'a printer) -> ('p1 -> 'p2 -> 'a format_printer)
 
-(** If necessary, embbed a {!Format} printer inside a formatting instruction
+(** If necessary, embed a {!Format} printer inside a formatting instruction
     stream. This breaks every guarantees provided by {!Format_doc}. *)
 val deprecated_printer: (Format.formatter -> unit) -> formatter -> unit
 val deprecated: 'a format_printer -> 'a printer

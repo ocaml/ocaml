@@ -193,7 +193,8 @@ Caml_inline void write_barrier(
           then this is in a remembered set already */
        if (Is_young(old_val)) return;
        /* old is a block and in the major heap */
-       caml_darken(Caml_state, old_val, 0);
+       if (caml_marking_started())
+         caml_darken(Caml_state, old_val, 0);
      }
      /* this update is creating a new link from major to minor, remember it */
      if (Is_block_and_young(new_val)) {
@@ -209,7 +210,7 @@ CAMLno_tsan /* We remove the ThreadSanitizer instrumentation of memory accesses
 CAMLexport CAMLweakdef void caml_modify (volatile value *fp, value val)
 {
 #if defined(WITH_THREAD_SANITIZER) && defined(NATIVE_CODE)
-  __tsan_func_entry(__builtin_return_address(0));
+  caml_tsan_func_entry(__builtin_return_address(0));
 #endif
 
   write_barrier((value)fp, 0, *fp, val);
@@ -222,8 +223,8 @@ CAMLexport CAMLweakdef void caml_modify (volatile value *fp, value val)
    * CAMLno_tsan. We signal it to ThreadSanitizer as a plain store (see
    * ocaml-multicore/ocaml-tsan/pull/22#issuecomment-1377439074 on Github).
    */
-  __tsan_write8((void *)fp);
-  __tsan_func_exit(NULL);
+  caml_tsan_write8((void *)fp);
+  caml_tsan_func_exit();
 #endif
 
   atomic_store_release(&Op_atomic_val((value)fp)[0], val);
@@ -314,18 +315,57 @@ CAMLexport CAMLweakdef void caml_initialize (volatile value *fp, value val)
     Ref_table_add(&Caml_state->minor_tables->major_ref, fp);
 }
 
-CAMLexport int caml_atomic_cas_field (
-  value obj, intnat field, value oldval, value newval)
+CAMLprim value caml_atomic_load_field (value obj, value vfield)
 {
+  intnat field = Long_val(vfield);
+  if (caml_domain_alone()) {
+    return Field(obj, field);
+  } else {
+    /* See Note [MM] above */
+    atomic_thread_fence(memory_order_acquire);
+    return atomic_load(&Op_atomic_val(obj)[field]);
+  }
+}
+CAMLprim value caml_atomic_load (value ref)
+{
+  return caml_atomic_load_field(ref, Val_long(0));
+}
+
+/* stores are implemented as exchanges */
+CAMLprim value caml_atomic_exchange_field (value obj, value vfield, value v)
+{
+  value ret;
+  intnat field = Long_val(vfield);
+  if (caml_domain_alone()) {
+    ret = Field(obj, field);
+    Field(obj, field) = v;
+  } else {
+    /* See Note [MM] above */
+    atomic_thread_fence(memory_order_acquire);
+    ret = atomic_exchange(&Op_atomic_val(obj)[field], v);
+    atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
+  }
+  write_barrier(obj, field, ret, v);
+  return ret;
+}
+CAMLprim value caml_atomic_exchange (value ref, value v)
+{
+  return caml_atomic_exchange_field(ref, Val_long(0), v);
+}
+
+CAMLprim value caml_atomic_cas_field (
+  value obj, value vfield, value oldval, value newval)
+{
+  intnat field = Long_val(vfield);
   if (caml_domain_alone()) {
     /* non-atomic CAS since only this thread can access the object */
     volatile value* p = &Field(obj, field);
     if (*p == oldval) {
       *p = newval;
       write_barrier(obj, field, oldval, newval);
-      return 1;
+      return Val_true;
     } else {
-      return 0;
+      return Val_false;
     }
   } else {
     /* need a real CAS */
@@ -334,83 +374,37 @@ CAMLexport int caml_atomic_cas_field (
     atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
     if (cas_ret) {
       write_barrier(obj, field, oldval, newval);
-      return 1;
+      return Val_true;
     } else {
-      return 0;
+      return Val_false;
     }
   }
 }
-
-
-CAMLprim value caml_atomic_load (value ref)
+CAMLprim value caml_atomic_cas (value ref, value oldval, value newval)
 {
-  if (caml_domain_alone()) {
-    return Field(ref, 0);
-  } else {
-    value v;
-    /* See Note [MM] above */
-    atomic_thread_fence(memory_order_acquire);
-    v = atomic_load(Op_atomic_val(ref));
-    return v;
-  }
+  return caml_atomic_cas_field(ref, Val_long(0), oldval, newval);
 }
 
-/* stores are implemented as exchanges */
-CAMLprim value caml_atomic_exchange (value ref, value v)
+CAMLprim value caml_atomic_fetch_add_field (value obj, value vfield, value incr)
 {
+  intnat field = Long_val(vfield);
   value ret;
   if (caml_domain_alone()) {
-    ret = Field(ref, 0);
-    Field(ref, 0) = v;
-  } else {
-    /* See Note [MM] above */
-    atomic_thread_fence(memory_order_acquire);
-    ret = atomic_exchange(Op_atomic_val(ref), v);
-    atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
-  }
-  write_barrier(ref, 0, ret, v);
-  return ret;
-}
-
-CAMLprim value caml_atomic_cas (value ref, value oldv, value newv)
-{
-  if (caml_domain_alone()) {
-    value* p = Op_val(ref);
-    if (*p == oldv) {
-      *p = newv;
-      write_barrier(ref, 0, oldv, newv);
-      return Val_int(1);
-    } else {
-      return Val_int(0);
-    }
-  } else {
-    atomic_value* p = &Op_atomic_val(ref)[0];
-    int cas_ret = atomic_compare_exchange_strong(p, &oldv, newv);
-    atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
-    if (cas_ret) {
-      write_barrier(ref, 0, oldv, newv);
-      return Val_int(1);
-    } else {
-      return Val_int(0);
-    }
-  }
-}
-
-CAMLprim value caml_atomic_fetch_add (value ref, value incr)
-{
-  value ret;
-  if (caml_domain_alone()) {
-    value* p = Op_val(ref);
-    CAMLassert(Is_long(*p));
+    value* p = &Op_val(obj)[field];
     ret = *p;
+    CAMLassert(Is_long(ret));
     *p = Val_long(Long_val(ret) + Long_val(incr));
     /* no write barrier needed, integer write */
   } else {
-    atomic_value *p = &Op_atomic_val(ref)[0];
-    ret = atomic_fetch_add(p, 2*Long_val(incr));
+    atomic_value *p = &Op_atomic_val(obj)[field];
+    ret = atomic_fetch_add(p, 2 * Long_val(incr));
     atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
   }
   return ret;
+}
+CAMLprim value caml_atomic_fetch_add (value ref, value incr)
+{
+  return caml_atomic_fetch_add_field(ref, Val_long(0), incr);
 }
 
 CAMLexport void caml_set_fields (value obj, value v)
@@ -436,15 +430,15 @@ Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, reserved_t reserved,
       return (value)NULL;
   }
 
-  dom_st->allocated_words += Whsize_wosize(wosize);
-  dom_st->allocated_words_direct += Whsize_wosize(wosize);
+  caml_update_major_allocated_words(
+    dom_st, Whsize_wosize(wosize), 1 /* direct */);
   if (dom_st->allocated_words_direct > dom_st->minor_heap_wsz / 5) {
     CAML_EV_COUNTER (EV_C_REQUEST_MAJOR_ALLOC_SHR, 1);
     caml_request_major_slice(1);
   }
 
 #ifdef DEBUG
-  if (tag < No_scan_tag) {
+  if (Scannable_tag(tag)) {
     for (mlsize_t i = 0; i < wosize; i++)
       Op_hp(v)[i] = Debug_uninit_major;
   }
@@ -729,12 +723,23 @@ CAMLexport caml_stat_string caml_stat_strdup(const char *s)
   return result;
 }
 
+CAMLexport caml_stat_string caml_stat_memdup(const char *s, asize_t size,
+                                             asize_t *out_size)
+{
+  CAMLassert(size > 0);
+  caml_stat_block result = caml_stat_alloc(size);
+  memcpy(result, s, size);
+  if (out_size != NULL)
+    *out_size = size;
+  return result;
+}
+
 #ifdef _WIN32
 
 CAMLexport wchar_t * caml_stat_wcsdup_noexc(const wchar_t *s)
 {
   size_t slen = wcslen(s);
-  wchar_t* result = caml_stat_alloc((slen + 1)*sizeof(wchar_t));
+  wchar_t* result = caml_stat_alloc_noexc((slen + 1)*sizeof(wchar_t));
   if (result == NULL)
     return NULL;
   memcpy(result, s, (slen + 1)*sizeof(wchar_t));

@@ -34,7 +34,7 @@ and type_expr = transient_expr
 and type_desc =
     Tvar of string option
   | Tarrow of arg_label * type_expr * type_expr * commutable
-  | Ttuple of type_expr list
+  | Ttuple of (string option * type_expr) list
   | Tconstr of Path.t * type_expr list * abbrev_memo ref
   | Tobject of type_expr * (Path.t * type_expr list) option ref
   | Tfield of string * field_kind * type_expr * type_expr
@@ -44,7 +44,12 @@ and type_desc =
   | Tvariant of row_desc
   | Tunivar of string option
   | Tpoly of type_expr * type_expr list
-  | Tpackage of Path.t * (Longident.t * type_expr) list
+  | Tpackage of package
+  | Tfunctor of arg_label * Ident.Unscoped.t * package * type_expr
+
+and package =
+    { pack_path : Path.t;
+      pack_constraints : (string list * type_expr) list }
 
 and row_desc =
     { row_fields: (label * row_field) list;
@@ -84,6 +89,12 @@ and _ commutable_gen =
     Cok      : [> `some] commutable_gen
   | Cunknown : [> `none] commutable_gen
   | Cvar : {mutable commu: any commutable_gen} -> [> `var] commutable_gen
+
+type tfunctor = {
+  id_us : Ident.Unscoped.t;
+  pack : package;
+  ty : type_expr;
+}
 
 module TransientTypeOps = struct
   type t = type_expr
@@ -146,19 +157,27 @@ and method_privacy =
      0 <= may_pos <= pos
      0 <= may_weak <= may_neg <= neg
      0 <= inj
+   may_pos/may_neg mean possible positive/negative occurrences;
+     thus, may_pos + may_neg = invariant
    Additionally, the following implications are valid
      pos => inj
      neg => inj
    Examples:
-     type 'a t        : may_pos + may_neg + may_weak
+     type 'a t        : may_pos + may_neg
+     type +'a t       : may_pos
+     type -'a t       : may_neg
+     type +-'a t      : null (no occurrence of 'a assured)
+     type !'a t       : may_pos + may_neg + inj
+     type +!'a t      : may_pos + inj
+     type -!'a t      : may_neg + inj
+     type +-!'a t     : inj
      type 'a t = 'a   : pos
      type 'a t = 'a -> unit : neg
      type 'a t = ('a -> unit) -> unit : pos + may_weak
      type 'a t = A of (('a -> unit) -> unit) : pos
      type +'a p = ..  : may_pos + inj
-     type +!'a t      : may_pos + inj
-     type -!'a t      : may_neg + inj
      type 'a t = A    : inj
+     type 'a t = external "t" : may_pos + may_neg + inj
  *)
 
 module Variance = struct
@@ -262,11 +281,14 @@ and ('lbl, 'cstr) type_kind =
   | Type_record of 'lbl list * record_representation
   | Type_variant of 'cstr list * variant_representation
   | Type_open
+  | Type_external of string
 
 and type_origin =
     Definition
   | Rec_check_regularity
+  | Approx_recmod
   | Existential of string
+  | Equation of type_expr * type_expr
 
 and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
@@ -283,6 +305,7 @@ and label_declaration =
   {
     ld_id: Ident.t;
     ld_mutable: mutable_flag;
+    ld_atomic: atomic_flag;
     ld_type: type_expr;
     ld_loc: Location.t;
     ld_attributes: Parsetree.attributes;
@@ -435,6 +458,18 @@ let signature_item_id = function
   | Sig_class_type (id, _, _, _)
     -> id
 
+  let classify_signature_item =
+    let open Shape.Sig_component_kind in
+    function
+    | Sig_value(id, v, _) -> Value, id, v.val_loc
+    | Sig_type (id, td, _, _) -> Type, id, td.type_loc
+    | Sig_typext (id, te, _, _) -> Extension_constructor, id, te.ext_loc
+    | Sig_module (id, _, md, _, _) -> Module, id, md.md_loc
+    | Sig_modtype (id, mtd, _) -> Module_type, id, mtd.mtd_loc
+    | Sig_class (id, c, _, _) -> Class, id, c.cty_loc
+    | Sig_class_type (id, ct, _, _) -> Class_type, id, ct.clty_loc
+
+
 (**** Definitions for backtracking ****)
 
 type change =
@@ -448,6 +483,7 @@ type change =
   | Ckind of [`var] field_kind_gen
   | Ccommu of [`var] commutable_gen
   | Cuniv of type_expr option ref * type_expr option
+  | Cuident of Ident.Unscoped.change
 
 type changes =
     Change of change * changes ref
@@ -460,6 +496,9 @@ let log_change ch =
   let r' = ref Unchanged in
   !trail := Change (ch, r');
   trail := r'
+
+let () =
+    Ident.Unscoped.change_log := (fun change -> log_change (Cuident change))
 
 (* constructor and accessors for [field_kind] *)
 
@@ -639,6 +678,11 @@ let set_row_name row row_name =
   let row = row_repr_no_fields row in
   {row with row_fields; row_name}
 
+let subst_row_name_path id_map row =
+  match row_name row with
+  | Some (p, tl) -> set_row_name row (Some (Path.subst id_map p, tl))
+  | None -> row
+
 type row_desc_repr =
     Row of { fields: (label * row_field) list;
              more:type_expr;
@@ -727,6 +771,8 @@ let match_row_field ~present ~absent ~either (f : row_field) =
 
 let new_id = Local_store.s_ref (-1)
 
+let reset () = new_id := -1
+
 let create_expr = Transient_expr.create
 
 let proto_newty3 ~level ~scope desc  =
@@ -747,6 +793,7 @@ let undo_change = function
   | Ckind  (FKvar r) -> r.field_kind <- FKprivate
   | Ccommu (Cvar r)  -> r.commu <- Cunknown
   | Cuniv  (r, v)    -> r := v
+  | Cuident change    -> Ident.Unscoped.undo_change change
 
 type snapshot = changes ref * int
 let last_snapshot = Local_store.s_ref 0
@@ -795,7 +842,7 @@ let set_level ty level =
 (* TODO: introduce a guard and rename it to set_higher_scope? *)
 let set_scope ty scope =
   let ty = repr ty in
-  let prev_scope = ty.scope land marks_mask in
+  let prev_scope = ty.scope land scope_mask in
   if scope <> prev_scope then begin
     if ty.id <= !last_snapshot then log_change (Cscope (ty, prev_scope));
     Transient_expr.set_scope ty scope

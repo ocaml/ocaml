@@ -24,8 +24,15 @@ extern float ftab_[];
 value fortran_filltab(value unit)
 {
   filltab_();
+#if defined(_MSC_VER) && !defined(__clang__)
+#pragma warning(push)
+#pragma warning(disable : 5287)
+#endif
   return caml_ba_alloc_dims(CAML_BA_FLOAT32 | CAML_BA_FORTRAN_LAYOUT,
                             2, ftab_, (intnat)8, (intnat)6);
+#if defined(_MSC_VER) && !defined(__clang__)
+#pragma warning(pop)
+#endif
 }
 
 value fortran_printtab(value ba)

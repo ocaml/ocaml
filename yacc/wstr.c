@@ -12,9 +12,6 @@
 /*                                                                        */
 /**************************************************************************/
 
-/* Need at least Windows Vista for WC_ERR_INVALID_CHARS */
-#define _WIN32_WINNT 0x600
-#define WINVER 0x600
 #include <windows.h>
 
 /* See corresponding values in runtime/win32.c */

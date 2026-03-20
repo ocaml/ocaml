@@ -80,6 +80,16 @@ let[@inline] utf_decode_uchar d = unsafe_of_int (d land 0xFFFFFF)
 let[@inline] utf_decode n u = ((8 lor n) lsl decode_bits) lor (to_int u)
 let[@inline] utf_decode_invalid n = (n lsl decode_bits) lor rep
 
+let utf_8_decode_length_of_byte = function
+  | '\x00' .. '\x7F' -> 1
+  | '\x80' .. '\xC1' -> 0
+  | '\xC2' .. '\xDF' -> 2
+  | '\xE0' .. '\xEF' -> 3
+  | '\xF0' .. '\xF4' -> 4
+  | _ -> 0
+
+let max_utf_8_decode_length = 4
+
 let utf_8_byte_length u = match to_int u with
 | u when u < 0 -> assert false
 | u when u <= 0x007F -> 1

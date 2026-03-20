@@ -1,0 +1,6 @@
+(library
+ (name dune_support)
+ (modules_without_implementation new_predef_types)
+ (flags (:standard -nostdlib -nopervasives))
+ (wrapped false)
+)

@@ -47,6 +47,7 @@ let latex_class_prefix = ref Odoc_messages.default_latex_class_prefix
 let latex_class_type_prefix = ref Odoc_messages.default_latex_class_type_prefix
 let latex_attribute_prefix = ref Odoc_messages.default_latex_attribute_prefix
 let latex_method_prefix = ref Odoc_messages.default_latex_method_prefix
+let latex_escape_underscore = ref true
 
 let new_buf () = Buffer.create 1024
 let new_fmt () =
@@ -186,7 +187,10 @@ class text =
       for i = 0 to len - 1 do
         let (s_no_, s) =
           match name.[i] with
-          '_' -> ("-underscore", "_")
+        |  '_' ->
+              if !latex_escape_underscore then
+                ("-underscore", "_")
+              else ("_","_")
         | '~' -> ("-tilde", "~")
         | '%' -> ("-percent", "%")
         | '@' -> ("-at", "\"@")
@@ -542,10 +546,11 @@ class latex =
         List.map (fun r ->
             let s_field =
               p fmt
-                "@[<h 6>  %s%s :@ %s ;"
+                "@[<h 6>  %s%s :@ %s %s;"
                 (if r.rf_mutable then "mutable " else "")
                 r.rf_name
-                (self#normal_type mod_name r.rf_type);
+                (self#normal_type mod_name r.rf_type)
+                (if r.rf_atomic then "[@atomic] " else "");
               flush ()
             in
             [ CodePre s_field ] @ (self#entry_comment f r.rf_text)
@@ -615,6 +620,8 @@ class latex =
              | Type_variant _ -> "="^(if priv then " private" else "")
              | Type_record _ -> "= "^(if priv then "private " else "")
              | Type_open -> "= .."
+             | Type_external name ->
+                 Printf.sprintf "= external %S" (self#escape name)
             ) ;
           flush2 ()
         in
@@ -654,6 +661,7 @@ class latex =
           | Type_open ->
              (* FIXME ? *)
              []
+          | Type_external _ -> []
         in
         let defs2 = (CodePre s_type3) :: defs in
         (merge_codepre defs2) @

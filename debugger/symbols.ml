@@ -54,10 +54,33 @@ let relocate_event orig ev =
     Event_parent repr -> repr := ev.ev_pos
   | _                 -> ()
 
+let maybe_invert_build_path_prefix_map abs_e =
+  let best_existing_dir =
+    List.find_map
+      (fun path ->
+        if Sys.file_exists path && Sys.is_directory path
+        then Some path
+        else None)
+      (Misc.invert_build_path_prefix_map abs_e) in
+  Option.value ~default:abs_e best_existing_dir
+
 let read_symbols' bytecode_file =
   let ic = open_in_bin bytecode_file in
   let toc =
     try
+      let open Misc.Magic_number in
+      let pos_trailer = in_channel_length ic - magic_length in
+      let () = seek_in ic pos_trailer in
+      match read_current_info ~expected_kind:(Some Exec) ic with
+      | Error (Parse_error err) ->
+         prerr_string bytecode_file; prerr_string " load error: ";
+         prerr_endline (explain_parse_error (Some Exec) err);
+         raise Toplevel
+      | Error (Unexpected_error err) ->
+         prerr_string bytecode_file; prerr_string " load error: ";
+         prerr_endline (explain_unexpected_error err);
+         raise Toplevel
+      | Ok _ -> ();
       let toc = Bytesections.read_toc ic in
       ignore(Bytesections.seek_section toc ic Bytesections.Name.SYMB);
       toc
@@ -83,7 +106,10 @@ let read_symbols' bytecode_file =
     let evll = partition_modules evl in
     eventlists := evll @ !eventlists;
     dirs :=
-      List.fold_left (fun s e -> String.Set.add e s) !dirs (input_value ic)
+      List.fold_left
+        (fun s abs_e ->
+          String.Set.add (maybe_invert_build_path_prefix_map abs_e) s)
+        !dirs (input_value ic)
   done;
   begin try
     ignore (Bytesections.seek_section toc ic Bytesections.Name.CODE)

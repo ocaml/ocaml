@@ -98,9 +98,9 @@ let validate_ident raw_name =
   match Misc.Utf8_lexeme.validate_identifier name with
   | Misc.Utf8_lexeme.Valid -> name
   | Misc.Utf8_lexeme.Invalid_character u ->
-    failwith (Format.asprintf "Invalid character U+%X" (Uchar.to_int u))
+    failwith (Format.asprintf "Invalid character U+%04X" (Uchar.to_int u))
   | Misc.Utf8_lexeme.Invalid_beginning u  ->
-    failwith (Format.asprintf "Invalid first character U+%X" (Uchar.to_int u))
+    failwith (Format.asprintf "Invalid first character U+%04X" (Uchar.to_int u))
 
  let validate_exception_uident raw_name =
     let name = validate_ident raw_name in
