@@ -102,10 +102,6 @@ Working version
 
 - #14598: Add `@since` annotations to `Runtime_events`. (Raphaël Proust)
 
-- #13590: Document automatic command-line expansion of `*` and `?` wildcards by
-  the runtime under Windows.
-  (Benjamin Sigonneau, review by Nicolás Ojeda Bär)
-
 ### Compiler user-interface and warnings:
 
 - #14205: Make inclusion check error message reference the user-written file
@@ -577,6 +573,10 @@ OCaml 5.5.0
 
 - #14392: Fix AsciiDoc files, add more markup, xrefs, documentation.
   (Antonin Décimo, review by Gabriel Scherer and David Allsopp)
+
+- #13590: Document automatic command-line expansion of `*` and `?` wildcards by
+  the runtime under Windows.
+  (Benjamin Sigonneau, review by Nicolás Ojeda Bär)
 
 ### Compiler user-interface and warnings:
 
