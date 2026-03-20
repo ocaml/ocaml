@@ -387,8 +387,8 @@ module Hashtbl : sig
             in the table. In particular, if the hash function depends on mutable
             key data, then that data must not be mutated while the key is in the
             table. Similarly, as the hash function may be called while the table
-            itself is being modified, it should avoid accessing the table as part
-            of its computation.
+            itself is being modified, it should avoid accessing the table as
+            part of its computation.
 
             Examples: suitable ([equal], [hash]) pairs for arbitrary key
             types include
