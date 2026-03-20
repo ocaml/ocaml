@@ -166,6 +166,9 @@ let ocamlc_default_flags = make ("ocamlc_default_flags",
 
 
 
+let ocamllex_exit_status = make ("ocamllex_exit_status",
+  "Expected exit status of ocamllex")
+
 let ocamllex_flags = make ("ocamllex_flags",
   "Flags passed to ocamllex")
 
@@ -306,6 +309,7 @@ let _ = List.iter register_variable
     ocamlc_opt_exit_status;
     ocamlopt_opt_exit_status;
     ocamlrunparam;
+    ocamllex_exit_status;
     ocamllex_flags;
     ocamlyacc_flags;
     ocamldoc_flags;

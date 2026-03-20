@@ -421,7 +421,7 @@ let expr sub x =
           sub.expr sub exp2
         )
     | Texp_atomic_loc (exp, lid, ld) ->
-        Texp_atomic_loc (sub.expr sub exp, map_loc sub lid, ld)
+        Texp_atomic_loc (sub.expr sub exp, map_loc_lid sub lid, ld)
     | Texp_array (mut, list) ->
         Texp_array (mut, List.map (sub.expr sub) list)
     | Texp_ifthenelse (exp1, exp2, expo) ->

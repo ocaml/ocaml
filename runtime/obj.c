@@ -134,30 +134,64 @@ CAMLprim value caml_obj_with_tag(value new_tag_v, value arg)
 {
   CAMLparam2 (new_tag_v, arg);
   CAMLlocal1 (res);
-  mlsize_t sz;
-  tag_t tg;
 
-  sz = Wosize_val(arg);
-  tg = (tag_t)Long_val(new_tag_v);
-  if (sz == 0) CAMLreturn (Atom(tg));
-  if (!Scannable_tag(tg)) {
-    res = caml_alloc(sz, tg);
-    memcpy(Bp_val(res), Bp_val(arg), sz * sizeof(value));
-  } else if (sz <= Max_young_wosize) {
-    res = caml_alloc_small(sz, tg);
-    for (mlsize_t i = 0; i < sz; i++) Field(res, i) = Field(arg, i);
-  } else {
-    res = caml_alloc_shr(sz, tg);
-    /* It is safe to use [caml_initialize] even if [tag == Closure_tag]
-       and some of the "values" being copied are actually code pointers.
-       That's because the new "value" does not point to the minor heap. */
-    for (mlsize_t i = 0; i < sz; i++)
-      caml_initialize(&Field(res, i), Field(arg, i));
-    /* Give gc a chance to run, and run memprof callbacks */
-    caml_process_pending_actions();
+  tag_t new_tag = (tag_t)Long_val(new_tag_v);
+  tag_t existing_tag = Tag_val(arg);
+
+  if (new_tag != existing_tag) {
+    if (new_tag == Infix_tag) {
+      caml_failwith ("Cannot change non-infix block to infix.");
+    }
+    if (existing_tag == Infix_tag) {
+      caml_failwith ("Cannot change infix block to non-infix.");
+    }
+    /* Could also check for:
+       - changing non-scannable to scannable
+       - changing closure to non-closure scannnable
+       and maybe others, but we leave these as discipline for the caller. */
   }
 
-  CAMLreturn (res);
+  if (existing_tag == Infix_tag) {
+    mlsize_t infix_offset = Infix_offset_val(arg);
+    CAMLassert (infix_offset > 0);
+    arg -= infix_offset;
+    CAMLassert (Tag_val(arg) == Closure_tag);
+    res = caml_obj_with_tag(Val_long(Closure_tag), arg);
+    CAMLreturn (res + infix_offset);
+  }
+
+  mlsize_t sz = Wosize_val(arg);
+
+  if (sz == 0) CAMLreturn (Atom(new_tag));
+
+  if (sz <= Max_young_wosize) {
+    res = caml_alloc_small(sz, new_tag);
+    /* field-by-field to avoid tearing; see wo_memcpy in array.c */
+    for (mlsize_t i = 0; i < sz; ++i) Field(res, i) = Field(arg, i);
+    CAMLreturn (res);
+  }
+
+  res = caml_alloc_shr(sz, new_tag);
+
+  mlsize_t unscannable_sz = 0;
+  if (!Scannable_tag(existing_tag))
+    unscannable_sz = sz;
+  else if (existing_tag == Closure_tag)
+    unscannable_sz = Start_env_closinfo(Closinfo_val(arg));
+
+  for (mlsize_t i = 0; i < unscannable_sz; ++i) {
+    Field(res, i) = Field(arg, i);
+  }
+  /* Result on major heap so we need to use caml_initialize for
+   * scannable fields */
+  for (mlsize_t i = unscannable_sz; i < sz; ++i) {
+    caml_initialize(&Field(res, i), Field(arg, i));
+  }
+
+  /* Give gc a chance to run, and run memprof callbacks */
+  caml_process_pending_actions();
+
+  CAMLreturn(res);
 }
 
 CAMLprim value caml_obj_dup(value arg)

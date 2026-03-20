@@ -980,6 +980,12 @@ module Map : sig
 
           @since 5.5 *)
 
+      val singleton_to_binding: 'a t -> (key * 'a) option
+      (** [singleton_to_binding m] is [Some (k, v)] if [m] only binds [k] to [v]
+          and [None] otherwise.
+
+          @since 5.6 *)
+
       val mem: key -> 'a t -> bool
       (** [mem x m] returns [true] if [m] contains a binding for [x],
           and [false] otherwise. *)
@@ -1296,6 +1302,12 @@ module Set : sig
       (** Test whether a set has exactly one element or not.
 
           @since 5.5 *)
+
+      val singleton_to_elt: t -> elt option
+      (** [singleton_to_elt s] is [Some x] if [s] has only the element [x]
+          and [None] otherwise.
+
+          @since 5.6 *)
 
       val mem: elt -> t -> bool
       (** [mem x s] tests whether [x] belongs to the set [s]. *)

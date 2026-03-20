@@ -122,8 +122,7 @@ let () =
      but the value of stdlib_exists_when_renamed is used in the Renamed phase
    The program must terminate with [expected_exit_code]. [~may_segfault] is an
    escape hatch permitting exit code 139 to be silently ignored. This works
-   around some problems with shared runtimes on s390x and riscv which don't
-   reliably fail.
+   around a problem with shared runtimes on riscv which doesn't reliably fail.
 *)
 let run_program env config =
   let prefix = Environment.prefix env in
@@ -192,6 +191,17 @@ let link_with_main_in_c env ~use_shared_runtime ~linker_exit_code mode
         [runtime_lib; Config.bytecomp_c_libraries]
     in
     clibs @ libraries
+  in
+  let flags =
+    if Config.architecture = "riscv" then
+      (* Running linker relaxation over the objects produced by
+         -output-complete-obj far too readily hits quadratic behaviour in ld.
+         For the purposes of these tests, we simply disable it. Binutils 2.41+
+         supports a more specific --no-relax-gp, but we'd have to detect it in
+         configure. *)
+      "-Wl,--no-relax" :: flags
+    else
+      flags
   in
   let exit_code =
     let summarise f () =
@@ -544,7 +554,7 @@ let compile_test usr_bin_sh config env test test_program description =
       | Output_obj(C_ocamlopt, Shared) ->
           (* cf. ocaml/ocaml#13693 - on Fedora/RHEL, this executable
              segfaults *)
-          let may_segfault = List.mem Config.architecture ["s390x"; "riscv"] in
+          let may_segfault = (Config.architecture = "riscv") in
           (* Shared compilation isn't available on native Windows and fails on
              Cygwin *)
           let linker_exit_code = fails_if (Sys.win32 || Sys.cygwin) in

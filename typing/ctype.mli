@@ -241,6 +241,12 @@ val instance_poly_fixed:
         (* Take an instance of a type scheme containing free univars for
            checking that an expression matches this scheme. *)
 
+val maybe_instance_poly: type_expr -> type_expr
+  (* If the type is a [Tpoly], we take an instance (replace
+     the corresponding [Tunivar] by [Tvar]) using
+     [instance_poly ~keep_names:true]; otherwise the
+     input type is returned unchanged. *)
+
 val instance_funct_opt:
         id_in:Ident.t -> p_out:Path.t -> fixed:bool ->
         type_expr -> type_expr option
@@ -363,6 +369,41 @@ val is_really_poly : Env.t -> type_expr -> bool
 val filter_method: Env.t -> string -> type_expr -> type_expr
         (* A special case of unification (with {m : 'a; 'b}).  Raises
            [Filter_method_failed] instead of [Unify]. *)
+
+(** [arrow_labels env ty] expands [ty] as an array type in [env] and
+    returns its argument labels.
+
+    [is_ret_tvar] is [true] if the final return type is a type variable,
+    indicating that the list of labels isn't necessarily exhaustive. *)
+val arrow_labels : Env.t -> type_expr -> arg_label list * is_ret_tvar:bool
+
+(** An argument in an arrow spine. *)
+type arrow_arg =
+  | Arg_value of type_expr
+    (** A regular value argument. *)
+  | Arg_module of Ident.Unscoped.t * package
+    (** A module dependent parameter. Consisting of a dependent module name
+        and a package type for the module. *)
+
+(** The return type of an arrow. *)
+type arrow_ret =
+  | Ret_cycle
+    (** The arrow is cyclic, its return type is ill-defined. *)
+  | Ret_type of type_expr
+    (** A regular return type. *)
+
+(** [arrow_spine env ty] expands [ty] as a arrow type in [env] and returns
+    its arrow spine.
+
+    If [ty] is [l1:ty1 -> ... -> ln:tyn -> rty], it returns
+    [([(l1, ty1); ...; (ln, tyn)], Ret_type rty)].
+
+    If [ty] is a {e cyclic} arrow type, it returns [([...], Ret_cycle)]. *)
+val arrow_spine
+  :  Env.t
+  -> type_expr
+  -> (arg_label * arrow_arg) list * arrow_ret
+
 val occur_in: Env.t -> type_expr -> type_expr -> bool
 val deep_occur: type_expr -> type_expr -> bool
 val deep_occur_list: type_expr -> type_expr list -> bool
@@ -524,16 +565,12 @@ val free_variables_list: ?env:Env.t -> type_expr list -> type_expr list
 val contains_nongen_variables: ?env:Env.t -> type_expr -> bool
 val closed_type_expr: ?env:Env.t -> type_expr -> bool
 val closed_type_decl: type_declaration -> type_expr option
-val closed_extension_constructor: extension_constructor -> type_expr option
 val closed_class:
         type_expr list -> class_signature ->
         closed_class_failure option
         (* Check whether all type variables are bound *)
 
 val unalias: type_expr -> type_expr
-
-val arity: type_expr -> int
-        (* Return the arity (as for curried functions) of the given type. *)
 
 val collapse_conj_params: Env.t -> type_expr list -> unit
         (* Collapse conjunctive types in class parameters *)

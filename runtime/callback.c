@@ -58,7 +58,7 @@ Caml_inline value alloc_and_clear_stack_parent(caml_domain_state* domain_state)
   if (parent_stack == NULL) {
     return Val_unit;
   } else {
-    value cont = caml_alloc_2(Cont_tag, Val_ptr(parent_stack), Val_long(0));
+    value cont = caml_alloc_1(Cont_tag, Val_ptr(parent_stack));
     Stack_parent(domain_state->current_stack) = NULL;
     return cont;
   }

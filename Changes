@@ -23,6 +23,24 @@ Working version
   symbols from the runtime. The declarations were removed in 5.0.
   (Antonin Décimo, review by Nicolás Ojeda Bär)
 
+- #14570: Distinguish between prefetching for read and write access in the
+  runtime. Significant performance benefit for some multi-domain programs. For
+  maximum benefit on AMD64, pass -mprfchw to the C compiler.
+  (Nick Barnes, review by Gabriel Scherer, Damien Doligez, and Antonin Décimo)
+
+- #14651: Remove S390x TSan (Thread Sanitizer) support.
+  (Tim McGilchrist, review by Olivier Nicole)
+
+- #14292: The value returned by `Hashtbl.is_randomized` is now reflected in the
+  `R` parameter of `Sys.runtime_parameters`.
+  (Antonin Décimo, David Allsopp, Hannes Mehnert, review by
+   Nicolás Ojeda Bär)
+
+### Type system:
+
+- #14512: Improve check for warning 16 (unerasable-optional-argument)
+  (Alistair O'Brien, review by Florian Angeletti, Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #14524: Native Iatomic_fetch_add on all backends:
@@ -38,7 +56,23 @@ Working version
   disable the change in a backward-compatible way.
   (Gabriel Scherer, review by Vincent Laviron)
 
+- #13438: keep some optimization hints from lambda in bytecode modules
+  and executables (to be used by Js_of_ocaml / Wasm_of_ocaml)
+  (Jérôme Vouillon)
+
 ### Standard library:
+
+- #13554: Add `List.append_map` and `List.rev_append_map`.
+  (Sylvain Boilard and Hugo Heuzard, review by Nicolás Ojeda Bär, Daniel Bünzli,
+   Damien Doligez and Jeremy Yallop)
+
+- #14121: Add Set.S.singleton_to_elt and Map.S.singleton_to_binding
+  (Vincent Laviron, review by Daniel Bünzli, Nicolás Ojeda Bär
+   and Gabriel Scherer)
+
+- #14380: Add Atomic.Array.
+  (Clément Allain and Gabriel Scherer, review by Olivier Nicole
+   and Léo Andrès for the stdlib team)
 
 - #14487: Add String.drop_{prefix,suffix}
   (Michael Neumann, review by Léo Andrès, Nicolás Ojeda Bär and Gabriel Scherer)
@@ -71,6 +105,8 @@ Working version
 
 ### Manual and documentation:
 
+- #14598: Add `@since` annotations to `Runtime_events`. (Raphaël Proust)
+
 ### Compiler user-interface and warnings:
 
 - #14205: Make inclusion check error message reference the user-written file
@@ -80,11 +116,30 @@ Working version
 - #14142: print GADT equations in error messages when they introduce a type
   (Stefan Muenzel, review by Florian Angeletti)
 
+- #14359, #14600: when reporting unbound type variables in a type declaration,
+  avoid a possible confusion between type parameters and unbound variables.
+  (Florian Angeletti, report by Florian Weimer, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
+
+- #14620: optimize utf8 normalization and (un)capitalization functions
+  (Gabriel Scherer, review by Stefan Muenzel and Florian Angeletti,
+   report by Stefan Muenzel)
+
+- #14618: optimize utf8 normalization outside of the ASCII range
+  (Stefan Muenzel, review by Gabriel Scherer, Daniel Bünzli, and
+   Florian Angeletti)
+
+- #14601, remove an unreachable path for unbound type variables in extension
+  constructor declarations.
+  (Florian Angeletti, review by Gabriel Scherer)
 
 ### Build system:
 
 ### Bug fixes:
+
+- #14492: Fix Obj.dup on closures.
+  (Mark Shinwell and Nick Barnes, review by Gabriel Scherer and Damien Doligez)
 
 OCaml 5.5.0
 -----------
@@ -122,6 +177,10 @@ OCaml 5.5.0
   (Nicolás Ojeda Bär, review by Valentin Gatien-Baron)
 
 ### Runtime system:
+
+- #14469: Make continuation objects have one field instead of two.
+  (KC Sivaramakrishnan, review by Olivier Nicole, Tim McGilchrist, Zane Hambly
+  and Ali Caglayan)
 
 - #14416: Spawned domains will record backtraces if the parent domain has
   enabled it.
@@ -231,6 +290,10 @@ OCaml 5.5.0
 
 ### Code generation and optimizations:
 
+- #14583: fix bug in linear scan spilling heuristic that in certain situations
+  could lead to miscompilations.
+  (Nicolás Ojeda Bär, review by Vincent Laviron)
+
 ### Standard library:
 
 - #14437: Add String.split_{first,last,all} and String.rsplit_all
@@ -293,6 +356,12 @@ OCaml 5.5.0
   (Kate Deplaix, review by Daniel Bünzli, Gabriel Scherer,
    Nicolás Ojeda Bär, Florian Angeletti and Josh Berdine)
 
+- #14043, #14393: Lazy.Mutexed: simple mutex-protected lazy thunks,
+  that may block the entire domain/thread on initialization races.
+  (Gabriel Scherer, suggestion by Kate Deplaix and Pierre Chambart,
+  review by KC Sivaramakrishnan, Florian Angeletti, Kate Deplaix
+  and Daniel Bünzli)
+
 - #14086: Add Domain.count.
   (Nicolás Ojeda Bär, review by David Allsopp, Gabriel Scherer, Daniel Bünzli
   and KC Sivaramakrishnan)
@@ -321,6 +390,11 @@ OCaml 5.5.0
 - #14432: Add floor division, ceil division, Euclidean division and remainder
   to the Int, Int32, Int64 and Nativeint modules.
   (Xavier Leroy, review by Ali Caglayan, Nicolás Ojeda Bär, Gabriel Scherer)
+
+- #13101: Add `Fun.todo ()` to signal that a piece of code is not yet
+  implemented.
+  (Pavlo Khrystenko and Olivier Nicole, review by Daniel Bünzli, Yawar Amin,
+   Gabriel Scherer)
 
 - #14433: Add bit-counting functions `leading_zeros`, `leading_sign_bits`,
   `trailing_zeros`, `bit_count`, `unsigned_bitsize`, `signed_bitsize`
@@ -376,6 +450,10 @@ OCaml 5.5.0
   means the initialisation of globals in Matching do not become observable in
   the marshalled output.
   (David Allsopp, review by Gabriel Scherer)
+
+- #14434, #14652: Protect check_counter_example_pat against polymorphic types,
+  restoring type soundness.
+  (Stephen Dolan and Jacques Garrigue, report and review by Alistair O'Brien)
 
 ### Other libraries:
 
@@ -448,6 +526,10 @@ OCaml 5.5.0
 - #14245: ocamlobjinfo now displays the runtime invoked by a bytecode
   executable (either from the RNTM section or by analysing the shebang lines)
   (David Allsopp, review by Damien Doligez and Samuel Hym)
+
+- #14448: ocamllex now prints a `missing-case` warning and shows an example
+  of nonmatching input if a rule is not exhaustive (Martin Jambon,
+  review by David Allsopp and Gabriel Scherer)
 
 ### Manual and documentation:
 
@@ -793,6 +875,28 @@ OCaml 5.5.0
 - private: robustify intern.c
   (Xavier Leroy and Nicolás Ojeda Bär, review by Olivier Nicole, Mindy Preston,
   Edwin Török, and Gabriel Scherer)
+
+- #13693, #14514: s390x: fix heap corruption with libasmrun_shared.so caused
+  by PLT lazy binding trampoline saving FPRs into OCaml's fiber stack.
+  Replace @PLT calls with GOT-indirect calls in the s390x code emitter.
+  (Zane Hambly, review by David Allsopp and Xavier Leroy)
+
+- #14603, #14604: avoid Ctype.apply failures when mixing
+  polymorphic types and unboxed constructors.
+  (Gabriel Scherer and Stefan Muenzel, report by Brandon Stride,
+   review by Florian Angeletti)
+
+- #14626: Handle module-dependent functions in warning 16 (Reported in #14622).
+  (Alistair O'Brien, review by Gabriel Scherer, report by Kate Deplaix)
+
+- #14635: Fix a bug in `caml_floatarray_gather` that would cause
+  the result of `Float.Array.sub`, `Float.Array.append`, `Float.Array.concat`
+  (when empty) not to be equal to `[||]`.
+  (Marc Lasson, review by Gabriel Scherer)
+
+- #14644, #14647: Fix a bug related to unhandled effects in bytecode.
+  (Vincent Laviron, report by Thibaut Mattio,
+   review by Nicolás Ojeda Bär, Stephen Dolan and Olivier Nicole)
 
 OCaml 5.4.0 (9 October 2025)
 ----------------------------
@@ -1382,6 +1486,10 @@ OCaml 5.4.0 (9 October 2025)
   (David Allsopp, review by Antonin Décimo and Gabriel Scherer)
 
 ### Bug fixes:
+
+- #14574, #14577, #14589: Fix wrong assembly code generated for ARM64
+  with frame pointer support.
+  (Xavier Leroy, review by Vincent Laviron, report by Richard Jones)
 
 - #13819: Fix field initialisation bug in runtime events subsystem.
   (Nick Barnes, review by Gabriel Scherer).
@@ -2419,6 +2527,9 @@ OCaml 5.2.0 (13 May 2024)
   some API changes in Gc.Memprof.
   (Nick Barnes, review by Jacques-Henri Jourdan
    and Guillaume Munch-Maccagnoni).
+
+- #12023: Deprecate Gc.stat
+  (Damien Doligez, review by Gabriel Scherer and Jeremy Yallop)
 
 - #12430: Simplify dynamic bytecode loading in Meta.reify_bytecode
   (Stephen Dolan, review by Sébastien Hinderer, Vincent Laviron and Xavier

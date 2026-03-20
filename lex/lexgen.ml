@@ -45,6 +45,7 @@ type t_env = (ident * ident_info) list
 
 type ('args,'action) lexer_entry =
   { lex_name: string;
+    lex_body_location: Syntax.location;
     lex_regexp: regexp;
     lex_mem_tags: int ;
     lex_actions: (int *  t_env * 'action) list }
@@ -73,6 +74,8 @@ and tag_action = SetTag of int * int | EraseTag of int
 type ('args,'action) automata_entry =
   { auto_name: string;
     auto_args: 'args ;
+    auto_shortest: bool;
+    auto_body_location: Syntax.location;
     auto_mem_size : int ;
     auto_initial_state: int * memory_action list;
     auto_actions: (int * t_env * 'action) list }
@@ -504,9 +507,10 @@ let encode_lexdef def =
   chars_count := 0;
   let entry_list =
     List.map
-      (fun {name=entry_name; args=args; shortest=shortest; clauses=casedef} ->
-        let (re,actions,_,ntags) = encode_casedef casedef in
-        { lex_name = entry_name;
+      (fun {name; args; shortest; body_location; clauses} ->
+        let (re,actions,_,ntags) = encode_casedef clauses in
+        { lex_name = name;
+          lex_body_location = body_location;
           lex_regexp = re;
           lex_mem_tags = ntags ;
           lex_actions = List.rev actions },args,shortest)
@@ -1171,6 +1175,8 @@ let make_dfa lexdef =
              (translate_state shortest tags chars follow) !r_states ;
         { auto_name = le.lex_name;
           auto_args = args ;
+          auto_shortest = shortest;
+          auto_body_location = le.lex_body_location;
           auto_mem_size =
             (if !temp_pending then !next_mem_cell+1 else !next_mem_cell) ;
           auto_initial_state = init_num ;

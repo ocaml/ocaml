@@ -499,7 +499,24 @@ val hash : t -> int
 
 module Array : sig
   type t = floatarray
-  (** The type of float arrays with packed representation.
+  (** The type of "flat" float arrays.
+
+      A [floatarray] is an array data structure that contains a fixed number
+      of elements of type [float]. The elements of a [floatarray] are
+      guaranteed to be stored contiguously in memory, without any boxing.
+
+      Currently, the built-in type [float array] is optimized by default to
+      also use an unboxed representation. However, this optimization may be
+      disabled at configure-time when building the compiler. Furthermore,
+      operations on [floatarray] are a bit more efficient than those on
+      [float array], which require an extra dynamic check.
+
+      Array literals of type [floatarray] can be written using the same syntax
+      as those of type [float array] as long as there is enough typing
+      information in the environment so that the compiler can disambiguate
+      between the two cases. See Section 12.25 'Type-directed disambiguation
+      of array literals' of the manual for more details.
+
       @since 4.08
     *)
 
@@ -882,7 +899,24 @@ end
 
 module ArrayLabels : sig
   type t = floatarray
-  (** The type of float arrays with packed representation.
+  (** The type of "flat" float arrays.
+
+      A [floatarray] is an array data structure that contains a fixed number
+      of elements of type [float]. The elements of a [floatarray] are
+      guaranteed to be stored contiguously in memory, without any boxing.
+
+      Currently, the built-in type [float array] is optimized by default to
+      also use an unboxed representation. However, this optimization may be
+      disabled at configure-time when building the compiler. Furthermore,
+      operations on [floatarray] are a bit more efficient than those on
+      [float array], which require an extra dynamic check.
+
+      Array literals of type [floatarray] can be written using the same syntax
+      as those of type [float array] as long as there is enough typing
+      information in the environment so that the compiler can disambiguate
+      between the two cases. See Section 12.25 'Type-directed disambiguation
+      of array literals' of the manual for more details.
+
       @since 4.08
     *)
 

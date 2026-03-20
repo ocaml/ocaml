@@ -1,26 +1,60 @@
 (* TEST_BELOW *)
 
-(* standard atomics *)
+module Refs = struct
+  (* standard atomics *)
 
-let standard_atomic_get (r : 'a Atomic.t) =
-  Atomic.get r
+  let standard_atomic_get (r : 'a Atomic.t) =
+    Atomic.get r
 
-let standard_atomic_cas (r : 'a Atomic.t) oldv newv =
-  Atomic.compare_and_set r oldv newv
+  let standard_atomic_set (r : 'a Atomic.t) =
+    Atomic.get r
 
+  let standard_atomic_cas (r : 'a Atomic.t) oldv newv =
+    Atomic.compare_and_set r oldv newv
+end
 
-(* atomic record fields *)
+module Fields = struct
+  (* atomic record fields *)
 
-type 'a atomic = { filler : unit; mutable x : 'a [@atomic] }
+  type 'a atomic = { filler : unit; mutable x : 'a [@atomic] }
 
-let get (r : 'a atomic) : 'a =
-  r.x
+  let get (r : 'a atomic) : 'a =
+    r.x
 
-let set (r : 'a atomic) v =
-  r.x <- v
+  let explicit_get (r : 'a atomic) : 'a =
+    Atomic.Loc.get [%atomic.loc r.x]
 
-let cas (r : 'a atomic) oldv newv =
-  Atomic.Loc.compare_and_set [%atomic.loc r.x] oldv newv
+  let set (r : 'a atomic) v =
+    r.x <- v
+
+  let explicit_set (r : 'a atomic) v =
+    Atomic.Loc.set [%atomic.loc r.x] v
+
+  let cas (r : 'a atomic) oldv newv =
+    Atomic.Loc.compare_and_set [%atomic.loc r.x] oldv newv
+end
+
+module Arrays = struct
+
+  (* atomic arrays *)
+  let array_get arr i =
+    Atomic.Array.get arr i
+
+  let unsafe_array_get arr i =
+    Atomic.Array.unsafe_get arr i
+
+  let array_set arr i v =
+    Atomic.Array.set arr i v
+
+  let unsafe_array_set arr i v =
+    Atomic.Array.unsafe_set arr i v
+
+  let array_cas arr i oldv newv =
+    Atomic.Array.compare_and_set arr i oldv newv
+
+  let unsafe_array_cas arr i oldv newv =
+    Atomic.Array.unsafe_compare_and_set arr i oldv newv
+end
 
 (* TEST
 

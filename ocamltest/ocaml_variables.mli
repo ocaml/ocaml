@@ -98,6 +98,7 @@ val ocamlrun : Variables.t
 val ocamlc_flags : Variables.t
 val ocamlc_default_flags : Variables.t
 
+val ocamllex_exit_status : Variables.t
 val ocamllex_flags : Variables.t
 
 val ocamlopt_flags : Variables.t

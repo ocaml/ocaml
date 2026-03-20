@@ -138,6 +138,7 @@ testsuite/tests/typing-unicode/*.ml                     typo.non-ascii
 testsuite/tests/tool-toplevel/strings.ml                typo.non-ascii
 testsuite/tests/win-unicode/*.ml                        typo.non-ascii
 testsuite/tests/unicode/見.ml                           typo.non-ascii
+testsuite/tests/unicode/utf8_lexeme.ml                  typo.non-ascii
 testsuite/tests/lib-format/unicode.ml                   typo.non-ascii
 testsuite/tests/lib-string/test_string.ml               typo.non-ascii
 testsuite/tests/lib-uchar/test.ml                       typo.non-ascii

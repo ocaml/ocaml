@@ -1116,9 +1116,7 @@ END_FUNCTION(caml_callback3_asm)
 /* Fibers */
 /*
  * A continuation is a one word object that points to a fiber. A fiber [f] will
- * point to its parent at Handler_parent(Stack_handler(f)). In the following,
- * the [last_fiber] refers to the last fiber in the linked-list formed by the
- * parent pointer.
+ * point to its parent at Handler_parent(Stack_handler(f)).
  */
 /******************************************************************************/
 
@@ -1126,12 +1124,14 @@ FUNCTION(caml_perform)
 CFI_STARTPROC
     /*  %rax: effect to perform
         %rbx: freshly allocated continuation */
-        movq    Caml_state(current_stack), %rsi /* %rsi := old stack */
-        leaq    1(%rsi), %rdi /* %rdi (last_fiber) := Val_ptr(old stack) */
+        movq    Caml_state(current_stack), %rsi /* %rsi := current_stack */
+        leaq    1(%rsi), %rdi /* %rdi := Val_ptr(current_stack) */
         movq    %rdi, 0(%rbx) /* Initialise continuation */
+        movq    %rsi, %rdx /* %rdx := cont_head */
 LBL(do_perform):
-    /*  %rdi: last_fiber
-        %rsi: old stack */
+    /*  %rdi: Val_ptr(current_stack)
+        %rsi: current_stack
+        %rdx: cont_head */
 #if defined(WITH_THREAD_SANITIZER)
     /* Signal to TSan all stack frames exited by the perform. */
         ENTER_FUNCTION
@@ -1144,10 +1144,9 @@ LBL(do_perform):
         TSAN_RESTORE_CALLER_REGS
         LEAVE_FUNCTION
 #endif
-        movq    %rdi, 8(%rbx) /* Set the last fiber field in the continuation */
-        movq    Stack_handler(%rsi), %r11  /* %r11 := old stack -> handler */
-        movq    Handler_parent(%r11), %r10 /* %r10 := parent stack */
-        cmpq    $0, %r10                   /* parent is NULL? */
+        movq    Stack_handler(%rsi), %r11  /* %r11 := current_stack->handler */
+        movq    Handler_parent(%r11), %r10 /* %r10 := parent_stack */
+        cmpq    $0, %r10                   /* parent_stack is NULL? */
         je      LBL(112)
 #if defined(WITH_THREAD_SANITIZER)
      /* Save non-callee-saved registers %rax, %rdi, %rsi, %r10, %r11 before C
@@ -1157,8 +1156,10 @@ LBL(do_perform):
         pushq   %rsi; CFI_ADJUST(8);
         pushq   %r10; CFI_ADJUST(8);
         pushq   %r11; CFI_ADJUST(8);
+        pushq   %rdx; CFI_ADJUST(8);
      /* Match the TSan-enter made from caml_runstack */
         TSAN_EXIT_FUNCTION
+        popq   %rdx; CFI_ADJUST(-8);
         popq   %r11; CFI_ADJUST(-8);
         popq   %r10; CFI_ADJUST(-8);
         popq   %rsi; CFI_ADJUST(-8);
@@ -1166,19 +1167,17 @@ LBL(do_perform):
         popq   %rax; CFI_ADJUST(-8);
 #endif
         SWITCH_OCAML_STACKS /* preserves r11 and rsi */
-     /* We have to null the Handler_parent after the switch because the
-        Handler_parent is needed to unwind the stack for backtraces */
-        movq    $0, Handler_parent(%r11) /* Set parent of performer to NULL */
-        movq    Handler_effect(%r11), %rsi  /* %rsi := effect handler */
-        jmp     GCALL(caml_apply3)
+     /* We have to update the Handler_parent after the switch because the
+        Handler_parent is needed to unwind the stack for backtraces. */
+        movq    %rdi, 0(%rbx) /* Update continuation with the new cont_tail */
+        movq    %rdx, Handler_parent(%r11) /* Connect cont_tail to cont_head */
+        movq    Handler_effect(%r11), %rdi /* %rdi := effect handler */
+        jmp     GCALL(caml_apply2)
 LBL(112):
-    /* Switch back to original performer before raising Effect.Unhandled
-       (no-op unless this is a reperform) */
-        movq    0(%rbx), %r10  /* load performer stack from continuation */
-        subq    $1, %r10       /* r10 := Ptr_val(r10) */
-        movq    Caml_state(current_stack), %rsi
-        SWITCH_OCAML_STACKS
-    /* No parent stack. Raise Effect.Unhandled. */
+    /* No parent stack. Switch back to original performer before raising
+       Effect.Unhandled. */
+        movq    %rdx, %r10 /* %r10 := cont_head */
+        SWITCH_OCAML_STACKS /* SWITCH_OCAML_STACK (source=%rsi, target=%r10) */
         ENTER_FUNCTION
 #if defined(WITH_THREAD_SANITIZER)
         /* We must let the TSan runtime know that we switched back to the
@@ -1206,12 +1205,14 @@ END_FUNCTION(caml_perform)
 FUNCTION(caml_reperform)
 CFI_STARTPROC
     /*  %rax: effect to reperform
-        %rbx: continuation
-        %rdi: last_fiber */
-        movq    Caml_state(current_stack), %rsi  /* %rsi := old stack */
+        %rbx: continuation */
+        movq    Caml_state(current_stack), %rsi /* %rsi := current_stack */
+        movq    0(%rbx), %rdi                   /* %rdi := Val_ptr(cont_tail) */
         movq    (Stack_handler-1)(%rdi), %r10
-        movq    %rsi, Handler_parent(%r10)       /* Append to last_fiber */
-        leaq    1(%rsi), %rdi  /* %rdi (last_fiber) := Val_ptr(old stack) */
+        movq    Handler_parent(%r10), %rdx /* %rdx := cont_head */
+        movq    %rsi, Handler_parent(%r10) /* parent(cont_tail)
+                                                := current_stack */
+        leaq    1(%rsi), %rdi /* %rdi := Val_ptr(current_stack) */
      /* Need to update the oldest saved frame pointer here as the execution of
         the handler may have caused the current fiber stack to reallocate. */
         UPDATE_BASE_POINTER(%r10)
@@ -1221,12 +1222,15 @@ END_FUNCTION(caml_reperform)
 
 FUNCTION(caml_resume)
 CFI_STARTPROC
-    /* %rax -> fiber, %rbx -> fun, %rdi -> arg, %rsi -> last_fiber */
-        leaq    -1(%rax), %r10  /* %r10 (new stack) = Ptr_val(%rax) */
-        movq    %rdi, %rax      /* %rax := argument to the function in %rbx */
+    /* %rax -> Val_ptr(cont_tail), %rbx -> fun, %rdi -> arg */
+        leaq    -1(%rax), %rsi  /* %rsi (cont_tail) = Ptr_val(%rax) */
     /*  check if stack null, then already used */
-        testq   %r10, %r10
+        testq   %rsi, %rsi
         jz      1f
+        movq    %rdi, %rax      /* %rax := argument to the function in %rbx */
+   /* Load cont_head, the fiber at which we will resume */
+        movq    Stack_handler(%rsi), %r10
+        movq    Handler_parent(%r10), %r10 /* %r10 = cont_head */
 #if defined(WITH_THREAD_SANITIZER)
     /* Save non-callee-saved registers %rax, %rsi and %r10 before C call */
         ENTER_FUNCTION
@@ -1251,7 +1255,7 @@ CFI_STARTPROC
         LEAVE_FUNCTION
 #endif
     /* Add current stack to the last fiber */
-        movq    (Stack_handler-1)(%rsi), %rdi
+        movq    Stack_handler(%rsi), %rdi
         movq    Caml_state(current_stack), %rsi
         movq    %rsi, Handler_parent(%rdi)
      /* Need to update the oldest saved frame pointer here as the current fiber
