@@ -192,6 +192,28 @@ val new_local_type:
         ?manifest_and_scope:(type_expr * int) ->
         type_origin -> type_declaration
 
+(** Forward declaration, to be filled in by {!Typemod.check_package_closed}.
+    Ensures that the package type does not contain any type variable. *)
+val check_package_closed
+  : (loc:Location.t
+     -> env:Env.t
+     -> typ:type_expr
+     -> (string list * type_expr) list
+     -> unit)
+    ref
+
+(** [with_moddep_param env ~name ~pack body] introduces a module parameter
+    and builds an arrow type. Returns a module-dependent arrow iff the
+    parameter escapes in the result type returned by [body]. *)
+val with_moddep_param
+  :  Env.t
+  -> loc:Location.t
+  -> arg_label:arg_label
+  -> name:string loc
+  -> pack:package
+  -> (Env.t -> Uid.t -> Ident.t -> 'a * type_expr)
+  -> 'a * type_expr
+
 module Pattern_env : sig
   type envop
   type t = private

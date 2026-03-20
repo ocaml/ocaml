@@ -83,13 +83,6 @@ Line 1, characters 13-14:
                  ^
 Warning 16 [unerasable-optional-argument]: this optional argument cannot be erased.
 
-val baz : ?x:'b -> 'a as 'a = <fun>
-|}, Principal{|
-Line 1, characters 13-14:
-1 | let rec baz ?x = baz
-                 ^
-Warning 16 [unerasable-optional-argument]: this optional argument cannot be erased.
-
 val baz : ?x:'a -> (?x:'a -> 'b as 'b) = <fun>
 |}]
 

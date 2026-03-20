@@ -263,13 +263,6 @@ let type_open_decl :
 let type_package =
   ref (fun _ -> assert false)
 
-(* Forward declaration, to be filled in by Typemod.check_package_closed *)
-
-let check_package_closed :
-  (loc:Location.t -> env:Env.t -> typ:type_expr ->
-   (string list * type_expr) list -> unit) ref =
-  ref (fun ~loc:_ ~env:_ ~typ:_ _ -> assert false)
-
 (* Forward declaration, to be filled in by Typeclass.class_structure *)
 let type_object =
   ref (fun _env _s -> assert false :
@@ -2304,6 +2297,13 @@ let add_pattern_variables ?check ?check_as env pv =
     )
     pv env
 
+(** [add_let_pattern_vars] adds the pattern variables [pvs] to [env] for
+    a let bindings. Additionally binds any type vars used in the patterns. *)
+let add_let_pattern_vars env ~pvs ~bind_type_vars_delayed =
+  let new_env = add_pattern_variables env pvs in
+  List.iter (fun f -> f ()) bind_type_vars_delayed;
+  new_env
+
 let add_module_variables env module_variables =
   let module_variables_as_list =
     match module_variables with
@@ -3440,122 +3440,6 @@ let loc_rest_of_function
   | [], Pfunction_body pexp -> pexp.pexp_loc
   | [], Pfunction_cases (_, loc_cases, _) -> loc_cases
 
-(* Approximate the type of an expression, for better recursion *)
-
-let rec approx_type env sty =
-  match sty.ptyp_desc with
-  | Ptyp_arrow (p, ({ ptyp_desc = Ptyp_poly _ } as arg_sty), sty) ->
-    if is_optional p then newvar ()
-    else begin
-      let arg_ty =
-        (* Polymorphic types will only unify with types that match all of their
-         polymorphic parts, so we need to fully translate the type here
-         unlike in the monomorphic case *)
-        Typetexp.transl_simple_type env ~closed:false arg_sty
-      in
-      newty (Tarrow (p, arg_ty.ctyp_type, approx_type env sty, commu_ok))
-    end
-  | Ptyp_arrow (p, _, sty) ->
-      let ty1 = if is_optional p then type_option (newvar ()) else newvar () in
-      newty (Tarrow (p, newmono ty1, approx_type env sty, commu_ok))
-  | Ptyp_tuple args ->
-      newty (Ttuple (List.map (fun (l, t) -> l, approx_type env t) args))
-  | Ptyp_constr (lid, ctl) ->
-      let path, decl = Env.lookup_type ~use:false ~loc:lid.loc lid.txt env in
-      if List.length ctl <> decl.type_arity then newvar ()
-      else begin
-        let tyl = List.map (approx_type env) ctl in
-        newconstr path tyl
-      end
-  | _ -> newvar ()
-
-let type_pattern_approx env spat ty_expected =
-  match spat.ppat_desc with
-  | Ppat_constraint (_, sty) ->
-      let inferred_ty =
-        match sty with
-        | {ptyp_desc=Ptyp_poly _} ->
-          let inferred_ty =
-            Typetexp.transl_simple_type env ~closed:false sty
-          in
-          inferred_ty.ctyp_type
-        | _ -> approx_type env sty
-      in
-      begin try unify_pat_types spat.ppat_loc env inferred_ty ty_expected
-        with Unify trace ->
-        raise(Error(spat.ppat_loc, env, Pattern_type_clash(trace, None)))
-      end;
-  | _ -> ()
-
-let type_approx_fun_one_param
-  env label default spato ty_expected ~first ~in_function =
-  (* [spato] is [None] when approximating a [Pfunction_cases],
-     the parameter is implicit in that case. *)
-  let has_poly =
-    match spato with
-    | None -> false
-    | Some spat -> check_poly_constraint spat env label
-  in
-  let { ty_param; ty_ret } =
-    match
-      filter_arrow env ~in_apply:false ty_expected label ~param_hole:has_poly
-    with
-    | Ok filtered_arrow -> filtered_arrow
-    | Error err ->
-      let loc_fun, ty_fun = in_function in
-      let err =
-        error_of_filter_arrow_failure ~explanation:None ty_fun err ~first
-      in
-      raise (Error(loc_fun, env, err))
-  in
-  begin
-    match spato with
-    | None -> ()
-    | Some spat ->
-        let ty_param =
-          match label, default with
-          | (Nolabel | Labelled _), _ -> ty_param
-          | Optional _, None ->
-            let var = newmono (type_option (newvar ())) in
-            unify_pat_types spat.ppat_loc env ty_param var;
-            ty_param
-          | Optional _, Some _ ->
-            let ty_opt_param = newvar () in
-            let ty_pat_param = newmono (type_option ty_opt_param) in
-            unify_pat_types spat.ppat_loc env ty_param ty_pat_param;
-            newmono ty_opt_param
-        in
-        let ty_param =
-          if has_poly || not (Btype.tpoly_is_mono ty_param) then ty_param
-          else Btype.tpoly_get_mono  ty_param
-        in
-        type_pattern_approx env spat ty_param;
-  end;
-  ty_ret
-
-let type_approx_constraint env constraint_ ~loc ty_expected =
-  match constraint_ with
-  | Pconstraint constrain ->
-      let ty_constrain = approx_type env constrain in
-      begin try unify env ty_constrain ty_expected with Unify err ->
-        raise (Error (loc, env, Expr_type_clash (err, None, None)))
-      end;
-      ty_constrain
-  | Pcoerce (constrain, coerce) ->
-      let ty_constrain = match constrain with
-        | None -> newvar ()
-        | Some sty -> approx_type env sty
-      in
-      let ty_coerce = approx_type env coerce in
-      begin try unify env ty_coerce ty_expected with Unify err ->
-        raise (Error (loc, env, Expr_type_clash (err, None, None)))
-      end;
-      ty_constrain
-
-let type_approx_constraint_opt env constraint_ ~loc ty_expected =
-  match constraint_ with
-  | None -> ty_expected
-  | Some constraint_ -> type_approx_constraint env constraint_ ~loc ty_expected
 
 let is_unpack pat =
   match pat.ppat_desc with
@@ -3567,83 +3451,11 @@ let could_be_functor env ty =
   | Tvar _ | Tfunctor _ -> true
   | _ -> false
 
-let rec type_approx env sexp ty_expected =
-  let loc = sexp.pexp_loc in
-  match sexp.pexp_desc with
-    Pexp_let (_, _, e) -> type_approx env e ty_expected
-  | Pexp_function (params, c, body) ->
-      let in_function = loc, ty_expected in
-      let first = true in
-      type_approx_function env params c body ty_expected ~in_function ~first
-  | Pexp_match (_, {pc_rhs=e}::_) -> type_approx env e ty_expected
-  | Pexp_try (e, _) -> type_approx env e ty_expected
-  | Pexp_tuple l -> type_tuple_approx env sexp.pexp_loc ty_expected l
-  | Pexp_ifthenelse (_,e,_) -> type_approx env e ty_expected
-  | Pexp_sequence (_,e) -> type_approx env e ty_expected
-  | Pexp_constraint (e, sty) ->
-      let ty_expected =
-        type_approx_constraint env (Pconstraint sty) ~loc ty_expected
-      in
-      type_approx env e ty_expected
-  | Pexp_coerce (_, sty1, sty2) ->
-      ignore @@
-      type_approx_constraint env (Pcoerce (sty1, sty2)) ~loc ty_expected
-  | Pexp_pack (_, Some ptyp) ->
-      let sty = Ast_helper.Typ.package ~loc ptyp in
-      ignore @@
-      type_approx_constraint env (Pconstraint sty) ~loc ty_expected
-  | _ -> ()
 
-and type_tuple_approx (env: Env.t) loc ty_expected l =
-  let labeled_tys = List.map (fun (label, _) -> label, newvar ()) l in
-  let ty = newty (Ttuple labeled_tys) in
-  begin try unify env ty ty_expected with Unify err ->
-    raise(Error(loc, env, Expr_type_clash (err, None, None)))
-  end;
-  List.iter2
-    (fun (_, e) (_, ty) -> type_approx env e ty)
-    l labeled_tys
 
-and type_approx_function env params c body ty_expected ~in_function ~first =
-  let loc_function, _ = in_function in
-  let loc = loc_rest_of_function ~first ~loc_function params body in
-  (* We can approximate types up to the first newtype parameter or potential
-     dependent module argument, whereupon we give up.
-  *)
-  match params with
-    { pparam_desc = Pparam_val (label, None, pat)} :: _
-      when is_unpack pat && not (is_optional label) -> ()
-  | { pparam_desc = Pparam_val (label, default, pat) } :: params ->
-      let ty_res =
-        type_approx_fun_one_param env label default (Some pat) ty_expected
-          ~first ~in_function
-      in
-      type_approx_function env params c body ty_res ~in_function ~first:false
-  | { pparam_desc = Pparam_newtype _ } :: _ -> ()
-  | [] ->
-      (* In the [Pconstraint] case, we override the [ty_expected] that
-         gets passed to the approximating of the rest of the type.
-      *)
-      let ty_expected =
-        type_approx_constraint_opt env c ty_expected ~loc
-      in
-      match body with
-      | Pfunction_body body ->
-          type_approx env body ty_expected
-      | Pfunction_cases ({pc_rhs = e} :: _, _, _) ->
-          let ty_res =
-            type_approx_fun_one_param env Nolabel None None ty_expected
-              ~in_function ~first
-          in
-          type_approx env e ty_res
-      | Pfunction_cases ([], _, _) ->
-          (* This case is in fact not reachable. Doing nothing would be the
-             correct thing to do if it were to be reachable in the future. *)
-          ()
-
-(* Check that all univars are safe in a type. Both exp.exp_type and
+(* Check that all univars are safe in a type. Both ty_actual and
    ty_expected should already be generalized. *)
-let check_univars env kind exp ty_expected vars =
+let check_univars ~env ~loc ~kind ty_actual ty_expected vars =
   let pty = instance ty_expected in
   let exp_ty, vars =
     with_local_level_generalize begin fun () ->
@@ -3653,8 +3465,8 @@ let check_univars env kind exp ty_expected vars =
              since body is not generic,  instance_poly_fixed only makes
              copies of nodes that have a Tunivar as descendant *)
           let _, ty' = instance_poly_fixed ~keep_names:true tl body in
-          let vars, exp_ty = instance_parameterized_type vars exp.exp_type in
-          unify_exp_types exp.exp_loc env exp_ty ty';
+          let vars, exp_ty = instance_parameterized_type vars ty_actual in
+          unify_exp_types loc env exp_ty ty';
           (exp_ty, vars)
       | _ -> assert false
     end
@@ -3665,7 +3477,7 @@ let check_univars env kind exp ty_expected vars =
     let diff = Ctype.expanded_diff env ~got:ty ~expected:ty_expected in
     let explanation = Errortrace.Univar (Quantification_mismatch errs) in
     let err = Errortrace.unification_error ~trace:[diff;explanation] in
-    raise (Error(exp.exp_loc, env, Less_general(kind,err)))
+    raise (Error(loc, env, Less_general(kind,err)))
 
 (* [check_statement] implements the [non-unit-statement] check.
 
@@ -4047,25 +3859,52 @@ let may_lower_contravariant env exp =
 
 (* value binding elaboration *)
 
-let vb_exp_constraint {pvb_expr=expr; pvb_pat=pat; pvb_constraint=ct; _ } =
+
+let vb_exp_constraint { pvb_expr = expr; pvb_pat = pat; pvb_constraint = ct; _ }
+  =
   let open Ast_helper in
-  match ct with
-  | None -> expr
-  | Some (Pvc_constraint { locally_abstract_univars=[]; typ }) ->
-      begin match typ.ptyp_desc with
-      | Ptyp_poly _ -> expr
-      | _ ->
-          let loc = { expr.pexp_loc with Location.loc_ghost = true } in
-          Exp.constraint_ ~loc expr typ
-      end
-  | Some (Pvc_coercion { ground; coercion}) ->
-      let loc = { expr.pexp_loc with Location.loc_ghost = true } in
-      Exp.coerce ~loc expr ground coercion
-  | Some (Pvc_constraint { locally_abstract_univars=vars;typ}) ->
-      let loc_start = pat.ppat_loc.Location.loc_start in
-      let loc = { expr.pexp_loc with loc_start; loc_ghost=true } in
-      let expr = Exp.constraint_ ~loc expr typ in
-      List.fold_right (Exp.newtype ~loc) vars expr
+  match pat.ppat_desc, ct with
+  | Ppat_constraint (_, typ), None ->
+    let loc = { expr.pexp_loc with Location.loc_ghost = true } in
+    Exp.constraint_ ~loc expr typ
+  | _, None -> expr
+  | _, Some (Pvc_constraint { locally_abstract_univars = []; typ }) ->
+    (* Here we permit [Pexp_constraint] to carry a [Ptyp_poly],
+       since [typ] may be a [Ptyp_poly]. This will be typed
+       as expected and is required by [Type_approx] to give
+       the approximated type a *polymorphic* type. *)
+    let loc = { expr.pexp_loc with Location.loc_ghost = true } in
+    Exp.constraint_ ~loc expr typ
+  | _, Some (Pvc_coercion { ground; coercion }) ->
+    let loc = { expr.pexp_loc with Location.loc_ghost = true } in
+    Exp.coerce ~loc expr ground coercion
+  | _, Some (Pvc_constraint { locally_abstract_univars = vars; typ }) ->
+    (* For locally abstract types, we introduce [newtype]
+       binders and a polymorphic annotation. The [newtype]
+       binders introduce the locally abstract types in [expr]
+       and the polymorphic annotation ensures that locally abstract
+       types are indeed generalizable.
+
+       It is worth noting that the [newtype] binders alone are
+       insufficient, as in the following example:
+       {[
+       # let f = fun (type a) : a option ref -> ref None;;
+       val f : '_a option ref
+       ]}
+       Here, the locally abstract [a] isn't guaranteed to
+       be generalizable (in fact it cannot be generalized due
+       to the value restriction)
+    *)
+    let loc_start = pat.ppat_loc.Location.loc_start in
+    let loc = { expr.pexp_loc with loc_start; loc_ghost = true } in
+    let body =
+      List.fold_right
+        (Exp.newtype ~loc)
+        vars
+        (Exp.constraint_ ~loc expr typ)
+    in
+    let varified = Typ.varify_constructors vars typ in
+    Exp.constraint_ ~loc body (Typ.poly ~loc:typ.ptyp_loc vars varified)
 
 let vb_pat_constraint ({pvb_pat=pat; pvb_expr = exp; _ } as vb) =
   vb.pvb_attributes,
@@ -4106,6 +3945,85 @@ type 'ret constraint_arg =
     is_self: 'ret -> bool;
     (** Whether the thing being constrained is a [Val_self] ident. *)
   }
+
+(** Performs the relaxed value restriction on a list of typed
+    value bindings (unzipped). For more information, see
+    https://caml.inria.fr/pub/papers/garrigue-value_restriction-fiwflp04.pdf *)
+let do_relaxed_value_restriction env pat_list exp_list =
+  List.iter2
+    (fun (pat, _) (exp, vars) ->
+      if maybe_expansive exp
+      then (
+        lower_contravariant env pat.pat_type;
+        if vars <> None then lower_contravariant env exp.exp_type))
+    pat_list
+    exp_list
+
+let check_let_univars env pat_list exp_list =
+  List.iter2
+    (fun (_, expected_ty) (exp, vars) ->
+      Option.iter
+        (check_univars
+           ~env
+           ~loc:exp.exp_loc
+           ~kind:"definition"
+           exp.exp_type
+           expected_ty)
+        vars)
+    pat_list
+    exp_list
+
+(** [('s, 'r) poly_rule] encodes the behavior needed to type a possibly
+    polymorphic 'subject' ['s], producing a result ['r].
+    See [type_poly] for more details. *)
+type ('s, 'r) poly_rule =
+  { kind : string
+    (** A short label used in diagnostic messages (e.g. "expression",
+        "function cases", etc) *)
+  ; type_subject : Env.t -> 's -> type_expr -> 'r * type_expr
+    (** [type_subject env s ty_expected] types [s] with the
+        instanced expected type [ty_expected]. This type may
+        still be generalized, indicating that structures are
+        principally known. *)
+  ; is_expansive : 'r -> bool
+    (** [is_expansive r] returns [true] if [r] is part of an expansive
+        expression. *)
+  }
+
+let type_poly
+    (type s r)
+    ~(rule : (s, r) poly_rule)
+    ~env
+    ~loc
+    (subj : s)
+    (ty_expected : type_expr)
+    : r * type_expr
+  =
+  (* With principal typing / ambivalent types (for GADTs), we
+     need to unshare types (by generalizing) *)
+  let unshare = !Clflags.principal || Env.has_local_constraints env in
+  let is_poly = is_poly_Tpoly ty_expected in
+  let vars, ret, ret_ty =
+    (* Raise level to check univars *)
+    with_local_level_generalize_if
+      is_poly
+      (fun () ->
+        let vars, ty_subj_expected =
+          with_local_level_generalize_structure_if unshare (fun () ->
+              match get_desc ty_expected with
+              | Tpoly (sch, univars) ->
+                instance_poly_fixed ~keep_names:true univars sch
+              | _ -> [], ty_expected)
+        in
+        let ret, ret_ty = rule.type_subject env subj ty_subj_expected in
+        vars, ret, ret_ty)
+      ~before_generalize:(fun (_, ret, ret_ty) ->
+        if rule.is_expansive ret then lower_contravariant env ret_ty)
+  in
+  (* Check univars after generalizing *)
+  if is_poly
+  then check_univars ~env ~loc ~kind:rule.kind ret_ty ty_expected vars;
+  ret, instance ret_ty
 
 let rec type_exp ?recarg env sexp =
   (* We now delegate everything to type_expect *)
@@ -4215,75 +4133,77 @@ and type_expect_
         {sexp with
          pexp_desc = Pexp_match (sval, [Ast_helper.Exp.case spat sbody])}
         ty_expected_explained
-  | Pexp_let(rec_flag, spat_sexp_list, sbody) ->
-      let existential_context =
-        if rec_flag = Recursive then In_rec
-        else if List.compare_length_with spat_sexp_list 1 > 0 then In_group
-        else With_attributes in
-      let may_contain_modules =
-        List.exists (fun pvb -> may_contain_modules pvb.pvb_pat) spat_sexp_list
-      in
-      let outer_level = get_current_level () in
-      let (pat_exp_list, body, _new_env) =
-        (* If the patterns contain module unpacks, there is a possibility that
-           the types of the let body or bound expressions mention types
-           introduced by those unpacks. The below code checks for scope escape
-           via both of these pathways (body, bound expressions).
-        *)
-        with_local_level_generalize_if may_contain_modules begin fun () ->
-          let allow_modules =
-            if may_contain_modules
-            then
-              let scope = create_scope () in
-              Modules_allowed { scope }
-            else Modules_rejected
-          in
-          let (pat_exp_list, new_env) =
-            type_let existential_context env rec_flag spat_sexp_list
-              allow_modules
-          in
+  | Pexp_let (rec_flag, spat_sexp_list, sbody) ->
+      let pat_exp_list, body =
+        match rec_flag with
+        | Recursive ->
+          let pat_exp_list, new_env = type_let_rec env spat_sexp_list in
           let body = type_expect new_env sbody ty_expected_explained in
-          let pat_exp_list = match rec_flag with
-            | Recursive -> annotate_recursive_bindings env pat_exp_list
-            | Nonrecursive -> pat_exp_list
+          let pat_exp_list =
+            annotate_recursive_bindings env pat_exp_list
           in
-          (* The "bound expressions" component of the scope escape check.
+          pat_exp_list, body
+        | Nonrecursive ->
+          let existential_context =
+            if List.compare_length_with spat_sexp_list 1 > 0
+            then In_group
+            else With_attributes
+          in
+          let may_contain_modules =
+            List.exists
+              (fun pvb -> may_contain_modules pvb.pvb_pat)
+              spat_sexp_list
+          in
+          let pat_exp_list, body, _new_env =
+            (* If the patterns contain module unpacks, there is a possibility
+               that the types of the let body or bound expressions mention
+               types introduced by those unpacks. The below code checks for
+               scope escape via both of these pathways (body, bound
+               expressions). *)
+            with_local_level_generalize_if
+              may_contain_modules
+              (fun () ->
+                let allow_modules =
+                  if may_contain_modules
+                  then (
+                    (* Create a fresh scope for all module variables
+                       introduced by unpacks. The scope ends at the end of the
+                       [with_local_level_generalize_if may_contain_modules]
+                       region. *)
+                    let scope = create_scope () in
+                    Modules_allowed { scope })
+                  else Modules_rejected
+                in
+                let pat_exp_list, new_env =
+                  type_let_nonrec
+                    ~existential_context
+                    ~allow_modules
+                    env
+                    spat_sexp_list
+                in
+                let body =
+                  type_expect new_env sbody ty_expected_explained
+                in
+                pat_exp_list, body, new_env)
+              ~before_generalize:(fun (_pat_exp_list, body, new_env) ->
+                (* Just before generalizing the local region, we link
+                   the body's type to a fresh variable in the outer region.
 
-             This kind of scope escape is relevant only for recursive
-             module definitions.
-          *)
-          if rec_flag = Recursive && may_contain_modules then begin
-            List.iter
-              (fun vb ->
-                 (* [type_let] already generalized bound expressions' types
-                    in-place. We first take an instance before checking scope
-                    escape at the outer level to avoid losing generality of
-                    types added to [new_env].
-                 *)
-                let bound_exp = vb.vb_expr in
-                let bound_exp_type = Ctype.instance bound_exp.exp_type in
-                let loc = proper_exp_loc bound_exp in
-                let outer_var = newvar2 outer_level in
-                (* Checking unification within an environment extended with the
-                   module bindings allows us to correctly accept more programs.
-                   This environment allows unification to identify more cases
-                   where a type introduced by the module is equal to a type
-                   introduced at an outer scope. *)
-                unify_exp_types loc new_env bound_exp_type outer_var)
-              pat_exp_list
-          end;
-          (pat_exp_list, body, new_env)
-        end
-        ~before_generalize:(fun (_pat_exp_list, body, new_env) ->
-          (* The "body" component of the scope escape check. *)
-          unify_exp ~sexp new_env body (newvar ()))
+                   This forces an eager scope check to occur, preventing
+                   the body's type from mentioning any module variables
+                   introduced by bindings in [pat_exp_list]. *)
+                unify_exp ~sexp new_env body (newvar ()))
+          in
+          pat_exp_list, body
       in
-      re {
-        exp_desc = Texp_let(rec_flag, pat_exp_list, body);
-        exp_loc = loc; exp_extra = [];
-        exp_type = body.exp_type;
-        exp_attributes = sexp.pexp_attributes;
-        exp_env = env }
+      re
+        { exp_desc = Texp_let (rec_flag, pat_exp_list, body)
+        ; exp_loc = loc
+        ; exp_extra = []
+        ; exp_type = body.exp_type
+        ; exp_attributes = sexp.pexp_attributes
+        ; exp_env = env
+        }
   | Pexp_function (params, body_constraint, body) ->
       let in_function = ty_expected_explained, loc in
       let exp_type, result_params, body, newtypes, contains_gadt =
@@ -4826,13 +4746,13 @@ and type_expect_
         exp_type = instance Predef.type_unit;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_constraint (sarg, sty) ->
-      let (ty, exp_extra) = type_constraint env sty in
-      let arg = type_argument env sarg ty (instance ty) in
+  | Pexp_constraint (sarg, spt) ->
+      let (ty, exp_extra) = type_constraint env spt in
+      let arg = type_poly_argument env sarg ty in
       rue {
         exp_desc = arg.exp_desc;
         exp_loc = arg.exp_loc;
-        exp_type = instance ty;
+        exp_type = maybe_instance_poly ty;
         exp_attributes = arg.exp_attributes;
         exp_env = env;
         exp_extra = (exp_extra, loc, sexp.pexp_attributes) :: arg.exp_extra;
@@ -5031,7 +4951,13 @@ and type_expect_
                 (exp, vars)
               end
             in
-            check_univars env "method" exp ty_expected vars;
+            check_univars
+              ~env
+              ~loc:exp.exp_loc
+              ~kind:"method"
+              exp.exp_type
+              ty_expected
+              vars;
             { exp with exp_type = instance ty }
         | Tvar _ ->
             let exp = type_exp env sbody in
@@ -5791,6 +5717,7 @@ and type_function
         the body is a [Tfunction_cases] whose patterns include a GADT.
      *)
     exp_type, [], body, [], No_gadt
+
 and type_moddep_fun ~env ~name ~pack_param ~rest ~arg_label ~first
     ~in_function ~ty_expected ~pparam_loc ~loc ~body_constraint ~body =
   let type_pack pack =
@@ -5824,81 +5751,67 @@ and type_moddep_fun ~env ~name ~pack_param ~rest ~arg_label ~first
               (not_principal "this module unpacking");
         (Some (id, ety), None, pack')
   in
-  !check_package_closed ~loc:pparam_loc ~env
-      ~typ:(newty (Tpackage pack)) pack.pack_constraints;
-  let mty = Ctype.modtype_of_package env pparam_loc pack in
-  let pv_uid = Uid.mk ~current_unit:(Env.get_current_unit ()) in
-  let arg_md = {
-    md_type = mty;
-    md_attributes = [];
-    md_loc = pparam_loc;
-    md_uid = pv_uid;
-  } in
-  let (res_ty, params, body, newtypes, contains_gadt), s_ident =
-    with_local_level begin fun () ->
-      let s_ident =
-        Ident.create_scoped ~scope:(Ctype.get_current_level()) name.txt
-      in
-      let new_env = Env.add_module_declaration ~check:true s_ident
-                          Mp_present arg_md env in
-      let expected_res = match id_expected_typ_opt with
-        | Some (id, ety) ->
-          with_local_level_generalize_structure_if_principal
-            (fun () -> instance_funct ~id_in:(Ident.of_unscoped id)
-                            ~p_out:(Pident s_ident) ~fixed:false ety)
-        | None -> newvar ()
-      in
-      type_function new_env rest body_constraint body
-          expected_res ~first:false ~in_function,
-      s_ident
-  end
+  let (param, params, body, contains_gadt), arrow_ty =
+    with_moddep_param
+      env
+      ~loc:pparam_loc
+      ~arg_label
+      ~name
+      ~pack
+      (fun env uid ident ->
+        let expected_res =
+          match id_expected_typ_opt with
+          | Some (id, ety) ->
+            with_local_level_generalize_structure_if_principal (fun () ->
+                instance_funct
+                  ~id_in:(Ident.of_unscoped id)
+                  ~p_out:(Pident ident)
+                  ~fixed:false
+                  ety)
+          | None -> newvar ()
+        in
+        let ret_ty, params, body, newtypes, contains_gadt =
+          type_function
+            env
+            rest
+            body_constraint
+            body
+            expected_res
+            ~first:false
+            ~in_function
+        in
+        let pat_desc = Tpat_var (ident, name, uid) in
+        let pack_param =
+          match cpack with
+          | Some { ctyp_desc = Ttyp_package pack } -> Some pack
+          | None -> None
+          | _ -> assert false
+        in
+        let pattern =
+          { pat_desc
+          ; pat_loc = pparam_loc
+          ; pat_extra = [ Tpat_unpack pack_param, pparam_loc, [] ]
+          ; pat_type = newty (Tpackage pack)
+          ; pat_env = env
+          ; pat_attributes = []
+          }
+        in
+        let fp_kind = Tparam_pat pattern in
+        let param =
+          { fp_kind
+          ; fp_arg_label = arg_label
+          ; fp_param = ident
+          ; fp_partial = Total
+          ; fp_newtypes = newtypes
+          ; fp_loc = pparam_loc
+          }
+        in
+        (param, params, body, contains_gadt), ret_ty)
   in
-  let ident = Ident.Unscoped.create name.txt in
-  let exp_type =
-    match
-      instance_funct_opt ~p_out:(Pident (Ident.of_unscoped ident))
-                          ~id_in:s_ident ~fixed:false res_ty
-    with
-    | Some res_ty ->
-        Btype.newgenty (Tfunctor (arg_label, ident, pack, res_ty))
-    | None ->
-        let pck_ty = newgenmono (newgenty (Tpackage pack)) in
-        newgenty (Tarrow (arg_label, pck_ty, res_ty, commu_ok))
-  in
-  let _ =
-    try
-      unify env ty_expected exp_type
-    with Unify trace ->
-      raise (Error(loc, env, Expr_type_clash(trace, None, None)))
-  in
-  let pat_desc = Tpat_var (s_ident, name, pv_uid) in
-  let pack_param =
-    match cpack with
-    | Some {ctyp_desc = Ttyp_package pack} -> Some pack
-    | None -> None
-    | _ -> assert false
-  in
-  let pattern = {
-    pat_desc;
-    pat_loc = pparam_loc;
-    pat_extra = [Tpat_unpack pack_param, pparam_loc, []];
-    pat_type = newty (Tpackage pack);
-    pat_env = env;
-    pat_attributes = []
-  } in
-  let fp_kind = Tparam_pat pattern in
-  let param =
-    { fp_kind;
-      fp_arg_label = arg_label;
-      fp_param = s_ident;
-      fp_partial = Total;
-      fp_newtypes = newtypes;
-      fp_loc = pparam_loc;
-    }
-  in
-  exp_type, { has_poly = false; param } :: params, body, [], contains_gadt
-
-
+  (try unify env ty_expected arrow_ty with
+  | Unify trace ->
+    raise (Error (loc, env, Expr_type_clash (trace, None, None))));
+  arrow_ty, { has_poly = false; param } :: params, body, [], contains_gadt
 
 and type_label_access env srecord usage lid =
   let record =
@@ -6216,8 +6129,35 @@ and type_label_exp create env loc ty_expected
     end
     ~before_generalize:(fun (_,arg) -> may_lower_contravariant env arg)
   in
-  if is_poly then check_univars env "field value" arg label.lbl_arg vars;
+  if is_poly
+  then
+    check_univars
+      ~env
+      ~loc:arg.exp_loc
+      ~kind:"field value"
+      arg.exp_type
+      label.lbl_arg
+      vars;
   (lid, label, {arg with exp_type = instance arg.exp_type})
+
+and type_poly_argument env sarg ty_expected =
+  let arg, arg_type =
+    type_poly
+      ~rule:
+        { kind = "expression"
+        ; type_subject =
+            (fun env sarg ty_arg ->
+              let arg = type_argument env sarg ty_arg (instance ty_arg) in
+              arg, arg.exp_type)
+        ; is_expansive = maybe_expansive
+        }
+      ~env
+      ~loc:sarg.pexp_loc
+      sarg
+      ty_expected
+  in
+  { arg with exp_type = arg_type }
+
 
 and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
   (* ty_expected' may be generic *)
@@ -6383,7 +6323,13 @@ and type_apply_arg env ~app_loc (lbl, arg) =
             ~before_generalize:(fun (arg, _, _) ->
                                   may_lower_contravariant env arg)
           in
-          check_univars env "argument" arg ty_arg vars;
+          check_univars
+            ~env
+            ~loc:arg.exp_loc
+            ~kind:"argument"
+            arg.exp_type
+            ty_arg
+            vars;
           {arg with exp_type = instance arg.exp_type}
         end
       in
@@ -6960,149 +6906,305 @@ and type_effect_cases
           cases
         end
 
-(* Typing of let bindings *)
-
-and type_let ?check ?check_strict
-    existential_context env rec_flag spat_sexp_list allow_modules =
-  let spatl =  List.map vb_pat_constraint spat_sexp_list in
-  let attrs_list = List.map fst spatl in
-  let is_recursive = (rec_flag = Recursive) in
-  if is_recursive then
-    List.iter
-      (fun { pvb_pat = pat; _ } ->
-        if not (is_var_pat pat)
-        then raise (Error (pat.ppat_loc, env, Illegal_letrec_pat)))
-      spat_sexp_list;
-  let (pat_list, exp_list, new_env, mvs) =
-    with_local_level_generalize begin fun () ->
-      if existential_context = At_toplevel then Typetexp.TyVarEnv.reset ();
-      let (pat_list, new_env, force, pvs, mvs) =
-        with_local_level_generalize_structure_if_principal begin fun () ->
-          let nvs = List.map (fun _ -> newvar ()) spatl in
-          let (pat_list, _new_env, _force, _pvs, _mvs as res) =
-            with_local_level_generalize_if is_recursive (fun () ->
-              type_pattern_list
-                Value existential_context env spatl nvs allow_modules)
-          in
-          (* If recursive, first unify with an approximation of the
-             expression *)
-          if is_recursive then
-            List.iter2
-              (fun pat binding ->
-                let pat =
-                  match get_desc pat.pat_type with
-                  | Tpoly (ty, tl) ->
-                      {pat with pat_type =
-                         instance_poly ~keep_names:true tl ty}
-                  | _ -> pat
-                in
-                let bound_expr = vb_exp_constraint binding in
-                type_approx env bound_expr pat.pat_type)
-              pat_list spat_sexp_list;
-          (* Polymorphic variant processing *)
-          List.iter
-            (fun pat ->
-              if has_variants pat then begin
-                Parmatch.pressure_variants env [pat];
-                finalize_variants pat
-              end)
-            pat_list;
-          res
-        end
-      in
-      (* Note [add_module_variables after checking expressions]
-         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-         Don't call [add_module_variables] here, because its use of
-         [type_module] will fail until after we have type-checked the expression
-         of the let. Example: [let m : (module S) = ... in let (module M) = m in
-         ...] We learn the signature [S] from the type of [m] in the RHS of the
-         second let, and we need that knowledge for [type_module] to succeed. If
-         we type-checked expressions before patterns, then we could call
-         [add_module_variables] here.
-      *)
-      let new_env = add_pattern_variables new_env pvs in
-      let pat_list =
-        List.map
-          (fun pat -> {pat with pat_type = instance pat.pat_type}, pat.pat_type)
-          pat_list
-      in
-      (* Only bind pattern variables after generalizing *)
-      List.iter (fun f -> f()) force;
-
-      let exp_list =
-        (* See Note [add_module_variables after checking expressions]
-           We can't defer type-checking module variables with recursive
-           definitions, so things like [let rec (module M) = m in ...] always
-           fail, even if the type of [m] is known.
-        *)
-        let exp_env =
-          if is_recursive then add_module_variables new_env mvs else env
-        in
-        type_let_def_wrap_warnings ?check ?check_strict ~is_recursive
-          ~exp_env ~new_env ~spat_sexp_list ~attrs_list ~pat_list ~pvs
-          (fun exp_env ({pvb_attributes; _} as vb) expected_ty ->
-            let sexp = vb_exp_constraint vb in
-            match get_desc expected_ty with
-            | Tpoly (ty, tl) ->
-                let vars, ty' =
-                  with_local_level_generalize_structure_if_principal
-                    (fun () -> instance_poly_fixed ~keep_names:true tl ty)
-                in
-                let exp =
-                  Builtin_attributes.warning_scope pvb_attributes (fun () ->
-                    type_expect exp_env sexp (mk_expected ty'))
-                in
-                exp, Some vars
-            | _ ->
-                let exp =
-                  Builtin_attributes.warning_scope pvb_attributes (fun () ->
-                    type_expect exp_env sexp (mk_expected expected_ty))
-                in
-                exp, None)
-      in
-      List.iter2
-        (fun (pat, _) (attrs, exp) ->
-          Builtin_attributes.warning_scope ~ppwarning:false attrs
-            (fun () ->
-              let case = Parmatch.typed_case (case pat exp) in
-              ignore(check_partial env pat.pat_type pat.pat_loc
-                       [case] : Typedtree.partial)
-            )
-        )
-        pat_list
-        (List.map2 (fun (attrs, _) (e, _) -> attrs, e) spatl exp_list);
-      (pat_list, exp_list, new_env, mvs)
-    end
-    ~before_generalize: begin fun (pat_list, exp_list, _, _) ->
-      List.iter2 (fun (pat, _) (exp, vars) ->
-        if maybe_expansive exp then begin
-          lower_contravariant env pat.pat_type;
-          if vars <> None then lower_contravariant env exp.exp_type
-        end)
-        pat_list exp_list
-    end
-  in
-  List.iter2
-    (fun (_, expected_ty) (exp, vars) ->
-      Option.iter (check_univars env "definition" exp expected_ty) vars)
-    pat_list exp_list;
+and value_bindings_of_pat_exp_lists pat_list exp_list ~spat_sexp_list =
   let l = List.combine pat_list exp_list in
   let l =
     List.map2
       (fun ((p, _), (e, _)) pvb ->
         (* vb_rec_kind will be computed later for recursive bindings *)
-        {vb_pat=p; vb_expr=e; vb_attributes=pvb.pvb_attributes;
-         vb_loc=pvb.pvb_loc; vb_rec_kind = Dynamic;
+        {
+          vb_pat = p;
+          vb_expr = e;
+          vb_attributes = pvb.pvb_attributes;
+          vb_loc = pvb.pvb_loc;
+          vb_rec_kind = Dynamic;
         })
       l spat_sexp_list
   in
-  List.iter (fun vb ->
-      if pattern_needs_partial_application_check vb.vb_pat then
-        check_partial_application ~statement:false vb.vb_expr
-    ) l;
+  l
+
+and type_var_pattern_list ~env ~existential_restriction pat_list pat_types =
+  let pat_list, env, bind_type_vars_delayed, pvs, mvs =
+    type_pattern_list
+      Value
+      existential_restriction
+      env
+      pat_list
+      pat_types
+      Modules_rejected
+  in
+  (* The accumulated module variables [mvs] must be
+     empty, since module unpacking is forbidden in
+     'var'-patterns. *)
+  ignore mvs;
+  (* The updated environment [env] cannot introduce
+     any GADT equations, rigid type variables, etc
+     in 'var'-patterns. *)
+  ignore env;
+  (* HACK: It is useful to obtain the list of bound variables
+           in the order of patterns. This is in fact the
+           reverse of the list of variables in [pvs]. *)
+  pat_list, bind_type_vars_delayed, List.rev pvs
+
+and type_let_rec
+    ?check
+    ?check_strict
+    ?(reset_tyvarenv = false)
+    env
+    spat_sexp_list
+  =
+  let spatl =
+    List.map (fun vb -> vb.pvb_attributes, vb.pvb_pat) spat_sexp_list
+  in
+  let attrs_list = List.map fst spatl in
+  (* Recursive patterns can only consist of (possibly annotated)
+     variables. *)
+  List.iter
+    (fun { pvb_pat = pat; _ } ->
+      if not (is_var_pat pat)
+      then raise (Error (pat.ppat_loc, env, Illegal_letrec_pat)))
+    spat_sexp_list;
+  let pat_list, exp_list, new_env =
+    with_local_level_generalize
+      (fun () ->
+        (* We must reset the tyvarenv in this local region since it
+           resets the global level *)
+        if reset_tyvarenv then Typetexp.TyVarEnv.reset ();
+        let pat_list, bind_type_vars_delayed, pvs =
+          let nvs = List.map (fun _ -> newvar ()) spatl in
+          type_var_pattern_list
+            ~env
+            ~existential_restriction:In_rec
+            spatl
+            nvs
+        in
+        (* We create a [new_env] here which is used in [type_let_exps]
+           for the unused check. *)
+        let new_env = add_let_pattern_vars env ~pvs ~bind_type_vars_delayed in
+        (* We keep the type in [pat_list] as the 'expected' type
+           for the expression. But to typecheck recursive bindings,
+           we also introduce an approximation of the type of the
+           recursive binding. *)
+        let approx_env =
+          let approx_pvs =
+            List.map2
+              (fun pv vb ->
+                let exp = vb_exp_constraint vb in
+                let mono_lvl = get_current_level () in
+                with_local_level_generalize (fun () ->
+                    let approx_ty =
+                      Type_approx.(
+                        type_expression
+                          (Approx_env.create ~env ~mono_lvl ())
+                          exp)
+                    in
+                    { pv with pv_type = approx_ty }))
+              pvs
+              spat_sexp_list
+          in
+          add_let_pattern_vars env ~pvs:approx_pvs ~bind_type_vars_delayed:[]
+        in
+        (* Ensure that the approximated environment is compatable with
+           the inferred types. *)
+        List.iter2
+          (fun pv { pvb_expr = sexp; _ } ->
+            let path = Path.Pident pv.pv_id in
+            let rec_vd = Env.find_value path approx_env in
+            let vd = Env.find_value path new_env in
+            unify_exp_types
+              sexp.pexp_loc
+              env
+              vd.val_type
+              (instance rec_vd.val_type))
+          pvs
+          spat_sexp_list;
+        (* Typecheck the expressions with the approximated environment. *)
+        let pat_list, exp_list =
+          type_let_exps
+            ?check
+            ?check_strict
+            ~is_recursive:true
+            ~exp_env:approx_env
+            ~new_env
+            ~attrs_list
+            ~pat_list
+            ~pvs
+            spat_sexp_list
+        in
+        pat_list, exp_list, new_env)
+      ~before_generalize:(fun (pat_list, exp_list, _) ->
+        do_relaxed_value_restriction env pat_list exp_list)
+  in
+  value_bindings_of_pat_exp_lists pat_list exp_list ~spat_sexp_list, new_env
+
+and type_let_nonrec
+    ?check
+    ?check_strict
+    ?(reset_tyvarenv = false)
+    ~existential_context
+    ~allow_modules
+    env
+    spat_sexp_list
+  =
+  let spatl = List.map vb_pat_constraint spat_sexp_list in
+  let attrs_list = List.map fst spatl in
+  let pat_list, exp_list, new_env, mvs =
+    with_local_level_generalize
+      begin fun () ->
+        (* We must reset the tyvarenv in this local region since it
+           resets the global level *)
+        if reset_tyvarenv then Typetexp.TyVarEnv.reset ();
+        let pat_list, new_env, bind_type_vars_delayed, pvs, mvs =
+          with_local_level_generalize_structure_if_principal begin fun () ->
+              let nvs = List.map (fun _ -> newvar ()) spatl in
+              let ((pat_list, _new_env, _bind_type_vars_delayed, _pvs, _mvs) as
+                  res)
+                =
+                type_pattern_list
+                  Value
+                  existential_context
+                  env
+                  spatl
+                  nvs
+                  allow_modules
+              in
+              (* Polymorphic variant processing *)
+              List.iter
+                (fun pat ->
+                  if has_variants pat
+                  then (
+                    Parmatch.pressure_variants env [ pat ];
+                    finalize_variants pat))
+                pat_list;
+              res
+          end
+        in
+        (* Note [add_module_variables after checking expressions]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+           Don't call [add_module_variables] here, because its use of
+           [type_module] will fail until after we have type-checked the
+           expression of the let.
+
+           Consider:
+           {[
+            let m : (module S) = ... in let (module M) = m in ...
+           |}
+
+           When typing the *second* let binding, we only learn that the
+           signature of [M] is [S] from the RHS (by propagation of [m]'s
+           known type). We need this signature for [type_module] in
+           [add_module_variables] to succeed.
+
+           Namely [add_module_variables] attempts to typecheck [val m']
+           where [m'] is the bound pattern variable for the unpacked
+           [(module M)] (added in [add_pattern_variables]). [m']'s type is
+           unknown until we typecheck the RHS [m] and unify it's type with
+           [m]'s (i.e. [(module S)]).
+
+           If we type-checked expressions before patterns, then we could call
+           [add_module_variables] here.
+        *)
+        let new_env =
+          add_let_pattern_vars new_env ~pvs ~bind_type_vars_delayed
+        in
+        let pat_list, exp_list =
+          type_let_exps
+            ?check
+            ?check_strict
+            ~is_recursive:false
+            ~exp_env:env
+            ~new_env
+            ~attrs_list
+            ~pat_list
+            ~pvs
+            spat_sexp_list
+        in
+        (* Do exhaustiveness checks on patterns *)
+        List.iter2
+          (fun (pat, _) (attrs, exp) ->
+            Builtin_attributes.warning_scope ~ppwarning:false attrs (fun () ->
+                let case = Parmatch.typed_case (case pat exp) in
+                ignore
+                  (check_partial env pat.pat_type pat.pat_loc [ case ]
+                    : Typedtree.partial)))
+          pat_list
+          (List.map2 (fun (attrs, _) (e, _) -> attrs, e) spatl exp_list);
+        pat_list, exp_list, new_env, mvs
+      end
+      ~before_generalize:(fun (pat_list, exp_list, _, _) ->
+        do_relaxed_value_restriction env pat_list exp_list)
+  in
+  check_let_univars env pat_list exp_list;
+  let l = value_bindings_of_pat_exp_lists pat_list exp_list ~spat_sexp_list in
+  List.iter
+    (fun vb ->
+      if pattern_needs_partial_application_check vb.vb_pat
+      then check_partial_application ~statement:false vb.vb_expr)
+    l;
   (* See Note [add_module_variables after checking expressions] *)
   let new_env = add_module_variables new_env mvs in
-  (l, new_env)
+  l, new_env
+
+and type_let_exps
+    ?check
+    ?check_strict
+    ~is_recursive
+    ~exp_env
+    ~new_env
+    ~attrs_list
+    ~pat_list
+    ~pvs
+    spat_sexp_list
+  =
+  (* Instantiate the pattern types.
+
+     Here, the instantiated type is used in [type_let_def_wrap_warnings] as
+     the pattern type, whereas the non-instantiated type is used as an
+     expected type in [check_let_univars]. This improves principality checks. *)
+  let pat_list =
+    List.map
+      (fun pat -> { pat with pat_type = instance pat.pat_type }, pat.pat_type)
+      pat_list
+  in
+  let exp_list =
+    type_let_def_wrap_warnings
+      ?check
+      ?check_strict
+      ~is_recursive
+      ~exp_env
+      ~new_env
+      ~spat_sexp_list
+      ~attrs_list
+      ~pat_list
+      ~pvs
+      (fun exp_env ({ pvb_attributes; _ } as vb) expected_ty ->
+        let sexp = vb_exp_constraint vb in
+        (* Type annotations of the form ['a ... 'c. tau] on patterns
+           (typically introduced in [let rec x : 'a ... 'c. tau = ...])
+           introduce polytypes.
+
+           Here, we must take particular care to instantiate the polytypes
+           and then check that the instantiated univars are generalized.
+           This is performed by [check_let_univars]. *)
+        match get_desc expected_ty with
+        | Tpoly (ty, tl) ->
+          let vars, ty' =
+            with_local_level_generalize_structure_if_principal (fun () ->
+                instance_poly_fixed ~keep_names:true tl ty)
+          in
+          let exp =
+            Builtin_attributes.warning_scope pvb_attributes (fun () ->
+                type_expect exp_env sexp (mk_expected ty'))
+          in
+          exp, Some vars
+        | _ ->
+          let exp =
+            Builtin_attributes.warning_scope pvb_attributes (fun () ->
+                type_expect exp_env sexp (mk_expected expected_ty))
+          in
+          exp, None)
+  in
+  pat_list, exp_list
 
 and type_let_def_wrap_warnings
     ?(check = fun s -> Warnings.Unused_var s)
@@ -7155,6 +7257,8 @@ and type_let_def_wrap_warnings
        events on the bound identifiers and record them in a slot corresponding
        to the current definition (!current_slot).
        In effect, this creates a dependency graph between definitions.
+       This is captured using handlers on value definitions in [exp_env],
+       the environment used to typecheck bindings
 
      - After type checking the definition (!current_slot = None),
        when one of the bound identifier is effectively used, we trigger
@@ -7191,18 +7295,24 @@ and type_let_def_wrap_warnings
                         Location.prerr_warning vd.Types.val_loc
                           ((if !some_used then check_strict else check) name)
                     );
-                Env.set_value_used_callback
-                  vd
-                  (fun () ->
-                    match !current_slot with
-                    | Some slot ->
-                        slot := vd.val_uid :: !slot; rec_needed := true
-                    | None ->
-                        List.iter Env.mark_value_used (get_ref slot);
-                        used := true;
-                        some_used := true
-                  )
-              )
+                let on_value_used () =
+                  match !current_slot with
+                  | Some slot ->
+                    slot := vd.val_uid :: !slot;
+                    rec_needed := true
+                  | None ->
+                    List.iter Env.mark_value_used (get_ref slot);
+                    used := true;
+                    some_used := true
+                in
+                if is_recursive
+                then (
+                  (* If the `let` is recursive, we need to register
+                     handlers on the recursive bindings (which live in
+                     [exp_env]). *)
+                  let rec_vd = Env.find_value (Path.Pident id) exp_env in
+                  Env.set_value_used_callback rec_vd on_value_used);
+                Env.set_value_used_callback vd on_value_used)
               (Typedtree.pat_bound_idents pat);
               expected_ty, Some slot
            ))
@@ -7359,19 +7469,32 @@ let () = type_argument' := type_argument
 (* Typing of toplevel bindings *)
 
 let type_binding env rec_flag spat_sexp_list =
-  let (pat_exp_list, new_env) =
-    type_let
-      ~check:(fun s -> Warnings.Unused_value_declaration s)
-      ~check_strict:(fun s -> Warnings.Unused_value_declaration s)
-      At_toplevel
-      env rec_flag spat_sexp_list Modules_rejected
-  in
-  (pat_exp_list, new_env)
+  let check s = Warnings.Unused_value_declaration s in
+  let check_strict s = Warnings.Unused_value_declaration s in
+  match rec_flag with
+  | Recursive ->
+    type_let_rec ~check ~check_strict ~reset_tyvarenv:true env spat_sexp_list
+  | Nonrecursive ->
+    type_let_nonrec
+      ~check
+      ~check_strict
+      ~reset_tyvarenv:true
+      ~existential_context:At_toplevel
+      ~allow_modules:Modules_rejected
+      env
+      spat_sexp_list
 
-let type_let existential_ctx env rec_flag spat_sexp_list =
-  let (pat_exp_list, new_env) =
-    type_let existential_ctx env rec_flag spat_sexp_list Modules_rejected in
-  (pat_exp_list, new_env)
+let type_let existential_context env rec_flag spat_sexp_list =
+  let reset_tyvarenv = existential_context = At_toplevel in
+  match rec_flag with
+  | Recursive -> type_let_rec ~reset_tyvarenv env spat_sexp_list
+  | Nonrecursive ->
+    type_let_nonrec
+      ~reset_tyvarenv
+      ~existential_context
+      ~allow_modules:Modules_rejected
+      env
+      spat_sexp_list
 
 (* Typing of toplevel expressions *)
 

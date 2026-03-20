@@ -75,6 +75,22 @@ Working version
 - #14553: Add Array.fold_{left,right}2
   (Clément Pottier, review by Nicolás Ojeda Bär and Vincent Laviron)
 
+- #14537: Improve recursion with module dependent functions.
+  ```
+  module type Pp = sig
+    type t
+    val pp : Format.formatter -> t -> unit
+  end
+
+  let rec pp_list (module X : Pp) ppf (xs : X.t list) =
+    match xs with
+    | [] -> ()
+    | x :: xs ->
+      Format.fprintf ppf "%a,@ %a" X.pp x (pp_list (module X)) xs
+  ```
+  (Alistair O'Brien, review by ??)
+
+
 ### Other libraries:
 
 ### Tools:
@@ -128,6 +144,10 @@ Working version
 - #14601, remove an unreachable path for unbound type variables in extension
   constructor declarations.
   (Florian Angeletti, review by Gabriel Scherer)
+
+* #14538 Refactor `type_approx` (again) and `type_let_rec` for polymorphic
+  recursion.
+  (Alistair O'Brien, review by ??)
 
 ### Build system:
 
@@ -736,6 +756,9 @@ OCaml 5.5.0
 - #14120, #14474, #14476: Associate Uids to items that don't have a concrete
   definition
   (Ulysse Gérard, review by Florian Angeletti and Gabriel Scherer)
+
+- #14394: Refactor `type_let` into `type_let_nonrec` and `type_let_rec`.
+  (Alistair O'Brien, review by ??)
 
 ### Build system:
 
