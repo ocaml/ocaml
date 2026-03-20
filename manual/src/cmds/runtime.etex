@@ -27,7 +27,7 @@ arguments \nth{arg}{1} to \nth{arg}{n}.
 On Windows, the OCaml runtime expands the "*" and "?" wildcards in arguments
 before anything else. The string array "Sys.argv" is constructed using the
 expanded arguments. To avoid this behaviour, a custom entry point can be written
-in C, as outlined in section~\ref{ss:main_c}.
+in C, as outlined in section~\ref{ss:main-c}.
 \end{windows}
 
 As mentioned in chapter~\ref{c:camlc}, the bytecode executable files
