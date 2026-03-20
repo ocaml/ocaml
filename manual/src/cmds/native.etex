@@ -189,7 +189,6 @@ constructed using the expanded arguments. To avoid this behaviour, a custom
 entry point can be written in C, as outlined in section~\ref{ss:main_c}.
 \end{windows}
 
-
 \section{s:compat-native-bytecode}{Compatibility with the bytecode compiler}
 
 This section lists the known incompatibilities between the bytecode
