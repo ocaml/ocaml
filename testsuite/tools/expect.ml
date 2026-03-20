@@ -48,48 +48,52 @@ type string_constant =
   ; tag : string
   }
 
-type clflag =
-  | Principal
-  | Rectypes
+module Clflag = struct
+  type t =
+    | Principal
+    | Rectypes
 
-let string_of_clflag = function
-  | Principal -> "Principal"
-  | Rectypes -> "Rectypes"
+  let to_string = function
+    | Principal -> "Principal"
+    | Rectypes -> "Rectypes"
 
-module Clflags_set = Set.Make(struct
-    type t = clflag
-    let compare = compare
-  end)
+  module Set = struct
+    module T = Set.Make(struct
+        type nonrec t = t
+        let compare = compare
+      end)
+    include T
 
-let original_clflags = ref Clflags_set.empty
+    module Map = Map.Make(T)
 
-let get_clflags () =
-  let open Clflags_set in
-  union
-    (if !Clflags.principal then singleton Principal else empty)
-    (if !Clflags.recursive_types then singleton Rectypes else empty)
+    let original = ref empty
 
-let string_of_clflags c =
-  Clflags_set.fold (fun cl acc ->
-      (if acc = "" then "" else acc ^ ".") ^ string_of_clflag cl
-    ) c ""
+    let get_current () =
+      union
+        (if !Clflags.principal then singleton Principal else empty)
+        (if !Clflags.recursive_types then singleton Rectypes else empty)
 
-let clflags_of_longident ~loc lid =
-  let open Clflags_set in
-  List.fold_left
-    ~f:(fun acc s ->
-        match s with
-        | "Principal" -> add Principal acc
-        | "Rectypes" -> add Rectypes acc
-        | other -> Location.raise_errorf ~loc "unknown flag: %s" other)
-    ~init:empty (Longident.flatten lid)
+    let to_string c =
+      fold (fun cl acc ->
+          (if acc = "" then "" else acc ^ ".") ^ to_string cl
+        ) c ""
 
-module Clmap = Map.Make(Clflags_set)
+    let of_longident ~loc lid =
+      List.fold_left
+        ~f:(fun acc s ->
+            match s with
+            | "Principal" -> add Principal acc
+            | "Rectypes" -> add Rectypes acc
+            | other -> Location.raise_errorf ~loc "unknown flag: %s" other)
+        ~init:empty (Longident.flatten lid)
+  end
+end
+
 
 type expectation =
   { extid_loc   : Location.t (* Location of "expect" in "[%%expect ...]" *)
   ; payload_loc : Location.t (* Location of the whole payload *)
-  ; text        : string_constant Clmap.t
+  ; text        : string_constant Clflag.Set.Map.t
   }
 
 (* A list of phrases with the expected toplevel output *)
@@ -137,8 +141,8 @@ let match_expect_extension (ext : Parsetree.extension) =
                                 ({ txt = clflags_s; _}, None) }
                             , [ Nolabel, b ]) }
                       ->
-                        Clmap.add
-                          (clflags_of_longident ~loc:b.pexp_loc clflags_s)
+                        Clflag.Set.Map.add
+                          (Clflag.Set.of_longident ~loc:b.pexp_loc clflags_s)
                           (string_constant b)
                           acc
                     | None,
@@ -155,8 +159,8 @@ let match_expect_extension (ext : Parsetree.extension) =
                                 { Parsetree.
                                   pexp_desc = Pexp_construct
                                       ({ txt = cl; _}, None) } ->
-                                  Clmap.add
-                                    (clflags_of_longident ~loc:b.pexp_loc cl)
+                                  Clflag.Set.Map.add
+                                    (Clflag.Set.of_longident ~loc:b.pexp_loc cl)
                                     str
                                     acc
                               | _ ->
@@ -169,11 +173,11 @@ let match_expect_extension (ext : Parsetree.extension) =
                           ~loc:pe.Parsetree.pexp_loc
                           "expected Constructor{|string|}"
                   )
-                ~init:(Clmap.singleton
-                         Clflags_set.empty (string_constant normal))
+                ~init:(Clflag.Set.Map.singleton
+                         Clflag.Set.empty (string_constant normal))
                 rest
           | _ ->
-              let s = string_constant e in Clmap.singleton Clflags_set.empty s
+              let s = string_constant e in Clflag.Set.Map.singleton Clflag.Set.empty s
         in
         { extid_loc
         ; payload_loc = e.pexp_loc
@@ -183,7 +187,7 @@ let match_expect_extension (ext : Parsetree.extension) =
         let s = { tag = ""; str = "" } in
         { extid_loc
         ; payload_loc  = { extid_loc with loc_start = extid_loc.loc_end }
-        ; text = Clmap.singleton Clflags_set.empty s
+        ; text = Clflag.Set.Map.singleton Clflag.Set.empty s
         }
       | _ -> invalid_payload "not an expectation"
     in
@@ -268,22 +272,24 @@ let parse_contents ~fname contents =
 let eval_expectation expectation ~output =
   let s =
     try
-      Clmap.find (get_clflags ()) expectation.text
+      Clflag.Set.Map.find (Clflag.Set.get_current ()) expectation.text
     with
     | Not_found ->
         try
-          Clmap.find Clflags_set.empty expectation.text
+          Clflag.Set.Map.find Clflag.Set.empty expectation.text
         with
         | Not_found -> { tag = ""; str = "" }
   in
-  let current_clflags = get_clflags () in
+  let current_clflags = Clflag.Set.get_current () in
   let clflags_correction =
-    if Clflags_set.equal current_clflags !original_clflags
+    if Clflag.Set.equal current_clflags !Clflag.Set.original
     then None
-    else if Clmap.mem !original_clflags expectation.text
+    else if Clflag.Set.Map.mem !Clflag.Set.original expectation.text
     then Some
         { expectation
-          with text = Clmap.remove !original_clflags expectation.text }
+          with text =
+                 Clflag.Set.Map.remove
+                   !Clflag.Set.original expectation.text }
     else None
   in
   if s.str = output then
@@ -297,7 +303,9 @@ let eval_expectation expectation ~output =
     in
     Some (
       { expectation with
-        text = Clmap.add (get_clflags ()) s expectation.text
+        text =
+          Clflag.Set.Map.add
+            (Clflag.Set.get_current ()) s expectation.text
       }
     )
 
@@ -420,11 +428,11 @@ let output_corrected oc ~file_contents correction =
       ~f:(fun ofs c ->
         output_slice oc file_contents ofs c.payload_loc.loc_start.pos_cnum;
         let normal =
-          Clmap.find_opt Clflags_set.empty c.text
+          Clflag.Set.Map.find_opt Clflag.Set.empty c.text
           |> Option.value ~default:{ str = ""; tag = "" }
         in
         let smap =
-          Clmap.fold
+          Clflag.Set.Map.fold
             (fun key body acc ->
                if body.str = normal.str then acc
                else String_map.add_to_list body.str key acc
@@ -436,16 +444,16 @@ let output_corrected oc ~file_contents correction =
           String_map.fold
             (fun str clflagss acc ->
                let clflagss =
-                 List.sort_uniq ~cmp:Clflags_set.compare clflagss
+                 List.sort_uniq ~cmp:Clflag.Set.compare clflagss
                in
                let low_flag = List.hd clflagss in
-               Clmap.add low_flag (clflagss, str) acc
+               Clflag.Set.Map.add low_flag (clflagss, str) acc
             )
             smap
-            Clmap.empty
+            Clflag.Set.Map.empty
         in
         output_body oc normal;
-        Clmap.iter
+        Clflag.Set.Map.iter
           (fun _ (clflagss, str) ->
              output_string oc ", ";
              let paren = List.length clflagss > 1 in
@@ -453,7 +461,7 @@ let output_corrected oc ~file_contents correction =
              List.iteri
                ~f:(fun i clflags ->
                    if i > 0 then output_string oc ", ";
-                   output_string oc (string_of_clflags clflags))
+                   output_string oc (Clflag.Set.to_string clflags))
                clflagss;
              if paren then output_string oc ")";
              output_body oc { str; tag = "" }
@@ -488,7 +496,7 @@ let keep_original_error_size = ref false
 let main fname =
   if not !keep_original_error_size then
     Clflags.error_size := 0;
-  original_clflags := get_clflags ();
+  Clflag.Set.original := Clflag.Set.get_current ();
   Toploop.override_sys_argv
     (Array.sub Sys.argv ~pos:!Arg.current
        ~len:(Array.length Sys.argv - !Arg.current));

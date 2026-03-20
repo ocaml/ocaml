@@ -17,16 +17,20 @@ type string_constant =
   ; tag : string
   }
 
-type clflag =
-  | Principal
-  | Rectypes
+module Clflag : sig
+  type t =
+    | Principal
+    | Rectypes
 
-module Clflags_set : Set.S with type elt = clflag
+  module Set : sig
+    include Set.S with type elt = t
 
-module Clmap : Map.S with type key = Clflags_set.t
+    module Map : Map.S with type key = t
+  end
+end
 
 type expectation =
   { extid_loc   : Location.t (* Location of "expect" in "[%%expect ...]" *)
   ; payload_loc : Location.t (* Location of the whole payload *)
-  ; text        : string_constant Clmap.t
+  ; text        : string_constant Clflag.Set.Map.t
   }
