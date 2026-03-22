@@ -35,8 +35,8 @@
 struct caml_loc_info {
   int loc_valid;
   int loc_is_raise;
-  char * loc_filename;
-  char * loc_defname;
+  const char * loc_filename;
+  const char * loc_defname;
   int loc_start_lnum;
   int loc_start_chr;
   int loc_end_lnum;
@@ -110,8 +110,8 @@ value caml_remove_debug_info(code_t start);
    for quick lookup */
 struct ev_info {
   code_t ev_pc;
-  char *ev_filename;
-  char *ev_defname;
+  const char *ev_filename;
+  const char *ev_defname;
   int ev_start_lnum;
   int ev_start_chr;  /* Relative to ev_start_lnum */
   int ev_end_lnum;

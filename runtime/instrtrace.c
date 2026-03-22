@@ -34,7 +34,7 @@
 #include "caml/backtrace_prim.h"
 
 #define OPCODE_NAME(name) #name,
-static char * names_of_instructions [] = {
+static char const * const names_of_instructions [] = {
   CAML_ZINC_OPCODES(OPCODE_NAME)
   "FIRST_UNIMPLEMENTED_OP"
 };

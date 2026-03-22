@@ -398,7 +398,7 @@ CAMLprim value caml_runtime_parameters (value unit)
 
   CAMLassert (unit == Val_unit);
   char *tweaks = format_gc_tweaks();
-  char *no_tweaks = "";
+  const char *no_tweaks = "";
   value res = caml_alloc_sprintf
       ("b=%d,c=%"F_Z",e=%"F_Z",l=%"F_Z",M=%"F_Z",m=%"F_Z",n=%"F_Z","
        "o=%"F_Z",p=%d,R=%u,s=%"F_S",t=%"F_Z",v=%"F_Z",V=%"F_Z",W=%"F_Z"%s",
