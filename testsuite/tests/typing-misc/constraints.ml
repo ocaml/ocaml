@@ -78,7 +78,7 @@ module type PR6505 = sig
   val abs : 'o is_an_object -> 'o abs
   val unabs : 'o abs -> 'o
 end
-;; (* fails *)
+;; (* succeeds after keep-expansion *)
 [%%expect{|
 module type PR6505 =
   sig
@@ -107,7 +107,7 @@ module PR6505a = struct
   type ('k,'l) abs = 'l constraint 'k = 'l is_an_object
   let y : ('o, 'o) abs = object end
 end;;
-let _ = lazy PR6505a.y#bang;; (* fails *)
+let _ = PR6505a.y#bang;; (* fails *)
 [%%expect{|
 module PR6505a :
   sig
@@ -115,9 +115,9 @@ module PR6505a :
     type (!'a, !'b) abs = 'a constraint 'a = < .. > constraint 'b = 'a
     val y : (<  >, <  >) abs
   end
-Line 6, characters 13-22:
-6 | let _ = lazy PR6505a.y#bang;; (* fails *)
-                 ^^^^^^^^^
+Line 6, characters 8-17:
+6 | let _ = PR6505a.y#bang;; (* fails *)
+            ^^^^^^^^^
 Error: This expression has type "<  >"
        It has no method "bang"
 |}, Principal{|
@@ -128,9 +128,9 @@ module PR6505a :
       constraint 'b = < .. >
     val y : (<  >, <  >) abs
   end
-Line 6, characters 13-22:
-6 | let _ = lazy PR6505a.y#bang;; (* fails *)
-                 ^^^^^^^^^
+Line 6, characters 8-17:
+6 | let _ = PR6505a.y#bang;; (* fails *)
+            ^^^^^^^^^
 Error: This expression has type "<  >"
        It has no method "bang"
 |}]
@@ -140,7 +140,7 @@ module PR6505b = struct
   type ('k,'l) abs = 'l constraint 'k = 'l is_an_object
   let x : ('a, 'a) abs = `Foo 6
 end;;
-let _ = lazy (match PR6505b.x with `Bar s -> s);; (* fails *)
+let _ = print_endline (match PR6505b.x with `Bar s -> s);; (* partial *)
 [%%expect{|
 module PR6505b :
   sig
@@ -148,13 +148,13 @@ module PR6505b :
     type (!'a, !'b) abs = 'a constraint 'a = [>  ] constraint 'b = 'a
     val x : ([> `Foo of int ] as 'a, 'a) abs
   end
-Line 6, characters 13-47:
-6 | let _ = lazy (match PR6505b.x with `Bar s -> s);; (* fails *)
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Line 6, characters 22-56:
+6 | let _ = print_endline (match PR6505b.x with `Bar s -> s);; (* partial *)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
   Here is an example of a case that is not matched: "`Foo _"
 
-- : 'a lazy_t = <lazy>
+Exception: Match_failure ("", 6, 22).
 |}]
 
 (* #9866, #9873 *)
@@ -238,7 +238,7 @@ end
 module type S = sig type !'a s type !'a t = 'b constraint 'a = 'b s end
 |}]
 
-module rec M : S =
+module rec M : S = (* mismatch *)
 struct
   type !'a s = 'a M.t
   type !'a t = 'b constraint 'a = 'b s

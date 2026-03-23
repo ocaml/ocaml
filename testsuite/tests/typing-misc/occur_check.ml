@@ -54,10 +54,9 @@ let wrong_to_seq (xt : 'a t) : 'a Seq.t =
   let T x = xt in
   Seq.cons Seq.empty x
 ;;
-(* Note: the current behavior of this function is believed to be
-   a bug, in the sense that it creates an equi-recursive type even in
-   absence of the -rectypes flag. On the other hand, it does not fail
-   with the Ctype.Escape exception, as it did from 4.13 to 5.1. *)
+(* Note: this function should not be typable, since it creates an
+   equi-recursive type even in absence of the -rectypes flag.
+   Properly detected by keep-expansion. *)
 [%%expect{|
 type 'a t = T of 'a
 Line 4, characters 2-22:

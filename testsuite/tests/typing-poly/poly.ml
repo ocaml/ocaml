@@ -1350,7 +1350,7 @@ val g : c -> 'a -> 'a = <fun>
 val h : < id : 'a; .. > -> 'a = <fun>
 |}];;
 
-(* Only solved for parameterless abbreviations *)
+(* Solved for all abbreviations with keep-expansion *)
 type 'a u = c option;;
 let just = function None -> failwith "just" | Some x -> x;;
 let f x = let l = [Some x; (None : _ u)] in (just(List.hd l))#id;;
