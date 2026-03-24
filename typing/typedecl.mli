@@ -52,6 +52,7 @@ val approx_type_decl:
     Parsetree.type_declaration list ->
                                   (Ident.t * type_declaration) list
 val check_recmod_typedecl:
+    abs_env:Env.t ->
     Env.t -> Location.t -> Ident.t list -> Path.t -> type_declaration -> unit
 val check_coherence:
     Env.t -> Location.t -> Path.t -> type_declaration -> unit

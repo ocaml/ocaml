@@ -238,7 +238,7 @@ let check_recmod_typedecls env decls =
     (fun (id, md) ->
       List.iter
         (fun path ->
-          Typedecl.check_recmod_typedecl env md.Types.md_loc recmod_ids
+          Typedecl.check_recmod_typedecl ~abs_env env md.Types.md_loc recmod_ids
                                          path (Env.find_type path env))
         (Mtype.type_paths env (Pident id) md.Types.md_type))
     decls

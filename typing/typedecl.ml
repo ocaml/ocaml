@@ -874,11 +874,8 @@ let reachable
       failwith "Tsubst"
   | Tpoly (ty', _) ->
       unguarded ~trace:(Contains (ty, ty') :: trace) ty'
-  | Tfunctor (_, _, { pack_constraints; _ }, ty') ->
-      rectypes_guarded ~trace:(Contains (ty, ty') :: trace) ty';
-      iter_tl' pack_constraints rectypes_guarded
-  | Tpackage { pack_constraints; _ } ->
-      iter_tl' pack_constraints rectypes_guarded
+  | Tpackage { pack_cstrs; _ } ->
+      iter_tl' pack_cstrs rectypes_guarded
 
 let is_reachable
     ?(trace=[])
@@ -2019,16 +2016,16 @@ let approx_type_decl sdecl_list =
 (* Check the well-formedness conditions on type abbreviations defined
    within recursive modules. *)
 
-let check_recmod_typedecl env loc recmod_ids path decl =
+let check_recmod_typedecl ~abs_env env loc recmod_ids path decl =
   (* recmod_ids is the list of recursively-defined module idents.
      (path, decl) is the type declaration to be checked. *)
   let to_check path = Path.exists_free recmod_ids path in
   let is_decl_path path' =
     to_check path'
   in
-  check_well_founded_decl ~abs_env:env ~final_env:env
+  check_well_founded_decl ~abs_env ~final_env:env
     ~is_decl_path loc path decl;
-  check_regularity ~abs_env:env env loc path decl to_check;
+  check_regularity ~abs_env env loc path decl to_check;
   (* additional coherence check, as one might build an incoherent signature,
      and use it to build an incoherent module, cf. #7851 *)
   check_coherence env loc path decl
