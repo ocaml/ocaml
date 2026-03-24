@@ -89,7 +89,7 @@ CAMLexport value
 caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
 {
   uintnat num_elts, asize, size;
-  int i, is_managed;
+  int i;
   value res;
   struct caml_ba_array * b;
   intnat dimcopy[CAML_BA_MAX_NUM_DIMS];
@@ -110,10 +110,11 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
     data = malloc(size);
     if (data == NULL && size != 0) caml_raise_out_of_memory();
     flags |= CAML_BA_MANAGED;
+  } else {
+    size = 0;
   }
   asize = SIZEOF_BA_ARRAY + num_dims * sizeof(intnat);
-  is_managed = ((flags & CAML_BA_MANAGED_MASK) == CAML_BA_MANAGED);
-  res = caml_alloc_custom_mem(&caml_ba_ops, asize, is_managed ? size : 0);
+  res = caml_alloc_custom_mem(&caml_ba_ops, asize, size);
   b = Caml_ba_array_val(res);
   b->data = data;
   b->num_dims = num_dims;
