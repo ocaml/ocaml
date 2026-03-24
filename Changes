@@ -78,7 +78,7 @@ Working version
 
 * #14602: Sys.rename and Unix.rename now allow renaming onto a read-only file on
   Windows.
-  (Nicolás Ojeda Bär, review by Gabriel Scherer,Antonin Décimo and Miod Vallat)
+  (Nicolás Ojeda Bär, review by Gabriel Scherer, Antonin Décimo and Miod Vallat)
 
 ### Other libraries:
 
