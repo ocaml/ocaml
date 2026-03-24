@@ -150,7 +150,7 @@ let f k ?a = k a;;
 val f : ('a option -> 'b) -> ?a:'a -> 'b = <fun>
 |}]
 
-(* This one cannot be detected has this is just a specialization of f *)
+(* This cannot be detected as the delayed check does not apply to instances *)
 let g = f (fun a -> ());;
 [%%expect{|
 val g : ?a:'_weak1 -> unit = <fun>
