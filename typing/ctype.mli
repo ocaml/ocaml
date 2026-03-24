@@ -371,7 +371,7 @@ val filter_method: Env.t -> string -> type_expr -> type_expr
            [Filter_method_failed] instead of [Unify]. *)
 
 (** [arrow_labels env ty] expands [ty] as an array type in [env] and
-    returns its argument labels.
+    returns its argument labels. The input types is kept unchanged.
 
     [is_ret_tvar] is [true] if the final return type is a type variable,
     indicating that the list of labels isn't necessarily exhaustive. *)
@@ -394,6 +394,8 @@ type arrow_ret =
 
 (** [arrow_spine env ty] expands [ty] as a arrow type in [env] and returns
     its arrow spine.
+    It may change the type through expansions, so if scopes matter you
+    should backtrack after using it.
 
     If [ty] is [l1:ty1 -> ... -> ln:tyn -> rty], it returns
     [([(l1, ty1); ...; (ln, tyn)], Ret_type rty)].
