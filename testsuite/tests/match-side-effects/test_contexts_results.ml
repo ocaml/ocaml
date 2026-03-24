@@ -39,5 +39,5 @@ val example_3 : unit -> (bool, int) Result.t = <fun>
 let _ = example_3 ();;
 (* This one works correctly. *)
 [%%expect {|
-- : (bool, int) Result.t = Ok true
+- : (bool, int) Result.t = Result.Ok true
 |}]
