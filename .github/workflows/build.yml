@@ -46,17 +46,28 @@ jobs:
         id: manual
         run: >-
          tools/ci/actions/check-manual-modified.sh
-         '${{ github.ref }}'
-         '${{ github.event_name }}'
-         '${{ github.event.pull_request.base.ref }}'
-         '${{ github.event.pull_request.base.sha }}'
-         '${{ github.event.pull_request.head.ref }}'
-         '${{ github.event.pull_request.head.sha }}'
-         '${{ github.event.ref }}'
-         '${{ github.event.before }}'
-         '${{ github.event.ref }}'
-         '${{ github.event.after }}'
-         '${{ github.event.repository.full_name }}'
+         "$GITHUB_REF_NAME"
+         "$EVENT_NAME"
+         "$PR_BASE_REF"
+         "$PR_BASE_SHA"
+         "$PR_HEAD_REF"
+         "$PR_HEAD_SHA"
+         "$EVENT_REF"
+         "$EVENT_BEFORE"
+         "$EVENT_REF"
+         "$EVENT_AFTER"
+         "$REPO_FULL_NAME"
+        env:
+          GITHUB_REF_NAME: ${{ github.ref }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_REF: ${{ github.event.ref }}
+          EVENT_BEFORE: ${{ github.event.before }}
+          EVENT_AFTER: ${{ github.event.after }}
+          REPO_FULL_NAME: ${{ github.event.repository.full_name }}
       - name: Configure tree
         run: |
           MAKE_ARG=-j CONFIG_ARG='--enable-flambda --enable-cmm-invariants --enable-codegen-invariants --enable-dependency-generation --enable-native-toplevel --with-relative-libdir --enable-runtime-search --enable-runtime-search-target=fallback' OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh configure
