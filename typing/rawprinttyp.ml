@@ -196,7 +196,6 @@ let raw_type_kind ppf tk =
   | Type_variant (csl,_) ->
       fprintf ppf "@[<hov>Type_variant@,%a@]"
         (raw_list raw_cstr_decl) csl
-  | Type_external s -> fprintf ppf "Type_external %s" s
 
 let raw_type_decl ppf td =
   fprintf ppf

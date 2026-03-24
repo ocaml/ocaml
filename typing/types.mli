@@ -141,7 +141,6 @@ type type_desc =
   (** [Texpand] is like [Tlink] but the result of an expansion;
       [Path.t] and [type_expr list] remember the original declaration. *)
 
->>>>>>> 744660c272 (Expand type in place, keeping original abbreviation)
 (** [package] corresponds to the type of a first-class module *)
 and package =
   { pack_path : Path.t;

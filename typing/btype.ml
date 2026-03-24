@@ -333,9 +333,9 @@ let fold_type_desc f init = function
       List.fold_left f result tyl
   | Tpackage pack       ->
       List.fold_left
-        (fun result (_n, ty) -> f result ty) init pack.pack_constraints
+        (fun result (_n, ty) -> f result ty) init pack.pack_cstrs
+  | Tsubst _            -> init
   | Tlink _
-  | Tsubst _
   | Texpand _           -> assert false
 
 let fold_type_expr f init ty =

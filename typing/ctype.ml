@@ -757,7 +757,8 @@ let rec copy_spine copy_scope ty =
   | Tvariant _
   | Tobject _
   | Tlink _
-  | Tunivar _ -> ty
+  | Tunivar _
+  | Texpand _ -> ty
   | (Tarrow _ | Tpoly _ | Ttuple _ | Tpackage _ | Tconstr _) as desc ->
       let level = get_level ty in
       if level < !current_level || level = generic_level then ty else
@@ -1185,8 +1186,9 @@ let rec copy ?partial ?keep_names copy_scope ty =
           else generic_level
     in
     if forget <> generic_level then newty2 ~level:forget (Tvar None) else
+    let ty_scope = get_scope ty in
     let ty_expand = get_expand ty in
-    let t = newstub ~scope:(get_scope ty) in
+    let t = newstub ~scope:ty_scope in
     For_copy.redirect_desc copy_scope ty (Tsubst (t, None));
     let desc' =
       match desc with
