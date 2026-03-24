@@ -156,7 +156,7 @@ let g = f (fun a -> ());;
 val g : ?a:'_weak1 -> unit = <fun>
 |}]
 
-(* But we can still detect if we add optional arguments *)
+(* But we can still warn if we add optional arguments *)
 let h ?b = f (fun a -> ());;
 [%%expect{|
 Line 1, characters 7-8:
