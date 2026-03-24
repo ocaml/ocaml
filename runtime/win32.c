@@ -809,7 +809,9 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
   }
   /* Another cornercase not handled by MoveFileEx:
      - file to existing read-only file - should succeed */
-  if (GetLastError() == ERROR_ACCESS_DENIED) {
+  if ((GetLastError() == ERROR_ACCESS_DENIED) &&
+      (new_attribs == INVALID_FILE_ATTRIBUTES)) {
+    /* We only consider the case when the old path is a file */
     new_attribs = GetFileAttributes(newpath);
     if ((new_attribs != INVALID_FILE_ATTRIBUTES) &&
         (new_attribs & FILE_ATTRIBUTE_READONLY) != 0) {
