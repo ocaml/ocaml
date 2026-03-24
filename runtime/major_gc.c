@@ -499,10 +499,18 @@ static intnat ephe_mark (intnat budget, uintnat round,
         } else if (Tag_val (key) == Infix_tag) {
           key -= Infix_offset_val (key);
         }
+        /* Ephemerons with young keys cannot be in the todo set because
+           they were allocated after last minor GC, which is after the
+           start of the major GC cycle.
+           Weak arrays can have young keys but they have no data, so it
+           doesn't matter whether we decide to erase their data.
+        */
+        CAMLassert (!Is_young(key) || Ephe_data(ephe) == caml_ephe_none);
         if (is_unmarked (key))
           preserve_data = false;
       }
     }
+    /* TODO: budget. The right thing is not obvious. See ocaml/ocaml#14610. */
 
     if (force_alive) preserve_data = true;
 

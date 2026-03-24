@@ -70,6 +70,29 @@ exception Finally_raised of exn
     one should not catch a [Finally_raised] exception except as part of
     a catch-all handler. *)
 
+(** {1:todo Failing on unimplemented functionality} *)
+
+type todo
+[@@deprecated "Do not use this type as it may be removed in the future"]
+
+exception Todo of todo [@alert "-deprecated"]
+(** Exception raised when a functionality is unimplemented. Notably raised by
+    {!Fun.todo}.
+
+    @since 5.6
+*)
+
+external todo : unit -> 'a = "%todo"
+[@@alert todo "Unimplemented functionality, may lead to runtime errors"]
+(** Raise an exception {!exception:Todo}. This is intended to be used as a
+    placeholder for to-be-written code. If you want to make sure that there are
+    no calls to this function left in your code, you can make the compiler warn
+    you by enabling the [todo] alert ("-alert +todo", see
+    {{:https://ocaml.org/manual/latest/alerts.html}alerts} in the manual).
+
+    @since 5.6
+*)
+
 (** {1:examples Examples}
 
 {2 Combinators}

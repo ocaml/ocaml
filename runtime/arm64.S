@@ -1055,23 +1055,23 @@ END_FUNCTION(caml_callback3_asm)
 
 /*
  * A continuation is a one word object that points to a fiber. A fiber [f] will
- * point to its parent at Handler_parent(Stack_handler(f)). In the following,
- * the [last_fiber] refers to the last fiber in the linked-list formed by the
- * parent pointer.
+ * point to its parent at Handler_parent(Stack_handler(f)).
  */
 
 FUNCTION(caml_perform)
         CFI_STARTPROC
     /*  x0: effect to perform
         x1: freshly allocated continuation */
-        ldr     x2, Caml_state(current_stack) /* x2 := old stack */
-        add     x3, x2, 1 /* x3 := Val_ptr(old stack) */
+        ldr     x2, Caml_state(current_stack) /* x2 := current_stack */
+        add     x3, x2, 1 /* x3 := Val_ptr(current_stack) */
         str     x3, [x1] /* Initialize continuation */
+        mov     x4, x2 /* x4 := cont_head */
 L(do_perform):
     /*  x0: effect to perform
         x1: continuation
-        x2: old_stack
-        x3: last_fiber */
+        x2: current_stack
+        x3: Val_ptr(current_stack)
+        x4: cont_head */
 #if defined(WITH_THREAD_SANITIZER)
     /* Signal to TSan all stack frames exited by the perform. */
         TSAN_SAVE_CALLER_REGS
@@ -1080,21 +1080,24 @@ L(do_perform):
         TSAN_C_CALL G(caml_tsan_exit_on_perform)
         TSAN_RESTORE_CALLER_REGS
 #endif
-        str     x3, [x1, 8] /* Set the last_fiber field in the continuation */
-        ldr     x9, Stack_handler(x2)  /* x9 := old stack -> handler */
-        ldr     x10, Handler_parent(x9) /* x10 := parent stack */
-        cbz     x10, 1f
+        ldr     x9, Stack_handler(x2)  /* x9 := current_stack -> handler */
+        ldr     x10, Handler_parent(x9) /* x10 := parent_stack */
+        cbz     x10, 1f /* is parent_stack NULL? */
 #if defined(WITH_THREAD_SANITIZER)
-    /* Save non-callee-saved registers x0, x1, x2, x3, x9 and x10 */
+    /* Save non-callee-saved registers x0, x1, x2, x3, x4, x9 and x10 */
         stp     x0, x1, [sp, -16]!
         CFI_ADJUST(16)
         stp     x2, x3, [sp, -16]!
         CFI_ADJUST(16)
-        stp     x9, x10, [sp, -16]!
+        stp     x4, x9, [sp, -16]!
+        CFI_ADJUST(16)
+        str     x10, [sp, -16]!
         CFI_ADJUST(16)
     /* Match the TSan-enter made from caml_runstack */
         TSAN_EXIT_FUNCTION
-        ldp     x9, x10, [sp], 16
+        ldr     x10, [sp], 16
+        CFI_ADJUST(-16)
+        ldp     x4, x9, [sp], 16
         CFI_ADJUST(-16)
         ldp     x2, x3, [sp], 16
         CFI_ADJUST(-16)
@@ -1102,21 +1105,17 @@ L(do_perform):
         CFI_ADJUST(-16)
 #endif
         SWITCH_OCAML_STACKS x2, x10
-    /*  we have to null the Handler_parent after the switch because
-        the Handler_parent is needed to unwind the stack for backtraces */
-        str     xzr, Handler_parent(x9) /* Set parent of performer to NULL */
-        ldr     TMP, Handler_effect(x9)
-        mov     x2, x3                 /* x2 := last_fiber */
-        mov     x3, TMP                /* x3 := effect handler */
-        b       G(caml_apply3)
+    /*  we have to update the Handler_parent after the switch because
+        the Handler_parent is needed to unwind the stack for backtraces. */
+        str     x3, [x1] /* Update continuation with the new cont_tail */
+        str     x4, Handler_parent(x9) /* Connect new cont_tail to cont_head */
+        ldr     x2, Handler_effect(x9) /* x2 := effect handler */
+        b       G(caml_apply2)
 1:
-    /*  switch back to original performer before raising Effect.Unhandled
-        (no-op unless this is a reperform) */
-        ldr     x10, [x1] /* load performer stack from continuation */
-        sub     x10, x10, 1 /* x10 := Ptr_val(x10) */
-        ldr     x9, Caml_state(current_stack)
-        SWITCH_OCAML_STACKS x9, x10
-    /*  No parent stack. Raise Effect.Unhandled. */
+    /*  No parent stack. Switch back to original performer before raising
+        Effect.Unhandled. */
+        SWITCH_OCAML_STACKS x2, x4
+    /*  Raise Effect.Unhandled. */
 #if defined(WITH_THREAD_SANITIZER)
         /* We must let the TSan runtime know that we switched back to the
            original performer stack. For that, we perform the necessary calls
@@ -1127,7 +1126,7 @@ L(do_perform):
         TSAN_SAVE_CALLER_REGS
         mov     x0, x30 /* arg 1: pc of perform */
         mov     x1, sp  /* arg 2: sp of perform */
-        mov     x2, x10 /* arg 3: performer stack */
+        mov     x2, x4  /* arg 3: performer stack (cont_head) */
         TSAN_C_CALL G(caml_tsan_entry_on_resume)
         TSAN_RESTORE_CALLER_REGS
 #endif
@@ -1139,12 +1138,13 @@ END_FUNCTION(caml_perform)
 FUNCTION(caml_reperform)
         CFI_STARTPROC
     /*  x0: effect to reperform
-        x1: continuation
-        x2: last_fiber */
-        ldr     TMP, Stack_handler_from_cont(x2)
-        ldr     x2, Caml_state(current_stack) /* x2 := old stack */
-        str     x2, Handler_parent(TMP) /* Append to last_fiber */
-        add     x3, x2, 1 /* x3 (last_fiber) := Val_ptr(old stack) */
+        x1: continuation */
+        ldr     x3, [x1] /* x3 := Val_ptr(cont_tail) */
+        ldr     TMP, Stack_handler_from_cont(x3)
+        ldr     x4, Handler_parent(TMP) /* x4 := cont_head */
+        ldr     x2, Caml_state(current_stack) /* x2 := current_stack */
+        str     x2, Handler_parent(TMP) /* parent(cont_tail) := current_stack */
+        add     x3, x2, 1 /* x3 := Val_ptr(current_stack) */
     /* Need to update the oldest saved frame pointer here as the execution of
        the handler may have caused the current fiber stack to reallocate. */
         UPDATE_BASE_POINTER TMP
@@ -1154,14 +1154,16 @@ END_FUNCTION(caml_reperform)
 
 FUNCTION(caml_resume)
         CFI_STARTPROC
-    /*  x0: new fiber
+    /*  x0: Val_ptr(cont_tail)
         x1: fun
-        x2: arg
-        x3: last_fiber */
-        sub     x0, x0, 1 /* x0 = Ptr_val(x0) */
-        ldr     x4, [x1]  /* code pointer */
+        x2: arg */
+        sub     x0, x0, 1 /* x0 (cont_tail) = Ptr_val(x0) */
     /* Check if stack null, then already used */
         cbz     x0, 1f
+        ldr     x4, [x1]  /* code pointer */
+    /* Load cont_head, the fiber at which we will resume */
+        ldr     x3, Stack_handler(x0)
+        ldr     x3, Handler_parent(x3) /* x3 = cont_head */
 #if defined(WITH_THREAD_SANITIZER)
     /* Save non-callee-saved registers x0, x1, x2, x3 and x4 */
         stp     x0, x1, [sp, -16]!
@@ -1180,26 +1182,25 @@ FUNCTION(caml_resume)
         CFI_ADJUST(-16)
         TSAN_SAVE_CALLER_REGS
     /* Signal to TSan all stack frames exited by the perform. */
-        mov     x2, x0           /* arg 3: fiber */
-        ldr     x1, Stack_sp(x0)
+        ldr     x1, Stack_sp(x3)
         ldr     x0, [x1, 8]      /* arg 1: pc of perform */
         /* This stack address adjustment is required to compensate the
            saving of x29 and x30 in SWITCH_OCAML_STACKS, which causes
            Stack_sp() to be 16 bytes lower than expected. */
         add     x1, x1, 16       /* arg 2: sp at perform */
+        mov     x2, x3           /* arg 3: fiber (cont_head) */
         TSAN_C_CALL G(caml_tsan_entry_on_resume)
         TSAN_RESTORE_CALLER_REGS
 #endif
-    /* Add current stack to the end */
-        sub     x3, x3, 1 /* x3 = Ptr_val(x3) */
-        ldr     x8, Stack_handler(x3)
+    /* Add current stack to the end of cont_tail */
+        ldr     x8, Stack_handler(x0)
         ldr     x9, Caml_state(current_stack)
         str     x9, Handler_parent(x8)
     /* Need to update the oldest saved frame pointer here as the current fiber
        stack may have been reallocated or we may be resuming a computation
        that was not originally run here. */
         UPDATE_BASE_POINTER x8
-        SWITCH_OCAML_STACKS x9, x0
+        SWITCH_OCAML_STACKS x9, x3
         mov     x0, x2
         br      x4
 1:      ADDRGLOBAL(ADDITIONAL_ARG, caml_raise_continuation_already_resumed)

@@ -212,4 +212,12 @@ let () =
   test (threshold + 1) (* Tail-recursive case *)
 ;;
 
+let () =
+  let result = ref [] in
+  let lst = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9] in
+  let lst' = List.append_map (fun x -> result := x :: !result; x) lst [] in
+  assert (lst' = lst);
+  assert (!result = List.rev lst) (* check evaluation order is left-to-right *)
+;;
+
 let () = print_endline "OK";;

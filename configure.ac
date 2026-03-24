@@ -2044,7 +2044,7 @@ AS_IF([test "x$enable_instrumented_runtime" != "xno" ],
 )
 
 # ThreadSanitizer support is currently only available for Linux/FreeBSD/macOS
-# on amd64, Linux/macOS on arm64 and Linux on POWER, riscv64 and s390x.
+# on amd64, Linux/macOS on arm64 and Linux on POWER and riscv64.
 AS_IF([test "x$enable_tsan" = "xyes" ],
   [AS_CASE(["$arch"],
     [amd64],
@@ -2078,16 +2078,6 @@ AS_IF([test "x$enable_tsan" = "xyes" ],
         [AC_MSG_ERROR([thread sanitizer not supported on system $system])]
        )],
     [riscv],
-      [AS_CASE(["$system"],
-        [linux],
-        [AS_CASE(["$ocaml_cc_vendor"],
-          [gcc-*|clang-*], [tsan=true],
-          [AC_MSG_ERROR(m4_normalize([thread sanitizer not supported with
-            vendor=$ocaml_cc_vendor"]))]
-         )],
-        [AC_MSG_ERROR([thread sanitizer not supported on system $system])]
-       )],
-    [s390x],
       [AS_CASE(["$system"],
         [linux],
         [AS_CASE(["$ocaml_cc_vendor"],
@@ -2221,7 +2211,7 @@ AS_IF([$tsan],
       ["arm64"], [libunwind_ldflags="-lunwind -lunwind-aarch64"],
       ["power"], [libunwind_ldflags="-lunwind -lunwind-ppc64"],
       ["riscv"], [libunwind_ldflags="-lunwind -lunwind-riscv"],
-      ["s390x"], [libunwind_ldflags="-lunwind -lunwind-s390x"])])
+      )])
 
   AS_IF([test x"$LIBUNWIND_LDFLAGS" != x],
     [libunwind_ldflags="$LIBUNWIND_LDFLAGS $libunwind_ldflags"])

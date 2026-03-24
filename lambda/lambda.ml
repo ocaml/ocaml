@@ -105,6 +105,7 @@ type primitive =
   | Pisint
   (* Test if the (integer) argument is outside an interval *)
   | Pisout
+  | Pcheckbound
   (* Operations on boxed integers (Nativeint.t, Int32.t, Int64.t) *)
   | Pbintofint of boxed_integer
   | Pintofbint of boxed_integer
@@ -760,6 +761,10 @@ let rec make_sequence fn = function
   | [x] -> fn x
   | x::rem ->
       let lam = fn x in Lsequence(lam, make_sequence fn rem)
+
+let make_atomic_loc ~loc arg field =
+  let shape = Some [Pgenval; Pintval] in
+  Lprim (Pmakeblock (0, Immutable, shape), [arg; field], loc)
 
 (* Apply a substitution to a lambda-term.
    Assumes that the image of the substitution is out of reach

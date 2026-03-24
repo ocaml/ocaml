@@ -92,6 +92,7 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Parraysets kind -> Parraysets kind
   | Pisint -> Pisint
   | Pisout -> Pisout
+  | Pcheckbound -> Pcheckbound
   | Pcvtbint (src, dest) -> Pcvtbint (src, dest)
   | Pnegbint bi -> Pnegbint bi
   | Paddbint bi -> Paddbint bi

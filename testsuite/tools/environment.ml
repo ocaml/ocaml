@@ -316,10 +316,9 @@ let run_one (~runtime, ~quiet, ~fails, ~program, ~argv0, ~args,
         (* Convert SIGABRT to exit code 134 *)
         Unix.WEXITED 134
     | Unix.WSIGNALED n
-      when n = Sys.sigsegv
-           && List.mem Config.architecture ["s390x"; "riscv"] ->
-        (* cf. ocaml/ocaml#13693 - s390x executables might segfault, so this
-           gets converted to Docker's exit code so it can be skipped *)
+      when n = Sys.sigsegv && Config.architecture = "riscv" ->
+        (* riscv executables might segfault, so this gets converted to Docker's
+           exit code so it can be skipped *)
         Unix.WEXITED 139
     | status ->
         status

@@ -113,6 +113,7 @@ type primitive =
   | Pisint
   (* Test if the (integer) argument is outside an interval *)
   | Pisout
+  | Pcheckbound
   (* Operations on boxed integers (Nativeint.t, Int32.t, Int64.t) *)
   | Pbintofint of boxed_integer
   | Pintofbint of boxed_integer
@@ -511,6 +512,8 @@ val max_arity : unit -> int
       (currently to 126) for native code. *)
 
 val tag_of_lazy_tag : lazy_block_tag -> int
+
+val make_atomic_loc : loc:scoped_location -> lambda -> lambda -> lambda
 
 (***********************)
 (* For static failures *)

@@ -194,8 +194,8 @@ DEFAULT_BUILD_TARGET = @default_build_target@
 # added to both XXX_YYY_COMPFLAGS and XXX_YYY_LINKFLAGS.
 
 OC_COMMON_COMPFLAGS = -g -strict-sequence -principal -absname \
-  -w +a-4-9-40-41-42-44-45-48 -warn-error +a -bin-annot \
-  -strict-formats
+  -w +a-4-9-40-41-42-44-45-48 -warn-error +a -alert @ocaml_deprecated_cli \
+  -bin-annot -strict-formats
 OC_COMMON_LINKFLAGS = $(INCLUDES)
 
 OC_BYTECODE_LINKFLAGS =

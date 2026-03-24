@@ -23,6 +23,13 @@ arguments are passed to the OCaml program, in the string array
 bytecode executable file; elements 1 to \var{n} are the remaining
 arguments \nth{arg}{1} to \nth{arg}{n}.
 
+\begin{windows}
+On Windows, the OCaml runtime expands the "*" and "?" wildcards in arguments
+before anything else. The string array "Sys.argv" is constructed using the
+expanded arguments. To avoid this behaviour, a custom entry point can be written
+in C, as outlined in section~\ref{ss:main-c}.
+\end{windows}
+
 As mentioned in chapter~\ref{c:camlc}, the bytecode executable files
 produced by the "ocamlc" command are self-executable, and manage to
 launch the "ocamlrun" command on themselves automatically. That is,

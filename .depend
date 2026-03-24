@@ -2565,6 +2565,7 @@ bytecomp/emitcode.cmo : \
     utils/clflags.cmi \
     bytecomp/bytegen.cmi \
     typing/btype.cmi \
+    parsing/asttypes.cmi \
     bytecomp/emitcode.cmi
 bytecomp/emitcode.cmx : \
     parsing/unit_info.cmx \
@@ -2585,6 +2586,7 @@ bytecomp/emitcode.cmx : \
     utils/clflags.cmx \
     bytecomp/bytegen.cmx \
     typing/btype.cmx \
+    parsing/asttypes.cmx \
     bytecomp/emitcode.cmi
 bytecomp/emitcode.cmi : \
     parsing/unit_info.cmi \
@@ -2595,26 +2597,32 @@ bytecomp/emitcode.cmi : \
 bytecomp/instruct.cmo : \
     typing/types.cmi \
     typing/subst.cmi \
+    typing/primitive.cmi \
     parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
     typing/env.cmi \
+    parsing/asttypes.cmi \
     bytecomp/instruct.cmi
 bytecomp/instruct.cmx : \
     typing/types.cmx \
     typing/subst.cmx \
+    typing/primitive.cmx \
     parsing/location.cmx \
     lambda/lambda.cmx \
     typing/ident.cmx \
     typing/env.cmx \
+    parsing/asttypes.cmx \
     bytecomp/instruct.cmi
 bytecomp/instruct.cmi : \
     typing/types.cmi \
     typing/subst.cmi \
+    typing/primitive.cmi \
     parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
-    typing/env.cmi
+    typing/env.cmi \
+    parsing/asttypes.cmi
 bytecomp/meta.cmo : \
     bytecomp/instruct.cmi \
     bytecomp/meta.cmi
@@ -8055,10 +8063,12 @@ tools/cvt_emit.cmx : \
 tools/cvt_emit.cmi :
 tools/dumpobj.cmo : \
     bytecomp/symtable.cmi \
+    typing/primitive.cmi \
     tools/opnames.cmi \
     bytecomp/opcodes.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
+    lambda/lambda.cmi \
     bytecomp/instruct.cmi \
     utils/format_doc.cmi \
     utils/config.cmi \
@@ -8068,10 +8078,12 @@ tools/dumpobj.cmo : \
     tools/dumpobj.cmi
 tools/dumpobj.cmx : \
     bytecomp/symtable.cmx \
+    typing/primitive.cmx \
     tools/opnames.cmx \
     bytecomp/opcodes.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
+    lambda/lambda.cmx \
     bytecomp/instruct.cmx \
     utils/format_doc.cmx \
     utils/config.cmx \

@@ -185,6 +185,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       let args =
         if (name = "Match_failure"
             || name = "Assert_failure"
+            || name = "Todo"
             || name = "Undefined_recursive_module")
         && O.size bucket = 2
         && O.tag(O.field bucket 1) = 0

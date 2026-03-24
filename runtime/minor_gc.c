@@ -269,13 +269,12 @@ static void oldify_one (void* st_v, value v, volatile value *p)
 
   if (tag == Cont_tag) {
     value stack_value = Field(v, 0);
-    CAMLassert(Wosize_hd(hd) == 2);
+    CAMLassert(Wosize_hd(hd) == 1);
     CAMLassert(infix_offset == 0);
-    result = alloc_shared(st->domain, 2, Cont_tag, Reserved_hd(hd));
+    result = alloc_shared(st->domain, 1, Cont_tag, Reserved_hd(hd));
     if( try_update_object_header(v, p, result, 0) ) {
       struct stack_info* stk = Ptr_val(stack_value);
       Field(result, 0) = stack_value;
-      Field(result, 1) = Field(v, 1);
       if (stk != NULL) {
         caml_scan_stack(&oldify_one, oldify_scanning_flags, st,
                         stk, 0);
@@ -288,7 +287,6 @@ static void oldify_one (void* st_v, value v, volatile value *p)
                                     caml_allocation_status());
       #ifdef DEBUG
       Field(result, 0) = Val_long(1);
-      Field(result, 1) = Val_long(1);
       #endif
     }
   } else if (tag < Infix_tag) {

@@ -1,0 +1,5 @@
+File "test_stdlib_todo_flag_error.ml", line 13, characters 0-8:
+13 | Fun.todo ();;
+     ^^^^^^^^
+Error (alert todo): Stdlib.Fun.todo
+Unimplemented functionality, may lead to runtime errors

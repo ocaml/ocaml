@@ -159,6 +159,15 @@ struct c_stack_link {
  *  Retrofitting Effect Handlers onto OCaml, KC Sivaramakrishnan, et al.
  *  PLDI 2021
  *
+ * A continuation object represents a suspended computation as a chain of fibers
+ * (stack segments). It contains a pointer to the tail of this fiber chain
+ * (cont_tail), whose parent pointer cycles back to the fiber at which the
+ * effect was performed (cont_head).
+ *
+ * Stack pointers are tagged as integers to avoid being followed by the GC. In
+ * the code, the tagged pointer can be referred to as a 'fiber':
+ *     fiber := Val_ptr(stack)
+ *
  *  Native code
  *  -----------
  *
@@ -166,11 +175,6 @@ struct c_stack_link {
  * Pperform, Preperform and Presume make use of corresponding functions
  * implemented in the assembly files for an architecture (such as
  * runtime/amd64.S).
- *
- * A continuation object represents a suspended OCaml stack. It contains
- * the stack pointer tagged as an integer to avoid being followed by the GC.
- * In the code the tagged pointer can be referred to as a 'fiber':
- *     fiber := Val_ptr(stack)
  *
  * caml_runstack new_stack function argument
  *  caml_runstack launches a function (with an argument) in a new OCaml
@@ -185,7 +189,7 @@ struct c_stack_link {
  *  then executing the handle_effect function. Should there be no parent OCaml
  *  stack then the Effect.Unhandled exception is raised.
  *
- * caml_reperform effect continuation last_fiber
+ * caml_reperform effect continuation
  *  caml_reperform is used to walk up the parent OCaml stacks to execute the
  *  next effect handler installed in the chain. This function is implemented
  *  by setting up the required registers then jumping into caml_perform which
@@ -237,6 +241,41 @@ struct c_stack_link {
  *   offset is checked. If there are no more exceptions in this stack and a
  *   parent stack exists, then the child stack is freed and the
  *   handle_exception function is executed on the parent stack.
+ *
+ *  Layout of continuation objects:
+ *  ------------------------------
+ *
+ *  A continuation object captures a suspended computation as a chain of fibers
+ *  (stack segments). The continuation maintains pointers to the tail of this
+ *  chain, with fibers linked via their Stack_parent pointers:
+ *
+ *  Continuation:                    Fibers:
+ *  +-----------+                     +------------------+
+ *  |   --------+----+                |    cont_head     |<------+
+ *  +-----------+    |                +------------------+       |
+ *                   |                         |                 |
+ *                   |                  | Stack_parent |         |
+ *                   |                         |                 |
+ *                   |                         v                 |
+ *                   |                +------------------+       |
+ *                   |                |      Fiber       |       |
+ *                   |                +------------------+       |
+ *                   |                         |                 |
+ *                   |                  | Stack_parent |         |
+ *                   |                         |                 |
+ *                   |                         v                 |
+ *                   +--------------> +------------------+       |
+ *                                    |    cont_tail     |       |
+ *                                    +------------------+       |
+ *                                             |                 |
+ *                                      | Stack_parent |         |
+ *                                             |                 |
+ *                                             +-----------------+
+ *
+ * [cont_head] is the fiber that performed the effect. The handler at
+ * [cont_tail] handled the effect. When the continuation is resumed, the current
+ * stack becomes the parent of [cont_tail] and execution continues from
+ * [cont_head].
  */
 
 /* The table of global identifiers. Val_unit initially and replaced with a block

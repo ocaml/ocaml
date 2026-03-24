@@ -197,6 +197,20 @@ val rev_map : ('a -> 'b) -> 'a list -> 'b list
    {!rev}[ (]{!map}[ f l)], but is more efficient.
  *)
 
+val append_map : ('a -> 'b) -> 'a list -> 'b list -> 'b list
+(** [append_map f l1 l2] applies [f] to every element of [l1] and appends
+    [l2] to the result. This is {!append}[ (]{!map}[ f l1) l2] but more
+    efficient.
+    @since 5.6
+ *)
+
+val rev_append_map : ('a -> 'b) -> 'a list -> 'b list -> 'b list
+(** [rev_append_map f l1 l2] applies [f] to every element of [l1], reverses the
+    result and appends [l2] to it. This is {!rev_append}[ (]{!map}[ f l1) l2]
+    but more efficient.
+    @since 5.6
+ *)
+
 val filter_map : ('a -> 'b option) -> 'a list -> 'b list
 (** [filter_map f l] applies [f] to every element of [l], filters
     out the [None] elements and returns the list of the arguments of

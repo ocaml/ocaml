@@ -179,25 +179,23 @@ CAMLdeprecated_typedef(addr, char *);
 #ifdef CAML_INTERNALS
 
 #if (__has_builtin(__builtin_prefetch) || defined(__GNUC__))
-#define caml_prefetchr(p) __builtin_prefetch((p), 0, 3)
-/* 0 = intent to read; 3 = all cache levels */
-#define caml_prefetchw(p) __builtin_prefetch((p), 1, 3)
-/* 1 = intent to write; 3 = all cache levels */
+#define caml_prefetchr(p) \
+  __builtin_prefetch((p), 0 /* rw: read */,  3 /* locality: all cache levels */)
+#define caml_prefetchw(p) \
+  __builtin_prefetch((p), 1 /* rw: write */, 3 /* locality: all cache levels */)
 
 #elif defined(_MSC_VER)
 #include <intrin.h>
-#if (defined(_M_IX86) || defined(_M_AMD64))
-/* MSVC Intel. See #14570.
-   0 - PREFETCHNTA; 1 - PREFETCHT0; 2 - PREFETCHT1; 3 - PREFETCHT2
-   4 - PREFETCHW; 5 - PREFETCHNTA */
-#define caml_prefetchr(p) _mm_prefetch((char const *) p, _MM_HINT_T0)
-/* PreFetchCacheLine(PF_TEMPORAL_LEVEL_1, p) */
-#define caml_prefetchw(p) _mm_prefetch((char const *) p, 4)
+#if (defined(_M_IX86) || defined(_M_AMD64)) && !defined(_M_ARM64EC)
+#define caml_prefetchr(p) \
+  _mm_prefetch((char const *)(p), _MM_HINT_T0)   /* prefetcht0 */
+#define caml_prefetchw(p) \
+  _mm_prefetch((char const *)(p), _MM_HINT_ENTA) /* prefetchw  */
+/* We would like to use _ET0 here, but it is not defined in Windows headers. */
 
-#elif defined(_M_ARM64)
-/* MSVC ARM64. See #14570 */
-#define caml_prefetchr(p) __prefetch2(p, 0)
-#define caml_prefetchw(p) __prefetch2(p, 16)
+#elif defined(_M_ARM64) || defined(_M_ARM64EC)
+#define caml_prefetchr(p) __prefetch2((p), 0)  /* prfm pldl1keep */
+#define caml_prefetchw(p) __prefetch2((p), 16) /* prfm pstl1keep */
 #endif
 #endif
 

@@ -780,18 +780,6 @@ let closed_type_decl decl =
     Some ty
   end
 
-let closed_extension_constructor ext =
-  with_type_mark begin fun mark -> try
-    List.iter (mark_type mark) ext.ext_type_params;
-    begin match ext.ext_ret_type with
-    | Some _ -> ()
-    | None -> iter_type_expr_cstr_args (closed_type mark) ext.ext_args
-    end;
-    None
-  with Non_closed (ty, _) ->
-    Some ty
-  end
-
 type closed_class_failure = {
   free_variable: type_expr * variable_kind;
   meth: string;
@@ -1712,6 +1700,12 @@ let instance_poly ?(keep_names=false) univars sch =
   For_copy.with_scope (fun copy_scope ->
     snd (instance_poly' copy_scope ~keep_names ~fixed:false univars sch)
   )
+
+let maybe_instance_poly ty =
+  match get_desc ty with
+  | Tpoly (ty', tyvars) ->
+    instance_poly ~keep_names:true tyvars ty'
+  | _ -> ty
 
 (** [instance_funct_opt] returns [None] if id_in never appeared in [sch] *)
 let instance_funct_opt ~id_in ~p_out ~fixed sch =
@@ -6047,12 +6041,6 @@ let unalias ty =
   | desc ->
       newty2 ~level desc
 
-(* Return the arity (as for curried functions) of the given type. *)
-let rec arity ty =
-  match get_desc ty with
-    Tarrow(_, _t1, t2, _) -> 1 + arity t2
-  | _ -> 0
-
 (* Check for non-generalizable type variables *)
 let add_nongen_vars_in_schema =
   let rec loop env ((visited, weak_set) as acc) ty =
@@ -6226,6 +6214,46 @@ let rec normalize_type_rec mark ty =
 let normalize_type ty =
   with_type_mark (fun mark -> normalize_type_rec mark ty)
 
+type arrow_arg =
+  | Arg_value of type_expr
+  | Arg_module of Ident.Unscoped.t * package
+
+type arrow_ret =
+  | Ret_cycle
+  | Ret_type of type_expr
+
+let arrow_spine env ty =
+  let rec arrow_spine_rec ~mark labels ty_fun =
+    let ty = expand_head env ty_fun in
+    if try_mark_node mark ty
+    then (
+      match get_desc ty with
+      | Tarrow (label, ty_arg, ty_ret, _commu) ->
+        arrow_spine_rec ~mark ((label, Arg_value ty_arg) :: labels) ty_ret
+      | Tfunctor (label, mod_id, package, ty_ret) ->
+        arrow_spine_rec
+          ~mark
+          ((label, Arg_module (mod_id, package)) :: labels)
+          ty_ret
+      | _ -> List.rev labels, Ret_type ty)
+    else List.rev labels, Ret_cycle
+  in
+  let snap = snapshot () in
+  let result =
+    with_type_mark (fun mark ->
+        wrap_trace_gadt_instances env (arrow_spine_rec ~mark []) ty)
+  in
+  backtrack snap;
+  result
+
+let arrow_labels env ty =
+  let label_tys, ret_ty_or_cycle = arrow_spine env ty in
+  let is_ret_tvar =
+    match ret_ty_or_cycle with
+    | Ret_cycle -> false
+    | Ret_type ty -> is_Tvar ty
+  in
+  List.map fst label_tys, ~is_ret_tvar
 
                               (*************************)
                               (*  Remove dependencies  *)

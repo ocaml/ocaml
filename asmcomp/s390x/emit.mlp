@@ -52,6 +52,16 @@ let emit_call s =
   else
    `	brasl	%r14, {emit_symbol s}\n`
 
+(* GOT-indirect call for runtime glue only -- avoids PLT lazy binding
+   trampoline which corrupts the heap when r15 points at the OCaml
+   fiber stack instead of a C stack frame (see #13693). *)
+let emit_call_got s =
+  if !Clflags.pic_code then begin
+   `	lgrl	%r1, {emit_symbol s}@GOT\n`;
+   `	basr	%r14, %r1\n`
+  end else
+   `	brasl	%r14, {emit_symbol s}\n`
+
 (* Output a label *)
 
 let label_prefix = ".L"
@@ -202,7 +212,7 @@ let record_frame env live dbg =
   `{emit_label lbl}:`
 
 let emit_call_gc gc =
-  `{emit_label gc.gc_lbl}:`; emit_call "caml_call_gc";
+  `{emit_label gc.gc_lbl}:`; emit_call_got "caml_call_gc";
   `{emit_label gc.gc_frame_lbl}:	brcl	15, {emit_label gc.gc_return_lbl}\n`
 
 let bound_error_label env dbg =
@@ -222,7 +232,7 @@ let bound_error_label env dbg =
  end
 
 let emit_call_bound_error bd =
-  `{emit_label bd.bd_lbl}:`; emit_call "caml_ml_array_bound_error";
+  `{emit_label bd.bd_lbl}:`; emit_call_got "caml_ml_array_bound_error";
   `{emit_label bd.bd_frame}:\n`
 
 let emit_call_bound_errors env =
@@ -230,7 +240,7 @@ let emit_call_bound_errors env =
   match env.bound_error_call with
   | None -> ()
   | Some lbl ->
-    `{emit_label lbl}:`; emit_call "caml_ml_array_bound_error"
+    `{emit_label lbl}:`; emit_call_got "caml_ml_array_bound_error"
 
 (* Masks for conditional branches after comparisons *)
 
@@ -371,11 +381,11 @@ let emit_instr env i =
           `	lgr	{emit_reg reg_stack_arg_begin}, %r15\n`;
           `	lay	{emit_reg reg_stack_arg_end}, {emit_int stack_ofs}(%r15)\n`;
           emit_load_symbol_addr reg_r7 func;
-          emit_call "caml_c_call_stack_args";
+          emit_call_got "caml_c_call_stack_args";
           `{record_frame env i.live (Dbg_other i.dbg)}\n`
         end else if alloc then begin
           emit_load_symbol_addr reg_r7 func;
-          emit_call "caml_c_call";
+          emit_call_got "caml_c_call";
           `{record_frame env i.live (Dbg_other i.dbg)}\n`
         end else begin
           (* Save OCaml SP in C callee-save register *)
@@ -443,12 +453,12 @@ let emit_instr env i =
               gc_frame_lbl = lbl_frame_lbl } :: env.call_gc_sites
         end else begin
           begin match n with
-          | 16 -> `	{emit_call "caml_alloc1"}\n`
-          | 24 -> `	{emit_call "caml_alloc2"}\n`
-          | 32 -> `	{emit_call "caml_alloc3"}\n`
+          | 16 -> `	{emit_call_got "caml_alloc1"}\n`
+          | 24 -> `	{emit_call_got "caml_alloc2"}\n`
+          | 32 -> `	{emit_call_got "caml_alloc3"}\n`
           | _  ->
               `	lay	%r11, {emit_int(-n)}(%r11)\n`;
-              `	{emit_call "caml_allocN"}\n`
+              `	{emit_call_got "caml_allocN"}\n`
           end;
           `{emit_label lbl_frame_lbl}:\n`;
           `	la	{emit_reg i.res.(0)}, 8(%r11)\n`
@@ -689,10 +699,10 @@ let emit_instr env i =
     | Lraise k ->
         begin match k with
         | Lambda.Raise_regular->
-          emit_call "caml_raise_exn";
+          emit_call_got "caml_raise_exn";
           `{record_frame env Reg.Set.empty (Dbg_raise i.dbg)}\n`
         | Lambda.Raise_reraise ->
-          emit_call "caml_reraise_exn";
+          emit_call_got "caml_reraise_exn";
           `{record_frame env Reg.Set.empty (Dbg_raise i.dbg)}\n`
         | Lambda.Raise_notrace ->
           `	lg	%r1, {emit_int size_addr}(%r13)\n`;
@@ -755,7 +765,7 @@ let fundecl fundecl =
       `	lay	%r15, -8(%r15)\n`;
       `	stg	%r14, 0(%r15)\n`;
       `	lgfi	%r12, {emit_int s}\n`;
-      emit_call "caml_call_realloc_stack";
+      emit_call_got "caml_call_realloc_stack";
       `	lg	%r14, 0(%r15)\n`;
       `	la	%r15, 8(%r15)\n`;
       `	brcl	15, {emit_label ret}\n`

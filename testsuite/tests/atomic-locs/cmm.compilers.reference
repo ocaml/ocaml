@@ -2,55 +2,193 @@
 cmm:
 (data)
 (data
- int 3063
+ int 4087
+ "camlCmm.9":
+ addr "caml_curry2"
+ int 144115188075855879
+ addr "camlCmm.set_327")
+(data
+ int 4087
+ "camlCmm.8":
+ addr "caml_curry2"
+ int 144115188075855879
+ addr "camlCmm.explicit_set_331")
+(data
+ int 4087
+ "camlCmm.7":
+ addr "caml_curry3"
+ int 216172782113783815
+ addr "camlCmm.cas_335")
+(data
+ int 4087
+ "camlCmm.6":
+ addr "caml_curry2"
+ int 144115188075855879
+ addr "camlCmm.array_get_341")
+(data
+ int 4087
  "camlCmm.5":
- addr "camlCmm.standard_atomic_get_274"
- int 72057594037927941)
+ addr "caml_curry2"
+ int 144115188075855879
+ addr "camlCmm.unsafe_array_get_373")
 (data
  int 4087
  "camlCmm.4":
  addr "caml_curry3"
  int 216172782113783815
- addr "camlCmm.standard_atomic_cas_299")
-(data int 3063 "camlCmm.3": addr "camlCmm.get_307" int 72057594037927941)
+ addr "camlCmm.array_set_377")
+(data
+ int 4087
+ "camlCmm.3":
+ addr "caml_curry3"
+ int 216172782113783815
+ addr "camlCmm.unsafe_array_set_382")
 (data
  int 4087
  "camlCmm.2":
- addr "caml_curry2"
- int 144115188075855879
- addr "camlCmm.set_310")
+ addr "caml_curry4"
+ int 288230376151711751
+ addr "camlCmm.array_cas_387")
+(data
+ int 3063
+ "camlCmm.14":
+ addr "camlCmm.standard_atomic_get_274"
+ int 72057594037927941)
+(data
+ int 3063
+ "camlCmm.13":
+ addr "camlCmm.standard_atomic_set_301"
+ int 72057594037927941)
+(data
+ int 4087
+ "camlCmm.12":
+ addr "caml_curry3"
+ int 216172782113783815
+ addr "camlCmm.standard_atomic_cas_304")
+(data int 3063 "camlCmm.11": addr "camlCmm.get_313" int 72057594037927941)
+(data
+ int 3063
+ "camlCmm.10":
+ addr "camlCmm.explicit_get_316"
+ int 72057594037927941)
 (data
  int 4087
  "camlCmm.1":
- addr "caml_curry3"
- int 216172782113783815
- addr "camlCmm.cas_314")
-(data int 5888 global "camlCmm" "camlCmm": int 1 int 1 int 1 int 1 int 1)
+ addr "caml_curry4"
+ int 288230376151711751
+ addr "camlCmm.unsafe_array_cas_393")
+(data
+ int 18176
+ global "camlCmm"
+ "camlCmm":
+ int 1
+ int 1
+ int 1
+ int 1
+ int 1
+ int 1
+ int 1
+ int 1
+ int 1
+ int 1
+ int 1
+ int 1
+ int 1
+ int 1
+ int 1
+ int 1
+ int 1)
 (data global "camlCmm.gc_roots" "camlCmm.gc_roots": addr "camlCmm" int 0)
 (function camlCmm.standard_atomic_get_274 (r: val) (load_mut_atomic val r))
 
-(function camlCmm.standard_atomic_cas_299 (r: val oldv: val newv: val)
+(function camlCmm.standard_atomic_set_301 (r: val) (load_mut_atomic val r))
+
+(function camlCmm.standard_atomic_cas_304 (r: val oldv: val newv: val)
  (extcall "caml_atomic_cas_field" r 1 oldv newv int,int,int,int->val))
 
-(function camlCmm.get_307 (r: val) (load_mut_atomic val (+a r 8)))
+(function camlCmm.get_313 (r: val) (load_mut_atomic val (+a r 8)))
 
-(function camlCmm.set_310 (r: val v: val)
+(function camlCmm.explicit_get_316 (r: val) (load_mut_atomic val (+a r 8)))
+
+(function camlCmm.set_327 (r: val v: val)
  (extcall "caml_atomic_exchange_field" r 3 v int,int,int->unit) 1)
 
-(function camlCmm.cas_314 (r: val oldv: val newv: val)
+(function camlCmm.explicit_set_331 (r: val v: val)
+ (let t (alloc 2048 r 3)
+   (extcall "caml_atomic_exchange_field" (load val t) (load int (+a t 8)) v
+     int,int,int->unit)
+   1))
+
+(function camlCmm.cas_335 (r: val oldv: val newv: val)
  (extcall "caml_atomic_cas_field" r 3 oldv newv int,int,int,int->val))
 
+(function camlCmm.array_get_341 (arr: val i: int)
+ (checkbound (or (>>u (load int (+a arr -8)) 9) 1) i) []
+ (load_mut_atomic val (+a (+a arr (<< i 2)) -4)))
+
+(function camlCmm.unsafe_array_get_373 (arr: val i: int)
+ (load_mut_atomic val (+a (+a arr (<< i 2)) -4)))
+
+(function camlCmm.array_set_377 (arr: val i: int v: val)
+ (checkbound (or (>>u (load int (+a arr -8)) 9) 1) i) []
+ (extcall "caml_atomic_exchange_field" arr i v int,int,int->unit) 1)
+
+(function camlCmm.unsafe_array_set_382 (arr: val i: int v: val)
+ (extcall "caml_atomic_exchange_field" arr i v int,int,int->unit) 1)
+
+(function camlCmm.array_cas_387 (arr: val i: int oldv: val newv: val)
+ (checkbound (or (>>u (load int (+a arr -8)) 9) 1) i) []
+ (extcall "caml_atomic_cas_field" arr i oldv newv int,int,int,int->val))
+
+(function camlCmm.unsafe_array_cas_393 (arr: val i: int oldv: val newv: val)
+ (extcall "caml_atomic_cas_field" arr i oldv newv int,int,int,int->val))
+
 (function camlCmm.entry ()
- (let standard_atomic_get "camlCmm.5"
-   (extcall "caml_initialize" "camlCmm" standard_atomic_get ->unit))
- (let standard_atomic_cas "camlCmm.4"
-   (extcall "caml_initialize" (+a "camlCmm" 8) standard_atomic_cas ->unit))
- (let get "camlCmm.3"
-   (extcall "caml_initialize" (+a "camlCmm" 16) get ->unit))
- (let set "camlCmm.2"
-   (extcall "caml_initialize" (+a "camlCmm" 24) set ->unit))
- (let cas "camlCmm.1"
-   (extcall "caml_initialize" (+a "camlCmm" 32) cas ->unit))
- 1)
+ (let standard_atomic_get "camlCmm.14"
+   (extcall "caml_initialize" (+a "camlCmm" 24) standard_atomic_get ->unit))
+ (let standard_atomic_set "camlCmm.13"
+   (extcall "caml_initialize" (+a "camlCmm" 32) standard_atomic_set ->unit))
+ (let standard_atomic_cas "camlCmm.12"
+   (extcall "caml_initialize" (+a "camlCmm" 40) standard_atomic_cas ->unit))
+ (let
+   Refs
+     (alloc 3072 (load val (+a "camlCmm" 24)) (load val (+a "camlCmm" 32))
+       (load val (+a "camlCmm" 40)))
+   (extcall "caml_initialize" "camlCmm" Refs ->unit)
+   (let get "camlCmm.11"
+     (extcall "caml_initialize" (+a "camlCmm" 48) get ->unit))
+   (let explicit_get "camlCmm.10"
+     (extcall "caml_initialize" (+a "camlCmm" 56) explicit_get ->unit))
+   (let set "camlCmm.9"
+     (extcall "caml_initialize" (+a "camlCmm" 64) set ->unit))
+   (let explicit_set "camlCmm.8"
+     (extcall "caml_initialize" (+a "camlCmm" 72) explicit_set ->unit))
+   (let cas "camlCmm.7"
+     (extcall "caml_initialize" (+a "camlCmm" 80) cas ->unit))
+   (let
+     Fields
+       (alloc 5120 (load val (+a "camlCmm" 48)) (load val (+a "camlCmm" 56))
+         (load val (+a "camlCmm" 64)) (load val (+a "camlCmm" 72))
+         (load val (+a "camlCmm" 80)))
+     (extcall "caml_initialize" (+a "camlCmm" 8) Fields ->unit)
+     (let array_get "camlCmm.6"
+       (extcall "caml_initialize" (+a "camlCmm" 88) array_get ->unit))
+     (let unsafe_array_get "camlCmm.5"
+       (extcall "caml_initialize" (+a "camlCmm" 96) unsafe_array_get ->unit))
+     (let array_set "camlCmm.4"
+       (extcall "caml_initialize" (+a "camlCmm" 104) array_set ->unit))
+     (let unsafe_array_set "camlCmm.3"
+       (extcall "caml_initialize" (+a "camlCmm" 112) unsafe_array_set ->unit))
+     (let array_cas "camlCmm.2"
+       (extcall "caml_initialize" (+a "camlCmm" 120) array_cas ->unit))
+     (let unsafe_array_cas "camlCmm.1"
+       (extcall "caml_initialize" (+a "camlCmm" 128) unsafe_array_cas ->unit))
+     (let
+       Arrays
+         (alloc 6144 (load val (+a "camlCmm" 88))
+           (load val (+a "camlCmm" 96)) (load val (+a "camlCmm" 104))
+           (load val (+a "camlCmm" 112)) (load val (+a "camlCmm" 120))
+           (load val (+a "camlCmm" 128)))
+       (extcall "caml_initialize" (+a "camlCmm" 16) Arrays ->unit) 1))))
 
 (data)

@@ -182,6 +182,13 @@ the following environment variables are also consulted:
   "CAMLRUNPARAM" is not found, then the default values will be used.
 \end{options}
 
+\begin{windows}
+On Windows, an "ocamlopt"-generated executable will expand the "*" and "?"
+wildcards in arguments before anything else. The string array "Sys.argv" is
+constructed using the expanded arguments. To avoid this behaviour, a custom
+entry point can be written in C, as outlined in section~\ref{ss:main-c}.
+\end{windows}
+
 \section{s:compat-native-bytecode}{Compatibility with the bytecode compiler}
 
 This section lists the known incompatibilities between the bytecode

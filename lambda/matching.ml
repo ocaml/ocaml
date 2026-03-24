@@ -4091,9 +4091,9 @@ let for_trywith ~scopes loc param pat_act_list =
   compile_matching ~scopes loc ~failer:(Reraise_noloc param)
     None param pat_act_list Partial
 
-let for_handler ~scopes loc param cont cont_tail pat_act_list =
+let for_handler ~scopes loc param cont pat_act_list =
   compile_matching ~scopes loc
-    ~failer:(Reperform_noloc [param; cont; cont_tail])
+    ~failer:(Reperform_noloc [param; cont])
     None param pat_act_list Partial
 
 let simple_for_let ~scopes loc param pat body =

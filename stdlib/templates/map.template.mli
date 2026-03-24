@@ -309,6 +309,12 @@ module type S =
 
         @since 5.5 *)
 
+    val singleton_to_binding: 'a t -> (key * 'a) option
+    (** [singleton_to_binding m] is [Some (k, v)] if [m] only binds [k] to [v]
+        and [None] otherwise.
+
+        @since 5.6 *)
+
     val mem: key -> 'a t -> bool
     (** [mem x m] returns [true] if [m] contains a binding for [x],
         and [false] otherwise. *)

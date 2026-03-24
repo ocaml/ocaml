@@ -54,3 +54,74 @@ let incr t =
   Loc.incr [%atomic.loc t.contents]
 let decr t =
   Loc.decr [%atomic.loc t.contents]
+
+module Array = struct
+  type !'a t =
+    'a array
+
+  external check_array_bound
+    : 'a t -> int -> unit
+    = "%check_array_bound"
+
+  external unsafe_index
+    : 'a t -> int -> 'a Loc.t
+    = "%atomic_unsafe_index"
+
+  external length
+    : 'a array -> int
+    = "%array_length"
+
+  external uniform_array_make
+    : int -> 'a -> 'a t
+    = "caml_uniform_array_make"
+
+  let[@inline] unsafe_get t i =
+    Loc.get (unsafe_index t i)
+  let[@inline] get t i =
+    check_array_bound t i;
+    unsafe_get t i
+
+  let[@inline] unsafe_set t i v =
+    (* using Loc.set works less well as Simplif misses the
+       lambda-level elimination of the atomic-location pair. *)
+    ignore (Loc.exchange (unsafe_index t i) v)
+  let[@inline] set t i v =
+    check_array_bound t i;
+    unsafe_set t i v
+
+  let[@inline] unsafe_exchange t i v =
+    Loc.exchange (unsafe_index t i) v
+  let[@inline] exchange t i v =
+    check_array_bound t i;
+    unsafe_exchange t i v
+
+  let[@inline] unsafe_compare_and_set t i old new_ =
+    Loc.compare_and_set (unsafe_index t i) old new_
+  let[@inline] compare_and_set t i old new_ =
+    check_array_bound t i;
+    unsafe_compare_and_set t i old new_
+
+  let[@inline] unsafe_fetch_and_add t i incr =
+    Loc.fetch_and_add (unsafe_index t i) incr
+  let[@inline] fetch_and_add t i incr =
+    check_array_bound t i;
+    unsafe_fetch_and_add t i incr
+
+  let make len v =
+    if len < 0 then
+      invalid_arg "Atomic.Array.make" ;
+    uniform_array_make len v
+
+  let init len fn =
+    if len < 0 then
+      invalid_arg "Atomic_array.init"
+    else if len = 0 then
+      [||]
+    else begin
+      let t = uniform_array_make len (fn 0) in
+      for i = 1 to len - 1 do
+        unsafe_set t i (fn i)
+      done ;
+      t
+    end
+end
