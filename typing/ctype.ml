@@ -6308,11 +6308,8 @@ let arrow_spine env ty =
       | _ -> List.rev labels, Ret_type ty)
     else List.rev labels, Ret_cycle
   in
-  let result =
-    with_type_mark (fun mark ->
-        wrap_trace_gadt_instances env (arrow_spine_rec ~mark []) ty)
-  in
-  result
+  with_type_mark (fun mark ->
+    wrap_trace_gadt_instances env (arrow_spine_rec ~mark []) ty)
 
 let arrow_labels env ty =
   let snap = snapshot () in
