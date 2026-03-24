@@ -370,8 +370,8 @@ val filter_method: Env.t -> string -> type_expr -> type_expr
         (* A special case of unification (with {m : 'a; 'b}).  Raises
            [Filter_method_failed] instead of [Unify]. *)
 
-(** [arrow_labels env ty] expands [ty] as an array type in [env] and
-    returns its argument labels. The input types is kept unchanged.
+(** [arrow_labels env ty] expands [ty] as an arrow type in [env] and
+    returns its argument labels. The input type is kept unchanged.
 
     [is_ret_tvar] is [true] if the final return type is a type variable,
     indicating that the list of labels isn't necessarily exhaustive. *)
