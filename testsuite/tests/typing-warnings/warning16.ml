@@ -166,4 +166,3 @@ Warning 16 [unerasable-optional-argument]: this optional argument cannot be eras
 
 val h : ?b:'a -> ?a:'b -> unit = <fun>
 |}]
-
