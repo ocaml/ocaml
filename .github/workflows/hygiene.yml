@@ -36,30 +36,46 @@ jobs:
       - name: Changes updated
         run: >-
           tools/ci/actions/check-changes-modified.sh
-          '${{ github.event.pull_request.issue_url }}'
-          '${{ github.ref }}'
+          "$PR_ISSUE_URL"
+          "$GITHUB_REF_NAME"
           'pull_request'
-          '${{ github.event.pull_request.base.ref }}'
-          '${{ github.event.pull_request.base.sha }}'
-          '${{ github.event.pull_request.head.ref }}'
-          '${{ github.event.pull_request.head.sha }}'
+          "$PR_BASE_REF"
+          "$PR_BASE_SHA"
+          "$PR_HEAD_REF"
+          "$PR_HEAD_SHA"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_ISSUE_URL: ${{ github.event.pull_request.issue_url }}
+          GITHUB_REF_NAME: ${{ github.ref }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         if: github.event_name == 'pull_request'
 
       - name: configure correctly generated
         run: >-
           tools/ci/actions/check-configure.sh
-          '${{ github.ref }}'
-          '${{ github.event_name }}'
-          '${{ github.event.pull_request.base.ref }}'
-          '${{ github.event.pull_request.base.sha }}'
-          '${{ github.event.pull_request.head.ref }}'
-          '${{ github.event.pull_request.head.sha }}'
-          '${{ github.event.ref }}'
-          '${{ github.event.before }}'
-          '${{ github.event.ref }}'
-          '${{ github.event.after }}'
+          "$GITHUB_REF_NAME"
+          "$EVENT_NAME"
+          "$PR_BASE_REF"
+          "$PR_BASE_SHA"
+          "$PR_HEAD_REF"
+          "$PR_HEAD_SHA"
+          "$EVENT_REF"
+          "$EVENT_BEFORE"
+          "$EVENT_REF"
+          "$EVENT_AFTER"
+        env:
+          GITHUB_REF_NAME: ${{ github.ref }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_REF: ${{ github.event.ref }}
+          EVENT_BEFORE: ${{ github.event.before }}
+          EVENT_AFTER: ${{ github.event.after }}
         if: ${{ always() }}
 
       - name: Check that no ignored files have been committed
@@ -70,16 +86,26 @@ jobs:
         id: revered
         run: >-
           tools/ci/actions/check-typo.sh
-          '${{ github.ref }}'
-          '${{ github.event_name }}'
-          '${{ github.event.pull_request.base.ref }}'
-          '${{ github.event.pull_request.base.sha }}'
-          '${{ github.event.pull_request.head.ref }}'
-          '${{ github.event.pull_request.head.sha }}'
-          '${{ github.event.ref }}'
-          '${{ github.event.before }}'
-          '${{ github.event.ref }}'
-          '${{ github.event.after }}'
+          "$GITHUB_REF_NAME"
+          "$EVENT_NAME"
+          "$PR_BASE_REF"
+          "$PR_BASE_SHA"
+          "$PR_HEAD_REF"
+          "$PR_HEAD_SHA"
+          "$EVENT_REF"
+          "$EVENT_BEFORE"
+          "$EVENT_REF"
+          "$EVENT_AFTER"
+        env:
+          GITHUB_REF_NAME: ${{ github.ref }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_REF: ${{ github.event.ref }}
+          EVENT_BEFORE: ${{ github.event.before }}
+          EVENT_AFTER: ${{ github.event.after }}
         if: ${{ always() }}
 
       - name: check-typo on whole tree
