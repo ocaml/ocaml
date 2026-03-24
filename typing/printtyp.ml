@@ -30,10 +30,10 @@ module Doc = struct
 
 
   let typexp mode ppf ty =
-    !Oprint.out_type ppf (tree_of_typexp mode ty)
+    !Oprint.out_type ppf (tree_of_typexp [] mode ty)
 
   let type_expansion k ppf e =
-    pp_type_expansion ppf (trees_of_type_expansion k e)
+    pp_type_expansion ppf (trees_of_type_expansion k (e,[]))
 
   let type_declaration id ppf decl =
     !Oprint.out_sig_item ppf (tree_of_type_declaration id decl Trec_first)
@@ -84,7 +84,8 @@ module Doc = struct
 
   let constructor_arguments ppf a =
     let tys = tree_of_constructor_arguments a in
-    !Oprint.out_type ppf (Otyp_tuple (List.map (fun t -> None, t) tys))
+    let plain_labels t = Oprint.plain None, t in
+    !Oprint.out_type ppf (Otyp_tuple (List.map plain_labels tys))
 
   let label ppf l =
     prepare_for_printing [l.Types.ld_type];

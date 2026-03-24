@@ -26,8 +26,8 @@ Error: Unbound record field "z"
 Line 1, characters 6-14:
 1 | {x=3; contents=2};;
           ^^^^^^^^
-Error: The record field "contents" belongs to the type "'a ref"
-       but is mixed here with fields of type "t"
+Error: The record field "contents" belongs to the type "'a (|ref|)"
+       but is mixed here with fields of type "(|t|)"
 |}];;
 
 (* private types *)
@@ -98,8 +98,8 @@ type bar = { x : int; }
 Line 3, characters 20-21:
 3 | let f (r: bar) = ({ r with z = 3 } : foo)
                         ^
-Error: This expression has type "bar" but an expression was expected of type
-         "foo"
+Error: This expression has type "(|bar|)" but an expression was expected of type
+         "(|foo|)"
 |}];;
 
 type foo = { x: int };;
@@ -157,9 +157,9 @@ val x : int t = {f = 12; g = 43}
 Line 3, characters 0-19:
 3 | {x with f = "hola"};;
     ^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "string t"
-       but an expression was expected of type "int t"
-       Type "string" is not compatible with type "int"
+Error: This expression has type "(|string|) t"
+       but an expression was expected of type "(|int|) t"
+       Type "(|string|)" is not compatible with type "(|int|)"
 |}]
 
 (* PR#7696 *)
@@ -197,7 +197,7 @@ Line 1, characters 0-40:
 Error: This variant or record definition does not match that of type
          "(int, [> `A ]) def"
        Their parameters differ
-       The type "int" is not equal to the type "'a"
+       The type "(|int|)" is not equal to the type "(|'a|)"
 |}]
 
 type ('a,'b) kind = ('a, 'b) def = A constraint 'b = [> `A];;
@@ -244,7 +244,7 @@ Error: This variant or record definition does not match that of type "d"
          "x : int;"
        is not the same as:
          "x : float;"
-       The type "int" is not equal to the type "float"
+       The type "(|int|)" is not equal to the type "(|float|)"
        2. An extra field, "y", is provided in the original definition.
 |}]
 

@@ -18,7 +18,7 @@ let ret_e1 (type a b) (b : bool) (wit : (a, b) eq) (x : a) (y : b) =
 Line 3, characters 29-30:
 3 |   | Refl -> if b then x else y
                                  ^
-Error: The value "y" has type "b" = "a" but an expression was expected of type "a"
+Error: The value "y" has type "b" = "a" but an expression was expected of type "(|a|)"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -32,7 +32,7 @@ let ret_e2 (type a b) (b : bool) (wit : (a, b) eq) (x : a) (y : b) =
 Line 3, characters 29-30:
 3 |   | Refl -> if b then x else y
                                  ^
-Error: The value "y" has type "b" = "a" but an expression was expected of type "a"
+Error: The value "y" has type "b" = "a" but an expression was expected of type "(|a|)"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -50,6 +50,14 @@ Error: The constant "0" has type "int" but an expression was expected of type
          "a" = "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+|}, Principal{|
+Line 3, characters 29-30:
+3 |   | Refl -> if b then x else 0
+                                 ^
+Error: The constant "0" has type "int" but an expression was expected of type
+         "a" = "(|int|)"
+       This instance of "int" is ambiguous:
+       it would escape the scope of its equation
 |}]
 
 let ret_ei2 (type a) (b : bool) (wit : (a, int) eq) (x : a) =
@@ -65,6 +73,14 @@ Error: The constant "0" has type "int" but an expression was expected of type
          "a" = "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+|}, Principal{|
+Line 3, characters 29-30:
+3 |   | Refl -> if b then x else 0
+                                 ^
+Error: The constant "0" has type "int" but an expression was expected of type
+         "a" = "(|int|)"
+       This instance of "int" is ambiguous:
+       it would escape the scope of its equation
 |}]
 
 
@@ -77,7 +93,7 @@ let ret_f (type a b) (wit : (a, b) eq) (x : a) (y : b) =
 Line 3, characters 16-17:
 3 |   | Refl -> [x; y]
                     ^
-Error: The value "y" has type "b" = "a" but an expression was expected of type "a"
+Error: The value "y" has type "b" = "a" but an expression was expected of type "(|a|)"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -91,7 +107,7 @@ let ret_g1 (type a b) (wit : (a, b) eq) (x : a) (y : b) =
 Line 3, characters 16-17:
 3 |   | Refl -> [x; y]
                     ^
-Error: The value "y" has type "b" = "a" but an expression was expected of type "a"
+Error: The value "y" has type "b" = "a" but an expression was expected of type "(|a|)"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -231,7 +247,7 @@ Error: Signature mismatch:
          val r : '_weak1 list ref
        is not included in
          val r : T.t list ref
-       The type "'_weak1 list ref" is not compatible with the type "T.t list ref"
+       The type "'_weak1 list ref" is not compatible with the type "(|T.t|) list ref"
        This instance of "T.t" is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -267,7 +283,7 @@ Error: Signature mismatch:
          val r : '_weak2 list ref
        is not included in
          val r : T.t list ref
-       The type "'_weak2 list ref" is not compatible with the type "T.t list ref"
+       The type "(|'_weak2|) list ref" is not compatible with the type "(|T.t|) list ref"
        Type "'_weak2" is not compatible with type "T.t" = "T.u"
        This instance of "T.u" is ambiguous:
        it would escape the scope of its equation

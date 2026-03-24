@@ -288,7 +288,7 @@ module Existential_escape =
 Line 5, characters 21-22:
 5 |     let eval (D x) = x
                          ^
-Error: The value "x" has type "$a t" but an expression was expected of type "'a"
+Error: The value "x" has type "(|$a|) t" but an expression was expected of type "'a"
        The type constructor "$a" would escape its scope
        Hint: "$a" is an existential type bound by the constructor "D".
 |}];;
@@ -372,7 +372,7 @@ Line 13, characters 19-20:
 13 |     | BoolLit b -> b
                         ^
 Error: The value "b" has type "bool" but an expression was expected of type
-         "s" = "bool"
+         "s" = "(|bool|)"
        This instance of "bool" is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -466,7 +466,7 @@ let test : type a. a t -> a = fun x ->
 Line 2, characters 30-42:
 2 |   let r = match x with Int -> ky 1 (1 : a)  (* fails *)
                                   ^^^^^^^^^^^^
-Error: This expression has type "int" but an expression was expected of type "'a"
+Error: This expression has type "(|int|)" but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -541,9 +541,18 @@ let test2 : type a. a t -> a option = fun x ->
 Line 4, characters 46-48:
 4 |   begin match x with Int -> u := Some 1; r := !u end;
                                                   ^^
-Error: This expression has type "int option"
-       but an expression was expected of type "a option"
+Error: This expression has type "(|int|) option"
+       but an expression was expected of type "(|a|) option"
        Type "int" is not compatible with type "a" = "int"
+       This instance of "int" is ambiguous:
+       it would escape the scope of its equation
+|}, Principal{|
+Line 4, characters 46-48:
+4 |   begin match x with Int -> u := Some 1; r := !u end;
+                                                  ^^
+Error: This expression has type "(|int|) option"
+       but an expression was expected of type "(|a|) option"
+       Type "int" is not compatible with type "a" = "(|int|)"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -579,7 +588,7 @@ val either : 'a -> 'a -> 'a = <fun>
 Line 3, characters 44-45:
 3 |   match v with Int -> let y = either 1 x in y
                                                 ^
-Error: The value "y" has type "int" but an expression was expected of type "'a"
+Error: The value "y" has type "(|int|)" but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -697,9 +706,20 @@ let f : type a b. (a,b) eq -> <m : a; ..> -> <m : b; ..> =
 Line 2, characters 14-15:
 2 |   fun Eq o -> o
                   ^
-Error: The value "o" has type "< m : a; .. >"
-       but an expression was expected of type "< m : b; .. >"
+Error: The value "o" has type "< m : (|a|); .. >"
+       but an expression was expected of type "< m : (|b|); .. >"
+       The method "m" has type "(|a|)", but the expected method type was "(|b|)"
        Type "a" is not compatible with type "b" = "a"
+       This instance of "a" is ambiguous:
+       it would escape the scope of its equation
+|}, Principal{|
+Line 2, characters 14-15:
+2 |   fun Eq o -> o
+                  ^
+Error: The value "o" has type "< m : (|a|); .. >"
+       but an expression was expected of type "< m : (|b|); .. >"
+       The method "m" has type "(|a|)", but the expected method type was "(|b|)"
+       Type "a" is not compatible with type "b" = "(|a|)"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -710,9 +730,20 @@ let f (type a) (type b) (eq : (a,b) eq) (o : <m : a; ..>) : <m : b; ..> =
 Line 2, characters 22-23:
 2 |   match eq with Eq -> o ;; (* should fail *)
                           ^
-Error: The value "o" has type "< m : a; .. >"
-       but an expression was expected of type "< m : b; .. >"
+Error: The value "o" has type "< m : (|a|); .. >"
+       but an expression was expected of type "< m : (|b|); .. >"
+       The method "m" has type "(|a|)", but the expected method type was "(|b|)"
        Type "a" is not compatible with type "b" = "a"
+       This instance of "a" is ambiguous:
+       it would escape the scope of its equation
+|}, Principal{|
+Line 2, characters 22-23:
+2 |   match eq with Eq -> o ;; (* should fail *)
+                          ^
+Error: The value "o" has type "< m : (|a|); .. >"
+       but an expression was expected of type "< m : (|b|); .. >"
+       The method "m" has type "(|a|)", but the expected method type was "(|b|)"
+       Type "a" is not compatible with type "b" = "(|a|)"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -750,9 +781,10 @@ val f : ('a, 'b) eq -> < m : 'a > -> < m : 'b > = <fun>
 Line 4, characters 44-45:
 4 |     let r : < m : b > = match eq with Eq -> o in (* fail with principal *)
                                                 ^
-Error: The value "o" has type "< m : a >" but an expression was expected of type
-         "< m : b >"
-       Type "a" is not compatible with type "b" = "a"
+Error: The value "o" has type "< m : (|a|) >" but an expression was expected of type
+         "< m : (|b|) >"
+       The method "m" has type "(|a|)", but the expected method type was "(|b|)"
+       Type "a" is not compatible with type "b" = "(|a|)"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -766,9 +798,20 @@ let f : type a b. (a,b) eq -> < m : a; .. > -> < m : b > =
 Line 3, characters 44-45:
 3 |     let r : < m : b > = match eq with Eq -> o in (* fail *)
                                                 ^
-Error: The value "o" has type "< m : a; .. >"
-       but an expression was expected of type "< m : b >"
+Error: The value "o" has type "< m : (|a|); .. >"
+       but an expression was expected of type "< m : (|b|) >"
+       The method "m" has type "(|a|)", but the expected method type was "(|b|)"
        Type "a" is not compatible with type "b" = "a"
+       This instance of "a" is ambiguous:
+       it would escape the scope of its equation
+|}, Principal{|
+Line 3, characters 44-45:
+3 |     let r : < m : b > = match eq with Eq -> o in (* fail *)
+                                                ^
+Error: The value "o" has type "< m : (|a|); .. >"
+       but an expression was expected of type "< m : (|b|) >"
+       The method "m" has type "(|a|)", but the expected method type was "(|b|)"
+       Type "a" is not compatible with type "b" = "(|a|)"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -779,9 +822,18 @@ let f : type a b. (a,b) eq -> [> `A of a] -> [> `A of b] =
 Line 2, characters 14-15:
 2 |   fun Eq o -> o ;; (* fail *)
                   ^
-Error: The value "o" has type "[> `A of a ]"
-       but an expression was expected of type "[> `A of b ]"
-       Type "a" is not compatible with type "b" = "a"
+Error: The value "o" has type "[> `A of (|a|) ]"
+       but an expression was expected of type "[> `A of (|b|) ]"
+       In tag "`A", type "a" is not compatible with type "b" = "a"
+       This instance of "a" is ambiguous:
+       it would escape the scope of its equation
+|}, Principal{|
+Line 2, characters 14-15:
+2 |   fun Eq o -> o ;; (* fail *)
+                  ^
+Error: The value "o" has type "[> `A of (|a|) ]"
+       but an expression was expected of type "[> `A of (|b|) ]"
+       In tag "`A", type "a" is not compatible with type "b" = "(|a|)"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -792,9 +844,18 @@ let f (type a b) (eq : (a,b) eq) (v : [> `A of a]) : [> `A of b] =
 Line 2, characters 22-23:
 2 |   match eq with Eq -> v ;; (* should fail *)
                           ^
-Error: The value "v" has type "[> `A of a ]"
-       but an expression was expected of type "[> `A of b ]"
-       Type "a" is not compatible with type "b" = "a"
+Error: The value "v" has type "[> `A of (|a|) ]"
+       but an expression was expected of type "[> `A of (|b|) ]"
+       In tag "`A", type "a" is not compatible with type "b" = "a"
+       This instance of "a" is ambiguous:
+       it would escape the scope of its equation
+|}, Principal{|
+Line 2, characters 22-23:
+2 |   match eq with Eq -> v ;; (* should fail *)
+                          ^
+Error: The value "v" has type "[> `A of (|a|) ]"
+       but an expression was expected of type "[> `A of (|b|) ]"
+       In tag "`A", type "a" is not compatible with type "b" = "(|a|)"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -806,7 +867,7 @@ Lines 1-2, characters 4-15:
 1 | ....f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
 2 |   fun Eq o -> o..............
 Error: This definition has type
-         "'c 'b. ('b, 'b) eq -> ([< `A of 'b | `B ] as 'c) -> 'c"
+         "'c 'b. ((|'b|), (|'b|)) eq -> ((|[< `A of (|'b|) | `B ] as 'c|)) -> (|'c|)"
        which is less general than
          "'d 'e 'a 'b.
            ('a, 'b) eq ->
@@ -850,9 +911,9 @@ Error: This expression has type
 Line 4, characters 49-50:
 4 |     let r : [`A of b | `B] = match eq with Eq -> o in (* fail with principal *)
                                                      ^
-Error: The value "o" has type "[ `A of a | `B ]"
-       but an expression was expected of type "[ `A of b | `B ]"
-       Type "a" is not compatible with type "b" = "a"
+Error: The value "o" has type "[ `A of (|a|) | `B ]"
+       but an expression was expected of type "[ `A of (|b|) | `B ]"
+       In tag "`A", type "a" is not compatible with type "b" = "(|a|)"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -866,9 +927,18 @@ let f : type a b. (a,b) eq -> [> `A of a | `B] -> [`A of b | `B] =
 Line 3, characters 49-50:
 3 |     let r : [`A of b | `B] = match eq with Eq -> o in (* fail *)
                                                      ^
-Error: The value "o" has type "[> `A of a | `B ]"
-       but an expression was expected of type "[ `A of b | `B ]"
-       Type "a" is not compatible with type "b" = "a"
+Error: The value "o" has type "[> `A of (|a|) | `B ]"
+       but an expression was expected of type "[ `A of (|b|) | `B ]"
+       In tag "`A", type "a" is not compatible with type "b" = "a"
+       This instance of "a" is ambiguous:
+       it would escape the scope of its equation
+|}, Principal{|
+Line 3, characters 49-50:
+3 |     let r : [`A of b | `B] = match eq with Eq -> o in (* fail *)
+                                                     ^
+Error: The value "o" has type "[> `A of (|a|) | `B ]"
+       but an expression was expected of type "[ `A of (|b|) | `B ]"
+       In tag "`A", type "a" is not compatible with type "b" = "(|a|)"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -947,8 +1017,8 @@ let f : type a. a ty -> a t -> int = fun x y ->
 Line 6, characters 6-13:
 6 |   | D [|1.0|], TE TC -> 14
           ^^^^^^^
-Error: This pattern matches values of type "'a array"
-       but a pattern was expected which matches values of type "a"
+Error: This pattern matches values of type "'a (|array|)"
+       but a pattern was expected which matches values of type "(|a|)"
 |}];;
 
 type ('a,'b) pair = {right:'a; left:'b}
@@ -967,8 +1037,8 @@ type ('a, 'b) pair = { right : 'a; left : 'b; }
 Line 8, characters 25-32:
 8 |   | {left=TE TC; right=D [|1.0|]} -> 14
                              ^^^^^^^
-Error: This pattern matches values of type "'a array"
-       but a pattern was expected which matches values of type "a"
+Error: This pattern matches values of type "'a (|array|)"
+       but a pattern was expected which matches values of type "(|a|)"
 |}];;
 
 type ('a,'b) pair = {left:'a; right:'b}
@@ -1013,9 +1083,9 @@ module M : sig type 'a t val eq : ('a t, 'b t) eq end
 Line 6, characters 17-19:
 6 |   function Eq -> Eq (* fail *)
                      ^^
-Error: The constructor "Eq" has type "(a, a) eq"
-       but an expression was expected of type "(a, b) eq"
-       Type "a" is not compatible with type "b"
+Error: The constructor "Eq" has type "((|a|), (|a|)) eq"
+       but an expression was expected of type "(a, (|b|)) eq"
+       Type "(|a|)" is not compatible with type "(|b|)"
 |}];;
 
 let f : type a b. (a M.t * a, b M.t * b) eq -> (a, b) eq =
@@ -1070,7 +1140,21 @@ Line 10, characters 3-4:
 10 |   (x:<foo:int>)
         ^
 Error: The value "x" has type "t" = "< foo : int; .. as $0 >"
-       but an expression was expected of type "< foo : int >"
+       but an expression was expected of type "(|< foo : int >|)"
+       Type "$0" = "< bar : int; .. as $1 >" is not compatible with type "<  >"
+       The second object type has no method "bar"
+       Hint: "$1" is a type variable introduced in the equation
+         "$0" = "< bar : int; .. as $1 >"
+       Hint: "$0" is a type variable introduced in the equation
+         "t" = "< foo : int; .. as $0 >"
+|}, Principal{|
+type _ int_foo = IF_constr : < foo : int; .. > int_foo
+type _ int_bar = IB_constr : < bar : int; .. > int_bar
+Line 10, characters 3-4:
+10 |   (x:<foo:int>)
+        ^
+Error: The value "x" has type "t" = "(|< foo : int; .. as (|$0|) >|)"
+       but an expression was expected of type "(|< foo : int >|)"
        Type "$0" = "< bar : int; .. as $1 >" is not compatible with type "<  >"
        The second object type has no method "bar"
        Hint: "$1" is a type variable introduced in the equation
@@ -1096,6 +1180,19 @@ Error: The value "x" has type "t" = "< foo : int; .. as $0 >"
          "$0" = "< bar : int; .. as $1 >"
        Hint: "$0" is a type variable introduced in the equation
          "t" = "< foo : int; .. as $0 >"
+|}, Principal{|
+Line 3, characters 3-4:
+3 |   (x:<foo:int;bar:int>)
+       ^
+Error: The value "x" has type "t" = "(|< foo : int; .. as (|$0|) >|)"
+       but an expression was expected of type "< bar : int; foo : int >"
+       Type "$0" = "< bar : int; .. as $1 >" is not compatible with type
+         "< bar : int >"
+       The first object type has an abstract row, it cannot be closed
+       Hint: "$1" is a type variable introduced in the equation
+         "$0" = "< bar : int; .. as $1 >"
+       Hint: "$0" is a type variable introduced in the equation
+         "t" = "< foo : int; .. as $0 >"
 |}];;
 
 let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
@@ -1106,7 +1203,7 @@ let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
 Line 3, characters 2-26:
 3 |   (x:<foo:int;bar:int;..>)
       ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "< bar : int; foo : int; .. as $1 >"
+Error: This expression has type "(|< bar : int; foo : int; .. as (|$1|) >|)"
        but an expression was expected of type "'a"
        The type constructor "$1" would escape its scope
        Hint: "$1" is a type variable introduced in the equation
@@ -1115,7 +1212,7 @@ Error: This expression has type "< bar : int; foo : int; .. as $1 >"
 Line 3, characters 2-26:
 3 |   (x:<foo:int;bar:int;..>)
       ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "< bar : int; foo : int; .. as $1 >"
+Error: This expression has type "(|< bar : int; foo : int; .. as (|$1|) >|)"
        but an expression was expected of type "'a"
        This instance of "$1" is ambiguous:
        it would escape the scope of its equation
@@ -1141,7 +1238,7 @@ val g : 't -> 't int_foo -> 't int_bar -> 't * int * int = <fun>
 Line 3, characters 5-10:
 3 |   x, x#foo, x#bar
          ^^^^^
-Error: The method call "x#foo" has type "int"
+Error: The method call "x#foo" has type "(|int|)"
        but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
@@ -1214,6 +1311,14 @@ Error: The value "b" has type "b" = "int" but an expression was expected of type
          "a" = "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+|}, Principal{|
+Line 5, characters 24-25:
+5 |     if true then a else b
+                            ^
+Error: The value "b" has type "b" = "int" but an expression was expected of type
+         "a" = "(|int|)"
+       This instance of "int" is ambiguous:
+       it would escape the scope of its equation
 |}];;
 
 let f : type a b. (a,b) eq -> (b,int) eq -> a -> b -> _ = fun ab bint a b ->
@@ -1276,7 +1381,7 @@ Line 7, characters 22-36:
 7 |   if true then x else fun x -> x + 1
                           ^^^^^^^^^^^^^^
 Error: This expression has type "'a -> 'b"
-       but an expression was expected of type "M.t" = "int -> int"
+       but an expression was expected of type "M.t" = "int (|->|) int"
        This instance of "int -> int" is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -1295,7 +1400,7 @@ type (_, _) eq = Refl : ('a, 'a) eq
 Line 7, characters 35-36:
 7 |   if true then fun x -> x + 1 else x
                                        ^
-Error: The value "x" has type "M.t" = "int -> int"
+Error: The value "x" has type "M.t" = "int (|->|) int"
        but an expression was expected of type "int -> int"
        This instance of "int -> int" is ambiguous:
        it would escape the scope of its equation
@@ -1362,7 +1467,7 @@ module M :
 Line 9, characters 4-5:
 9 |     z#b
         ^
-Error: This expression has type "$a" = "< b : bool >"
+Error: This expression has type "$a" = "(|< b : bool >|)"
        but an expression was expected of type "< b : 'a; .. >"
        This instance of "< b : bool >" is ambiguous:
        it would escape the scope of its equation
@@ -1390,7 +1495,7 @@ module M :
 Line 9, characters 4-5:
 9 |     z#b
         ^
-Error: This expression has type "$a" = "< b : bool >"
+Error: This expression has type "$a" = "(|< b : bool >|)"
        but an expression was expected of type "< b : 'a; .. >"
        This instance of "< b : bool >" is ambiguous:
        it would escape the scope of its equation

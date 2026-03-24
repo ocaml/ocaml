@@ -35,9 +35,14 @@ type expanded_type = { ty: type_expr; expanded: type_expr }
 val trivial_expansion : type_expr -> expanded_type
 
 type 'a diff = { got: 'a; expected: 'a }
+type ctx =
+  | In_method of string
+  | In_tag of string
+type 'a ctx_diff = { ctx: ctx option; d: 'a diff }
 
 (** [map_diff f {expected;got}] is [{expected=f expected; got=f got}] *)
 val map_diff: ('a -> 'b) -> 'a diff -> 'b diff
+val map_cdiff: ('a -> 'b) -> 'a ctx_diff -> 'b ctx_diff
 
 (** Scope escape related errors *)
 type 'a escape_kind =
@@ -57,10 +62,6 @@ type 'a escape =
 
 val map_escape : ('a -> 'b) -> 'a escape -> 'b escape
 
-val explain: 'a list ->
-  (prev:'a option -> 'a -> 'b option) ->
-  'b option
-
 (** Type indices *)
 type unification = private Unification
 type comparison  = private Comparison
@@ -71,7 +72,7 @@ type fixed_row_case =
 
 type 'variety variant =
   (* Common *)
-  | Incompatible_types_for : string -> _ variant
+  | Arity_mismatch: string -> _ variant
   | No_tags : position * (Asttypes.label * row_field) list -> _ variant
   (* Unification *)
   | No_intersection : unification variant
@@ -97,29 +98,53 @@ type univar =
   | Var_mismatch of { order:order; diff:type_expr diff }
   | Quantification_mismatch of type_expr list
 
-type ('a, 'variety) elt =
+type highlight_target =
+  | Type of Outcometree.highlight_kind * type_expr
+  | Type_constructor of Path.t
+
+type highlight_hint = highlight_target list diff
+
+type ('a, 'variety) root =
   (* Common *)
-  | Diff : 'a diff -> ('a, _) elt
-  | Variant : 'variety variant -> ('a, 'variety) elt
-  | Obj : 'variety obj -> ('a, 'variety) elt
-  | Escape : 'a escape -> ('a, _) elt
+  | Variant : 'variety variant -> ('a, 'variety) root
+  | Obj : 'variety obj -> ('a, 'variety) root
+  | Escape : 'a escape -> ('a, _) root
   | Function_label_mismatch of Asttypes.arg_label diff
   | Tuple_label_mismatch of string option diff
-  | Incompatible_fields : { name:string; diff: type_expr diff } -> ('a, _) elt
-  | First_class_module: first_class_module -> ('a,_) elt
+  | First_class_module: first_class_module -> ('a,_) root
   | Univar of univar
+  | Highlight_hint of highlight_hint
   (* Unification & Moregen; included in Equality for simplicity *)
-  | Rec_occur : type_expr * type_expr -> ('a, _) elt
+  | Rec_occur : type_expr * type_expr -> ('a, _) root
 
-type ('a, 'variety) t = ('a, 'variety) elt list
+type ('a, 'variety) t = {
+  path: 'a ctx_diff list;
+  root: ('a, 'variety) root option
+}
 
 type 'variety trace = (type_expr,     'variety) t
 type 'variety error = (expanded_type, 'variety) t
 
 val map : ('a -> 'b) -> ('a, 'variety) t -> ('b, 'variety) t
 
-val incompatible_fields :
-  name:string -> got:type_expr -> expected:type_expr -> (type_expr, _) elt
+val no_ctx: 'a diff -> 'a ctx_diff
+val diff:
+  ?ctx:ctx -> got:'a -> expected:'a -> ('a,'variety) t -> ('a,'variety) t
+val root: ('a,'variety) root -> ('a,'variety) t
+val empty_root: ('a,'variety) t
+
+
+val incompatible_fields:
+  name:string -> got:type_expr -> expected:type_expr ->
+  (type_expr, 'v) t -> (type_expr, 'v) t
+
+val in_tag:
+  l:string -> (type_expr, 'f) t -> (type_expr, 'f) t
+
+val variant_arity_mismatch: string -> ('any, 'f) root
+
+val highlight_type:
+  Outcometree.highlight_kind -> Types.type_expr -> highlight_target list
 
 val swap_trace : ('a, 'variety) t -> ('a, 'variety) t
 
@@ -157,10 +182,9 @@ type comparison_error =
 val swap_unification_error : unification_error -> unification_error
 
 module Subtype : sig
-  type 'a elt =
-    | Diff of 'a diff
 
-  type 'a t = 'a elt list
+  type 'a t = 'a ctx_diff list
+  val diff: ?ctx:ctx -> got:'a -> expected:'a -> 'a t -> 'a t
 
   (** Just as outside [Subtype], we split traces, completed traces, and complete
       errors.  However, in a minor asymmetry, the name [Subtype.error_trace]
@@ -182,4 +206,53 @@ module Subtype : sig
     trace:error_trace -> unification_trace:unification_error_trace -> error
 
   val map : ('a -> 'b) -> 'a t -> 'b t
+end
+
+module Structured: sig
+(** This module contains helper functions to parse the error trace into the more
+    structured type {!Stuctured.t} *)
+
+  (** We extend the core explanation type with promoted explanation generated
+      from the main trace *)
+  type 'a extended_explanation =
+    | Standard of 'a
+    | Promoted of highlight_hint option * Format_doc.t
+    | Hint of highlight_hint
+
+  type ('a,'b,'c) s = {
+    top: ('a ctx_diff * bool) option; (* top = None => tr = [] *)
+    tr: 'a ctx_diff list;
+    expl: ('b, 'c) root extended_explanation option
+  }
+  (** The structured version of the trace is split in three parts:
+      - {!top} the first element of the trace
+      - {!tr} a list of meaningful context difference element
+      - {!expl} a root explanation for a type error
+   *)
+
+  type printing_status =
+    | Discard
+    | Keep
+    | Context
+    (** A {!Context} element marks the entry inside a method or a polymorphic
+        variant tag *)
+    | Optional_refinement
+    (** An [Optional_refinement] printing status is attributed to trace
+        elements that are focusing on a new subpart of a structural type.
+        Since the whole type should have been printed earlier in the trace,
+        we only print those elements if they are the last printed element
+        of a trace, and there is no explicit explanation for the
+        type error.
+    *)
+
+  (** [parse ~promote ~status] builds a structured trace from an unstructured
+      one. The [status] function is used to classify elements of the trace,
+      whereas the [promote] function describe which kind of trace element might
+      be promoted to an extended explanation in the absence of a standard
+      explanation. *)
+val parse:
+    promote:('a diff -> Format_doc.t option) ->
+    status:('a ctx_diff -> printing_status) ->
+    ('a, 'b) t -> ('a, 'a, 'b) s
+
 end

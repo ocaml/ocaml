@@ -184,6 +184,7 @@ let () =
   Misc.Style.(set_styles {
     warning = no_markup [Bold; FG Yellow];
     error = no_markup [Bold; FG Red];
+    difference_highlight = no_markup [Bold; FG Red];
     loc = no_markup [Bold; FG Blue];
     hint = no_markup [Bold; FG Green];
     inline_code = no_markup [FG Blue]});

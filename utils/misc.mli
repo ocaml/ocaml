@@ -551,9 +551,11 @@ module Style : sig
     loc: tag_style;
     hint: tag_style;
     inline_code: tag_style;
+    difference_highlight: tag_style;
   }
 
   val hint: Format_doc.formatter -> unit
+  val highlight: 'a Format_doc.printer -> 'a Format_doc.printer
   val as_inline_code: 'a Format_doc.printer -> 'a Format_doc.printer
   val inline_code: string Format_doc.printer
 

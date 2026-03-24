@@ -15,6 +15,9 @@
 
 open Outcometree
 
+val highlight: 'a -> 'a highlightable
+val plain: 'a -> 'a highlightable
+
 type 'a printer = 'a Format_doc.printer ref
 type 'a toplevel_printer = (Format.formatter -> 'a -> unit) ref
 

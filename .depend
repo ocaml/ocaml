@@ -846,6 +846,7 @@ typing/errortrace.cmi : \
     parsing/asttypes.cmi
 typing/errortrace_report.cmo : \
     typing/types.cmi \
+    typing/syntactic_highlighting.cmi \
     typing/printtyp.cmi \
     typing/predef.cmi \
     typing/path.cmi \
@@ -862,6 +863,7 @@ typing/errortrace_report.cmo : \
     typing/errortrace_report.cmi
 typing/errortrace_report.cmx : \
     typing/types.cmx \
+    typing/syntactic_highlighting.cmx \
     typing/printtyp.cmx \
     typing/predef.cmx \
     typing/path.cmx \
@@ -1611,6 +1613,14 @@ typing/subst.cmi : \
     parsing/parsetree.cmi \
     parsing/location.cmi \
     typing/ident.cmi
+typing/syntactic_highlighting.cmo : \
+    typing/outcometree.cmi \
+    typing/syntactic_highlighting.cmi
+typing/syntactic_highlighting.cmx : \
+    typing/outcometree.cmi \
+    typing/syntactic_highlighting.cmi
+typing/syntactic_highlighting.cmi : \
+    typing/outcometree.cmi
 typing/tast_iterator.cmo : \
     typing/typedtree.cmi \
     parsing/parsetree.cmi \

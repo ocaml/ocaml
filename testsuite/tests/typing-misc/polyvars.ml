@@ -247,7 +247,7 @@ Line 5, characters 25-26:
                              ^
 Error: The value "x" has type "[ `X of int ]"
        but an expression was expected of type "[ `X ]"
-       Types for tag "`X" are incompatible
+       Arities for tag "`X" are incompatible.
 |}]
 
 
@@ -257,8 +257,8 @@ Line 1, characters 25-26:
 1 | let f (x:[`X of int]) = (x:[<`X of & int])
                              ^
 Error: The value "x" has type "[ `X of int ]"
-       but an expression was expected of type "[< `X of & int ]"
-       Types for tag "`X" are incompatible
+       but an expression was expected of type "[< `X of (|&|) int ]"
+       Arities for tag "`X" are incompatible.
 |}]
 
 (** Inconsistent type *)
@@ -268,9 +268,9 @@ let f (x:[<`X of & int & float]) = (x:[`X])
 Line 3, characters 36-37:
 3 | let f (x:[<`X of & int & float]) = (x:[`X])
                                         ^
-Error: The value "x" has type "[< `X of & int & float ]"
+Error: The value "x" has type "[< `X of (|&|) int & float ]"
        but an expression was expected of type "[ `X ]"
-       Types for tag "`X" are incompatible
+       Arities for tag "`X" are incompatible.
 |}]
 
 
@@ -285,10 +285,10 @@ val f : ([< `A | `B of string | `R of 'a ] as 'a) -> int = <fun>
 Line 4, characters 30-31:
 4 | let g (x:[`A | `R of rt]) = f x
                                   ^
-Error: The value "x" has type "[ `A | `R of rt ]"
+Error: The value "x" has type "[ `A | `R of (|rt|) ]"
        but an expression was expected of type "[< `A | `R of 'a ] as 'a"
-       Type "rt" = "[ `A | `B of string | `R of rt ]" is not compatible with type
-         "[< `A | `R of 'a ] as 'a"
+       In tag "`R", type "rt" = "[ `A | `B of string | `R of rt ]"
+       is not compatible with type "[< `A | `R of 'a ] as 'a"
        The second variant type does not allow tag(s) "`B"
 |}]
 
@@ -302,7 +302,7 @@ Line 4, characters 10-50:
 4 | let f x = (x : [ `Foo of int ] :> [ `Foo | `Bar ])
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Type "[ `Foo of int ]" is not a subtype of "[ `Bar | `Foo ]"
-       Types for tag "`Foo" are incompatible
+       Arities for tag "`Foo" are incompatible.
 |}]
 
 let f x = (x : [ `Foo of int ] list :> [ `Foo | `Bar ] list)
@@ -310,9 +310,9 @@ let f x = (x : [ `Foo of int ] list :> [ `Foo | `Bar ] list)
 Line 1, characters 10-60:
 1 | let f x = (x : [ `Foo of int ] list :> [ `Foo | `Bar ] list)
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type "[ `Foo of int ] list" is not a subtype of "[ `Bar | `Foo ] list"
+Error: Type "(|[ `Foo of int ]|) list" is not a subtype of "(|[ `Bar | `Foo ]|) list"
        Type "[ `Foo of int ]" is not a subtype of "[ `Bar | `Foo ]"
-       Types for tag "`Foo" are incompatible
+       Arities for tag "`Foo" are incompatible.
 |}]
 
 (** When typing pattern match containing possibly absent polymorphic variants,
@@ -324,8 +324,33 @@ let f (x: [< `A] * 'a * ' a ) = match x with
 Line 2, characters 4-13:
 2 |   | `A , _, _ -> ()
         ^^^^^^^^^
-Error: This pattern matches values of type "[< `A ] * unit * 'a option"
+Error: This pattern matches values of type "[< `A ] * unit * 'a (|option|)"
        but a pattern was expected which matches values of type
-         "[< `A ] * unit * unit"
-       Type "'a option" is not compatible with type "unit"
+         "[< `A ] * unit * (|unit|)"
+       Type "'a (|option|)" is not compatible with type "(|unit|)"
+|}]
+
+
+(** Present tag arities must be consistent *)
+let f x =
+  let u = match x with
+  | `A 0 -> [x]
+  in
+let v = match x with
+  | `A -> [x]
+  in
+  [ `A; x]
+[%%expect {|
+Lines 2-3, characters 10-15:
+2 | ..........match x with
+3 |   | `A 0 -> [x]
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+  Here is an example of a case that is not matched: "`A 1"
+
+Line 8, characters 8-9:
+8 |   [ `A; x]
+            ^
+Error: The value "x" has type "[< `A of (|&|) int ]"
+       but an expression was expected of type "[> `A ]"
+       Arities for tag "`A" are incompatible.
 |}]

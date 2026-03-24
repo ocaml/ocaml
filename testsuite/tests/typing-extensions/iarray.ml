@@ -56,8 +56,8 @@ match ifarray with
 Line 3, characters 4-5:
 3 | | [|1;2;3;4;5|] -> "1--5"
         ^
-Error: This pattern matches values of type "int"
-       but a pattern was expected which matches values of type "float"
+Error: This pattern matches values of type "(|int|)"
+       but a pattern was expected which matches values of type "(|float|)"
 Hint: Did you mean "1."?
 |}];;
 
@@ -70,8 +70,8 @@ match marray with
 Line 2, characters 2-19:
 2 | | ([||] : _ iarray) -> "empty"
       ^^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type "'a iarray"
-       but a pattern was expected which matches values of type "int array"
+Error: This pattern matches values of type "'a (|iarray|)"
+       but a pattern was expected which matches values of type "int (|array|)"
 |}];;
 
 match iarray with
@@ -83,6 +83,6 @@ match iarray with
 Line 2, characters 2-18:
 2 | | ([||] : _ array) -> "empty"
       ^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type "'a array"
-       but a pattern was expected which matches values of type "int iarray"
+Error: This pattern matches values of type "'a (|array|)"
+       but a pattern was expected which matches values of type "int (|iarray|)"
 |}];;

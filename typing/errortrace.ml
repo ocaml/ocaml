@@ -39,14 +39,20 @@ type expanded_type = { ty: type_expr; expanded: type_expr }
 let trivial_expansion ty = { ty; expanded = ty }
 
 type 'a diff = { got: 'a; expected: 'a }
+type ctx =
+  | In_method of string
+  | In_tag of string
+type 'a ctx_diff = { ctx: ctx option; d: 'a diff }
 
 let map_diff f r =
   (* ordering is often meaningful when dealing with type_expr *)
   let got = f r.got in
   let expected = f r.expected in
   { got; expected }
-
 let swap_diff x = { got = x.expected; expected = x.got }
+
+let map_cdiff f x = { x with d = map_diff f x.d }
+let swap_cdiff x = { x with d = swap_diff x.d }
 
 type 'a escape_kind =
   | Constructor of Path.t
@@ -69,16 +75,6 @@ let map_escape f esc =
      | (Constructor _ | Univ _ | Self | Module_type _
         | Module _ | Constraint) as c -> c}
 
-let explain trace f =
-  let rec explain = function
-    | [] -> None
-    | [h] -> f ~prev:None h
-    | h :: (prev :: _ as rem) ->
-      match f ~prev:(Some prev) h with
-      | Some _ as m -> m
-      | None -> explain rem in
-  explain (List.rev trace)
-
 (* Type indices *)
 type unification = private Unification
 type comparison  = private Comparison
@@ -89,7 +85,7 @@ type fixed_row_case =
 
 type 'variety variant =
   (* Common *)
-  | Incompatible_types_for : string -> _ variant
+  | Arity_mismatch : string -> _ variant
   | No_tags : position * (Asttypes.label * row_field) list -> _ variant
   (* Unification *)
   | No_intersection : unification variant
@@ -115,47 +111,67 @@ type univar =
   | Var_mismatch of { order:order; diff:type_expr diff }
   | Quantification_mismatch of type_expr list
 
-type ('a, 'variety) elt =
+type highlight_target =
+  | Type of Outcometree.highlight_kind * type_expr
+  | Type_constructor of Path.t
+
+type highlight_hint = highlight_target list diff
+
+type ('a, 'variety) root  =
   (* Common *)
-  | Diff : 'a diff -> ('a, _) elt
-  | Variant : 'variety variant -> ('a, 'variety) elt
-  | Obj : 'variety obj -> ('a, 'variety) elt
-  | Escape : 'a escape -> ('a, _) elt
+  | Variant : 'variety variant -> ('a, 'variety) root
+  | Obj : 'variety obj -> ('a, 'variety) root
+  | Escape : 'a escape -> ('a, _) root
   | Function_label_mismatch of Asttypes.arg_label diff
   | Tuple_label_mismatch of string option diff
-  | Incompatible_fields : { name:string; diff: type_expr diff } -> ('a, _) elt
-      (* Could move [Incompatible_fields] into [obj] *)
-  | First_class_module: first_class_module -> ('a,_) elt
+  | First_class_module: first_class_module -> ('a,_) root
   | Univar of univar
+  | Highlight_hint of highlight_hint
   (* Unification & Moregen; included in Equality for simplicity *)
-  | Rec_occur : type_expr * type_expr -> ('a, _) elt
+  | Rec_occur : type_expr * type_expr -> ('a, _) root
 
-type ('a, 'variety) t = ('a, 'variety) elt list
+type ('a, 'variety) t = {
+  path: 'a ctx_diff list;
+  root: ('a, 'variety) root option
+}
 
+let root root = { root= Some root; path = [] }
+let empty_root = { root = None; path = [] }
+let no_ctx d = { ctx = None; d }
 type 'variety trace = (type_expr,     'variety) t
 type 'variety error = (expanded_type, 'variety) t
 
-let map_elt (type variety) f : ('a, variety) elt -> ('b, variety) elt = function
-  | Diff x -> Diff (map_diff f x)
+let map_root (type variety) f : ('a, variety) root -> ('b, variety) root =
+  function
   | Escape {kind = Equation x; context} ->
       Escape { kind = Equation (f x); context }
   | Escape {kind = (Univ _ | Self | Constructor _
       | Module_type _ | Module _ | Constraint);
             _}
   | Variant _ | Obj _ | Function_label_mismatch _ | Tuple_label_mismatch _
-  | Incompatible_fields _
   | Rec_occur (_, _) | First_class_module _  as x -> x
   | Univar _  as x -> x
+  | Highlight_hint _ as x -> x
 
-let map f t = List.map (map_elt f) t
+let map f t ={
+  path = List.map (map_cdiff f) t.path;
+  root = Option.map (map_root f) t.root
+}
+let diff ?ctx ~got ~expected trace =
+  { trace with path = { ctx; d = {got;expected} } :: trace.path }
 
-let incompatible_fields ~name ~got ~expected =
-  Incompatible_fields { name; diff={got; expected} }
+let incompatible_fields ~name ~got ~expected  t =
+  diff ~ctx:(In_method name) ~got ~expected t
+let in_tag ~l t = match t.path with
+  | { ctx = None; d} :: rem ->
+      { t with path = { ctx = Some(In_tag l); d } :: rem }
+  | _ -> t
+let variant_arity_mismatch l = Variant (Arity_mismatch l)
+let highlight_type k ty = [Type(k,ty)]
 
-let swap_elt (type variety) : ('a, variety) elt -> ('a, variety) elt = function
-  | Diff x -> Diff (swap_diff x)
-  | Incompatible_fields { name; diff } ->
-    Incompatible_fields { name; diff = swap_diff diff}
+
+let swap_root (type variety) : ('a, variety) root -> ('a, variety) root =
+  function
   | Obj (Missing_field(pos,s)) -> Obj (Missing_field(swap_position pos,s))
   | Obj (Abstract_row pos) -> Obj (Abstract_row (swap_position pos))
   | Variant (Fixed_row(pos,k,f)) ->
@@ -168,9 +184,13 @@ let swap_elt (type variety) : ('a, variety) elt -> ('a, variety) elt = function
         diff = swap_diff d.diff
       })
   | Univar (Quantification_mismatch _) as x -> x
+  | Highlight_hint d -> Highlight_hint (swap_diff d)
   | x -> x
 
-let swap_trace e = List.map swap_elt e
+let swap_trace t = {
+  root = Option.map swap_root t.root;
+  path = List.map swap_cdiff t.path
+}
 
 type unification_error = { trace : unification error } [@@unboxed]
 
@@ -180,16 +200,17 @@ type equality_error =
 
 type moregen_error = { trace : comparison error } [@@unboxed]
 
+let non_empty trace = trace.root <> None || trace.path <> []
 let unification_error ~trace : unification_error =
-  assert (trace <> []);
+  assert (non_empty trace);
   { trace }
 
 let equality_error ~trace ~subst : equality_error =
-    assert (trace <> []);
+    assert (non_empty trace);
     { trace; subst }
 
 let moregen_error ~trace : moregen_error =
-  assert (trace <> []);
+  assert (non_empty trace);
   { trace }
 
 type comparison_error =
@@ -200,10 +221,8 @@ let swap_unification_error ({trace} : unification_error) =
   ({trace = swap_trace trace} : unification_error)
 
 module Subtype = struct
-  type 'a elt =
-    | Diff of 'a diff
 
-  type 'a t = 'a elt list
+  type 'a t = 'a ctx_diff list
 
   type trace       = type_expr t
   type error_trace = expanded_type t
@@ -214,12 +233,157 @@ module Subtype = struct
     { trace             : error_trace
     ; unification_trace : unification error }
 
+  let diff ?ctx ~got ~expected t = { ctx; d = { got; expected }} :: t
   let error ~trace ~unification_trace =
   assert (trace <> []);
   { trace; unification_trace }
 
-  let map_elt f = function
-    | Diff x -> Diff (map_diff f x)
+  let map f t = List.map (map_cdiff f) t
+end
 
-  let map f t = List.map (map_elt f) t
+module Structured = struct
+(** This module contains helper functions to parse the error trace into the more
+    structured type {!Stuctured.t} *)
+
+(** We extend the core explanation type with promoted explanation generated from
+    the main trace *)
+type 'a extended_explanation =
+  | Standard of 'a
+  | Promoted of highlight_hint option * Format_doc.t
+  | Hint of highlight_hint
+
+type ('a,'b,'c) s = {
+  top: ('a ctx_diff * bool) option;
+  tr: 'a ctx_diff list;
+  expl: ('b,'c) root extended_explanation option;
+}
+(** The structured version of the trace is split in three parts:
+- {!top} the first element of the trace
+- {!tr} a list of meaningful context difference element
+- {!expl} a root explanation for a type error
+*)
+
+(**  The first intermediary representation splits the trace into four parts:
+- the {!head} element of the trace
+- {!before}: trace elements appearing before the last method or tag
+  difference, in reverse order.
+- {!last_ctx}: the last method or tag context, and the list of elements after it
+  in reverse order.
+- {!optional}: the last element that might be useful to print, if we do not
+  discover a better element to print later on.
+Contrarily to the {!t} format this form can be built element by element. *)
+type ('a,'b) segments =
+  {
+    head: 'a;
+    before:'a list;
+    last_ctx:('a * 'a list) option;
+    optional: 'a option;
+    expl: 'b option;
+  }
+
+let head_segment hd expl =
+  { head = hd; before=[]; last_ctx = None; optional = None; expl }
+
+(** Add a non-contextual element to the active context *)
+let add x s = match s.last_ctx with
+  | None ->  { s with optional = None; before = x :: s.before }
+  | Some (ctx, rest)->
+      { s with optional = None; last_ctx = Some (ctx, x :: rest)}
+
+(** Add a new context, add the last context contents to the {!before} trace *)
+let add_ctx c s = match s.last_ctx with
+  | None -> { s with optional = None; last_ctx = Some (c,[]) }
+  | Some (_ctx, rest) -> {
+      head = s.head;
+      optional = None;
+      before = rest @ s.before;
+      last_ctx = Some (c,[]);
+      expl = s.expl
+    }
+
+type printing_status =
+  | Discard
+  | Keep
+  | Context
+    (** A {!Context} element marks the entry inside a method or a polymorphic
+        variant tag *)
+  | Optional_refinement
+  (** An [Optional_refinement] printing status is attributed to trace
+      elements that are focusing on a new subpart of a structural type.
+      Since the whole type should have been printed earlier in the trace,
+      we only print those elements if they are the last printed element
+      of a trace, and there is no explicit explanation for the
+      type error.
+  *)
+
+(** Construct a segmented trace from an unstructured trace *)
+let segment status path expl = match path with
+  | [] -> assert false
+  | hd :: tr ->
+      List.fold_left (fun s x ->
+      match status x with
+      | Discard -> s
+      | Keep -> add x s
+      | Optional_refinement -> { s with optional = Some x }
+      | Context -> add_ctx x s
+    ) (head_segment hd expl) tr
+
+let promoted ?hint x = match x, hint with
+  | None, None -> None
+  | Some x, _ -> Some (Promoted (hint,x))
+  | None, Some h -> Some (Hint h)
+
+type 'a visibility =
+  | Visible of 'a
+  | Info of highlight_hint
+  | Invisible
+
+let explanation_visibility = function
+  | None -> Invisible
+  | Some (Highlight_hint h) -> Info h
+  | Some e -> Visible e
+
+let split_hint = function
+  | Highlight_hint h -> Hint h
+  | e -> Standard e
+
+let merge promote s =
+  (* First, we commit the last contextualized segment of the trace to the trace
+     if there one. We also discard the optional last element in this
+     case. *)
+  let rtr, opt = match s.last_ctx with
+    | None -> s.before, s.optional
+    | Some (ctx, rest) -> rest @ ctx :: s.before, None
+  in
+  let rtr, expl =
+    (* If there are no root explanation, we try to promote one from the last
+       element*)
+    match explanation_visibility s.expl, rtr, s.head with
+    | Visible expl, _, _ -> rtr, Some (Standard expl)
+    | Invisible, [], last | Invisible, last :: _, _ ->
+        rtr, promoted (promote last.d)
+    | Info hint, [], last | Info hint, last :: _, _ ->
+        rtr, promoted ~hint (promote last.d)
+  in
+  (* Finally, we keep the last optional element only if there were no
+     explanation at all.*)
+  let tr = match expl, opt with
+    | (None | Some (Hint _)), Some opt -> List.rev (opt :: rtr)
+    | Some _, _ | None, None  -> List.rev rtr
+  in
+  (* We use a compact presentation for the top element only if the trace is
+     empty, or is a singleton contextual element (?). *)
+  let compact_head = match tr with
+    | [] | [{ ctx = Some _; _}] -> s.head, true
+    | _ -> s.head, false
+  in
+  { top = Some compact_head; tr; expl }
+
+  let parse ~promote ~status s =
+    match s.path with
+    | [] ->
+        let expl = Option.map split_hint s.root in
+        { top = None; tr = []; expl }
+    | path -> merge promote (segment status path s.root)
+
 end

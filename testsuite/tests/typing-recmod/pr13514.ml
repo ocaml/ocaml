@@ -13,5 +13,5 @@ end
 Line 6, characters 29-30:
 6 |   let f: t -> M.t = fun x -> x
                                  ^
-Error: The value "x" has type "t" but an expression was expected of type "M.t"
+Error: The value "x" has type "(|t|)" but an expression was expected of type "(|M.t|)"
 |}]

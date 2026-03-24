@@ -194,9 +194,11 @@ Line 3, characters 36-41:
 3 |     inherit parameter_contains_self param
                                         ^^^^^
 Error: The value "param" has type
-         "< redrawWidget : parameter_contains_self -> unit; .. >"
+         "< redrawWidget : parameter_contains_self (|->|) unit; .. >"
        but an expression was expected of type
-         "< redrawWidget : < invalidate : unit; .. > -> unit; .. >"
+         "< redrawWidget : < invalidate : unit; .. > (|->|) unit; .. >"
+       The method "redrawWidget" has type "parameter_contains_self -> unit",
+       but the expected method type was "< invalidate : unit; .. > -> unit"
        Type "parameter_contains_self" = "< invalidate : unit >"
        is not compatible with type "< invalidate : unit; .. >"
        Self type cannot be unified with a closed object type
@@ -210,9 +212,11 @@ Line 3, characters 26-31:
 3 |   parameter_contains_self param;;
                               ^^^^^
 Error: The value "param" has type
-         "< redrawWidget : parameter_contains_self -> unit; .. >"
+         "< redrawWidget : parameter_contains_self (|->|) unit; .. >"
        but an expression was expected of type
-         "< redrawWidget : < invalidate : unit; .. > -> unit; .. >"
+         "< redrawWidget : < invalidate : unit; .. > (|->|) unit; .. >"
+       The method "redrawWidget" has type "parameter_contains_self -> unit",
+       but the expected method type was "< invalidate : unit; .. > -> unit"
        Type "parameter_contains_self" = "< invalidate : unit >"
        is not compatible with type "< invalidate : unit; .. >"
        Self type cannot be unified with a closed object type
@@ -257,9 +261,11 @@ Line 3, characters 36-41:
 3 |     inherit parameter_contains_self param
                                         ^^^^^
 Error: The value "param" has type
-         "< redrawWidget : parameter_contains_self -> unit; .. >"
+         "< redrawWidget : parameter_contains_self (|->|) unit; .. >"
        but an expression was expected of type
-         "< redrawWidget : < invalidate : unit; .. > -> unit; .. >"
+         "< redrawWidget : < invalidate : unit; .. > (|->|) unit; .. >"
+       The method "redrawWidget" has type "parameter_contains_self -> unit",
+       but the expected method type was "< invalidate : unit; .. > -> unit"
        Type "parameter_contains_self" = "< invalidate : unit >"
        is not compatible with type "< invalidate : unit; .. >"
        Self type cannot be unified with a closed object type

@@ -28,7 +28,7 @@ Error: Signature mismatch:
          "Foo of float * int"
        is not the same as:
          "Foo of int * int"
-       The type "float" is not equal to the type "int"
+       The type "(|float|)" is not equal to the type "(|int|)"
 |}];;
 
 module M2 : sig
@@ -90,7 +90,7 @@ Error: Signature mismatch:
          "x : float;"
        is not the same as:
          "x : int;"
-       The type "float" is not equal to the type "int"
+       The type "(|float|)" is not equal to the type "(|int|)"
 |}];;
 
 module M4 : sig
@@ -174,7 +174,7 @@ Error: Signature mismatch:
          "A of 'b"
        is not the same as:
          "A of 'a"
-       The type "'b" is not equal to the type "'a"
+       The type "(|'b|)" is not equal to the type "(|'a|)"
 |}];;
 
 module M : sig
@@ -200,7 +200,7 @@ Error: Signature mismatch:
          "A of 'a"
        is not the same as:
          "A of 'a"
-       The type "'a" is not equal to the type "'b"
+       The type "(|'a|)" is not equal to the type "(|'b|)"
 |}];;
 
 
@@ -407,7 +407,7 @@ Error: Signature mismatch:
          "A of float"
        is not the same as:
          "A of int"
-       The type "float" is not equal to the type "int"
+       The type "(|float|)" is not equal to the type "(|int|)"
        3->6. Constructor "C" has been moved from position 3 to 6.
 |}]
 
@@ -438,7 +438,7 @@ Error: Signature mismatch:
          "B of float"
        is not the same as:
          "B of int"
-       The type "float" is not equal to the type "int"
+       The type "(|float|)" is not equal to the type "(|int|)"
 |}]
 
 module Very_imperfect_match: sig

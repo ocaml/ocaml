@@ -77,8 +77,8 @@ let rec f x = ( (), () : _ -> _ -> _ )
 Line 3, characters 16-22:
 3 | let rec f x = ( (), () : _ -> _ -> _ )
                     ^^^^^^
-Error: This expression has type "'a * 'b"
-       but an expression was expected of type "'c -> 'd -> 'e"
+Error: This expression has type "'a (|*|) 'b"
+       but an expression was expected of type "'c (|->|) 'd -> 'e"
 |}]
 
 let rec g x = ( ((), ()) : _ -> _ :> _ )
@@ -86,8 +86,8 @@ let rec g x = ( ((), ()) : _ -> _ :> _ )
 Line 1, characters 16-24:
 1 | let rec g x = ( ((), ()) : _ -> _ :> _ )
                     ^^^^^^^^
-Error: This expression has type "'a * 'b"
-       but an expression was expected of type "'c -> 'd"
+Error: This expression has type "'a (|*|) 'b"
+       but an expression was expected of type "'c (|->|) 'd"
 |}]
 
 
@@ -337,7 +337,7 @@ Line 2, characters 6-15:
 2 | let f (A x|B x) = 0
           ^^^^^^^^^
 Error: The variable "x" on the left-hand side of this or-pattern has type "
-       int" but on the right-hand side it has type "float"
+       (|int|)" but on the right-hand side it has type "(|float|)"
 |}]
 
 (** Orphan pattern variable *)
@@ -386,7 +386,7 @@ Line 3, characters 9-13:
 3 | let x = ([`B]:>[`A])
              ^^^^
 Error: This expression cannot be coerced to type ""[ `A ]""; it has type
-         "[> `B ] list"
+         "[> `B ] (|list|)"
        but is here used with type "[< `A ]"
 |}]
 
@@ -461,8 +461,8 @@ type s = { y : unit; }
 Line 3, characters 21-22:
 3 | let f = function {x; y} -> x
                          ^
-Error: The record field "y" belongs to the type "s"
-       but is mixed here with fields of type "t"
+Error: The record field "y" belongs to the type "(|s|)"
+       but is mixed here with fields of type "(|t|)"
 |}]
 
 

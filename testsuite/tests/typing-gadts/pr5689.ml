@@ -104,7 +104,7 @@ Line 7, characters 35-43:
 7 |     | (Kind _, Ast_Text txt)    -> Text txt
                                        ^^^^^^^^
 Error: This constructor has type "[< inkind > `Nonlink ] inline_t"
-       but an expression was expected of type "a inline_t"
+       but an expression was expected of type "(|a|) inline_t"
        Type "[< inkind > `Nonlink ]" = "[< `Link | `Nonlink > `Nonlink ]"
        is not compatible with type "a" = "[< `Link | `Nonlink ]"
        The second variant type is bound to "$'a",

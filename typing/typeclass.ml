@@ -2017,7 +2017,7 @@ let quoted_type ppf t = Style.as_inline_code Printtyp.type_expr ppf t
 
 let report_error_doc env ppf =
   let pp_args ppf args =
-    let args = List.map (Out_type.tree_of_typexp Type) args in
+    let args = List.map (Out_type.tree_of_typexp [] Type) args in
     Style.as_inline_code !Oprint.out_type_args ppf args
   in
   function
@@ -2072,9 +2072,9 @@ let report_error_doc env ppf =
       Out_type.prepare_for_printing [abbrev; actual; expected];
       fprintf ppf "@[The abbreviation@ %a@ expands to type@ %a@ \
        but is used with type@ %a@]"
-        out_type (Out_type.tree_of_typexp Type abbrev)
-        out_type (Out_type.tree_of_typexp Type actual)
-        out_type (Out_type.tree_of_typexp Type expected)
+        out_type (Out_type.tree_of_typexp [] Type abbrev)
+        out_type (Out_type.tree_of_typexp [] Type actual)
+        out_type (Out_type.tree_of_typexp [] Type expected)
   | Constructor_type_mismatch (c, err) ->
       let msg = Format_doc.doc_printf in
       Errortrace_report.unification ppf env err
@@ -2143,11 +2143,12 @@ let report_error_doc env ppf =
         in
         Out_type.add_type_to_preparation meth_ty;
         Out_type.add_type_to_preparation ty1;
+        let h = Errortrace.highlight_type Independent ty0 in
         fprintf ppf
           "The method %a@ has type@;<1 2>%a@ where@ %a@ is unbound"
           Style.inline_code meth
-          out_type (Out_type.tree_of_typexp Type meth_ty)
-          out_type (Out_type.tree_of_typexp Type ty0)
+          out_type (Out_type.tree_of_typexp h Type meth_ty)
+          out_type (Out_type.tree_of_typexp h Type ty0)
       in
       fprintf ppf
         "@[<v>@[Some type variables are unbound in this type:@;<1 2>%a@]@ \

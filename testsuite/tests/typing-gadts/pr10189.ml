@@ -17,11 +17,11 @@ let f (type a b) (y : (a, b) j t) : a -> b =
 Line 2, characters 6-7:
 2 |   let A = y in fun x -> x;;
           ^
-Error: This pattern matches values of type "i t"
-       but a pattern was expected which matches values of type "(a, b) j t"
-       Type "i" = "< m : 'c. 'c -> 'c >" is not compatible with type
-         "(a, b) j" = "< m : a -> b >"
-       The method "m" has type "'c. 'c -> 'c", but the expected method type was
+Error: This pattern matches values of type "(|i|) t"
+       but a pattern was expected which matches values of type "(a, b) (|j|) t"
+       Type "i" = "< m : (|'c. 'c -> 'c|) >" is not compatible with type
+         "(a, b) j" = "< m : a (|->|) b >"
+       The method "m" has type "'c. (|'c|) -> (|'c|)", but the expected method type was
        "a -> b"
        The universal variable "'c" would escape its scope
 |}]
@@ -198,9 +198,9 @@ Error: Signature mismatch:
        is not included in
          type 'b t = A constraint 'b = < x : 'a. 'a -> x >
        Their parameters differ
-       The type "< x : 'a. 'a -> 'a >" is not equal to the type
-         "< x : 'a. 'a -> x >"
-       Type "'a" is not equal to type "x" = "M.x"
-       The method "x" has type "'a. 'a -> 'a", but the expected method type was
-       "'a. 'a -> x"
+       The type "< x : (|'a. 'a -> 'a|) >" is not equal to the type
+         "< x : (|'a. 'a -> x|) >"
+       The method "x" has type "'a. 'a -> (|'a|)", but the expected method type was
+       "'a. 'a -> (|x|)"
+       Type "(|'a|)" is not equal to type "x" = "(|M.x|)"
 |}]

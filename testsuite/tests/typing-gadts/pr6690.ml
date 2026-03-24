@@ -30,9 +30,9 @@ Line 15, characters 4-9:
 15 |   | Local -> fun _ -> raise Exit
          ^^^^^
 Error: This pattern matches values of type
-         "($0, $0 * insert, $0 local_visit_action) context"
+         "((|$0|), (|$0|) * insert, (|$0|) local_visit_action) context"
        but a pattern was expected which matches values of type
-         "($0, $0 * insert, visit_action) context"
+         "((|$0|), (|$0|) * insert, visit_action) context"
        The type constructor "$0" would escape its scope
        Hint: "$0" is a type variable introduced in the equation
          "visit_action" = "$0 local_visit_action"
@@ -49,9 +49,9 @@ Line 4, characters 4-9:
 4 |   | Local -> fun _ -> raise Exit
         ^^^^^
 Error: This pattern matches values of type
-         "($'a, $'a * insert, $'a local_visit_action) context"
+         "((|$'a|), (|$'a|) * insert, (|$'a|) local_visit_action) context"
        but a pattern was expected which matches values of type
-         "($'a, $'a * insert, visit_action) context"
+         "((|$'a|), (|$'a|) * insert, visit_action) context"
        The type constructor "$'a" would escape its scope
        Hint: "$'a" is a type variable introduced in the equation
          "visit_action" = "$'a local_visit_action"

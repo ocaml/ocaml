@@ -128,7 +128,7 @@ let rec annotate_presence
 Line 18, characters 12-13:
 18 |     Entry.E e
                  ^
-Error: The value "e" has type "($s, $2, $1, $0) Entry.t.E"
+Error: The value "e" has type "($s, (|$2|), $1, $0) Entry.t.E"
        but an expression was expected of type "($s, 'a, 'b, 'c) Entry.t.E"
        The type constructor "$2" would escape its scope
        Hint: "$s" is an existential type bound by the constructor "E".

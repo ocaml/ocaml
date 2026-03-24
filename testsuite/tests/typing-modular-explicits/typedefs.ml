@@ -75,9 +75,9 @@ let t9_fail (x : (module T : T) -> T.t -> int) = C x
 Line 1, characters 51-52:
 1 | let t9_fail (x : (module T : T) -> T.t -> int) = C x
                                                        ^
-Error: The value "x" has type "(module T : T) -> T.t -> int"
-       but an expression was expected of type "(module T : T) -> T.t -> T.t"
-       Type "int" is not compatible with type "T.t"
+Error: The value "x" has type "(module T : T) -> T.t -> (|int|)"
+       but an expression was expected of type "(module T : T) -> T.t -> (|T.t|)"
+       Type "(|int|)" is not compatible with type "(|T.t|)"
 |}]
 
 type 'a t6bis_good = (module M : T with type t = int) -> (M.t as 'a)
@@ -87,7 +87,7 @@ type 'a t6bis_good = (module M : T with type t = int) -> (M.t as 'a)
 Line 1, characters 58-67:
 1 | type 'a t6bis_good = (module M : T with type t = int) -> (M.t as 'a)
                                                               ^^^^^^^^^
-Error: This type "'a" should be an instance of type "M.t"
+Error: This type "'a" should be an instance of type "(|M.t|)"
        The type constructor "M.t" would escape its scope
 |}]
 
@@ -97,7 +97,7 @@ type 'a t6_fail = (module M : T) -> (M.t as 'a)
 Line 1, characters 37-46:
 1 | type 'a t6_fail = (module M : T) -> (M.t as 'a)
                                          ^^^^^^^^^
-Error: This type "'a" should be an instance of type "M.t"
+Error: This type "'a" should be an instance of type "(|M.t|)"
        The type constructor "M.t" would escape its scope
 |}]
 
@@ -287,8 +287,8 @@ Error: This variant or record definition does not match that of type "typ1"
          "A of ((module Add with type t = int) -> int -> int)"
        is not the same as:
          "A of ((module A : Add with type t = int) -> float -> int)"
-       The type "(module Add with type t = int) -> int -> int"
+       The type "(module Add with type t = int) -> (|int|) -> int"
        is not equal to the type
-         "(module A : Add with type t = int) -> float -> int"
-       Type "int" is not equal to type "float"
+         "(module A : Add with type t = int) -> (|float|) -> int"
+       Type "(|int|)" is not equal to type "(|float|)"
 |}]

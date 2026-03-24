@@ -108,7 +108,7 @@ Warning 41 [ambiguous-name]: these field labels belong to several types:
 Line 3, characters 35-36:
 3 |   let f r = match r with {x; y} -> y + y
                                        ^
-Error: The value "y" has type "bool" but an expression was expected of type "int"
+Error: The value "y" has type "(|bool|)" but an expression was expected of type "(|int|)"
 |}]
 
 module F2 = struct
@@ -373,8 +373,8 @@ let r = { M.x = 3; N.y = 4; };; (* error: different definitions *)
 Line 1, characters 19-22:
 1 | let r = { M.x = 3; N.y = 4; };; (* error: different definitions *)
                        ^^^
-Error: The record field "N.y" belongs to the type "N.bar"
-       but is mixed here with fields of type "M.foo"
+Error: The record field "N.y" belongs to the type "(|N.bar|)"
+       but is mixed here with fields of type "(|M.foo|)"
 |}]
 
 module MN = struct include M include N end
@@ -408,8 +408,8 @@ Warning 41 [ambiguous-name]: "y" belongs to several types: "NM.foo" "NM.bar".
 Line 1, characters 19-23:
 1 | let r = {MN.x = 3; NM.y = 4};; (* error: type would change with order *)
                        ^^^^
-Error: The record field "NM.y" belongs to the type "NM.foo" = "M.foo"
-       but is mixed here with fields of type "MN.bar" = "N.bar"
+Error: The record field "NM.y" belongs to the type "NM.foo" = "(|M.foo|)"
+       but is mixed here with fields of type "MN.bar" = "(|N.bar|)"
 |}]
 
 (* Lpw25 *)

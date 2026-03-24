@@ -35,8 +35,8 @@ let (x : int * int) = ~x:1, 2
 Line 1, characters 22-29:
 1 | let (x : int * int) = ~x:1, 2
                           ^^^^^^^
-Error: This expression has type "x:'a * 'b"
-       but an expression was expected of type "int * int"
+Error: This expression has type "(|x:|)'a * 'b"
+       but an expression was expected of type "(||)int * int"
        The first tuple element is labeled "x",
        but an unlabeled element was expected
 |}]
@@ -46,8 +46,8 @@ let (x : x:string * int) = ~x:1, 2
 Line 1, characters 30-31:
 1 | let (x : x:string * int) = ~x:1, 2
                                   ^
-Error: The constant "1" has type "int" but an expression was expected of type
-         "string"
+Error: The constant "1" has type "(|int|)" but an expression was expected of type
+         "(|string|)"
 |}]
 
 let (x : int * y:int) = ~x:1, 2
@@ -55,8 +55,8 @@ let (x : int * y:int) = ~x:1, 2
 Line 1, characters 24-31:
 1 | let (x : int * y:int) = ~x:1, 2
                             ^^^^^^^
-Error: This expression has type "x:'a * 'b"
-       but an expression was expected of type "int * y:int"
+Error: This expression has type "(|x:|)'a * (||)'b"
+       but an expression was expected of type "(||)int * (|y:|)int"
        The first tuple element is labeled "x",
        but an unlabeled element was expected
 |}]
@@ -80,8 +80,8 @@ else
 Line 4, characters 3-24:
 4 |    ~a: "5", 10, ~c: "hi"
        ^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "a:string * int * c:'a"
-       but an expression was expected of type "a:string * int * string"
+Error: This expression has type "a:string * int * (|c:|)'a"
+       but an expression was expected of type "a:string * int * (||)string"
        The first tuple element is labeled "c",
        but an unlabeled element was expected
 |}]
@@ -95,7 +95,7 @@ else
 Line 4, characters 3-24:
 4 |    ~a: "5", 10, ~c: "hi"
        ^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "a:'a * 'b * c:'c"
+Error: This expression has type "a:'a * 'b * (|c:|)'c"
        but an expression was expected of type "a:string * int"
 |}]
 
@@ -108,8 +108,8 @@ else
 Line 4, characters 3-24:
 4 |    ~a: "5", 10, ~c: "hi"
        ^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "a:string * int * c:'a"
-       but an expression was expected of type "a:string * int * b:string"
+Error: This expression has type "a:string * int * (|c:|)'a"
+       but an expression was expected of type "a:string * int * (|b:|)string"
        Labels "c" and "b" do not match
 |}]
 
@@ -162,8 +162,8 @@ let a = choose_pt true (~y: 6, ~x: 5)
 Line 1, characters 23-37:
 1 | let a = choose_pt true (~y: 6, ~x: 5)
                            ^^^^^^^^^^^^^^
-Error: This expression has type "y:'a * x:'b"
-       but an expression was expected of type "x:int * y:int"
+Error: This expression has type "(|y:|)'a * (|x:|)'b"
+       but an expression was expected of type "(|x:|)int * (|y:|)int"
        Labels "y" and "x" do not match
 |}]
 
@@ -174,8 +174,8 @@ and b = 2, ~lbl:a
 Line 2, characters 16-17:
 2 | and b = 2, ~lbl:a
                     ^
-Error: The value "a" has type "int * lbl:(int * lbl:'a)"
-       but an expression was expected of type "'a"
+Error: The value "a" has type "int * lbl:(int * lbl:(|'a|))"
+       but an expression was expected of type "(|'a|)"
        The type variable "'a" occurs inside "int * lbl:(int * lbl:'a)"
 |}]
 
@@ -238,7 +238,7 @@ let z = ~(x:string), ~y:"baz";;
 Line 1, characters 10-11:
 1 | let z = ~(x:string), ~y:"baz";;
               ^
-Error: The value "x" has type "int" but an expression was expected of type "string"
+Error: The value "x" has type "(|int|)" but an expression was expected of type "(|string|)"
 |}];;
 
 (* Take a [a:'a * b:'a] and an int, and returns a
@@ -275,8 +275,8 @@ let x: string * a:int * int = ~lbl:5, "hi"
 Line 1, characters 30-42:
 1 | let x: string * a:int * int = ~lbl:5, "hi"
                                   ^^^^^^^^^^^^
-Error: This expression has type "lbl:'a * 'b"
-       but an expression was expected of type "string * a:int * int"
+Error: This expression has type "(|lbl:|)'a * (||)'b"
+       but an expression was expected of type "(||)string * (|a:|)int * (|int|)"
 |}]
 
 (* Well-typed *)
@@ -320,8 +320,8 @@ let _ = { x = ~foo:1, ~bar:2}
 Line 1, characters 14-28:
 1 | let _ = { x = ~foo:1, ~bar:2}
                   ^^^^^^^^^^^^^^
-Error: This expression has type "foo:'a * bar:'b"
-       but an expression was expected of type "int * int"
+Error: This expression has type "(|foo:|)'a * (|bar:|)'b"
+       but an expression was expected of type "(||)int * (||)int"
        The first tuple element is labeled "foo",
        but an unlabeled element was expected
 |}]
@@ -336,8 +336,8 @@ let _ : tx = {x = 1, ~bar:2}
 Line 1, characters 18-27:
 1 | let _ : tx = {x = 1, ~bar:2}
                       ^^^^^^^^^
-Error: This expression has type "'a * bar:'b"
-       but an expression was expected of type "foo:int * bar:int"
+Error: This expression has type "(||)'a * bar:'b"
+       but an expression was expected of type "(|foo:|)int * bar:int"
        A label "foo" was expected
 |}]
 
@@ -346,8 +346,8 @@ let _ : tx = { x = ~foo:1, 2}
 Line 1, characters 19-28:
 1 | let _ : tx = { x = ~foo:1, 2}
                        ^^^^^^^^^
-Error: This expression has type "foo:int * 'a"
-       but an expression was expected of type "foo:int * bar:int"
+Error: This expression has type "foo:int * (||)'a"
+       but an expression was expected of type "foo:int * (|bar:|)int"
        A label "bar" was expected
 |}]
 
@@ -356,8 +356,8 @@ let _ : tx = { x = 1, 2}
 Line 1, characters 19-23:
 1 | let _ : tx = { x = 1, 2}
                        ^^^^
-Error: This expression has type "'a * 'b"
-       but an expression was expected of type "foo:int * bar:int"
+Error: This expression has type "(||)'a * (||)'b"
+       but an expression was expected of type "(|foo:|)int * (|bar:|)int"
        A label "foo" was expected
 |}]
 
@@ -491,7 +491,7 @@ Error: Signature mismatch:
          type t = x:int * int
        is not included in
          type t = y:int * int
-       The type "x:int * int" is not equal to the type "y:int * int"
+       The type "(|x:|)int * int" is not equal to the type "(|y:|)int * int"
 |}]
 
 module Int_int : sig
@@ -510,7 +510,7 @@ Error: Signature mismatch:
          type t = x:int * int
        is not included in
          type t = int * int
-       The type "x:int * int" is not equal to the type "int * int"
+       The type "(|x:|)int * int" is not equal to the type "(||)int * int"
 |}]
 
 (* Recursive modules *)

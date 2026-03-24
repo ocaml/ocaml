@@ -39,7 +39,7 @@ Error: This variant or record definition does not match that of type "M1.t"
          "E of M1.x"
        is not the same as:
          "E of M1.y"
-       The type "M1.x" = "int" is not equal to the type "M1.y" = "bool"
+       The type "M1.x" = "(|int|)" is not equal to the type "M1.y" = "(|bool|)"
 |}]
 
 (* Also check the original version *)
@@ -82,6 +82,6 @@ Error: This variant or record definition does not match that of type "M1.t"
          "E of (M1.x, M1.x) eq"
        is not the same as:
          "E of (M1.x, M1.y) eq"
-       The type "(M1.x, M1.x) eq" is not equal to the type "(M1.x, M1.y) eq"
-       Type "M1.x" = "int" is not equal to type "M1.y" = "bool"
+       The type "(M1.x, (|M1.x|)) eq" is not equal to the type "(M1.x, (|M1.y|)) eq"
+       Type "M1.x" = "(|int|)" is not equal to type "M1.y" = "(|bool|)"
 |}]

@@ -65,7 +65,7 @@ val f : 'a -> 'a t2 -> int = <fun>
 Line 3, characters 12-15:
 3 |   | A, f -> f 1
                 ^^^
-Error: This expression has type "int" but an expression was expected of type "'a"
+Error: This expression has type "(|int|)" but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -119,11 +119,11 @@ Line 13, characters 4-14:
 13 |   | Type.Equal -> ()
          ^^^^^^^^^^
 Error: This pattern matches values of type
-         "((module X : S) -> (int * $'a) R.n,
-          (module X : S) -> (int * $'a) R.n)
+         "((module X : S) -> (int * (|$'a|)) R.n,
+          (module X : S) -> (int * (|$'a|)) R.n)
          Type.eq"
        but a pattern was expected which matches values of type
-         "((module X : S) -> (int * $'a) R.n,
+         "((module X : S) -> (int * (|$'a|)) R.n,
           (module X : S) -> (float * 'b) R.n)
          Type.eq"
        The type constructor "$'a" would escape its scope

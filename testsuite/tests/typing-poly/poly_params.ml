@@ -34,7 +34,7 @@ let _ = poly1 (id (fun x -> x))
 Line 1, characters 14-31:
 1 | let _ = poly1 (id (fun x -> x))
                   ^^^^^^^^^^^^^^^^^
-Error: This argument has type "'a -> 'a" which is less general than
+Error: This argument has type "(|'a|) -> (|'a|)" which is less general than
          "'a0. 'a0 -> 'a0"
        The type variable "'a" is not generalizable to an universal
        type variable.
@@ -45,7 +45,7 @@ let _ = poly1 (let r = ref None in fun x -> r := Some x; x)
 Line 1, characters 14-59:
 1 | let _ = poly1 (let r = ref None in fun x -> r := Some x; x)
                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This argument has type "'a -> 'a" which is less general than
+Error: This argument has type "(|'a|) -> (|'a|)" which is less general than
          "'a0. 'a0 -> 'a0"
        The type variable "'a" is not generalizable to an universal
        type variable.
@@ -56,7 +56,7 @@ let escape f = poly1 (fun x -> f x; x)
 Line 1, characters 21-38:
 1 | let escape f = poly1 (fun x -> f x; x)
                          ^^^^^^^^^^^^^^^^^
-Error: This argument has type "'a -> 'a" which is less general than
+Error: This argument has type "(|'a|) -> (|'a|)" which is less general than
          "'a0. 'a0 -> 'a0"
        The type variable "'a" is not generalizable to an universal
        type variable.
@@ -177,7 +177,7 @@ val needs_magic : ('a 'b. 'a -> 'b) -> string = <fun>
 Line 2, characters 20-32:
 2 | let _ = needs_magic (fun x -> x)
                         ^^^^^^^^^^^^
-Error: This argument has type "'b. 'b -> 'b" which is less general than
+Error: This argument has type "'b. (|'b|) -> (|'b|)" which is less general than
          "'a 'b. 'a -> 'b"
        The universal type variable "'b" in the first type matches multiple
        distinct variables in the second type.
@@ -216,7 +216,7 @@ Line 3, characters 15-16:
 3 |   else with_id f
                    ^
 Error: The value "f" has type "('b -> 'b) -> 'c"
-       but an expression was expected of type "('a. 'a -> 'a) -> 'd"
+       but an expression was expected of type "('a. (|'a|) -> (|'a|)) -> 'd"
        The universal variable "'a" would escape its scope
 |}];;
 
@@ -264,8 +264,8 @@ let non_principal4 =
 Line 2, characters 26-35:
 2 |   [ Some (fun y -> y 6, y "goodbye");
                               ^^^^^^^^^
-Error: This constant has type "string" but an expression was expected of type
-         "int"
+Error: This constant has type "(|string|)" but an expression was expected of type
+         "(|int|)"
 |}];;
 
 (* Functions with polymorphic parameters are separate from other functions *)
@@ -277,7 +277,7 @@ type 'a arg = 'b constraint 'a = 'b -> 'c
 Line 3, characters 20-44:
 3 | type really_poly = (('a. 'a -> 'a) -> string) arg
                         ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This type "('a. 'a -> 'a) -> string" should be an instance of type
+Error: This type "('a. (|'a|) -> (|'a|)) -> string" should be an instance of type
          "'b -> 'c"
        The universal variable "'a" would escape its scope
 |}];;
@@ -295,8 +295,8 @@ let foo (f : p1) : p2 = f
 Line 1, characters 24-25:
 1 | let foo (f : p1) : p2 = f
                             ^
-Error: The value "f" has type "p1" = "('a. 'a -> 'a) -> int"
-       but an expression was expected of type "p2" = "('a 'b. 'a -> 'b) -> int"
+Error: The value "f" has type "p1" = "('a. (|'a|) -> (|'a|)) -> int"
+       but an expression was expected of type "p2" = "('a 'b. 'a -> (|'b|)) -> int"
        The universal variables "'a" and "'b" are distinct.
 |}];;
 
@@ -324,6 +324,19 @@ Error: Signature mismatch:
        The type "p1" = "('a. 'a -> 'a) -> int" is not compatible with the type
          "p2" = "('a 'b. 'a -> 'b) -> int"
        The universal variables "'a" and "'b" are distinct.
+|}, Principal{|
+Line 1, characters 59-60:
+1 | module Foo (X : sig val f : p1 end) : sig val f : p2 end = X
+                                                               ^
+Error: Signature mismatch:
+       Modules do not match:
+         sig val f : p1 end
+       is not included in
+         sig val f : p2 end
+       Values do not match: val f : p1 is not included in val f : p2
+       The type "p1" = "('a. (|'a|) -> (|'a|)) -> int" is not compatible with the type
+         "p2" = "('a 'b. 'a -> (|'b|)) -> int"
+       The universal variables "'a" and "'b" are distinct.
 |}];;
 
 let foo (f : p1) : p2 = (fun id -> f id)
@@ -344,9 +357,9 @@ type p2 = ('a. 'a -> 'a) -> int
 Line 4, characters 24-25:
 4 | let foo (x : p1) : p2 = x
                             ^
-Error: The value "x" has type "p1" = "(bool -> bool) -> int"
-       but an expression was expected of type "p2" = "('a. 'a -> 'a) -> int"
-       Type "bool" is not compatible with type "'a"
+Error: The value "x" has type "p1" = "((|bool|) -> bool) -> int"
+       but an expression was expected of type "p2" = "('a. (|'a|) -> 'a) -> int"
+       Type "(|bool|)" is not compatible with type "(|'a|)"
 |}];;
 
 let foo x = (x : p1 :> p2)
@@ -367,7 +380,20 @@ Error: Signature mismatch:
        Values do not match: val f : p1 is not included in val f : p2
        The type "p1" = "(bool -> bool) -> int" is not compatible with the type
          "p2" = "('a. 'a -> 'a) -> int"
-       Type "bool" is not compatible with type "'a"
+       Type "(|bool|)" is not compatible with type "(|'a|)"
+|}, Principal{|
+Line 1, characters 59-60:
+1 | module Foo (X : sig val f : p1 end) : sig val f : p2 end = X
+                                                               ^
+Error: Signature mismatch:
+       Modules do not match:
+         sig val f : p1 end
+       is not included in
+         sig val f : p2 end
+       Values do not match: val f : p1 is not included in val f : p2
+       The type "p1" = "((|bool|) -> bool) -> int" is not compatible with the type
+         "p2" = "('a. (|'a|) -> 'a) -> int"
+       Type "(|bool|)" is not compatible with type "(|'a|)"
 |}];;
 
 let foo (f : p1) : p2 = (fun id -> f id)
@@ -541,7 +567,7 @@ Line 2, characters 2-6:
 2 |   let* x = 3. in
       ^^^^
 Error: The operator "let*" has type
-         "('a. 'a option) -> ('a. 'a -> 'a) -> 'b option * int"
+         "('a. (|'a|) option) -> ('a. 'a -> 'a) -> 'b option * int"
        but it was expected to have type "'c -> ('d -> 'e) -> 'f"
        The universal variable "'a" would escape its scope
 |}]

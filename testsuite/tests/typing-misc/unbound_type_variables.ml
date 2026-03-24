@@ -134,5 +134,5 @@ Lines 1-5, characters 0-3:
 Error: Some type variables are unbound in this type:
          class ['a, 'b, 'c, 'd, 'e, 'f] c :
            object method m : ('a * 'g * 'c) * ('d * 'h) end
-       The method "m" has type "('a * 'g * 'c) * ('d * 'h)" where "'g" is unbound
+       The method "m" has type "('a * (|'g|) * 'c) * ('d * 'h)" where "(|'g|)" is unbound
 |}]
