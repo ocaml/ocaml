@@ -142,3 +142,28 @@ module type Show = sig type t val show : t -> string end
 type 'a t = A : { x : string option; show : 'a -> string; } -> 'a t
 val test : ?x:string -> (module M : Show with type t = 'a) -> M.t t = <fun>
 |}]
+
+(* Support CPS *)
+
+let f k ?a = k a;;
+[%%expect{|
+val f : ('a option -> 'b) -> ?a:'a -> 'b = <fun>
+|}]
+
+(* This one cannot be detected has this is just a specialization of f *)
+let g = f (fun a -> ());;
+[%%expect{|
+val g : ?a:'_weak1 -> unit = <fun>
+|}]
+
+(* But we can still detect if we add optional arguments *)
+let h ?b = f (fun a -> ());;
+[%%expect{|
+Line 1, characters 7-8:
+1 | let h ?b = f (fun a -> ());;
+           ^
+Warning 16 [unerasable-optional-argument]: this optional argument cannot be erased.
+
+val h : ?b:'a -> ?a:'b -> unit = <fun>
+|}]
+
