@@ -1463,6 +1463,7 @@ typing/rawprinttyp.cmo : \
     parsing/pprintast.cmi \
     typing/path.cmi \
     parsing/longident.cmi \
+    typing/ident.cmi \
     utils/format_doc.cmi \
     parsing/asttypes.cmi \
     typing/rawprinttyp.cmi
@@ -1471,6 +1472,7 @@ typing/rawprinttyp.cmx : \
     parsing/pprintast.cmx \
     typing/path.cmx \
     parsing/longident.cmx \
+    typing/ident.cmx \
     utils/format_doc.cmx \
     parsing/asttypes.cmx \
     typing/rawprinttyp.cmi
