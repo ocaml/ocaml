@@ -56,6 +56,10 @@ Working version
   `char[N]` with the C compiler `-Wwrite-strings` flag.
   (Antonin Décimo, review by Xavier Leroy and Olivier Nicole)
 
+- #14694: Warn if C format specifier and argument differ in signedness
+  (-Wformat-signedness).
+  (Antonin Décimo, review by Léo Andrès)
+
 - #14717: assign 'unique_id' early during domain creation to help debugging
   (Gabriel Scherer, review by Olivier Nicole)
 

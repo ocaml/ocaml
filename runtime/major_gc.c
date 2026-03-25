@@ -1009,17 +1009,17 @@ update_major_slice_work(intnat howmuch,
 
   CAML_GC_MESSAGE(SLICESIZE, "heap_words = %" CAML_PRIuNAT "\n",
                   heap_words);
-  CAML_GC_MESSAGE(SLICESIZE, "allocated_words = %" CAML_PRIuNAT "\n",
+  CAML_GC_MESSAGE(SLICESIZE, "allocated_words = %" CAML_PRIdNAT "\n",
                    my_alloc_count);
-  CAML_GC_MESSAGE(SLICESIZE, "allocated_words_direct = %" CAML_PRIuNAT "\n",
+  CAML_GC_MESSAGE(SLICESIZE, "allocated_words_direct = %" CAML_PRIdNAT "\n",
                    my_alloc_direct_count);
-  CAML_GC_MESSAGE(SLICESIZE, "allocated_words_suspended = %" CAML_PRIuNAT "\n",
+  CAML_GC_MESSAGE(SLICESIZE, "allocated_words_suspended = %" CAML_PRIdNAT "\n",
                    my_alloc_suspended_count);
-  CAML_GC_MESSAGE(SLICESIZE, "allocated_words_resumed = %" CAML_PRIuNAT "\n",
+  CAML_GC_MESSAGE(SLICESIZE, "allocated_words_resumed = %" CAML_PRIdNAT "\n",
                    my_alloc_resumed_count);
   CAML_GC_MESSAGE(SLICESIZE, "alloc work-to-do = %" CAML_PRIdNAT "\n",
                    alloc_work);
-  CAML_GC_MESSAGE(SLICESIZE, "dependent_words = %" CAML_PRIuNAT "\n",
+  CAML_GC_MESSAGE(SLICESIZE, "dependent_words = %" CAML_PRIdNAT "\n",
                    my_dependent_count);
   CAML_GC_MESSAGE(SLICESIZE, "dependent work-to-do = %" CAML_PRIdNAT "\n",
                   dependent_work);
@@ -1068,16 +1068,16 @@ update_major_slice_work(intnat howmuch,
 
   caml_gc_log("Updated major work: [%c] "
               " %" CAML_PRIuNAT " heap_words, "
-              " %" CAML_PRIuNAT " allocated, "
-              " %" CAML_PRIuNAT " allocated (direct), "
-              " %" CAML_PRIuNAT " allocated (suspended), "
-              " %" CAML_PRIuNAT " allocated (resumed), "
+              " %" CAML_PRIdNAT " allocated, "
+              " %" CAML_PRIdNAT " allocated (direct), "
+              " %" CAML_PRIdNAT " allocated (suspended), "
+              " %" CAML_PRIdNAT " allocated (resumed), "
               " %" CAML_PRIdNAT " alloc_work, "
               " %" CAML_PRIdNAT " dependent_work, "
               " %" CAML_PRIdNAT " extra_work, "
               " %" CAML_PRIuNAT " work counter %s, "
               " %" CAML_PRIuNAT " alloc counter, "
-              " %" CAML_PRIuNAT " slice target, "
+              " %" CAML_PRIdNAT " slice target, "
               " %" CAML_PRIdNAT " slice budget"
               ,
               caml_gc_phase_char(may_access_gc_phase),
@@ -1244,7 +1244,7 @@ static void mark_stack_prune(struct mark_stack* stk)
     ++old_compressed_entries;
   }
   if (old_compressed_entries > 0) {
-    caml_gc_log("Preserved %" CAML_PRIdNAT " compressed entries",
+    caml_gc_log("Preserved %" CAML_PRIuNAT " compressed entries",
                 old_compressed_entries);
   }
   caml_addrmap_clear(&stk->compressed_stack);
@@ -1267,9 +1267,9 @@ static void mark_stack_prune(struct mark_stack* stk)
     }
   }
 
-  caml_gc_log("Compressed %" CAML_PRIdNAT " mark stack words into "
-              "%" CAML_PRIdNAT " mark stack entries and "
-              "%" CAML_PRIdNAT " compressed entries",
+  caml_gc_log("Compressed %" CAML_PRIuNAT " mark stack words into "
+              "%" CAML_PRIuNAT " mark stack entries and "
+              "%" CAML_PRIuNAT " compressed entries",
               total_words, new_stk_count,
               compressed_entries+old_compressed_entries);
 
@@ -1403,7 +1403,7 @@ static intnat mark_stack_push_block(struct mark_stack* stk, value block)
 static void shrink_mark_stack (void)
 {
   struct mark_stack* stk = Caml_state->mark_stack;
-  intnat init_stack_bsize = MARK_STACK_INIT_SIZE * sizeof(mark_entry);
+  uintnat init_stack_bsize = MARK_STACK_INIT_SIZE * sizeof(mark_entry);
   mark_entry* shrunk_stack;
 
   caml_gc_log ("Shrinking mark stack to %" CAML_PRIuNAT "k bytes\n",

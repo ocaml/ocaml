@@ -401,7 +401,7 @@ CAMLprim value caml_runtime_parameters (value unit)
   const char *no_tweaks = "";
   value res = caml_alloc_sprintf
       ("b=%d,c=%"F_Z",e=%"F_Z",l=%"F_Z",M=%"F_Z",m=%"F_Z",n=%"F_Z","
-       "o=%"F_Z",p=%d,R=%u,s=%"F_S",t=%"F_Z",v=%"F_Z",V=%"F_Z",W=%"F_Z"%s",
+       "o=%"F_Z",p=%d,R=%d,s=%"F_S",t=%"F_Z",v=%"F_Z",V=%"F_Z",W=%"F_Z"%s",
        /* b */ (int) Caml_state->backtrace_active,
        /* c */ caml_params->cleanup_on_exit,
        /* e */ caml_params->runtime_events_log_wsize,

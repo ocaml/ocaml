@@ -1074,6 +1074,7 @@ done
 
 # Additional warnings
 for flag in \
+  '-Wformat-signedness' \
   '-Wold-style-declaration' \
   '-Wwrite-strings' \
 ; do
