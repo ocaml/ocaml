@@ -200,7 +200,7 @@ Error: Signature mismatch:
        Their parameters differ
        The type "< x : 'a. 'a -> 'a >" is not equal to the type
          "< x : 'a. 'a -> x >"
-       Type "'a" is not equal to type "x" = "M.x"
        The method "x" has type "'a. 'a -> 'a", but the expected method type was
        "'a. 'a -> x"
+       Type "'a" is not equal to type "x" = "M.x"
 |}]

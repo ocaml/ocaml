@@ -327,7 +327,7 @@ Error: Signature mismatch:
        is not included in
          type t = private [ `C of int ]
        The type "[ `C ]" is not equal to the type "[ `C of int ]"
-       Types for tag "`C" are incompatible
+       Arities for tag "`C" are incompatible.
 |}];;
 
 module M : sig
@@ -350,7 +350,7 @@ Error: Signature mismatch:
        is not included in
          type t = private [ `C ]
        The type "[ `C of int ]" is not equal to the type "[ `C ]"
-       Types for tag "`C" are incompatible
+       Arities for tag "`C" are incompatible.
 |}];;
 
 module M : sig
@@ -946,7 +946,7 @@ Error: Signature mismatch:
          val f : [< `C ] -> unit
        The type "[< `C of & int & float ] -> unit"
        is not compatible with the type "[< `C ] -> unit"
-       Types for tag "`C" are incompatible
+       Arities for tag "`C" are incompatible.
 |}];;
 
 module M : sig
@@ -970,7 +970,7 @@ Error: Signature mismatch:
          val f : [ `Foo ] -> unit
        The type "[ `Foo of int ] -> unit" is not compatible with the type
          "[ `Foo ] -> unit"
-       Types for tag "`Foo" are incompatible
+       Arities for tag "`Foo" are incompatible.
 |}];;
 
 module M : sig
@@ -994,7 +994,7 @@ Error: Signature mismatch:
          val f : [ `Foo of int ] -> unit
        The type "[ `Foo ] -> unit" is not compatible with the type
          "[ `Foo of int ] -> unit"
-       Types for tag "`Foo" are incompatible
+       Arities for tag "`Foo" are incompatible.
 |}];;
 
 module M : sig

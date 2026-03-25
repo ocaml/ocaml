@@ -1831,7 +1831,7 @@ Line 2, characters 2-72:
 Error: This expression has type "< m : 'b 'x. ([< `Foo of 'x ] as 'b) -> 'x >"
        but an expression was expected of type
          "< m : 'a. [< `Foo of int ] -> 'a >"
-       Types for tag "`Foo" are incompatible
+       In tag "`Foo", type "'x" is not compatible with type "int"
 |}];;
 (* fail *)
 let (n : 'b -> < m : 'a . ([< `Foo of int] as 'b) -> 'a >) = fun x ->
@@ -1843,7 +1843,7 @@ Line 2, characters 2-72:
 Error: This expression has type "< m : 'b 'x. ([< `Foo of 'x ] as 'b) -> 'x >"
        but an expression was expected of type
          "< m : 'a. [< `Foo of int ] -> 'a >"
-       Types for tag "`Foo" are incompatible
+       In tag "`Foo", type "'x" is not compatible with type "int"
 |}];;
 (* ok *)
 let f (n : < m : 'a 'r. [< `Foo of 'a & int | `Bar] as 'r >) =
@@ -1863,7 +1863,7 @@ Line 2, characters 3-4:
 Error: The value "n" has type "< m : 'a 'c. [< `Bar | `Foo of 'a & int ] as 'c >"
        but an expression was expected of type
          "< m : 'b 'd. [< `Bar | `Foo of int & 'b ] as 'd >"
-       Types for tag "`Foo" are incompatible
+       In tag "`Foo", type "'a" is not compatible with type "int"
 |}]
 (* ok (with implicit universal quantification) *)
 let f (n : < m : 'a. [< `Foo of 'a & int | `Bar] >) =
