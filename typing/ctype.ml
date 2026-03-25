@@ -1772,15 +1772,19 @@ type typedecl_extraction_result =
   | May_have_typedecl
 
 let rec extract_concrete_typedecl env ty =
-  match get_desc ty with
+  match get_constr_desc ty with
     Tconstr (p, _, _) ->
+      let cannot_expand () =
+        if get_abbrev ty = None then May_have_typedecl else
+        extract_concrete_typedecl env (newgenty (get_desc ty))
+      in
       begin match Env.find_type p env with
-      | exception Not_found -> May_have_typedecl
+      | exception Not_found -> cannot_expand ()
       | decl ->
           if not (type_kind_is_abstract decl) then Typedecl(p, p, decl)
           else begin
             match try_expand_safe_no_link env ty with
-            | exception Cannot_expand -> May_have_typedecl
+            | exception Cannot_expand -> cannot_expand ()
             | ty ->
                 match extract_concrete_typedecl env ty with
                 | Typedecl(_, p', decl) -> Typedecl(p, p', decl)
