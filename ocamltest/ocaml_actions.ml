@@ -412,7 +412,7 @@ let setup_tool_build_env tool log env =
   Sys.force_remove tool_output_file;
   let env =
     Environments.add Builtin_variables.test_build_directory build_dir env in
-  Actions_helpers.setup_build_env false source_modules log env
+  Actions_helpers.setup_build_env ~add_testfile:false source_modules log env
 
 let setup_compiler_build_env (compiler : Ocaml_compilers.compiler) log env =
   let (r, env) = setup_tool_build_env compiler log env in
@@ -596,7 +596,8 @@ let ocamlobjinfo =
     )
 
 let ocamltest_action log env =
-  let (_, env) = Actions_helpers.setup_simple_build_env false [] log env in
+  let (_, env) =
+    Actions_helpers.setup_simple_build_env ~add_testfile:false [] log env in
   let program = Environments.safe_lookup Builtin_variables.program env in
   let what = Printf.sprintf "Running ocamltest on %s" program in
   Printf.fprintf log "%s\n%!" what;

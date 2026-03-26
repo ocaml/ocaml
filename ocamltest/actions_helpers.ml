@@ -94,7 +94,7 @@ let setup_subdirectories source_directory build_directory subdirs =
   in
   List.iter cp_dir subdirs
 
-let setup_build_env add_testfile additional_files (_log : out_channel) env =
+let setup_build_env ~add_testfile additional_files (_log : out_channel) env =
   let source_dir = (test_source_directory env) in
   let build_dir = (test_build_directory env) in
   let some_files = additional_files @ (readonly_files env) in
@@ -108,11 +108,11 @@ let setup_build_env add_testfile additional_files (_log : out_channel) env =
   Sys.chdir build_dir;
   (Test_result.pass, env)
 
-let setup_simple_build_env add_testfile additional_files log env =
+let setup_simple_build_env ~add_testfile additional_files log env =
   let build_env = Environments.add
     Builtin_variables.test_build_directory
     (test_build_directory_prefix env) env in
-  setup_build_env add_testfile additional_files log build_env
+  setup_build_env ~add_testfile additional_files log build_env
 
 let run_cmd
     ?(environment=[||])
