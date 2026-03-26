@@ -808,7 +808,7 @@ let cc =
   Actions.make ~name:"cc" ~description:"Run C compiler to build the program"
     run_cc
 
-let run_expect_once input_file principal log env =
+let run_expect_once input_file ~principal log env =
   let expect_flags = Sys.safe_getenv "EXPECT_FLAGS" in
   let repo_root = "-repo-root " ^ Ocaml_directories.srcdir in
   let principal_flag = if principal then "-principal" else "" in
@@ -833,11 +833,11 @@ let run_expect_once input_file principal log env =
 
 let run_expect_twice input_file log env =
   let corrected filename = Filename.make_filename filename "corrected" in
-  let (result1, env1) = run_expect_once input_file false log env in
+  let (result1, env1) = run_expect_once input_file ~principal:false log env in
   if Test_result.is_pass result1 then begin
     let intermediate_file = corrected input_file in
     let (result2, env2) =
-      run_expect_once intermediate_file true log env1 in
+      run_expect_once intermediate_file ~principal:true log env1 in
     if Test_result.is_pass result2 then begin
       let output_file = corrected intermediate_file in
       let output_env = Environments.add_bindings
