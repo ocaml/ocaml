@@ -486,6 +486,9 @@ static void prepare_for_ephe_sweeping (caml_domain_state *domain_state)
   }
 }
 
+enum mark_flag { MARK_DEFAULT, MARK_NO_FINISH };
+static intnat mark(intnat budget, enum mark_flag flag);
+
 #define EPHE_MARK_DEFAULT false
 #define EPHE_MARK_FORCE_ALIVE true
 
@@ -504,7 +507,6 @@ static void prepare_for_ephe_sweeping (caml_domain_state *domain_state)
  * Returns the remaining budget.
  */
 
-static intnat mark(intnat budget);
 static intnat ephe_mark (intnat budget, uintnat round,
                          /* Forces ephemerons and their data to be alive */
                          bool force_alive)
@@ -521,6 +523,7 @@ static intnat ephe_mark (intnat budget, uintnat round,
     prev_linkp = &domain_state->ephe_info->todo;
   }
   value next = *prev_linkp;
+  bool must_mark_again = false;
   while (next != 0 && budget > 0) {
 
     /* TODO: this reproduces much of caml_ephe_clean; can we share code? */
@@ -588,7 +591,8 @@ static intnat ephe_mark (intnat budget, uintnat round,
              in the list in dependency order, so a single round suffices
              to mark all the live ones.
           */
-          budget = mark(budget);
+          budget = mark(budget, MARK_NO_FINISH);
+          must_mark_again = true;
         }
       }
       /* Move to 'live' list */
@@ -602,6 +606,11 @@ static intnat ephe_mark (intnat budget, uintnat round,
       prev_linkp = &Ephe_link(ephe);
     }
     ++ scanned;
+  }
+
+  if (must_mark_again) {
+    CAMLassert(!domain_state->marking_done);
+    mark(1, MARK_DEFAULT);
   }
 
   caml_gc_log
@@ -1661,8 +1670,14 @@ Caml_noinline static intnat do_some_marking(struct mark_stack* stk,
   return budget;
 }
 
-/* mark until the budget runs out or marking is done */
-static intnat mark(intnat budget) {
+/* mark until the budget runs out or marking is done.
+
+   if flag == MARK_NO_FINISH, then the caller promises that mark will be
+   called again within the same GC slice, in MARK_DEFAULT mode, with a nonzero
+   budget. This allows the present call to skip the end-of-marking work (setting
+   marking_done and advancing the ephemeron round), since it will be handled by
+   the next MARK_DEFAULT call. */
+static intnat mark(intnat budget, enum mark_flag flag) {
   caml_domain_state *domain_state = Caml_state;
   CAMLassert(caml_marking_started());
   while (budget > 0 && !domain_state->marking_done) {
@@ -1686,6 +1701,8 @@ static intnat mark(intnat budget) {
             mark_slice_darken(domain_state->mark_stack, *p, &budget);
           }
         }
+      } else if (flag == MARK_NO_FINISH) {
+        break;
       } else {
         ephe_next_round ();
         domain_state->marking_done = 1;
@@ -2254,7 +2271,7 @@ mark_again:
 
     while (!domain_state->marking_done &&
            (budget = get_major_slice_work(mode)) > 0) {
-      intnat left = mark(budget);
+      intnat left = mark(budget, MARK_DEFAULT);
       intnat work_done = budget - left;
       /* It is possible to call caml_darken directly during marking,
          if we e.g. discover a continuation and mark its stack.
@@ -2519,7 +2536,7 @@ static void empty_mark_stack (void)
       /* This calls caml_mark_roots_stw with the minor heap empty */
       caml_empty_minor_heaps_once();
     }
-    mark(1000);
+    mark(1000, MARK_DEFAULT);
     caml_handle_incoming_interrupts();
   }
 
