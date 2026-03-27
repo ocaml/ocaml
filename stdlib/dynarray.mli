@@ -455,6 +455,14 @@ val to_array : 'a t -> 'a array
     dynamic array [a]. This always allocate a new array and copies
     elements into it. *)
 
+val of_iarray : 'a iarray -> 'a t
+(** [of_iarray a] returns a dynamic array corresponding to the
+    immutable array [a]. Operates in [O(n)] time by making a copy. *)
+
+val to_iarray : 'a t -> 'a iarray
+(** [to_iarray a] returns an immutable array corresponding to the dynamic array
+    [a]. This always allocates a new array and copies elements into it. *)
+
 val of_list : 'a list -> 'a t
 (** [of_list l] is the array containing the elements of [l] in
     the same order. *)

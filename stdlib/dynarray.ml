@@ -1265,6 +1265,26 @@ let to_array a =
   check_same_length "to_array" a ~length;
   res
 
+let of_iarray a =
+  let length = Iarray.length a in
+  let Dummy.Fresh dummy = global_dummy in
+  let arr = Iarray.to_array a in
+  let arr = Dummy.Array.unsafe_nocopy_from_array arr ~dummy in
+  Pack {
+    length;
+    arr;
+    dummy;
+  }
+
+let to_iarray a =
+  let Pack {arr; length; dummy} = a in
+  check_valid_length length arr;
+  let res = Iarray.init length (fun i ->
+    unsafe_get arr ~dummy ~i ~length
+  ) in
+  check_same_length "to_iarray" a ~length;
+  res
+
 let of_list li =
   let a = Array.of_list li in
   let length = Array.length a in
