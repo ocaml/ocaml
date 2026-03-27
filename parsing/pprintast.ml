@@ -1040,7 +1040,7 @@ and simple_expr ctxt f x =
                 (simple_expr ctxt) e
         in
         pp f "@[<hv0>@[<hv2>{@;%a%a@]@;}@]"(* "@[<hov2>{%a%a}@]" *)
-          (option ~last:" with@;" (simple_expr ctxt)) eo
+          (option ~last:" with@;" (record_update_expr ctxt)) eo
           (list longident_x_expression ~sep:";@;") l
     | Pexp_array (l) ->
         pp f "@[<0>@[<2>[|%a|]@]@]"
@@ -1055,6 +1055,11 @@ and simple_expr ctxt f x =
         pp f fmt (pattern ctxt) s expression e1 direction_flag
           df expression e2 expression e3
     | _ ->  paren true (expression ctxt) f x
+
+and record_update_expr ctxt f x =
+  match x.pexp_desc with
+  | Pexp_apply _ -> expression ctxt f x
+  | _ -> simple_expr ctxt f x
 
 and attributes ctxt f l =
   List.iter (attribute ctxt f) l

@@ -1155,6 +1155,8 @@ type my_record  =
      b: string list;
     }
 
+let copy_with_b f b = { f () with b }
+
 let my_record =
   let fields =
     [
