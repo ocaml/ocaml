@@ -31,7 +31,7 @@ end = T
 module T :
   sig
     val foo : ([> 'a a ] as 'a) wrap -> 'a wrap -> unit
-    val bar : [ 'a a ] as 'a
+    val bar : [ | 'a a ] as 'a
   end
 module Good : sig val bar : t val foo : t -> t -> unit end
 module Bad : sig val foo : t -> t -> unit val bar : t end
@@ -39,7 +39,7 @@ module Bad : sig val foo : t -> t -> unit val bar : t end
 module T :
   sig
     val foo : ([> 'a wrap a ] as 'a) wrap -> 'a wrap -> unit
-    val bar : [ 'a a ] as 'a
+    val bar : [ | 'a a ] as 'a
   end
 module Good : sig val bar : t val foo : t -> t -> unit end
 module Bad : sig val foo : t -> t -> unit val bar : t end

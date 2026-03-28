@@ -256,7 +256,8 @@ let rec typexp copy_scope s ty =
       if s.for_saving then newpersty (Tvar None)
       else newgenstub ~scope:(get_scope ty)
     in
-    For_copy.redirect_desc copy_scope ty (Tsubst (ty', None));
+    if get_desc ty == desc then
+      For_copy.redirect_desc copy_scope ty (Tsubst (ty', None));
     let desc' =
       if has_fixed_row then
         match get_desc tm with (* PR#7348 *)

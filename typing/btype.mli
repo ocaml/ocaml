@@ -203,6 +203,7 @@ val deep_occur: type_expr -> type_expr -> bool
       Objects are also traversed. *)
 val deep_occur_list: type_expr -> type_expr list -> bool
 val get_folded_desc: keep_Tvar:bool -> type_expr -> type_desc
+  (* Turn a [Texpand] into a [Tconstr] only when it is safe to do so *)
 
 module For_copy : sig
 

@@ -617,11 +617,7 @@ let iter_abbrev f t =
   ignore (repr t);
   match t.desc with Texpand (_, path, args) -> f path args | _ -> ()
 
-let get_abbrev_scope t =
-  ignore (repr t);
-  match t.desc with
-    Texpand (_, path, _) -> Path.scope path
-  | _ -> Ident.lowest_scope
+let ignore_abbrev ty = repr ty
 
 (* transient type_expr *)
 
