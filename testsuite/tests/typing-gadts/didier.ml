@@ -56,6 +56,8 @@ Error: The value "x" has type "t" = "bool" but an expression was expected of typ
          "bool"
        This instance of "bool" is ambiguous:
        it would escape the scope of its equation
+       Hint: You may need to add a type annotation outside the scope of the equation.
+       (see manual section 7.2)
 |}];;
 (* val f : 'a -> 'a ty -> bool = <fun> *)
 
@@ -79,6 +81,8 @@ Error: This expression has type "bool" but an expression was expected of type
          "t" = "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+       Hint: You may need to add a type annotation outside the scope of the equation.
+       (see manual section 7.2)
 |}];;
 (* Error: This expression has type bool but an expression was expected of type
 t = int *)

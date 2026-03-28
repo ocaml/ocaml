@@ -729,6 +729,8 @@ Error: Signature mismatch:
        The type "'_weak4 list ref" is not compatible with the type "T.t list ref"
        This instance of "T.t" is ambiguous:
        it would escape the scope of its equation
+       Hint: You may need to add a type annotation outside the scope of the equation.
+       (see manual section 7.2)
 |}];;
 
 module M: sig

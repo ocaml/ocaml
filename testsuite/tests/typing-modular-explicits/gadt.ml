@@ -68,6 +68,8 @@ Line 3, characters 12-15:
 Error: This expression has type "int" but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+       Hint: You may need to add a type annotation outside the scope of the equation.
+       (see manual section 7.2)
 |}]
 
 let f2 (type a) (x : a) (el : a t2) : int =

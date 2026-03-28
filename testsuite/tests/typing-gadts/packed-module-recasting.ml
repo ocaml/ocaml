@@ -415,6 +415,8 @@ Error: This expression has type "b" = "int"
        but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+       Hint: You may need to add a type annotation outside the scope of the equation.
+       (see manual section 7.2)
 |}]
 let f (type a b) (w1 : (a, b -> b) eq) (w2 : (a, int -> int) eq) (g : a) =
    let module M = struct let g = g end in
@@ -428,6 +430,8 @@ Line 3, characters 37-42:
 Error: This expression has type "int" but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+       Hint: You may need to add a type annotation outside the scope of the equation.
+       (see manual section 7.2)
 |}]
 
 (* Ambivalance via packed module *)
@@ -453,6 +457,8 @@ Error: This expression has type "b" = "int"
        but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+       Hint: You may need to add a type annotation outside the scope of the equation.
+       (see manual section 7.2)
 |}]
 let f (type a b) (w1 : (a, b -> b) eq) (w2 : (a, int -> int) eq)
     ((module M) : (module S with type a = a)) =
@@ -468,6 +474,8 @@ Line 3, characters 36-41:
 Error: This expression has type "int" but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+       Hint: You may need to add a type annotation outside the scope of the equation.
+       (see manual section 7.2)
 |}]
 
 (* Ambivalance in module expression *)
@@ -486,6 +494,8 @@ Error: The value "M.res" has type "b" = "int"
        but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+       Hint: You may need to add a type annotation outside the scope of the equation.
+       (see manual section 7.2)
 |}]
 let f (type a b) (w1 : (a, b -> b) eq) (w2 : (a, int -> int) eq) (g : a) =
    let Refl = w2 in let Refl = w1 in
@@ -500,4 +510,6 @@ Line 4, characters 3-8:
 Error: The value "M.res" has type "int" but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+       Hint: You may need to add a type annotation outside the scope of the equation.
+       (see manual section 7.2)
 |}]

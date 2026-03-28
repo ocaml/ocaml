@@ -168,6 +168,8 @@ Error: This pattern matches values of type "bool"
        but a pattern was expected which matches values of type "a" = "bool"
        This instance of "bool" is ambiguous:
        it would escape the scope of its equation
+       Hint: You may need to add a type annotation outside the scope of the equation.
+       (see manual section 7.2)
 |}]
 
 
@@ -222,6 +224,8 @@ Line 3, characters 18-19:
 Error: This pattern matches values of type "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+       Hint: You may need to add a type annotation outside the scope of the equation.
+       (see manual section 7.2)
 |}]
 
 let simple_merged_annotated_return_annotated (type a) (t : a t) (a : a) =

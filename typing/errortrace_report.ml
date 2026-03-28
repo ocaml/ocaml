@@ -243,12 +243,18 @@ let explain_escape pre = function
         pp_doc pre pp_path (Path.Pident id)
     )
   | Errortrace.Equation Errortrace.{ty = _; expanded = t} ->
+      let[@manual.ref "s:gadts-type-inference"] manual_ref =
+        [ 7; 2 ]
+      in
       Variable_names.reserve t;
       Some(
-        doc_printf "%a@ @[<hov>This instance of %a is ambiguous:@ %s@]"
+        doc_printf "%a@ @[<hov>This instance of %a is ambiguous:@ %s@]\
+                    @,@[@{<hint>Hint@}: You may need to add a type \
+                    annotation outside the scope of the equation. @ %a@]"
           pp_doc pre
           (Style.as_inline_code type_expr_with_reserved_names) t
           "it would escape the scope of its equation"
+          Misc.print_see_manual manual_ref
       )
   | Errortrace.Self ->
       Some (doc_printf "%a@,Self type cannot escape its class" pp_doc pre)
