@@ -734,7 +734,7 @@ Error: This pattern matches values of type "GADT_ordering.point"
          "a" = "GADT_ordering.point"
        This instance of "GADT_ordering.point" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}];;

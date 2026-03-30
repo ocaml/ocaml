@@ -249,8 +249,8 @@ let explain_escape pre = function
       Variable_names.reserve t;
       Some(
         doc_printf "%a@ @[<hov>This instance of %a is ambiguous:@ %s@]\
-                    @,@[@{<hint>Hint@}: You may need to add a type \
-                    annotation to remove the ambiguity,@,either on this \
+                    @,@[@{<hint>Hint@}: A type annotation may resolve \
+                    the ambiguity,@,either on this \
                     expression or the whole function. @ %a@]"
           pp_doc pre
           (Style.as_inline_code type_expr_with_reserved_names) t

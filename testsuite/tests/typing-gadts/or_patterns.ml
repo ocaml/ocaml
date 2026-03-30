@@ -168,7 +168,7 @@ Error: This pattern matches values of type "bool"
        but a pattern was expected which matches values of type "a" = "bool"
        This instance of "bool" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}]
@@ -225,7 +225,7 @@ Line 3, characters 18-19:
 Error: This pattern matches values of type "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}]

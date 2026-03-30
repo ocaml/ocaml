@@ -56,7 +56,7 @@ Error: The value "x" has type "t" = "bool" but an expression was expected of typ
          "bool"
        This instance of "bool" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}];;
@@ -82,7 +82,7 @@ Error: This expression has type "bool" but an expression was expected of type
          "t" = "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}];;

@@ -729,7 +729,7 @@ Error: Signature mismatch:
        The type "'_weak4 list ref" is not compatible with the type "T.t list ref"
        This instance of "T.t" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}];;

@@ -82,7 +82,7 @@ Line 4, characters 32-33:
 Error: The value "y" has type "a" but an expression was expected of type "t"
        This instance of "< m : int * 'a > as 'a" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}]

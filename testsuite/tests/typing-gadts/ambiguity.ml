@@ -21,7 +21,7 @@ Line 3, characters 29-30:
 Error: The value "y" has type "b" = "a" but an expression was expected of type "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}]
@@ -38,7 +38,7 @@ Line 3, characters 29-30:
 Error: The value "y" has type "b" = "a" but an expression was expected of type "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}]
@@ -56,7 +56,7 @@ Error: The constant "0" has type "int" but an expression was expected of type
          "a" = "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}]
@@ -74,7 +74,7 @@ Error: The constant "0" has type "int" but an expression was expected of type
          "a" = "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}]
@@ -92,7 +92,7 @@ Line 3, characters 16-17:
 Error: The value "y" has type "b" = "a" but an expression was expected of type "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}]
@@ -109,7 +109,7 @@ Line 3, characters 16-17:
 Error: The value "y" has type "b" = "a" but an expression was expected of type "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}]
@@ -133,7 +133,7 @@ Line 3, characters 4-29:
 Error: This pattern matches values of type "(a, b) eq * a list"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}]
@@ -150,7 +150,7 @@ Line 3, characters 4-29:
 Error: This pattern matches values of type "(a, b) eq * a list"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}]
@@ -167,7 +167,7 @@ Line 3, characters 4-29:
 Error: This pattern matches values of type "(a, b) eq * b list"
        This instance of "b" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}]
@@ -184,7 +184,7 @@ Line 4, characters 4-29:
 Error: This pattern matches values of type "(a, b) eq * a list"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}]
@@ -201,7 +201,7 @@ Line 4, characters 4-29:
 Error: This pattern matches values of type "(a, b) eq * a list"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}]
@@ -218,7 +218,7 @@ Line 4, characters 4-29:
 Error: This pattern matches values of type "(a, b) eq * b list"
        This instance of "b" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}]
@@ -270,7 +270,7 @@ Error: Signature mismatch:
        The type "'_weak1 list ref" is not compatible with the type "T.t list ref"
        This instance of "T.t" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}]
@@ -310,7 +310,7 @@ Error: Signature mismatch:
        Type "'_weak2" is not compatible with type "T.t" = "T.u"
        This instance of "T.u" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation to remove the ambiguity,
+       Hint: A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
        (see manual section 7.2)
 |}]
