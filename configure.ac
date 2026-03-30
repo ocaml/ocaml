@@ -1879,10 +1879,7 @@ AS_CASE([$as_target,$ocaml_cc_vendor],
   [x86_64-pc-windows,*],
     [default_as="ml64 -nologo -Cp -c -Fo"
     default_aspp="$default_as"
-    as_is_cc=false],
-  [*-*-darwin*,clang-*],
-    [default_as="$CC -c -Wno-trigraphs"
-    default_aspp="$default_as"])
+    as_is_cc=false])
 
 AS_IF([test -z "$default_as"],[default_as="$CC -c"])
 AS_IF([test -z "$default_aspp"],[default_aspp="$CC -c"])
