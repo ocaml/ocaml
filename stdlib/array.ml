@@ -185,13 +185,12 @@ let of_list = function
       fill 1 tl
 
 let equal eq a b =
-  if length a <> length b then false else
+  length a = length b &&
   let i = ref 0 in
   let len = length a in
   while !i < len && eq (unsafe_get a !i) (unsafe_get b !i) do incr i done;
   !i = len
 
-let stdlib_compare = compare
 let compare cmp a b =
   let len_a = length a and len_b = length b in
   let diff = len_a - len_b in
@@ -251,20 +250,18 @@ let fold_right2 f a b x =
   done;
   !r
 
-let exists p a =
-  let n = length a in
-  let rec loop i =
-    if i = n then false
-    else if p (unsafe_get a i) then true
-    else loop (succ i) in
-  loop 0
-
 let for_all p a =
   let n = length a in
   let rec loop i =
-    if i = n then true
-    else if p (unsafe_get a i) then loop (succ i)
-    else false in
+    i = n || p (unsafe_get a i) && loop (succ i)
+  in
+  loop 0
+
+let exists p a =
+  let n = length a in
+  let rec loop i =
+    i < n && (p (unsafe_get a i) || loop (succ i))
+  in
   loop 0
 
 let for_all2 p l1 l2 =
@@ -272,9 +269,8 @@ let for_all2 p l1 l2 =
   and n2 = length l2 in
   if n1 <> n2 then invalid_arg "Array.for_all2"
   else let rec loop i =
-    if i = n1 then true
-    else if p (unsafe_get l1 i) (unsafe_get l2 i) then loop (succ i)
-    else false in
+    i = n1 || p (unsafe_get l1 i) (unsafe_get l2 i) && loop (succ i)
+  in
   loop 0
 
 let exists2 p l1 l2 =
@@ -282,25 +278,22 @@ let exists2 p l1 l2 =
   and n2 = length l2 in
   if n1 <> n2 then invalid_arg "Array.exists2"
   else let rec loop i =
-    if i = n1 then false
-    else if p (unsafe_get l1 i) (unsafe_get l2 i) then true
-    else loop (succ i) in
+    i < n1 && (p (unsafe_get l1 i) (unsafe_get l2 i) || loop (succ i))
+  in
   loop 0
 
 let mem x a =
   let n = length a in
   let rec loop i =
-    if i = n then false
-    else if stdlib_compare (unsafe_get a i) x = 0 then true
-    else loop (succ i) in
+    i < n && (Stdlib.compare (unsafe_get a i) x = 0 || loop (succ i))
+  in
   loop 0
 
 let memq x a =
   let n = length a in
   let rec loop i =
-    if i = n then false
-    else if x == (unsafe_get a i) then true
-    else loop (succ i) in
+    i < n && (x == (unsafe_get a i) || loop (succ i))
+  in
   loop 0
 
 let find_opt p a =
