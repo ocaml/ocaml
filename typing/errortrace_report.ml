@@ -250,7 +250,8 @@ let explain_escape pre = function
       Some(
         doc_printf "%a@ @[<hov>This instance of %a is ambiguous:@ %s@]\
                     @,@[@{<hint>Hint@}: You may need to add a type \
-                    annotation outside the scope of the equation. @ %a@]"
+                    annotation to remove the ambiguity,@,either on this \
+                    expression or the whole function. @ %a@]"
           pp_doc pre
           (Style.as_inline_code type_expr_with_reserved_names) t
           "it would escape the scope of its equation"

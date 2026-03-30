@@ -25,7 +25,8 @@ Line 4, characters 4-29:
 Error: This pattern matches values of type "(a, b) eq * a list"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}]
 let fails (type a b) (x : (a, b) eq) =
@@ -40,7 +41,8 @@ Line 3, characters 4-29:
 Error: This pattern matches values of type "(a, b) eq * a list"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}]
 

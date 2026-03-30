@@ -68,7 +68,8 @@ Line 3, characters 12-15:
 Error: This expression has type "int" but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}]
 

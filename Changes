@@ -132,7 +132,7 @@ Working version
   (Weixie Cui)
 
 - #14695: Add hint about using type annotations to avoid scope escape errors
-  (Stefan Muenzel, review by ????)
+  (Stefan Muenzel, review by Jacques Garrigue)
 
 ### Internal/compiler-libs changes:
 

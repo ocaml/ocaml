@@ -375,7 +375,8 @@ Error: The value "b" has type "bool" but an expression was expected of type
          "s" = "bool"
        This instance of "bool" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}];;
 
@@ -444,7 +445,8 @@ Error: This expression has type "a" = "int"
        but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}];;
 
@@ -460,7 +462,8 @@ Error: This expression has type "a" = "int"
        but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}];;
 
@@ -475,7 +478,8 @@ Line 2, characters 30-42:
 Error: This expression has type "int" but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}];;
 
@@ -554,7 +558,8 @@ Error: This expression has type "int option"
        Type "int" is not compatible with type "a" = "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}];;
 
@@ -592,7 +597,8 @@ Line 3, characters 44-45:
 Error: The value "y" has type "int" but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}];;
 
@@ -714,7 +720,8 @@ Error: The value "o" has type "< m : a; .. >"
        Type "a" is not compatible with type "b" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}];;
 
@@ -729,7 +736,8 @@ Error: The value "o" has type "< m : a; .. >"
        Type "a" is not compatible with type "b" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}];;
 
@@ -771,7 +779,8 @@ Error: The value "o" has type "< m : a >" but an expression was expected of type
        Type "a" is not compatible with type "b" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}];;
 
@@ -789,7 +798,8 @@ Error: The value "o" has type "< m : a; .. >"
        Type "a" is not compatible with type "b" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}];;
 
@@ -804,7 +814,8 @@ Error: The value "o" has type "[> `A of a ]"
        Type "a" is not compatible with type "b" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}];;
 
@@ -819,7 +830,8 @@ Error: The value "v" has type "[> `A of a ]"
        Type "a" is not compatible with type "b" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}];;
 
@@ -879,7 +891,8 @@ Error: The value "o" has type "[ `A of a | `B ]"
        Type "a" is not compatible with type "b" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}];;
 
@@ -897,7 +910,8 @@ Error: The value "o" has type "[> `A of a | `B ]"
        Type "a" is not compatible with type "b" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}];;
 
@@ -1147,7 +1161,8 @@ Error: This expression has type "< bar : int; foo : int; .. as $1 >"
        but an expression was expected of type "'a"
        This instance of "$1" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
        Hint: "$1" is a type variable introduced in the equation
          "$0" = "< bar : int; .. as $1 >"
@@ -1175,7 +1190,8 @@ Error: The method call "x#foo" has type "int"
        but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}];;
 
@@ -1246,7 +1262,8 @@ Error: The value "b" has type "b" = "int" but an expression was expected of type
          "a" = "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}];;
 
@@ -1265,7 +1282,8 @@ Error: The value "b" has type "b" = "int" but an expression was expected of type
          "a" = "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}];;
 
@@ -1282,7 +1300,8 @@ Error: The value "y" has type "b" = "int" but an expression was expected of type
          "a" = "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}];;
 
@@ -1298,7 +1317,8 @@ Error: The value "x" has type "a" = "int" but an expression was expected of type
          "b" = "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}];;
 
@@ -1319,7 +1339,8 @@ Error: This expression has type "'a -> 'b"
        but an expression was expected of type "M.t" = "int -> int"
        This instance of "int -> int" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}]
 
@@ -1341,7 +1362,8 @@ Error: The value "x" has type "M.t" = "int -> int"
        but an expression was expected of type "int -> int"
        This instance of "int -> int" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}]
 
@@ -1363,7 +1385,8 @@ Error: This expression has type "M.t" but an expression was expected of type
          "< m : 'a; .. >"
        This instance of "< m : int >" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}]
 
@@ -1386,7 +1409,8 @@ Error: This expression has type "M.t" but an expression was expected of type
          "< m : 'a; .. >"
        This instance of "< m : int >" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
 |}]
 
@@ -1414,7 +1438,8 @@ Error: This expression has type "$a" = "< b : bool >"
        but an expression was expected of type "< b : 'a; .. >"
        This instance of "< b : bool >" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
        Hint: "$a" is an existential type bound by the constructor "C".
 |}]
@@ -1444,7 +1469,8 @@ Error: This expression has type "$a" = "< b : bool >"
        but an expression was expected of type "< b : 'a; .. >"
        This instance of "< b : bool >" is ambiguous:
        it would escape the scope of its equation
-       Hint: You may need to add a type annotation outside the scope of the equation.
+       Hint: You may need to add a type annotation to remove the ambiguity,
+       either on this expression or the whole function.
        (see manual section 7.2)
        Hint: "$a" is an existential type bound by the constructor "C".
 |}]
