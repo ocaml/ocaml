@@ -73,7 +73,8 @@ Working version
   (Michael Neumann, review by Léo Andrès, Nicolás Ojeda Bär and Gabriel Scherer)
 
 - #14693: Add Dynarray.{of,to}_iarray
-  (Olivier Nicole, review by Gabriel Scherer, suggestion by Andreas Rossberg)
+  (Olivier Nicole, review by Gabriel Scherer and Nicolás Ojeda Bär, suggestion
+   by Andreas Rossberg)
 
 - #14553: Add Array.fold_{left,right}2
   (Clément Pottier, review by Nicolás Ojeda Bär and Vincent Laviron)
