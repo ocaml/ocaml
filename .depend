@@ -2594,6 +2594,22 @@ bytecomp/emitcode.cmi : \
     bytecomp/instruct.cmi \
     typing/ident.cmi \
     file_formats/cmo_format.cmi
+bytecomp/incr_c.cmo : \
+    lambda/simplif.cmi \
+    lambda/printlambda.cmi \
+    lambda/lambda.cmi \
+    typing/ident.cmi \
+    lambda/debuginfo.cmi \
+    bytecomp/incr_c.cmi
+bytecomp/incr_c.cmx : \
+    lambda/simplif.cmx \
+    lambda/printlambda.cmx \
+    lambda/lambda.cmx \
+    typing/ident.cmx \
+    lambda/debuginfo.cmx \
+    bytecomp/incr_c.cmi
+bytecomp/incr_c.cmi : \
+    lambda/lambda.cmi
 bytecomp/instruct.cmo : \
     typing/types.cmi \
     typing/subst.cmi \
@@ -7032,6 +7048,7 @@ driver/compile.cmo : \
     bytecomp/printinstr.cmi \
     utils/misc.cmi \
     lambda/lambda.cmi \
+    bytecomp/incr_c.cmi \
     bytecomp/emitcode.cmi \
     driver/compile_common.cmi \
     utils/clflags.cmi \
@@ -7047,6 +7064,7 @@ driver/compile.cmx : \
     bytecomp/printinstr.cmx \
     utils/misc.cmx \
     lambda/lambda.cmx \
+    bytecomp/incr_c.cmx \
     bytecomp/emitcode.cmx \
     driver/compile_common.cmx \
     utils/clflags.cmx \

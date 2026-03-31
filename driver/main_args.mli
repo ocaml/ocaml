@@ -175,6 +175,7 @@ module type Bytecomp_options = sig
   val _dcamlprimc : unit -> unit
 
   val _use_prims : string -> unit
+  val _incr_c : unit -> unit
 end
 
 module type Bytetop_options = sig

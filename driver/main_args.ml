@@ -646,6 +646,9 @@ let mk_match_context_rows f =
 let mk_use_prims f =
   "-use-prims", Arg.String f, "<file>  (undocumented)"
 
+let mk_incr_c f =
+  "-incr-c", Arg.Unit f, " C++ output"
+
 let mk_dump_into_file f =
   "-dump-into-file", Arg.Unit f, " dump output like -dlambda into <target>.dump"
 
@@ -979,6 +982,7 @@ module type Bytecomp_options = sig
   val _dcamlprimc : unit -> unit
 
   val _use_prims : string -> unit
+  val _incr_c : unit -> unit
 end;;
 
 module type Bytetop_options = sig
@@ -1188,6 +1192,7 @@ struct
 
     mk_match_context_rows F._match_context_rows;
     mk_use_prims F._use_prims;
+    mk_incr_c F._incr_c;
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
     mk_dno_canonical_ids F._dno_canonical_ids;
@@ -2027,6 +2032,7 @@ third-party libraries such as Lwt, but with a different API."
       _output_complete_obj (); output_complete_executable := true
     let _output_obj () = output_c_object := true; custom_runtime := true
     let _use_prims s = use_prims := s
+    let _incr_c () = incr_c := true; compile_only := true
     let _use_runtime s = use_runtime := s
     let _launch_method s =
       let setting =

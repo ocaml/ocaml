@@ -57,13 +57,27 @@ let emit_bytecode i (bytecode, required_globals) =
          (Emitcode.to_file oc cmo ~required_globals);
     )
 
+let emit_cpp i Typedtree.{structure; coercion; _} =
+  (structure, coercion)
+  |> Profile.(record transl)
+    (Translmod.transl_implementation (Unit_info.modname i.target))
+  |> Profile.(record ~accumulate:true generate)
+    (fun prog ->
+       let cpp = Unit_info.cpp i.target in
+       let oc = open_out_bin (Unit_info.Artifact.filename cpp) in
+       Incr_c.to_channel oc prog)
+
 let implementation ~start_from ~source_file ~output_prefix =
   let backend info typed =
-    let bytecode = to_bytecode info typed in
-    emit_bytecode info bytecode
+    if !Clflags.incr_c then
+      emit_cpp info typed
+    else
+      let bytecode = to_bytecode info typed in
+      emit_bytecode info bytecode
   in
   let unit_info = Unit_info.make ~source_file Impl output_prefix in
-  with_info ~dump_ext:"cmo" unit_info @@ fun info ->
+  let ext = if !Clflags.incr_c then "cpp" else "cmo" in
+  with_info ~dump_ext:ext unit_info @@ fun info ->
   match (start_from : Clflags.Compiler_pass.t) with
   | Parsing -> Compile_common.implementation info ~backend
   | _ -> Misc.fatal_errorf "Cannot start from %s"

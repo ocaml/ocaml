@@ -152,6 +152,7 @@ end
     metadata.*)
 val cmi: t -> Artifact.t
 val cmo: t -> Artifact.t
+val cpp: t -> Artifact.t
 val cmx: t -> Artifact.t
 val obj: t -> Artifact.t
 val cmt: t -> Artifact.t

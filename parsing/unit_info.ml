@@ -120,6 +120,7 @@ let companion_artifact ext x =
 
 let cmi f = mk_artifact ".cmi" f
 let cmo f = mk_artifact ".cmo" f
+let cpp f = mk_artifact ".cpp" f
 let cmx f = mk_artifact ".cmx" f
 let obj f = mk_artifact Config.ext_obj f
 let cmt f = mk_artifact ".cmt" f

@@ -217,6 +217,7 @@ ocamlbytecomp_SOURCES = \
   bytecomp/bytelink.mli bytecomp/bytelink.ml \
   bytecomp/bytelibrarian.mli bytecomp/bytelibrarian.ml \
   bytecomp/bytepackager.mli bytecomp/bytepackager.ml \
+  bytecomp/incr_c.mli bytecomp/incr_c.ml \
   driver/errors.mli driver/errors.ml \
   driver/compile.mli driver/compile.ml \
   driver/maindriver.mli driver/maindriver.ml
