@@ -1,6 +1,6 @@
 (* TEST
  include config;
- flags = "config.cmx";
+ binary_modules = "config";
  native;
 *)
 

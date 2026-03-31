@@ -650,9 +650,13 @@ rule token = parse
       }
   | "#"
       { let at_beginning_of_line pos = (pos.pos_cnum = pos.pos_bol) in
-        if not (at_beginning_of_line lexbuf.lex_start_p)
-        then HASH
-        else try directive lexbuf with Failure _ -> HASH
+      if at_beginning_of_line lexbuf.lex_start_p
+         && lex_directive lexbuf
+      then
+        (* [lex_directive] silently updates location information on success;
+           continue to the next token *)
+       token lexbuf
+      else HASH
       }
   | "&"  { AMPERSAND }
   | "&&" { AMPERAMPER }
@@ -727,7 +731,7 @@ rule token = parse
   | (_ as illegal_char)
       { error lexbuf (Illegal_character illegal_char) }
 
-and directive = parse
+and lex_directive = parse
   | ([' ' '\t']* (['0'-'9']+ as num) [' ' '\t']*
         ("\"" ([^ '\010' '\013' '\"' ] * as name) "\"") as directive)
         [^ '\010' '\013'] *
@@ -742,8 +746,16 @@ and directive = parse
               positive, but we have never guarded against this and it
               might have useful hackish uses. *)
             update_loc lexbuf (Some name) (line_num - 1) true 0;
-            token lexbuf
+            true
       }
+  | ""
+      { (* hack: fix the location to include the `#` character we consumed
+           before calling [lex_directive]. *)
+        let pos = lexbuf.lex_start_p in
+        lexbuf.lex_start_p <- { pos with pos_cnum = pos.pos_cnum - 1 };
+        false
+      }
+
 and comment = parse
     "(*"
       { comment_start_loc := (Location.curr lexbuf) :: !comment_start_loc;

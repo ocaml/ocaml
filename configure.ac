@@ -282,8 +282,7 @@ AC_SUBST([target_libdir_is_relative])
 AC_SUBST([srcdir_abs])
 AC_SUBST([srcdir_abs_real])
 AC_SUBST([build_map_flags])
-AC_SUBST([zinc_runtime_id_lo])
-AC_SUBST([zinc_runtime_id_hi])
+AC_SUBST([zinc_runtime_id])
 AC_SUBST([bytecode_runtime_id])
 AC_SUBST([native_runtime_id])
 AC_SUBST([suffixing])
@@ -1144,6 +1143,12 @@ AS_CASE([$ocaml_cc_vendor],
     common_cppflags="-D_XPG6"
     internal_cflags="$cc_warnings"],
   [common_cflags="-O"])
+
+# Enable the prefetchw instruction on x86 and x86_64.
+AS_CASE([$target],
+  [i686*|x86_64*],
+    [AX_CHECK_COMPILE_FLAG([-mprfchw],
+      [internal_cflags="$internal_cflags -mprfchw"], [], [$warn_error_flag])])
 
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
 # Enable 64-bit time_t in time.h
@@ -2044,7 +2049,7 @@ AS_IF([test "x$enable_instrumented_runtime" != "xno" ],
 )
 
 # ThreadSanitizer support is currently only available for Linux/FreeBSD/macOS
-# on amd64, Linux/macOS on arm64 and Linux on POWER, riscv64 and s390x.
+# on amd64, Linux/macOS on arm64 and Linux on POWER and riscv64.
 AS_IF([test "x$enable_tsan" = "xyes" ],
   [AS_CASE(["$arch"],
     [amd64],
@@ -2078,16 +2083,6 @@ AS_IF([test "x$enable_tsan" = "xyes" ],
         [AC_MSG_ERROR([thread sanitizer not supported on system $system])]
        )],
     [riscv],
-      [AS_CASE(["$system"],
-        [linux],
-        [AS_CASE(["$ocaml_cc_vendor"],
-          [gcc-*|clang-*], [tsan=true],
-          [AC_MSG_ERROR(m4_normalize([thread sanitizer not supported with
-            vendor=$ocaml_cc_vendor"]))]
-         )],
-        [AC_MSG_ERROR([thread sanitizer not supported on system $system])]
-       )],
-    [s390x],
       [AS_CASE(["$system"],
         [linux],
         [AS_CASE(["$ocaml_cc_vendor"],
@@ -2221,7 +2216,7 @@ AS_IF([$tsan],
       ["arm64"], [libunwind_ldflags="-lunwind -lunwind-aarch64"],
       ["power"], [libunwind_ldflags="-lunwind -lunwind-ppc64"],
       ["riscv"], [libunwind_ldflags="-lunwind -lunwind-riscv"],
-      ["s390x"], [libunwind_ldflags="-lunwind -lunwind-s390x"])])
+      )])
 
   AS_IF([test x"$LIBUNWIND_LDFLAGS" != x],
     [libunwind_ldflags="$LIBUNWIND_LDFLAGS $libunwind_ldflags"])
@@ -3151,8 +3146,7 @@ AS_CASE([$target,$windows_unicode],
 quintet3_zinc=BASE32([$quintet3_zinc])
 quintet3=BASE32([$quintet3])
 
-zinc_runtime_id_lo="QUINTET0[]QUINTET1_ZINC"
-zinc_runtime_id_hi="${quintet2_zinc}${quintet3_zinc}"
+zinc_runtime_id="QUINTET0[]QUINTET1_ZINC${quintet2_zinc}${quintet3_zinc}"
 bytecode_runtime_id="QUINTET0${quintet1}${quintet2_byte}${quintet3}"
 native_runtime_id="QUINTET0${quintet1}${quintet2_native}${quintet3}"
 

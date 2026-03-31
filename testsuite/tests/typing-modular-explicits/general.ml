@@ -777,10 +777,22 @@ let apply_small_annot2 (f : (module T : Typ) -> T.t -> T.t) g (module T : Typ) x
   g (module T) x
 
 [%%expect{|
+Line 2, characters 10-26:
+2 |   let _ = merge_no_mod f g in
+              ^^^^^^^^^^^^^^^^
+Warning 5 [ignored-partial-application]: this function application is partial,
+  maybe some arguments are missing.
+
 val apply_small_annot2 :
   ((module T : Typ) -> T.t -> T.t) ->
   ((module T : Typ) -> T.t -> T.t) -> (module T : Typ) -> T.t -> T.t = <fun>
 |}, Principal{|
+Line 2, characters 10-26:
+2 |   let _ = merge_no_mod f g in
+              ^^^^^^^^^^^^^^^^
+Warning 5 [ignored-partial-application]: this function application is partial,
+  maybe some arguments are missing.
+
 Line 3, characters 2-3:
 3 |   g (module T) x
       ^
@@ -1423,4 +1435,47 @@ module M : sig type a = int type v = [ `A of a ] end
 val f : (module M : T) -> ([> M.v ] as 'a) -> 'a = <fun>
 val u : ((module M : T) -> ([> M.v ] as 'a) -> 'a) -> (module T) -> 'a -> 'a =
   <fun>
+|}]
+
+(** Warnings *)
+
+module type Iter = sig
+  type 'a t
+  val iter: ('a -> unit) -> 'a t -> unit
+end
+let iter (module M:Iter) f x = M.iter f x
+[%%expect {|
+module type Iter = sig type 'a t val iter : ('a -> unit) -> 'a t -> unit end
+val iter : (module M : Iter) -> ('a -> unit) -> 'a M.t -> unit = <fun>
+|}]
+let too_many_arg = iter (module Iarray) (Format.printf "%d@.") [|0;1;2|] ()
+[%%expect {|
+Line 1, characters 19-75:
+1 | let too_many_arg = iter (module Iarray) (Format.printf "%d@.") [|0;1;2|] ()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The function "iter" has type
+         (module M : Iter) -> ('a -> unit) -> 'a M.t -> unit
+       It is applied to too many arguments
+Line 1, characters 71-73:
+1 | let too_many_arg = iter (module Iarray) (Format.printf "%d@.") [|0;1;2|] ()
+                                                                           ^^
+  Hint: Did you forget a ";"?
+Line 1, characters 73-75:
+1 | let too_many_arg = iter (module Iarray) (Format.printf "%d@.") [|0;1;2|] ()
+                                                                             ^^
+  This extra argument is not expected.
+|}]
+
+let too_many_arg_bis = map (module Iarray) succ [| 0; 1; 2 |] ()
+[%%expect {|
+Line 1, characters 23-64:
+1 | let too_many_arg_bis = map (module Iarray) succ [| 0; 1; 2 |] ()
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The function "map" has type
+         (module M : Map) -> ('a -> 'b) -> 'a M.t -> 'b M.t
+       It is applied to too many arguments
+Line 1, characters 62-64:
+1 | let too_many_arg_bis = map (module Iarray) succ [| 0; 1; 2 |] ()
+                                                                  ^^
+  This extra argument is not expected.
 |}]

@@ -169,6 +169,7 @@ module type Bytecomp_options = sig
   val _launch_method : string -> unit
   val _search_method : string -> unit
   val _output_complete_exe : unit -> unit
+  val _bytecode_hints : unit -> unit
 
   val _dinstr : unit -> unit
   val _dcamlprimc : unit -> unit

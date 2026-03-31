@@ -105,6 +105,7 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Pbigstring_load (_, Unsafe) ->
       No_effects, Has_coeffects
   | Parrayrefs _
+  | Pcheckbound
   | Pstringrefs
   | Pbytesrefs
   | Pstring_load (_, Safe)

@@ -294,13 +294,13 @@ let not_root = make
 let setup_build_env = make
   ~name:"setup-build-env"
   ~description:"Create a dedicated directory for the test and populates it"
-  (Actions_helpers.setup_build_env true [])
+  (Actions_helpers.setup_build_env ~add_testfile:true [])
 
 let setup_simple_build_env = make
   ~name:"setup-simple-build-env"
   ~description:"Do not create a dedicated directory, but only sets the \
     test_build_directory variable"
-  (Actions_helpers.setup_simple_build_env true [])
+  (Actions_helpers.setup_simple_build_env ~add_testfile:true [])
 
 let run = make
   ~name:"run"

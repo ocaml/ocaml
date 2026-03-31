@@ -109,5 +109,36 @@
         ptype_manifest =
           None
     ]
+  structure_item (hash_ambiguity.ml[19,487+0]..[21,510+4])
+    Pstr_type Rec
+    [
+      type_declaration "x" (hash_ambiguity.ml[19,487+8]..[19,487+9]) (hash_ambiguity.ml[19,487+0]..[21,510+4])
+        ptype_params =
+          [
+            core_type (hash_ambiguity.ml[19,487+5]..[19,487+7])
+              Ptyp_var a
+          ]
+        ptype_constraints =
+          []
+        ptype_kind =
+          Ptype_variant
+            [
+              (hash_ambiguity.ml[19,487+12]..[21,510+4])
+                "A" (hash_ambiguity.ml[19,487+12]..[19,487+13])
+                [
+                  core_type (hash_ambiguity.ml[19,487+17]..[21,510+4])
+                    Ptyp_class "list" (hash_ambiguity.ml[21,510+0]..[21,510+4])
+                    [
+                      core_type (hash_ambiguity.ml[19,487+17]..[19,487+20])
+                        Ptyp_constr "int" (hash_ambiguity.ml[19,487+17]..[19,487+20])
+                        []
+                    ]
+                ]
+                None
+            ]
+        ptype_private = Public
+        ptype_manifest =
+          None
+    ]
 ]
 

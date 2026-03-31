@@ -429,6 +429,15 @@ let cfi_def_cfa_register ~reg =
     emit_string "\n"
   end
 
+let cfi_val_offset ~reg ~offset =
+  if is_cfi_enabled () then begin
+    emit_string "\t.cfi_escape 0x14, "; (* DW_CFA_val_offset (0x14) *)
+    emit_int reg;
+    emit_string ", ";
+    emit_int offset;
+    emit_string "\n"
+  end
+
 (* Emit debug information *)
 
 (* This assoc list is expected to be very short *)

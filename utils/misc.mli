@@ -946,10 +946,6 @@ module RuntimeID : sig
   val of_string: string -> t option
   (** Converts the 4-character representation back to a {!t} *)
 
-  val of_zinc_hi: ?dev:bool -> ?release:int -> string -> t option
-  (** Converts hi 2 characters of the representation back to a {!t} (using the
-      default version information from {!Config}. *)
-
   val ocamlrun: string -> t -> string
   (** [ocamlrun variant runtime_id] returns the name for the runtime for the
       given Zinc Runtime ID. *)

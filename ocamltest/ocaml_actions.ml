@@ -273,9 +273,9 @@ let compile_program (compiler : Ocaml_compilers.compiler) log env =
         c_headers_flags;
         Ocaml_flags.stdlib;
         directory_flags env;
-        flags env;
         libraries;
         backend_default_flags env compiler#target;
+        flags env;
         backend_flags env compiler#target;
         compile_flags;
         output;
@@ -315,9 +315,9 @@ let compile_module compiler module_ log env =
     Ocaml_flags.stdlib;
     c_headers_flags;
     directory_flags env;
-    flags env;
     libraries compiler#target env;
     backend_default_flags env compiler#target;
+    flags env;
     backend_flags env compiler#target;
     "-c " ^ module_;
   ] in
@@ -412,7 +412,7 @@ let setup_tool_build_env tool log env =
   Sys.force_remove tool_output_file;
   let env =
     Environments.add Builtin_variables.test_build_directory build_dir env in
-  Actions_helpers.setup_build_env false source_modules log env
+  Actions_helpers.setup_build_env ~add_testfile:false source_modules log env
 
 let setup_compiler_build_env (compiler : Ocaml_compilers.compiler) log env =
   let (r, env) = setup_tool_build_env compiler log env in
@@ -596,7 +596,8 @@ let ocamlobjinfo =
     )
 
 let ocamltest_action log env =
-  let (_, env) = Actions_helpers.setup_simple_build_env false [] log env in
+  let (_, env) =
+    Actions_helpers.setup_simple_build_env ~add_testfile:false [] log env in
   let program = Environments.safe_lookup Builtin_variables.program env in
   let what = Printf.sprintf "Running ocamltest on %s" program in
   Printf.fprintf log "%s\n%!" what;
@@ -807,7 +808,7 @@ let cc =
   Actions.make ~name:"cc" ~description:"Run C compiler to build the program"
     run_cc
 
-let run_expect_once input_file principal log env =
+let run_expect_once input_file ~principal log env =
   let expect_flags = Sys.safe_getenv "EXPECT_FLAGS" in
   let repo_root = "-repo-root " ^ Ocaml_directories.srcdir in
   let principal_flag = if principal then "-principal" else "" in
@@ -832,11 +833,11 @@ let run_expect_once input_file principal log env =
 
 let run_expect_twice input_file log env =
   let corrected filename = Filename.make_filename filename "corrected" in
-  let (result1, env1) = run_expect_once input_file false log env in
+  let (result1, env1) = run_expect_once input_file ~principal:false log env in
   if Test_result.is_pass result1 then begin
     let intermediate_file = corrected input_file in
     let (result2, env2) =
-      run_expect_once intermediate_file true log env1 in
+      run_expect_once intermediate_file ~principal:true log env1 in
     if Test_result.is_pass result2 then begin
       let output_file = corrected intermediate_file in
       let output_env = Environments.add_bindings

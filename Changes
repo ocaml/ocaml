@@ -23,15 +23,30 @@ Working version
   symbols from the runtime. The declarations were removed in 5.0.
   (Antonin Décimo, review by Nicolás Ojeda Bär)
 
-- #14570: Distinguish between prefetching for read and write access in the
-  runtime. Significant performance benefit for some multi-domain programs. For
-  maximum benefit on AMD64, pass -mprfchw to the C compiler.
+- #14570, #14616, #14665: Distinguish between prefetching for read and write
+  access in the runtime. Significant performance benefit for some multi-domain
+  programs.
   (Nick Barnes, review by Gabriel Scherer, Damien Doligez, and Antonin Décimo)
+
+- #14651: Remove S390x TSan (Thread Sanitizer) support.
+  (Tim McGilchrist, review by Olivier Nicole)
+
+- #14292: The value returned by `Hashtbl.is_randomized` is now reflected in the
+  `R` parameter of `Sys.runtime_parameters`.
+  (Antonin Décimo, David Allsopp, Hannes Mehnert, review by
+   Nicolás Ojeda Bär)
+
+- #14482: Add DWARF CFI support to POWER backend.
+  (Tim McGilchrist, review by Xavier Leroy)
 
 ### Type system:
 
 - #14512: Improve check for warning 16 (unerasable-optional-argument)
   (Alistair O'Brien, review by Florian Angeletti, Gabriel Scherer)
+
+- #12150: class type system improvements: self type constraints, virtual method
+  inheritance in mutually recursive definition, immediate object inheritance.
+  (Leo White, review by Florian Angeletti)
 
 ### Code generation and optimizations:
 
@@ -43,10 +58,30 @@ Working version
   disable the change in a backward-compatible way.
   (Gabriel Scherer, review by Vincent Laviron)
 
+- #13438: keep some optimization hints from lambda in bytecode modules
+  and executables (to be used by Js_of_ocaml / Wasm_of_ocaml)
+  (Jérôme Vouillon)
+
 ### Standard library:
+
+- #13554: Add `List.append_map` and `List.rev_append_map`.
+  (Sylvain Boilard and Hugo Heuzard, review by Nicolás Ojeda Bär, Daniel Bünzli,
+   Damien Doligez and Jeremy Yallop)
+
+- #14121: Add Set.S.singleton_to_elt and Map.S.singleton_to_binding
+  (Vincent Laviron, review by Daniel Bünzli, Nicolás Ojeda Bär
+   and Gabriel Scherer)
+
+- #14380: Add Atomic.Array.
+  (Clément Allain and Gabriel Scherer, review by Olivier Nicole
+   and Léo Andrès for the stdlib team)
 
 - #14487: Add String.drop_{prefix,suffix}
   (Michael Neumann, review by Léo Andrès, Nicolás Ojeda Bär and Gabriel Scherer)
+
+- #14693: Add Dynarray.{of,to}_iarray
+  (Olivier Nicole, review by Gabriel Scherer and Nicolás Ojeda Bär, suggestion
+   by Andreas Rossberg)
 
 - #14553: Add Array.fold_{left,right}2
   (Clément Pottier, review by Nicolás Ojeda Bär and Vincent Laviron)
@@ -97,6 +132,10 @@ Working version
   (Gabriel Scherer, review by Stefan Muenzel and Florian Angeletti,
    report by Stefan Muenzel)
 
+- #14618: optimize utf8 normalization outside of the ASCII range
+  (Stefan Muenzel, review by Gabriel Scherer, Daniel Bünzli, and
+   Florian Angeletti)
+
 - #14601, remove an unreachable path for unbound type variables in extension
   constructor declarations.
   (Florian Angeletti, review by Gabriel Scherer)
@@ -104,12 +143,20 @@ Working version
 - #14641: Move `Opnames` into `ocamlbytecomp`.
   (David Allsopp, review by Nicolás Ojeda Bär)
 
+- #14654: Fix non-exhaustive directive rule in lexer.
+  (Antonin Décimo, review by Martin Jambon and Gabriel Scherer)
+
 ### Build system:
 
 ### Bug fixes:
 
 - #14492: Fix Obj.dup on closures.
   (Mark Shinwell and Nick Barnes, review by Gabriel Scherer and Damien Doligez)
+
+- #14500: Fix CFI information emitted for s390x architecture. This helps
+  debuggers to unwind the stack correctly and print accurate backtraces
+  for OCaml code.
+  (Tim McGilchrist, review by Miod Vallat, Zane Hambly and Olivier Nicole)
 
 OCaml 5.5.0
 -----------
@@ -421,6 +468,10 @@ OCaml 5.5.0
   the marshalled output.
   (David Allsopp, review by Gabriel Scherer)
 
+- #14434, #14652: Protect check_counter_example_pat against polymorphic types,
+  restoring type soundness.
+  (Stephen Dolan and Jacques Garrigue, report and review by Alistair O'Brien)
+
 ### Other libraries:
 
 - #13700, #14454: Use POSIX thread-safe getgrnam_r, getgrgid_r, getpwnam_r,
@@ -499,6 +550,9 @@ OCaml 5.5.0
 
 ### Manual and documentation:
 
+- #14684: Improve ocamlopt's manual page
+  (Samuel Hym, review by Florian Angeletti)
+
 - #14397: Improve documentation of type-directed disambiguation of array
   literals (Alicia Michael, review by Olivier Nicole and Florian Angeletti)
 
@@ -544,6 +598,10 @@ OCaml 5.5.0
 
 - #14392: Fix AsciiDoc files, add more markup, xrefs, documentation.
   (Antonin Décimo, review by Gabriel Scherer and David Allsopp)
+
+- #13590: Document automatic command-line expansion of `*` and `?` wildcards by
+  the runtime under Windows.
+  (Benjamin Sigonneau, review by Nicolás Ojeda Bär)
 
 ### Compiler user-interface and warnings:
 
@@ -708,6 +766,9 @@ OCaml 5.5.0
   definition
   (Ulysse Gérard, review by Florian Angeletti and Gabriel Scherer)
 
+- #14394: Refactor `type_let` into `type_let_nonrec` and `type_let_rec`.
+  (Alistair O'Brien, review by Samuel Vivien)
+
 ### Build system:
 
 - #13705, #14444: Cache test results of custom Autoconf tests from aclocal.m4.
@@ -859,6 +920,13 @@ OCaml 5.5.0
   the result of `Float.Array.sub`, `Float.Array.append`, `Float.Array.concat`
   (when empty) not to be equal to `[||]`.
   (Marc Lasson, review by Gabriel Scherer)
+
+- #14644, #14647: Fix a bug related to unhandled effects in bytecode.
+  (Vincent Laviron, report by Thibaut Mattio,
+   review by Nicolás Ojeda Bär, Stephen Dolan and Olivier Nicole)
+
+- #14667: enable application related warnings for module-dependent functions
+  (Florian Angeletti, review by Gabriel Scherer)
 
 OCaml 5.4.0 (9 October 2025)
 ----------------------------
@@ -2489,6 +2557,9 @@ OCaml 5.2.0 (13 May 2024)
   some API changes in Gc.Memprof.
   (Nick Barnes, review by Jacques-Henri Jourdan
    and Guillaume Munch-Maccagnoni).
+
+- #12023: Deprecate Gc.stat
+  (Damien Doligez, review by Gabriel Scherer and Jeremy Yallop)
 
 - #12430: Simplify dynamic bytecode loading in Meta.reify_bytecode
   (Stephen Dolan, review by Sébastien Hinderer, Vincent Laviron and Xavier

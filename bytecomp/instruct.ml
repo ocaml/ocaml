@@ -58,6 +58,28 @@ and debug_event_repr =
   | Event_parent of int ref
   | Event_child of int ref
 
+type closure_hint =
+  { params : Lambda.value_kind list;
+    return: Lambda.value_kind;
+    inline : Lambda.inline_attribute;
+    specialise : Lambda.specialise_attribute;
+    is_a_functor : bool }
+
+type ccall_hint =
+  | Hint_unsafe
+  | Hint_int of Primitive.boxed_integer
+  | Hint_bigarray of
+      { unsafe : bool;
+        elt_kind : Lambda.bigarray_kind;
+        layout : Lambda.bigarray_layout }
+  | Hint_primitive of Primitive.description
+
+type optimization_hint =
+  | Hint_immutable_block
+  | Hint_arraylength of Lambda.array_kind
+  | Hint_closures of closure_hint list
+  | Hint_ccall of ccall_hint
+
 type label = int                     (* Symbolic code labels *)
 
 type instruction =
@@ -73,19 +95,19 @@ type instruction =
   | Kreturn of int                      (* slot size *)
   | Krestart
   | Kgrab of int                        (* number of arguments *)
-  | Kclosure of label * int
-  | Kclosurerec of label list * int
+  | Kclosure of label * int * closure_hint
+  | Kclosurerec of (label * closure_hint) list * int
   | Koffsetclosure of int
   | Kgetglobal of Ident.t
   | Ksetglobal of Ident.t
   | Kconst of structured_constant
-  | Kmakeblock of int * int             (* size, tag *)
-  | Kmakefloatblock of int
+  | Kmakeblock of int * int * Asttypes.mutable_flag (* size, tag, mutable *)
+  | Kmakefloatblock of int * Asttypes.mutable_flag
   | Kgetfield of int
   | Ksetfield of int
   | Kgetfloatfield of int
   | Ksetfloatfield of int
-  | Kvectlength
+  | Kvectlength of Lambda.array_kind
   | Kgetvectitem
   | Ksetvectitem
   | Kgetstringchar
@@ -102,7 +124,7 @@ type instruction =
   | Kpoptrap
   | Kraise of raise_kind
   | Kcheck_signals
-  | Kccall of string * int
+  | Kccall of string * int * ccall_hint option
   | Knegint | Kaddint | Ksubint | Kmulint | Kdivint | Kmodint
   | Kandint | Korint | Kxorint | Klslint | Klsrint | Kasrint
   | Kintcomp of integer_comparison

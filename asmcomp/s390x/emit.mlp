@@ -98,23 +98,6 @@ let reg_r7 = check_phys_reg 5 "%r7"
 let reg_stack_arg_begin = check_phys_reg 7 "%r9"
 let reg_stack_arg_end = check_phys_reg 6 "%r8"
 
-let cfi_startproc () =
-  if Config.asm_cfi_supported then begin
-    emit_string "\t.cfi_startproc\n";
-  end
-
-let cfi_endproc () =
-  if Config.asm_cfi_supported then begin
-    emit_string "\t.cfi_endproc\n";
-  end
-
-let cfi_def_cfa_register reg =
-  if Config.asm_cfi_supported then begin
-    emit_string "\t.cfi_def_cfa_register ";
-    emit_string reg;
-    emit_string "\n"
-  end
-
 (* Output a stack reference *)
 
 let emit_stack env r =
@@ -311,8 +294,15 @@ let emit_instr env i =
     | Lprologue ->
       let n = frame_size env in
       emit_stack_adjust n;
-      if env.f.fun_frame_required then
-        `	stg	%r14, {emit_int(n - size_addr)}(%r15)\n`
+      (* Use cfi_def_cfa_offset to SET the CFA, not adjust it.
+         The s390x CIE has a default offset of 160 for C ABI, but OCaml
+         has its own stack layout. CFA = sp + n after allocation. *)
+      cfi_def_cfa_offset n;
+      cfi_val_offset ~reg:15 ~offset:0;
+      if env.f.fun_frame_required then begin
+        `	stg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
+        cfi_offset ~reg:14 ~offset:(-size_addr)
+      end
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc <> dst.loc then begin
@@ -391,10 +381,7 @@ let emit_instr env i =
           (* Save OCaml SP in C callee-save register *)
           `	lgr	%r12, %r15\n`;
           cfi_remember_state ();
-          cfi_def_cfa_register "%r12";
-          (* NB: gdb has asserts on contiguous stacks that mean it
-             will not unwind through this unless we were to tag this
-             calling frame with cfi_signal_frame in its definition. *)
+          cfi_def_cfa_register ~reg:12;
           let offset = Domainstate.(idx_of_field Domain_c_stack) * 8 in
           `	lg	%r15, {emit_int offset}(%r10)\n`;
           emit_call func;
@@ -404,6 +391,7 @@ let emit_instr env i =
 
      | Lop(Istackoffset n) ->
         emit_stack_adjust n;
+        if n <> 0 then cfi_adjust_cfa_offset n;
         env.stack_offset <- env.stack_offset + n
 
      | Lop(Iload { memory_chunk; addressing_mode; _ }) ->
@@ -684,10 +672,12 @@ let emit_instr env i =
         (* each trap occupies 16 bytes on the stack *)
         let delta = 16 * delta_traps in
         emit_stack_adjust delta;
+        if delta <> 0 then cfi_adjust_cfa_offset delta;
         env.stack_offset <- env.stack_offset + delta
     | Lpushtrap { lbl_handler; } ->
         env.stack_offset <- env.stack_offset + 16;
         emit_stack_adjust 16;
+        cfi_adjust_cfa_offset 16;
         `	larl	%r14, {emit_label lbl_handler}\n`;
         `	stg	%r14, {emit_int size_addr}(%r15)\n`;
         `	stg	%r13, 0(%r15)\n`;
@@ -695,6 +685,7 @@ let emit_instr env i =
     | Lpoptrap ->
         `	lg	%r13, 0(%r15)\n`;
         emit_stack_adjust (-16);
+        cfi_adjust_cfa_offset (-16);
         env.stack_offset <- env.stack_offset - 16
     | Lraise k ->
         begin match k with
@@ -733,6 +724,10 @@ let fundecl fundecl =
   `	.align	8\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
   cfi_startproc ();
+  (* Reset CFA from CIE default (r15+160) to r15+0 at function entry.
+     This ensures correct unwinding even when stopped before the prologue. *)
+  cfi_def_cfa_offset 0;
+  cfi_val_offset ~reg:15 ~offset:0;
 
   (* Dynamic stack checking *)
   let stack_threshold_size = Config.stack_threshold * 8 in (* bytes *)
@@ -763,11 +758,18 @@ let fundecl fundecl =
       `{emit_label overflow}:\n`;
       let s = (Config.stack_threshold + max_frame_size / 8) in
       `	lay	%r15, -8(%r15)\n`;
+      (* Set CFA = sp + 8 after allocating 8 bytes *)
+      cfi_def_cfa_offset 8;
+      cfi_val_offset ~reg:15 ~offset:0;
       `	stg	%r14, 0(%r15)\n`;
+      cfi_offset ~reg:14 ~offset:(-8);
       `	lgfi	%r12, {emit_int s}\n`;
       emit_call_got "caml_call_realloc_stack";
       `	lg	%r14, 0(%r15)\n`;
       `	la	%r15, 8(%r15)\n`;
+      (* Back to entry state: CFA = sp + 0 *)
+      cfi_def_cfa_offset 0;
+      cfi_val_offset ~reg:15 ~offset:0;
       `	brcl	15, {emit_label ret}\n`
     end
   end;

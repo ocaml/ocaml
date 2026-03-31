@@ -597,18 +597,17 @@ let emit_instr env i =
     match i.desc with
     | Lend -> ()
     | Lprologue ->
-      let n = frame_size env in
-      if n > 0 then begin
-        `	addi	1, 1, {emit_int(-n)}\n`;
-        cfi_adjust_cfa_offset n
-      end;
-      if env.f.fun_frame_required then begin
-        let ra = retaddr_offset env in
-        `	mflr	0\n`;
-        `	std	0, {emit_int ra}(1)\n`;
-        cfi_offset ~reg: 65 (* LR *) ~offset: (ra - n);
-        `	std	2, {emit_int(toc_save_offset env)}(1)\n`
-      end
+        let n = frame_size env in
+        if env.f.fun_frame_required then begin
+            `	mflr	0\n`;
+            `	std	0, {emit_int 16}(1)\n`;
+            `	std	2, {emit_int 8}(1)\n`;
+            cfi_offset ~reg: 65 (* LR *) ~offset: 16;
+         end;
+        if n > 0 then begin
+            `	addi	1, 1, {emit_int(-n)}\n`;
+            cfi_adjust_cfa_offset n
+        end
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc <> dst.loc then begin
@@ -1021,11 +1020,11 @@ let fundecl fundecl =
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   emit_type_directive fundecl.fun_name "@function";
   `{emit_symbol fundecl.fun_name}:\n`;
+  cfi_startproc();
   `0:	addis	2, 12, (.TOC. - 0b)@ha\n`;
   `	addi	2, 2, (.TOC. - 0b)@l\n`;
   `	.localentry {emit_symbol fundecl.fun_name}, . - 0b\n`;
   emit_debug_info fundecl.fun_dbg;
-  cfi_startproc();
   (* Dynamic stack checking *)
   begin match !handle_overflow with
   | None -> ()

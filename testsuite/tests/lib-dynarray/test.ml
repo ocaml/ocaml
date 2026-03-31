@@ -435,7 +435,7 @@ let () =
 
 (** {1:conversions Conversions to other data structures} *)
 
-(** {of,to}_{list,array,seq{,_rev}{,_rentrant}} *)
+(** {of,to}_{list,array,iarray,seq{,_rev}{,_rentrant}} *)
 
 let () =
   for i = 0 to 1024 do
@@ -443,6 +443,8 @@ let () =
     assert ((ints |> A.of_list |> A.to_list) = ints);
     let arr = Array.of_list ints in
     assert ((arr |> A.of_array |> A.to_array) = arr);
+    let iarr = Iarray.of_list ints in
+    assert ((iarr |> A.of_iarray |> A.to_iarray) = iarr);
     let seq = Array.to_seq arr in
     [A.to_seq; A.to_seq_reentrant] |> List.iter (fun dynarray_to_seq ->
       assert ((seq |> A.of_seq |> dynarray_to_seq) |> Array.of_seq = arr)

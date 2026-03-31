@@ -242,6 +242,7 @@ stdlib__Dynarray.cmo : dynarray.ml \
     stdlib__Seq.cmi \
     stdlib__Printf.cmi \
     stdlib__Obj.cmi \
+    stdlib__Iarray.cmi \
     camlinternalOO.cmi \
     stdlib__Array.cmi \
     stdlib__Dynarray.cmi
@@ -251,6 +252,7 @@ stdlib__Dynarray.cmx : dynarray.ml \
     stdlib__Seq.cmx \
     stdlib__Printf.cmx \
     stdlib__Obj.cmx \
+    stdlib__Iarray.cmx \
     camlinternalOO.cmx \
     stdlib__Array.cmx \
     stdlib__Dynarray.cmi
@@ -409,7 +411,6 @@ stdlib__Gc.cmi : gc.mli \
     stdlib__Printexc.cmi
 stdlib__Hashtbl.cmo : hashtbl.ml \
     stdlib__Sys.cmi \
-    stdlib__String.cmi \
     stdlib__Seq.cmi \
     stdlib__Random.cmi \
     stdlib__Obj.cmi \
@@ -420,7 +421,6 @@ stdlib__Hashtbl.cmo : hashtbl.ml \
     stdlib__Hashtbl.cmi
 stdlib__Hashtbl.cmx : hashtbl.ml \
     stdlib__Sys.cmx \
-    stdlib__String.cmx \
     stdlib__Seq.cmx \
     stdlib__Random.cmx \
     stdlib__Obj.cmx \
