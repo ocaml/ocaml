@@ -3237,7 +3237,7 @@ let rec unify uenv t1 t2 =
         update_scope_for Unify (get_scope t1) t2;
         link_type t1 t2
     | (Tconstr _, Tconstr _) when Env.has_local_constraints (get_env uenv) ->
-        unify2_rec uenv t1 t1 t2 t2
+        unify2_rec uenv t1 [] t1 t2 [] t2
     | _ ->
         unify2 uenv t1 t2
     end;
@@ -3248,7 +3248,7 @@ let rec unify uenv t1 t2 =
 
 and unify2 uenv t1 t2 = unify2_expand uenv t1 t1 t2 t2
 
-and unify2_rec uenv t10 t1 t20 t2 =
+and unify2_rec uenv t10 t1s t1 t20 t2s t2 =
   if unify_eq uenv t1 t2 then () else
   try match (get_desc t1, get_desc t2) with
   | (Tconstr (p1, tl1, a1), Tconstr (p2, tl2, a2)) ->
@@ -3256,13 +3256,14 @@ and unify2_rec uenv t10 t1 t20 t2 =
       && not (has_cached_expansion p1 !a1 || has_cached_expansion p2 !a2)
       then begin
         update_level_for Unify (get_env uenv) (get_level t1) t2;
-        update_scope_for Unify (get_scope t1) t2;
+        let scope = Int.max (get_scope t1) (get_scope t2) in
+        List.iter (update_scope_for Unify scope) (t2 :: t1s @ t2s);
         link_type t1 t2
       end else
         let env = get_env uenv in
         if find_expansion_scope env p1 > find_expansion_scope env p2
-        then unify2_rec uenv t10 t1 t20 (try_expand_safe env t2)
-        else unify2_rec uenv t10 (try_expand_safe env t1) t20 t2
+        then unify2_rec uenv t10 t1s t1 t20 (t2::t2s) (try_expand_safe env t2)
+        else unify2_rec uenv t10 (t1::t1s) (try_expand_safe env t1) t20 t2s t2
   | _ ->
       raise Cannot_expand
   with Cannot_expand ->
