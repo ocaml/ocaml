@@ -453,11 +453,15 @@ val of_array : 'a array -> 'a t
 val to_array : 'a t -> 'a array
 (** [to_array a] returns a fixed-sized array corresponding to the
     dynamic array [a]. This always allocate a new array and copies
-    elements into it. *)
+    elements into it.
+
+    @since 5.6 *)
 
 val of_iarray : 'a iarray -> 'a t
 (** [of_iarray a] returns a dynamic array corresponding to the
-    immutable array [a]. Operates in [O(n)] time by making a copy. *)
+    immutable array [a]. Operates in [O(n)] time by making a copy.
+
+    @since 5.6 *)
 
 val to_iarray : 'a t -> 'a iarray
 (** [to_iarray a] returns an immutable array corresponding to the dynamic array
