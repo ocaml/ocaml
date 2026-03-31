@@ -459,7 +459,8 @@ val to_array : 'a t -> 'a array
 
 val of_iarray : 'a iarray -> 'a t
 (** [of_iarray a] returns a dynamic array corresponding to the
-    immutable array [a]. Operates in [O(n)] time by making a copy.
+    immutable array [a]. Operates in [O(n)] time in the length of [a] by making
+    a copy.
 
     @since 5.6 *)
 
