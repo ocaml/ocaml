@@ -524,6 +524,78 @@ rule token = parse
       { let name = ident_for_extended lexbuf raw_name in
         check_label_name ~raw_escape:(escape<>"") lexbuf name;
         LABEL name }
+  (* Tilde diacritic on lowercase letter in label position: emit LABEL
+     with the base letter (without diacritic) as start of the label name.
+     NFC precomposed forms: ã ĩ ñ õ ũ *)
+  | '\195' ('\163' | '\177' | '\181') (identchar * as rest) ':'
+      { let base_letter = match Lexing.lexeme_char lexbuf 1 with
+          | '\163' -> "a"  (* ã *)
+          | '\177' -> "n"  (* ñ *)
+          | '\181' -> "o"  (* õ *)
+          | _ -> assert false
+        in
+        let name = base_letter ^ rest in
+        check_label_name lexbuf name;
+        LABEL name }
+  | '\196' '\169' (identchar * as rest) ':'
+      { let name = "i" ^ rest in  (* ĩ *)
+        check_label_name lexbuf name;
+        LABEL name }
+  | '\197' '\169' (identchar * as rest) ':'
+      { let name = "u" ^ rest in  (* ũ *)
+        check_label_name lexbuf name;
+        LABEL name }
+  (* NFD decomposed form: lowercase letter + combining tilde U+0303 in label *)
+  | (['a'-'z'] as letter) '\204' '\131' (identchar * as rest) ':'
+      { let name = String.make 1 letter ^ rest in
+        check_label_name lexbuf name;
+        LABEL name }
+  (* Tilde diacritic on lowercase letter without colon: emit TILDE and push
+     the base letter back into the buffer for the next token.
+     NFC precomposed forms: ã ñ õ *)
+  | '\195' ('\163' | '\177' | '\181') (identchar_ext* as rest)
+      { let base_letter = match Lexing.lexeme_char lexbuf 1 with
+          | '\163' -> 'a'  (* ã *)
+          | '\177' -> 'n'  (* ñ *)
+          | '\181' -> 'o'  (* õ *)
+          | _ -> assert false
+        in
+        let rewind = 1 + String.length rest in
+        let pos = lexbuf.Lexing.lex_curr_pos in
+        Bytes.set lexbuf.Lexing.lex_buffer (pos - rewind) base_letter;
+        lexbuf.Lexing.lex_curr_pos <- pos - rewind;
+        lexbuf.Lexing.lex_curr_p <-
+          { lexbuf.Lexing.lex_curr_p with
+            pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - rewind };
+        TILDE }
+  | '\196' '\169' (identchar_ext* as rest)
+      { let rewind = 1 + String.length rest in  (* ĩ *)
+        let pos = lexbuf.Lexing.lex_curr_pos in
+        Bytes.set lexbuf.Lexing.lex_buffer (pos - rewind) 'i';
+        lexbuf.Lexing.lex_curr_pos <- pos - rewind;
+        lexbuf.Lexing.lex_curr_p <-
+          { lexbuf.Lexing.lex_curr_p with
+            pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - rewind };
+        TILDE }
+  | '\197' '\169' (identchar_ext* as rest)
+      { let rewind = 1 + String.length rest in  (* ũ *)
+        let pos = lexbuf.Lexing.lex_curr_pos in
+        Bytes.set lexbuf.Lexing.lex_buffer (pos - rewind) 'u';
+        lexbuf.Lexing.lex_curr_pos <- pos - rewind;
+        lexbuf.Lexing.lex_curr_p <-
+          { lexbuf.Lexing.lex_curr_p with
+            pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - rewind };
+        TILDE }
+  (* NFD decomposed form: lowercase letter + combining tilde U+0303 *)
+  | (['a'-'z'] as letter) '\204' '\131' (identchar_ext* as rest)
+      { let rewind = 1 + String.length rest in
+        let pos = lexbuf.Lexing.lex_curr_pos in
+        Bytes.set lexbuf.Lexing.lex_buffer (pos - rewind) letter;
+        lexbuf.Lexing.lex_curr_pos <- pos - rewind;
+        lexbuf.Lexing.lex_curr_p <-
+          { lexbuf.Lexing.lex_curr_p with
+            pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - rewind };
+        TILDE }
   | "?"
       { QUESTION }
   | "?" (lowercase identchar * as name) ':'
