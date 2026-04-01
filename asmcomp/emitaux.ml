@@ -55,7 +55,7 @@ let emit_symbol s =
 let emit_string_literal s =
   let last_was_escape = ref false in
   emit_string "\"";
-  (* Avoid producing '??' to avoid triggering assembler warnings about trigraphs *)
+  (* Avoid producing '??' to avoid assembler warnings about trigraphs *)
   let last_was_question_mark = ref false in
   for i = 0 to String.length s - 1 do
     let c = s.[i] in
