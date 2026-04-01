@@ -71,9 +71,8 @@ Line 7, characters 35-36:
 Error: The value "x" has type "$a" but an expression was expected of type "'a"
        This instance of "$a" is ambiguous:
        it would escape the scope of its equation
-       Hint: A type annotation may resolve the ambiguity,
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
-       (see manual section 7.2)
        Hint: "$a" is an existential type bound by the constructor "Pair".
 |}]
 

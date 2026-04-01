@@ -1251,6 +1251,13 @@ let print_see_manual ppf manual_section =
     (pp_print_list ~pp_sep:(fun f () -> pp_print_char f '.') pp_print_int)
     manual_section
 
+let manual_hint ppf manual_section =
+  let open Format_doc in
+  fprintf ppf "%t (manual section %a):"
+    Style.hint
+    (pp_print_list ~pp_sep:(fun f () -> pp_print_char f '.') pp_print_int)
+    manual_section
+
 let print_if ppf flag printer arg =
   if !flag then Format.fprintf ppf "%a@." printer arg;
   arg

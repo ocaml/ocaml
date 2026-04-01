@@ -394,9 +394,8 @@ Error: This pattern matches values of type "N.t foo"
        but a pattern was expected which matches values of type "'a"
        This instance of "M.t" is ambiguous:
        it would escape the scope of its equation
-       Hint: A type annotation may resolve the ambiguity,
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
-       (see manual section 7.2)
 |}, Principal{|
 Line 3, characters 26-31:
 3 |   | { x = (x : N.t); eq = Refl3 } -> x
@@ -411,9 +410,8 @@ Error: This pattern matches values of type "N.t foo"
        but a pattern was expected which matches values of type "'a"
        This instance of "M.t" is ambiguous:
        it would escape the scope of its equation
-       Hint: A type annotation may resolve the ambiguity,
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
-       (see manual section 7.2)
 |}]
 
 let foo x =

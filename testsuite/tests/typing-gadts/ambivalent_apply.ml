@@ -20,9 +20,8 @@ Error: This expression has type "b" = "int"
        but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
-       Hint: A type annotation may resolve the ambiguity,
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
-       (see manual section 7.2)
 |}]
 let f (type a b) (w1 : (a, b -> b) eq) (w2 : (a, int -> int) eq) (g : a) =
    let Refl = w2 in let Refl = w1 in g 3;;
@@ -35,9 +34,8 @@ Line 2, characters 37-40:
 Error: This expression has type "int" but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
-       Hint: A type annotation may resolve the ambiguity,
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
        either on this expression or the whole function.
-       (see manual section 7.2)
 |}]
 
 (* Ok *)

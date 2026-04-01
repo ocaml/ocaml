@@ -588,6 +588,9 @@ val print_if :
 val print_see_manual : int list Format_doc.printer
 (** See manual section *)
 
+val manual_hint : int list Format_doc.printer
+(** Manual hint, reserved for hints that are essentially quoting the manual *)
+
 (** {1 Displaying configuration variables} *)
 
 val show_config_and_exit : unit -> unit
