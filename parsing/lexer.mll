@@ -534,6 +534,37 @@ rule token = parse
         check_label_name ~raw_escape:(escape<>"") lexbuf name;
         OPTLABEL name
       }
+  (* Grave accent diacritic on uppercase letter: emit BACKQUOTE and push
+     the base letter back into the buffer for the next token.
+     NFC precomposed forms: À È Ì Ò Ù *)
+  | '\195' ('\128' | '\136' | '\140' | '\146' | '\153')
+    (identchar_ext* as rest)
+      { let base_letter = match Lexing.lexeme_char lexbuf 1 with
+          | '\128' -> 'A'  (* À *)
+          | '\136' -> 'E'  (* È *)
+          | '\140' -> 'I'  (* Ì *)
+          | '\146' -> 'O'  (* Ò *)
+          | '\153' -> 'U'  (* Ù *)
+          | _ -> assert false
+        in
+        let rewind = 1 + String.length rest in
+        let pos = lexbuf.Lexing.lex_curr_pos in
+        Bytes.set lexbuf.Lexing.lex_buffer (pos - rewind) base_letter;
+        lexbuf.Lexing.lex_curr_pos <- pos - rewind;
+        lexbuf.Lexing.lex_curr_p <-
+          { lexbuf.Lexing.lex_curr_p with
+            pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - rewind };
+        BACKQUOTE }
+  (* NFD decomposed form: uppercase letter + combining grave accent U+0300 *)
+  | (['A'-'Z'] as letter) '\204' '\128' (identchar_ext* as rest)
+      { let rewind = 1 + String.length rest in
+        let pos = lexbuf.Lexing.lex_curr_pos in
+        Bytes.set lexbuf.Lexing.lex_buffer (pos - rewind) letter;
+        lexbuf.Lexing.lex_curr_pos <- pos - rewind;
+        lexbuf.Lexing.lex_curr_p <-
+          { lexbuf.Lexing.lex_curr_p with
+            pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - rewind };
+        BACKQUOTE }
   | lowercase identchar * as name
       { find_keyword lexbuf name }
   | uppercase identchar * as name
