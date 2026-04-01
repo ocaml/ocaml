@@ -1245,18 +1245,18 @@ let debug_prefix_map_flags () =
         []
   end
 
-let print_see_manual ppf manual_section =
+let print_manual_section ppf manual_section =
   let open Format_doc in
-  fprintf ppf "(see manual section %a)"
+  fprintf ppf "manual section %a"
     (pp_print_list ~pp_sep:(fun f () -> pp_print_char f '.') pp_print_int)
     manual_section
 
-let manual_hint ppf manual_section =
+let print_see_manual ppf manual_section =
+  Format_doc.fprintf ppf "(see %a)" print_manual_section manual_section
+
+let print_manual_hint ppf manual_section =
   let open Format_doc in
-  fprintf ppf "%t (manual section %a):"
-    Style.hint
-    (pp_print_list ~pp_sep:(fun f () -> pp_print_char f '.') pp_print_int)
-    manual_section
+  fprintf ppf "%t (%a):" Style.hint print_manual_section manual_section
 
 let print_if ppf flag printer arg =
   if !flag then Format.fprintf ppf "%a@." printer arg;

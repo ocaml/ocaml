@@ -255,7 +255,7 @@ let explain_escape pre = function
           pp_doc pre
           (Style.as_inline_code type_expr_with_reserved_names) t
           "it would escape the scope of its equation"
-          Misc.manual_hint manual_ref
+          Misc.print_manual_hint manual_ref
       )
   | Errortrace.Self ->
       Some (doc_printf "%a@,Self type cannot escape its class" pp_doc pre)
