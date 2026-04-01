@@ -369,6 +369,8 @@ let to_channel oc (program : Lambda.program) =
        intop e1 "|" e2
     | Lprim (Pxorint, [e1; e2], _) ->
        intop e1 "^" e2
+    | Lprim (Poffsetint n, [e2], _) ->
+       intop (Lconst (Const_int n)) "+" e2
     | Lconst (Const_int n) ->
        [], Tapp (Var mk_int, [Const_int n])
     | Lconst (Const_block (tag, args)) ->
