@@ -128,7 +128,8 @@ type instruction =
   | Kccall of string * int * ccall_hint option
   | Knegint | Kaddint | Ksubint | Kmulint | Kdivint | Kmodint
   | Kandint | Korint | Kxorint | Klslint | Klsrint | Kasrint
-  | Kintcomp of integer_comparison * bool
+  | Kintcomp of integer_comparison
+  | Kphyscomp of physical_comparison
   | Koffsetint of int
   | Koffsetref of int
   | Kisint

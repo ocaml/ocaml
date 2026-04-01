@@ -496,6 +496,7 @@ val bind : let_kind -> Ident.t -> lambda -> lambda -> lambda
 val bind_with_value_kind:
   let_kind -> (Ident.t * value_kind) -> lambda -> lambda -> lambda
 
+val negate_physical_comparison : physical_comparison -> physical_comparison
 val negate_integer_comparison : integer_comparison -> integer_comparison
 val swap_integer_comparison : integer_comparison -> integer_comparison
 

@@ -228,6 +228,9 @@ and emit_branch_comp = function
 | Clt -> out opBLTINT | Cle -> out opBLEINT
 | Cgt -> out opBGTINT | Cge -> out opBGEINT
 
+let integer_comparison_of_physical : physical_comparison -> integer_comparison =
+  function CPeq -> Ceq | CPneq -> Cne
+
 let emit_instr = function
     Klabel lbl -> define_label lbl
   | Kacc n ->
@@ -334,10 +337,11 @@ let emit_instr = function
   | Kandint -> out opANDINT  | Korint -> out opORINT
   | Kxorint -> out opXORINT  | Klslint -> out opLSLINT
   | Klsrint -> out opLSRINT  | Kasrint -> out opASRINT
-  | Kintcomp (c,physical_comparison) ->
-      if physical_comparison
-      then record_hint (Hint_physical_comparison);
+  | Kintcomp c ->
       emit_comp c
+  | Kphyscomp c ->
+      record_hint (Hint_physical_comparison);
+      emit_comp (integer_comparison_of_physical c)
   | Koffsetint n -> out opOFFSETINT; out_int n
   | Koffsetref n -> out opOFFSETREF; out_int n
   | Kisint -> out opISINT
@@ -363,15 +367,28 @@ let rec emit = function
     [] -> ()
   (* Peephole optimizations *)
 (* optimization of integer tests *)
-  | Kpush::Kconst k::Kintcomp (c,_)::Kbranchif lbl::rem
+  | Kpush::Kconst k::Kintcomp c::Kbranchif lbl::rem
       when is_immed_const k ->
         emit_branch_comp c ;
         out_const k ;
         out_label lbl ;
         emit rem
-  | Kpush::Kconst k::Kintcomp (c,_)::Kbranchifnot lbl::rem
+  | Kpush::Kconst k::Kintcomp c::Kbranchifnot lbl::rem
       when is_immed_const k ->
         emit_branch_comp (negate_integer_comparison c) ;
+        out_const k ;
+        out_label lbl ;
+        emit rem
+  | Kpush::Kconst k::Kphyscomp c::Kbranchif lbl::rem
+      when is_immed_const k ->
+        emit_branch_comp (integer_comparison_of_physical c) ;
+        out_const k ;
+        out_label lbl ;
+        emit rem
+  | Kpush::Kconst k::Kphyscomp c::Kbranchifnot lbl::rem
+      when is_immed_const k ->
+        emit_branch_comp
+          (negate_integer_comparison (integer_comparison_of_physical c)) ;
         out_const k ;
         out_label lbl ;
         emit rem

@@ -366,9 +366,8 @@ let comp_primitive stack_info p sz args =
   match p with
     Pgetglobal id -> Kgetglobal id
   | Psetglobal id -> Ksetglobal id
-  | Pintcomp cmp -> Kintcomp (cmp, false)
-  | Pphyscomp CPeq -> Kintcomp (Ceq, true)
-  | Pphyscomp CPneq -> Kintcomp (Cne, true)
+  | Pintcomp cmp -> Kintcomp cmp
+  | Pphyscomp cmp -> Kphyscomp cmp
   | Pcompare_ints -> Kccall("caml_int_compare", 2, None)
   | Pcompare_floats -> Kccall("caml_float_compare", 2, None)
   | Pcompare_bints bi -> comp_bint_primitive bi "compare" args
@@ -896,11 +895,11 @@ let rec comp_expr stack_info env exp sz cont =
       let comp = match dir with Upto -> Cgt | Downto -> Clt in
       comp_expr stack_info env start sz
         (Kpush :: comp_expr stack_info env stop (sz+1)
-          (Kpush :: Kpush :: Kacc 2 :: Kintcomp (comp, false) :: Kbranchif lbl_exit ::
+          (Kpush :: Kpush :: Kacc 2 :: Kintcomp comp :: Kbranchif lbl_exit ::
            Klabel lbl_loop :: Kcheck_signals ::
            comp_expr stack_info (add_var param (sz+1) env) body (sz+2)
              (Kacc 1 :: Kpush :: Koffsetint offset :: Kassign 2 ::
-              Kacc 1 :: Kintcomp (Cne, false) :: Kbranchif lbl_loop ::
+              Kacc 1 :: Kintcomp Cne :: Kbranchif lbl_loop ::
               Klabel lbl_exit :: add_const_unit (add_pop 2 cont))))
   | Lswitch(arg, sw, _loc) ->
       let (branch, cont1) = make_branch cont in

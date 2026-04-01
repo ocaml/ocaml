@@ -1016,6 +1016,10 @@ let bind_with_value_kind str (var, kind) exp body =
 let bind str var exp body =
   bind_with_value_kind str (var, Pgenval) exp body
 
+let negate_physical_comparison = function
+  | CPeq -> CPneq
+  | CPneq -> CPeq
+
 let negate_integer_comparison = function
   | Ceq -> Cne
   | Cne -> Ceq
