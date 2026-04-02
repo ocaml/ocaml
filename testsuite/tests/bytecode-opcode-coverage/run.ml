@@ -2,6 +2,7 @@
  include ocamlcommon;
  include ocamlbytecomp;
  include unix;
+ hasunix;
  flags = "-w -a";
  readonly_files = "test.ml";
  setup-ocamlc.byte-build-env;
