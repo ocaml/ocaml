@@ -112,20 +112,16 @@ type chunk =
   ; expectation : expectation
   }
 
-type correct_op =
-  | Set of Clflag.Set.t * string_constant
-  | Remove of Clflag.Set.t
-
-let apply_correct_op expectation correct_op =
-  match correct_op with
-  | Set (clflags, s) ->
-      { expectation with text = Clflag.Set.Map.add clflags s expectation.text }
-  | Remove clflags ->
-      { expectation with text = Clflag.Set.Map.remove clflags expectation.text }
+module Corrected = struct
+  type 'a t =
+    { original : 'a
+    ; corrected : 'a
+    }
+end
 
 module Correction = struct
   type t =
-    { corrected_expectations : (expectation * (correct_op list)) list
+    { corrected_expectations : expectation Corrected.t list
     ; trailing_output        : string Clflag.Set.Map.t
     }
 end
@@ -147,16 +143,33 @@ module Merged_correction = struct
       List.fold_left
         ~f:(fun (cmap, tmap) { Correction.corrected_expectations; trailing_output } ->
             List.fold_left
-              ~f:(fun acc (expectation, correct_op) ->
+              ~f:(fun acc { Corrected.original; corrected } ->
                   LocationMap.update
-                    expectation.extid_loc
-                    (fun current ->
-                       Some
-                         (List.fold_left
-                            ~f:apply_correct_op
-                            ~init:(Option.value ~default:expectation current)
-                            correct_op
-                         )
+                    original.extid_loc
+                    (function
+                      | None ->
+                          Some { Corrected.original; corrected }
+                      | Some { Corrected.original; corrected = corrected' } ->
+                          Some
+                            { Corrected.original
+                            ; corrected =
+                                { original with
+                                  text =
+                                    Clflag.Set.Map.merge
+                                      (fun _key to1 to2 ->
+                                         match to1, to2 with
+                                         | None, None -> None
+                                         | Some to1, None -> Some to1
+                                         | None, Some to2 -> Some to2
+                                         | Some to1, Some to2 when to1 = to2 -> Some to1
+                                         | _ -> Location.raise_errorf
+                                                  ~loc:original.extid_loc
+                                                  "conflicting outputs"
+                                      )
+                                      corrected.text
+                                      corrected'.text
+                                }
+                            }
                     )
                     acc
                 )
@@ -180,7 +193,12 @@ module Merged_correction = struct
     in
     { corrected_expectations =
         LocationMap.to_list corrected_expectations
-        |> List.map ~f:snd
+        |> List.filter_map
+             ~f:(fun (_, { Corrected.original; corrected }) ->
+              if original = corrected
+              then None
+              else Some corrected
+            )
     ; trailing_output
     }
 
@@ -361,21 +379,14 @@ let eval_expectation expectation ~output =
         with
         | Not_found -> { tag = ""; str = "" }
   in
-  let current_clflags = Clflag.Set.get_current () in
-  let correct_op =
-    if Clflag.Set.equal current_clflags !Clflag.Set.original
-    then []
-    else if Clflag.Set.Map.mem !Clflag.Set.original expectation.text
-    then [ Remove !Clflag.Set.original ]
-    else [ ]
-  in
-  if s.str = output then
-    match correct_op with
-    | [] -> None
-    | _  -> Some (expectation, correct_op)
-  else
-    let s = { s with str = output } in
-    Some (expectation, Set (current_clflags, s) :: correct_op)
+  let s = { s with str = output } in
+  { Corrected.original = expectation
+  ; corrected = { expectation with
+                  text =
+                    Clflag.Set.Map.singleton
+                      (Clflag.Set.get_current ()) s
+                }
+  }
 
 let shift_lines delta phrases =
   let position (pos : Lexing.position) =
@@ -467,12 +478,10 @@ let eval_expect_file _fname ~file_contents =
   in
   let corrected_expectations =
     capture_everything buf ppf ~f:(fun () ->
-      List.fold_left chunks ~init:[] ~f:(fun acc chunk ->
-        let output = exec_phrases chunk.phrases in
-        match eval_expectation chunk.expectation ~output with
-        | None -> acc
-        | Some correction -> correction :: acc)
-      |> List.rev)
+        List.fold_left chunks ~init:[] ~f:(fun acc chunk ->
+            let output = exec_phrases chunk.phrases in
+            eval_expectation chunk.expectation ~output :: acc)
+        |> List.rev)
   in
   let trailing_output =
     match trailing_code with

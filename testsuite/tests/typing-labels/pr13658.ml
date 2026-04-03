@@ -67,7 +67,7 @@ val f : (?x:'a -> 'a as 'a) -> 'a = <fun>
 
 let rec f ?x = f
 let () = Clflags.classic := true;;
-[%%expect {||}, (Principal.Rectypes, Principal.Rectypes.Classic){|
+[%%expect {||}, Principal.Rectypes.Classic{|
 Line 1, characters 11-12:
 1 | let rec f ?x = f
                ^
@@ -84,7 +84,7 @@ val f : ?x:'b -> 'a as 'a = <fun>
 |}]
 
 let () = f 3
-[%%expect{||}, (Principal.Rectypes, Principal.Rectypes.Classic){|
+[%%expect{||}, Principal.Rectypes.Classic{|
 Line 1, characters 11-12:
 1 | let () = f 3
                ^

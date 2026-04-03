@@ -13,23 +13,13 @@ let check f = f ()
 
 let f ~x = ()
 let () = check f;;
-[%%expect {|
-val check : (unit -> 'a) -> 'a = <fun>
-val f : x:'a -> unit = <fun>
-Line 9, characters 15-16:
-9 | let () = check f;;
-                   ^
-Error: The value "f" has type "x:'a -> unit"
-       but an expression was expected of type "unit -> 'b"
-       The first argument is labeled "x",
-       but an unlabeled argument was expected
-|}, (Principal.Classic, Rectypes.Classic, Classic){|
+[%%expect {||}, (Principal.Classic, Rectypes.Classic, Classic){|
 val check : (unit -> 'a) -> 'a = <fun>
 val f : x:'a -> unit = <fun>
 |}]
 
 let () = f ~y:1
-[%%expect {|
+[%%expect {||}, (Principal.Classic, Rectypes.Classic, Classic){|
 Line 1, characters 14-15:
 1 | let () = f ~y:1
                   ^
@@ -39,10 +29,7 @@ This argument cannot be applied with label "~y"
 
 let f ?x ~a ?y ~z () = ()
 let g = f ?y:None ?x:None ~a:()
-[%%expect {|
-val f : ?x:'a -> a:'b -> ?y:'c -> z:'d -> unit -> unit = <fun>
-val g : z:'_weak1 -> unit -> unit = <fun>
-|}, (Principal.Classic, Rectypes.Classic, Classic){|
+[%%expect {||}, (Principal.Classic, Rectypes.Classic, Classic){|
 val f : ?x:'a -> a:'b -> ?y:'c -> z:'d -> unit -> unit = <fun>
 Line 2, characters 13-17:
 2 | let g = f ?y:None ?x:None ~a:()
@@ -55,14 +42,7 @@ Since OCaml 4.11, optional arguments do not commute when -nolabels is given
 
 let f (g: ?x:_ -> _) = g ~y:None ?x:None; g ?x:None ()
 
-[%%expect{|
-Line 1, characters 42-43:
-1 | let f (g: ?x:_ -> _) = g ~y:None ?x:None; g ?x:None ()
-                                              ^
-Error: This function is applied to arguments
-       in an order different from other calls.
-       This is only allowed when the real type is known.
-|}, (Principal.Classic, Rectypes.Classic, Classic){|
+[%%expect{||}, (Principal.Classic, Rectypes.Classic, Classic){|
 Line 1, characters 28-32:
 1 | let f (g: ?x:_ -> _) = g ~y:None ?x:None; g ?x:None ()
                                 ^^^^
@@ -76,7 +56,7 @@ Since OCaml 4.11, optional arguments do not commute when -nolabels is given
 let f i ?(a=0) ?(b=0) ?(c=0) ~x j =
   i + a + b + c + x + j
 ;;
-[%%expect{|
+[%%expect{||}, (Principal.Classic, Rectypes.Classic, Classic){|
 val f : int -> ?a:int -> ?b:int -> ?c:int -> x:int -> int -> int = <fun>
 |}]
 ;;
@@ -84,9 +64,7 @@ val f : int -> ?a:int -> ?b:int -> ?c:int -> x:int -> int -> int = <fun>
 (* [a], [b] and [c] can be commuted without issues *)
 
 f 3 ~c:2 ~a:1 ~b:0 ~x:4 5;;
-[%%expect{|
-- : int = 15
-|}, (Principal.Classic, Rectypes.Classic, Classic){|
+[%%expect{||}, (Principal.Classic, Rectypes.Classic, Classic){|
 Line 1, characters 7-8:
 1 | f 3 ~c:2 ~a:1 ~b:0 ~x:4 5;;
            ^
@@ -101,9 +79,7 @@ Since OCaml 4.11, optional arguments do not commute when -nolabels is given
    argument, but compare the reported function types: *)
 
 f 3 ~a:1 ~b:2 5 ~c:0 ~x:4;;
-[%%expect{|
-- : int = 15
-|}, (Principal.Classic, Rectypes.Classic, Classic){|
+[%%expect{||}, (Principal.Classic, Rectypes.Classic, Classic){|
 Line 1, characters 14-15:
 1 | f 3 ~a:1 ~b:2 5 ~c:0 ~x:4;;
                   ^
@@ -115,9 +91,7 @@ Since OCaml 4.11, optional arguments do not commute when -nolabels is given
 ;;
 
 f 3 ~a:1 ~c:2 5 ~b:0 ~x:4;;
-[%%expect{|
-- : int = 15
-|}, (Principal.Classic, Rectypes.Classic, Classic){|
+[%%expect{||}, (Principal.Classic, Rectypes.Classic, Classic){|
 Line 1, characters 12-13:
 1 | f 3 ~a:1 ~c:2 5 ~b:0 ~x:4;;
                 ^
@@ -129,9 +103,7 @@ Since OCaml 4.11, optional arguments do not commute when -nolabels is given
 ;;
 
 f 3 ~b:1 ~c:2 5 ~a:0 ~x:4;;
-[%%expect{|
-- : int = 15
-|}, (Principal.Classic, Rectypes.Classic, Classic){|
+[%%expect{||}, (Principal.Classic, Rectypes.Classic, Classic){|
 Line 1, characters 7-8:
 1 | f 3 ~b:1 ~c:2 5 ~a:0 ~x:4;;
            ^
@@ -146,15 +118,13 @@ Since OCaml 4.11, optional arguments do not commute when -nolabels is given
    https://github.com/ocaml/ocaml/pull/9411 *)
 
 let f ?x ?y () = ();;
-[%%expect{|
+[%%expect{||}, (Principal.Classic, Rectypes.Classic, Classic){|
 val f : ?x:'a -> ?y:'b -> unit -> unit = <fun>
 |}]
 ;;
 
 f ~y:3;;
-[%%expect{|
-- : ?x:'a -> unit -> unit = <fun>
-|}, (Principal.Classic, Rectypes.Classic, Classic){|
+[%%expect{||}, (Principal.Classic, Rectypes.Classic, Classic){|
 Line 1, characters 5-6:
 1 | f ~y:3;;
          ^
