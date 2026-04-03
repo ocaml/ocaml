@@ -489,60 +489,64 @@ let output_corrected oc ~file_contents (correction : Merged_correction.t) =
   let output_body oc { str; tag } =
     Printf.fprintf oc "{%s|%s|%s}" tag str tag
   in
+  let output_for_all_clflags map ?(output_empty=true) ~empty_str str =
+    let normal =
+      Clflag.Set.Map.find_opt Clflag.Set.empty map
+      |> Option.value ~default:empty_str
+    in
+    let smap =
+      Clflag.Set.Map.fold
+        (fun key body acc ->
+           if (str body) = (str normal) then acc
+           else String_map.add_to_list (str body) key acc
+        )
+        map
+        String_map.empty
+    in
+    let ordered_by_lowest_flag =
+      String_map.fold
+        (fun str clflagss acc ->
+           let clflagss =
+             List.sort_uniq ~cmp:Clflag.Set.compare clflagss
+           in
+           let low_flag = List.hd clflagss in
+           Clflag.Set.Map.add low_flag (clflagss, str) acc
+        )
+        smap
+        Clflag.Set.Map.empty
+    in
+    if (not output_empty) && Clflag.Set.Map.is_empty ordered_by_lowest_flag
+       && (str normal) = (str empty_str)
+    then ()
+    else begin
+      output_body oc { str = (str normal); tag = "" };
+      Clflag.Set.Map.iter
+        (fun _ (clflagss, str) ->
+           output_string oc ", ";
+           let paren = List.length clflagss > 1 in
+           if paren then output_string oc "(";
+           List.iteri
+             ~f:(fun i clflags ->
+                 if i > 0 then output_string oc ", ";
+                 output_string oc (Clflag.Set.to_string clflags))
+             clflagss;
+           if paren then output_string oc ")";
+           output_body oc { str; tag = "" }
+        )
+        ordered_by_lowest_flag;
+    end
+  in
   let ofs =
     List.fold_left correction.corrected_expectations ~init:0
       ~f:(fun ofs c ->
         output_slice oc file_contents ofs c.payload_loc.loc_start.pos_cnum;
-        let normal =
-          Clflag.Set.Map.find_opt Clflag.Set.empty c.text
-          |> Option.value ~default:{ str = ""; tag = "" }
-        in
-        let smap =
-          Clflag.Set.Map.fold
-            (fun key body acc ->
-               if body.str = normal.str then acc
-               else String_map.add_to_list body.str key acc
-            )
-            c.text
-            String_map.empty
-        in
-        let ordered_by_lowest_flag =
-          String_map.fold
-            (fun str clflagss acc ->
-               let clflagss =
-                 List.sort_uniq ~cmp:Clflag.Set.compare clflagss
-               in
-               let low_flag = List.hd clflagss in
-               Clflag.Set.Map.add low_flag (clflagss, str) acc
-            )
-            smap
-            Clflag.Set.Map.empty
-        in
-        output_body oc normal;
-        Clflag.Set.Map.iter
-          (fun _ (clflagss, str) ->
-             output_string oc ", ";
-             let paren = List.length clflagss > 1 in
-             if paren then output_string oc "(";
-             List.iteri
-               ~f:(fun i clflags ->
-                   if i > 0 then output_string oc ", ";
-                   output_string oc (Clflag.Set.to_string clflags))
-               clflagss;
-             if paren then output_string oc ")";
-             output_body oc { str; tag = "" }
-          )
-          ordered_by_lowest_flag;
+        output_for_all_clflags c.text ~empty_str:{ str = ""; tag = "" }
+          (fun c -> c.str);
         c.payload_loc.loc_end.pos_cnum)
   in
   output_slice oc file_contents ofs (String.length file_contents);
-  ignore correction.trailing_output;
-  ()
-  (*
-  match correction.trailing_output with
-  | "" -> ()
-  | s  -> Printf.fprintf oc "\n[%%%%expect{|%s|}]\n" s
-     *)
+  output_for_all_clflags correction.trailing_output ~output_empty:false
+    ~empty_str:"" (fun c -> c)
 
 let write_corrected ~file ~file_contents correction =
   let oc = open_out file in
