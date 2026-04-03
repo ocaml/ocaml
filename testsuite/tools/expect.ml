@@ -71,10 +71,12 @@ module Clflag = struct
     let original = ref empty
 
     let get_current () =
-      union
-        (if !Clflags.principal then singleton Principal else empty)
-        (if !Clflags.recursive_types then singleton Rectypes else empty)
-      |> union (if !Clflags.classic then singleton Classic else empty)
+      List.fold_left ~f:union
+        [ if !Clflags.principal then singleton Principal else empty
+        ; if !Clflags.recursive_types then singleton Rectypes else empty
+        ; if !Clflags.classic then singleton Classic else empty
+        ]
+        ~init:empty
 
     let set_current t =
       Clflags.principal := mem Principal t;
@@ -155,24 +157,26 @@ module Merged_correction = struct
                       | None ->
                           Some { Corrected.original; corrected }
                       | Some { Corrected.original; corrected = corrected' } ->
+                          let text =
+                            Clflag.Set.Map.merge
+                              (fun _key to1 to2 ->
+                                 match to1, to2 with
+                                 | None, None -> None
+                                 | Some to1, None -> Some to1
+                                 | None, Some to2 -> Some to2
+                                 | Some to1, Some to2 when to1 = to2 -> Some to1
+                                 | _ -> Location.raise_errorf
+                                          ~loc:original.extid_loc
+                                          "conflicting outputs"
+                              )
+                              corrected.text
+                              corrected'.text
+                          in
                           Some
                             { Corrected.original
                             ; corrected =
                                 { original with
-                                  text =
-                                    Clflag.Set.Map.merge
-                                      (fun _key to1 to2 ->
-                                         match to1, to2 with
-                                         | None, None -> None
-                                         | Some to1, None -> Some to1
-                                         | None, Some to2 -> Some to2
-                                         | Some to1, Some to2 when to1 = to2 -> Some to1
-                                         | _ -> Location.raise_errorf
-                                                  ~loc:original.extid_loc
-                                                  "conflicting outputs"
-                                      )
-                                      corrected.text
-                                      corrected'.text
+                                  text
                                 }
                             }
                     )
