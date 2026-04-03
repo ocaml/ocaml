@@ -106,6 +106,11 @@ type expectation =
   ; text        : string_constant Clflag.Set.Map.t
   }
 
+let expectation_equal a b =
+  a.extid_loc = b.extid_loc &&
+  a.payload_loc = b.payload_loc &&
+  Clflag.Set.Map.equal (fun a b -> a.str = b.str && a.tag = b.tag) a.text b.text
+
 (* A list of phrases with the expected toplevel output *)
 type chunk =
   { phrases     : Parsetree.toplevel_phrase list
@@ -195,7 +200,7 @@ module Merged_correction = struct
         LocationMap.to_list corrected_expectations
         |> List.filter_map
              ~f:(fun (_, { Corrected.original; corrected }) ->
-              if original = corrected
+              if expectation_equal original corrected
               then None
               else Some corrected
             )
