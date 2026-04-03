@@ -21,6 +21,7 @@ module Clflag : sig
   type t =
     | Principal
     | Rectypes
+    | Classic
 
   module Set : sig
     include Set.S with type elt = t

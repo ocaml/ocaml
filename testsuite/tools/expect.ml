@@ -52,10 +52,12 @@ module Clflag = struct
   type t =
     | Principal
     | Rectypes
+    | Classic
 
   let to_string = function
     | Principal -> "Principal"
     | Rectypes -> "Rectypes"
+    | Classic -> "Classic"
 
   module Set = struct
     module T = Set.Make(struct
@@ -72,10 +74,12 @@ module Clflag = struct
       union
         (if !Clflags.principal then singleton Principal else empty)
         (if !Clflags.recursive_types then singleton Rectypes else empty)
+      |> union (if !Clflags.classic then singleton Classic else empty)
 
     let set_current t =
       Clflags.principal := mem Principal t;
       Clflags.recursive_types := mem Rectypes t;
+      Clflags.classic := mem Classic t;
       ()
 
     let to_string c =
@@ -89,6 +93,7 @@ module Clflag = struct
             match s with
             | "Principal" -> add Principal acc
             | "Rectypes" -> add Rectypes acc
+            | "Classic" -> add Classic acc
             | other -> Location.raise_errorf ~loc "unknown flag: %s" other)
         ~init:empty (Longident.flatten lid)
   end
@@ -553,7 +558,7 @@ let write_corrected ~file ~file_contents correction =
   output_corrected oc ~file_contents correction;
   close_out oc
 
-let process_expect_file fname =
+let process_expect_file ~startup_clflags fname =
   let corrected_fname = fname ^ ".corrected" in
   let file_contents =
     let ic = open_in_bin fname in
@@ -569,8 +574,9 @@ let process_expect_file fname =
     let corrections =
       List.map clflags ~f:(fun clflags ->
           let store = Local_store.fresh () in
-          Clflag.Set.set_current clflags;
-          Clflag.Set.original := Clflag.Set.get_current ();
+          let local_clflags = Clflag.Set.union startup_clflags clflags in
+          Clflag.Set.set_current local_clflags;
+          Clflag.Set.original := local_clflags;
           Typecore.reset_delayed_checks ();
           Env.reset_required_globals ();
           Out_type.reset ();
@@ -593,7 +599,7 @@ let keep_original_error_size = ref false
 let main fname =
   if not !keep_original_error_size then
     Clflags.error_size := 0;
-  Clflag.Set.original := Clflag.Set.get_current ();
+  let startup_clflags = Clflag.Set.get_current () in
   Toploop.override_sys_argv
     (Array.sub Sys.argv ~pos:!Arg.current
        ~len:(Array.length Sys.argv - !Arg.current));
@@ -611,7 +617,7 @@ let main fname =
         Compenv.last_include_dirs := [Filename.concat dir "stdlib"]
   end;
   Compmisc.init_path ~auto_include:Load_path.no_auto_include ();
-  process_expect_file fname;
+  process_expect_file ~startup_clflags fname;
   exit 0
 
 module Options = Main_args.Make_bytetop_options (struct

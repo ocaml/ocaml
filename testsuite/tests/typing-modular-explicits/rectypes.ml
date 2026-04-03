@@ -78,7 +78,7 @@ Line 1, characters 64-66:
 Error: This alias is bound to type "M.t * ((module N : T) -> 'a)"
        but is used as an instance of type "'a"
        The type variable "'a" occurs inside "M.t * ((module N : T) -> 'a)"
-|}, Rectypes{|
+|}, (Principal.Rectypes, Rectypes){|
 Line 2, characters 3-4:
 2 |   (x : ((module O : T) -> O.t * 'b) as 'b)
        ^
