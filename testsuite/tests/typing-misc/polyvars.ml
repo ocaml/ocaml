@@ -232,7 +232,7 @@ val x : ([> `X ] as '_weak1) -> unit = <fun>
 
 let x = let rec x = `X (`Y (fun y -> x = y)) in Fun.id x
 [%%expect {|
-val x : [> `X of [> `Y of '_weak2 -> bool ] as '_weak3 ] as '_weak2 =
+val x : [> `X of [> `Y of '_weak1 -> bool ] as '_weak2 ] as '_weak1 =
   `X (`Y <fun>)
 |}]
 

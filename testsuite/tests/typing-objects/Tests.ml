@@ -762,7 +762,7 @@ fun x -> (x : < .. > :> < >);;
 
 let x = ref [];;
 [%%expect{|
-val x : '_weak2 list ref = {contents = []}
+val x : '_weak1 list ref = {contents = []}
 |}];;
 module F(X : sig end) =
   struct type t = int let _ = (x : < m : t> list ref) end;;
@@ -977,7 +977,7 @@ end;;
 Line 2, characters 13-58:
 2 |   method o = object(_ : 'self) method o = assert false end
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Cannot close type of object literal: "< o : '_weak4; .. > as '_weak3"
+Error: Cannot close type of object literal: "< o : '_weak2; .. > as '_weak1"
        it has been unified with the self type of a class that is not yet
        completely defined.
 |}];;

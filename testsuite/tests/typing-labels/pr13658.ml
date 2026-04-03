@@ -25,9 +25,8 @@ let x =
 Line 2, characters 49-50:
 2 |   fun (f : (x:string -> y:int -> 'a) as 'a) -> f 3;;
                                                      ^
-Error: The function applied to this argument has type
-         x:string -> y:int -> x:string -> (y:int -> x:string -> 'a as 'a)
-This argument cannot be applied without label
+Error: The constant "3" has type "int" but an expression was expected of type
+         "string"
 |}]
 
 let rec f ~x ~y = Format.printf "@[x=%s y=%s@]@." x y; f
@@ -43,10 +42,20 @@ let u () =
 
 [%%expect{||}, Principal.Rectypes{|
 val f : x:string -> y:string -> (x:string -> y:string -> 'a as 'a) = <fun>
-val u : unit -> unit = <fun>
+Line 4, characters 26-40:
+4 |   let f = f ~x:"hello" ~x:"second hello" ~x:"last" in
+                              ^^^^^^^^^^^^^^
+Error: The function applied to this argument has type
+         y:string -> (x:string -> y:string -> 'a as 'a)
+This argument cannot be applied with label "~x"
 |}, Rectypes{|
 val f : x:string -> y:string -> 'a as 'a = <fun>
-val u : unit -> unit = <fun>
+Line 4, characters 26-40:
+4 |   let f = f ~x:"hello" ~x:"second hello" ~x:"last" in
+                              ^^^^^^^^^^^^^^
+Error: The function applied to this argument has type
+         y:string -> x:string -> 'a as 'a
+This argument cannot be applied with label "~x"
 |}]
 
 let f g = g ?x:(g ?x:(Some g)) 0

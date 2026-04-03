@@ -1936,7 +1936,7 @@ let x = f 3;;
 [%%expect{|
 type (+'a, -'b) foo = private int
 val f : int -> ('a, 'a) foo = <fun>
-val x : ('_weak2, '_weak2) foo = 3
+val x : ('_weak1, '_weak1) foo = 3
 |}]
 
 
@@ -2113,8 +2113,8 @@ Line 1, characters 0-63:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The type of this class,
        "class ['a] r :
-         object constraint 'a = '_weak3 list ref method get : 'a end",
-       contains the non-generalizable type variable(s): "'_weak3".
+         object constraint 'a = '_weak1 list ref method get : 'a end",
+       contains the non-generalizable type variable(s): "'_weak1".
        (see manual section 6.1.2)
 |}]
 
