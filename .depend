@@ -7843,6 +7843,7 @@ toplevel/byte/trace.cmo : \
     utils/misc.cmi \
     bytecomp/meta.cmi \
     parsing/longident.cmi \
+    parsing/location.cmi \
     typing/ctype.cmi \
     parsing/asttypes.cmi \
     toplevel/byte/trace.cmi
@@ -7856,6 +7857,7 @@ toplevel/byte/trace.cmx : \
     utils/misc.cmx \
     bytecomp/meta.cmx \
     parsing/longident.cmx \
+    parsing/location.cmx \
     typing/ctype.cmx \
     parsing/asttypes.cmx \
     toplevel/byte/trace.cmi
