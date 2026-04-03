@@ -846,8 +846,10 @@ let run_expect_variants input_file log env =
     | Error _ -> prev
   in
   run ~principal:false ~rectypes:false (Ok (input_file, env))
+    (*
   |> run ~principal:true ~rectypes:false
   |> run ~principal:false ~rectypes:true
+       *)
   |> function
   | Ok (output_file, env) ->
       let output_env = Environments.add_bindings

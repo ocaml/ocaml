@@ -847,7 +847,8 @@ end = struct
     name_subst := [];
     name_counter := 0;
     named_vars := [];
-    visited_for_named_vars := []
+    visited_for_named_vars := [];
+    named_weak_vars := String.Set.empty
 
   let add_named_var tty =
     match tty.desc with

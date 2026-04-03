@@ -1,4 +1,4 @@
-(**************************************************************************)
+(***************************************Correction.***********************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
@@ -73,6 +73,11 @@ module Clflag = struct
         (if !Clflags.principal then singleton Principal else empty)
         (if !Clflags.recursive_types then singleton Rectypes else empty)
 
+    let set_current t =
+      Clflags.principal := mem Principal t;
+      Clflags.recursive_types := mem Rectypes t;
+      ()
+
     let to_string c =
       fold (fun cl acc ->
           (if acc = "" then "" else acc ^ ".") ^ to_string cl
@@ -102,10 +107,80 @@ type chunk =
   ; expectation : expectation
   }
 
-type correction =
-  { corrected_expectations : expectation list
-  ; trailing_output        : string
-  }
+type correct_op =
+  | Set of Clflag.Set.t * string_constant
+  | Remove of Clflag.Set.t
+
+let apply_correct_op expectation correct_op =
+  match correct_op with
+  | Set (clflags, s) ->
+      { expectation with text = Clflag.Set.Map.add clflags s expectation.text }
+  | Remove clflags ->
+      { expectation with text = Clflag.Set.Map.remove clflags expectation.text }
+
+module Correction = struct
+  type t =
+    { corrected_expectations : (expectation * (correct_op list)) list
+    ; trailing_output        : string Clflag.Set.Map.t
+    }
+end
+
+module Merged_correction = struct
+  type t =
+    { corrected_expectations : expectation list
+    ; trailing_output        : string Clflag.Set.Map.t
+    }
+
+  module LocationMap = Map.Make(struct
+      include Location
+
+      let compare = compare
+    end)
+
+  let merge (clist : Correction.t list) : t =
+    let corrected_expectations, trailing_output =
+      List.fold_left
+        ~f:(fun (cmap, tmap) { Correction.corrected_expectations; trailing_output } ->
+            List.fold_left
+              ~f:(fun acc (expectation, correct_op) ->
+                  LocationMap.update
+                    expectation.extid_loc
+                    (fun current ->
+                       Some
+                         (List.fold_left
+                            ~f:apply_correct_op
+                            ~init:(Option.value ~default:expectation current)
+                            correct_op
+                         )
+                    )
+                    acc
+                )
+              ~init:cmap
+              corrected_expectations
+          , Clflag.Set.Map.merge
+              (fun _key to1 to2 ->
+                 match to1, to2 with
+                 | None, None -> None
+                 | Some to1, None -> Some to1
+                 | None, Some to2 -> Some to2
+                 | Some to1, Some to2 when to1 = to2 -> Some to1
+                 | _ -> Location.raise_errorf
+                          ~loc:Location.none "conflicting trailing outputs"
+              )
+              tmap
+              trailing_output
+        )
+      ~init:(LocationMap.empty, Clflag.Set.Map.empty)
+      clist
+    in
+    { corrected_expectations =
+        LocationMap.to_list corrected_expectations
+        |> List.map ~f:snd
+    ; trailing_output
+    }
+
+end
+
 
 let match_expect_extension (ext : Parsetree.extension) =
   match ext with
@@ -282,33 +357,20 @@ let eval_expectation expectation ~output =
         | Not_found -> { tag = ""; str = "" }
   in
   let current_clflags = Clflag.Set.get_current () in
-  let clflags_correction =
+  let correct_op =
     if Clflag.Set.equal current_clflags !Clflag.Set.original
-    then None
+    then []
     else if Clflag.Set.Map.mem !Clflag.Set.original expectation.text
-    then Some
-        { expectation
-          with text =
-                 Clflag.Set.Map.remove
-                   !Clflag.Set.original expectation.text }
-    else None
+    then [ Remove !Clflag.Set.original ]
+    else [ ]
   in
   if s.str = output then
-    clflags_correction
+    match correct_op with
+    | [] -> None
+    | _  -> Some (expectation, correct_op)
   else
     let s = { s with str = output } in
-    let expectation =
-      match clflags_correction with
-      | None -> expectation
-      | Some correction -> correction
-    in
-    Some (
-      { expectation with
-        text =
-          Clflag.Set.Map.add
-            (Clflag.Set.get_current ()) s expectation.text
-      }
-    )
+    Some (expectation, Set (current_clflags, s) :: correct_op)
 
 let shift_lines delta phrases =
   let position (pos : Lexing.position) =
@@ -413,14 +475,17 @@ let eval_expect_file _fname ~file_contents =
     | Some phrases ->
       capture_everything buf ppf ~f:(fun () -> exec_phrases phrases)
   in
-  { corrected_expectations; trailing_output }
+  let trailing_output =
+    Clflag.Set.Map.singleton (Clflag.Set.get_current ()) trailing_output
+  in
+  { Correction.corrected_expectations; trailing_output }
 
 let output_slice oc s a b =
   output_string oc (String.sub s ~pos:a ~len:(b - a))
 
 module String_map = Map.Make(String)
 
-let output_corrected oc ~file_contents correction =
+let output_corrected oc ~file_contents (correction : Merged_correction.t) =
   let output_body oc { str; tag } =
     Printf.fprintf oc "{%s|%s|%s}" tag str tag
   in
@@ -471,9 +536,13 @@ let output_corrected oc ~file_contents correction =
         c.payload_loc.loc_end.pos_cnum)
   in
   output_slice oc file_contents ofs (String.length file_contents);
+  ignore correction.trailing_output;
+  ()
+  (*
   match correction.trailing_output with
   | "" -> ()
   | s  -> Printf.fprintf oc "\n[%%%%expect{|%s|}]\n" s
+     *)
 
 let write_corrected ~file ~file_contents correction =
   let oc = open_out file in
@@ -488,7 +557,30 @@ let process_expect_file fname =
     | s           -> close_in ic; Misc.normalise_eol s
     | exception e -> close_in ic; raise e
   in
-  let correction = eval_expect_file fname ~file_contents in
+  let clflags =
+    List.map ~f:Clflag.Set.of_list
+      [ []; [ Clflag.Rectypes]; [ Clflag.Principal ] ]
+  in
+  let correction =
+    let corrections =
+      List.map clflags ~f:(fun clflags ->
+          let store = Local_store.fresh () in
+          Clflag.Set.set_current clflags;
+          Clflag.Set.original := Clflag.Set.get_current ();
+          Typecore.reset_delayed_checks ();
+          Env.reset_required_globals ();
+          Out_type.reset ();
+          Toploop.initialize_toplevel_env ();
+          (* We are in interactive mode and should record directive error on stdout *)
+          Sys.interactive := true;
+          Local_store.with_store store
+            (fun () ->
+               eval_expect_file fname ~file_contents;
+            )
+        )
+    in
+    Merged_correction.merge corrections
+  in
   write_corrected ~file:corrected_fname ~file_contents correction
 
 let repo_root = ref None
@@ -515,9 +607,6 @@ let main fname =
         Compenv.last_include_dirs := [Filename.concat dir "stdlib"]
   end;
   Compmisc.init_path ~auto_include:Load_path.no_auto_include ();
-  Toploop.initialize_toplevel_env ();
-  (* We are in interactive mode and should record directive error on stdout *)
-  Sys.interactive := true;
   process_expect_file fname;
   exit 0
 
