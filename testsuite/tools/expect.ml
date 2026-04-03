@@ -127,15 +127,8 @@ module Corrected = struct
 end
 
 module Correction = struct
-  type t =
-    { corrected_expectations : expectation Corrected.t list
-    ; trailing_output        : string Clflag.Set.Map.t
-    }
-end
-
-module Merged_correction = struct
-  type t =
-    { corrected_expectations : expectation list
+  type 'a t =
+    { corrected_expectations : 'a list
     ; trailing_output        : string Clflag.Set.Map.t
     }
 
@@ -145,10 +138,10 @@ module Merged_correction = struct
       let compare = compare
     end)
 
-  let merge (clist : Correction.t list) : t =
+  let merge clist =
     let corrected_expectations, trailing_output =
       List.fold_left
-        ~f:(fun (cmap, tmap) { Correction.corrected_expectations; trailing_output } ->
+        ~f:(fun (cmap, tmap) { corrected_expectations; trailing_output } ->
             List.fold_left
               ~f:(fun acc { Corrected.original; corrected } ->
                   LocationMap.update
@@ -508,7 +501,7 @@ let output_slice oc s a b =
 
 module String_map = Map.Make(String)
 
-let output_corrected oc ~file_contents (correction : Merged_correction.t) =
+let output_corrected oc ~file_contents (correction : _ Correction.t) =
   let output_body oc { str; tag } =
     Printf.fprintf oc "{%s|%s|%s}" tag str tag
   in
@@ -599,15 +592,13 @@ let process_expect_file ~startup_clflags fname =
           Env.reset_required_globals ();
           Out_type.reset ();
           Toploop.initialize_toplevel_env ();
-          (* We are in interactive mode and should record directive error on stdout *)
-          Sys.interactive := true;
           Local_store.with_store store
             (fun () ->
                eval_expect_file fname ~file_contents;
             )
         )
     in
-    Merged_correction.merge corrections
+    Correction.merge corrections
   in
   write_corrected ~file:corrected_fname ~file_contents correction
 
@@ -623,6 +614,8 @@ let main fname =
        ~len:(Array.length Sys.argv - !Arg.current));
   (* Ignore OCAMLRUNPARAM=b to be reproducible *)
   Printexc.record_backtrace false;
+  (* We are in interactive mode and should record directive error on stdout *)
+  Sys.interactive := true;
   if not !Clflags.no_std_include then begin
     match !repo_root with
     | None -> ()
