@@ -529,7 +529,7 @@ let output_corrected oc ~file_contents (correction : _ Correction.t) =
            in
            let tag = snd (List.hd clflagss_and_tag) in
            let low_flag = List.hd clflagss in
-           Clflag.Set.Map.add low_flag (clflagss, { str; tag }) acc
+           Clflag.Set.Map.add_to_list low_flag (clflagss, { str; tag }) acc
         )
         string_to_flags_and_tag
         Clflag.Set.Map.empty
@@ -541,17 +541,20 @@ let output_corrected oc ~file_contents (correction : _ Correction.t) =
     else begin
       output_body oc normal;
       Clflag.Set.Map.iter
-        (fun _ (clflagss, str) ->
-           output_string oc ", ";
-           let paren = List.length clflagss > 1 in
-           if paren then output_string oc "(";
-           List.iteri
-             ~f:(fun i clflags ->
-                 if i > 0 then output_string oc ", ";
-                 output_string oc (Clflag.Set.to_string clflags))
-             clflagss;
-           if paren then output_string oc ")";
-           output_body oc str;
+        (fun _ list ->
+           List.iter ~f:(fun (clflagss, str) ->
+               output_string oc ", ";
+               let paren = List.length clflagss > 1 in
+               if paren then output_string oc "(";
+               List.iteri
+                 ~f:(fun i clflags ->
+                     if i > 0 then output_string oc ", ";
+                     output_string oc (Clflag.Set.to_string clflags))
+                 clflagss;
+               if paren then output_string oc ")";
+               output_body oc str;
+             )
+             list
         )
         ordered_by_lowest_flag;
     end
