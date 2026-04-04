@@ -185,8 +185,9 @@ Working version
 - #14654: Fix non-exhaustive directive rule in lexer.
   (Antonin Décimo, review by Martin Jambon and Gabriel Scherer)
 
-- #14643: Test `-recypes` in addition to `-principal` in expect tests.
-  (Stefan Muenzel, review by Alistar O'Brien)
+- #14643: Test `-recypes` in addition to `-principal` in expect tests. Run all
+  test variants in the same invocation.
+  (Stefan Muenzel, review by Alistar O'Brien and Florian Angeletti)
 
 ### Build system:
 
