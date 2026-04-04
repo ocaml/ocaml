@@ -808,19 +808,15 @@ let cc =
   Actions.make ~name:"cc" ~description:"Run C compiler to build the program"
     run_cc
 
-let run_expect_once input_file ~principal ~rectypes log env =
+let run_expect_once input_file log env =
   let expect_flags = Sys.safe_getenv "EXPECT_FLAGS" in
   let repo_root = "-repo-root " ^ Ocaml_directories.srcdir in
-  let principal_flag = if principal then "-principal" else "" in
-  let rectypes_flag = if rectypes then "-rectypes" else "" in
   let commandline =
   [
     Ocaml_commands.ocamlrun_expect;
     expect_flags;
     flags env;
     repo_root;
-    principal_flag;
-    rectypes_flag;
     input_file
   ] in
   let exit_status =
@@ -835,21 +831,17 @@ let run_expect_once input_file ~principal ~rectypes log env =
 
 let run_expect_variants input_file log env =
   let corrected filename = Filename.make_filename filename "corrected" in
-  let run ~principal ~rectypes prev =
+  let run prev =
     match prev with
     | Ok (input_file, env) ->
         let (result, env') =
-          run_expect_once input_file ~principal ~rectypes log env in
+          run_expect_once input_file log env in
         if Test_result.is_pass result
         then Ok (corrected input_file, env')
         else Error (result, env')
     | Error _ -> prev
   in
-  run ~principal:false ~rectypes:false (Ok (input_file, env))
-    (*
-  |> run ~principal:true ~rectypes:false
-  |> run ~principal:false ~rectypes:true
-       *)
+  run (Ok (input_file, env))
   |> function
   | Ok (output_file, env) ->
       let output_env = Environments.add_bindings

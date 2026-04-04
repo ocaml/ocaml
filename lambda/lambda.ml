@@ -696,6 +696,9 @@ let next_raise_count () =
   incr raise_count ;
   !raise_count
 
+let reset_raise_count () =
+  raise_count := 0
+
 (* Anticipated staticraise, for guards *)
 let staticfail = Lstaticraise (0,[])
 

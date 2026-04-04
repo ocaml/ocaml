@@ -527,6 +527,8 @@ val make_atomic_loc : loc:scoped_location -> lambda -> lambda -> lambda
 (* Get a new static failure ident *)
 val next_raise_count : unit -> int
 
+val reset_raise_count : unit -> unit
+
 val staticfail : lambda (* Anticipated static failure *)
 
 (* Check anticipated failure, substitute its final value *)
