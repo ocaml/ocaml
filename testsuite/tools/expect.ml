@@ -23,7 +23,7 @@
 
    {[
      [%%expect {|
-     output without -principal
+     output without flags
      |}, Principal{|
      output with -principal
      |}]
@@ -31,10 +31,32 @@
 
    {[
      [%%expect {|
-     output without -rectypes
+     output without flags
      |}, Rectypesl{|
      output with -rectypes
      |}]
+   ]}
+
+   In case addional flags are used, for example when manually enabled,
+   any flag combinations are combined with a dot (".") as separator.
+
+   {[
+     [%%expect {|
+     output without flags
+     |}, Principal.Rectypes{|
+     output with -principal and -rectypes
+     |}]
+   ]}
+
+   If multiple such combinations result in the same output, then they
+   are displayed as a tuple.
+
+   {[
+     [%%expect {|
+     output without flags
+     |}, (Principal, Rectypes){|
+     output with -principal or -rectypes
+     |}
    ]}
 *)
 
@@ -145,7 +167,7 @@ module Correction = struct
   let merge clist =
     let merge_text ?(loc = Location.none) a b =
       Clflag.Set.Map.merge
-        (fun _key text1 text2 ->
+        (fun key text1 text2 ->
            match text1, text2 with
            | None, None -> None
            | (Some _ as text, None)
@@ -154,7 +176,7 @@ module Correction = struct
                text
            | _ -> Location.raise_errorf
                     ~loc
-                    "conflicting outputs"
+                    "conflicting outputs for %s" (Clflag.Set.to_string key)
         ) a b
     in
     let corrected_expectations, trailing_output =
@@ -218,7 +240,7 @@ let match_expect_extension (ext : Parsetree.extension) =
       match e.pexp_desc with
       | Pexp_constant {pconst_desc = Pconst_string (str, _, Some tag); _} ->
         { str; tag }
-      | _ -> invalid_payload "not a string"
+      | _ -> invalid_payload ~loc:e.pexp_loc "not a string"
     in
     let expectation =
       match payload with
@@ -265,6 +287,7 @@ let match_expect_extension (ext : Parsetree.extension) =
                                     acc
                               | _ ->
                                   invalid_payload
+                                    ~loc:b.pexp_loc
                                     "expected Constructor"
                             )
                           ~init:acc clflags_tuple
@@ -379,7 +402,7 @@ let eval_expectation expectation ~output =
         try
           Clflag.Set.Map.find Clflag.Set.empty expectation.text
         with
-        | Not_found -> { tag = ""; str = "" }
+        | Not_found -> empty_str
   in
   let s = { s with str = output } in
   { Corrected.original = expectation
