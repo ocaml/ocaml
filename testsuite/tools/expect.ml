@@ -583,6 +583,7 @@ let process_expect_file ~startup_clflags fname =
     List.map ~f:Clflag.Set.of_list
       [ []; [ Clflag.Rectypes]; [ Clflag.Principal ] ]
   in
+  let warning_state = Warnings.backup () in
   let correction =
     let corrections =
       List.map clflags ~f:(fun clflags ->
@@ -595,9 +596,12 @@ let process_expect_file ~startup_clflags fname =
           Lambda.reset_raise_count ();
           Out_type.reset ();
           Toploop.initialize_toplevel_env ();
-          Local_store.with_store store
+          Warnings.with_state warning_state
             (fun () ->
-               eval_expect_file fname ~file_contents;
+               Local_store.with_store store
+                 (fun () ->
+                    eval_expect_file fname ~file_contents;
+                 )
             )
         )
     in

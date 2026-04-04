@@ -57,7 +57,7 @@ let jM =
 ;;
 [%%expect{|
 val j : '_weak1 -> '_weak1 = <fun>
-val jM : '_weak2 -> '_weak2 = <fun>
+val jM : '_weak1 -> '_weak1 = <fun>
 |}]
 
 module Square(X : sig val x : int end) = struct
@@ -77,8 +77,8 @@ let kM =
   fun x -> x
 ;;
 [%%expect{|
-val k : '_weak3 -> '_weak3 = <fun>
-val kM : '_weak4 -> '_weak4 = <fun>
+val k : '_weak1 -> '_weak1 = <fun>
+val kM : '_weak1 -> '_weak1 = <fun>
 |}]
 
 let op =
@@ -89,5 +89,5 @@ let op =
   M.s
 ;;
 [%%expect{|
-val op : '_weak5 list ref = {contents = []}
+val op : '_weak1 list ref = {contents = []}
 |}]
