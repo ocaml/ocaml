@@ -49,8 +49,9 @@ Working version
 
 ### Type system:
 
-- #14512: Improve check for warning 16 (unerasable-optional-argument)
-  (Alistair O'Brien, review by Florian Angeletti, Gabriel Scherer)
+- #14512, #14671: Improve check for warning 16 (unerasable-optional-argument)
+  (Alistair O'Brien, Jacques Garrigue, review by Florian Angeletti,
+   Gabriel Scherer)
 
 - #12150: class type system improvements: self type constraints, virtual method
   inheritance in mutually recursive definition, immediate object inheritance.
