@@ -954,6 +954,9 @@ OCaml 5.5.0
   the file could be incorrectly added to the visible table.
   (Hugo Heuzard, review by Florian Angeletti)
 
+- ???: fix hard-to-reproduce runtime bugs involving weak pointers / ephemerons.
+  (Gabriel Scherer, review by ???, report by Jan Midtgaard)
+
 OCaml 5.4.0 (9 October 2025)
 ----------------------------
 
