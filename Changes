@@ -47,6 +47,10 @@ Working version
 - #14482: Add DWARF CFI support to POWER backend.
   (Tim McGilchrist, review by Xavier Leroy)
 
+- #14666: Give C string constants the type `const char[N]` instead of `char[N]`
+  with the C compiler `-Wwrite-strings` flag.
+  (Antonin Décimo, review by Xavier Leroy and Olivier Nicole)
+
 - #14717: assign 'unique_id' early during domain creation to help debugging
   (Gabriel Scherer, review by Olivier Nicole)
 
