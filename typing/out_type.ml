@@ -1221,7 +1221,6 @@ let rec tree_of_typexp mode ty =
    Otyp_var (non_gen, name) else
 
   let pr_typ () =
-    let tty = Transient_expr.repr ty in
     match printer_get_desc ty with
     | Tvar _ ->
         let non_gen = is_non_gen mode px in
