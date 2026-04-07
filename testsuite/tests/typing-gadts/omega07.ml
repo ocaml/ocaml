@@ -921,7 +921,7 @@ val double :
    App (App (Shift (Shift (Shift (Var Add))), Var <poly>), Var <poly>))
 val ex3 :
   ((zero, int,
-    (suc, int -> int, (add, int -> int -> int, '_weak1) rcons) rcons)
+    (suc, int -> int, (add, int -> int -> int, '_weak2) rcons) rcons)
    rcons, int)
   lam =
   App

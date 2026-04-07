@@ -835,11 +835,11 @@ let set (module T : Typ) (x : T.t) =
   r := Some x
 
 [%%expect{|
-val r : '_weak1 option ref = {contents = None}
+val r : '_weak2 option ref = {contents = None}
 Line 6, characters 12-13:
 6 |   r := Some x
                 ^
-Error: The value "x" has type "T.t" but an expression was expected of type "'a"
+Error: The value "x" has type "T.t" but an expression was expected of type "'weak2"
        The type constructor "T.t" would escape its scope
 |}]
 
@@ -1207,7 +1207,7 @@ let f_contra_applied = f_contra ()
 
 [%%expect{|
 val f_covar_applied : (module M : Covariant) -> 'a M.t = <fun>
-val f_contra_applied : (module M : Contravariant) -> '_weak1 M.t = <fun>
+val f_contra_applied : (module M : Contravariant) -> '_weak3 M.t = <fun>
 |}]
 
 module type M_arrow1 = sig
@@ -1235,7 +1235,7 @@ let fa2_applied = fa2 ()
 [%%expect{|
 module type M_arrow2 = sig type 'a t = 'a -> int end
 val fa2 : unit -> (module M_arrow2) -> 'a -> int = <fun>
-val fa2_applied : (module M_arrow2) -> '_weak1 -> int = <fun>
+val fa2_applied : (module M_arrow2) -> '_weak4 -> int = <fun>
 |}]
 
 module type Typ2 = sig
@@ -1278,11 +1278,11 @@ val ftmb : unit -> (module M : Typ2) -> 'a M.tmb = <fun>
 val ftb : unit -> (module M : Typ2) -> 'a M.tb = <fun>
 val ft : unit -> (module M : Typ2) -> 'a M.t = <fun>
 val ftp_applied : (module M : Typ2) -> 'a M.tp = <fun>
-val ftm_applied : (module M : Typ2) -> '_weak1 M.tm = <fun>
+val ftm_applied : (module M : Typ2) -> '_weak5 M.tm = <fun>
 val ftpb_applied : (module M : Typ2) -> 'a M.tpb = <fun>
-val ftmb_applied : (module M : Typ2) -> '_weak1 M.tmb = <fun>
-val ftb_applied : (module M : Typ2) -> '_weak1 M.tb = <fun>
-val ft_applied : (module M : Typ2) -> '_weak1 M.t = <fun>
+val ftmb_applied : (module M : Typ2) -> '_weak6 M.tmb = <fun>
+val ftb_applied : (module M : Typ2) -> '_weak7 M.tb = <fun>
+val ft_applied : (module M : Typ2) -> '_weak8 M.t = <fun>
 |}]
 
 
@@ -1293,7 +1293,7 @@ let f3_applied = f3 ()
 
 [%%expect{|
 val f3 : unit -> (module Typ with type t = 'a) -> unit = <fun>
-val f3_applied : (module Typ with type t = '_weak1) -> unit = <fun>
+val f3_applied : (module Typ with type t = '_weak9) -> unit = <fun>
 |}]
 
 (* Ensure that subst handles module dependent functions *)

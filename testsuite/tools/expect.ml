@@ -621,6 +621,7 @@ let process_expect_file ~startup_clflags fname =
           Env.reset_required_globals ();
           Lambda.reset_raise_count ();
           Out_type.reset ();
+          Out_type.reset_weak_names ();
           Toploop.initialize_toplevel_env ();
           Warnings.with_state warning_state
             (fun () ->
