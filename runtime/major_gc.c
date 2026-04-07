@@ -2535,6 +2535,12 @@ int caml_init_major_gc(caml_domain_state* d) {
      * so doesn't need to mark. */
     d->sweeping_done = 1;
     d->marking_done = 1;
+
+    /* We still need to increment [num_domains_todo] as the domain may
+       call [ephe_todo_list_emptied] and decrement it during this
+       cycle. */
+    (void)caml_atomic_counter_incr(&ephe_round_info.num_domains_todo);
+    (void)caml_atomic_counter_incr(&ephe_round_info.num_domains_done);
   }
 
   /* Finalisers. Fresh domains participate in updating finalisers. */
