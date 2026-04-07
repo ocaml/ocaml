@@ -892,7 +892,7 @@ end = struct
 
   let reset_weak_names () =
     named_weak_vars := String.Set.empty;
-    weak_var_map := TypeMap.empty;
+    weak_var_map := Proxy.Map.empty;
     weak_counter := 1
 
   let add_named_var tty =
@@ -1230,7 +1230,6 @@ let rec tree_of_typexp mode ty =
    Otyp_var (non_gen, name) else
 
   let pr_typ () =
-    let tty = Transient_expr.repr ty in
     match printer_get_desc ty with
     | Tvar _ ->
         let non_gen = is_non_gen mode px in
