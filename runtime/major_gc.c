@@ -368,6 +368,8 @@ static void ephe_next_round (void)
 
 static void ephe_todo_list_emptied (void)
 {
+  CAMLassert(Caml_state->ephe_info->must_mark_ephe);
+
   /* If we haven't started marking, the todo list can grow (during ephemeron
      allocation), so we should not yet announce that it has emptied */
   CAMLassert (caml_marking_started());
@@ -384,6 +386,7 @@ static void ephe_todo_list_emptied (void)
   (void)caml_atomic_counter_decr(&ephe_round_info.num_domains_todo);
   CAMLassert(caml_atomic_counter_value(&ephe_round_info.num_domains_done) <=
              caml_atomic_counter_value(&ephe_round_info.num_domains_todo));
+  Caml_state->ephe_info->must_mark_ephe = 0;
 
   caml_plat_unlock(&ephe_lock);
 }
@@ -405,6 +408,7 @@ static void prepare_for_ephe_marking(caml_domain_state *domain)
 
 static void record_ephe_marking_done (uintnat round)
 {
+  CAMLassert (Caml_state->ephe_info->must_mark_ephe);
   CAMLassert (round <=
               caml_atomic_counter_value(&ephe_round_info.round));
   CAMLassert (Caml_state->marking_done);
@@ -1778,7 +1782,8 @@ void caml_mark_roots_stw (int participant_count,
   caml_gc_log("Marking started, %ld entries on mark stack",
               (long)domain->mark_stack->count);
 
-  if (domain->ephe_info->todo == (value) NULL)
+  if (domain->ephe_info->must_mark_ephe
+      && domain->ephe_info->todo == (value) NULL)
     ephe_todo_list_emptied();
 
   /* Wait until global roots are marked before leaving the slice,
@@ -1801,7 +1806,9 @@ void caml_mark_roots_stw (int participant_count,
 
 static void cycle_major_heap_from_stw_single(
   caml_domain_state* domain,
-  uintnat num_domains_in_stw)
+  uintnat num_domains_in_stw,
+  caml_domain_state** participating
+)
 {
   /* Cycle major heap */
   /* FIXME: delete caml_cycle_heap_from_stw_single
@@ -1866,8 +1873,11 @@ static void cycle_major_heap_from_stw_single(
                work_counter_at_sweep_start);
   work_counter_min_before_mark = work_counter + caml_small_heap_limit;
   atomic_store(&caml_gc_mark_phase_requested, 0);
+
   caml_atomic_counter_init(&ephe_round_info.num_domains_todo,
                            num_domains_in_stw);
+  for (int i = 0; i < num_domains_in_stw; i++)
+    participating[i]->ephe_info->must_mark_ephe = 1;
   caml_atomic_counter_init(&ephe_round_info.round, 1);
   caml_atomic_counter_init(&ephe_round_info.num_domains_done, 0);
   caml_atomic_counter_init(&num_domains_to_ephe_sweep, 0);
@@ -1919,7 +1929,8 @@ static void stw_cycle_all_domains(
 
   CAML_EV_BEGIN(EV_MAJOR_GC_STW);
   Caml_global_barrier_if_final(participating_count) {
-    cycle_major_heap_from_stw_single(domain, (uintnat) participating_count);
+    cycle_major_heap_from_stw_single(
+      domain, (uintnat)participating_count, participating);
   }
 
   /* If the heap is to be verified, do it before the domains continue
@@ -2523,26 +2534,6 @@ int caml_init_major_gc(caml_domain_state* d) {
   d->mark_stack->compressed_stack_iter =
                   caml_addrmap_iterator(&d->mark_stack->compressed_stack);
 
-  if (caml_gc_phase == Phase_sweep_main) {
-    /* This fresh domain will allocate UNMARKED until we start
-     * marking, so must mark in this cycle. */
-    d->sweeping_done = 1;
-    d->marking_done = 0;
-    (void)caml_atomic_counter_incr(&num_domains_to_mark);
-    (void)caml_atomic_counter_incr(&ephe_round_info.num_domains_todo);
-  } else {
-    /* This fresh domain will allocate MARKED in this cycle,
-     * so doesn't need to mark. */
-    d->sweeping_done = 1;
-    d->marking_done = 1;
-
-    /* We still need to increment [num_domains_todo] as the domain may
-       call [ephe_todo_list_emptied] and decrement it during this
-       cycle. */
-    (void)caml_atomic_counter_incr(&ephe_round_info.num_domains_todo);
-    (void)caml_atomic_counter_incr(&ephe_round_info.num_domains_done);
-  }
-
   /* Finalisers. Fresh domains participate in updating finalisers. */
   d->final_info = caml_alloc_final_info ();
   if(d->final_info == NULL) {
@@ -2561,6 +2552,22 @@ int caml_init_major_gc(caml_domain_state* d) {
   }
   (void)caml_atomic_counter_incr(&num_domains_to_final_update_first);
   (void)caml_atomic_counter_incr(&num_domains_to_final_update_last);
+
+  if (caml_gc_phase == Phase_sweep_main) {
+    /* This fresh domain will allocate UNMARKED until we start
+     * marking, so must mark in this cycle. */
+    d->sweeping_done = 1;
+    d->marking_done = 0;
+    (void)caml_atomic_counter_incr(&num_domains_to_mark);
+    d->ephe_info->must_mark_ephe = 1;
+    (void)caml_atomic_counter_incr(&ephe_round_info.num_domains_todo);
+  } else {
+    /* This fresh domain will allocate MARKED in this cycle,
+     * so doesn't need to mark. */
+    d->sweeping_done = 1;
+    d->marking_done = 1;
+    d->ephe_info->must_mark_ephe = 0;
+  }
 
   return 0;
 }

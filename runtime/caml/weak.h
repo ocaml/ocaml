@@ -44,6 +44,10 @@ struct caml_ephe_info {
      may be unmarked if these ephemerons were the target of a blit
      operation. The data field is never unmarked. */
 
+  int must_mark_ephe;
+  /* Remember whether this domain is within the set of domains
+     that need to mark their ephemerons. */
+
   int must_sweep_ephe;
   /* At the beginning of [Phase_sweep_ephe] the [live] list is moved
      to the [todo] list since the ephemerons in the [live] list may
