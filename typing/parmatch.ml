@@ -846,7 +846,7 @@ let pats_of_type env ty =
       | Type_variant (cstrs,_) when List.length cstrs <= 1 ||
         (* Only explode when all constructors are GADTs *)
         List.for_all (fun cd -> cd.cstr_generalized) cstrs ->
-          List.map (pat_of_constr (make_pat Tpat_any ty env)) cstrs
+          List.rev_map (pat_of_constr (make_pat Tpat_any ty env)) cstrs
       | Type_record (labels, _) ->
           let fields =
             List.map (fun ld ->
