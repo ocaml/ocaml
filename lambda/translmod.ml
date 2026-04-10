@@ -978,18 +978,18 @@ let field_of_str loc str =
         apply_coercion loc Alias cc lam
     | _ -> apply_coercion loc Strict cc (Lvar ids.(pos))
 
+let lambda_subst subst lam =
+  Lambda.subst (fun _ _ env -> env) subst lam
 
 let transl_store_structure ~scopes glob map prims aliases str =
-  let no_env_update _ _ env = env in
   let rec transl_store ~scopes rootpath subst cont = function
     [] ->
       transl_store_subst := subst;
-      Lambda.subst no_env_update subst cont
+      lambda_subst subst cont
     | item :: rem ->
         match item.str_desc with
         | Tstr_eval (expr, _attrs) ->
-            Lsequence(Lambda.subst no_env_update subst
-                        (transl_exp ~scopes expr),
+            Lsequence(lambda_subst subst (transl_exp ~scopes expr),
                       transl_store ~scopes rootpath subst cont rem)
         | Tstr_value(rec_flag, pat_expr_list) ->
             let ids = let_bound_idents pat_expr_list in
@@ -997,7 +997,7 @@ let transl_store_structure ~scopes glob map prims aliases str =
               transl_let ~scopes ~in_structure:true rec_flag pat_expr_list
                 (store_idents Loc_unknown ids)
             in
-            Lsequence(Lambda.subst no_env_update subst lam,
+            Lsequence(lambda_subst subst lam,
                       transl_store ~scopes rootpath
                         (add_idents false ids subst) cont rem)
         | Tstr_primitive descr ->
@@ -1013,7 +1013,7 @@ let transl_store_structure ~scopes glob map prims aliases str =
               transl_type_extension ~scopes item.str_env rootpath tyext
                                     (store_idents Loc_unknown ids)
             in
-            Lsequence(Lambda.subst no_env_update subst lam,
+            Lsequence(lambda_subst subst lam,
                       transl_store ~scopes rootpath
                         (add_idents false ids subst) cont rem)
         | Tstr_exception ext ->
@@ -1027,7 +1027,7 @@ let transl_store_structure ~scopes glob map prims aliases str =
                                            ext.tyexn_constructor
             in
             Lsequence(Llet(Strict, Pgenval, id,
-                           Lambda.subst no_env_update subst lam,
+                           lambda_subst subst lam,
                            store_ident loc id),
                       transl_store ~scopes rootpath
                         (add_ident false id subst) cont rem)
@@ -1040,7 +1040,7 @@ let transl_store_structure ~scopes glob map prims aliases str =
                 loc mb_attributes
             in
             Lsequence(
-              Lprim(Pignore,[Lambda.subst no_env_update subst lam],
+              Lprim(Pignore,[lambda_subst subst lam],
                     of_location ~scopes mb_name.loc),
               transl_store ~scopes rootpath subst cont rem
             )
@@ -1057,7 +1057,7 @@ let transl_store_structure ~scopes glob map prims aliases str =
             let subst = !transl_store_subst in
             Lsequence(lam,
                       Llet(Strict, Pgenval, id,
-                           Lambda.subst no_env_update subst
+                           lambda_subst subst
                              (Lprim(Pmakeblock(0, Immutable, None),
                                     List.map (fun id -> Lvar id)
                                       (defined_idents str.str_items), loc)),
@@ -1086,7 +1086,7 @@ let transl_store_structure ~scopes glob map prims aliases str =
             let field = field_of_str loc str in
             Lsequence(lam,
                       Llet(Strict, Pgenval, id,
-                           Lambda.subst no_env_update subst
+                           lambda_subst subst
                              (Lprim(Pmakeblock(0, Immutable, None),
                                     List.map field map, loc)),
                            Lsequence(store_ident loc id,
@@ -1109,7 +1109,7 @@ let transl_store_structure ~scopes glob map prims aliases str =
                the compilation unit (add_ident true returns subst unchanged).
                If not, we can use the value from the global
                (add_ident true adds id -> Pgetglobal... to subst). *)
-            Llet(Strict, Pgenval, id, Lambda.subst no_env_update subst lam,
+            Llet(Strict, Pgenval, id, lambda_subst subst lam,
                  Lsequence(store_ident (of_location ~scopes loc) id,
                            transl_store ~scopes rootpath
                              (add_ident true id subst)
@@ -1120,7 +1120,7 @@ let transl_store_structure ~scopes glob map prims aliases str =
             let ids = List.filter_map (fun mb -> mb.mb_id) bindings in
             compile_recmodule ~scopes
               (fun id modl ->
-                 Lambda.subst no_env_update subst
+                 lambda_subst subst
                    (match id with
                     | None ->
                       transl_module ~scopes Tcoerce_none None modl
@@ -1138,7 +1138,7 @@ let transl_store_structure ~scopes glob map prims aliases str =
               Value_rec_compiler.compile_letrec class_bindings
                 (store_idents Loc_unknown ids)
             in
-            Lsequence(Lambda.subst no_env_update subst lam,
+            Lsequence(lambda_subst subst lam,
                       transl_store ~scopes rootpath (add_idents false ids subst)
                         cont rem)
 
@@ -1168,7 +1168,7 @@ let transl_store_structure ~scopes glob map prims aliases str =
                     cont rem
               | id :: ids, arg :: args ->
                   Llet(Alias, Pgenval, id,
-                       Lambda.subst no_env_update subst (field arg),
+                       lambda_subst subst (field arg),
                        Lsequence(store_ident (of_location ~scopes loc) id,
                                  loop ids args))
               | _ -> assert false
@@ -1200,7 +1200,7 @@ let transl_store_structure ~scopes glob map prims aliases str =
                                  store_idents (pos + 1) idl))
             in
             Llet(Strict, Pgenval, mid,
-                 Lambda.subst no_env_update subst
+                 lambda_subst subst
                    (transl_module ~scopes Tcoerce_none None modl),
                  store_idents 0 ids)
         | Tstr_open od ->
@@ -1221,8 +1221,7 @@ let transl_store_structure ~scopes glob map prims aliases str =
                            Lsequence(store_ident loc id,
                                      store_idents (pos + 1) idl))
                 in
-                Lsequence(lam, Lambda.subst no_env_update subst
-                                 (store_idents 0 ids0))
+                Lsequence(lam, lambda_subst subst (store_idents 0 ids0))
             | _ ->
                 let pure = pure_module od.open_expr in
                 (* this optimization shouldn't be needed because Simplif would
@@ -1248,7 +1247,7 @@ let transl_store_structure ~scopes glob map prims aliases str =
                     in
                     Llet(
                       pure, Pgenval, mid,
-                      Lambda.subst no_env_update subst
+                      lambda_subst subst
                         (transl_module ~scopes Tcoerce_none None od.open_expr),
                       store_idents 0 ids)
           end
@@ -1368,8 +1367,7 @@ let transl_store_gen ~scopes module_name ({ str_items = str }, restr) topl =
   let f = function
     | [ { str_desc = Tstr_eval (expr, _attrs) } ] when topl ->
         assert (size = 0);
-        Lambda.subst (fun _ _ env -> env) !transl_store_subst
-          (transl_exp ~scopes expr)
+        lambda_subst !transl_store_subst (transl_exp ~scopes expr)
     | str -> transl_store_structure ~scopes module_id map prims aliases str
   in
   transl_store_label_init module_id size f str
