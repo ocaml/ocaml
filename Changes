@@ -94,8 +94,9 @@ Working version
 
 ### Standard library:
 
-- #10798: Atomic helper function
+- #10798, ...: Atomic helper functions
     update : ('a -> 'a) -> 'a t -> unit
+    fold_update : ('a -> 'acc * 'a) -> 'a t -> 'acc
   (Gabriel Scherer, review by Simon Cruanes, Stephen Dolan,
    Xavier Leroy, Guillaume Munch-Maccagnoni, Vesa Karvonen,
    Noah Bogart, Léo Andrès and Olivier Nicole)
