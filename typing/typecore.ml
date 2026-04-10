@@ -2575,13 +2575,23 @@ let set_state s penv =
   Btype.backtrack s.snapshot;
   Pattern_env.set_env penv s.env
 
+(** Type variables allocated when searching for counter-examples
+    should be discarded at the end of the search *)
+  let with_counterexample_pool f =
+    let r, _ = Btype.with_new_pool ~level:(get_current_level ()) f in
+    r
+
 (** Find the first alternative in the tree of or-patterns for which
     [f] does not raise an error. If all fail, the last error is
     propagated *)
 let rec find_valid_alternative f pat =
   match pat.pat_desc with
   | Tpat_or(p1,p2,_) ->
-      (try find_valid_alternative f p1 with
+      (try
+         (* Keeping alive type nodes from discarded branches would be
+            a memory leak *)
+         with_counterexample_pool (fun () -> find_valid_alternative f p1)
+       with
        | Empty_branch | Error _ -> find_valid_alternative f p2
       )
   | _ -> f pat
@@ -2743,10 +2753,13 @@ let check_counter_example_pat ~counter_example_args penv tp expected_ty =
   let expected_ty =
     with_level ~level:generic_level (fun () -> maybe_instance_poly expected_ty)
   in
-  wrap_trace_gadt_instances ~force:true !!penv
-    (check_counter_example_pat ~info:counter_example_args ~penv
-       type_pat_state tp expected_ty)
-    (fun x -> x)
+  wrap_trace_gadt_instances ~force:true !!penv (fun () ->
+    with_counterexample_pool (fun () ->
+      check_counter_example_pat ~info:counter_example_args ~penv
+        type_pat_state tp expected_ty (fun x -> x)
+    )
+  ) ()
+
 
 (* this function is passed to Partial.parmatch
    to type check gadt nonexhaustiveness *)
