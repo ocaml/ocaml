@@ -745,6 +745,24 @@ allowing competing domains to make progress before retrying the failed
 operation. This lock-free stack implementation is called a
 \href{https://en.wikipedia.org/wiki/Treiber_stack}{Treiber stack}.
 
+We also provide convenience functions to encapsulate this retry-loop update
+pattern:
+\begin{caml_example*}{verbatim}
+module Lockfree_stack = struct
+  type 'a t = 'a list Atomic.t
+
+  let make () = Atomic.make []
+
+  let push r v =
+    Atomic.update (fun s -> v :: s) r
+
+  let rec pop r =
+    Atomic.fold_update (function
+    | [] -> None, []
+    | x::xs -> Some x, xs
+    ) r
+end
+\end{caml_example*}
 
 \subsection{s:atomic-record-fields}{Atomic record fields}
 
