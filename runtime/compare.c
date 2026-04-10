@@ -290,6 +290,13 @@ static intnat do_compare_val(struct compare_stack* stk,
         break;
       }
       default: {
+        /* Physical equality on regular (scanned) blocks is safe even for
+           non-total comparison (=): NaN can only appear in Double_tag and
+           Double_array_tag blocks, both handled by their own cases above.
+           This avoids recursing into closures or other incomparable fields
+           when comparing shared subvalues (e.g. channels, existential GADTs
+           containing vtables). */
+        if (v1 == v2) goto next_item;
         mlsize_t sz1 = Wosize_val(v1);
         mlsize_t sz2 = Wosize_val(v2);
         /* Compare sizes first for speed */
