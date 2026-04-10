@@ -5057,8 +5057,11 @@ let does_match env ty ty' =
                  (*  Equivalence between parameterized types  *)
                  (*********************************************)
 
+type eq_kind =
+  | Equality of bool
+
 type comparison_context = {
-  rename : bool;
+  kind : eq_kind;
   type_pairs : TypePairs.t;
   subst : (type_expr * type_expr) list ref;
 }
@@ -5085,7 +5088,7 @@ let eqtype_subst ctxt t1 t2 =
 
 let rec eqtype ctxt env t1 t2 =
   let check_phys_eq t1 t2 =
-    not ctxt.rename && eq_type t1 t2
+    ctxt.kind <> Equality true && eq_type t1 t2
   in
   (* Checking for physical equality of type representatives when [rename] is
      true would be incorrect: imagine comparing ['a * 'a] with ['b * 'a]. The
@@ -5098,7 +5101,7 @@ let rec eqtype ctxt env t1 t2 =
   if check_phys_eq t1 t2 then () else
   try
     match (get_desc t1, get_desc t2) with
-      (Tvar _, Tvar _) when ctxt.rename ->
+      (Tvar _, Tvar _) when ctxt.kind = Equality true ->
         eqtype_subst ctxt t1 t2
     | (Tconstr (p1, [], _), Tconstr (p2, [], _))
       when quick_eq_type_path ~normalize:false env p1 p2 ->
@@ -5111,7 +5114,7 @@ let rec eqtype ctxt env t1 t2 =
         if not (TypePairs.mem ctxt.type_pairs (t1', t2')) then begin
           TypePairs.add ctxt.type_pairs (t1', t2');
           match (get_desc t1', get_desc t2') with
-            (Tvar _, Tvar _) when ctxt.rename ->
+            (Tvar _, Tvar _) when ctxt.kind = Equality true ->
               eqtype_subst ctxt t1' t2'
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) ->
               eq_labels Equality ~in_pattern_mode:false l1 l2;
@@ -5202,7 +5205,7 @@ and eqtype_fields ctxt env ty1 ty2 =
   (* First check if same row => already equal *)
   let same_row =
     (* [not rename]: see comment at top of [eqtype] *)
-    (not ctxt.rename && eq_type rest1 rest2) ||
+    (ctxt.kind <> Equality true && eq_type rest1 rest2) ||
     TypePairs.mem ctxt.type_pairs (rest1,rest2)
   in
   if same_row then () else
@@ -5318,12 +5321,12 @@ and eqtype_row ctxt env row1 row2 =
 
 (* Must empty univar_pairs first *)
 let eqtype_list_same_length rename type_pairs subst env tl1 tl2 =
+  let kind = Equality rename in
   with_univar_pairs [] (fun () ->
     let snap = Btype.snapshot () in
     Misc.try_finally
       ~always:(fun () -> backtrack snap)
-      (fun () ->
-        eqtype_list_same_length {rename; type_pairs; subst} env tl1 tl2))
+      (fun () -> eqtype_list_same_length {kind; type_pairs; subst} env tl1 tl2))
 
 let eqtype rename type_pairs subst env t1 t2 =
   eqtype_list_same_length rename type_pairs subst env [t1] [t2]
