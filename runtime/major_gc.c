@@ -489,6 +489,12 @@ static void prepare_for_ephe_sweeping (caml_domain_state *domain_state)
 enum mark_flag { MARK_DEFAULT, MARK_NO_FINISH };
 static intnat mark(intnat budget, enum mark_flag flag);
 
+// call this once after calling mark with MARK_NO_FINISH
+static void mark_finish (void)
+{
+  (void)mark(1, MARK_DEFAULT);
+}
+
 #define EPHE_MARK_DEFAULT false
 #define EPHE_MARK_FORCE_ALIVE true
 
@@ -610,7 +616,7 @@ static intnat ephe_mark (intnat budget, uintnat round,
 
   if (must_mark_again) {
     CAMLassert(!domain_state->marking_done);
-    mark(1, MARK_DEFAULT);
+    mark_finish();
   }
 
   caml_gc_log
@@ -1674,9 +1680,11 @@ Caml_noinline static intnat do_some_marking(struct mark_stack* stk,
 
    if flag == MARK_NO_FINISH, then the caller promises that mark will be
    called again within the same GC slice, in MARK_DEFAULT mode, with a nonzero
-   budget. This allows the present call to skip the end-of-marking work (setting
-   marking_done and advancing the ephemeron round), since it will be handled by
-   the next MARK_DEFAULT call. */
+   budget. You can use [mark_finish()] which will use a budget of 1.
+
+   This allows the MARK_NO_FINISH call to skip the end-of-marking work
+   (setting marking_done and advancing the ephemeron round), since it will be
+   handled by the next MARK_DEFAULT call. */
 static intnat mark(intnat budget, enum mark_flag flag) {
   caml_domain_state *domain_state = Caml_state;
   CAMLassert(caml_marking_started());
