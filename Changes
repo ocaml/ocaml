@@ -47,6 +47,11 @@ Working version
 - #14482: Add DWARF CFI support to POWER backend.
   (Tim McGilchrist, review by Xavier Leroy)
 
+- #14731: Enforce that `t == u` implies `t = u` for non-float values, even
+  recursively inside other values (meaning that
+  `t == u` implies, say, `[t;t] = [u]@[u]`).
+  (Simon Cruanes)
+
 ### Type system:
 
 * #11648: Keep expansion and new well-foundedness check implementation.
