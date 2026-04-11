@@ -20,8 +20,6 @@ type extern_flags =
 
 (* note: this type definition is used in 'runtime/debugger.c' *)
 
-external to_channel: out_channel -> 'a -> extern_flags list -> unit
-    = "caml_output_value"
 external to_bytes: 'a -> extern_flags list -> bytes
     = "caml_output_value_to_bytes"
 external to_string: 'a -> extern_flags list -> string
@@ -35,13 +33,16 @@ let to_buffer buff ofs len v flags =
   then invalid_arg "Marshal.to_buffer: substring out of bounds"
   else to_buffer_unsafe buff ofs len v flags
 
+let to_channel (oc : out_channel) v flags =
+  let b = to_bytes v flags in
+  output oc b 0 (Bytes.length b)
+
 (* The functions below use byte sequences as input, never using any
    mutation. It makes sense to use non-mutated [bytes] rather than
    [string], because we really work with sequences of bytes, not
    a text representation.
 *)
 
-external from_channel: in_channel -> 'a = "caml_input_value"
 external from_bytes_unsafe: bytes -> int -> 'a = "caml_input_value_from_bytes"
 external data_size_unsafe: bytes -> int -> int = "caml_marshal_data_size"
 
@@ -66,3 +67,12 @@ let from_string buff ofs =
   (* Bytes.unsafe_of_string is safe here, as the produced byte
      sequence is never mutated *)
   from_bytes (Bytes.unsafe_of_string buff) ofs
+
+let from_channel (ic : in_channel) =
+  let header = Bytes.create header_size in
+  really_input ic header 0 header_size;
+  let data_len = data_size_unsafe header 0 in
+  let data = Bytes.create (header_size + data_len) in
+  Bytes.blit header 0 data 0 header_size;
+  really_input ic data header_size data_len;
+  from_bytes_unsafe data 0

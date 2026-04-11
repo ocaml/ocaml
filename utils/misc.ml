@@ -887,14 +887,12 @@ let ordinal_suffix n =
 
 (* Color support handling *)
 module Color = struct
-  external isatty : out_channel -> bool = "caml_sys_isatty"
-
   (* reasonable heuristic on whether colors should be enabled *)
   let should_enable_color () =
     let term = try Sys.getenv "TERM" with Not_found -> "" in
     term <> "dumb"
     && term <> ""
-    && isatty stderr
+    && out_channel_isatty stderr
 
   type setting = Auto | Always | Never
 

@@ -83,3 +83,26 @@ CAMLprim value caml_unix_outchannel_of_filedescr(value fd)
   if (err != 0) caml_unix_error(err, "out_channel_of_descr", Nothing);
   return caml_ml_open_descriptor_out(fd);
 }
+
+/* Check stream semantics only, raising a Unix error on failure.
+   Used by the OCaml-level channel constructors that wrap the native channel
+   themselves (so the C primitive only needs to validate the fd). */
+CAMLprim value caml_unix_check_stream_in(value fd)
+{
+  int err;
+  caml_enter_blocking_section();
+  err = caml_unix_check_stream_semantics(Int_val(fd));
+  caml_leave_blocking_section();
+  if (err != 0) caml_unix_error(err, "in_channel_of_descr", Nothing);
+  return Val_unit;
+}
+
+CAMLprim value caml_unix_check_stream_out(value fd)
+{
+  int err;
+  caml_enter_blocking_section();
+  err = caml_unix_check_stream_semantics(Int_val(fd));
+  caml_leave_blocking_section();
+  if (err != 0) caml_unix_error(err, "out_channel_of_descr", Nothing);
+  return Val_unit;
+}

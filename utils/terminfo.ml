@@ -15,8 +15,8 @@
 
 open Printf
 
-external isatty : out_channel -> bool = "caml_sys_isatty"
-external terminfo_rows: out_channel -> int = "caml_terminfo_rows"
+let isatty = out_channel_isatty
+let terminfo_rows = Stdlib.CamlinternalChannel.out_channel_terminfo_rows
 
 type status =
   | Uninitialised

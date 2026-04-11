@@ -23,9 +23,11 @@ type [@warning "-unused-constructor"] extern_flags =
   | Compat_32                           (** Ensure 32-bit compatibility *)
   | Compression                         (** Optional compression *)
 
-external to_channel: out_channel -> 'a -> extern_flags list -> unit
-                   = "caml_output_value"
+external to_bytes_internal: 'a -> extern_flags list -> bytes
+                          = "caml_output_value_to_bytes"
 
-let output_value ch v = to_channel ch v [Compression]
+let output_value ch v =
+  let b = to_bytes_internal v [Compression] in
+  output ch b 0 (Bytes.length b)
 
 let input_value = Stdlib.input_value

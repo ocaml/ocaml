@@ -116,7 +116,7 @@ val output_substring : t -> string -> int -> int -> unit
     sequence. *)
 
 val output_bigarray :
-  t -> (_, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t ->
+  t -> (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t ->
   int -> int -> unit
 (** Same as {!output} but take the data from a bigarray.
     @since 5.2 *)
@@ -194,6 +194,47 @@ val isatty : t -> bool
     [false] otherwise.
 
     @since 5.1 *)
+
+val of_buffer : Buffer.t -> t
+(** [of_buf b] creates an output channel that appends to buffer [b].
+    @since 5.6 *)
+
+val map_char : (char -> char) -> t -> t
+(** [map_char f oc] creates an output channel that applies [f] to every
+    character before writing it to [oc]. Closing the resulting channel also
+    flushes and closes [oc].
+    @since 5.6 *)
+
+val make :
+  write:('st -> bytes -> int -> int -> int) ->
+  flush:('st -> unit) ->
+  close:('st -> unit) ->
+  ?seek:('st -> int64 -> unit) ->
+  ?pos:('st -> int64) ->
+  ?length:('st -> int64) ->
+  ?set_binary:('st -> bool -> unit) ->
+  ?isatty:('st -> bool) ->
+  ?is_binary:('st -> bool) ->
+  ?get_fd:('st -> int) ->
+  'st -> t
+(** [make ~write ~flush ~close st] creates a user-defined output channel
+    backed by state [st]. [write st buf ofs len] writes bytes from [buf]
+    starting at [ofs] for [len] bytes and returns the number of bytes
+    written. [flush] ensures pending output is sent to the underlying
+    destination. [close] releases any resources associated with [st].
+
+    The optional arguments correspond to optional channel operations:
+    {ul
+    {- [~seek]: seek to an absolute offset in the output.}
+    {- [~pos]: return the current absolute offset.}
+    {- [~length]: return the total length of the underlying file.}
+    {- [~set_binary]: switch between binary and text mode; if provided,
+       [~is_binary] should also be provided.}
+    {- [~isatty]: return [true] if the output is a terminal.}
+    {- [~is_binary]: return whether the channel is in binary mode.}
+    {- [~get_fd]: return the underlying Unix file descriptor.}}
+
+    @since 5.6 *)
 
 (** {1:examples Examples}
     Printing to the terminal:

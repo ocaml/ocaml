@@ -137,7 +137,7 @@ val input : t -> bytes -> int -> int -> int
     [buf]. *)
 
 val input_bigarray :
-  t -> (_, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t ->
+  t -> (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t ->
   int -> int -> int
 (** Same as {!input}, but read the data into a bigarray.
     @since 5.2 *)
@@ -156,7 +156,7 @@ val really_input : t -> bytes -> int -> int -> unit option
     [buf]. *)
 
 val really_input_bigarray :
-  t -> (_, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t ->
+  t -> (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t ->
   int -> int -> unit option
 (** Same as {!really_input}, but read the data into a bigarray.
     @since 5.2 *)
@@ -221,6 +221,47 @@ val isatty : t -> bool
     [false] otherwise.
 
     @since 5.1 *)
+
+val of_string : ?off:int -> ?len:int -> string -> t
+(** [of_string s] creates an input channel that reads from the string [s].
+    @param off initial offset in [s]
+    @param len number of bytes in [s]
+    @since 5.6 *)
+
+val map_char : (char -> char) -> t -> t
+(** [map_char f ic] creates an input channel that reads from [ic] and
+    applies [f] to every character. Closing the resulting channel also
+    closes [ic].
+    @since 5.6 *)
+
+val make :
+  read:('st -> Stdlib.chan_buffer -> unit) ->
+  close:('st -> unit) ->
+  ?seek:('st -> int64 -> unit) ->
+  ?pos:('st -> int64) ->
+  ?length:('st -> int64) ->
+  ?set_binary:('st -> bool -> unit) ->
+  ?isatty:('st -> bool) ->
+  ?is_binary:('st -> bool) ->
+  ?get_fd:('st -> int) ->
+  'st -> t
+(** [make ~read ~close st] creates a user-defined input channel backed by
+    state [st]. [read] fills a {!Stdlib.chan_buffer} with input data;
+    setting [chan_buffer.len] to [0] signals end-of-file. [close]
+    releases any resources associated with [st].
+
+    The optional arguments correspond to optional channel operations:
+    {ul
+    {- [~seek]: seek to an absolute offset in the input.}
+    {- [~pos]: return the current absolute offset.}
+    {- [~length]: return the total length of the input.}
+    {- [~set_binary]: switch between binary and text mode; if provided,
+       [~is_binary] should also be provided.}
+    {- [~isatty]: return [true] if the input is a terminal.}
+    {- [~is_binary]: return whether the channel is in binary mode.}
+    {- [~get_fd]: return the underlying Unix file descriptor.}}
+
+    @since 5.6 *)
 
 (** {1:examples Examples}
     Reading the contents of a file:

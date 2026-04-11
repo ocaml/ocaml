@@ -21,12 +21,9 @@
 #ifdef CAML_INTERNALS
 
 #include "mlvalues.h"
-#include "io.h"
 
 CAMLextern void caml_md5_block(unsigned char digest[16],
                                void * data, uintnat len);
-
-CAMLextern value caml_md5_channel(struct channel *chan, intnat toread);
 
 struct MD5Context {
         uint32_t buf[4];

@@ -326,14 +326,35 @@ let single_write_substring fd buf ofs len =
 
 (* Interfacing with the standard input/output library *)
 
-external in_channel_of_descr: file_descr -> in_channel
+(* The C functions return raw native channels; we wrap them in the OCaml
+   in_channel / out_channel constructors so that the result is a proper
+   variant value, not a bare C-channel pointer. *)
+external _unix_inchan_native : file_descr -> Stdlib.CamlinternalChannel.native_in_channel
    = "caml_unix_inchannel_of_filedescr"
-external out_channel_of_descr: file_descr -> out_channel
+external _unix_outchan_native : file_descr -> Stdlib.CamlinternalChannel.native_out_channel
    = "caml_unix_outchannel_of_filedescr"
-external descr_of_in_channel : in_channel -> file_descr
+
+(* The C function expects a raw native_in/out_channel, not the OCaml wrapper. *)
+external _unix_filedescr_of_native_in : Stdlib.CamlinternalChannel.native_in_channel -> file_descr
    = "caml_unix_filedescr_of_channel"
-external descr_of_out_channel : out_channel -> file_descr
+external _unix_filedescr_of_native_out : Stdlib.CamlinternalChannel.native_out_channel -> file_descr
    = "caml_unix_filedescr_of_channel"
+
+let in_channel_of_descr fd =
+  Stdlib.CamlinternalChannel.wrap_native_in_channel (_unix_inchan_native fd)
+
+let out_channel_of_descr fd =
+  Stdlib.CamlinternalChannel.wrap_native_out_channel (_unix_outchan_native fd)
+
+let descr_of_in_channel ic =
+  match Stdlib.CamlinternalChannel.native_in_channel_of ic with
+  | Some nc -> _unix_filedescr_of_native_in nc
+  | None -> invalid_arg "descr_of_in_channel: not a native file-descriptor channel"
+
+let descr_of_out_channel oc =
+  match Stdlib.CamlinternalChannel.native_out_channel_of oc with
+  | Some nc -> _unix_filedescr_of_native_out nc
+  | None -> invalid_arg "descr_of_out_channel: not a native file-descriptor channel"
 
 (* Seeking and truncating *)
 

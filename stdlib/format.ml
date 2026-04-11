@@ -1037,7 +1037,7 @@ let pp_make_formatter f g h i j =
 
 
 (* Build a formatter out of its out functions. *)
-let formatter_of_out_functions out_funs =
+let formatter_of_out_functions (out_funs : formatter_out_functions) =
   pp_make_formatter
     out_funs.out_string
     out_funs.out_flush

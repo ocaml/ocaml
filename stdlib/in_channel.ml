@@ -68,9 +68,21 @@ let input_line ic =
 
 let input = Stdlib.input
 
-external unsafe_input_bigarray :
-  t -> _ Bigarray.Array1.t -> int -> int -> int
-  = "caml_ml_input_bigarray"
+let unsafe_input_bigarray ic
+  (buf:(char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t) ofs len =
+  match Stdlib.CamlinternalChannel.native_in_channel_of ic with
+  | Some nc ->
+    Stdlib.CamlinternalChannel.unsafe_input_bigarray_native nc buf ofs len
+  | None ->
+    (* User-defined channel: copy via an intermediate bytes buffer.
+       Cast the bigarray to char element type since int8_unsigned_elt is
+       1 byte regardless of whether element type is char or int. *)
+    let tmp = Bytes.create len in
+    let r = Stdlib.input ic tmp 0 len in
+    for i = 0 to r - 1 do
+      Bigarray.Array1.unsafe_set buf (ofs + i) (Bytes.unsafe_get tmp i)
+    done;
+    r
 
 let input_bigarray ic buf ofs len =
   if ofs < 0 || len < 0 || ofs > Bigarray.Array1.dim buf - len
@@ -155,7 +167,7 @@ let input_all ic =
   let initial_size =
     try
       Stdlib.in_channel_length ic - Stdlib.pos_in ic
-    with Sys_error _ ->
+    with Sys_error _ | Invalid_argument _ ->
       -1
   in
   let initial_size = if initial_size < 0 then chunk_size else initial_size in
@@ -204,6 +216,94 @@ let rec fold_lines f accu ic =
 
 let set_binary_mode = Stdlib.set_binary_mode_in
 
-external is_binary_mode : in_channel -> bool = "caml_ml_is_binary_mode"
+let is_binary_mode = Stdlib.in_channel_is_binary_mode
 
-external isatty : t -> bool = "caml_sys_isatty"
+let isatty = Stdlib.in_channel_isatty
+
+type str_channel = {
+  str: string;
+  mutable pos: int;
+  mutable len: int;
+  initial_len: int;
+}
+
+let of_string ?(off=0) ?len:initial_len str =
+  let ops : str_channel Stdlib.in_ops = {
+    in_read = (fun st buf ->
+      if st.len = 0 then buf.Stdlib.len <- 0
+      else begin
+        let n = Int.min st.len (Bytes.length buf.Stdlib.buf) in
+        Bytes.blit_string st.str st.pos buf.Stdlib.buf 0 n;
+        buf.Stdlib.off <- 0;
+        buf.Stdlib.len <- n;
+        st.pos <- st.pos + n;
+        st.len <- st.len - n;
+      end);
+    in_close = (fun _ -> ());
+    in_pos = Some (fun st -> Int64.of_int st.pos);
+    in_length = Some (fun st -> Int64.of_int st.initial_len);
+    in_seek = Some (fun st p ->
+      if Int64.to_int p > st.initial_len then invalid_arg "In_channel.of_string.seek";
+      st.pos <- Int64.to_int p);
+    in_set_binary = None;
+    in_isatty = None;
+    in_is_binary = None;
+    in_get_fd = None;
+  } in
+
+  let initial_len = match initial_len with
+    | Some len ->
+        if off + len > String.length str then invalid_arg "In_channel.of_string";
+        len
+    | None -> String.length str - off
+  in
+  let st = { str; pos=off; len=initial_len; initial_len } in
+  Stdlib.make_in_channel st ops
+
+let map_char f ic =
+  let ops : in_channel Stdlib.in_ops = {
+    in_read = (fun ic buf ->
+      let n = Stdlib.input ic buf.Stdlib.buf 0 (Bytes.length buf.Stdlib.buf) in
+      if n = 0 then buf.Stdlib.len <- 0
+      else begin
+        for i = 0 to n - 1 do
+          Bytes.unsafe_set buf.Stdlib.buf i
+            (f (Bytes.unsafe_get buf.Stdlib.buf i))
+        done;
+        buf.Stdlib.off <- 0;
+        buf.Stdlib.len <- n
+      end);
+    in_close = (fun ic -> Stdlib.close_in ic);
+    in_seek = Some Stdlib.LargeFile.seek_in;
+    in_pos = Some Stdlib.LargeFile.pos_in;
+    in_length = Some Stdlib.LargeFile.in_channel_length;
+    in_set_binary = Some Stdlib.set_binary_mode_in;
+    in_isatty = Some Stdlib.in_channel_isatty;
+    in_is_binary = Some Stdlib.in_channel_is_binary_mode;
+    in_get_fd = Some Stdlib.CamlinternalChannel.in_channel_fd;
+  } in
+  Stdlib.make_in_channel ic ops
+
+let make
+    ~read
+    ~close
+    ?seek
+    ?pos
+    ?length
+    ?set_binary
+    ?isatty
+    ?is_binary
+    ?get_fd
+    st =
+  let ops : 'st Stdlib.in_ops = {
+    in_read = read;
+    in_close = close;
+    in_seek = seek;
+    in_pos = pos;
+    in_length = length;
+    in_set_binary = set_binary;
+    in_isatty = isatty;
+    in_is_binary = is_binary;
+    in_get_fd = get_fd;
+  } in
+  Stdlib.make_in_channel st ops

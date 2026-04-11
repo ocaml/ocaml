@@ -808,6 +808,99 @@ type in_channel
 type out_channel
 (** The type of output channel. *)
 
+(**/**)
+
+module CamlinternalChannel : sig
+  (* Internal channel utilities. Not part of the stable public API. *)
+  val open_descriptor_in : int -> in_channel
+  val open_descriptor_out : int -> out_channel
+  val in_channel_fd : in_channel -> int
+  val out_channel_fd : out_channel -> int
+  val out_channel_terminfo_rows : out_channel -> int
+  type native_in_channel
+  type native_out_channel
+  val native_in_channel_of : in_channel -> native_in_channel option
+  val native_out_channel_of : out_channel -> native_out_channel option
+  val wrap_native_in_channel : native_in_channel -> in_channel
+  val wrap_native_out_channel : native_out_channel -> out_channel
+  val unsafe_output_bigarray_native : native_out_channel -> 'a -> int -> int -> unit
+  val unsafe_input_bigarray_native : native_in_channel -> 'a -> int -> int -> int
+end
+
+(**/**)
+
+(** {2 Extensible channels} *)
+
+type chan_buffer = {
+  buf: bytes;   (** The underlying byte storage. *)
+  mutable off: int;  (** Start of valid data within [buf]. *)
+  mutable len: int;  (** Number of valid bytes from [off]. [0] means the buffer is empty. *)
+}
+(** Buffer used by user-defined input channels.
+    @since 5.6 *)
+
+type 'st out_ops = {
+  out_write: 'st -> bytes -> int -> int -> int;
+    (** Write the slice of bytes *)
+  out_flush: 'st -> unit;
+  out_close: 'st -> unit;
+    (** Close the channel. Ideally idempotent. *)
+  out_seek: ('st -> int64 -> unit) option;
+    (** Seek to (absolute) offset. Optional. *)
+  out_pos: ('st -> int64) option;
+    (** Current (absolute) offset. Optional. *)
+  out_length: ('st -> int64) option;
+    (** Total length of the underlying file. Optional. *)
+  out_set_binary: ('st -> bool -> unit) option;
+    (** Set to binary mode. Optional. if [None]
+        then the channel should always be in
+        binary mode.
+        It provided, [out_is_binary] should be
+        present as well. *)
+  out_isatty: ('st -> bool) option;
+    (** Is the output a TTY? Optional. *)
+  out_is_binary: ('st -> bool) option;
+    (** Is the output in binary mode? Optional *)
+  out_get_fd: ('st -> int) option;
+    (** Get underlying Unix FD, if any. *)
+}
+(** Operations for a user-defined output channel.
+    @since 5.6 *)
+
+type 'st in_ops = {
+  in_read: 'st -> chan_buffer -> unit;
+    (** Read into the buffer. The buffer is
+        empty (len=0). This should write bytes
+        into the buffer and set the offset and length.
+        If the buffer's length is 0 after this,
+        it means the end of input has been reached. *)
+  in_close: 'st -> unit;
+    (** Close the input *)
+  in_seek: ('st -> int64 -> unit) option;
+    (** Set absolute offset. Optional. *)
+  in_pos: ('st -> int64) option;
+    (** Get absolute offset. Optional. *)
+  in_length: ('st -> int64) option;
+    (** Get length of input. Optional. *)
+  in_set_binary: ('st -> bool -> unit) option;
+    (** Is the input in binary mode? Optional.
+        It provided, [in_is_binary] should be
+        present as well. *)
+  in_isatty: ('st -> bool) option;
+    (** Is the input a TTY? Optional. *)
+  in_is_binary: ('st -> bool) option;
+    (** Is the input in binary mode? Optional *)
+  in_get_fd: ('st -> int) option;
+    (** Get underlying Unix FD, if any *)
+}
+(** Operations for a user-defined input channel. *)
+
+val make_in_channel : 'st -> 'st in_ops -> in_channel
+(** [make_in_channel state ops] creates a user-defined input channel. *)
+
+val make_out_channel : 'st -> 'st out_ops -> out_channel
+(** [make_out_channel state ops] creates a user-defined output channel. *)
+
 val stdin : in_channel
 (** The standard input for the process. *)
 
@@ -1168,6 +1261,30 @@ val set_binary_mode_in : in_channel -> bool -> unit
    end-of-lines will be translated from [\r\n] to [\n].
    This function has no effect under operating systems that
    do not distinguish between text mode and binary mode. *)
+
+val in_channel_is_binary_mode : in_channel -> bool
+(** [in_channel_is_binary_mode ic] returns [true] if [ic] is in binary mode.
+    @since 5.6 *)
+
+val in_channel_isatty : in_channel -> bool
+(** [in_channel_isatty ic] returns [true] if [ic] is connected to a terminal.
+    @since 5.6 *)
+
+val out_channel_is_binary_mode : out_channel -> bool
+(** [out_channel_is_binary_mode oc] returns [true] if [oc] is in binary mode.
+    @since 5.6 *)
+
+val out_channel_isatty : out_channel -> bool
+(** [out_channel_isatty oc] returns [true] if [oc] is connected to a terminal.
+    @since 5.6 *)
+
+val set_buffered_out : out_channel -> bool -> unit
+(** [set_buffered_out oc b] sets the buffered mode of [oc].
+    @since 5.6 *)
+
+val is_buffered_out : out_channel -> bool
+(** [is_buffered_out oc] returns whether [oc] is in buffered mode.
+    @since 5.6 *)
 
 
 (** {2 Operations on large files} *)

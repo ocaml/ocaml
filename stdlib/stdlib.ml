@@ -208,6 +208,7 @@ external string_blit : string -> int -> bytes -> int -> int -> unit
 external bytes_blit : bytes -> int -> bytes -> int -> int -> unit
                         = "caml_blit_bytes" [@@noalloc]
 external bytes_unsafe_to_string : bytes -> string = "%bytes_to_string"
+external bytes_unsafe_of_string : string -> bytes = "%bytes_to_string"
 
 let ( ^ ) s1 s2 =
   let l1 = string_length s1 and l2 = string_length s2 in
@@ -304,18 +305,6 @@ let[@tail_mod_cons] rec ( @ ) l1 l2 =
 
 (* I/O operations *)
 
-type in_channel
-type out_channel
-
-external open_descriptor_out : int -> out_channel
-                             = "caml_ml_open_descriptor_out"
-external open_descriptor_in : int -> in_channel = "caml_ml_open_descriptor_in"
-
-let stdin = open_descriptor_in 0
-let stdout = open_descriptor_out 1
-let stderr = open_descriptor_out 2
-
-(* General output functions *)
 
 type open_flag =
     Open_rdonly | Open_wronly | Open_append
@@ -324,24 +313,243 @@ type open_flag =
 
 external open_desc : string -> open_flag list -> int -> int = "caml_sys_open"
 
-external set_out_channel_name: out_channel -> string -> unit =
-  "caml_ml_set_channel_name"
 
-let open_out_gen mode perm name =
-  let c = open_descriptor_out(open_desc name mode perm) in
-  set_out_channel_name c name;
-  c
+(* native channels. These correspond to the pre-existing
+   IO channels implemented in C.
+   Now we wrap them in a sum type to allow for user-defined channels. *)
 
-let open_out name =
-  open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_text] 0o666 name
+type native_in_channel
+type native_out_channel
 
-let open_out_bin name =
-  open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o666 name
+(* definitions and primitives used to define IO channels *)
+open struct
 
-external flush : out_channel -> unit = "caml_ml_flush"
+  external int64_add : int64 -> int64 -> int64 = "%int64_add"
+  external int64_sub : int64 -> int64 -> int64 = "%int64_sub"
+  external int64_of_int : int -> int64 = "%int64_of_int"
+  external int64_to_int : int64 -> int = "%int64_to_int"
+
+  external bytes_unsafe_get : bytes -> int -> char = "%bytes_unsafe_get"
+  external bytes_unsafe_set : bytes -> int -> char -> unit = "%bytes_unsafe_set"
+
+  (* Marshal module is not available yet; we use the C primitives directly. *)
+
+  external marshal_to_bytes : 'a -> unit list -> bytes
+    = "caml_output_value_to_bytes"
+  external marshal_from_bytes_unsafe : bytes -> int -> 'a
+    = "caml_input_value_from_bytes"
+  external marshal_data_size_unsafe : bytes -> int -> int
+    = "caml_marshal_data_size"
+  let marshal_header_size = 16
+
+  external native_open_descriptor_in  : int -> native_in_channel
+    = "caml_ml_open_descriptor_in"
+  external native_open_descriptor_out : int -> native_out_channel
+    = "caml_ml_open_descriptor_out"
+  external native_flush               : native_out_channel -> unit
+    = "caml_ml_flush"
+  external native_unsafe_output       : native_out_channel -> bytes -> int -> int -> unit
+    = "caml_ml_output_bytes"
+  external native_unsafe_output_bigarray : native_out_channel -> 'a -> int -> int -> unit
+    = "caml_ml_output_bigarray"
+  external native_output_char         : native_out_channel -> char -> unit
+    = "caml_ml_output_char"
+  external native_marshal_to_channel  : native_out_channel -> 'a -> unit list -> unit
+    = "caml_output_value"
+  external native_seek_out            : native_out_channel -> int -> unit
+    = "caml_ml_seek_out"
+  external native_pos_out             : native_out_channel -> int
+    = "caml_ml_pos_out"
+  external native_out_channel_length  : native_out_channel -> int
+    = "caml_ml_channel_size"
+  external native_close_channel       : native_out_channel -> unit
+    = "caml_ml_close_channel"
+  external native_set_binary_mode_out : native_out_channel -> bool -> unit
+    = "caml_ml_set_binary_mode"
+  external native_is_binary_mode_out  : native_out_channel -> bool
+    = "caml_ml_is_binary_mode"
+  external native_set_buffered_out    : native_out_channel -> bool -> unit
+    = "caml_ml_set_buffered"
+  external native_is_buffered_out     : native_out_channel -> bool
+    = "caml_ml_is_buffered"
+  external native_set_out_name        : native_out_channel -> string -> unit
+    = "caml_ml_set_channel_name"
+  external native_input_char          : native_in_channel -> char
+    = "caml_ml_input_char"
+  external native_unsafe_input        : native_in_channel -> bytes -> int -> int -> int
+    = "caml_ml_input"
+  external native_unsafe_input_bigarray : native_in_channel -> 'a -> int -> int -> int
+    = "caml_ml_input_bigarray"
+  external native_input_scan_line     : native_in_channel -> int
+    = "caml_ml_input_scan_line"
+  external native_input_value         : native_in_channel -> 'a
+    = "caml_input_value"
+  external native_seek_in             : native_in_channel -> int -> unit
+    = "caml_ml_seek_in"
+  external native_pos_in              : native_in_channel -> int
+    = "caml_ml_pos_in"
+  external native_in_channel_length   : native_in_channel -> int
+    = "caml_ml_channel_size"
+  external native_close_in            : native_in_channel -> unit
+    = "caml_ml_close_channel"
+  external native_set_binary_mode_in  : native_in_channel -> bool -> unit
+    = "caml_ml_set_binary_mode"
+  external native_is_binary_mode_in   : native_in_channel -> bool
+    = "caml_ml_is_binary_mode"
+  external native_set_in_name         : native_in_channel -> string -> unit
+    = "caml_ml_set_channel_name"
+  external native_isatty_out          : native_out_channel -> bool
+    = "caml_sys_isatty"
+  external native_isatty_in           : native_in_channel -> bool
+    = "caml_sys_isatty"
+  external native_terminfo_rows       : native_out_channel -> int
+    = "caml_terminfo_rows"
+  external native_channel_descriptor  : 'a -> int
+    = "caml_channel_descriptor"
+  external native_seek_out_64         : native_out_channel -> int64 -> unit
+    = "caml_ml_seek_out_64"
+  external native_pos_out_64          : native_out_channel -> int64
+    = "caml_ml_pos_out_64"
+  external native_out_channel_length_64 : native_out_channel -> int64
+    = "caml_ml_channel_size_64"
+  external native_seek_in_64          : native_in_channel -> int64 -> unit
+    = "caml_ml_seek_in_64"
+  external native_pos_in_64           : native_in_channel -> int64
+    = "caml_ml_pos_in_64"
+  external native_in_channel_length_64 : native_in_channel -> int64
+    = "caml_ml_channel_size_64"
+end
+
+let io_buffer_size = 65536
+
+type chan_buffer = {
+  buf: bytes;
+  mutable off: int;
+  mutable len: int;
+}
+
+let make_chan_buffer () = { buf = bytes_create io_buffer_size; off = 0; len = 0 }
+
+type 'st out_ops = {
+  out_write: 'st -> bytes -> int -> int -> int;
+  out_flush: 'st -> unit;
+  out_close: 'st -> unit;
+  out_seek: ('st -> int64 -> unit) option;
+  out_pos: ('st -> int64) option;
+  out_length: ('st -> int64) option;
+  out_set_binary: ('st -> bool -> unit) option;
+  out_isatty: ('st -> bool) option;
+  out_is_binary: ('st -> bool) option;
+  out_get_fd: ('st -> int) option;
+}
+
+type 'st in_ops = {
+  in_read: 'st -> chan_buffer -> unit;
+  in_close: 'st -> unit;
+  in_seek: ('st -> int64 -> unit) option;
+  in_pos: ('st -> int64) option;
+  in_length: ('st -> int64) option;
+  in_set_binary: ('st -> bool -> unit) option;
+  in_isatty: ('st -> bool) option;
+  in_is_binary: ('st -> bool) option;
+  in_get_fd: ('st -> int) option;
+}
+
+type out_channel =
+  | OC_native of native_out_channel
+  | OC_user_defined : {
+      st: 'st;
+      ops: 'st out_ops;
+      buf: chan_buffer;
+      mutable closed: bool;
+    } -> out_channel
+
+type in_channel =
+  | IC_native of native_in_channel
+  | IC_user_defined : {
+      st: 'st;
+      ops: 'st in_ops;
+      buf: chan_buffer;
+      mutable closed: bool;
+    } -> in_channel
+
+let stdin  = IC_native (native_open_descriptor_in  0)
+let stdout = OC_native (native_open_descriptor_out 1)
+let stderr = OC_native (native_open_descriptor_out 2)
+
+module CamlinternalChannel = struct
+  let open_descriptor_in  fd = IC_native (native_open_descriptor_in  fd)
+  let open_descriptor_out fd = OC_native (native_open_descriptor_out fd)
+
+  let in_channel_fd ic =
+    match ic with
+    | IC_native nc -> native_channel_descriptor nc
+    | IC_user_defined r ->
+      match r.ops.in_get_fd with
+      | Some f -> f r.st
+      | None -> invalid_arg "in_channel_fd: not a file-descriptor channel"
+
+  let out_channel_fd oc =
+    match oc with
+    | OC_native nc -> native_channel_descriptor nc
+    | OC_user_defined r ->
+      match r.ops.out_get_fd with
+      | Some f -> f r.st
+      | None -> invalid_arg "out_channel_fd: not a file-descriptor channel"
+
+  let out_channel_terminfo_rows (oc : out_channel) =
+    match oc with
+    | OC_native nc -> native_terminfo_rows nc
+    | OC_user_defined _ -> -1
+
+  type nonrec native_in_channel = native_in_channel
+  type nonrec native_out_channel = native_out_channel
+
+  let unsafe_output_bigarray_native nc buf ofs len =
+    native_unsafe_output_bigarray nc buf ofs len
+
+  let unsafe_input_bigarray_native nc buf ofs len =
+    native_unsafe_input_bigarray nc buf ofs len
+
+  let native_in_channel_of (ic : in_channel) =
+    match ic with
+    | IC_native nc -> Some nc
+    | IC_user_defined _ -> None
+
+  let native_out_channel_of (oc : out_channel) =
+    match oc with
+    | OC_native nc -> Some nc
+    | OC_user_defined _ -> None
+
+  let wrap_native_in_channel nc = IC_native nc
+  let wrap_native_out_channel nc = OC_native nc
+end
+
+let make_in_channel st ops =
+  IC_user_defined { st; ops; buf = make_chan_buffer (); closed = false }
+
+let make_out_channel st ops =
+  OC_user_defined { st; ops; buf = make_chan_buffer (); closed = false }
+
+let flush_buf_ud st ops (buf : chan_buffer) =
+  while buf.len > 0 do
+    let n = ops.out_write st buf.buf buf.off buf.len in
+    buf.off <- buf.off + n;
+    buf.len <- buf.len - n
+  done;
+  buf.off <- 0
+
+let flush (oc : out_channel) =
+  match oc with
+  | OC_native nc -> native_flush nc
+  | OC_user_defined r ->
+    if not r.closed then begin
+      flush_buf_ud r.st r.ops r.buf;
+      r.ops.out_flush r.st
+    end
 
 external out_channels_list : unit -> out_channel list
-                           = "caml_ml_out_channels_list"
+  = "caml_ml_out_channels_list"
 
 let flush_all () =
   let rec iter = function
@@ -355,67 +563,191 @@ let flush_all () =
         iter l
   in iter (out_channels_list ())
 
-external unsafe_output : out_channel -> bytes -> int -> int -> unit
-                       = "caml_ml_output_bytes"
-external unsafe_output_string : out_channel -> string -> int -> int -> unit
-                              = "caml_ml_output"
+let output_char (oc : out_channel) (c : char) =
+  match oc with
+  | OC_native nc -> native_output_char nc c
+  | OC_user_defined r ->
+    if r.closed then raise (Sys_error "output_char: channel is closed");
+    let cap = bytes_length r.buf.buf in
+    if r.buf.off + r.buf.len >= cap then flush_buf_ud r.st r.ops r.buf;
+    bytes_unsafe_set r.buf.buf (r.buf.off + r.buf.len) c;
+    r.buf.len <- r.buf.len + 1;
+    if r.buf.off + r.buf.len >= cap
+    then flush_buf_ud r.st r.ops r.buf
 
-external output_char : out_channel -> char -> unit = "caml_ml_output_char"
+let output_byte oc n = output_char oc (unsafe_char_of_int (n land 0xFF))
 
-let output_bytes oc s =
-  unsafe_output oc s 0 (bytes_length s)
-
-let output_string oc s =
-  unsafe_output_string oc s 0 (string_length s)
-
-let output oc s ofs len =
+let output (oc : out_channel) (s : bytes) (ofs : int) (len : int) =
   if ofs < 0 || len < 0 || ofs > bytes_length s - len
-  then invalid_arg "output"
-  else unsafe_output oc s ofs len
+  then invalid_arg "output";
+  match oc with
+  | OC_native nc -> native_unsafe_output nc s ofs len
+  | OC_user_defined r ->
+    if r.closed then raise (Sys_error "output: channel is closed");
+    let cap = bytes_length r.buf.buf in
+    let i = ref ofs in
+    let remaining = ref len in
+    while !remaining > 0 do
+      if r.buf.off + r.buf.len >= cap then flush_buf_ud r.st r.ops r.buf;
+      let n = min !remaining (cap - r.buf.off - r.buf.len) in
+      bytes_blit s !i r.buf.buf (r.buf.off + r.buf.len) n;
+      r.buf.len <- r.buf.len + n;
+      i := !i + n;
+      remaining := !remaining - n
+    done;
+    if r.buf.off + r.buf.len >= cap
+    then flush_buf_ud r.st r.ops r.buf
 
-let output_substring oc s ofs len =
+let output_substring (oc : out_channel) (s : string) (ofs : int) (len : int) =
   if ofs < 0 || len < 0 || ofs > string_length s - len
   then invalid_arg "output_substring"
-  else unsafe_output_string oc s ofs len
+  else output oc (bytes_unsafe_of_string s) ofs len
 
-external output_byte : out_channel -> int -> unit = "caml_ml_output_char"
-external output_binary_int : out_channel -> int -> unit = "caml_ml_output_int"
+let output_bytes oc s = output oc s 0 (bytes_length s)
+let output_string oc s = output_substring oc s 0 (string_length s)
 
-external marshal_to_channel : out_channel -> 'a -> unit list -> unit
-     = "caml_output_value"
-let output_value chan v = marshal_to_channel chan v []
+let output_binary_int oc (n : int) =
+  output_byte oc (n asr 24);
+  output_byte oc (n asr 16);
+  output_byte oc (n asr 8);
+  output_byte oc n
 
-external seek_out : out_channel -> int -> unit = "caml_ml_seek_out"
-external pos_out : out_channel -> int = "caml_ml_pos_out"
-external out_channel_length : out_channel -> int = "caml_ml_channel_size"
-external close_out_channel : out_channel -> unit = "caml_ml_close_channel"
+let output_value oc v =
+  match oc with
+  | OC_native nc -> native_marshal_to_channel nc v []
+  | OC_user_defined _ ->
+    let s = marshal_to_bytes v [] in
+    output_bytes oc s
+
+let seek_out (oc : out_channel) (pos : int) =
+  match oc with
+  | OC_native nc -> native_seek_out nc pos
+  | OC_user_defined r ->
+    if r.closed then raise (Sys_error "seek_out: channel is closed");
+    flush_buf_ud r.st r.ops r.buf;
+    match r.ops.out_seek with
+    | None -> invalid_arg "seek_out: channel does not support seeking"
+    | Some f -> f r.st (int64_of_int pos)
+
+let pos_out (oc : out_channel) =
+  match oc with
+  | OC_native nc -> native_pos_out nc
+  | OC_user_defined r ->
+    if r.closed then raise (Sys_error "pos_out: channel is closed");
+    match r.ops.out_pos with
+    | None -> invalid_arg "pos_out: channel does not support position"
+    | Some f -> int64_to_int (int64_add (f r.st) (int64_of_int r.buf.len))
+
+let out_channel_length (oc : out_channel) =
+  match oc with
+  | OC_native nc -> native_out_channel_length nc
+  | OC_user_defined r ->
+    if r.closed then raise (Sys_error "out_channel_length: channel is closed");
+    match r.ops.out_length with
+    | None -> invalid_arg "out_channel_length: channel does not support length"
+    | Some f -> int64_to_int (f r.st)
+
+let close_out_channel (oc : out_channel) =
+  match oc with
+  | OC_native nc -> native_close_channel nc
+  | OC_user_defined r ->
+    if not r.closed then begin
+      r.closed <- true;
+      (try flush_buf_ud r.st r.ops r.buf with _ -> ());
+      r.ops.out_close r.st
+    end
+
 let close_out oc = flush oc; close_out_channel oc
+
 let close_out_noerr oc =
   (try flush oc with _ -> ());
   (try close_out_channel oc with _ -> ())
-external set_binary_mode_out : out_channel -> bool -> unit
-                             = "caml_ml_set_binary_mode"
 
-(* General input functions *)
+let set_binary_mode_out (oc : out_channel) (bin : bool) =
+  match oc with
+  | OC_native nc -> native_set_binary_mode_out nc bin
+  | OC_user_defined r ->
+    if r.closed then raise (Sys_error "set_binary_mode_out: channel is closed");
+    flush_buf_ud r.st r.ops r.buf;
+    (match r.ops.out_set_binary with None -> () | Some f -> f r.st bin)
 
-external set_in_channel_name: in_channel -> string -> unit =
-  "caml_ml_set_channel_name"
+let out_channel_isatty (oc : out_channel) =
+  match oc with
+  | OC_native nc -> native_isatty_out nc
+  | OC_user_defined r ->
+    (match r.ops.out_isatty with None -> false | Some f -> f r.st)
 
-let open_in_gen mode perm name =
-  let c = open_descriptor_in(open_desc name mode perm) in
-  set_in_channel_name c name;
-  c
+let out_channel_is_binary_mode (oc : out_channel) =
+  match oc with
+  | OC_native nc -> native_is_binary_mode_out nc
+  | OC_user_defined r ->
+    (match r.ops.out_is_binary with None -> false | Some f -> f r.st)
 
-let open_in name =
-  open_in_gen [Open_rdonly; Open_text] 0 name
+let set_buffered_out (oc : out_channel) (b : bool) =
+  match oc with
+  | OC_native nc -> native_set_buffered_out nc b
+  | OC_user_defined r ->
+    if r.closed then raise (Sys_error "set_buffered: channel is closed");
+    if not b then
+      invalid_arg "set_buffered: user-defined channels are always buffered"
 
-let open_in_bin name =
-  open_in_gen [Open_rdonly; Open_binary] 0 name
+let is_buffered_out (oc : out_channel) : bool =
+  match oc with
+  | OC_native nc -> native_is_buffered_out nc
+  | OC_user_defined _ -> true
 
-external input_char : in_channel -> char = "caml_ml_input_char"
+let open_out_gen mode perm name =
+  let nc = native_open_descriptor_out (open_desc name mode perm) in
+  native_set_out_name nc name;
+  OC_native nc
 
-external unsafe_input : in_channel -> bytes -> int -> int -> int
-                      = "caml_ml_input"
+let open_out name =
+  open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_text] 0o666 name
+
+let open_out_bin name =
+  open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o666 name
+
+(* Input functions *)
+
+let input_char (ic : in_channel) =
+  match ic with
+  | IC_native nc -> native_input_char nc
+  | IC_user_defined r ->
+    if r.closed then raise (Sys_error "input_char: channel is closed");
+    if r.buf.len = 0 then begin
+      r.ops.in_read r.st r.buf;
+      if r.buf.len = 0 then raise End_of_file
+    end;
+    let c = bytes_unsafe_get r.buf.buf r.buf.off in
+    r.buf.off <- r.buf.off + 1;
+    r.buf.len <- r.buf.len - 1;
+    c
+
+let input_byte ic = int_of_char (input_char ic)
+
+(* Internal: read into user's bytes buffer without bounds checking *)
+let unsafe_input (ic : in_channel) (s : bytes) (ofs : int) (len : int) =
+  match ic with
+  | IC_native nc -> native_unsafe_input nc s ofs len
+  | IC_user_defined r ->
+    if r.closed then raise (Sys_error "input: channel is closed");
+    if r.buf.len = 0 then begin
+      r.ops.in_read r.st r.buf;
+      if r.buf.len = 0 then 0
+      else begin
+        let n = min r.buf.len len in
+        bytes_blit r.buf.buf r.buf.off s ofs n;
+        r.buf.off <- r.buf.off + n;
+        r.buf.len <- r.buf.len - n;
+        n
+      end
+    end else begin
+      let n = min r.buf.len len in
+      bytes_blit r.buf.buf r.buf.off s ofs n;
+      r.buf.off <- r.buf.off + n;
+      r.buf.len <- r.buf.len - n;
+      n
+    end
 
 let input ic s ofs len =
   if ofs < 0 || len < 0 || ofs > bytes_length s - len
@@ -440,46 +772,207 @@ let really_input_string ic len =
   really_input ic s 0 len;
   bytes_unsafe_to_string s
 
-external input_scan_line : in_channel -> int = "caml_ml_input_scan_line"
+(* Scan [buf] for '\n'. Returns index relative to [buf.off], or -1 if not found. *)
+let scan_newline (buf : chan_buffer) : int =
+  let b = buf.buf in
+  let off = buf.off in
+  let limit = off + buf.len in
+  let rec loop i =
+    if i >= limit then -1
+    else if bytes_unsafe_get b i = '\n' then i - off
+    else loop (i + 1)
+  in
+  loop off
 
-let input_line chan =
+(* Consume [n] bytes from buffer, return them as a fresh bytes *)
+let consume_buf (buf : chan_buffer) (n : int) : bytes =
+  let b = bytes_create n in
+  bytes_blit buf.buf buf.off b 0 n;
+  buf.off <- buf.off + n;
+  buf.len <- buf.len - n;
+  b
+
+(* Concatenate a reversed list of chunks into a single string *)
+let concat_chunks_rev (chunks : bytes list) (total : int) : string =
+  let result = bytes_create total in
+  let pos = ref total in
+  let rec copy = function
+    | [] -> ()
+    | c :: rest ->
+      let n = bytes_length c in
+      pos := !pos - n;
+      bytes_blit c 0 result !pos n;
+      copy rest
+  in
+  copy chunks;
+  bytes_unsafe_to_string result
+
+(* input_line for native channels: use C's efficient input_scan_line *)
+let native_input_line nc =
   let rec build_result buf pos = function
-    [] -> buf
-  | hd :: tl ->
+    | [] -> buf
+    | hd :: tl ->
       let len = bytes_length hd in
       bytes_blit hd 0 buf (pos - len) len;
-      build_result buf (pos - len) tl in
+      build_result buf (pos - len) tl
+  in
   let rec scan accu len =
-    let n = input_scan_line chan in
-    if n = 0 then begin                   (* n = 0: we are at EOF *)
+    let n = native_input_scan_line nc in
+    if n = 0 then begin
       match accu with
-        [] -> raise End_of_file
+      | [] -> raise End_of_file
       | _  -> build_result (bytes_create len) len accu
-    end else if n > 0 then begin          (* n > 0: newline found in buffer *)
+    end else if n > 0 then begin
       let res = bytes_create (n - 1) in
-      ignore (unsafe_input chan res 0 (n - 1));
-      ignore (input_char chan);           (* skip the newline *)
+      ignore (native_unsafe_input nc res 0 (n - 1));
+      ignore (native_input_char nc);
       match accu with
-        [] -> res
-      |  _ -> let len = len + n - 1 in
+      | [] -> res
+      | _  -> let len = len + n - 1 in
               build_result (bytes_create len) len (res :: accu)
-    end else begin                        (* n < 0: newline not found *)
+    end else begin
       let beg = bytes_create (-n) in
-      ignore(unsafe_input chan beg 0 (-n));
+      ignore (native_unsafe_input nc beg 0 (-n));
       scan (beg :: accu) (len - n)
     end
-  in bytes_unsafe_to_string (scan [] 0)
+  in
+  bytes_unsafe_to_string (scan [] 0)
 
-external input_byte : in_channel -> int = "caml_ml_input_char"
-external input_binary_int : in_channel -> int = "caml_ml_input_int"
-external input_value : in_channel -> 'a = "caml_input_value"
-external seek_in : in_channel -> int -> unit = "caml_ml_seek_in"
-external pos_in : in_channel -> int = "caml_ml_pos_in"
-external in_channel_length : in_channel -> int = "caml_ml_channel_size"
-external close_in : in_channel -> unit = "caml_ml_close_channel"
+let user_input_line st ops buf =
+  let rec collect chunks total_len =
+    if buf.len = 0 then begin
+      ops.in_read st buf;
+      if buf.len = 0 then begin
+        if total_len = 0 then raise End_of_file
+        else concat_chunks_rev chunks total_len
+      end else
+        collect chunks total_len
+    end else
+      let nl = scan_newline buf in
+      if nl >= 0 then begin
+        let chunk = consume_buf buf nl in
+        buf.off <- buf.off + 1;
+        buf.len <- buf.len - 1;
+        concat_chunks_rev (chunk :: chunks) (total_len + nl)
+      end else begin
+        let chunk = consume_buf buf buf.len in
+        ops.in_read st buf;
+        collect (chunk :: chunks) (total_len + bytes_length chunk)
+      end
+  in
+
+  let nl = scan_newline buf in
+  if nl >= 0 then begin
+    let line = consume_buf buf nl in
+    buf.off <- buf.off + 1; (* skip '\n' *)
+    buf.len <- buf.len - 1;
+    bytes_unsafe_to_string line
+  end else begin
+    collect [] 0
+  end
+
+let input_line (ic : in_channel) =
+  match ic with
+  | IC_native nc -> native_input_line nc
+  | IC_user_defined r ->
+    if r.closed then raise (Sys_error "input_line: channel is closed");
+    user_input_line r.st r.ops r.buf
+
+let input_binary_int ic =
+  let b0 = input_byte ic in
+  let b1 = input_byte ic in
+  let b2 = input_byte ic in
+  let b3 = input_byte ic in
+  (* Big-endian 4-byte signed integer.
+     We compute this portably (bytecode compat-32) by treating b0 as a
+     signed byte: on 64-bit platforms this naturally sign-extends the
+     result, matching the old C implementation. All constants are small. *)
+  let s0 = if b0 land 0x80 <> 0 then b0 - 256 else b0 in
+  (s0 lsl 24) lor (b1 lsl 16) lor (b2 lsl 8) lor b3
+
+let input_value ic =
+  match ic with
+  | IC_native nc -> native_input_value nc
+  | IC_user_defined _ ->
+    let header = bytes_create marshal_header_size in
+    really_input ic header 0 marshal_header_size;
+    let data_size = marshal_data_size_unsafe header 0 in
+    let buf = bytes_create (marshal_header_size + data_size) in
+    bytes_blit header 0 buf 0 marshal_header_size;
+    really_input ic buf marshal_header_size data_size;
+    marshal_from_bytes_unsafe buf 0
+
+let seek_in (ic : in_channel) (pos : int) =
+  match ic with
+  | IC_native nc -> native_seek_in nc pos
+  | IC_user_defined r ->
+    if r.closed then raise (Sys_error "seek_in: channel is closed");
+    r.buf.off <- 0;
+    r.buf.len <- 0;
+    match r.ops.in_seek with
+    | None -> invalid_arg "seek_in: channel does not support seeking"
+    | Some f -> f r.st (int64_of_int pos)
+
+let pos_in (ic : in_channel) =
+  match ic with
+  | IC_native nc -> native_pos_in nc
+  | IC_user_defined r ->
+    if r.closed then raise (Sys_error "pos_in: channel is closed");
+    match r.ops.in_pos with
+    | None -> invalid_arg "pos_in: channel does not support position"
+    | Some f -> int64_to_int (int64_sub (f r.st) (int64_of_int r.buf.len))
+
+let in_channel_length (ic : in_channel) =
+  match ic with
+  | IC_native nc -> native_in_channel_length nc
+  | IC_user_defined r ->
+    if r.closed then raise (Sys_error "in_channel_length: channel is closed");
+    match r.ops.in_length with
+    | None -> invalid_arg "in_channel_length: channel does not support length"
+    | Some f -> int64_to_int (f r.st)
+
+let close_in (ic : in_channel) =
+  match ic with
+  | IC_native nc -> native_close_in nc
+  | IC_user_defined r ->
+    if not r.closed then begin
+      r.closed <- true;
+      r.buf.off <- 0;
+      r.buf.len <- 0;
+      r.ops.in_close r.st
+    end
+
 let close_in_noerr ic = (try close_in ic with _ -> ())
-external set_binary_mode_in : in_channel -> bool -> unit
-                            = "caml_ml_set_binary_mode"
+
+let set_binary_mode_in (ic : in_channel) (bin : bool) =
+  match ic with
+  | IC_native nc -> native_set_binary_mode_in nc bin
+  | IC_user_defined r ->
+    if r.closed then raise (Sys_error "set_binary_mode_in: channel is closed");
+    (match r.ops.in_set_binary with None -> () | Some f -> f r.st bin)
+
+let in_channel_isatty (ic : in_channel) =
+  match ic with
+  | IC_native nc -> native_isatty_in nc
+  | IC_user_defined r ->
+    (match r.ops.in_isatty with None -> false | Some f -> f r.st)
+
+let in_channel_is_binary_mode (ic : in_channel) =
+  match ic with
+  | IC_native nc -> native_is_binary_mode_in nc
+  | IC_user_defined r ->
+    (match r.ops.in_is_binary with None -> false | Some f -> f r.st)
+
+let open_in_gen mode perm name =
+  let nc = native_open_descriptor_in (open_desc name mode perm) in
+  native_set_in_name nc name;
+  IC_native nc
+
+let open_in name =
+  open_in_gen [Open_rdonly; Open_text] 0 name
+
+let open_in_bin name =
+  open_in_gen [Open_rdonly; Open_binary] 0 name
 
 (* Output functions on standard output *)
 
@@ -513,16 +1006,68 @@ let read_float_opt () = float_of_string_opt(read_line())
 
 (* Operations on large files *)
 
-module LargeFile =
-  struct
-    external seek_out : out_channel -> int64 -> unit = "caml_ml_seek_out_64"
-    external pos_out : out_channel -> int64 = "caml_ml_pos_out_64"
-    external out_channel_length : out_channel -> int64
-                                = "caml_ml_channel_size_64"
-    external seek_in : in_channel -> int64 -> unit = "caml_ml_seek_in_64"
-    external pos_in : in_channel -> int64 = "caml_ml_pos_in_64"
-    external in_channel_length : in_channel -> int64 = "caml_ml_channel_size_64"
-  end
+module LargeFile = struct
+  let seek_out (oc : out_channel) (pos : int64) =
+    match oc with
+    | OC_native nc -> native_seek_out_64 nc pos
+    | OC_user_defined r ->
+      if r.closed then raise (Sys_error "seek_out: channel is closed");
+      flush_buf_ud r.st r.ops r.buf;
+      match r.ops.out_seek with
+      | None -> invalid_arg "seek_out: channel does not support seeking"
+      | Some f -> f r.st pos
+
+  let pos_out (oc : out_channel) =
+    match oc with
+    | OC_native nc -> native_pos_out_64 nc
+    | OC_user_defined r ->
+      if r.closed then raise (Sys_error "pos_out: channel is closed");
+      match r.ops.out_pos with
+      | None -> invalid_arg "pos_out: channel does not support position"
+      | Some f -> int64_add (f r.st) (int64_of_int r.buf.len)
+
+  let out_channel_length (oc : out_channel) =
+    match oc with
+    | OC_native nc -> native_out_channel_length_64 nc
+    | OC_user_defined r ->
+      if r.closed then
+        raise (Sys_error "out_channel_length: channel is closed");
+      match r.ops.out_length with
+      | None ->
+        invalid_arg "out_channel_length: channel does not support length"
+      | Some f -> f r.st
+
+  let seek_in (ic : in_channel) (pos : int64) =
+    match ic with
+    | IC_native nc -> native_seek_in_64 nc pos
+    | IC_user_defined r ->
+      if r.closed then raise (Sys_error "seek_in: channel is closed");
+      r.buf.off <- 0;
+      r.buf.len <- 0;
+      match r.ops.in_seek with
+      | None -> invalid_arg "seek_in: channel does not support seeking"
+      | Some f -> f r.st pos
+
+  let pos_in (ic : in_channel) =
+    match ic with
+    | IC_native nc -> native_pos_in_64 nc
+    | IC_user_defined r ->
+      if r.closed then raise (Sys_error "pos_in: channel is closed");
+      match r.ops.in_pos with
+      | None -> invalid_arg "pos_in: channel does not support position"
+      | Some f -> int64_sub (f r.st) (int64_of_int r.buf.len)
+
+  let in_channel_length (ic : in_channel) =
+    match ic with
+    | IC_native nc -> native_in_channel_length_64 nc
+    | IC_user_defined r ->
+      if r.closed then
+        raise (Sys_error "in_channel_length: channel is closed");
+      match r.ops.in_length with
+      | None ->
+        invalid_arg "in_channel_length: channel does not support length"
+      | Some f -> f r.st
+end
 
 (* Formats *)
 

@@ -306,14 +306,25 @@ let single_write_substring fd buf ofs len =
 
 (* Interfacing with the standard input/output library *)
 
-external in_channel_of_descr : file_descr -> in_channel
-                             = "caml_unix_inchannel_of_filedescr"
-external out_channel_of_descr : file_descr -> out_channel
-                              = "caml_unix_outchannel_of_filedescr"
-external descr_of_in_channel : in_channel -> file_descr
-                             = "caml_channel_descriptor"
-external descr_of_out_channel : out_channel -> file_descr
-                              = "caml_channel_descriptor"
+(* Check stream semantics (blocking device check) before opening a channel.
+   The open itself is done on the OCaml side so the result is a properly
+   wrapped in_channel / out_channel value (not a raw native channel). *)
+external _check_stream_in  : file_descr -> unit = "caml_unix_check_stream_in"
+external _check_stream_out : file_descr -> unit = "caml_unix_check_stream_out"
+
+let in_channel_of_descr fd =
+  _check_stream_in fd;
+  Stdlib.CamlinternalChannel.open_descriptor_in (Obj.magic fd : int)
+
+let out_channel_of_descr fd =
+  _check_stream_out fd;
+  Stdlib.CamlinternalChannel.open_descriptor_out (Obj.magic fd : int)
+
+let descr_of_in_channel ic =
+  (Obj.magic (Stdlib.CamlinternalChannel.in_channel_fd ic) : file_descr)
+
+let descr_of_out_channel oc =
+  (Obj.magic (Stdlib.CamlinternalChannel.out_channel_fd oc) : file_descr)
 
 (* Seeking and truncating *)
 

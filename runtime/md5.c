@@ -18,10 +18,10 @@
 #include <string.h>
 #include "caml/alloc.h"
 #include "caml/fail.h"
+#include "caml/io.h"
 #include "caml/md5.h"
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
-#include "caml/io.h"
 #include "caml/reverse.h"
 
 /* MD5 message digest */
@@ -42,41 +42,42 @@ CAMLprim value caml_md5_bytes(value b, value ofs, value len)
   return caml_md5_string(b, ofs, len);
 }
 
-CAMLexport value caml_md5_channel(struct channel *chan, intnat toread)
+/* caml_md5_chan: compute MD5 of a native_in_channel.
+   [vlen] is the number of bytes to read, or a negative value to read until
+   EOF. */
+CAMLprim value caml_md5_chan(value vchan, value vlen)
 {
-  CAMLparam0();
+  CAMLparam2(vchan, vlen);
   struct MD5Context ctx;
+  struct channel *chan = Channel(vchan);
+  intnat toread = Long_val(vlen);
+  char buf[4096];
+  int n;
   value res;
-  intnat read;
-  char buffer[4096];
 
-  caml_channel_lock(chan);
   caml_MD5Init(&ctx);
-  if (toread < 0){
-    while (1){
-      read = caml_getblock (chan, buffer, sizeof(buffer));
-      if (read == 0) break;
-      caml_MD5Update (&ctx, (unsigned char *) buffer, read);
-    }
-  }else{
+  caml_channel_lock(chan);
+  if (toread < 0) {
+    /* Read until EOF */
+    while ((n = caml_getblock(chan, buf, sizeof(buf))) > 0)
+      caml_MD5Update(&ctx, (unsigned char *)buf, n);
+  } else {
+    /* Read exactly toread bytes */
     while (toread > 0) {
-      read = caml_getblock(chan, buffer,
-                           toread > sizeof(buffer) ? sizeof(buffer) : toread);
-      if (read == 0) caml_raise_end_of_file();
-      caml_MD5Update(&ctx, (unsigned char *) buffer, read);
-      toread -= read;
+      intnat req = toread < (intnat)sizeof(buf) ? toread : (intnat)sizeof(buf);
+      n = caml_getblock(chan, buf, req);
+      if (n == 0) {
+        caml_channel_unlock(chan);
+        caml_raise_end_of_file();
+      }
+      caml_MD5Update(&ctx, (unsigned char *)buf, n);
+      toread -= n;
     }
   }
+  caml_channel_unlock(chan);
   res = caml_alloc_string(16);
   caml_MD5Final(&Byte_u(res, 0), &ctx);
-  caml_channel_unlock(chan);
-  CAMLreturn (res);
-}
-
-CAMLprim value caml_md5_chan(value vchan, value len)
-{
-   CAMLparam2 (vchan, len);
-   CAMLreturn (caml_md5_channel(Channel(vchan), Long_val(len)));
+  CAMLreturn(res);
 }
 
 CAMLexport void caml_md5_block(unsigned char digest[16],

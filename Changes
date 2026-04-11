@@ -87,6 +87,9 @@ Working version
   + #14733: clarify the implementation of per-domain ephemeron work counters
   (Gabriel Scherer, review by Damien Doligez)
 
+- #14775: Make IO channels extensible
+  (Simon Cruanes, review by Kate Deplaix)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14842, #14845: Keep expansion and
