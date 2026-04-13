@@ -81,6 +81,25 @@ type baz = bar = ..
 type baz = bar = ..
 |}]
 
+type baz += Baz of int
+;;
+[%%expect {|
+type baz += Baz of int
+|}]
+
+type foo += Foo of int
+
+let f = function
+  | Baz i -> 2 * i
+  | Foo i -> 3 * i
+  | _ -> 0
+;;
+
+[%%expect {|
+type foo += Foo of int
+val f : baz -> int = <fun>
+|}]
+
 (* Abbreviations need to match parameters *)
 
 type 'a foo = ..
