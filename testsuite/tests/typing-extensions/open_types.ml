@@ -255,6 +255,16 @@ Error: Signature mismatch:
        A private extensible variant would be revealed.
 |}]
 
+type m_foo = M.foo = ..
+
+[%%expect {|
+Line 1, characters 0-23:
+1 | type m_foo = M.foo = ..
+    ^^^^^^^^^^^^^^^^^^^^^^^
+Error: This variant or record definition does not match that of type "M.foo"
+       A private extensible variant would be revealed.
+|}]
+
 
 (* Check that signatures maintain variances *)
 
