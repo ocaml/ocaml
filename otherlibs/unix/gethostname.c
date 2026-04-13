@@ -21,7 +21,7 @@
 #endif
 #include "caml/unixsupport.h"
 
-#ifdef HAS_GETHOSTNAME
+#if defined(HAS_GETHOSTNAME)
 
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN 256
@@ -35,8 +35,7 @@ CAMLprim value caml_unix_gethostname(value unit)
   return caml_copy_string(name);
 }
 
-#else
-#ifdef HAS_UNAME
+#elif defined(HAS_UNAME)
 
 #include <sys/utsname.h>
 
@@ -52,5 +51,4 @@ CAMLprim value caml_unix_gethostname(value unit)
 CAMLprim value caml_unix_gethostname(value unit)
 { caml_invalid_argument("gethostname not implemented"); }
 
-#endif
 #endif
