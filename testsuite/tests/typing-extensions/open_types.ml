@@ -100,6 +100,18 @@ type foo += Foo of int
 val f : baz -> int = <fun>
 |}]
 
+type bar'
+
+type baz = bar' = ..
+[%%expect {|
+type bar'
+Line 3, characters 0-20:
+3 | type baz = bar' = ..
+    ^^^^^^^^^^^^^^^^^^^^
+Error: This variant or record definition does not match that of type "bar'"
+       The original is abstract, but this is an extensible variant.
+|}]
+
 (* Abbreviations need to match parameters *)
 
 type 'a foo = ..
