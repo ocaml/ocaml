@@ -44,7 +44,7 @@ CAMLprim value caml_unix_gethostname(value unit)
 {
   struct utsname un;
   uname(&un);
-  return copy_string(un.nodename);
+  return caml_copy_string(un.nodename);
 }
 
 #else
