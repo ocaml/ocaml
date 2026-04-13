@@ -2593,9 +2593,7 @@ let rec find_valid_alternative f pat =
        with
        | Empty_branch | Error _ -> find_valid_alternative f p2
       )
-  | _ ->
-      (* Type nodes should be discarded as soon as possible *)
-      with_counterexample_pool (fun () -> f pat)
+  | _ -> f pat
 
 let no_explosion info = { info with explosion_fuel = 0 }
 
@@ -2709,7 +2707,11 @@ let rec check_counter_example_pat
       let state = save_state penv in
       let split_or tp =
         let type_alternative pat =
-          set_state state penv; check_rec pat expected_ty k in
+          set_state state penv;
+          (* Type nodes should be discarded as soon as possible *)
+          with_counterexample_pool (fun () ->
+              check_rec pat expected_ty k
+            ) in
         find_valid_alternative type_alternative tp
       in
       if must_split then split_or tp else
