@@ -71,8 +71,6 @@ val add_to_pool: level:int -> transient_expr -> unit
         (* Add a type node to the pool associated to the level (which should
            be the level of the type node).
            Do nothing if [level = generic_level] or [level = lowest_level]. *)
-val with_no_pool: (unit -> 'a) -> 'a
-  (* Disable the tracking of fresh type insode pools *)
 
 val newty3: level:int -> scope:int -> type_desc -> type_expr
         (* Create a type with a fresh id *)
