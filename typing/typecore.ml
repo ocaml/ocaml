@@ -2588,13 +2588,13 @@ let rec find_valid_alternative f pat =
   match pat.pat_desc with
   | Tpat_or(p1,p2,_) ->
       (try
-         (* Keeping alive type nodes from discarded branches would be
-            a memory leak *)
-         with_counterexample_pool (fun () -> find_valid_alternative f p1)
+         find_valid_alternative f p1
        with
        | Empty_branch | Error _ -> find_valid_alternative f p2
       )
-  | _ -> f pat
+  | _ ->
+      (* Type nodes should be discarded as soon as possible *)
+      with_counterexample_pool (fun () -> f pat)
 
 let no_explosion info = { info with explosion_fuel = 0 }
 
