@@ -198,6 +198,10 @@ Working version
 - #14654: Fix non-exhaustive directive rule in lexer.
   (Antonin Décimo, review by Martin Jambon and Gabriel Scherer)
 
+- #14730: Test keep-expansion (#11648) against overflow in the presence of
+  rectypes and module aliases.
+  (Brandon Stride)
+
 ### Build system:
 
 ### Bug fixes:

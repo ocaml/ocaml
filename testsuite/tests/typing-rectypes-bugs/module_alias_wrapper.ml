@@ -4,6 +4,8 @@
  expect;
 *)
 
+(* PR14730 tests #11648 *)
+
 module Empty = struct end
 
 module Empty_wrapper = struct
