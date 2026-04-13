@@ -93,10 +93,14 @@ static const int lock_command_table[] = {
   F_ULOCK, F_LOCK, F_TLOCK, F_TEST, F_LOCK, F_TLOCK
 };
 
-CAMLprim value caml_unix_lockf(value fd, value cmd, value span)
+CAMLprim value caml_unix_lockf(value fd, value vcmd, value span)
 {
-  if (lockf(Int_val(fd), lock_command_table[Int_val(cmd)], Long_val(span))
-      == -1) caml_uerror("lockf", Nothing);
+  int ret;
+  int cmd = lock_command_table[Int_val(vcmd)];
+  if (cmd == F_BLOCK) caml_enter_blocking_section();
+  ret = lockf(Int_val(fd), cmd, Long_val(span));
+  if (cmd == F_BLOCK) caml_leave_blocking_section();
+  if (ret == -1) caml_uerror("lockf", Nothing);
   return Val_unit;
 }
 
