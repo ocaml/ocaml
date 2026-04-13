@@ -194,6 +194,7 @@ val new_local_type:
 
 module Pattern_env : sig
   type envop
+  type state
   type t = private
     { mutable env : Env.t;
       mutable op_list : envop list;
@@ -210,6 +211,8 @@ module Pattern_env : sig
   val copy: ?equations_scope:int -> t -> t
   val enter_type: scope:int -> label -> type_declaration -> t -> Ident.t
   val set_env: t -> Env.t -> unit
+  val reset: t -> state -> unit
+  val save: t -> state
 end
 
 type existential_treatment =

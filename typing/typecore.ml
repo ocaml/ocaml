@@ -2566,14 +2566,15 @@ type abort_reason = Adds_constraints | Empty
     In the GADT mode, [env] may be extended by unification,
     and therefore it needs to be saved along with a [snapshot]. *)
 type unification_state =
- { snapshot: snapshot;
-   env: Env.t; }
+  { snapshot: snapshot;
+    pattern_env: Pattern_env.state;
+ }
 let save_state penv =
   { snapshot = Btype.snapshot ();
-    env = !!penv; }
+    pattern_env = Pattern_env.save penv; }
 let set_state s penv =
   Btype.backtrack s.snapshot;
-  Pattern_env.set_env penv s.env
+  Pattern_env.reset penv s.pattern_env
 
 (** Type variables allocated when searching for counter-examples
     should be discarded at the end of the search *)
