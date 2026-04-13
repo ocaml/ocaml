@@ -118,7 +118,8 @@ type pool = {level: int; mutable pool: transient_expr list; next: pool}
    the list. It will never be accessed, as [pool_of_level] is always called
    with [level >= 0]. *)
 let rec dummy = {level = max_int; pool = []; next = dummy}
-let pool_stack = s_table (fun () -> {level = 0; pool = []; next = dummy}) ()
+let pool_stack =
+  s_table (fun () -> Some {level = 0; pool = []; next = dummy}) ()
 
 (* Lookup in the stack is linear, but the depth is the number of nested
    generalization points (e.g. lhs of let-definitions), which in ML is known
@@ -135,16 +136,25 @@ let rec pool_of_level level pool =
 
 (* Create a new pool at given level, and use it locally. *)
 let with_new_pool ~level f =
-  let pool = {level; pool = []; next = !pool_stack} in
-  let r =
-    Misc.protect_refs [ R(pool_stack, pool) ] f
-  in
-  (r, pool.pool)
+  match !pool_stack with
+  | None -> f (), []
+  | Some pool ->
+    let pool = {level; pool = []; next = pool} in
+    let r =
+      Misc.protect_refs [ R(pool_stack, Some pool) ] f
+    in
+    (r, pool.pool)
 
 let add_to_pool ~level ty =
-  if level >= generic_level || level <= lowest_level then () else
-  let pool = pool_of_level level !pool_stack in
-  pool.pool <- ty :: pool.pool
+  match level >= generic_level || level <= lowest_level,
+        !pool_stack
+  with
+  | true, _ | _, None -> ()
+  | false, Some pool_stack ->
+      let pool = pool_of_level level pool_stack in
+      pool.pool <- ty :: pool.pool
+
+let with_no_pool f = Misc.protect_refs [ R(pool_stack, None) ] f
 
 (**** Some type creators ****)
 

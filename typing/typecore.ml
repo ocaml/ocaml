@@ -2576,12 +2576,6 @@ let set_state s penv =
   Btype.backtrack s.snapshot;
   Pattern_env.reset penv s.pattern_env
 
-(** Type variables allocated when searching for counter-examples
-    should be discarded at the end of the search *)
-  let with_counterexample_pool f =
-    let r, _ = Btype.with_new_pool ~level:(get_current_level ()) f in
-    r
-
 (** Find the first alternative in the tree of or-patterns for which
     [f] does not raise an error. If all fail, the last error is
     propagated *)
@@ -2593,9 +2587,7 @@ let rec find_valid_alternative f pat =
        with
        | Empty_branch | Error _ -> find_valid_alternative f p2
       )
-  | _ ->
-      (* Type nodes should be discarded as soon as possible *)
-      with_counterexample_pool (fun () -> f pat)
+  | _ -> f pat
 
 let no_explosion info = { info with explosion_fuel = 0 }
 
@@ -2755,7 +2747,7 @@ let check_counter_example_pat ~counter_example_args penv tp expected_ty =
     with_level ~level:generic_level (fun () -> maybe_instance_poly expected_ty)
   in
   wrap_trace_gadt_instances ~force:true !!penv (fun () ->
-    with_counterexample_pool (fun () ->
+    Btype.with_no_pool (fun () ->
       check_counter_example_pat ~info:counter_example_args ~penv
         type_pat_state tp expected_ty (fun x -> x)
     )
