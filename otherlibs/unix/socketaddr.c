@@ -89,8 +89,9 @@ void caml_unix_get_sockaddr(value vaddr,
       s_inet6->sin6_len = sizeof(struct sockaddr_in6);
 #endif
       *addr_len = sizeof(struct sockaddr_in6);
-    } else {
+    } else
 #endif
+    {
       struct sockaddr_in *s_inet = (struct sockaddr_in *) addr;
       memset(s_inet, 0, sizeof(struct sockaddr_in));
       s_inet->sin_family = AF_INET;
