@@ -31,7 +31,7 @@ CAMLprim value caml_unix_lockf(value fd, value cmd, value span)
 
   fildes = Int_val(fd);
   size = Long_val(span);
-  l.l_whence = 1;
+  l.l_whence = SEEK_CUR;
   if (size < 0) {
     l.l_start = size;
     l.l_len = -size;
