@@ -84,9 +84,7 @@ CAMLprim value caml_unix_lockf(value fd, value cmd, value span)
   return Val_unit;
 }
 
-#else
-
-#ifdef HAS_LOCKF
+#elif defined(HAS_LOCKF)
 #include <unistd.h>
 
 static const int lock_command_table[] = {
@@ -109,5 +107,4 @@ CAMLprim value caml_unix_lockf(value fd, value vcmd, value span)
 CAMLprim value caml_unix_lockf(value fd, value cmd, value span)
 { caml_invalid_argument("lockf not implemented"); }
 
-#endif
 #endif
