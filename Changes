@@ -200,6 +200,10 @@ Working version
   for OCaml code.
   (Tim McGilchrist, review by Miod Vallat, Zane Hambly and Olivier Nicole)
 
+- #14727: Reduce memory usage when refuting a pattern clause with a large
+  counter-example search space.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 OCaml 5.5.0
 -----------
 
