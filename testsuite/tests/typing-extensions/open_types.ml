@@ -78,11 +78,7 @@ Error: Type definition "bar" is not extensible
 type baz = bar = ..
 ;;
 [%%expect {|
-Line 1, characters 0-19:
-1 | type baz = bar = ..
-    ^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "bar"
-       The original is abstract, but this is an extensible variant.
+type baz = bar = ..
 |}]
 
 (* Abbreviations need to match parameters *)

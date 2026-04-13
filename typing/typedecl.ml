@@ -671,7 +671,12 @@ let check_coherence env loc dpath decl =
       begin match Btype.get_constr_desc ty with
         Tconstr(path, args, _) ->
           begin try
-            let decl' = Env.find_type path env in
+            let decl' =
+              match Ctype.extract_concrete_typedecl env ty with
+              | Typedecl (_,_,decl) -> decl
+              | Has_no_typedecl | May_have_typedecl ->
+                  Env.find_type path env
+            in
             let err =
               if List.length args <> List.length decl.type_params
               then Some Includecore.Arity
