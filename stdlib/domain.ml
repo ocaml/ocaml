@@ -103,10 +103,8 @@ module DLS = struct
 
   let parent_keys = Atomic.make ([] : key_initializer list)
 
-  let rec add_parent_key ki =
-    let l = Atomic.get parent_keys in
-    if not (Atomic.compare_and_set parent_keys l (ki :: l))
-    then add_parent_key ki
+  let add_parent_key ki =
+    Atomic.update (fun l -> ki :: l) parent_keys
 
   let new_key ?split_from_parent init_orphan =
     let idx = Atomic.fetch_and_add key_counter 1 in

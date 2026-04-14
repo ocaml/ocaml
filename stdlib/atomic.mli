@@ -87,6 +87,32 @@ let global_push elem = Atomic.update (List.cons elem) global_list
 *)
 val update : ('a -> 'a) -> 'a t -> unit
 
+(** [fold_update f r] updates [r] in a way similar to {!update}, and
+    also accumulates a result from the current value of the
+    reference. More precisely, if [v] is the current value of [r] and
+    [f v] is [(acc, v')], it will set [r] to [v'] and return [acc], or
+    retry (calling [f] again) if [r] was concurrently changed to
+    a physically different value.
+
+    Remark: no [set] is performed when [v'] is physically equal to [v].
+
+    Example:
+{[
+let global_list = Atomic.make []
+let global_pop =
+  Atomic.fold_update (function
+  | [] -> None, []
+  | x::xs -> Some x, xs
+  ) global_list
+]}
+    Notice that there is no [set] in the empty list case, as
+    the input is returned unchanged.
+
+    @since 5.6
+*)
+val fold_update : ('a -> 'acc * 'a) -> 'a t -> 'acc
+
+
 (** Atomic "locations", such as record fields.
 
     @since 5.4 *)
@@ -114,6 +140,7 @@ module Loc : sig
   val incr : int t -> unit
   val decr : int t -> unit
   val update : ('a -> 'a) -> 'a t -> unit
+  val fold_update : ('a -> 'acc * 'a) -> 'a t -> 'acc
 end
 
 
@@ -162,6 +189,11 @@ module Array : sig
     ('a -> 'a) -> 'a t -> int -> unit
   val update :
     ('a -> 'a) -> 'a t -> int -> unit
+
+  val unsafe_fold_update :
+    ('a -> 'acc * 'a) -> 'a t -> int -> 'acc
+  val fold_update :
+    ('a -> 'acc * 'a) -> 'a t -> int -> 'acc
 end
 
 (** {1:examples Examples}
@@ -270,6 +302,18 @@ end
     with {!Atomic.update} instead:
 
     {[
-    let push stack elt = Atomic.update (fun li -> elt :: li) stack
+    let push stack elt =
+      Atomic.update (fun li -> elt :: li) stack
     ]}
-  *)
+
+    [pop] also returns a value in addition to updating the stack, so
+    it needs {!Atomic.fold_update}:
+
+    {[
+    let pop stack =
+      Atomic.fold_update (function
+      | [] -> None, []
+      | x::xs -> Some x, xs
+      ) stack
+    ]}
+*)

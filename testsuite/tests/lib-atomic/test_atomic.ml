@@ -48,3 +48,17 @@ let () =
     i + 1
   ) r;
   assert (Atomic.get r = 11)
+
+let () =
+  let r = Atomic.make 1 in
+  let v =
+    Atomic.fold_update (fun i ->
+      begin
+        (* simulate concurrent modifications *)
+        if i < 10 then Atomic.incr r;
+      end;
+      2 * i, i + 1
+    ) r
+  in
+  assert (v = 20);
+  assert (Atomic.get r = 11)

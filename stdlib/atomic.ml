@@ -133,6 +133,15 @@ module Loc = struct
       then ()
       else loop ~backoff:(Backoff.once backoff) f t
     in loop ~backoff:Backoff.default f t
+
+  let fold_update f t =
+    let rec loop ~backoff f t =
+      let v_old = get t in
+      let (acc, v_new) = f v_old in
+      if v_old == v_new || compare_and_set t v_old v_new
+      then acc
+      else loop ~backoff:(Backoff.once backoff) f t
+    in loop ~backoff:Backoff.default f t
 end
 
 type !'a t =
@@ -162,6 +171,8 @@ let decr t =
 
 let update f t =
   Loc.update f [%atomic.loc t.contents]
+let fold_update f t =
+  Loc.fold_update f [%atomic.loc t.contents]
 
 module Array = struct
   type !'a t =
@@ -220,6 +231,12 @@ module Array = struct
   let[@inline] update f t i =
     check_array_bound t i;
     unsafe_update f t i
+
+  let[@inline] unsafe_fold_update f t i =
+    Loc.fold_update f (unsafe_index t i)
+  let[@inline] fold_update f t i =
+    check_array_bound t i;
+    unsafe_fold_update f t i
 
   let make len v =
     if len < 0 then
