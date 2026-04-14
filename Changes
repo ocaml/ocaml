@@ -73,9 +73,8 @@ Working version
   inheritance in mutually recursive definition, immediate object inheritance.
   (Leo White, review by Florian Angeletti)
 
-- #13872, #14736: When checking that the type representation in a type
-  declaration conforms to the given type equation, follow public type
-  abbreviations in this equation.
+- #13872, #14736: Expand type abbreviations when checking that a type is a
+  re-export of a previous one (e.g `type t = u = A | B`)
   (Stefan Muenzel, request by ygrek, review by Florian Angeletti)
 
 ### Code generation and optimizations:
