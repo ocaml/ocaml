@@ -398,8 +398,8 @@ static bool has_completed_last_ephe_round (caml_domain_state *domain_state)
   return (domain_state->ephe_info->round == ephe_round_info.round);
 }
 
-/* Move to the next global ephemeron round. Called whenever any domain
- * finishes marking. */
+/* Move to the next global ephemeron round. Called when all domains
+ * are done marking. */
 static void ephe_next_round (void)
 {
   caml_plat_lock_blocking(&ephe_lock);
@@ -1714,9 +1714,34 @@ static intnat mark(intnat budget, enum mark_flag flag) {
       } else if (flag == MARK_NO_FINISH) {
         break;
       } else {
-        ephe_next_round ();
         domain_state->marking_done = 1;
-        (void)caml_atomic_counter_decr(&num_domains_to_mark);
+        /* If we are the last domain with marking work left,
+           it means that everyone is now done with marking,
+           and we should ask for a new round of ephemeron marking.
+
+           We must do this check _before_ decrementing
+           [num_domains_to_mark], otherwise other domains could
+           observe a state where all marking is done and the round has
+           not been incremented, and move to the next phase.
+        */
+        uintnat domains_still_marking =
+          caml_atomic_counter_value(&num_domains_to_mark);
+        do {
+          if (domains_still_marking == 1) {
+            /* We wait until all domains are done with their marking
+               work to ask for a new round of ephemeron marking, to
+               avoid useless rounds that would start with incomplete
+               marking information, and have to be followed by more runs
+               as more domains finish marking. */
+            ephe_next_round ();
+          }
+          /* [compare_exchange_strong] will succeed if
+             [num_domains_to_mark] is unchanged, and otherwise update
+             [domains_still_marking] to its new value. */
+        } while (!atomic_compare_exchange_strong(
+                   &num_domains_to_mark,
+                   &domains_still_marking,
+                   domains_still_marking - 1));
       }
     }
   }
