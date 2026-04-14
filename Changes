@@ -8,11 +8,6 @@ Working version
 - #13377, RFC 44: Primitive aliases
   (Nailen Matschke, review by Jeremy Yallop, Leo White, and Florian Angeletti)
 
-- #13872, #14736: When checking that the type representation in a type
-  declaration conforms to the given type equation, follow public type
-  abbreviations in this equation.
-  (Stefan Muenzel, request by ygrek, review by ????)
-
 ### Runtime system:
 
 - #14486, #14530: Add FreeBSD frame pointers support for AMD64 and ARM64.
@@ -77,6 +72,11 @@ Working version
 - #12150: class type system improvements: self type constraints, virtual method
   inheritance in mutually recursive definition, immediate object inheritance.
   (Leo White, review by Florian Angeletti)
+
+- #13872, #14736: When checking that the type representation in a type
+  declaration conforms to the given type equation, follow public type
+  abbreviations in this equation.
+  (Stefan Muenzel, request by ygrek, review by Florian Angeletti)
 
 ### Code generation and optimizations:
 
