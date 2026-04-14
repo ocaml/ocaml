@@ -97,7 +97,7 @@ Working version
 
 ### Standard library:
 
-- #XXXX: Add Domain.max_domains to expose the maximum number of domains
+- #14741: Add Domain.max_domains to expose the maximum number of domains
   supported by the runtime, as configured via the d parameter of
   OCAMLRUNPARAM.
   (Tim McGilchrist, review by ???)
