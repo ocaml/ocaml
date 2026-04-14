@@ -2641,7 +2641,7 @@ let rec check_counter_example_pat
           if must_backtrack_on_gadt then raise Need_backtrack;
           let tp =
             List.fold_left
-              (fun tp tp' -> {tp with pat_desc = Tpat_or (tp', tp, None)})
+              (fun tp tp' -> {tp with pat_desc = Tpat_or (tp, tp', None)})
               tp tpl
           in
           check_rec ~info:(decrease 5) tp expected_ty k
