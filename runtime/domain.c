@@ -2501,6 +2501,11 @@ CAMLprim value caml_domain_count(value unused)
   return Val_long(atomic_load_relaxed(&caml_num_domains_running));
 }
 
+CAMLprim value caml_domain_max_domains(value unused)
+{
+  return Val_long(caml_params->max_domains);
+}
+
 CAMLprim value caml_recommended_domain_count(value unused)
 {
   intnat n = -1;

@@ -43,6 +43,8 @@ module Raw = struct
     = "caml_ml_domain_cpu_relax"
   external get_domain_count: unit -> int
     = "caml_domain_count" [@@noalloc]
+  external get_max_domains: unit -> int
+    = "caml_domain_max_domains" [@@noalloc]
   external get_recommended_domain_count: unit -> int
     = "caml_recommended_domain_count" [@@noalloc]
 end
@@ -303,4 +305,5 @@ let join { term_sync ; _ } =
   | Error (ex, bt) -> Printexc.raise_with_backtrace ex bt
 
 let count = Raw.get_domain_count
+let max_domains = Raw.get_max_domains
 let recommended_domain_count = Raw.get_recommended_domain_count

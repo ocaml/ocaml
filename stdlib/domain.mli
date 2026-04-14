@@ -95,6 +95,14 @@ val count : unit -> int
 
     @since 5.5 *)
 
+val max_domains : unit -> int
+(** The maximum number of domains that can be running simultaneously.
+    This is determined by the [d] parameter of the [OCAMLRUNPARAM] environment
+    variable, defaulting to [128] on 64-bit platforms and [16] on 32-bit
+    platforms. The upper limit is [4096].
+
+    @since 5.6 *)
+
 val recommended_domain_count : unit -> int
 (** The recommended maximum number of domains which should be running
     simultaneously (including domains already running).
