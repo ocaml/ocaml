@@ -4439,6 +4439,13 @@ and type_expect_
         lower_args outer_level env funct.exp_type;
         funct
       in
+      let type_sfunct_args sfunct extra_args =
+        match sfunct.pexp_desc with
+        | Pexp_apply (sfunct, args) ->
+           type_sfunct sfunct, args @ extra_args
+        | _ ->
+           type_sfunct sfunct, extra_args
+      in
       let funct, sargs =
         let funct = type_sfunct sfunct in
         match funct.exp_desc, sargs with
@@ -4447,12 +4454,12 @@ and type_expect_
           [Nolabel, sarg; Nolabel, actual_sfunct]
           when is_inferred actual_sfunct
             && check_apply_prim_type Revapply val_type ->
-            type_sfunct actual_sfunct, [Nolabel, sarg]
+            type_sfunct_args actual_sfunct [Nolabel, sarg]
         | Texp_ident (_, _,
                       {val_kind = Val_prim {prim_name="%apply"}; val_type}),
           [Nolabel, actual_sfunct; Nolabel, sarg]
           when check_apply_prim_type Apply val_type ->
-            type_sfunct actual_sfunct, [Nolabel, sarg]
+            type_sfunct_args actual_sfunct [Nolabel, sarg]
         | _ ->
             funct, sargs
       in
