@@ -36,46 +36,46 @@ jobs:
       - name: Changes updated
         run: >-
           tools/ci/actions/check-changes-modified.sh
-          "$PR_ISSUE_URL"
-          "$GITHUB_REF_NAME"
+          "$CAMLCI_PR_ISSUE_URL"
+          "$CAMLCI_GITHUB_REF_NAME"
           'pull_request'
-          "$PR_BASE_REF"
-          "$PR_BASE_SHA"
-          "$PR_HEAD_REF"
-          "$PR_HEAD_SHA"
+          "$CAMLCI_PR_BASE_REF"
+          "$CAMLCI_PR_BASE_SHA"
+          "$CAMLCI_PR_HEAD_REF"
+          "$CAMLCI_PR_HEAD_SHA"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_ISSUE_URL: ${{ github.event.pull_request.issue_url }}
-          GITHUB_REF_NAME: ${{ github.ref }}
-          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CAMLCI_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CAMLCI_PR_ISSUE_URL: ${{ github.event.pull_request.issue_url }}
+          CAMLCI_GITHUB_REF_NAME: ${{ github.ref }}
+          CAMLCI_PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          CAMLCI_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CAMLCI_PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          CAMLCI_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         if: github.event_name == 'pull_request'
 
       - name: configure correctly generated
         run: >-
           tools/ci/actions/check-configure.sh
-          "$GITHUB_REF_NAME"
-          "$EVENT_NAME"
-          "$PR_BASE_REF"
-          "$PR_BASE_SHA"
-          "$PR_HEAD_REF"
-          "$PR_HEAD_SHA"
-          "$EVENT_REF"
-          "$EVENT_BEFORE"
-          "$EVENT_REF"
-          "$EVENT_AFTER"
+          "$CAMLCI_GITHUB_REF_NAME"
+          "$CAMLCI_EVENT_NAME"
+          "$CAMLCI_PR_BASE_REF"
+          "$CAMLCI_PR_BASE_SHA"
+          "$CAMLCI_PR_HEAD_REF"
+          "$CAMLCI_PR_HEAD_SHA"
+          "$CAMLCI_EVENT_REF"
+          "$CAMLCI_EVENT_BEFORE"
+          "$CAMLCI_EVENT_REF"
+          "$CAMLCI_EVENT_AFTER"
         env:
-          GITHUB_REF_NAME: ${{ github.ref }}
-          EVENT_NAME: ${{ github.event_name }}
-          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          EVENT_REF: ${{ github.event.ref }}
-          EVENT_BEFORE: ${{ github.event.before }}
-          EVENT_AFTER: ${{ github.event.after }}
+          CAMLCI_GITHUB_REF_NAME: ${{ github.ref }}
+          CAMLCI_EVENT_NAME: ${{ github.event_name }}
+          CAMLCI_PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          CAMLCI_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CAMLCI_PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          CAMLCI_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CAMLCI_EVENT_REF: ${{ github.event.ref }}
+          CAMLCI_EVENT_BEFORE: ${{ github.event.before }}
+          CAMLCI_EVENT_AFTER: ${{ github.event.after }}
         if: ${{ always() }}
 
       - name: Check that no ignored files have been committed
@@ -86,26 +86,27 @@ jobs:
         id: revered
         run: >-
           tools/ci/actions/check-typo.sh
-          "$GITHUB_REF_NAME"
-          "$EVENT_NAME"
-          "$PR_BASE_REF"
-          "$PR_BASE_SHA"
-          "$PR_HEAD_REF"
-          "$PR_HEAD_SHA"
-          "$EVENT_REF"
-          "$EVENT_BEFORE"
-          "$EVENT_REF"
-          "$EVENT_AFTER"
+          "$CAMLCI_GITHUB_REF_NAME"
+          "$CAMLCI_EVENT_NAME"
+          "$CAMLCI_PR_BASE_REF"
+          "$CAMLCI_PR_BASE_SHA"
+          "$CAMLCI_PR_HEAD_REF"
+          "$CAMLCI_PR_HEAD_SHA"
+          "$CAMLCI_EVENT_REF"
+          "$CAMLCI_EVENT_BEFORE"
+          "$CAMLCI_EVENT_REF"
+          "$CAMLCI_EVENT_AFTER"
         env:
-          GITHUB_REF_NAME: ${{ github.ref }}
-          EVENT_NAME: ${{ github.event_name }}
-          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          EVENT_REF: ${{ github.event.ref }}
-          EVENT_BEFORE: ${{ github.event.before }}
-          EVENT_AFTER: ${{ github.event.after }}
+          # Prefix CAMLCI used here to avoid GITHUB_REF_NAME colliding
+          CAMLCI_GITHUB_REF_NAME: ${{ github.ref }}
+          CAMLCI_EVENT_NAME: ${{ github.event_name }}
+          CAMLCI_PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          CAMLCI_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CAMLCI_PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          CAMLCI_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CAMLCI_EVENT_REF: ${{ github.event.ref }}
+          CAMLCI_EVENT_BEFORE: ${{ github.event.before }}
+          CAMLCI_EVENT_AFTER: ${{ github.event.after }}
         if: ${{ always() }}
 
       - name: check-typo on whole tree
