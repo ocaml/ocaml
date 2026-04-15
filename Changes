@@ -164,6 +164,10 @@ Working version
   that it would be okay to run only rarely.
   (Gabriel Scherer, review by Florian Angeletti)
 
+- #14748: ocamlyacc: a data structure allocated with malloc was not being fully
+  initialized, which could lead to incorrect line directives being generated.
+  (Nicolás Ojeda Bär, report by Igor Pikovets)
+
 ### Manual and documentation:
 
 - #14598: Add `@since` annotations to `Runtime_events`. (Raphaël Proust)
