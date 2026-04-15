@@ -3865,6 +3865,40 @@ type 'ret constraint_arg =
     (** Whether the thing being constrained is a [Val_self] ident. *)
   }
 
+(* Typecheck [y |> f x] and [f x @@ y] as [f x y], rather than [(f x) y]. *)
+let flatten_application_operator type_exp env lower_args funct sargs =
+  let type_sfunct sfunct =
+    let funct =
+      with_local_level_generalize_structure_if_principal
+        (fun () -> type_exp env sfunct)
+    in
+    let ty = instance funct.exp_type in
+    wrap_trace_gadt_instances env (lower_args TypeSet.empty) ty;
+    funct
+  in
+  let type_sfunct_args sfunct extra_args =
+    match sfunct.pexp_desc with
+    | Pexp_apply (sfunct, args) ->
+       type_sfunct sfunct, args @ extra_args
+    | _ ->
+       type_sfunct sfunct, extra_args
+  in
+  let funct = type_sfunct funct in
+  match funct.exp_desc, sargs with
+  | Texp_ident (_, _,
+                {val_kind = Val_prim {prim_name="%revapply"}; val_type}),
+    [Nolabel, sarg; Nolabel, actual_sfunct]
+    when is_inferred actual_sfunct
+      && check_apply_prim_type Revapply val_type ->
+      type_sfunct_args actual_sfunct [Nolabel, sarg]
+  | Texp_ident (_, _,
+                {val_kind = Val_prim {prim_name="%apply"}; val_type}),
+    [Nolabel, actual_sfunct; Nolabel, sarg]
+    when check_apply_prim_type Apply val_type ->
+      type_sfunct_args actual_sfunct [Nolabel, sarg]
+  | _ ->
+      funct, sargs
+
 let rec type_exp ?recarg env sexp =
   (* We now delegate everything to type_expect *)
   type_expect ?recarg env sexp (mk_expected (newvar ()))
@@ -4144,38 +4178,8 @@ and type_expect_
       in
       (* one more level for warning on non-returning functions *)
       with_local_level_generalize begin fun () ->
-      let type_sfunct sfunct =
-        let funct =
-          with_local_level_generalize_structure_if_principal
-            (fun () -> type_exp env sfunct)
-        in
-        let ty = instance funct.exp_type in
-        wrap_trace_gadt_instances env (lower_args TypeSet.empty) ty;
-        funct
-      in
-      let type_sfunct_args sfunct extra_args =
-        match sfunct.pexp_desc with
-        | Pexp_apply (sfunct, args) ->
-           type_sfunct sfunct, args @ extra_args
-        | _ ->
-           type_sfunct sfunct, extra_args
-      in
       let funct, sargs =
-        let funct = type_sfunct sfunct in
-        match funct.exp_desc, sargs with
-        | Texp_ident (_, _,
-                      {val_kind = Val_prim {prim_name="%revapply"}; val_type}),
-          [Nolabel, sarg; Nolabel, actual_sfunct]
-          when is_inferred actual_sfunct
-            && check_apply_prim_type Revapply val_type ->
-            type_sfunct_args actual_sfunct [Nolabel, sarg]
-        | Texp_ident (_, _,
-                      {val_kind = Val_prim {prim_name="%apply"}; val_type}),
-          [Nolabel, actual_sfunct; Nolabel, sarg]
-          when check_apply_prim_type Apply val_type ->
-            type_sfunct_args actual_sfunct [Nolabel, sarg]
-        | _ ->
-            funct, sargs
+        flatten_application_operator type_exp env lower_args sfunct sargs
       in
       let (args, ty_res) = type_application env loc funct sargs in
       rue {
