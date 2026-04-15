@@ -63,7 +63,6 @@ make_bucket(const char *name)
     bp->lineno = 0;
     bp->column = 0;
 
-    if (bp->name == 0) no_space();
     strcpy(bp->name, name);
 
     return (bp);
