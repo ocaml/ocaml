@@ -68,8 +68,7 @@ end
    linux;
    no-flambda; (* the output will be slightly different under Flambda *)
    not tsan; (* TSan modifies the generated code *)
-   script = "sh ${test_source_directory}/check-reserved-bits.sh";
-   script;
+   not has_reserved_header_bits;
 
    setup-ocamlopt.byte-build-env;
    flags = "-c -dcmm -dno-locations -dno-unique-ids";

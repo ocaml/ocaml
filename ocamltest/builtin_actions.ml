@@ -88,6 +88,13 @@ let libwin32unix = make
     "win32 variant of the unix library available"
     "win32 variant of the unix library not available")
 
+let has_reserved_header_bits = make
+  ~name:"has_reserved_header_bits"
+  ~description:"Pass if some of the bits in the header are reserved"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.reserved_header_bits <> 0)
+    (Printf.sprintf "%d bits reserved" Ocamltest_config.reserved_header_bits)
+    "No header bits are reserved")
+
 let hassysthreads = make
   ~name:"hassysthreads"
   ~description:"Pass if the systhreads library is available"
@@ -415,6 +422,7 @@ let _ =
     dumpenv;
     hasunix;
     hassysthreads;
+    has_reserved_header_bits;
     hasstr;
     multicore;
     libunix;
