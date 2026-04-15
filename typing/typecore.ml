@@ -2756,12 +2756,10 @@ let check_counter_example_pat ~counter_example_args penv tp expected_ty =
   let expected_ty =
     with_level ~level:generic_level (fun () -> maybe_instance_poly expected_ty)
   in
-  wrap_trace_gadt_instances ~force:true !!penv (fun () ->
-    with_counterexample_pool (fun () ->
-      check_counter_example_pat ~info:counter_example_args ~penv
-        type_pat_state tp expected_ty (fun x -> x)
-    )
-  ) ()
+  wrap_trace_gadt_instances ~force:true !!penv
+    (check_counter_example_pat ~info:counter_example_args ~penv
+       type_pat_state tp expected_ty)
+    (fun x -> x)
 
 
 (* this function is passed to Partial.parmatch
@@ -2777,7 +2775,9 @@ let partial_pred ~lev ~splitting_mode ?(explode=0) env expected_ty p =
       } in
   try
     let typed_p =
-      check_counter_example_pat ~counter_example_args penv p expected_ty
+      with_counterexample_pool (fun () ->
+          check_counter_example_pat ~counter_example_args penv p expected_ty
+        )
     in
     set_state state penv;
     (* types are invalidated but we don't need them here *)
