@@ -166,7 +166,8 @@ Working version
 
 - #14748: ocamlyacc: a data structure allocated with malloc was not being fully
   initialized, which could lead to incorrect line directives being generated.
-  (Nicolás Ojeda Bär, report by Igor Pikovets, review by Gabriel Scherer)
+  (Nicolás Ojeda Bär, report by Igor Pikovets, review by Gabriel Scherer and
+  Xavier Leroy)
 
 ### Manual and documentation:
 
