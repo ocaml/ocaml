@@ -183,6 +183,37 @@ let is_omitted = function
   | Arg _ -> false
   | Omitted () -> true
 
+module Arg_fusion = struct
+  (** Merge list of arguments in nested application [((f x1 x2) x3
+      ... xn)] in order to try to fill up omitted argument in the
+      inner applications with present arguments from the outer
+      applications. This can avoid creating intermediary closures for
+      omitted argument that are syntactically available. *)
+
+  let rec search_for_first_arg lbl apps = function
+    | [] -> (lbl, Omitted ()), List.rev apps
+    | [] :: app_args -> search_for_first_arg lbl apps app_args
+    | ((_, Omitted ()) :: app_args) :: other_app_args ->
+        search_for_first_arg lbl (app_args :: apps) other_app_args
+    | ((_, Arg _) as a :: app_args) :: other_app_args ->
+        a, List.rev_append (app_args :: apps) other_app_args
+
+  let rec coalesce sargs = match sargs with
+    | [] -> []
+    | [] :: sargs -> coalesce sargs
+    | ((_, Arg _) as a :: inner) :: sargs -> a :: coalesce (inner :: sargs)
+    | ((lbl, Omitted ()) :: inner) :: sargs ->
+        let arg, sargs = search_for_first_arg lbl [] sargs in
+        arg :: coalesce (inner::sargs)
+
+  let rec unnest sargs e = match e.exp_desc with
+    | Texp_apply (f,args) -> unnest(args::sargs) f
+    | _ -> e, coalesce sargs
+
+  let in_nested_apply e = unnest [] e
+
+end
+
 let rec transl_exp ~scopes e =
   transl_exp1 ~scopes ~in_new_scope:false e
 
@@ -244,10 +275,11 @@ and transl_exp0 ~in_new_scope ~scopes e =
           (transl_apply ~scopes ~tailcall ~inlined ~specialised
              lam extra_args (of_location ~scopes e.exp_loc))
       end
-  | Texp_apply(funct, oargs) ->
+  | Texp_apply(funct, _oargs) ->
       let tailcall = Translattribute.get_tailcall_attribute funct in
       let inlined = Translattribute.get_inlined_attribute funct in
       let specialised = Translattribute.get_specialised_attribute funct in
+      let funct, oargs = Arg_fusion.in_nested_apply e in
       let e = { e with exp_desc = Texp_apply(funct, oargs) } in
       event_after ~scopes e
         (transl_apply ~scopes ~tailcall ~inlined ~specialised
