@@ -85,6 +85,41 @@ Error: This variant or record definition does not match that of type "bar"
        The original is abstract, but this is an extensible variant.
 |}]
 
+type baz += Baz of int
+;;
+[%%expect {|
+type baz += Baz of int
+|}]
+
+type foo += Foo of int
+
+let f = function
+  | Baz i -> 2 * i
+  | Foo i -> 3 * i
+  | _ -> 0
+;;
+
+[%%expect {|
+type foo += Foo of int
+Line 5, characters 4-7:
+5 |   | Foo i -> 3 * i
+        ^^^
+Error: This variant pattern is expected to have type "baz" = "foo/2"
+       There is no constructor "Foo" within type "baz"
+|}]
+
+type bar'
+
+type baz = bar' = ..
+[%%expect {|
+type bar'
+Line 3, characters 0-20:
+3 | type baz = bar' = ..
+    ^^^^^^^^^^^^^^^^^^^^
+Error: This variant or record definition does not match that of type "bar'"
+       The original is abstract, but this is an extensible variant.
+|}]
+
 (* Abbreviations need to match parameters *)
 
 type 'a foo = ..
@@ -237,6 +272,16 @@ Error: Signature mismatch:
          type foo = M.foo = private ..
        is not included in
          type foo = ..
+       A private extensible variant would be revealed.
+|}]
+
+type m_foo = M.foo = ..
+
+[%%expect {|
+Line 1, characters 0-23:
+1 | type m_foo = M.foo = ..
+    ^^^^^^^^^^^^^^^^^^^^^^^
+Error: This variant or record definition does not match that of type "M.foo"
        A private extensible variant would be revealed.
 |}]
 
