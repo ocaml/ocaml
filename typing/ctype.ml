@@ -4764,23 +4764,23 @@ let expand_head_rigid env ty =
   let ty' = expand_head_nolink env ty in
   rigid_variants := old; ty'
 
-let eqtype_subst ctxt t1 t2 =
+let eqtype_subst context t1 t2 =
   if List.exists
       (fun (t,t') ->
         let found1 = eq_type t1 t in
         let found2 = eq_type t2 t' in
         if found1 && found2 then true else
         if found1 || found2 then raise_unexplained_for Equality else false)
-      !(ctxt.subst)
+      !(context.subst)
   then ()
   else begin
-    ctxt.subst := (t1, t2) :: !(ctxt.subst);
-    TypePairs.add ctxt.type_pairs (t1, t2)
+    context.subst := (t1, t2) :: !(context.subst);
+    TypePairs.add context.type_pairs (t1, t2)
   end
 
-let rec eqtype ctxt env t1 t2 =
+let rec eqtype context env t1 t2 =
   let check_phys_eq t1 t2 =
-    ctxt.kind <> Equality true && eq_type t1 t2
+    context.kind <> Equality true && eq_type t1 t2
   in
   (* Checking for physical equality of type representatives when [rename] is
      true would be incorrect: imagine comparing ['a * 'a] with ['b * 'a]. The
@@ -4793,9 +4793,9 @@ let rec eqtype ctxt env t1 t2 =
   if check_phys_eq t1 t2 then () else
   try
     match (get_desc t1, get_desc t2) with
-      (Tvar _, Tvar _) when ctxt.kind = Equality true ->
-        eqtype_subst ctxt t1 t2
-    | (Tvar _, _) when ctxt.kind = Moregen && may_instantiate t1 ->
+      (Tvar _, Tvar _) when context.kind = Equality true ->
+        eqtype_subst context t1 t2
+    | (Tvar _, _) when context.kind = Moregen && may_instantiate t1 ->
         moregen_occur env (get_level t1) t2;
         update_scope_for Equality (get_scope t1) t2;
         occur_for Equality (Expression {env; in_subst = false}) t1 t2;
@@ -4805,76 +4805,76 @@ let rec eqtype ctxt env t1 t2 =
         ()
     | _ ->
         let expand_fun =
-          if ctxt.kind = Moregen then expand_head else expand_head_rigid
+          if context.kind = Moregen then expand_head else expand_head_rigid
         in
         let t1' = expand_fun env t1 in
         let t2' = expand_fun env t2 in
         (* Expansion may have changed the representative of the types... *)
         if check_phys_eq t1' t2' then () else
-        if not (TypePairs.mem ctxt.type_pairs (t1', t2')) then begin
-          TypePairs.add ctxt.type_pairs (t1', t2');
+        if not (TypePairs.mem context.type_pairs (t1', t2')) then begin
+          TypePairs.add context.type_pairs (t1', t2');
           match (get_desc t1', get_desc t2') with
-            (Tvar _, Tvar _) when ctxt.kind = Equality true ->
-              eqtype_subst ctxt t1' t2'
-          | (Tvar _, _) when ctxt.kind = Moregen && may_instantiate t1' ->
+            (Tvar _, Tvar _) when context.kind = Equality true ->
+              eqtype_subst context t1' t2'
+          | (Tvar _, _) when context.kind = Moregen && may_instantiate t1' ->
               moregen_occur env (get_level t1') t2;
               update_scope_for Equality (get_scope t1') t2;
               link_type t1' t2
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) ->
               eq_labels Equality ~in_pattern_mode:false l1 l2;
-              eqtype ctxt env t1 t2;
-              eqtype ctxt env u1 u2
+              eqtype context env t1 t2;
+              eqtype context env u1 u2
           | (Tfunctor (l1, id1, pack1, t1), Tfunctor (l2, id2, pack2, t2)) ->
               eq_labels Equality ~in_pattern_mode:false l1 l2;
-              eqtype_package ctxt env
+              eqtype_package context env
                 (get_level t1') pack1 (get_level t2') pack2;
               let mty1 = modtype_of_package env Location.none pack1 in
               let mty2 = modtype_of_package env Location.none pack2 in
               enter_functor_with_mtys_for Equality env id1 mty1 t1' id2 mty2 t2'
-                  (fun new_env -> eqtype ctxt new_env t1 t2)
+                  (fun new_env -> eqtype context new_env t1 t2)
           | (Tfunctor (l1, id1, pack1, u1), Tarrow (l2, t2, u2, _)) ->
               eq_labels Equality ~in_pattern_mode:false l1 l2;
               let t1 = newmono_package pack1 in
-              eqtype ctxt env t1 t2;
+              eqtype context env t1 t2;
               let mty = modtype_of_package env Location.none pack1 in
               let env' = Env.add_module (Ident.of_unscoped id1)
                                         Mp_present mty env in
               identifier_escape_for Equality env' [id1] u1;
-              eqtype ctxt env u1 u2
+              eqtype context env u1 u2
           | (Tarrow (l1, t1, u1, _), Tfunctor (l2, id2, pack2, u2)) ->
               eq_labels Equality ~in_pattern_mode:false l1 l2;
               let t2 = newmono_package pack2 in
-              eqtype ctxt env t1 t2;
+              eqtype context env t1 t2;
               let mty = modtype_of_package env Location.none pack2 in
               let env' = Env.add_module (Ident.of_unscoped id2)
                                         Mp_present mty env in
               identifier_escape_for Equality env' [id2] u2;
-              eqtype ctxt env u1 u2
+              eqtype context env u1 u2
           | (Ttuple tl1, Ttuple tl2) ->
-              eqtype_labeled_list ctxt env tl1 tl2
+              eqtype_labeled_list context env tl1 tl2
           | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
                 when quick_eq_type_path ~normalize:true env p1 p2 ->
-              eqtype_list_same_length ctxt env tl1 tl2
+              eqtype_list_same_length context env tl1 tl2
           | (Tpackage pack1, Tpackage pack2) ->
-              eqtype_package ctxt env
+              eqtype_package context env
                 (get_level t1') pack1 (get_level t2') pack2
           | (Tnil,  Tconstr _ ) ->
               raise_for Equality (Obj (Abstract_row Second))
           | (Tconstr _,  Tnil ) ->
               raise_for Equality (Obj (Abstract_row First))
           | (Tvariant row1, Tvariant row2) ->
-              eqtype_row ctxt env row1 row2
+              eqtype_row context env row1 row2
           | (Tobject (fi1, _nm1), Tobject (fi2, _nm2)) ->
-              eqtype_fields ctxt env fi1 fi2
+              eqtype_fields context env fi1 fi2
           | (Tfield _, Tfield _) ->       (* Actually unused *)
-              eqtype_fields ctxt env t1' t2'
+              eqtype_fields context env t1' t2'
           | (Tnil, Tnil) ->
               ()
           | (Tpoly (t1, []), Tpoly (t2, [])) ->
-              eqtype ctxt env t1 t2
+              eqtype context env t1 t2
           | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
               enter_poly_for Equality env t1 tl1 t2 tl2
-                (eqtype ctxt env)
+                (eqtype context env)
           | (Tunivar _, Tunivar _) ->
               unify_univar_for Equality t1' t2' !univar_pairs
           | (_, _) ->
@@ -4883,52 +4883,53 @@ let rec eqtype ctxt env t1 t2 =
   with Equality_trace trace ->
     raise_trace_for Equality (Diff {got = t1; expected = t2} :: trace)
 
-and eqtype_list_same_length ctxt env tl1 tl2 =
-  List.iter2 (eqtype ctxt env) tl1 tl2
+and eqtype_list_same_length context env tl1 tl2 =
+  List.iter2 (eqtype context env) tl1 tl2
 
-and eqtype_labeled_list ctxt env labeled_tl1 labeled_tl2 =
+and eqtype_labeled_list context env labeled_tl1 labeled_tl2 =
   if 0 <> List.compare_lengths labeled_tl1 labeled_tl2 then
     raise_unexplained_for Equality;
   List.iter2
     (fun (label1, ty1) (label2, ty2) ->
       if not (Option.equal String.equal label1 label2) then
         raise_unexplained_for Equality;
-      eqtype ctxt env ty1 ty2)
+      eqtype context env ty1 ty2)
     labeled_tl1 labeled_tl2
 
-and eqtype_package ctxt env lvl1 pack1 lvl2 pack2 =
+and eqtype_package context env lvl1 pack1 lvl2 pack2 =
   match
-    compare_package env (eqtype ctxt env) lvl1 pack1 lvl2 pack2
+    compare_package env (eqtype context env) lvl1 pack1 lvl2 pack2
   with
   | Ok () -> ()
   | Error fme -> raise_for Equality (First_class_module fme)
 
-and eqtype_fields ctxt env ty1 ty2 =
+and eqtype_fields context env ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1 in
   let (fields2, rest2) = flatten_fields ty2 in
   (* First check if same row => already equal *)
-  let same_row = ctxt.kind <> Moregen &&
+  let same_row = context.kind <> Moregen &&
     (* [not rename]: see comment at top of [eqtype] *)
-    ((ctxt.kind <> Equality true && eq_type rest1 rest2) ||
-     TypePairs.mem ctxt.type_pairs (rest1,rest2))
+    ((context.kind <> Equality true && eq_type rest1 rest2) ||
+     TypePairs.mem context.type_pairs (rest1,rest2))
   in
   if same_row then () else
   (* Try expansion, needed when called from Includecore.type_manifest *)
   match get_desc (expand_head_rigid env rest2) with
-    Tobject(ty2,_) when ctxt.kind <> Moregen -> eqtype_fields ctxt env ty1 ty2
+    Tobject(ty2,_) when context.kind <> Moregen ->
+      eqtype_fields context env ty1 ty2
   | _ ->
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
   match miss1, miss2 with
   | ((n, _, _)::_, _) -> raise_for Equality (Obj (Missing_field (Second, n)))
-  | (_, (n, _, _)::_) when ctxt.kind <> Moregen ->
+  | (_, (n, _, _)::_) when context.kind <> Moregen ->
     raise_for Equality (Obj (Missing_field (First, n)))
   | [], _ ->
-      eqtype ctxt env rest1 (build_fields (get_level ty2) miss2 rest2);
+      eqtype context env rest1 (build_fields (get_level ty2) miss2 rest2);
       List.iter
         (function (name, k1, t1, k2, t2) ->
            eqtype_kind name k1 k2;
            try
-             eqtype ctxt env t1 t2;
+             eqtype context env t1 t2;
            with Equality_trace trace ->
              raise_trace_for Equality
                (incompatible_fields ~name ~got:t1 ~expected:t2 :: trace))
@@ -4943,16 +4944,16 @@ and eqtype_kind name k1 k2 =
   | _                    ->
     raise_for Equality (Obj (Kind_differ (name, k1, k2)))
 
-and eqtype_row ctxt env row1 row2 =
-  if ctxt.kind <> Moregen then
-    eqtype_row_equality ctxt env row1 row2
+and eqtype_row context env row1 row2 =
+  if context.kind <> Moregen then
+    eqtype_row_equality context env row1 row2
   else
-    eqtype_row_moregen ctxt env row1 row2
+    eqtype_row_moregen context env row1 row2
 
-and eqtype_row_equality ctxt env row1 row2 =
+and eqtype_row_equality context env row1 row2 =
   (* Try expansion, needed when called from Includecore.type_manifest *)
   match get_desc (expand_head_rigid env (row_more row2)) with
-    Tvariant row2 -> eqtype_row_equality ctxt env row1 row2
+    Tvariant row2 -> eqtype_row_equality context env row1 row2
   | _ ->
   let r1, r2, pairs = merge_row_fields (row_fields row1) (row_fields row2) in
   if row_closed row1 <> row_closed row2 then begin
@@ -4976,7 +4977,7 @@ and eqtype_row_equality ctxt env row1 row2 =
     | _ :: _ as r2 -> raise_for Equality (Variant (No_tags (First, r2)))
   end;
   if not (static_row row1) then
-    eqtype ctxt env (row_more row1) (row_more row2);
+    eqtype context env (row_more row1) (row_more row2);
   List.iter
     (fun (l,f1,f2) ->
        if f1 == f2 then () else
@@ -4984,7 +4985,7 @@ and eqtype_row_equality ctxt env row1 row2 =
        (* Both matching [Rpresent]s *)
        | Rpresent(Some t1), Rpresent(Some t2) -> begin
            try
-             eqtype ctxt env t1 t2
+             eqtype context env t1 t2
            with Equality_trace trace ->
              raise_trace_for Equality
                (Variant (Incompatible_types_for l) :: trace)
@@ -4995,15 +4996,15 @@ and eqtype_row_equality ctxt env row1 row2 =
        | Reither(c1, t1::tl1, _), Reither(c2, t2::tl2, _)
          when c1 = c2 -> begin
            try
-             eqtype ctxt env t1 t2;
+             eqtype context env t1 t2;
              if List.length tl1 = List.length tl2 then
                (* if same length allow different types (meaning?) *)
-               List.iter2 (eqtype ctxt env) tl1 tl2
+               List.iter2 (eqtype context env) tl1 tl2
              else begin
                (* otherwise everything must be equal *)
-               List.iter (eqtype ctxt env t1) tl2;
+               List.iter (eqtype context env t1) tl2;
                List.iter
-                 (fun t1 -> eqtype ctxt env t1 t2) tl1
+                 (fun t1 -> eqtype context env t1 t2) tl1
              end
            with Equality_trace trace ->
              raise_trace_for Equality
@@ -5030,7 +5031,7 @@ and eqtype_row_equality ctxt env row1 row2 =
            raise_for Equality (Variant (No_tags (Second, [l, f1]))))
     pairs
 
-and eqtype_row_moregen ctxt env row1 row2 =
+and eqtype_row_moregen context env row1 row2 =
   let Row {fields = row1_fields; more = rm1; closed = row1_closed} =
     row_repr row1 in
   let Row {fields = row2_fields; more = rm2; closed = row2_closed;
@@ -5071,7 +5072,7 @@ and eqtype_row_moregen ctxt env row1 row2 =
       (* This [link_type] has to be undone if the rest of the function fails *)
       link_type rm1 ext
   | Tconstr _, Tconstr _ ->
-      eqtype ctxt env rm1 rm2
+      eqtype context env rm1 rm2
   | _ -> raise_unexplained_for Equality
   end;
   try
@@ -5082,7 +5083,7 @@ and eqtype_row_moregen ctxt env row1 row2 =
          (* Both matching [Rpresent]s *)
          | Rpresent(Some t1), Rpresent(Some t2) -> begin
              try
-               eqtype ctxt env t1 t2
+               eqtype context env t1 t2
              with Equality_trace trace ->
                raise_trace_for Equality
                  (Variant (Incompatible_types_for l) :: trace)
@@ -5097,11 +5098,11 @@ and eqtype_row_moregen ctxt env row1 row2 =
                    rf_either [] ~use_ext_of:f2 ~no_arg:c2 ~matched:m2 in
                  link_row_field_ext ~inside:f1 f2';
                  if List.length tl1 = List.length tl2 then
-                   List.iter2 (eqtype ctxt env) tl1 tl2
+                   List.iter2 (eqtype context env) tl1 tl2
                  else match tl2 with
                    | t2 :: _ ->
                      List.iter
-                       (fun t1 -> eqtype ctxt env t1 t2)
+                       (fun t1 -> eqtype context env t1 t2)
                        tl1
                    | [] -> if tl1 <> [] then raise_unexplained_for Equality
                end
@@ -5114,7 +5115,7 @@ and eqtype_row_moregen ctxt env row1 row2 =
              try
                link_row_field_ext ~inside:f1 f2;
                List.iter
-                 (fun t1 -> eqtype ctxt env t1 t2)
+                 (fun t1 -> eqtype context env t1 t2)
                  tl1
              with Equality_trace trace ->
                raise_trace_for Equality
