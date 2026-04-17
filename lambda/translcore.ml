@@ -183,34 +183,96 @@ let is_omitted = function
   | Arg _ -> false
   | Omitted () -> true
 
-module Arg_fusion = struct
+module Apply_fusion = struct
   (** Merge list of arguments in nested application [((f x1 x2) x3
       ... xn)] in order to try to fill up omitted argument in the
       inner applications with present arguments from the outer
-      applications. This can avoid creating intermediary closures for
-      omitted argument that are syntactically available. *)
+      applications. This avoids creating intermediary closures for
+      argument that are in fact syntactically available. *)
 
-  let rec search_for_first_arg lbl apps = function
-    | [] -> (lbl, Omitted ()), List.rev apps
-    | [] :: app_args -> search_for_first_arg lbl apps app_args
-    | ((_, Omitted ()) :: app_args) :: other_app_args ->
-        search_for_first_arg lbl (app_args :: apps) other_app_args
-    | ((_, Arg _) as a :: app_args) :: other_app_args ->
-        a, List.rev_append (app_args :: apps) other_app_args
+  type 'a arg_list = {
+    args: (Asttypes.arg_label * ('a,unit) arg_or_omitted) list;
+    order_protected: bool
+  }
 
-  let rec coalesce sargs = match sargs with
-    | [] -> []
-    | [] :: sargs -> coalesce sargs
-    | ((_, Arg _) as a :: inner) :: sargs -> a :: coalesce (inner :: sargs)
-    | ((lbl, Omitted ()) :: inner) :: sargs ->
-        let arg, sargs = search_for_first_arg lbl [] sargs in
-        arg :: coalesce (inner::sargs)
+  let is_pure = function
+    | Lvar _ | Lconst _ -> true
+    | _ -> false
+
+  let effectful_arg = function
+    | Arg x -> if is_pure x then None else Some x
+    | Omitted () -> None
+
+  let alias () =
+    let id = Ident.create_local "arg" in
+    id, Lvar id
+
+  let rec protect_app_order defs args = function
+    | [] -> defs, List.rev args
+    | (lbl, a as larg) :: q ->
+        match effectful_arg a with
+        | None -> protect_app_order defs (larg::args) q
+        | Some a ->
+            (* Only move to [defs] the execution of effectful arguments.*)
+            let id, alias = alias () in
+            protect_app_order ((id,a)::defs) ((lbl, Arg alias)::args) q
+
+  (* Moving an argument to the left possibly delays its application
+     compared to other argument, to avoid this we move the execution
+     of all non-pure arguments to its right to a sequence of let
+     definition *)
+  let rec protect_order defs prev_apps = function
+    | [] -> defs, List.rev prev_apps
+    | a :: q ->
+        if a.order_protected then
+          defs, List.rev_append prev_apps (a::q)
+        else
+          let new_defs, args = protect_app_order [] [] a.args in
+          let defs = List.rev_append new_defs defs in
+          protect_order defs ({args; order_protected=true}::prev_apps) q
+
+  let rec first_present_arg lbl defs apps_before = function
+    | [] -> (lbl, Omitted ()), defs, List.rev apps_before
+    | app :: next_apps ->
+        match app.args with
+        | [] ->
+            (* an application cannot contain only omitted argument *)
+            assert false
+        | (_, Omitted ()) :: args ->
+            let app = { app with args } in
+            first_present_arg lbl defs (app :: apps_before) next_apps
+        | (lbl, Arg a) as arg :: args ->
+            let app = { app with args } in
+            (* we can move pure argument without changing execution order *)
+            if is_pure a then
+              arg, defs, List.rev_append (app :: apps_before) next_apps
+            else
+              let defs, apps = protect_order defs [] (app :: next_apps) in
+              let id, alias = alias () in
+              (lbl, Arg alias), (id,a) :: defs, List.rev_append apps_before apps
+
+  let rec coalesce defs unified_args sargs = match sargs with
+    | [] -> defs, List.rev unified_args
+    | a :: sargs ->
+        match a.args with
+        | [] -> coalesce defs unified_args sargs
+        | (_, Arg _) as arg :: args ->
+            coalesce defs (arg :: unified_args) ({ a with args }::sargs)
+        | (lbl, Omitted ()) :: args ->
+            let arg, defs, sargs = first_present_arg lbl defs [] sargs in
+            coalesce defs (arg :: unified_args) ({ a with args }::sargs)
 
   let rec unnest sargs e = match e.exp_desc with
-    | Texp_apply (f,args) -> unnest(args::sargs) f
-    | _ -> e, coalesce sargs
+    | Texp_apply (f,args) -> unnest (args::sargs) f
+    | _ -> e, sargs
 
-  let in_nested_apply e = unnest [] e
+  let map_args f l =
+    List.map (fun (lbl,x) -> lbl, Typedtree.map_apply_arg f x) l
+
+  let map f sargs =
+    List.map (fun x -> { order_protected = false; args = map_args f x}) sargs
+
+  let merge_args args = coalesce [] [] args
 
 end
 
@@ -272,18 +334,29 @@ and transl_exp0 ~in_new_scope ~scopes e =
         let specialised = Translattribute.get_specialised_attribute funct in
         let e = { e with exp_desc = Texp_apply(funct, oargs) } in
         event_after ~scopes e
-          (transl_apply ~scopes ~tailcall ~inlined ~specialised
-             lam extra_args (of_location ~scopes e.exp_loc))
+          (transl_apply_args ~tailcall ~inlined ~specialised lam
+             (Apply_fusion.map_args (transl_exp ~scopes) extra_args)
+             (of_location ~scopes e.exp_loc)
+          )
       end
-  | Texp_apply(funct, _oargs) ->
+  | Texp_apply(funct, oargs) ->
       let tailcall = Translattribute.get_tailcall_attribute funct in
       let inlined = Translattribute.get_inlined_attribute funct in
       let specialised = Translattribute.get_specialised_attribute funct in
-      let funct, oargs = Arg_fusion.in_nested_apply e in
       let e = { e with exp_desc = Texp_apply(funct, oargs) } in
       event_after ~scopes e
-        (transl_apply ~scopes ~tailcall ~inlined ~specialised
-           (transl_exp ~scopes funct) oargs (of_location ~scopes e.exp_loc))
+        (
+          let funct, sargs = Apply_fusion.unnest [] e in
+          let sargs = Apply_fusion.map (transl_exp ~scopes) sargs in
+          let defs, oargs = Apply_fusion.merge_args sargs in
+          let apply =
+            transl_apply_args ~tailcall ~inlined ~specialised
+              (transl_exp ~scopes funct) oargs (of_location ~scopes e.exp_loc)
+          in
+          List.fold_left
+            (fun body (id, lam) -> Llet(Strict, Pgenval, id, lam, body))
+            apply defs
+        )
   | Texp_match(arg, pat_expr_list, [], partial) ->
       transl_match ~scopes e arg pat_expr_list partial
   | Texp_match(arg, pat_expr_list, eff_pat_expr_list, partial) ->
@@ -656,7 +729,7 @@ and transl_tupled_cases ~scopes patl_expr_list =
   List.map (fun (patl, guard, expr) -> (patl, transl_guard ~scopes guard expr))
     patl_expr_list
 
-and transl_apply ~scopes
+and transl_apply_args
       ?(tailcall=Default_tailcall)
       ?(inlined = Default_inline)
       ?(specialised = Default_specialise)
@@ -750,12 +823,8 @@ and transl_apply ~scopes
     | [] ->
         lapply lam (List.rev_map fst args)
   in
-  let transl_arg arg = Typedtree.map_apply_arg (transl_exp ~scopes) arg in
-  (build_apply lam [] (List.map (fun (l, arg) ->
-                                   transl_arg arg,
-                                   Btype.is_optional l)
-                                sargs)
-     : Lambda.lambda)
+  let args = List.map (fun (l, arg) -> arg, Btype.is_optional l) sargs in
+  (build_apply lam [] args: Lambda.lambda)
 
 (* There are two cases in function translation:
     - [Tupled]. It takes a tupled argument, and we can flatten it.
@@ -1327,6 +1396,10 @@ and transl_letop ~scopes loc env let_ ands param case partial =
   }
 
 (* Wrapper for class compilation *)
+
+let transl_apply ~scopes ?tailcall ?inlined ?specialised lam sargs loc =
+  transl_apply_args ?tailcall ?inlined ?specialised lam
+    (Apply_fusion.map_args (transl_exp ~scopes) sargs) loc
 
 (*
 let transl_exp = transl_exp_wrap
