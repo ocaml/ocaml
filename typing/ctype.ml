@@ -4914,8 +4914,8 @@ and eqtype_fields context env ty1 ty2 =
   in
   if same_row then () else
   (* Try expansion, needed when called from Includecore.type_manifest *)
-  match get_desc (expand_head_rigid env rest2) with
-    Tobject(ty2,_) when context.kind <> Moregen ->
+  match get_desc (expand_head_rigid env rest2), context.kind with
+    Tobject(ty2,_), Equality _ ->
       eqtype_fields context env ty1 ty2
   | _ ->
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
@@ -4945,9 +4945,10 @@ and eqtype_kind name k1 k2 =
     raise_for Equality (Obj (Kind_differ (name, k1, k2)))
 
 and eqtype_row context env row1 row2 =
-  if context.kind <> Moregen then
+  match context.kind with
+  | Equality _ ->
     eqtype_row_equality context env row1 row2
-  else
+  | Moregen ->
     eqtype_row_moregen context env row1 row2
 
 and eqtype_row_equality context env row1 row2 =
