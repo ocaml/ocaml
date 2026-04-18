@@ -192,6 +192,10 @@ type private_object_mismatch =
   | Missing of string
   | Types of Errortrace.equality_error
 
+type alias_mismatch_kind =
+  | Instantiation of type_expr
+  | Manifest
+
 type variant_change =
   (Types.constructor_declaration as 'l, 'l, constructor_mismatch)
     Diffing_with_keys.change
@@ -209,6 +213,14 @@ type type_mismatch =
   | Variant_mismatch of variant_change list
   | Unboxed_representation of position
   | Immediate of Type_immediacy.Violation.t
+  | Not_an_alias of alias_mismatch
+and alias_mismatch =
+  { kind : alias_mismatch_kind;
+    path1 : Path.t;
+    ty1 : type_expr;
+    path2 : Path.t;
+    ty2 : type_expr;
+    inner : type_mismatch }
 
 module Style = Misc.Style
 module Fmt = Format_doc
@@ -439,7 +451,7 @@ let report_kind_mismatch first second ppf (kind1, kind2) =
     second
     (kind_to_string kind2)
 
-let report_type_mismatch first second decl env ppf err =
+let rec report_type_mismatch first second decl env ppf err =
   let pr fmt = Fmt.fprintf ppf fmt in
   match err with
   | Arity ->
@@ -472,12 +484,39 @@ let report_type_mismatch first second decl env ppf err =
          "uses unboxed representation"
   | Immediate violation ->
       let first = StringLabels.capitalize_ascii first in
-      match violation with
+      begin match violation with
       | Type_immediacy.Violation.Not_always_immediate ->
           pr "%s is not an immediate type." first
       | Type_immediacy.Violation.Not_always_immediate_on_64bits ->
           pr "%s is not a type that is always immediate on 64 bit platforms."
             first
+      end
+  | Not_an_alias { ty1; path2; ty2; inner; kind } ->
+      let kind =
+        match kind with
+        | Manifest ->
+            Fmt.dprintf ""
+        | Instantiation ty2_def ->
+            Fmt.dprintf "%a is not an unmodified instantiation of %a"
+              (Style.as_inline_code Printtyp.type_expr) ty2
+              (Style.as_inline_code Printtyp.type_expr) ty2_def
+      in
+      let p2 = Path.name path2 in
+      pr "@[<hov2>The representation of %a cannot be used \
+          in the %s of %s type, because@ \
+          %a is not an alias of %a.@ %t@ %a@]@ \
+          When re-exporting a type representation, each type equation \
+          leading to@ the original representation must be an alias defining \
+          a type@ with the same parameters, in the same order, with the same \
+          constraints."
+        Style.inline_code p2
+        decl
+        second
+        (Style.as_inline_code Printtyp.type_expr) ty1
+        (Style.as_inline_code Printtyp.type_expr) ty2
+        kind
+        (report_type_mismatch "the first" "the second" "definition" env)
+        inner
 
 module Record_diffing = struct
 
@@ -938,6 +977,11 @@ let type_manifest env ty1 params1 ty2 params2 priv2 kind2 =
       | () -> None
     end
 
+let type_declarations_privacy_mismatch env decl1 decl2 =
+  match privacy_mismatch env decl1 decl2 with
+  | Some err -> Some (Privacy err)
+  | None -> None
+
 (* A type declarations [td1] is consistent with the type declaration [td2] if
    there is a context E such E |- td1 <: td2 for the ordinary subtyping. For
    types, this is the case as soon as the two type declarations share the same
@@ -945,9 +989,67 @@ let type_manifest env ty1 params1 ty2 params2 priv2 kind2 =
    context E where all type constructors are equal). *)
 let type_declarations_consistency env decl1 decl2 =
   if decl1.type_arity <> decl2.type_arity then Some Arity
-  else match privacy_mismatch env decl1 decl2 with
-    | Some err -> Some (Privacy err)
-    | None -> None
+  else type_declarations_privacy_mismatch env decl1 decl2
+
+type decl_path =
+  | Not_via_alias of type_mismatch
+  | Via_alias
+
+let rec extract_concrete_typedecl_via_alias env ty1 path1 decl1 =
+  let exception Found_error of (decl_path * Types.type_declaration) in
+  match decl1.type_kind, decl1.type_manifest with
+  | Type_open, _
+  | Type_external _, _
+  | Type_record _, _
+  | Type_variant _, _ -> Some (Via_alias, decl1)
+  | Type_abstract _, None -> None
+  | Type_abstract _, Some ty2 ->
+      match Btype.get_constr_desc ty2 with
+      | Tconstr (path2, params2, _) ->
+          begin try
+            let decl2 = Env.find_type path2 env in
+            match extract_concrete_typedecl_via_alias env ty2 path2 decl2 with
+            | None -> None
+            | Some (deep_via, deep_decl) ->
+                let deep_via =
+                  match
+                    type_declarations_privacy_mismatch env deep_decl decl2
+                  with
+                  | None -> deep_via
+                  | Some err -> Not_via_alias err
+                in
+                let deep_decl =
+                  match decl1.type_private with
+                  | Private -> { deep_decl with type_private = Private }
+                  | _ -> deep_decl
+                in
+                let found_error err kind =
+                  raise
+                    (Found_error
+                       (Not_via_alias
+                          (Not_an_alias
+                             { kind; path1; ty1; path2; ty2; inner = err })
+                       , deep_decl))
+                in
+                if decl1.type_arity <> decl2.type_arity then
+                  found_error Arity Manifest;
+                begin try Ctype.equal env true decl2.type_params params2
+                with Ctype.Equality err ->
+                  found_error (Constraint err)
+                    (Instantiation
+                       (Btype.newgenty
+                          (Tconstr(path2, decl2.type_params, ref Mnil))))
+                end;
+                begin try Ctype.equal env false decl1.type_params params2
+                with Ctype.Equality err ->
+                  found_error (Constraint err) Manifest
+                end;
+                Some (deep_via, deep_decl)
+          with
+          | Not_found -> None
+          | Found_error err -> Some err
+          end
+      | _ -> None
 
 let type_declarations ?(equality = false) ~loc env ~mark name
       decl1 path decl2 =
@@ -981,9 +1083,33 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           | () -> None
   in
   if err <> None then err else
-  let err = match (decl1.type_kind, decl2.type_kind) with
-      (_, Type_abstract _) -> None
-    | (Type_variant (cstrs1, rep1), Type_variant (cstrs2, rep2)) ->
+  let decl1', err, expand_error =
+    match decl1.type_kind, decl1.type_manifest, decl2.type_kind with
+    | (_,_, Type_abstract _) -> decl1, None, None
+    | (Type_abstract _, Some _, _) ->
+        let check_decl_privacy decl =
+          type_declarations_privacy_mismatch env decl decl2
+        in
+        let ty1 =
+          Btype.newgenty (Tconstr(path, decl1.type_params, ref Mnil))
+        in
+        begin match
+          extract_concrete_typedecl_via_alias env ty1 path decl1
+        with
+        | None ->
+            decl1, None, None
+        | Some (Via_alias, found_decl) ->
+            found_decl, check_decl_privacy found_decl, None
+        | Some (Not_via_alias err, found_decl) ->
+            (* Prefer privacy error over alias error. *)
+            decl1, check_decl_privacy found_decl, Some err
+        end
+    | _ -> decl1, None, None
+  in
+  if err <> None then err else
+  let err = match (decl1'.type_kind, decl2.type_kind, expand_error) with
+      (_, Type_abstract _, _) -> None
+    | (Type_variant (cstrs1, rep1), Type_variant (cstrs2, rep2), _) ->
         if mark then begin
           let mark usage cstrs =
             List.iter (fun cstr ->
@@ -998,13 +1124,13 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           if equality then mark Env.Exported cstrs2
         end;
         Variant_diffing.compare_with_representation ~loc env
-          decl1.type_params
+          decl1'.type_params
           decl2.type_params
           cstrs1
           cstrs2
           rep1
           rep2
-    | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
+    | (Type_record(labels1,rep1), Type_record(labels2,rep2), _) ->
         if mark then begin
           let mark usage lbls =
             List.iter (fun lbl ->
@@ -1019,12 +1145,14 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           if equality then mark Env.Exported labels2
         end;
         Record_diffing.compare_with_representation ~loc env
-          decl1.type_params decl2.type_params
+          decl1'.type_params decl2.type_params
           labels1 labels2
           rep1 rep2
-    | (Type_open, Type_open) -> None
-    | (Type_external n1, Type_external n2) when n1 = n2 -> None
-    | (_, _) -> Some (Kind (of_kind decl1.type_kind, of_kind decl2.type_kind))
+    | (Type_open, Type_open, _) -> None
+    | (Type_external n1, Type_external n2, _) when n1 = n2 -> None
+    | (Type_abstract _, _, (Some _ as err)) -> err
+    | (_, _, _) ->
+        Some (Kind (of_kind decl1'.type_kind, of_kind decl2.type_kind))
   in
   if err <> None then err else
   let abstr = Btype.type_kind_is_abstract decl2 && decl2.type_manifest = None in

@@ -120,6 +120,11 @@ Working version
   used.
   (Stefan Muenzel, report by Leo White, review by Jacques Garrigue)
 
+- #13872, #14736, #14746: Expand type abbreviations when checking that a type is
+  a re-export of a previous one (e.g `type t = u = A | B`)
+  (Stefan Muenzel, request by ygrek and Jacques Garrigue,
+   review by Florian Angeletti)
+
 ### Code generation and optimizations:
 
 - #14575: Emit direct assembly for `Atomic.fetch_and_add`

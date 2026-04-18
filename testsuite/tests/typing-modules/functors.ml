@@ -1557,7 +1557,7 @@ Error: This application of the functor "F" is ill-typed.
             type t = int
           is not included in
             type t = Y of X.t
-          The first is abstract, but the second is a variant.
+          The first is external "int", but the second is a variant.
        3. Modules do not match:
             Y : sig type t = Y.t = Y of int end
           is not included in

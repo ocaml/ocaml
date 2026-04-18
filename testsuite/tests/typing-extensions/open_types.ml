@@ -78,11 +78,7 @@ Error: Type definition "bar" is not extensible
 type baz = bar = ..
 ;;
 [%%expect {|
-Line 1, characters 0-19:
-1 | type baz = bar = ..
-    ^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "bar"
-       The original is abstract, but this is an extensible variant.
+type baz = bar = ..
 |}]
 
 type baz += Baz of int
@@ -101,11 +97,7 @@ let f = function
 
 [%%expect {|
 type foo += Foo of int
-Line 5, characters 4-7:
-5 |   | Foo i -> 3 * i
-        ^^^
-Error: This variant pattern is expected to have type "baz" = "foo/2"
-       There is no constructor "Foo" within type "baz"
+val f : baz -> int = <fun>
 |}]
 
 type bar'
