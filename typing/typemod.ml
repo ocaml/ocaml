@@ -199,23 +199,23 @@ let type_module_type_of_fwd :
 (* Additional validity checks on type definitions arising from
    recursive modules *)
 
+let abstractify_type ty =
+  let arity = ty.type_arity in
+  { ty with
+    type_params =
+      List.map (fun _ -> Btype.newgenvar()) ty.type_params;
+    type_kind = Type_abstract Rec_check_regularity;
+    type_manifest = None;
+    type_variance = Variance.unknown_signature ~injective:false ~arity;
+    type_separability = Types.Separability.default_signature ~arity;
+    type_is_newtype = false;
+    type_expansion_scope = Btype.lowest_level;
+    type_immediate = Unknown;
+    type_unboxed_default = false;
+  }
+
 let check_recmod_typedecls env decls =
   let recmod_ids = List.map fst decls in
-  let abstractify_type ty =
-    let arity = ty.type_arity in
-    { ty with
-      type_params =
-        List.map (fun _ -> Btype.newgenvar()) ty.type_params;
-      type_kind = Type_abstract Rec_check_regularity;
-      type_manifest = None;
-      type_variance = Variance.unknown_signature ~injective:false ~arity;
-      type_separability = Types.Separability.default_signature ~arity;
-      type_is_newtype = false;
-      type_expansion_scope = Btype.lowest_level;
-      type_immediate = Unknown;
-      type_unboxed_default = false;
-    }
-  in
   let type_to_abstract =
     List.fold_left
       (fun acc (id, md) ->
@@ -271,6 +271,13 @@ let check_type_decl env sg loc id row_id newdecl decl =
     | Some fresh_row_id -> Env.add_type ~check:false fresh_row_id newdecl env
   in
   let env = Env.add_signature sg env in
+  let abs_env =
+    let abs_ty = abstractify_type newdecl in
+    Env.add_local_constraint path abs_ty env
+  in
+  Typedecl.check_well_founded_decl
+    ~abs_env ~final_env:env ~is_decl_path:(Path.same path) loc path
+    newdecl;
   Includemod.type_declarations ~mark:true ~loc env fresh_id newdecl decl;
   Typedecl.check_coherence env loc path newdecl
 

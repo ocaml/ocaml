@@ -60,6 +60,10 @@ val approx_type_decl:
     explanation:Types.type_origin -> Parsetree.type_declaration list ->
                                   (Ident.t * type_declaration) list
 
+val check_well_founded_decl:
+  abs_env:Env.t ->final_env:Env.t -> is_decl_path:(Path.t -> bool) ->
+  Location.t -> Path.t -> Types.type_declaration -> unit
+
 (** [check_recmod_typedecl ~abs_env env loc recmod_ids path decl]
    - [recmod_ids] is the list of recursively-defined module idents.
    - [path, decl] is the type declaration to be checked.
