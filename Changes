@@ -89,6 +89,11 @@ Working version
   inheritance in mutually recursive definition, immediate object inheritance.
   (Leo White, review by Florian Angeletti)
 
+- #14753, #14754: Prevent module constraints (`with type`) from introducing
+  cyclic types by re-checking well-foundedness when a module constraint is
+  used.
+  (Stefan Muenzel, report by Leo White, review by Jacques Garrigue)
+
 ### Code generation and optimizations:
 
 * #13919: optimize `lazy v` when `v` is a structured constant
