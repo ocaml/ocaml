@@ -152,3 +152,30 @@ Error: Signature mismatch:
        the original representation must be an alias defining a type
        with the same parameters, in the same order, with the same constraints.
 |}]
+
+module X : sig
+  type t = external "x"
+end = struct
+  type x = external "x"
+  type t' = private x
+  type t = t'
+end ;;
+
+[%%expect{|
+Lines 3-7, characters 6-3:
+3 | ......struct
+4 |   type x = external "x"
+5 |   type t' = private x
+6 |   type t = t'
+7 | end...
+Error: Signature mismatch:
+       Modules do not match:
+         sig type x = external "x" type t' = private x type t = t' end
+       is not included in
+         sig type t = external "x" end
+       Type declarations do not match:
+         type t = t'
+       is not included in
+         type t = external "x"
+       A private external type would be revealed.
+|}]

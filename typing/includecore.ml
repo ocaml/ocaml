@@ -137,6 +137,7 @@ type privacy_mismatch =
   | Private_record_type
   | Private_extensible_variant
   | Private_row_type
+  | Private_external_type
 
 type type_kind =
   | Kind_abstract
@@ -275,6 +276,7 @@ let report_privacy_mismatch ppf err =
     | Private_record_type        -> true,  "record constructor"
     | Private_extensible_variant -> true,  "extensible variant"
     | Private_row_type           -> true,  "row type"
+    | Private_external_type      -> true,  "external type"
   in Format_doc.fprintf ppf "%s %s would be revealed."
        (if singular then "A private" else "Private")
        item
@@ -817,6 +819,7 @@ let privacy_mismatch env decl1 decl2 =
       | Type_record  _, Type_record  _ -> Some Private_record_type
       | Type_variant _, Type_variant _ -> Some Private_variant_type
       | Type_open,      Type_open      -> Some Private_extensible_variant
+      | Type_external _, Type_external _ -> Some Private_external_type
       | Type_abstract _, Type_abstract _
         when Option.is_some decl2.type_manifest -> begin
           match decl1.type_manifest with
