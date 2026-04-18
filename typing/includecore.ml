@@ -452,7 +452,7 @@ let report_type_mismatch first second decl env ppf err =
       (* This error can come from implicit parameter disagreement or from
          explicit `constraint`s.  Both affect the parameters, hence this choice
          of explanatory text *)
-      pr "Their parameters differ@,";
+      pr "Their parameters differ:@ ";
       report_type_inequality env ppf err
   | Manifest err ->
       report_type_inequality env ppf err
