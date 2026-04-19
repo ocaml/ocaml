@@ -81,7 +81,7 @@ static void init_startup_params(void)
   params.event_trace = 0;
 }
 
-static void scanmult (char *opt, uintnat *var)
+static void scanmult (const char *opt, uintnat *var)
 {
   char mult = ' ';
   unsigned int val = 1;
@@ -104,7 +104,7 @@ void caml_parse_ocamlrunparam(void)
   char_os *opt_os = caml_secure_getenv (T("OCAMLRUNPARAM"));
   if (opt_os == NULL) opt_os = caml_secure_getenv (T("CAMLRUNPARAM"));
   char *opt_tofree = opt_os ? caml_stat_strdup_noexc_of_os(opt_os) : NULL;
-  char *opt = opt_tofree;
+  const char *opt = opt_tofree;
 
   if (opt != NULL){
     while (*opt != '\0'){
@@ -132,7 +132,7 @@ void caml_parse_ocamlrunparam(void)
       case 'V': scanmult (opt, &params.verify_heap); break;
       case 'W': scanmult (opt, &caml_runtime_warnings); break;
       case 'X': {
-        char *name = opt;
+        const char *name = opt;
         while (*opt != '=' && *opt != ',' && *opt != '\0') opt++;
         if (opt - name == strlen("help") &&
             memcmp(name, "help", opt - name) == 0) {
