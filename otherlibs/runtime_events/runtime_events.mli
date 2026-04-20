@@ -588,10 +588,10 @@ module User : sig
 
   type 'value t
   (** The type for a user event. User events describe their tag, carried data
-      type and an unique string-based name. *)
+      type and a unique string-based name. *)
 
   val register : string -> tag -> 'value Type.t -> 'value t
-  (** [register name tag ty] registers a new event with an unique [name],
+  (** [register name tag ty] registers a new event with a unique [name],
       carrying a [tag] and values of type [ty]. *)
 
   val write : 'value t -> 'value -> unit

@@ -126,7 +126,7 @@ let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
   let convert_error error =
     (* convert an internal error to a Bad/Help exception
        *or* add the program name as a prefix and the usage message as a suffix
-       to an user-raised Bad exception.
+       to a user-raised Bad exception.
     *)
     let b = Buffer.create 200 in
     let progname =

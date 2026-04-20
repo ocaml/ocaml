@@ -54,7 +54,7 @@ module Error = struct
     | Unit
     | Empty_struct
      (** For backward compatibility's sake, an empty struct can be implicitly
-         converted to an unit module  *)
+         converted to a unit module  *)
 
   type ('a,'b) diff = {got:'a; expected:'a; symptom:'b}
   type 'a core_diff =('a,unit) diff
