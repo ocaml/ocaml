@@ -11,4 +11,13 @@ C
 B
 E
 D
+function eager
 x argument
+function delay
+function f
+param a
+param b
+function g
+param c
+param d
+end
