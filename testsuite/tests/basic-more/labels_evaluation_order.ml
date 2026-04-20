@@ -20,3 +20,9 @@ let _ =
   ((f ~e:(Printf.printf "E\n") ~d:(Printf.printf "D\n"))
      ~c:(Printf.printf "C\n") ~b:(Printf.printf "B\n"))
   ~a:(Printf.printf "A\n") ~f:(Printf.printf "F\n")
+
+let delayed ?(x=()) =
+  Printf.printf "x argument\n";
+  fun ?(y=()) ~a:() ~b:() -> ()
+
+let partial = (delayed ~x:()) ~b:()

@@ -235,9 +235,7 @@ module Apply_fusion = struct
     | [] -> (lbl, Omitted ()), defs, List.rev apps_before
     | app :: next_apps ->
         match app.args with
-        | [] ->
-            (* an application cannot contain only omitted argument *)
-            assert false
+        | [] -> first_present_arg lbl defs apps_before next_apps
         | (_, Omitted ()) :: args ->
             let app = { app with args } in
             first_present_arg lbl defs (app :: apps_before) next_apps
@@ -263,7 +261,11 @@ module Apply_fusion = struct
             coalesce defs (arg :: unified_args) ({ a with args }::sargs)
 
   let rec unnest sargs e = match e.exp_desc with
-    | Texp_apply (f,args) -> unnest (args::sargs) f
+    | Texp_apply (f,args)
+      when List.exists (function (_, Omitted ()) -> true | _ -> false) args ->
+        (* Eager evaluation for inner applications with no omitted
+           arguments. *)
+          unnest (args::sargs) f
     | _ -> e, sargs
 
   let map_args f l =
@@ -346,7 +348,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
       let e = { e with exp_desc = Texp_apply(funct, oargs) } in
       event_after ~scopes e
         (
-          let funct, sargs = Apply_fusion.unnest [] e in
+          let funct, sargs = Apply_fusion.unnest [oargs] funct in
           let sargs = Apply_fusion.map (transl_exp ~scopes) sargs in
           let defs, oargs = Apply_fusion.merge_args sargs in
           let apply =
