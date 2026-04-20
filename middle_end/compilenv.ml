@@ -211,7 +211,7 @@ let get_global_info global_ident = (
             (* Linking to a compilation unit expected to go into a
                pack (ui_for_pack = Some ...) is possible only from
                inside the same pack, but it is perfectly ok to link to
-               an unit outside of the pack. *)
+               a unit outside of the pack. *)
             (match ui.ui_for_pack, current_unit.ui_for_pack with
              | None, _ -> ()
              | Some p1, Some p2 when

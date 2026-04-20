@@ -419,7 +419,7 @@ let bprint_iconv_flag buf iconv = match iconv with
       buffer_add_char buf '#'
   | Int_d | Int_i | Int_x | Int_X | Int_o | Int_u -> ()
 
-(* Print an complete int format in a buffer (ex: "%3.*d"). *)
+(* Print a complete int format in a buffer (ex: "%3.*d"). *)
 let bprint_int_fmt buf ign_flag iconv pad prec =
   buffer_add_char buf '%';
   bprint_ignored_flag buf ign_flag;
