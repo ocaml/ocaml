@@ -24332,7 +24332,8 @@ esac
 
 
 
-if test x"$libdir" = x'${exec_prefix}/lib'
+if test x"$libdir" = x'${exec_prefix}/lib' || \
+       test x"$libdir" = x'${exec_prefix}/lib64'
 then :
   libdir="$libdir"/ocaml
 fi
@@ -24414,7 +24415,8 @@ fi ;; #(
      ;;
 esac
 
-if test x"$libdir" = x'${exec_prefix}/lib/ocaml'
+if test x"$libdir" = x'${exec_prefix}/lib/ocaml' || \
+       test x"$libdir" = x'${exec_prefix}/lib64/ocaml'
 then :
   if test x"$bindir_to_libdir" != 'x'
 then :

@@ -2996,7 +2996,8 @@ shlwapi.lib synchronization.lib"])
 
 AC_CONFIG_COMMANDS_PRE([cclibs="$cclibs $mathlib $DLLIBS $PTHREAD_LIBS"])
 
-AS_IF([test x"$libdir" = x'${exec_prefix}/lib'],
+AS_IF([test x"$libdir" = x'${exec_prefix}/lib' || \
+       test x"$libdir" = x'${exec_prefix}/lib64'],
   [libdir="$libdir"/ocaml])
 
 AS_IF([test x"$mandir" = x'${datarootdir}/man'],
@@ -3053,7 +3054,8 @@ AS_CASE([$cygwin_build_env,$host],
         [ocaml_libdir='${exec_prefix}\lib\ocaml'],
         [ocaml_libdir="$libdir"])])])
 
-AS_IF([test x"$libdir" = x'${exec_prefix}/lib/ocaml'],
+AS_IF([test x"$libdir" = x'${exec_prefix}/lib/ocaml' || \
+       test x"$libdir" = x'${exec_prefix}/lib64/ocaml' ],
   [AS_IF([test x"$bindir_to_libdir" != 'x'],
     [ocaml_libdir="$bindir_to_libdir"
     target_libdir_is_relative=true

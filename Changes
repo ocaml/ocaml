@@ -246,6 +246,9 @@ Working version
   counter-example search space.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #14761: Fix configure when `libdir='${exec_prefix}/lib64'`.
+  (Edwin Török)
+
 OCaml 5.5.0
 -----------
 
