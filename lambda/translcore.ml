@@ -195,12 +195,8 @@ module Apply_fusion = struct
     order_protected: bool
   }
 
-  let is_pure = function
-    | Lvar _ | Lconst _ -> true
-    | _ -> false
-
   let effectful_arg = function
-    | Arg x -> if is_pure x then None else Some x
+    | Arg x -> if Lambda.is_evaluated x then None else Some x
     | Omitted () -> None
 
   let alias () =
@@ -241,8 +237,8 @@ module Apply_fusion = struct
             first_present_arg lbl defs (app :: apps_before) next_apps
         | (lbl, Arg a) as arg :: args ->
             let app = { app with args } in
-            (* we can move pure argument without changing execution order *)
-            if is_pure a then
+            (* we can move value arguments without changing execution order *)
+            if Lambda.is_evaluated a then
               arg, defs, List.rev_append (app :: apps_before) next_apps
             else
               let defs, apps = protect_order defs [] (app :: next_apps) in
@@ -772,9 +768,8 @@ and transl_apply_args
         (* Out-of-order partial application; we will need to build a closure *)
         let defs = ref [] in
         let protect name lam =
-          match lam with
-            Lvar _ | Lconst _ -> lam
-          | _ ->
+          if Lambda.is_evaluated lam then lam
+          else
               let id = Ident.create_local name in
               defs := (id, lam) :: !defs;
               Lvar id
