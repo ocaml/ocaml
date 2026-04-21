@@ -690,3 +690,10 @@ val read_poll : cursor -> Callbacks.t -> int option -> int
 (** [read_poll cursor callbacks max_option] calls the corresponding functions
     on [callbacks] for up to [max_option] events read off [cursor]'s
     runtime_events and returns the number of events read. *)
+
+val register_cleanup_runtime_events_sigint_handler : unit -> unit
+(** Register a signal handler for SIGINT which deletes runtime event files.
+    This signal handler is registered for SIGINT by default if runtime events
+    are enabled. Registering any other signal handler for SIGINT (including
+    [Signal_default] will replace this handler, but this function can be called
+    to restore the default behaviour. *)

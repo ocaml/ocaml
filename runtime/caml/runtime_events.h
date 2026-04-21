@@ -357,6 +357,9 @@ CAMLextern value caml_runtime_events_user_write(
 CAMLextern value caml_runtime_events_user_resolve(char* event_name,
    ev_user_ml_type event_type);
 
+/* Register a signal handler for SIGINT which cleans up runtime event files. */
+CAMLextern void caml_register_cleanup_runtime_events_sigint_handler(void);
+
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_RUNTIME_EVENTS_H */

@@ -396,6 +396,9 @@ OCaml 5.5.0
   heaps and for a smooth start at program launch and after a forced major GC.
   (Damien Doligez, review by Stephen Dolan and Nick Barnes)
 
+- #14470: Cleanup runtime events ring buffer file when a process is terminated
+  by an unhandled sigint. (Stephen Sherratt)
+
 ### Code generation and optimizations:
 
 - #14583: fix bug in linear scan spilling heuristic that in certain situations

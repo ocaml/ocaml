@@ -870,3 +870,31 @@ CAMLexport value caml_runtime_events_user_resolve(
 
   CAMLreturn (Val_none);
 }
+
+/* Intended as a signal handler. When a signal is received, cleanup temporary
+   files, register the SIG_DFL handler for the received signal, then reraise
+   the signal so that the program exits due to an unhandled signal of the same
+   type as the received signal. */
+static void cleanup_runtime_events_and_reraise_signal(int signal_number)
+{
+  CAML_RUNTIME_EVENTS_DESTROY();
+#ifdef POSIX_SIGNALS
+  struct sigaction act = {0};
+  act.sa_handler = SIG_DFL;
+  sigaction(signal_number, &act, NULL);
+#else
+  signal(signal_number, SIG_DFL);
+#endif
+  raise(signal_number);
+}
+
+void caml_register_cleanup_runtime_events_sigint_handler(void)
+{
+#ifdef POSIX_SIGNALS
+  struct sigaction act = {0};
+  act.sa_handler = cleanup_runtime_events_and_reraise_signal;
+  sigaction(SIGINT, &act, NULL);
+#else
+  signal(SIGINT, cleanup_runtime_events_and_reraise_signal);
+#endif
+}
