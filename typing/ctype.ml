@@ -3212,12 +3212,6 @@ let compare_package env unify_list lv1 pack1 lv2 pack2 =
       (!package_subtype env pack1 pack2)
       (fun () -> !package_subtype env pack2 pack1)
 
-(* force unification in Reither when one side has a non-conjunctive type *)
-(* Code smell: this could also be put in unification_environment.
-   Only modified by expand_head_rigid, but the corresponding unification
-   environment is built in subst. *)
-let rigid_variants = ref false
-
 let unify1_var uenv t1 t2 =
   assert (is_Tvar t1);
   occur_for Unify uenv t1 t2;
@@ -3779,8 +3773,7 @@ and unify_row_field uenv fixed1 fixed2 rm1 rm2 l f1 f2 =
         List.iter2 (unify uenv) tl1 tl2
       end
       else let redo =
-        (m1 || m2 || either_fixed ||
-         !rigid_variants && (List.length tl1 = 1 || List.length tl2 = 1)) &&
+        (matched || either_fixed) &&
         begin match tl1 @ tl2 with [] -> false
         | t1 :: tl ->
             if no_arg then raise_unexplained_for Unify;
@@ -4951,12 +4944,6 @@ let does_match env ty ty' =
                  (*  Equivalence between parameterized types  *)
                  (*********************************************)
 
-let expand_head_rigid env ty =
-  let old = !rigid_variants in
-  rigid_variants := true;
-  let ty' = expand_head_nolink env ty in
-  rigid_variants := old; ty'
-
 let eqtype_subst type_pairs subst t1 t2 =
   if List.exists
       (fun (t,t') ->
@@ -4992,8 +4979,8 @@ let rec eqtype rename type_pairs subst env t1 t2 =
       when Env_unscoped.path_equiv env p1 p2 ->
         ()
     | _ ->
-        let t1' = expand_head_rigid env t1 in
-        let t2' = expand_head_rigid env t2 in
+        let t1' = expand_head env t1 in
+        let t2' = expand_head env t2 in
         (* Expansion may have changed the representative of the types... *)
         if check_phys_eq t1' t2' then () else
         if not (TypePairs.mem type_pairs (t1', t2')) then begin
@@ -5103,7 +5090,7 @@ and eqtype_fields rename type_pairs subst env ty1 ty2 =
   in
   if same_row then () else
   (* Try expansion, needed when called from Includecore.type_manifest *)
-  match get_desc (expand_head_rigid env rest2) with
+  match get_desc (expand_head env rest2) with
     Tobject(ty2,_) -> eqtype_fields rename type_pairs subst env ty1 ty2
   | _ ->
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
@@ -5133,7 +5120,7 @@ and eqtype_kind name k1 k2 =
 
 and eqtype_row rename type_pairs subst env row1 row2 =
   (* Try expansion, needed when called from Includecore.type_manifest *)
-  match get_desc (expand_head_rigid env (row_more row2)) with
+  match get_desc (expand_head env (row_more row2)) with
     Tvariant row2 -> eqtype_row rename type_pairs subst env row1 row2
   | _ ->
   let r1, r2, pairs = merge_row_fields (row_fields row1) (row_fields row2) in
