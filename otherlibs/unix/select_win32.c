@@ -674,7 +674,7 @@ static LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData,
     if (res == NULL)
     {
       DEBUG_PRINT("No job for type %d found, create one", SELECT_TYPE_SOCKET);
-      res = select_data_new(lpSelectData, SELECT_TYPE_SOCKET);
+      lpSelectData = res = select_data_new(lpSelectData, SELECT_TYPE_SOCKET);
       res->funcWorker = socket_poll;
       res->nQueriesCount = 1;
       aQueries = &res->aQueries[0];
@@ -695,7 +695,7 @@ static LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData,
     DEBUG_PRINT("Socket %x updated to %d", hFileDescr, aQueries->EMode);
   }
 
-  return res;
+  return lpSelectData;
 }
 
 /***********************/
