@@ -926,7 +926,8 @@ let rec check_level_type_rec visited level ty =
 
 let check_level_type level ty = check_level_type_rec [] level ty
 
-let rec update_level env level expand ty =
+let rec update_level env level expand mark ty =
+  if try_mark_node mark ty then
   let ty_level = get_level ty in
   if ty_level > level then begin
     if level < get_scope ty then raise_scope_escape_exn ty;
@@ -942,7 +943,7 @@ let rec update_level env level expand ty =
         begin try
           let ty' = !forward_try_expand_safe env ty in
           link_type ty ty';
-          update_level env level expand ty
+          update_level env level expand mark ty
         with Cannot_expand ->
           raise_escape_exn (Constructor p)
         end
@@ -953,20 +954,20 @@ let rec update_level env level expand ty =
           if not needs_expand then raise Cannot_expand;
           let ty' = !forward_try_expand_safe env ty in
           link_type ty ty';
-          update_level env level expand ty
+          update_level env level expand mark ty
         with Cannot_expand ->
           set_level ();
-          iter_type_expr (update_level env level expand) ty;
-          update_level_abbrev env level expand ty
+          iter_type_expr (update_level env level expand mark) ty;
+          update_level_abbrev env level expand mark ty
         end
     | Tpackage pack when level < Path.scope pack.pack_path ->
         let pack_path = normalize_or_raise_escape env pack.pack_path in
         set_type_desc ty (Tpackage {pack with pack_path});
-        update_level env level expand ty
+        update_level env level expand mark ty
     | Tobject (_, ({contents=Some(p, _tl)} as nm))
       when level < Path.scope p ->
         set_name nm None;
-        update_level env level expand ty
+        update_level env level expand mark ty
     | Tvariant row ->
         begin match row_name row with
         | Some (p, _tl) when level < Path.scope p ->
@@ -974,38 +975,41 @@ let rec update_level env level expand ty =
         | _ -> ()
         end;
         set_level ();
-        iter_type_expr (update_level env level expand) ty;
-        update_level_abbrev env level expand ty
+        iter_type_expr (update_level env level expand mark) ty;
+        update_level_abbrev env level expand mark ty
     | Tfunctor (lbl, id, pack, t) when level < Path.scope pack.pack_path ->
         let pack_path = normalize_or_raise_escape env pack.pack_path in
         set_type_desc ty (Tfunctor (lbl, id, {pack with pack_path}, t));
-        update_level env level expand ty
+        update_level env level expand mark ty
     | Tfunctor (_, id, pack, t) ->
-        List.iter (fun (_, t) -> update_level env level expand t)
+        List.iter (fun (_, t) -> update_level env level expand mark t)
           pack.pack_constraints;
         let mty = modtype_of_package env Location.none pack in
         let env = Env.add_module (Ident.of_unscoped id) Mp_present mty env in
         set_level ();
-        update_level env level expand t
+        update_level env level expand mark t
     | Tfield(lab, _, ty1, _)
       when lab = dummy_method && level < get_scope ty1 ->
         raise_escape_exn Self
     | _ ->
         set_level ();
         (* XXX what about abbreviations in Tconstr ? *)
-        iter_type_expr (update_level env level expand) ty;
-        update_level_abbrev env level expand ty
+        iter_type_expr (update_level env level expand mark) ty;
+        update_level_abbrev env level expand mark ty
   end
-  else update_level_abbrev env level expand ty
+  else update_level_abbrev env level expand mark ty
 
-and update_level_abbrev env level expand ty =
+and update_level_abbrev env level expand mark ty =
   iter_abbrev
     (fun p args ->
       if level < Path.scope p then forget_abbrev ty else
       if List.for_all (check_level_type level) args then () else
       if expand || needs_expand env level p args then forget_abbrev ty else
-      List.iter (update_level env level expand) args)
+      List.iter (update_level env level expand mark) args)
     ty
+
+let update_level env level expand ty =
+  with_type_mark (fun mark -> update_level env level expand mark ty)
 
 let try_update_level env level ty =
   update_level env level false ty
