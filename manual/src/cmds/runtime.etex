@@ -210,6 +210,23 @@ The following environment variables are also consulted:
 
   The multiplier is "k", "M", or "G", for multiplication by $2^{10}$,
   $2^{20}$, and $2^{30}$ respectively.
+
+  For memory-related parameters that are specified in words (such as "s",
+  "l", and "e"), you can use explicit unit suffixes to clarify the unit:
+  \begin{itemize}
+  \item "w" suffix (e.g., "kw", "Mw", "Gw") explicitly denotes words
+    (same as the bare "k"/"M"/"G" suffixes); bare "w" denotes words
+    with no multiplier
+  \item "iB" suffix (e.g., "kiB", "MiB", "GiB") denotes binary bytes
+    ($2^{10}$, $2^{20}$, $2^{30}$ bytes respectively); bare "B" denotes
+    bytes with no multiplier
+  \end{itemize}
+  When using byte suffixes, the value is automatically converted to words
+  based on the machine word size (4 bytes on 32-bit, 8 bytes on 64-bit);
+  if the byte count is not a multiple of the word size, it is rounded down.
+  For backward compatibility, "k", "M", and "G" without a suffix continue
+  to mean words for these parameters.
+
   If the option letter is not recognized, the whole parameter is ignored;
   if the equal sign or the number is missing, the value is taken as 1;
   if the multiplier is not recognized, it is ignored.
@@ -222,6 +239,9 @@ The following environment variables are also consulted:
   set its initial minor heap size to 1~megabyte and
   print a message at the start of each major GC cycle, when the heap
   size changes, and when compaction is triggered.
+
+  On a 64-bit machine, "s=256k", "s=256kw", and "s=2MiB" are all equivalent
+  (each specifies $2^{18}$ words = $2^{21}$ bytes = 2~MiB).
 
 \item["CAMLRUNPARAM"]  If "OCAMLRUNPARAM" is not found in the
   environment, then "CAMLRUNPARAM" will be used instead.  If

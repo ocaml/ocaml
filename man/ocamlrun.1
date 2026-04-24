@@ -292,6 +292,23 @@ The multiplier is
 .BR k , M ", or " G ,
 for multiplication by 2^10, 2^20, and 2^30 respectively.
 
+For memory-related parameters specified in words (such as
+.BR s , l ", and " e ),
+explicit unit suffixes can be used:
+.BR w " (e.g., " kw ", " Mw ", " Gw )
+denotes words (same as bare
+.BR k / M / G );
+bare
+.B w
+denotes words with no multiplier.
+.BR iB " (e.g., " kiB ", " MiB ", " GiB )
+denotes binary bytes (2^10, 2^20, 2^30 bytes respectively);
+bare
+.B B
+denotes bytes with no multiplier.
+When using byte suffixes, the value is converted to words based on the
+machine word size (4 bytes on 32-bit, 8 bytes on 64-bit).
+
 If the option letter is not recognized, the whole parameter is ignored;
 if the equal sign or the number is missing, the value is taken as 1;
 if the multiplier is not recognized, it is ignored.
@@ -302,6 +319,9 @@ tells a subsequent
 .B ocamlrun
 to set its initial minor heap size to 1 megabyte and to print
 a message at the start of each major GC cycle.
+On a 64-bit machine,
+.BR s=256k ", " s=256kw ", and " s=2MiB
+are all equivalent.
 .TP
 .B CAMLRUNPARAM
 If OCAMLRUNPARAM is not found in the environment, then CAMLRUNPARAM
