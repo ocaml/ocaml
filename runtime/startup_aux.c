@@ -81,17 +81,62 @@ void caml_init_startup_params(struct caml_params *params)
   params->event_trace = 0;
 }
 
+static uintnat apply_si_mult (uintnat val, char prefix)
+{
+  switch (prefix) {
+  case 'k': case 'K': return val * 1024;
+  case 'M':           return val * 1024 * 1024;
+  case 'G':           return val * 1024 * 1024 * 1024;
+  default:            return val;
+  }
+}
+
+static void scan_val_unit (const char *opt, unsigned int *val, char *unit)
+{
+  sscanf (opt, "=%u%3[a-zA-Z]", val, unit);
+  sscanf (opt, "=0x%x%3[a-zA-Z]", val, unit);
+}
+
 static void scanmult (const char *opt, uintnat *var)
 {
-  char mult = ' ';
+  char unit[4] = { 0 };
   unsigned int val = 1;
-  sscanf (opt, "=%u%c", &val, &mult);
-  sscanf (opt, "=0x%x%c", &val, &mult);
-  switch (mult) {
-  case 'k':   *var = (uintnat) val * 1024; break;
-  case 'M':   *var = (uintnat) val * (1024 * 1024); break;
-  case 'G':   *var = (uintnat) val * (1024 * 1024 * 1024); break;
-  default:    *var = (uintnat) val; break;
+  scan_val_unit(opt, &val, unit);
+
+  switch (unit[0]) {
+  case '\0':
+  case 'k': case 'K':
+  case 'M':
+  case 'G':
+    *var = apply_si_mult((uintnat) val, unit[0]);
+    break;
+  default:
+    caml_fatal_error(
+      "OCAMLRUNPARAM: invalid unit suffix '%s' (expected k/M/G)", unit);
+  }
+}
+
+static void scanmult_words (const char *opt, uintnat *var)
+{
+  char unit[4] = { 0 };
+  unsigned int val = 1;
+  scan_val_unit(opt, &val, unit);
+
+  if (strcmp(unit, "") == 0 ||
+      strcmp(unit, "w") == 0 ||
+      strcmp(unit, "k") == 0 || strcmp(unit, "K") == 0 ||
+      strcmp(unit, "M") == 0 || strcmp(unit, "G") == 0 ||
+      strcmp(unit, "kw") == 0 || strcmp(unit, "Kw") == 0 ||
+      strcmp(unit, "Mw") == 0 || strcmp(unit, "Gw") == 0) {
+    *var = apply_si_mult((uintnat) val, unit[0]);
+  } else if (strcmp(unit, "B") == 0 ||
+             strcmp(unit, "kiB") == 0 || strcmp(unit, "KiB") == 0 ||
+             strcmp(unit, "MiB") == 0 || strcmp(unit, "GiB") == 0) {
+    *var = Wsize_bsize(apply_si_mult((uintnat) val, unit[0]));
+  } else {
+    caml_fatal_error(
+      "OCAMLRUNPARAM: invalid unit suffix '%s' for word-sized parameter"
+      " (expected w/B, k/M/G, kw/Mw/Gw, or kiB/MiB/GiB)", unit);
   }
 }
 
@@ -105,8 +150,8 @@ void caml_parse_startup_params(struct caml_params *params, const char *opt)
     case 'b': scanmult (opt, &params->backtrace_enabled); break;
     case 'c': scanmult (opt, &params->cleanup_on_exit); break;
     case 'd': scanmult (opt, &params->max_domains); break;
-    case 'e': scanmult (opt, &params->runtime_events_log_wsize); break;
-    case 'l': scanmult (opt, &params->init_max_stack_wsz); break;
+    case 'e': scanmult_words (opt, &params->runtime_events_log_wsize); break;
+    case 'l': scanmult_words (opt, &params->init_max_stack_wsz); break;
     case 'M': scanmult (opt, &params->init_custom_major_ratio); break;
     case 'm': scanmult (opt, &params->init_custom_minor_ratio); break;
     case 'n': scanmult (opt, &params->init_custom_minor_max_bsz); break;
@@ -116,7 +161,7 @@ void caml_parse_startup_params(struct caml_params *params, const char *opt)
       scanmult (opt, &val);
       caml_runtime_hashtbl_randomized = !!val;
       break;
-    case 's': scanmult (opt, &params->init_minor_heap_wsz); break;
+    case 's': scanmult_words (opt, &params->init_minor_heap_wsz); break;
     case 't': scanmult (opt, &params->trace_level); break;
     case 'v':
       scanmult (opt, &val);
