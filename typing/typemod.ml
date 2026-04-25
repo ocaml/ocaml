@@ -275,6 +275,11 @@ let check_type_decl env sg loc id row_id newdecl decl =
     let abs_ty = abstractify_type newdecl in
     Env.add_local_constraint path abs_ty env
   in
+  (* While any "with" constraints that could be used to create ill-founded
+     types in downstream definitions that depend on this one should be rejected
+     by the inclusion check below, we still need to ensure that the type
+     declarations input to the inclusion check are well-founded; otherwise
+     the inclusion check may loop on type declarations that it should reject. *)
   Typedecl.check_well_founded_decl
     ~abs_env ~final_env:env ~is_decl_path:(Path.same path) loc path
     newdecl;
