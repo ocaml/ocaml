@@ -4979,8 +4979,8 @@ let rec eqtype rename type_pairs subst env t1 t2 =
       when Env_unscoped.path_equiv env p1 p2 ->
         ()
     | _ ->
-        let t1' = expand_head env t1 in
-        let t2' = expand_head env t2 in
+        let t1' = expand_head_nolink env t1 in
+        let t2' = expand_head_nolink env t2 in
         (* Expansion may have changed the representative of the types... *)
         if check_phys_eq t1' t2' then () else
         if not (TypePairs.mem type_pairs (t1', t2')) then begin
@@ -5090,7 +5090,7 @@ and eqtype_fields rename type_pairs subst env ty1 ty2 =
   in
   if same_row then () else
   (* Try expansion, needed when called from Includecore.type_manifest *)
-  match get_desc (expand_head env rest2) with
+  match get_desc (expand_head_nolink env rest2) with
     Tobject(ty2,_) -> eqtype_fields rename type_pairs subst env ty1 ty2
   | _ ->
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
@@ -5120,7 +5120,7 @@ and eqtype_kind name k1 k2 =
 
 and eqtype_row rename type_pairs subst env row1 row2 =
   (* Try expansion, needed when called from Includecore.type_manifest *)
-  match get_desc (expand_head env (row_more row2)) with
+  match get_desc (expand_head_nolink env (row_more row2)) with
     Tvariant row2 -> eqtype_row rename type_pairs subst env row1 row2
   | _ ->
   let r1, r2, pairs = merge_row_fields (row_fields row1) (row_fields row2) in
