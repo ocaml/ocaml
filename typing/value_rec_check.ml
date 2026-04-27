@@ -435,7 +435,7 @@ sig
 
   val equal : t -> t -> bool
 end = struct
-  module M = Map.Make(Ident)
+  module M = Ident.Map
 
   (** A "t" maps each rec-bound variable to an access status *)
   type t = Mode.t M.t
@@ -448,10 +448,8 @@ end = struct
   let empty = M.empty
 
   let join (x: t) (y: t) =
-    M.fold
-      (fun (id: Ident.t) (v: Mode.t) (tbl: t) ->
-         let v' = find id tbl in
-         M.add id (Mode.join v v') tbl)
+    M.union
+      (fun _id v1 v2 -> Some (Mode.join v1 v2))
       x y
 
   let join_list li = List.fold_left join empty li
