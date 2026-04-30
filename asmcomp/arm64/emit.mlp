@@ -1003,7 +1003,7 @@ let emit_instr env i =
         let offset = Domainstate.(idx_of_field Domain_dls_root) * 8 in
         `	ldr	{emit_reg i.res.(0)}, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`
     | Lop(Iatomic_fetch_add) ->
-        (* LL/SC loop — works on baseline ARMv8.0 (no LSE required).
+        (* LL/SC loop, works on baseline ARMv8.0 (no LSE required).
            x16 = sum (data), x17 = stlxr status (must differ per ARM spec) *)
         let lbl = new_label() in
         `{emit_label lbl}:\n`;
