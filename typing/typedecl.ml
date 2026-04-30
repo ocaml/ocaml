@@ -23,6 +23,7 @@ open Types
 open Typetexp
 
 module String = Misc.Stdlib.String
+module List = Misc.Stdlib.List
 
 type native_repr_kind = Unboxed | Untagged
 
@@ -34,6 +35,8 @@ type reaching_type_path = reaching_type_step list
 and reaching_type_step =
   | Expands_to of type_expr * type_expr
   | Contains of type_expr * type_expr
+  | Parameter of Path.t * int * type_expr
+  | Considered_abstract of Path.t
 
 type error =
     Repeated_parameter
@@ -68,7 +71,6 @@ type error =
   | Rebind_private of Longident.t
   | Variance of Typedecl_variance.error
   | Unavailable_type_constructor of Path.t
-  | Val_in_structure
   | Multiple_native_repr_attributes
   | Cannot_unbox_or_untag_type of native_repr_kind
   | Deep_unbox_or_untag_attribute of native_repr_kind
@@ -81,6 +83,8 @@ type error =
   | Invalid_private_row_declaration of type_expr
   | Atomic_field_must_be_mutable of string
   | External_with_non_syntactic_arity
+  | Primitive_alias_does_not_refer_to_primitive of value_kind
+  | Primitive_type_mismatch of Env.t * Errortrace.unification_error
 
 open Typedtree
 
@@ -548,12 +552,11 @@ let transl_declaration env sdecl (id, uid) =
 (* Check that all constraints are enforced *)
 
 module TypeSet = Btype.TypeSet
-module TypeMap = Btype.TypeMap
 
 let rec check_constraints_rec env loc visited ty =
   if TypeSet.mem ty !visited then () else begin
   visited := TypeSet.add ty !visited;
-  match get_desc ty with
+  match Btype.get_constr_desc ty with
   | Tconstr (path, args, _) ->
       let decl =
         try Env.find_type path env
@@ -665,7 +668,7 @@ let check_coherence env loc dpath decl =
   match decl with
     { type_kind = (Type_variant _ | Type_record _| Type_open);
       type_manifest = Some ty } ->
-      begin match get_desc ty with
+      begin match Btype.get_constr_desc ty with
         Tconstr(path, args, _) ->
           begin try
             let decl' = Env.find_type path env in
@@ -744,8 +747,11 @@ let check_abbrev env sdecl (id, decl) =
      then t1 is reachable guarded from t3 if t1 is guarded in t2
      or t2 is guarded in t3, and reachable unguarded otherwise.
 
-   A type [t] is not well-founded if and only if [t] is reachable
-   unguarded in [t].
+
+   A type [t] is not well-founded if any of the following hold:
+   - [t] is reachable unguarded in [t]
+   - there exists a parameter [a] of [t], such that [t] is
+     reachable unguarded in [a]
 
    Notice that, in the case of datatypes, the arguments of
    a parametrized datatype are reachable (they must not contain
@@ -826,7 +832,7 @@ let check_abbrev env sdecl (id, decl) =
      end
 
      (* well-founded *)
-     Module M = Fix(functor (M:T) -> struct type t = < x : M.t > end)
+     module M = Fix(functor (M:T) -> struct type t = < x : M.t > end)
 
      (* ill-founded *)
      module M = Fix(functor (M:T) -> struct type t = int * M.t end);;
@@ -841,111 +847,222 @@ let check_abbrev env sdecl (id, decl) =
    - if -rectypes is not used, we only allow cycles in the type graph
      if they go through an object or polymorphic variant type *)
 
-let check_well_founded ~abs_env env loc path to_check visited ty0 =
-  let rec check parents trace ty =
-    if TypeSet.mem ty parents then begin
-      (*Format.eprintf "@[%a@]@." Printtyp.raw_type_expr ty;*)
-      let err =
-        let reaching_path, rec_abbrev =
-          (* The reaching trace is accumulated in reverse order, we
-             reverse it to get a reaching path. *)
-          match trace with
-          | [] -> assert false
-          | Expands_to (ty1, _) :: trace when (match get_desc ty1 with
-              Tconstr (p,_,_) -> Path.same p path | _ -> false) ->
-                List.rev trace, true
-          | trace -> List.rev trace, false
-        in
-        if rec_abbrev
-        then Recursive_abbrev (Path.name path, abs_env, reaching_path)
-        else Cycle_in_def (Path.name path, abs_env, reaching_path)
-      in raise (Error (loc, err))
-    end;
-    let (fini, parents) =
-      try
-        (* Map each node to the set of its already checked parents *)
-        let prev = TypeMap.find ty !visited in
-        if TypeSet.subset parents prev then (true, parents) else
-        let parents = TypeSet.union parents prev in
-        visited := TypeMap.add ty parents !visited;
-        (false, parents)
-      with Not_found ->
-        visited := TypeMap.add ty parents !visited;
-        (false, parents)
-    in
-    if fini then () else
-    let rec_ok =
-      match get_desc ty with
-      | Tconstr(p,_,_) ->
-          !Clflags.recursive_types && Ctype.is_contractive env p
-      | Tobject _ | Tvariant _ -> true
-      | _ -> !Clflags.recursive_types
-    in
-    if rec_ok then () else
-    let parents = TypeSet.add ty parents in
-    match get_desc ty with
-    | Tconstr(p, tyl, _) ->
-        let to_check = to_check p in
-        if to_check then List.iter (check_subtype parents trace ty) tyl;
-        begin match Ctype.try_expand_once_opt env ty with
-        | ty' -> check parents (Expands_to (ty, ty') :: trace) ty'
-        | exception Ctype.Cannot_expand ->
-            if not to_check then List.iter (check_subtype parents trace ty) tyl
-        end
-    | _ ->
-        Btype.iter_type_expr (check_subtype parents trace ty) ty
-  and check_subtype parents trace outer_ty inner_ty =
-      check parents (Contains (outer_ty, inner_ty) :: trace) inner_ty
+let reachable
+    ~abs_env
+    ~final_env
+    ~restrict_type_expansion
+    ~rectypes_guarded
+    ~unguarded
+    ~trace
+    ty
+  =
+  let iter_tl ?(trace=trace) tl f =
+    List.iter (fun t -> f ~trace:(Contains (ty, t) :: trace) t) tl
   in
+  let iter_tl' tl f =
+    List.iter (fun (_, t) -> f ~trace:(Contains (ty, t) :: trace) t) tl
+  in
+  (* We must use get_desc here. get_constr_desc will cause us to
+     think we are dealing with a constructor, rather than a Texpand node.
+     We will then fail to expand the type, and assume that it is abstract. *)
+  match get_desc ty with
+  | Tobject _ | Tfield _ | Tnil -> ()
+  | Tvariant _ -> ()
+  | Tvar _ | Tunivar _ -> ()
+  | Tarrow (_, t1, t2, _) ->
+      rectypes_guarded ~trace:(Contains (ty, t1) :: trace) t1;
+      rectypes_guarded ~trace:(Contains (ty, t2) :: trace) t2;
+  | Ttuple tl ->
+      iter_tl' tl rectypes_guarded
+  | Tconstr (path, tl, _) ->
+      if Ctype.is_contractive final_env path
+      then
+        iter_tl tl rectypes_guarded
+      else begin
+        match
+          (* Expansion can trigger unification, so we need to use
+             an abstract environment to avoid any cycles. *)
+          Ctype.try_expand_once_gen_nolink
+            ~find_type_expansion:(restrict_type_expansion path)
+            abs_env ty
+        with
+        | exception Ctype.Cannot_expand ->
+            (* Abstract *)
+            iter_tl ~trace:(Considered_abstract path :: trace) tl unguarded
+        | ty' ->
+            unguarded ~trace:(Expands_to (ty, ty') :: trace) ty'
+      end
+  | Tlink _ | Texpand _ | Tsubst _ ->
+      failwith "Tsubst"
+  | Tpoly (ty', _) ->
+      unguarded ~trace:(Contains (ty, ty') :: trace) ty'
+  | Tfunctor (_, _, { pack_constraints; _ }, ty') ->
+      rectypes_guarded ~trace:(Contains (ty, ty') :: trace) ty';
+      iter_tl' pack_constraints rectypes_guarded
+  | Tpackage { pack_constraints; _ } ->
+      iter_tl' pack_constraints rectypes_guarded
+
+let is_reachable
+    ?(trace=[])
+    ~is_decl_path
+    ~abs_env (* Environment with all types in the declaration abstract *)
+    ~final_env (* Environment with all types defined *)
+    loc
+    ~from_ty
+    ty_path
+  =
+  let visited = ref TypeSet.empty in
+  (* We need to keeps paths since [visited] is insufficient to detect
+     certain already visited types.
+
+     For example:
+     {[
+       module PR_4261 = struct
+         module type S =
+         sig
+           type t
+         end
+
+         module type T =
+         sig
+           module D : S
+           type t = D.t
+         end
+
+         module rec U : T with type D.t = U'.t = U
+         and U' : S with type t = U'.t = U
+       end
+     ]}
+
+     Those paths may not uniquely identify a type (since they may have
+     different type parameters), so we save all types, and compare
+     them inside an abstract environment.
+  *)
+  let visited_paths = ref Path.Map.empty in
+  let raise_error ~trace =
+    let path = ty_path in
+    let err =
+      let reaching_path, rec_abbrev =
+        (* The reaching trace is accumulated in reverse order, we
+             reverse it to get a reaching path. *)
+        match trace with
+        | (Expands_to (ty1, _) :: _)
+          when (match Btype.get_constr_desc ty1 with
+                Tconstr (p,_,_) -> Path.same p path | _ -> false) ->
+            List.rev trace, true
+        | trace -> List.rev trace, false
+      in
+      if rec_abbrev
+      then Recursive_abbrev (Path.name path, abs_env, reaching_path)
+      else Cycle_in_def (Path.name path, abs_env, reaching_path)
+    in raise (Error (loc, err))
+  in
+  let rec unguarded ~trace ty' =
+    if TypeSet.mem ty' !visited
+    then ()
+    else if match Btype.get_constr_desc ty' with
+        Tconstr (path, _, _) ->
+          begin match Path.Map.find_opt path !visited_paths with
+          | None -> false
+          | Some visited_tys ->
+              List.exists
+                (fun ty'' -> Ctype.is_equal abs_env false [ ty' ] [ ty'' ])
+                visited_tys
+          end;
+      | _ -> false
+    then ()
+    else match Btype.get_constr_desc ty' with
+      | Tconstr (path, _, _) when Path.same path ty_path ->
+          raise_error ~trace
+      | _ -> unguarded_no_self ~trace ty'
+  and unguarded_no_self ~trace ty' =
+    visited := TypeSet.add ty' !visited;
+    begin match Btype.get_constr_desc ty' with
+    | Tconstr (path, _, _) when is_decl_path path ->
+        visited_paths := Path.Map.add_to_list path ty' !visited_paths
+    | _ -> ()
+    end;
+    reachable
+      ~abs_env
+      ~final_env
+      ~restrict_type_expansion
+      ~rectypes_guarded
+      ~unguarded
+      ~trace
+      ty'
+  and rectypes_guarded ~trace ty' =
+    if !Clflags.recursive_types
+    then ()
+    else unguarded ~trace ty'
+  and restrict_type_expansion root_path_to_expand =
+    fun path _env ->
+      let is_decl_path = is_decl_path path in
+      let should_not_expand =
+        (Path.same path ty_path)
+        || (is_decl_path && not (Path.same path root_path_to_expand))
+      in
+      (* Always expand private abbreviations *)
+      if should_not_expand
+      then Env.find_type_expansion path abs_env
+      else Env.find_type_expansion_opt path final_env
+  in
+  unguarded ~trace from_ty
+
+let is_reachable
+    ?trace
+    ~is_decl_path
+    ~abs_env
+    ~final_env
+    loc
+    ~from_ty
+    ty_path
+  =
   let snap = Btype.snapshot () in
-  try Ctype.wrap_trace_gadt_instances env (check TypeSet.empty []) ty0
+  try
+    Ctype.wrap_trace_gadt_instances final_env (
+      is_reachable
+        ?trace
+        ~is_decl_path
+        ~abs_env
+        ~final_env
+        loc
+        ~from_ty
+    ) ty_path
   with Ctype.Escape _ ->
     (* Will be detected by check_regularity *)
     Btype.backtrack snap
 
-let check_well_founded_manifest ~abs_env env loc path decl =
-  if decl.type_manifest = None then () else
-  let args = List.map (fun _ -> Ctype.newvar()) decl.type_params in
-  let visited = ref TypeMap.empty in
-  check_well_founded ~abs_env env loc path (Path.same path) visited
-    (Ctype.newconstr path args)
 
 (* Given a new type declaration [type t = ...] (potentially mutually-recursive),
    we check that accepting the declaration does not introduce ill-founded types.
 
    Note: we check that the types at the toplevel of the declaration
    are not reachable unguarded from themselves, that is, we check that
-   there is no cycle going through the "root" of the declaration. But
-   we *also* check that all the type sub-expressions reachable from
-   the root even those that are guarded, are themselves
-   well-founded. (So we check the absence of cycles, even for cycles
-   going through inner type subexpressions but not the root.
-
-   We are not actually sure that this "deep check" is necessary
-   (we don't have an example at hand where it is necessary), but we
-   are doing it anyway out of caution.
+   there is no cycle going through the "root" of the declaration.
 *)
-let check_well_founded_decl  ~abs_env env loc path decl to_check =
-  let open Btype in
-  (* We iterate on all subexpressions of the declaration to check
-     "in depth" that no ill-founded type exists. *)
-  with_type_mark begin fun mark ->
-    let super = type_iterators mark in
-    let visited =
-      (* [visited] remembers the inner visits performed by
-         [check_well_founded] on each type expression reachable from
-         this declaration. This avoids unnecessary duplication of
-         [check_well_founded] work when invoked on two parts of the
-         type declaration that have common subexpressions. *)
-      ref TypeMap.empty in
-    let it =
-      {super with it_do_type_expr =
-       (fun self ty ->
-         check_well_founded ~abs_env env loc path to_check visited ty;
-         super.it_do_type_expr self ty
-       )} in
-    it.it_type_declaration it (Ctype.generic_instance_declaration decl)
-  end
+let check_well_founded_decl
+    ~abs_env ~final_env ~is_decl_path loc path decl =
+  let declaration = Ctype.generic_instance_declaration decl in
+  let is_reachable ~trace =
+    is_reachable ~trace ~abs_env ~final_env ~is_decl_path loc path
+  in
+  List.iteri
+    (fun i from_ty ->
+       is_reachable
+         ~trace:[ Parameter (path, i, from_ty) ]
+         ~from_ty
+    )
+    declaration.type_params
+  ;
+  Option.iter
+    (fun from_ty ->
+       let args = declaration.type_params in
+       let ty = Ctype.newconstr path args in
+       is_reachable
+         ~trace:[ Expands_to (ty, from_ty) ]
+         ~from_ty
+    )
+    declaration.type_manifest
 
 (* Check for non-regular abbreviations; an abbreviation
    [type 'a t = ...] is non-regular if the expansion of [...]
@@ -964,10 +1081,10 @@ let check_regularity ~abs_env env loc path decl to_check =
 
   let visited = ref TypeSet.empty in
 
-  let rec check_regular cpath args prev_exp trace ty =
+  let rec check_regular args prev_exp trace ty =
     if not (TypeSet.mem ty !visited) then begin
       visited := TypeSet.add ty !visited;
-      match get_desc ty with
+      match Btype.get_constr_desc ty with
       | Tconstr(path', args', _) ->
           if Path.same path path' then begin
             if not (Ctype.is_equal abs_env false args args') then
@@ -996,22 +1113,22 @@ let check_regularity ~abs_env env loc path decl to_check =
                 with Ctype.Unify err ->
                   raise (Error(loc, Constraint_failed (abs_env, err)));
               end;
-              check_regular path' args
+              check_regular args
                 (path' :: prev_exp) (Expands_to (ty,body) :: trace)
                 body
             with Not_found -> ()
           end;
-          List.iter (check_subtype cpath args prev_exp trace ty) args'
+          List.iter (check_subtype args prev_exp trace ty) args'
       | Tpoly (ty, tl) ->
           let ty = Ctype.instance_poly ~keep_names:true tl ty in
-          check_regular cpath args prev_exp trace ty
+          check_regular args prev_exp trace ty
       | _ ->
           Btype.iter_type_expr
-            (check_subtype cpath args prev_exp trace ty) ty
+            (check_subtype args prev_exp trace ty) ty
     end
-    and check_subtype cpath args prev_exp trace outer_ty inner_ty =
+    and check_subtype args prev_exp trace outer_ty inner_ty =
       let trace = Contains (outer_ty, inner_ty) :: trace in
-      check_regular cpath args prev_exp trace inner_ty
+      check_regular args prev_exp trace inner_ty
   in
 
   Option.iter
@@ -1019,8 +1136,8 @@ let check_regularity ~abs_env env loc path decl to_check =
       let (args, body) =
         Ctype.instance_parameterized_type
           ~keep_names:true decl.type_params body in
-      List.iter (check_regular path args [] []) args;
-      check_regular path args [] [] body)
+      List.iter (check_regular args [] []) args;
+      check_regular args [] [] body)
     decl.type_manifest
 
 let check_abbrev_regularity ~abs_env env id_loc_list to_check tdecl =
@@ -1067,7 +1184,7 @@ let name_recursion sdecl id decl =
       type_manifest = Some ty;
       type_private = Private; } when is_fixed_type sdecl ->
     let ty' = Btype.newty2 ~level:(get_level ty) (get_desc ty) in
-    if Ctype.deep_occur ty ty' then
+    if Btype.deep_occur ty ty' then
       let td = Tconstr(Path.Pident id, decl.type_params, ref Mnil) in
       link_type ty (Btype.newty2 ~level:(get_level ty) td);
       {decl with type_manifest = Some ty'}
@@ -1147,7 +1264,7 @@ let transl_type_decl env rec_flag sdecl_list =
   (* Translate declarations, using a temporary environment where abbreviations
      expand to a generic type variable. After that, we check the coherence of
      the translated declarations in the resulting new environment. *)
-  let tdecls, decls, shapes, temp_env, new_env =
+  let tdecls_shapes, temp_env =
     Ctype.with_local_level_generalize begin fun () ->
       (* Enter types. *)
       let temp_env =
@@ -1184,19 +1301,22 @@ let transl_type_decl env rec_flag sdecl_list =
       in
       let tdecls =
         List.map2 transl_declaration sdecl_list (List.map ids_slots ids_list) in
-      let decls, shapes =
-        List.map (fun (tdecl, shape) ->
-          (tdecl.typ_id, tdecl.typ_type), shape) tdecls
-        |> List.split
-      in
       current_slot := None;
       (* Check for duplicates *)
       check_duplicates sdecl_list;
-      (* Build the final env. *)
-      let new_env = add_types_to_env decls shapes env in
-      (tdecls, decls, shapes, temp_env, new_env)
+      tdecls, temp_env
     end
   in
+  let tdecls, shapes = List.split tdecls_shapes in
+  (* Copy the type declarations to remove spurious expansions *)
+  let tdecls, decls =
+    List.map begin fun tdecl ->
+      let decl = Subst.(type_declaration identity tdecl.typ_type) in
+      {tdecl with typ_type = decl}, (tdecl.typ_id, decl)
+    end tdecls |> List.split
+  in
+  (* Build the final env. *)
+  let new_env = add_types_to_env decls shapes env in
   (* Check for ill-formed abbrevs *)
   let id_loc_list =
     List.map2 (fun (id, _) sdecl -> (id, sdecl.ptype_loc))
@@ -1210,19 +1330,16 @@ let transl_type_decl env rec_flag sdecl_list =
     List.fold_left2
       (enter_type ~abstract_abbrevs:Rec_check_regularity rec_flag)
       env sdecl_list ids_list in
-  List.iter (fun (id, decl) ->
-    check_well_founded_manifest ~abs_env new_env (List.assoc id id_loc_list)
-      (Path.Pident id) decl)
-    decls;
   let to_check =
     function Path.Pident id -> List.mem_assoc id id_loc_list | _ -> false in
   List.iter (fun (id, decl) ->
-    check_well_founded_decl ~abs_env new_env (List.assoc id id_loc_list)
-      (Path.Pident id)
-      decl to_check)
+      let path = Path.Pident id in
+      check_well_founded_decl
+        ~abs_env ~final_env:new_env ~is_decl_path:to_check
+        (List.assoc id id_loc_list)
+        path decl)
     decls;
-  List.iter (fun (tdecl, _shape) ->
-    check_abbrev_regularity ~abs_env new_env id_loc_list to_check tdecl)
+  List.iter (check_abbrev_regularity ~abs_env new_env id_loc_list to_check)
     tdecls;
   (* Update temporary definitions (for well-founded recursive types) *)
   begin match rec_flag with
@@ -1235,8 +1352,8 @@ let transl_type_decl env rec_flag sdecl_list =
   end;
   (* Check that all type variables are closed *)
   List.iter2
-    (fun sdecl (tdecl, _shape) ->
-       let decl = tdecl.typ_type in
+    (fun sdecl tdecl ->
+      let decl = tdecl.typ_type in
        match Ctype.closed_type_decl decl with
          Some var ->
            let params = param_types tdecl.typ_params in
@@ -1268,8 +1385,9 @@ let transl_type_decl env rec_flag sdecl_list =
   (* Keep original declaration *)
   let final_decls =
     List.map2
-      (fun (tdecl, _shape) (_id2, decl) ->
-        { tdecl with typ_type = decl }
+      (fun tdecl (_id2, decl) ->
+        (* Using [Subst] reverts expansions *)
+        { tdecl with typ_type = Subst.type_declaration Subst.identity decl }
       ) tdecls decls
   in
   (* Done *)
@@ -1654,42 +1772,10 @@ let transl_value_decl env loc valdecl =
   let cty = Typetexp.transl_type_scheme env valdecl.pval_type in
   let ty = cty.ctyp_type in
   let v =
-  match valdecl.pval_prim with
-    [] when Env.is_in_signature env ->
-      { val_type = ty; val_kind = Val_reg; Types.val_loc = loc;
-        val_attributes = valdecl.pval_attributes;
-        val_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
-      }
-  | [] ->
-      raise (Error(valdecl.pval_loc, Val_in_structure))
-  | _ ->
-      let global_repr =
-        match
-          get_native_repr_attribute valdecl.pval_attributes ~global_repr:None
-        with
-        | Native_repr_attr_present repr -> Some repr
-        | Native_repr_attr_absent -> None
-      in
-      let native_repr_args, native_repr_res =
-        parse_native_repr_attributes env valdecl.pval_type ty ~global_repr
-      in
-      let prim =
-        Primitive.parse_declaration valdecl
-          ~native_repr_args
-          ~native_repr_res
-      in
-      if prim.prim_arity = 0 &&
-         (prim.prim_name = "" || prim.prim_name.[0] <> '%') then
-        raise(Error(valdecl.pval_type.ptyp_loc, Null_arity_external));
-      if !Clflags.native_code
-      && prim.prim_arity > 5
-      && prim.prim_native_name = ""
-      then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
-      check_unboxable env loc ty;
-      { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
-        val_attributes = valdecl.pval_attributes;
-        val_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
-      }
+    { val_type = ty; val_kind = Val_reg; Types.val_loc = loc;
+      val_attributes = valdecl.pval_attributes;
+      val_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
+    }
   in
   let (id, newenv) =
     Env.enter_value valdecl.pval_name.txt v env
@@ -1700,7 +1786,6 @@ let transl_value_decl env loc valdecl =
      val_id = id;
      val_name = valdecl.pval_name;
      val_desc = cty; val_val = v;
-     val_prim = valdecl.pval_prim;
      val_loc = valdecl.pval_loc;
      val_attributes = valdecl.pval_attributes;
     }
@@ -1710,6 +1795,102 @@ let transl_value_decl env loc valdecl =
 let transl_value_decl env loc valdecl =
   Builtin_attributes.warning_scope valdecl.pval_attributes
     (fun () -> transl_value_decl env loc valdecl)
+
+(* Translate a primitive description *)
+let transl_prim_desc env loc primdesc =
+  match primdesc.pprim_kind with
+  | Pprim_decl (pprim_type, pprim_prim) ->
+    let cty = Typetexp.transl_type_scheme env pprim_type in
+    let ty = cty.ctyp_type in
+    let v =
+      let global_repr =
+        match
+          get_native_repr_attribute primdesc.pprim_attributes ~global_repr:None
+        with
+        | Native_repr_attr_present repr -> Some repr
+        | Native_repr_attr_absent -> None
+      in
+      let native_repr_args, native_repr_res =
+        parse_native_repr_attributes env pprim_type ty ~global_repr
+      in
+      let prim =
+        Primitive.parse_description
+          ~native_repr_args
+          ~native_repr_res
+          ~prim:pprim_prim
+          ~attrs:primdesc.pprim_attributes
+          ~loc:primdesc.pprim_loc
+      in
+      if prim.prim_arity = 0 &&
+         (prim.prim_name = "" || prim.prim_name.[0] <> '%') then
+        raise(Error(pprim_type.ptyp_loc, Null_arity_external));
+      if !Clflags.native_code
+      && prim.prim_arity > 5
+      && prim.prim_native_name = ""
+      then raise(Error(pprim_type.ptyp_loc, Missing_native_external));
+      check_unboxable env loc ty;
+      { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
+        val_attributes = primdesc.pprim_attributes;
+        val_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
+      }
+    in
+    let (id, newenv) =
+      Env.enter_value primdesc.pprim_name.txt v env
+        ~check:(fun s -> Warnings.Unused_value_declaration s)
+    in
+    let desc =
+      {
+       prim_id = id;
+       prim_name = primdesc.pprim_name;
+       prim_kind = Tprim_decl (cty, pprim_prim); prim_val = v;
+       prim_loc = primdesc.pprim_loc;
+       prim_attributes = primdesc.pprim_attributes;
+      }
+    in
+    desc, newenv
+  | Pprim_alias (pprim_type, pprim_ident) ->
+    let path, v =
+      Env.lookup_value ~use:true ~loc:pprim_ident.loc pprim_ident.txt env
+    in
+    (match v.val_kind with
+     | Val_prim _ ->
+       let cty, v =
+         match pprim_type with
+         | None -> None, v
+         | Some pprim_type ->
+           let cty = Typetexp.transl_type_scheme env pprim_type in
+           (* When the alias has a type ascription, we check that it is no more
+              general than the type of the aliased declaration. *)
+           match
+             Ctype.matches ~expand_error_trace:true env
+               cty.ctyp_type v.val_type
+           with
+           | () -> Some cty, { v with val_type = cty.ctyp_type; val_loc = loc }
+           | exception (Ctype.Matches_failure (env, err)) ->
+             raise(Error(cty.ctyp_loc, Primitive_type_mismatch (env, err)))
+       in
+       let (id, newenv) =
+         Env.enter_value primdesc.pprim_name.txt v env
+           ~check:(fun s -> Warnings.Unused_value_declaration s)
+       in
+       let desc =
+         {
+          prim_id = id;
+          prim_name = primdesc.pprim_name;
+          prim_kind = Tprim_alias (cty, path, pprim_ident);
+          prim_val = v;
+          prim_loc = primdesc.pprim_loc;
+          prim_attributes = primdesc.pprim_attributes;
+         }
+       in
+       desc, newenv
+     | Val_reg | Val_ivar _ | Val_self _ | Val_anc _ as val_kind ->
+       raise(Error(pprim_ident.loc,
+                   Primitive_alias_does_not_refer_to_primitive val_kind)))
+
+let transl_prim_desc env loc primdesc =
+  Builtin_attributes.warning_scope primdesc.pprim_attributes
+    (fun () -> transl_prim_desc env loc primdesc)
 
 (* Translate a "with" constraint -- much simplified version of
    transl_type_decl. For a constraint [Sig with t = sdecl],
@@ -1929,11 +2110,16 @@ let approx_type_decl ~explanation sdecl_list =
 (* [abs_env] is an abstract environment without physical cycles.
   It is used as a printing environment in the case of cycles.
   [env] is the main typing environment, which may contain cycles. *)
-let check_recmod_typedecl ~abs_env env loc recmod_ids path decl =
+let check_recmod_typedecl
+    ~abs_env env loc recmod_ids path decl =
   (* recmod_ids is the list of recursively-defined module idents.
      (path, decl) is the type declaration to be checked. *)
   let to_check path = Path.exists_free recmod_ids path in
-  check_well_founded_decl ~abs_env env loc path decl to_check;
+  let is_decl_path path' =
+    to_check path'
+  in
+  check_well_founded_decl ~abs_env ~final_env:env
+    ~is_decl_path loc path decl;
   check_regularity ~abs_env env loc path decl to_check;
   (* additional coherence check, as one might build an incoherent signature,
      and use it to build an incoherent module, cf. #7851 *)
@@ -1948,7 +2134,7 @@ module Printtyp = Printtyp.Doc
 
 let explain_unbound_gen ppf ~params tv tl typ kwd pr =
   try
-    let ti = List.find (fun ti -> Ctype.deep_occur tv (typ ti)) tl in
+    let ti = List.find (fun ti -> Btype.deep_occur tv (typ ti)) tl in
     let ty0 = (* Hack to force aliasing when needed *)
       Btype.newgenty (Tobject(tv, ref None)) in
     Out_type.prepare_for_printing (params @ [typ ti; ty0]);
@@ -2014,6 +2200,9 @@ module Reaching_path = struct
     List.iter (function
       | Contains (ty1, ty2) | Expands_to (ty1, ty2) ->
           List.iter Out_type.add_type_to_preparation [ty1; ty2]
+      | Parameter (_, _, ty) ->
+          Out_type.add_type_to_preparation ty
+      | Considered_abstract _ -> ()
     ) path
 
   module Fmt = Format_doc
@@ -2028,6 +2217,17 @@ module Reaching_path = struct
           Fmt.fprintf ppf "%a contains %a"
             (Style.as_inline_code Out_type.prepared_type_expr) outer
             (Style.as_inline_code Out_type.prepared_type_expr) inner
+      | Parameter (path, i, ty) ->
+          let i = i + 1 in
+          Fmt.fprintf ppf "the %i%s type parameter of %a is constrained to %a"
+            i
+            (Misc.ordinal_suffix i)
+            Style.inline_code (Path.name path)
+            (Printtyp.type_expansion Type)
+            (Out_type.prepare_expansion (Errortrace.trivial_expansion ty))
+      | Considered_abstract path ->
+          Fmt.fprintf ppf "the type %a is considered abstract"
+            Style.inline_code (Path.name path)
     in
     Fmt.(pp_print_list ~pp_sep:comma) pp_step ppf reaching_path
 
@@ -2273,8 +2473,6 @@ let report_error ~loc = function
          cannot be checked%t"
         n (Misc.ordinal_suffix n)
         reason_text
-  | Val_in_structure ->
-      Location.errorf ~loc "Value declarations are only allowed in signatures"
   | Multiple_native_repr_attributes ->
       Location.errorf ~loc "Too many %a/%a attributes"
         Style.inline_code "[@@unboxed]"
@@ -2364,7 +2562,25 @@ let report_error ~loc = function
       Location.errorf ~loc
         "This external declaration has a non-syntactic arity,@ \
          its arity is greater than its syntactic arity."
-
+  | Primitive_alias_does_not_refer_to_primitive val_kind ->
+      Location.errorf ~loc
+        "@[This@ identifier@ should@ be@ a@ primitive,@ but@ it@ is@ bound@ \
+         to@ %s.@]"
+        (match val_kind with
+         | Val_prim _ ->
+           Misc.fatal_error "Typedecl.report_error: value is a primitive"
+         | Val_reg -> "a regular value"
+         | Val_ivar _ -> "an instance variable"
+         | Val_self _ -> "the self object"
+         | Val_anc _ -> "an ancestor object")
+  | Primitive_type_mismatch (env, err) ->
+      let msg = Format_doc.Doc.msg in
+      Location.errorf ~loc
+        "@[<v>The type of this alias does not match that of the aliased \
+         primitive.@,%t@]" @@ fun ppf ->
+        Errortrace_report.unification ppf env err
+          (msg "Type")
+          (msg "is not compatible with type")
 
 let () =
   Location.register_error_of_exn

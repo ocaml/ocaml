@@ -116,7 +116,7 @@ module ParamsUnificationEnv :
       sig type 'a u = 'a list type +'a t constraint 'a = 'b u end
     type +'a t = 'b constraint 'a = 'b list
     module type Sig2 =
-      sig type 'a u = 'a list type +'a t = 'a t/2 constraint 'a = 'b u end
+      sig type 'a u = 'a list type +'a t = 'b u t/2 constraint 'a = 'b u end
   end
 |}]
 

@@ -87,13 +87,13 @@ STDLIB_MODULE_BASENAMES = \
   random \
   hashtbl \
   weak \
-  format \
   scanf \
   callback \
   camlinternalOO \
   oo \
-  camlinternalMod \
   dynarray \
+  format \
+  camlinternalMod \
   pqueue \
   ephemeron \
   filename \

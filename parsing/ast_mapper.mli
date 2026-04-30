@@ -95,6 +95,8 @@ type mapper = {
   package_type: mapper -> package_type -> package_type;
   pat: mapper -> pattern -> pattern;
   payload: mapper -> payload -> payload;
+  primitive_description: mapper -> primitive_description
+                         -> primitive_description;
   signature: mapper -> signature -> signature;
   signature_item: mapper -> signature_item -> signature_item;
   structure: mapper -> structure -> structure;

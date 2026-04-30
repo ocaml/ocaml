@@ -174,7 +174,7 @@ token\n", virtual_input_file_name, lineno, s);
 
 void too_many_entries(void)
 {
-    fprintf(stderr, "File \"%s\", line %d: more than %u entry points\n",
+    fprintf(stderr, "File \"%s\", line %d: more than %d entry points\n",
             virtual_input_file_name, lineno, MAX_ENTRY_POINT);
     done(1);
 }

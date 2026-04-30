@@ -2651,7 +2651,7 @@ let persistent_structures_of_dir dir =
 
 (* Save a signature to a file *)
 let save_signature_with_transform cmi_transform ~alerts sg cmi_info =
-  Btype.cleanup_abbrev ();
+  Btype.cleanup_abbrev_memo ();
   Subst.reset_for_saving ();
   let sg = Subst.signature Make_local (Subst.for_saving Subst.identity) sg in
   let cmi =

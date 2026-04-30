@@ -84,6 +84,7 @@ META
 
 /bytecomp/opcodes.ml
 /bytecomp/opcodes.mli
+/bytecomp/opnames.ml
 /bytecomp/byterntm.ml
 
 /debugger/debugger_lexer.ml
@@ -282,7 +283,6 @@ META
 /tools/ocamldep.opt
 /tools/ocamlprof
 /tools/ocamlprof.opt
-/tools/opnames.ml
 /tools/dumpobj
 /tools/dumpobj.opt
 /tools/ocamlobjinfo

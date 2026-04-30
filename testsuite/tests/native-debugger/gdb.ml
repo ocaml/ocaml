@@ -3,7 +3,7 @@
    not tsan; (* Skip, TSan inserts extra frames into backtraces *)
    linux;
    not clang; (* Skip, clang is tested on macOS *)
-   arch_amd64 || arch_arm64 || arch_riscv;
+   arch_amd64 || arch_arm64 || arch_power || arch_riscv || arch_s390x;
    script = "sh ${test_source_directory}/has_gdb.sh";
    script;
    readonly_files = "meander.ml meander_c.c gdb_test.py";

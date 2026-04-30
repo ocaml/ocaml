@@ -1420,7 +1420,7 @@ do_resume: {
 #ifdef _MSC_VER
       CAMLunreachable();
 #else
-      caml_fatal_error("bad opcode (%" CAML_PRIxNAT ")", (intnat) *(pc-1));
+      caml_fatal_error("bad opcode (%" CAML_PRIxNAT ")", (uintnat) *(pc-1));
 #endif
     }
   }

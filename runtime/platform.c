@@ -332,11 +332,11 @@ void* caml_mem_map(uintnat size, int reserve_only)
   void* mem = caml_plat_mem_map(size, reserve_only);
 
   if (mem == 0) {
-    CAML_GC_MESSAGE(ADDRSPACE, "mmap %" CAML_PRIdNAT " bytes failed", size);
+    CAML_GC_MESSAGE(ADDRSPACE, "mmap %" CAML_PRIuNAT " bytes failed", size);
     return 0;
   }
 
-  CAML_GC_MESSAGE(ADDRSPACE, "mmap %" CAML_PRIdNAT " bytes at %p for heaps\n",
+  CAML_GC_MESSAGE(ADDRSPACE, "mmap %" CAML_PRIuNAT " bytes at %p for heaps\n",
                   size, mem);
 
 #ifdef DEBUG
@@ -349,7 +349,7 @@ void* caml_mem_map(uintnat size, int reserve_only)
 void* caml_mem_commit(void* mem, uintnat size)
 {
   CAMLassert(Is_page_aligned(size));
-  CAML_GC_MESSAGE(ADDRSPACE, "commit %" CAML_PRIdNAT " bytes at %p for heaps\n",
+  CAML_GC_MESSAGE(ADDRSPACE, "commit %" CAML_PRIuNAT " bytes at %p for heaps\n",
                   size, mem);
   return caml_plat_mem_commit(mem, size);
 }
@@ -358,7 +358,7 @@ void caml_mem_decommit(void* mem, uintnat size)
 {
   if (size) {
     CAML_GC_MESSAGE(ADDRSPACE,
-                    "decommit %" CAML_PRIdNAT " bytes at %p for heaps\n",
+                    "decommit %" CAML_PRIuNAT " bytes at %p for heaps\n",
                     size, mem);
     caml_plat_mem_decommit(mem, size);
   }
@@ -371,7 +371,7 @@ void caml_mem_unmap(void* mem, uintnat size)
   CAMLassert(caml_lf_skiplist_find(&mmap_blocks, (uintnat)mem, &data) != 0);
   CAMLassert(data == size);
 #endif
-  CAML_GC_MESSAGE(ADDRSPACE, "munmap %" CAML_PRIdNAT " bytes at %p for heaps\n",
+  CAML_GC_MESSAGE(ADDRSPACE, "munmap %" CAML_PRIuNAT " bytes at %p for heaps\n",
                   size, mem);
   caml_plat_mem_unmap(mem, size);
 #ifdef DEBUG

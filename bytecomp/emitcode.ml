@@ -228,6 +228,9 @@ and emit_branch_comp = function
 | Clt -> out opBLTINT | Cle -> out opBLEINT
 | Cgt -> out opBGTINT | Cge -> out opBGEINT
 
+let integer_comparison_of_physical : physical_comparison -> integer_comparison =
+  function CPeq -> Ceq | CPneq -> Cne
+
 let emit_instr = function
     Klabel lbl -> define_label lbl
   | Kacc n ->
@@ -334,7 +337,11 @@ let emit_instr = function
   | Kandint -> out opANDINT  | Korint -> out opORINT
   | Kxorint -> out opXORINT  | Klslint -> out opLSLINT
   | Klsrint -> out opLSRINT  | Kasrint -> out opASRINT
-  | Kintcomp c -> emit_comp c
+  | Kintcomp c ->
+      emit_comp c
+  | Kphyscomp c ->
+      record_hint (Hint_physical_comparison);
+      emit_comp (integer_comparison_of_physical c)
   | Koffsetint n -> out opOFFSETINT; out_int n
   | Koffsetref n -> out opOFFSETREF; out_int n
   | Kisint -> out opISINT
@@ -372,6 +379,19 @@ let rec emit = function
         out_const k ;
         out_label lbl ;
         emit rem
+  | Kpush::Kconst k::Kphyscomp c::Kbranchif lbl::rem
+      when is_immed_const k ->
+        emit_branch_comp (integer_comparison_of_physical c) ;
+        out_const k ;
+        out_label lbl ;
+        emit rem
+  | Kpush::Kconst k::Kphyscomp c::Kbranchifnot lbl::rem
+      when is_immed_const k ->
+        emit_branch_comp
+          (negate_integer_comparison (integer_comparison_of_physical c)) ;
+        out_const k ;
+        out_label lbl ;
+        emit rem
 (* same for range tests *)
   | Kpush::Kconst k::Kisout::Kbranchif lbl::rem
       when is_immed_const k ->
@@ -393,7 +413,7 @@ let rec emit = function
       if n < 8 then out(opPUSHACC0 + n) else (out opPUSHACC; out_int n);
       emit c
   | Kpush :: Kenvacc n :: c ->
-      if n >= 1 && n < 4
+      if n >= 1 && n <= 4
       then out(opPUSHENVACC1 + n - 1)
       else (out opPUSHENVACC; out_int n);
       emit c
@@ -480,7 +500,7 @@ let to_file outchan artifact_info ~required_globals code =
   let () =
     (* Remove any cached abbreviation expansion before marshaling.
        See doc-comment for [Types.abbrev_memo] *)
-    Btype.cleanup_abbrev ();
+    Btype.cleanup_abbrev_memo ();
     marshal_to_channel_with_possibly_32bit_compat
       ~filename:(Unit_info.Artifact.filename artifact_info)
       ~kind:"bytecode unit"

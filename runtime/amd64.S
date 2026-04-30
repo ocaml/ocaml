@@ -407,13 +407,17 @@ G(name):
         .text
 
 #if defined(FUNCTION_SECTIONS)
-        TEXT_SECTION(CAMLSEP(hot,code_begin))
-        .globl  G(CAMLSEP(hot,code_begin))
-G(CAMLSEP(hot,code_begin)):
+/* Two sections, and matching symbols, caml_hot__code_begin and
+   caml_hot__code_end, are used by OCamlFDO. These names are not OCaml
+   functions, and are hard-wired in OCamlFDO. */
 
-        TEXT_SECTION(CAMLSEP(hot,code_end))
-        .globl  G(CAMLSEP(hot,code_end))
-G(CAMLSEP(hot,code_end)):
+        TEXT_SECTION(caml_hot__code_begin)
+        .globl  G(caml_hot__code_begin)
+G(caml_hot__code_begin):
+
+        TEXT_SECTION(caml_hot__code_end)
+        .globl  G(caml_hot__code_end)
+G(caml_hot__code_end):
 #endif
 
 /******************************************************************************/

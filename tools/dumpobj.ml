@@ -472,6 +472,8 @@ let print_hint hint =
   match hint with
   | Hint_immutable_block ->
       printf " (immutable)"
+  | Hint_physical_comparison ->
+      printf " (physical comparison)"
   | Hint_arraylength kind ->
       printf " (%s)"
         (match kind with

@@ -87,7 +87,7 @@ installopt-default:
 
 MANGLING = $(filter true,$(SUFFIXING))
 runtime-launch-info: tmpheader.exe
-	@{ printf '$(if $(MANGLING),$(ZINC_RUNTIME_ID_HI),\000)'; \
+	@{ printf '$(if $(MANGLING),$(ZINC_RUNTIME_ID),\000)'; \
 	   cat $^; } > $@
 
 # The mingw-w64 and MSVC versions of tmpheader.exe are linked with special flags

@@ -72,7 +72,9 @@ let list_concat sep =
   in
   iter
 
-let remove_duplicates (type a) compare (li : a list) =
+(* let remove_duplicates (type a) compare (li : a list) = *)
+let remove_duplicates : type a. (a -> a -> int) -> a list -> a list =
+  fun compare li ->
   let module S = Set.Make(struct type t = a let compare = compare end) in
   let maybe_cons ((set, rev_acc) as acc) x =
     if S.mem x set then acc
@@ -507,6 +509,7 @@ let remove_option typ =
     | Tvariant _
     | Tpackage _ -> t
     | Tlink t2 -> trim (get_desc t2)
+    | Texpand _
     | Tsubst _ -> assert false
   in
   Transient_expr.type_expr

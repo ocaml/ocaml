@@ -146,9 +146,10 @@ let remove_dir dir =
 let add (dir : Dir.t) =
   assert (not Config.merlin || Local_store.is_bound ());
   let update base fn visible_files hidden_files =
-    if dir.hidden && not (STbl.mem !hidden_files base) then
-      STbl.replace !hidden_files base fn
-    else if not (STbl.mem !visible_files base) then
+    if dir.hidden then begin
+      if not (STbl.mem !hidden_files base) then
+        STbl.replace !hidden_files base fn
+    end else if not (STbl.mem !visible_files base) then
       STbl.replace !visible_files base fn
   in
   List.iter

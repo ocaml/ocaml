@@ -5,6 +5,14 @@ Working version
 
 ### Language features:
 
+- #13377, RFC 44: Primitive aliases
+  (Nailen Matschke, review by Jeremy Yallop, Leo White, and Florian Angeletti)
+
+- #14274, #14710: read nested `with` constraints in package type
+  `(module T with type x = ... with type y = ...)` as syntactic sugar for list
+  of constraints (`with type x =... and type s = ...`).
+  (Florian Angeletti, report by Brendan Zabarauskas, review by Gabriel Scherer)
+
 ### Runtime system:
 
 - #14486, #14530: Add FreeBSD frame pointers support for AMD64 and ARM64.
@@ -23,9 +31,14 @@ Working version
   symbols from the runtime. The declarations were removed in 5.0.
   (Antonin Décimo, review by Nicolás Ojeda Bär)
 
-- #14570: Distinguish between prefetching for read and write access in the
-  runtime. Significant performance benefit for some multi-domain programs. For
-  maximum benefit on AMD64, pass -mprfchw to the C compiler.
+- #14642: Ignore cleanup-at-exit / caml_shutdown when other domains remain
+  running
+  (Gabriel Scherer and Olivier Nicole, report by Olivier Nicole, review by Miod
+   Vallat and Damien Doligez)
+
+- #14570, #14616, #14665: Distinguish between prefetching for read and write
+  access in the runtime. Significant performance benefit for some multi-domain
+  programs.
   (Nick Barnes, review by Gabriel Scherer, Damien Doligez, and Antonin Décimo)
 
 - #14651: Remove S390x TSan (Thread Sanitizer) support.
@@ -36,10 +49,45 @@ Working version
   (Antonin Décimo, David Allsopp, Hannes Mehnert, review by
    Nicolás Ojeda Bär)
 
+- #14482: Add DWARF CFI support to POWER backend.
+  (Tim McGilchrist, review by Xavier Leroy)
+
+- #14666, #14751: Give C string constants the type `const char[N]` instead of
+  `char[N]` with the C compiler `-Wwrite-strings` flag.
+  (Antonin Décimo, review by Xavier Leroy and Olivier Nicole)
+
+- #14694: Warn if C format specifier and argument differ in signedness
+  (-Wformat-signedness).
+  (Antonin Décimo, review by Léo Andrès)
+
+- #14717: assign 'unique_id' early during domain creation to help debugging
+  (Gabriel Scherer, review by Olivier Nicole)
+
 ### Type system:
+
+* #11648, #14766, #14768: Keep expansion and new well-foundedness check
+  implementation.
+  Do expansion in place during unification, rather than only memoizing it
+  in a temporary cache. This fixes a number of non-terminations and crashes
+  (#9314, #13230, #13881, #14036) and losses of principality (#14307 among
+  others). The well-foundedness check of type definitions was rewritten.
+  To be able to still show abbreviations in printed types, they are kept
+  inside the edges of the graph representation of types. However, due to path
+  compression we keep only a single abbreviation, and it may get invalidated
+  in some cases, resulting in bigger types printed. Also, while the
+  implementation strives to follow the specification, some unspecified
+  behaviors may change: stricter behavior of the well-foundedness check in
+  some cases, or expansions kept in cmis in rare cases.
+  (Jacques Garrigue and Stefan Muenzel, cross reviewed, temporary regression
+   reported by Jeremy Yallop, fix reviewed by Samuel Vivien and
+   Florian Angeletti)
 
 - #14512: Improve check for warning 16 (unerasable-optional-argument)
   (Alistair O'Brien, review by Florian Angeletti, Gabriel Scherer)
+
+- #12150: class type system improvements: self type constraints, virtual method
+  inheritance in mutually recursive definition, immediate object inheritance.
+  (Leo White, review by Florian Angeletti)
 
 ### Code generation and optimizations:
 
@@ -60,7 +108,21 @@ Working version
   and executables (to be used by Js_of_ocaml / Wasm_of_ocaml)
   (Jérôme Vouillon)
 
+- #13588: propagate physical comparison operators to lambda
+  (to be used by Js_of_ocaml / Wasm_of_ocaml)
+  (Hugo Heuzard, review by Olivier Nicole)
+
+- #14534: Fix bytecode peehole optimization for PUSHENVACC4
+  (Hugo heuzard, David Allsopp review by Nicolás Ojeda Bär, Vincent Laviron
+  and Gabriel Scherer)
+
 ### Standard library:
+
+- #10798: Atomic helper function
+    update : ('a -> 'a) -> 'a t -> unit
+  (Gabriel Scherer, review by Simon Cruanes, Stephen Dolan,
+   Xavier Leroy, Guillaume Munch-Maccagnoni, Vesa Karvonen,
+   Noah Bogart, Léo Andrès and Olivier Nicole)
 
 - #13554: Add `List.append_map` and `List.rev_append_map`.
   (Sylvain Boilard and Hugo Heuzard, review by Nicolás Ojeda Bär, Daniel Bünzli,
@@ -77,12 +139,28 @@ Working version
 - #14487: Add String.drop_{prefix,suffix}
   (Michael Neumann, review by Léo Andrès, Nicolás Ojeda Bär and Gabriel Scherer)
 
+- #14693: Add Dynarray.{of,to}_iarray
+  (Olivier Nicole, review by Gabriel Scherer and Nicolás Ojeda Bär, suggestion
+   by Andreas Rossberg)
+
+- #14724: Add Format.pp_print_iarray
+  (Olivier Nicole, review by Gabriel Scherer and Daniel Bünzli, suggestion by
+   Jan Behrens)
+
+- #14726: Add Format.pp_print_dynarray
+  (Olivier Nicole, review by Gabriel Scherer and Léo Andrès, suggestion by Léo
+   Andrès)
+
 - #14553: Add Array.fold_{left,right}2
   (Clément Pottier, review by Nicolás Ojeda Bär and Vincent Laviron)
 
 ### Other libraries:
 
 ### Tools:
+
+- #14318, #14709, ocamldoc: use "Module_name (Library name)" rather than
+   "Library name: Module_name" as the title of html pages.
+   (Florian Angeletti, report by Antonin Décimo, review by Nicolás Ojeda Bär)
 
 - #14499: in ocamltest, remove support for the legacy
   test syntax (with '***') and the '-translate' option
@@ -103,6 +181,15 @@ Working version
   `macosx` to match the configure-time choice.
   (Tim McGilchrist, review by Gabriel Scherer and Antonin Décimo)
 
+- #12418, #14713: ocamltest, 'cold' predicate to mark tests
+  that it would be okay to run only rarely.
+  (Gabriel Scherer, review by Florian Angeletti)
+
+- #14748: ocamlyacc: a data structure allocated with malloc was not being fully
+  initialized, which could lead to incorrect line directives being generated.
+  (Nicolás Ojeda Bär, report by Igor Pikovets, review by Gabriel Scherer and
+  Xavier Leroy)
+
 ### Manual and documentation:
 
 - #14598: Add `@since` annotations to `Runtime_events`. (Raphaël Proust)
@@ -120,6 +207,17 @@ Working version
   avoid a possible confusion between type parameters and unbound variables.
   (Florian Angeletti, report by Florian Weimer, review by Gabriel Scherer)
 
+- #14690: Fix `Name_type_mismatch` error message when the expected type is an
+  alias: print the expanded path on the right-hand side of the equality, not
+  the alias twice.
+  (Weixie Cui)
+
+- #14695: Add hint about using type annotations to avoid scope escape errors
+  (Stefan Muenzel, review by Jacques Garrigue and Florian Angeletti)
+
+- #14737: Uniformly check for missing fields first when comparing object types.
+  (Samuel Vivien, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #14620: optimize utf8 normalization and (un)capitalization functions
@@ -134,12 +232,35 @@ Working version
   constructor declarations.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #14641: Move `Opnames` into `ocamlbytecomp`.
+  (David Allsopp, review by Nicolás Ojeda Bär)
+
+- #14654: Fix non-exhaustive directive rule in lexer.
+  (Antonin Décimo, review by Martin Jambon and Gabriel Scherer)
+
+- #14730: Test keep-expansion (#11648) against overflow in the presence of
+  rectypes and module aliases.
+  (Brandon Stride)
+
+- #14738: Improved error message for mismatched privacy level on method types
+  when mixing self types, local modules and first class modules.
+  (Samuel Vivien, review by Florian Angeletti, Jacques Garrigue)
+
 ### Build system:
 
 ### Bug fixes:
 
 - #14492: Fix Obj.dup on closures.
   (Mark Shinwell and Nick Barnes, review by Gabriel Scherer and Damien Doligez)
+
+- #14500: Fix CFI information emitted for s390x architecture. This helps
+  debuggers to unwind the stack correctly and print accurate backtraces
+  for OCaml code.
+  (Tim McGilchrist, review by Miod Vallat, Zane Hambly and Olivier Nicole)
+
+- #14727: Reduce memory usage when refuting a pattern clause with a large
+  counter-example search space.
+  (Florian Angeletti, review by Gabriel Scherer)
 
 OCaml 5.5.0
 -----------
@@ -175,6 +296,9 @@ OCaml 5.5.0
   to most other structure items, eg `let type t = ... in ...`, `let type t +=
   ... in ...`, etc.
   (Nicolás Ojeda Bär, review by Valentin Gatien-Baron)
+
+- #14692: Allow unparenthesized application expressions in record update syntax
+  (Stephen Dolan, review by Damien Doligez)
 
 ### Runtime system:
 
@@ -533,6 +657,9 @@ OCaml 5.5.0
 
 ### Manual and documentation:
 
+- #14684: Improve ocamlopt's manual page
+  (Samuel Hym, review by Florian Angeletti)
+
 - #14397: Improve documentation of type-directed disambiguation of array
   literals (Alicia Michael, review by Olivier Nicole and Florian Angeletti)
 
@@ -578,6 +705,10 @@ OCaml 5.5.0
 
 - #14392: Fix AsciiDoc files, add more markup, xrefs, documentation.
   (Antonin Décimo, review by Gabriel Scherer and David Allsopp)
+
+- #13590: Document automatic command-line expansion of `*` and `?` wildcards by
+  the runtime under Windows.
+  (Benjamin Sigonneau, review by Nicolás Ojeda Bär)
 
 ### Compiler user-interface and warnings:
 
@@ -742,6 +873,9 @@ OCaml 5.5.0
   definition
   (Ulysse Gérard, review by Florian Angeletti and Gabriel Scherer)
 
+- #14394: Refactor `type_let` into `type_let_nonrec` and `type_let_rec`.
+  (Alistair O'Brien, review by Samuel Vivien)
+
 ### Build system:
 
 - #13705, #14444: Cache test results of custom Autoconf tests from aclocal.m4.
@@ -897,6 +1031,20 @@ OCaml 5.5.0
 - #14644, #14647: Fix a bug related to unhandled effects in bytecode.
   (Vincent Laviron, report by Thibaut Mattio,
    review by Nicolás Ojeda Bär, Stephen Dolan and Olivier Nicole)
+
+- #14655, #14691: check for size overflow in caml_ba_reshape
+  (Stephen Dolan, review by Xavier Leroy)
+
+- #14667: enable application related warnings for module-dependent functions
+  (Florian Angeletti, review by Gabriel Scherer)
+
+- #14702: Fix hidden directory files leaking into the visible load path table.
+  When a hidden directory contained a file whose basename was already present,
+  the file could be incorrectly added to the visible table.
+  (Hugo Heuzard, review by Florian Angeletti)
+
+- #14719, #14721: compute arity correctly for module-dependent function
+  (Florian Angeletti, report by Jeremy Yallop, review by Stefan Muenzel)
 
 OCaml 5.4.0 (9 October 2025)
 ----------------------------

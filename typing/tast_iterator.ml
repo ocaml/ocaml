@@ -61,6 +61,7 @@ type iterator =
     value_binding: iterator -> value_binding -> unit;
     value_bindings: iterator -> (rec_flag * value_binding list) -> unit;
     value_description: iterator -> value_description -> unit;
+    primitive_description: iterator -> primitive_description -> unit;
     with_constraint: iterator -> with_constraint -> unit;
     item_declaration: iterator -> item_declaration -> unit;
   }
@@ -148,7 +149,7 @@ let structure_item sub {str_loc; str_desc; str_env; _} =
   match str_desc with
   | Tstr_eval   (exp, attrs) -> sub.expr sub exp; sub.attributes sub attrs
   | Tstr_value  (rec_flag, list) -> sub.value_bindings sub (rec_flag, list)
-  | Tstr_primitive v -> sub.value_description sub v
+  | Tstr_primitive p -> sub.primitive_description sub p
   | Tstr_type (rec_flag, list) -> sub.type_declarations sub (rec_flag, list)
   | Tstr_typext te -> sub.type_extension sub te
   | Tstr_exception ext -> sub.type_exception sub ext
@@ -170,6 +171,18 @@ let value_description sub x =
   sub.attributes sub x.val_attributes;
   iter_loc sub x.val_name;
   sub.typ sub x.val_desc
+
+let primitive_description sub x =
+  sub.item_declaration sub (Primitive x);
+  sub.location sub x.prim_loc;
+  sub.attributes sub x.prim_attributes;
+  iter_loc sub x.prim_name;
+  match x.prim_kind with
+  | Tprim_decl (typ, _)->
+    sub.typ sub typ
+  | Tprim_alias (typ, _, lid) ->
+    Option.iter (sub.typ sub) typ;
+    iter_loc_lid sub lid
 
 let label_decl sub ({ld_loc; ld_name; ld_type; ld_attributes; _} as ld) =
   sub.item_declaration sub (Label ld);
@@ -413,6 +426,7 @@ let signature_item sub {sig_loc; sig_desc; sig_env; _} =
   sub.env sub sig_env;
   match sig_desc with
   | Tsig_value v -> sub.value_description sub v
+  | Tsig_primitive p -> sub.primitive_description sub p
   | Tsig_type (rf, tdl)  -> sub.type_declarations sub (rf, tdl)
   | Tsig_typesubst list -> sub.type_declarations sub (Nonrecursive, list)
   | Tsig_typext te -> sub.type_extension sub te
@@ -711,6 +725,7 @@ let default_iterator =
     value_binding;
     value_bindings;
     value_description;
+    primitive_description;
     with_constraint;
     item_declaration;
   }

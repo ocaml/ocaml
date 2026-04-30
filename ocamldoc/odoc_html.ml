@@ -1082,9 +1082,10 @@ class html =
     method title = match !Global.title with None -> "" | Some t -> self#escape t
 
     (** Get the title given by the user completed with the given subtitle. *)
-    method inner_title s =
-      (match self#title with "" -> "" | t -> t^" : ")^
-      (self#escape s)
+    method inner_title s = match self#title with
+      | "" -> self#escape s
+      | t -> String.concat "" [self#escape s; " ("; t; ")"]
+
 
     (** Get the page header. *)
     method print_header b ?nav ?comments title = header b ?nav ?comments title

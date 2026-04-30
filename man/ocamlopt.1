@@ -14,30 +14,31 @@
 .\"**************************************************************************
 .\"
 .TH OCAMLOPT 1
-
+.\"*****
 .SH NAME
-
+.\"*****
 ocamlopt \- The OCaml native-code compiler
-
+.
+.\"*********
 .SH SYNOPSIS
-
-.B ocamlopt
-[
-.I options
-]
-.IR filename " ..."
-
-.B ocamlopt.opt
-(same options)
-
+.\"*********
+.SY ocamlopt
+.RI [ options ]
+.IR filename ...
+.SY ocamlopt.opt
+.RI [ options ]
+.IR filename ...
+.YS
+.
+.\"************
 .SH DESCRIPTION
-
+.\"************
 The OCaml high-performance
 native-code compiler
 .BR ocamlopt (1)
 compiles OCaml source files to native code object files and link these
 object files to produce standalone executables.
-
+.P
 The
 .BR ocamlopt (1)
 command has a command-line interface very close to that
@@ -45,7 +46,8 @@ of
 .BR ocamlc (1).
 It accepts the same types of arguments and processes them
 sequentially, after all options have been processed:
-
+.TP 4n
+.B \(bu
 Arguments ending in .mli are taken to be source files for
 compilation unit interfaces. Interfaces specify the names exported by
 compilation units: they declare value names with their types, define
@@ -60,7 +62,8 @@ in the file
 The interface produced is identical to that
 produced by the bytecode compiler
 .BR ocamlc (1).
-
+.TP 4n
+.B \(bu
 Arguments ending in .ml are taken to be source files for compilation
 unit implementations. Implementations provide definitions for the
 names exported by the unit, and also contain expressions to be
@@ -79,12 +82,13 @@ should always be referred to under the name
 (when given a .o file,
 .BR ocamlopt (1)
 assumes that it contains code compiled from C, not from OCaml).
-
+.IP
 The implementation is checked against the interface file
 .IR x .mli
 (if it exists) as described in the manual for
 .BR ocamlc (1).
-
+.TP 4n
+.B \(bu
 Arguments ending in .cmx are taken to be compiled object code.  These
 files are linked together, along with the object files obtained
 by compiling .ml arguments (if any), and the OCaml standard
@@ -97,7 +101,8 @@ before having initialized it. Hence, a given
 file must come
 before all .cmx files that refer to the unit
 .IR x .
-
+.TP 4n
+.B \(bu
 Arguments ending in .cmxa are taken to be libraries of object code.
 Such a library packs in two files
 .IR lib .cmxa
@@ -112,18 +117,20 @@ files contained in the library are linked as regular .cmx files (see
 above), in the order specified when the library was built. The only
 difference is that if an object file contained in a library is not
 referenced anywhere in the program, then it is not linked in.
-
+.TP 4n
+.B \(bu
 Arguments ending in .c are passed to the C compiler, which generates
 a .o object file. This object file is linked with the program.
-
+.TP 4n
+.B \(bu
 Arguments ending in .o or .a are assumed to be C object files and
 libraries. They are linked with the program.
-
+.P
 The output of the linking phase is a regular Unix executable file. It
 does not need
 .BR ocamlrun (1)
 to run.
-
+.P
 .B ocamlopt.opt
 is the same compiler as
 .BR ocamlopt ,
@@ -134,9 +141,10 @@ Thus, it behaves exactly like
 but compiles faster.
 .B ocamlopt.opt
 is not available in all installations of OCaml.
-
+.
+.\"********
 .SH OPTIONS
-
+.\"********
 The following command-line options are recognized by
 .BR ocamlopt (1).
 .TP
@@ -146,7 +154,7 @@ files) given on the command line, instead of linking them into an
 executable file. The name of the library must be set with the
 .B \-o
 option.
-
+.IP
 If
 .BR \-cclib " or " \-ccopt
 options are passed on the command
@@ -216,20 +224,22 @@ directory
 .BI \-color " mode"
 Enable or disable colors in compiler messages (especially warnings and errors).
 The following modes are supported:
-
+.RS
+.TP
 .B auto
 use heuristics to enable colors only if the output supports them (an
 ANSI-compatible tty terminal);
-
+.TP
 .B always
 enable colors unconditionally;
-
+.TP
 .B never
 disable color output.
-
+.RE
+.IP
 The environment variable "OCAML_COLOR" is considered if \-color is not
 provided. Its values are auto/always/never as above.
-
+.IP
 If \-color is not provided, "OCAML_COLOR" is not set and the environment
 variable "NO_COLOR" is set, then color output is disabled. Otherwise,
 the default setting is
@@ -237,26 +247,26 @@ the default setting is
 and the current heuristic
 checks that the "TERM" environment variable exists and is
 not empty or "dumb", and that isatty(stderr) holds.
-
 .TP
 .BI \-error\-style " mode"
 Control the way error messages and warnings are printed.
 The following modes are supported:
-
+.RS
+.TP
 .B short
 only print the error and its location;
-
+.TP
 .B contextual
 like "short", but also display the source code snippet corresponding
 to the location of the error.
-
+.RE
+.IP
 The default setting is
 .B contextual.
-
+.IP
 The environment variable "OCAML_ERROR_STYLE" is considered if
 \-error\-style is not provided. Its values are short/contextual as
 above.
-
 .TP
 .B \-compact
 Optimize the produced code for space rather than for time. This
@@ -325,7 +335,7 @@ are searched after the current directory, in the order in which they
 were given on the command line, but before the standard library
 directory. See also option
 .BR \-nostdlib .
-
+.IP
 If the given directory starts with
 .BR + ,
 it is taken relative to the
@@ -451,22 +461,34 @@ object code files (.cmx), and libraries (.cmxa). See also option
 Ignore non-optional labels in types. Labels cannot be used in
 applications, and parameter order becomes strict.
 .TP
-.BI \-o " exec\-file"
-Specify the name of the output file produced by the linker. The
-default output name is a.out, in keeping with the Unix tradition. If the
-.B \-a
-option is given, specify the name of the library produced. If the
-.B \-pack
-option is given, specify the name of the packed object file produced.
-If the
-.B \-output\-obj
-option is given, specify the name of the output file produced. If the
-.B \-shared
-option is given, specify the name of plugin file produced.
-This can also be used when compiling an interface or implementation
-file, without linking, in which case it sets the name of the cmi or
-cmo file, and also sets the module name to the file name up to the
-first dot.
+.BI \-o " filename"
+Specify the name of the final output file, whether it is an executable, a
+library
+.RB ( \-a
+option), a packed object
+.RB ( \-pack
+option), a dynlinkable plugin
+.RB ( \-shared
+option) or a C object file
+.RB ( \-output\-obj
+and
+.B \-output\-complete\-obj
+options).
+.IP
+The default output name for an executable depends on the platform, it is the
+traditional
+.B a.out
+on Unix,
+.B camlprog.exe
+on Windows.
+.IP
+This can also be used when compiling but not linking an interface or
+implementation file
+.RB ( \-c
+option), in which case it sets both the name of the cmi or cmx file, and of
+the compilation unit to the
+.I filename
+up to the first dot.
 .TP
 .B \-opaque
 When compiling a .mli interface file, this has the same effect as the
@@ -492,12 +514,12 @@ must be set with the
 option.
 This option can also be used to produce a compiled shared/dynamic
 library (.so extension).
+.TP
 .B \-output\-complete\-obj
 Same as
 .B \-output\-obj
 except the object file produced includes the runtime and
 autolink libraries.
-.TP
 .TP
 .B \-pack
 Build an object file (.cmx and .o files) and its associated compiled
@@ -513,14 +535,14 @@ compilation unit having three sub-modules A, B and C,
 corresponding to the contents of the object files A.cmx, B.cmx and
 C.cmx.  These contents can be referenced as P.A, P.B and P.C
 in the remainder of the program.
-
+.IP
 The .cmx object files being combined must have been compiled with
 the appropriate
 .B \-for\-pack
 option.  In the example above,
 A.cmx, B.cmx and C.cmx must have been compiled with
 .BR ocamlopt\ \-for\-pack\ P .
-
+.IP
 Multiple levels of packing can be achieved by combining
 .B \-pack
 with
@@ -601,11 +623,13 @@ supported passes are:
 .BI \-set\-runtime\-default " setting=value"
 When linking an executable, override the default value for a runtime setting.
 The only currently supported setting is:
-
+.RS
+.TP
 .B standard_library_default
 Specifies the default location used by the executable to locate the Standard
 Library. By default, this is the absolute path to the Standard Library the
 compiler itself was configured with.
+.RE
 .TP
 .B \-shared
 Build a plugin (usually .cmxs) that can be dynamically loaded with
@@ -715,13 +739,13 @@ sign (or an uppercase letter) marks the corresponding warnings as fatal, a
 sign (or a lowercase letter) turns them back into non-fatal warnings, and a
 .B @
 sign both enables and marks as fatal the corresponding warnings.
-
+.IP
 Note: it is not recommended to use the
 .B \-warn\-error
 option in production code, because it will almost certainly prevent
 compiling your program with later versions of OCaml when they add new
 warnings or modify existing warnings.
-
+.IP
 The default setting is
 .B \-warn\-error \-a
 (no warning is fatal).
@@ -746,9 +770,10 @@ as a file name, even if it starts with a dash (-) character.
 .TP
 .BR \-help " or " \-\-help
 Display a short usage summary and exit.
-
+.
+.\"***********************************
 .SH OPTIONS FOR THE FLAMBDA MIDDLE-END
-
+.\"***********************************
 When the Flambda code generator has been enabled at configuration time,
 its behavior may be tuned up with the following additional options:
 .TP
@@ -769,9 +794,10 @@ compilation times and code that probably runs rather slower.
 .B \-inlining-report
 Emit .inlining files (one per round of optimisation) showing all of the
 inliner's decisions.
-
+.
+.\"***********************************
 .SH OPTIONS FOR THE AMD64 ARCHITECTURE
-
+.\"***********************************
 The AMD64 code generator (64-bit versions of Intel Pentium and AMD
 Athlon) supports the following additional options:
 .TP
@@ -780,8 +806,10 @@ Generate position-independent machine code.  This is the default.
 .TP
 .B \-fno\-PIC
 Generate position-dependent machine code.
-
+.
+.\"*********
 .SH SEE ALSO
+.\"*********
 .BR ocamlc (1).
 .br
 .IR The\ OCaml\ user's\ manual ,

@@ -112,7 +112,7 @@ let classify env ty : classification =
       end
   | Tarrow _ | Ttuple _ | Tpackage _ | Tobject _
   | Tnil | Tvariant _ | Tfunctor _ -> Addr
-  | Tlink _ | Tsubst _ | Tpoly _ | Tfield _ ->
+  | Tlink _ | Tsubst _ | Texpand _ | Tpoly _ | Tfield _ ->
       assert false
 
 let array_type_kind env ty =

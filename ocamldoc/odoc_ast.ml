@@ -106,8 +106,8 @@ module Typedtree_search =
               | Some n -> Hashtbl.add table_values n (pat,exp)
             )
             pat_exp_list
-      | Typedtree.Tstr_primitive vd ->
-          Hashtbl.add table (P (Name.from_ident vd.val_id)) tt
+      | Typedtree.Tstr_primitive pd ->
+          Hashtbl.add table (P (Name.from_ident pd.prim_id)) tt
       | Typedtree.Tstr_open _ -> ()
       | Typedtree.Tstr_include _ -> ()
       | Typedtree.Tstr_eval _ -> ()
@@ -167,7 +167,7 @@ module Typedtree_search =
 
     let search_primitive table name =
       match Hashtbl.find table (P name) with
-        Tstr_primitive vd -> vd.val_val.Types.val_type
+        Tstr_primitive pd -> pd.prim_val.Types.val_type
       | _ -> assert false
 
     let get_nth_inherit_class_expr cls n =
@@ -1074,8 +1074,8 @@ module Analyser =
           let (new_env, l_ele) = iter ~first: true loc.Location.loc_start.Lexing.pos_cnum env [] pat_exp_list in
           (0, new_env, l_ele)
 
-      | Parsetree.Pstr_primitive val_desc ->
-            let name_pre = val_desc.Parsetree.pval_name.txt in
+      | Parsetree.Pstr_val {Parsetree.pval_name={txt=name_pre}; pval_attributes=attrs}
+      | Parsetree.Pstr_primitive {Parsetree.pprim_name={txt=name_pre}; pprim_attributes=attrs} ->
             (* of string * value_description *)
             let typ = Typedtree_search.search_primitive table name_pre in
             let name = Name.parens_if_infix name_pre in
@@ -1087,7 +1087,7 @@ module Analyser =
               else
                 None
             in
-            let comment_opt = Odoc_sig.analyze_alerts comment_opt val_desc.Parsetree.pval_attributes in
+            let comment_opt = Odoc_sig.analyze_alerts comment_opt attrs in
             let new_value = {
                 val_name = complete_name ;
                 val_info = comment_opt ;

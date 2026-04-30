@@ -282,8 +282,7 @@ AC_SUBST([target_libdir_is_relative])
 AC_SUBST([srcdir_abs])
 AC_SUBST([srcdir_abs_real])
 AC_SUBST([build_map_flags])
-AC_SUBST([zinc_runtime_id_lo])
-AC_SUBST([zinc_runtime_id_hi])
+AC_SUBST([zinc_runtime_id])
 AC_SUBST([bytecode_runtime_id])
 AC_SUBST([native_runtime_id])
 AC_SUBST([suffixing])
@@ -1067,15 +1066,20 @@ AS_CASE([$ocaml_cc_vendor],
       [cc_warnings="$cc_warnings -Wno-cast-function-type-mismatch"], [],
       [$warn_error_flag])])
 
-# Use -Wold-style-declaration if supported
-AX_CHECK_COMPILE_FLAG([-Wold-style-declaration],
-  [cc_warnings="$cc_warnings -Wold-style-declaration"], [],
-  [$warn_error_flag])
-
 # Use -Wimplicit-fallthrough if supported
 for flag in '-Wimplicit-fallthrough=5' '-Wimplicit-fallthrough'; do
   AX_CHECK_COMPILE_FLAG([$flag],
     [cc_warnings="$cc_warnings $flag"; break], [], [$warn_error_flag])
+done
+
+# Additional warnings
+for flag in \
+  '-Wformat-signedness' \
+  '-Wold-style-declaration' \
+  '-Wwrite-strings' \
+; do
+    AX_CHECK_COMPILE_FLAG([$flag],
+      [cc_warnings="$cc_warnings $flag"], [], [$warn_error_flag])
 done
 
 AS_CASE([$enable_warn_error,OCAML__DEVELOPMENT_VERSION],
@@ -1144,6 +1148,12 @@ AS_CASE([$ocaml_cc_vendor],
     common_cppflags="-D_XPG6"
     internal_cflags="$cc_warnings"],
   [common_cflags="-O"])
+
+# Enable the prefetchw instruction on x86 and x86_64.
+AS_CASE([$target],
+  [i686*|x86_64*],
+    [AX_CHECK_COMPILE_FLAG([-mprfchw],
+      [internal_cflags="$internal_cflags -mprfchw"], [], [$warn_error_flag])])
 
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
 # Enable 64-bit time_t in time.h
@@ -1880,10 +1890,7 @@ AS_CASE([$as_target,$ocaml_cc_vendor],
   [x86_64-pc-windows,*],
     [default_as="ml64 -nologo -Cp -c -Fo"
     default_aspp="$default_as"
-    as_is_cc=false],
-  [*-*-darwin*,clang-*],
-    [default_as="$CC -c -Wno-trigraphs"
-    default_aspp="$default_as"])
+    as_is_cc=false])
 
 AS_IF([test -z "$default_as"],[default_as="$CC -c"])
 AS_IF([test -z "$default_aspp"],[default_aspp="$CC -c"])
@@ -3141,8 +3148,7 @@ AS_CASE([$target,$windows_unicode],
 quintet3_zinc=BASE32([$quintet3_zinc])
 quintet3=BASE32([$quintet3])
 
-zinc_runtime_id_lo="QUINTET0[]QUINTET1_ZINC"
-zinc_runtime_id_hi="${quintet2_zinc}${quintet3_zinc}"
+zinc_runtime_id="QUINTET0[]QUINTET1_ZINC${quintet2_zinc}${quintet3_zinc}"
 bytecode_runtime_id="QUINTET0${quintet1}${quintet2_byte}${quintet3}"
 native_runtime_id="QUINTET0${quintet1}${quintet2_native}${quintet3}"
 

@@ -110,18 +110,18 @@ let compare_text_files ignored_lines file1 file2 =
        CRLF-normalised (it can't be in any of the dropped lines didn't end
        CRLF. *)
     let (crlf_endings2, line2, reached_end_file2) =
-      let rec loop crlf_endings2 k =
+      let rec loop ~crlf_endings2 k =
         match input_line ic2 with
         | line ->
             let crlf_endings2 = crlf_endings2 && last_is_cr line in
             if k = 0 then
               (crlf_endings2, line, false)
             else
-              loop crlf_endings2 (pred k)
+              loop ~crlf_endings2 (pred k)
         | exception End_of_file ->
             (false, "", true)
       in
-        loop true ignored_lines
+        loop ~crlf_endings2:true ignored_lines
     in
       Sys.with_input_file ~bin:true file1 @@ fun ic1 ->
         if reached_end_file2 then

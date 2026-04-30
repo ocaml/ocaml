@@ -169,7 +169,7 @@ CAMLexport void caml_do_exit(int retcode)
                       (intnat) majwords);
       CAML_GC_MESSAGE(STATS, "minor_collections: %" CAML_PRIdNAT "\n",
                       (intnat) atomic_load(&caml_minor_collections_count));
-      CAML_GC_MESSAGE(STATS, "major_collections: %" CAML_PRIdNAT "\n",
+      CAML_GC_MESSAGE(STATS, "major_collections: %" CAML_PRIuNAT "\n",
                       caml_major_cycles_completed);
       CAML_GC_MESSAGE(STATS, "forced_major_collections: %" CAML_PRIdNAT "\n",
                       (intnat) s.alloc_stats.forced_major_collections);

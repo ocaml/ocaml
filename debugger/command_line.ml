@@ -628,7 +628,7 @@ let instr_break ppf lexbuf =
         begin try
           let (v, ty) = Eval.expression !selected_event env expr in
           match get_desc ty with
-          | Tarrow _ ->
+          | Tarrow _ | Tfunctor _ ->
               add_breakpoint_after_pc (Remote_value.closure_code v)
           | _ ->
               eprintf "Not a function.@.";

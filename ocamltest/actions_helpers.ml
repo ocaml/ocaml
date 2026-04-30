@@ -94,7 +94,7 @@ let setup_subdirectories source_directory build_directory subdirs =
   in
   List.iter cp_dir subdirs
 
-let setup_build_env add_testfile additional_files (_log : out_channel) env =
+let setup_build_env ~add_testfile additional_files (_log : out_channel) env =
   let source_dir = (test_source_directory env) in
   let build_dir = (test_build_directory env) in
   let some_files = additional_files @ (readonly_files env) in
@@ -108,11 +108,11 @@ let setup_build_env add_testfile additional_files (_log : out_channel) env =
   Sys.chdir build_dir;
   (Test_result.pass, env)
 
-let setup_simple_build_env add_testfile additional_files log env =
+let setup_simple_build_env ~add_testfile additional_files log env =
   let build_env = Environments.add
     Builtin_variables.test_build_directory
     (test_build_directory_prefix env) env in
-  setup_build_env add_testfile additional_files log build_env
+  setup_build_env ~add_testfile additional_files log build_env
 
 let run_cmd
     ?(environment=[||])
@@ -196,11 +196,11 @@ let run_cmd
   n
 
 let run
-    (log_message : string)
-    (redirect_output : bool)
-    (can_skip : bool)
-    (prog_variable : Variables.t)
-    (args_variable : Variables.t option)
+    ~(log_message : string)
+    ~(redirect_output : bool)
+    ~(can_skip : bool)
+    ~prog:(prog_variable : Variables.t)
+    ~args:(args_variable : Variables.t option)
     (log : out_channel)
     (env : Environments.t)
   =
@@ -243,11 +243,11 @@ let run
 
 let run_program =
   run
-    "Running program"
-    true
-    false
-    Builtin_variables.program
-    (Some Builtin_variables.arguments)
+    ~log_message:"Running program"
+    ~redirect_output:true
+    ~can_skip:false
+    ~prog:Builtin_variables.program
+    ~args:(Some Builtin_variables.arguments)
 
 let run_script log env =
   let response_file = Filename.temp_file "ocamltest-" ".response" in
@@ -256,11 +256,11 @@ let run_script log env =
   let scriptenv = Environments.add
     Builtin_variables.ocamltest_response response_file env in
   let (result, newenv) = run
-    "Running script"
-    true
-    true
-    Builtin_variables.script
-    None
+    ~log_message:"Running script"
+    ~redirect_output:true
+    ~can_skip:true
+    ~prog:Builtin_variables.script
+    ~args:None
     log scriptenv in
   let final_value =
     if Test_result.is_pass result then begin

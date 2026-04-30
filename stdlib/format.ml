@@ -1332,6 +1332,12 @@ let pp_print_list ?(pp_sep = pp_print_cut) pp_v ppf v =
 let pp_print_array ?(pp_sep = pp_print_cut) pp_v ppf v =
   pp_print_iter ~pp_sep Array.iter pp_v ppf v
 
+let pp_print_iarray ?(pp_sep = pp_print_cut) pp_v ppf v =
+  pp_print_iter ~pp_sep Iarray.iter pp_v ppf v
+
+let pp_print_dynarray ?(pp_sep = pp_print_cut) pp_v ppf v =
+  pp_print_iter ~pp_sep Dynarray.iter pp_v ppf v
+
 (* To format a sequence *)
 let pp_print_seq ?(pp_sep = pp_print_cut) pp_v ppf seq =
   pp_print_iter ~pp_sep Seq.iter pp_v ppf seq

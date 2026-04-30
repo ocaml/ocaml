@@ -808,8 +808,7 @@ runtime_search
 suffixing
 native_runtime_id
 bytecode_runtime_id
-zinc_runtime_id_hi
-zinc_runtime_id_lo
+zinc_runtime_id
 build_map_flags
 srcdir_abs_real
 srcdir_abs
@@ -3575,7 +3574,6 @@ LINEAR_MAGIC_NUMBER=Caml1999L038
 
 
  # TODO: rename this variable
-
 
 
 
@@ -15508,48 +15506,6 @@ fi
      ;;
 esac
 
-# Use -Wold-style-declaration if supported
-as_CACHEVAR=`printf "%s\n" "ax_cv_check_cflags_$warn_error_flag_-Wold-style-declaration" | $as_tr_sh`
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler accepts -Wold-style-declaration" >&5
-printf %s "checking whether the C compiler accepts -Wold-style-declaration... " >&6; }
-if eval test \${$as_CACHEVAR+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-
-  ax_check_save_flags=$CFLAGS
-  CFLAGS="$CFLAGS $warn_error_flag -Wold-style-declaration"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main (void)
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"
-then :
-  eval "$as_CACHEVAR=yes"
-else $as_nop
-  eval "$as_CACHEVAR=no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-  CFLAGS=$ax_check_save_flags
-fi
-eval ac_res=\$$as_CACHEVAR
-	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-printf "%s\n" "$ac_res" >&6; }
-if eval test \"x\$"$as_CACHEVAR"\" = x"yes"
-then :
-  cc_warnings="$cc_warnings -Wold-style-declaration"
-else $as_nop
-  :
-fi
-
-
 # Use -Wimplicit-fallthrough if supported
 for flag in '-Wimplicit-fallthrough=5' '-Wimplicit-fallthrough'; do
   as_CACHEVAR=`printf "%s\n" "ax_cv_check_cflags_$warn_error_flag_$flag" | $as_tr_sh`
@@ -15588,6 +15544,54 @@ printf "%s\n" "$ac_res" >&6; }
 if eval test \"x\$"$as_CACHEVAR"\" = x"yes"
 then :
   cc_warnings="$cc_warnings $flag"; break
+else $as_nop
+  :
+fi
+
+done
+
+# Additional warnings
+for flag in \
+  '-Wformat-signedness' \
+  '-Wold-style-declaration' \
+  '-Wwrite-strings' \
+; do
+    as_CACHEVAR=`printf "%s\n" "ax_cv_check_cflags_$warn_error_flag_$flag" | $as_tr_sh`
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler accepts $flag" >&5
+printf %s "checking whether the C compiler accepts $flag... " >&6; }
+if eval test \${$as_CACHEVAR+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+
+  ax_check_save_flags=$CFLAGS
+  CFLAGS="$CFLAGS $warn_error_flag $flag"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  eval "$as_CACHEVAR=yes"
+else $as_nop
+  eval "$as_CACHEVAR=no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+  CFLAGS=$ax_check_save_flags
+fi
+eval ac_res=\$$as_CACHEVAR
+	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+printf "%s\n" "$ac_res" >&6; }
+if eval test \"x\$"$as_CACHEVAR"\" = x"yes"
+then :
+  cc_warnings="$cc_warnings $flag"
 else $as_nop
   :
 fi
@@ -15703,6 +15707,53 @@ fi
     internal_cflags="$cc_warnings" ;; #(
   *) :
     common_cflags="-O" ;;
+esac
+
+# Enable the prefetchw instruction on x86 and x86_64.
+case $target in #(
+  i686*|x86_64*) :
+    as_CACHEVAR=`printf "%s\n" "ax_cv_check_cflags_$warn_error_flag_-mprfchw" | $as_tr_sh`
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler accepts -mprfchw" >&5
+printf %s "checking whether the C compiler accepts -mprfchw... " >&6; }
+if eval test \${$as_CACHEVAR+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+
+  ax_check_save_flags=$CFLAGS
+  CFLAGS="$CFLAGS $warn_error_flag -mprfchw"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  eval "$as_CACHEVAR=yes"
+else $as_nop
+  eval "$as_CACHEVAR=no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+  CFLAGS=$ax_check_save_flags
+fi
+eval ac_res=\$$as_CACHEVAR
+	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+printf "%s\n" "$ac_res" >&6; }
+if eval test \"x\$"$as_CACHEVAR"\" = x"yes"
+then :
+  internal_cflags="$internal_cflags -mprfchw"
+else $as_nop
+  :
+fi
+ ;; #(
+  *) :
+     ;;
 esac
 
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
@@ -19439,9 +19490,6 @@ esac ;; #(
     default_as="ml64 -nologo -Cp -c -Fo"
     default_aspp="$default_as"
     as_is_cc=false ;; #(
-  *-*-darwin*,clang-*) :
-    default_as="$CC -c -Wno-trigraphs"
-    default_aspp="$default_as" ;; #(
   *) :
      ;;
 esac
@@ -24492,8 +24540,7 @@ esac
 quintet3_zinc="$(echo '0123456789abcdefghijklmnopqrstuv' | cut -c $(expr \( $quintet3_zinc \) + 1))"
 quintet3="$(echo '0123456789abcdefghijklmnopqrstuv' | cut -c $(expr \( $quintet3 \) + 1))"
 
-zinc_runtime_id_lo="d1"
-zinc_runtime_id_hi="${quintet2_zinc}${quintet3_zinc}"
+zinc_runtime_id="d1${quintet2_zinc}${quintet3_zinc}"
 bytecode_runtime_id="d${quintet1}${quintet2_byte}${quintet3}"
 native_runtime_id="d${quintet1}${quintet2_native}${quintet3}"
 

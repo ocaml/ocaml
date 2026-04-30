@@ -104,7 +104,14 @@ let rec split_last = function
 
 module Stdlib = struct
   module List = struct
-    type 'a t = 'a list
+    include Stdlib.List
+
+    let rec fold_left4 f accu l1 l2 l3 l4 =
+      match (l1, l2, l3, l4) with
+        ([], [], [], []) -> accu
+      | (a1::l1, a2::l2, a3::l3, a4::l4) ->
+          fold_left4 f (f accu a1 a2 a3 a4) l1 l2 l3 l4
+      | (_, _, _, _) -> invalid_arg "List.fold_left4"
 
     let rec compare cmp l1 l2 =
       match l1, l2 with
@@ -1245,11 +1252,18 @@ let debug_prefix_map_flags () =
         []
   end
 
-let print_see_manual ppf manual_section =
+let print_manual_section ppf manual_section =
   let open Format_doc in
-  fprintf ppf "(see manual section %a)"
+  fprintf ppf "manual section %a"
     (pp_print_list ~pp_sep:(fun f () -> pp_print_char f '.') pp_print_int)
     manual_section
+
+let print_see_manual ppf manual_section =
+  Format_doc.fprintf ppf "(see %a)" print_manual_section manual_section
+
+let print_manual_hint ppf manual_section =
+  let open Format_doc in
+  fprintf ppf "%t (%a):" Style.hint print_manual_section manual_section
 
 let print_if ppf flag printer arg =
   if !flag then Format.fprintf ppf "%a@." printer arg;
@@ -1616,10 +1630,6 @@ module RuntimeID = struct
               ansi = set 3 q3; (* bit 4 of q3 is unused *)}
       else
         None
-
-  let of_zinc_hi ?(dev = not Config.is_official_release)
-                 ?(release = Config.release_number) s =
-    Option.map (fun id -> {id with dev; release}) (of_string ("00" ^ s))
 
   let ocamlrun variant runtime_id =
     if is_zinc runtime_id then

@@ -876,7 +876,6 @@ static void domain_create(uintnat initial_minor_heap_wsize,
   /* Set domain_self if we have successfully allocated the
    * caml_domain_state. Otherwise domain_self will be NULL and it's up
    * to the caller to deal with that. */
-
   domain_self = d;
   caml_state = domain_state;
 
@@ -888,6 +887,9 @@ static void domain_create(uintnat initial_minor_heap_wsize,
                         memory_order_release);
 
   domain_state->id = d->id;
+
+  s->unique_id = fresh_domain_unique_id();
+  domain_state->unique_id = s->unique_id;
 
   /* Tell memprof system about the new domain before either (a) new
    * domain can allocate anything or (b) parent domain can go away. */
@@ -952,11 +954,8 @@ static void domain_create(uintnat initial_minor_heap_wsize,
     goto alloc_main_stack_failure;
   }
 
-  /* No remaining failure cases: domain creation is going to succeed,
-   * so we can update globally-visible state without needing to unwind
-   * it. */
-  s->unique_id = fresh_domain_unique_id();
-  domain_state->unique_id = s->unique_id;
+  /* No remaining failure cases. */
+
   s->running = 1;
 
   domain_state->c_stack = NULL;
@@ -2426,51 +2425,9 @@ void caml_domain_terminate(bool last)
     atomic_fetch_add(&caml_num_domains_running, -1);
 }
 
-/* Try and terminate the currently running domain.
-   This is only invoked when extra domains are left running while the
-   main one is terminating. In this case, we are not in a state where
-   we can safely release resources. The best we can do is cancel the
-   extra running threads. */
-static void stw_terminate_domain(caml_domain_state *domain, void *data,
-  int participating_count,
-  caml_domain_state **participating)
-{
-  if (!caml_plat_thread_equal(domain_self->tid, *(caml_plat_thread *)data)) {
-    if (caml_bt_is_self()) {
-      /* If this STW request is handled by the backup thread, the
-         domain thread is currently running C code. */
-      domain_self->domain_canceled = true;
-      (void)caml_plat_thread_cancel(domain_self->tid);
-      /* We are intentionally not waiting for the thread to terminate here,
-         and not decrementing the number of running domains either, since
-         we don't know the state of the various locks and condition
-         variables in this state. */
-      atomic_store_release(&domain_self->backup_thread_msg, BT_INIT);
-    } else {
-      /* Domain threads forced to exit here will not have a chance to
-         run caml_domain_terminate() on their own, so we need to ask
-         the backup thread to terminate here. */
-      terminate_backup_thread(domain_self);
-      caml_plat_unlock(&domain_self->domain_lock);
-      /* No particular memory resource cleanup is attempted here, for we
-         have no idea which state each domain is in. */
-    }
-    caml_plat_thread_exit();
-  }
-}
-
-void caml_stop_all_domains(void)
+void caml_set_domains_exiting(void)
 {
   atomic_store_relaxed(&domains_exiting, 1);
-
-  caml_plat_thread myself = caml_plat_thread_self();
-  do {} while (!caml_try_run_on_all_domains(
-               &stw_terminate_domain, &myself, NULL));
-
-  terminate_backup_thread(domain_self);
-  caml_plat_unlock(&domain_self->domain_lock);
-
-  caml_plat_assert_all_locks_unlocked();
 }
 
 bool caml_free_domains(void)

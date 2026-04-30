@@ -207,8 +207,7 @@ OC_NATIVE_LINKFLAGS = -g
 BUILD_TRIPLET = @build@
 
 # Zinc Runtime ID is needed for installation only
-ZINC_RUNTIME_ID_HI = @zinc_runtime_id_hi@
-ZINC_RUNTIME_ID = @zinc_runtime_id_lo@$(ZINC_RUNTIME_ID_HI)
+ZINC_RUNTIME_ID = @zinc_runtime_id@
 
 # Platform-dependent command to create symbolic links
 LN = @ln@

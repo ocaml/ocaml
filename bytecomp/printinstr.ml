@@ -93,6 +93,8 @@ let instruction ppf = function
   | Kintcomp Cgt -> fprintf ppf "\tgtint"
   | Kintcomp Cle -> fprintf ppf "\tleint"
   | Kintcomp Cge -> fprintf ppf "\tgeint"
+  | Kphyscomp CPeq -> fprintf ppf "\tphyseq"
+  | Kphyscomp CPneq -> fprintf ppf "\tphysneq"
   | Koffsetint n -> fprintf ppf "\toffsetint %i" n
   | Koffsetref n -> fprintf ppf "\toffsetref %i" n
   | Kisint -> fprintf ppf "\tisint"

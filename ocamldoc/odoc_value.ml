@@ -62,24 +62,26 @@ let update_value_parameters_text v =
    [parameter_list_from_arrows t = [ a ; b ]] if t = a -> b -> c.*)
 let parameter_list_from_arrows typ =
   let rec iter t =
-    match Types.get_desc t with
-      Types.Tarrow (l, t1, t2, _) ->
+    let open Types in
+    match get_desc t with
+      Tarrow (l, t1, t2, _) ->
         (l, t1) :: (iter t2)
-    | Types.Tfunctor (l, _, pack, t2) ->
-        (l, Ctype.newty (Types.Tpackage pack)) :: (iter t2)
-    | Types.Tlink texp
-    | Types.Tpoly (texp, _) -> iter texp
-    | Types.Tvar _
-    | Types.Ttuple _
-    | Types.Tconstr _
-    | Types.Tobject _
-    | Types.Tfield _
-    | Types.Tnil
-    | Types.Tunivar _
-    | Types.Tpackage _
-    | Types.Tvariant _ ->
+    | Tfunctor (l, _, pack, t2) ->
+        (l, Ctype.newty (Tpackage pack)) :: (iter t2)
+    | Tpoly (texp, _) -> iter texp
+    | Tvar _
+    | Ttuple _
+    | Tconstr _
+    | Tobject _
+    | Tfield _
+    | Tnil
+    | Tunivar _
+    | Tpackage _
+    | Tvariant _ ->
         []
-    | Types.Tsubst _ ->
+    | Tlink _
+    | Texpand _
+    | Tsubst _ ->
         assert false
   in
   iter typ
@@ -88,8 +90,9 @@ let dummy_parameter_list typ =
   let normal_name = Odoc_misc.label_name in
   let liste_param = parameter_list_from_arrows typ in
   let rec iter (label, t) =
-    match Types.get_desc t with
-    | Types.Ttuple l ->
+    let open Types in
+    match get_desc t with
+    | Ttuple l ->
         let open Asttypes in
         if label = Nolabel then
           Odoc_parameter.Tuple
@@ -100,9 +103,9 @@ let dummy_parameter_list typ =
             { Odoc_parameter.sn_name = normal_name label ;
               Odoc_parameter.sn_type = t ;
               Odoc_parameter.sn_text = None }
-    | Types.Tlink t2 ->
+    | Tlink t2 ->
         (iter (label, t2))
-    | Types.Tsubst _ ->
+    | Tsubst _ ->
         assert false
     | _ ->
         Odoc_parameter.Simple_name

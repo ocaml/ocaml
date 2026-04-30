@@ -65,6 +65,7 @@ type iterator =
     value_binding: iterator -> value_binding -> unit;
     value_bindings: iterator -> (rec_flag * value_binding list) -> unit;
     value_description: iterator -> value_description -> unit;
+    primitive_description: iterator -> primitive_description -> unit;
     with_constraint: iterator -> with_constraint -> unit;
     item_declaration: iterator -> item_declaration -> unit;
   }

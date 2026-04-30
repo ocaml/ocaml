@@ -167,6 +167,7 @@ let print_cmt_infos cmt =
     Array.iter (fun (uid, item) ->
       let loc = match (item : Typedtree.item_declaration) with
         | Value vd -> vd.val_name
+        | Primitive pd -> pd.prim_name
         | Value_binding vb ->
           let (_, name, _, _) =
             List.hd (Typedtree.let_bound_idents_full [vb])

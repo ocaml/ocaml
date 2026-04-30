@@ -82,6 +82,8 @@ Line 4, characters 32-33:
 Error: The value "y" has type "a" but an expression was expected of type "t"
        This instance of "< m : int * 'a > as 'a" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}]
 
 
@@ -94,9 +96,13 @@ type t2 = < m : 'a. 'a * ('a * 'b) > as 'b
 Line 3, characters 22-23:
 3 | let f (x : t1) : t2 = x;;
                           ^
-Error: The value "x" has type "t1" but an expression was expected of type "t2"
-       The method "m" has type "'c. 'c * ('a * < m : 'c. 'b >) as 'b",
-       but the expected method type was "'a. 'a * ('a * < m : 'a. 'd >) as 'd"
+Error: The value "x" has type
+         "t1" = "< m : 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b) >"
+       but an expression was expected of type "t2" = "< m : 'a. 'a * ('a * t2) >"
+       Type "< m : 'c. 'c * ('a * 'd) > as 'd" is not compatible with type
+         "t2" = "< m : 'a. 'a * ('a * t2) >"
+       The method "m" has type "'c. 'c * ('a * < m : 'c. 'e >) as 'e",
+       but the expected method type was "'a. 'a * ('a * t2)"
        The universal variable "'a" would escape its scope
 |}]
 

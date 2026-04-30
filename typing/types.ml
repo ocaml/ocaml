@@ -39,13 +39,14 @@ and type_desc =
   | Tobject of type_expr * (Path.t * type_expr list) option ref
   | Tfield of string * field_kind * type_expr * type_expr
   | Tnil
-  | Tlink of type_expr
-  | Tsubst of type_expr * type_expr option
   | Tvariant of row_desc
   | Tunivar of string option
   | Tpoly of type_expr * type_expr list
   | Tpackage of package
   | Tfunctor of arg_label * Ident.Unscoped.t * package * type_expr
+  | Texpand of type_expr * Path.t * type_expr list
+  | Tlink of type_expr
+  | Tsubst of type_expr * type_expr option
 
 and package =
     { pack_path : Path.t;
@@ -73,7 +74,12 @@ and _ row_field_gen =
 
 and abbrev_memo =
     Mnil
-  | Mcons of private_flag * Path.t * type_expr * type_expr * abbrev_memo
+  | Mcons of
+      { privacy : private_flag;
+        path : Path.t;
+        abbreviation : type_expr;
+        expansion : type_expr;
+        rem: abbrev_memo }
   | Mlink of abbrev_memo ref
 
 and any = [`some | `none | `var]
@@ -145,6 +151,7 @@ and self_meths =
 and class_signature =
   { csig_self: type_expr;
     mutable csig_self_row: type_expr;
+    mutable csig_dummy_method : field_kind;
     mutable csig_vars: (mutable_flag * virtual_flag * type_expr) Vars.t;
     mutable csig_meths: (method_privacy * virtual_flag * type_expr) Meths.t; }
 
@@ -534,33 +541,60 @@ let commu_var () = Cvar {commu=Cunknown}
 
 (**** Representative of a type ****)
 
-let rec repr_link (t : type_expr) d : type_expr -> type_expr =
- function
-   {desc = Tlink t' as d'} ->
-     repr_link t d' t'
- | {desc = Tfield (_, k, _, t') as d'}
-   when field_kind_internal_repr k = FKabsent ->
-     repr_link t d' t'
- | t' ->
-     log_change (Ccompress (t, t.desc, d));
-     t.desc <- d;
-     t'
+let repr_update t_orig d =
+  log_change (Ccompress (t_orig, t_orig.desc, d));
+  t_orig.desc <- d
 
-let repr_link1 t = function
-   {desc = Tlink t' as d'} ->
-     repr_link t d' t'
- | {desc = Tfield (_, k, _, t') as d'}
-   when field_kind_internal_repr k = FKabsent ->
-     repr_link t d' t'
- | t' -> t'
+let rec repr_expand update t_orig t path args =
+  match t.desc with
+  | Tlink t' | Texpand (t', _, _) ->
+      repr_expand true t_orig t' path args
+  | Tfield (_, k, _, t') when field_kind_internal_repr k = FKabsent ->
+      repr_expand true t_orig t' path args
+  | _ ->
+      if update then repr_update t_orig (Texpand (t, path, args));
+      t
+
+let rec repr_link update t_orig t =
+  match t.desc with
+  | Tlink t' ->
+      repr_link true t_orig t'
+  | Texpand (t', path, args) ->
+      repr_expand true t_orig t' path args
+  | Tfield (_, k, _, t') when field_kind_internal_repr k = FKabsent ->
+      repr_link true t_orig t'
+  | _ ->
+      if update then repr_update t_orig (Tlink t);
+      t
+
+(* A non-normalized type may contain an arbitrarily long chain of
+   [Tlink] or [Texpand] prefixing the actual node (neither
+   [Tlink] nor [Texpand]).
+   [repr t] returns the actual node [t'], and also normalizes [t]
+   so that it is either [t'] itself (if there was no prefix) or
+   either [Tlink t'] or [Texpand (t', path, args)] where [path] and [args]
+   are taken from the first [Texpand] in the chain.
+   For instance, with "t1 -> t2" for [t1.desc = Tlink t2] and
+   "t1 -(path,args)-> t2" for [t1.desc = Texpand (t2, path, args)], we have
+   Before:
+      t -> t1 -(path1,args1)-> t2 -> t3 -(path2,args2)-> t'
+   After:
+      t -(path1,args1)-> t'
+   Before:
+      t -> t1 -> t2 -> t'
+   After:
+      t -> t'
+ *)
 
 let repr t =
   match t.desc with
-   Tlink t' ->
-     repr_link1 t t'
- | Tfield (_, k, _, t') when field_kind_internal_repr k = FKabsent ->
-     repr_link1 t t'
- | _ -> t
+  | Tlink t' ->
+      repr_link false t t'
+  | Texpand (t', path, args) ->
+      repr_expand false t t' path args
+  | Tfield (_, k, _, t') when field_kind_internal_repr k = FKabsent ->
+      repr_link true t t'
+  | _ -> t
 
 (* scope_field and marks *)
 
@@ -604,6 +638,16 @@ let not_marked_node mark t =
   match mark with
   | Mark {mark} -> (repr t).scope land mark = 0
   | Hash {visited} -> not (TransientTypeHash.mem visited (repr t))
+
+let get_abbrev t =
+  ignore (repr t);
+  match t.desc with Texpand (_, path, args) -> Some (path, args) | _ -> None
+
+let iter_abbrev f t =
+  ignore (repr t);
+  match t.desc with Texpand (_, path, args) -> f path args | _ -> ()
+
+let ignore_abbrev ty = repr ty
 
 (* transient type_expr *)
 
@@ -729,7 +773,7 @@ let rec row_field_ext (fi : row_field) =
   | RFeither {ext = {contents = RFnone} as ext} -> ext
   | RFeither {ext = {contents = RFeither _ | RFpresent _ | RFabsent as rf}} ->
       row_field_ext rf
-  | _ -> Misc.fatal_error "Types.row_field_ext "
+  | _ -> Misc.fatal_error "Types.row_field_ext"
 
 let rf_present oty = RFpresent oty
 let rf_absent = RFabsent
@@ -800,30 +844,54 @@ let last_snapshot = Local_store.s_ref 0
 
 let log_type ty =
   if ty.id <= !last_snapshot then log_change (Ctype (ty, ty.desc))
-let link_type ty ty' =
+
+let link_expand ty ty' =
   let ty = repr ty in
   let ty' = repr ty' in
-  if ty == ty' then () else begin
+  if ty == ty' then () else
+  match ty.desc with
+    Tconstr (path, args, _memo) ->
+      log_type ty;
+      Transient_expr.set_desc ty (Texpand (ty', path, args))
+  | _ -> Misc.fatal_error "Types.link_expand"
+
+let forget_abbrev ty =
+  ignore (repr ty);
+  match ty.desc with
+    Texpand (ty', _, _) ->
+      log_type ty;
+      ty.desc <- Tlink ty'
+  | _ -> Misc.fatal_error "Types.forget_abbrev"
+
+let link_type ty ty' =
+  let ty = repr ty in
+  let ty'' = repr ty' in
+  if ty == ty'' then () else begin
   log_type ty;
   let desc = ty.desc in
-  Transient_expr.set_desc ty (Tlink ty');
+  begin match ty'.desc with
+    Tlink _ | Texpand _ as d -> (* Keep [Texpand] for printing *)
+      Transient_expr.set_desc ty d
+  | _ ->
+      Transient_expr.set_desc ty (Tlink ty')
+  end;
   (* Name is a user-supplied name for this unification variable (obtained
    * through a type annotation for instance). *)
-  match desc, ty'.desc with
+  match desc, ty''.desc with
     Tvar name, Tvar name' ->
       begin match name, name' with
-      | Some _, None -> log_type ty'; Transient_expr.set_desc ty' (Tvar name)
+      | Some _, None -> log_type ty''; Transient_expr.set_desc ty'' (Tvar name)
       | None, Some _ -> ()
       | Some _, Some _ ->
-          if ty.level < ty'.level then
-            (log_type ty'; Transient_expr.set_desc ty' (Tvar name))
+          if ty.level < ty''.level then
+            (log_type ty''; Transient_expr.set_desc ty'' (Tvar name))
       | None, None   -> ()
       end
   | _ -> ()
   end
   (* ; assert (check_memorized_abbrevs ()) *)
   (*  ; check_expans [] ty' *)
-(* TODO: consider eliminating set_type_desc, replacing it with link types *)
+
 let set_type_desc ty td =
   let ty = repr ty in
   if td != ty.desc then begin
@@ -860,7 +928,7 @@ let rec link_row_field_ext ~(inside : row_field) (v : row_field) =
       log_change (Crow e); e := v
   | RFeither {ext = {contents = RFeither _ | RFpresent _ | RFabsent as rf}} ->
       link_row_field_ext ~inside:rf v
-  | _ -> invalid_arg "Types.link_row_field_ext"
+  | _ -> Misc.fatal_error "Types.link_row_field_ext"
 
 let rec link_kind ~(inside : field_kind) (k : field_kind) =
   match inside with
@@ -873,7 +941,7 @@ let rec link_kind ~(inside : field_kind) (k : field_kind) =
       end
   | FKvar {field_kind = FKvar _ | FKpublic | FKabsent as inside} ->
       link_kind ~inside k
-  | _ -> invalid_arg "Types.link_kind"
+  | _ -> Misc.fatal_error "Types.link_kind"
 
 let rec commu_repr : commutable -> commutable = function
   | Cvar {commu = Cvar _ | Cok as commu} -> commu_repr commu
@@ -890,7 +958,7 @@ let rec link_commu ~(inside : commutable) (c : commutable) =
       end
   | Cvar {commu = Cvar _ | Cok as inside} ->
       link_commu ~inside c
-  | _ -> invalid_arg "Types.link_commu"
+  | _ -> Misc.fatal_error "Types.link_commu"
 
 let set_commu_ok c = link_commu ~inside:c Cok
 
@@ -907,12 +975,12 @@ let rec rev_log accu = function
       next := Invalid;
       rev_log (ch::accu) d
 
-let backtrack ~cleanup_abbrev (changes, old) =
+let backtrack ~cleanup (changes, old) =
   match !changes with
     Unchanged -> last_snapshot := old
   | Invalid -> failwith "Types.backtrack"
   | Change _ as change ->
-      cleanup_abbrev ();
+      cleanup ();
       let backlog = rev_log [] change in
       List.iter undo_change backlog;
       changes := Unchanged;

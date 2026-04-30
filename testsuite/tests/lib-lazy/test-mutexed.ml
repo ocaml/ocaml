@@ -2,7 +2,8 @@
  shared-libraries;
  hassysthreads;
  flags = "-I ${ocamlsrcdir}/otherlibs/unix -I ${ocamlsrcdir}/otherlibs/systhreads";
- include systhreads;
+ ld_library_path += " ${ocamlsrcdir}/otherlibs/unix";
+ ld_library_path += " ${ocamlsrcdir}/otherlibs/systhreads";
  expect;
 *)
 

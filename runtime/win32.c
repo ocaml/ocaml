@@ -249,7 +249,7 @@ void * caml_globalsym(const char * name)
   return flexdll_dlsym(flexdll_wdlopen(NULL,0), name);
 }
 
-char * caml_dlerror(void)
+const char * caml_dlerror(void)
 {
   return flexdll_dlerror();
 }
@@ -275,7 +275,7 @@ void * caml_globalsym(const char * name)
   return NULL;
 }
 
-char * caml_dlerror(void)
+const char * caml_dlerror(void)
 {
   return "dynamic loading not supported on this platform";
 }

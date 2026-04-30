@@ -62,6 +62,7 @@ type iterator = {
   package_type: iterator -> package_type -> unit;
   pat: iterator -> pattern -> unit;
   payload: iterator -> payload -> unit;
+  primitive_description: iterator -> primitive_description -> unit;
   signature: iterator -> signature -> unit;
   signature_item: iterator -> signature_item -> unit;
   structure: iterator -> structure -> unit;

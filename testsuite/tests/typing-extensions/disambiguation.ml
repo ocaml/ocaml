@@ -154,7 +154,7 @@ module P : sig type p = x end
 Line 7, characters 13-17:
 7 | let x: P.p = Alha;;
                  ^^^^
-Error: This variant expression is expected to have type "P.p"
+Error: This variant expression is expected to have type "P.p" = "x"
        There is no constructor "Alha" within type "x"
 Hint:             Did you mean "Alpha"?
 |}]
@@ -168,7 +168,7 @@ module N : sig type s = M.t end
 Line 3, characters 13-14:
 3 | let y: N.s = T ;;
                  ^
-Error: This variant expression is expected to have type "N.s"
+Error: This variant expression is expected to have type "N.s" = "M.t"
        There is no constructor "T" within type "M.t"
 |}]
 

@@ -1,0 +1,9 @@
+break @ Debuggee 17
+run
+break f
+break g
+run
+print z
+run
+print y
+quit

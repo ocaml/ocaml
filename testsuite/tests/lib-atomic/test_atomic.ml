@@ -37,3 +37,14 @@ let () =
   let cur = Atomic.get r in
   ignore (Atomic.incr r, Atomic.decr r);
   assert (Atomic.get r = cur)
+
+let () =
+  let r = Atomic.make 1 in
+  Atomic.update (fun i ->
+    begin
+      (* simulate concurrent modifications *)
+      if i < 10 then Atomic.incr r;
+    end;
+    i + 1
+  ) r;
+  assert (Atomic.get r = 11)

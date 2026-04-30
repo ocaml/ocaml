@@ -849,6 +849,7 @@ let rec choice ctx t =
     | Pandint | Porint | Pxorint
     | Plslint | Plsrint | Pasrint
     | Pintcomp _
+    | Pphyscomp _
     | Poffsetint _ | Poffsetref _
     | Pintoffloat | Pfloatofint
     | Pnegfloat | Pabsfloat

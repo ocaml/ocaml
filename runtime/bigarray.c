@@ -1373,7 +1373,9 @@ CAMLprim value caml_ba_reshape(value vb, value vdim)
     dim[i] = Long_val(Field(vdim, i));
     if (dim[i] < 0)
       caml_invalid_argument("Bigarray.reshape: negative dimension");
-    num_elts *= dim[i];
+    if (caml_umul_overflow(num_elts, (uintnat)dim[i], &num_elts))
+      /* Since the old dims didn't overflow, an overflow must be a mismatch */
+      caml_invalid_argument("Bigarray.reshape: size mismatch");
   }
   /* Check that sizes agree */
   if (num_elts != caml_ba_num_elts(b))

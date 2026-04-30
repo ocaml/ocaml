@@ -346,7 +346,7 @@ let s_list_arrayb =
       string_of_int [|[3; 2]; [2]; []|]
 
 [%%expect{|
-val s_list_arrayb : string list Array.t = [|["3"; "2"]; ["2"]; []|]
+val s_list_arrayb : string list array = [|["3"; "2"]; ["2"]; []|]
 |}]
 
 module F () : Map = struct
@@ -777,10 +777,22 @@ let apply_small_annot2 (f : (module T : Typ) -> T.t -> T.t) g (module T : Typ) x
   g (module T) x
 
 [%%expect{|
+Line 2, characters 10-26:
+2 |   let _ = merge_no_mod f g in
+              ^^^^^^^^^^^^^^^^
+Warning 5 [ignored-partial-application]: this function application is partial,
+  maybe some arguments are missing.
+
 val apply_small_annot2 :
   ((module T : Typ) -> T.t -> T.t) ->
   ((module T : Typ) -> T.t -> T.t) -> (module T : Typ) -> T.t -> T.t = <fun>
 |}, Principal{|
+Line 2, characters 10-26:
+2 |   let _ = merge_no_mod f g in
+              ^^^^^^^^^^^^^^^^
+Warning 5 [ignored-partial-application]: this function application is partial,
+  maybe some arguments are missing.
+
 Line 3, characters 2-3:
 3 |   g (module T) x
       ^
@@ -1208,8 +1220,8 @@ let fa1_applied = fa1 ()
 
 [%%expect{|
 module type M_arrow1 = sig type 'a t = int -> 'a end
-val fa1 : unit -> (module M : M_arrow1) -> 'a M.t = <fun>
-val fa1_applied : (module M : M_arrow1) -> 'a M.t = <fun>
+val fa1 : unit -> (module M_arrow1) -> int -> 'a = <fun>
+val fa1_applied : (module M_arrow1) -> int -> 'a = <fun>
 |}]
 
 module type M_arrow2 = sig
@@ -1222,8 +1234,8 @@ let fa2_applied = fa2 ()
 
 [%%expect{|
 module type M_arrow2 = sig type 'a t = 'a -> int end
-val fa2 : unit -> (module M : M_arrow2) -> 'a M.t = <fun>
-val fa2_applied : (module M : M_arrow2) -> '_weak4 M.t = <fun>
+val fa2 : unit -> (module M_arrow2) -> 'a -> int = <fun>
+val fa2_applied : (module M_arrow2) -> '_weak4 -> int = <fun>
 |}]
 
 module type Typ2 = sig
@@ -1423,4 +1435,86 @@ module M : sig type a = int type v = [ `A of a ] end
 val f : (module M : T) -> ([> M.v ] as 'a) -> 'a = <fun>
 val u : ((module M : T) -> ([> M.v ] as 'a) -> 'a) -> (module T) -> 'a -> 'a =
   <fun>
+|}]
+
+(* Test shadowing of an include that could cause an error due to a module
+   not matching an inferred signature. *)
+
+module U = struct
+  type t = unit = ()
+end
+module M = struct
+  include U
+  type t = float
+  module type S = sig type t end
+  let f : (module X:S) -> X.t -> int = fun (module X:S)     _  -> 3
+end
+
+[%%expect{|
+module U : sig type t = unit = () end
+module M :
+  sig
+    type t = float
+    module type S = sig type t end
+    val f : (module X : S) -> X.t -> int
+  end
+|}]
+
+module type T = sig
+  type t
+end
+
+module F (X : T) = struct
+  type t = (module Y : T) -> Y.t -> X.t
+end
+
+module M = F(struct type t = float end)
+
+[%%expect{|
+module type T = sig type t end
+module F : (X : T) -> sig type t = (module Y : T) -> Y.t -> X.t end
+module M : sig type t = (module Y : T) -> Y.t -> float end
+|}]
+
+(** Warnings *)
+
+module type Iter = sig
+  type 'a t
+  val iter: ('a -> unit) -> 'a t -> unit
+end
+let iter (module M:Iter) f x = M.iter f x
+[%%expect {|
+module type Iter = sig type 'a t val iter : ('a -> unit) -> 'a t -> unit end
+val iter : (module M : Iter) -> ('a -> unit) -> 'a M.t -> unit = <fun>
+|}]
+let too_many_arg = iter (module Iarray) (Format.printf "%d@.") [|0;1;2|] ()
+[%%expect {|
+Line 1, characters 19-75:
+1 | let too_many_arg = iter (module Iarray) (Format.printf "%d@.") [|0;1;2|] ()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The function "iter" has type
+         "(module M : Iter) -> ('b -> unit) -> 'b M.t -> unit"
+       It is applied to too many arguments
+Line 1, characters 71-73:
+1 | let too_many_arg = iter (module Iarray) (Format.printf "%d@.") [|0;1;2|] ()
+                                                                           ^^
+  Hint: Did you forget a ";"?
+Line 1, characters 73-75:
+1 | let too_many_arg = iter (module Iarray) (Format.printf "%d@.") [|0;1;2|] ()
+                                                                             ^^
+  This extra argument is not expected.
+|}]
+
+let too_many_arg_bis = map (module Iarray) succ [| 0; 1; 2 |] ()
+[%%expect {|
+Line 1, characters 23-64:
+1 | let too_many_arg_bis = map (module Iarray) succ [| 0; 1; 2 |] ()
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The function "map" has type
+         "(module M : Map) -> ('c -> 'd) -> 'c M.t -> 'd M.t"
+       It is applied to too many arguments
+Line 1, characters 62-64:
+1 | let too_many_arg_bis = map (module Iarray) succ [| 0; 1; 2 |] ()
+                                                                  ^^
+  This extra argument is not expected.
 |}]

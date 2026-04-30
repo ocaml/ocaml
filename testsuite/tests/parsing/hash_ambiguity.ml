@@ -16,6 +16,10 @@ type 'a u = A of int #list
 
 type 'a v = A of int * int #list
 
+type 'a x = A of int
+#
+list
+
 (* TEST
  flags = "-stop-after parsing -dparsetree";
  setup-ocamlc.byte-build-env;

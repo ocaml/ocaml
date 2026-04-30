@@ -54,19 +54,23 @@ let windows =
 let string_of_string_literal s =
   let b = Buffer.create (String.length s + 2) in
   let last_was_escape = ref false in
+  (* Avoid producing '??' to avoid assembler warnings about trigraphs *)
+  let last_was_question_mark = ref false in
   for i = 0 to String.length s - 1 do
     let c = s.[i] in
     if c >= '0' && c <= '9' then
       if !last_was_escape
       then Printf.bprintf b "\\%o" (Char.code c)
       else Buffer.add_char b c
-    else if c >= ' ' && c <= '~' && c <> '"' (* '"' *) && c <> '\\' then begin
+    else if c >= ' ' && c <= '~' && c <> '"' (* '"' *) && c <> '\\' &&
+              (c <> '?' || not !last_was_question_mark) then begin
       Buffer.add_char b c;
       last_was_escape := false
     end else begin
       Printf.bprintf b "\\%o" (Char.code c);
       last_was_escape := true
-    end
+    end;
+    last_was_question_mark := (c = '?')
   done;
   Buffer.contents b
 

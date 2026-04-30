@@ -79,6 +79,7 @@ type optimization_hint =
   | Hint_arraylength of Lambda.array_kind
   | Hint_closures of closure_hint list
   | Hint_ccall of ccall_hint
+  | Hint_physical_comparison
 
 type label = int                     (* Symbolic code labels *)
 
@@ -128,6 +129,7 @@ type instruction =
   | Knegint | Kaddint | Ksubint | Kmulint | Kdivint | Kmodint
   | Kandint | Korint | Kxorint | Klslint | Klsrint | Kasrint
   | Kintcomp of integer_comparison
+  | Kphyscomp of physical_comparison
   | Koffsetint of int
   | Koffsetref of int
   | Kisint

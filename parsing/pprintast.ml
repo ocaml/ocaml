@@ -1040,7 +1040,7 @@ and simple_expr ctxt f x =
                 (simple_expr ctxt) e
         in
         pp f "@[<hv0>@[<hv2>{@;%a%a@]@;}@]"(* "@[<hov2>{%a%a}@]" *)
-          (option ~last:" with@;" (simple_expr ctxt)) eo
+          (option ~last:" with@;" (record_update_expr ctxt)) eo
           (list longident_x_expression ~sep:";@;") l
     | Pexp_array (l) ->
         pp f "@[<0>@[<2>[|%a|]@]@]"
@@ -1055,6 +1055,11 @@ and simple_expr ctxt f x =
         pp f fmt (pattern ctxt) s expression e1 direction_flag
           df expression e2 expression e3
     | _ ->  paren true (expression ctxt) f x
+
+and record_update_expr ctxt f x =
+  match x.pexp_desc with
+  | Pexp_apply _ -> expression ctxt f x
+  | _ -> simple_expr ctxt f x
 
 and attributes ctxt f l =
   List.iter (attribute ctxt f) l
@@ -1073,12 +1078,23 @@ and floating_attribute ctxt f a =
 
 and value_description ctxt f x =
   (* note: value_description has an attribute field,
-           but they're already printed by the callers this method *)
-  pp f "@[<hov2>%a%a@]" (core_type ctxt) x.pval_type
-    (fun f x ->
-       if x.pval_prim <> []
-       then pp f "@ =@ %a" (list constant_string) x.pval_prim
-    ) x
+           but they're already printed by the callers of this method *)
+  pp f "@[<hov2>%a@]" (core_type ctxt) x.pval_type
+
+and primitive_description ctxt f x =
+  (* note: primitive_description has an attribute field,
+           but they're already printed by the callers of this method *)
+  match x.pprim_kind with
+  | Pprim_decl (pprim_type, pprim_prim) ->
+      pp f ":@ @[<hov2>%a@ =@ %a@]"
+        (core_type ctxt) pprim_type
+        (list constant_string) pprim_prim
+  | Pprim_alias (Some pprim_type, pprim_ident) ->
+      pp f ":@ @[<hov2>%a@ =@ %a@]"
+        (core_type ctxt) pprim_type
+        (with_loc value_longident) pprim_ident
+  | Pprim_alias (None, pprim_ident) ->
+      pp f "@[@ =@ %a@]" (with_loc value_longident) pprim_ident
 
 and extension ctxt f (s, e) =
   pp f "@[<2>[%%%s@ %a]@]" s.txt (payload ctxt) e
@@ -1350,11 +1366,15 @@ and signature_item ctxt f x : unit =
       *)
       type_def_list ctxt f (Recursive, false, l)
   | Psig_value vd ->
-      let intro = if vd.pval_prim = [] then "val" else "external" in
-      pp f "@[<2>%s@ %a@ :@ %a@]%a" intro
+      pp f "@[<2>val@ %a@ :@ %a@]%a"
         ident_of_name vd.pval_name.txt
         (value_description ctxt) vd
         (item_attributes ctxt) vd.pval_attributes
+  | Psig_primitive pd ->
+      pp f "@[<2>external@ %a@ %a@]%a"
+        ident_of_name pd.pprim_name.txt
+        (primitive_description ctxt) pd
+        (item_attributes ctxt) pd.pprim_attributes
   | Psig_typext te ->
       type_extension ctxt f te
   | Psig_exception ed ->
@@ -1563,6 +1583,11 @@ and structure_item ctxt f x =
   | Pstr_value (rf, l) ->
       (* pp f "@[<hov2>let %a%a@]"  rec_flag rf bindings l *)
       pp f "@[<2>%a@]" (bindings ctxt) (rf,l)
+  | Pstr_val vd ->
+      pp f "@[<hov2>val@ %a@ :@ %a@]%a"
+        ident_of_name vd.pval_name.txt
+        (value_description ctxt) vd
+        (item_attributes ctxt) vd.pval_attributes
   | Pstr_typext te -> type_extension ctxt f te
   | Pstr_exception ed -> exception_declaration ctxt f ed
   | Pstr_module x ->
@@ -1646,11 +1671,11 @@ and structure_item ctxt f x =
               (list ~sep:"@," (class_declaration "and")) xs
       end
   | Pstr_class_type l -> class_type_declaration_list ctxt f l
-  | Pstr_primitive vd ->
-      pp f "@[<hov2>external@ %a@ :@ %a@]%a"
-        ident_of_name vd.pval_name.txt
-        (value_description ctxt) vd
-        (item_attributes ctxt) vd.pval_attributes
+  | Pstr_primitive pd ->
+      pp f "@[<hov2>external@ %a@ %a@]%a"
+        ident_of_name pd.pprim_name.txt
+        (primitive_description ctxt) pd
+        (item_attributes ctxt) pd.pprim_attributes
   | Pstr_include incl ->
       pp f "@[<hov2>include@ %a@]%a"
         (module_expr ctxt) incl.pincl_mod

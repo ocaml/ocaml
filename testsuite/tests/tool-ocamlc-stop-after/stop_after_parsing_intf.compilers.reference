@@ -5,6 +5,5 @@
       core_type (stop_after_parsing_intf.mli[12,306+8]..[12,306+61])
         Ptyp_constr "Module_that_does_not_exists.type_that_does_not_exists" (stop_after_parsing_intf.mli[12,306+8]..[12,306+61])
         []
-      []
 ]
 

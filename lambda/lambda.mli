@@ -86,6 +86,7 @@ type primitive =
   | Pandint | Porint | Pxorint
   | Plslint | Plsrint | Pasrint
   | Pintcomp of integer_comparison
+  | Pphyscomp of physical_comparison
   (* Comparisons that return int (not bool like above) for ordering *)
   | Pcompare_ints | Pcompare_floats | Pcompare_bints of boxed_integer
   | Poffsetint of int
@@ -175,6 +176,9 @@ type primitive =
 
 and integer_comparison =
     Ceq | Cne | Clt | Cgt | Cle | Cge
+
+and physical_comparison =
+    CPeq | CPneq
 
 and float_comparison =
     CFeq | CFneq | CFlt | CFnlt | CFgt | CFngt | CFle | CFnle | CFge | CFnge
@@ -493,6 +497,7 @@ val bind : let_kind -> Ident.t -> lambda -> lambda -> lambda
 val bind_with_value_kind:
   let_kind -> (Ident.t * value_kind) -> lambda -> lambda -> lambda
 
+val negate_physical_comparison : physical_comparison -> physical_comparison
 val negate_integer_comparison : integer_comparison -> integer_comparison
 val swap_integer_comparison : integer_comparison -> integer_comparison
 

@@ -87,6 +87,8 @@ type 'variety obj =
   | Abstract_row : position -> _ obj
   (* Unification *)
   | Self_cannot_be_closed : unification obj
+  (* Equality & Moregen *)
+  | Kind_differ : string * field_kind_view * field_kind_view -> comparison obj
 
 type first_class_module =
     | Package_cannot_scrape of Path.t

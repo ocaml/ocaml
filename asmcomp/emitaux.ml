@@ -55,19 +55,23 @@ let emit_symbol s =
 let emit_string_literal s =
   let last_was_escape = ref false in
   emit_string "\"";
+  (* Avoid producing '??' to avoid assembler warnings about trigraphs *)
+  let last_was_question_mark = ref false in
   for i = 0 to String.length s - 1 do
     let c = s.[i] in
     if c >= '0' && c <= '9' then
       if !last_was_escape
       then Printf.fprintf !output_channel "\\%o" (Char.code c)
       else output_char !output_channel c
-    else if c >= ' ' && c <= '~' && c <> '"' (* '"' *) && c <> '\\' then begin
+    else if c >= ' ' && c <= '~' && c <> '"' (* '"' *) && c <> '\\' &&
+              (c <> '?' || not !last_was_question_mark) then begin
       output_char !output_channel c;
       last_was_escape := false
     end else begin
       Printf.fprintf !output_channel "\\%o" (Char.code c);
       last_was_escape := true
-    end
+    end;
+    last_was_question_mark := (c = '?')
   done;
   emit_string "\""
 
@@ -426,6 +430,15 @@ let cfi_def_cfa_register ~reg =
   if is_cfi_enabled () then begin
     emit_string "\t.cfi_def_cfa_register ";
     emit_int reg;
+    emit_string "\n"
+  end
+
+let cfi_val_offset ~reg ~offset =
+  if is_cfi_enabled () then begin
+    emit_string "\t.cfi_escape 0x14, "; (* DW_CFA_val_offset (0x14) *)
+    emit_int reg;
+    emit_string ", ";
+    emit_int offset;
     emit_string "\n"
   end
 

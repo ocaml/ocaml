@@ -59,6 +59,7 @@ type iterator = {
   package_type: iterator -> package_type -> unit;
   pat: iterator -> pattern -> unit;
   payload: iterator -> payload -> unit;
+  primitive_description: iterator -> primitive_description -> unit;
   signature: iterator -> signature -> unit;
   signature_item: iterator -> signature_item -> unit;
   structure: iterator -> structure -> unit;
@@ -320,6 +321,7 @@ module MT = struct
     sub.location sub loc;
     match desc with
     | Psig_value vd -> sub.value_description sub vd
+    | Psig_primitive pd -> sub.primitive_description sub pd
     | Psig_type (_, l)
     | Psig_typesubst l ->
       List.iter (sub.type_declaration sub) l
@@ -370,7 +372,8 @@ module M = struct
     | Pstr_eval (x, attrs) ->
         sub.attributes sub attrs; sub.expr sub x
     | Pstr_value (_r, vbs) -> List.iter (sub.value_binding sub) vbs
-    | Pstr_primitive vd -> sub.value_description sub vd
+    | Pstr_val vd -> sub.value_description sub vd
+    | Pstr_primitive pd -> sub.primitive_description sub pd
     | Pstr_type (_rf, l) -> List.iter (sub.type_declaration sub) l
     | Pstr_typext te -> sub.type_extension sub te
     | Pstr_exception ed -> sub.type_exception sub ed
@@ -628,12 +631,22 @@ let default_iterator =
     extension_constructor = T.iter_extension_constructor;
     package_type = T.iter_package_type;
     value_description =
-      (fun this {pval_name; pval_type; pval_prim = _; pval_loc;
-                 pval_attributes} ->
+      (fun this {pval_name; pval_type; pval_loc; pval_attributes} ->
         iter_loc iter_string this pval_name;
         this.typ this pval_type;
         this.location this pval_loc;
         this.attributes this pval_attributes;
+      );
+    primitive_description =
+      (fun this {pprim_name; pprim_kind; pprim_loc; pprim_attributes} ->
+        iter_loc iter_string this pprim_name;
+        (match pprim_kind with
+         | Pprim_decl (pprim_type, _) -> this.typ this pprim_type
+         | Pprim_alias (pprim_type, pprim_ident) ->
+           Option.iter (this.typ this) pprim_type;
+           iter_loc_lid this pprim_ident);
+        this.location this pprim_loc;
+        this.attributes this pprim_attributes;
       );
 
     pat = P.iter;

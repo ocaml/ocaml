@@ -72,7 +72,7 @@ extern void * caml_dlsym(void * handle, const char * name);
 extern void * caml_globalsym(const char * name);
 
 /* Return an error message describing the most recent dynlink failure. */
-extern char * caml_dlerror(void);
+extern const char * caml_dlerror(void);
 
 /* Recover executable name if possible (/proc/sef/exe under Linux,
    GetModuleFileName under Windows).  Return NULL on error,

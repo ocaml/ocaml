@@ -1,10 +1,10 @@
 set disable-randomization off
-break *(&caml_start_program+0)
+set debuginfod enabled off
+source gdb_test.py
+break_start_program
 break caml_program
 break ocaml_to_c
 break meander.ml:5
-set debuginfod enabled off
-source gdb_test.py
 run
 print_backtrace
 continue

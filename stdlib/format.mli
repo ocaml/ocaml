@@ -1249,6 +1249,26 @@ val pp_print_array:
   @since 5.1
 *)
 
+val pp_print_iarray:
+  ?pp_sep:(formatter -> unit -> unit) ->
+  (formatter -> 'a -> unit) -> (formatter -> 'a iarray -> unit)
+(** [pp_print_iarray ?pp_sep pp_v ppf a] prints items of immutable array [a],
+  using [pp_v] to print each item, and calling [pp_sep] between items ([pp_sep]
+  defaults to {!pp_print_cut}). Does nothing on empty arrays.
+
+  @since 5.6
+*)
+
+val pp_print_dynarray:
+  ?pp_sep:(formatter -> unit -> unit) ->
+  (formatter -> 'a -> unit) -> (formatter -> 'a Dynarray.t -> unit)
+(** [pp_print_dynarray ?pp_sep pp_v ppf a] prints items of dynarray [a],
+  using [pp_v] to print each item, and calling [pp_sep] between items ([pp_sep]
+  defaults to {!pp_print_cut}). Does nothing on empty arrays.
+
+  @since 5.6
+*)
+
 val pp_print_seq:
   ?pp_sep:(formatter -> unit -> unit) ->
   (formatter -> 'a -> unit) -> (formatter -> 'a Seq.t -> unit)

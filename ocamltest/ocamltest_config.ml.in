@@ -110,3 +110,5 @@ let tsan = @tsan@
 let has_relative_libdir = @target_libdir_is_relative@
 
 let suffixing = @suffixing@
+
+let reserved_header_bits = @reserved_header_bits@

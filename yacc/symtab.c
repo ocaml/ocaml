@@ -56,12 +56,13 @@ make_bucket(const char *name)
     bp->value = UNDEFINED;
     bp->index = 0;
     bp->prec = 0;
-    bp-> class = UNKNOWN;
+    bp->class = UNKNOWN;
     bp->assoc = TOKEN;
     bp->entry = 0;
     bp->true_token = 0;
+    bp->lineno = 0;
+    bp->column = 0;
 
-    if (bp->name == 0) no_space();
     strcpy(bp->name, name);
 
     return (bp);

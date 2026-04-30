@@ -93,6 +93,9 @@ val is_Tvar: type_expr -> bool
 val is_Tunivar: type_expr -> bool
 val is_Tconstr: type_expr -> bool
 val dummy_method: label
+val get_constr_desc: type_expr -> type_desc
+        (* Replaces any expansion at the head of the type_desc
+           with its abbreviation. *)
 val type_kind_is_abstract: type_declaration -> bool
 val type_origin: type_declaration -> type_origin
 
@@ -154,7 +157,7 @@ val fold_type_expr: ('a -> type_expr -> 'a) -> 'a -> type_expr -> 'a
 val iter_row: (type_expr -> unit) -> row_desc -> unit
         (* Iteration on types in a row *)
 val fold_row: ('a -> type_expr -> 'a) -> 'a -> row_desc -> 'a
-val iter_abbrev: (type_expr -> unit) -> abbrev_memo -> unit
+val iter_abbrev_memo: (type_expr -> unit) -> abbrev_memo -> unit
         (* Iteration on types in an abbreviation list *)
 val iter_type_expr_kind: (type_expr -> unit) -> (type_decl_kind -> unit)
 
@@ -215,6 +218,13 @@ val copy_row:
     (type_expr -> type_expr) ->
     bool -> row_desc -> bool -> type_expr -> row_desc
 
+val deep_occur: type_expr -> type_expr -> bool
+   (* [deep_occur t0 ty] return whether [t0] occurs in [ty].
+      Objects are also traversed. *)
+val deep_occur_list: type_expr -> type_expr list -> bool
+val get_folded_desc: keep_Tvar:bool -> type_expr -> type_desc
+  (* Turn a [Texpand] into a [Tconstr] only when it is safe to do so *)
+
 module For_copy : sig
 
   type copy_scope
@@ -236,7 +246,7 @@ end
 
 val find_expans: private_flag -> Path.t -> abbrev_memo -> type_expr option
         (* Look up a memorized abbreviation *)
-val cleanup_abbrev: unit -> unit
+val cleanup_abbrev_memo: unit -> unit
         (* Flush the cache of abbreviation expansions.
            When some types are saved (using [output_value]), this
            function MUST be called just before. *)
@@ -244,7 +254,7 @@ val memorize_abbrev:
         abbrev_memo ref ->
         private_flag -> Path.t -> type_expr -> type_expr -> unit
         (* Add an expansion in the cache *)
-val forget_abbrev:
+val forget_abbrev_memo:
         abbrev_memo ref -> Path.t -> unit
         (* Remove an abbreviation from the cache *)
 

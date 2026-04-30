@@ -445,9 +445,9 @@ let write_header outchan =
       else if data.[0] = '\000' then
         None, 1
       else
-        let zinc = Misc.RuntimeID.of_zinc_hi (String.sub data 0 2) in
+        let zinc = Misc.RuntimeID.of_string (String.sub data 0 4) in
         if Option.fold ~none:false ~some:Misc.RuntimeID.is_zinc zinc then
-          zinc, 2
+          zinc, 4
         else
           raise (Error (Camlheader ("corrupt header", header)))
     in

@@ -120,7 +120,7 @@ let _ =
 let _ =
   if !Odoc_global.errors > 0 then
   (
-   prerr_endline (Odoc_messages.errors_occured !Odoc_global.errors) ;
+   prerr_endline (Odoc_messages.errors_occurred !Odoc_global.errors) ;
    exit 1
   )
   else

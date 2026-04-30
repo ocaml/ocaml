@@ -85,7 +85,7 @@ static int caml_unix_execve_script(const char * path,
             {"/bin/sh", path, argv[1], ..., argv[argc-1], NULL} */
   new_argv = calloc(argc + 3, sizeof (char *));
   if (new_argv == NULL) return ENOMEM;
-  new_argv[0] = "/bin/sh";
+  new_argv[0] = (char *) "/bin/sh";
   new_argv[1] = (char *) path;
   for (size_t i = 1; i < argc; i++) new_argv[i + 1] = argv[i];
   new_argv[argc + 1] = NULL;

@@ -1528,7 +1528,7 @@ pack_symbols(void)
     symbol_value[0] = 0;
     symbol_prec[0] = 0;
     symbol_assoc[0] = TOKEN;
-    symbol_tag[0] = "";
+    symbol_tag[0] = (char *) "";
     symbol_true_token[0] = 0;
     for (i = 1; i < ntokens; ++i)
     {
@@ -1543,7 +1543,7 @@ pack_symbols(void)
     symbol_value[start_symbol] = -1;
     symbol_prec[start_symbol] = 0;
     symbol_assoc[start_symbol] = TOKEN;
-    symbol_tag[start_symbol] = "";
+    symbol_tag[start_symbol] = (char *) "";
     symbol_true_token[start_symbol] = 0;
     for (++i; i < nsyms; ++i)
     {

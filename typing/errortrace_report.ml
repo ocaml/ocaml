@@ -37,7 +37,7 @@ open Format_doc
 module Fmt = Format_doc
 module Style = Misc.Style
 
-type 'a diff = 'a Out_type.diff = Same of 'a | Diff of 'a * 'a
+type 'a diff = Same of 'a | Diff of 'a * 'a
 
 let trees_of_trace mode =
   List.map (Errortrace.map_diff (trees_of_type_expansion mode))
@@ -243,12 +243,19 @@ let explain_escape pre = function
         pp_doc pre pp_path (Path.Pident id)
     )
   | Errortrace.Equation Errortrace.{ty = _; expanded = t} ->
+      let[@manual.ref "s:gadts-type-inference"] manual_ref =
+        [ 7; 2 ]
+      in
       Variable_names.reserve t;
       Some(
-        doc_printf "%a@ @[<hov>This instance of %a is ambiguous:@ %s@]"
+        doc_printf "%a@ @[<hov>This instance of %a is ambiguous:@ %s@]\
+                    @,@[%a A type annotation may resolve \
+                    the ambiguity,@,either on this \
+                    expression or the whole function.@]"
           pp_doc pre
           (Style.as_inline_code type_expr_with_reserved_names) t
           "it would escape the scope of its equation"
+          Misc.print_manual_hint manual_ref
       )
   | Errortrace.Self ->
       Some (doc_printf "%a@,Self type cannot escape its class" pp_doc pre)
@@ -269,6 +276,13 @@ let explain_object (type variety) : variety Errortrace.obj -> _ = function
       Some (doc_printf
               "@,Self type cannot be unified with a closed object type"
            )
+  | Errortrace.Kind_differ (f, k1, k2) -> Some(
+      doc_printf
+        "@,@[The method %a is %s and was expected to be %s@]"
+          Style.inline_code f
+          (match k1 with Fpublic -> "public" | _ -> "private")
+          (match k2 with Fpublic -> "public" | _ -> "private")
+    )
 
 let explain_incompatible_fields name (diff: Types.type_expr Errortrace.diff) =
   Variable_names.reserve diff.got;
@@ -697,7 +711,7 @@ let type_path_expansion ppf = function
 let trees_of_type_path_expansion (tp,tp') =
   let path_tree = namespaced_tree_of_path Type in
   if Path.same tp tp' then Same(path_tree tp) else
-    Diff(path_tree tp, path_tree tp)
+    Diff(path_tree tp, path_tree tp')
 
 let type_path_list ppf l =
   Fmt.pp_print_list ~pp_sep:(fun ppf () -> Fmt.pp_print_break ppf 2 0)

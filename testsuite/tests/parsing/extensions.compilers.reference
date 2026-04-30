@@ -292,14 +292,12 @@
                 core_type (extensions.ml[24,573+19]..[24,573+20])
                   Ptyp_constr "t" (extensions.ml[24,573+19]..[24,573+20])
                   []
-                []
             signature_item (extensions.ml[24,573+22]..[24,573+31])
               Psig_value
               value_description "y" (extensions.ml[24,573+26]..[24,573+27]) (extensions.ml[24,573+22]..[24,573+31])
                 core_type (extensions.ml[24,573+30]..[24,573+31])
                   Ptyp_constr "t" (extensions.ml[24,573+30]..[24,573+31])
                   []
-                []
           ]
         expression (extensions.ml[25,606+4]..[25,606+23])
           Pexp_extension "foo"

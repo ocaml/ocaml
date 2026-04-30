@@ -375,6 +375,8 @@ Error: The value "b" has type "bool" but an expression was expected of type
          "s" = "bool"
        This instance of "bool" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 module Normal_constrs = struct
@@ -442,6 +444,8 @@ Error: This expression has type "a" = "int"
        but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 let test : type a. a t -> a = fun x ->
@@ -456,6 +460,8 @@ Error: This expression has type "a" = "int"
        but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 let test : type a. a t -> a = fun x ->
@@ -469,6 +475,8 @@ Line 2, characters 30-42:
 Error: This expression has type "int" but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 let test (type a) x =
@@ -546,6 +554,8 @@ Error: This expression has type "int option"
        Type "int" is not compatible with type "a" = "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 let test2 : type a. a t -> a option = fun x ->
@@ -582,6 +592,8 @@ Line 3, characters 44-45:
 Error: The value "y" has type "int" but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 (* Effect of external consraints *)
@@ -702,6 +714,8 @@ Error: The value "o" has type "< m : a; .. >"
        Type "a" is not compatible with type "b" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 let f (type a) (type b) (eq : (a,b) eq) (o : <m : a; ..>) : <m : b; ..> =
@@ -715,6 +729,8 @@ Error: The value "o" has type "< m : a; .. >"
        Type "a" is not compatible with type "b" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 let f : type a b. (a,b) eq -> <m : a> -> <m : b> =
@@ -755,6 +771,8 @@ Error: The value "o" has type "< m : a >" but an expression was expected of type
        Type "a" is not compatible with type "b" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 let f : type a b. (a,b) eq -> < m : a; .. > -> < m : b > =
@@ -771,6 +789,8 @@ Error: The value "o" has type "< m : a; .. >"
        Type "a" is not compatible with type "b" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 let f : type a b. (a,b) eq -> [> `A of a] -> [> `A of b] =
@@ -784,6 +804,8 @@ Error: The value "o" has type "[> `A of a ]"
        Type "a" is not compatible with type "b" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 let f (type a b) (eq : (a,b) eq) (v : [> `A of a]) : [> `A of b] =
@@ -797,6 +819,8 @@ Error: The value "v" has type "[> `A of a ]"
        Type "a" is not compatible with type "b" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 let f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
@@ -855,6 +879,8 @@ Error: The value "o" has type "[ `A of a | `B ]"
        Type "a" is not compatible with type "b" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 let f : type a b. (a,b) eq -> [> `A of a | `B] -> [`A of b | `B] =
@@ -871,6 +897,8 @@ Error: The value "o" has type "[> `A of a | `B ]"
        Type "a" is not compatible with type "b" = "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 (* Pattern matching *)
@@ -1069,7 +1097,7 @@ type _ int_bar = IB_constr : < bar : int; .. > int_bar
 Line 10, characters 3-4:
 10 |   (x:<foo:int>)
         ^
-Error: The value "x" has type "t" = "< foo : int; .. as $0 >"
+Error: The value "x" has type "t" = "< bar : int; foo : int; .. as $1 >"
        but an expression was expected of type "< foo : int >"
        Type "$0" = "< bar : int; .. as $1 >" is not compatible with type "<  >"
        The second object type has no method "bar"
@@ -1087,7 +1115,7 @@ let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
 Line 3, characters 3-4:
 3 |   (x:<foo:int;bar:int>)
        ^
-Error: The value "x" has type "t" = "< foo : int; .. as $0 >"
+Error: The value "x" has type "t" = "< bar : int; foo : int; .. as $1 >"
        but an expression was expected of type "< bar : int; foo : int >"
        Type "$0" = "< bar : int; .. as $1 >" is not compatible with type
          "< bar : int >"
@@ -1119,6 +1147,8 @@ Error: This expression has type "< bar : int; foo : int; .. as $1 >"
        but an expression was expected of type "'a"
        This instance of "$1" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
        Hint: "$1" is a type variable introduced in the equation
          "$0" = "< bar : int; .. as $1 >"
 |}];;
@@ -1145,6 +1175,8 @@ Error: The method call "x#foo" has type "int"
        but an expression was expected of type "'a"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 (* PR#5554 *)
@@ -1214,6 +1246,8 @@ Error: The value "b" has type "b" = "int" but an expression was expected of type
          "a" = "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 let f : type a b. (a,b) eq -> (b,int) eq -> a -> b -> _ = fun ab bint a b ->
@@ -1231,6 +1265,8 @@ Error: The value "b" has type "b" = "int" but an expression was expected of type
          "a" = "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 let f (type a b c) (b : bool) (w1 : (a,b) eq) (w2 : (a,int) eq) (x : a) (y : b) =
@@ -1246,6 +1282,8 @@ Error: The value "y" has type "b" = "int" but an expression was expected of type
          "a" = "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 let f (type a b c) (b : bool) (w1 : (a,b) eq) (w2 : (a,int) eq) (x : a) (y : b) =
@@ -1260,6 +1298,8 @@ Error: The value "x" has type "a" = "int" but an expression was expected of type
          "b" = "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}];;
 
 module M = struct
@@ -1279,6 +1319,8 @@ Error: This expression has type "'a -> 'b"
        but an expression was expected of type "M.t" = "int -> int"
        This instance of "int -> int" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}]
 
 (* Check got/expected when the order changes *)
@@ -1299,6 +1341,8 @@ Error: The value "x" has type "M.t" = "int -> int"
        but an expression was expected of type "int -> int"
        This instance of "int -> int" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}]
 
 module M = struct
@@ -1319,6 +1363,8 @@ Error: This expression has type "M.t" but an expression was expected of type
          "< m : 'a; .. >"
        This instance of "< m : int >" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}]
 
 (* Check got/expected when the order changes *)
@@ -1340,6 +1386,8 @@ Error: This expression has type "M.t" but an expression was expected of type
          "< m : 'a; .. >"
        This instance of "< m : int >" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}]
 
 type (_,_) eq = Refl: ('a,'a) eq
@@ -1366,6 +1414,8 @@ Error: This expression has type "$a" = "< b : bool >"
        but an expression was expected of type "< b : 'a; .. >"
        This instance of "< b : bool >" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
        Hint: "$a" is an existential type bound by the constructor "C".
 |}]
 
@@ -1394,5 +1444,7 @@ Error: This expression has type "$a" = "< b : bool >"
        but an expression was expected of type "< b : 'a; .. >"
        This instance of "< b : bool >" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
        Hint: "$a" is an existential type bound by the constructor "C".
 |}]

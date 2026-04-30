@@ -68,6 +68,7 @@ end
    linux;
    no-flambda; (* the output will be slightly different under Flambda *)
    not tsan; (* TSan modifies the generated code *)
+   not has_reserved_header_bits;
 
    setup-ocamlopt.byte-build-env;
    flags = "-c -dcmm -dno-locations -dno-unique-ids";

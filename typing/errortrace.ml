@@ -105,6 +105,8 @@ type 'variety obj =
   | Abstract_row : position -> _ obj
   (* Unification *)
   | Self_cannot_be_closed : unification obj
+  (* Equality & Moregen *)
+  | Kind_differ : string * field_kind_view * field_kind_view -> comparison obj
 
 type first_class_module =
     | Package_cannot_scrape of Path.t
@@ -158,6 +160,7 @@ let swap_elt (type variety) : ('a, variety) elt -> ('a, variety) elt = function
     Incompatible_fields { name; diff = swap_diff diff}
   | Obj (Missing_field(pos,s)) -> Obj (Missing_field(swap_position pos,s))
   | Obj (Abstract_row pos) -> Obj (Abstract_row (swap_position pos))
+  | Obj (Kind_differ (name, k1, k2)) -> Obj (Kind_differ (name, k2, k1))
   | Variant (Fixed_row(pos,k,f)) ->
     Variant (Fixed_row(swap_position pos,k,f))
   | Variant (No_tags(pos,f)) ->

@@ -131,7 +131,7 @@ val bad_magic_number : string
 val not_a_module_name : string -> string
 val load_file_error : string -> string -> string
 val wrong_format : string -> string
-val errors_occured : int -> string
+val errors_occurred : int -> string
 val parse_error : string
 val text_parse_error : int -> int -> string -> string
 val file_not_found_in_paths : string list -> string -> string
