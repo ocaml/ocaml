@@ -216,6 +216,7 @@ let print_instr b = function
   | TEST (arg1, arg2) -> i2_s b "test" arg1 arg2
   | UCOMISD (arg1, arg2) -> i2 b "ucomisd" arg1 arg2
   | LOCK_XADD (arg1, arg2) -> i2_s b "lock xadd" arg1 arg2
+  | XADD (arg1, arg2) -> i2_s b "xadd" arg1 arg2
   | XCHG (arg1, arg2) -> i2 b "xchg" arg1 arg2
   | XOR (arg1, arg2) -> i2_s b "xor" arg1 arg2
   | XORPD (arg1, arg2) -> i2 b "xorpd" arg1 arg2

@@ -193,6 +193,7 @@ type instruction =
   | TEST of arg * arg
   | UCOMISD of arg * arg
   | LOCK_XADD of arg * arg
+  | XADD of arg * arg
   | XCHG of arg * arg
   | XOR of arg * arg
   | XORPD of arg * arg
