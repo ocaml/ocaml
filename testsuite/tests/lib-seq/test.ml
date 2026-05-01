@@ -148,6 +148,11 @@ let () =
   assert (Seq.length (Seq.take 1_000_000 seq) = 1_000_000);
   ()
 
+(* [forever] isn't too eager *)
+let () =
+  let f () = failwith "forever evaluated" in
+  ignore (Seq.forever f)
+
 (* [scan] must not invoke [f] too early. (An easy trap to fall into.)
    The function [f] does not tolerate being invoked 4 times. Indeed, in
    this example, it should be called 3 times only. *)
