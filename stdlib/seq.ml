@@ -296,23 +296,20 @@ let forever f =
 
 (* This preliminary definition of [cycle] requires the sequence [xs]
    to be nonempty. Applying it to an empty sequence would produce a
-   sequence that diverges when it is forced.
-   The tail is defined recursively for reuse on every cycle.  *)
-
-let cycle_nonempty xs () =
-  let rec tl () = append xs tl () in tl ()
+   sequence that diverges when it is forced.  *)
 
 (* [cycle xs] checks whether [xs] is empty and, if so, returns an empty
-   sequence. Otherwise, [cycle xs] produces one copy of [xs] followed
-   with the infinite sequence [cycle_nonempty xs]. Thus, the nonemptiness
-   check is performed just once. *)
+   sequence. Otherwise, [cycle xs] produces one copy of [xs] whose
+   final Cons points back to the initial element. *)
+let rec loop init xs =
+  match xs () with
+  | Nil -> init
+  | Cons (x, xs') -> Cons (x, fun () -> loop init xs')
 
 let cycle xs () =
-  match xs() with
-  | Nil ->
-      Nil
-  | Cons (x, xs') ->
-      Cons (x, append xs' (cycle_nonempty xs))
+  match xs () with
+  | Nil -> Nil
+  | Cons (x, xs') -> let rec init = Cons (x, fun () -> loop init xs') in init
 
 (* [iterate1 f x] is the sequence [f x, f (f x), ...].
    It is equivalent to [tail (iterate f x)].
