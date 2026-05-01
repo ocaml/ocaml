@@ -288,11 +288,11 @@ let init n f =
   else
     init_aux f 0 n
 
-let rec repeat x () =
-  Cons (x, repeat x)
+let repeat x =
+  let rec tl () = Cons (x, tl) in tl
 
-let rec forever f () =
-  Cons (f(), forever f)
+let forever f =
+  let rec tl () = Cons (f(), tl) in tl
 
 (* This preliminary definition of [cycle] requires the sequence [xs]
    to be nonempty. Applying it to an empty sequence would produce a
