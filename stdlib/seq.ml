@@ -289,7 +289,7 @@ let init n f =
     init_aux f 0 n
 
 let repeat x =
-  let rec tl () = Cons (x, tl) in tl
+  let rec tl () = c and c = Cons (x, tl) in tl
 
 let forever f =
   let rec tl () = Cons (f(), tl) in tl
