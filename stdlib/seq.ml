@@ -298,8 +298,8 @@ let rec forever f () =
    to be nonempty. Applying it to an empty sequence would produce a
    sequence that diverges when it is forced. *)
 
-let rec cycle_nonempty xs () =
-  append xs (cycle_nonempty xs) ()
+let cycle_nonempty xs () =
+  let rec tl () = append xs tl () in tl ()
 
 (* [cycle xs] checks whether [xs] is empty and, if so, returns an empty
    sequence. Otherwise, [cycle xs] produces one copy of [xs] followed
