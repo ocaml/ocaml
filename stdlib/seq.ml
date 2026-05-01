@@ -296,7 +296,8 @@ let forever f =
 
 (* This preliminary definition of [cycle] requires the sequence [xs]
    to be nonempty. Applying it to an empty sequence would produce a
-   sequence that diverges when it is forced. *)
+   sequence that diverges when it is forced.
+   The tail is defined recursively for reuse on every cycle.  *)
 
 let cycle_nonempty xs () =
   let rec tl () = append xs tl () in tl ()
