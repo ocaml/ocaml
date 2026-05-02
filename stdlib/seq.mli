@@ -413,15 +413,19 @@ val forever : (unit -> 'a) -> 'a t
     @since 4.14 *)
 
 val cycle : 'a t -> 'a t
-(** [cycle xs] is the cyclic sequence that consists of an infinite
-    number of repetitions of the sequence [xs].
+(** [cycle xs] is the cyclic sequence that encodes an infinite number
+    of repetitions of the sequence [xs].
 
     If [xs] is an empty sequence,
     then [cycle xs] is empty as well.
 
-    Consuming (a prefix of) the sequence [cycle xs] once
-    can cause the sequence [xs] to be consumed more than once.
-    Therefore, [xs] must be persistent.
+    If [xs] is an ephemeral sequence,
+    then [cycle xs] will not query the elements of [xs] more than once.
+
+    Querying elements from [cycle xs] is not thread-safe.
+    See {!memoize}.
+
+    [cycle xs] is equivalent to [append (memoize xs) (cycle xs)]
 
     @since 4.14 *)
 
