@@ -294,28 +294,6 @@ let repeat x =
 let forever f =
   let rec tl () = Cons (f(), tl) in tl
 
-(* This preliminary definition of [cycle] requires the sequence [xs]
-   to be nonempty. Applying it to an empty sequence would produce a
-   sequence that diverges when it is forced.  *)
-
-(* [cycle xs] checks whether [xs] is empty and, if so, returns an empty
-   sequence. Otherwise, [cycle xs] produces one copy of [xs] whose
-   final Cons points back to the initial element. *)
-
-let lazy_to_fun l () = Lazy.force l
-
-let rec loop init xs =
-  match xs () with
-  | Nil -> Lazy.force init
-  | Cons (x, xs') -> Cons (x, lazy_to_fun (lazy (loop init xs')))
-                   
-let cycle xs () =
-  match xs () with
-  | Nil -> Nil
-  | Cons (x, xs') -> let rec lseq = lazy (Cons (x, lazy_to_fun ltail))
-                         and ltail = lazy (loop lseq xs') in
-                      Lazy.force lseq
-
 (* [iterate1 f x] is the sequence [f x, f (f x), ...].
    It is equivalent to [tail (iterate f x)].
    [iterate1] is used as a building block in the definition of [iterate]. *)
@@ -490,6 +468,24 @@ let rec once xs =
     | Cons (x, xs) ->
         Cons (x, once xs)
   )
+
+(* [cycle xs] checks whether [xs] is empty and, if so, returns an empty
+   sequence. Otherwise, [cycle xs] produces one copy of [xs] whose
+   final Cons points back to the initial element. *)
+let rec loop hd tl =
+  Suspension.memoize (fun () ->
+    match tl () with
+    | Nil -> Lazy.force hd
+    | Cons (x, xs) -> Cons (x, loop hd xs)
+  )
+
+
+let cycle xs () =
+  match xs () with
+  | Nil -> Nil
+  | Cons (x, xs) ->
+      let rec hd = lazy (Cons (x, loop hd xs)) in
+      Lazy.force hd
 
 
 let rec zip xs ys () =
