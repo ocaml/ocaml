@@ -151,6 +151,11 @@ Working version
 
 ### Other libraries:
 
+* #14788: The Win32 error code `ERROR_DIRECTORY` (= 267) is now mapped to
+  `ENOTDIR` instead of `EUNKNOWNERR(-267)` when raised by functions in the
+  `Unix` module (eg `Unix.opendir`).
+  (Nicolás Ojeda Bär, report by Adrián Montesinos González)
+
 ### Tools:
 
 - #14318, #14709, ocamldoc: use "Module_name (Library name)" rather than
