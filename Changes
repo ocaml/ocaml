@@ -154,7 +154,8 @@ Working version
 * #14788: The Win32 error code `ERROR_DIRECTORY` (= 267) is now mapped to
   `ENOTDIR` instead of `EUNKNOWNERR(-267)` when raised by functions in the
   `Unix` module (eg `Unix.opendir`).
-  (Nicolás Ojeda Bär, report by Adrián Montesinos González)
+  (Nicolás Ojeda Bär, report by Adrián Montesinos González, review by Gabriel
+  Scherer)
 
 ### Tools:
 
