@@ -108,6 +108,13 @@ void caml_ephe_list_append_inplace(value e, value *li);
 
 value caml_ephe_list_pop(value *li);
 
+CAMLextern int caml_ephe_try_get_field(value eph, mlsize_t offset, value *key);
+/** Return 1 if the key in the ephemeron at the given offset is set.
+    Otherwise 0. When returning 1, set [*key] to the pointed value.
+
+    The value [eph] must be an ephemeron and [offset] a valid key
+    offset.
+*/
 
 #endif /* CAML_INTERNALS */
 

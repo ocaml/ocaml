@@ -77,6 +77,19 @@ let fill ar ofs len x =
     done
   end
 
+external foldi_left : (int -> 'a -> 'b -> 'a) -> 'a -> 'b t -> 'a
+  = "caml_weak_foldi_left"
+
+let iter =
+  let h _ g v = g v; g in
+  fun f t -> ignore (foldi_left h f t)
+[@@warning "-5"]
+
+let iteri =
+  let h i g v = g i v; g in
+  fun f t -> ignore (foldi_left h f t)
+[@@warning "-5"]
+
 
 (** Weak hash tables *)
 

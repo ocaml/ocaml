@@ -1,0 +1,6 @@
+iter_empty: OK
+iter_partial: OK
+iteri: OK
+foldi_left_sum: OK
+foldi_left_indices: OK
+gc_erasure: OK
