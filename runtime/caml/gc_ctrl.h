@@ -45,10 +45,11 @@ void caml_heap_check (void);
 #endif
 
 /* See the documentation of [Gc.ramp_up] in the standard library. */
-caml_result caml_gc_ramp_up(value callback, uintnat *out_suspended_work);
+caml_result caml_gc_ramp_up(value callback,
+                            caml_alloc_counter *out_suspended_work);
 
 /* See the documentation of [Gc.ramp_down] in the standard library. */
-void caml_gc_ramp_down(uintnat suspended_ramp_up_words);
+void caml_gc_ramp_down(caml_alloc_counter suspended_ramp_up_words);
 
 /* See the [Gc.Tweak] module in the standard library */
 void caml_init_gc_tweaks(void);
