@@ -7554,5 +7554,8 @@ let () =
   let%e[@foo] x = 12 in
   ()
 
+let f = function (module M : (A [@a])) -> ()
+let f = function (module M : (A with type t = int [@a])) -> ()
+
 (* 5.5 Features *)
 type t = external "foo"
