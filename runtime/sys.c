@@ -143,7 +143,7 @@ CAMLexport void caml_do_exit(int retcode)
       double minwords = s.alloc_stats.minor_words
         + (double) (domain_state->young_end - domain_state->young_ptr);
       double majwords = s.alloc_stats.major_words
-        + (double) domain_state->allocated_words;
+        + (double) domain_state->allocated_words->on_heap;
       double allocated_words = minwords + majwords
         - s.alloc_stats.promoted_words;
       intnat heap_words =

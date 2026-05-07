@@ -238,48 +238,33 @@ CAMLexport CAMLweakdef void caml_modify (volatile value *fp, value val)
    dependent memory, and [caml_free_dependent_memory] when you
    free it.  In both cases, you pass as argument the size (in bytes)
    of the block being allocated or freed.
+
+   Note: this API is obsolete; we should call
+   Caml_update_major_allocated_words with kind=off_heap, but only when
+   the block that holds the off-heap memory goes into the major heap
+   (by promotion or direct allocation).
 */
 CAMLexport void caml_alloc_dependent_memory (mlsize_t nbytes)
 {
-  Caml_state->dependent_size += nbytes / sizeof (value);
-  Caml_state->dependent_allocated += nbytes / sizeof (value);
 }
 
 CAMLexport void caml_free_dependent_memory (mlsize_t nbytes)
 {
-  if (Caml_state->dependent_size < nbytes / sizeof (value)){
-    Caml_state->dependent_size = 0;
-  }else{
-    Caml_state->dependent_size -= nbytes / sizeof (value);
-  }
 }
 
 /* Use this function to tell the major GC to speed up when you use
-   finalized blocks to automatically deallocate resources (other
-   than memory). The GC will do at least one cycle every [max]
-   allocated resources; [res] is the number of resources allocated
-   this time.
-   Note that only [res/max] is relevant.  The units (and kind of
-   resource) can change between calls to [caml_adjust_gc_speed].
+   finalized blocks to automatically deallocate off-heap memory.
 
-   If [max] = 0, then we use a number proportional to the major heap
-   size and [caml_custom_major_ratio]. In this case, [mem] should
-   be a number of bytes and the trade-off between GC work and space
-   overhead is under the control of the user through
-   [caml_custom_major_ratio].
+   [res] is the size (in bytes) of off-heap memory just allocated,
+   and [max] should be 0.
 */
 CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
 {
-  if (max == 0) max = caml_custom_get_max_major ();
-  if (res > max) res = max;
-  Caml_state->extra_heap_resources += (double) res / (double) max;
-  if (Caml_state->extra_heap_resources > 0.2){
-    CAML_EV_COUNTER (EV_C_REQUEST_MAJOR_ADJUST_GC_SPEED, 1);
-    caml_request_major_slice (1);
-  }
+  Caml_update_major_allocated_words(off_heap, Caml_state, res / sizeof(value),
+                                    1);
 }
 
-/* This function is analogous to [caml_adjust_gc_speed]. When the
+/* This function is used to speed up the minor GC. When the
    accumulated sum of [res/max] values reaches 1, a minor GC is
    triggered.
 */
@@ -430,9 +415,12 @@ Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, reserved_t reserved,
       return (value)NULL;
   }
 
-  caml_update_major_allocated_words(
-    dom_st, Whsize_wosize(wosize), 1 /* direct */);
-  if (dom_st->allocated_words_direct > dom_st->minor_heap_wsz / 5) {
+  Caml_update_major_allocated_words(
+    on_heap, dom_st, Whsize_wosize(wosize), 1 /* direct */);
+  if (dom_st->allocated_words_direct->on_heap
+      + dom_st->allocated_words_direct->off_heap
+      + dom_st->allocated_words_direct->ephe
+      > dom_st->minor_heap_wsz / 5) {
     CAML_EV_COUNTER (EV_C_REQUEST_MAJOR_ALLOC_SHR, 1);
     caml_request_major_slice(1);
   }

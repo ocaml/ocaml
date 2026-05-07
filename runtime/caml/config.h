@@ -207,14 +207,14 @@ typedef uintptr_t uintnat;
 #define Heap_chunk_min (15 * Page_size)
 
 
-/* Default speed setting for the major GC.  The heap will grow until
-   the dead objects and the free list represent this percentage of the
-   total size of live objects. */
+/* Default value for the main space overhead setting for the major GC.
+   (percents) */
 #define Percent_free_def 120
 
-/* Default "small heap mode" setting for the major GC.  The GC will
-   add an Idle phase when the sweeping work for a cycle is smaller than
-   this limit. */
+/* Default value for the space overhead caused by ephemerons. (percents) */
+#define Ephe_percent_free_def 10
+
+/* Default "small heap mode" setting for the major GC. (words) */
 #define Small_heap_limit_def 262144
 
 /* Default setting for the major GC slice smoothing window: 1

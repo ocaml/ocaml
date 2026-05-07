@@ -67,32 +67,40 @@ void caml_mark_root(value, value*);
 void caml_mark_roots_stw(int, caml_domain_state **);
 void caml_finish_major_cycle(int force_compaction);
 void caml_init_major_pacing (void);
-/* Reset any internal accounting the GC uses to set collection pacing.
- * For use at times when we have disturbed the usual pacing, for
- * example, after any synchronous major collection.
- */
-void caml_reset_major_pacing(bool add_overhead);
 #ifdef DEBUG
 int caml_mark_stack_is_empty(void);
 #endif
 void caml_orphan_ephemerons(caml_domain_state*);
 void caml_orphan_finalisers(caml_domain_state*);
 
+typedef struct {
+  atomic_uintnat percent_free;
+  atomic_uintnat ephe_percent_free;
+} caml_gc_pacing_params;
+caml_gc_pacing_params caml_get_pacing_params (void);
+void caml_set_pacing_params (caml_gc_pacing_params);
+extern atomic_uintnat caml_small_heap_limit;
+
+/* Reset any internal accounting the GC uses to set collection pacing.
+ * For use at times when we have disturbed the usual pacing, for
+ * example, after any synchronous major collection.
+ */
+void caml_reset_major_pacing(bool add_overhead);
+
 /* This variable is only written with the world stopped,
    so it need not be atomic */
 extern uintnat caml_major_cycles_completed;
 
-Caml_inline void caml_update_major_allocated_words(
-  caml_domain_state *self, intnat words, int direct
-) {
-  self->allocated_words += words;
-  if (direct) {
-    self->allocated_words_direct += words;
-  }
-  if (self->gc_policy & CAML_GC_RAMP_UP) {
-    self->allocated_words_suspended += words;
-  }
-}
+#define Caml_update_major_allocated_words(kind, self, words, direct) \
+  do {                                                               \
+    (self)->allocated_words->kind += (words);                        \
+    if (direct) {                                                    \
+      (self)->allocated_words_direct->kind += (words);               \
+    }                                                                \
+    if ((self)->gc_policy & CAML_GC_RAMP_UP) {                       \
+      (self)->allocated_words_suspended->kind += (words);            \
+    }                                                                \
+  }while(0)
 
 #endif /* CAML_INTERNALS */
 
