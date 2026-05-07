@@ -137,13 +137,14 @@ type control =
 
     space_overhead : int;
     (** The major GC speed is computed from this parameter, along with
-        [small_heap_limit].
+        [ephe_space_overhead] and [small_heap_limit].
        This is the memory that will be "wasted" because the GC does not
        immediately collect unreachable blocks.  It is expressed as a
        percentage of the memory used for live data.
        The GC will work more (use more CPU time and collect
        blocks more eagerly) if [space_overhead] is smaller.
-       The amount of overhead space used by the GC is approximately:
+       When the program is not using ephemerons, the amount of overhead
+       space used by the GC is approximately:
        - [(live data size) * space_overhead] when live data is greater than
          [small_heap_limit]
        - less than [small_heap_limit + (live data size) * space overhead]
@@ -210,17 +211,7 @@ type control =
         always [0]. *)
 
     custom_major_ratio : int;
-    (** Target ratio of floating garbage to major heap size for
-        out-of-heap memory held by custom values located in the major
-        heap. The GC speed is adjusted to try to use this much memory
-        for dead values that are not yet collected. Expressed as a
-        percentage of major heap size. The default value keeps the
-        out-of-heap floating garbage about the same size as the
-        in-heap overhead.
-        Note: this only applies to values allocated with
-        [caml_alloc_custom_mem] (e.g. bigarrays).
-        Default: 44.
-        @since 4.08 *)
+    (** unused since 5.6 *)
 
     custom_minor_ratio : int;
     (** Bound on floating garbage for out-of-heap memory held by
@@ -240,6 +231,14 @@ type control =
         [caml_alloc_custom_mem] (e.g. bigarrays).
         Default: 70000 bytes.
         @since 4.08 *)
+
+    ephe_space_overhead : int;
+    (** TODO
+        @since 5.6 *)
+
+    small_heap_limit : int;
+    (** TODO
+        @since 5.6 *)
   }
 (** The GC parameters are given as a [control] record.  Note that
     these parameters can also be initialised by setting the
