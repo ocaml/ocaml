@@ -267,6 +267,9 @@ Working version
   counter-example search space.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #19962: fix pprintast of package_type to pp attributes.
+  (Chet Murthy)
+
 OCaml 5.5.0
 -----------
 
