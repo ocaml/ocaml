@@ -73,27 +73,27 @@ DOMAIN_STATE(uintnat, marking_done)
 DOMAIN_STATE(uintnat, sweeping_done)
 /* Is sweeping done for the current major cycle. */
 
-DOMAIN_STATE(uintnat, allocated_words)
+DOMAIN_STATE(struct caml_alloc_counter *, allocated_words)
 /* Number of words allocated in the major heap (by promotion or
    direct allocation) since the latest slice. */
 
-DOMAIN_STATE(uintnat, allocated_words_direct)
-/* Subset of [allocated_words] that was allocated directly to the
+DOMAIN_STATE(struct caml_alloc_counter *, allocated_words_direct)
+/* Subset of [allocated_words.on_heap] that was allocated directly to the
    major heap since the latest slice. */
 
-DOMAIN_STATE(uintnat, allocated_words_suspended)
+DOMAIN_STATE(struct caml_alloc_counter *, allocated_words_suspended)
 /* Subset of [allocated_words] that were allocated in ramp-up
    phases since the latest slice.
 
    The corresponding deallocation work is "suspended" for later
    ramp-down phases, instead of being performed in the next slice. */
 
-DOMAIN_STATE(uintnat, allocated_words_resumed)
+DOMAIN_STATE(struct caml_alloc_counter *, allocated_words_resumed)
 /* A number of allocated words (disjoint from [allocated_words])
    whose deallocation work was suspended by a previous ramp-up phase,
    and was resumed during a ramp-down phase since the latest slice. */
 
-DOMAIN_STATE(intnat, current_ramp_up_allocated_words_diff)
+DOMAIN_STATE(struct caml_alloc_counter *, current_ramp_up_allocated_words_diff)
 /* The total number of suspended deallocation words for the current ramp-up
    phase is [allocated_suspended + current_ramp_up_allocated_words_diff].
 
@@ -157,22 +157,18 @@ DOMAIN_STATE(int, unique_id)
 DOMAIN_STATE(value, dls_root)
 /* Domain-local state */
 
-DOMAIN_STATE(double, extra_heap_resources)
 DOMAIN_STATE(double, extra_heap_resources_minor)
 
-DOMAIN_STATE(uintnat, dependent_size)
-DOMAIN_STATE(uintnat, dependent_allocated)
-
+DOMAIN_STATE(struct caml_alloc_counter *, slice_target)
 /* How much work needs to be done (by all domains) before we stop this slice. */
-DOMAIN_STATE(intnat, slice_target)
 
-/* Minimum amount of work to do in this slice by this domain. */
 DOMAIN_STATE(intnat, slice_budget)
+/* Minimum amount of work to do in this slice by this domain. */
 
-/* Accounting for sweeping work done while allocating. */
 DOMAIN_STATE(uintnat, sweep_work_done_between_slices)
-/* Accounting for marking work done in the write barrier. */
+/* Accounting for sweeping work done while allocating. */
 DOMAIN_STATE(uintnat, mark_work_done_between_slices)
+/* Accounting for marking work done in the write barrier. */
 
 DOMAIN_STATE(struct caml_extern_state*, extern_state)
 DOMAIN_STATE(struct caml_intern_state*, intern_state)
