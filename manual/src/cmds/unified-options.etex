@@ -530,18 +530,19 @@ object code files (".cmx"), and libraries (".cmxa"). See also option
 }%nat
 
 \notop{%
-\item["-o" \var{output-file}]
-Specify the name of the output file to produce. For executable files, the
-default output name is "a.out" under Unix and "camlprog.exe" under
-Windows. If the "-a" option is given, specify the name of the library
-produced.  If the "-pack" option is given, specify the name of the
-packed object file produced.  If the "-output-obj" or "-output-complete-obj"
-options are given, specify the name of the produced object file.
-\nat{If the "-shared" option is given, specify the name of plugin
-file produced.}
-\comp{If the "-c" option is given, specify the name of the object
-file produced for the {\em next} source file that appears on the
-command line.}
+\item["-o" \var{filename}]
+Specify the name of the final output file, whether it is an executable, a
+compiled object ("-c" option), a library ("-a" option), a packed object ("-pack"
+option), \nat{a dynlinkable plugin ("-shared" option),} or a C source or object
+file ("-output-obj" and "-output-complete-obj" options).
+
+The default output name for an executable depends on the platform, it is the
+traditional "a.out" on Unix, "camlprog.exe" on Windows.
+
+This can also be used when compiling but not linking an interface or
+implementation file ("-c" option), in which case it sets both the name of the
+"cmi" or {\qcmo} file, and of the compilation unit to the \var{filename} up to
+the first dot.
 }%notop
 
 \notop{%
