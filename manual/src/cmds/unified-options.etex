@@ -930,7 +930,7 @@ the mnemonic for that warning).
 \input{warnings-help.tex}
 \end{options}
 
-The default setting is "-w +a-4-6-7-9-27-29-32..42-44-45-48-50-60".
+The default setting is "-w +a-4-7-9-27-29-30-32..42-44-45-48-50-60-66..70-74".
 It is displayed by {\machine\ocamlx\ -help}.
 Note that warnings 5 and 10 are not always triggered, depending on
 the internals of the type checker.
