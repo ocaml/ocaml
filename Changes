@@ -267,7 +267,7 @@ Working version
   counter-example search space.
   (Florian Angeletti, review by Gabriel Scherer)
 
-- #19962: fix pprintast of package_type to pp attributes.
+- #19962: avoid dropping attributes attached to package types when pretty printing in surface syntax.
   (Chet Murthy)
 
 OCaml 5.5.0
