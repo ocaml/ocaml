@@ -314,6 +314,7 @@ AC_SUBST([cxx_extra_warnings])
 AC_SUBST([header_cflags])
 AC_SUBST([header_ldflags])
 AC_SUBST([header_libs])
+AC_SUBST([ocaml_cv_prog_cc_c11_atomic_cflags])
 
 ## Generated files
 
