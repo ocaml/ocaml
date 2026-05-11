@@ -542,8 +542,7 @@ AC_DEFUN([OCAML_CC_C11_ATOMIC_CFLAGS], [
       [C11 atomic support is required, use another C compiler]))],
     [AS_IF([test "x$ocaml_cv_prog_cc_c11_atomic_cflags" = x],
       [AC_MSG_RESULT([none needed])],
-      [AC_MSG_RESULT([$ocaml_cv_prog_cc_c11_atomic_cflags])
-      common_cflags="$common_cflags $ocaml_cv_prog_cc_c11_atomic_cflags"])])
+      [AC_MSG_RESULT([$ocaml_cv_prog_cc_c11_atomic_cflags])])])
 ])
 
 # Detects whether the C compiler generates an explicit .note.GNU-stack section

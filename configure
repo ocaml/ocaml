@@ -794,6 +794,7 @@ build_os
 build_vendor
 build_cpu
 build
+test_common_cxx_cxxflags
 header_libs
 header_ldflags
 header_cflags
@@ -3642,6 +3643,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L039
 
 
  # TODO: rename this variable
+
 
 
 
@@ -19361,8 +19363,7 @@ then :
 printf "%s\n" "none needed" >&6; }
 else case e in #(
   e) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ocaml_cv_prog_cc_c11_atomic_cflags" >&5
-printf "%s\n" "$ocaml_cv_prog_cc_c11_atomic_cflags" >&6; }
-      common_cflags="$common_cflags $ocaml_cv_prog_cc_c11_atomic_cflags" ;;
+printf "%s\n" "$ocaml_cv_prog_cc_c11_atomic_cflags" >&6; } ;;
 esac
 fi ;;
 esac
@@ -25584,6 +25585,14 @@ esac
   header_ldflags=''
   header_libs='' ;;
 esac
+
+# The flags enabling C11 atomics are C-only and may be rejected by the C++
+# compiler, so they are only added to the C flags.
+test_common_cxx_cxxflags="$common_cflags"
+if test -n "$ocaml_cv_prog_cc_c11_atomic_cflags"
+then :
+  common_cflags="$common_cflags $ocaml_cv_prog_cc_c11_atomic_cflags"
+fi
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"

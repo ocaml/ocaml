@@ -82,7 +82,7 @@ endif
 COMPUTE_DEPS=@compute_deps@
 
 TEST_CXX = @ocamltest_CXX@
-TEST_CXX_CXXFLAGS = @common_cflags@
+TEST_CXX_CXXFLAGS = @test_common_cxx_cxxflags@
 TEST_CXX_CPPFLAGS = @common_cppflags@
 CXXFLAGS ?=
 

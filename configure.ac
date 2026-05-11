@@ -315,6 +315,7 @@ AC_SUBST([cxx_extra_warnings])
 AC_SUBST([header_cflags])
 AC_SUBST([header_ldflags])
 AC_SUBST([header_libs])
+AC_SUBST([test_common_cxx_cxxflags])
 
 ## Generated files
 
@@ -3113,6 +3114,12 @@ AS_CASE(["$toolchain"],
   [header_cflags=''
   header_ldflags=''
   header_libs=''])
+
+# The flags enabling C11 atomics are C-only and may be rejected by the C++
+# compiler, so they are only added to the C flags.
+test_common_cxx_cxxflags="$common_cflags"
+AS_IF([test -n "$ocaml_cv_prog_cc_c11_atomic_cflags"],
+  [common_cflags="$common_cflags $ocaml_cv_prog_cc_c11_atomic_cflags"])
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
