@@ -917,11 +917,12 @@ let needs_expand env level path args =
 let rec check_level_type_rec visited level ty =
   get_level ty <= level &&
   match get_abbrev ty with
-    Some (path, args) ->
-      Path.scope path <= level &&
-      (args = [] || List.memq ty visited ||
+    Some abbr ->
+      abbr.abbr_level <= level ||
+      Path.scope abbr.abbr_path <= level &&
+      (abbr.abbr_args = [] || List.memq ty visited ||
       let visited = ty :: visited in
-      List.for_all (check_level_type_rec visited level) args)
+      List.for_all (check_level_type_rec visited level) abbr.abbr_args)
   | None -> true
 
 let check_level_type level ty = check_level_type_rec [] level ty
@@ -1000,11 +1001,16 @@ let rec update_level env level expand ty =
 
 and update_level_abbrev env level expand ty =
   iter_abbrev
-    (fun p args ->
+    (function {abbr_path=p; abbr_args=args; abbr_level=l} as abbr ->
+      if level >= l then () else
       if level < Path.scope p then forget_abbrev ty else
-      if List.for_all (check_level_type level) args then () else
-      if expand || needs_expand env level p args then forget_abbrev ty else
-      List.iter (update_level env level expand) args)
+      if List.for_all (check_level_type level) args then
+        set_abbrev_level abbr level
+      else if expand || needs_expand env level p args then forget_abbrev ty
+      else begin
+        set_abbrev_level abbr level;
+        List.iter (update_level env level expand) args
+      end)
     ty
 
 let try_update_level env level ty =
@@ -1488,11 +1494,12 @@ let rec copy ?partial ?keep_names ?scope ?(unscoped = empty_unscoped_mapping)
     in
     let desc' =
       match ty_expand with
-        Some (path, args) ->
-          let path = Path.subst unscoped.map path in
-          let args = List.map copy args in
+        Some abbr ->
+          let path = Path.subst unscoped.map abbr.abbr_path in
+          let args = List.map copy abbr.abbr_args in
           let t' = new_scoped_ty ty_scope desc' in
-          Texpand (t', path, args)
+          Texpand (t',
+                   {abbr with abbr_args = args; abbr_level = !current_level})
       | None ->
           desc'
     in
@@ -3482,10 +3489,11 @@ and unify3 uenv t1' t2' =
             without_assume_injective uenv (fun uenv -> unify_list uenv tl1 tl2)
           else if in_current_module p1 (* || in_pervasives p1 *)
                || List.exists
-                   (fun (p, _) -> expands_to_datatype (get_env uenv) p)
-                   (Option.to_list (get_abbrev t1') @
-                    Option.to_list (get_abbrev t2') @
-                    [p1, []])
+                   (expands_to_datatype (get_env uenv))
+                   (List.map (fun a -> a.abbr_path)
+                      (Option.to_list (get_abbrev t1') @
+                       Option.to_list (get_abbrev t2'))
+                    @ [p1])
           then
             unify_list uenv tl1 tl2
           else

@@ -180,7 +180,7 @@ let dummy_method = "*dummy method*"
 
 let get_constr_desc ty =
   match get_abbrev ty with
-    Some (path, tyl) -> Tconstr (path, tyl, ref Mnil)
+    Some abbr -> Tconstr (abbr.abbr_path, abbr.abbr_args, ref Mnil)
   | None -> get_desc ty
 
                   (********************************)
@@ -858,7 +858,7 @@ let deep_occur_rec mark t0 =
       iter_type_desc occur ty'.desc;
       iter_abbrev occur_abbrev ty
     end
-  and occur_abbrev _p tyl = List.iter occur tyl
+  and occur_abbrev abbr = List.iter occur abbr.abbr_args
   in
   occur
 
@@ -887,7 +887,7 @@ let get_folded_desc ~keep_Tvar ty =
       (* Only re-instate an abbreviation if there is no risk to hide
          something *)
       match get_abbrev ty with
-      | Some (path, args) when not (Path.contains_unscoped_ident path ||
-                                    deep_occur_list ty args) ->
-          Tconstr (path, args, ref Mnil)
+      | Some abbr when not (Path.contains_unscoped_ident abbr.abbr_path ||
+                            deep_occur_list ty abbr.abbr_args) ->
+          Tconstr (abbr.abbr_path, abbr.abbr_args, ref Mnil)
       | _ -> desc
