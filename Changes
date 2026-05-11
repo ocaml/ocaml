@@ -149,6 +149,10 @@ Working version
 - #14553: Add Array.fold_{left,right}2
   (Clément Pottier, review by Nicolás Ojeda Bär and Vincent Laviron)
 
+* #14602: Sys.rename and Unix.rename now allow renaming onto a read-only file on
+  Windows.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer, Antonin Décimo and Miod Vallat)
+
 ### Other libraries:
 
 * #14788: The Win32 error code `ERROR_DIRECTORY` (= 267) is now mapped to

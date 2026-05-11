@@ -785,7 +785,7 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
 {
   /* First handle corner-case not handled by MoveFileEx:
      - dir to existing file - should fail */
-  DWORD new_attribs;
+  DWORD new_attribs = INVALID_FILE_ATTRIBUTES;
   DWORD old_attribs = GetFileAttributes(oldpath);
   if ((old_attribs != INVALID_FILE_ATTRIBUTES) &&
       (old_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0) {
@@ -806,6 +806,23 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
                  MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
                  MOVEFILE_COPY_ALLOWED)) {
     return 0;
+  }
+  /* Another cornercase not handled by MoveFileEx:
+     - file to existing read-only file - should succeed */
+  if ((GetLastError() == ERROR_ACCESS_DENIED) &&
+      (new_attribs == INVALID_FILE_ATTRIBUTES)) {
+    /* We only consider the case when the old path is a file */
+    new_attribs = GetFileAttributes(newpath);
+    if ((new_attribs != INVALID_FILE_ATTRIBUTES) &&
+        (new_attribs & FILE_ATTRIBUTE_READONLY) != 0) {
+      /* Remove read-only bit before trying to rename */
+      SetFileAttributes(newpath, new_attribs & ~FILE_ATTRIBUTE_READONLY);
+      if (MoveFileEx(oldpath, newpath,
+                     MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
+                     MOVEFILE_COPY_ALLOWED)) {
+        return 0;
+      }
+    }
   }
   /* Another cornercase not handled by MoveFileEx:
      - dir to empty dir - positive - should succeed */
