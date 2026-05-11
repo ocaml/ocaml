@@ -82,7 +82,8 @@ endif
 COMPUTE_DEPS=@compute_deps@
 
 TEST_CXX = @CXX@
-TEST_CXX_CXXFLAGS = @common_cflags@
+TEST_CXX_CXXFLAGS = \
+  $(filter-out @ocaml_cv_prog_cc_c11_atomic_cflags@,@common_cflags@)
 TEST_CXX_CPPFLAGS = @common_cppflags@
 CXXFLAGS ?=
 

@@ -798,6 +798,7 @@ build_os
 build_vendor
 build_cpu
 build
+ocaml_cv_prog_cc_c11_atomic_cflags
 header_libs
 header_ldflags
 header_cflags
@@ -3990,6 +3991,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L038
 
 
  # TODO: rename this variable
+
 
 
 
