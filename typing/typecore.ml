@@ -391,6 +391,11 @@ let is_iarray_type env ty =
 let protect_expansion env ty =
   if Env.has_local_constraints env then generic_instance ty else ty
 
+let is_arrow_type env ty =
+  match get_desc (expand_head_opt env (protect_expansion env ty)) with
+  | Tarrow _ -> true
+  | _ -> false
+
 type record_extraction_result =
   | Record_type of Path.t * Path.t * Types.label_declaration list
   | Not_a_record_type
@@ -4574,6 +4579,24 @@ and type_expect_
         exp_type = newty (Ttuple (List.map (fun (l, e) -> l, e.exp_type) expl));
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
+  | Pexp_construct(lid, None) when is_arrow_type env ty_expected ->
+      let var_name = "*auto_eta*" in
+      let var_loc = { loc with Location.loc_ghost = true } in
+      let pat = Ast_helper.Pat.var ~loc:var_loc { txt = var_name; loc = var_loc } in
+      let var_exp =
+        Ast_helper.Exp.ident ~loc:var_loc
+          { txt = Longident.Lident var_name; loc = var_loc }
+      in
+      let body = Ast_helper.Exp.construct ~loc:var_loc lid (Some var_exp) in
+      let param =
+        { pparam_loc = var_loc;
+          pparam_desc = Pparam_val (Nolabel, None, pat) }
+      in
+      let new_sexp =
+        Ast_helper.Exp.function_ ~loc ~attrs:sexp.pexp_attributes
+          [param] None (Pfunction_body body)
+      in
+      type_expect_ ~recarg env new_sexp ty_expected_explained
   | Pexp_construct(lid, sarg) ->
       type_construct env ~sexp lid sarg ty_expected_explained
   | Pexp_variant(l, sarg) ->
