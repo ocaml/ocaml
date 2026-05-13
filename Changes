@@ -114,6 +114,10 @@ Working version
 - #14506: Add frame pointers support for RISC-V Linux.
   (Miod Vallat and Tim McGilchrist, review by Zane Hambly)
 
+- #14804: Expose caml_ba_compare, etc. publicly, removing the need to define
+  CAML_INTERNALS when allocating custom bigarrays.
+  (David Allsopp, review by ???)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14842, #14845: Keep expansion and
