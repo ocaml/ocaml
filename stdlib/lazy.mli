@@ -45,14 +45,6 @@ type 'a t = 'a CamlinternalLazy.t
     locks. The module however ensures memory-safety, and hence, concurrently
     accessing this module will not lead to a crash but the behaviour is
     unspecified.
-
-    Note: if the program is compiled with the [-rectypes] option,
-    ill-founded recursive definitions of the form [let rec x = lazy x]
-    or [let rec x = lazy(lazy(...(lazy x)))] are accepted by the type-checker
-    and lead, when forced, to ill-formed values that trigger infinite
-    loops in the garbage collector and other parts of the run-time system.
-    Without the [-rectypes] option, such ill-founded recursive definitions
-    are rejected by the type-checker.
 *)
 
 
