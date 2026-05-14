@@ -264,7 +264,7 @@ let instrument body =
       (* Replace the atomic fetch-add with a call to
          [__tsan_atomic64_fetch_add]. OCaml values are word-sized, so we use
          the 64-bit variant (on 64-bit platforms) with sequential consistency
-         to match the semantics of the LAAG instruction on s390x. *)
+         to match the semantics of the native atomic fetch-add. *)
       let loc_id = VP.create (V.create_local "loc") in
       let loc_exp = Cvar (VP.var loc_id) in
       let incr_id = VP.create (V.create_local "incr") in
