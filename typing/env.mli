@@ -403,7 +403,7 @@ val enter_signature: ?mod_shape:Shape.t -> scope:int -> signature -> t ->
   signature * t
 
 (* Same as [enter_signature] but also extends the shape map ([parent_shape])
-   with all the the items from the signature, their shape being a projection
+   with all the items from the signature, their shape being a projection
    from the given shape. *)
 val enter_signature_and_shape: scope:int -> parent_shape:Shape.Map.t ->
   Shape.t -> signature -> t -> signature * Shape.Map.t * t

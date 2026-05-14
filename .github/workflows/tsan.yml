@@ -29,7 +29,7 @@ jobs:
       manual_changed: ${{ steps.manual.outputs.manual_changed }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
       - name: Install libunwind
@@ -51,7 +51,7 @@ jobs:
       - name: Prepare Artifact
         run: tar --zstd -cf /tmp/sources.tar.zstd .
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: compiler
           path: /tmp/sources.tar.zstd
@@ -77,7 +77,7 @@ jobs:
             dependencies: libunwind-dev
     steps:
       - name: Download Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: compiler
       - name: Unpack Artifact

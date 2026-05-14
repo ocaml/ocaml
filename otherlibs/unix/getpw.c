@@ -75,21 +75,23 @@ CAMLprim value caml_unix_getpwnam(value name)
     }
     buffer = newbuffer;
   }
-  if (e != 0) {
+  if (entry == NULL) {
     caml_stat_free(buffer);
-    if (e == EINTR)
+    if (e != 0)
+      caml_unix_error(e, "getpwnam", Nothing);
+    caml_raise_not_found();
+  }
+  res = alloc_passwd_entry(entry);
+  caml_stat_free(buffer);
 #else
   errno = 0;
   entry = getpwnam(String_val(name));
   if (entry == NULL) {
     if (errno == EINTR)
-#endif
-      caml_unix_error(EINTR, "getpwnam", Nothing);
-    caml_raise_not_found();
+      caml_uerror("getpwnam", Nothing);
+    caml_raise_not_found();     /* ignore errors */
   }
   res = alloc_passwd_entry(entry);
-#ifdef HAVE_GETPWNAM_R
-  caml_stat_free(buffer);
 #endif
   return res;
 }
@@ -103,7 +105,7 @@ CAMLprim value caml_unix_getpwuid(value uid)
   long initlen = sysconf(_SC_GETPW_R_SIZE_MAX);
   size_t len = initlen <= 0 ? /* default */ 1024 : (size_t) initlen;
   struct passwd result;
-  char *buffer = caml_stat_alloc(len);
+  char *buffer = caml_stat_alloc_noexc(len);
   if (buffer == NULL)
     caml_unix_error(ENOMEM, "getpwuid", Nothing);
   int e;
@@ -118,21 +120,23 @@ CAMLprim value caml_unix_getpwuid(value uid)
     }
     buffer = newbuffer;
   }
-  if (e != 0) {
+  if (entry == NULL) {
     caml_stat_free(buffer);
-    if (e == EINTR)
+    if (e != 0)
+      caml_unix_error(e, "getpwuid", Nothing);
+    caml_raise_not_found();
+  }
+  res = alloc_passwd_entry(entry);
+  caml_stat_free(buffer);
 #else
   errno = 0;
   entry = getpwuid(Int_val(uid));
   if (entry == NULL) {
     if (errno == EINTR)
-#endif
-      caml_unix_error(EINTR, "getpwuid", Nothing);
-    caml_raise_not_found();
+      caml_uerror("getpwuid", Nothing);
+    caml_raise_not_found();     /* ignore errors */
   }
   res = alloc_passwd_entry(entry);
-#ifdef HAVE_GETPWUID_R
-  caml_stat_free(buffer);
 #endif
   return res;
 }
