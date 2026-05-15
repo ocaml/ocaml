@@ -113,7 +113,7 @@ and core_type_desc =
            Invariant: [n >= 2].
         *)
   | Ptyp_constr of Longident.t loc * core_type list
-      (** [Ptyp_constr(lident, l)] represents:
+      (** [Ptyp_constr(tconstr, l)] represents:
             - [tconstr]               when [l=[]],
             - [T tconstr]             when [l=[T]],
             - [(T1, ..., Tn) tconstr] when [l=[T1 ; ... ; Tn]].
