@@ -39,7 +39,7 @@ jobs:
       manual_changed: ${{ steps.manual.outputs.manual_changed }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
       - name: Check for manual changes
@@ -58,7 +58,8 @@ jobs:
          "$CAMLCI_EVENT_AFTER"
          "$CAMLCI_REPO_FULL_NAME"
         env:
-          # Prefix CAMLCI used here to avoid GITHUB_REF_NAME colliding
+          # Prefix CAMLCI used here to avoid colliding with Github variables,
+          # such as GITHUB_REF_NAME, as they always take precedence
           CAMLCI_GITHUB_REF_NAME: ${{ github.ref }}
           CAMLCI_EVENT_NAME: ${{ github.event_name }}
           CAMLCI_PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
@@ -78,7 +79,7 @@ jobs:
       - name: Prepare Artifact
         run: tar --zstd -cf /tmp/sources.tar.zstd .
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: compiler
           path: /tmp/sources.tar.zstd
@@ -110,7 +111,7 @@ jobs:
       fail-fast: true
     steps:
       - name: Download Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: compiler
       - name: Unpack Artifact
@@ -181,7 +182,7 @@ jobs:
     steps:
       - name: Record if the build matrix is expanded
         id: full
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             let full_matrix = false;
@@ -194,7 +195,7 @@ jobs:
             return full_matrix;
       - name: Compute matrix for the "others" job
         id: jobs
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             // # Default jobs: Linux -O0, Linux arm64 & macOS
@@ -236,7 +237,7 @@ jobs:
             return jobs;
       - name: Determine if the testsuite should be skipped
         id: skip
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             let skip_testsuite = false;
@@ -258,7 +259,7 @@ jobs:
       fail-fast: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
       - name: macOS Dependencies

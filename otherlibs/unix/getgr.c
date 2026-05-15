@@ -69,21 +69,23 @@ CAMLprim value caml_unix_getgrnam(value name)
     }
     buffer = newbuffer;
   }
-  if (e != 0) {
+  if (entry == NULL) {
     caml_stat_free(buffer);
-    if (e == EINTR)
+    if (e != 0)
+      caml_unix_error(e, "getgrnam", Nothing);
+    caml_raise_not_found();
+  }
+  res = alloc_group_entry(entry);
+  caml_stat_free(buffer);
 #else
   errno = 0;
   entry = getgrnam(String_val(name));
   if (entry == NULL) {
     if (errno == EINTR)
-#endif
-      caml_unix_error(EINTR, "getgrnam", Nothing);
-    caml_raise_not_found();
+      caml_uerror("getgrnam", Nothing);
+    caml_raise_not_found();     /* ignore errors */
   }
   res = alloc_group_entry(entry);
-#ifdef HAVE_GETGRNAM_R
-  caml_stat_free(buffer);
 #endif
   return res;
 }
@@ -99,7 +101,7 @@ CAMLprim value caml_unix_getgrgid(value gid)
   struct group result;
   char *buffer = caml_stat_alloc_noexc(len);
   if (buffer == NULL)
-    caml_unix_error(ENOMEM, "getgrid", Nothing);
+    caml_unix_error(ENOMEM, "getgrgid", Nothing);
   int e;
   while ((e = getgrgid_r(Int_val(gid), &result, buffer, len, &entry))
          == ERANGE) {
@@ -108,25 +110,27 @@ CAMLprim value caml_unix_getgrgid(value gid)
     if (len > CAML_GETGR_R_SIZE_MAX ||
         (newbuffer = caml_stat_resize_noexc(buffer, len)) == NULL) {
       caml_stat_free(buffer);
-      caml_unix_error(ENOMEM, "getgrid", Nothing);
+      caml_unix_error(ENOMEM, "getgrgid", Nothing);
     }
     buffer = newbuffer;
   }
-  if (e != 0) {
+  if (entry == NULL) {
     caml_stat_free(buffer);
-    if (e == EINTR)
+    if (e != 0)
+      caml_unix_error(e, "getgrgid", Nothing);
+    caml_raise_not_found();
+  }
+  res = alloc_group_entry(entry);
+  caml_stat_free(buffer);
 #else
   errno = 0;
   entry = getgrgid(Int_val(gid));
   if (entry == NULL) {
     if (errno == EINTR)
-#endif
-      caml_unix_error(EINTR, "getgrgid", Nothing);
-    caml_raise_not_found();
+      caml_uerror("getgrgid", Nothing);
+    caml_raise_not_found();     /* ignore errors */
   }
   res = alloc_group_entry(entry);
-#ifdef HAVE_GETGRGID_R
-  caml_stat_free(buffer);
 #endif
   return res;
 }

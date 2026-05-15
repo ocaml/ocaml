@@ -6825,7 +6825,7 @@ and map_half_typed_cases
           else
             ext_env
         in
-        (* Before handing off the cases to the callback, first set up the the
+        (* Before handing off the cases to the callback, first set up the
            branch environments by adding the variables (and module variables)
            from the patterns.
         *)

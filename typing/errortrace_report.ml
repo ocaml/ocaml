@@ -92,7 +92,7 @@ let prepare_any_trace printing_status tr =
 let prepare_trace f tr =
   prepare_any_trace printing_status (Errortrace.map f tr)
 
-(** Keep elements that are [Diff _ ] and split the the last element if it is
+(** Keep elements that are [Diff _ ] and split the last element if it is
     optionally elidable, require a prepared trace *)
 let rec filter_trace = function
   | [] -> [], None

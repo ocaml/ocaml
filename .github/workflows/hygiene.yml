@@ -8,7 +8,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
-# Restrict the GITHUB_TOKEN
+# Restrict the CAMLCI_GITHUB_TOKEN
 permissions: {}
 
 concurrency:
@@ -28,7 +28,7 @@ jobs:
         # context variable.
         if: failure()
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 50
           persist-credentials: false
@@ -44,6 +44,8 @@ jobs:
           "$CAMLCI_PR_HEAD_REF"
           "$CAMLCI_PR_HEAD_SHA"
         env:
+          # Prefix CAMLCI used here to avoid colliding with Github variables,
+          # such as GITHUB_REF_NAME, as they always take precedence
           CAMLCI_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CAMLCI_PR_ISSUE_URL: ${{ github.event.pull_request.issue_url }}
           CAMLCI_GITHUB_REF_NAME: ${{ github.ref }}

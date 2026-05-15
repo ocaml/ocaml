@@ -247,6 +247,10 @@ Working version
   when mixing self types, local modules and first class modules.
   (Samuel Vivien, review by Florian Angeletti, Jacques Garrigue)
 
+- #14800: localise `nondep_type_rec` memoisation state in a new
+  `Nondep_scope` module (`typing/ctype.ml`).
+  (Matthew Marques, review by Stefan Muenzel)
+
 ### Build system:
 
 - #14676: Security fix: prevent shell injection in Github Actions workflows
@@ -590,9 +594,11 @@ OCaml 5.5.0
 
 ### Other libraries:
 
-- #13700, #14454: Use POSIX thread-safe getgrnam_r, getgrgid_r, getpwnam_r,
-  getpwuid_r, gmtime_r, localtime_r, getlogin_r, and fix mktime error checking.
-  (Antonin Décimo, review by David Allsopp, Stefan Muenzel, and Miod Vallat)
+- #13700, #14454, #14715: Use POSIX thread-safe getgrnam_r, getgrgid_r,
+  getpwnam_r, getpwuid_r, gmtime_r, localtime_r, getlogin_r, and fix mktime
+  error checking.
+  (Antonin Décimo, review by Florian Angeletti, David Allsopp, Stefan Muenzel,
+   Gabriel Scherer, and Miod Vallat)
 
 - #14406: Better handling of address length for unix sockets, improving Haiku
   compatibility.
@@ -1054,6 +1060,11 @@ OCaml 5.5.0
 
 - #14719, #14721: compute arity correctly for module-dependent function
   (Florian Angeletti, report by Jeremy Yallop, review by Stefan Muenzel)
+
+- #14760, #14802: Correct the detection of argument defaults in configure,
+  fixing an incorrect error message when installing OCaml through opam on
+  OpenSUSE with the site-config package installed.
+  (David Allsopp, review by Edwin Török, report by Edwin Török)
 
 OCaml 5.4.0 (9 October 2025)
 ----------------------------
@@ -4885,7 +4896,7 @@ OCaml 5.0.0 (15 December 2022)
    review by Xavier Leroy,
    report by Jan Midtgaard and Tom Kelly)
 
-- #11576: Fix bug in Bigarray.Genarray.init in the the case of zero-dimensional
+- #11576: Fix bug in Bigarray.Genarray.init in the case of zero-dimensional
   arrays.
   (Nicolás Ojeda Bär, Jeremy Yallop, report by Masayuki Takeda, review by Jeremy
   Yallop and Florian Angeletti)

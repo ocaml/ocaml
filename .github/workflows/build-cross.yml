@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout OCaml
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
       - name: Configure, build and install OCaml
@@ -60,7 +60,7 @@ jobs:
           cd "$HOME"
           tar caf /tmp/ocaml.tar.zst .local
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: non-cross-ocaml
           path: /tmp/ocaml.tar.zst
@@ -71,7 +71,7 @@ jobs:
     needs: non-cross
     steps:
       - name: Download Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: non-cross-ocaml
       - name: Install non-cross OCaml and set up environment
@@ -83,7 +83,7 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y gcc-mingw-w64-x86-64
       - name: Checkout OCaml
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: true
           persist-credentials: false
@@ -113,7 +113,7 @@ jobs:
           cat example.ml
           $HOME/cross/bin/ocamlopt.opt.exe -I $HOME/cross/lib/ocaml/compiler-libs/ ocamlcommon.cmxa ocamloptcomp.cmxa example.ml -o example.exe -verbose
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-executable
           path: example.exe
@@ -133,7 +133,7 @@ jobs:
     needs: cross-windows
     steps:
       - name: Download Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: windows-executable
       - name: Run example program
@@ -145,7 +145,7 @@ jobs:
     needs: non-cross
     steps:
       - name: Download Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: non-cross-ocaml
       - name: Install non-cross OCaml and set up environment
@@ -157,7 +157,7 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y gcc-aarch64-linux-gnu qemu-user
       - name: Checkout OCaml
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: true
           persist-credentials: false
@@ -206,7 +206,7 @@ jobs:
       API_LEVEL: 21
     steps:
       - name: Download Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: non-cross-ocaml
       - name: Install non-cross OCaml
@@ -216,7 +216,7 @@ jobs:
           rm -f ocaml.tar.zst
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Restore the Android NDK from cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         id: cache
         with:
           path: |
@@ -232,14 +232,14 @@ jobs:
           rm android-ndk-$NDK-linux.zip
         if: steps.cache.outputs.cache-hit != 'true'
       - name: Save the Android NDK to cache
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: |
             /home/runner/android
           key: android-ndk-${{ env.NDK }}
         if: steps.cache.outputs.cache-hit != 'true'
       - name: Checkout OCaml
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
       - name: Configure, build and install Linux-to-Android OCaml

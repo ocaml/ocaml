@@ -118,7 +118,7 @@ let dummy_parameter_list typ =
 let is_function v =
   let rec f t =
     match Types.get_desc t with
-      Types.Tarrow _ ->
+      Types.Tarrow _ | Types.Tfunctor _ ->
         true
     | Types.Tlink t ->
         f t

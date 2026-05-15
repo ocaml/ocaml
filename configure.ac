@@ -25,6 +25,28 @@ AC_INIT([OCaml],
 
 AC_MSG_NOTICE([Configuring OCaml version AC_PACKAGE_VERSION])
 
+# It's important for the setting up of defaults and the checking of the
+# --with-relative-libdir option to know whether the user specified --libdir.
+# Unfortunately, autoconf doesn't provide an easy way to determine this, so we
+# simply repeat autoconf's argument parsing for the libdir and mandir options.
+# This is done early in the script to ensure that only autoconf and site-config
+# scripts have run.
+libdir_given=no
+mandir_given=no
+for ac_arg
+do
+  case $ac_arg in
+    -mandir=* | --mandir=* | --mandi=* | --mand=* | --man=* | --ma=* | --m=* | \
+    -mandir | --mandir | --mandi | --mand | --man | --ma | --m)
+      mandir_given=yes
+      break ;;
+    -libdir=* | --libdir=* | --libdi=* | --libd=* | \
+    -libdir   | --libdir   | --libdi   | --libd)
+      libdir_given=yes
+      break ;;
+  esac
+done
+
 # Configuration variables
 
 ## Command-line arguments passed to configure
@@ -2997,10 +3019,10 @@ shlwapi.lib synchronization.lib"])
 
 AC_CONFIG_COMMANDS_PRE([cclibs="$cclibs $mathlib $DLLIBS $PTHREAD_LIBS"])
 
-AS_IF([test x"$libdir" = x'${exec_prefix}/lib'],
+AS_IF([test x"$libdir_given" = 'xno'],
   [libdir="$libdir"/ocaml])
 
-AS_IF([test x"$mandir" = x'${datarootdir}/man'],
+AS_IF([test x"$mandir_given" = 'xno'],
   [mandir='${prefix}/man'])
 
 # Define default prefix correctly for the different Windows ports
@@ -3054,7 +3076,7 @@ AS_CASE([$cygwin_build_env,$host],
         [ocaml_libdir='${exec_prefix}\lib\ocaml'],
         [ocaml_libdir="$libdir"])])])
 
-AS_IF([test x"$libdir" = x'${exec_prefix}/lib/ocaml'],
+AS_IF([test x"$libdir_given" = 'xno'],
   [AS_IF([test x"$bindir_to_libdir" != 'x'],
     [ocaml_libdir="$bindir_to_libdir"
     target_libdir_is_relative=true
