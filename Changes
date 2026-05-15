@@ -273,7 +273,7 @@ Working version
 
 - #19962: avoid dropping attributes attached to package types when pretty
   printing in surface syntax.
-  (Chet Murthy)
+  (Chet Murthy, review by Nicolás Ojeda Bär)
 
 OCaml 5.5.0
 -----------
