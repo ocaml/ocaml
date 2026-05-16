@@ -53,13 +53,9 @@ let rec combine i allocstate =
            match state with
            | No_alloc -> assert false
            | Pending_alloc { totalsz; dbginfos; _ } -> totalsz, dbginfos in
-         let next =
-           let offset = totalsz - sz in
-           if offset = 0 then next
-           else instr_cons_debug (Iop(Iintop_imm(Iadd, offset))) i.res
-                i.res i.dbg next
-         in
-         (instr_cons_debug (Iop(Ialloc {bytes = totalsz; dbginfo; }))
+         (instr_cons_debug (Iop(Ialloc { bytes = totalsz;
+                                         offset = totalsz - sz;
+                                         dbginfo; }))
           i.arg i.res i.dbg next, allocstate)
       end
   | Iop(Icall_ind | Icall_imm _ | Iextcall _ |

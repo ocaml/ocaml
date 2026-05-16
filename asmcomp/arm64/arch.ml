@@ -48,7 +48,8 @@ type cmm_label = int
 
 type specific_operation =
   | Ipoll_far of { return_label: cmm_label option }
-  | Ialloc_far of { bytes : int; dbginfo : Debuginfo.alloc_dbginfo }
+  | Ialloc_far of { bytes : int; offset : int;
+                    dbginfo : Debuginfo.alloc_dbginfo }
   | Icheckbound_far
   | Icheckbound_imm_far of { bound : int; }
   | Ishiftarith of arith_operation * int
@@ -109,8 +110,8 @@ let print_specific_operation printreg op ppf arg =
   match op with
   | Ipoll_far _ ->
     fprintf ppf "(far) poll"
-  | Ialloc_far { bytes; } ->
-    fprintf ppf "(far) alloc %i" bytes
+  | Ialloc_far { bytes; offset; } ->
+    fprintf ppf "(far) alloc %i %i" bytes offset
   | Icheckbound_far ->
     fprintf ppf "%a (far) check > %a" printreg arg.(0) printreg arg.(1)
   | Icheckbound_imm_far { bound; } ->

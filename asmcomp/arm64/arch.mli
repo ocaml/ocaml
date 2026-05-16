@@ -45,7 +45,8 @@ type cmm_label = int
 
 type specific_operation =
   | Ipoll_far of { return_label: cmm_label option }
-  | Ialloc_far of { bytes : int; dbginfo : Debuginfo.alloc_dbginfo }
+  | Ialloc_far of { bytes : int; offset : int;
+                    dbginfo : Debuginfo.alloc_dbginfo }
   | Icheckbound_far
   | Icheckbound_imm_far of { bound : int; }
   | Ishiftarith of arith_operation * int
