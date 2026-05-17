@@ -822,12 +822,12 @@ val ints : int -> int t
 val ints_in_range: first:int -> last:int -> int t
 (** [range ~first ~last] is the sequence of integers beginning at [first] (included) and counting up to [last] (included)
 
-   For example,
-   {[
-       range ~first:1 ~last:5
-   ]}
+    For example,
+    {[
+      range ~first:1 ~last:5
+    ]}
 
-   yields [1], [2], [3], [4] and [5]
+    yields [1], [2], [3], [4] and [5]
 
 *)
 
