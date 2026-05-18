@@ -98,6 +98,22 @@ val blit : 'a t -> int -> 'a t -> int -> int -> unit
    not designate a valid subarray of [ar1], or if [off2] and [len]
    do not designate a valid subarray of [ar2].*)
 
+val foldi_left : (int -> 'a -> 'b -> 'a) -> 'a -> 'b t -> 'a
+(** [Weak.foldi_left f init ar] computes
+   [f n (... (f 1 (f 0 init x0) x1) ...) xn]
+   where [x0, ..., xn] are the full cells of [ar] and the integer
+   arguments are their indices.  Empty cells are skipped. *)
+
+val iteri : (int -> 'a -> unit) -> 'a t -> unit
+(** [Weak.iteri f ar] applies [f] to each full cell of [ar], passing
+   the index and the element.  Empty cells are skipped.
+   Does not allocate. *)
+
+val iter : ('a -> unit) -> 'a t -> unit
+(** [Weak.iter f ar] applies [f] to each full cell of [ar], in index
+   order.  Empty cells are skipped.
+   Does not allocate. *)
+
 
 (** {1 Weak hash sets} *)
 

@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include "caml/alloc.h"
+#include "caml/callback.h"
 #include "caml/domain.h"
 #include "caml/fail.h"
 #include "caml/major_gc.h"
@@ -286,19 +287,34 @@ CAMLprim value caml_ephe_unset_data (value e)
   return caml_ephe_set_data(e, caml_ephe_none);
 }
 
+static bool ephe_try_get_field(value e, mlsize_t offset, value *dst)
+{
+  clean_field(e, offset);
+  value elt = Field(e, offset);
+
+  if (elt == caml_ephe_none)
+    return 0;
+
+  if (caml_marking_started())
+    caml_darken (Caml_state, elt, 0);
+
+  *dst = elt;
+  return 1;
+}
+
+CAMLexport int caml_ephe_try_get_field(value e, mlsize_t offset, value *dst)
+{
+  return ephe_try_get_field(e, offset, dst);
+}
+
 static value ephe_get_field (value e, mlsize_t offset)
 {
   CAMLparam1(e);
   CAMLlocal2 (res, elt);
 
-  clean_field(e, offset);
-  elt = Field(e, offset);
-
-  if (elt == caml_ephe_none) {
+  if (!ephe_try_get_field(e, offset, &elt)) {
     res = Val_none;
   } else {
-    if (caml_marking_started())
-      caml_darken (Caml_state, elt, 0);
     res = caml_alloc_small (1, Tag_some);
     Field(res, 0) = elt;
   }
@@ -467,6 +483,20 @@ CAMLprim value caml_ephe_check_key (value e, value n)
 CAMLprim value caml_weak_check (value e, value n)
 {
   return caml_ephe_check_key(e,n);
+}
+
+CAMLprim value caml_weak_foldi_left(value f, value init, value ar)
+{
+  CAMLparam3(f, init, ar);
+  CAMLlocal2(acc, elt);
+  mlsize_t sz = Wosize_val(ar);
+
+  acc = init;
+  for (mlsize_t i = CAML_EPHE_FIRST_KEY; i < sz; i++) {
+    if (!ephe_try_get_field(ar, i, &elt)) continue;
+    acc = caml_callback3(f, Val_long(i - CAML_EPHE_FIRST_KEY), acc, elt);
+  }
+  CAMLreturn(acc);
 }
 
 CAMLprim value caml_ephe_check_data (value e)

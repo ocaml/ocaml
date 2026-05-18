@@ -149,6 +149,15 @@ Working version
 - #14553: Add Array.fold_{left,right}2
   (Clément Pottier, review by Nicolás Ojeda Bär and Vincent Laviron)
 
+- #14792: Add `Weak.iter`, `Weak.iteri` and `Weak.foldi_left` for
+  zero-allocation iteration over weak arrays. All three are built on a
+  single C primitive `caml_weak_foldi_left` that passes each live element
+  directly to the callback without wrapping it in `option`. Also export
+  `caml_ephe_try_get_field`, a C function that retrieves an ephemeron key
+  without allocating, equivalent to `caml_ephemeron_get_key` available in
+  OCaml 4.14.x.
+  (Romain Beauxis)
+
 ### Other libraries:
 
 * #14788: The Win32 error code `ERROR_DIRECTORY` (= 267) is now mapped to
