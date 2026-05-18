@@ -222,6 +222,16 @@ let not_principal fmt =
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
+let check_scope_escape loc env level ty =
+  try Ctype.check_scope_escape env level ty
+  with Escape esc ->
+    (* We don't expand the type here because if we do, we might expand to the
+       type that escaped, leading to confusing error messages. *)
+    let trace = Errortrace.[Escape (map_escape trivial_expansion esc)] in
+    raise (Error(loc,
+                 env,
+                 Pattern_type_clash(Errortrace.unification_error ~trace, None)))
+
 let error_of_filter_arrow_failure ~explanation ~first ty_fun
   : filter_arrow_failure -> _ = function
   | Unification_error unif_err ->
@@ -932,10 +942,15 @@ and build_as_type_aux (env : Env.t) p =
    We could also have used [generic_level] rather than [generic_level - 10],
    but this requires much care inside [build_as_type], in particular
    [instance_unshared] would have to be modified.
+   However, we recheck the scope of the final type to make sure it is
+   usable in the current scope.
  *)
 let solve_Ppat_alias env pat =
-  with_local_level_generalize (fun () ->
-    with_level ~level:(generic_level - 10) (fun () -> build_as_type env pat))
+  let ty = with_local_level_generalize (fun () ->
+      with_level ~level:(generic_level - 10) (fun () -> build_as_type env pat))
+  in
+  check_scope_escape pat.pat_loc env (get_current_level ()) ty;
+  ty
 
 (* Extracts the first element from a list matching a label. Roughly:
      pat <- List.assoc_opt label patl;
@@ -1792,17 +1807,6 @@ let rec has_literal_pattern p = match p.ppat_desc with
   | Ppat_effect (p, q)
   | Ppat_or (p, q) ->
      has_literal_pattern p || has_literal_pattern q
-
-let check_scope_escape loc env level ty =
-  try Ctype.check_scope_escape env level ty
-  with Escape esc ->
-    (* We don't expand the type here because if we do, we might expand to the
-       type that escaped, leading to confusing error messages. *)
-    let trace = Errortrace.[Escape (map_escape trivial_expansion esc)] in
-    raise (Error(loc,
-                 env,
-                 Pattern_type_clash(Errortrace.unification_error ~trace, None)))
-
 
 (** The typedtree has two distinct syntactic categories for patterns,
    "value" patterns, matching on values, and "computation" patterns
@@ -6825,7 +6829,7 @@ and map_half_typed_cases
           else
             ext_env
         in
-        (* Before handing off the cases to the callback, first set up the the
+        (* Before handing off the cases to the callback, first set up the
            branch environments by adding the variables (and module variables)
            from the patterns.
         *)

@@ -288,18 +288,19 @@ let init n f =
   else
     init_aux f 0 n
 
-let rec repeat x () =
-  Cons (x, repeat x)
+let repeat x =
+  let rec tl () = c and c = Cons (x, tl) in tl
 
-let rec forever f () =
-  Cons (f(), forever f)
+let forever f =
+  let rec tl () = Cons (f(), tl) in tl
 
 (* This preliminary definition of [cycle] requires the sequence [xs]
    to be nonempty. Applying it to an empty sequence would produce a
-   sequence that diverges when it is forced. *)
+   sequence that diverges when it is forced.
+   The tail is defined recursively for reuse on every cycle.  *)
 
-let rec cycle_nonempty xs () =
-  append xs (cycle_nonempty xs) ()
+let cycle_nonempty xs () =
+  let rec tl () = append xs tl () in tl ()
 
 (* [cycle xs] checks whether [xs] is empty and, if so, returns an empty
    sequence. Otherwise, [cycle xs] produces one copy of [xs] followed

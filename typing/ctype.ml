@@ -3157,8 +3157,8 @@ let nondep_instance env level id ty =
   with_level ~level (fun () -> instance ty)
 
 (* Find the type paths nl1 in the module type pack2, and add them to the
-   list (nl2, tl2). raise Not_found if impossible *)
-let complete_type_list ?(allow_absent=false) env fl1 lv2 pack2 =
+   list (nl2, tl2). *)
+let complete_type_list ~pos ?(allow_absent=false) env fl1 lv2 pack2 =
   (* This is morally WRONG: we're adding a (dummy) module without a scope in the
      environment. However no operation which cares about levels/scopes is going
      to happen while this module exists.
@@ -3169,6 +3169,9 @@ let complete_type_list ?(allow_absent=false) env fl1 lv2 pack2 =
 
      It'd be nice if we avoided creating such temporary dummy modules and broken
      environments though. *)
+  let exception Exit of Errortrace.first_class_module in
+  let mismatch lhs decl =
+    Exit(Constraint_on_mismatched_type {pos; decl; lhs}) in
   let id2 = Ident.create_local "Pkg" in
   let env' = Env.add_module id2 Mp_present (Mty_ident pack2.pack_path) env in
   let rec complete fl1 fl2 =
@@ -3188,25 +3191,38 @@ let complete_type_list ?(allow_absent=false) env fl1 lv2 pack2 =
                 if allow_absent then
                   complete nl fl2
                 else
-                  raise Exit
+                  raise (Exit (Constraint_with_deps(pos,n)))
             end
-        | (_, {type_arity = 0; type_kind = Type_abstract _;
-               type_private = Public; type_manifest = None})
-          when allow_absent ->
+        | (_, ({type_arity = 0; type_kind = Type_abstract _;
+               type_private = Public; type_manifest = None} as decl))
+           ->
+            if allow_absent then
+              complete nl fl2
+            else raise (mismatch n decl)
+        | _, decl -> raise (mismatch n decl)
+        | exception Not_found ->
+           if allow_absent then
             complete nl fl2
-        | _ -> raise Exit
-        | exception Not_found when allow_absent->
-            complete nl fl2
+           else raise (Exit (Constraint_on_missing_type (pos,n)))
   in
   match complete fl1 pack2.pack_constraints with
-  | res -> res
-  | exception Exit -> raise Not_found
+  | res -> Ok res
+  | exception (Exit e) -> Error e
 
-(* raise Not_found rather than Unify if the module types are incompatible *)
-let compare_package env unify_list lv1 pack1 lv2 pack2 =
-  let ntl2 = complete_type_list env pack1.pack_constraints lv2 pack2
-  and ntl1 = complete_type_list env pack2.pack_constraints lv1 pack1 in
-  unify_list (List.map snd ntl1) (List.map snd ntl2);
+let compare_package env unify lv1 pack1 lv2 pack2 =
+  let check = function
+    | Error e -> raise_for Unify (First_class_module e)
+    | Ok ntl -> ntl
+  in
+  let ntl2 =
+    complete_type_list ~pos:Second env pack1.pack_constraints lv2 pack2
+  and ntl1 =
+    complete_type_list ~pos:First env pack2.pack_constraints lv1 pack1
+  in
+  let ntl2 = check ntl2 in
+  let ntl1 = check ntl1 in
+  (* ntl1 and ntl2 have the same length by construction *)
+  List.iter2 unify (List.map snd ntl1) (List.map snd ntl2);
   if eq_package_path env pack1.pack_path pack2.pack_path then Ok ()
   else Result.bind
       (!package_subtype env pack1 pack2)
@@ -3572,9 +3588,7 @@ and unify_labeled_list env labeled_tl1 labeled_tl2 =
     labeled_tl1 labeled_tl2
 
 and unify_package uenv lvl1 pack1 lvl2 pack2 =
-  match
-    compare_package (get_env uenv) (unify_list uenv) lvl1 pack1 lvl2 pack2
-  with
+  match compare_package (get_env uenv) (unify uenv) lvl1 pack1 lvl2 pack2 with
   | Ok () -> ()
   | Error fm_err ->
       if not (in_pattern_mode uenv) then
@@ -4678,12 +4692,11 @@ and moregen_labeled_list type_pairs env labeled_tl1
 
 and moregen_package type_pairs env lvl1 pack1 lvl2 pack2 =
   match
-    compare_package env (moregen_list type_pairs env)
+    compare_package env (moregen type_pairs env)
       lvl1 pack1 lvl2 pack2
   with
   | Ok () -> ()
   | Error fme -> raise_for Moregen (First_class_module fme)
-  | exception Not_found -> raise_unexplained_for Moregen
 
 and moregen_fields type_pairs env ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1
@@ -4833,8 +4846,8 @@ and moregen_row type_pairs env row1 row2 =
 
 (* Must empty univar_pairs first *)
 let moregen type_pairs env patt subj =
-  with_univar_pairs [] (fun () ->
-    moregen type_pairs env patt subj)
+  with_univar_pairs [] @@ wrap_trace_gadt_instances env @@ fun () ->
+    moregen type_pairs env patt subj
 
 (*
    Non-generic variable can be instantiated only if [inst_nongen] is
@@ -5068,11 +5081,6 @@ let rec eqtype rename type_pairs subst env t1 t2 =
 and eqtype_list_same_length rename type_pairs subst env tl1 tl2 =
   List.iter2 (eqtype rename type_pairs subst env) tl1 tl2
 
-and eqtype_list rename type_pairs subst env tl1 tl2 =
-  if List.length tl1 <> List.length tl2 then
-    raise_unexplained_for Equality;
-  eqtype_list_same_length rename type_pairs subst env tl1 tl2
-
 and eqtype_labeled_list rename type_pairs subst env labeled_tl1 labeled_tl2 =
   if 0 <> List.compare_lengths labeled_tl1 labeled_tl2 then
     raise_unexplained_for Equality;
@@ -5085,12 +5093,11 @@ and eqtype_labeled_list rename type_pairs subst env labeled_tl1 labeled_tl2 =
 
 and eqtype_package rename type_pairs subst env lvl1 pack1 lvl2 pack2 =
   match
-    compare_package env (eqtype_list rename type_pairs subst env)
+    compare_package env (eqtype rename type_pairs subst env)
       lvl1 pack1 lvl2 pack2
   with
   | Ok () -> ()
   | Error fme -> raise_for Equality (First_class_module fme)
-  | exception Not_found -> raise_unexplained_for Equality
 
 and eqtype_fields rename type_pairs subst env ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1 in
@@ -5942,31 +5949,39 @@ and subtype_labeled_list env trace labeled_tl1 labeled_tl2 constraints =
     constraints labeled_tl1 labeled_tl2
 
 and subtype_package env trace lvl1 pack1 lvl2 pack2 constraints =
-  try
-    let ntl1 = complete_type_list env pack2.pack_constraints lvl1 pack1
-    and ntl2 =
-      complete_type_list env pack1.pack_constraints lvl2 pack2
-        ~allow_absent:true in
-    let constraints' =
-      List.map
-        (fun (n2,t2) -> (env, trace, List.assoc n2 ntl1, t2, !univar_pairs))
-        ntl2
-    in
-    if eq_package_path env pack1.pack_path pack2.pack_path
-    then constraints' @ constraints
-    else begin
-      (* need to check module subtyping *)
-      let snap = Btype.snapshot () in
-      match List.iter (fun (env, _, t1, t2, _) -> unify env t1 t2) constraints'
-      with
-      | () when Result.is_ok (!package_subtype env pack1 pack2) ->
-        Btype.backtrack snap; constraints' @ constraints
-      | () | exception Unify _ ->
-        Btype.backtrack snap; raise Not_found
-    end
-  with Not_found ->
-    (env, trace, newty (Tpackage pack1), newty (Tpackage pack2), !univar_pairs)
-      ::constraints
+  let ntl1 =
+    complete_type_list ~pos:Second env pack2.pack_constraints lvl1 pack1
+  and ntl2 =
+    complete_type_list ~pos:First env pack1.pack_constraints lvl2 pack2
+      ~allow_absent:true
+  in
+  match ntl1, ntl2 with
+  | Error e, _ | _, Error e ->
+      subtype_error ~env ~trace ~unification_trace:[First_class_module e]
+  | Ok ntl1, Ok ntl2 ->
+      let constraints' =
+        List.map
+          (fun (n2,t2) -> (env, trace, List.assoc n2 ntl1, t2, !univar_pairs))
+          ntl2
+      in
+      if eq_package_path env pack1.pack_path pack2.pack_path then
+        constraints' @ constraints
+      else
+        (* need to check module subtyping *)
+        let snap = Btype.snapshot () in
+        let apply_constraint (env,_,t1,t2,_) = unify env t1 t2 in
+        match List.iter apply_constraint constraints' with
+        | exception Unify {trace=unification_trace} ->
+            Btype.backtrack snap;
+            subtype_error ~env ~trace ~unification_trace
+        | () ->
+            match !package_subtype env pack1 pack2 with
+            | Ok () ->
+                Btype.backtrack snap; constraints' @ constraints
+            | Error e ->
+                Btype.backtrack snap;
+                subtype_error ~env ~trace
+                  ~unification_trace:[First_class_module e]
 
 and subtype_functor env trace ?id1 id pack u1 u2 constraints =
   let mty = modtype_of_package env Location.none pack in
@@ -6365,12 +6380,41 @@ let arrow_labels env ty =
    expand_abbrev.
 *)
 
-let nondep_hash     = TypeHash.create 47
-let nondep_variants = TypeHash.create 17
-let clear_hash ()   =
-  TypeHash.clear nondep_hash; TypeHash.clear nondep_variants
+module Nondep_scope : sig
+  type t
 
-let rec nondep_type_rec_aux ?(expand_private=false) env id_map ids ty =
+  val create : unit -> t
+  val reset : t -> unit
+
+  val find_copied_type : t -> type_expr -> type_expr
+  val find_copied_variant : t -> row:type_expr -> type_expr
+
+  val add_copied_type : t -> type_expr -> type_expr -> unit
+  val add_copied_variant : t -> row:type_expr -> type_expr -> unit
+
+  val remove_copied_type : t -> type_expr -> unit
+end = struct
+  type t = {
+    copied_types : type_expr TypeHash.t;
+    copied_variants : type_expr TypeHash.t
+  }
+
+  let create () =
+    { copied_types = TypeHash.create 47; copied_variants = TypeHash.create 17 }
+  let reset scope =
+    TypeHash.clear scope.copied_types; TypeHash.clear scope.copied_variants
+
+  let find_copied_type t key = TypeHash.find t.copied_types key
+  let find_copied_variant t ~row = TypeHash.find t.copied_variants row
+
+  let add_copied_type t key value = TypeHash.add t.copied_types key value
+  let add_copied_variant t ~row value = TypeHash.add t.copied_variants row value
+
+  let remove_copied_type t key = TypeHash.remove t.copied_types key
+end
+
+let rec nondep_type_rec_aux ?(expand_private=false) env
+    (scope : Nondep_scope.t) id_map ids ty =
   let try_expand env t =
     if expand_private then try_expand_safe_opt env t
     else try_expand_safe_no_link env t
@@ -6378,12 +6422,12 @@ let rec nondep_type_rec_aux ?(expand_private=false) env id_map ids ty =
   let desc = get_folded_desc ~keep_Tvar:true ty in
   match desc with
     Tvar _ | Tunivar _ -> ty
-  | _ -> try TypeHash.find nondep_hash ty
+  | _ -> try Nondep_scope.find_copied_type scope ty
   with Not_found ->
     let ty' = newgenstub ~scope:(get_scope ty) in
-    TypeHash.add nondep_hash ty ty';
+    Nondep_scope.add_copied_type scope ty ty';
     let nondep_trec ?expand_private ty =
-      nondep_type_rec_aux ?expand_private env id_map ids ty
+      nondep_type_rec_aux ?expand_private env scope id_map ids ty
     in
     match
       match desc with
@@ -6399,7 +6443,7 @@ let rec nondep_type_rec_aux ?(expand_private=false) env id_map ids ty =
           with (Nondep_cannot_erase _) as exn ->
             (* If that doesn't work, try expanding abbrevs *)
             if desc != get_desc ty then begin
-              TypeHash.remove nondep_hash ty;
+              Nondep_scope.remove_copied_type scope ty;
               Tlink (nondep_trec ~expand_private (ignore_abbrev ty))
             end else try
               Tlink (nondep_trec ~expand_private
@@ -6444,7 +6488,7 @@ let rec nondep_type_rec_aux ?(expand_private=false) env id_map ids ty =
             assert (List.for_all (fun i -> not (Ident.same i id_us)) ids);
             let mty = modtype_of_package env Location.none pack in
             let env' = Env.add_module id_us Mp_present mty env in
-            let t' = nondep_type_rec_aux env' id_map ids t in
+            let t' = nondep_type_rec_aux env' scope id_map ids t in
             Tfunctor (l, us', pack', t')
           end
       | Tobject (t1, name) ->
@@ -6459,13 +6503,13 @@ let rec nondep_type_rec_aux ?(expand_private=false) env id_map ids ty =
           let more = row_more row in
           (* We must keep sharing according to the row variable *)
           begin try
-            let ty2 = TypeHash.find nondep_variants more in
+            let ty2 = Nondep_scope.find_copied_variant scope ~row:more in
             (* This variant type has been already copied *)
-            TypeHash.add nondep_hash ty ty2;
+            Nondep_scope.add_copied_type scope ty ty2;
             Tlink ty2
           with Not_found ->
             (* Register new type first for recursion *)
-            TypeHash.add nondep_variants more ty';
+            Nondep_scope.add_copied_variant scope ~row:more ty';
             let static = static_row row in
             let more' =
               if static then newgenty Tnil else nondep_trec more
@@ -6486,166 +6530,148 @@ let rec nondep_type_rec_aux ?(expand_private=false) env id_map ids ty =
       Transient_expr.set_stub_desc ty' desc';
       ty'
     | exception e ->
-      TypeHash.remove nondep_hash ty;
+      Nondep_scope.remove_copied_type scope ty;
       raise e
 
-let nondep_type_rec ?expand_private env id ty =
-  nondep_type_rec_aux ?expand_private env [] id ty
+let nondep_type_rec ?expand_private env scope id ty =
+  nondep_type_rec_aux ?expand_private env scope [] id ty
 
 let nondep_type env id ty =
-  try
-    let ty' = nondep_type_rec env id ty in
-    clear_hash ();
-    ty'
-  with Nondep_cannot_erase _ as exn ->
-    clear_hash ();
-    raise exn
+  let scope = Nondep_scope.create () in
+  nondep_type_rec env scope id ty
 
 let () = nondep_type' := nondep_type
 
 (* Preserve sharing inside type declarations. *)
 let nondep_type_decl env mid is_covariant decl =
-  try
-    let params = List.map (nondep_type_rec env mid) decl.type_params in
-    let tk =
-      try map_kind (nondep_type_rec env mid) decl.type_kind
-      with Nondep_cannot_erase _ when is_covariant -> Type_abstract Definition
-    and tm, priv =
-      match decl.type_manifest with
-      | None -> None, decl.type_private
-      | Some ty ->
-          try Some (nondep_type_rec env mid ty), decl.type_private
-          with Nondep_cannot_erase _ when is_covariant ->
-            clear_hash ();
-            try Some (nondep_type_rec ~expand_private:true env mid ty),
-                Private
-            with Nondep_cannot_erase _ ->
-              None, decl.type_private
-    in
-    clear_hash ();
-    let priv =
-      match tm with
-      | Some ty when Btype.has_constr_row ty -> Private
-      | _ -> priv
-    in
-    { type_params = params;
-      type_arity = decl.type_arity;
-      type_kind = tk;
-      type_manifest = tm;
-      type_private = priv;
-      type_variance = decl.type_variance;
-      type_separability = decl.type_separability;
-      type_is_newtype = false;
-      type_expansion_scope = Btype.lowest_level;
-      type_loc = decl.type_loc;
-      type_attributes = decl.type_attributes;
-      type_immediate = decl.type_immediate;
-      type_unboxed_default = decl.type_unboxed_default;
-      type_uid = decl.type_uid;
-    }
-  with Nondep_cannot_erase _ as exn ->
-    clear_hash ();
-    raise exn
+  let scope = Nondep_scope.create () in
+  let params = List.map (nondep_type_rec env scope mid) decl.type_params in
+  let tk =
+    try map_kind (nondep_type_rec env scope mid) decl.type_kind
+    with Nondep_cannot_erase _ when is_covariant -> Type_abstract Definition
+  and tm, priv =
+    match decl.type_manifest with
+    | None -> None, decl.type_private
+    | Some ty ->
+        try Some (nondep_type_rec env scope mid ty), decl.type_private
+        with Nondep_cannot_erase _ when is_covariant ->
+          Nondep_scope.reset scope;
+          try Some (nondep_type_rec ~expand_private:true env scope mid ty),
+              Private
+          with Nondep_cannot_erase _ ->
+            None, decl.type_private
+  in
+  let priv =
+    match tm with
+    | Some ty when Btype.has_constr_row ty -> Private
+    | _ -> priv
+  in
+  { type_params = params;
+    type_arity = decl.type_arity;
+    type_kind = tk;
+    type_manifest = tm;
+    type_private = priv;
+    type_variance = decl.type_variance;
+    type_separability = decl.type_separability;
+    type_is_newtype = false;
+    type_expansion_scope = Btype.lowest_level;
+    type_loc = decl.type_loc;
+    type_attributes = decl.type_attributes;
+    type_immediate = decl.type_immediate;
+    type_unboxed_default = decl.type_unboxed_default;
+    type_uid = decl.type_uid;
+  }
 
 (* Preserve sharing inside extension constructors. *)
 let nondep_extension_constructor env ids ext =
-  try
-    let type_path, type_params =
-      match Path.find_free_opt ids ext.ext_type_path with
-      | Some id ->
-        begin
-          let ty =
-            newgenty (Tconstr(ext.ext_type_path, ext.ext_type_params, ref Mnil))
-          in
-          let ty' = nondep_type_rec env ids ty in
-            match get_desc ty' with
-                Tconstr(p, tl, _) -> p, tl
-              | _ -> raise (Nondep_cannot_erase id)
-        end
-      | None ->
-        let type_params =
-          List.map (nondep_type_rec env ids) ext.ext_type_params
+  let scope = Nondep_scope.create () in
+  let type_path, type_params =
+    match Path.find_free_opt ids ext.ext_type_path with
+    | Some id ->
+      begin
+        let ty =
+          newgenty (Tconstr(ext.ext_type_path, ext.ext_type_params, ref Mnil))
         in
-          ext.ext_type_path, type_params
-    in
-    let args = map_type_expr_cstr_args (nondep_type_rec env ids) ext.ext_args
-    in
-    let ret_type = Option.map (nondep_type_rec env ids) ext.ext_ret_type in
-      clear_hash ();
-      { ext_type_path = type_path;
-        ext_type_params = type_params;
-        ext_args = args;
-        ext_ret_type = ret_type;
-        ext_private = ext.ext_private;
-        ext_attributes = ext.ext_attributes;
-        ext_loc = ext.ext_loc;
-        ext_uid = ext.ext_uid;
-      }
-  with Nondep_cannot_erase _ as exn ->
-    clear_hash ();
-    raise exn
+        let ty' = nondep_type_rec env scope ids ty in
+          match get_desc ty' with
+              Tconstr(p, tl, _) -> p, tl
+            | _ -> raise (Nondep_cannot_erase id)
+      end
+    | None ->
+      let type_params =
+        List.map (nondep_type_rec env scope ids) ext.ext_type_params
+      in
+        ext.ext_type_path, type_params
+  in
+  let args =
+    map_type_expr_cstr_args (nondep_type_rec env scope ids) ext.ext_args
+  in
+  let ret_type = Option.map (nondep_type_rec env scope ids) ext.ext_ret_type in
+  { ext_type_path = type_path;
+    ext_type_params = type_params;
+    ext_args = args;
+    ext_ret_type = ret_type;
+    ext_private = ext.ext_private;
+    ext_attributes = ext.ext_attributes;
+    ext_loc = ext.ext_loc;
+    ext_uid = ext.ext_uid;
+  }
 
 
 (* Preserve sharing inside class types. *)
-let nondep_class_signature env id sign =
-  { csig_self = nondep_type_rec env id sign.csig_self;
-    csig_self_row = nondep_type_rec env id sign.csig_self_row;
+let nondep_class_signature env scope id sign =
+  { csig_self = nondep_type_rec env scope id sign.csig_self;
+    csig_self_row = nondep_type_rec env scope id sign.csig_self_row;
     csig_dummy_method = field_kind_internal_repr sign.csig_dummy_method;
     csig_vars =
-      Vars.map (function (m, v, t) -> (m, v, nondep_type_rec env id t))
+      Vars.map (function (m, v, t) -> (m, v, nondep_type_rec env scope id t))
         sign.csig_vars;
     csig_meths =
-      Meths.map (function (p, v, t) -> (p, v, nondep_type_rec env id t))
+      Meths.map (function (p, v, t) -> (p, v, nondep_type_rec env scope id t))
         sign.csig_meths }
 
-let rec nondep_class_type env ids =
+let rec nondep_class_type env scope ids =
   function
     Cty_constr (p, _, cty) when Path.exists_free ids p ->
-      nondep_class_type env ids cty
+      nondep_class_type env scope ids cty
   | Cty_constr (p, tyl, cty) ->
-      Cty_constr (p, List.map (nondep_type_rec env ids) tyl,
-                   nondep_class_type env ids cty)
+      Cty_constr (p, List.map (nondep_type_rec env scope ids) tyl,
+                   nondep_class_type env scope ids cty)
   | Cty_signature sign ->
-      Cty_signature (nondep_class_signature env ids sign)
+      Cty_signature (nondep_class_signature env scope ids sign)
   | Cty_arrow (l, ty, cty) ->
-      Cty_arrow (l, nondep_type_rec env ids ty,
-                 nondep_class_type env ids cty)
+      Cty_arrow (l, nondep_type_rec env scope ids ty,
+                 nondep_class_type env scope ids cty)
 
 let nondep_class_declaration env ids decl =
   assert (not (Path.exists_free ids decl.cty_path));
-  let decl =
-    { cty_params = List.map (nondep_type_rec env ids) decl.cty_params;
-      cty_variance = decl.cty_variance;
-      cty_type = nondep_class_type env ids decl.cty_type;
-      cty_path = decl.cty_path;
-      cty_new =
-        begin match decl.cty_new with
-          None    -> None
-        | Some ty -> Some (nondep_type_rec env ids ty)
-        end;
-      cty_loc = decl.cty_loc;
-      cty_attributes = decl.cty_attributes;
-      cty_uid = decl.cty_uid;
-    }
-  in
-  clear_hash ();
-  decl
+  let scope = Nondep_scope.create () in
+  { cty_params = List.map (nondep_type_rec env scope ids) decl.cty_params;
+    cty_variance = decl.cty_variance;
+    cty_type = nondep_class_type env scope ids decl.cty_type;
+    cty_path = decl.cty_path;
+    cty_new =
+      begin match decl.cty_new with
+        None    -> None
+      | Some ty -> Some (nondep_type_rec env scope ids ty)
+      end;
+    cty_loc = decl.cty_loc;
+    cty_attributes = decl.cty_attributes;
+    cty_uid = decl.cty_uid;
+  }
 
 let nondep_cltype_declaration env ids decl =
   assert (not (Path.exists_free ids decl.clty_path));
-  let decl =
-    { clty_params = List.map (nondep_type_rec env ids) decl.clty_params;
-      clty_variance = decl.clty_variance;
-      clty_type = nondep_class_type env ids decl.clty_type;
-      clty_path = decl.clty_path;
-      clty_hash_type = nondep_type_decl env ids false decl.clty_hash_type ;
-      clty_loc = decl.clty_loc;
-      clty_attributes = decl.clty_attributes;
-      clty_uid = decl.clty_uid;
-    }
-  in
-  clear_hash ();
-  decl
+  let scope = Nondep_scope.create () in
+  { clty_params = List.map (nondep_type_rec env scope ids) decl.clty_params;
+    clty_variance = decl.clty_variance;
+    clty_type = nondep_class_type env scope ids decl.clty_type;
+    clty_path = decl.clty_path;
+    clty_hash_type = nondep_type_decl env ids false decl.clty_hash_type ;
+    clty_loc = decl.clty_loc;
+    clty_attributes = decl.clty_attributes;
+    clty_uid = decl.clty_uid;
+  }
 
 (* collapse conjunctive types in class parameters *)
 let rec collapse_conj env visited ty =

@@ -14,6 +14,7 @@
 /**************************************************************************/
 
 #include <caml/alloc.h>
+#include <caml/memory.h>
 #include "caml/unixsupport.h"
 #include <limits.h>
 #include <unistd.h>
@@ -42,7 +43,7 @@ CAMLprim value caml_unix_getlogin(value unit)
     bufsize *= 2;
     char *newname;
     if (bufsize > CAML_LOGIN_NAME_MAX ||
-        (newname = caml_stat_realloc(name)) == NULL) {
+        (newname = caml_stat_resize_noexc(name, bufsize)) == NULL) {
       caml_stat_free(name);
       caml_unix_error(ENOMEM, "getlogin", Nothing);
     }
@@ -50,15 +51,15 @@ CAMLprim value caml_unix_getlogin(value unit)
   }
   if (e != 0) {
     caml_stat_free(name);
-#else
-  name = getlogin();
-  if (name == NULL) {
-#endif
-    caml_unix_error(ENOENT, "getlogin", Nothing);
+    caml_unix_error(e, "getlogin", Nothing);
   }
   res = caml_copy_string(name);
-#ifdef HAVE_GETLOGIN_R
   caml_stat_free(name);
+#else
+  name = getlogin();
+  if (name == NULL)
+    caml_unix_error(ENOENT, "getlogin", Nothing); /* ignore errors */
+  res = caml_copy_string(name);
 #endif
   return res;
 }

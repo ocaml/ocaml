@@ -412,7 +412,7 @@ let report_private_variant_mismatch first second decl env ppf err =
       pr "The constructor %a is only present in %s %s."
         Style.inline_code name (choose ord first second) decl
   | Presence s ->
-      pr "The tag %a is present in the %s %s,@ but might not be in the %s"
+      pr "The tag %a is present in %s %s,@ but might not be in %s"
         (Style.as_inline_code pp_tag) s second decl first
   | Incompatible_types_for s -> pr "Types for tag `%s are incompatible" s
   | Types err ->

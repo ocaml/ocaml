@@ -29,7 +29,7 @@ jobs:
     steps:
       - name: Compute matrix for the "build" job
         id: matrix
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             // # Always test cl and clang-cl
@@ -65,7 +65,7 @@ jobs:
             return {os: ['windows-latest'], prefix: ['$PROGRAMFILES/Бактріан🐫'], opam: ['false'], config_arg: [''], arch: ['x86_64'], cc: compilers, libdir: libdir, include: include};
       - name: Determine if the testsuite should be skipped
         id: skip
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             let skip_testsuite = false;
@@ -95,25 +95,25 @@ jobs:
     steps:
 
       - name: Fetch OCaml
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: true
 
       - name: Restore Cygwin cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: |
             C:\cygwin-packages
           key: cygwin-packages
 
       - name: Install Cygwin
-        uses: cygwin/cygwin-install-action@v3
+        uses: cygwin/cygwin-install-action@v6
         with:
           packages: make,${{ matrix.cc != 'gcc' && 'mingw64-x86_64-' || 'gcc-g++,gcc-fortran,' }}gcc-core,rsync,unzip
           install-dir: 'D:\cygwin'
 
       - name: Save Cygwin cache
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: |
             C:\cygwin-packages
@@ -140,7 +140,7 @@ jobs:
           echo "key=${{ env.HOST }}-${{ matrix.cc }}-${{ hashFiles('configure') }}" >> $GITHUB_OUTPUT
 
       - name: Restore Autoconf cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: |
             config.cache
@@ -175,7 +175,7 @@ jobs:
           fi
 
       - name: Save Autoconf cache
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: |
             config.cache

@@ -25,6 +25,7 @@ ocamlopt \- The OCaml native-code compiler
 .SY ocamlopt
 .RI [ options ]
 .IR filename ...
+.YS
 .SY ocamlopt.opt
 .RI [ options ]
 .IR filename ...
@@ -131,16 +132,22 @@ does not need
 .BR ocamlrun (1)
 to run.
 .P
+Two versions of the native-code compiler exist:
+.B ocamlopt.byte
+is a bytecode executable (i.e. compiled with
+.BR ocamlc (1)),
+while
 .B ocamlopt.opt
-is the same compiler as
-.BR ocamlopt ,
-but compiled with itself instead of with the bytecode compiler
-.BR ocamlc (1).
-Thus, it behaves exactly like
-.BR ocamlopt ,
-but compiles faster.
+is a native executable (i.e. compiled with
+.BR ocamlopt (1)
+itself).
 .B ocamlopt.opt
-is not available in all installations of OCaml.
+may not be available in all installations of OCaml.
+.B ocamlopt
+is an alias for the fastest of the two, i.e. for
+.B ocamlopt.opt
+if it is available, otherwise for
+.BR ocamlopt.byte .
 .
 .\"********
 .SH OPTIONS
@@ -463,13 +470,15 @@ applications, and parameter order becomes strict.
 .TP
 .BI \-o " filename"
 Specify the name of the final output file, whether it is an executable, a
-library
+compiled object
+.RB ( \-c
+option), a library
 .RB ( \-a
 option), a packed object
 .RB ( \-pack
 option), a dynlinkable plugin
 .RB ( \-shared
-option) or a C object file
+option) or a C source or object file
 .RB ( \-output\-obj
 and
 .B \-output\-complete\-obj
@@ -720,8 +729,8 @@ Enable, disable, or mark as fatal the warnings specified by the argument
 .IR warning\-list .
 See
 .BR ocamlc (1)
-for the syntax of
-.IR warning-list .
+for the complete documentation of that flag, in particular the list of supported
+warnings.
 .TP
 .BI \-warn\-error " warning\-list"
 Mark as fatal the warnings specified in the argument

@@ -852,6 +852,7 @@ typing/errortrace_report.cmo : \
     typing/out_type.cmi \
     typing/oprint.cmi \
     utils/misc.cmi \
+    typing/ident.cmi \
     utils/format_doc.cmi \
     typing/errortrace.cmi \
     typing/env.cmi \
@@ -868,6 +869,7 @@ typing/errortrace_report.cmx : \
     typing/out_type.cmx \
     typing/oprint.cmx \
     utils/misc.cmx \
+    typing/ident.cmx \
     utils/format_doc.cmx \
     typing/errortrace.cmx \
     typing/env.cmx \

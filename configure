@@ -3349,6 +3349,28 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Configuring OCaml version 5.6.0+dev0-2026-01-26" >&5
 printf "%s\n" "$as_me: Configuring OCaml version 5.6.0+dev0-2026-01-26" >&6;}
 
+# It's important for the setting up of defaults and the checking of the
+# --with-relative-libdir option to know whether the user specified --libdir.
+# Unfortunately, autoconf doesn't provide an easy way to determine this, so we
+# simply repeat autoconf's argument parsing for the libdir and mandir options.
+# This is done early in the script to ensure that only autoconf and site-config
+# scripts have run.
+libdir_given=no
+mandir_given=no
+for ac_arg
+do
+  case $ac_arg in
+    -mandir=* | --mandir=* | --mandi=* | --mand=* | --man=* | --ma=* | --m=* | \
+    -mandir | --mandir | --mandi | --mand | --man | --ma | --m)
+      mandir_given=yes
+      break ;;
+    -libdir=* | --libdir=* | --libdi=* | --libd=* | \
+    -libdir   | --libdir   | --libdi   | --libd)
+      libdir_given=yes
+      break ;;
+  esac
+done
+
 # Configuration variables
 
 ## Command-line arguments passed to configure
@@ -24333,12 +24355,12 @@ esac
 
 
 
-if test x"$libdir" = x'${exec_prefix}/lib'
+if test x"$libdir_given" = 'xno'
 then :
   libdir="$libdir"/ocaml
 fi
 
-if test x"$mandir" = x'${datarootdir}/man'
+if test x"$mandir_given" = 'xno'
 then :
   mandir='${prefix}/man'
 fi
@@ -24415,7 +24437,7 @@ fi ;; #(
      ;;
 esac
 
-if test x"$libdir" = x'${exec_prefix}/lib/ocaml'
+if test x"$libdir_given" = 'xno'
 then :
   if test x"$bindir_to_libdir" != 'x'
 then :

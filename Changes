@@ -65,7 +65,7 @@ Working version
 
 ### Type system:
 
-* #11648, #14766, #14768: Keep expansion and new well-foundedness check
+* #11648, #14766, #14768, #14776: Keep expansion and new well-foundedness check
   implementation.
   Do expansion in place during unification, rather than only memoizing it
   in a temporary cache. This fixes a number of non-terminations and crashes
@@ -156,6 +156,12 @@ Working version
 
 ### Other libraries:
 
+* #14788: The Win32 error code `ERROR_DIRECTORY` (= 267) is now mapped to
+  `ENOTDIR` instead of `EUNKNOWNERR(-267)` when raised by functions in the
+  `Unix` module (eg `Unix.opendir`).
+  (Nicolás Ojeda Bär, report by Adrián Montesinos González, review by Gabriel
+  Scherer)
+
 ### Tools:
 
 - #14318, #14709, ocamldoc: use "Module_name (Library name)" rather than
@@ -195,6 +201,10 @@ Working version
 - #14598: Add `@since` annotations to `Runtime_events`. (Raphaël Proust)
 
 ### Compiler user-interface and warnings:
+
+- #14051: Improved error messages for first-class modules with a missing
+  constrained type.
+  (Florian Angeletti, review by Gabriel Scherer)
 
 - #14205: Make inclusion check error message reference the user-written file
   when operating on a ppx-generated file.
@@ -246,7 +256,15 @@ Working version
   when mixing self types, local modules and first class modules.
   (Samuel Vivien, review by Florian Angeletti, Jacques Garrigue)
 
+- #14800: localise `nondep_type_rec` memoisation state in a new
+  `Nondep_scope` module (`typing/ctype.ml`).
+  (Matthew Marques, review by Stefan Muenzel)
+
 ### Build system:
+
+- #14676: Security fix: prevent shell injection in Github Actions workflows
+  (Austin Thierault, review by Antonin Décimo, Edwin Török, David Allsopp and
+   Olivier Nicole)
 
 ### Bug fixes:
 
@@ -261,6 +279,10 @@ Working version
 - #14727: Reduce memory usage when refuting a pattern clause with a large
   counter-example search space.
   (Florian Angeletti, review by Gabriel Scherer)
+
+- #11922, #14789: fix a missing scope escape error message when a pattern alias
+  captured local types from under an or-pattern.
+  (Florian Angeletti, report by Richard Eisenberg, review by Jacques Garrigue)
 
 OCaml 5.5.0
 -----------
@@ -581,9 +603,11 @@ OCaml 5.5.0
 
 ### Other libraries:
 
-- #13700, #14454: Use POSIX thread-safe getgrnam_r, getgrgid_r, getpwnam_r,
-  getpwuid_r, gmtime_r, localtime_r, getlogin_r, and fix mktime error checking.
-  (Antonin Décimo, review by David Allsopp, Stefan Muenzel, and Miod Vallat)
+- #13700, #14454, #14715: Use POSIX thread-safe getgrnam_r, getgrgid_r,
+  getpwnam_r, getpwuid_r, gmtime_r, localtime_r, getlogin_r, and fix mktime
+  error checking.
+  (Antonin Décimo, review by Florian Angeletti, David Allsopp, Stefan Muenzel,
+   Gabriel Scherer, and Miod Vallat)
 
 - #14406: Better handling of address length for unix sockets, improving Haiku
   compatibility.
@@ -657,8 +681,8 @@ OCaml 5.5.0
 
 ### Manual and documentation:
 
-- #14684: Improve ocamlopt's manual page
-  (Samuel Hym, review by Florian Angeletti)
+- #14684, #14782: Improve ocamlc's and ocamlopt's manual pages
+  (Samuel Hym, review by Florian Angeletti, Antonin Décimo and Gabriel Scherer)
 
 - #14397: Improve documentation of type-directed disambiguation of array
   literals (Alicia Michael, review by Olivier Nicole and Florian Angeletti)
@@ -1045,6 +1069,15 @@ OCaml 5.5.0
 
 - #14719, #14721: compute arity correctly for module-dependent function
   (Florian Angeletti, report by Jeremy Yallop, review by Stefan Muenzel)
+
+- #14760, #14802: Correct the detection of argument defaults in configure,
+  fixing an incorrect error message when installing OCaml through opam on
+  OpenSUSE with the site-config package installed.
+  (David Allsopp, review by Edwin Török, report by Edwin Török)
+
+- #14797: avoid dropping attributes attached to package types when pretty
+  printing in surface syntax.
+  (Chet Murthy, review by Nicolás Ojeda Bär)
 
 OCaml 5.4.0 (9 October 2025)
 ----------------------------
@@ -4876,7 +4909,7 @@ OCaml 5.0.0 (15 December 2022)
    review by Xavier Leroy,
    report by Jan Midtgaard and Tom Kelly)
 
-- #11576: Fix bug in Bigarray.Genarray.init in the the case of zero-dimensional
+- #11576: Fix bug in Bigarray.Genarray.init in the case of zero-dimensional
   arrays.
   (Nicolás Ojeda Bär, Jeremy Yallop, report by Masayuki Takeda, review by Jeremy
   Yallop and Florian Angeletti)

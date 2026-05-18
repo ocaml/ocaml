@@ -8,7 +8,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
-# Restrict the GITHUB_TOKEN
+# Restrict the CAMLCI_GITHUB_TOKEN
 permissions: {}
 
 concurrency:
@@ -28,7 +28,7 @@ jobs:
         # context variable.
         if: failure()
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 50
           persist-credentials: false
@@ -36,30 +36,48 @@ jobs:
       - name: Changes updated
         run: >-
           tools/ci/actions/check-changes-modified.sh
-          '${{ github.event.pull_request.issue_url }}'
-          '${{ github.ref }}'
+          "$CAMLCI_PR_ISSUE_URL"
+          "$CAMLCI_GITHUB_REF_NAME"
           'pull_request'
-          '${{ github.event.pull_request.base.ref }}'
-          '${{ github.event.pull_request.base.sha }}'
-          '${{ github.event.pull_request.head.ref }}'
-          '${{ github.event.pull_request.head.sha }}'
+          "$CAMLCI_PR_BASE_REF"
+          "$CAMLCI_PR_BASE_SHA"
+          "$CAMLCI_PR_HEAD_REF"
+          "$CAMLCI_PR_HEAD_SHA"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Prefix CAMLCI used here to avoid colliding with Github variables,
+          # such as GITHUB_REF_NAME, as they always take precedence
+          CAMLCI_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CAMLCI_PR_ISSUE_URL: ${{ github.event.pull_request.issue_url }}
+          CAMLCI_GITHUB_REF_NAME: ${{ github.ref }}
+          CAMLCI_PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          CAMLCI_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CAMLCI_PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          CAMLCI_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         if: github.event_name == 'pull_request'
 
       - name: configure correctly generated
         run: >-
           tools/ci/actions/check-configure.sh
-          '${{ github.ref }}'
-          '${{ github.event_name }}'
-          '${{ github.event.pull_request.base.ref }}'
-          '${{ github.event.pull_request.base.sha }}'
-          '${{ github.event.pull_request.head.ref }}'
-          '${{ github.event.pull_request.head.sha }}'
-          '${{ github.event.ref }}'
-          '${{ github.event.before }}'
-          '${{ github.event.ref }}'
-          '${{ github.event.after }}'
+          "$CAMLCI_GITHUB_REF_NAME"
+          "$CAMLCI_EVENT_NAME"
+          "$CAMLCI_PR_BASE_REF"
+          "$CAMLCI_PR_BASE_SHA"
+          "$CAMLCI_PR_HEAD_REF"
+          "$CAMLCI_PR_HEAD_SHA"
+          "$CAMLCI_EVENT_REF"
+          "$CAMLCI_EVENT_BEFORE"
+          "$CAMLCI_EVENT_REF"
+          "$CAMLCI_EVENT_AFTER"
+        env:
+          CAMLCI_GITHUB_REF_NAME: ${{ github.ref }}
+          CAMLCI_EVENT_NAME: ${{ github.event_name }}
+          CAMLCI_PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          CAMLCI_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CAMLCI_PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          CAMLCI_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CAMLCI_EVENT_REF: ${{ github.event.ref }}
+          CAMLCI_EVENT_BEFORE: ${{ github.event.before }}
+          CAMLCI_EVENT_AFTER: ${{ github.event.after }}
         if: ${{ always() }}
 
       - name: Check that no ignored files have been committed
@@ -70,16 +88,27 @@ jobs:
         id: revered
         run: >-
           tools/ci/actions/check-typo.sh
-          '${{ github.ref }}'
-          '${{ github.event_name }}'
-          '${{ github.event.pull_request.base.ref }}'
-          '${{ github.event.pull_request.base.sha }}'
-          '${{ github.event.pull_request.head.ref }}'
-          '${{ github.event.pull_request.head.sha }}'
-          '${{ github.event.ref }}'
-          '${{ github.event.before }}'
-          '${{ github.event.ref }}'
-          '${{ github.event.after }}'
+          "$CAMLCI_GITHUB_REF_NAME"
+          "$CAMLCI_EVENT_NAME"
+          "$CAMLCI_PR_BASE_REF"
+          "$CAMLCI_PR_BASE_SHA"
+          "$CAMLCI_PR_HEAD_REF"
+          "$CAMLCI_PR_HEAD_SHA"
+          "$CAMLCI_EVENT_REF"
+          "$CAMLCI_EVENT_BEFORE"
+          "$CAMLCI_EVENT_REF"
+          "$CAMLCI_EVENT_AFTER"
+        env:
+          # Prefix CAMLCI used here to avoid GITHUB_REF_NAME colliding
+          CAMLCI_GITHUB_REF_NAME: ${{ github.ref }}
+          CAMLCI_EVENT_NAME: ${{ github.event_name }}
+          CAMLCI_PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          CAMLCI_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CAMLCI_PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          CAMLCI_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CAMLCI_EVENT_REF: ${{ github.event.ref }}
+          CAMLCI_EVENT_BEFORE: ${{ github.event.before }}
+          CAMLCI_EVENT_AFTER: ${{ github.event.after }}
         if: ${{ always() }}
 
       - name: check-typo on whole tree

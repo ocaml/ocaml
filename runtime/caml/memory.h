@@ -96,23 +96,6 @@ CAMLextern caml_stat_block caml_stat_alloc(asize_t);
 CAMLmalloc(caml_stat_free, 1, 1)
 CAMLextern caml_stat_block caml_stat_alloc_noexc(asize_t);
 
-/* [caml_stat_alloc_aligned(size, modulo, block*)] allocates a memory block of
-   the requested [size] (in bytes), the starting address of which is aligned to
-   the provided [modulo] value. The function returns the aligned address, as
-   well as the unaligned [block] (as an output parameter). It throws an OCaml
-   exception in case the request fails, and so requires the runtime lock.
-*/
-CAMLaligned_alloc(caml_stat_free, 1, 1, 2) CAMLreturns_nonnull()
-CAMLextern void* caml_stat_alloc_aligned(asize_t, int modulo, caml_stat_block*);
-
-/* [caml_stat_alloc_aligned_noexc] is a variant of [caml_stat_alloc_aligned]
-   that returns NULL in case the request fails, and doesn't require the runtime
-   lock to be held.
-*/
-CAMLaligned_alloc(caml_stat_free, 1, 1, 2)
-CAMLextern void* caml_stat_alloc_aligned_noexc(asize_t, int modulo,
-                                               caml_stat_block*);
-
 /* [caml_stat_calloc_noexc(num, size)] allocates a block of memory for an array
    of [num] elements, each of them [size] bytes long, and initializes all its
    bits to zero, effectively allocating a zero-initialized memory block of

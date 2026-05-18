@@ -766,7 +766,7 @@ field are atomic operations similar to "Atomic.get" and
 this field by using a built-in extension node, "%atomic.loc": if
 "rc" is a value of type "foo refcounted", then "[%atomic.loc rc.readers]"
 is an expression of the built-in type "foo Atomic.Loc.t", which allows
-atomic operations defined in the the \stdmoduleref{Atomic}.Loc module
+atomic operations defined in the \stdmoduleref{Atomic}.Loc module
 of the standard library, mirroring the operations exposed for atomic
 references in the \stdmoduleref{Atomic} module:
 

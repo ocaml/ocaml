@@ -331,6 +331,7 @@
 #undef HAVE_GETGRGID_R
 #undef HAVE_GETPWNAM_R
 #undef HAVE_GETPWUID_R
+#undef HAVE_GETLOGIN_R
 
 /* 3. Language extensions. */
 

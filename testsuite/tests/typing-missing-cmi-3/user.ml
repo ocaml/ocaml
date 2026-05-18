@@ -35,6 +35,7 @@ Line 1, characters 19-20:
 Error: The value "x" has type "(module Original.T)"
        but an expression was expected of type
          "(module Original.T with type t = int)"
+       There is no type "t" in the first module type.
 |}]
 
 let () = Middle.f (module struct end)

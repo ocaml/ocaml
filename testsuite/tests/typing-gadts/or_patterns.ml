@@ -768,3 +768,40 @@ Error: This pattern matches values of type "$a"
        The type constructor "$a" would escape its scope
        Hint: "$a" is an existential type bound by the constructor "A".
 |}]
+
+(* Test as-patterns capturing whole or-patterns *)
+
+type _ t = A : 'ca -> (char * 'ca) t
+
+let f (type abs): abs t option -> abs -> bool = function
+| Some A _ | None as x -> fun (c,_) -> c = '0'
+[%%expect {|
+type _ t = A : 'ca -> (char * 'ca) t
+Line 4, characters 2-17:
+4 | | Some A _ | None as x -> fun (c,_) -> c = '0'
+      ^^^^^^^^^^^^^^^
+Error: This pattern matches values of type "(char * $0) t option"
+       The type constructor "$0" would escape its scope
+|}]
+
+type _ t1 =
+  | A : 'a -> [> `A of 'a ] t1
+  | B : 'a -> [> `B of 'a ] t1
+
+let f1 (type a) (t : [ `A of a | `B of a ] t1) = assert false
+
+type t = T : _ t1 -> t
+
+let f (T x) =
+  match x with
+  | (A _ | B _) as x -> ignore (f1 x : _)
+[%%expect {|
+type _ t1 = A : 'a -> [> `A of 'a ] t1 | B : 'a -> [> `B of 'a ] t1
+val f1 : [ `A of 'a | `B of 'a ] t1 -> 'b = <fun>
+type t = T : 'a t1 -> t
+Line 11, characters 4-15:
+11 |   | (A _ | B _) as x -> ignore (f1 x : _)
+         ^^^^^^^^^^^
+Error: This pattern matches values of type "[> `A of $1 | `B of $1 ] t1"
+       The type constructor "$1" would escape its scope
+|}]
