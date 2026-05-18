@@ -152,7 +152,7 @@ Working version
 - #10480: Add Seq.ints_in_range.
   (Tristan Brugère, review by Nicolas Chataing, Xavier Leroy, Jeremy Yallop,
   Ulugbek Abdullaev, Hezekiah M. Carty, Simon Cruanes, Daniel Bünzli, Yotam
-  Barnoy, Michael Hendricks, Léo Andrès)
+  Barnoy, Michael Hendricks and Léo Andrès)
 
 ### Other libraries:
 
