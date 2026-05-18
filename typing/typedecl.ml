@@ -1829,7 +1829,7 @@ let transl_prim_desc env loc primdesc =
       && prim.prim_native_name = ""
       then raise(Error(pprim_type.ptyp_loc, Missing_native_external));
       check_unboxable env loc ty;
-      { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
+      { val_type = ty; val_kind = Val_prim (prim, Safe); Types.val_loc = loc;
         val_attributes = primdesc.pprim_attributes;
         val_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
       }
@@ -1852,22 +1852,49 @@ let transl_prim_desc env loc primdesc =
     let path, v =
       Env.lookup_value ~use:true ~loc:pprim_ident.loc pprim_ident.txt env
     in
-    (match v.val_kind with
-     | Val_prim _ ->
+    let val_kind = v.val_kind in
+    (match val_kind with
+     | Val_prim (desc, _) ->
        let cty, v =
          match pprim_type with
          | None -> None, v
          | Some pprim_type ->
            let cty = Typetexp.transl_type_scheme env pprim_type in
-           (* When the alias has a type ascription, we check that it is no more
-              general than the type of the aliased declaration. *)
-           match
-             Ctype.matches ~expand_error_trace:true env
-               cty.ctyp_type v.val_type
-           with
-           | () -> Some cty, { v with val_type = cty.ctyp_type; val_loc = loc }
-           | exception (Ctype.Matches_failure (env, err)) ->
+           let raise_unification_error env err =
              raise(Error(cty.ctyp_loc, Primitive_type_mismatch (env, err)))
+           in
+           let val_kind =
+             (* When the alias has a type ascription, we check that it is no
+                more general than the type of the aliased declaration. *)
+             match
+               Ctype.matches ~expand_error_trace:true env
+                 cty.ctyp_type v.val_type
+             with
+             | () ->
+               (* The alias matches the declaration. *)
+               val_kind
+             | exception (Ctype.Matches_failure _)
+               when Env.is_in_signature env ->
+               (* The alias doesn't match the declaration, but we are in a
+                  signature, and we should check whether it is at least possible
+                  for the types to be made equal. *)
+               (match
+                  Ctype.matches_gadt ~expand_error_trace:true env
+                    cty.ctyp_type v.val_type
+                with
+                | () ->
+                  (* The alias could be made to match the declaration, but it
+                     would be unsound in a self-referential recursive module. *)
+                  Val_prim (desc, Unsafe_in_recmod)
+                | exception (Ctype.Matches_failure (env, err)) ->
+                  (* There is no way the types could be made equal. *)
+                  raise_unification_error env err)
+             | exception (Ctype.Matches_failure (env, err)) ->
+               (* We are in a structure and the types surely do not match. *)
+               raise_unification_error env err
+           in
+           Some cty,
+           { v with val_type = cty.ctyp_type; val_kind; val_loc = loc }
        in
        let (id, newenv) =
          Env.enter_value primdesc.pprim_name.txt v env

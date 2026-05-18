@@ -47,6 +47,7 @@ type unsafe_component =
   | Unsafe_functor
   | Unsafe_non_function
   | Unsafe_typext
+  | Unsafe_primitive
 
 type unsafe_info =
   | Unsafe of {
