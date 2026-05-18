@@ -149,6 +149,11 @@ Working version
 - #14553: Add Array.fold_{left,right}2
   (Clément Pottier, review by Nicolás Ojeda Bär and Vincent Laviron)
 
+- #10480: Add Seq.ints_in_range.
+  (Tristan Brugère, review by Nicolas Chataing, Xavier Leroy, Jeremy Yallop,
+  Ulugbek Abdullaev, Hezekiah M. Carty, Simon Cruanes, Daniel Bünzli, Yotam
+  Barnoy, Michael Hendricks, Léo Andrès)
+
 ### Other libraries:
 
 ### Tools:
