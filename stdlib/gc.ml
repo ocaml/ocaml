@@ -48,7 +48,6 @@ type control = {
   custom_minor_ratio : int;
   custom_minor_max_size : int;
   ephe_space_overhead : int;
-  small_heap_limit : int;
 }
 
 external stat : unit -> stat = "caml_gc_stat"

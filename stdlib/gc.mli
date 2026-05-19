@@ -233,11 +233,12 @@ type control =
         @since 4.08 *)
 
     ephe_space_overhead : int;
-    (** TODO
-        @since 5.6 *)
-
-    small_heap_limit : int;
-    (** TODO
+    (** Space overhead for ephemerons.
+        This is a percentage of the memory used for live data. When the
+        program uses ephemerons, the GC has to do more work, and this
+        translates to additional space overhead. This parameter is an
+        upper bound on the actual overhead.
+        Default: 10.
         @since 5.6 *)
   }
 (** The GC parameters are given as a [control] record.  Note that

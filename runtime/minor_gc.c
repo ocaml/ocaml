@@ -775,7 +775,6 @@ static void ephe_clean_minor (caml_domain_state* domain)
     CAMLassert(Tag_hd(hd) != Infix_tag);
     if (Is_promoted_hd(hd)) {
       /* promoted */
-      Caml_update_major_allocated_words(ephe, domain, Whsize_val(v), 0);
       v = Field(v, 0) + infix_offset;
     } else {
       /* collected */
@@ -799,7 +798,7 @@ static void custom_finalize_minor (caml_domain_state * domain)
     value *v = &elt->block;
     if (Is_block(*v) && Is_young(*v)) {
       if (Is_promoted_hd(Hd_val(*v))) { /* value copied to major heap */
-        caml_adjust_gc_speed(elt->mem, elt->max);
+        Caml_update_major_allocated_words(off_heap, domain, elt->mem, 0);
       } else {
         void (*final_fun)(value) = Custom_ops_val(*v)->finalize;
         if (final_fun != NULL) final_fun(*v);

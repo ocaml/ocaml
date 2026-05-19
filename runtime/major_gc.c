@@ -967,7 +967,7 @@ static caml_plat_mutex pp_lock = CAML_PLAT_MUTEX_INITIALIZER;
   static double pp_c[PP_NUM_PHASES], pp_c1[PP_NUM_PHASES], pp_c2[PP_NUM_PHASES];
 
 /* end mutex */
-atomic_uintnat caml_small_heap_limit;
+atomic_uintnat caml_small_heap_limit = Small_heap_limit_def;
 #define pp_Jdot caml_small_heap_limit
 
 caml_gc_pacing_params caml_get_pacing_params (void)
@@ -1035,7 +1035,6 @@ static inline intnat diffmod (uintnat x1, uintnat x2)
 
 /* Initialize the counters for GC pacing.
    This is for use in caml_init_gc, when everything is still single-threaded.
-   caml_small_heap_limit must be initialized before calling this function.
 */
 void caml_init_major_pacing (void)
 {
@@ -1331,9 +1330,7 @@ static void commit_major_slice_work(intnat words_done) {
       if (w == 0) break;
       atomic_alloc_counter wc = work_counter;
       atomic_alloc_counter ac = alloc_counter;
-      diff.on_heap = ac.on_heap - wc.on_heap;
-      diff.off_heap = ac.off_heap = wc.off_heap;
-      diff.ephe = ac.ephe - wc.ephe;
+      Caml_ac_op(diff, ac, -, wc);
       translate_back (ph, &w, &diff);
       if (atomic_compare_exchange_weak
             (&pacing_ring[ph].advance_work, &adv, w)){
