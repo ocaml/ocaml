@@ -28,42 +28,19 @@
 #include "caml/signals.h"
 #include "caml/memprof.h"
 
-_Atomic uintnat caml_custom_major_ratio = Custom_major_ratio_def;
 _Atomic uintnat caml_custom_minor_ratio = Custom_minor_ratio_def;
 _Atomic uintnat caml_custom_minor_max_bsz = Custom_minor_max_bsz_def;
 
-mlsize_t caml_custom_get_max_major (void)
-{
-  /* The major ratio is a percentage relative to the major heap size.
-     A complete GC cycle will be done every time 2/3 of that much
-     memory is allocated for blocks in the major heap.  Assuming
-     constant allocation and deallocation rates, this means there are
-     at most [M/100 * major-heap-size] bytes of floating garbage at
-     any time.  The reason for a factor of 2/3 (or 1.5) is, roughly
-     speaking, because the major GC takes 1.5 cycles (previous cycle +
-     marking phase) before it starts to deallocate dead blocks
-     allocated during the previous cycle.  [heap_size / 150] is really
-     [heap_size * (2/3) / 100] (but faster). */
-  return caml_heap_size(Caml_state->shared_heap) / 150
-         * atomic_load_relaxed(&caml_custom_major_ratio);
-}
-
-/* [mem] is an amount of out-of-heap resources, in the same units as
-   [max_major] and [max_minor]. When the cumulated amount of such
-   resources reaches [max_minor] (for resources held by the minor
-   heap) we do a minor collection; when it reaches [max_major] (for
-   resources held by the major heap), we guarantee that a major cycle
-   is done.
-
-   If [max_major] is 0, then [mem] is a number of bytes and the actual
-   limit is [caml_custom_get_max_major ()] computed at the
-   time when the custom block is promoted to the major heap.
+/* [mem] is the amount (in words) of off-heap memory held by the custom
+   block. It is used for two purposes:
+   1. to trigger a minor GC when the amount held by the minor heap gets
+      over max_minor
+   2. to inform the major GC, if/when the block gets promoted.
 */
-static value alloc_custom_gen (const struct custom_operations * ops,
-                               uintnat bsz,
-                               mlsize_t mem,
-                               mlsize_t max_major,
-                               mlsize_t max_minor)
+CAMLexport value caml_alloc_custom (const struct custom_operations * ops,
+                                    uintnat bsz,
+                                    mlsize_t mem,
+                                    mlsize_t unused)
 {
   mlsize_t wosize;
   CAMLparam0();
@@ -75,47 +52,29 @@ static value alloc_custom_gen (const struct custom_operations * ops,
     result = caml_alloc_small(wosize, Custom_tag);
     Custom_ops_val(result) = ops;
     if (ops->finalize != NULL || mem != 0) {
-      /* Record the extra resources in case the block gets promoted. */
-      add_to_custom_table (&Caml_state->minor_tables->custom, result,
-                           mem, max_major);
-      /* Keep track of extra resources held by custom block in
-         minor heap. */
+      /* Record the off-heap size in case the block gets promoted. */
+      add_to_custom_table (&Caml_state->minor_tables->custom, result, mem);
+      /* Keep track of off-heap memory held by custom block in minor heap. */
       if (mem != 0) {
-        caml_adjust_minor_gc_speed (mem, max_minor);
+        caml_adjust_minor_gc_speed (mem, 0);
       }
     }
   } else {
+    caml_domain_state *d = Caml_state;
     result = caml_alloc_shr(wosize, Custom_tag);
+    Caml_update_major_allocated_words(off_heap, d, mem, 1);
     Custom_ops_val(result) = ops;
-    caml_adjust_gc_speed(mem, max_major);
     result = caml_check_urgent_gc(result);
   }
   CAMLreturn(result);
 }
 
-Caml_inline mlsize_t get_max_minor (void)
-{
-  return
-    Bsize_wsize (Caml_state->minor_heap_wsz) / 100
-                * atomic_load_relaxed(&caml_custom_minor_ratio);
-}
-
-CAMLexport value caml_alloc_custom(const struct custom_operations * ops,
-                                   uintnat bsz,
-                                   mlsize_t mem,
-                                   mlsize_t max)
-{
-  mlsize_t max_major = max;
-  mlsize_t max_minor = max == 0 ? get_max_minor() : max;
-  return alloc_custom_gen (ops, bsz, mem, max_major, max_minor);
-}
-
 CAMLexport value caml_alloc_custom_mem(const struct custom_operations * ops,
                                        uintnat bsz,
-                                       mlsize_t mem)
+                                       mlsize_t mem_bytes)
 {
-  value v = alloc_custom_gen (ops, bsz, mem, 0, get_max_minor());
-  size_t mem_words = (mem + sizeof(value) - 1) / sizeof(value);
+  size_t mem_words = (mem_bytes + sizeof(value) - 1) / sizeof(value);
+  value v = caml_alloc_custom (ops, bsz, mem_words, 0);
   caml_memprof_sample_block(v, mem_words, mem_words, CAML_MEMPROF_SRC_CUSTOM);
   return v;
 }
