@@ -271,6 +271,9 @@ Working version
 
 ### Bug fixes:
 
+- #14816: Cope with a data race when marking lazy objects.
+  (Nick Barnes, review by Gabriel Scherer)
+
 - #14492: Fix Obj.dup on closures.
   (Mark Shinwell and Nick Barnes, review by Gabriel Scherer and Damien Doligez)
 
