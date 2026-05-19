@@ -995,7 +995,7 @@ let rec update_level env level expand ty =
         raise_escape_exn Self
     | _ ->
         set_level ();
-        (* XXX what about abbreviations in Tconstr ? *)
+        (* XXX what about memoized abbreviations in Tconstr ? *)
         iter_type_expr (update_level env level expand) ty;
         update_level_abbrev env level expand ty
   end
@@ -1005,7 +1005,7 @@ let rec update_level env level expand ty =
    even if the level of the type itself (which is the level of the expanded
    form) is already correct.
    Namely, abbreviations are taken from nodes that are actually ancestors
-   to the expanded versions of the type. And, through unification, it may
+   to the expanded version of the type. And, through unification, it may
    be the case that the same expanded type node can be accessed through
    different ancestors, holding different abbreviations.
    We keep an abbreviation if its scope is valid and either all the levels it

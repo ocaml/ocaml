@@ -120,7 +120,7 @@ Working version
 
 ### Type system:
 
-* #11648, #14766, #14768, #14776, #14842, #14845: Keep expansion and
+* #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
   new well-foundedness check implementation.
   Do expansion in place during unification, rather than only memoizing it
   in a temporary cache. This fixes a number of non-terminations and crashes
@@ -133,9 +133,9 @@ Working version
   implementation strives to follow the specification, some unspecified
   behaviors may change: stricter behavior of the well-foundedness check in
   some cases, or expansions kept in cmis in rare cases.
-  (Jacques Garrigue and Stefan Muenzel, cross reviewed, temporary regression
-   reported by Jeremy Yallop, fix reviewed by Samuel Vivien and
-   Florian Angeletti)
+  (Jacques Garrigue and Stefan Muenzel, cross reviewed,
+   temporary regression reported by Jeremy Yallop, fix reviewed by Samuel
+   Vivien and Florian Angeletti, other regression reported by Florian Angeletti)
 
 - #14512: Improve check for warning 16 (unerasable-optional-argument)
   (Alistair O'Brien, review by Florian Angeletti, Gabriel Scherer)

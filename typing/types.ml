@@ -885,7 +885,7 @@ let link_expand ty ty' =
       let abbrev =
         { abbr_path = path;
           abbr_args = args;
-          abbr_level = ty'.level }
+          abbr_level = ty.level }
       in
       Transient_expr.set_desc ty (Texpand (ty', abbrev))
   | _ -> Misc.fatal_error "Types.link_expand"
