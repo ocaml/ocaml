@@ -44,6 +44,7 @@ type unsafe_info =
 type error =
   Circular_dependency of (Ident.t * unsafe_info) list
 | Conflicting_inline_attributes
+| Unsafe_primitive of Ident.t * Path.t
 
 exception Error of Location.t * error
 
@@ -216,7 +217,7 @@ let compose_coercions c1 c2 =
 
 let primitive_declarations = ref ([] : Primitive.description list)
 let record_primitive = function
-  | {val_kind=Val_prim p;val_loc} ->
+  | {val_kind=Val_prim (p, _);val_loc} ->
       Translprim.check_primitive_arity val_loc p;
       primitive_declarations := p :: !primitive_declarations
   | _ -> ()
@@ -264,8 +265,12 @@ let init_shape id modl =
               raise (Initialization_failure info)
         in
         init_v :: init_shape_struct new_path env rem
-    | Sig_value(_, {val_kind=Val_prim _}, _) :: rem ->
+    | Sig_value(_, {val_kind=Val_prim (_, Safe)}, _) :: rem ->
         init_shape_struct path env rem
+    | Sig_value(subid, {val_kind=Val_prim (_, Unsafe_in_recmod); val_loc = loc},
+                _) :: _ ->
+        let new_path = Pdot(path, Ident.name subid) in
+        raise (Error (loc, (Unsafe_primitive (id, new_path))))
     | Sig_value _ :: _rem ->
         assert false
     | Sig_type(id, tdecl, _, _) :: rem ->
@@ -1705,6 +1710,14 @@ let report_error loc = function
   | Conflicting_inline_attributes ->
       Location.errorf "@[Conflicting %a attributes@]"
         Style.inline_code "inline"
+  | Unsafe_primitive (id, path) ->
+      let top_module = Ident.name id in
+      let guilty = get_relative_path top_module path in
+      Location.errorf ~loc
+        "Module %a defines an unsafe primitive alias, %a .@ \
+         The type of this primitive alias cannot be checked."
+        Style.inline_code top_module
+        Style.inline_code guilty
 
 let () =
   Location.register_error_of_exn
