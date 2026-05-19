@@ -914,6 +914,8 @@ let needs_expand env level path args =
     (without this constraint, the type system would actually be unsound.)
 *)
 
+(* Check whether no internal level needs to be updated,
+   including abbreviations *)
 let rec check_level_type_rec visited level ty =
   get_level ty <= level &&
   match get_abbrev ty with
@@ -999,6 +1001,20 @@ let rec update_level env level expand ty =
   end
   else update_level_abbrev env level expand ty
 
+(* [update_level_abbrev] needs to be called to update levels in abbreviations
+   even if the level of the type itself (which is the level of the expanded
+   form) is already correct.
+   Namely, abbreviations are taken from nodes that are actually ancestors
+   to the expanded versions of the type. And, through unification, it may
+   be the case that the same expanded type node can be accessed through
+   different ancestors, holding different abbreviations.
+   We keep an abbreviation if its scope is valid and either all the levels it
+   contains are already low enough (check_level_type) or if we can succesfully
+   update the levels in its arguments. Otherwise, we forget it as invalid.
+   To avoid checking the same abbreviation repeatedly, we store the level
+   we have checked inside it. Since path compression can copy a Texpand to
+   an ancestor node, it would be inefficient to use the level of the node
+   containing the Texpand (the level would have to be copied too). *)
 and update_level_abbrev env level expand ty =
   iter_abbrev
     (function {abbr_path=p; abbr_args=args; abbr_level=l} as abbr ->
