@@ -61,8 +61,7 @@ struct caml_ephe_ref_table CAML_TABLE_STRUCT(struct caml_ephe_ref_elt);
 
 struct caml_custom_elt {
   value block;     /* The finalized block in the minor heap. */
-  mlsize_t mem;    /* The parameters for adjusting GC speed. */
-  mlsize_t max;
+  mlsize_t mem;    /* Size (words) of off-heap data. */
 };
 struct caml_custom_table CAML_TABLE_STRUCT(struct caml_custom_elt);
 
@@ -133,7 +132,7 @@ Caml_inline void add_to_ephe_ref_table (struct caml_ephe_ref_table *tbl,
 }
 
 Caml_inline void add_to_custom_table (struct caml_custom_table *tbl, value v,
-                                        mlsize_t mem, mlsize_t max)
+                                      mlsize_t mem)
 {
   struct caml_custom_elt *elt;
   if (tbl->ptr >= tbl->limit){
@@ -143,7 +142,6 @@ Caml_inline void add_to_custom_table (struct caml_custom_table *tbl, value v,
   elt = tbl->ptr++;
   elt->block = v;
   elt->mem = mem;
-  elt->max = max;
 }
 
 #endif /* CAML_INTERNALS */
