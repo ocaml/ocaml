@@ -45,7 +45,6 @@
 atomic_uintnat caml_max_stack_wsize;
 uintnat caml_fiber_wsz;
 
-extern _Atomic uintnat caml_custom_major_ratio; /* see custom.c */
 extern _Atomic uintnat caml_custom_minor_ratio; /* see custom.c */
 extern _Atomic uintnat caml_custom_minor_max_bsz; /* see custom.c */
 extern uintnat caml_minor_heap_max_wsz; /* see domain.c */
@@ -129,33 +128,23 @@ CAMLprim value caml_gc_get(value v)
   CAMLlocal1 (res);
   caml_gc_pacing_params pp = caml_get_pacing_params ();
 
-  res = caml_alloc_tuple (11);
+  res = caml_alloc_tuple (12);
   Store_field (res, 0, Val_long (Caml_state->minor_heap_wsz));          /* s */
   Store_field (res, 2, Val_long (pp.percent_free));                     /* o */
   Store_field (res, 3, Val_long (atomic_load_relaxed(&caml_verb_gc)));  /* v */
   Store_field (res, 5, Val_long (caml_max_stack_wsize));                /* l */
-  Store_field (res, 8,
-    Val_long (atomic_load_relaxed(&caml_custom_major_ratio)));          /* M */
+  Store_field (res, 8, Val_long (0)); /* unused custom_major_ratio */
   Store_field (res, 9,
     Val_long (atomic_load_relaxed(&caml_custom_minor_ratio)));          /* m */
   Store_field (res, 10,
     Val_long (atomic_load_relaxed(&caml_custom_minor_max_bsz)));        /* n */
+  Store_field (res, 11, Val_long (pp.ephe_percent_free));               /* q */
   CAMLreturn (res);
 }
 
 #define Max(x,y) ((x) < (y) ? (y) : (x))
 
 static inline intnat norm_pfree (intnat p)
-{
-  return Max (p, 1);
-}
-
-static inline intnat norm_small_heap_limit (intnat p)
-{
-  return Max (p, 0);
-}
-
-static inline intnat norm_custom_maj (intnat p)
 {
   return Max (p, 1);
 }
@@ -189,21 +178,15 @@ CAMLprim value caml_gc_set(value v)
                     newpf);
     some_pacing_changed = true;
   }
-  /* These fields were added in 5.6. */
-  if (Wosize_val (v) >= 13){
+  /* This field was added in 5.6. */
+  if (Wosize_val (v) >= 12){
     uintnat newepf = norm_pfree (Long_val (Field (v, 11)));
-    uintnat newshl = norm_small_heap_limit (Long_val (Field (v, 12)));
 
     if (newepf != pp.ephe_percent_free){
       pp.ephe_percent_free = newepf;
       CAML_GC_MESSAGE(PARAMS, "New ephemeron-related space overhead: %"
                       CAML_PRIuNAT "%%\n", newepf);
       some_pacing_changed = true;
-    }
-    if (newshl != caml_small_heap_limit){
-      caml_small_heap_limit = newshl;
-      CAML_GC_MESSAGE(PARAMS, "New small heap limit: %" CAML_PRIuNAT "%%\n",
-                      newshl);
     }
   }
   if (some_pacing_changed) caml_set_pacing_params (pp);
@@ -212,14 +195,8 @@ CAMLprim value caml_gc_set(value v)
 
   /* These fields were added in 4.08.0. */
   if (Wosize_val (v) >= 11){
-    uintnat new_custom_maj = norm_custom_maj (Long_val (Field (v, 8)));
     uintnat new_custom_min = norm_custom_min (Long_val (Field (v, 9)));
     uintnat new_custom_sz = norm_custom_sz (Long_val (Field (v, 10)));
-    if (new_custom_maj != atomic_load_relaxed(&caml_custom_major_ratio)){
-      atomic_store_relaxed(&caml_custom_major_ratio, new_custom_maj);
-      CAML_GC_MESSAGE(PARAMS, "New custom major ratio: %" CAML_PRIuNAT "%%\n",
-                      caml_custom_major_ratio);
-    }
     if (new_custom_min != atomic_load_relaxed(&caml_custom_minor_ratio)){
       atomic_store_relaxed(&caml_custom_minor_ratio, new_custom_min);
       CAML_GC_MESSAGE(PARAMS, "New custom minor ratio: %" CAML_PRIuNAT "%%\n",
@@ -374,11 +351,8 @@ void caml_init_gc (void)
   caml_gc_pacing_params pp = caml_get_pacing_params();
   pp.percent_free = norm_pfree (caml_params->init_percent_free);
   pp.ephe_percent_free = norm_pfree (caml_params->init_ephe_percent_free);
-  caml_small_heap_limit = norm_pfree (caml_params->init_small_heap_limit);
   caml_set_pacing_params (pp);
 
-  atomic_store_relaxed(&caml_custom_major_ratio,
-                       norm_custom_maj (caml_params->init_custom_major_ratio));
   atomic_store_relaxed(&caml_custom_minor_ratio,
                        norm_custom_min (caml_params->init_custom_minor_ratio));
   atomic_store_relaxed(&caml_custom_minor_max_bsz,
@@ -433,21 +407,18 @@ CAMLprim value caml_runtime_parameters (value unit)
   const char *no_tweaks = "";
   caml_gc_pacing_params pp = caml_get_pacing_params();
   value res = caml_alloc_sprintf
-      ("b=%d,c=%"F_Z",e=%"F_Z",k=%"F_S",l=%"F_Z",M=%"F_Z",m=%"F_Z",n=%"F_Z","
-       "o=%"F_Z",p=%d,q=%"F_Z",R=%d,s=%"F_S",t=%"F_Z",v=%"F_Z",V=%"F_Z","
-       "W=%"F_Z"%s",
+      ("b=%d,c=%"F_Z",e=%"F_Z",l=%"F_Z",m=%"F_Z",n=%"F_Z",o=%"F_Z",p=%d,"
+       "q=%"F_Z",R=%d,s=%"F_S",t=%"F_Z",v=%"F_Z",V=%"F_Z",W=%"F_Z"%s",
        /* b */ (int) Caml_state->backtrace_active,
        /* c */ caml_params->cleanup_on_exit,
        /* e */ caml_params->runtime_events_log_wsize,
-       /* k */ caml_small_heap_limit,
        /* l */ caml_max_stack_wsize,
-       /* M */ caml_custom_major_ratio,
        /* m */ caml_custom_minor_ratio,
        /* n */ caml_custom_minor_max_bsz,
        /* o */ pp.percent_free,
-       /* p */ Caml_state->parser_trace,
+       /* p */ (int) Caml_state->parser_trace,
        /* q */ pp.ephe_percent_free,
-       /* R */ caml_runtime_hashtbl_randomized,
+       /* R */ (int) caml_runtime_hashtbl_randomized,
        /* s */ Caml_state->minor_heap_wsz,
        /* t */ caml_params->trace_level,
        /* v */ caml_verb_gc,

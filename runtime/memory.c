@@ -256,23 +256,30 @@ CAMLexport void caml_free_dependent_memory (mlsize_t nbytes)
    finalized blocks to automatically deallocate off-heap memory.
 
    [res] is the size (in bytes) of off-heap memory just allocated,
-   and [max] should be 0.
+   and [max] is ignored.
 */
 CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
 {
-  Caml_update_major_allocated_words(off_heap, Caml_state, res / sizeof(value),
-                                    1);
+  caml_domain_state *d = Caml_state;
+  Caml_update_major_allocated_words(off_heap, d, res / sizeof(value), 1);
 }
 
-/* This function is used to speed up the minor GC. When the
-   accumulated sum of [res/max] values reaches 1, a minor GC is
-   triggered.
+/* This function is used to trigger the minor GC whenever the amount of
+   off-heap memory held by the minor heap goes over the limit
+   (minor heap size * [caml_custom_minor_ratio] / 100).
+   [res] is a size in words. In the case of custom blocks, it is the
+   size of the off-heap memory held by the custom block that was just
+   allocated on the minor heap.
+   [max] is unused.
 */
 CAMLexport void caml_adjust_minor_gc_speed (mlsize_t res, mlsize_t max)
 {
-  if (max == 0) max = 1;
-  Caml_state->extra_heap_resources_minor += (double) res / (double) max;
-  if (Caml_state->extra_heap_resources_minor > 1.0) {
+  mlsize_t minor_off_heap_max =
+    (Caml_state->minor_heap_wsz) / 100
+    * atomic_load_relaxed(&caml_custom_minor_ratio);
+
+  Caml_state->extra_heap_resources_minor += res;
+  if (Caml_state->extra_heap_resources_minor > minor_off_heap_max) {
     caml_request_minor_gc ();
   }
 }

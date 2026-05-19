@@ -133,7 +133,7 @@ and an optional multiplier. If the letter is followed by anything
 else, the corresponding option is set to 1. Unknown letters
 are ignored.
 The options are documented below; the options
-.BR l , m , M , n , o , s , v
+.BR l , m , n , o , q , s , v
 correspond to the fields of the
 .B control
 record documented in
@@ -174,31 +174,14 @@ Note: this only applies to values allocated with
 (e.g. bigarrays).
 Default: 100.
 .TP
-.BR M " (custom_major_ratio)"
-Target ratio of floating garbage to
-major heap size for out-of-heap memory held by custom values
-located in the major heap. The GC speed is adjusted
-to try to use this much memory for dead values that are not yet
-collected. Expressed as a percentage of major heap size.
-The default value keeps the out-of-heap floating garbage about the
-same size as the in-heap overhead.
-Note: this only applies to values allocated with
-.B caml_alloc_custom_mem
-(e.g. bigarrays).
-Default: 44.
-.TP
 .BR n " (custom_minor_max_size)"
 Maximum amount of out-of-heap
 memory for each custom value allocated in the minor heap. When a custom
-value is allocated on the minor heap and holds more than this many
-bytes, only this value is counted against
-.B custom_minor_ratio
-and the rest is directly counted against
-.BR custom_major_ratio .
-Note: this only applies to values allocated with
+value is allocated with
 .B caml_alloc_custom_mem
-(e.g. bigarrays).
-Default: 8192 bytes.
+(e.g. bigarrays), and holds more than this many bytes of off-heap memory,
+it will be allocated directly on the major heap.
+Default: 70000 bytes.
 .TP
 .BR o " (space_overhead)"
 The main major GC speed setting.
@@ -209,6 +192,9 @@ Turn on debugging support for
 parsers.  When this option is on,
 the pushdown automaton that executes the parsers prints a
 trace of its actions.  This option takes no argument.
+.TP
+.BR q " (ephe_space_overhead)"
+The major GC speed setting for ephemerons.
 .TP
 .BR R
 Turn on randomization of all hash tables by default (see the
