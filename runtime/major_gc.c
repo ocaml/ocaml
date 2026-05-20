@@ -1453,8 +1453,9 @@ void caml_darken_cont(value cont);
 
 Caml_inline header_t mark_header(value block, header_t hd, status marked)
 {
+  header_t marked_hd;
 again:
-  header_t marked_hd = With_status_hd(hd, marked);
+  marked_hd = With_status_hd(hd, marked);
   if (Tag_hd(hd) == Lazy_tag && Tag_hd(hd) == Forcing_tag) {
     /* To detect and mitigate a race against some other domain
      * short-circuiting alazy block, we compare-and-swap */
