@@ -99,6 +99,7 @@ parsing_SOURCES = $(addprefix parsing/, \
   ast_iterator.mli ast_iterator.ml \
   builtin_attributes.mli builtin_attributes.ml \
   camlinternalMenhirLib.mli camlinternalMenhirLib.ml \
+  parser_def.mli parser_def.ml \
   parser.mly \
   lexer.mll \
   pprintast.mli pprintast.ml \
