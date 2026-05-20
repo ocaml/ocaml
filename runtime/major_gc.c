@@ -1447,24 +1447,25 @@ static void shrink_mark_stack (void)
 void caml_darken_cont(value cont);
 
 /* Mark a single block's header. Lifted from the various marking
- * functions to ensure the lazy logic is consistently correct. */
+ * functions to ensure the lazy logic is consistently correct.
+ * Return the final header value (whose colour and tag may have
+ * changed). */
 
-Caml_inline void mark_header(value block, header_t hd,
-                             struct global_heap_state state)
+Caml_inline header_t mark_header(value block, header_t hd, status marked)
 {
 again:
+  header_t marked_hd = With_status_hd(hd, marked);
   if (Tag_hd(hd) == Lazy_tag && Tag_hd(hd) == Forcing_tag) {
     /* To detect and mitigate a race against some other domain
      * short-circuiting alazy block, we compare-and-swap */
-    if (!atomic_compare_exchange_strong(Hp_atomic_val(block), &hd,
-                                        With_status_hd(hd, state.MARKED))) {
+    if (!atomic_compare_exchange_strong(Hp_atomic_val(block), &hd, marked_hd)) {
       hd = Hd_val(block);
       goto again;
     }
   } else {
-    atomic_store_relaxed(Hp_atomic_val(block),
-                         With_status_hd(hd, state.MARKED));
+    atomic_store_relaxed(Hp_atomic_val(block), marked_hd);
   }
+  return marked_hd;
 }
 
 static void mark_slice_darken(struct mark_stack* stk, value child,
@@ -1493,7 +1494,7 @@ static void mark_slice_darken(struct mark_stack* stk, value child,
         caml_darken_cont(child);
         *work -= Wosize_hd(chd);
       } else {
-        mark_header(child, chd, caml_global_heap_state);
+        chd = mark_header(child, chd, caml_global_heap_state.MARKED);
         if(Scannable_hd(chd)) {
           *work -= mark_stack_push_block(stk, child);
         } else {
@@ -1546,7 +1547,7 @@ Caml_noinline static intnat do_some_marking(struct mark_stack* stk,
         budget -= Whsize_hd(hd);
         continue;
       }
-      mark_header(block, hd, caml_global_heap_state);
+      hd = mark_header(block, hd, caml_global_heap_state.MARKED);
       budget--; /* header word */
       if (!Scannable_hd(hd)) {
         /* Nothing to scan here */
@@ -1706,7 +1707,7 @@ void caml_darken(void* state, value v, volatile value* ignored) {
     if (Tag_hd(hd) == Cont_tag) {
       caml_darken_cont(v);
     } else {
-      mark_header(v, hd, caml_global_heap_state);
+      hd = mark_header(v, hd, caml_global_heap_state.MARKED);
       if (Scannable_hd(hd)) {
         mark_stack_push_block(domain_state->mark_stack, v);
         Caml_state->mark_work_done_between_slices += 1; /* just the header */
