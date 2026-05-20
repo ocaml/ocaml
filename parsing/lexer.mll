@@ -131,6 +131,12 @@ let populate_keywords (version,keywords) =
     | exception Not_found -> Hashtbl.replace tbl name None
     ) keywords
 
+let as_keyword token =
+  Hashtbl.to_seq keyword_table
+  |> Seq.find_map (function
+       | (text, Some token') when token = token' -> Some text
+       | _ -> None
+     )
 
 (* To buffer string literals *)
 

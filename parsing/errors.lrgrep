@@ -1,0 +1,2082 @@
+{
+  let rec longident_to_string = function
+    | Longident.Lident n -> n
+    | Longident.Lapply (a, b) ->
+      longident_to_string a.txt ^ "(" ^ longident_to_string b.txt ^ ")"
+    | Longident.Ldot (a, n) ->
+      longident_to_string a.txt ^ "." ^ n.txt
+
+  let report_currified_constructor ?outer inner (token : Parser.token) =
+    let token = match token with
+      | UNDERSCORE -> "_"
+      | LIDENT u | UIDENT u -> u
+      | LPAREN -> "..."
+      | _ -> assert false
+    in
+    let inner_msg = longident_to_string inner ^ " (..., " ^ token ^ ")" in
+    "Issue #10990: arguments of n-ary constructors should be put between parentheses, e.g. " ^
+    match outer with
+    | Some outer -> longident_to_string outer ^ " (" ^ inner_msg ^ ")"
+    | None -> inner_msg
+
+  let str_line pos = string_of_int pos.Lexing.pos_lnum
+  let str_col pos = string_of_int (pos.Lexing.pos_cnum - pos.Lexing.pos_bol)
+
+  let line_and_char pos = "line " ^ str_line pos ^ ", character " ^ str_col pos
+}
+
+rule error_messages = parse error
+
+(*************************************************************)
+(* Hand-crafed part, fine-grained or specific error messages *)
+(*************************************************************)
+
+| e=fun_expr; SEMI @ ELSE
+  %partial {
+    match e with
+    | {pexp_desc = Pexp_ifthenelse(_, _, None); _} -> (
+      Some ("The semicolon " ^ line_and_char $startpos(e)
+            ^ " terminates the `if ... then ...` expression. \
+            Remove it to add an else branch.")
+      )
+    | _ -> None
+  }
+
+(* A list of type parameters that is not followed by the path of a type constructore *)
+(* (from "Misleading syntax error message for incorrect module definition", ocaml issue #12280) *)
+| LPAREN; typs=reversed_separated_nontrivial_llist(COMMA,core_type); rp=RPAREN /atomic_type: LPAREN _ RPAREN . _*
+  %partial {
+    match List.rev typs with
+    | [] | [_] -> None
+    | typs -> Some Ast_helper.(
+      Printf.sprintf
+        "The preceding type ending %s is incomplete.\n\
+         It's missing a type constructor after the parameters, for instance: %s.\n\
+         If you meant to write a tuple, use '*': %s."
+        (line_and_char $endpos(rp))
+        (Format.asprintf "%a" Pprintast.core_type
+          (Typ.constr (Location.mknoloc (Longident.Lident "t")) typs))
+        (Format.asprintf "%a" Pprintast.core_type
+          (Typ.tuple (List.map (fun t -> (None,t)) typs)))
+    )
+  }
+
+| LIDENT / label_declaration: mutable_flag _ . COLON _* @ EQUAL
+  { "Expecting ':' to declare the type of a record field, not '='" }
+
+(* let x = 5 ; let y = 6 let z = 7 *)
+
+| [structure_item]; semi=SEMI; [let_bindings(ext) / _* . IN _*]
+  { "Expecting 'in' to complete local-let binding. Hint: this might be due to the semicolon " ^ line_and_char $startpos(semi) }
+
+| loc=_ / fun_expr : _* . fun_expr; [let_bindings(ext)]
+  { "Expecting 'in' after let binding(s) in an expression. \n\
+     This might be due to the unterminated expression at " ^
+     line_and_char $endpos(loc) }
+
+| item=structure_item; [let_bindings(ext)] @ IN
+  { "A 'let ... in' expression is not allowed immediately after a definition. \n\
+    This can be solved by inserting ';;' or 'let () = ' after " ^ line_and_char $endpos(item) }
+
+(* Replace builtin grammatical rule reporting unclosed parenthesis *)
+| lp=LPAREN; [_* / _* . RPAREN _*]
+  { "Unclosed parenthesis at " ^ line_and_char $startpos(lp) }
+
+| pos=[_* / LET _* . IN _*]
+| pos=[_* / let_bindings(ext) _* . IN _*]
+| pos=[_* / let_bindings(no_ext) _* . IN _*]
+  { "Expecting `in' to continue let-binding at " ^ line_and_char $startpos(pos) }
+
+(* https://github.com/ocaml/ocaml/issues/11108
+   Report when a keyword has been typed in a context where a lowercase
+   identifier is expected. *)
+| [_* / _* _ . LIDENT _*]
+  %partial { match Lexer.as_keyword token with
+    | None -> None
+    | Some kw ->
+      Some ("`" ^ kw ^ "' is a keyword and cannot appear in this context (try " ^ kw ^ "_)")
+  }
+
+(* https://github.com/ocaml/ocaml/issues/5068 *)
+(*| [_*  / _* _ . UIDENT _* |  _* / _* _ . TYPE _* | _* / _* _ . REC _*]
+  { "Expecting `type' or a module name beginning with an uppercase letter"} *)
+
+(* https://discuss.ocaml.org/t/syntax-error-compiling-code-with-functor-module/6352 *)
+| [_* / _* . seq_expr _*] @ MODULE
+  {  "`module' keyword cannot appear in an expression, \
+       use `(module M)' to pack a first class-module \
+       or `let module M = ... in ...' to define a local module"
+  }
+
+(* https://github.com/ocaml/ocaml/issues/11445 *)
+
+| [constructor_arguments] @ MINUSGREATER
+  { "Issue #11445: in constructor arguments, \
+     arrow types should be wrapped between parentheses"
+  }
+
+| outer=constr_longident; inner=constr_longident;
+  [_ / pattern_gen: constr_longident pattern .]
+  @ UNDERSCORE, LIDENT, UIDENT, LPAREN
+  { report_currified_constructor ~outer inner token }
+
+| constr_longident; [simple_expr]
+  @ first(simple_expr)
+  { (* Expliquer le raisonnement *)
+    (* Plusieurs niveaux d'explications ? *)
+    (* Message court identifiant la situation *)
+    (* Hint pour détailler. (Rappel de la syntaxe) *)
+    "Application of n-ary constructors cannot be currified, \
+     arguments should be wrapped between parentheses and comma separated" }
+
+| inner=constr_longident;
+  [_* / pattern_gen: constr_longident pattern .]
+  @ UNDERSCORE, LIDENT, UIDENT, LPAREN
+  { report_currified_constructor inner token }
+
+| / . atomic_type @ LBRACKETATAT
+  { "[@@ ...] attribute should be placed after a type (note that it attaches to the item, not to the type)" }
+
+| / . atomic_type @ LBRACKETAT
+  { "[@ ...] attribute should be placed after a type" }
+
+(************************************************)
+(* Coarse-grained but exhaustive error messages *)
+(************************************************)
+
+| /ext: PERCENT . attr_id
+| /fun_seq_expr: fun_expr SEMI PERCENT . attr_id seq_expr
+| /let_bindings(no_ext): LET PERCENT . attr_id list(attribute) rec_flag let_binding_body list(post_item_attribute)
+  { "Expected extension name after `%`" }
+
+| /attr_id: single_attr_id DOT . attr_id
+  { "Expected identifier after `.` in attribute path" }
+
+| /attribute: LBRACKETAT . attr_id attr_payload RBRACKET
+  { "Expected attribute identifier after `[@`" }
+
+| [_* /value_description: VAL ext list(attribute) . val_ident COLON possibly_poly(core_type) list(post_item_attribute)]
+| [_* /class_sig_field: VAL list(attribute) mutable_virtual_flags . LIDENT COLON core_type list(post_item_attribute)]
+| [_* /value: list(attribute) mutable_flag . LIDENT _*]
+  { "Expected value name after `val`" }
+
+| [_* /atomic_type: mod_ext_longident . DOT delimited_type_supporting_local_open
+      /mk_longident(mod_ext_longident,LIDENT): mod_ext_longident . DOT LIDENT
+      /mk_longident(mod_ext_longident,UIDENT): mod_ext_longident . DOT UIDENT]
+  { "Expected `.` to complete module path" }
+
+| /operator: DOTOP . LPAREN _*
+  /operator: DOTOP . LBRACKET _*
+  /operator: DOTOP . LBRACE _*
+  { "Expected `(`, `[`, or `{` after `.<op>` operator" }
+
+| /index_mod: SEMI . DOTDOT
+  { "Expected `..` after `;` in index operator" }
+
+| [_* /operator: DOTOP LPAREN index_mod . RPAREN _*]
+  { "Expected closing `)` in index operator" }
+
+| [_* /operator: DOTOP LBRACKET index_mod . RBRACKET _*]
+  { "Expected closing `]` in index operator" }
+
+| [_* /operator: DOTOP LBRACE index_mod . RBRACE _*]
+  { "Expected closing `}` in index operator" }
+
+| [_* /val_extra_ident: LPAREN operator . RPAREN]
+  { "Expected closing `)` after operator in value identifier" }
+
+| [_* /value_description: VAL ext list(attribute) val_ident . COLON possibly_poly(core_type) list(post_item_attribute)]
+| /class_sig_field: VAL list(attribute) mutable_virtual_flags LIDENT . COLON core_type list(post_item_attribute)
+  { "Expected `:` after value name" }
+
+| /value_description: VAL ext list(attribute) val_ident COLON . possibly_poly(core_type) list(post_item_attribute)
+  { "Expected type annotation after `:`" }
+
+| /atomic_type: QUOTE . ident
+  /reversed_nonempty_llist(typevar): QUOTE . ident
+| /atomic_type: QUOTE . ident
+| /type_variable: QUOTE . ident
+| /reversed_nonempty_llist(typevar): reversed_nonempty_llist(typevar) QUOTE . ident
+| /alias_type: alias_type AS QUOTE . ident
+  { "Expected type variable name after `'`" }
+
+| /optlabel: QUESTION . LIDENT COLON
+  { "Expected labeled parameter name after `?`" }
+
+| /optlabel: QUESTION LIDENT . COLON
+  { "Expected `:` after optional label name" }
+
+| /atomic_type: LPAREN . reversed_separated_nontrivial_llist(COMMA,core_type) _*
+  /constr_extra_nonprefix_ident: LPAREN . RPAREN
+  /constr_ident: LPAREN . COLONCOLON RPAREN
+  /delimited_type_supporting_local_open: LPAREN . core_type RPAREN
+  /delimited_type_supporting_local_open: LPAREN . MODULE ext list(attribute) module_type RPAREN
+  { "Expected type, `module`, or `::)` after `(`" }
+
+| /atomic_type: LPAREN . reversed_separated_nontrivial_llist(COMMA,core_type) _*
+  /delimited_type_supporting_local_open: LPAREN . core_type RPAREN
+  /delimited_type_supporting_local_open: LPAREN . MODULE ext list(attribute) module_type RPAREN
+| /delimited_type_supporting_local_open: LPAREN . core_type RPAREN
+  /delimited_type_supporting_local_open: LPAREN . MODULE ext list(attribute) module_type RPAREN
+  { "Expected type or `module` after `(`" }
+
+| /class_self_type: LPAREN . core_type RPAREN
+  { "Expected type after `(`" }
+
+| [_* /delimited_type_supporting_local_open: LPAREN MODULE ext list(attribute) . module_type RPAREN]
+  { "Expected module type after `module` in parenthesized type" }
+
+| [_* /type_parameters: LPAREN reversed_separated_nonempty_llist(COMMA,type_parameter) . RPAREN]
+  { "Expected closing `)` in type parameters" }
+
+| /type_kind: EQUAL . nonempty_type_kind
+  { "Expected type definition after `=`" }
+
+| /nonempty_type_kind: PRIVATE . core_type
+  /nonempty_type_kind: PRIVATE . constructor_declarations
+  /nonempty_type_kind: PRIVATE . DOTDOT
+  /nonempty_type_kind: PRIVATE . LBRACE label_declarations RBRACE
+  { "Expected type after `private`" }
+
+| /function_type: LIDENT COLON . tuple_type MINUSGREATER function_type
+  /function_type: LIDENT COLON . atomic_type _*
+  { "Expected type after `:` in function type" }
+
+| /object_type: LESS . meth_list GREATER
+  /object_type: LESS . GREATER
+  { "Expected method list or `>` after `<`" }
+
+| /meth_list: LIDENT COLON . possibly_poly(core_type_no_attr) _*
+| /method_: list(attribute) private_flag LIDENT COLON . possibly_poly(core_type) EQUAL seq_expr
+  /method_: list(attribute) private_flag LIDENT COLON . TYPE nonempty_list(mkrhs(LIDENT)) DOT core_type EQUAL seq_expr
+| /method_: BANG list(attribute) private_flag LIDENT COLON . possibly_poly(core_type) EQUAL seq_expr
+  /method_: BANG list(attribute) private_flag LIDENT COLON . TYPE nonempty_list(mkrhs(LIDENT)) DOT core_type EQUAL seq_expr
+  { "Expected type after `:` in method" }
+
+| /extension: LBRACKETPERCENT . attr_id payload RBRACKET
+  { "Expected extension name after `[%`" }
+
+| [_* /generic_type_declaration(nonrec_flag,type_kind): TYPE ext list(attribute) NONREC type_parameters . LIDENT type_kind reversed_llist(preceded(CONSTRAINT,constrain)) list(post_item_attribute)
+      /structure_item: TYPE ext list(attribute) NONREC type_parameters . type_longident PLUSEQ private_flag reversed_bar_llist(extension_constructor) list(post_item_attribute)]
+  { "Expected type identifier after `type nonrec`" }
+
+| /post_item_attribute: LBRACKETATAT . attr_id attr_payload RBRACKET
+  { "Expected attribute name after `[@@`" }
+
+| [_* /fun_expr: TRY ext list(attribute) . seq_expr WITH reversed_preceded_or_separated_nonempty_llist(BAR,match_case)]
+  { "Expected expression after `try`" }
+
+| /reversed_labeled_tuple_body: TILDE . LIDENT _*
+  /reversed_labeled_tuple_body: TILDE . LPAREN _*
+| /labeled_simple_pattern: TILDE . LPAREN label_let_pattern RPAREN
+  /labeled_simple_pattern: TILDE . LIDENT
+  { "Expected parameter name or `(` after `~`" }
+
+| /labeled_simple_expr: TILDE LPAREN . LIDENT type_constraint RPAREN
+| /reversed_labeled_tuple_body: TILDE LPAREN . LIDENT _*
+| /labeled_tuple_pat_element_list(pattern): TILDE LPAREN . LIDENT _*
+  /reversed_labeled_tuple_pattern(pattern): TILDE LPAREN . LIDENT COLON core_type RPAREN COMMA DOTDOT
+| /labeled_tuple_pat_element_list(pattern_no_exn): TILDE LPAREN . LIDENT _*
+  /reversed_labeled_tuple_pattern(pattern_no_exn): TILDE LPAREN . LIDENT COLON core_type RPAREN COMMA DOTDOT
+  { "Expected parameter name after `~(`" }
+
+| /reversed_labeled_tuple_body: TILDE LPAREN LIDENT . type_constraint _*
+| /labeled_simple_expr: TILDE LPAREN LIDENT . type_constraint RPAREN
+| /reversed_labeled_tuple_body: LABEL simple_expr COMMA TILDE LPAREN LIDENT . type_constraint RPAREN
+  /reversed_labeled_tuple_body: TILDE LPAREN LIDENT . type_constraint _*
+  { "Expected type constraint (e.g. `: int`) after parameter name" }
+
+| /type_constraint: COLONGREATER . core_type
+| /type_constraint: COLON core_type COLONGREATER . core_type
+  { "Expected type after `:>`" }
+
+| [_* /delimited_type_supporting_local_open: LBRACKETLESS option(BAR) . reversed_separated_nonempty_llist(BAR,row_field) _*]
+  { "Expected row field after `[<` or `|`" }
+
+| [_* /delimited_type_supporting_local_open: LBRACKETGREATER option(BAR) . reversed_separated_nonempty_llist(BAR,row_field) RBRACKET]
+  { "Expected row field after `[>` or `|`" }
+
+| /atomic_type: HASH . clty_longident
+| /atomic_type: atomic_type HASH . clty_longident
+  { "Expected class type after `#`" }
+
+| /mod_ext_longident: mod_ext_longident LPAREN . mod_ext_longident RPAREN
+  { "Expected module expression after `(`" }
+
+| [_* /mk_longident(mod_ext_longident,UIDENT): mod_ext_longident . DOT UIDENT
+      /mod_ext_longident: mod_ext_longident LPAREN mod_ext_longident . RPAREN]
+| [_* /paren_module_expr: LPAREN module_expr . COLON module_type RPAREN
+      /paren_module_expr: LPAREN module_expr . RPAREN]
+| [_* /simple_expr: LPAREN MODULE ext list(attribute) module_expr . RPAREN
+      /simple_expr: LPAREN MODULE ext list(attribute) module_expr . COLON module_type RPAREN]
+  { "Expected closing `)` after module expression" }
+
+| /delimited_type_supporting_local_open: LBRACKET BAR . reversed_separated_nonempty_llist(BAR,row_field) RBRACKET
+| /reversed_separated_nonempty_llist(BAR,row_field): reversed_separated_nonempty_llist(BAR,row_field) BAR . row_field
+| /delimited_type_supporting_local_open: LBRACKET row_field BAR . reversed_separated_nonempty_llist(BAR,row_field) RBRACKET
+  { "Expected row field after `|`" }
+
+| /name_tag: BACKQUOTE . ident
+  { "Expected identifier after `` ` ``" }
+
+| /function_type: tuple_type MINUSGREATER . function_type
+| /function_type: optlabel tuple_type MINUSGREATER . function_type
+| /generalized_constructor_arguments: COLON reversed_nonempty_llist(typevar) DOT constructor_arguments MINUSGREATER . atomic_type
+| /generalized_constructor_arguments: COLON constructor_arguments MINUSGREATER . atomic_type
+| /function_type: LIDENT COLON tuple_type MINUSGREATER . function_type
+| /function_type: LIDENT COLON atomic_type STAR reversed_separated_nonempty_llist(STAR,labeled_tuple_typ_element) MINUSGREATER . function_type
+  { "Expected type after `->`" }
+
+| [_* /function_type: optlabel . tuple_type MINUSGREATER function_type]
+  { "Expected parameter type after optional label" }
+
+| [_* /function_type: optlabel tuple_type . MINUSGREATER function_type]
+  { "Expected `->` after parameter" }
+
+(*| /atomic_type: mod_ext_longident DOT . delimited_type_supporting_local_open
+  /mk_longident(mod_ext_longident,LIDENT): mod_ext_longident DOT . LIDENT
+  /mk_longident(mod_ext_longident,UIDENT): mod_ext_longident DOT . UIDENT
+  { "Expected identifier or type after `.`" }*)
+
+| /tuple_type: atomic_type STAR . reversed_separated_nonempty_llist(STAR,labeled_tuple_typ_element)
+| /reversed_separated_nonempty_llist(STAR,labeled_tuple_typ_element): reversed_separated_nonempty_llist(STAR,labeled_tuple_typ_element) STAR . atomic_type
+  /reversed_separated_nonempty_llist(STAR,labeled_tuple_typ_element): reversed_separated_nonempty_llist(STAR,labeled_tuple_typ_element) STAR . LIDENT COLON atomic_type
+| /function_type: LIDENT COLON atomic_type STAR . reversed_separated_nonempty_llist(STAR,labeled_tuple_typ_element) _*
+  /tuple_type: atomic_type STAR . reversed_separated_nonempty_llist(STAR,labeled_tuple_typ_element)
+  { "Expected tuple element after `*`" }
+
+| /reversed_separated_nonempty_llist(STAR,labeled_tuple_typ_element): LIDENT COLON . atomic_type
+| /reversed_separated_nonempty_llist(STAR,labeled_tuple_typ_element): reversed_separated_nonempty_llist(STAR,labeled_tuple_typ_element) STAR LIDENT COLON . atomic_type
+  { "Expected type after `:` in labeled tuple element" }
+
+| /alias_type: alias_type AS . QUOTE ident
+  { "Expected type variable after `as`" }
+
+| [_* /delimited_type_supporting_local_open: LBRACKET BAR reversed_separated_nonempty_llist(BAR,row_field) . RBRACKET]
+  { "Expected closing `]` after row type" }
+
+| [_* /tag_field: name_tag OF opt_ampersand . reversed_separated_nonempty_llist(AMPERSAND,core_type_no_attr) list(attribute)]
+  { "Expected type after `of` in variant tag" }
+
+| /reversed_separated_nonempty_llist(AMPERSAND,core_type_no_attr): reversed_separated_nonempty_llist(AMPERSAND,core_type_no_attr) AMPERSAND . alias_type
+  { "Expected type after `&` in constrained type" }
+
+| [_* /delimited_type_supporting_local_open: LBRACKET row_field . BAR reversed_separated_nonempty_llist(BAR,row_field) RBRACKET]
+  { "Expected `|` or closing `]` after row field" }
+
+| [_* /delimited_type_supporting_local_open: LBRACKET row_field BAR reversed_separated_nonempty_llist(BAR,row_field) . RBRACKET]
+  { "Expected `]` to close the row type" }
+
+| [_* /delimited_type_supporting_local_open: LBRACKETGREATER option(BAR) reversed_separated_nonempty_llist(BAR,row_field) . RBRACKET]
+  { "Expected closing `]` after object row type" }
+
+| [_* /delimited_type_supporting_local_open: LBRACKETLESS option(BAR) reversed_separated_nonempty_llist(BAR,row_field) . RBRACKET
+      /delimited_type_supporting_local_open: LBRACKETLESS option(BAR) reversed_separated_nonempty_llist(BAR,row_field) . GREATER reversed_nonempty_llist(name_tag) RBRACKET]
+  { "Expected closing `]` or `>` after object row type" }
+
+| /delimited_type_supporting_local_open: LBRACKETLESS option(BAR) reversed_separated_nonempty_llist(BAR,row_field) GREATER . reversed_nonempty_llist(name_tag) RBRACKET
+  { "Expected name tag after `>`" }
+
+| [_* /delimited_type_supporting_local_open: LBRACKETLESS option(BAR) reversed_separated_nonempty_llist(BAR,row_field) GREATER reversed_nonempty_llist(name_tag) . RBRACKET]
+  { "Expected closing `]` after object type with name tags" }
+
+| /let_binding_body_no_punning: val_ident COLON . reversed_nonempty_llist(typevar) DOT core_type EQUAL seq_expr
+  /let_binding_body_no_punning: val_ident COLON . TYPE nonempty_list(mkrhs(LIDENT)) DOT core_type EQUAL seq_expr
+  /type_constraint: COLON . core_type _*
+  { "Expected type annotation after `:` in let binding" }
+
+| /type_constraint: COLON . core_type _*
+| /option(preceded(COLON,core_type)): COLON . core_type
+| /option(preceded(COLON,atomic_type)): COLON . atomic_type
+  { "Expected type after `:`" }
+
+| [_* /reversed_labeled_tuple_body: TILDE LPAREN LIDENT type_constraint . RPAREN _*]
+| [_* /labeled_simple_pattern: TILDE LPAREN label_let_pattern . RPAREN]
+  { "Expected closing `)` after labeled parameter" }
+
+| /reversed_labeled_tuple_body: TILDE LPAREN LIDENT type_constraint RPAREN . COMMA _*
+  { "Expected `,` or closing `)` after labeled parameter" }
+
+| /reversed_labeled_tuple_body: _* COMMA . fun_expr
+  /reversed_labeled_tuple_body: _* COMMA . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  /reversed_labeled_tuple_body: _* COMMA . LABEL simple_expr
+  /reversed_labeled_tuple_body: _* COMMA . TILDE _*
+  { "Expected another labeled element or an expression after `,` in labeled tuple" }
+
+| /simple_expr: PREFIXOP . simple_expr
+  { "Expected expression after prefix operator" }
+
+| /class_self_pattern: LPAREN . pattern _*
+  { "Expected pattern after `(`" }
+
+| /reversed_labeled_tuple_pattern(pattern): TILDE . LIDENT COMMA DOTDOT
+  /reversed_labeled_tuple_pattern(pattern): TILDE . LPAREN LIDENT COLON core_type RPAREN COMMA DOTDOT
+| /reversed_labeled_tuple_pattern(pattern_no_exn): TILDE . LIDENT COMMA DOTDOT
+  /reversed_labeled_tuple_pattern(pattern_no_exn): TILDE . LPAREN LIDENT COLON core_type RPAREN COMMA DOTDOT
+  { "Expected labeled pattern after `~`" }
+
+| /labeled_tuple_pat_element_list(pattern): TILDE LPAREN LIDENT . COLON _*
+  /reversed_labeled_tuple_pattern(pattern): TILDE LPAREN LIDENT . COLON core_type RPAREN COMMA DOTDOT
+| /labeled_tuple_pat_element_list(pattern_no_exn): TILDE LPAREN LIDENT . COLON _*
+  /reversed_labeled_tuple_pattern(pattern_no_exn): TILDE LPAREN LIDENT . COLON core_type RPAREN COMMA DOTDOT
+  { "Expected type annotation (e.g. `: int`) after parameter name" }
+
+| /labeled_tuple_pat_element_list(pattern): TILDE LPAREN LIDENT COLON . core_type _*
+  /reversed_labeled_tuple_pattern(pattern): TILDE LPAREN LIDENT COLON . core_type RPAREN COMMA DOTDOT
+| /labeled_tuple_pat_element_list(pattern_no_exn): TILDE LPAREN LIDENT COLON . core_type _*
+  /reversed_labeled_tuple_pattern(pattern_no_exn): TILDE LPAREN LIDENT COLON . core_type RPAREN COMMA DOTDOT
+  { "Expected type after `:` in labeled pattern" }
+
+| [_* /labeled_tuple_pat_element_list(pattern): TILDE LPAREN LIDENT COLON core_type . RPAREN _*
+      /reversed_labeled_tuple_pattern(pattern): TILDE LPAREN LIDENT COLON core_type . RPAREN COMMA DOTDOT]
+| [_* /labeled_tuple_pat_element_list(pattern_no_exn): TILDE LPAREN LIDENT COLON core_type . RPAREN _*
+      /reversed_labeled_tuple_pattern(pattern_no_exn): TILDE LPAREN LIDENT COLON core_type . RPAREN COMMA DOTDOT]
+  { "Expected closing `)` after type constraint" }
+
+| /labeled_tuple_pat_element_list(pattern): TILDE LPAREN LIDENT COLON core_type RPAREN . COMMA _*
+  /reversed_labeled_tuple_pattern(pattern): TILDE LPAREN LIDENT COLON core_type RPAREN . COMMA DOTDOT
+| /labeled_tuple_pat_element_list(pattern_no_exn): TILDE LPAREN LIDENT COLON core_type RPAREN . COMMA _*
+  /reversed_labeled_tuple_pattern(pattern_no_exn): TILDE LPAREN LIDENT COLON core_type RPAREN . COMMA DOTDOT
+| [_* /labeled_tuple_pat_element_list(pattern): LABEL simple_pattern . COMMA _*
+      /reversed_labeled_tuple_pattern(pattern): LABEL simple_pattern . COMMA DOTDOT]
+| [_* /labeled_tuple_pat_element_list(pattern_no_exn): LABEL simple_pattern . COMMA _*
+      /reversed_labeled_tuple_pattern(pattern_no_exn): LABEL simple_pattern . COMMA DOTDOT]
+  { "Expected `,` after labeled pattern" }
+
+| /labeled_tuple_pat_element_list(pattern): _* COMMA . pattern
+  /labeled_tuple_pat_element_list(pattern): _* COMMA . LABEL simple_pattern
+  /labeled_tuple_pat_element_list(pattern): _* COMMA . TILDE _*
+  /reversed_labeled_tuple_pattern(pattern): _* COMMA . DOTDOT
+| /labeled_tuple_pat_element_list(pattern_no_exn): _* COMMA . pattern_no_exn
+  /labeled_tuple_pat_element_list(pattern_no_exn): _* COMMA . LABEL simple_pattern
+  /labeled_tuple_pat_element_list(pattern_no_exn): _* COMMA . TILDE _*
+  /reversed_labeled_tuple_pattern(pattern_no_exn): _* COMMA . DOTDOT
+  { "Expected pattern after `,` in labeled tuple pattern" }
+
+| /signed_constant: PLUS . INT
+  /signed_constant: PLUS . FLOAT
+  { "Expected number after `+`" }
+
+| /signed_constant: MINUS . INT
+  /signed_constant: MINUS . FLOAT
+  { "Expected number after `-`" }
+
+| [_* /simple_pattern_not_ident: LPAREN MODULE ext list(attribute) . module_name _*]
+  { "Expected module name after `module` in parenthesized pattern" }
+
+| [_* /simple_pattern_not_ident: LPAREN MODULE ext list(attribute) module_name . RPAREN
+      /simple_pattern_not_ident: LPAREN MODULE ext list(attribute) module_name . COLON module_type RPAREN]
+  { "Expected closing `)` after module pattern" }
+
+| /simple_pattern_not_ident: LPAREN MODULE ext list(attribute) module_name COLON . module_type RPAREN
+  { "Expected module type after `:` in parenthesized module pattern" }
+
+| /module_type: MODULE . TYPE OF list(attribute) module_expr
+  { "Expected `type` after `module` in module type" }
+
+| /module_type: MODULE TYPE . OF list(attribute) module_expr
+  { "Expected `of` after `module type`" }
+
+| [_* /module_type: MODULE TYPE OF list(attribute) . module_expr]
+  { "Expected module expression after `of`" }
+
+| [_* /open_declaration: OPEN BANG ext list(attribute) . module_expr list(post_item_attribute)]
+  { "Expected module expression after `open !`" }
+
+| /module_expr: module_expr LPAREN . RPAREN
+  /paren_module_expr: LPAREN . module_expr _*
+  /paren_module_expr: LPAREN . VAL _*
+  { "Expected module expression, `val`, or `)` after `(`" }
+
+| /paren_module_expr: LPAREN . module_expr _*
+  /paren_module_expr: LPAREN . VAL _*
+  { "Expected module expression or `val` after `(`" }
+
+| [_* /paren_module_expr: LPAREN VAL list(attribute) . fun_expr _*
+      /paren_module_expr: LPAREN VAL list(attribute) . FUNCTION _*]
+  { "Expected function or expression after `val` in parenthesized module" }
+
+| [_* /simple_expr: NEW ext list(attribute) . class_longident]
+  { "Expected class name after `new`" }
+
+| /simple_expr: METAOCAML_ESCAPE . simple_expr
+  { "Expected expression after escape operator" }
+
+| /simple_expr: METAOCAML_BRACKET_OPEN . seq_expr METAOCAML_BRACKET_CLOSE
+  { "Expected expression after bracket-open operator" }
+
+| [_* /fun_expr: MATCH ext list(attribute) . seq_expr WITH reversed_preceded_or_separated_nonempty_llist(BAR,match_case)]
+  { "Expected expression after `match`" }
+
+| /constr_extra_nonprefix_ident: LPAREN . RPAREN
+  /constr_longident: LPAREN . COLONCOLON RPAREN
+  /simple_expr: LPAREN . seq_expr _*
+  /simple_expr: LPAREN . MODULE _*
+  /val_extra_ident: LPAREN . operator RPAREN
+  { "Expected expression, `module`, `)`, or `::)` after `(`" }
+
+| /constr_longident: mod_longident DOT LPAREN . COLONCOLON RPAREN
+  /simple_expr: mod_longident DOT LPAREN . seq_expr RPAREN
+  /simple_expr: mod_longident DOT LPAREN . RPAREN
+  /simple_expr: mod_longident DOT LPAREN . MODULE ext list(attribute) module_expr COLON module_type RPAREN
+  /val_extra_ident: LPAREN . operator RPAREN
+  { "Expected expression, `module`, operator, `)`, or `::)` after `(`" }
+
+| /simple_expr: LBRACKETBAR . separated_or_terminated_nonempty_list(SEMI,expr) BARRBRACKET
+  /simple_expr: LBRACKETBAR . BARRBRACKET
+| /simple_expr: mod_longident DOT LBRACKETBAR . separated_or_terminated_nonempty_list(SEMI,expr) BARRBRACKET
+  /simple_expr: mod_longident DOT LBRACKETBAR . BARRBRACKET
+  { "Expected expression list or `|]` after `[|`" }
+
+| /fun_expr: _* LESSMINUS . fun_expr
+  /fun_expr: _* LESSMINUS . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  { "Expected expression after `<-`" }
+
+| /fun_expr: LETOP . letop_bindings IN seq_expr
+  { "Expected let-bindings after `let<op>`" }
+
+| /simple_delimited_pattern: LBRACKETBAR . separated_or_terminated_nonempty_list(SEMI,pattern) BARRBRACKET
+  /simple_delimited_pattern: LBRACKETBAR . BARRBRACKET
+  { "Expected pattern list or `|]` after `[|`" }
+
+| /constr_extra_nonprefix_ident: LBRACKET . RBRACKET
+  /simple_delimited_pattern: LBRACKET . separated_or_terminated_nonempty_list(SEMI,pattern) RBRACKET
+| /simple_delimited_pattern: LBRACKET . separated_or_terminated_nonempty_list(SEMI,pattern) RBRACKET
+  /simple_pattern_not_ident: mod_longident DOT LBRACKET . RBRACKET
+  { "Expected pattern list or `]` after `[`" }
+
+| /simple_delimited_pattern: LBRACE . listx(SEMI,record_pat_field,UNDERSCORE) RBRACE
+  { "Expected record pattern after `{`" }
+
+| [_* /simple_delimited_pattern: LBRACE listx(SEMI,record_pat_field,UNDERSCORE) . RBRACE]
+  { "Expected closing `}` after record pattern" }
+
+| /option(preceded(EQUAL,pattern)): EQUAL . pattern
+  { "Expected pattern after `=` in record pattern" }
+
+| [_* /pattern_gen: LAZY ext list(attribute) . simple_pattern]
+  { "Expected pattern after `lazy`" }
+
+| /simple_pattern_not_ident: HASH . type_longident
+  { "Expected type path after `#` in pattern" }
+
+| /simple_pattern_not_ident: signed_constant DOTDOT . signed_constant
+  { "Expected another constant after `..` in pattern" }
+
+| /constr_longident: mod_longident DOT . LPAREN COLONCOLON RPAREN
+  /mk_longident(mod_longident,UIDENT): mod_longident DOT . UIDENT
+  /simple_pattern_not_ident: mod_longident DOT . simple_delimited_pattern
+  /simple_pattern_not_ident: mod_longident DOT . LBRACKET RBRACKET
+  /simple_pattern_not_ident: mod_longident DOT . LPAREN _*
+  { "Expected identifier, pattern, `(`, or `[` after `.`" }
+
+| /constr_longident: mod_longident DOT LPAREN . COLONCOLON RPAREN
+  /simple_pattern_not_ident: mod_longident DOT LPAREN . RPAREN
+  /simple_pattern_not_ident: mod_longident DOT LPAREN . pattern RPAREN
+  { "Expected pattern, `)`, or `::)` after `(`" }
+
+| /labeled_tuple_pat_element_list(pattern): LABEL . simple_pattern _*
+  /reversed_labeled_tuple_pattern(pattern): LABEL . simple_pattern COMMA DOTDOT
+| /labeled_tuple_pat_element_list(pattern_no_exn): LABEL . simple_pattern _*
+  /reversed_labeled_tuple_pattern(pattern_no_exn): LABEL . simple_pattern COMMA DOTDOT
+  { "Expected pattern after label" }
+
+| [_* /pattern: EXCEPTION ext list(attribute) . pattern]
+  { "Expected pattern after `exception`" }
+
+| /pattern: EFFECT . pattern_gen COMMA simple_pattern
+  { "Expected pattern after `effect`" }
+
+| [_* /pattern: EFFECT pattern_gen . COMMA simple_pattern]
+  { "Expected `,` after pattern in effect pattern" }
+
+| /pattern: EFFECT pattern_gen COMMA . simple_pattern
+  { "Expected simple pattern after `,` in effect pattern" }
+
+| /pattern: pattern COLONCOLON . pattern
+  { "Expected a pattern after `::`" }
+
+| /pattern: pattern BAR . pattern
+  { "Expected a pattern after `|`" }
+
+| /pattern: pattern AS . val_ident
+  { "Expected a variable name after `as`" }
+
+| /constr_extra_nonprefix_ident: LPAREN . RPAREN
+  /constr_longident: LPAREN . COLONCOLON RPAREN
+  /pattern_gen: constr_longident LPAREN . TYPE nonempty_list(mkrhs(LIDENT)) RPAREN simple_pattern
+  /simple_pattern_not_ident: LPAREN . pattern RPAREN
+  /simple_pattern_not_ident: LPAREN . MODULE _*
+  /simple_pattern_not_ident: LPAREN . pattern COLON core_type RPAREN
+  /val_extra_ident: LPAREN . operator RPAREN
+  { "Expected pattern, module, type, or operator after `(`" }
+
+| /pattern_gen: constr_longident LPAREN TYPE . nonempty_list(mkrhs(LIDENT)) RPAREN simple_pattern
+  { "Expected type parameter after `type` in constructor pattern" }
+
+| [_* /pattern_gen: constr_longident LPAREN TYPE nonempty_list(mkrhs(LIDENT)) . RPAREN simple_pattern]
+  { "Expected closing `)` after type parameters in constructor pattern" }
+
+| /pattern_gen: constr_longident LPAREN TYPE nonempty_list(mkrhs(LIDENT)) RPAREN . simple_pattern
+  { "Expected pattern after constructor in constructor pattern" }
+
+| /constr_longident: LPAREN COLONCOLON . RPAREN
+| /constr_longident: mod_longident DOT LPAREN COLONCOLON . RPAREN
+  { "Expected closing `)` after `::` in constructor" }
+
+| [_* /labeled_tuple_pat_element_list(pattern): pattern . COMMA _*
+      /reversed_labeled_tuple_pattern(pattern): pattern . COMMA DOTDOT
+      /simple_pattern_not_ident: LPAREN pattern . RPAREN
+      /simple_pattern_not_ident: LPAREN pattern . COLON core_type RPAREN]
+  { "Expected closing `)`, `:`, or `,` after pattern" }
+
+| /simple_pattern_not_ident: LPAREN pattern COLON . core_type RPAREN
+  { "Expected type after `:` in parenthesized pattern" }
+
+| [_* /simple_pattern_not_ident: LPAREN pattern COLON core_type . RPAREN]
+| [_* /labeled_tuple_pat_element_list(pattern): pattern . COMMA _*
+      /reversed_labeled_tuple_pattern(pattern): pattern . COMMA DOTDOT
+      /simple_pattern_not_ident: mod_longident DOT LPAREN pattern . RPAREN]
+  { "Expected closing `)` after parenthesized pattern" }
+
+| [_* /simple_delimited_pattern: LBRACKET separated_or_terminated_nonempty_list(SEMI,pattern) . RBRACKET]
+  { "Expected closing `]` after pattern list" }
+
+| [_* /simple_delimited_pattern: LBRACKETBAR separated_or_terminated_nonempty_list(SEMI,pattern) . BARRBRACKET]
+  { "Expected closing `|]` after pattern list" }
+
+| /pattern_no_exn: pattern_no_exn COLONCOLON . pattern
+  { "Expected pattern after `::`" }
+
+| /pattern_no_exn: pattern_no_exn BAR . pattern
+| /reversed_preceded_or_separated_nonempty_llist(BAR,match_case): BAR . match_case
+| /reversed_preceded_or_separated_nonempty_llist(BAR,match_case): reversed_preceded_or_separated_nonempty_llist(BAR,match_case) BAR . match_case
+  { "Expected pattern after `|`" }
+
+| /pattern_no_exn: pattern_no_exn AS . val_ident
+| /option(preceded(AS,mkrhs(LIDENT))): AS . LIDENT
+  { "Expected identifier after `as`" }
+
+| /labeled_tuple_pat_element_list(pattern_no_exn): TILDE LIDENT . COMMA _*
+  /reversed_labeled_tuple_pattern(pattern_no_exn): TILDE LIDENT . COMMA DOTDOT
+  { "Expected `,` or closing `)` after labeled pattern" }
+
+| /labeled_simple_pattern: TILDE LPAREN . label_let_pattern RPAREN
+  { "Expected labeled parameter after `~(`" }
+
+| /label_let_pattern: LIDENT COLON . core_type
+  { "Expected type after `:` in labeled parameter" }
+
+| /labeled_simple_pattern: QUESTION . LPAREN label_let_pattern option(preceded(EQUAL,seq_expr)) RPAREN
+  /labeled_simple_pattern: QUESTION . LIDENT
+| /labeled_simple_pattern: OPTLABEL . LPAREN let_pattern option(preceded(EQUAL,seq_expr)) RPAREN
+  /labeled_simple_pattern: OPTLABEL . pattern_var
+  { "Expected labeled parameter after `?`" }
+
+| /labeled_simple_pattern: QUESTION LPAREN . label_let_pattern option(preceded(EQUAL,seq_expr)) RPAREN
+  { "Expected labeled parameter after `?(`" }
+
+| /option(preceded(EQUAL,seq_expr)): EQUAL . seq_expr
+  { "Expected expression after `=` in optional labeled parameter" }
+
+| [_* /fun_expr: LET OPEN BANG ext list(attribute) . module_expr IN seq_expr]
+  { "Expected module expression after `let open !`" }
+
+| [_* /module_expr: FUNCTOR list(attribute) . reversed_nonempty_llist(functor_arg) MINUSGREATER module_expr]
+  { "Expected argument after `functor`" }
+
+| [_* /functor_arg: LPAREN module_name . COLON module_type RPAREN]
+  { "Expected `:` after module name in functor argument" }
+
+| /functor_arg: LPAREN module_name COLON . module_type RPAREN
+  { "Expected module type after `:` in functor argument" }
+
+| /functor_arg: LPAREN . RPAREN
+  /functor_arg: LPAREN . module_name COLON module_type RPAREN
+  /module_type: LPAREN . module_type RPAREN
+  { "Expected module name, module type, or `)` after `(`" }
+
+| /functor_arg: LPAREN . RPAREN
+  /functor_arg: LPAREN . module_name COLON module_type RPAREN
+  { "Expected module name or `)` after `(` in functor argument" }
+
+| [_* /module_type: FUNCTOR list(attribute) . reversed_nonempty_llist(functor_arg) MINUSGREATER module_type]
+  { "Expected argument after `functor` in module type" }
+
+| /module_type: FUNCTOR list(attribute) reversed_nonempty_llist(functor_arg) MINUSGREATER . module_type
+| /module_type: reversed_nonempty_llist(functor_arg) MINUSGREATER . module_type
+| /module_type: module_type MINUSGREATER . module_type
+  { "Expected module type after `->`" }
+
+| /module_type: module_type WITH . reversed_separated_nonempty_llist(AND,with_constraint)
+  { "Expected constraint after `with`" }
+
+| [_* /with_constraint: TYPE type_parameters . label_longident _*]
+  { "Expected type identifier after `type` in constraint" }
+
+| [_* /with_constraint: TYPE type_parameters label_longident . with_type_binder alias_type reversed_llist(preceded(CONSTRAINT,constrain))
+      /with_constraint: TYPE type_parameters label_longident . COLONEQUAL alias_type]
+  { "Expected type binding after type identifier in constraint" }
+
+| /with_constraint: TYPE type_parameters label_longident COLONEQUAL . alias_type
+| [_* /with_constraint: TYPE type_parameters label_longident with_type_binder . alias_type reversed_llist(preceded(CONSTRAINT,constrain))]
+  { "Expected type after `=` in `with type` constraint" }
+
+| /reversed_llist(preceded(CONSTRAINT,constrain)): reversed_llist(preceded(CONSTRAINT,constrain)) CONSTRAINT . core_type EQUAL core_type
+| [_* /class_sig_field: CONSTRAINT list(attribute) . constrain_field list(post_item_attribute)]
+  { "Expected type after `constraint`" }
+
+| [_* /reversed_llist(preceded(CONSTRAINT,constrain)): reversed_llist(preceded(CONSTRAINT,constrain)) CONSTRAINT core_type . EQUAL core_type]
+  { "Expected `=` after type in constraint" }
+
+| /reversed_llist(preceded(CONSTRAINT,constrain)): reversed_llist(preceded(CONSTRAINT,constrain)) CONSTRAINT core_type EQUAL . core_type
+  { "Expected type after `=` in constraint" }
+
+| /with_constraint: MODULE . mod_longident _*
+  /with_constraint: MODULE . TYPE _*
+  { "Expected module or `type` after `module` in constraint" }
+
+| /with_constraint: MODULE TYPE . mty_longident _*
+  { "Expected module type identifier after `module type` in constraint" }
+
+| [_* /with_constraint: MODULE TYPE mty_longident . EQUAL module_type
+      /with_constraint: MODULE TYPE mty_longident . COLONEQUAL module_type]
+  { "Expected module type binding after module type identifier in constraint" }
+
+| /with_constraint: MODULE TYPE mty_longident EQUAL . module_type
+  { "Expected module type after `=` in module constraint" }
+
+| /with_constraint: MODULE TYPE mty_longident COLONEQUAL . module_type
+  { "Expected module type after `:=` in module constraint" }
+
+| [_* /mk_longident(mod_longident,UIDENT): mod_longident . DOT UIDENT
+      /with_constraint: MODULE mod_longident . EQUAL mod_ext_longident
+      /with_constraint: MODULE mod_longident . COLONEQUAL mod_ext_longident]
+  { "Expected module expression or module type after module identifier in constraint" }
+
+| /with_constraint: MODULE mod_longident EQUAL . mod_ext_longident
+  { "Expected module expression after `=` in module constraint" }
+
+| /with_constraint: MODULE mod_longident COLONEQUAL . mod_ext_longident
+  { "Expected module expression after `:=` in module constraint" }
+
+| /reversed_separated_nonempty_llist(AND,with_constraint): reversed_separated_nonempty_llist(AND,with_constraint) AND . with_constraint
+  { "Expected constraint after `and`" }
+
+| [_* /module_type: LPAREN module_type . RPAREN]
+| [_* /simple_pattern_not_ident: LPAREN MODULE ext list(attribute) module_name COLON module_type . RPAREN]
+| [_* /delimited_type_supporting_local_open: LPAREN MODULE ext list(attribute) module_type . RPAREN]
+  { "Expected closing `)` after module type" }
+
+| [_* /functor_arg: LPAREN module_name COLON module_type . RPAREN]
+  { "Expected closing `)` after functor argument" }
+
+| /module_expr: FUNCTOR list(attribute) reversed_nonempty_llist(functor_arg) MINUSGREATER . module_expr
+  { "Expected module expression after `->`" }
+
+| /paren_module_expr: LPAREN module_expr COLON . module_type RPAREN
+  { "Expected module type after `:` in parenthesized module" }
+
+| [_* /paren_module_expr: LPAREN module_expr COLON module_type . RPAREN]
+| [_* /simple_expr: LPAREN MODULE ext list(attribute) module_expr COLON module_type . RPAREN]
+  { "Expected closing `)` after parenthesized module with type annotation" }
+
+(*| [_* /fun_expr: LET OPEN BANG ext list(attribute) module_expr . IN seq_expr]
+| [_* /fun_expr: LET OPEN ext list(attribute) module_expr . IN seq_expr]
+  { "Expected `in` after module expression" }*)
+
+| /fun_expr: LET OPEN BANG ext list(attribute) module_expr IN . seq_expr
+| /fun_expr: let_bindings(ext) IN . seq_expr
+| /fun_expr: LETOP letop_bindings IN . seq_expr
+| /fun_expr: LET OPEN ext list(attribute) module_expr IN . seq_expr
+| /fun_expr: LET MODULE ext list(attribute) module_name module_binding_body IN . seq_expr
+| /fun_expr: LET EXCEPTION ext list(attribute) constr_ident generalized_constructor_arguments list(attribute) IN . seq_expr
+  { "Expected expression after `in`" }
+
+| /constr_extra_nonprefix_ident: LBRACKET . RBRACKET
+  /simple_expr: LBRACKET . separated_or_terminated_nonempty_list(SEMI,expr) RBRACKET
+| /simple_expr: mod_longident DOT LBRACKET . separated_or_terminated_nonempty_list(SEMI,expr) RBRACKET
+  /simple_expr: mod_longident DOT LBRACKET . RBRACKET
+  { "Expected expression list or `]` after `[`" }
+
+| /simple_expr: LBRACELESS . separated_or_terminated_nonempty_list(SEMI,object_expr_field) GREATERRBRACE
+  /simple_expr: LBRACELESS . GREATERRBRACE
+  { "Expected object field or `>}` after `{<`" }
+
+| /option(preceded(EQUAL,expr)): EQUAL . fun_expr
+  /option(preceded(EQUAL,expr)): EQUAL . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  { "Expected expression after `=` in record expression" }
+
+| /simple_expr: LBRACE . record_expr_content RBRACE
+| /simple_expr: mod_longident DOT LBRACE . record_expr_content RBRACE
+  { "Expected record content after `{`" }
+
+| [_* /simple_expr: BEGIN ext list(attribute) . seq_expr END
+      /simple_expr: BEGIN ext list(attribute) . END]
+  { "Expected expression after `begin`" }
+
+| [_* /fun_expr: LAZY ext list(attribute) . simple_expr]
+  { "Expected expression after `lazy`" }
+
+| /simple_expr: BANG . simple_expr
+  { "Expected expression after `!`" }
+
+| /simple_expr: simple_expr HASHOP . simple_expr
+  { "Expected expression after `#<op>` operator" }
+
+| /simple_expr: simple_expr HASH . LIDENT
+| /toplevel_directive: HASH . ident _*
+  { "Expected identifier after `#`" }
+
+| /simple_expr: _* DOTOP . LPAREN separated_or_terminated_nonempty_list(SEMI,expr) RPAREN
+  /simple_expr: _* DOTOP . LBRACE separated_or_terminated_nonempty_list(SEMI,expr) RBRACE
+  /simple_expr: _* DOTOP . LBRACKET separated_or_terminated_nonempty_list(SEMI,expr) RBRACKET
+  { "Expected `(`, `{`, or `[` after `.<op>` operator" }
+
+| /simple_expr: simple_expr DOTOP LPAREN . separated_or_terminated_nonempty_list(SEMI,expr) RPAREN
+| /simple_expr: simple_expr DOT mod_longident DOTOP LPAREN . separated_or_terminated_nonempty_list(SEMI,expr) RPAREN
+| /fun_expr: simple_expr DOTOP LPAREN . separated_or_terminated_nonempty_list(SEMI,expr) _*
+  /simple_expr: simple_expr DOTOP LPAREN . separated_or_terminated_nonempty_list(SEMI,expr) RPAREN
+| /fun_expr: simple_expr DOT mod_longident DOTOP LPAREN . separated_or_terminated_nonempty_list(SEMI,expr) _*
+  /simple_expr: simple_expr DOT mod_longident DOTOP LPAREN . separated_or_terminated_nonempty_list(SEMI,expr) RPAREN
+  { "Expected expression list after `.<op>(`" }
+
+| /reversed_labeled_tuple_body: _* LABEL . simple_expr _*
+  { "Expected expression after label in labeled tuple" }
+
+| [_* /reversed_labeled_tuple_body: LABEL simple_expr . COMMA _*]
+  { "Expected `,` after expression in labeled tuple" }
+
+| /simple_expr: simple_expr DOT . LPAREN seq_expr RPAREN
+  /simple_expr: simple_expr DOT . LBRACE seq_expr RBRACE
+  /simple_expr: simple_expr DOT . LBRACKET seq_expr RBRACKET
+  /simple_expr: simple_expr DOT . mod_longident _*
+  /simple_expr: simple_expr DOT . label_longident
+| /constr_longident: mod_longident DOT . LPAREN COLONCOLON RPAREN
+  /mk_longident(mod_longident,UIDENT): mod_longident DOT . UIDENT
+  /mk_longident(mod_longident,val_ident): mod_longident DOT . val_ident
+  /simple_expr: mod_longident DOT . LPAREN seq_expr RPAREN
+  /simple_expr: mod_longident DOT . LBRACELESS separated_or_terminated_nonempty_list(SEMI,object_expr_field) GREATERRBRACE
+  /simple_expr: mod_longident DOT . LPAREN RPAREN
+  /simple_expr: mod_longident DOT . LBRACE record_expr_content RBRACE
+  /simple_expr: mod_longident DOT . LBRACKETBAR _*
+  /simple_expr: mod_longident DOT . LBRACKET _*
+  /simple_expr: mod_longident DOT . LPAREN MODULE ext list(attribute) module_expr COLON module_type RPAREN
+| /constr_longident: mod_longident DOT . LPAREN COLONCOLON RPAREN
+  /mk_longident(mod_longident,LIDENT): mod_longident DOT . LIDENT
+  /mk_longident(mod_longident,UIDENT): mod_longident DOT . UIDENT
+  /mk_longident(mod_longident,val_ident): mod_longident DOT . val_ident
+  /simple_expr: mod_longident DOT . LPAREN seq_expr RPAREN
+  /simple_expr: mod_longident DOT . LBRACELESS separated_or_terminated_nonempty_list(SEMI,object_expr_field) GREATERRBRACE
+  /simple_expr: mod_longident DOT . LPAREN RPAREN
+  /simple_expr: mod_longident DOT . LBRACE record_expr_content RBRACE
+  /simple_expr: mod_longident DOT . LBRACKETBAR _*
+  /simple_expr: mod_longident DOT . LBRACKET _*
+  /simple_expr: mod_longident DOT . LPAREN MODULE ext list(attribute) module_expr COLON module_type RPAREN
+  { "Expected identifier, `(`, `{`, or `[` after `.`" }
+
+| /simple_expr: simple_expr DOT LPAREN . seq_expr RPAREN
+| /fun_expr: simple_expr DOT LPAREN . seq_expr _*
+  /simple_expr: simple_expr DOT LPAREN . seq_expr RPAREN
+  { "Expected expression after `(`" }
+
+| [_* /fun_expr: IF ext list(attribute) . seq_expr _*]
+  { "Expected expression after `if`" }
+
+| [_* /fun_body: _* FUNCTION ext list(attribute) . reversed_preceded_or_separated_nonempty_llist(BAR,match_case)]
+| [_* /reversed_labeled_tuple_body: _* FUNCTION ext list(attribute) . reversed_preceded_or_separated_nonempty_llist(BAR,match_case) _*]
+  { "Expected pattern after `function`" }
+
+| [_* /labeled_tuple_pat_element_list(pattern): pattern . COMMA _*
+      /match_case: pattern . MINUSGREATER seq_expr
+      /match_case: pattern . WHEN seq_expr MINUSGREATER seq_expr
+      /match_case: pattern . MINUSGREATER DOT
+      /reversed_labeled_tuple_pattern(pattern): pattern . COMMA DOTDOT]
+  { "Expected closing `->`, `when`, or `,` after pattern" }
+
+| /match_case: pattern WHEN . seq_expr MINUSGREATER seq_expr
+| /payload: QUESTION pattern WHEN . seq_expr
+  { "Expected guard expression after `when`" }
+
+| [_* /fun_expr: FUN ext list(attribute) . fun_params option(preceded(COLON,atomic_type)) MINUSGREATER fun_body]
+| [_* /class_expr: FUN list(attribute) . class_fun_def]
+  { "Expected parameter after `fun`" }
+
+| /labeled_simple_pattern: OPTLABEL LPAREN . let_pattern option(preceded(EQUAL,seq_expr)) RPAREN
+  { "Expected parameter after `?(`" }
+
+| /let_pattern: pattern COLON . core_type
+  { "Expected type after `:` in let pattern" }
+
+| [_* /labeled_simple_pattern: OPTLABEL LPAREN let_pattern option(preceded(EQUAL,seq_expr)) . RPAREN]
+| [_* /labeled_simple_pattern: QUESTION LPAREN label_let_pattern option(preceded(EQUAL,seq_expr)) . RPAREN]
+  { "Expected closing `)` after optional labeled parameter" }
+
+| /constr_extra_nonprefix_ident: LPAREN . RPAREN
+  /constr_longident: LPAREN . COLONCOLON RPAREN
+  /fun_param_as_list: LPAREN . TYPE nonempty_list(mkrhs(LIDENT)) RPAREN
+  /simple_pattern_not_ident: LPAREN . pattern RPAREN
+  /simple_pattern_not_ident: LPAREN . MODULE _*
+  /simple_pattern_not_ident: LPAREN . pattern COLON core_type RPAREN
+  /val_extra_ident: LPAREN . operator RPAREN
+  { "Expected pattern, operator, `module`, `type`, `)`, or `::)` after `(`" }
+
+| /constr_extra_nonprefix_ident: LPAREN . RPAREN
+  /constr_longident: LPAREN . COLONCOLON RPAREN
+  /simple_pattern_not_ident: LPAREN . pattern RPAREN
+  /simple_pattern_not_ident: LPAREN . MODULE _*
+  /simple_pattern_not_ident: LPAREN . pattern COLON core_type RPAREN
+  /val_extra_ident: LPAREN . operator RPAREN
+  { "Expected pattern, module, or operator after `(`" }
+
+| /fun_param_as_list: LPAREN TYPE . nonempty_list(mkrhs(LIDENT)) RPAREN
+  { "Expected type variables after `type`" }
+
+| [_* /fun_param_as_list: LPAREN TYPE nonempty_list(mkrhs(LIDENT)) . RPAREN]
+  { "Expected closing `)` after polymorphic type variables" }
+
+| /labeled_simple_pattern: LABEL . simple_pattern
+  { "Expected pattern after label in labeled simple pattern" }
+
+| [_* /fun_expr: FUN ext list(attribute) fun_params option(preceded(COLON,atomic_type)) . MINUSGREATER fun_body]
+  { "Expected `->` after function parameters" }
+
+| /fun_expr: FUN ext list(attribute) fun_params option(preceded(COLON,atomic_type)) MINUSGREATER . fun_body
+  { "Expected function body after `->`" }
+
+| [_* /simple_expr: mod_longident DOT LPAREN MODULE ext list(attribute) . module_expr COLON module_type RPAREN]
+| [_* /simple_expr: LPAREN MODULE ext list(attribute) . module_expr _*]
+  { "Expected module expression after `module`" }
+
+| [_* /simple_expr: mod_longident DOT LPAREN MODULE ext list(attribute) module_expr . COLON module_type RPAREN]
+  { "Expected `:` after module expression in parenthesized expression" }
+
+| /simple_expr: mod_longident DOT LPAREN MODULE ext list(attribute) module_expr COLON . module_type RPAREN
+  { "Expected module type after `:` in parenthesized module expression" }
+
+| [_* /paren_module_expr: LPAREN VAL list(attribute) FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case) COLON module_type . RPAREN
+      /paren_module_expr: LPAREN VAL list(attribute) FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case) COLON module_type . COLONGREATER module_type RPAREN]
+| [_* /paren_module_expr: LPAREN VAL list(attribute) fun_expr COLON module_type . RPAREN
+      /paren_module_expr: LPAREN VAL list(attribute) fun_expr COLON module_type . COLONGREATER module_type RPAREN]
+  { "Expected closing `)` or `:>` after parenthesized module expression with type annotation" }
+
+| [_* /simple_expr: mod_longident DOT LPAREN MODULE ext list(attribute) module_expr COLON module_type . RPAREN]
+| [_* /paren_module_expr: LPAREN VAL list(attribute) _* COLON module_type COLONGREATER module_type . RPAREN]
+| [_* /paren_module_expr: LPAREN VAL list(attribute) fun_expr COLONGREATER module_type . RPAREN]
+  { "Expected closing `)` after parenthesized module expression with type annotation" }
+
+| /letop_binding_body: simple_pattern COLON . core_type EQUAL seq_expr
+| /let_binding_body_no_punning: simple_pattern_not_ident COLON . core_type EQUAL seq_expr
+  { "Expected type after `:` in let binding" }
+
+| [_* /letop_binding_body: simple_pattern COLON core_type . EQUAL seq_expr]
+  { "Expected `=` after type in let binding" }
+
+| /letop_binding_body: simple_pattern COLON core_type EQUAL . seq_expr
+  { "Expected expression after `=` in let binding" }
+
+| [_* /fun_expr: FOR ext list(attribute) . pattern EQUAL seq_expr direction_flag seq_expr DO seq_expr DONE]
+  { "Expected pattern after `for`" }
+
+| [_* /fun_expr: FOR ext list(attribute) pattern . EQUAL seq_expr direction_flag seq_expr DO seq_expr DONE
+      /labeled_tuple_pat_element_list(pattern): pattern . COMMA _*
+      /reversed_labeled_tuple_pattern(pattern): pattern . COMMA DOTDOT]
+  { "Expected `=` after pattern in for loop" }
+
+| /fun_expr: FOR ext list(attribute) pattern EQUAL . seq_expr direction_flag seq_expr DO seq_expr DONE
+  { "Expected expression after `=` in for loop" }
+
+| [_* /fun_expr: ASSERT ext list(attribute) . simple_expr]
+  { "Expected expression after `assert`" }
+
+| [_* /fun_expr: subtractive . fun_expr
+      /fun_expr: subtractive . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)]
+| /fun_expr: fun_expr MINUS . fun_expr
+  /fun_expr: fun_expr MINUS . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  { "Expected expression after `-`" }
+
+| /labeled_simple_expr: TILDE . LIDENT
+  /labeled_simple_expr: TILDE . LPAREN LIDENT type_constraint RPAREN
+  { "Expected labeled expression after `~`" }
+
+| [_* /labeled_simple_expr: TILDE LPAREN LIDENT type_constraint . RPAREN]
+  { "Expected closing `)` after labeled expression" }
+
+| /labeled_simple_expr: QUESTION . LIDENT
+  { "Expected labeled expression after `?`" }
+
+| /labeled_simple_expr: OPTLABEL . simple_expr
+  { "Expected expression after optional label" }
+
+| /labeled_simple_expr: LABEL . simple_expr
+  { "Expected expression after label in labeled simple expression" }
+
+(*| [_* /fun_expr: let_bindings(ext) . IN seq_expr]
+  { "Expected `in` after let bindings" }*)
+
+| /fun_expr: fun_expr STAR . fun_expr
+  /fun_expr: fun_expr STAR . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  { "Expected expression after `*`" }
+
+| /fun_expr: fun_expr PLUSEQ . fun_expr
+  /fun_expr: fun_expr PLUSEQ . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  { "Expected expression after `+=`" }
+
+| /fun_expr: fun_expr PLUSDOT . fun_expr
+  /fun_expr: fun_expr PLUSDOT . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  { "Expected expression after `+.`" }
+
+| /fun_expr: fun_expr PLUS . fun_expr
+  /fun_expr: fun_expr PLUS . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+| [_* /fun_expr: additive . fun_expr
+      /fun_expr: additive . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)]
+  { "Expected expression after `+`" }
+
+| /fun_expr: fun_expr PERCENT . fun_expr
+  /fun_expr: fun_expr PERCENT . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  { "Expected expression after `%`" }
+
+| /fun_expr: fun_expr OR . fun_expr
+  /fun_expr: fun_expr OR . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  { "Expected expression after `or`" }
+
+| /fun_expr: fun_expr MINUSDOT . fun_expr
+  /fun_expr: fun_expr MINUSDOT . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  { "Expected expression after `-.`" }
+
+| /fun_expr: fun_expr LESS . fun_expr
+  /fun_expr: fun_expr LESS . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  { "Expected expression after `<`" }
+
+| /fun_expr: fun_expr INFIXOP4 . fun_expr
+  /fun_expr: fun_expr INFIXOP4 . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+| /fun_expr: fun_expr INFIXOP3 . fun_expr
+  /fun_expr: fun_expr INFIXOP3 . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+| /fun_expr: fun_expr INFIXOP2 . fun_expr
+  /fun_expr: fun_expr INFIXOP2 . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+| /fun_expr: fun_expr INFIXOP1 . fun_expr
+  /fun_expr: fun_expr INFIXOP1 . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+| /fun_expr: fun_expr INFIXOP0 . fun_expr
+  /fun_expr: fun_expr INFIXOP0 . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  { "Expected expression after operator" }
+
+| /fun_expr: fun_expr GREATER . fun_expr
+  /fun_expr: fun_expr GREATER . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  { "Expected expression after `>`" }
+
+| /fun_expr: fun_expr EQUAL . fun_expr
+  /fun_expr: fun_expr EQUAL . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+| /strict_binding: EQUAL . seq_expr
+| /let_binding_body_no_punning: val_ident COLON TYPE nonempty_list(mkrhs(LIDENT)) DOT core_type EQUAL . seq_expr
+| /let_binding_body_no_punning: val_ident COLON reversed_nonempty_llist(typevar) DOT core_type EQUAL . seq_expr
+| /let_binding_body_no_punning: val_ident type_constraint EQUAL . seq_expr
+| /let_binding_body_no_punning: simple_pattern_not_ident COLON core_type EQUAL . seq_expr
+| /let_binding_body_no_punning: pattern_no_exn EQUAL . seq_expr
+| /letop_binding_body: pattern_no_exn EQUAL . seq_expr
+  { "Expected expression after `=`" }
+
+| /fun_expr: fun_expr COLONEQUAL . fun_expr
+  /fun_expr: fun_expr COLONEQUAL . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  { "Expected expression after `:=`" }
+
+| /fun_expr: fun_expr COLONCOLON . fun_expr
+  /fun_expr: fun_expr COLONCOLON . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  { "Expected expression after `::`" }
+
+| /fun_expr: fun_expr BARBAR . fun_expr
+  /fun_expr: fun_expr BARBAR . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  { "Expected expression after `||`" }
+
+| /fun_expr: fun_expr AMPERSAND . fun_expr
+  /fun_expr: fun_expr AMPERSAND . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  { "Expected expression after `&`" }
+
+| /fun_expr: fun_expr AMPERAMPER . fun_expr
+  /fun_expr: fun_expr AMPERAMPER . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  { "Expected expression after `&&`" }
+
+| [_* /fun_seq_expr: fun_expr SEMI PERCENT attr_id . seq_expr]
+  { "Expected expression after extension name" }
+
+| [_* /and_let_binding: AND list(attribute) . let_binding_body list(post_item_attribute)]
+  { "Expected let binding after `and`" }
+
+| /let_binding_body_no_punning: val_ident COLON TYPE . nonempty_list(mkrhs(LIDENT)) DOT core_type EQUAL seq_expr
+  { "Expected type parameter after `type`" }
+
+| [_* /let_binding_body_no_punning: val_ident COLON TYPE nonempty_list(mkrhs(LIDENT)) . DOT core_type EQUAL seq_expr]
+| [_* /let_binding_body_no_punning: val_ident COLON reversed_nonempty_llist(typevar) . DOT core_type EQUAL seq_expr]
+| [_* /possibly_poly(core_type_no_attr): reversed_nonempty_llist(typevar) . DOT alias_type]
+| [_* /generalized_constructor_arguments: COLON reversed_nonempty_llist(typevar) . DOT _*]
+| [_* /possibly_poly(core_type): reversed_nonempty_llist(typevar) . DOT core_type]
+  { "Expected `.` after type parameters" }
+
+| /let_binding_body_no_punning: val_ident COLON TYPE nonempty_list(mkrhs(LIDENT)) DOT . core_type EQUAL seq_expr
+| /let_binding_body_no_punning: val_ident COLON reversed_nonempty_llist(typevar) DOT . core_type EQUAL seq_expr
+| /possibly_poly(core_type_no_attr): reversed_nonempty_llist(typevar) DOT . alias_type
+| /generalized_constructor_arguments: COLON reversed_nonempty_llist(typevar) DOT . constructor_arguments MINUSGREATER atomic_type
+  /generalized_constructor_arguments: COLON reversed_nonempty_llist(typevar) DOT . atomic_type
+| /possibly_poly(core_type): reversed_nonempty_llist(typevar) DOT . core_type
+| /method_: list(attribute) private_flag LIDENT COLON TYPE nonempty_list(mkrhs(LIDENT)) DOT . core_type EQUAL seq_expr
+| /method_: BANG list(attribute) private_flag LIDENT COLON TYPE nonempty_list(mkrhs(LIDENT)) DOT . core_type EQUAL seq_expr
+  { "Expected type after `.`" }
+
+| [_* /let_binding_body_no_punning: val_ident COLON TYPE nonempty_list(mkrhs(LIDENT)) DOT core_type . EQUAL seq_expr]
+| [_* /let_binding_body_no_punning: val_ident COLON reversed_nonempty_llist(typevar) DOT core_type . EQUAL seq_expr]
+| [_* /let_binding_body_no_punning: simple_pattern_not_ident COLON core_type . EQUAL seq_expr]
+  { "Expected `=` after type" }
+
+| [_* /let_binding_body_no_punning: val_ident type_constraint . EQUAL seq_expr]
+  { "Expected `=` after type constraint" }
+
+| [_* /strict_binding: fun_params option(type_constraint) . EQUAL fun_body]
+  { "Expected `=` after function parameters" }
+
+| /strict_binding: fun_params option(type_constraint) EQUAL . fun_body
+  { "Expected function body after `=`" }
+
+| [_* /labeled_tuple_pat_element_list(pattern_no_exn): pattern_no_exn . COMMA _*
+      /let_binding_body_no_punning: pattern_no_exn . EQUAL seq_expr
+      /reversed_labeled_tuple_pattern(pattern_no_exn): pattern_no_exn . COMMA DOTDOT]
+| [_* /labeled_tuple_pat_element_list(pattern_no_exn): pattern_no_exn . COMMA _*
+      /letop_binding_body: pattern_no_exn . EQUAL seq_expr
+      /reversed_labeled_tuple_pattern(pattern_no_exn): pattern_no_exn . COMMA DOTDOT]
+  { "Expected `=` (or `,`) after pattern" }
+
+| [_* /fun_expr: simple_expr DOTOP LPAREN separated_or_terminated_nonempty_list(SEMI,expr) . RPAREN _*
+      /simple_expr: simple_expr DOTOP LPAREN separated_or_terminated_nonempty_list(SEMI,expr) . RPAREN]
+| [_* /fun_expr: simple_expr DOT mod_longident DOTOP LPAREN separated_or_terminated_nonempty_list(SEMI,expr) . RPAREN _*
+      /simple_expr: simple_expr DOT mod_longident DOTOP LPAREN separated_or_terminated_nonempty_list(SEMI,expr) . RPAREN]
+| [_* /simple_expr: simple_expr DOT mod_longident DOTOP LPAREN separated_or_terminated_nonempty_list(SEMI,expr) . RPAREN]
+| [_* /simple_expr: simple_expr DOTOP LPAREN separated_or_terminated_nonempty_list(SEMI,expr) . RPAREN]
+  { "Expected closing `)` after expression list" }
+
+| /fun_expr: simple_expr DOTOP LBRACKET . separated_or_terminated_nonempty_list(SEMI,expr) _*
+  /simple_expr: simple_expr DOTOP LBRACKET . separated_or_terminated_nonempty_list(SEMI,expr) RBRACKET
+| /fun_expr: simple_expr DOT mod_longident DOTOP LBRACKET . separated_or_terminated_nonempty_list(SEMI,expr) _*
+  /simple_expr: simple_expr DOT mod_longident DOTOP LBRACKET . separated_or_terminated_nonempty_list(SEMI,expr) RBRACKET
+| /simple_expr: simple_expr DOT mod_longident DOTOP LBRACKET . separated_or_terminated_nonempty_list(SEMI,expr) RBRACKET
+| /simple_expr: simple_expr DOTOP LBRACKET . separated_or_terminated_nonempty_list(SEMI,expr) RBRACKET
+  { "Expected expression list after `.<op>[`" }
+
+| [_* /fun_expr: simple_expr DOTOP LBRACKET separated_or_terminated_nonempty_list(SEMI,expr) . RBRACKET _*
+      /simple_expr: simple_expr DOTOP LBRACKET separated_or_terminated_nonempty_list(SEMI,expr) . RBRACKET]
+| [_* /fun_expr: simple_expr DOT mod_longident DOTOP LBRACKET separated_or_terminated_nonempty_list(SEMI,expr) . RBRACKET _*
+      /simple_expr: simple_expr DOT mod_longident DOTOP LBRACKET separated_or_terminated_nonempty_list(SEMI,expr) . RBRACKET]
+| [_* /simple_expr: mod_longident DOT LBRACKET separated_or_terminated_nonempty_list(SEMI,expr) . RBRACKET]
+| [_* /simple_expr: simple_expr DOT mod_longident DOTOP LBRACKET separated_or_terminated_nonempty_list(SEMI,expr) . RBRACKET]
+| [_* /simple_expr: simple_expr DOTOP LBRACKET separated_or_terminated_nonempty_list(SEMI,expr) . RBRACKET]
+| [_* /simple_expr: LBRACKET separated_or_terminated_nonempty_list(SEMI,expr) . RBRACKET]
+  { "Expected closing `]` after expression list" }
+
+| /fun_expr: simple_expr DOTOP LBRACE . separated_or_terminated_nonempty_list(SEMI,expr) _*
+  /simple_expr: simple_expr DOTOP LBRACE . separated_or_terminated_nonempty_list(SEMI,expr) RBRACE
+| /fun_expr: simple_expr DOT mod_longident DOTOP LBRACE . separated_or_terminated_nonempty_list(SEMI,expr) _*
+  /simple_expr: simple_expr DOT mod_longident DOTOP LBRACE . separated_or_terminated_nonempty_list(SEMI,expr) RBRACE
+| /simple_expr: simple_expr DOT mod_longident DOTOP LBRACE . separated_or_terminated_nonempty_list(SEMI,expr) RBRACE
+| /simple_expr: simple_expr DOTOP LBRACE . separated_or_terminated_nonempty_list(SEMI,expr) RBRACE
+  { "Expected expression list after `.<op>{`" }
+
+| [_* /fun_expr: simple_expr DOTOP LBRACE separated_or_terminated_nonempty_list(SEMI,expr) . RBRACE _*
+      /simple_expr: simple_expr DOTOP LBRACE separated_or_terminated_nonempty_list(SEMI,expr) . RBRACE]
+| [_* /fun_expr: simple_expr DOT mod_longident DOTOP LBRACE separated_or_terminated_nonempty_list(SEMI,expr) . RBRACE _*
+      /simple_expr: simple_expr DOT mod_longident DOTOP LBRACE separated_or_terminated_nonempty_list(SEMI,expr) . RBRACE]
+| [_* /simple_expr: simple_expr DOT mod_longident DOTOP LBRACE separated_or_terminated_nonempty_list(SEMI,expr) . RBRACE]
+| [_* /simple_expr: simple_expr DOTOP LBRACE separated_or_terminated_nonempty_list(SEMI,expr) . RBRACE]
+  { "Expected closing `}` after expression list" }
+
+| [_* /fun_expr: simple_expr DOT LPAREN seq_expr . RPAREN _*
+      /simple_expr: simple_expr DOT LPAREN seq_expr . RPAREN]
+| [_* /simple_expr: mod_longident DOT LPAREN seq_expr . RPAREN]
+| [_* /simple_expr: simple_expr DOT LPAREN seq_expr . RPAREN]
+| [_* /simple_expr: LPAREN seq_expr . RPAREN
+      /simple_expr: LPAREN seq_expr . type_constraint RPAREN]
+  { "Expected closing `)` after expression" }
+
+| /fun_expr: simple_expr DOT LBRACKET . seq_expr _*
+  /simple_expr: simple_expr DOT LBRACKET . seq_expr RBRACKET
+| /simple_expr: simple_expr DOT LBRACKET . seq_expr RBRACKET
+  { "Expected expression or `]` after `[`" }
+
+| [_* /fun_expr: simple_expr DOT LBRACKET seq_expr . RBRACKET _*
+      /simple_expr: simple_expr DOT LBRACKET seq_expr . RBRACKET]
+| [_* /simple_expr: simple_expr DOT LBRACKET seq_expr . RBRACKET]
+  { "Expected closing `]` after expression" }
+
+| /fun_expr: simple_expr DOT LBRACE . seq_expr _*
+  /simple_expr: simple_expr DOT LBRACE . seq_expr RBRACE
+| /simple_expr: simple_expr DOT LBRACE . seq_expr RBRACE
+  { "Expected expression or `}` after `{`" }
+
+| [_* /fun_expr: simple_expr DOT LBRACE seq_expr . RBRACE _*
+      /simple_expr: simple_expr DOT LBRACE seq_expr . RBRACE]
+| [_* /simple_expr: simple_expr DOT LBRACE seq_expr . RBRACE]
+  { "Expected closing `}` after expression" }
+
+| [_* /fun_expr: simple_expr DOT mod_longident . DOTOP _*
+      /mk_longident(mod_longident,LIDENT): mod_longident . DOT LIDENT
+      /mk_longident(mod_longident,UIDENT): mod_longident . DOT UIDENT
+      /simple_expr: simple_expr DOT mod_longident . DOTOP _*]
+| [_* /mk_longident(mod_longident,LIDENT): mod_longident . DOT LIDENT
+      /mk_longident(mod_longident,UIDENT): mod_longident . DOT UIDENT
+      /simple_expr: simple_expr DOT mod_longident . DOTOP _*]
+  { "Expected `.` to complete module path" }
+
+| [_* /fun_expr: FOR ext list(attribute) pattern EQUAL seq_expr . direction_flag seq_expr DO seq_expr DONE]
+  { "Expected direction after expression in for loop" }
+
+| [_* /fun_expr: FOR ext list(attribute) pattern EQUAL seq_expr direction_flag . seq_expr DO seq_expr DONE]
+  { "Expected expression after direction in for loop" }
+
+| [_* /fun_expr: FOR ext list(attribute) pattern EQUAL seq_expr direction_flag seq_expr . DO seq_expr DONE]
+  { "Expected `do` after expression in for loop" }
+
+| /fun_expr: FOR ext list(attribute) pattern EQUAL seq_expr direction_flag seq_expr DO . seq_expr DONE
+  { "Expected expression after `do` in for loop" }
+
+| [_* /fun_expr: FOR ext list(attribute) pattern EQUAL seq_expr direction_flag seq_expr DO seq_expr . DONE]
+  { "Expected `done` after expression in for loop" }
+
+| [_* /fun_expr: LETOP letop_bindings . IN seq_expr]
+  { "Expected `in` after `let<op>` bindings" }
+
+| /letop_bindings: letop_bindings ANDOP . letop_binding_body
+  { "Expected let binding after `and<op>`" }
+
+| [_* /simple_expr: mod_longident DOT LBRACKETBAR separated_or_terminated_nonempty_list(SEMI,expr) . BARRBRACKET]
+| [_* /simple_expr: LBRACKETBAR separated_or_terminated_nonempty_list(SEMI,expr) . BARRBRACKET]
+  { "Expected closing `|]` after expression list" }
+
+| /simple_expr: mod_longident DOT LBRACELESS . separated_or_terminated_nonempty_list(SEMI,object_expr_field) GREATERRBRACE
+  { "Expected object field after `{<`" }
+
+| [_* /simple_expr: mod_longident DOT LBRACELESS separated_or_terminated_nonempty_list(SEMI,object_expr_field) . GREATERRBRACE]
+| [_* /simple_expr: LBRACELESS separated_or_terminated_nonempty_list(SEMI,object_expr_field) . GREATERRBRACE]
+  { "Expected closing `>}` after object field list" }
+
+| [_* /record_expr_content: simple_expr . WITH separated_or_terminated_nonempty_list(SEMI,record_expr_field)]
+  { "Expected `with` in record update" }
+
+| /record_expr_content: simple_expr WITH . separated_or_terminated_nonempty_list(SEMI,record_expr_field)
+  { "Expected record field after `with`" }
+
+| [_* /simple_expr: mod_longident DOT LBRACE record_expr_content . RBRACE]
+  { "Expected closing `}` after record expression" }
+
+| [_* /match_case: pattern WHEN seq_expr . MINUSGREATER seq_expr]
+  { "Expected `->` after `when` guard" }
+
+| /match_case: pattern WHEN seq_expr MINUSGREATER . seq_expr
+  { "Expected expression after `->`" }
+
+| /match_case: pattern MINUSGREATER . seq_expr
+  /match_case: pattern MINUSGREATER . DOT
+  { "Expected expression (or `.`) after `->`" }
+
+| [_* /fun_expr: IF ext list(attribute) seq_expr . THEN _*]
+  { "Expected `then` after expression in if expression" }
+
+| /fun_expr: IF ext list(attribute) seq_expr THEN . fun_expr _*
+  /fun_expr: IF ext list(attribute) seq_expr THEN . FUNCTION _*
+  { "Expected expression after `then`" }
+
+| /fun_expr: IF ext list(attribute) seq_expr THEN FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case) ELSE . fun_expr
+  /fun_expr: IF ext list(attribute) seq_expr THEN FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case) ELSE . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+| /fun_expr: IF ext list(attribute) seq_expr THEN fun_expr ELSE . fun_expr
+  /fun_expr: IF ext list(attribute) seq_expr THEN fun_expr ELSE . FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  { "Expected expression after `else`" }
+
+| [_* /simple_expr: BEGIN ext list(attribute) seq_expr . END]
+  { "Expected closing `end` after expression in begin expression" }
+
+| [_* /simple_expr: LBRACE record_expr_content . RBRACE]
+  { "Expected closing `}` after record content" }
+
+| [_* /fun_expr: LET OPEN ext list(attribute) . module_expr IN seq_expr]
+  { "Expected module expression after `let open`" }
+
+| [_* /fun_expr: LET MODULE ext list(attribute) . module_name module_binding_body IN seq_expr]
+  { "Expected module name after `let module`" }
+
+| [_* /fun_expr: LET MODULE ext list(attribute) module_name . module_binding_body IN seq_expr]
+| [_* /structure_item: MODULE ext list(attribute) REC module_name . module_binding_body list(post_item_attribute) list(and_module_binding)]
+| [_* /list(and_module_binding): AND list(attribute) module_name . module_binding_body list(post_item_attribute) list(and_module_binding)]
+| [_* /structure_item: MODULE ext list(attribute) module_name . module_binding_body list(post_item_attribute)]
+  { "Expected module binding body after module name" }
+
+| /module_binding_body: EQUAL . module_expr
+| /module_binding_body: COLON module_type EQUAL . module_expr
+  { "Expected module expression after `=`" }
+
+| /module_binding_body: COLON . module_type EQUAL module_expr
+| /simple_expr: LPAREN MODULE ext list(attribute) module_expr COLON . module_type RPAREN
+| /paren_module_expr: LPAREN VAL list(attribute) FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case) COLON . module_type _*
+| /paren_module_expr: LPAREN VAL list(attribute) fun_expr COLON . module_type _*
+| /list(and_module_declaration): AND list(attribute) module_name COLON . module_type list(post_item_attribute) list(and_module_declaration)
+  { "Expected module type after `:`" }
+
+| [_* /module_binding_body: COLON module_type . EQUAL module_expr]
+  { "Expected `=` after module type" }
+
+(*| [_* /fun_expr: LET MODULE ext list(attribute) module_name module_binding_body . IN seq_expr]
+  { "Expected `in` after module binding" }*)
+
+| [_* /module_binding_body: functor_arg . module_binding_body]
+  { "Expected module binding body after functor argument" }
+
+| [_* /fun_expr: LET EXCEPTION ext list(attribute) . constr_ident generalized_constructor_arguments list(attribute) IN seq_expr]
+  { "Expected constructor after `let exception`" }
+
+| /constr_extra_nonprefix_ident: LPAREN . RPAREN
+  /constr_ident: LPAREN . COLONCOLON RPAREN
+  { "Expected constructor or operator after `(`" }
+
+| /constr_ident: LPAREN COLONCOLON . RPAREN
+| /mk_longident(mod_ext_longident,__anonymous_42): LPAREN COLONCOLON . RPAREN
+  { "Expected closing `)` after `::`" }
+
+| /generalized_constructor_arguments: OF . constructor_arguments
+  { "Expected constructor arguments after `of`" }
+
+| [_* /label_declaration: mutable_flag . LIDENT COLON possibly_poly(core_type_no_attr) list(attribute)
+      /label_declaration_semi: mutable_flag . LIDENT COLON possibly_poly(core_type_no_attr) list(attribute) SEMI list(attribute)]
+  { "Expected field name after `mutable`" }
+
+| /label_declaration: mutable_flag LIDENT . COLON possibly_poly(core_type_no_attr) list(attribute)
+  /label_declaration_semi: mutable_flag LIDENT . COLON possibly_poly(core_type_no_attr) list(attribute) SEMI list(attribute)
+  { "Expected `:` after field name" }
+
+| /label_declaration: mutable_flag LIDENT COLON . possibly_poly(core_type_no_attr) list(attribute)
+  /label_declaration_semi: mutable_flag LIDENT COLON . possibly_poly(core_type_no_attr) list(attribute) SEMI list(attribute)
+  { "Expected type after `:` in label declaration" }
+
+| [_* /constructor_arguments: LBRACE label_declarations . RBRACE]
+  { "Expected closing `}` after record type" }
+
+| [_* /constructor_arguments: reversed_separated_nonempty_llist(STAR,atomic_type) . STAR atomic_type]
+| /constructor_arguments: reversed_separated_nonempty_llist(STAR,atomic_type) STAR . atomic_type
+  /reversed_separated_nonempty_llist(STAR,atomic_type): reversed_separated_nonempty_llist(STAR,atomic_type) STAR . atomic_type
+  { "Expected type after `*`" }
+
+| /generalized_constructor_arguments: COLON . constructor_arguments MINUSGREATER atomic_type
+  /generalized_constructor_arguments: COLON . reversed_nonempty_llist(typevar) DOT constructor_arguments MINUSGREATER atomic_type
+  /generalized_constructor_arguments: COLON . atomic_type
+  /generalized_constructor_arguments: COLON . reversed_nonempty_llist(typevar) DOT atomic_type
+  { "Expected type or constructor arguments after `:`" }
+
+| [_* /generalized_constructor_arguments: COLON reversed_nonempty_llist(typevar) DOT constructor_arguments . MINUSGREATER atomic_type]
+| [_* /generalized_constructor_arguments: COLON constructor_arguments . MINUSGREATER atomic_type]
+  { "Expected `->` after constructor arguments" }
+
+(*| [_* /fun_expr: LET EXCEPTION ext list(attribute) constr_ident generalized_constructor_arguments list(attribute) . IN seq_expr]
+  { "Expected `in` after exception binding" }*)
+
+| [_* /let_bindings(ext): LET ext list(attribute) rec_flag . let_binding_body list(post_item_attribute)]
+  { "Expected let binding after `let`" }
+
+| [_* /simple_expr: LPAREN seq_expr type_constraint . RPAREN]
+  { "Expected closing `)` after type constraint" }
+
+| [_* /fun_expr: MATCH ext list(attribute) seq_expr . WITH reversed_preceded_or_separated_nonempty_llist(BAR,match_case)]
+  { "Expected `with` after expression in match expression" }
+
+| /fun_expr: MATCH ext list(attribute) seq_expr WITH . reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  { "Expected pattern after `with`" }
+
+| [_* /simple_expr: METAOCAML_BRACKET_OPEN seq_expr . METAOCAML_BRACKET_CLOSE]
+  { "Expected closing bracket after expression" }
+
+| [_* /paren_module_expr: LPAREN VAL list(attribute) FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case) . RPAREN
+      /paren_module_expr: LPAREN VAL list(attribute) FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case) . COLON _*
+      /paren_module_expr: LPAREN VAL list(attribute) FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case) . COLONGREATER module_type RPAREN
+      /reversed_labeled_tuple_body: FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case) . COMMA _*]
+| [_* /paren_module_expr: LPAREN VAL list(attribute) fun_expr . RPAREN
+      /paren_module_expr: LPAREN VAL list(attribute) fun_expr . COLON _*
+      /paren_module_expr: LPAREN VAL list(attribute) fun_expr . COLONGREATER module_type RPAREN
+      /reversed_labeled_tuple_body: fun_expr . COMMA _*]
+  { "Expected closing `)` after function expression" }
+
+| /paren_module_expr: LPAREN VAL list(attribute) FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case) COLONGREATER . module_type RPAREN
+| /paren_module_expr: LPAREN VAL list(attribute) FUNCTION ext list(attribute) reversed_preceded_or_separated_nonempty_llist(BAR,match_case) COLON module_type COLONGREATER . module_type RPAREN
+| /paren_module_expr: LPAREN VAL list(attribute) fun_expr COLONGREATER . module_type RPAREN
+| /paren_module_expr: LPAREN VAL list(attribute) fun_expr COLON module_type COLONGREATER . module_type RPAREN
+  { "Expected module type after `:>`" }
+
+| [_* /open_declaration: OPEN ext list(attribute) . module_expr list(post_item_attribute)]
+  { "Expected module expression after `open`" }
+
+| /option(preceded(EQUAL,module_type)): EQUAL . module_type
+  { "Expected module type after `=`" }
+
+| [_* /structure_item: MODULE ext list(attribute) . module_name module_binding_body list(post_item_attribute)
+      /structure_item: MODULE ext list(attribute) . REC module_name module_binding_body list(post_item_attribute) list(and_module_binding)]
+  { "Expected module name after `module`" }
+
+| /structure_item: MODULE ext list(attribute) REC . module_name module_binding_body list(post_item_attribute) list(and_module_binding)
+| /signature_item: MODULE ext list(attribute) REC . module_name COLON module_type list(post_item_attribute) list(and_module_declaration)
+  { "Expected module name after `module rec`" }
+
+| [_* /list(and_module_binding): AND list(attribute) . module_name module_binding_body list(post_item_attribute) list(and_module_binding)]
+  { "Expected module name after `and`" }
+
+| /item_extension: LBRACKETPERCENTPERCENT . attr_id payload RBRACKET
+  { "Expected extension name after `[%%`" }
+
+| /payload: QUESTION . pattern _*
+  { "Expected pattern after `?` in payload" }
+
+| /floating_attribute: LBRACKETATATAT . attr_id attr_payload RBRACKET
+  { "Expected attribute name after `[@@@`" }
+
+| [_* /structure_item: INCLUDE ext list(attribute) . module_expr list(post_item_attribute)]
+  { "Expected module expression after `include`" }
+
+| [_* /primitive_declaration: EXTERNAL ext list(attribute) . val_ident COLON possibly_poly(core_type) EQUAL nonempty_list(raw_string) list(post_item_attribute)]
+  { "Expected identifier after `external`" }
+
+| [_* /primitive_declaration: EXTERNAL ext list(attribute) val_ident . COLON possibly_poly(core_type) EQUAL nonempty_list(raw_string) list(post_item_attribute)]
+  { "Expected `:` after identifier in external declaration" }
+
+| /primitive_declaration: EXTERNAL ext list(attribute) val_ident COLON . possibly_poly(core_type) EQUAL nonempty_list(raw_string) list(post_item_attribute)
+  { "Expected type after `:` in external declaration" }
+
+| [_* /primitive_declaration: EXTERNAL ext list(attribute) val_ident COLON possibly_poly(core_type) . EQUAL nonempty_list(raw_string) list(post_item_attribute)]
+  { "Expected `=` after type in external declaration" }
+
+| /primitive_declaration: EXTERNAL ext list(attribute) val_ident COLON possibly_poly(core_type) EQUAL . nonempty_list(raw_string) list(post_item_attribute)
+  { "Expected string list after `=` in external declaration" }
+
+| [_* /sig_exception_declaration: EXCEPTION ext list(attribute) . constr_ident generalized_constructor_arguments list(attribute) list(post_item_attribute)
+      /str_exception_declaration: EXCEPTION ext list(attribute) . constr_ident EQUAL constr_longident list(attribute) list(post_item_attribute)]
+  { "Expected constructor after `exception`" }
+
+| /str_exception_declaration: EXCEPTION ext list(attribute) constr_ident EQUAL . constr_longident list(attribute) list(post_item_attribute)
+  { "Expected constructor identifier after `=`" }
+
+| /constr_extra_nonprefix_ident: LPAREN . RPAREN
+  /constr_longident: LPAREN . COLONCOLON RPAREN
+  { "Expected `)` or `::)` after `(`" }
+
+| /constr_longident: mod_longident DOT . LPAREN COLONCOLON RPAREN
+  /mk_longident(mod_longident,UIDENT): mod_longident DOT . UIDENT
+| /mk_longident(mod_ext_longident,UIDENT): mod_ext_longident DOT . UIDENT
+  /mk_longident(mod_ext_longident,__anonymous_42): mod_ext_longident DOT . ident
+  /mk_longident(mod_ext_longident,__anonymous_42): mod_ext_longident DOT . LPAREN COLONCOLON RPAREN
+  /mk_longident(mod_ext_longident,__anonymous_42): mod_ext_longident DOT . val_extra_ident
+  { "Expected identifier or `(::)` after `.`" }
+
+| /constr_longident: mod_longident DOT LPAREN . COLONCOLON RPAREN
+  { "Expected `::)` after `(`" }
+
+| /mk_longident(mod_ext_longident,UIDENT): mod_ext_longident DOT . UIDENT
+| /mk_longident(mod_ext_longident,LIDENT): mod_ext_longident DOT . LIDENT
+  /mk_longident(mod_ext_longident,UIDENT): mod_ext_longident DOT . UIDENT
+| /mk_longident(mod_longident,LIDENT): mod_longident DOT . LIDENT
+  /mk_longident(mod_longident,UIDENT): mod_longident DOT . UIDENT
+| /mk_longident(mod_ext_longident,UIDENT): mod_ext_longident DOT . UIDENT
+  /mk_longident(mod_ext_longident,ident): mod_ext_longident DOT . ident
+| /mk_longident(mod_longident,UIDENT): mod_longident DOT . UIDENT
+| /mk_longident(mod_longident,UIDENT): mod_longident DOT . UIDENT
+  /mk_longident(mod_longident,val_ident): mod_longident DOT . val_ident
+  { "Expected identifier after `.`" }
+
+| [_* /open_description: OPEN BANG ext list(attribute) . mod_ext_longident list(post_item_attribute)]
+  { "Expected module path after `open !`" }
+
+| [_* /open_description: OPEN ext list(attribute) . mod_ext_longident list(post_item_attribute)]
+  { "Expected module path after `open`" }
+
+| [_* /module_type_declaration: MODULE TYPE ext list(attribute) . ident option(preceded(EQUAL,module_type)) list(post_item_attribute)
+      /module_type_subst: MODULE TYPE ext list(attribute) . ident COLONEQUAL module_type list(post_item_attribute)]
+  { "Expected a module type name after `module type`" }
+
+| [_* /module_type_declaration: MODULE TYPE ext list(attribute) . ident option(preceded(EQUAL,module_type)) list(post_item_attribute)]
+  { "Expected identifier after `module type`" }
+
+| /module_type_subst: MODULE TYPE ext list(attribute) ident COLONEQUAL . module_type list(post_item_attribute)
+  { "Expected a module type after `:=` to substitute module type" }
+
+| [_* /module_subst: MODULE ext list(attribute) . UIDENT COLONEQUAL mod_ext_longident list(post_item_attribute)
+      /signature_item: MODULE ext list(attribute) . module_name _*
+      /signature_item: MODULE ext list(attribute) . REC module_name COLON module_type list(post_item_attribute) list(and_module_declaration)]
+  { "Expected module name or `rec` after `module`" }
+
+| /module_subst: MODULE ext list(attribute) UIDENT COLONEQUAL . mod_ext_longident list(post_item_attribute)
+  { "Expected module path after `:=` to substitute module" }
+
+| [_* /signature_item: MODULE ext list(attribute) REC module_name . COLON module_type list(post_item_attribute) list(and_module_declaration)]
+| [_* /list(and_module_declaration): AND list(attribute) module_name . COLON module_type list(post_item_attribute) list(and_module_declaration)]
+  { "Expected `:` after module name" }
+
+| /signature_item: MODULE ext list(attribute) REC module_name COLON . module_type list(post_item_attribute) list(and_module_declaration)
+  { "Expected module type after `:` to declare recursive module" }
+
+| [_* /list(and_module_declaration): AND list(attribute) . module_name COLON module_type list(post_item_attribute) list(and_module_declaration)]
+  { "Expected another module name after `and`" }
+
+| [_* /signature_item: MODULE ext list(attribute) module_name . module_declaration_body list(post_item_attribute)
+      /signature_item: MODULE ext list(attribute) module_name . EQUAL mod_longident list(post_item_attribute)]
+  { "Expected `:`, a functor argument, or `=` after module name" }
+
+| /signature_item: MODULE ext list(attribute) module_name EQUAL . mod_longident list(post_item_attribute)
+  { "Expected module path after `=` to define a module alias" }
+
+| /module_declaration_body: COLON . module_type
+  { "Expected module type after `:` in module declaration" }
+
+| [_* /module_declaration_body: functor_arg . module_declaration_body]
+  { "Expected `:` or another functor argument in module declaration" }
+
+| [_* /signature_item: INCLUDE ext list(attribute) . module_type list(post_item_attribute)]
+  { "Expected module type after `include`" }
+
+| [_* /sig_exception_declaration: EXCEPTION ext list(attribute) . constr_ident generalized_constructor_arguments list(attribute) list(post_item_attribute)]
+  { "Expected exception name after `exception`" }
+
+| [_* /formal_class_parameters: LBRACKET reversed_separated_nonempty_llist(COMMA,type_parameter) . RBRACKET]
+  { "Expected `,` or a closing `]` after class parameters" }
+
+| [_* /class_type_declarations: CLASS TYPE ext list(attribute) virtual_flag formal_class_parameters . LIDENT EQUAL class_signature list(post_item_attribute) list(and_class_type_declaration)]
+  { "Expected class type name in class type declaration" }
+
+| /class_type_declarations: CLASS TYPE ext list(attribute) virtual_flag formal_class_parameters LIDENT . EQUAL class_signature list(post_item_attribute) list(and_class_type_declaration)
+  { "Expected `=` after class type name in class type declaration" }
+
+| /class_type_declarations: CLASS TYPE ext list(attribute) virtual_flag formal_class_parameters LIDENT EQUAL . class_signature list(post_item_attribute) list(and_class_type_declaration)
+  { "Expected class type after `=`" }
+
+| [_* /class_self_type: LPAREN core_type . RPAREN]
+| [_* /class_self_pattern: LPAREN pattern COLON core_type . RPAREN]
+  { "Expected closing `)` after class self type" }
+
+| /class_sig_field: VAL list(attribute) mutable_virtual_flags LIDENT COLON . core_type list(post_item_attribute)
+  { "Expected type after `:` in class type value" }
+
+| [_* /class_sig_field: METHOD list(attribute) private_virtual_flags . LIDENT COLON possibly_poly(core_type) list(post_item_attribute)]
+| [_* /method_: list(attribute) virtual_with_private_flag . LIDENT COLON possibly_poly(core_type)]
+| [_* /method_: list(attribute) private_flag . LIDENT _*]
+  { "Expected method name after `method`" }
+
+| /class_sig_field: METHOD list(attribute) private_virtual_flags LIDENT . COLON possibly_poly(core_type) list(post_item_attribute)
+| /method_: list(attribute) virtual_with_private_flag LIDENT . COLON possibly_poly(core_type)
+  { "Expected `:` after method name" }
+
+| /class_sig_field: METHOD list(attribute) private_virtual_flags LIDENT COLON . possibly_poly(core_type) list(post_item_attribute)
+  { "Expected type after `:` in class type method" }
+
+| [_* /class_sig_field: INHERIT list(attribute) . class_signature list(post_item_attribute)]
+  { "Expected class signature after `inherit`" }
+
+| /class_signature: LET . OPEN _*
+  { "Expected `open` after `let` in class signature" }
+
+| /class_signature: LET OPEN BANG list(attribute) mod_longident IN . class_signature
+| /class_signature: LET OPEN list(attribute) mod_longident IN . class_signature
+  { "Expected class signature after `in`" }
+
+| [_* /class_signature: LBRACKET reversed_separated_nonempty_llist(COMMA,core_type) . RBRACKET clty_longident]
+  { "Expected `,` or closing `]` in type list" }
+
+| /class_signature: LBRACKET reversed_separated_nonempty_llist(COMMA,core_type) RBRACKET . clty_longident
+  { "Expected class path after class type parameters" }
+
+| /reversed_separated_nonempty_llist(COMMA,core_type): reversed_separated_nonempty_llist(COMMA,core_type) COMMA . core_type
+  { "Expected another type after `,` in type list" }
+
+| [_* /class_signature: LET OPEN list(attribute) . mod_longident IN class_signature]
+| [_* /class_expr: LET OPEN list(attribute) . mod_longident IN class_expr]
+  { "Expected module path after `let open`" }
+
+| [_* /class_signature: LET OPEN BANG list(attribute) . mod_longident IN class_signature]
+| [_* /class_expr: LET OPEN BANG list(attribute) . mod_longident IN class_expr]
+  { "Expected module path after `let open !`" }
+
+(*| [_* /class_signature: LET OPEN list(attribute) mod_longident . IN class_signature
+      /mk_longident(mod_longident,UIDENT): mod_longident . DOT UIDENT]
+| [_* /class_signature: LET OPEN BANG list(attribute) mod_longident . IN class_signature
+      /mk_longident(mod_longident,UIDENT): mod_longident . DOT UIDENT]
+  { "Expected `.` or `in` after module path in `let open`" }*)
+
+| [_* /constrain_field: core_type . EQUAL core_type]
+  { "Expected `=` after type in `constraint` field" }
+
+| /constrain_field: core_type EQUAL . core_type
+  { "Expected another type after `=` in `constraint` field" }
+
+| [_* /class_signature: OBJECT list(attribute) class_self_type list(text_csig(class_sig_field)) . END]
+  { "Expected a class type field or a closing `end` in class type body" }
+
+| [_* /list(and_class_type_declaration): AND list(attribute) virtual_flag formal_class_parameters . LIDENT EQUAL class_signature list(post_item_attribute) list(and_class_type_declaration)]
+  { "Expected class type name in class type declarations" }
+
+| /list(and_class_type_declaration): AND list(attribute) virtual_flag formal_class_parameters LIDENT . EQUAL class_signature list(post_item_attribute) list(and_class_type_declaration)
+  { "Expected `=` after class type name in class type declarations" }
+
+| /list(and_class_type_declaration): AND list(attribute) virtual_flag formal_class_parameters LIDENT EQUAL . class_signature list(post_item_attribute) list(and_class_type_declaration)
+  { "Expected class signature after `=`" }
+
+| [_* /signature_item: CLASS ext list(attribute) virtual_flag formal_class_parameters . LIDENT COLON class_type list(post_item_attribute) list(and_class_description)]
+  { "Expected class name in class declaration" }
+
+| /signature_item: CLASS ext list(attribute) virtual_flag formal_class_parameters LIDENT . COLON class_type list(post_item_attribute) list(and_class_description)
+  { "Expected `:` after class name in class declaration" }
+
+| /signature_item: CLASS ext list(attribute) virtual_flag formal_class_parameters LIDENT COLON . class_type list(post_item_attribute) list(and_class_description)
+| /list(and_class_description): AND list(attribute) virtual_flag formal_class_parameters LIDENT COLON . class_type list(post_item_attribute) list(and_class_description)
+| /class_fun_binding: COLON . class_type EQUAL class_expr
+  { "Expected class type after `:`" }
+
+| /class_type: LIDENT COLON . tuple_type MINUSGREATER class_type
+  { "Expected type after label in class type" }
+
+| [_* /class_type: LIDENT COLON tuple_type . MINUSGREATER class_type]
+| [_* /class_type: optlabel tuple_type . MINUSGREATER class_type]
+  { "Expected `->` after label type" }
+
+| /class_type: LIDENT COLON tuple_type MINUSGREATER . class_type
+| /class_type: tuple_type MINUSGREATER . class_type
+| /class_type: optlabel tuple_type MINUSGREATER . class_type
+  { "Expected class type after `->`" }
+
+| /class_signature: LBRACKET . reversed_separated_nonempty_llist(COMMA,core_type) RBRACKET clty_longident
+  /delimited_type_supporting_local_open: LBRACKET . tag_field RBRACKET
+  /delimited_type_supporting_local_open: LBRACKET . BAR reversed_separated_nonempty_llist(BAR,row_field) RBRACKET
+  /delimited_type_supporting_local_open: LBRACKET . row_field BAR reversed_separated_nonempty_llist(BAR,row_field) RBRACKET
+  { "Expected class type parameters `[`" }
+
+| /class_signature: LBRACKET . reversed_separated_nonempty_llist(COMMA,core_type) RBRACKET clty_longident
+| /class_simple_expr: LBRACKET . reversed_separated_nonempty_llist(COMMA,core_type) RBRACKET class_longident
+  { "Expected type list after `[`" }
+
+| [_* /class_type: tuple_type . MINUSGREATER class_type]
+| [_* /function_type: LIDENT COLON tuple_type . MINUSGREATER function_type]
+  { "Expected `->` after type" }
+
+| [_* /class_type: optlabel . tuple_type MINUSGREATER class_type]
+  { "Expected parameter type after label" }
+
+| [_* /list(and_class_description): AND list(attribute) virtual_flag formal_class_parameters . LIDENT COLON class_type list(post_item_attribute) list(and_class_description)]
+  { "Expected another class identifier in class descriptions" }
+
+| /list(and_class_description): AND list(attribute) virtual_flag formal_class_parameters LIDENT . COLON class_type list(post_item_attribute) list(and_class_description)
+  { "Expected `:` after class identifier in class descriptions" }
+
+| [_* /list(generic_and_type_declaration(type_kind)): AND list(attribute) . type_parameters LIDENT type_kind reversed_llist(preceded(CONSTRAINT,constrain)) list(post_item_attribute) list(generic_and_type_declaration(type_kind))]
+| [_* /list(generic_and_type_declaration(type_subst_kind)): AND list(attribute) . type_parameters LIDENT COLONEQUAL nonempty_type_kind reversed_llist(preceded(CONSTRAINT,constrain)) list(post_item_attribute) list(generic_and_type_declaration(type_subst_kind))]
+  { "Expected type identifier after `and`" }
+
+| /list(generic_and_type_declaration(type_subst_kind)): AND list(attribute) type_parameters LIDENT . COLONEQUAL nonempty_type_kind reversed_llist(preceded(CONSTRAINT,constrain)) list(post_item_attribute) list(generic_and_type_declaration(type_subst_kind))
+  { "Expected `:=` after identifier in type substitution" }
+
+| /list(generic_and_type_declaration(type_subst_kind)): AND list(attribute) type_parameters LIDENT COLONEQUAL . nonempty_type_kind reversed_llist(preceded(CONSTRAINT,constrain)) list(post_item_attribute) list(generic_and_type_declaration(type_subst_kind))
+| /generic_type_declaration(no_nonrec_flag,type_subst_kind): TYPE ext list(attribute) type_parameters LIDENT COLONEQUAL . nonempty_type_kind reversed_llist(preceded(CONSTRAINT,constrain)) list(post_item_attribute)
+| /generic_type_declaration(no_nonrec_flag,type_subst_kind): TYPE ext list(attribute) NONREC type_parameters LIDENT COLONEQUAL . nonempty_type_kind reversed_llist(preceded(CONSTRAINT,constrain)) list(post_item_attribute)
+  { "Expected type definition after `:=`" }
+
+| /constr_extra_nonprefix_ident: LBRACKET . RBRACKET
+  /delimited_type_supporting_local_open: LBRACKET . tag_field RBRACKET
+  /delimited_type_supporting_local_open: LBRACKET . BAR reversed_separated_nonempty_llist(BAR,row_field) RBRACKET
+  /delimited_type_supporting_local_open: LBRACKET . row_field BAR reversed_separated_nonempty_llist(BAR,row_field) RBRACKET
+  { "Expected row field or `]` after `[`" }
+
+| /nonempty_type_kind: core_type EQUAL . constructor_declarations
+  /nonempty_type_kind: core_type EQUAL . DOTDOT
+  /nonempty_type_kind: core_type EQUAL . LBRACE label_declarations RBRACE
+  /nonempty_type_kind: core_type EQUAL . PRIVATE constructor_declarations
+  /nonempty_type_kind: core_type EQUAL . PRIVATE DOTDOT
+  /nonempty_type_kind: core_type EQUAL . PRIVATE LBRACE label_declarations RBRACE
+  { "Expected constructor declaration, `{`, `private`, or `..` after `=`" }
+
+| /nonempty_type_kind: core_type EQUAL PRIVATE . constructor_declarations
+  /nonempty_type_kind: core_type EQUAL PRIVATE . DOTDOT
+  /nonempty_type_kind: core_type EQUAL PRIVATE . LBRACE label_declarations RBRACE
+  { "Expected constructor declaration, `{`, or `..` after `private`" }
+
+| [_* /nonempty_type_kind: LBRACE label_declarations . RBRACE]
+| [_* /nonempty_type_kind: core_type EQUAL PRIVATE LBRACE label_declarations . RBRACE]
+| [_* /nonempty_type_kind: core_type EQUAL LBRACE label_declarations . RBRACE]
+| [_* /nonempty_type_kind: PRIVATE LBRACE label_declarations . RBRACE]
+  { "Expected closing `}` after record fields" }
+
+| [_* /structure_item: CLASS ext list(attribute) virtual_flag formal_class_parameters . LIDENT class_fun_binding list(post_item_attribute) list(and_class_declaration)]
+  { "Expected class name for class definition" }
+
+| /structure_item: CLASS ext list(attribute) virtual_flag formal_class_parameters LIDENT . class_fun_binding list(post_item_attribute) list(and_class_declaration)
+| /list(and_class_declaration): AND list(attribute) virtual_flag formal_class_parameters LIDENT . class_fun_binding list(post_item_attribute) list(and_class_declaration)
+  { "Expected `=`, `:` or binding pattern after class name in class definition" }
+
+| /class_fun_binding: EQUAL . class_expr
+| /class_fun_binding: COLON class_type EQUAL . class_expr
+  { "Expected class expression after `=`" }
+
+| [_* /value: list(attribute) virtual_with_mutable_flag . LIDENT COLON core_type]
+  { "Expected value name after `val virtual`" }
+
+| /value: list(attribute) virtual_with_mutable_flag LIDENT . COLON core_type
+  { "Expected `:` after virtual value name" }
+
+| /value: list(attribute) virtual_with_mutable_flag LIDENT COLON . core_type
+  { "Expected type after `:` in value definition" }
+
+| [_* /value: BANG list(attribute) mutable_flag . LIDENT _*]
+  { "Expected value name after `val !`" }
+
+| /value: list(attribute) mutable_flag LIDENT . EQUAL seq_expr
+  /value: list(attribute) mutable_flag LIDENT . type_constraint EQUAL seq_expr
+| /value: BANG list(attribute) mutable_flag LIDENT . EQUAL seq_expr
+  /value: BANG list(attribute) mutable_flag LIDENT . type_constraint EQUAL seq_expr
+  { "Expected `=` or `:` after field name" }
+
+| [_* /value: list(attribute) mutable_flag LIDENT type_constraint . EQUAL seq_expr]
+| [_* /value: BANG list(attribute) mutable_flag LIDENT type_constraint . EQUAL seq_expr]
+  { "Expected `=` after type constraint in value definition" }
+
+| /value: list(attribute) mutable_flag LIDENT EQUAL . seq_expr
+| /value: list(attribute) mutable_flag LIDENT type_constraint EQUAL . seq_expr
+| /value: BANG list(attribute) mutable_flag LIDENT EQUAL . seq_expr
+| /value: BANG list(attribute) mutable_flag LIDENT type_constraint EQUAL . seq_expr
+  { "Expected expression after `=` to define value" }
+
+| [_* /method_: BANG list(attribute) private_flag . LIDENT _*]
+  { "Expected method name after `method !`" }
+
+| /method_: list(attribute) virtual_with_private_flag LIDENT COLON . possibly_poly(core_type)
+  { "Expected type after `:` in method definition" }
+
+| /method_: list(attribute) private_flag LIDENT . strict_binding
+  /method_: list(attribute) private_flag LIDENT . COLON _*
+| /method_: BANG list(attribute) private_flag LIDENT . strict_binding
+  /method_: BANG list(attribute) private_flag LIDENT . COLON _*
+  { "Expected `=`, parameter, or `:` after method name" }
+
+| /method_: list(attribute) private_flag LIDENT COLON TYPE . nonempty_list(mkrhs(LIDENT)) DOT core_type EQUAL seq_expr
+| /method_: BANG list(attribute) private_flag LIDENT COLON TYPE . nonempty_list(mkrhs(LIDENT)) DOT core_type EQUAL seq_expr
+  { "Expected type name after `type`" }
+
+| [_* /method_: list(attribute) private_flag LIDENT COLON TYPE nonempty_list(mkrhs(LIDENT)) . DOT core_type EQUAL seq_expr]
+| [_* /method_: BANG list(attribute) private_flag LIDENT COLON TYPE nonempty_list(mkrhs(LIDENT)) . DOT core_type EQUAL seq_expr]
+  { "Expected `.` after polymorphic types" }
+
+| [_* /method_: list(attribute) private_flag LIDENT COLON TYPE nonempty_list(mkrhs(LIDENT)) DOT core_type . EQUAL seq_expr]
+| [_* /method_: list(attribute) private_flag LIDENT COLON possibly_poly(core_type) . EQUAL seq_expr]
+| [_* /method_: BANG list(attribute) private_flag LIDENT COLON TYPE nonempty_list(mkrhs(LIDENT)) DOT core_type . EQUAL seq_expr]
+| [_* /method_: BANG list(attribute) private_flag LIDENT COLON possibly_poly(core_type) . EQUAL seq_expr]
+  { "Expected `=` after method type" }
+
+| /method_: list(attribute) private_flag LIDENT COLON TYPE nonempty_list(mkrhs(LIDENT)) DOT core_type EQUAL . seq_expr
+| /method_: list(attribute) private_flag LIDENT COLON possibly_poly(core_type) EQUAL . seq_expr
+| /method_: BANG list(attribute) private_flag LIDENT COLON TYPE nonempty_list(mkrhs(LIDENT)) DOT core_type EQUAL . seq_expr
+| /method_: BANG list(attribute) private_flag LIDENT COLON possibly_poly(core_type) EQUAL . seq_expr
+  { "Expected expression after `=` to define method" }
+
+| [_* /class_field: INITIALIZER list(attribute) . seq_expr list(post_item_attribute)]
+  { "Expected expression after `initializer`" }
+
+| [_* /class_field: INHERIT BANG list(attribute) . class_expr option(preceded(AS,mkrhs(LIDENT))) list(post_item_attribute)]
+  { "Expected class expression after `inherit !`" }
+
+| /class_simple_expr: LPAREN . class_expr _*
+  { "Expected class expression after `(`" }
+
+| [_* /let_bindings(no_ext): LET PERCENT attr_id list(attribute) rec_flag . let_binding_body list(post_item_attribute)]
+  { "Expected let binding after extension name" }
+
+(*| [_* /class_expr: LET OPEN BANG list(attribute) mod_longident . IN class_expr
+      /mk_longident(mod_longident,UIDENT): mod_longident . DOT UIDENT]
+  { "Expected `.` or `in` after module path" }*)
+
+| /class_expr: LET OPEN BANG list(attribute) mod_longident IN . class_expr
+| /class_expr: let_bindings(no_ext) IN . class_expr
+| /class_expr: LET OPEN list(attribute) mod_longident IN . class_expr
+  { "Expected class expression after `in`" }
+
+| [_* /class_simple_expr: LBRACKET reversed_separated_nonempty_llist(COMMA,core_type) . RBRACKET class_longident]
+  { "Expected closing `]` after type list" }
+
+| /class_simple_expr: LBRACKET reversed_separated_nonempty_llist(COMMA,core_type) RBRACKET . class_longident
+  { "Expected class name after class parameters" }
+
+| [_* /class_fun_def: labeled_simple_pattern . MINUSGREATER class_expr
+      /class_fun_def: labeled_simple_pattern . class_fun_def]
+  { "Expected `->` after parameter in class definition" }
+
+| /class_fun_def: labeled_simple_pattern MINUSGREATER . class_expr
+  { "Expected class expression after `->`" }
+
+(*| [_* /class_expr: let_bindings(no_ext) . IN class_expr]
+  { "Expected `in` after let bindings" }*)
+
+(*| [_* /class_expr: LET OPEN list(attribute) mod_longident . IN class_expr
+      /mk_longident(mod_longident,UIDENT): mod_longident . DOT UIDENT]
+  { "Expected `in` after module path" }*)
+
+| [_* /let_bindings(no_ext): LET list(attribute) rec_flag . let_binding_body list(post_item_attribute)]
+  { "Expected a binding pattern after `let`" }
+
+| [_* /class_simple_expr: LPAREN class_expr . RPAREN
+      /class_simple_expr: LPAREN class_expr . COLON class_type RPAREN]
+  { "Expected closing `)` or `:` after class expression" }
+
+| /class_simple_expr: LPAREN class_expr COLON . class_type RPAREN
+  { "Expected class type after `:` in class expression" }
+
+| [_* /class_simple_expr: LPAREN class_expr COLON class_type . RPAREN]
+  { "Expected closing `)` after class type" }
+
+| [_* /class_field: INHERIT list(attribute) . class_expr option(preceded(AS,mkrhs(LIDENT))) list(post_item_attribute)]
+  { "Expected class expression after `inherit`" }
+
+| [_* /class_field: CONSTRAINT list(attribute) . constrain_field list(post_item_attribute)]
+  { "Expected a type after `constraint`" }
+
+| [_* /class_simple_expr: OBJECT list(attribute) class_self_pattern list(text_cstr(class_field)) . END]
+  { "Expected a class field or a closing `end` in class body" }
+
+| [_* /class_fun_binding: COLON class_type . EQUAL class_expr]
+  { "Expected `=` after class type" }
+
+| [_* /class_fun_binding: labeled_simple_pattern . class_fun_binding]
+  { "Expected `=`, `:` or another binding pattern in class definition" }
+
+| [_* /list(and_class_declaration): AND list(attribute) virtual_flag formal_class_parameters . LIDENT class_fun_binding list(post_item_attribute) list(and_class_declaration)]
+  { "Expected identifier after class parameters" }
+
+| [_* /floating_attribute: LBRACKETATATAT attr_id attr_payload . RBRACKET]
+| [_* /post_item_attribute: LBRACKETATAT attr_id attr_payload . RBRACKET]
+| [_* /attribute: LBRACKETAT attr_id attr_payload . RBRACKET]
+  { "Expected closing `]` after attribute" }
+
+| [_* /item_extension: LBRACKETPERCENTPERCENT attr_id payload . RBRACKET]
+| [_* /extension: LBRACKETPERCENT attr_id payload . RBRACKET]
+  { "Expected closing `]` after extension" }
+
+| [_* /module_expr: STRUCT list(attribute) structure . END]
+  { "Expected structure item or closing `end` in structure" }
+
+| /labeled_tuple_pat_element_list(pattern): TILDE LIDENT . COMMA _*
+  /reversed_labeled_tuple_pattern(pattern): TILDE LIDENT . COMMA DOTDOT
+  { "Expected `,` in labeled tuple pattern" }
+
+| [_* /class_self_pattern: LPAREN pattern . RPAREN
+      /class_self_pattern: LPAREN pattern . COLON core_type RPAREN
+      /labeled_tuple_pat_element_list(pattern): pattern . COMMA _*
+      /reversed_labeled_tuple_pattern(pattern): pattern . COMMA DOTDOT]
+  { "Expected closing `)`, `:`, or `,` in class self pattern" }
+
+| /class_self_pattern: LPAREN pattern COLON . core_type RPAREN
+  { "Expected type after `:` in class self pattern" }
+
+| [_* /simple_expr: OBJECT ext list(attribute) class_self_pattern list(text_cstr(class_field)) . END]
+  { "Expected closing `end` after object expression" }
+
+| /reversed_labeled_tuple_body: TILDE LIDENT . COMMA _*
+  { "Expected `,` after labeled element" }
+
+| [_* /fun_expr: TRY ext list(attribute) seq_expr . WITH reversed_preceded_or_separated_nonempty_llist(BAR,match_case)]
+  { "Expected `with` after expression in try expression" }
+
+| /fun_expr: TRY ext list(attribute) seq_expr WITH . reversed_preceded_or_separated_nonempty_llist(BAR,match_case)
+  { "Expected exception pattern after `with` in try expression" }
+
+| /extension_constructor_rebind(BAR): BAR . constr_ident EQUAL constr_longident list(attribute)
+  /generic_constructor_declaration(BAR): BAR . constr_ident generalized_constructor_arguments list(attribute)
+  { "Expected constructor after `|`" }
+
+| /extension_constructor_rebind(BAR): BAR constr_ident EQUAL . constr_longident list(attribute)
+| /extension_constructor_rebind(epsilon): constr_ident EQUAL . constr_longident list(attribute)
+  { "Expected constructor path after `=`" }
+
+| [_* /object_type: LESS meth_list . GREATER]
+  { "Expected closing `>` after method list" }
+
+| [_* /atomic_type: LPAREN reversed_separated_nontrivial_llist(COMMA,core_type) . RPAREN _*]
+  { "Expected closing `)` after type list" }
+
+| /atomic_type: LPAREN reversed_separated_nontrivial_llist(COMMA,core_type) RPAREN . type_longident
+  /atomic_type: LPAREN reversed_separated_nontrivial_llist(COMMA,core_type) RPAREN . HASH clty_longident
+  { "Expected type path after parenthesized type list" }
+
+| /atomic_type: LPAREN reversed_separated_nontrivial_llist(COMMA,core_type) RPAREN HASH . clty_longident
+  { "Expected path to class type after `#`" }
+
+| /reversed_separated_nontrivial_llist(COMMA,core_type): reversed_separated_nontrivial_llist(COMMA,core_type) COMMA . core_type
+| /reversed_separated_nontrivial_llist(COMMA,core_type): core_type COMMA . core_type
+  { "Expected type after `,` in type list" }
+
+| [_* /delimited_type_supporting_local_open: LPAREN core_type . RPAREN
+      /reversed_separated_nontrivial_llist(COMMA,core_type): core_type . COMMA core_type]
+  { "Expected closing `)` or `,` in type list" }
+
+| [_* /structure_item: TYPE ext list(attribute) type_parameters type_longident . PLUSEQ private_flag reversed_bar_llist(extension_constructor) list(post_item_attribute)]
+| [_* /structure_item: TYPE ext list(attribute) NONREC type_parameters type_longident . PLUSEQ private_flag reversed_bar_llist(extension_constructor) list(post_item_attribute)]
+| [_* /signature_item: TYPE ext list(attribute) type_parameters type_longident . PLUSEQ private_flag reversed_bar_llist(extension_constructor_declaration) list(post_item_attribute)]
+| [_* /signature_item: TYPE ext list(attribute) NONREC type_parameters type_longident . PLUSEQ private_flag reversed_bar_llist(extension_constructor_declaration) list(post_item_attribute)]
+  { "Expected `+=` after type path" }
+
+| [_* /structure_item: TYPE ext list(attribute) type_parameters type_longident PLUSEQ private_flag . reversed_bar_llist(extension_constructor) list(post_item_attribute)]
+| [_* /structure_item: TYPE ext list(attribute) NONREC type_parameters type_longident PLUSEQ private_flag . reversed_bar_llist(extension_constructor) list(post_item_attribute)]
+| [_* /signature_item: TYPE ext list(attribute) type_parameters type_longident PLUSEQ private_flag . reversed_bar_llist(extension_constructor_declaration) list(post_item_attribute)]
+| [_* /signature_item: TYPE ext list(attribute) NONREC type_parameters type_longident PLUSEQ private_flag . reversed_bar_llist(extension_constructor_declaration) list(post_item_attribute)]
+  { "Expected a constructor after `+=` in type extension" }
+
+| [_* /module_type: SIG list(attribute) signature . END]
+  { "Expected closing `end` or a signature item" }
+
+| [_* /fun_expr: WHILE ext list(attribute) . seq_expr DO seq_expr DONE]
+  { "Expected expression after `while`" }
+
+| [_* /fun_expr: WHILE ext list(attribute) seq_expr . DO seq_expr DONE]
+  { "Expected `do` after expression in while expression" }
+
+| /fun_expr: WHILE ext list(attribute) seq_expr DO . seq_expr DONE
+  { "Expected expression after `do` in while expression" }
+
+| [_* /fun_expr: WHILE ext list(attribute) seq_expr DO seq_expr . DONE]
+  { "Expected `done` after expression in while expression" }
+
+| [_* /implementation: structure . EOF]
+  { "Expected a structure item or end of file" }
+
+| [_* /interface: signature . EOF]
+  { "Expected a signature item or end of file" }
+
+| /parse_any_longident': . parse_any_longident
+| /parse_mod_longident': . parse_mod_longident
+  { "Expected module path" }
+
+| /constr_extra_nonprefix_ident: LPAREN . RPAREN
+  /mk_longident(mod_ext_longident,__anonymous_42): LPAREN . COLONCOLON RPAREN
+  /val_extra_ident: LPAREN . operator RPAREN
+  { "Expected operator, `::`, or `)`" }
+
+| [_* /mk_longident(mod_ext_longident,UIDENT): mod_ext_longident . DOT UIDENT
+      /mk_longident(mod_ext_longident,__anonymous_42): mod_ext_longident . DOT _*]
+  { "Expected `.` after module path" }
+
+| /mk_longident(mod_ext_longident,__anonymous_42): mod_ext_longident DOT LPAREN . COLONCOLON RPAREN
+  /val_extra_ident: LPAREN . operator RPAREN
+  { "Expected operator or `::` after `.(`" }
+
+| /mk_longident(mod_ext_longident,__anonymous_42): mod_ext_longident DOT LPAREN COLONCOLON . RPAREN
+  { "Expected `)` after `::`" }
+
+| [_* /parse_any_longident: any_longident . EOF]
+  { "Expected end of module path" }
+
+| /parse_constr_longident': . parse_constr_longident
+  { "Expected constructor path" }
+
+| [_* /parse_constr_longident: constr_longident . EOF]
+  { "Expected end of constructor path" }
+
+| /parse_core_type': . parse_core_type
+  { "Expected type" }
+
+| [_* /parse_core_type: core_type . EOF]
+  { "Expected end of type" }
+
+| /parse_expression': . parse_expression
+  { "Expected expression" }
+
+| [_* /parse_expression: seq_expr . EOF]
+  { "Expected end of expression" }
+
+| /parse_mod_ext_longident': . parse_mod_ext_longident
+  { "Expected extended module path" }
+
+| [_* /mk_longident(mod_ext_longident,UIDENT): mod_ext_longident . DOT UIDENT
+      /parse_mod_ext_longident: mod_ext_longident . EOF]
+| [_* /mk_longident(mod_longident,UIDENT): mod_longident . DOT UIDENT
+      /parse_mod_longident: mod_longident . EOF]
+  { "Expected `.` or end of module path" }
+
+| /parse_module_expr': . parse_module_expr
+  { "Expected module expression" }
+
+| [_* /parse_module_expr: module_expr . EOF]
+  { "Expected end of module expression" }
+
+| /parse_module_type': . parse_module_type
+  { "Expected module type" }
+
+| [_* /parse_module_type: module_type . EOF]
+  { "Expected end of module type" }
+
+| /parse_mty_longident': . parse_mty_longident
+  { "Expected module type path" }
+
+| [_* /parse_mty_longident: mty_longident . EOF]
+  { "Expected end of module type path" }
+
+| /parse_pattern': . parse_pattern
+  { "Expected pattern" }
+
+| [_* /labeled_tuple_pat_element_list(pattern): pattern . COMMA _*
+      /parse_pattern: pattern . EOF
+      /reversed_labeled_tuple_pattern(pattern): pattern . COMMA DOTDOT]
+  { "Expected end of input or `,` after pattern" }
+
+| /parse_val_longident': . parse_val_longident
+  { "Expected value path" }
+
+| [_* /parse_val_longident: val_longident . EOF]
+  { "Expected end of input after identifier" }
+
+| [_* /mk_longident(mod_longident,UIDENT): mod_longident . DOT UIDENT
+      /mk_longident(mod_longident,val_ident): mod_longident . DOT val_ident]
+  { "Expected `.` after identifier" }
+
+| [_* /toplevel_phrase: toplevel_directive . SEMISEMI]
+  { "Expected `;;` after directive" }
+
+| [_* /toplevel_phrase: seq_expr list(post_item_attribute) . SEMISEMI]
+| [_* /toplevel_phrase: list(text_str(structure_item)) . SEMISEMI]
+  { "Expected `;;` after phrase" }
+
+| [_* /use_file: seq_expr list(post_item_attribute) list(use_file_element) . EOF]
+| [_* /use_file: list(use_file_element) . EOF]
+  { "Expected structure item or end of file" }
+
+| [_* /mk_longident(mod_ext_longident,LIDENT): mod_ext_longident . DOT LIDENT
+      /mk_longident(mod_ext_longident,UIDENT): mod_ext_longident . DOT UIDENT]
+| [_* /mk_longident(mod_longident,LIDENT): mod_longident . DOT LIDENT
+      /mk_longident(mod_longident,UIDENT): mod_longident . DOT UIDENT]
+| [_* /mk_longident(mod_ext_longident,UIDENT): mod_ext_longident . DOT UIDENT
+      /mk_longident(mod_ext_longident,ident): mod_ext_longident . DOT ident]
+  { "Expected `.` to continue module path" }
+
+| [_* /module_type: _* . MINUSGREATER module_type]
+| [_* /module_expr: _* . MINUSGREATER module_expr]
+  { "Expected `->` after functor arguments" }
+
+| /val_extra_ident: LPAREN . operator RPAREN
+  { "Expected operator after `(` in value identifier" }
+
+| /generic_constructor_declaration(BAR): BAR . constr_ident generalized_constructor_arguments list(attribute)
+  { "Expected constructor name after `|`" }
+
+| [_* /delimited_type_supporting_local_open: LPAREN core_type . RPAREN]
+  { "Expected closing `)` after type expression" }
+
+| /delimited_type_supporting_local_open: LBRACKET . tag_field RBRACKET
+  /delimited_type_supporting_local_open: LBRACKET . BAR reversed_separated_nonempty_llist(BAR,row_field) RBRACKET
+  /delimited_type_supporting_local_open: LBRACKET . row_field BAR reversed_separated_nonempty_llist(BAR,row_field) RBRACKET
+  { "Expected row field after `[`" }
+
+| /constr_extra_nonprefix_ident: LBRACKET . RBRACKET
+  { "Expected `]` after `[`" }
+
+| [_* /type_parameter: type_variance . type_variable]
+  { "Expected type variable after variance annotation" }
+
+| [_* /generic_type_declaration(no_nonrec_flag,type_subst_kind): TYPE ext list(attribute) NONREC type_parameters . LIDENT COLONEQUAL nonempty_type_kind reversed_llist(preceded(CONSTRAINT,constrain)) list(post_item_attribute)
+      /generic_type_declaration(nonrec_flag,type_kind): TYPE ext list(attribute) NONREC type_parameters . LIDENT type_kind reversed_llist(preceded(CONSTRAINT,constrain)) list(post_item_attribute)
+      /signature_item: TYPE ext list(attribute) NONREC type_parameters . type_longident PLUSEQ private_flag reversed_bar_llist(extension_constructor_declaration) list(post_item_attribute)]
+| [_* /list(generic_and_type_declaration(type_kind)): AND list(attribute) type_parameters . LIDENT type_kind reversed_llist(preceded(CONSTRAINT,constrain)) list(post_item_attribute) list(generic_and_type_declaration(type_kind))]
+| [_* /list(generic_and_type_declaration(type_subst_kind)): AND list(attribute) type_parameters . LIDENT COLONEQUAL nonempty_type_kind reversed_llist(preceded(CONSTRAINT,constrain)) list(post_item_attribute) list(generic_and_type_declaration(type_subst_kind))]
+| [_* /generic_type_declaration(nonrec_flag,type_kind): TYPE ext list(attribute) type_parameters . LIDENT type_kind reversed_llist(preceded(CONSTRAINT,constrain)) list(post_item_attribute)
+      /structure_item: TYPE ext list(attribute) type_parameters . type_longident PLUSEQ private_flag reversed_bar_llist(extension_constructor) list(post_item_attribute)]
+| [_* /generic_type_declaration(no_nonrec_flag,type_subst_kind): TYPE ext list(attribute) type_parameters . LIDENT COLONEQUAL nonempty_type_kind reversed_llist(preceded(CONSTRAINT,constrain)) list(post_item_attribute)
+      /generic_type_declaration(nonrec_flag,type_kind): TYPE ext list(attribute) type_parameters . LIDENT type_kind reversed_llist(preceded(CONSTRAINT,constrain)) list(post_item_attribute)
+      /signature_item: TYPE ext list(attribute) type_parameters . type_longident PLUSEQ private_flag reversed_bar_llist(extension_constructor_declaration) list(post_item_attribute)]
+  { "Expected type identifier after type parameters" }
