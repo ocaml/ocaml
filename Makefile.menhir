@@ -120,9 +120,12 @@ MENHIR_LIB_MODULES = \
 
 .PHONY: import-menhirLib
 import-menhirLib: | boot/menhir
-	@sh ./parsing/standalone-menhirLib.sh \
+	@sh ./parsing/standalone-menhirLib.sh ml \
 	  $(shell $(MENHIR) --suggest-menhirLib) \
 	  $(MENHIR_LIB_MODULES) > $|/menhirLib.ml
+	@sh ./parsing/standalone-menhirLib.sh mli \
+	  $(shell $(MENHIR) --suggest-menhirLib) \
+	  $(MENHIR_LIB_MODULES) > $|/menhirLib.mli
 
 ## demote-menhir
 
