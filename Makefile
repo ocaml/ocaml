@@ -2611,7 +2611,7 @@ $(foreach file, asmcomp/emit.ml $(ARCH_SPECIFIC),\
 DEP_DIRS = \
   utils parsing typing bytecomp asmcomp middle_end lambda file_formats \
   middle_end/closure middle_end/flambda middle_end/flambda/base_types driver \
-  toplevel toplevel/byte toplevel/native lex tools debugger ocamldoc ocamltest \
+  toplevel toplevel/byte toplevel/native lex tools debugger ocamldoc \
   testsuite/lib testsuite/tools otherlibs/dynlink
 
 DEP_FILES = $(addsuffix .depend, $(DEP_DIRS))

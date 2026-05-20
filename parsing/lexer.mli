@@ -48,6 +48,7 @@ val in_comment : unit -> bool
 val in_string : unit -> bool
 
 val is_keyword : string -> bool
+val as_keyword : Parser.token -> string option
 
 val print_warnings : bool ref
 val handle_docstrings: bool ref
