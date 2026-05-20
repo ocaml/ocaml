@@ -94,9 +94,9 @@ promote-menhir: parsing/parser.mly
 	  parsing/camlinternalLrgrep_runtime.mli
 	@cp -f $(shell ocamlfind query lrgrep.runtime)/lrgrep_runtime.ml \
 	  parsing/camlinternalLrgrep_runtime.ml
-	$(LRGREP) compile -g parsing/parser.cmly -s parsing/errors.lrgrep -o parsing/errors.ml.tmp
-	@ sed -e 's/\<Lrgrep_runtime\>/camlinternal&/g' < parsing/errors.ml.tmp > parsing/errors.ml
-	@ rm -f parsing/errors.ml.tmp
+	$(LRGREP) compile -g parsing/parser.cmly -s parsing/parse_errors.lrgrep -o parsing/parse_errors.ml
+	@ sed -e 's/\<Lrgrep_runtime\>/Camlinternal&/g' < parsing/parse_errors.ml > parsing/parse_errors.ml.tmp
+	@ mv parsing/parse_errors.ml.tmp parsing/parse_errors.ml
 # The generated parser.ml may contain lexer directives containing
 # the absolute path to Menhir's standard library on the promoter's machine.
 # This is benign but will generate pointless churn if another developer

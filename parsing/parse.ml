@@ -40,17 +40,47 @@ let maybe_skip_phrase lexbuf =
   | Parser.SEMISEMI | Parser.EOF -> ()
   | _ -> skip_phrase lexbuf
 
-type 'a parser =
-  (Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> 'a
+let get_triple lexbuf =
+  let token = Lexer.token lexbuf in
+  let {Lexing. lex_start_p; lex_curr_p; _} = lexbuf in
+  (token, lex_start_p, lex_curr_p)
 
-let wrap (parser : 'a parser) lexbuf : 'a =
+let rec parse_loop lexbuf last_token last_input checkpoint =
+  match checkpoint with
+  | Parser.MenhirInterpreter.InputNeeded env ->
+     let triple = get_triple lexbuf in
+     parse_loop lexbuf triple env
+       (Parser.MenhirInterpreter.offer checkpoint triple)
+  | Parser.MenhirInterpreter.HandlingError _ ->
+     let _, loc_start, loc_end = last_token in
+     let loc = {Location. loc_start; loc_end; loc_ghost = false} in
+     begin match Parse_errors.error_messages last_input last_token with
+     | Some msg ->
+        raise (Syntaxerr.Error (Syntaxerr.Custom (loc, msg)))
+     | None ->
+        raise (Syntaxerr.Error (Syntaxerr.Other loc))
+     end
+  | Parser.MenhirInterpreter.Accepted ast -> ast
+  | _ ->
+     parse_loop lexbuf last_token last_input
+       (Parser.MenhirInterpreter.resume ~strategy:`Simplified checkpoint)
+
+let run_parser lexbuf checkpoint =
+  match checkpoint with
+  | Parser.MenhirInterpreter.InputNeeded env ->
+     let triple = get_triple lexbuf in
+     parse_loop lexbuf triple env
+       (Parser.MenhirInterpreter.offer checkpoint triple)
+  | _ -> assert false
+
+let wrap entrypoint lexbuf : 'a =
   try
     Docstrings.init ();
     let keyword_edition =
       Clflags.(Option.map parse_keyword_edition !keyword_edition)
     in
     Lexer.init ?keyword_edition ();
-    let ast = parser token lexbuf in
+    let ast = run_parser lexbuf (entrypoint lexbuf.Lexing.lex_curr_p) in
     Parsing.clear_parser();
     Docstrings.warn_bad_docstrings ();
     last_token := Parser.EOF;
@@ -70,43 +100,22 @@ let wrap (parser : 'a parser) lexbuf : 'a =
       then maybe_skip_phrase lexbuf;
       raise(Syntaxerr.Error(Syntaxerr.Other loc))
 
-(* We pass [--strategy simplified] to Menhir, which means that we wish to use
-   its "simplified" strategy for handling errors. When a syntax error occurs,
-   the current token is replaced with an [error] token. The parser then
-   continues shifting and reducing, as far as possible. After (possibly)
-   shifting the [error] token, though, the parser remains in error-handling
-   mode, and does not request the next token, so the current token remains
-   [error].
+let implementation = wrap Parser.Incremental.implementation
+and interface = wrap Parser.Incremental.interface
+and toplevel_phrase = wrap Parser.Incremental.toplevel_phrase
+and use_file = wrap Parser.Incremental.use_file
+and core_type = wrap Parser.Incremental.parse_core_type
+and expression = wrap Parser.Incremental.parse_expression
+and pattern = wrap Parser.Incremental.parse_pattern
+let module_type = wrap Parser.Incremental.parse_module_type
+let module_expr = wrap Parser.Incremental.parse_module_expr
 
-   In OCaml's grammar, the [error] token always appears at the end of a
-   production, and this production always raises an exception. In such
-   a situation, the strategy described above means that:
-
-   - either the parser will not be able to shift [error],
-     and will raise [Parser.Error];
-
-   - or it will be able to shift [error] and will then reduce
-     a production whose semantic action raises an exception.
-
-   In either case, the parser will not attempt to read one token past
-   the syntax error. *)
-
-let implementation = wrap Parser.implementation
-and interface = wrap Parser.interface
-and toplevel_phrase = wrap Parser.toplevel_phrase
-and use_file = wrap Parser.use_file
-and core_type = wrap Parser.parse_core_type
-and expression = wrap Parser.parse_expression
-and pattern = wrap Parser.parse_pattern
-let module_type = wrap Parser.parse_module_type
-let module_expr = wrap Parser.parse_module_expr
-
-let longident = wrap Parser.parse_any_longident
-let val_ident = wrap Parser.parse_val_longident
-let constr_ident= wrap Parser.parse_constr_longident
-let extended_module_path = wrap Parser.parse_mod_ext_longident
-let simple_module_path = wrap Parser.parse_mod_longident
-let type_ident = wrap Parser.parse_mty_longident
+let longident = wrap Parser.Incremental.parse_any_longident
+let val_ident = wrap Parser.Incremental.parse_val_longident
+let constr_ident= wrap Parser.Incremental.parse_constr_longident
+let extended_module_path = wrap Parser.Incremental.parse_mod_ext_longident
+let simple_module_path = wrap Parser.Incremental.parse_mod_longident
+let type_ident = wrap Parser.Incremental.parse_mty_longident
 
 (* Error reporting for Syntaxerr *)
 (* The code has been moved here so that one can reuse Pprintast.tyvar *)
@@ -144,7 +153,9 @@ let prepare_error err =
         (Style.as_inline_code Pprintast.Doc.tyvar) var
         Style.inline_code var
   | Other loc ->
-      Location.errorf ~loc "Syntax error"
+      Location.error ~loc "Syntax error"
+  | Custom (loc, msg) ->
+      Location.error ~loc msg
   | Ill_formed_ast (loc, s) ->
       Location.errorf ~loc
         "broken invariant in parsetree: %s" s

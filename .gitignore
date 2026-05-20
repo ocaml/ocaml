@@ -222,6 +222,7 @@ META
 
 /parsing/parser.ml
 /parsing/parser.mli
+/parsing/parser.cmly
 /parsing/lexer.ml
 /parsing/lexer_tmp.mll
 /parsing/lexer_tmp.ml

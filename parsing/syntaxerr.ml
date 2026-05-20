@@ -29,6 +29,7 @@ type error =
   | Applicative_path of Location.t
   | Variable_in_scope of Location.t * string
   | Other of Location.t
+  | Custom of Location.t * string
   | Ill_formed_ast of Location.t * string
   | Invalid_package_type of Location.t * invalid_package_type
   | Removed_string_set of Location.t
@@ -41,6 +42,7 @@ let location_of_error = function
   | Applicative_path l
   | Variable_in_scope(l,_)
   | Other l
+  | Custom (l,_)
   | Not_expecting (l, _)
   | Ill_formed_ast (l, _)
   | Invalid_package_type (l, _)
