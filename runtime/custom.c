@@ -35,7 +35,7 @@ _Atomic uintnat caml_custom_minor_max_bsz = Custom_minor_max_bsz_def;
    block. It is used for two purposes:
    1. to trigger a minor GC when the amount held by the minor heap gets
       over max_minor
-   2. to inform the major GC, if/when the block gets promoted.
+   2. to inform the major GC if/when the block gets promoted.
 */
 CAMLexport value caml_alloc_custom (const struct custom_operations * ops,
                                     uintnat bsz,
@@ -60,8 +60,8 @@ CAMLexport value caml_alloc_custom (const struct custom_operations * ops,
       }
     }
   } else {
-    caml_domain_state *d = Caml_state;
     result = caml_alloc_shr(wosize, Custom_tag);
+    caml_domain_state *d = Caml_state;
     Caml_update_major_allocated_words(off_heap, d, mem, 1);
     Custom_ops_val(result) = ops;
     result = caml_check_urgent_gc(result);

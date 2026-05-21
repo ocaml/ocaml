@@ -894,7 +894,6 @@ static atomic_alloc_counter work_counter;
    synchronous major GC.
 */
 static uintnat latest_sweep_allocs;
-static caml_alloc_counter work_at_sweep_start;
 
 /* Small-memory mode: at the end of sweeping, we will not switch to
    Phase_mark_and_sweep_main (and thus will stay in idle mode) until
@@ -913,8 +912,6 @@ struct {
   atomic_uintnat advance_work;
   caml_alloc_counter alloc_at_phase_start;
 } pacing_ring [PP_NUM_PHASES];
-/* XXX Note: pacing_ring[pp_sweep].alloc_at_phase_start supersedes
-   work_counter_at_sweep_start */
 
 static inline pacing_phase pp_next (pacing_phase p)
 {
@@ -934,7 +931,7 @@ static inline pacing_phase pp_phase (void)
 
 static void advance_pacing_ring (pacing_phase p)
 {
-  /* catch up on alloc counter if we are too much behind */
+  /* Make alloc_counter catch up if it is too much behind. */
   caml_alloc_counter *c = &pacing_ring[p].alloc_at_phase_start;
   if (c->on_heap > work_counter.on_heap) work_counter.on_heap = c->on_heap;
   if (c->off_heap > work_counter.off_heap) work_counter.off_heap = c->off_heap;
@@ -942,9 +939,7 @@ static void advance_pacing_ring (pacing_phase p)
 
   /* update pacing ring */
   pacing_ring[p].advance_work = 0;
-  c->on_heap = alloc_counter.on_heap;
-  c->off_heap = alloc_counter.off_heap;
-  c->ephe = alloc_counter.ephe;
+  Caml_ac_assign(*c,alloc_counter);
 }
 
 /* TODO find the right value for sigma. */
@@ -1039,20 +1034,14 @@ static inline intnat diffmod (uintnat x1, uintnat x2)
 */
 void caml_init_major_pacing (void)
 {
-  alloc_counter.on_heap = 0;
-  alloc_counter.off_heap = 0;
-  alloc_counter.ephe = 0;
-  work_counter.on_heap = 0;
-  work_counter.off_heap = 0;
-  work_counter.ephe = 0;
+  Caml_ac_clear (alloc_counter);
+  Caml_ac_clear (work_counter);
   caml_gc_log ("work_counter: initialize to 0/0/0");
   latest_sweep_allocs = 0;
   work_counter_min_before_mark = caml_small_heap_limit;
   for (int i = 0; i < PP_NUM_PHASES; i++){
     pacing_ring[i].advance_work = 0;
-    pacing_ring[i].alloc_at_phase_start.on_heap = 0;
-    pacing_ring[i].alloc_at_phase_start.off_heap = 0;
-    pacing_ring[i].alloc_at_phase_start.ephe = 0;
+    Caml_ac_clear (pacing_ring[i].alloc_at_phase_start);
   }
 }
 
@@ -1096,18 +1085,10 @@ update_major_slice_work(intnat howmuch,
   my_alloc_resumed_count = *d->allocated_words_resumed;
 
   /* ... and clear them. */
-  d->allocated_words->on_heap = 0;
-  d->allocated_words->off_heap = 0;
-  d->allocated_words->ephe = 0;
-  d->allocated_words_direct->on_heap = 0;
-  d->allocated_words_direct->off_heap = 0;
-  d->allocated_words_direct->ephe = 0;
-  d->allocated_words_suspended->on_heap = 0;
-  d->allocated_words_suspended->off_heap = 0;
-  d->allocated_words_suspended->ephe = 0;
-  d->allocated_words_resumed->on_heap = 0;
-  d->allocated_words_resumed->off_heap = 0;
-  d->allocated_words_resumed->ephe = 0;
+  Caml_ac_clear (*d->allocated_words);
+  Caml_ac_clear (*d->allocated_words_direct);
+  Caml_ac_clear (*d->allocated_words_suspended);
+  Caml_ac_clear (*d->allocated_words_resumed);
 
   /* Transfer the domain-local allocation counters to the global counters,
      offset by the suspended/resumed counts. */
@@ -1152,16 +1133,12 @@ update_major_slice_work(intnat howmuch,
 
   if (howmuch == AUTO_TRIGGERED_MAJOR_SLICE ||
       howmuch == GC_CALCULATE_MAJOR_SLICE) {
-    d->slice_target->on_heap = alloc_counter.on_heap;
-    d->slice_target->off_heap = alloc_counter.off_heap;
-    d->slice_target->ephe = alloc_counter.ephe;
+    Caml_ac_assign(*d->slice_target, alloc_counter);
     d->slice_budget = 0;
   }else{
     /* forced or opportunistic GC slice with explicit quantity */
     /* slice_target is already reached */
-    d->slice_target->on_heap = work_counter.on_heap;
-    d->slice_target->off_heap = work_counter.off_heap;
-    d->slice_target->ephe = work_counter.ephe;
+    Caml_ac_assign(*d->slice_target, work_counter);
     d->slice_budget = howmuch;
   }
 
@@ -1982,7 +1959,7 @@ void caml_mark_roots_stw (int participant_count,
     atomic_store_relaxed(&global_roots_status, WAITING);
 
     caml_alloc_counter c;
-    Caml_ac_op(c, work_counter, -, work_at_sweep_start);
+    Caml_ac_op(c, work_counter, -, pacing_ring[pp_sweep].alloc_at_phase_start);
     latest_sweep_allocs = c.on_heap + c.off_heap;
     advance_pacing_ring(pp_mark);
 
@@ -2111,15 +2088,12 @@ static void cycle_major_heap_from_stw_single(
   caml_atomic_counter_init(&num_domains_to_mark, num_domains_in_stw);
 
   caml_gc_phase = Phase_sweep_main;
-  work_at_sweep_start.on_heap = work_counter.on_heap;
-  work_at_sweep_start.off_heap = work_counter.off_heap;
-  work_at_sweep_start.ephe = work_counter.ephe;  /* unused */
+  advance_pacing_ring (pp_sweep);
   caml_gc_log ("work_counter: %" CAML_PRIuNAT "/%" CAML_PRIuNAT
                "/%" CAML_PRIuNAT " at start of sweep",
-               work_at_sweep_start.on_heap,
-               work_at_sweep_start.off_heap,
-               work_at_sweep_start.ephe);
-  advance_pacing_ring (pp_sweep);
+               pacing_ring[pp_sweep].alloc_at_phase_start.on_heap,
+               pacing_ring[pp_sweep].alloc_at_phase_start.off_heap,
+               pacing_ring[pp_sweep].alloc_at_phase_start.ephe);
 
   work_counter_min_before_mark =
     work_counter.on_heap + work_counter.off_heap + caml_small_heap_limit;
