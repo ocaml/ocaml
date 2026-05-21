@@ -149,6 +149,7 @@ type control =
          [small_heap_limit]
        - less than [small_heap_limit + (live data size) * space overhead]
          when live data is smaller than [small_heap_limit]
+       Note: [small_heap_limit] can be changed by using the {!Tweak} module.
        Default: 120. *)
 
     verbose : int;
