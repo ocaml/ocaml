@@ -929,6 +929,7 @@ static inline pacing_phase pp_phase (void)
   case Phase_mark_final: return pp_mark;
   case Phase_sweep_ephe: return pp_ephe;
   }
+  CAMLunreachable();
 }
 
 static void advance_pacing_ring (pacing_phase p)
