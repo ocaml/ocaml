@@ -78,6 +78,15 @@ Working version
 - #14717: assign 'unique_id' early during domain creation to help debugging
   (Gabriel Scherer, review by Olivier Nicole)
 
+- #14820: caml_ba_alloc must account for memory it allocated itself.
+  CAML_BA_SUBARRAY (introduced in 5.2) with data=NULL would result in the
+  Gc accounting for the allocation as 0 bytes, which can eventually lead
+  to OOM. This condition never occurs in the compiler itself, but occurs
+  in external C bindings that attempt to create a new bigarray in the
+  shape of an existing one. For backwards compatibility ignore CAML_BA_SUBARRAY
+  when data is NULL.
+  (Edwin Török)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776: Keep expansion and new well-foundedness check
