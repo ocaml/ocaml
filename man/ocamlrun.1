@@ -178,8 +178,8 @@ Default: 100.
 Maximum amount of out-of-heap
 memory for each custom value allocated in the minor heap. When a custom
 value is allocated with
-.B caml_alloc_custom_mem
-(e.g. bigarrays), and holds more than this many bytes of off-heap memory,
+.BR caml_alloc_custom or caml_alloc_custom_mem ,
+and holds more than this many bytes of off-heap memory,
 it will be allocated directly on the major heap.
 Default: 70000 bytes.
 .TP

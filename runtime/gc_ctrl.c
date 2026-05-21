@@ -509,24 +509,24 @@ caml_result caml_gc_ramp_up(value callback,
     return res;
 }
 
-void caml_gc_ramp_down(caml_alloc_counter ramp_up_words) {
+void caml_gc_ramp_down(caml_alloc_counter ramp_up_work) {
   Caml_ac_op (*Caml_state->allocated_words_resumed,
-              *Caml_state->allocated_words_resumed, +, ramp_up_words);
+              *Caml_state->allocated_words_resumed, +, ramp_up_work);
 }
 
 CAMLprim value caml_ml_gc_ramp_up(value callback) {
   CAMLparam1(callback);
   CAMLlocal2(v, c);
-  caml_alloc_counter deferred_words;
-  caml_result res = caml_gc_ramp_up(callback, &deferred_words);
+  caml_alloc_counter deferred_work;
+  caml_result res = caml_gc_ramp_up(callback, &deferred_work);
   if (caml_result_is_exception(res)) {
     // We will re-raise the exception below; before that,
     // we ramp_down to avoid discarding the deferred work.
-    caml_gc_ramp_down(deferred_words);
+    caml_gc_ramp_down(deferred_work);
   }
   v = caml_get_value_or_raise(res);
   c = caml_alloc(3, Abstract_tag);
-  *(caml_alloc_counter *)(Op_val(c)) = deferred_words;
+  *(caml_alloc_counter *)(Op_val(c)) = deferred_work;
   CAMLreturn (caml_alloc_2(0, v, c));
 }
 

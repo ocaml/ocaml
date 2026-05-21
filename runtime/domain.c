@@ -901,6 +901,8 @@ static void domain_create(uintnat initial_minor_heap_wsize,
 
   CAMLassert(!interruptor_has_pending(s));
 
+  domain_state->minor_off_heap_size = 0;
+
   domain_state->sweep_work_done_between_slices = 0;
   domain_state->mark_work_done_between_slices = 0;
 

@@ -239,7 +239,8 @@ CAMLexport CAMLweakdef void caml_modify (volatile value *fp, value val)
    free it.  In both cases, you pass as argument the size (in bytes)
    of the block being allocated or freed.
 
-   Note: this API is obsolete; we should call
+   Note: this API is obsolete; custom block allocation does the right
+   thing, which is to call
    Caml_update_major_allocated_words with kind=off_heap, but only when
    the block that holds the off-heap memory goes into the major heap
    (by promotion or direct allocation).
@@ -267,19 +268,18 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
 /* This function is used to trigger the minor GC whenever the amount of
    off-heap memory held by the minor heap goes over the limit
    (minor heap size * [caml_custom_minor_ratio] / 100).
-   [res] is a size in words. In the case of custom blocks, it is the
+   [wsz] is a size in words. In the case of custom blocks, it is the
    size of the off-heap memory held by the custom block that was just
    allocated on the minor heap.
-   [max] is unused.
 */
-CAMLexport void caml_adjust_minor_gc_speed (mlsize_t res, mlsize_t max)
+CAMLexport void caml_adjust_minor_gc_speed (mlsize_t wsz, mlsize_t unused)
 {
   mlsize_t minor_off_heap_max =
     (Caml_state->minor_heap_wsz) / 100
     * atomic_load_relaxed(&caml_custom_minor_ratio);
 
-  Caml_state->extra_heap_resources_minor += res;
-  if (Caml_state->extra_heap_resources_minor > minor_off_heap_max) {
+  Caml_state->minor_off_heap_size += wsz;
+  if (Caml_state->minor_off_heap_size > minor_off_heap_max) {
     caml_request_minor_gc ();
   }
 }
