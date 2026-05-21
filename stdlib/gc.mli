@@ -126,14 +126,7 @@ type control =
        active domains. Default: 256k. *)
 
     major_heap_increment : int;
-    (** How much to add to the major heap when increasing it. If this
-        number is less than or equal to 1000, it is a percentage of
-        the current heap size (i.e. setting it to 100 will double the heap
-        size at each increase). If it is more than 1000, it is a fixed
-        number of words that will be added to the heap.
-
-        This field is currently not available in OCaml 5: the field value is
-        always [0]. *)
+    (** Unused since Ocaml 5.0. *)
 
     space_overhead : int;
     (** The major GC speed is computed from this parameter, along with
@@ -149,7 +142,6 @@ type control =
          [small_heap_limit]
        - less than [small_heap_limit + (live data size) * space overhead]
          when live data is smaller than [small_heap_limit]
-       Note: [small_heap_limit] can be changed by using the {!Tweak} module.
        Default: 120. *)
 
     verbose : int;
@@ -172,47 +164,20 @@ type control =
        Default: 0. *)
 
     max_overhead : int;
-    (** Heap compaction is triggered when the estimated amount
-       of "wasted" memory is more than [max_overhead] percent of the
-       amount of live data.  If [max_overhead] is set to 0, heap
-       compaction is triggered at the end of each major GC cycle
-       (this setting is intended for testing purposes only).
-       If [max_overhead >= 1000000], compaction is never triggered.
-
-       This field is currently not available in OCaml 5: the field value is
-       always [0]. *)
+    (** Unused since OCaml 5.0. *)
 
     stack_limit : int;
     (** The maximum size of the fiber stacks (in words).
        Default: 128M. *)
 
     allocation_policy : int;
-    (** The policy used for allocating in the major heap.
-
-        This field is currently not available in OCaml 5: the field value is
-        always [0].
-
-        Prior to OCaml 5.0, possible values were 0, 1 and 2.
-
-        - 0 was the next-fit policy
-
-        - 1 was the first-fit policy (since OCaml 3.11)
-
-        - 2 was the best-fit policy (since OCaml 4.10)
-
-        @since 3.11 *)
+    (** Unused since OCaml 5.0. *)
 
     window_size : int;
-    (** The size of the window used by the major GC for smoothing
-        out variations in its workload. This is an integer between
-        1 and 50.
-        @since 4.03
-
-        This field is currently not available in OCaml 5: the field value is
-        always [0]. *)
+    (** Unused since OCaml 5.0. *)
 
     custom_major_ratio : int;
-    (** unused since 5.6 *)
+    (** Unused since Ocaml 5.6. *)
 
     custom_minor_ratio : int;
     (** Bound on floating garbage for out-of-heap memory held by
