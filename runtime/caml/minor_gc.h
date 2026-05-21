@@ -61,7 +61,7 @@ struct caml_ephe_ref_table CAML_TABLE_STRUCT(struct caml_ephe_ref_elt);
 
 struct caml_custom_elt {
   value block;     /* The finalized block in the minor heap. */
-  mlsize_t mem;    /* Size (words) of off-heap data. */
+  mlsize_t mem;    /* Size (in words) of off-heap data. */
 };
 struct caml_custom_table CAML_TABLE_STRUCT(struct caml_custom_elt);
 

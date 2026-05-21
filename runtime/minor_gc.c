@@ -510,7 +510,7 @@ void caml_empty_minor_heap_domain_clear(caml_domain_state* domain)
   clear_table ((struct generic_table *)&minor_tables->ephe_ref);
   clear_table ((struct generic_table *)&minor_tables->custom);
 
-  domain->extra_heap_resources_minor = 0.0;
+  domain->minor_off_heap_size = 0;
 }
 
 /* Try to do a major slice, returns nonzero if there was any work available,
