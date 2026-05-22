@@ -908,7 +908,7 @@ typedef enum pacing_phase { pp_sweep = 0, pp_mark, pp_ephe } pacing_phase;
    alloc-counters-at-start-of-phase for the current pacing phase
    and the previous 2 pacing phases.
 */
-struct {
+static struct {
   atomic_uintnat advance_work;
   caml_alloc_counter alloc_at_phase_start;
 } pacing_ring [PP_NUM_PHASES];
@@ -1057,7 +1057,7 @@ void caml_reset_major_pacing(bool add_overhead)
   uintnat virtual_sweep_work = latest_sweep_allocs;
   uintnat w = work_counter.on_heap + work_counter.off_heap;
   if (add_overhead){
-    virtual_sweep_work = virtual_sweep_work * (1 + pp_beta);
+    virtual_sweep_work = (uintnat) (virtual_sweep_work * (1 + pp_beta));
   }
   work_counter_min_before_mark =
     w + max2 (virtual_sweep_work, caml_small_heap_limit);
@@ -1237,7 +1237,8 @@ static intnat get_major_slice_work(collection_slice_mode mode){
   intnat d_ephe =
     max2(0, diffmod (d->slice_target->ephe, work_counter.ephe));
 
-  intnat budget = pp_c[ph] * d_on + pp_c1[ph] * d_off + pp_c2[ph] * d_ephe;
+  intnat budget =
+    (intnat) (pp_c[ph] * d_on + pp_c1[ph] * d_off + pp_c2[ph] * d_ephe);
 
   /* The slice budget is the max of the alloc-driven budget and
      the explicit budget (d->slice_budget). */
@@ -1265,14 +1266,15 @@ static void translate_back (pacing_phase p, uintnat *w,
   if (d_off < 0) d_off = 0;
   if (d_ephe < 0) d_ephe = 0;
   double diff_work = d_on * pp_c[p] + d_off * pp_c1[p] + d_ephe * pp_c2[p];
+  CAMLassert (diff_work >= 0);
   if (diff_work > *w){
     double p = *w / diff_work;
-    diffs->on_heap *= p;
-    diffs->off_heap *= p;
-    diffs->ephe *= p;
+    diffs->on_heap = (uintnat) (diffs->on_heap * p);
+    diffs->off_heap = (uintnat) (diffs->off_heap * p);
+    diffs->ephe = (uintnat) (diffs->ephe * p);
     *w = 0;
   }else{
-    *w = *w - diff_work;
+    *w = *w - (uintnat) diff_work;
   }
 }
 
