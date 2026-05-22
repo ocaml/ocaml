@@ -2294,6 +2294,9 @@ void caml_domain_terminate(bool last)
     if (!marking_and_sweeping_done(domain_state))
       continue;
 
+    /* Transfer the domain's allocation counts to the global counters. */
+    caml_flush_alloc_counters();
+
     /* Orphan the local shared heap.
        This is only valid when [sweeping_done], and does
        not create any new major GC work. */
