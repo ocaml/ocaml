@@ -2709,12 +2709,6 @@ void caml_finish_marking (void)
     CAML_EV_BEGIN(EV_MAJOR_FINISH_MARKING);
     empty_mark_stack();
     shrink_mark_stack();
-    /* We call update_major_slice_work to update the statistics and
-       transfer the domain's allocation counters to the global counters.
-       It will also compute slice_target and slice_budget, but we don't
-       need them.
-    */
-    update_major_slice_work (1, true);
     CAMLassert(Caml_state->marking_done);
     CAML_EV_END(EV_MAJOR_FINISH_MARKING);
   }
@@ -2735,6 +2729,16 @@ void caml_finish_sweeping (void)
     caml_handle_incoming_interrupts();
   }
   CAML_EV_END(EV_MAJOR_FINISH_SWEEPING);
+}
+
+void caml_flush_alloc_counters (void)
+{
+  /* We call update_major_slice_work to update the statistics and
+     transfer the domain's allocation counters to the global counters.
+     It will also compute slice_target and slice_budget, but we don't
+     need them.
+  */
+  update_major_slice_work (1, true);
 }
 
 int caml_init_major_gc(caml_domain_state* d) {
