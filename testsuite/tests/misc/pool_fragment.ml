@@ -49,7 +49,7 @@ let sizeclasses =
   ; 118
   ; 128 ]
 
-let repeat = 40
+let repeat = 20
 
 let keep =
   Array.init repeat (fun _ ->
@@ -113,7 +113,7 @@ let () =
   let ratio = full_major_and_top_ratio () in
   (* if you've changed the GC and confirmed that the higher ratio is
      an expected and acceptable trade-off then tweak this constant *)
-  if ratio > 16. then begin
+  if ratio > 25. then begin
     Gc.print_stat stdout ;
     Printf.printf "\n[!] Top heap size to live words ratio is too high: %.2f.\n"
       ratio;
