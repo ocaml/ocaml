@@ -102,22 +102,33 @@ let compact_and_ratio () =
   (* compaction can't decrease top_heap_words, just heap_words *)
   float_of_int gc.heap_words /. float_of_int gc.live_words
 
+(* See c89bff11ab944e868413f446e1444577e7f6cdbb *)
+let triage_msg = "Have you changed the GC?"
+let triage_msg_compact = "Have you changed the GC compactor?"
+
 let () =
   (* disable automatic compaction for a fairer comparison with OCaml 4 *)
   Gc.(set {(get ()) with max_overhead= 1000000}) ;
   fragment_sizeclasses () ;
   let ratio = full_major_and_top_ratio () in
+  (* if you've changed the GC and confirmed that the higher ratio is
+     an expected and acceptable trade-off then tweak this constant *)
   if ratio > 16. then begin
     Gc.print_stat stdout ;
-    Printf.printf "\n[!] Top heap size to live words ratio is too high: %.2f\n"
-      ratio
+    Printf.printf "\n[!] Top heap size to live words ratio is too high: %.2f.\n"
+      ratio;
+    print_endline triage_msg
   end
   else print_endline "top_heap_words/live_words: OK" ;
   let ratio = compact_and_ratio () in
+  (* This is expected to be around 1, so this is not expected to fail.
+     There is some memory that cannot freed, so it isn't exactly 1.
+   *)
   if ratio > 3. then begin
     Gc.print_stat stdout ;
     Printf.printf
       "\n[!] Heap size after compaction to live words ratio is too high: %.2f\n"
-      ratio
+      ratio;
+    print_endline triage_msg_compact
   end
   else print_endline "\ncompact: OK"
