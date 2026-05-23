@@ -116,7 +116,7 @@ static void scanmult_unit(const char *opt, uintnat * var){
     break;
   }
   case 'w': /* self assignment is unnecessary */  break;
-  default:  /* self assignment is unnecessary */break;
+  default:  /* self assignment is unnecessary */  break;
   }
   *var = (uintnat) val;
 }
