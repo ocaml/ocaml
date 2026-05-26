@@ -60,7 +60,7 @@ void test_weirdly_binary(void)
   caml_init_startup_params(&params);
 
   // we check that the rightmost setting takes precedence
-  const char *opts = "b=2k,d=3M,M=4G";
+  const char *opts = "b=2k,d=3M,m=3G";
   caml_parse_startup_params(&params, opts);
 
   printf("OCAMLRUNPARAM='%s' gives "
