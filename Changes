@@ -190,6 +190,11 @@ Working version
   (Nicolás Ojeda Bär, report by Adrián Montesinos González, review by Gabriel
   Scherer)
 
+- #14764: Fix a bug the Win32 implementation of the `Unix` library that could
+  result in some file descriptors being dropped from the result of `Unix.select`
+  under certain circumstances.
+  (Zhang Rui, review by Nicolás Ojeda Bär)
+
 ### Tools:
 
 - #14318, #14709, ocamldoc: use "Module_name (Library name)" rather than
