@@ -1,5 +1,5 @@
 minor_heap_wsz: ok
 OCAMLRUNPARAM='b' gives b=1
 OCAMLRUNPARAM='b=3' gives b=3
-OCAMLRUNPARAM='b=2k,d=3M,M=4G' gives b=2048, d=3145728, M=4294967296
+OCAMLRUNPARAM='b=2k,d=3M,m=3G' gives b=2048, d=3145728, m=3221225472
 OCAMLRUNPARAM='R, t=2K' gives R=1, t=0
