@@ -1,0 +1,10 @@
+File "mutual_recursion.ml", line 1:
+Error: Multiple errors were encountered
+File "mutual_recursion.ml", line 11, characters 4-9:
+11 | and (a,b) = (1,2)
+         ^^^^^
+  Only variables are allowed as left-hand side of let rec
+File "mutual_recursion.ml", line 15, characters 13-18:
+15 | let d = 10 + "foo"
+                  ^^^^^
+  This constant has type string but an expression was expected of type int

@@ -1,0 +1,7 @@
+File "illegal_reference_to_recursive_class.ml", line 12, characters 44-47:
+12 | and Bar : sig class type c = object inherit Foo.c end end = Bar
+                                                 ^^^
+Error: This module type is recursive. This use of the recursive module Foo
+       within the definition of the module Bar
+       makes the module type of Bar depend on the module type of Foo.
+       Such recursive definitions of module types are not allowed.

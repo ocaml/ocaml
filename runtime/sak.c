@@ -98,7 +98,7 @@ unsigned print_utf8_as_utf16(const char *c) {
 
   /* Encode UTF16 */
   if (printable(uc)) {
-    printf("%c", uc);
+    printf("%c", (char) uc);
   } else {
     if (uc <= 0xd7ff || (uc >= 0xe000 && uc <= 0xffff)) {
       printf(F16, uc);
@@ -133,7 +133,7 @@ unsigned print_utf16_as_utf8(const wchar_t *c) {
   /* Encode UTF-8 */
   /* All non-printable characters are encoded, this is easier to proof-read */
   if (printable(uc)) {
-    printf("%c", uc);
+    printf("%c", (char) uc);
   } else {
     if (uc < 0x80) {
       printf(F8, uc);

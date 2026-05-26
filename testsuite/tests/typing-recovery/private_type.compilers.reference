@@ -1,0 +1,18 @@
+File "private_type.ml", line 1:
+Error: Multiple errors were encountered
+File "private_type.ml", line 22, characters 8-9:
+22 | let r = A
+             ^
+  Cannot create values of the private type k
+File "private_type.ml", line 27, characters 9-11:
+27 | let b = (10 : T.t)
+              ^^
+  The constant 10 has type int but an expression was expected of type T.t
+File "private_type.ml", line 33, characters 10-18:
+33 |   let a = T.Foo 10 in
+               ^^^^^^^^
+  Cannot create values of the private type T.r
+File "private_type.ml", line 36, characters 13-15:
+36 | let x = {a = 10; b = (a :> int) + 15}
+                  ^^
+  The constant 10 has type int but an expression was expected of type T.t

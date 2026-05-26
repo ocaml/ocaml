@@ -360,6 +360,8 @@ val error: ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg -> string -> error
 val errorf: ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg ->
   ('a, Format_doc.formatter, unit, error) format4 -> 'a
 
+val multiple_errors : ?loc:t -> ?footnote:delayed_msg -> error list -> error
+
 val aligned_error_hint:
   ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg ->
   ('a, Format_doc.formatter, unit, Format_doc.t option ->  error) format4 -> 'a

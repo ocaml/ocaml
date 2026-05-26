@@ -1,0 +1,129 @@
+File "modular_explicit_examples.ml", line 1:
+Error: Multiple errors were encountered
+File "modular_explicit_examples.ml", line 50, characters 2-5:
+50 |   f 3 m 4
+       ^^^
+  This expression has type (module M : Typ) -> M.t -> 'a * M.t
+  but an expression was expected of type (module Typ) -> 'b
+  The module M would escape its scope
+This function is module-dependent. The dependency is preserved
+when the function is passed a static module argument (module M : S)
+or (module M). Its argument here is not static, so the type-checker
+tried instead to change the function type to be non-dependent.
+File "modular_explicit_examples.ml", line 56, characters 6-7:
+56 |   f 3 m 4
+           ^
+  The value m has type (module Typ with type t = int)
+  but an expression was expected of type (module Typ)
+  The constraint on t in the first module type is not compatible
+  with the declaration of type t in the second module type.
+File "modular_explicit_examples.ml", line 56, characters 2-5:
+56 |   f 3 m 4
+       ^^^
+  This expression has type (module M : Typ) -> M.t -> 'a * M.t
+  but an expression was expected of type (module Typ) -> 'b
+  The module M would escape its scope
+This function is module-dependent. The dependency is preserved
+when the function is passed a static module argument (module M : S)
+or (module M). Its argument here is not static, so the type-checker
+tried instead to change the function type to be non-dependent.
+File "modular_explicit_examples.ml", line 60, characters 7-19:
+60 |   f ~a (fun x -> x)
+            ^^^^^^^^^^^^
+  This expression should not be a function, the expected type is (module Typ)
+File "modular_explicit_examples.ml", line 60, characters 2-6:
+60 |   f ~a (fun x -> x)
+       ^^^^
+  This expression has type (module M : Typ) -> M.t
+  but an expression was expected of type (module Typ) -> 'a
+  The module M would escape its scope
+This function is module-dependent. The dependency is preserved
+when the function is passed a static module argument (module M : S)
+or (module M). Its argument here is not static, so the type-checker
+tried instead to change the function type to be non-dependent.
+File "modular_explicit_examples.ml", line 62, characters 17-19:
+62 | let c : string = 10
+                      ^^
+  The constant 10 has type int but an expression was expected of type string
+File "modular_explicit_examples.ml", line 68, characters 26-37:
+68 | let apply_labelled_fail = labelled () ~y:3
+                               ^^^^^^^^^^^
+  This function has type (module M : Typ) -> y:M.t -> M.t
+  The module argument M cannot be omitted in this application.
+File "modular_explicit_examples.ml", line 73, characters 2-6:
+73 |   f ~a m
+       ^^^^
+  This expression has type (module M : Typ) -> M.t
+  but an expression was expected of type (module Typ) -> 'a
+  The module M would escape its scope
+This function is module-dependent. The dependency is preserved
+when the function is passed a static module argument (module M : S)
+or (module M). Its argument here is not static, so the type-checker
+tried instead to change the function type to be non-dependent.
+File "modular_explicit_examples.ml", line 75, characters 29-38:
+75 | let apply_labelled_success = labelled' ~y:3
+                                  ^^^^^^^^^
+  Unbound value labelled'
+Hint:   Did you mean labelled?
+File "modular_explicit_examples.ml", line 79, characters 10-22:
+79 |   f ~a ~c:(module Int)
+               ^^^^^^^^^^^^
+  The function applied to this argument has type b:(module M : Typ) -> M.t
+This argument cannot be applied with label ~c
+File "modular_explicit_examples.ml", line 83, characters 43-44:
+83 | let x_from_generative_functor = id (module F ())
+                                                ^
+  Unbound module F
+File "modular_explicit_examples.ml", lines 102-105, characters 14-12:
+102 | ..............MapCombine(struct
+103 |           type 'a t = A of 'a
+104 |           let map f (A x) = (A (f x))
+105 |         end)........
+  This functor has type
+  (M1 : Map) (M2 : Map) ->
+    sig
+      type 'a t = 'a M1.t M2.t
+      val map : ('a -> 'b) -> 'a M1.t M2.t -> 'b M1.t M2.t
+    end
+  The parameter cannot be eliminated in the result type.
+  Please bind the argument to a module identifier.
+File "modular_explicit_examples.ml", lines 102-105, characters 14-19:
+102 | ..............MapCombine(struct
+103 |           type 'a t = A of 'a
+104 |           let map f (A x) = (A (f x))
+105 |         end)(Array).
+  Signature mismatch:
+  Modules do not match: sig end is not included in Map
+  The type t is required but not provided
+  File "modular_explicit_examples.ml", line 86, characters 2-10:
+    Expected declaration
+  The value map is required but not provided
+  File "modular_explicit_examples.ml", line 87, characters 2-38:
+    Expected declaration
+File "modular_explicit_examples.ml", line 101, characters 4-7:
+101 |     map
+          ^^^
+  This expression has type (module M : Map) -> ('a -> 'b) -> 'a M.t -> 'b M.t
+  but an expression was expected of type (module Map) -> 'c
+  The module M would escape its scope
+This function is module-dependent. The dependency is preserved
+when the function is passed a static module argument (module M : S)
+or (module M). Its argument here is not static, so the type-checker
+tried instead to change the function type to be non-dependent.
+File "modular_explicit_examples.ml", line 108, characters 23-24:
+108 | let fail = map (module F()) string_of_int [3]
+                             ^
+  Unbound module F
+File "modular_explicit_examples.ml", line 123, characters 2-39:
+123 |   (f :> (module A : Add) -> A.t -> A.t)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  Type (module A : Add2) -> A.t -> A.t is not a subtype of
+    (module A : Add) -> A.t -> A.t
+  Modules do not match: Add is not included in Add2
+  The type a is required but not provided
+  File "modular_explicit_examples.ml", line 16, characters 2-8:
+    Expected declaration
+File "modular_explicit_examples.ml", line 133, characters 26-28:
+133 | let last_error : string = 10
+                                ^^
+  The constant 10 has type int but an expression was expected of type string

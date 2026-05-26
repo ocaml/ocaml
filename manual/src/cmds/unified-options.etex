@@ -807,6 +807,11 @@ implementations. You should use this flag to detect and fix such
 invalid formats, as they will be rejected by future OCaml versions.
 
 \notop{%
+\item["-typing-recovery"]
+Try to collect all typing errors.
+}
+
+\notop{%
 \item["-unboxed-types"]
 When a type is unboxable (i.e. a record with a single argument or a
 concrete datatype with a single constructor of one argument) it will

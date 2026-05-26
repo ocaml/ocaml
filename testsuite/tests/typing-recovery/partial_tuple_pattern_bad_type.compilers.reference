@@ -1,0 +1,10 @@
+File "partial_tuple_pattern_bad_type.ml", line 1:
+Error: Multiple errors were encountered
+File "partial_tuple_pattern_bad_type.ml", line 10, characters 10-22:
+10 | let f (z, (~y, ~x, ..)) = x, y, z
+               ^^^^^^^^^^^^
+  Could not determine the type of this partial tuple pattern.
+File "partial_tuple_pattern_bad_type.ml", line 11, characters 6-18:
+11 | let g (~x, ~y, ..) = x, y
+           ^^^^^^^^^^^^
+  Could not determine the type of this partial tuple pattern.

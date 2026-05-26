@@ -253,7 +253,7 @@ let compile infile outfile =
   if masm then
     Ccomp.command (Config.asm ^
                    Filename.quote outfile ^ " " ^ Filename.quote infile ^
-                   (if !Clflags.verbose then "" else ">NUL"))
+                   (if !Clflags.verbose then "" else ">" ^ Filename.null))
   else
     Ccomp.command (Config.asm ^ " " ^
                    (String.concat " " (Misc.debug_prefix_map_flags ())) ^

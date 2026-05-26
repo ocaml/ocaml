@@ -1,0 +1,98 @@
+File "wrong_expected_kind.ml", line 1:
+Error: Multiple errors were encountered
+File "wrong_expected_kind.ml", line 53, characters 4-5:
+53 |   | A | B | C -> ()
+         ^
+  This pattern should not be a constructor, the expected type is
+  'a -> Constr.t
+File "wrong_expected_kind.ml", line 53, characters 8-9:
+53 |   | A | B | C -> ()
+             ^
+  This pattern should not be a constructor, the expected type is
+  'a -> Constr.t
+File "wrong_expected_kind.ml", line 53, characters 12-13:
+53 |   | A | B | C -> ()
+                 ^
+  This pattern should not be a constructor, the expected type is
+  'a -> Constr.t
+File "wrong_expected_kind.ml", line 58, characters 4-12:
+58 |   | { a; _ } -> ()
+         ^^^^^^^^
+  This pattern should not be a record, the expected type is 'a -> Record.t
+File "wrong_expected_kind.ml", line 63, characters 4-8:
+63 |   | true -> ()
+         ^^^^
+  This pattern should not be a boolean literal, the expected type is
+  'a -> Bool.t
+File "wrong_expected_kind.ml", line 68, characters 4-9:
+68 |   | false -> ()
+         ^^^^^
+  This pattern should not be a boolean literal, the expected type is
+  'a -> Bool.t
+File "wrong_expected_kind.ml", line 73, characters 4-6:
+73 |   | [] -> ()
+         ^^
+  This pattern should not be a list literal, the expected type is
+  'a -> 'b List.t
+File "wrong_expected_kind.ml", line 74, characters 4-10:
+74 |   | _ :: _ -> ()
+         ^^^^^^
+  This pattern should not be a list literal, the expected type is
+  'a -> 'b List.t
+File "wrong_expected_kind.ml", line 79, characters 4-6:
+79 |   | () -> ()
+         ^^
+  This pattern should not be a unit literal, the expected type is
+  'a -> Unit.t
+File "wrong_expected_kind.ml", line 82, characters 20-21:
+82 | let () = Constr.put A
+                         ^
+  This expression should not be a constructor, the expected type is
+  unit -> Constr.t
+File "wrong_expected_kind.ml", line 83, characters 20-43:
+83 | let () = Record.put { a = 0; b = 0; c = 0 }
+                         ^^^^^^^^^^^^^^^^^^^^^^^
+  This expression should not be a record, the expected type is
+  unit -> Record.t
+File "wrong_expected_kind.ml", line 84, characters 18-22:
+84 | let () = Bool.put true
+                       ^^^^
+  This expression should not be a boolean literal, the expected type is
+  unit -> Bool.t
+File "wrong_expected_kind.ml", line 85, characters 18-23:
+85 | let () = Bool.put false
+                       ^^^^^
+  This expression should not be a boolean literal, the expected type is
+  unit -> Bool.t
+File "wrong_expected_kind.ml", line 86, characters 18-20:
+86 | let () = List.put []
+                       ^^
+  This expression should not be a list literal, the expected type is
+  unit -> int List.t
+File "wrong_expected_kind.ml", line 87, characters 18-27:
+87 | let () = List.put [1; 2; 3]
+                       ^^^^^^^^^
+  This expression should not be a list literal, the expected type is
+  unit -> int List.t
+File "wrong_expected_kind.ml", line 88, characters 18-20:
+88 | let () = Unit.put ()
+                       ^^
+  This expression should not be a unit literal, the expected type is
+  unit -> Unit.t
+File "wrong_expected_kind.ml", line 89, characters 17-32:
+89 | let () = ignore ((Record.get ()).a)
+                      ^^^^^^^^^^^^^^^
+  This expression has type 'a -> Record.t which is not a record type.
+File "wrong_expected_kind.ml", line 90, characters 9-24:
+90 | let () = (Record.get ()).a <- 5
+              ^^^^^^^^^^^^^^^
+  This expression has type 'a -> Record.t which is not a record type.
+File "wrong_expected_kind.ml", line 91, characters 18-33:
+91 | let () = ignore { (Record.get ()) with a = 5 }
+                       ^^^^^^^^^^^^^^^
+  This expression has type 'a -> Record.t which is not a record type.
+File "wrong_expected_kind.ml", line 92, characters 23-39:
+92 | let foo x = Record.put { x with a = 5 }
+                            ^^^^^^^^^^^^^^^^
+  This expression should not be a record, the expected type is
+  unit -> Record.t

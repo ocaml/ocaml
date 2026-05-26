@@ -126,6 +126,8 @@ Line 3, characters 6-7:
           ^
 Error: The value "m" has type "(module Typ with type t = int)"
        but an expression was expected of type "(module Typ)"
+       The constraint on "t" in the first module type is not compatible
+       with the declaration of type t in the second module type.
 |}]
 
 (** From here we will test things with labels *)
@@ -1435,6 +1437,45 @@ module M : sig type a = int type v = [ `A of a ] end
 val f : (module M : T) -> ([> M.v ] as 'a) -> 'a = <fun>
 val u : ((module M : T) -> ([> M.v ] as 'a) -> 'a) -> (module T) -> 'a -> 'a =
   <fun>
+|}]
+
+(* Test shadowing of an include that could cause an error due to a module
+   not matching an inferred signature. *)
+
+module U = struct
+  type t = unit = ()
+end
+module M = struct
+  include U
+  type t = float
+  module type S = sig type t end
+  let f : (module X:S) -> X.t -> int = fun (module X:S)     _  -> 3
+end
+
+[%%expect{|
+module U : sig type t = unit = () end
+module M :
+  sig
+    type t = float
+    module type S = sig type t end
+    val f : (module X : S) -> X.t -> int
+  end
+|}]
+
+module type T = sig
+  type t
+end
+
+module F (X : T) = struct
+  type t = (module Y : T) -> Y.t -> X.t
+end
+
+module M = F(struct type t = float end)
+
+[%%expect{|
+module type T = sig type t end
+module F : (X : T) -> sig type t = (module Y : T) -> Y.t -> X.t end
+module M : sig type t = (module Y : T) -> Y.t -> float end
 |}]
 
 (** Warnings *)

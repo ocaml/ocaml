@@ -503,3 +503,14 @@ Error: Type "u -> unit" is not a subtype of "v -> unit"
          "v0" = "float * float -> unit"
        Type "float" is not a subtype of "int"
 |}]
+
+(* Too many arguments *)
+
+let f: _ -> int = fun x y -> 0
+[%%expect {|
+Line 1, characters 18-30:
+1 | let f: _ -> int = fun x y -> 0
+                      ^^^^^^^^^^^^
+Error: This function expects too many arguments, it should have type
+       "'a -> int"
+|}]

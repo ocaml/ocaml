@@ -96,6 +96,19 @@ Caml_inline value Ephe_key(value ephe, uintnat i)
 struct caml_ephe_info* caml_alloc_ephe_info (void);
 void caml_ephe_clean(value e);
 
+// returns the last element of the ephemeron list, or 0 if it is empty
+value caml_ephe_list_tail(value li);
+
+value caml_ephe_list_cons(value e, value li);
+value caml_ephe_list_append(value front, value back);
+value caml_ephe_list_append_seg(value first, value last, value back);
+
+void caml_ephe_list_cons_inplace(value e, value *li);
+void caml_ephe_list_append_inplace(value e, value *li);
+
+value caml_ephe_list_pop(value *li);
+
+
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_WEAK_H */

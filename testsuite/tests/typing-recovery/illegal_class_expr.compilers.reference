@@ -1,0 +1,28 @@
+File "illegal_class_expr.ml", line 1:
+Error: Multiple errors were encountered
+File "illegal_class_expr.ml", lines 11-12, characters 2-12:
+11 | ..let _ = new b in
+12 |   object end
+  This kind of recursive class expression is not allowed
+File "illegal_class_expr.ml", lines 14-15, characters 2-12:
+14 | ..let _ = new a in
+15 |   object end
+  This kind of recursive class expression is not allowed
+File "illegal_class_expr.ml", lines 18-19, characters 2-12:
+18 | ..let _ = new c in
+19 |   object end
+  This kind of recursive class expression is not allowed
+File "illegal_class_expr.ml", lines 22-24, characters 2-12:
+22 | ..let x() = new d in
+23 |   let _y = x() in
+24 |   object end
+  This kind of recursive class expression is not allowed
+File "illegal_class_expr.ml", lines 28-30, characters 2-12:
+28 | ..let x() = new e in
+29 |   let _y = x() in
+30 |   object end
+  This kind of recursive class expression is not allowed
+File "illegal_class_expr.ml", line 32, characters 17-19:
+32 | let t : string = 10
+                      ^^
+  The constant 10 has type int but an expression was expected of type string

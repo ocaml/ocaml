@@ -1,0 +1,12 @@
+File "apply_non_function.ml", line 1:
+Error: Multiple errors were encountered
+File "apply_non_function.ml", line 12, characters 8-9:
+12 | let _ = x 1
+             ^
+  This expression has type int
+  This is not a function; it cannot be applied.
+File "apply_non_function.ml", line 16, characters 8-9:
+16 | let _ = y 2
+             ^
+  This expression has type int
+  This is not a function; it cannot be applied.

@@ -148,7 +148,7 @@ static int skiplist_find(struct lf_skiplist *sk, uintnat key,
 
 retry:
   while (1) {
-    /* start at the the head of the skiplist. This node has a key less than any
+    /* start at the head of the skiplist. This node has a key less than any
        key we could be searching for */
     pred = sk->head;
     /*

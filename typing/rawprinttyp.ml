@@ -88,8 +88,8 @@ and raw_type_desc ppf = function
         (string_of_label l) raw_type t1 raw_type t2
         (if is_commu_ok c then "Cok" else "Cunknown")
   | Tfunctor (l, id, {pack_path; pack_constraints}, t2) ->
-    fprintf ppf "@[<hov1>Tfunctor(\"%s\",@,%s,@,(%a,@,%a),@,%a)@]"
-      (string_of_label l) (Ident.Unscoped.name id)
+    fprintf ppf "@[<hov1>Tfunctor(\"%s\",@,%a,@,(%a,@,%a),@,%a)@]"
+      (string_of_label l) Ident.Unscoped.print id
       path pack_path raw_lid_type_list pack_constraints raw_type t2
   | Ttuple tl ->
       fprintf ppf "@[<1>Ttuple@,%a@]" labeled_type_list tl

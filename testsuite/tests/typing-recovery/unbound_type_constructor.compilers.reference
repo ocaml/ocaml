@@ -1,0 +1,4 @@
+File "unbound_type_constructor.ml", line 12, characters 17-21:
+12 | let foo2 : int * toto = 3, 4
+                      ^^^^
+Error: Unbound type constructor toto

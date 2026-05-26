@@ -875,6 +875,12 @@ let mkerror loc sub footnote txt =
 let errorf ?(loc = none) ?(sub = []) ?(footnote=Fun.const None) =
   Fmt.kdoc_printf (mkerror loc sub footnote)
 
+let multiple_errors ?loc ?footnote = function
+  | [error] -> error
+  | errors ->
+      let sub = List.concat_map (fun err -> err.main :: err.sub) errors in
+      errorf ?loc ?footnote ~sub "Multiple errors were encountered@,"
+
 let aligned_error_hint
     ?(loc = none) ?(sub = []) ?(footnote=Fun.const None) fmt =
   Fmt.kdoc_printf (fun main hint ->

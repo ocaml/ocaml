@@ -683,8 +683,8 @@ module Digraph = struct
     | Types.Tarrow(l,t1,t2,_) ->
        mk "→%a" Pp.exponent_of_label l |> numbered [t1; t2]
     | Types.Tfunctor(l,us,{pack_path; pack_constraints},t2) ->
-        mk "→%a (%s : %a)" Pp.exponent_of_label l
-                    (Ident.Unscoped.name us)
+        mk "→%a (%a : %a)" Pp.exponent_of_label l
+                    Ident.Unscoped.print us
                     pp_path pack_path
           |> package_constraints params id pack_constraints
           |> numbered [t2]

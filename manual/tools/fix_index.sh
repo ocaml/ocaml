@@ -40,6 +40,8 @@ case $# in
 esac
 
 sed < "$1" > "$1.new" \
+    -e 's/verb`("|hyperxindexformat{\\"}/verb`("|"|)`|hyperpage/' \
+    -e 's/verb`("|hyperxindexformat{\\>)`}/verb`("|>)`|hyperpage/' \
     -e 's/verb`("|hyperindexformat{\\"}/verb`("|"|)`|hyperpage/' \
     -e 's/verb`("|hyperindexformat{\\>)`}/verb`("|>)`|hyperpage/'
 

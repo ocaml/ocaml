@@ -1,0 +1,21 @@
+File "log_or_raise.ml", line 1:
+Error: Multiple errors were encountered
+File "log_or_raise.ml", line 12, characters 15-16:
+12 | | Some x, Some x | [], x -> x
+                    ^
+  Variable x is bound several times in this matching
+File "log_or_raise.ml", line 12, characters 19-21:
+12 | | Some x, Some x | [], x -> x
+                        ^^
+  This variant pattern is expected to have type 'a option
+  There is no constructor [] within type option
+File "log_or_raise.ml", line 12, characters 2-24:
+12 | | Some x, Some x | [], x -> x
+       ^^^^^^^^^^^^^^^^^^^^^^
+  The variable x on the left-hand side of this or-pattern has type 'a
+  but on the right-hand side it has type 'a option
+  The type variable 'b occurs inside 'b option
+File "log_or_raise.ml", line 12, characters 28-29:
+12 | | Some x, Some x | [], x -> x
+                                 ^
+  Unbound value x

@@ -18,6 +18,8 @@ env:
   PARALLEL_TESTS: parallel callback gc-roots weak-ephe-final
   # Fully print commands executed by Make
   # MAKEFLAGS: V=1
+  # Disable 'cold' tests
+  OCAMLTEST_COLD_TESTS: 0
 
 # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#concurrency
 # Concurrent workflows are grouped by the PR or branch that triggered them
@@ -39,24 +41,37 @@ jobs:
       manual_changed: ${{ steps.manual.outputs.manual_changed }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
       - name: Check for manual changes
         id: manual
         run: >-
          tools/ci/actions/check-manual-modified.sh
-         '${{ github.ref }}'
-         '${{ github.event_name }}'
-         '${{ github.event.pull_request.base.ref }}'
-         '${{ github.event.pull_request.base.sha }}'
-         '${{ github.event.pull_request.head.ref }}'
-         '${{ github.event.pull_request.head.sha }}'
-         '${{ github.event.ref }}'
-         '${{ github.event.before }}'
-         '${{ github.event.ref }}'
-         '${{ github.event.after }}'
-         '${{ github.event.repository.full_name }}'
+         "$CAMLCI_GITHUB_REF_NAME"
+         "$CAMLCI_EVENT_NAME"
+         "$CAMLCI_PR_BASE_REF"
+         "$CAMLCI_PR_BASE_SHA"
+         "$CAMLCI_PR_HEAD_REF"
+         "$CAMLCI_PR_HEAD_SHA"
+         "$CAMLCI_EVENT_REF"
+         "$CAMLCI_EVENT_BEFORE"
+         "$CAMLCI_EVENT_REF"
+         "$CAMLCI_EVENT_AFTER"
+         "$CAMLCI_REPO_FULL_NAME"
+        env:
+          # Prefix CAMLCI used here to avoid colliding with Github variables,
+          # such as GITHUB_REF_NAME, as they always take precedence
+          CAMLCI_GITHUB_REF_NAME: ${{ github.ref }}
+          CAMLCI_EVENT_NAME: ${{ github.event_name }}
+          CAMLCI_PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          CAMLCI_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CAMLCI_PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          CAMLCI_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CAMLCI_EVENT_REF: ${{ github.event.ref }}
+          CAMLCI_EVENT_BEFORE: ${{ github.event.before }}
+          CAMLCI_EVENT_AFTER: ${{ github.event.after }}
+          CAMLCI_REPO_FULL_NAME: ${{ github.event.repository.full_name }}
       - name: Configure tree
         run: |
           MAKE_ARG=-j CONFIG_ARG='--enable-flambda --enable-cmm-invariants --enable-codegen-invariants --enable-dependency-generation --enable-native-toplevel --with-relative-libdir --enable-runtime-search --enable-runtime-search-target=fallback' OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh configure
@@ -66,7 +81,7 @@ jobs:
       - name: Prepare Artifact
         run: tar --zstd -cf /tmp/sources.tar.zstd .
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: compiler
           path: /tmp/sources.tar.zstd
@@ -88,7 +103,7 @@ jobs:
         include:
           - id: normal
             name: normal
-            dependencies: texlive-latex-extra texlive-fonts-recommended texlive-luatex hevea sass gdb lldb
+            dependencies: texlive-latex-extra texlive-fonts-recommended texlive-fonts-extra hevea sass gdb lldb
           - id: opam
             name: opam installation
           - id: debug
@@ -98,7 +113,7 @@ jobs:
       fail-fast: true
     steps:
       - name: Download Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: compiler
       - name: Unpack Artifact
@@ -169,7 +184,7 @@ jobs:
     steps:
       - name: Record if the build matrix is expanded
         id: full
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             let full_matrix = false;
@@ -182,7 +197,7 @@ jobs:
             return full_matrix;
       - name: Compute matrix for the "others" job
         id: jobs
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             // # Default jobs: Linux -O0, Linux arm64 & macOS
@@ -224,7 +239,7 @@ jobs:
             return jobs;
       - name: Determine if the testsuite should be skipped
         id: skip
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             let skip_testsuite = false;
@@ -246,7 +261,7 @@ jobs:
       fail-fast: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
       - name: macOS Dependencies

@@ -1670,7 +1670,7 @@ val ldprintf :
       a formatter (into which formatting happens), and the pair itself.
       When printing is done it returns [()].
 
-    - [Format.printf "l = [@[<hov>%a@]]@." ... l] is like [printf], but
+    - [Format.printf "l: [@[<hov>%a@]]@." ... l] is like [printf], but
       with additional formatting instructions (denoted with "@"). The pair
       "[@\[<hov>]" and "[@\]]" is a "horizontal-or-vertical box".
 

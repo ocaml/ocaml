@@ -62,7 +62,7 @@
    includecore tast_iterator tast_mapper signature_group cmt_format untypeast
    includemod signature_matching includemod_errorprinter errortrace_report
    typetexp patterns printpat parmatch stypes typeopt typedecl value_rec_check
-   typecore
+   typing_recovery_state typing_recovery typecore
    typeclass typemod typedecl_variance typedecl_properties typedecl_immediacy
    typedecl_unboxed typedecl_separability cmt2annot out_type data_types
    ; manual update: mli only files

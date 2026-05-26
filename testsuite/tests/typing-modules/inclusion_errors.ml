@@ -1278,8 +1278,8 @@ Error: Signature mismatch:
          type t = private [< `A | `B ]
        is not included in
          type t = private [< `A | `B > `B ]
-       The tag "`B" is present in the the second declaration,
-       but might not be in the the first
+       The tag "`B" is present in the second declaration,
+       but might not be in the first
 |}];;
 
 module M : sig

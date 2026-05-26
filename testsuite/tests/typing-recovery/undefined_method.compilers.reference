@@ -1,0 +1,22 @@
+File "undefined_method.ml", line 1:
+Error: Multiple errors were encountered
+File "undefined_method.ml", line 18, characters 10-11:
+18 |   let c = x # baz and y = x # foobar in
+               ^
+  This expression has type < bar : int; foo : int -> unit >
+  It has no method baz
+Hint:      Did you mean bar?
+File "undefined_method.ml", line 18, characters 26-27:
+18 |   let c = x # baz and y = x # foobar in
+                               ^
+  This expression has type < bar : int; foo : int -> unit >
+  It has no method foobar
+File "undefined_method.ml", line 32, characters 11-12:
+32 |   let b = (a # bar) + (a # foo) in
+                ^
+  This expression has type < foo : int >
+  It has no method bar
+File "undefined_method.ml", line 35, characters 14-18:
+35 | let t : int = true
+                   ^^^^
+  This expression should not be a boolean literal, the expected type is int

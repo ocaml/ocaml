@@ -1,0 +1,14 @@
+File "inline_record_expected.ml", line 1:
+Error: Multiple errors were encountered
+File "inline_record_expected.ml", line 12, characters 8-11:
+12 | let x = A 1
+             ^^^
+  This constructor expects an inlined record argument.
+File "inline_record_expected.ml", line 14, characters 10-13:
+14 |   let a = A 2 in
+               ^^^
+  This constructor expects an inlined record argument.
+File "inline_record_expected.ml", line 19, characters 17-18:
+19 | let t : string = u
+                      ^
+  The value u has type int but an expression was expected of type string

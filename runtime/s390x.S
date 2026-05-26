@@ -48,13 +48,18 @@
 #endif
 
 #if defined(FUNCTION_SECTIONS)
-        TEXT_SECTION(caml_hot.code_begin)
-        .globl caml_hot.code_begin
-caml_hot.code_begin:
+/* Two sections, and matching symbols, caml_hot__code_begin and
+   caml_hot__code_end, are used by OCamlFDO. These names are not OCaml
+   functions and should not be mangled in the same way as OCaml
+   symbols: they are hard-wired in OCamlFDO. */
 
-        TEXT_SECTION(caml_hot.code_end)
-        .globl caml_hot.code_end
-caml_hot.code_end:
+        TEXT_SECTION(caml_hot__code_begin)
+        .globl caml_hot__code_begin
+caml_hot__code_begin:
+
+        TEXT_SECTION(caml_hot__code_end)
+        .globl caml_hot__code_end
+caml_hot__code_end:
 #endif
 
 #define FUNCTION(name) \

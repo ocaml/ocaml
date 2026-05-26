@@ -1,0 +1,28 @@
+File "missing_errors_in_pattern.ml", line 1:
+Error: Multiple errors were encountered
+File "missing_errors_in_pattern.ml", line 13, characters 6-11:
+13 |   | I "foo" ->
+           ^^^^^
+  This pattern matches values of type string
+  but a pattern was expected which matches values of type int
+File "missing_errors_in_pattern.ml", line 14, characters 6-10:
+14 |       3.14 + 2
+           ^^^^
+  The constant 3.14 has type float but an expression was expected of type int
+File "missing_errors_in_pattern.ml", line 17, characters 4-5:
+17 |   | J ->
+         ^
+  Unbound constructor J
+File "missing_errors_in_pattern.ml", line 18, characters 6-10:
+18 |       3.14 + 2
+           ^^^^
+  The constant 3.14 has type float but an expression was expected of type int
+File "missing_errors_in_pattern.ml", line 22, characters 4-12:
+22 |   | `c7diagq ->
+         ^^^^^^^^
+  Variant tags `azdwbie and `c7diagq have the same hash value.
+  Change one of them.
+File "missing_errors_in_pattern.ml", line 23, characters 6-10:
+23 |       3.14 + 2
+           ^^^^
+  The constant 3.14 has type float but an expression was expected of type int

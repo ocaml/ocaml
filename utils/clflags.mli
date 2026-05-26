@@ -125,6 +125,7 @@ val recursive_types : bool ref
 val strict_sequence : bool ref
 val strict_formats : bool ref
 val applicative_functors : bool ref
+val typing_recovery : bool ref
 val make_runtime : bool ref
 val c_compiler : string option ref
 val no_auto_link : bool ref

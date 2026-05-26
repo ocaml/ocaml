@@ -242,6 +242,8 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
     data = malloc(size);
     if (data == NULL && size != 0) caml_raise_out_of_memory();
     flags |= CAML_BA_MANAGED;
+    /* backwards compatibility with C bindings that pass through flags */
+    flags &= ~CAML_BA_SUBARRAY;
   }
   asize = SIZEOF_BA_ARRAY + num_dims * sizeof(intnat);
   uses_resources =

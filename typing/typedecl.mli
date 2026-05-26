@@ -60,6 +60,10 @@ val approx_type_decl:
     explanation:Types.type_origin -> Parsetree.type_declaration list ->
                                   (Ident.t * type_declaration) list
 
+val check_well_founded_decl:
+  abs_env:Env.t ->final_env:Env.t -> is_decl_path:(Path.t -> bool) ->
+  Location.t -> Path.t -> Types.type_declaration -> unit
+
 (** [check_recmod_typedecl ~abs_env env loc recmod_ids path decl]
    - [recmod_ids] is the list of recursively-defined module idents.
    - [path, decl] is the type declaration to be checked.
@@ -134,6 +138,11 @@ type error =
   | Primitive_alias_does_not_refer_to_primitive of value_kind
   | Primitive_type_mismatch of Env.t * Errortrace.unification_error
 
-exception Error of Location.t * error
+module Error : sig
+    type exn += private In_context of Location.t * error
+
+  val log_or_raise : Location.t -> error -> unit
+  val log_and_raise : Location.t -> error -> 'a
+end
 
 val report_error: loc:Location.t -> error -> Location.report

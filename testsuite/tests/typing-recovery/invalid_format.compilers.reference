@@ -1,0 +1,16 @@
+File "invalid_format.ml", line 12, characters 28-30:
+12 | let _ = Format.asprintf "%d%\e" 10
+                                 ^^
+Warning 14 [illegal-backslash]: illegal backslash escape in string.
+  Hint: Single backslashes \ are reserved for escape sequences (\n, \r, ...).
+  Did you check the list of OCaml escape sequences?
+  To get a backslash character, escape it with a second backslash: \\.
+
+File "invalid_format.ml", line 1:
+Error: Multiple errors were encountered
+invalid format "%d%\r": at character number 3, invalid conversion "%"
+invalid format "%d%\\e": at character number 3, invalid conversion "%\"
+File "invalid_format.ml", line 13, characters 15-17:
+13 | let _ : bool = 10
+                    ^^
+  The constant 10 has type int but an expression was expected of type bool

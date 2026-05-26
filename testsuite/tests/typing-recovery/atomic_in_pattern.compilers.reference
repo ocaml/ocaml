@@ -1,0 +1,13 @@
+File "atomic_in_pattern.ml", line 1:
+Error: Multiple errors were encountered
+File "atomic_in_pattern.ml", line 13, characters 16-24:
+13 |   let forbidden { x; y } = x + y
+                     ^^^^^^^^
+  Atomic fields (here y) are forbidden in patterns,
+  as it is difficult to reason about when the atomic read
+  will happen during pattern matching: the field may be read
+  zero, one or several times depending on the patterns around it.
+File "atomic_in_pattern.ml", line 17, characters 17-18:
+17 | let r : string = k
+                      ^
+  The value k has type int but an expression was expected of type string

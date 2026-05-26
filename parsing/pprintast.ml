@@ -544,7 +544,7 @@ and core_type1 ctxt f x =
     | (Ptyp_arrow _ | Ptyp_alias _ | Ptyp_poly _ | Ptyp_functor _) ->
        paren true (core_type ctxt) f x
 
-and package_type ctxt f ptyp =
+and package_type_aux ctxt f ptyp =
   let aux f (s, ct) =
     pp f "type %a@ =@ %a" (with_loc type_longident) s (core_type ctxt) ct
   in
@@ -554,6 +554,13 @@ and package_type ctxt f ptyp =
     pp f "%a@ with@ %a"
       (with_loc type_longident) ptyp.ppt_path
       (list aux ~sep:"@ and@ ") ptyp.ppt_constraints
+
+and package_type ctxt f ptyp =
+  match ptyp.ppt_attrs with
+    [] -> package_type_aux ctxt f ptyp
+  | __ ->
+     pp f "((%a)%a)" (package_type_aux ctxt) {ptyp with ppt_attrs=[]}
+      (attributes ctxt) ptyp.ppt_attrs
 
 (********************pattern********************)
 (* be cautious when use [pattern], [pattern1] is preferred *)

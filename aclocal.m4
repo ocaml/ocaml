@@ -667,6 +667,11 @@ AC_DEFUN([OCAML_CXX_COMPILE_STDCXX_11], [
         AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #if !defined(__cplusplus) || __cplusplus < 201103L
 #error "No C++11 support"
+/* This extra test is added to ignore C++ support when compiling with musl
+   (where the -xc++ flag will get passed through to gcc, but the headers are
+   not available). */
+#elif defined(__has_include) && !__has_include(<atomic>)
+#error "Missing <atomic> header"
 #endif
 #include <iostream>
           ]])],

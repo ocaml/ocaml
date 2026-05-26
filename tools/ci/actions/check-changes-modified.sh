@@ -23,7 +23,7 @@ set -e
 API_URL="$1"
 shift 1
 
-AUTH="authorization: Bearer $GITHUB_TOKEN"
+AUTH="authorization: Bearer $CAMLCI_GITHUB_TOKEN"
 
 # We need all the commits in the PR to be available
 . tools/ci/actions/deepen-fetch.sh
