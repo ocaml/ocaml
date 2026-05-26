@@ -193,7 +193,7 @@ Working version
 - #14764: Fix a bug in the Win32 implementation of the `Unix` library that could
   result in some file descriptors being dropped from the result of `Unix.select`
   under certain circumstances.
-  (Zhang Rui, review by Nicolás Ojeda Bär)
+  (Zhang Rui, review by Nicolás Ojeda Bär, Antonin Décimo and David Allsopp)
 
 ### Tools:
 
