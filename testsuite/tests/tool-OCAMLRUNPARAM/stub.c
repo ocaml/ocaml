@@ -81,7 +81,7 @@ void test_space_ignored(void)
   caml_init_startup_params(&params);
 
   // we check that the rightmost setting takes precedence
-  const char *opts = "R, t=2K";
+  const char *opts = "R, t=2";
   caml_parse_startup_params(&params, opts);
 
   printf("OCAMLRUNPARAM='%s' gives "
