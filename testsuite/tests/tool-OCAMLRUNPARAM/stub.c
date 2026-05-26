@@ -66,11 +66,11 @@ void test_weirdly_binary(void)
   printf("OCAMLRUNPARAM='%s' gives "
          "b=%" CAML_PRIuNAT ", "
          "d=%" CAML_PRIuNAT ", "
-         "M=%" CAML_PRIuNAT "\n",
+         "m=%" CAML_PRIuNAT "\n",
          opts,
          params.backtrace_enabled,
          params.max_domains,
-         params.init_custom_major_ratio);
+         params.init_custom_minor_ratio);
 }
 
 /* Weird behavior we may not want to preserve: options preceded
