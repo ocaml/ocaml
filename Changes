@@ -142,7 +142,7 @@ Working version
 - #12023: Deprecate Gc.stat
   (Damien Doligez, review by Gabriel Scherer and Jeremy Yallop)
 
-- #13101: Add `Fun.todo ()` to signal that a piece of code is not yet
+- #13101, #14525: Add `Fun.todo ()` to signal that a piece of code is not yet
   implemented.
   (Pavlo Khrystenko and Olivier Nicole, review by Daniel Bünzli, Yawar Amin,
    Gabriel Scherer)
