@@ -30,7 +30,8 @@ void test_optionless(void)
   const char *opts = "b";
   caml_parse_startup_params(&params, opts);
 
-  printf("OCAMLRUNPARAM='%s' gives b=%d\n", opts, params.backtrace_enabled);
+  printf("OCAMLRUNPARAM='%s' gives b=%" CAML_PRIuNAT "\n",
+         opts, params.backtrace_enabled);
 }
 
 /* Weird behavior we may not want to preserve: boolean options
