@@ -329,6 +329,5 @@ META
 /utils/domainstate.mli
 
 /yacc/ocamlyacc
-/yacc/ocamlyacc.opt
 /yacc/version.h
 /yacc/.gdb_history

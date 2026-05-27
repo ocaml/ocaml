@@ -117,6 +117,5 @@ installcross:
 	    $(foreach ext,cmi cmt cmti cmx, native/nat__dummy__.$(ext)) \
 	      all__dummy__.cmx topstart.o native/tophooks.cmi)
 	$(LN) `command -v ocamllex` lex/ocamllex.opt$(EXE)
-	$(LN) `command -v ocamlyacc` yacc/ocamlyacc.opt$(EXE)
 	# Real installation
 	$(MAKE) install $(INSTALL_OVERRIDES)
