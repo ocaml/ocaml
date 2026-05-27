@@ -243,10 +243,10 @@ Caml_inline value try_promote(value v, volatile value *p, header_t hd,
   /* Copy unscannable prefix, which will include any infix tags, so
    * that infix pointers to `v` can be oldified into pointers with
    * Infix_tag to a working header as soon as the header is
-   * Promoted_hd (so that, e.g., major GC marking can work while the
-   * block is still on our oldify todo list). Have to do this here,
-   * before we update the object header. Start from field 2 as fields
-   * 0 and 1 are used for forwarding pointers and the todo-list. */
+   * Promoted_hd (so that, e.g., another domain can oldify a pointer
+   * to such an Infix_tag). Have to do this here, before we update the
+   * object header. Start from field 2 as fields 0 and 1 are used for
+   * forwarding pointers and the todo-list. */
   CAMLassert(infix_offset <= prefix * sizeof(value));
   for (mlsize_t j = 2; j < prefix; ++j) {
     Field(result, j) = Field(v, j);
