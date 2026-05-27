@@ -746,8 +746,7 @@ let emit_instr env fallthrough i =
          the old value, on the single-domain path we load/add/store by hand.
          arg.(2) holds &caml_num_domains_running (materialised by an
          Iconst_symbol in selection), so reading the domain count works in
-         dlcode too without a hand-rolled GOTPCREL scratch.  res.(1) is the
-         allocator-provided scratch for the old value (replacing push/pop). *)
+         dlcode too without a hand-rolled GOTPCREL scratch. *)
       I.mov (arg i 1) (res i 0);
       let lbl_multi = new_label() in
       let lbl_done = new_label() in
@@ -755,11 +754,11 @@ let emit_instr env fallthrough i =
       I.jne (label lbl_multi);
       (* Single-domain fast path: plain load/add/store, no bus lock,
          mirroring caml_atomic_fetch_add_field's caml_domain_alone branch
-         in runtime/memory.c. *)
-      I.mov (mem64 QWORD 0 (arg64 i 0)) (res i 1);   (* old := *addr *)
-      I.add (res i 1) (res i 0);                      (* res.(0) := incr + old *)
-      I.mov (res i 0) (mem64 QWORD 0 (arg64 i 0));    (* *addr := new *)
-      I.mov (res i 1) (res i 0);                      (* res.(0) := old (result) *)
+         in runtime/memory.c.  The old value is parked on the stack so we
+         need no scratch register. *)
+      I.push (mem64 QWORD 0 (arg64 i 0));
+      I.add (res i 0) (mem64 QWORD 0 (arg64 i 0));
+      I.pop (res i 0);
       I.jmp (label lbl_done);
       def_label lbl_multi;
       I.lock_xadd (res i 0) (mem64 QWORD 0 (arg64 i 0));

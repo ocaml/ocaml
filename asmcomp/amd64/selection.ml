@@ -128,13 +128,9 @@ let pseudoregs_for_operation op arg res =
   (* Atomic fetch-and-add: res.(0) holds the increment then receives the old
      value (via lock xadd on the multi-domain path).  Tying res.(0) to arg.(1)
      eliminates the mov in emit and ensures arg.(0) (the address) gets a
-     distinct register.  arg.(2) is &caml_num_domains_running.  [tmp] is a
-     fresh scratch holding the old value on the single-domain path; it is
-     threaded through the allocator like [treg] above, replacing the old
-     push/pop trick. *)
+     distinct register.  arg.(2) is &caml_num_domains_running. *)
   | Iatomic_fetch_add ->
-      let tmp = Reg.create Int in
-      ([| arg.(0); res.(0); arg.(2); tmp |], [| res.(0); tmp |])
+      ([| arg.(0); res.(0); arg.(2) |], res)
   (* Other instructions are regular *)
   | _ -> raise Use_default
 
