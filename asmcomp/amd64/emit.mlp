@@ -742,31 +742,28 @@ let emit_instr env fallthrough i =
   | Lop (Idls_get) ->
       I.mov (domain_field Domainstate.Domain_dls_root) (res i 0)
   | Lop (Iatomic_fetch_add) ->
+      (* res.(0) := increment; on the multi-domain path lock xadd swaps in
+         the old value, on the single-domain path we load/add/store by hand.
+         arg.(2) holds &caml_num_domains_running (materialised by an
+         Iconst_symbol in selection), so reading the domain count works in
+         dlcode too without a hand-rolled GOTPCREL scratch.  res.(1) is the
+         allocator-provided scratch for the old value (replacing push/pop). *)
       I.mov (arg i 1) (res i 0);
-      if !Clflags.dlcode then
-        (* In dlcode (.cmxs) we'd need a GOTPCREL indirection plus a
-           scratch register to read caml_num_domains_running across DSOs.
-           Skip the fast path here and just emit the locked op. *)
-        I.lock_xadd (res i 0) (mem64 QWORD 0 (arg64 i 0))
-      else begin
-        (* Fast path for single-domain mode: explicit load+add+store
-           (mirroring caml_atomic_fetch_add_field's caml_domain_alone
-           branch in runtime/memory.c). The push/pop is to grab a scratch
-           slot for the old value without disturbing the regalloc tying
-           of arg.(1) to res.(0). *)
-        let lbl_multi = new_label() in
-        let lbl_done = new_label() in
-        I.cmp (int 1)
-              (mem64_rip QWORD (emit_symbol "caml_num_domains_running"));
-        I.jne (label lbl_multi);
-        I.push (mem64 QWORD 0 (arg64 i 0));
-        I.add (res i 0) (mem64 QWORD 0 (arg64 i 0));
-        I.pop (res i 0);
-        I.jmp (label lbl_done);
-        def_label lbl_multi;
-        I.lock_xadd (res i 0) (mem64 QWORD 0 (arg64 i 0));
-        def_label lbl_done
-      end
+      let lbl_multi = new_label() in
+      let lbl_done = new_label() in
+      I.cmp (int 1) (mem64 QWORD 0 (arg64 i 2));
+      I.jne (label lbl_multi);
+      (* Single-domain fast path: plain load/add/store, no bus lock,
+         mirroring caml_atomic_fetch_add_field's caml_domain_alone branch
+         in runtime/memory.c. *)
+      I.mov (mem64 QWORD 0 (arg64 i 0)) (res i 1);   (* old := *addr *)
+      I.add (res i 1) (res i 0);                      (* res.(0) := incr + old *)
+      I.mov (res i 0) (mem64 QWORD 0 (arg64 i 0));    (* *addr := new *)
+      I.mov (res i 1) (res i 0);                      (* res.(0) := old (result) *)
+      I.jmp (label lbl_done);
+      def_label lbl_multi;
+      I.lock_xadd (res i 0) (mem64 QWORD 0 (arg64 i 0));
+      def_label lbl_done
   | Lop (Ireturn_addr) ->
       let offset = frame_size env - 8 in
       I.mov (mem64 QWORD offset RSP) (res i 0)

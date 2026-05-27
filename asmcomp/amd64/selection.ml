@@ -126,10 +126,15 @@ let pseudoregs_for_operation op arg res =
       (if is_swapped then [| arg.(0); treg |] else [| treg; arg.(1) |])
     , [| res.(0); treg |]
   (* Atomic fetch-and-add: res.(0) holds the increment then receives the old
-     value via lock xadd.  Tying res.(0) to arg.(1) eliminates the mov in
-     emit and ensures arg.(0) (the address) gets a distinct register. *)
+     value (via lock xadd on the multi-domain path).  Tying res.(0) to arg.(1)
+     eliminates the mov in emit and ensures arg.(0) (the address) gets a
+     distinct register.  arg.(2) is &caml_num_domains_running.  [tmp] is a
+     fresh scratch holding the old value on the single-domain path; it is
+     threaded through the allocator like [treg] above, replacing the old
+     push/pop trick. *)
   | Iatomic_fetch_add ->
-      ([| arg.(0); res.(0) |], res)
+      let tmp = Reg.create Int in
+      ([| arg.(0); res.(0); arg.(2); tmp |], [| res.(0); tmp |])
   (* Other instructions are regular *)
   | _ -> raise Use_default
 
@@ -263,6 +268,14 @@ method! select_operation op args dbg =
       Ispecific Izextend32, [arg]
     | _ -> super#select_operation op args dbg
     end
+  | Catomic_fetch_add ->
+      (* Materialise &caml_num_domains_running as a regalloc-managed operand
+         (an Iconst_symbol) so the single-domain fast path also works in
+         dlcode, where reading the symbol needs a GOTPCREL indirection and
+         hence a register.  This is the "Iconst_symbol followed by a test"
+         shape suggested in review.  See ocaml/ocaml#14575. *)
+      (Iatomic_fetch_add,
+       args @ [Cconst_symbol ("caml_num_domains_running", dbg)])
   | _ -> super#select_operation op args dbg
 
 (* Recognize float arithmetic with mem *)
