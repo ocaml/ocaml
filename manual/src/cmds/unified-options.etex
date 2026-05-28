@@ -238,7 +238,7 @@ with "ocamlmklib -suffixed".
 }%comp
 
 \comp{\item["-dllpath" \var{dir}]
-Adds the directory \var{dir} to the run-time search path for shared
+Add the directory \var{dir} to the run-time search path for shared
 C libraries.  At link-time, shared libraries are searched in the
 standard search path (the one corresponding to the "-I" option).
 The "-dllpath" option simply stores \var{dir} in the produced
@@ -441,7 +441,7 @@ See section~\ref{ss:custom-runtime} for more information.
 }%comp
 
 \notop{%
-\item["-match-context-rows"]
+\item["-match-context-rows" \var{number}]
 Set the number of rows of context used for optimization during
 pattern matching compilation. The default value is 32. Lower values
 cause faster compilation, but less optimized code. This advanced
@@ -696,7 +696,7 @@ flag, you must use it again for all dependencies.}
 
 \comp{%
 \item["-runtime-search" \var{method}]
-Controls whether the header used by normal bytecode executables is permitted to
+Control whether the header used by normal bytecode executables is permitted to
 search for the interpreter, or requires it to be at a fixed location.
 The following methods are supported:
 \begin{description}
