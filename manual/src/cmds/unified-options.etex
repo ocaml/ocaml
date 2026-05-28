@@ -51,7 +51,7 @@ given on the command line, instead of linking them into an executable file.
 The name of the library must be set with the "-o" option.
 
 If \comp{"-custom", }"-cclib" or "-ccopt" options are passed on the command
-line, these options are stored in the resulting \qcma library. Then,
+line, these options are stored in the resulting {\qcma} library. Then,
 linking with this library automatically adds back the \comp{"-custom", }
 "-cclib" and "-ccopt" options as if they had been provided on the
 command line, unless the "-noautolink" option is given.
@@ -233,7 +233,7 @@ by the run-time system "ocamlrun" at program start-up time.
 \item["-dllib-suffixed" "-l"\var{libname}]
 As for "-dllib" but the name recorded is mangled with the Runtime ID and host of
 the interpreter before being loaded by the run-time system "ocamlrun" at program
-start-up time. Ths is used for C stub libraries, for example by DLLs produced
+start-up time. This is used for C stub libraries, for example by DLLs produced
 with "ocamlmklib -suffixed".
 }%comp
 
@@ -253,7 +253,7 @@ that can later be included
 as a sub-module (with the given access path) of a compilation unit
 constructed with "-pack".  For instance,
 {\machine\ocamlx\ -for-pack\ P\ -c\ A.ml}
-will generate {\machine a.\cmo}\nat{ and "a.o" files} that can
+will generate {\machine a\cmo}\nat{ and "a.o" files} that can
 later be used with {\machine \ocamlx\ -pack\ -o\ P\cmo\ a\cmo}.
 Note: you can still pack a module that was compiled without
 "-for-pack" but in this case exceptions will be printed with the wrong
@@ -295,7 +295,7 @@ private types or types without a manifest (e.g., abstract types).
 Add the given directory to the list of directories searched for
 \nat{compiled interface files (".cmi"), compiled object code files (".cmx"),
 and libraries (".cmxa").}
-\comp{compiled interface files (".cmi"), compiled object code files ".cmo",
+\comp{compiled interface files (".cmi"), compiled object code files (".cmo"),
 libraries (".cma") and C libraries specified with "-cclib -lxxx".}
 \top{source and compiled files.}
 By default, the current directory is searched first, then the standard
@@ -475,7 +475,7 @@ Do not compile assertion checks.  Note that the special form
 
 \notop{%
 \item["-noautolink"]
-When linking \qcma libraries, ignore \comp{"-custom",} "-cclib" and "-ccopt"
+When linking {\qcma} libraries, ignore \comp{"-custom",} "-cclib" and "-ccopt"
 options potentially contained in the libraries (if these options were
 given when building the libraries).  This can be useful if a library
 contains incorrect specifications of C libraries or C options; in this
