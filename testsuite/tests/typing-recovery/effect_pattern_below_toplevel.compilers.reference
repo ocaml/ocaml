@@ -1,0 +1,18 @@
+File "effect_pattern_below_toplevel.ml", line 1:
+Error: Multiple errors were encountered
+File "effect_pattern_below_toplevel.ml", line 15, characters 9-22:
+15 |   | Some (effect A, _) -> "bar"
+              ^^^^^^^^^^^^^
+  Effect patterns must be at the top level of a match case.
+File "effect_pattern_below_toplevel.ml", line 20, characters 5-16:
+20 |   | [effect A, _] -> "foobar"
+          ^^^^^^^^^^^
+  Effect patterns must be at the top level of a match case.
+File "effect_pattern_below_toplevel.ml", line 28, characters 14-15:
+28 | let k : int = t + t
+                   ^
+  The value t has type string but an expression was expected of type int
+File "effect_pattern_below_toplevel.ml", line 28, characters 18-19:
+28 | let k : int = t + t
+                       ^
+  The value t has type string but an expression was expected of type int

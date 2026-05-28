@@ -818,3 +818,17 @@ val ints : int -> int t
     counting up.
 
     @since 4.14 *)
+
+val ints_in_range: first:int -> last:int -> int t
+(** [ints_in_range ~first ~last] is the sequence of integers beginning at
+    [first] (included) and counting up to [last] (included)
+
+    For example,
+    {[
+      ints_in_range ~first:1 ~last:5
+    ]}
+
+    yields [1], [2], [3], [4] and [5]
+
+    @since 5.6
+*)

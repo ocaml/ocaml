@@ -342,4 +342,15 @@ let () =
   | Seq.Nil -> assert false
   | Seq.Cons ((), seq) -> ignore seq
 
+(* ints_in_range *)
+let () =
+  (* start < stop example *)
+  assert ((List.of_seq (Seq.ints_in_range ~first:0 ~last:5)) = [0;1;2;3;4;5]);
+  (* start > stop example *)
+  assert ((List.of_seq (Seq.ints_in_range ~first:5 ~last:0 )) = []);
+  (* start > stop example *)
+  assert ((List.of_seq (Seq.ints_in_range ~first:6 ~last:6 ))= [6]);
+;;
+
+
 let () = print_endline "OK";;

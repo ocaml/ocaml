@@ -716,3 +716,9 @@ let to_dispenser xs =
 
 let rec ints i () =
   Cons (i, ints (i + 1))
+
+let rec ints_in_range ~first ~last () =
+  if last >= first then
+    Cons (first, ints_in_range ~first:(first + 1) ~last)
+  else
+    Nil

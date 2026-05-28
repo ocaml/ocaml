@@ -482,6 +482,9 @@ let mk_shared f =
 let mk_short_paths f =
   "-short-paths", Arg.Unit f, " Shorten paths in types"
 
+let mk_typing_recovery f =
+  "-typing-recovery", Arg.Unit f, " Enable typing recovery"
+
 let mk_stdin f =
   "-stdin", Arg.Unit f, " Read script from standard input"
 
@@ -926,6 +929,7 @@ module type Compiler_options = sig
   val _without_runtime : unit -> unit
   val _set_runtime_default : string -> unit
   val _short_paths : unit -> unit
+  val _typing_recovery : unit -> unit
   val _thread : unit -> unit
   val _v : unit -> unit
   val _verbose : unit -> unit
@@ -1161,6 +1165,7 @@ struct
     mk_safer_matching F._safer_matching;
     mk_set_runtime_default F._set_runtime_default;
     mk_short_paths F._short_paths;
+    mk_typing_recovery F._typing_recovery;
     mk_strict_sequence F._strict_sequence;
     mk_no_strict_sequence F._no_strict_sequence;
     mk_strict_formats F._strict_formats;
@@ -1390,6 +1395,7 @@ struct
     mk_set_runtime_default F._set_runtime_default;
     mk_shared F._shared;
     mk_short_paths F._short_paths;
+    mk_typing_recovery F._typing_recovery;
     mk_strict_sequence F._strict_sequence;
     mk_no_strict_sequence F._no_strict_sequence;
     mk_strict_formats F._strict_formats;
@@ -1903,6 +1909,7 @@ module Default = struct
     let _version () = Compenv.print_version_string ()
     let _vnum () = Compenv.print_version_string ()
     let _where () = Compenv.print_standard_library ()
+    let _typing_recovery = set typing_recovery
     let _with_runtime = set with_runtime
     let _without_runtime = clear with_runtime
   end

@@ -47,7 +47,7 @@ directory. These files are then converted to the different output
 formats using either LaTeX or hevea.
 
 Each part of the manual corresponds to a specific directory, and each distinct
-chapters (or sometimes sections) are mapped to a distinct `.etex` file:
+chapters (or sometimes sections) is mapped to a distinct `.etex` file:
 
 - Part I, Introduction to OCaml: `tutorials`
   - The core language: `coreexamples.etex`
@@ -95,8 +95,8 @@ and `top.etex`. If you need to update this list of options, the top comment
 of `unified-options.etex` contains the relevant information.
 
 - Part IV, The OCaml library: 'library'
- This parts contains an brief presentation of all libraries bundled with the
- compilers and the api documentation generated for these libraries.
+ This part contains a brief presentation of all libraries bundled with the
+ compiler and the API documentation generated for these libraries.
     - The core library: `core.etex`
     - The standard library: `stdlib-blurb.etex`
     - The compiler front-end: `compilerlibs.etex`
@@ -267,5 +267,5 @@ first subsection of `refman/refman.etex`.
 Consistency tests
 -----------------
 
-The `tests` folder contains consistency tests that checks that the manual
+The `tests` folder contains consistency tests that check that the manual
 and the rest of the compiler sources stay synced.

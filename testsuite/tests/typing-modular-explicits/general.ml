@@ -126,6 +126,8 @@ Line 3, characters 6-7:
           ^
 Error: The value "m" has type "(module Typ with type t = int)"
        but an expression was expected of type "(module Typ)"
+       The constraint on "t" in the first module type is not compatible
+       with the declaration of type t in the second module type.
 |}]
 
 (** From here we will test things with labels *)

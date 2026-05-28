@@ -1,0 +1,45 @@
+File "extra_missing_tuple_label.ml", line 1:
+Error: Multiple errors were encountered
+File "extra_missing_tuple_label.ml", line 13, characters 6-32:
+13 |   let ~x, k1, ~y, ~z, ~w, k2, k3 = lt in
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  This pattern was expected to match values of type
+  x:int * int * y:int * z:int * int * int,
+  but it contains an extra component with label w.
+File "extra_missing_tuple_label.ml", line 17, characters 6-28:
+17 |   let ~x, k1, ~y, ~w, k2, k3 = lt in
+           ^^^^^^^^^^^^^^^^^^^^^^
+  This pattern was expected to match values of type
+  x:int * int * y:int * z:int * int * int,
+  but it is missing a component with label z.
+  Hint: use .. to ignore some components.
+File "extra_missing_tuple_label.ml", line 21, characters 6-32:
+21 |   let ~x, k1, ~y, ~z, k2, k3, k4 = lt in
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  This pattern was expected to match values of type
+  x:int * int * y:int * z:int * int * int,
+  but it contains an extra unlabeled component.
+File "extra_missing_tuple_label.ml", line 22, characters 2-3:
+22 |   x, y, z
+       ^
+  Unbound value x
+File "extra_missing_tuple_label.ml", line 22, characters 5-6:
+22 |   x, y, z
+          ^
+  Unbound value y
+File "extra_missing_tuple_label.ml", line 22, characters 8-9:
+22 |   x, y, z
+             ^
+  Unbound value z
+File "extra_missing_tuple_label.ml", line 24, characters 9-29:
+24 | type t = x:int * bool * x:int
+              ^^^^^^^^^^^^^^^^^^^^
+  This tuple type has two labels named x
+File "extra_missing_tuple_label.ml", line 26, characters 8-24:
+26 | let _ = 1, ~x:2, 3, ~x:4
+             ^^^^^^^^^^^^^^^^
+  This tuple expression has two labels named x
+File "extra_missing_tuple_label.ml", line 28, characters 6-22:
+28 | let f (a, ~x, b, ~x:c) = ()
+           ^^^^^^^^^^^^^^^^
+  This tuple pattern has two labels named x

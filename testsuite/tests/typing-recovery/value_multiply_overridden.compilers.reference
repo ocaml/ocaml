@@ -1,0 +1,22 @@
+File "value_multiply_overridden.ml", line 1:
+Error: Multiple errors were encountered
+File "value_multiply_overridden.ml", line 12, characters 20-38:
+12 |   method foo : 'a = {<x = 11; x = 12>}
+                         ^^^^^^^^^^^^^^^^^^
+  The instance variable x is overridden several times
+File "value_multiply_overridden.ml", line 17, characters 16-36:
+17 |   method! foo = {< x = 12; x = 13 >}
+                     ^^^^^^^^^^^^^^^^^^^^
+  The instance variable x is overridden several times
+File "value_multiply_overridden.ml", line 24, characters 20-40:
+24 |       method! foo = {< x = 12; x = 13 >}
+                         ^^^^^^^^^^^^^^^^^^^^
+  The instance variable x is overridden several times
+File "value_multiply_overridden.ml", line 33, characters 22-42:
+33 |         method! foo = {< x = 12; x = 13 >}
+                           ^^^^^^^^^^^^^^^^^^^^
+  The instance variable x is overridden several times
+File "value_multiply_overridden.ml", line 39, characters 17-19:
+39 | let t : string = 11
+                      ^^
+  The constant 11 has type int but an expression was expected of type string

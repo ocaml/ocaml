@@ -60,6 +60,10 @@ struct caml_params {
   uintnat max_domains;
 };
 
+void caml_init_startup_params(struct caml_params *params);
+void caml_parse_startup_params(struct caml_params *, const char *);
+void caml_validate_startup_params(const struct caml_params *);
+
 extern const struct caml_params* const caml_params;
 
 extern void caml_parse_ocamlrunparam (void);

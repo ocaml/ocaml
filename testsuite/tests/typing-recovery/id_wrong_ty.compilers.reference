@@ -1,0 +1,4 @@
+File "id_wrong_ty.ml", line 10, characters 28-38:
+10 | let rec id_wrong_ty : int = fun x -> x
+                                 ^^^^^^^^^^
+Error: This expression should not be a function, the expected type is int

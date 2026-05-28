@@ -538,7 +538,7 @@ and try_modtypes ~core ~direction ~loc env subst mty1 mty2 orig_shape =
       match
         Env.normalize_module_path (Some Location.none) env p1
       with
-      | exception Env.Error (Env.Missing_module (_, _, path)) ->
+      | exception Env.Error.In_context (Env.Missing_module (_, _, path)) ->
           Error Error.(Mt_core(Unbound_module_path path))
       | p1 ->
           begin match expand_module_alias ~strengthen:false env p1 with

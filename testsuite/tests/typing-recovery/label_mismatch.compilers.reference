@@ -1,0 +1,16 @@
+File "label_mismatch.ml", line 1:
+Error: Multiple errors were encountered
+File "label_mismatch.ml", line 21, characters 11-12:
+21 |   { x = 1; y = 2; z = "oops" }
+                ^
+  The record field y belongs to the type a
+  but is mixed here with fields of type b
+File "label_mismatch.ml", line 23, characters 14-22:
+23 | let x : int = "string"
+                   ^^^^^^^^
+  This constant has type string but an expression was expected of type int
+File "label_mismatch.ml", line 38, characters 11-12:
+38 |   { r with w = "oops" }
+                ^
+  This record expression is expected to have type d
+  There is no field w within type d

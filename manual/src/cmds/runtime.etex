@@ -175,12 +175,7 @@ The following environment variables are also consulted:
         the pushdown automaton that executes the parsers prints a
         trace of its actions.  This option takes no argument.
   \item[R] (randomize) Turn on randomization of all hash tables by default
-        (see
-\ifouthtml
-  \ahref{libref/Hashtbl.html}{Module \texttt{Hashtbl}}).
-\else
-  section~\ref{Hashtbl}).
-\fi
+        (see \stdmoduleref{Hashtbl}).
         This option takes no argument.
   \item[s] ("minor_heap_size")  Size of the minor heap. (in words)
   \item[t] Set the trace level for the debug runtime (ignored by the standard runtime).

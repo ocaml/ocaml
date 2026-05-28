@@ -12,9 +12,11 @@ on:
       - 'trunk'
   pull_request:
 
-# env:
+env:
   # Fully print commands executed by Make
   # MAKEFLAGS: V=1
+  # Disable 'cold' tests
+  OCAMLTEST_COLD_TESTS: 0
 
 defaults:
   run:

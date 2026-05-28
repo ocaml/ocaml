@@ -4,7 +4,6 @@
 (Introduced in 4.06)
 
 \begin{syntax}
-
 dot-ext:
    | dot-operator-char { operator-char }
 ;

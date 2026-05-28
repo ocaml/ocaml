@@ -68,6 +68,8 @@ val o3_arguments : inlining_arguments
     The default is set if no round is provided. *)
 val use_inlining_arguments_set : ?round:int -> inlining_arguments -> unit
 
+type profile_column = [ `Time | `Alloc | `Top_heap | `Abs_top_heap ]
+
 val objfiles : string list ref
 val ccobjs : string list ref
 val dllibs : (suffixed:bool * string) list ref
@@ -125,6 +127,7 @@ val recursive_types : bool ref
 val strict_sequence : bool ref
 val strict_formats : bool ref
 val applicative_functors : bool ref
+val typing_recovery : bool ref
 val make_runtime : bool ref
 val c_compiler : string option ref
 val no_auto_link : bool ref
@@ -206,7 +209,7 @@ val force_slash : bool ref
 val keep_docs : bool ref
 val keep_locs : bool ref
 val opaque : bool ref
-val profile_columns : Profile.column list ref
+val profile_columns : profile_column list ref
 val flambda_invariant_checks : bool ref
 val unbox_closures : bool ref
 val unbox_closures_factor : int ref

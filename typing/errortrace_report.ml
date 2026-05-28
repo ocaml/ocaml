@@ -329,6 +329,52 @@ let explain_first_class_module = function
       Some(doc_printf "@,@[%a@]" Fmt.pp_doc pr)
   | Errortrace.Package_coercion pr ->
       Some(doc_printf "@,@[%a@]" Fmt.pp_doc pr)
+  | Errortrace.Constraint_on_missing_type (position,name) ->
+      let name = String.concat "." name in
+      let expl = match position with
+        | First ->
+            doc_printf "@,@[There is no type %a in the first module type.@]"
+              Style.inline_code name
+        | Second ->
+            doc_printf "@,@[There is no type %a in the second module type.@]"
+              Style.inline_code name
+      in
+      Some expl
+  | Errortrace.Constraint_with_deps (position,name) ->
+      let name = String.concat "." name in
+      let expl = match position with
+        | First ->
+            doc_printf
+              "@,@[The type %a depends on internal types@ in@ the@ \
+               first@ module@ type.@]"
+              Style.inline_code name
+        | Second ->
+            doc_printf
+              "@,@[The type %a depends on internal types@ in@ the@ \
+               second@ module@ type.@]"
+              Style.inline_code name
+      in
+      Some expl
+  | Errortrace.Constraint_on_mismatched_type {pos; decl; lhs }  ->
+      let name = String.concat "." lhs in
+      let id = Ident.create_local name in
+      let expl = match pos with
+        | First ->
+            doc_printf
+              "@,@[The constraint on %a in the second module type@ \
+               is not compatible@ with the declaration of@;<1 2>@[%a@]@ in \
+               the first module type.@]"
+              Style.inline_code name
+              (Printtyp.Doc.type_declaration id) decl
+        | Second ->
+            doc_printf
+              "@,@[The constraint on %a in the first module type@ \
+               is not compatible@ with the declaration of@;<1 2>@[%a@]@ in \
+               the second module type.@]"
+              Style.inline_code name
+              (Printtyp.Doc.type_declaration id) decl
+      in
+      Some expl
 
 let explain_univar prev = function
   | Errortrace.Var_mismatch { diff; order} ->

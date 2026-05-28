@@ -3157,8 +3157,8 @@ let nondep_instance env level id ty =
   with_level ~level (fun () -> instance ty)
 
 (* Find the type paths nl1 in the module type pack2, and add them to the
-   list (nl2, tl2). raise Not_found if impossible *)
-let complete_type_list ?(allow_absent=false) env fl1 lv2 pack2 =
+   list (nl2, tl2). *)
+let complete_type_list ~pos ?(allow_absent=false) env fl1 lv2 pack2 =
   (* This is morally WRONG: we're adding a (dummy) module without a scope in the
      environment. However no operation which cares about levels/scopes is going
      to happen while this module exists.
@@ -3169,6 +3169,9 @@ let complete_type_list ?(allow_absent=false) env fl1 lv2 pack2 =
 
      It'd be nice if we avoided creating such temporary dummy modules and broken
      environments though. *)
+  let exception Exit of Errortrace.first_class_module in
+  let mismatch lhs decl =
+    Exit(Constraint_on_mismatched_type {pos; decl; lhs}) in
   let id2 = Ident.create_local "Pkg" in
   let env' = Env.add_module id2 Mp_present (Mty_ident pack2.pack_path) env in
   let rec complete fl1 fl2 =
@@ -3188,25 +3191,38 @@ let complete_type_list ?(allow_absent=false) env fl1 lv2 pack2 =
                 if allow_absent then
                   complete nl fl2
                 else
-                  raise Exit
+                  raise (Exit (Constraint_with_deps(pos,n)))
             end
-        | (_, {type_arity = 0; type_kind = Type_abstract _;
-               type_private = Public; type_manifest = None})
-          when allow_absent ->
+        | (_, ({type_arity = 0; type_kind = Type_abstract _;
+               type_private = Public; type_manifest = None} as decl))
+           ->
+            if allow_absent then
+              complete nl fl2
+            else raise (mismatch n decl)
+        | _, decl -> raise (mismatch n decl)
+        | exception Not_found ->
+           if allow_absent then
             complete nl fl2
-        | _ -> raise Exit
-        | exception Not_found when allow_absent->
-            complete nl fl2
+           else raise (Exit (Constraint_on_missing_type (pos,n)))
   in
   match complete fl1 pack2.pack_constraints with
-  | res -> res
-  | exception Exit -> raise Not_found
+  | res -> Ok res
+  | exception (Exit e) -> Error e
 
-(* raise Not_found rather than Unify if the module types are incompatible *)
-let compare_package env unify_list lv1 pack1 lv2 pack2 =
-  let ntl2 = complete_type_list env pack1.pack_constraints lv2 pack2
-  and ntl1 = complete_type_list env pack2.pack_constraints lv1 pack1 in
-  unify_list (List.map snd ntl1) (List.map snd ntl2);
+let compare_package env unify lv1 pack1 lv2 pack2 =
+  let check = function
+    | Error e -> raise_for Unify (First_class_module e)
+    | Ok ntl -> ntl
+  in
+  let ntl2 =
+    complete_type_list ~pos:Second env pack1.pack_constraints lv2 pack2
+  and ntl1 =
+    complete_type_list ~pos:First env pack2.pack_constraints lv1 pack1
+  in
+  let ntl2 = check ntl2 in
+  let ntl1 = check ntl1 in
+  (* ntl1 and ntl2 have the same length by construction *)
+  List.iter2 unify (List.map snd ntl1) (List.map snd ntl2);
   if eq_package_path env pack1.pack_path pack2.pack_path then Ok ()
   else Result.bind
       (!package_subtype env pack1 pack2)
@@ -3572,9 +3588,7 @@ and unify_labeled_list env labeled_tl1 labeled_tl2 =
     labeled_tl1 labeled_tl2
 
 and unify_package uenv lvl1 pack1 lvl2 pack2 =
-  match
-    compare_package (get_env uenv) (unify_list uenv) lvl1 pack1 lvl2 pack2
-  with
+  match compare_package (get_env uenv) (unify uenv) lvl1 pack1 lvl2 pack2 with
   | Ok () -> ()
   | Error fm_err ->
       if not (in_pattern_mode uenv) then
@@ -4678,12 +4692,11 @@ and moregen_labeled_list type_pairs env labeled_tl1
 
 and moregen_package type_pairs env lvl1 pack1 lvl2 pack2 =
   match
-    compare_package env (moregen_list type_pairs env)
+    compare_package env (moregen type_pairs env)
       lvl1 pack1 lvl2 pack2
   with
   | Ok () -> ()
   | Error fme -> raise_for Moregen (First_class_module fme)
-  | exception Not_found -> raise_unexplained_for Moregen
 
 and moregen_fields type_pairs env ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1
@@ -4833,8 +4846,8 @@ and moregen_row type_pairs env row1 row2 =
 
 (* Must empty univar_pairs first *)
 let moregen type_pairs env patt subj =
-  with_univar_pairs [] (fun () ->
-    moregen type_pairs env patt subj)
+  with_univar_pairs [] @@ wrap_trace_gadt_instances env @@ fun () ->
+    moregen type_pairs env patt subj
 
 (*
    Non-generic variable can be instantiated only if [inst_nongen] is
@@ -5068,11 +5081,6 @@ let rec eqtype rename type_pairs subst env t1 t2 =
 and eqtype_list_same_length rename type_pairs subst env tl1 tl2 =
   List.iter2 (eqtype rename type_pairs subst env) tl1 tl2
 
-and eqtype_list rename type_pairs subst env tl1 tl2 =
-  if List.length tl1 <> List.length tl2 then
-    raise_unexplained_for Equality;
-  eqtype_list_same_length rename type_pairs subst env tl1 tl2
-
 and eqtype_labeled_list rename type_pairs subst env labeled_tl1 labeled_tl2 =
   if 0 <> List.compare_lengths labeled_tl1 labeled_tl2 then
     raise_unexplained_for Equality;
@@ -5085,12 +5093,11 @@ and eqtype_labeled_list rename type_pairs subst env labeled_tl1 labeled_tl2 =
 
 and eqtype_package rename type_pairs subst env lvl1 pack1 lvl2 pack2 =
   match
-    compare_package env (eqtype_list rename type_pairs subst env)
+    compare_package env (eqtype rename type_pairs subst env)
       lvl1 pack1 lvl2 pack2
   with
   | Ok () -> ()
   | Error fme -> raise_for Equality (First_class_module fme)
-  | exception Not_found -> raise_unexplained_for Equality
 
 and eqtype_fields rename type_pairs subst env ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1 in
@@ -5942,31 +5949,39 @@ and subtype_labeled_list env trace labeled_tl1 labeled_tl2 constraints =
     constraints labeled_tl1 labeled_tl2
 
 and subtype_package env trace lvl1 pack1 lvl2 pack2 constraints =
-  try
-    let ntl1 = complete_type_list env pack2.pack_constraints lvl1 pack1
-    and ntl2 =
-      complete_type_list env pack1.pack_constraints lvl2 pack2
-        ~allow_absent:true in
-    let constraints' =
-      List.map
-        (fun (n2,t2) -> (env, trace, List.assoc n2 ntl1, t2, !univar_pairs))
-        ntl2
-    in
-    if eq_package_path env pack1.pack_path pack2.pack_path
-    then constraints' @ constraints
-    else begin
-      (* need to check module subtyping *)
-      let snap = Btype.snapshot () in
-      match List.iter (fun (env, _, t1, t2, _) -> unify env t1 t2) constraints'
-      with
-      | () when Result.is_ok (!package_subtype env pack1 pack2) ->
-        Btype.backtrack snap; constraints' @ constraints
-      | () | exception Unify _ ->
-        Btype.backtrack snap; raise Not_found
-    end
-  with Not_found ->
-    (env, trace, newty (Tpackage pack1), newty (Tpackage pack2), !univar_pairs)
-      ::constraints
+  let ntl1 =
+    complete_type_list ~pos:Second env pack2.pack_constraints lvl1 pack1
+  and ntl2 =
+    complete_type_list ~pos:First env pack1.pack_constraints lvl2 pack2
+      ~allow_absent:true
+  in
+  match ntl1, ntl2 with
+  | Error e, _ | _, Error e ->
+      subtype_error ~env ~trace ~unification_trace:[First_class_module e]
+  | Ok ntl1, Ok ntl2 ->
+      let constraints' =
+        List.map
+          (fun (n2,t2) -> (env, trace, List.assoc n2 ntl1, t2, !univar_pairs))
+          ntl2
+      in
+      if eq_package_path env pack1.pack_path pack2.pack_path then
+        constraints' @ constraints
+      else
+        (* need to check module subtyping *)
+        let snap = Btype.snapshot () in
+        let apply_constraint (env,_,t1,t2,_) = unify env t1 t2 in
+        match List.iter apply_constraint constraints' with
+        | exception Unify {trace=unification_trace} ->
+            Btype.backtrack snap;
+            subtype_error ~env ~trace ~unification_trace
+        | () ->
+            match !package_subtype env pack1 pack2 with
+            | Ok () ->
+                Btype.backtrack snap; constraints' @ constraints
+            | Error e ->
+                Btype.backtrack snap;
+                subtype_error ~env ~trace
+                  ~unification_trace:[First_class_module e]
 
 and subtype_functor env trace ?id1 id pack u1 u2 constraints =
   let mty = modtype_of_package env Location.none pack in

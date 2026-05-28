@@ -485,7 +485,12 @@ type error =
   | Illegal_value_name of Location.t * string
   | Lookup_error of Location.t * t * lookup_error
 
-exception Error of error
+module Error : sig
+  type exn += private In_context of error
+
+  val log_or_raise : error -> unit
+  val log_and_raise : error -> 'a
+end
 
 val in_signature: bool -> t -> t
 

@@ -8,6 +8,10 @@ on:
 # Restrict the GITHUB_TOKEN
 permissions: {}
 
+env:
+  # Disable 'cold' tests
+  OCAMLTEST_COLD_TESTS: 0
+
 # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#concurrency
 # Concurrent workflows are grouped by the PR or branch that triggered them
 # (github.ref) and the name of the workflow (github.workflow). The

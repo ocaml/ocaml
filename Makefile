@@ -128,6 +128,7 @@ typing_SOURCES = \
   typing/subst.mli typing/subst.ml \
   typing/predef.mli typing/predef.ml \
   typing/datarepr.mli typing/datarepr.ml \
+  typing/typing_recovery.mli typing/typing_recovery.ml \
   file_formats/cmi_format.mli file_formats/cmi_format.ml \
   typing/persistent_env.mli typing/persistent_env.ml \
   typing/env.mli typing/env.ml \
@@ -149,6 +150,7 @@ typing_SOURCES = \
   typing/shape_reduce.mli typing/shape_reduce.ml \
   file_formats/cmt_format.mli file_formats/cmt_format.ml \
   typing/cmt2annot.mli typing/cmt2annot.ml \
+  typing/typing_recovery_state.mli typing/typing_recovery_state.ml \
   typing/untypeast.mli typing/untypeast.ml \
   typing/includemod.mli typing/includemod.ml \
   typing/signature_matching.mli typing/signature_matching.ml \
@@ -2498,7 +2500,6 @@ ocamlcp_ocamloptp_SOURCES = \
   build_path_prefix_map.mli build_path_prefix_map.ml \
   format_doc.mli format_doc.ml \
   misc.mli misc.ml \
-  profile.mli profile.ml \
   warnings.mli warnings.ml \
   identifiable.mli identifiable.ml \
   numbers.mli numbers.ml \
@@ -2506,6 +2507,7 @@ ocamlcp_ocamloptp_SOURCES = \
   local_store.mli local_store.ml \
   load_path.mli load_path.ml \
   clflags.mli clflags.ml \
+  profile.mli profile.ml \
   terminfo.mli terminfo.ml \
   location.mli location.ml \
   ccomp.mli ccomp.ml \

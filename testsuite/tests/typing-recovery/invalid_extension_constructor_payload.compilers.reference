@@ -1,0 +1,19 @@
+File "invalid_extension_constructor_payload.ml", line 1:
+Error: Multiple errors were encountered
+File "invalid_extension_constructor_payload.ml", line 10, characters 8-32:
+10 | let x = [%extension_constructor]
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  Invalid [%extension_constructor] payload, a constructor is expected.
+File "invalid_extension_constructor_payload.ml", line 12, characters 10-34:
+12 |   let a = [%extension_constructor]
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  Invalid [%extension_constructor] payload, a constructor is expected.
+File "invalid_extension_constructor_payload.ml", line 13, characters 10-34:
+13 |   and b = [%extension_constructor] in
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  Invalid [%extension_constructor] payload, a constructor is expected.
+File "invalid_extension_constructor_payload.ml", line 17, characters 14-15:
+17 | let t : int = u
+                   ^
+  The value u has type 'a * 'b * 'c but an expression was expected of type
+    int

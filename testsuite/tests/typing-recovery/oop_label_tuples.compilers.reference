@@ -1,0 +1,45 @@
+File "oop_label_tuples.ml", line 1:
+Error: Multiple errors were encountered
+File "oop_label_tuples.ml", line 20, characters 14-24:
+20 |     let y = g (module S) (x + 1) in
+                   ^^^^^^^^^^
+  The signature for this packaged module couldn't be inferred.
+File "oop_label_tuples.ml", line 21, characters 8-13:
+21 |     y + 220.2
+             ^^^^^
+  The constant 220.2 has type float but an expression was expected of type
+    int
+File "oop_label_tuples.ml", lines 27-28, characters 69-9:
+27 | .....................................................................object
+28 |       end
+  This expression has type <  > but an expression was expected of type
+    < deal : 'a -> 'b; finalize : string; from : 'b -> string; .. >
+  The first object type has no method deal
+File "oop_label_tuples.ml", lines 30-34, characters 11-7:
+30 | ...........object
+31 |       method deal = String.to_seq
+32 |       method from = String.of_seq
+33 |       method finalize = 44
+34 |     end............
+  This expression has type
+    < deal : String.t -> unit -> char Seq.node; finalize : int;
+      from : char Seq.t -> String.t >
+  but an expression was expected of type
+    < deal : String.t -> unit -> char Seq.node; finalize : string;
+      from : (unit -> char Seq.node) -> string; .. >
+  The method finalize has type int, but the expected method type was string
+File "oop_label_tuples.ml", line 39, characters 12-21:
+39 | let u = fgh (1, 2, 3) + fgh (~a:11, ~b:300, ~c:3000) + fgh (~a:22, ~b:1, ~c:"30")
+                 ^^^^^^^^^
+  This expression has type 'a * 'b * 'c
+  but an expression was expected of type a:int * b:int * c:string
+  A label a was expected
+File "oop_label_tuples.ml", line 39, characters 47-51:
+39 | let u = fgh (1, 2, 3) + fgh (~a:11, ~b:300, ~c:3000) + fgh (~a:22, ~b:1, ~c:"30")
+                                                    ^^^^
+  The constant 3000 has type int but an expression was expected of type
+    string
+File "oop_label_tuples.ml", line 45, characters 35-38:
+45 |   | Foo {bar; _} -> (int_of_string bar) + 10
+                                        ^^^
+  The value bar has type int but an expression was expected of type string

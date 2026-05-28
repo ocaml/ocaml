@@ -44,17 +44,10 @@ struct caml_ephe_info {
      may be unmarked if these ephemerons were the target of a blit
      operation. The data field is never unmarked. */
 
-  int must_sweep_ephe;
-  /* At the beginning of [Phase_sweep_ephe] the [live] list is moved
-     to the [todo] list since the ephemerons in the [live] list may
-     contain unmarked keys if the blit operation was performed in
-     earlier phases. This move is done exactly once per major cycle
-     per domain. This field keeps track of whether this move has been
-     done for the current cycle. */
-
   uintnat round;
   /* Records the number of the round of ephemeron marking most
    * recently completed in the current cycle. */
+
   struct {
     value* todop;
     uintnat round;

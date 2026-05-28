@@ -1,0 +1,28 @@
+File "unbound_instance_variable.ml", line 1:
+Error: Multiple errors were encountered
+File "unbound_instance_variable.ml", line 12, characters 16-25:
+12 |   method m: c = {< y=1 >}
+                     ^^^^^^^^^
+  Unbound instance variable y
+File "unbound_instance_variable.ml", line 17, characters 16-31:
+17 |   method m: c = {< x=1; k=10 >}
+                     ^^^^^^^^^^^^^^^
+  Unbound instance variable k
+File "unbound_instance_variable.ml", line 22, characters 17-27:
+22 |   method a : f = {<x = 10>}
+                      ^^^^^^^^^^
+  This expression has type < a : f; b : f; c : f; .. >
+  but an expression was expected of type < .. >
+  Self type cannot escape its class
+File "unbound_instance_variable.ml", line 23, characters 17-35:
+23 |   method b : f = {<x = 10; y = 12>}
+                      ^^^^^^^^^^^^^^^^^^
+  Unbound instance variable y
+File "unbound_instance_variable.ml", line 24, characters 17-27:
+24 |   method c : f = {<k = 15>}
+                      ^^^^^^^^^^
+  Unbound instance variable k
+File "unbound_instance_variable.ml", line 35, characters 17-40:
+35 |     method b e = {<x = (e # a); y = 22>}
+                      ^^^^^^^^^^^^^^^^^^^^^^^
+  Unbound instance variable y

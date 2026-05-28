@@ -59,8 +59,8 @@ module type S3 = sig type u type t val x : int end
 Line 3, characters 2-67:
 3 |   (x : (module S3 with type t = 'a and type u = 'b) :> (module S'));; (* fail *)
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type "(module S3 with type t = int and type u = bool)"
-       is not a subtype of "(module S')"
+Error: Type "(module S3 with type t = 'a and type u = 'b)" is not a subtype of
+         "(module S')"
        The two first-class module types differ by their runtime size.
 |}];;
 

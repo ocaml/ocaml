@@ -133,7 +133,7 @@ and an optional multiplier. If the letter is followed by anything
 else, the corresponding option is set to 1. Unknown letters
 are ignored.
 The options are documented below; the options
-.BR a , i , l , m , M , n , o , O , s , v , w
+.BR l , m , M , n , o , s , v
 correspond to the fields of the
 .B control
 record documented in
@@ -141,12 +141,6 @@ record documented in
 chapter "Standard Library", section "Gc".
 
 .RS 7
-.TP
-.BR a " (allocation_policy)"
-The policy used for allocating in the OCaml heap.  Possible values
-are 0 for the next-fit policy, 1 for the first-fit
-policy, and 2 for the best-fit policy. The default is 2.
-See the Gc module documentation for details.
 .TP
 .B b
 Trigger the printing of a stack backtrace
@@ -158,16 +152,14 @@ This option takes no argument.
 also enables pooling (as in caml_startup_pooled). This mode can be used
 to detect leaks with a third-party memory debugger.
 .TP
-.BR h
-The initial size of the major heap (in words).
+.B d " (max_domains)"
+Maximum number of domains that can be active concurrently. Defaults to
+128 on 64-bit platforms and 16 on 32-bit platforms.
 .TP
-.BR H
-Allocate heap chunks by mmapping huge pages. Huge pages are locked into
-memory, and are not swapped.
-.TP
-.BR i " (major_heap_increment)"
-The default size increment for the major heap (in words if greater than 1000,
-else in percents of the heap size).
+.B e " (runtime_events_log_wsize)"
+Size of the per-domain runtime events ring buffers in log powers of
+two words. Defaults to 16, giving 64k word or 512kb buffers on 64-bit
+systems.
 .TP
 .BR l " (stack_limit)"
 The limit (in words) of the stack size.
@@ -210,9 +202,6 @@ Default: 8192 bytes.
 .TP
 .BR o " (space_overhead)"
 The main major GC speed setting.
-.TP
-.BR O " (max_overhead)"
-The heap compaction trigger setting.
 .TP
 .B p
 Turn on debugging support for
@@ -279,9 +268,9 @@ GC debugging messages.
 Address space reservation changes.
 
 .TP
-.BR w " (window_size)"
-Set size of the window used by major GC for smoothing out variations in
-its workload. This is an integer between 1 and 50. (Default: 1)
+.BR V
+(verify_heap) Runs an integrity check on the heap just after the
+completion of a major GC cycle.
 .TP
 .BR W
 Print runtime warnings to stderr (such as Channel opened on file dies without

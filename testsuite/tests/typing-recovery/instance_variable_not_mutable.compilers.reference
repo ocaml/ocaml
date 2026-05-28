@@ -1,0 +1,30 @@
+File "instance_variable_not_mutable.ml", line 1:
+Error: Multiple errors were encountered
+File "instance_variable_not_mutable.ml", line 15, characters 4-11:
+15 |     y <- 11
+         ^^^^^^^
+  The instance variable y is not mutable
+File "instance_variable_not_mutable.ml", line 22, characters 15-22:
+22 |       let () = x <- 11 in
+                    ^^^^^^^
+  The instance variable x is not mutable
+File "instance_variable_not_mutable.ml", line 31, characters 13-29:
+31 |     let () = y <- y ^ "hello" in
+                  ^^^^^^^^^^^^^^^^
+  The instance variable y is not mutable
+File "instance_variable_not_mutable.ml", line 31, characters 18-19:
+31 |     let () = y <- y ^ "hello" in
+                       ^
+  The value y has type int but an expression was expected of type string
+File "instance_variable_not_mutable.ml", line 31, characters 18-29:
+31 |     let () = y <- y ^ "hello" in
+                       ^^^^^^^^^^^
+  This expression has type string but an expression was expected of type int
+File "instance_variable_not_mutable.ml", line 32, characters 4-5:
+32 |     y
+         ^
+  The value y has type int but an expression was expected of type unit
+File "instance_variable_not_mutable.ml", line 35, characters 17-19:
+35 | let x : string = 11
+                      ^^
+  The constant 11 has type int but an expression was expected of type string

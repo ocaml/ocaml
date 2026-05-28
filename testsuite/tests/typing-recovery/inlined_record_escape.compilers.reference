@@ -1,0 +1,18 @@
+File "inlined_record_escape.ml", line 1:
+Error: Multiple errors were encountered
+File "inlined_record_escape.ml", line 11, characters 20-25:
+11 | let f = function (A (x:_)) -> 0
+                         ^^^^^
+  This form is not allowed as the type of the inlined record could escape.
+File "inlined_record_escape.ml", line 15, characters 13-14:
+15 |     | A y -> y
+                  ^
+  This form is not allowed as the type of the inlined record could escape.
+File "inlined_record_escape.ml", line 17, characters 4-5:
+17 |   a.x + 10
+         ^
+  Unbound record field x
+File "inlined_record_escape.ml", line 20, characters 17-18:
+20 | let t : string = u
+                      ^
+  The value u has type int but an expression was expected of type string

@@ -1,0 +1,13 @@
+File "wrong_name.ml", line 1:
+Error: Multiple errors were encountered
+File "wrong_name.ml", line 14, characters 4-10:
+14 |   p.height
+         ^^^^^^
+  This expression has type person
+  There is no field height within type person
+  The field baz is not part of the record argument for the t.A constructor
+Hint: Did you mean bar?
+File "wrong_name.ml", line 23, characters 17-19:
+23 | let t : string = 10
+                      ^^
+  The constant 10 has type int but an expression was expected of type string

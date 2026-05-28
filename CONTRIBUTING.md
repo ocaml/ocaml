@@ -19,7 +19,7 @@ Modifying the sources is far from the only way to contribute to the
 OCaml distribution. Bug reports (in particular when they come with
 a reproducible example), simple typos or clarifications in the
 documentation also help, and help evaluating and integrating existing
-change proposals also help. Providing good answers on the discussion
+change proposals also helps. Providing good answers on the discussion
 forums, or asking the good questions that highlight deficiencies in
 existing documentations, also help.
 
@@ -42,7 +42,7 @@ familiar with GitHub, don't worry, all these steps are actually quite
 easy!)
 
 The current rule is that a PR needs to get an explicit approval from
-one of the core maintainer in order to be merged.  Reviews by
+one of the core maintainers in order to be merged.  Reviews by
 external contributors are very much appreciated.
 
 Since core maintainers cannot push directly without going through an

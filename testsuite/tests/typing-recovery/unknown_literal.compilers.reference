@@ -1,0 +1,22 @@
+File "unknown_literal.ml", line 1:
+Error: Multiple errors were encountered
+File "unknown_literal.ml", line 10, characters 8-15:
+10 | let a = 123455z
+             ^^^^^^^
+  Unknown modifier z for literal 123455z
+File "unknown_literal.ml", line 11, characters 8-24:
+11 | let b = 990098_09988777k
+             ^^^^^^^^^^^^^^^^
+  Unknown modifier k for literal 990098_09988777k
+File "unknown_literal.ml", line 14, characters 4-11:
+14 |   | 123455z -> "foo"
+         ^^^^^^^
+  Unknown modifier z for literal 123455z
+File "unknown_literal.ml", line 15, characters 3-19:
+15 |   |990098_09988777k -> "bar"
+        ^^^^^^^^^^^^^^^^
+  Unknown modifier k for literal 990098_09988777k
+File "unknown_literal.ml", line 18, characters 17-19:
+18 | let k : string = 10
+                      ^^
+  The constant 10 has type int but an expression was expected of type string

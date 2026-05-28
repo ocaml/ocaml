@@ -65,7 +65,7 @@ let typecheck_intf { Parse_result.ast; info } =
   Profile.(record_call typing) @@ fun () ->
   let tsg =
     ast
-    |> Typemod.type_interface info.env
+    |> Typemod.type_interface info.target info.env
     |> print_if info.ppf_dump Clflags.dump_typedtree Printtyped.interface
   in
   let alerts = Builtin_attributes.alerts_of_sig ~mark:true ast in
