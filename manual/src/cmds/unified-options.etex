@@ -536,8 +536,8 @@ compiled object ("-c" option), a library ("-a" option), a packed object ("-pack"
 option), \nat{a dynlinkable plugin ("-shared" option),} or a C source or object
 file ("-output-obj" and "-output-complete-obj" options).
 
-The default output name for an executable depends on the platform, it is the
-traditional "a.out" on Unix, "camlprog.exe" on Windows.
+The default output name for an executable depends on the platform, it is "a.out"
+on Unix, "camlprog.exe" on Windows.
 
 This can also be used when compiling but not linking an interface or
 implementation file ("-c" option), in which case it sets both the name of the
