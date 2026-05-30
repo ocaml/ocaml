@@ -530,7 +530,7 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
         in
         simplify env r body
       end else
-        (* It is extremely uncommon for stub inlining to be disalowed, but in
+        (* It is extremely uncommon for stub inlining to be disallowed, but in
            that case we want to prevent any kind of inlining.
            The only known case is through recursive calls inside default
            argument stubs
