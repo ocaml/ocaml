@@ -40,6 +40,9 @@ module Env = struct
     never_inline_outside_closures : bool;
     unroll_counts : int Set_of_closures_origin.Map.t;
     inlining_counts : int Closure_origin.Map.t;
+    (* Set of stubs in the current inlining stack.
+       It is cleared as soon as non-stub inlining occur *)
+    inlined_stub : Set_of_closures_origin.Set.t;
     actively_unrolling : int Set_of_closures_origin.Map.t;
     closure_depth : int;
     inlining_stats_closure_stack : Inlining_stats.Closure_stack.t;
@@ -63,6 +66,7 @@ module Env = struct
       never_inline_outside_closures = false;
       unroll_counts = Set_of_closures_origin.Map.empty;
       inlining_counts = Closure_origin.Map.empty;
+      inlined_stub = Set_of_closures_origin.Set.empty;
       actively_unrolling = Set_of_closures_origin.Map.empty;
       closure_depth = 0;
       inlining_stats_closure_stack =
@@ -326,7 +330,7 @@ module Env = struct
       Set_of_closures_origin.Map.add
         origin (unroll_count - 1) t.unroll_counts
     in
-    { t with unroll_counts }
+    { t with unroll_counts; inlined_stub = Set_of_closures_origin.Set.empty }
 
   let inlining_allowed t id =
     let inlining_count =
@@ -337,6 +341,9 @@ module Env = struct
                  ~key:t.round !Clflags.inline_max_unroll)
     in
     inlining_count > 0
+
+  let stub_inlining_allowed t id =
+    not (Set_of_closures_origin.Set.mem id t.inlined_stub)
 
   let inside_inlined_function t id =
     let inlining_count =
@@ -349,7 +356,13 @@ module Env = struct
     let inlining_counts =
       Closure_origin.Map.add id (inlining_count - 1) t.inlining_counts
     in
-    { t with inlining_counts }
+    (* inlining_stubs prevents recursive stub inlining.
+       But as soon as we inline another kind of function,
+       we can reactivate stub inlining. *)
+    { t with inlining_counts; inlined_stub = Set_of_closures_origin.Set.empty }
+
+  let inside_inlined_stub_function t id =
+    { t with inlined_stub = Set_of_closures_origin.Set.add id t.inlined_stub }
 
   let inlining_level t = t.inlining_level
   let freshening t = t.freshening
