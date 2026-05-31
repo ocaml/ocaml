@@ -23780,8 +23780,8 @@ fi
 if test x"$enable_frame_pointers" = "xyes"
 then :
   case $target in #(
-  x86_64-*-linux*|x86_64-*-darwin*|x86_64-*-freebsd*|aarch64-*-linux*| \
-     aarch64-*-darwin*|aarch64-*-freebsd*) :
+  x86_64-*-linux*|x86_64-*-darwin*|x86_64-*-freebsd*|x86_64-*-dragonfly*| \
+     aarch64-*-linux*|aarch64-*-darwin*|aarch64-*-freebsd*) :
     case $ocaml_cc_vendor in #(
   clang-*|gcc-*) :
     common_cflags="$common_cflags -g  -fno-omit-frame-pointer"

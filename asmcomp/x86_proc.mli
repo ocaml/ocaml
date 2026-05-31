@@ -69,6 +69,7 @@ type system =
   | S_freebsd
   | S_netbsd
   | S_openbsd
+  | S_dragonfly
 
   | S_unknown
 
