@@ -29,4 +29,8 @@ let g
     ?(x = self (Self self) ()) () =
   x + 1
 
-let b = g (Self g) ()
+let _ =
+  if Sys.opaque_identity false then
+    g (Self g) ()
+  else
+    0
