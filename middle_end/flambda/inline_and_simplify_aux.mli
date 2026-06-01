@@ -192,7 +192,7 @@ module Env : sig
       in the given environment. *)
   val unrolling_allowed : t -> Set_of_closures_origin.t -> bool
 
-  (** Whether the given environment is currently being used to rewrite the
+  (** Mark the environment as currently being used to rewrite the
       body of an unrolled recursive function. *)
   val inside_unrolled_function : t -> Set_of_closures_origin.t -> t
 
@@ -200,7 +200,7 @@ module Env : sig
       environment. *)
   val inlining_allowed : t -> Closure_origin.t -> bool
 
-  (** Whether the given environment is currently being used to rewrite the
+  (** Mark the environment as currently being used to rewrite the
       body of an inlined function. *)
   val inside_inlined_function : t -> Closure_origin.t -> t
 
@@ -212,7 +212,7 @@ module Env : sig
       stub inlining. *)
   val stub_inlining_allowed : t -> Set_of_closures_origin.t -> bool
 
-  (** Whether the given environment is currently being used to rewrite the
+  (** Mark the environment as  currently being used to rewrite the
       body of an inlined stub function. *)
   val inside_inlined_stub_function : t -> Set_of_closures_origin.t -> t
 
