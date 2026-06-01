@@ -21,3 +21,12 @@ let caller () =
   let _ = (g[@unroll 1]) () in
   let _ = (i[@unroll 1]) () in
   ()
+
+type 'a self_rec = Self of ('a self_rec -> 'a) [@@unboxed]
+
+let g
+    (Self self : (?x:int -> unit -> int) self_rec)
+    ?(x = self (Self self) ()) () =
+  x + 1
+
+let b = g (Self g) ()
