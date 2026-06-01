@@ -32,7 +32,7 @@ Working version
 
 - #14840: Add DragonFly BSD frame pointers support for AMD64 and recognize
   DragonFly as BSD in ocamltest.
-  (Michael Neumann, review by ?)
+  (Michael Neumann, review by Nicolás Ojeda Bär)
 
 - #14486, #14530: Add FreeBSD frame pointers support for AMD64 and ARM64.
   Document the usage of pmcstat and dtrace for generating profiling
