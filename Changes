@@ -364,7 +364,7 @@ Working version
 
 - #14828, #14839: fix infinite recursive inlining of stub function with flambda
   (Pierre Chambart, report by Nathanaëlle Courant and
-   Vincent Laviron review by ???)
+   Vincent Laviron review by Vincent Laviron)
 
 OCaml 5.5.0
 -----------
