@@ -48,7 +48,7 @@
    {2 Invariants and valid states}
 
    We enforce the invariant that [length >= 0] at all times.
-   we rely on this invariant for optimization.
+   We rely on this invariant for optimization.
 
    The following conditions define what we call a "valid" dynarray:
    - valid length: [length <= Array.length arr]
