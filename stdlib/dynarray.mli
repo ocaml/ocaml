@@ -17,7 +17,7 @@
 
 (** Dynamic arrays.
 
-    The {!Array} module provide arrays of fixed length. {!Dynarray}
+    The {!Array} module provides arrays of fixed length. {!Dynarray}
     provides arrays whose length can change over time, by adding or
     removing elements at the end of the array.
 
