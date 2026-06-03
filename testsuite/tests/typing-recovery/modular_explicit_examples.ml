@@ -132,3 +132,11 @@ let restrict_signature_with_priv_to_add_dep =
 
 let last_error : string = 10
 let r = last_error ^ "foo"
+
+
+type t = (module X:Typ) -> X.t -> X.t
+let f: t= fun (module F_name) x -> x
+
+let err (f:t) (g: (module Name_A:Typ) -> Name_A.t -> int as 'a) =
+  (g: float),
+  (f:'a)

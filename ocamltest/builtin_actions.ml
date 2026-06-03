@@ -155,7 +155,7 @@ let target_windows = make
 
 let is_bsd_system s =
   match s with
-  | "bsd_elf" | "netbsd" | "freebsd" | "openbsd" -> true
+  | "bsd_elf" | "netbsd" | "freebsd" | "openbsd" | "dragonfly" -> true
   | _ -> false
 
 let bsd = make

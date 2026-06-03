@@ -1155,7 +1155,7 @@ let message = function
               Style.inline_code x
         | _::_ ->
             Fmt.dprintf
-              "variables %a appears in@ different@ places@ in@ \
+              "variables %a appear in@ different@ places@ in@ \
                different@ or-pattern@ alternatives."
               comma_inline_list vars
       in

@@ -151,7 +151,7 @@ Line 2, characters 4-43:
 2 |   | (`B (x, z, Some y) | `B (x, Some y, z)) when x < y || Some x = z -> ()
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 57 [ambiguous-var-in-pattern-guard]: Ambiguous or-pattern variables under
-  guard; variables "y", "z" appears in different places in different or-pattern
+  guard; variables "y", "z" appear in different places in different or-pattern
   alternatives.
   Only the first match will be used to evaluate the guard expression.
   (see manual section 13.5.4)
@@ -340,7 +340,7 @@ Lines 2-3, characters 2-17:
 2 | ..X (Z x,Y (y,0))
 3 | | X (Z y,Y (x,_))
 Warning 57 [ambiguous-var-in-pattern-guard]: Ambiguous or-pattern variables under
-  guard; variables "x", "y" appears in different places in different or-pattern
+  guard; variables "x", "y" appear in different places in different or-pattern
   alternatives.
   Only the first match will be used to evaluate the guard expression.
   (see manual section 13.5.4)
@@ -418,7 +418,7 @@ Line 2, characters 4-56:
 2 |   | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 57 [ambiguous-var-in-pattern-guard]: Ambiguous or-pattern variables under
-  guard; variables "x", "y" appears in different places in different or-pattern
+  guard; variables "x", "y" appear in different places in different or-pattern
   alternatives.
   Only the first match will be used to evaluate the guard expression.
   (see manual section 13.5.4)
@@ -455,7 +455,7 @@ Line 2, characters 4-56:
 2 |   | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 57 [ambiguous-var-in-pattern-guard]: Ambiguous or-pattern variables under
-  guard; variables "x", "y" appears in different places in different or-pattern
+  guard; variables "x", "y" appear in different places in different or-pattern
   alternatives.
   Only the first match will be used to evaluate the guard expression.
   (see manual section 13.5.4)

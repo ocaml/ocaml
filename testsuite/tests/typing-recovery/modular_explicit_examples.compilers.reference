@@ -127,3 +127,14 @@ File "modular_explicit_examples.ml", line 133, characters 26-28:
 133 | let last_error : string = 10
                                 ^^
   The constant 10 has type int but an expression was expected of type string
+File "modular_explicit_examples.ml", line 141, characters 3-4:
+141 |   (g: float),
+         ^
+  The value g has type (module Name_A : Typ) -> Name_A.t -> int
+  but an expression was expected of type float
+File "modular_explicit_examples.ml", line 142, characters 3-4:
+142 |   (f:'a)
+         ^
+  The value f has type (module X : Typ) -> X.t -> X.t
+  but an expression was expected of type (module X : Typ) -> X.t -> int
+  Type X.t is not compatible with type int
