@@ -2100,6 +2100,8 @@ static void cycle_major_heap_from_stw_single(
 
          space_overhead@N =
          100.0 * (heap_words@N - live_words@N) / live_words@N
+
+         FIXME this became wrong when we added the mark-delay optimization.
       */
       intnat live_words = last_cycle.not_garbage_words - swept_words;
       double space_overhead = 100.0 * (double)(last_cycle.heap_words
@@ -2118,8 +2120,8 @@ static void cycle_major_heap_from_stw_single(
 
   caml_gc_phase = Phase_sweep_main;
   advance_pacing_ring (pp_sweep);
-  caml_gc_log ("work_counter: %" CAML_PRIuNAT "/%" CAML_PRIuNAT
-               "/%" CAML_PRIuNAT " at start of sweep",
+  caml_gc_log ("alloc_counter at start of sweep: %"
+               CAML_PRIuNAT "/%" CAML_PRIuNAT "/%" CAML_PRIuNAT,
                pacing_ring[pp_sweep].alloc_at_phase_start.on_heap,
                pacing_ring[pp_sweep].alloc_at_phase_start.off_heap,
                pacing_ring[pp_sweep].alloc_at_phase_start.ephe);
