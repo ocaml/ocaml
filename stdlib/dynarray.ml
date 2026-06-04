@@ -1241,68 +1241,21 @@ let compare cmp a1 a2 =
 
 (** {1:sorting Sorting}*)
 
-let cutoff = 5
 let unsafe_stable_sort_sub cmp a init_ofs init_len =
   let Pack {arr = arr1; length = len1; dummy = dum1} = a in
   check_valid_length len1 arr1;
-  let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
-    let Pack {arr = arr2; length = len2; dummy = dum2} = src2 in
-    check_valid_length len2 arr2;
-    let src1r = src1ofs + src1len and src2r = src2ofs + src2len in
-    let rec loop i1 s1 i2 s2 d =
-      if cmp s1 s2 <= 0 then begin
-        set dst d s1;
-        let i1 = i1 + 1 in
-        if i1 < src1r then
-          loop i1 (unsafe_get arr1 ~dummy:dum1 ~i:i1 ~length:len1) i2 s2 (d + 1)
-        else
-          blit ~src:src2 ~src_pos:i2 ~dst:dst ~dst_pos:(d + 1) ~len:(src2r - i2)
-      end else begin
-        set dst d s2;
-        let i2 = i2 + 1 in
-        if i2 < src2r then
-          loop i1 s1 i2 (unsafe_get arr2 ~dummy:dum2 ~i:i2 ~length:len2) (d + 1)
-        else
-          blit ~src:a ~src_pos:i1 ~dst:dst ~dst_pos:(d + 1) ~len:(src1r - i1)
-      end
-    in loop src1ofs (unsafe_get arr1 ~dummy:dum1 ~i:src1ofs ~length:len1)
-        src2ofs (unsafe_get arr2 ~dummy:dum2 ~i:src2ofs ~length:len2) dstofs;
-  in
-  let isortto srcofs dst dstofs len =
-    for i = 0 to len - 1 do
-      let e = (unsafe_get arr1 ~dummy:dum1 ~i:(srcofs + i) ~length:len1) in
-      let j = ref (dstofs + i - 1) in
-      while (!j >= dstofs && cmp (get dst !j) e > 0) do
-        set dst (!j + 1) (get dst !j);
-        decr j;
-      done;
-      set dst (!j + 1) e;
-    done;
-  in
-  let rec sortto srcofs dst dstofs len =
-    if len <= cutoff then isortto srcofs dst dstofs len else begin
-      let l1 = len / 2 in
-      let l2 = len - l1 in
-      sortto (srcofs + l1) dst (dstofs + l1) l2;
-      sortto srcofs a (srcofs + l2) l1;
-      merge (srcofs + l2) l1 dst (dstofs + l1) l2 dst dstofs;
-    end;
-  in
-  let base = init_ofs in
-  let l = init_len in
-  if l <= cutoff then isortto base a base l else begin
-    let l1 = l / 2 in
-    let l2 = l - l1 in
-    let t = make l2 (get a base) in
-    sortto (base + l1) t 0 l2;
-    sortto base a (base + l2) l1;
-    merge (base + l2) l1 t 0 l2 a base;
-  end
+  Array.stable_sort_sub
+    (fun x y ->
+     if Dummy.is_dummy x dum1 || Dummy.is_dummy y dum1
+     then invalid_arg Error.invalid_state_description
+     else cmp (Dummy.unsafe_get x) (Dummy.unsafe_get y))
+    arr1 init_ofs init_len;
+  check_same_length "unsafe_stable_sort_sub" a ~length:len1
 
-let stable_sort_sub cmp a ofs len =
-  if ofs < 0 || len < 0 || ofs > length a - len
+let stable_sort_sub cmp a ~pos ~len =
+  if pos < 0 || len < 0 || pos > length a - len
   then invalid_arg Error.invalid_state_description
-  else unsafe_stable_sort_sub cmp a ofs len
+  else unsafe_stable_sort_sub cmp a pos len
 
 let stable_sort cmp a =
   let Pack {arr; length = len; _} = a in begin
