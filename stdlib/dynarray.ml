@@ -1243,29 +1243,34 @@ let compare cmp a1 a2 =
 
 let cutoff = 5
 let unsafe_stable_sort_sub cmp a init_ofs init_len =
+  let Pack {arr = arr1; length = len1; dummy = dum1} = a in
+  check_valid_length len1 arr1;
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
+    let Pack {arr = arr2; length = len2; dummy = dum2} = src2 in
+    check_valid_length len2 arr2;
     let src1r = src1ofs + src1len and src2r = src2ofs + src2len in
     let rec loop i1 s1 i2 s2 d =
       if cmp s1 s2 <= 0 then begin
         set dst d s1;
         let i1 = i1 + 1 in
         if i1 < src1r then
-          loop i1 (get a i1) i2 s2 (d + 1)
+          loop i1 (unsafe_get arr1 ~dummy:dum1 ~i:i1 ~length:len1) i2 s2 (d + 1)
         else
           blit ~src:src2 ~src_pos:i2 ~dst:dst ~dst_pos:(d + 1) ~len:(src2r - i2)
       end else begin
         set dst d s2;
         let i2 = i2 + 1 in
         if i2 < src2r then
-          loop i1 s1 i2 (get src2 i2) (d + 1)
+          loop i1 s1 i2 (unsafe_get arr2 ~dummy:dum2 ~i:i2 ~length:len2) (d + 1)
         else
           blit ~src:a ~src_pos:i1 ~dst:dst ~dst_pos:(d + 1) ~len:(src1r - i1)
       end
-    in loop src1ofs (get a src1ofs) src2ofs (get src2 src2ofs) dstofs;
+    in loop src1ofs (unsafe_get arr1 ~dummy:dum1 ~i:src1ofs ~length:len1)
+        src2ofs (unsafe_get arr2 ~dummy:dum2 ~i:src2ofs ~length:len2) dstofs;
   in
   let isortto srcofs dst dstofs len =
     for i = 0 to len - 1 do
-      let e = (get a (srcofs + i)) in
+      let e = (unsafe_get arr1 ~dummy:dum1 ~i:(srcofs + i) ~length:len1) in
       let j = ref (dstofs + i - 1) in
       while (!j >= dstofs && cmp (get dst !j) e > 0) do
         set dst (!j + 1) (get dst !j);
