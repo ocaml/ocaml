@@ -460,6 +460,9 @@ val stable_sort : ('a -> 'a -> int) -> 'a t -> unit
    Changing the length of the array during the sort is considered to be a
    programming error and will result in the function failing. *)
 
+val sort : ('a -> 'a -> int) -> 'a t -> unit
+(** An alias for stable_sort. *)
+
 (** {1:conversions Conversions to other data structures}
 
     Note: the [of_*] functions raise [Invalid_argument] if the

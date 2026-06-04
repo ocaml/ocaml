@@ -1306,6 +1306,7 @@ let stable_sort cmp a =
   check_same_length "stable_sort" a ~length:len;
   end
 
+let sort = stable_sort
 (** {1:conversions Conversions to other data structures} *)
 
 (* The eager [to_*] conversion functions behave similarly to iterators
