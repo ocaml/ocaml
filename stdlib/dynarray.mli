@@ -433,6 +433,32 @@ val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
     @since 5.3
 *)
 
+(** {1:sorting Sorting}*)
+
+val stable_sort_sub : ('a -> 'a -> int) -> 'a t -> int -> int -> unit
+(**[stable_sort_sub cmp a pos len] sorts the subarray of the array [a]
+   delimited by the start position [pos] and by the length [len]. The data
+   in this subarray is sorted in increasing order according to the comparison
+   function [cmp]. The data outside of this subarray is unaffected. The
+   sorting algorithm is stable; it is the same as in {!stable_sort}.
+
+   Changing the length of [a] during the sort is considered to be a programming
+   error and will result in the function failing.
+
+   @raise Invalid_argument if [pos] and [len] do not
+   designate a valid subarray of [a]; that is, if
+   [pos < 0], or [len < 0], or [pos + len > length a]. *)
+
+val stable_sort : ('a -> 'a -> int) -> 'a t -> unit
+(** Sorts an array in increasing order according to a comparison function.
+   The comparison function must return 0 if its arguments compare as equal,
+   a positive integer if the first is greater, and a negative integer if the
+   first is smaller. The algorithm is stable and sorts in place, using Merge
+   Sort if the array's length is greater than 5, and Insertion Sort 
+   otherwise.
+   
+   Changing the length of the array during the sort is considered to be a
+   programming error and will result in the function failing. *)
 
 (** {1:conversions Conversions to other data structures}
 

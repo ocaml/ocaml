@@ -1239,6 +1239,73 @@ let compare cmp a1 a2 =
     r
   end
 
+(** {1:sorting Sorting}*)
+
+let cutoff = 5
+let unsafe_stable_sort_sub cmp a init_ofs init_len =
+  let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
+    let src1r = src1ofs + src1len and src2r = src2ofs + src2len in
+    let rec loop i1 s1 i2 s2 d =
+      if cmp s1 s2 <= 0 then begin
+        set dst d s1;
+        let i1 = i1 + 1 in
+        if i1 < src1r then
+          loop i1 (get a i1) i2 s2 (d + 1)
+        else
+          blit ~src:src2 ~src_pos:i2 ~dst:dst ~dst_pos:(d + 1) ~len:(src2r - i2)
+      end else begin
+        set dst d s2;
+        let i2 = i2 + 1 in
+        if i2 < src2r then
+          loop i1 s1 i2 (get src2 i2) (d + 1)
+        else
+          blit ~src:a ~src_pos:i1 ~dst:dst ~dst_pos:(d + 1) ~len:(src1r - i1)
+      end
+    in loop src1ofs (get a src1ofs) src2ofs (get src2 src2ofs) dstofs;
+  in
+  let isortto srcofs dst dstofs len =
+    for i = 0 to len - 1 do
+      let e = (get a (srcofs + i)) in
+      let j = ref (dstofs + i - 1) in
+      while (!j >= dstofs && cmp (get dst !j) e > 0) do
+        set dst (!j + 1) (get dst !j);
+        decr j;
+      done;
+      set dst (!j + 1) e;
+    done;
+  in
+  let rec sortto srcofs dst dstofs len =
+    if len <= cutoff then isortto srcofs dst dstofs len else begin
+      let l1 = len / 2 in
+      let l2 = len - l1 in
+      sortto (srcofs + l1) dst (dstofs + l1) l2;
+      sortto srcofs a (srcofs + l2) l1;
+      merge (srcofs + l2) l1 dst (dstofs + l1) l2 dst dstofs;
+    end;
+  in
+  let base = init_ofs in
+  let l = init_len in
+  if l <= cutoff then isortto base a base l else begin
+    let l1 = l / 2 in
+    let l2 = l - l1 in
+    let t = make l2 (get a base) in
+    sortto (base + l1) t 0 l2;
+    sortto base a (base + l2) l1;
+    merge (base + l2) l1 t 0 l2 a base;
+  end
+
+let stable_sort_sub cmp a ofs len =
+  if ofs < 0 || len < 0 || ofs > length a - len
+  then invalid_arg Error.invalid_state_description
+  else unsafe_stable_sort_sub cmp a ofs len
+
+let stable_sort cmp a =
+  let Pack {arr; length = len; _} = a in begin
+  check_valid_length len arr;
+  unsafe_stable_sort_sub cmp a 0 (length a);
+  check_same_length "stable_sort" a ~length:len;
+  end
+
 (** {1:conversions Conversions to other data structures} *)
 
 (* The eager [to_*] conversion functions behave similarly to iterators
