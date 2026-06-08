@@ -339,7 +339,7 @@ val find : ('a -> bool) -> 'a list -> 'a
  *)
 
 val find_opt : ('a -> bool) -> 'a list -> 'a option
-(** [find f l] returns the first element of the list [l]
+(** [find_opt f l] returns the first element of the list [l]
    that satisfies the predicate [f].
    Returns [None] if there is no value that satisfies [f] in the
    list [l].
