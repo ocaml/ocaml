@@ -90,7 +90,7 @@ val is_none : 'a option -> bool
 (** [is_none o] is [true] if and only if [o] is [None]. *)
 
 val is_some : 'a option -> bool
-(** [is_some o] is [true] if and only if [o] is [Some o]. *)
+(** [is_some o] is [true] if and only if [o] is [Some _]. *)
 
 val equal : ('a -> 'a -> bool) -> 'a option -> 'a option -> bool
 (** [equal eq o0 o1] is [true] if and only if [o0] and [o1] are both [None]
