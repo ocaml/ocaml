@@ -530,7 +530,7 @@ module Size = struct
     | Lop (Ispecific Imove32) -> 1
     | Lop (Ispecific (Isignext _)) -> 1
     | Lop (Idls_get) -> 1
-    | Lop (Iatomic_fetch_add) -> 4
+    | Lop (Iatomic_fetch_add) -> 5
     | Lop (Ireturn_addr) -> 1
     | Lreloadretaddr -> 0
     | Lreturn -> epilogue_size f + (if top_bits_ignore then 0 else 1)
@@ -1004,13 +1004,15 @@ let emit_instr env i =
         `	ldr	{emit_reg i.res.(0)}, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`
     | Lop(Iatomic_fetch_add) ->
         (* LL/SC loop, works on baseline ARMv8.0 (no LSE required).
-           x16 = sum (data), x17 = stlxr status (must differ per ARM spec) *)
+           reg_tmp1 = sum (data), reg_tmp2 = stlxr status (must differ per ARM spec).
+           Trailing dmb st is the atomic-store release barrier from #10972. *)
         let lbl = new_label() in
         `{emit_label lbl}:\n`;
         `	ldaxr	{emit_reg i.res.(0)}, [{emit_reg i.arg.(0)}]\n`;
         `	add	{emit_reg reg_tmp1}, {emit_reg i.res.(0)}, {emit_reg i.arg.(1)}\n`;
         `	stlxr	{emit_wreg reg_tmp2}, {emit_reg reg_tmp1}, [{emit_reg i.arg.(0)}]\n`;
-        `	cbnz	{emit_wreg reg_tmp2}, {emit_label lbl}\n`
+        `	cbnz	{emit_wreg reg_tmp2}, {emit_label lbl}\n`;
+        `	dmb	st\n`
     | Lop(Ireturn_addr) ->
         let n = frame_size env in
         if env.f.fun_frame_required then
