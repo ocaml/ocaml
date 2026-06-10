@@ -1466,7 +1466,7 @@ again:
   marked_hd = With_status_hd(hd, marked);
   if (Tag_hd(hd) == Lazy_tag || Tag_hd(hd) == Forcing_tag) {
     /* To detect and mitigate a race against some other domain
-     * short-circuiting alazy block, we compare-and-swap */
+     * short-circuiting a lazy block, we compare-and-swap */
     if (!atomic_compare_exchange_strong(Hp_atomic_val(block), &hd, marked_hd)) {
       hd = Hd_val(block);
       goto again;
