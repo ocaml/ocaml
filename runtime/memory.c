@@ -102,8 +102,9 @@
 
    Using release stores for all writes also ensures publication safety
    for newly-allocated objects, and isn't necessary for initialising
-   writes. The cost is free on x86, but requires a fence in
-   caml_modify on weakly-ordered architectures (ARM, Power).
+   writes (more about publication safety in note [MMPS]). The cost is
+   free on x86, but requires a fence in caml_modify on weakly-ordered
+   architectures (ARM, Power).
 
    However, instead of using acquire loads for all reads, an
    optimisation is possible. (Optimising reads is more important than
@@ -129,6 +130,107 @@
    (They're still useful, though: they serve to inhibit an overeager C
    compiler's optimisations). On ARMv8, actual hardware fences are
    generated.
+
+   And finally, you will see additional release fences after atomic
+   writes, like this:
+
+      atomic_thread_fence(memory_order_release)
+
+   This fence is here specifically to ensure the correctness of the
+   ARMv8 assembly emitted for atomic writes implemented in C such as
+   caml_atomic_exchange. The reason we need it is that the ARMv8 emitted
+   by the compiler for memory operations is an optimized version of what
+   a C compiler would emit with the operations described above: we emit
+   `dmb ishld; str` for non-atomic stores rather than `dmb ishld; stlr`.
+   The counterpart is that we add a `dmb ishst` after atomic stores, to
+   enforce order between them and subsequent non-atomic stores. A more
+   detailed description of the optimized ARMv8 mapping can be found at
+   https://github.com/ocaml/ocaml/pull/10995.
+*/
+
+/* Note [MMPS]: Publication safety in the memory model.
+
+   Care must be taken to ensure the publication of initialising writes
+   in newly allocated objects to all domains that might see these
+   objects.
+
+   Consider the OCaml program:
+
+      let r : int ref ref = ref (ref 0)
+
+      let t0 () = (* Domain 0 *)
+        let v = ref 42
+        r := v
+
+      let t1 () = (* Domain 1 *)
+        let r1 = !r in
+        let r2 = !r1 in
+        print_int r2
+
+   Let us try to understand its execution at a slightly lower level by
+   rewriting it in C:
+
+      // These three initial writes can be considered to be immediately
+      // propagated to all CPUs
+      value **r = alloc_small(1);
+      *r = alloc_small(1);
+      **r = Val_int(0);
+
+      P0() {
+        value *v = alloc_small(1);
+        *v = Val_int(42);
+
+        // This is `caml_modify`:
+        atomic_thread_fence(acquire);
+        atomic_store_release(r, v);
+      }
+
+      P1() {
+        value *r1 = atomic_load_relaxed(r);
+        value r2 = atomic_load_relaxed(r1);
+        print_int(Int_val(r2));
+      }
+
+   Now, suppose that `r1` contains `v`. Will the load from `r1` in P1
+   see the initializing store to `v`, i.e., `*v = Val_int(42);`? If not,
+   `r2` will contain uninitialised garbage, which is very bad (notably
+   because it breaks type safety). Publication safety consists in
+   assuring that this doesn’t happen. In the program above, it doesn’t.
+
+   Indeed, this program may appear racy, but in fact it isn’t. The
+   reasoning goes as follows:
+
+   - The release store in P0 is also a release fence, i.e. it guarantees
+     that all stores before it in program order also happen-before it.
+   - If r1 = v in P1, then necessarily the store of v in r got
+     propagated to CPU 1 before the first load of P1. If r1 != v, then
+     the second load is not from v and thus there is no race on v.
+   - There is an address dependency from the first load to the second in
+     P1, so the second cannot be reorder before the first, because the
+     first load must be performed for the CPU to know which location the
+     second load should access.
+
+   In other words, the store of 42 to v in P0 is necessarily executed
+   before the store of v to r, which is necessarily executed before the
+   load from r in P1 (assuming it returns v), which is necessarily
+   executed before the load from v in P1. Hence, there is no data race
+   on v, and either this program prints 0 or it prints 42.
+
+   The reasoning makes use of address dependencies, which are not part
+   of the C11 memory model. However, in practice they do create
+   happens-before ordering in practice. This is the case, for example,
+   in the Linux Kernel Memory Model. In the C11 model, two things are
+   missing:
+
+   - C11 considers that only an acquire load that reads from a release
+     store can establish a hb relation. The LKMM relaxes this by
+     allowing the same reasoning on "relaxed" loads that read from a
+     release store (the LKMM does not use the term of "relaxed" atomics
+     but employs `READ_ONCE` and `WRITE_ONCE` which are similar)
+   - C11 does not have the notion of address/data dependencies:
+     `memory_order_consume` has proven impossible to implement in
+     compilers, preventing us from using it and forcing us to reason
+     outside of C11.
 */
 
 /* Note [MMMOC]: Mixing the Memory Models of OCaml and C.
