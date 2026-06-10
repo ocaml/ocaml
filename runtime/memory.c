@@ -195,9 +195,9 @@
    see the initializing store to `v`, i.e., `*v = Val_int(42);`? If not,
    `r2` will contain uninitialised garbage, which is very bad (notably
    because it breaks type safety). Publication safety consists in
-   assuring that this doesn’t happen. In the program above, it doesn’t.
+   assuring that this doesn't happen. In the program above, it doesn't.
 
-   Indeed, this program may appear racy, but in fact it isn’t. The
+   Indeed, this program may appear racy, but in fact it isn't. The
    reasoning goes as follows:
 
    - The release store in P0 is also a release fence, i.e. it guarantees
