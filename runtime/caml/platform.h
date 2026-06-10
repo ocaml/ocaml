@@ -38,6 +38,7 @@
 #include "mlvalues.h"
 #include "sys.h"
 #include "osdeps.h"
+#include "startup_aux.h"
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
@@ -137,7 +138,7 @@ int caml_plat_thread_create(caml_plat_thread *restrict thread,
 {
   *thread = (caml_plat_thread) _beginthreadex(
     NULL, /* security: handle can't be inherited */
-    0,    /* stack size */
+    caml_params->init_sys_stack_bsz, /* stack size */
     start_address,
     arg,
     0,    /* run immediately */
@@ -229,7 +230,14 @@ int caml_plat_thread_create(caml_plat_thread *restrict thread,
                             void *(*start_routine)(void *),
                             void *restrict arg)
 {
-  return pthread_create(thread, 0, start_routine, arg);
+  pthread_attr_t attr;
+  pthread_attr_init(&attr);
+  if(caml_params->init_sys_stack_bsz != 0){
+    pthread_attr_setstacksize(&attr, caml_params->init_sys_stack_bsz);
+  }
+  int res = pthread_create(thread, &attr, start_routine, arg);
+  pthread_attr_destroy(&attr);
+  return res;
 }
 
 Caml_inline

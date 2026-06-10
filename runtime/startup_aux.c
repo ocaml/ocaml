@@ -62,6 +62,7 @@ void caml_init_startup_params(struct caml_params *params)
   params->init_custom_minor_ratio = Custom_minor_ratio_def;
   params->init_custom_minor_max_bsz = Custom_minor_max_bsz_def;
   params->init_max_stack_wsz = Max_stack_def;
+  params->init_sys_stack_bsz = Sys_stack_def;
   params->max_domains = Max_domains_def;
   params->runtime_events_log_wsize = Default_runtime_events_log_wsize;
 
@@ -107,6 +108,7 @@ void caml_parse_startup_params(struct caml_params *params, const char *opt)
     case 'd': scanmult (opt, &params->max_domains); break;
     case 'e': scanmult (opt, &params->runtime_events_log_wsize); break;
     case 'l': scanmult (opt, &params->init_max_stack_wsz); break;
+    case 'S': scanmult (opt, &params->init_sys_stack_bsz); break;
     case 'M': scanmult (opt, &params->init_custom_major_ratio); break;
     case 'm': scanmult (opt, &params->init_custom_minor_ratio); break;
     case 'n': scanmult (opt, &params->init_custom_minor_max_bsz); break;
