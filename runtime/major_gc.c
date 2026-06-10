@@ -1464,7 +1464,7 @@ Caml_inline header_t mark_header(value block, header_t hd, status marked)
   header_t marked_hd;
 again:
   marked_hd = With_status_hd(hd, marked);
-  if (Tag_hd(hd) == Lazy_tag && Tag_hd(hd) == Forcing_tag) {
+  if (Tag_hd(hd) == Lazy_tag || Tag_hd(hd) == Forcing_tag) {
     /* To detect and mitigate a race against some other domain
      * short-circuiting alazy block, we compare-and-swap */
     if (!atomic_compare_exchange_strong(Hp_atomic_val(block), &hd, marked_hd)) {
