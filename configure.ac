@@ -450,19 +450,7 @@ If your host is 64 bits, you can try with './configure CC="gcc -m64"' \
 
 AS_CASE([$target],
   [*-pc-windows],
-    [AS_IF([test -z "$CC"], [CC=cl])
-    ccomp_type=msvc
-    S=asm
-    SO=dll
-    outputexe=-Fe
-    outputobj=-Fo
-    syslib='$(1).lib'],
-  [ccomp_type=cc
-  S=s
-  SO=so
-  outputexe='-o '
-  outputobj='-o '
-  syslib='-l$(1)'])
+    [AS_IF([test -z "$CC"], [CC=cl])])
 
 AC_CHECK_PROG([csc],[csc],[csc])
 AS_IF([test -n "$csc"],
@@ -871,6 +859,26 @@ OCAML_ASM_SIZE_TYPE_DIRECTIVES
 
 ## Find vendor of the C compiler
 OCAML_CC_VENDOR
+
+AS_CASE([$target],
+  [*-pc-windows],
+    [OCAML_CC_CCOMP_TYPE
+    AS_CASE(["$ocaml_cv_cc_ccomp_type"],
+      [msvc], [ccomp_type=msvc],
+      [cc], [AC_MSG_ERROR([unsupported cc-like compiler driver for $target])],
+      [AC_MSG_ERROR([unknown ccomp_type $ocaml_cv_cc_ccomp_type])])
+    SO=dll],
+  [ccomp_type=cc])
+
+AS_IF([test "$ccomp_type" = 'msvc'],
+  [S=asm
+  outputexe=-Fe
+  outputobj=-Fo
+  syslib='$(1).lib'],
+  [S=s
+  outputexe='-o '
+  outputobj='-o '
+  syslib='-l$(1)'])
 
 DEP_CC_PREFIX=''
 AS_CASE([$target],

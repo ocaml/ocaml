@@ -85,6 +85,15 @@ unknown
   AC_MSG_RESULT([$ocaml_cc_vendor])
 ])
 
+AC_DEFUN([OCAML_CC_CCOMP_TYPE], [
+  AC_REQUIRE([AC_PROG_CC])
+  AC_CACHE_CHECK([whether $CC uses the MSVC or cc command line interface],
+    [ocaml_cv_cc_ccomp_type],
+    [AS_IF([$CC -nologo '-?' >&AS_MESSAGE_LOG_FD 2>&1],
+      [ocaml_cv_cc_ccomp_type=msvc],
+      [ocaml_cv_cc_ccomp_type=cc])])
+])
+
 AC_DEFUN([OCAML_SIGNAL_HANDLERS_SEMANTICS], [
   AC_MSG_NOTICE([checking semantics of signal handlers])
   AC_CHECK_FUNC([sigaction], [has_sigaction=true], [has_sigaction=false])
