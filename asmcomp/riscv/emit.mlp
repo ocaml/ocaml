@@ -501,7 +501,9 @@ let emit_instr env i =
       let ofs = Domainstate.(idx_of_field Domain_dls_root) * 8 in
       `	ld	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg reg_domain_state_ptr})\n`
   | Lop (Iatomic_fetch_add) ->
-      `	amoadd.d.aqrl	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, ({emit_reg i.arg.(0)})\n`
+      (* trailing fence rw,w is a belt-and-braces release fence *)
+      `	amoadd.d.aqrl	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, ({emit_reg i.arg.(0)})\n`;
+      `	fence	rw,w\n`
   | Lop (Ireturn_addr) ->
       let n = frame_size env in
       if env.f.fun_frame_required then

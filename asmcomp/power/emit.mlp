@@ -475,7 +475,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Iopaque) -> 0
     | Lop(Ispecific _) -> 1
     | Lop(Idls_get) -> 1
-    | Lop(Iatomic_fetch_add) -> 6
+    | Lop(Iatomic_fetch_add) -> 7
     | Lop(Ireturn_addr) -> 1
     | Lreloadretaddr -> 2
     | Lreturn -> 2
@@ -848,6 +848,7 @@ let emit_instr env i =
         let offset = Domainstate.(idx_of_field Domain_dls_root) * 8 in
         `	ld	{emit_reg i.res.(0)}, {emit_int offset}(30)\n`
     | Lop (Iatomic_fetch_add) ->
+        (* trailing lwsync is the release fence, #10995 *)
         let lbl = new_label() in
         `	sync\n`;
         `{emit_label lbl}:\n`;
@@ -855,7 +856,8 @@ let emit_instr env i =
         `	add	0, {emit_reg i.res.(0)}, {emit_reg i.arg.(1)}\n`;
         `	stdcx.	0, 0, {emit_reg i.arg.(0)}\n`;
         `	bne-	{emit_label lbl}\n`;
-        `	isync\n`
+        `	isync\n`;
+        `	lwsync\n`
     | Lop (Ireturn_addr) ->
         if env.f.fun_frame_required then
         `	ld	{emit_reg i.res.(0)}, {emit_int(retaddr_offset env)}(1)\n`
