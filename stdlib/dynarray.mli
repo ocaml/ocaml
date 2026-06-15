@@ -621,12 +621,32 @@ val reset : 'a t -> unit
     It is equivalent to [set_capacity a 0] or [clear a; fit_capacity a].
 *)
 
-(** {2:noleaks No leaks: preservation of memory liveness}
+(** {1:unsafe Unsafe operations} *)
 
-    The user-provided values reachable from a dynamic array [a] are
-    exactly the elements in the indices [0] to [length a - 1]. In
-    particular, no user-provided values are "leaked" by being present
-    in the backing array at index [length a] or later.
+val unsafe_get : 'a t -> int -> 'a
+(** [unsafe_get a i] accesses the element at index [i] of [a]
+    without bound-checking: it breaks type- and memory-safety
+    if [i] is not a valid index for [a], as it may return an
+    arbitrary value. It may also return a type-unsafe value
+    if an unsynchronized concurrent update put the dynarray in
+    an invalid state.
+
+    This operation is {b more unsafe} than [Array.unsafe_get a i],
+    whose precondition [0 <= i < Array.length a] can usually be
+    checked by local reasoning. For a dynarray, the length may change
+    concurrently if the program wrongly performs unsynchronized
+    concurrent accesses, and the absence of such a race typically
+    cannot be ensured by local reasoning.
+*)
+
+val unsafe_set : 'a t -> int -> 'a -> unit
+(** [unsafe_set a i v] sets the element at index [i] of [a]
+    to [v] without bound-checking: it breaks type- and memory-safety
+    if [i] is not a valid index for [a], as it may mutate an arbitrary
+    value.
+
+    See {!unsafe_get} for commentary on why this is {b more unsafe}
+    than the corresponding [Array.unsafe_set].
 *)
 
 val unsafe_to_iarray : capacity:int -> ('a t -> unit) -> 'a iarray
@@ -645,6 +665,13 @@ val unsafe_to_iarray : capacity:int -> ('a t -> unit) -> 'a iarray
 
     @since 5.4 *)
 
+(** {2:noleaks No leaks: preservation of memory liveness}
+
+    The user-provided values reachable from a dynamic array [a] are
+    exactly the elements in the indices [0] to [length a - 1]. In
+    particular, no user-provided values are "leaked" by being present
+    in the backing array at index [length a] or later.
+*)
 
 (** {1:examples Code examples}
 

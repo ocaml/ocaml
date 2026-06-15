@@ -191,6 +191,9 @@ Working version
   Ulugbek Abdullaev, Hezekiah M. Carty, Simon Cruanes, Daniel Bünzli, Yotam
   Barnoy, Michael Hendricks and Léo Andrès)
 
+- #????: add Dynarray.unsafe_{get,set}
+  (Gabriel Scherer, review by ?)
+
 ### Other libraries:
 
 * #14788: The Win32 error code `ERROR_DIRECTORY` (= 267) is now mapped to

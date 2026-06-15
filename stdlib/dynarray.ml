@@ -1384,3 +1384,12 @@ let unsafe_to_iarray ~capacity (f : 'a t -> unit) =
     with Dummy.Array.Dummy_found i -> Error.missing_element ~i ~length
   in
   unsafe_iarray_of_array values
+
+
+(** {1. Unsafe operations} *)
+
+let[@inline] unsafe_get (type a) (Pack a : a t) i =
+  Dummy.unsafe_get (Array.unsafe_get a.arr i)
+
+let[@inline] unsafe_set (Pack a) i x =
+  Array.unsafe_set a.arr i (Dummy.of_val x)
