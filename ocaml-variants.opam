@@ -111,7 +111,7 @@ build: [
   [make "-j%{jobs}%"]
   [make "INSTALL_MODE=opam" "install"]
 ]
-install: ["sh" "./%{name}%-fixup.sh" prefix]
+install: [make "install"]
 depopts: [
   "ocaml-option-32bit"
   "ocaml-option-afl"
