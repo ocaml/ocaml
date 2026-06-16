@@ -631,12 +631,27 @@ val unsafe_get : 'a t -> int -> 'a
     if an unsynchronized concurrent update put the dynarray in
     an invalid state.
 
-    This operation is {b more unsafe} than [Array.unsafe_get a i],
-    whose precondition [0 <= i < Array.length a] can usually be
-    checked by local reasoning. For a dynarray, the length may change
-    concurrently if the program wrongly performs unsynchronized
-    concurrent accesses, and the absence of such a race typically
-    cannot be ensured by local reasoning.
+    {b: Safety warning.} This operation is {b more unsafe} than
+    [Array.unsafe_get a i], whose precondition
+    [0 <= i < Array.length a] can usually be checked by local
+    reasoning. For a dynarray, the length may change concurrently if
+    the program wrongly performs unsynchronized concurrent accesses,
+    and the absence of such a race typically cannot be ensured by
+    local reasoning. In more concrete terms:
+
+    - If you are the author of a library, and you use
+      [unsafe_{get,set}] on a dynarray input that is provided by the
+      user of the library, then your function "inherits" the unsafety of
+      [unsafe_{get,set}], because if the user shrinks the array
+      concurrently the program can blow up. You have to mark this very
+      clearly and it is probably not a good idea.
+
+    - If you can control all usages of a dynarray value, because it is
+      local to a function or module and never escapes, or because you
+      control the code of the whole program, then you may be able to
+      reason globally about the fact that it is never shrunk below the
+      index -- for example, if you have the property that the dynarray
+      always grows, never shrinks. Then using this function is safe.
 *)
 
 val unsafe_set : 'a t -> int -> 'a -> unit
