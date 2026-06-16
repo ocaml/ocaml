@@ -191,8 +191,8 @@ Working version
   Ulugbek Abdullaev, Hezekiah M. Carty, Simon Cruanes, Daniel Bünzli, Yotam
   Barnoy, Michael Hendricks and Léo Andrès)
 
-- #????: add Dynarray.unsafe_{get,set}
-  (Gabriel Scherer, review by ?)
+- #14864: add Dynarray.unsafe_{get,set}
+  (Gabriel Scherer, review by Basile Clément and ?)
 
 ### Other libraries:
 
