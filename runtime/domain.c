@@ -1243,7 +1243,7 @@ static value install_backup_thread_exn (dom_internal* di)
 #endif
 
   atomic_store_release(&di->backup_thread_msg, BT_ENTERING_OCAML);
-  err = caml_plat_thread_create(&di->backup_thread, 0, backup_thread_func,
+  err = caml_plat_thread_create(&di->backup_thread, backup_thread_func,
                                 (void*)di);
 
 #ifndef _WIN32
@@ -1506,7 +1506,7 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
                                     sizeof(struct domain_ml_values));
   init_domain_ml_values(p.ml_values, callback, term_sync);
 
-  err = caml_plat_thread_create(&th, 0, domain_thread_func, (void*)&p);
+  err = caml_plat_thread_create(&th, domain_thread_func, (void*)&p);
   if (err) {
     free_domain_ml_values(p.ml_values);
     caml_check_error(err, "failed to create domain thread: "

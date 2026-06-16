@@ -132,11 +132,9 @@ typedef void * caml_plat_thread_attr;
 
 Caml_inline
 int caml_plat_thread_create(caml_plat_thread *restrict thread,
-                            const caml_plat_thread_attr *restrict attr,
                             unsigned ( WINAPI *start_address )( void * ),
                             void *restrict arg)
 {
-  (void) attr; /* unused */
   *thread = (caml_plat_thread) _beginthreadex(
     NULL, /* security: handle can't be inherited */
     0,    /* stack size */
@@ -228,11 +226,10 @@ typedef pthread_attr_t caml_plat_thread_attr;
 
 Caml_inline
 int caml_plat_thread_create(caml_plat_thread *restrict thread,
-                            const caml_plat_thread_attr *restrict attr,
                             void *(*start_routine)(void *),
                             void *restrict arg)
 {
-  return pthread_create(thread, attr, start_routine, arg);
+  return pthread_create(thread, 0, start_routine, arg);
 }
 
 Caml_inline
