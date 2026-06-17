@@ -995,6 +995,13 @@ void caml_set_pacing_params (caml_gc_pacing_params p)
   pp_c2[pp_mark] = s2 / pp_sigma;
   pp_c2[pp_ephe] = 2 * s2 / pp_gamma + 1;
   caml_plat_unlock (&pp_lock);
+  caml_gc_log("set GC pacing params: %"CAML_PRIuNAT" percent_free; %"
+              CAML_PRIuNAT" ephe_percent_free; %g beta; %g beta''; %g gamma; "
+              "%g s; %g m; %g w; %g s'; %g m'; %g w'; %g s''; %g m''; %g w''",
+              pp.percent_free, pp.ephe_percent_free, pp_beta, pp_beta2,
+              pp_gamma, pp_c[pp_sweep], pp_c[pp_mark], pp_c[pp_ephe],
+              pp_c1[pp_sweep], pp_c1[pp_mark], pp_c1[pp_ephe],
+              pp_c2[pp_sweep], pp_c2[pp_mark], pp_c2[pp_ephe]);
 }
 
 /***********************************************************************/
@@ -1241,10 +1248,18 @@ static intnat get_major_slice_work(collection_slice_mode mode){
     (intnat) (pp_c[ph] * d_on + pp_c1[ph] * d_off + pp_c2[ph] * d_ephe);
 
   /* The slice budget is the max of the alloc-driven budget and
-     the explicit budget (d->slice_budget). */
+     the explicit budget (d->slice_budget), and we return only one chunk
+     of that amount. */
 
-  /* Return only one chunk of it. */
-  return min2(max2(budget, d->slice_budget), Chunk_size);
+  intnat chunk_budget = min2(max2(budget, d->slice_budget), Chunk_size);
+
+  caml_gc_log("compute slice budget: %"CAML_PRIdNAT" normal; %"
+              CAML_PRIdNAT" explicit; %"CAML_PRIdNAT" chunk;"
+              " %"CAML_PRIdNAT" d_on; %"CAML_PRIdNAT" d_off; %"
+              CAML_PRIdNAT" d_ephe; %u phase",
+              budget, d->slice_budget, chunk_budget, d_on, d_off, d_ephe, ph);
+
+  return chunk_budget;
 }
 
 /* Translate back from GC work amount to allocation units.
@@ -1267,14 +1282,23 @@ static void translate_back (pacing_phase p, uintnat *w,
   if (d_ephe < 0) d_ephe = 0;
   double diff_work = d_on * pp_c[p] + d_off * pp_c1[p] + d_ephe * pp_c2[p];
   CAMLassert (diff_work >= 0);
-  if (diff_work > *w){
+  /* Note: diff_work is the budget that was given to the GC, while *w is
+     the amount of work done by the GC. But one is a double and the other
+     a uintnat. If we compare without rounding, diff_work can be greater
+     than *w, even if the GC used all the budget. We have to round down
+     diff_work to make it equal to the actual budget before we compare
+     to tell whether the GC used all the budget. If the GC used all the
+     budget, we must not change diffs, then the work counters can catch up
+     to the alloc counters.
+  */
+  if ((uintnat) diff_work > *w){
     double p = *w / diff_work;
     diffs->on_heap = (uintnat) (diffs->on_heap * p);
     diffs->off_heap = (uintnat) (diffs->off_heap * p);
     diffs->ephe = (uintnat) (diffs->ephe * p);
     *w = 0;
   }else{
-    *w = *w - (uintnat) diff_work;
+    *w -= (uintnat) diff_work;
   }
 }
 
@@ -1292,7 +1316,7 @@ static void commit_major_slice_work(intnat words_done) {
   caml_alloc_counter diff;
   uintnat w;
 
-  caml_gc_log ("Commit major slice work: [%c]  %" CAML_PRIdNAT " words_done, ",
+  caml_gc_log ("Commit major slice work: [%c]  %" CAML_PRIdNAT " words_done",
                caml_gc_phase_char (), words_done);
 
   uintnat local_work[PP_NUM_PHASES];
@@ -1317,6 +1341,9 @@ static void commit_major_slice_work(intnat words_done) {
         (void)atomic_fetch_add (&work_counter.on_heap, diff.on_heap);
         (void)atomic_fetch_add (&work_counter.off_heap, diff.off_heap);
         (void)atomic_fetch_add (&work_counter.ephe, diff.ephe);
+        caml_gc_log ("Commit major slice work: %"CAML_PRIuNAT" on; %"
+                     CAML_PRIuNAT" off; %"CAML_PRIuNAT" ephe",
+                     diff.on_heap, diff.off_heap, diff.ephe);
         break;
       }
     }
