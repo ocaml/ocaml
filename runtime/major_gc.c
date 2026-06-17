@@ -1253,11 +1253,13 @@ static intnat get_major_slice_work(collection_slice_mode mode){
 
   intnat chunk_budget = min2(max2(budget, d->slice_budget), Chunk_size);
 
-  caml_gc_log("compute slice budget: %"CAML_PRIdNAT" normal; %"
-              CAML_PRIdNAT" explicit; %"CAML_PRIdNAT" chunk;"
-              " %"CAML_PRIdNAT" d_on; %"CAML_PRIdNAT" d_off; %"
-              CAML_PRIdNAT" d_ephe; %u phase",
-              budget, d->slice_budget, chunk_budget, d_on, d_off, d_ephe, ph);
+  CAML_GC_MESSAGE(SLICESIZE,
+                  "compute slice budget: %"CAML_PRIdNAT" alloc-driven; %"
+                  CAML_PRIdNAT" explicit; %"CAML_PRIdNAT" chunk;"
+                  " %"CAML_PRIdNAT" on-heap; %"CAML_PRIdNAT" off-heap; %"
+                  CAML_PRIdNAT" ephemeron; %u phase",
+                  budget, d->slice_budget, chunk_budget, d_on, d_off, d_ephe,
+                  ph);
 
   return chunk_budget;
 }
@@ -1316,8 +1318,9 @@ static void commit_major_slice_work(intnat words_done) {
   caml_alloc_counter diff;
   uintnat w;
 
-  caml_gc_log ("Commit major slice work: [%c]  %" CAML_PRIdNAT " words_done",
-               caml_gc_phase_char (), words_done);
+  CAML_GC_MESSAGE(SLICESIZE,
+                  "Commit major slice work: [%c]  %"CAML_PRIdNAT" words_done",
+                  caml_gc_phase_char (), words_done);
 
   uintnat local_work[PP_NUM_PHASES];
   local_work[pp_sweep] = sweep_work_done_between_slices();
@@ -1341,9 +1344,10 @@ static void commit_major_slice_work(intnat words_done) {
         (void)atomic_fetch_add (&work_counter.on_heap, diff.on_heap);
         (void)atomic_fetch_add (&work_counter.off_heap, diff.off_heap);
         (void)atomic_fetch_add (&work_counter.ephe, diff.ephe);
-        caml_gc_log ("Commit major slice work: %"CAML_PRIuNAT" on; %"
-                     CAML_PRIuNAT" off; %"CAML_PRIuNAT" ephe",
-                     diff.on_heap, diff.off_heap, diff.ephe);
+        CAML_GC_MESSAGE(SLICESIZE,
+                        "Commit major slice work: %"CAML_PRIuNAT" on; %"
+                        CAML_PRIuNAT" off; %"CAML_PRIuNAT" ephe",
+                        diff.on_heap, diff.off_heap, diff.ephe);
         break;
       }
     }
@@ -2067,7 +2071,7 @@ static void cycle_major_heap_from_stw_single(
               caml_major_cycles_completed);
 
   caml_major_cycles_completed++;
-  CAML_GC_MESSAGE(SLICESIZE, "Starting major GC cycle\n");
+  CAML_GC_MESSAGE(MAJOR, "Starting major GC cycle\n");
 
   if (atomic_load_relaxed(&caml_verb_gc) & CAML_GC_MSG_STATS) {
     struct gc_stats s;
@@ -2437,8 +2441,8 @@ static void major_collection_slice(intnat howmuch,
       uintnat alcnt = alloc_counter.on_heap + alloc_counter.off_heap;
       intnat todo = diffmod (alcnt, wkcnt);
       todo = min2(todo, idle);
-      caml_gc_log("Idle phase: %" CAML_PRIdNAT "%s", todo,
-                  todo == idle ? " [finished]" : "");
+      CAML_GC_MESSAGE(SLICESIZE, "Idle phase: %" CAML_PRIdNAT "%s", todo,
+                      todo == idle ? " [finished]" : "");
       commit_major_slice_work (todo);
       if (todo == idle) request_mark_phase ();
     }
