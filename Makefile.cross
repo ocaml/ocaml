@@ -25,6 +25,12 @@
 # have to be lazier.
 HOST_ZSTD_LIBS=ZSTD_LIBS=$(shell ocamlopt -config-var compression_c_libraries)
 
+# As the bytecode binaries will be compiled with the host compiler, they should
+# look for the host ocamlrun to launch them, so we override $(BINDIR) so that
+# $(BYTECODE_LAUNCHER_FLAGS) pick up the correct directory for the
+# `-launch-method`
+HOST_BINDIR:=BINDIR=$(dir $(shell command -v ocamlrun))
+
 # The build system adds various include directories which pertain to the current
 # tree, including -I runtime, which is necessary for -custom executables.
 # ocamltest is always a -custom executable, but some others (ocamldoc; the
@@ -39,7 +45,7 @@ HOST_ZSTD_LIBS=ZSTD_LIBS=$(shell ocamlopt -config-var compression_c_libraries)
 VPATH := + $(VPATH)
 
 CROSS_OVERRIDES=OCAMLRUN=ocamlrun NEW_OCAMLRUN=ocamlrun \
-  BOOT_OCAMLLEX=ocamllex OCAMLYACC=ocamlyacc
+  BOOT_OCAMLLEX=ocamllex OCAMLYACC=ocamlyacc $(HOST_BINDIR)
 # The cross-compiler is linked as build/bin/ocamlopt -o cross/bin/ocamlopt
 # Config.standard_library_default for cross/bin/ocamlopt would by default be the
 # value for build/bin/ocamlopt (i.e. build/lib/ocaml), which is not what is
