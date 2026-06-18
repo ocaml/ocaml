@@ -187,8 +187,8 @@ typedef uintptr_t uintnat;
 /* Default maximum size of the stack (words). */
 /* (1 Gib for 64-bit platforms, 512 Mib for 32-bit platforms) */
 #define Max_stack_def (128 * 1024 * 1024)
-/* Default system stack size for new pthreads (bytes).
-   0 stands for the default system value. */
+/* Default system stack size for new pthreads (bytes). */
+/* 0 stands for the default system value. */
 #define Sys_stack_def (0)
 
 

@@ -230,12 +230,17 @@ int caml_plat_thread_create(caml_plat_thread *restrict thread,
                             void *(*start_routine)(void *),
                             void *restrict arg)
 {
+  int res;
   pthread_attr_t attr;
   pthread_attr_init(&attr);
-  if(caml_params->init_sys_stack_bsz != 0){
-    pthread_attr_setstacksize(&attr, caml_params->init_sys_stack_bsz);
+  if (caml_params->init_sys_stack_bsz != 0) {
+    res = pthread_attr_setstacksize(&attr, caml_params->init_sys_stack_bsz);
+    if (res) {
+      pthread_attr_destroy(&attr);
+      return res;
+    }
   }
-  int res = pthread_create(thread, &attr, start_routine, arg);
+  res = pthread_create(thread, &attr, start_routine, arg);
   pthread_attr_destroy(&attr);
   return res;
 }

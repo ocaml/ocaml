@@ -37,7 +37,7 @@ static int st_thread_create(st_thread_id * res,
   int rc;
 
   pthread_attr_init(&attr);
-  if(caml_params->init_sys_stack_bsz != 0){
+  if (caml_params->init_sys_stack_bsz != 0) {
     pthread_attr_setstacksize(&attr, caml_params->init_sys_stack_bsz);
   }
   if (res == NULL) pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
