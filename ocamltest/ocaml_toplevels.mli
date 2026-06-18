@@ -15,7 +15,15 @@
 
 (* Descriptions of the OCaml toplevels *)
 
-class toplevel :
+module type Toplevel = sig
+  include Ocaml_tools.Tool
+  val backend : Ocaml_backends.t
+  val compiler : Ocaml_compilers.compiler
+end
+
+type toplevel = (module Toplevel)
+
+val toplevel :
   name : string ->
   flags : string ->
   directory : string ->
@@ -24,10 +32,7 @@ class toplevel :
   output_variable : Variables.t ->
   backend : Ocaml_backends.t ->
   compiler : Ocaml_compilers.compiler ->
-object inherit Ocaml_tools.tool
-  method backend : Ocaml_backends.t
-  method compiler : Ocaml_compilers.compiler
-end
+  toplevel
 
 val ocaml : toplevel
 

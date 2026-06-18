@@ -15,7 +15,17 @@
 
 (* Descriptions of the OCaml compilers *)
 
-class compiler :
+module type Compiler = sig
+  include Ocaml_tools.Tool
+  val host : Ocaml_backends.t
+  val target : Ocaml_backends.t
+  val program_variable : Variables.t
+  val program_output_variable : Variables.t option
+end
+
+type compiler = (module Compiler)
+
+val compiler :
   name : string ->
   flags : string ->
   directory : string ->
@@ -24,12 +34,7 @@ class compiler :
   output_variable : Variables.t ->
   host : Ocaml_backends.t ->
   target : Ocaml_backends.t ->
-object inherit Ocaml_tools.tool
-  method host : Ocaml_backends.t
-  method target : Ocaml_backends.t
-  method program_variable : Variables.t
-  method program_output_variable : Variables.t option
-end
+  compiler
 
 val ocamlc_byte : compiler
 

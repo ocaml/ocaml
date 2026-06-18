@@ -15,7 +15,21 @@
 
 (* Descriptions of the OCaml tools *)
 
-class tool :
+module type Tool = sig
+  val name : string
+  val family : string
+  val flags : string
+  val directory : string
+  val exit_status_variable : Variables.t
+  val reference_variable : Variables.t
+  val output_variable : Variables.t
+  val reference_filename_suffix : Environments.t -> string
+  val reference_file : Environments.t -> string -> string
+end
+
+type tool = (module Tool)
+
+val tool :
   name : string ->
   family : string ->
   flags : string ->
@@ -23,17 +37,9 @@ class tool :
   exit_status_variable : Variables.t ->
   reference_variable : Variables.t ->
   output_variable : Variables.t ->
-object
-  method name : string
-  method family : string
-  method flags : string
-  method directory : string
-  method exit_status_variable : Variables.t
-  method reference_variable : Variables.t
-  method output_variable : Variables.t
-  method reference_filename_suffix : Environments.t -> string
-  method reference_file : Environments.t -> string -> string
-end
+  ?reference_filename_suffix : (Environments.t -> string) ->
+  unit ->
+  tool
 
 val expected_exit_status : Environments.t -> tool -> int
 

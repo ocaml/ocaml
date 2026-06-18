@@ -17,7 +17,29 @@
 
 open Ocamltest_stdlib
 
-class tool
+module type Tool = sig
+  val name : string
+  val family : string
+  val flags : string
+  val directory : string
+  val exit_status_variable : Variables.t
+  val reference_variable : Variables.t
+  val output_variable : Variables.t
+  val reference_filename_suffix : Environments.t -> string
+  val reference_file : Environments.t -> string -> string
+end
+
+type tool = (module Tool)
+
+let reference_filename_suffix_default env =
+  let tool_reference_suffix =
+    Environments.safe_lookup Ocaml_variables.compiler_reference_suffix env
+  in
+  if tool_reference_suffix<>""
+  then tool_reference_suffix ^ ".reference"
+  else ".reference"
+
+let tool
   ~(name : string)
   ~(family : string)
   ~(flags : string)
@@ -25,34 +47,35 @@ class tool
   ~(exit_status_variable : Variables.t)
   ~(reference_variable : Variables.t)
   ~(output_variable : Variables.t)
-= object (self)
-  method name = name
-  method family = family
-  method flags = flags
-  method directory = directory
-  method exit_status_variable = exit_status_variable
-  method reference_variable = reference_variable
-  method output_variable = output_variable
+  ?(reference_filename_suffix = reference_filename_suffix_default)
+  ()
+  : tool
+= (module struct
+  let name = name
+  let family = family
+  let flags = flags
+  let directory = directory
+  let exit_status_variable = exit_status_variable
+  let reference_variable = reference_variable
+  let output_variable = output_variable
+  let reference_filename_suffix = reference_filename_suffix
 
-  method reference_filename_suffix env =
-    let tool_reference_suffix =
-      Environments.safe_lookup Ocaml_variables.compiler_reference_suffix env
-    in
-    if tool_reference_suffix<>""
-    then tool_reference_suffix ^ ".reference"
-    else ".reference"
-
-  method reference_file env prefix =
-    let suffix = self#reference_filename_suffix env in
+  let reference_file env prefix =
+    let suffix = reference_filename_suffix env in
     (Filename.make_filename prefix directory) ^ suffix
-end
+end)
 
-let expected_exit_status env tool =
-  Actions_helpers.exit_status_of_variable env tool#exit_status_variable
-
+let expected_exit_status env (module Tool : Tool) =
+  Actions_helpers.exit_status_of_variable env Tool.exit_status_variable
 
 let ocamldoc =
-  object inherit
+  let reference_filename_suffix env =
+    let backend =
+      Environments.safe_lookup Ocaml_variables.ocamldoc_backend env in
+    if backend = "" then
+      ".reference"
+    else "." ^ backend ^ ".reference"
+  in
   tool
     ~name:Ocaml_files.ocamldoc
     ~family:"doc"
@@ -61,11 +84,4 @@ let ocamldoc =
     ~exit_status_variable:Ocaml_variables.ocamldoc_exit_status
     ~reference_variable:Ocaml_variables.ocamldoc_reference
     ~output_variable:Ocaml_variables.ocamldoc_output
-
-    method ! reference_filename_suffix env =
-      let backend =
-        Environments.safe_lookup Ocaml_variables.ocamldoc_backend env in
-      if backend = "" then
-        ".reference"
-      else "." ^ backend ^ ".reference"
-  end
+    ~reference_filename_suffix ()

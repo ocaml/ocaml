@@ -85,7 +85,7 @@ let native =
     check_program_output;
   ] @
   (if not Sys.win32 then
-    opt_build
+    []
   else
     []
   ) in
