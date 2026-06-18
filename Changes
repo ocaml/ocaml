@@ -439,6 +439,9 @@ OCaml 5.6.0
   barrier; the default is chosen at configure time and can be overridden.
   (Sebastian Pop and Xavier Leroy, review by Xavier Leroy and Olivier Nicole)
 
+- #14861, #14868: Lift immutable instance variable reads
+  (Vincent Laviron, report by Romain Beauxis, review by Stefan Muenzel)
+
 - #14898, #15035: do not trust GADT equations introduced by refutable arguments
   in the Lambda IR.
   (Florian Angeletti, report by Nathanaëlle Courant, review by Gabriel Scherer)

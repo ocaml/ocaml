@@ -37,7 +37,7 @@ let[@inline never] check_liveness ~alloc ~work =
   let result = isolate () in
   Gc.full_major ();
   result, !r
-    
+
 let () =
   let get_x, live =
     check_liveness ~alloc:(fun () -> new c)
