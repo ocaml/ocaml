@@ -1042,7 +1042,7 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
           [lfunction ((self, Pgenval) :: args)
              (if not (Ident.Set.mem env (free_variables body')) then body' else
               Llet(Alias, Pgenval, env,
-                   Lprim(Pfield_computed,
+                   Lprim(Pfield_computed Mutable,
                          [Lvar self; Lvar env2],
                          Loc_unknown),
                    body'))]

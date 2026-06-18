@@ -132,7 +132,7 @@ and expression_desc =
         expression
   | Texp_send of expression * meth
   | Texp_new of Path.t * Longident.t loc * Types.class_declaration
-  | Texp_instvar of Path.t * Path.t * string loc
+  | Texp_instvar of Path.t * Path.t * mutable_flag * string loc
   | Texp_setinstvar of Path.t * Path.t * string loc * expression
   | Texp_override of Path.t * (Ident.t * string loc * expression) list
   | Texp_assert of expression * Location.t

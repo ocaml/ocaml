@@ -488,11 +488,11 @@ and transl_exp0 ~in_new_scope ~scopes e =
         ap_inlined=Default_inline;
         ap_specialised=Default_specialise;
       }
-  | Texp_instvar(path_self, path, _) ->
+  | Texp_instvar(path_self, path, mut, _) ->
       let loc = of_location ~scopes e.exp_loc in
       let self = transl_value_path loc e.exp_env path_self in
       let var = transl_value_path loc e.exp_env path in
-      Lprim(Pfield_computed, [self; var], loc)
+      Lprim(Pfield_computed mut, [self; var], loc)
   | Texp_setinstvar(path_self, path, _, expr) ->
       let loc = of_location ~scopes e.exp_loc in
       let self = transl_value_path loc e.exp_env path_self in

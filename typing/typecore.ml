@@ -4563,12 +4563,12 @@ and type_expect_
       let path, desc = type_ident env ~recarg lid in
       let exp_desc =
         match desc.val_kind with
-        | Val_ivar (_, cl_num) ->
+        | Val_ivar (mut, cl_num) ->
             let (self_path, _) =
               Env.find_value_by_name
                 (Longident.Lident ("self-" ^ cl_num)) env
             in
-            Texp_instvar(self_path, path,
+            Texp_instvar(self_path, path, mut,
                          match lid.txt with
                              Longident.Lident txt -> { txt; loc = lid.loc }
                            | _ -> assert false)
