@@ -435,7 +435,8 @@ let setup_compiler_build_env (compiler : Ocaml_compilers.compiler) log env =
     (r, env)
   end else (r, env)
 
-let setup_toplevel_build_env (module Toplevel : Ocaml_toplevels.Toplevel) log env =
+let setup_toplevel_build_env
+    (module Toplevel : Ocaml_toplevels.Toplevel) log env =
   setup_tool_build_env (module Toplevel) log env
 
 let mk_compiler_env_setup name (compiler : Ocaml_compilers.compiler) =

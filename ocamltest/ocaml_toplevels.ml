@@ -36,7 +36,7 @@ let toplevel
   ~(compiler : Ocaml_compilers.compiler)
   : toplevel
   =
-  let module Tool = 
+  let module Tool =
     (val Ocaml_tools.tool
       ~name:name
       ~family:"toplevel"
