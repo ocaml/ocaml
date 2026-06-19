@@ -54,6 +54,7 @@ type deferred_action =
   | ProcessOtherFile of string
   | ProcessObjects of string list
   | ProcessObjectsStatic of string list
+  | ProcessObjectsVariant of string * string list
   | ProcessDLLs of bool * string list
 
 val c_object_of_filename : string -> string

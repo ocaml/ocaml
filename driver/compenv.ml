@@ -158,6 +158,14 @@ let check_bool ppf name s =
       "bad value %s for %s" s name;
     false
 
+let check_linking_variant ppf name s =
+  match String.split_on_char ':' s with
+  | [n; v] -> Some (n, v)
+  | _ ->
+    Printf.ksprintf (print_error ppf)
+      "bad value %s for %s" s name;
+    None
+
 let decode_compiler_pass ppf v ~name ~filter =
   let module P = Clflags.Compiler_pass in
   let passes = P.available_pass_names ~filter ~native:!native_code in
@@ -486,6 +494,8 @@ let read_one_param ppf position name v =
   |  "keywords"  -> Clflags.keyword_edition := Some v
 
   | "static" -> Clflags.static := check_bool ppf name v
+  | "linking" -> Clflags.linking_variant := check_linking_variant ppf name v
+
   | _ ->
     if not (List.mem name !can_discard) then begin
       can_discard := name :: !can_discard;
@@ -629,6 +639,7 @@ type deferred_action =
   | ProcessOtherFile of string
   | ProcessObjects of string list
   | ProcessObjectsStatic of string list
+  | ProcessObjectsVariant of string * string list
   | ProcessDLLs of bool * string list
 
 let c_object_of_filename name =
@@ -680,6 +691,8 @@ let process_action ctx action =
       ccobjs := names @ !ccobjs
   | ProcessObjectsStatic names ->
       ccobjs_static := names @ !ccobjs_static
+  | ProcessObjectsVariant (name, names) ->
+      ccobjs_variants := Clflags.Linking_variants.merge_objs (Clflags.Linking_variants.M.singleton name names) !ccobjs_variants
   | ProcessDLLs (suffixed, names) ->
       dllibs := (List.map (fun n -> (~suffixed, n)) names) @ !dllibs
   | ProcessOtherFile name ->

@@ -272,6 +272,11 @@ let print_cmxa_infos (lib : Cmx_format.library_infos) =
   List.iter print_spaced_string (List.rev lib.lib_ccobjs);
   printf "\nExtra C object files for static linking:";
   List.iter print_spaced_string (List.rev lib.lib_ccobjs_static);
+  Clflags.Linking_variants.M.iter
+    (fun name objs ->
+      printf "\nExtra C object files for %s linking:" name;
+      List.iter print_spaced_string (List.rev objs))
+    lib.lib_ccobjs_variants;
   printf "\nExtra C options:";
   List.iter print_spaced_string (List.rev lib.lib_ccopts);
   printf "\n";

@@ -62,6 +62,9 @@ let mk_cclib f =
 let mk_cclib_static f =
   "-cclib-static", Arg.String f, "<opt>  Pass option <opt> to the C linker when using -static"
 
+let mk_cclib_variant f =
+  "-cclib-variant", Arg.String f, " Use linking parameter when linking in specified mode"
+
 let mk_ccopt f =
   "-ccopt", Arg.String f,
   "<opt>  Pass option <opt> to the C compiler and linker"
@@ -485,6 +488,9 @@ let mk_shared f =
 let mk_static f =
   "-static", Arg.Unit f, " Prefer static linking when possible"
 
+let mk_linking_variant f =
+  "-linking-variant", Arg.String f, " Use the specified linking mechanism to determine linking flags"
+
 let mk_short_paths f =
   "-short-paths", Arg.Unit f, " Shorten paths in types"
 
@@ -902,6 +908,7 @@ module type Compiler_options = sig
   val _cc : string -> unit
   val _cclib : string -> unit
   val _cclib_static : string -> unit
+  val _cclib_variant : string -> unit
   val _ccopt : string -> unit
   val _cmi_file : string -> unit
   val _config : unit -> unit
@@ -1064,6 +1071,7 @@ module type Optcomp_options = sig
   val _S : unit -> unit
   val _shared : unit -> unit
   val _static : unit -> unit
+  val _linking_variant : string -> unit
   val _afl_instrument : unit -> unit
   val _afl_inst_ratio : int -> unit
   val _function_sections : unit -> unit
@@ -1108,6 +1116,7 @@ struct
     mk_cc F._cc;
     mk_cclib F._cclib;
     mk_cclib_static F._cclib_static;
+    mk_cclib_variant F._cclib_variant;
     mk_ccopt F._ccopt;
     mk_cmi_file F._cmi_file;
     mk_color F._color;
@@ -1321,6 +1330,7 @@ struct
     mk_cc F._cc;
     mk_cclib F._cclib;
     mk_cclib_static F._cclib_static;
+    mk_cclib_variant F._cclib_variant;
     mk_ccopt F._ccopt;
     mk_cmi_file F._cmi_file;
     mk_clambda_checks F._clambda_checks;
@@ -1405,6 +1415,7 @@ struct
     mk_set_runtime_default F._set_runtime_default;
     mk_shared F._shared;
     mk_static F._static;
+    mk_linking_variant F._linking_variant;
     mk_short_paths F._short_paths;
     mk_typing_recovery F._typing_recovery;
     mk_strict_sequence F._strict_sequence;
@@ -1871,6 +1882,10 @@ module Default = struct
     let _cc s = c_compiler := (Some s)
     let _cclib s = Compenv.defer (ProcessObjects (Misc.rev_split_words s))
     let _cclib_static s = Compenv.defer (ProcessObjectsStatic (Misc.rev_split_words s))
+    let _cclib_variant s =
+      match String.split_on_char ':' s with
+      | [n; v] -> Compenv.defer (ProcessObjectsVariant (n, [v]))
+      | _ -> raise (Arg.Bad "linking variant c library must havve variant name followed by colon followed by value")
     let _ccopt s = Compenv.first_ccopts := (s :: (!Compenv.first_ccopts))
     let _cmi_file s = cmi_file := (Some s)
     let _config = Misc.show_config_and_exit
@@ -1984,6 +1999,10 @@ module Default = struct
          OCaml 4.08.0"
     let _shared () = shared := true; dlcode := true
     let _static () = static := true
+    let _linking_variant s =
+      match String.split_on_char ':' s with
+      | [n; v] -> linking_variant := Some (n, v)
+      | _ -> raise (Arg.Bad "linking variant selection must have variant name followed by colon followed by command")
     let _v () = Compenv.print_version_and_library "native-code compiler"
   end
 

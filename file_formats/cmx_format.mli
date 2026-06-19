@@ -59,4 +59,5 @@ type library_infos =
        how they end up being used on the command line. *)
     lib_ccobjs: string list;            (* C object files needed *)
     lib_ccobjs_static: string list;     (* C object files needed for -static *)
+    lib_ccobjs_variants: string list Clflags.Linking_variants.M.t;     (* arguments needed for other linking variants *)
     lib_ccopts: string list }           (* Extra opts to C compiler *)

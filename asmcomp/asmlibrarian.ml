@@ -78,6 +78,7 @@ let create_archive file_list lib_name =
          { lib_units = List.map snd units;
            lib_ccobjs = !Clflags.ccobjs;
            lib_ccobjs_static = !Clflags.ccobjs_static;
+           lib_ccobjs_variants = !Clflags.ccobjs_variants;
            lib_ccopts = !Clflags.all_ccopts } in
        output_value outchan infos;
        if Ccomp.create_archive archive_name objfiles <> 0
