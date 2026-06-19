@@ -485,6 +485,7 @@ let read_one_param ppf position name v =
 
   |  "keywords"  -> Clflags.keyword_edition := Some v
 
+  | "static" -> Clflags.static := check_bool ppf name v
   | _ ->
     if not (List.mem name !can_discard) then begin
       can_discard := name :: !can_discard;
@@ -627,6 +628,7 @@ type deferred_action =
   | ProcessCFile of string
   | ProcessOtherFile of string
   | ProcessObjects of string list
+  | ProcessObjectsStatic of string list
   | ProcessDLLs of bool * string list
 
 let c_object_of_filename name =
@@ -676,6 +678,8 @@ let process_action ctx action =
       ccobjs := obj_name :: !ccobjs
   | ProcessObjects names ->
       ccobjs := names @ !ccobjs
+  | ProcessObjectsStatic names ->
+      ccobjs_static := names @ !ccobjs_static
   | ProcessDLLs (suffixed, names) ->
       dllibs := (List.map (fun n -> (~suffixed, n)) names) @ !dllibs
   | ProcessOtherFile name ->

@@ -59,6 +59,9 @@ let mk_cc f =
 let mk_cclib f =
   "-cclib", Arg.String f, "<opt>  Pass option <opt> to the C linker"
 
+let mk_cclib_static f =
+  "-cclib-static", Arg.String f, "<opt>  Pass option <opt> to the C linker when using -static"
+
 let mk_ccopt f =
   "-ccopt", Arg.String f,
   "<opt>  Pass option <opt> to the C compiler and linker"
@@ -479,6 +482,9 @@ let mk_safer_matching f =
 let mk_shared f =
   "-shared", Arg.Unit f, " Produce a dynlinkable plugin"
 
+let mk_static f =
+  "-static", Arg.Unit f, " Prefer static linking when possible"
+
 let mk_short_paths f =
   "-short-paths", Arg.Unit f, " Shorten paths in types"
 
@@ -895,6 +901,7 @@ module type Compiler_options = sig
   val _c : unit -> unit
   val _cc : string -> unit
   val _cclib : string -> unit
+  val _cclib_static : string -> unit
   val _ccopt : string -> unit
   val _cmi_file : string -> unit
   val _config : unit -> unit
@@ -1056,6 +1063,7 @@ module type Optcomp_options = sig
   val _pp : string -> unit
   val _S : unit -> unit
   val _shared : unit -> unit
+  val _static : unit -> unit
   val _afl_instrument : unit -> unit
   val _afl_inst_ratio : int -> unit
   val _function_sections : unit -> unit
@@ -1099,6 +1107,7 @@ struct
     mk_c F._c;
     mk_cc F._cc;
     mk_cclib F._cclib;
+    mk_cclib_static F._cclib_static;
     mk_ccopt F._ccopt;
     mk_cmi_file F._cmi_file;
     mk_color F._color;
@@ -1311,6 +1320,7 @@ struct
     mk_c F._c;
     mk_cc F._cc;
     mk_cclib F._cclib;
+    mk_cclib_static F._cclib_static;
     mk_ccopt F._ccopt;
     mk_cmi_file F._cmi_file;
     mk_clambda_checks F._clambda_checks;
@@ -1394,6 +1404,7 @@ struct
     mk_safer_matching F._safer_matching;
     mk_set_runtime_default F._set_runtime_default;
     mk_shared F._shared;
+    mk_static F._static;
     mk_short_paths F._short_paths;
     mk_typing_recovery F._typing_recovery;
     mk_strict_sequence F._strict_sequence;
@@ -1859,6 +1870,7 @@ module Default = struct
     let _c = set compile_only
     let _cc s = c_compiler := (Some s)
     let _cclib s = Compenv.defer (ProcessObjects (Misc.rev_split_words s))
+    let _cclib_static s = Compenv.defer (ProcessObjectsStatic (Misc.rev_split_words s))
     let _ccopt s = Compenv.first_ccopts := (s :: (!Compenv.first_ccopts))
     let _cmi_file s = cmi_file := (Some s)
     let _config = Misc.show_config_and_exit
@@ -1971,6 +1983,7 @@ module Default = struct
         "Profiling with \"gprof\" (option `-p') is only supported up to \
          OCaml 4.08.0"
     let _shared () = shared := true; dlcode := true
+    let _static () = static := true
     let _v () = Compenv.print_version_and_library "native-code compiler"
   end
 

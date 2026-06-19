@@ -58,4 +58,5 @@ type library_infos =
     (* In the following fields the lists are reversed with respect to
        how they end up being used on the command line. *)
     lib_ccobjs: string list;            (* C object files needed *)
+    lib_ccobjs_static: string list;     (* C object files needed for -static *)
     lib_ccopts: string list }           (* Extra opts to C compiler *)

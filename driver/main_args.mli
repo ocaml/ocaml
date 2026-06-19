@@ -87,6 +87,7 @@ module type Compiler_options = sig
   val _c : unit -> unit
   val _cc : string -> unit
   val _cclib : string -> unit
+  val _cclib_static : string -> unit
   val _ccopt : string -> unit
   val _cmi_file : string -> unit
   val _config : unit -> unit
@@ -249,6 +250,7 @@ module type Optcomp_options = sig
   val _pp : string -> unit
   val _S : unit -> unit
   val _shared : unit -> unit
+  val _static : unit -> unit
   val _afl_instrument : unit -> unit
   val _afl_inst_ratio : int -> unit
   val _function_sections : unit -> unit

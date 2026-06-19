@@ -195,20 +195,30 @@ let call_linker mode output_name files extra =
           (quote_files ~response_files:true (remove_Wl files))
           extra
       else
-        Printf.sprintf "%s -o %s %s %s %s %s %s"
-          (match !Clflags.c_compiler, mode with
-          | Some cc, _ -> cc
-          | None, Exe -> Config.mkexe
-          | None, Dll -> Config.mkdll
-          | None, MainDll -> Config.mkmaindll
-          | None, Partial -> assert false
-          )
+        let comp, wlbdynamic =
+          match !Clflags.c_compiler, mode with
+          | Some cc, _ -> cc, ""
+          | None, Exe ->
+              if
+                !Clflags.static (* static requested by user via -static *)
+                && String.starts_with ~prefix:"linux" Config.system (* only for Linux for now *)
+              then
+                Config.mkexe ^ " -Wl,-Bstatic", "-Wl,-Bdynamic"
+              else
+                Config.mkexe, ""
+          | None, Dll -> Config.mkdll, ""
+          | None, MainDll -> Config.mkmaindll, ""
+          | None, Partial -> assert false, ""
+        in
+        Printf.sprintf "%s -o %s %s %s %s %s %s %s"
+          comp
           (Filename.quote output_name)
           ""  (*(Clflags.std_include_flag "-I")*)
           (quote_prefixed ~response_files:true "-L"
              (Load_path.get_path_list ()))
           (String.concat " " (List.rev !Clflags.all_ccopts))
           (quote_files ~response_files:true files)
+          wlbdynamic
           extra
     in
     command cmd
