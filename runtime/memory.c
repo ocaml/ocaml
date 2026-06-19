@@ -138,23 +138,46 @@
 
    This fence is here specifically to ensure the correctness of the
    ARMv8 assembly emitted for atomic writes implemented in C such as
-   caml_atomic_exchange. The reason we need it is that the ARMv8 emitted
-   by the compiler for memory operations is an optimized version of what
-   a C compiler would emit with the operations described above: we emit
-   `dmb ishld; str` for non-atomic stores rather than `dmb ishld; stlr`.
-   The counterpart is that we add a `dmb ishst` after atomic stores, to
-   enforce order between them and subsequent non-atomic stores. A more
-   detailed description of the optimized ARMv8 mapping can be found at
-   https://github.com/ocaml/ocaml/pull/10995.
+   caml_atomic_exchange.
+   The reason we need it is that the ARMv8 emitted by the OCaml compiler
+   is more optimized than what current C compilers emit. We need to
+   ensure that non-atomic stores are ordered after prior atomic
+   operations and non-atomic loads. (More precisely, we need
+   happens-before between operations that synchronise with a prior
+   atomic operator / write to a prior atomic load, and operations that
+   read from this nonatomic store.) The best sequence a C compiler can
+   emit for nonatomic stores, under this constraint, is `dmb ishld;
+   stlr` (in `caml_modify` for instance).
+
+   The OCaml compiler, on the other hand, emits `dmb ishld; str` with a
+   plain store, while emitting a `dmb ishst` barrier after atomic
+   operations. `dmb ishld` provides ordering with respect to prior reads
+   (covering both nonatomic loads and atomic ones), while `dmb ishst`
+   provides ordering with respect to prior writes. Since we only need
+   the ordering with respect to prior atomic writes, we can place the
+   `dmb ishst` after each atomic write rather than before nonatomic
+   writes. The extra release fence on the C side is here to emit this
+   `dmb ishst` on ARMv8, in order to provide ordering to the weak `str`
+   instructions emitted by the OCaml compiler.
 */
 
 /* Note [MMPS]: Publication safety in the memory model.
 
    Care must be taken to ensure the publication of initialising writes
-   in newly allocated objects to all domains that might see these
+   in newly allocated values to all domains that might see these
    objects.
 
-   Consider the OCaml program:
+   The only way a newly allocated value can be made visible to another domain
+   is either via `Domain.spawn` or by mutation of a pointer field.
+   `Domain.spawn` is fully synchronizing; mutating a pointer field is
+   necessarily done via `caml_modify`, which performs the following:
+
+      atomic_thread_fence(atomic_order_acquire);
+      atomic_store_release(p, v);
+
+   where `p` is the field's adress. The release store ensures that
+   initialising writes into `p` to other domains. To see why, consider
+   the OCaml program:
 
       let r : int ref ref = ref (ref 0)
 
@@ -219,8 +242,8 @@
    The reasoning makes use of address dependencies, which are not part
    of the C11 memory model. However, in practice they do create
    happens-before ordering in practice. This is the case, for example,
-   in the Linux Kernel Memory Model. In the C11 model, two things are
-   missing:
+   in the Linux Kernel Memory Model (LKMM). In the C11 model, two things
+   are missing:
 
    - C11 considers that only an acquire load that reads from a release
      store can establish a hb relation. The LKMM relaxes this by
