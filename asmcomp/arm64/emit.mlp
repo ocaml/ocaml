@@ -1005,7 +1005,7 @@ let emit_instr env i =
     | Lop(Iatomic_fetch_add) ->
         (* LL/SC loop, works on baseline ARMv8.0 (no LSE required).
            reg_tmp1 = sum (data), reg_tmp2 = stlxr status (must differ per ARM spec).
-           Trailing dmb st is the atomic-store release barrier from #10972. *)
+           Trailing dmb ishst is the atomic-store release barrier from #10972. *)
         let lbl = new_label() in
         `{emit_label lbl}:\n`;
         `	ldaxr	{emit_reg i.res.(0)}, [{emit_reg i.arg.(0)}]\n`;
