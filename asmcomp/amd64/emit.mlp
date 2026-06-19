@@ -743,7 +743,7 @@ let emit_instr env fallthrough i =
       I.mov (domain_field Domainstate.Domain_dls_root) (res i 0)
   | Lop (Iatomic_fetch_add) ->
       (* res.(0) := increment; on the multi-domain path lock xadd swaps in
-         the old value, on the single-domain path we load/add/store by hand.
+         the old value, on the single-domain path a plain xadd does the same.
          arg.(2) holds &caml_num_domains_running (materialised by an
          Iconst_symbol in selection), so reading the domain count works in
          dlcode too without a hand-rolled GOTPCREL scratch. *)
@@ -752,13 +752,8 @@ let emit_instr env fallthrough i =
       let lbl_done = new_label() in
       I.cmp (int 1) (mem64 QWORD 0 (arg64 i 2));
       I.jne (label lbl_multi);
-      (* Single-domain fast path: plain load/add/store, no bus lock,
-         mirroring caml_atomic_fetch_add_field's caml_domain_alone branch
-         in runtime/memory.c.  The old value is parked on the stack so we
-         need no scratch register. *)
-      I.push (mem64 QWORD 0 (arg64 i 0));
-      I.add (res i 0) (mem64 QWORD 0 (arg64 i 0));
-      I.pop (res i 0);
+      (* Single-domain fast path: xadd without the lock prefix *)
+      I.xadd (res i 0) (mem64 QWORD 0 (arg64 i 0));
       I.jmp (label lbl_done);
       def_label lbl_multi;
       I.lock_xadd (res i 0) (mem64 QWORD 0 (arg64 i 0));

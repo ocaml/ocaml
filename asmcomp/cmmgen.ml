@@ -1162,12 +1162,6 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
            transl env arg1; transl env arg2; transl env arg3],
            dbg)
 
-  | Preperform ->
-      Cop (Capply typ_val,
-           [Cconst_symbol ("caml_reperform", dbg);
-           transl env arg1; transl env arg2; transl env arg3],
-           dbg)
-
   | Patomic_fetch_add ->
       let ptr = transl env arg1 in
       let ofs = transl env arg2 in
@@ -1184,7 +1178,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
            transl env arg1; transl env arg2; transl env arg3],
            dbg)
 
-  | Pperform | Pdls_get
+  | Pperform | Preperform | Pdls_get
   | Patomic_load
   | Pfield_computed | Psequand | Psequor | Pnot | Pnegint | Paddint
   | Psubint | Pmulint | Pandint | Porint | Pxorint | Plslint | Plsrint | Pasrint

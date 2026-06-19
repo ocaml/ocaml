@@ -126,9 +126,8 @@ let pseudoregs_for_operation op arg res =
       (if is_swapped then [| arg.(0); treg |] else [| treg; arg.(1) |])
     , [| res.(0); treg |]
   (* Atomic fetch-and-add: res.(0) holds the increment then receives the old
-     value (via lock xadd on the multi-domain path).  Tying res.(0) to arg.(1)
-     eliminates the mov in emit and ensures arg.(0) (the address) gets a
-     distinct register.  arg.(2) is &caml_num_domains_running. *)
+     value. Tying res.(0) to arg.(1) keeps the address (arg.(0)) in a distinct
+     register. arg.(2) is &caml_num_domains_running. *)
   | Iatomic_fetch_add ->
       ([| arg.(0); res.(0); arg.(2) |], res)
   (* Other instructions are regular *)
