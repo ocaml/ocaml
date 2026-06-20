@@ -1897,7 +1897,7 @@ default_as=''
 AS_CASE([$as_target,$ocaml_cc_vendor],
   [*-*-linux*,gcc-*],
     [AS_CASE([$as_cpu],
-      [x86_64|arm*|aarch64*|i[[3-6]]86|riscv*],
+      [x86_64|arm*|aarch64*|i[[3-6]]86],
         [default_as="${toolpref}as"
         as_is_cc=false])],
   [*-*-cygwin,gcc-*],

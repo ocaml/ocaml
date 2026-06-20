@@ -19500,7 +19500,7 @@ default_as=''
 case $as_target,$ocaml_cc_vendor in #(
   *-*-linux*,gcc-*) :
     case $as_cpu in #(
-  x86_64|arm*|aarch64*|i[3-6]86|riscv*) :
+  x86_64|arm*|aarch64*|i[3-6]86) :
     default_as="${toolpref}as"
         as_is_cc=false ;; #(
   *) :

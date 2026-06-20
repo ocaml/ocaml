@@ -567,13 +567,18 @@ let emit_instr env i =
   | Lswitch jumptbl ->
       let lbl = new_label() in
       `	la	{emit_reg reg_tmp}, {emit_label lbl}\n`;
-      `	slli	t0, {emit_reg i.arg.(0)}, 2\n`;
-      `	add	{emit_reg reg_tmp}, {emit_reg reg_tmp}, t0\n`;
+      `	slli	{emit_reg reg_tmp2}, {emit_reg i.arg.(0)}, 2\n`;
+      `	add	{emit_reg reg_tmp}, {emit_reg reg_tmp}, {emit_reg reg_tmp2}\n`;
       `	jr	{emit_reg reg_tmp}\n`;
+      (* The following jump instructions must be encoded in 32 bits,
+         so we disable code compression temporarily. *)
+      `.option push\n`;
+      `.option norvc\n`;
       `{emit_label lbl}:\n`;
       for i = 0 to Array.length jumptbl - 1 do
         `	j	{emit_label jumptbl.(i)}\n`
-      done
+      done;
+      `.option pop\n`
   | Lentertrap ->
       ()
   | Ladjust_trap_depth { delta_traps } ->
