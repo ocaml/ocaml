@@ -20,8 +20,8 @@
 #include "caml/asm.h"
 
 #define DOMAIN_STATE_PTR s11
-#define TRAP_PTR s1
-#define ALLOC_PTR s10
+#define TRAP_PTR s10
+#define ALLOC_PTR s1
 #define ADDITIONAL_ARG t2
 #define STACK_ARG_BEGIN s3
 #define STACK_ARG_END s4

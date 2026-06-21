@@ -35,8 +35,8 @@ open Mach
     t2-t6        16-20     temporary
     s0           21        general purpose (preserved by C)
     t0, t1       22-23     temporaries (used by call veneers)
-    s1           24        trap pointer (preserved by C)
-    s10          25        allocation pointer (preserved by C)
+    s10          24        trap pointer (preserved by C)
+    s1           25        allocation pointer (preserved by C)
     s11          26        domain pointer (preserved by C)
 
   Floating-point register map
@@ -66,7 +66,7 @@ let int_reg_name =
      "t2"; "t3"; "t4"; "t5"; "t6";                    (* 16 - 20 *)
      "s0";                                            (* 21 *)
      "t0"; "t1";                                      (* 22 - 23 *)
-     "s1"; "s10"; "s11" |]                            (* 24 - 26 *)
+     "s10"; "s1"; "s11" |]                            (* 24 - 26 *)
 
 let float_reg_name =
   [| "ft0"; "ft1"; "ft2"; "ft3"; "ft4"; "ft5"; "ft6"; "ft7";
@@ -279,7 +279,7 @@ let int_dwarf_reg_numbers =
      7; 28; 29; 30; 31;
      8;
      5; 6;
-     9; 26; 27;
+     26; 9; 27;
   |]
 
 let float_dwarf_reg_numbers =
