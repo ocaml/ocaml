@@ -89,7 +89,7 @@ let first_available_register = [| 0; 100 |]
 let register_name r =
   if r < 100 then int_reg_name.(r) else float_reg_name.(r - 100)
 
-let rotate_registers = true
+let rotate_registers = false
 
 (* Representation of hard registers by pseudo-registers *)
 
