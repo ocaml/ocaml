@@ -742,12 +742,12 @@ let emit_instr env fallthrough i =
   | Lop (Idls_get) ->
       I.mov (domain_field Domainstate.Domain_dls_root) (res i 0)
   | Lop (Iatomic_fetch_add) ->
-      (* res.(0) := increment; on the multi-domain path lock xadd swaps in
-         the old value, on the single-domain path a plain xadd does the same.
-         arg.(2) holds &caml_num_domains_running (materialised by an
-         Iconst_symbol in selection), so reading the domain count works in
-         dlcode too without a hand-rolled GOTPCREL scratch. *)
-      I.mov (arg i 1) (res i 0);
+      (* res.(0) already holds the increment (selection ties res.(0) to
+         arg.(1)). On the multi-domain path lock xadd swaps in the old value,
+         on the single-domain path a plain xadd does the same. arg.(2) holds
+         &caml_num_domains_running (materialised by an Iconst_symbol in
+         selection), so reading the domain count works in dlcode too without a
+         hand-rolled GOTPCREL scratch. *)
       let lbl_multi = new_label() in
       let lbl_done = new_label() in
       I.cmp (int 1) (mem64 QWORD 0 (arg64 i 2));
