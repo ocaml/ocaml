@@ -267,8 +267,7 @@ method! select_operation op args dbg =
       (* Materialise &caml_num_domains_running as a regalloc-managed operand
          (an Iconst_symbol) so the single-domain fast path also works in
          dlcode, where reading the symbol needs a GOTPCREL indirection and
-         hence a register.  This is the "Iconst_symbol followed by a test"
-         shape suggested in review.  See ocaml/ocaml#14575. *)
+         hence a register. *)
       (Iatomic_fetch_add,
        args @ [Cconst_symbol ("caml_num_domains_running", dbg)])
   | _ -> super#select_operation op args dbg
