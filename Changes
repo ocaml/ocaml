@@ -87,6 +87,8 @@ Working version
   + #14734: fix ephemeron orphaning (a counterpart of #14722)
   + #14733: clarify the implementation of per-domain ephemeron work counters
   + #14813: ensure that no orphaned ephemerons remain across GC cycles
+  + #14877: adopt early, adopt often
+  + #14879: simplify the orphaning of ephemerons
   (Gabriel Scherer, review by Damien Doligez)
 
 ### Type system:
