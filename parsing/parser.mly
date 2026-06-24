@@ -3780,8 +3780,11 @@ function_type:
       RPAREN
       MINUSGREATER
       codomain = function_type
-        { let ptyp = {ptyp with ppt_attrs = snd attrs @ ptyp.ppt_attrs } in
-          Ptyp_functor(label, id, ptyp, codomain) }
+        { match attrs with
+          | Some _, _ -> not_expecting $loc(attrs) "extension"
+          | None, attrs ->
+            let ptyp = {ptyp with ppt_attrs = attrs @ ptyp.ppt_attrs } in
+            Ptyp_functor(label, id, ptyp, codomain) }
     )
     { $1 }
 ;
