@@ -393,7 +393,7 @@ let emit_instr env i =
         | Double -> "fsd"
       in
       `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_int ofs}({emit_reg i.arg.(1)})\n`
-  | Lop(Ialloc {bytes; dbginfo}) ->
+  | Lop(Ialloc {bytes; offset = comb_offset; dbginfo}) ->
       let lbl_frame_lbl = record_frame_label env i.live (Dbg_alloc dbginfo) in
       if env.f.fun_fast then begin
         let lbl_after_alloc = new_label () in
@@ -404,7 +404,7 @@ let emit_instr env i =
         `	ld	{emit_reg reg_tmp}, {emit_int offset}({emit_reg reg_domain_state_ptr})\n`;
         `	bltu	{emit_reg reg_alloc_ptr}, {emit_reg reg_tmp}, {emit_label lbl_call_gc}\n`;
         `{emit_label lbl_after_alloc}:\n`;
-        `	addi	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, 8\n`;
+        emit_addimm i.res.(0) reg_alloc_ptr (8 + comb_offset);
         env.call_gc_sites <-
           { gc_lbl = lbl_call_gc;
             gc_return_lbl = lbl_after_alloc;
@@ -419,7 +419,7 @@ let emit_instr env i =
             `	{emit_call "caml_allocN"}\n`
         end;
         `{emit_label lbl_frame_lbl}:\n`;
-        `	addi	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, 8\n`
+        emit_addimm i.res.(0) reg_alloc_ptr (8 + comb_offset)
       end
   | Lop(Ipoll { return_label }) ->
       let lbl_frame_lbl = record_frame_label env i.live (Dbg_alloc []) in

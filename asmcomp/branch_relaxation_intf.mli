@@ -63,6 +63,7 @@ module type S = sig
      the size of out-of-line code (cf. branch_relaxation.mli). *)
   val relax_allocation
      : num_bytes:int
+    -> offset:int
     -> dbginfo:Debuginfo.alloc_dbginfo
     -> Linear.instruction_desc
 

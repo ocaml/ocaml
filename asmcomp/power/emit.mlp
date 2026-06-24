@@ -494,8 +494,8 @@ module BR = Branch_relaxation.Make (struct
     | Lraise (Lambda.Raise_regular | Lambda.Raise_reraise) -> 2
     | Lraise Lambda.Raise_notrace -> 5
 
-  let relax_allocation ~num_bytes:bytes ~dbginfo =
-    Lop (Ispecific (Ialloc_far { bytes; dbginfo }))
+  let relax_allocation ~num_bytes:bytes ~offset ~dbginfo =
+    Lop (Ispecific (Ialloc_far { bytes; offset; dbginfo }))
 
   let relax_poll ~return_label =
     Lop (Ispecific (Ipoll_far { return_label }))
@@ -513,7 +513,7 @@ end)
 
 (* Assembly code for inlined allocation *)
 
-let emit_alloc env i bytes dbginfo far =
+let emit_alloc env i bytes comb_offset dbginfo far =
   if env.call_gc_label = 0 then env.call_gc_label <- new_label ();
   let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
   `	ld	0, {emit_int offset}(30)\n`;
@@ -522,13 +522,13 @@ let emit_alloc env i bytes dbginfo far =
   if not far then begin
     `	bltl-	{emit_label env.call_gc_label}\n`;
     record_frame env i.live (Dbg_alloc dbginfo);
-    `	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
+    `	addi	{emit_reg i.res.(0)}, 31, {emit_int (size_addr + comb_offset)}\n`
   end else begin
     let lbl = new_label() in
     `	bge+	{emit_label lbl}\n`;
     `	bl	{emit_label env.call_gc_label}\n`;
     record_frame env i.live (Dbg_alloc dbginfo);
-    `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
+    `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, 31, {emit_int (size_addr + comb_offset)}\n`
   end
 
 let emit_poll env i return_label far =
@@ -757,10 +757,10 @@ let emit_instr env i =
         if store_needs_lwsync chunk assignment then
           `	lwsync\n`;
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
-    | Lop(Ialloc { bytes; dbginfo }) ->
-        emit_alloc env i bytes dbginfo false
-    | Lop(Ispecific(Ialloc_far { bytes; dbginfo })) ->
-        emit_alloc env i bytes dbginfo true
+    | Lop(Ialloc { bytes; offset; dbginfo }) ->
+        emit_alloc env i bytes offset dbginfo false
+    | Lop(Ispecific(Ialloc_far { bytes; offset; dbginfo })) ->
+        emit_alloc env i bytes offset dbginfo true
     | Lop(Ipoll { return_label }) ->
         emit_poll env i return_label false
     | Lop(Ispecific(Ipoll_far { return_label })) ->

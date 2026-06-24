@@ -437,7 +437,7 @@ method select_operation op args _dbg =
       end
   | (Cdls_get, _) -> Idls_get, args
   | (Cpoll, _) -> (Ipoll { return_label = None }), args
-  | (Calloc, _) -> (Ialloc {bytes = 0; dbginfo = []}), args
+  | (Calloc, _) -> (Ialloc {bytes = 0; offset = 0; dbginfo = []}), args
   | (Caddi, _) -> self#select_arith_comm Iadd args
   | (Csubi, _) -> self#select_arith Isub args
   | (Cmuli, _) -> self#select_arith_comm Imul args
@@ -702,7 +702,8 @@ method emit_expr (env:environment) exp =
               assert (bytes mod Arch.size_addr = 0);
               let alloc_words = bytes / Arch.size_addr in
               let op =
-                Ialloc { bytes; dbginfo = [{alloc_words; alloc_dbg = dbg}] }
+                Ialloc { bytes; offset = 0;
+                         dbginfo = [{alloc_words; alloc_dbg = dbg}] }
               in
               self#insert_debug env (Iop op) dbg [||] rd;
               self#emit_stores env new_args rd;

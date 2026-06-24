@@ -29,7 +29,7 @@ type specific_operation =
     Imultaddf                           (* multiply and add *)
   | Imultsubf                           (* multiply and subtract *)
   | Ialloc_far of                       (* allocation in large functions *)
-      { bytes : int; dbginfo : Debuginfo.alloc_dbginfo }
+      { bytes : int; offset : int; dbginfo : Debuginfo.alloc_dbginfo }
   | Ipoll_far of { return_label : cmm_label option }
                                         (* poll point in large functions *)
   | Icheckbound_far                     (* bounds check in large functions *)

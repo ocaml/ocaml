@@ -563,8 +563,8 @@ module Size = struct
   let relax_poll ~return_label =
     Lop (Ispecific (Ipoll_far { return_label }))
 
-  let relax_allocation ~num_bytes ~dbginfo =
-    Lop (Ispecific (Ialloc_far { bytes = num_bytes; dbginfo }))
+  let relax_allocation ~num_bytes ~offset ~dbginfo =
+    Lop (Ispecific (Ialloc_far { bytes = num_bytes; offset; dbginfo }))
 
   let relax_intop_checkbound () =
     Lop (Ispecific (Icheckbound_far))
@@ -581,7 +581,7 @@ module BR = Branch_relaxation.Make (Size)
 
 (* Output the assembly code for allocation. *)
 
-let assembly_code_for_allocation env i ~n ~far ~dbginfo =
+let assembly_code_for_allocation env i ~n ~comb_offset ~far ~dbginfo =
   let lbl_frame =
     record_frame_label env i.live (Dbg_alloc dbginfo)
   in
@@ -605,7 +605,7 @@ let assembly_code_for_allocation env i ~n ~far ~dbginfo =
       `{emit_label lbl}:\n`
     end;
     `{emit_label lbl_after_alloc}:`;
-    `	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #8\n`;
+    `	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #{emit_int (8 + comb_offset)}\n`;
     env.call_gc_sites <-
       { gc_lbl = lbl_call_gc;
         gc_return_lbl = lbl_after_alloc;
@@ -618,7 +618,7 @@ let assembly_code_for_allocation env i ~n ~far ~dbginfo =
     | _  -> emit_intconst reg_x8 (Nativeint.of_int n);
             `	bl	{emit_symbol "caml_allocN"}\n`
     end;
-    `{emit_label lbl_frame}:	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #8\n`
+    `{emit_label lbl_frame}:	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #{emit_int (8 + comb_offset)}\n`
   end
 
 let assembly_code_for_poll env i ~far ~return_label =
@@ -875,10 +875,10 @@ let emit_instr env i =
         | Double ->
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
         end
-    | Lop(Ialloc { bytes = n; dbginfo }) ->
-        assembly_code_for_allocation env i ~n ~far:false ~dbginfo
-    | Lop(Ispecific (Ialloc_far { bytes = n; dbginfo })) ->
-        assembly_code_for_allocation env i ~n ~far:true ~dbginfo
+    | Lop(Ialloc { bytes = n; offset = comb_offset; dbginfo }) ->
+        assembly_code_for_allocation env i ~n ~comb_offset ~far:false ~dbginfo
+    | Lop(Ispecific (Ialloc_far { bytes = n; offset = comb_offset; dbginfo })) ->
+        assembly_code_for_allocation env i ~n ~comb_offset ~far:true ~dbginfo
     | Lop(Ipoll { return_label }) ->
         assembly_code_for_poll env i ~far:false ~return_label
     | Lop(Ispecific (Ipoll_far { return_label })) ->
