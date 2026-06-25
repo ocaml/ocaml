@@ -909,7 +909,7 @@ typedef enum pacing_phase { pp_sweep = 0, pp_mark, pp_ephe } pacing_phase;
    and the previous 2 pacing phases.
 */
 static struct {
-  atomic_uintnat advance_work;
+  atomic_double advance_work;
   caml_alloc_counter alloc_at_phase_start;
 } pacing_ring [PP_NUM_PHASES];
 
@@ -1226,6 +1226,12 @@ typedef enum {
   Slice_opportunistic
 } collection_slice_mode;
 
+static inline double translate (pacing_phase ph, intnat on, intnat off,
+                                intnat ephe)
+{
+  return pp_c[ph] * on + pp_c1[ph] * off + pp_c2[ph] * ephe;
+}
+
 static intnat get_major_slice_work(collection_slice_mode mode){
   if (mode == Slice_interruptible && caml_incoming_interrupts_queued())
     return 0;
@@ -1244,8 +1250,10 @@ static intnat get_major_slice_work(collection_slice_mode mode){
   intnat d_ephe =
     max2(0, diffmod (d->slice_target->ephe, work_counter.ephe));
 
-  intnat budget =
-    (intnat) (pp_c[ph] * d_on + pp_c1[ph] * d_off + pp_c2[ph] * d_ephe);
+  /* It is very important to be rounding up here, otherwise the slice
+     will stop just short of spending the bugdet and then loop for
+     a long time on the remainder. */
+  intnat budget = (intnat) ceil(translate(ph, d_on, d_off, d_ephe));
 
   /* The slice budget is the max of the alloc-driven budget and
      the explicit budget (d->slice_budget), and we return only one chunk
@@ -1273,7 +1281,7 @@ static intnat get_major_slice_work(collection_slice_mode mode){
    diffs = translated amounts of work
    w = overflow work, if any
 */
-static void translate_back (pacing_phase p, uintnat *w,
+static void translate_back (pacing_phase p, double *w,
                             caml_alloc_counter *diffs)
 {
   intnat d_on = diffs->on_heap;
@@ -1282,18 +1290,9 @@ static void translate_back (pacing_phase p, uintnat *w,
   if (d_on < 0) d_on = 0;
   if (d_off < 0) d_off = 0;
   if (d_ephe < 0) d_ephe = 0;
-  double diff_work = d_on * pp_c[p] + d_off * pp_c1[p] + d_ephe * pp_c2[p];
+  double diff_work = translate (p, d_on, d_off, d_ephe);
   CAMLassert (diff_work >= 0);
-  /* Note: diff_work is the budget that was given to the GC, while *w is
-     the amount of work done by the GC. But one is a double and the other
-     a uintnat. If we compare without rounding, diff_work can be greater
-     than *w, even if the GC used all the budget. We have to round down
-     diff_work to make it equal to the actual budget before we compare
-     to tell whether the GC used all the budget. If the GC used all the
-     budget, we must not change diffs, then the work counters can catch up
-     to the alloc counters.
-  */
-  if ((uintnat) diff_work > *w){
+  if (diff_work > *w){
     double p = *w / diff_work;
     diffs->on_heap = (uintnat) (diffs->on_heap * p);
     diffs->off_heap = (uintnat) (diffs->off_heap * p);
@@ -1316,7 +1315,7 @@ static void translate_back (pacing_phase p, uintnat *w,
 static void commit_major_slice_work(intnat words_done) {
   caml_domain_state *d = Caml_state;
   caml_alloc_counter diff;
-  uintnat w;
+  double w;
 
   CAML_GC_MESSAGE(SLICESIZE,
                   "Commit major slice work: [%c]  %"CAML_PRIdNAT" words_done",
@@ -1332,7 +1331,7 @@ static void commit_major_slice_work(intnat words_done) {
     /* Start with the oldest phase, finish with the current one. */
     ph = pp_next (ph);
     while (1){
-      uintnat adv = pacing_ring[ph].advance_work;
+      double adv = pacing_ring[ph].advance_work;
       w = local_work[ph] + adv;
       if (w == 0) break;
       atomic_alloc_counter wc = work_counter;
