@@ -147,6 +147,9 @@ The following environment variables are also consulted:
   \item[l] ("stack_limit") The limit (in words) of the stack size. This is
         relevant to both the byte-code runtime and the native code runtime:
         OCaml always uses its own stack and not the operating system's stack.
+  \item[S] ("thread_system_stack_size") The minimum system stack size (in bytes)
+        for new threads. This can be useful for threads that call FFI code
+        that needs a larger system stack.
   \item[m] ("custom_minor_ratio") Bound on floating garbage for
         out-of-heap memory
         held by custom values in the minor heap. A minor GC is triggered
