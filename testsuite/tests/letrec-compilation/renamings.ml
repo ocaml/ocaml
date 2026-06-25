@@ -96,3 +96,18 @@ module M : sig val x : int end
       (apply (field_mut 1 (global Toploop!)) "baz" baz/0))))
 val baz : unit -> int = <fun>
 |}];;
+
+let rec foobar =
+  let x = (1, 2) in
+  let z = x in
+  fun () -> z
+[%%expect {|
+(let (letrec_function_context/3 = (caml_alloc_dummy 1))
+  (letrec
+    (foobar/0 (function param/5[int] (field_imm 0 letrec_function_context/3)))
+    (seq
+      (caml_update_dummy letrec_function_context/3
+        (let (x/3 = [0: 1 2] z/1 = x/3) (makeblock 0 x/3)))
+      (apply (field_mut 1 (global Toploop!)) "foobar" foobar/0))))
+val foobar : unit -> int * int = <fun>
+|}];;

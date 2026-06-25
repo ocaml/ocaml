@@ -498,6 +498,14 @@ let rec split_static_function block_var local_idents renamings lam :
                Lprim (Pmakeblock (0, lifted_block_mut, None), [Lvar v], no_loc))
   | Lfunction lfun ->
     let free_vars = Lambda.free_variables lfun.body in
+    (* Translate the free variables through renamings *)
+    let free_vars =
+      Ident.Map.fold (fun left right free_vars ->
+          if Ident.Set.mem left free_vars
+          then Ident.Set.add right (Ident.Set.remove left free_vars)
+          else free_vars)
+        renamings free_vars
+    in
     let local_free_vars = Ident.Set.inter free_vars local_idents in
     let free_vars_block_size, subst, block_fields_rev =
       Ident.Set.fold (fun var (i, subst, fields) ->
@@ -511,7 +519,9 @@ let rec split_static_function block_var local_idents renamings lam :
     in
     let subst =
       Ident.Map.fold (fun var_left var_right subst ->
-          Ident.Map.add var_left (Lvar var_right) subst)
+          Ident.Map.add var_left
+            (Lambda.subst (fun _ _ env -> env) subst (Lvar var_right))
+            subst)
         renamings subst
     in
     (* Note: When there are no local free variables, we don't need the
