@@ -4081,11 +4081,11 @@ fi
 
 # Environment-specific set-up
 
-case $target in #(
+case $host in #(
   *-w64-mingw32*|*-pc-windows) :
-    default_separator='\' ;; #(
+    host_dir_sep='\' ;; #(
   *) :
-    default_separator='/' ;;
+    host_dir_sep='/' ;;
 esac
 
 # Environment variables that are taken into account
@@ -4381,7 +4381,7 @@ then :
   no) :
     ocaml_additional_stublibs_dir='' ;; #(
   yes) :
-    ocaml_additional_stublibs_dir="..${default_separator}stublibs" ;; #(
+    ocaml_additional_stublibs_dir="..${host_dir_sep}stublibs" ;; #(
   *) :
     ocaml_additional_stublibs_dir="$withval" ;;
 esac
@@ -4467,7 +4467,7 @@ then :
   no) :
     bindir_to_libdir='' ;; #(
   yes) :
-    bindir_to_libdir="..${default_separator}lib${default_separator}ocaml" ;; #(
+    bindir_to_libdir="..${host_dir_sep}lib${host_dir_sep}ocaml" ;; #(
   *) :
     bindir_to_libdir="$withval" ;;
 esac
@@ -25815,7 +25815,7 @@ fi
 ocaml_additional_stublibs_dir=\
 '$(echo "$ocaml_additional_stublibs_dir" | sed -e "s/'/'\"'\"'/g")'
   ocaml_libdir='$(echo "$ocaml_libdir" | sed -e "s/'/'\"'\"'/g")'
-  default_separator='$default_separator'
+  host_dir_sep='$host_dir_sep'
   supports_shared_libraries='$supports_shared_libraries'
 
 _ACEOF
@@ -26996,7 +26996,7 @@ ltmain=$ac_aux_dir/ltmain.sh
   test x"$ocaml_additional_stublibs_dir" = 'x' || \
     echo "$ocaml_additional_stublibs_dir" > runtime/ld.conf
   if $supports_shared_libraries; then
-    echo ".${default_separator}stublibs" >> runtime/ld.conf
+    echo ".${host_dir_sep}stublibs" >> runtime/ld.conf
   fi
   echo "." >> runtime/ld.conf ;;
 
