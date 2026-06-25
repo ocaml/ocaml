@@ -180,7 +180,7 @@ jobs:
         with:
           submodules: true
           persist-credentials: false
-      - name: Configure, build and install Linux-to-Windows OCaml
+      - name: Configure, build and install Linux-to-ARM-Linux OCaml
         run: |
           set -x
           ./configure --prefix="$HOME/cross" --target=aarch64-linux-gnu \
