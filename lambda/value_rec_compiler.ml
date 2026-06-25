@@ -430,6 +430,11 @@ let lfunction_with_body { kind; params; return; body = _; attr; loc } body =
        { aux }
      and i_lifted = fun x -> i_context.aux x
    ]}
+
+   If the context contains let-bindings for pure expressions, we can also
+   substitute these expressions into the function body instead. The current
+   implementation only performs this transformation for variable renamings
+   (let x = y in ...).
 *)
 
 type lifted_function =
@@ -454,10 +459,15 @@ let lifted_block_mut : Asttypes.mutable_flag = Immutable
 
 let no_loc = Debuginfo.Scoped_location.Loc_unknown
 
-let rec split_static_function block_var local_idents lam :
+let rec split_static_function block_var local_idents renamings lam :
   Lambda.lambda split_result =
   match lam with
   | Lvar v ->
+    let v =
+      match Ident.Map.find_opt v renamings with
+      | Some v' -> v'
+      | None -> v
+    in
     (* Eta-expand *)
     (* Note: knowing the arity might let us generate slightly better code *)
     let param = Ident.create_local "let_rec_param" in
@@ -499,6 +509,11 @@ let rec split_static_function block_var local_idents lam :
           (succ i, Ident.Map.add var access subst, Lvar var :: fields))
         local_free_vars (0, Ident.Map.empty, [])
     in
+    let subst =
+      Ident.Map.fold (fun var_left var_right subst ->
+          Ident.Map.add var_left (Lvar var_right) subst)
+        renamings subst
+    in
     (* Note: When there are no local free variables, we don't need the
        substitution and we don't need to generate code for pre-allocating
        and backpatching a block of size 0.
@@ -515,14 +530,36 @@ let rec split_static_function block_var local_idents lam :
              no_loc)
     in
     Reachable (lifted, block)
+  | Llet (lkind, vkind, var_left, Lvar var_right, body) ->
+    (* Simple renaming: use direct substitution *)
+    (* We need the right-hand side of the renamings map to not mention
+       any variable from the left-hand side, so we apply previous
+       renamings eagerly *)
+    let var_right_renamed =
+      match Ident.Map.find_opt var_right renamings with
+      | None -> var_right
+      | Some v -> v
+    in
+    let+ body =
+      split_static_function block_var local_idents
+        (Ident.Map.add var_left var_right_renamed renamings) body
+    in
+    (* The [body] here is the expression for the closure block. We could apply
+       the renaming to it too, but it would be a bit tedious (and of non-linear
+       complexity) so instead we keep the original binding.
+       (All occurrences of [var_left] have disappeared from the lifted function,
+       but occurrences can remain in [body].) *)
+    Llet (lkind, vkind, var_left, Lvar var_right, body)
   | Llet (lkind, vkind, var, def, body) ->
     let+ body =
-      split_static_function block_var (Ident.Set.add var local_idents) body
+      split_static_function block_var (Ident.Set.add var local_idents)
+        renamings body
     in
     Llet (lkind, vkind, var, def, body)
   | Lmutlet (vkind, var, def, body) ->
     let+ body =
-      split_static_function block_var (Ident.Set.add var local_idents) body
+      split_static_function block_var (Ident.Set.add var local_idents)
+        renamings body
     in
     Lmutlet (vkind, var, def, body)
   | Lletrec (bindings, body) ->
@@ -531,16 +568,21 @@ let rec split_static_function block_var local_idents lam :
         local_idents bindings
     in
     let+ body =
-      split_static_function block_var local_idents body
+      split_static_function block_var local_idents renamings body
     in
     Lletrec (bindings, body)
   | Lprim (Praise _, _, _) -> Unreachable
   | Lstaticraise _ -> Unreachable
   | Lswitch (arg, sw, loc) ->
-    let sw_consts_res = rebuild_arms block_var local_idents sw.sw_consts in
-    let sw_blocks_res = rebuild_arms block_var local_idents sw.sw_blocks in
+    let sw_consts_res =
+      rebuild_arms block_var local_idents renamings sw.sw_consts
+    in
+    let sw_blocks_res =
+      rebuild_arms block_var local_idents renamings sw.sw_blocks
+    in
     let sw_failaction_res =
-      Option.map (split_static_function block_var local_idents) sw.sw_failaction
+      Option.map (split_static_function block_var local_idents renamings)
+        sw.sw_failaction
     in
     begin match sw_consts_res, sw_blocks_res, sw_failaction_res with
     | Unreachable, Unreachable, (None | Some Unreachable) -> Unreachable
@@ -558,9 +600,10 @@ let rec split_static_function block_var local_idents lam :
       Misc.fatal_error "letrec: multiple functions"
     end
   | Lstringswitch (arg, arms, failaction, loc) ->
-    let arms_res = rebuild_arms block_var local_idents arms in
+    let arms_res = rebuild_arms block_var local_idents renamings arms in
     let failaction_res =
-      Option.map (split_static_function block_var local_idents) failaction
+      Option.map (split_static_function block_var local_idents renamings)
+        failaction
     in
     begin match arms_res, failaction_res with
     | Unreachable, (None | Some Unreachable) -> Unreachable
@@ -572,13 +615,15 @@ let rec split_static_function block_var local_idents lam :
       Misc.fatal_error "letrec: multiple functions"
     end
   | Lstaticcatch (body, (nfail, params), handler) ->
-    let body_res = split_static_function block_var local_idents body in
+    let body_res =
+      split_static_function block_var local_idents renamings body
+    in
     let handler_res =
       let local_idents =
         List.fold_left (fun vars (var, _) -> Ident.Set.add var vars)
           local_idents params
       in
-      split_static_function block_var local_idents handler
+      split_static_function block_var local_idents renamings handler
     in
     begin match body_res, handler_res with
     | Unreachable, Unreachable -> Unreachable
@@ -590,10 +635,12 @@ let rec split_static_function block_var local_idents lam :
       Misc.fatal_error "letrec: multiple functions"
     end
   | Ltrywith (body, exn_var, handler) ->
-    let body_res = split_static_function block_var local_idents body in
+    let body_res =
+      split_static_function block_var local_idents renamings body
+    in
     let handler_res =
       split_static_function block_var
-        (Ident.Set.add exn_var local_idents) handler
+        (Ident.Set.add exn_var local_idents) renamings handler
     in
     begin match body_res, handler_res with
     | Unreachable, Unreachable -> Unreachable
@@ -605,8 +652,12 @@ let rec split_static_function block_var local_idents lam :
       Misc.fatal_error "letrec: multiple functions"
     end
   | Lifthenelse (cond, ifso, ifnot) ->
-    let ifso_res = split_static_function block_var local_idents ifso in
-    let ifnot_res = split_static_function block_var local_idents ifnot in
+    let ifso_res =
+      split_static_function block_var local_idents renamings ifso
+    in
+    let ifnot_res =
+      split_static_function block_var local_idents renamings ifnot
+    in
     begin match ifso_res, ifnot_res with
     | Unreachable, Unreachable -> Unreachable
     | Reachable (lfun, ifso), Unreachable ->
@@ -617,10 +668,10 @@ let rec split_static_function block_var local_idents lam :
       Misc.fatal_error "letrec: multiple functions"
     end
   | Lsequence (e1, e2) ->
-    let+ e2 = split_static_function block_var local_idents e2 in
+    let+ e2 = split_static_function block_var local_idents renamings e2 in
     Lsequence (e1, e2)
   | Levent (lam, lev) ->
-    let+ lam = split_static_function block_var local_idents lam in
+    let+ lam = split_static_function block_var local_idents renamings lam in
     Levent (lam, lev)
   | Lmutvar _
   | Lconst _
@@ -632,14 +683,14 @@ let rec split_static_function block_var local_idents lam :
   | Lsend _
   | Lifused _ -> Misc.fatal_error "letrec binding is not a static function"
 and rebuild_arms :
-  type a. _ -> _ -> (a * Lambda.lambda) list ->
+  type a. _ -> _ -> _ -> (a * Lambda.lambda) list ->
   (a * Lambda.lambda) list split_result =
-  fun block_var local_idents arms ->
+  fun block_var local_idents renamings arms ->
   match arms with
   | [] -> Unreachable
   | (i, lam) :: arms ->
-    let res = rebuild_arms block_var local_idents arms in
-    let lam_res = split_static_function block_var local_idents lam in
+    let res = rebuild_arms block_var local_idents renamings arms in
+    let lam_res = split_static_function block_var local_idents renamings lam in
     match lam_res, res with
     | Unreachable, Unreachable -> Unreachable
     | Reachable (lfun, lam), Unreachable ->
@@ -850,7 +901,9 @@ let compile_letrec input_bindings body =
               }
             | _ ->
               let ctx_id = Ident.create_local "letrec_function_context" in
-              begin match split_static_function ctx_id Ident.Set.empty def with
+              begin match
+                split_static_function ctx_id Ident.Set.empty Ident.Map.empty def
+              with
               | Unreachable ->
                 Misc.fatal_error "letrec: no function for binding"
               | Reachable ({ lfun; free_vars_block_size }, lam) ->
