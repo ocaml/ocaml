@@ -485,6 +485,10 @@ AS_CASE([$host],
   [*-w64-mingw32*|*-pc-windows],
     [host_dir_sep='\'],
   [host_dir_sep='/'])
+AS_CASE([$target],
+  [*-w64-mingw32*|*-pc-windows],
+    [target_dir_sep='\'],
+  [target_dir_sep='/'])
 
 # Environment variables that are taken into account
 
@@ -3123,7 +3127,8 @@ AS_CASE([$cygwin_build_env,$host],
 AS_IF([test x"$libdir_given" = 'xno'],
   [AS_IF([test x"$bindir_to_libdir" != 'x'],
     [ocaml_libdir="$bindir_to_libdir"
-    target_libdir_is_relative=true
+    AS_IF([test x"$TARGET_LIBDIR" = x],
+      [target_libdir_is_relative=true])
     AS_CASE([$cygwin_build_env,$host],
       [true,*-w64-mingw32*|true,*-pc-windows],
         [build_bindir_to_libdir="$(LC_ALL=C.UTF-8 cygpath \
@@ -3137,6 +3142,10 @@ AS_IF([test x"$libdir_given" = 'xno'],
   [AS_IF([test x"$bindir_to_libdir" != 'x'],
     [AC_MSG_ERROR(m4_normalize([--with-relative-libdir and --libdir cannot both
       be specified]))])])
+
+AS_CASE([$TARGET_LIBDIR],
+  [.|..|.${target_dir_sep}*|..${target_dir_sep}*],
+    [target_libdir_is_relative=true])
 
 host_libdir='${TARGET_LIBDIR}'
 

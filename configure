@@ -4087,6 +4087,12 @@ case $host in #(
   *) :
     host_dir_sep='/' ;;
 esac
+case $target in #(
+  *-w64-mingw32*|*-pc-windows) :
+    target_dir_sep='\' ;; #(
+  *) :
+    target_dir_sep='/' ;;
+esac
 
 # Environment variables that are taken into account
 
@@ -24510,7 +24516,10 @@ then :
   if test x"$bindir_to_libdir" != 'x'
 then :
   ocaml_libdir="$bindir_to_libdir"
-    target_libdir_is_relative=true
+    if test x"$TARGET_LIBDIR" = x
+then :
+  target_libdir_is_relative=true
+fi
     case $cygwin_build_env,$host in #(
   true,*-w64-mingw32*|true,*-pc-windows) :
     build_bindir_to_libdir="$(LC_ALL=C.UTF-8 cygpath \
@@ -24533,6 +24542,13 @@ then :
   as_fn_error $? "--with-relative-libdir and --libdir cannot both be specified" "$LINENO" 5
 fi
 fi
+
+case $TARGET_LIBDIR in #(
+  .|..|.${target_dir_sep}*|..${target_dir_sep}*) :
+    target_libdir_is_relative=true ;; #(
+  *) :
+     ;;
+esac
 
 host_libdir='${TARGET_LIBDIR}'
 
