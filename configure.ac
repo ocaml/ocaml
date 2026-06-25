@@ -297,6 +297,7 @@ AC_SUBST([compute_deps])
 AC_SUBST([ocaml_prefix])
 AC_SUBST([ocaml_bindir])
 AC_SUBST([ocaml_libdir])
+AC_SUBST([host_libdir])
 AC_SUBST([TARGET_LIBDIR])
 AC_SUBST([QS])
 AC_SUBST([ar_supports_response_files])
@@ -3136,9 +3137,14 @@ AS_IF([test x"$libdir_given" = 'xno'],
     [AC_MSG_ERROR(m4_normalize([--with-relative-libdir and --libdir cannot both
       be specified]))])])
 
-AS_IF([test x"$bindir_to_libdir" != 'x' && test x"$TARGET_LIBDIR" != 'x'],
-  [AC_MSG_ERROR(m4_normalize([--with-relative-libdir and TARGET_LIBDIR cannot
-    both be specified]))])
+host_libdir='${TARGET_LIBDIR}'
+
+AS_IF([$cross_compiler],
+  [AS_IF([test x"$bindir_to_libdir" != 'x'],
+    [host_libdir="$bindir_to_libdir"])],
+  [AS_IF([test x"$bindir_to_libdir" != 'x' && test x"$TARGET_LIBDIR" != 'x'],
+    [AC_MSG_ERROR(m4_normalize([--with-relative-libdir and TARGET_LIBDIR cannot
+      both be specified]))])])
 
 # Define a few macros that were defined in config/m-nt.h
 # but whose value is not guessed properly by configure

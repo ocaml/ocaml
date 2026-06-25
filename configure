@@ -818,6 +818,7 @@ target_libdir_is_relative
 ar_supports_response_files
 QS
 TARGET_LIBDIR
+host_libdir
 ocaml_libdir
 ocaml_bindir
 ocaml_prefix
@@ -3605,6 +3606,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L038
 
 
  # TODO: rename this variable
+
 
 
 
@@ -24532,9 +24534,19 @@ then :
 fi
 fi
 
-if test x"$bindir_to_libdir" != 'x' && test x"$TARGET_LIBDIR" != 'x'
+host_libdir='${TARGET_LIBDIR}'
+
+if $cross_compiler
+then :
+  if test x"$bindir_to_libdir" != 'x'
+then :
+  host_libdir="$bindir_to_libdir"
+fi
+else $as_nop
+  if test x"$bindir_to_libdir" != 'x' && test x"$TARGET_LIBDIR" != 'x'
 then :
   as_fn_error $? "--with-relative-libdir and TARGET_LIBDIR cannot both be specified" "$LINENO" 5
+fi
 fi
 
 # Define a few macros that were defined in config/m-nt.h
