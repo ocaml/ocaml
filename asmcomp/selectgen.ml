@@ -87,7 +87,7 @@ let oper_result_type = function
   | Craise _ -> typ_void
   | Ccheckbound -> typ_void
   | Copaque -> typ_val
-  | Catomic_fetch_add -> typ_val
+  | Catomic_fetch_add -> typ_int
   | Cpoll -> typ_void
 
 (* Infer the size in bytes of the result of an expression whose evaluation
