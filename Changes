@@ -137,8 +137,12 @@ Working version
   (Hugo Heuzard, review by Olivier Nicole)
 
 - #14534: Fix bytecode peehole optimization for PUSHENVACC4
-  (Hugo heuzard, David Allsopp review by Nicolás Ojeda Bär, Vincent Laviron
+  (Hugo Heuzard, David Allsopp review by Nicolás Ojeda Bär, Vincent Laviron
   and Gabriel Scherer)
+
+- #14799, #14873: Support compressed RISC-V instructions
+  (Xavier Leroy, suggestion by Github user @nickbetteridge, review by
+   Nicolás Ojeda Bär)
 
 ### Standard library:
 
