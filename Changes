@@ -149,6 +149,11 @@ Working version
   (Xavier Leroy, suggestion by Github user @nickbetteridge, review by
    Nicolás Ojeda Bär)
 
+- #14876, #14885: Better compilation for recursive functions where
+  local aliases are introduced before the function itself.
+  The pattern is uncommon in hand-written code but some ppxes produce it.
+  (Vincent Laviron, report by Sacha-Élie Ayoun, review by Gabriel Scherer)
+
 ### Standard library:
 
 - #10798: Atomic helper function
