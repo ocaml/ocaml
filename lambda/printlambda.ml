@@ -171,7 +171,8 @@ let primitive ppf = function
         | Pointer, Immutable -> "field_imm "
       in
       fprintf ppf "%s%i" instr n
-  | Pfield_computed -> fprintf ppf "field_computed"
+  | Pfield_computed Mutable -> fprintf ppf "field_computed_mut"
+  | Pfield_computed Immutable -> fprintf ppf "field_computed_imm"
   | Psetfield(n, ptr, init) ->
       let instr =
         match ptr with
@@ -375,7 +376,7 @@ let name_of_primitive = function
   | Pmakeblock _ -> "Pmakeblock"
   | Pmakelazyblock _ -> "Pmakelazyblock"
   | Pfield _ -> "Pfield"
-  | Pfield_computed -> "Pfield_computed"
+  | Pfield_computed _ -> "Pfield_computed"
   | Psetfield _ -> "Psetfield"
   | Psetfield_computed _ -> "Psetfield_computed"
   | Pfloatfield _ -> "Pfloatfield"

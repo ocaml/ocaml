@@ -367,7 +367,7 @@ and expression i ppf x =
   List.iter (expression_extra i ppf) x.exp_extra;
   match x.exp_desc with
   | Texp_ident (li,_,_) -> line i ppf "Texp_ident %a\n" fmt_path li;
-  | Texp_instvar (_, li,_) -> line i ppf "Texp_instvar %a\n" fmt_path li;
+  | Texp_instvar (_, li,_,_) -> line i ppf "Texp_instvar %a\n" fmt_path li;
   | Texp_constant (c) -> line i ppf "Texp_constant %a\n" fmt_constant c;
   | Texp_let (rf, l, e) ->
       line i ppf "Texp_let %a\n" fmt_rec_flag rf;

@@ -547,7 +547,7 @@ let expression sub exp =
           | Tmeth_val id -> mkloc (Ident.name id) loc
           | Tmeth_ancestor(id, _) -> mkloc (Ident.name id) loc)
     | Texp_new (_path, lid, _) -> Pexp_new (map_loc sub lid)
-    | Texp_instvar (_, path, name) ->
+    | Texp_instvar (_, path, _mut, name) ->
       Pexp_ident ({loc = sub.location sub name.loc ; txt = lident_of_path path})
     | Texp_setinstvar (_, _path, lid, exp) ->
         Pexp_setinstvar (map_loc sub lid, sub.expr sub exp)

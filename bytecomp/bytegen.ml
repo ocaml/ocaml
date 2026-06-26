@@ -145,7 +145,7 @@ let preserve_tailcall_for_prim = function
   | Prunstack | Pperform | Presume | Preperform | Ppoll ->
       true
   | Pbytes_to_string | Pbytes_of_string | Pignore | Pgetglobal _ | Psetglobal _
-  | Pmakeblock _ | Pmakelazyblock _ | Pfield _ | Pfield_computed | Psetfield _
+  | Pmakeblock _ | Pmakelazyblock _ | Pfield _ | Pfield_computed _ | Psetfield _
   | Psetfield_computed _ | Pfloatfield _ | Psetfloatfield _ | Pduprecord _
   | Pccall _ | Praise _ | Pnot | Pnegint | Paddint | Psubint | Pmulint
   | Pdivint _ | Pmodint _ | Pandint | Porint | Pxorint | Plslint | Plsrint
@@ -372,7 +372,7 @@ let comp_primitive stack_info p sz args =
   | Pcompare_floats -> Kccall("caml_float_compare", 2, None)
   | Pcompare_bints bi -> comp_bint_primitive bi "compare" args
   | Pfield(n, _ptr, _mut) -> Kgetfield n
-  | Pfield_computed -> Kgetvectitem
+  | Pfield_computed _ -> Kgetvectitem
   | Psetfield(n, _ptr, _init) -> Ksetfield n
   | Psetfield_computed(_ptr, _init) -> Ksetvectitem
   | Psetfloatfield (n, _init) -> Ksetfloatfield n

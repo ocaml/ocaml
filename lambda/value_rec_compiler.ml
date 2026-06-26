@@ -311,7 +311,7 @@ let compute_static_size lam =
     | Pgetglobal _
     | Psetglobal _
     | Pfield _
-    | Pfield_computed
+    | Pfield_computed _
     | Pfloatfield _
     | Prunstack
     | Pperform

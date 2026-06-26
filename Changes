@@ -145,6 +145,9 @@ Working version
   (Hugo heuzard, David Allsopp review by Nicolás Ojeda Bär, Vincent Laviron
   and Gabriel Scherer)
 
+- #14861, #14868: Lift immutable instance variable reads
+  (Vincent Laviron, report by Romain Beauxis, review by a very kind person)
+
 ### Standard library:
 
 - #10798: Atomic helper function

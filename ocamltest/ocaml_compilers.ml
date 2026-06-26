@@ -17,7 +17,17 @@
 
 open Ocamltest_stdlib
 
-class compiler
+module type Compiler = sig
+  include Ocaml_tools.Tool
+  val host : Ocaml_backends.t
+  val target : Ocaml_backends.t
+  val program_variable : Variables.t
+  val program_output_variable : Variables.t option
+end
+
+type compiler = (module Compiler)
+
+let compiler
   ~(name : string)
   ~(flags : string)
   ~(directory : string)
@@ -26,41 +36,46 @@ class compiler
   ~(output_variable : Variables.t)
   ~(host : Ocaml_backends.t)
   ~(target : Ocaml_backends.t)
-= object (self) inherit Ocaml_tools.tool
-  ~name:name
-  ~family:"compiler"
-  ~flags:flags
-  ~directory:directory
-  ~exit_status_variable:exit_status_variable
-  ~reference_variable:reference_variable
-  ~output_variable:output_variable
-  as tool
+  : compiler
+  =
+  let module Tool =
+    (val Ocaml_tools.tool
+      ~name:name
+      ~family:"compiler"
+      ~flags:flags
+      ~directory:directory
+      ~exit_status_variable:exit_status_variable
+      ~reference_variable:reference_variable
+      ~output_variable:output_variable
+      () : Ocaml_tools.Tool)
+  in
+  (module struct
+    include Tool
+    let host = host
+    let target = target
 
-  method host = host
-  method target = target
+    let program_variable =
+      if Ocaml_backends.is_native host && not Sys.win32
+      then Builtin_variables.program2
+      else Builtin_variables.program
 
-  method program_variable =
-    if Ocaml_backends.is_native host && not Sys.win32
-    then Builtin_variables.program2
-    else Builtin_variables.program
+    let program_output_variable =
+      if Ocaml_backends.is_native host && not Sys.win32
+      then None
+      else Some Builtin_variables.output
 
-  method program_output_variable =
-    if Ocaml_backends.is_native host && not Sys.win32
-    then None
-    else Some Builtin_variables.output
+    let reference_file env prefix =
+      let default = Tool.reference_file env prefix in
+      if Sys.file_exists default then default else
+        let suffix = Tool.reference_filename_suffix env in
+        let mk s = (Filename.make_filename prefix s) ^ suffix in
+        let filename = mk
+            (Ocaml_backends.string_of_backend target) in
+        if Sys.file_exists filename then filename else
+          mk "compilers"
+  end)
 
-  method ! reference_file env prefix =
-    let default = tool#reference_file env prefix in
-    if Sys.file_exists default then default else
-    let suffix = self#reference_filename_suffix env in
-    let mk s = (Filename.make_filename prefix s) ^ suffix in
-    let filename = mk
-      (Ocaml_backends.string_of_backend target) in
-    if Sys.file_exists filename then filename else
-    mk "compilers"
-end
-
-let ocamlc_byte = new compiler
+let ocamlc_byte = compiler
   ~name: Ocaml_commands.ocamlrun_ocamlc
   ~flags: ""
   ~directory: "ocamlc.byte"
@@ -70,7 +85,7 @@ let ocamlc_byte = new compiler
   ~host: Ocaml_backends.Bytecode
   ~target: Ocaml_backends.Bytecode
 
-let ocamlc_opt = new compiler
+let ocamlc_opt = compiler
   ~name: Ocaml_files.ocamlc_dot_opt
   ~flags: ""
   ~directory: "ocamlc.opt"
@@ -80,7 +95,7 @@ let ocamlc_opt = new compiler
   ~host: Ocaml_backends.Native
   ~target: Ocaml_backends.Bytecode
 
-let ocamlopt_byte = new compiler
+let ocamlopt_byte = compiler
   ~name: Ocaml_commands.ocamlrun_ocamlopt
   ~flags: ""
   ~directory: "ocamlopt.byte"
@@ -90,7 +105,7 @@ let ocamlopt_byte = new compiler
   ~host: Ocaml_backends.Bytecode
   ~target: Ocaml_backends.Native
 
-let ocamlopt_opt = new compiler
+let ocamlopt_opt = compiler
   ~name: Ocaml_files.ocamlopt_dot_opt
   ~flags: ""
   ~directory: "ocamlopt.opt"
