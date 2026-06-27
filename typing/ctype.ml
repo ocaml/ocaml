@@ -2577,7 +2577,7 @@ let enter_poly_for tr_exn env t1 tl1 t2 tl2 f =
     Similar to [nondep_type], however we remove the dependency in place,
     while [nondep] does a copy of the type.
 *)
-let identifier_escape env idl ty =
+let identifier_escape env idl initial_ty =
   with_type_mark begin fun mark ->
   let rec occur ?(ignore_mark=false) idl ty =
     if try_mark_node mark ty || ignore_mark then begin
@@ -2639,7 +2639,7 @@ let identifier_escape env idl ty =
       set_type_desc ty (f p');
       occur ~ignore_mark:true idl ty
   in
-  occur (List.map Ident.of_unscoped idl) ty
+  occur (List.map Ident.of_unscoped idl) initial_ty
   end
 
 let identifier_escape_for tr_exn env idl t =
