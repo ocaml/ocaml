@@ -394,6 +394,23 @@ Working version
   constraints.
   (Stefan Muenzel, review by Florian Angeletti)
 
+OCaml 5.5.1
+-----------
+
+### Bug fixes:
+
+- #14891, #14982: fix scope error leading to an erroneous typechecking for
+  non-dependent application of module-dependent function in presence of
+  dependent first-class module types:
+  ```ocaml
+  module type T = sig module type S end
+  let f (module M:T) (m: (module M.S)) = m
+  module type P = sig type 'a t end
+  let error =
+    f (module struct module type S = P end) (module List)
+  ````
+  (Florian Angeletti, report by Hazem ElMasry, review by Gabriel Scherer)
+
 OCaml 5.5.0 (19 June 2026)
 -------------------------
 
