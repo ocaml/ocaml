@@ -928,6 +928,7 @@ The precedences must be listed from low to high.
 %left     BAR                           /* pattern (p|p|p) */
 %nonassoc below_COMMA
 %left     COMMA                         /* expr/labeled_tuple (e,e,e) */
+%nonassoc below_MINUSGREATER
 %right    MINUSGREATER                  /* function_type (t -> t -> t) */
 %right    OR BARBAR                     /* expr (e || e || e) */
 %right    AMPERSAND AMPERAMPER          /* expr (e && e && e) */
@@ -3649,8 +3650,10 @@ with_constraint:
   | MODULE mkrhs(mod_longident) COLONEQUAL mkrhs(mod_ext_longident)
       { Pwith_modsubst ($2, $4) }
   | MODULE TYPE l=mkrhs(mty_longident) EQUAL rhs=module_type
+    %prec below_MINUSGREATER
       { Pwith_modtype (l, rhs) }
   | MODULE TYPE l=mkrhs(mty_longident) COLONEQUAL rhs=module_type
+    %prec below_MINUSGREATER
       { Pwith_modtypesubst (l, rhs) }
 ;
 with_type_binder:
