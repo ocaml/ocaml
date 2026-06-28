@@ -29,13 +29,12 @@ module Linking_variants = struct
 
   let compute_variant cmd objs =
     List.concat_map (fun obj ->
-      if String.starts_with ~prefix:"-l" obj then [obj] else
-        let flag_blob =
-          Printf.ksprintf output_of_command "%s %s"
-            cmd
-            obj
-        in
-        List.rev (String.split_on_char ' ' (String.trim flag_blob)))
+      let flag_blob =
+        Printf.ksprintf output_of_command "%s %s"
+          cmd
+          obj
+      in
+      List.rev (String.split_on_char ' ' (String.trim flag_blob)))
     objs
 
   let merge_objs fobjs lobjs =
