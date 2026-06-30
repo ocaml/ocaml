@@ -3637,7 +3637,7 @@ let report_error ~loc _env = function
         (Style.as_inline_code modtype) mty
   | Not_included errs ->
       Location.errorf ~loc ~footnote:Out_type.Ident_conflicts.err_msg
-        "@[<v>Signature mismatch:@ %a@]"
+        "@[<v>Module type mismatch:@ %a@]"
         Includemod_errorprinter.err_msgs errs
   | Cannot_eliminate_dependency mty ->
       Location.errorf ~loc
