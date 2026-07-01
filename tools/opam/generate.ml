@@ -165,9 +165,12 @@ let copy_files oc dir =
 
 let clone_files oc dir ic =
   output_endline oc
-    {|dest="$1"'/%s' xargs sh "$1/clone-files" <<'EOF'|} dir;
+    {|(
+cd "$build_dir"
+dest="$1"'/%s' origin_prefix=$origin_prefix xargs sh "$1/clone-files" <<'EOF'|} dir;
   In_channel.fold_lines (fun _ -> output_endline oc "%s") () ic;
-  output_endline oc {|EOF|}
+  output_endline oc {|EOF|};
+  output_endline oc {|)|}
 
 let () =
   if mode = "opam" then begin
@@ -188,22 +191,24 @@ set -eu|};
     Out_channel.with_open_bin (package ^ "-clone.sh") @@ fun oc ->
       output_endline oc {|#!/bin/sh
 set -eu
+origin_prefix=$(pwd)
+build_dir=$2
 mkdir -p "$1"
 rm -f "$1/__cp_test" "$1/__ln_test"
 if cp --reflink=always doc/ocaml/LICENSE "$1/__cp_test" 2>/dev/null; then
   rm -f "$1/__cp_test"
   CP='cp --reflink=always -%sf'
   if ! test -e "$1/clone-files"; then
-    echo "$CP"' "$@" "$dest/"' > "$1/clone-files"
+    echo 'cd "$origin_prefix" && '"$CP"' "$@" "$dest/"' > "$1/clone-files"
   fi
 else
   CP='cp -%sf'
   if ! test -e "$1/clone-files"; then
     if ln -f doc/ocaml/LICENSE "$1/__ln_test" 2>/dev/null; then
       rm -f "$1/__ln_test"
-      echo 'ln -f "$@" "$dest/"' > "$1/clone-files"
+      echo 'cd "$origin_prefix" && ln -f "$@" "$dest/"' > "$1/clone-files"
     else
-      echo "$CP"' "$@" "$dest/"' > "$1/clone-files"
+      echo 'cd "$origin_prefix" && '"$CP"' "$@" "$dest/"' > "$1/clone-files"
     fi
   fi
 fi|} preserve preserve;
@@ -216,6 +221,8 @@ fi|} preserve preserve;
           Makefile.config and config.status will both contain the original
           prefix, which must be updated. *)
       output_endline oc {|cp lib/ocaml/ld.conf "$1/lib/ocaml/ld.conf"
+(
+cd "$build_dir"
 cat > "$1/prefix.awk" <<'ENDAWK'
 {
   rest = $0
@@ -226,6 +233,7 @@ cat > "$1/prefix.awk" <<'ENDAWK'
   print rest
 }
 ENDAWK
+)
 prefix="$(sed -ne 's/^prefix *= *//p' lib/ocaml/Makefile.config)"
 for file in lib/ocaml/Makefile.config share/ocaml/config.status; do
   O="$prefix" N="$1" awk -f "$1/prefix.awk" "$file" > "$1/$file"
