@@ -116,6 +116,8 @@ module Stdlib : sig
   module List : sig
     include module type of struct include List end
 
+    val iter_1 : ('p -> 'a -> unit) -> 'p -> 'a list -> unit
+
     val fold_left4
       :  ('acc -> 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'acc)
       -> 'acc

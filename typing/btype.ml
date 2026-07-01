@@ -379,6 +379,10 @@ let fold_type_expr f init ty =
 let iter_type_expr f ty =
   fold_type_expr (fun () v -> f v) () ty
 
+let iter_type_expr_1 (type param) f (param : param) ty =
+  fold_type_expr (fun param v -> f param v; param) param ty
+  |> (ignore : param -> unit)
+
 let rec iter_abbrev_memo f = function
     Mnil                   -> ()
   | Mcons { abbreviation; expansion; rem; _ } ->
@@ -842,15 +846,14 @@ exception Occur
 let rec deep_occur_rec ((mark, t0) as mt) ty =
   if get_level ty >= get_level t0 && try_mark_node mark ty then begin
     if eq_type ty t0 then raise Occur;
-    let mt = fold_type_expr deep_occur_rec mt ty in
-    fold_abbrev (fun mt _p tyl ->
-      List.fold_left deep_occur_rec mt tyl
+    iter_type_expr_1 deep_occur_rec mt ty;
+    iter_abbrev_1 (fun mt _p tyl ->
+      Misc.Stdlib.List.iter_1 deep_occur_rec mt tyl
     ) mt ty
-  end else mt
+  end
 
 let deep_occur_rec mark t0 ty =
   deep_occur_rec (mark, t0) ty
-  |> (ignore : (_ * _) -> unit)
 
 let deep_occur t0 ty =
   try

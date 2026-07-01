@@ -643,15 +643,11 @@ let get_abbrev t =
   ignore (repr t);
   match t.desc with Texpand (_, path, args) -> Some (path, args) | _ -> None
 
-let fold_abbrev f a t =
+let iter_abbrev_1 f a t =
   ignore (repr t);
-  match t.desc with Texpand (_, path, args) -> f a path args | _ -> a
+  match t.desc with Texpand (_, path, args) -> f a path args | _ -> ()
 
-let iter_abbrev f t =
-  let (_ : (Path.t -> _ list -> unit)) =
-    fold_abbrev (fun f p a -> f p a; f) f t
-  in
-  ()
+let iter_abbrev f t = iter_abbrev_1 (fun f p a -> f p a) f t
 
 let ignore_abbrev ty = repr ty
 
