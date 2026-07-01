@@ -839,12 +839,18 @@ let instance_variable_type label sign =
 (* Return whether [t0] occurs in [ty]. Objects are also traversed. *)
 exception Occur
 
-let rec deep_occur_rec mark t0 ty =
+let rec deep_occur_rec ((mark, t0) as mt) ty =
   if get_level ty >= get_level t0 && try_mark_node mark ty then begin
     if eq_type ty t0 then raise Occur;
-    iter_type_expr (deep_occur_rec mark t0) ty;
-    iter_abbrev (fun _p tyl -> List.iter (deep_occur_rec mark t0) tyl) ty
-  end
+    let mt = fold_type_expr deep_occur_rec mt ty in
+    fold_abbrev (fun mt _p tyl ->
+      List.fold_left deep_occur_rec mt tyl
+    ) mt ty
+  end else mt
+
+let deep_occur_rec mark t0 ty =
+  deep_occur_rec (mark, t0) ty
+  |> (ignore : (_ * _) -> unit)
 
 let deep_occur t0 ty =
   try
