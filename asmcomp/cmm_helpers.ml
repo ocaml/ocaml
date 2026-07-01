@@ -1600,9 +1600,13 @@ struct
 
   let make_const i =  Cconst_int (i, Debuginfo.none)
   let make_prim p args = Cop (p,args, Debuginfo.none)
-  let make_offset arg n = add_const arg n Debuginfo.none
+  let make_negative_offset arg n = add_const arg (-n) Debuginfo.none
   let make_isout h arg = Cop (Ccmpa Clt, [h ; arg], Debuginfo.none)
+  let make_large_isout ~low ~high arg =
+    make_isout (make_const (high-low)) (make_negative_offset arg low)
   let make_isin h arg = Cop (Ccmpa Cge, [h ; arg], Debuginfo.none)
+  let make_large_isin ~low ~high arg =
+    make_isin (make_const (high-low)) (make_negative_offset arg low)
   let make_is_nonzero arg = arg
   let arg_as_test arg = arg
   let make_if cond ifso ifnot =

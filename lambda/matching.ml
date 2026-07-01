@@ -2633,10 +2633,10 @@ module SArg = struct
 
   let make_prim p args = Lprim (p, args, Loc_unknown)
 
-  let make_offset arg n =
+  let make_negative_offset arg n =
     match n with
     | 0 -> arg
-    | _ -> Lprim (Poffsetint n, [ arg ], Loc_unknown)
+    | _ -> Lprim (Poffsetint (-n), [ arg ], Loc_unknown)
 
   let bind arg body =
     let newvar, newarg =
@@ -2652,7 +2652,14 @@ module SArg = struct
 
   let make_isout h arg = Lprim (Pisout, [ h; arg ], Loc_unknown)
 
+  (* Pisout is unsigned comparison *)
+  let make_large_isout ~low ~high arg =
+    make_isout (make_const (high-low)) (make_negative_offset arg low)
+
   let make_isin h arg = Lprim (Pnot, [ make_isout h arg ], Loc_unknown)
+
+  let make_large_isin ~low ~high arg =
+    make_isin (make_const (high-low)) (make_negative_offset arg low)
 
   let make_is_nonzero arg =
     if !Clflags.native_code then
