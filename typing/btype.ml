@@ -850,6 +850,12 @@ let instance_variable_type label sign =
 exception Occur
 
 let deep_occur_rec mark t0 =
+  (* In order to avoid calling [repr] repeatedly on the same type, we use
+     [Transient_expr] to witness that [repr] has been called. This also
+     means we can directly access [level] and [desc]. This transformation
+     is valid as long as no type expressions are not modified during the
+     lifetime of the Transient expression. We achieve a speedup on very
+     large types between 20% and 45%. *)
   let t0 = Transient_expr.repr t0 in
   let rec occur ty =
     let ty' = Transient_expr.repr ty in

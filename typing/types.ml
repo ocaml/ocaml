@@ -596,6 +596,8 @@ let repr_slow_path t =
       repr_link true t t'
   | _ -> t
 
+(* [repr] is called on almost every access to any type expression, so
+   we isolate and inline the simple cases. *)
 let [@inline hint] repr t =
   match t.desc with
   | Tvar _
