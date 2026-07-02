@@ -377,11 +377,17 @@ let fold_type_expr f init ty =
   fold_type_desc f init (get_desc ty)
 
 let iter_type_expr f ty =
-  fold_type_expr (fun () v -> f v) () ty
+  let [@ocaml.warning "-5"] (_ : type_expr -> unit) =
+    fold_type_expr (fun f v -> f v; f) f ty
+  in
+  ()
 
-let iter_type_expr_1 (type param) f (param : param) ty =
-  fold_type_expr (fun param v -> f param v; param) param ty
-  |> (ignore : param -> unit)
+let iter_type_desc f desc =
+  let [@ocaml.warning "-5"] (_ : type_expr -> unit) =
+    fold_type_desc (fun f v -> f v; f) f desc
+  in
+  ()
+
 
 let rec iter_abbrev_memo f = function
     Mnil                   -> ()
@@ -843,17 +849,17 @@ let instance_variable_type label sign =
 (* Return whether [t0] occurs in [ty]. Objects are also traversed. *)
 exception Occur
 
-let rec deep_occur_rec ((mark, t0) as mt) ty =
-  if get_level ty >= get_level t0 && try_mark_node mark ty then begin
-    if eq_type ty t0 then raise Occur;
-    iter_type_expr_1 deep_occur_rec mt ty;
-    iter_abbrev_1 (fun mt _p tyl ->
-      Misc.Stdlib.List.iter_1 deep_occur_rec mt tyl
-    ) mt ty
-  end
-
-let deep_occur_rec mark t0 ty =
-  deep_occur_rec (mark, t0) ty
+let deep_occur_rec mark t0 =
+  let t0 = Transient_expr.repr t0 in
+  let rec occur ty =
+    let ty' = Transient_expr.repr ty in
+    if ty'.level >= t0.level && Transient_expr.try_mark_node mark ty' then begin
+      if Transient_expr.eq t0 ty' then raise Occur;
+      iter_type_desc occur ty'.desc;
+      iter_abbrev (fun _p tyl -> List.iter occur tyl) ty
+    end
+  in
+  occur
 
 let deep_occur t0 ty =
   try

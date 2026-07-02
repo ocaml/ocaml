@@ -586,7 +586,7 @@ let rec repr_link update t_orig t =
       t -> t'
  *)
 
-let repr t =
+let repr_slow_path t =
   match t.desc with
   | Tlink t' ->
       repr_link false t t'
@@ -595,6 +595,22 @@ let repr t =
   | Tfield (_, k, _, t') when field_kind_internal_repr k = FKabsent ->
       repr_link true t t'
   | _ -> t
+
+let [@inline hint] repr t =
+  match t.desc with
+  | Tvar _
+  | Tarrow _
+  | Ttuple _
+  | Tconstr _
+  | Tobject _
+  | Tnil
+  | Tvariant _
+  | Tunivar _
+  | Tpoly _
+  | Tpackage _
+  | Tfunctor _
+  | Tsubst _ -> t
+  | _ -> repr_slow_path t
 
 (* scope_field and marks *)
 
@@ -647,7 +663,9 @@ let iter_abbrev_1 f a t =
   ignore (repr t);
   match t.desc with Texpand (_, path, args) -> f a path args | _ -> ()
 
-let iter_abbrev f t = iter_abbrev_1 (fun f p a -> f p a) f t
+let [@inline hint] iter_abbrev f t =
+  ignore (repr t);
+  match t.desc with Texpand (_, path, args) -> f path args | _ -> ()
 
 let ignore_abbrev ty = repr ty
 
@@ -664,7 +682,7 @@ module Transient_expr = struct
     if (sc land marks_mask <> 0) then
       invalid_arg "Types.Transient_expr.set_scope";
     ty.scope <- (ty.scope land marks_mask) lor sc
-  let try_mark_node mark ty =
+  let [@inline hint] try_mark_node mark ty =
     match mark with
     | Mark ({mark} as mk) ->
         (ty.scope land mark = 0) && (* mark type node when not marked *)
@@ -675,6 +693,8 @@ module Transient_expr = struct
   let coerce ty = ty
   let repr = repr
   let type_expr ty = ty
+  let eq_type ty ty' = ty == ty' || ty == repr ty'
+  let eq ty ty' = ty == ty'
 end
 
 (* setting marks *)
