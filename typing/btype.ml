@@ -329,10 +329,10 @@ let fold_row f init row =
   match get_desc (row_more row) with
   | Tvar _ | Tunivar _ | Tsubst _ | Tconstr _ | Tnil ->
     begin match
-      Option.map (fun (_,l) -> List.fold_left f result l) (row_name row)
+      row_name row
     with
     | None -> result
-    | Some result -> result
+    | Some (_,l) -> List.fold_left f result l
     end
   | _ -> assert false
 
