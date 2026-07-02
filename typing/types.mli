@@ -269,8 +269,6 @@ val try_mark_node: type_mark -> type_expr -> bool
 (** Handle kept abbreviations *)
 val get_abbrev: type_expr -> (Path.t * type_expr list) option
 val iter_abbrev: (Path.t -> type_expr list -> unit) -> type_expr -> unit
-val iter_abbrev_1:
-  ('a -> Path.t -> type_expr list -> unit) -> 'a -> type_expr -> unit
 val forget_abbrev: type_expr -> unit
 val ignore_abbrev: type_expr -> type_expr
 
@@ -303,7 +301,6 @@ module Transient_expr : sig
 
   val try_mark_node: type_mark -> transient_expr -> bool
 
-  val eq_type : transient_expr -> type_expr -> bool
   val eq : transient_expr -> transient_expr -> bool
 end
 

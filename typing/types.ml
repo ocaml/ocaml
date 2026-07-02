@@ -659,10 +659,6 @@ let get_abbrev t =
   ignore (repr t);
   match t.desc with Texpand (_, path, args) -> Some (path, args) | _ -> None
 
-let iter_abbrev_1 f a t =
-  ignore (repr t);
-  match t.desc with Texpand (_, path, args) -> f a path args | _ -> ()
-
 let [@inline hint] iter_abbrev f t =
   ignore (repr t);
   match t.desc with Texpand (_, path, args) -> f path args | _ -> ()
@@ -693,7 +689,6 @@ module Transient_expr = struct
   let coerce ty = ty
   let repr = repr
   let type_expr ty = ty
-  let eq_type ty ty' = ty == ty' || ty == repr ty'
   let eq ty ty' = ty == ty'
 end
 

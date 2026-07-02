@@ -106,11 +106,6 @@ module Stdlib = struct
   module List = struct
     include Stdlib.List
 
-    let rec iter_1 f param list =
-      match list with
-      | [] -> ()
-      | x :: xs -> f param x; iter_1 f param xs
-
     let rec fold_left4 f accu l1 l2 l3 l4 =
       match (l1, l2, l3, l4) with
         ([], [], [], []) -> accu
