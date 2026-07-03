@@ -300,6 +300,8 @@ module Transient_expr : sig
           Fail if already instantiated. *)
 
   val try_mark_node: type_mark -> transient_expr -> bool
+
+  val eq : transient_expr -> transient_expr -> bool
 end
 
 val create_expr:

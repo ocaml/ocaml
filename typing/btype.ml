@@ -376,8 +376,20 @@ let fold_type_desc f init = function
 let fold_type_expr f init ty =
   fold_type_desc f init (get_desc ty)
 
+(* Rather than creating a closure that captures [f], we pass [f] as the
+   fold accumulator. This means we avoid closure allocation in [iter_*].
+*)
 let iter_type_expr f ty =
-  fold_type_expr (fun () v -> f v) () ty
+  let (_ : type_expr -> unit) =
+    fold_type_expr (fun f v -> f v; f) f ty
+  in
+  ()
+
+let iter_type_desc f desc =
+  let (_ : type_expr -> unit) =
+    fold_type_desc (fun f v -> f v; f) f desc
+  in
+  ()
 
 let rec iter_abbrev_memo f = function
     Mnil                   -> ()
@@ -839,12 +851,24 @@ let instance_variable_type label sign =
 (* Return whether [t0] occurs in [ty]. Objects are also traversed. *)
 exception Occur
 
-let rec deep_occur_rec mark t0 ty =
-  if get_level ty >= get_level t0 && try_mark_node mark ty then begin
-    if eq_type ty t0 then raise Occur;
-    iter_type_expr (deep_occur_rec mark t0) ty;
-    iter_abbrev (fun _p tyl -> List.iter (deep_occur_rec mark t0) tyl) ty
-  end
+let deep_occur_rec mark t0 =
+  (* In order to avoid calling [repr] repeatedly on the same type, we use
+     [Transient_expr] to witness that [repr] has been called. This also
+     means we can directly access [level] and [desc]. This transformation
+     is valid as long as no type expressions are not modified during the
+     lifetime of the Transient expression. We achieve a speedup on very
+     large types between 20% and 45%. *)
+  let t0 = Transient_expr.repr t0 in
+  let rec occur ty =
+    let ty' = Transient_expr.repr ty in
+    if ty'.level >= t0.level && Transient_expr.try_mark_node mark ty' then begin
+      if Transient_expr.eq t0 ty' then raise Occur;
+      iter_type_desc occur ty'.desc;
+      iter_abbrev occur_abbrev ty
+    end
+  and occur_abbrev _p tyl = List.iter occur tyl
+  in
+  occur
 
 let deep_occur t0 ty =
   try

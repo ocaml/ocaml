@@ -351,6 +351,10 @@ Working version
   test variants in the same invocation.
   (Stefan Muenzel, review by Alistar O'Brien and Florian Angeletti)
 
+- #14900: Speed up deep_occur_rec, improving typechecking performance of
+  certain large types, as seen in #14897.
+  (Stefan Muenzel, review by Gabriel Scherer and Vincent Laviron)
+
 ### Build system:
 
 - #14552: Export `AR` and `ARFLAGS` in Makefile.config.
