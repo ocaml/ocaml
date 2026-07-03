@@ -800,7 +800,9 @@ static void adopt_orphaned_work (void)
   value orph_ephe_list_live;
   struct caml_final_info *f, *myf, *temp;
 
-  if (caml_domain_is_terminating())
+  /* There is no point for a terminating domain to adopt, unless it is the last
+     one (runtime shutting down). */
+  if (caml_domain_is_terminating() && !caml_domain_alone())
     return;
 
 #ifdef DEBUG
