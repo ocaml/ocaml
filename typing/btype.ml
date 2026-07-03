@@ -376,18 +376,20 @@ let fold_type_desc f init = function
 let fold_type_expr f init ty =
   fold_type_desc f init (get_desc ty)
 
+(* Rather than creating a closure that captures [f], we pass [f] as the
+   fold accumulator. This means we avoid closure allocation in [iter_*].
+*)
 let iter_type_expr f ty =
-  let [@ocaml.warning "-5"] (_ : type_expr -> unit) =
+  let (_ : type_expr -> unit) =
     fold_type_expr (fun f v -> f v; f) f ty
   in
   ()
 
 let iter_type_desc f desc =
-  let [@ocaml.warning "-5"] (_ : type_expr -> unit) =
+  let (_ : type_expr -> unit) =
     fold_type_desc (fun f v -> f v; f) f desc
   in
   ()
-
 
 let rec iter_abbrev_memo f = function
     Mnil                   -> ()
@@ -862,8 +864,9 @@ let deep_occur_rec mark t0 =
     if ty'.level >= t0.level && Transient_expr.try_mark_node mark ty' then begin
       if Transient_expr.eq t0 ty' then raise Occur;
       iter_type_desc occur ty'.desc;
-      iter_abbrev (fun _p tyl -> List.iter occur tyl) ty
+      iter_abbrev occur_abbrev ty
     end
+  and occur_abbrev _p tyl = List.iter occur tyl
   in
   occur
 
