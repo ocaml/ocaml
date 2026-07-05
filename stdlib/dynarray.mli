@@ -144,6 +144,11 @@ val append_array : 'a t -> 'a array -> unit
     ]}
 *)
 
+val append_iarray : 'a t -> 'a iarray -> unit
+(** Like {!append_array} but with an immutable array.
+
+    @since 5.6 *)
+
 val append_list : 'a t -> 'a list -> unit
 (** Like {!append_array} but with a list. *)
 
