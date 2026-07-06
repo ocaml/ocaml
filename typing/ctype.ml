@@ -1846,7 +1846,7 @@ let instance_label ~fixed lbl =
 
 (* NB: since this is [unify_var], it raises [Unify], not [Unify_trace] *)
 let unify_var' = (* Forward declaration *)
-  ref (fun _env _ty1 _ty2 -> assert false)
+  ref (fun ~check_occur:_ _env _ty1 _ty2 -> assert false)
 
 let subst ~env ~level ?scope ~priv ~abbrev ?oty ~params ~args body =
   if List.length params <> List.length args then raise Cannot_subst;
@@ -1868,8 +1868,32 @@ let subst ~env ~level ?scope ~priv ~abbrev ?oty ~params ~args body =
     abbreviations := ref Mnil;
     let uenv = Expression {env; in_subst = true} in
     try
-      !unify_var' uenv body0 body';
-      List.iter2 (!unify_var' uenv) params' args;
+      !unify_var' ~check_occur:true uenv body0 body';
+      let _, first_gen_vars, others =
+        Misc.Stdlib.List.fold_left3
+          (fun (previous_gen, first_gen, others) p p' a ->
+             match get_desc p with
+             | Tvar _ when get_level p = generic_level
+                        && not (List.exists (eq_type p) previous_gen) ->
+                 p :: previous_gen, (p', a) :: first_gen, others
+             | _ ->
+                 previous_gen, first_gen, (p', a) :: others
+          )
+          ([],[],[])
+          params params' args
+      in
+      (* We can elide the occurs-check for the first occurence of parameters
+         that are a generalizable variable (and therefore will be instantiated
+         to a fresh variable).
+         This can be beneficial if the argument is a very large type, where
+         the occurs check would be expensive. Non-generalizable type variables
+         or non-variables cannot avoid the check, since we're not able to show
+         they cannot occur.
+      *)
+      Misc.Stdlib.List.rev_iter
+        (fun (p,a) -> !unify_var' uenv ~check_occur:false p a) first_gen_vars;
+      Misc.Stdlib.List.rev_iter
+        (fun (p,a) -> !unify_var' uenv ~check_occur:true p a) others;
       body'
     with Unify _ ->
       undo_abbrev ();
@@ -3923,16 +3947,16 @@ let unify_gadt (penv : Pattern_env.t) ~pat:ty1 ~expected:ty2 =
     Btype.backtrack snap;
     with_univar_pairs [] do_unify_gadt
 
-let unify_var uenv t1 t2 =
+let unify_var ~check_occur uenv t1 t2 =
   if eq_type t1 t2 then () else
   match get_desc t1, get_desc t2 with
-    Tvar _, Tconstr _ when deep_occur t1 t2 ->
+    Tvar _, Tconstr _ when check_occur && deep_occur t1 t2 ->
       unify uenv t1 t2
   | Tvar _, _ ->
       let env = get_env uenv in
       let reset_tracing = check_trace_gadt_instances env in
       begin try
-        occur_for Unify uenv t1 t2;
+        if check_occur then occur_for Unify uenv t1 t2;
         update_level_for Unify env (get_level t1) t2;
         update_scope_for Unify (get_scope t1) t2;
         link_type t1 t2;
@@ -3950,7 +3974,7 @@ let _ = unify_var' := unify_var
 
 (* the final versions of unification functions *)
 let unify_var env ty1 ty2 =
-  unify_var (Expression {env; in_subst = false}) ty1 ty2
+  unify_var ~check_occur:true (Expression {env; in_subst = false}) ty1 ty2
 
 let unify_pairs env ty1 ty2 pairs =
   with_univar_pairs pairs (fun () ->

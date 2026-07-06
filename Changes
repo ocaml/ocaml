@@ -127,6 +127,12 @@ Working version
   used.
   (Stefan Muenzel, report by Leo White, review by Jacques Garrigue)
 
+- #14897, #14913: When instantiating types with arguments, do not check if the
+  parameters occur in the arguments when the parameters are fresh
+  variables, avoiding potentially expensive checks with large arguments.
+  (Stefan Muenzel, review by Gabriel Scherer, Florian Angeletti, and
+   Jacques Garrigue)
+
 ### Code generation and optimizations:
 
 - #14575: Emit direct assembly for `Atomic.fetch_and_add`
