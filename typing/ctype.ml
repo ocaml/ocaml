@@ -1231,8 +1231,8 @@ let rec inv_type hash pty ty =
   with Not_found ->
     let inv = { inv_type = ty; inv_parents = pty } in
     TypeHash.add hash ty inv;
-    iter_abbrev (fun _ args ->
-      List.iter (inv_type hash [inv]) args
+    iter_abbrev (fun {abbr_args} ->
+      List.iter (inv_type hash [inv]) abbr_args
     ) ty;
     iter_type_expr (inv_type hash [inv]) ty
 
@@ -1302,7 +1302,8 @@ let type_subexpressions_with_free_occurrences ids ty =
   in
   let occurrence_in_abbrev inv =
     iter_abbrev
-      (fun p _ -> if Path.exists_free ids p then add_all_parents ids inv)
+      (fun {abbr_path} ->
+        if Path.exists_free ids abbr_path then add_all_parents ids inv)
       inv.inv_type
   in
   TypeHash.iter (fun ty inv ->
@@ -1514,8 +1515,8 @@ let rec copy ?partial ?keep_names ?scope ?(unscoped = empty_unscoped_mapping)
           let path = Path.subst unscoped.map abbr.abbr_path in
           let args = List.map copy abbr.abbr_args in
           let t' = new_scoped_ty ty_scope desc' in
-          Texpand (t',
-                   {abbr with abbr_args = args; abbr_level = !current_level})
+          Texpand (t', {abbr_path = path; abbr_args = args;
+                        abbr_level = !current_level})
       | None ->
           desc'
     in
