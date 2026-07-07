@@ -85,6 +85,7 @@ type atomic_op =
   | Load
   | Exchange
   | Cas
+  | Compare_and_exchange
   | Faa
 
 type prim =
@@ -132,6 +133,10 @@ let prim_atomic_exchange =
   Primitive.simple ~name:"caml_atomic_exchange_field" ~arity:3 ~alloc:false
 let prim_atomic_cas =
   Primitive.simple ~name:"caml_atomic_cas_field" ~arity:4 ~alloc:false
+let prim_atomic_compare_and_exchange =
+  Primitive.simple ~name:"caml_atomic_compare_and_exchange_field" ~arity:4
+    ~alloc:false
+
 let primitives_table =
   create_hashtable 57 [
     "%identity", Identity;
@@ -389,14 +394,17 @@ let primitives_table =
     "%atomic_load", Atomic(Load, Ref);
     "%atomic_exchange", Atomic(Exchange, Ref);
     "%atomic_cas", Atomic(Cas, Ref);
+    "%atomic_compare_and_exchange", Atomic(Compare_and_exchange, Ref);
     "%atomic_fetch_add", Atomic(Faa, Ref);
     "%atomic_load_field", Atomic(Load, Field);
     "%atomic_exchange_field", Atomic(Exchange, Field);
     "%atomic_cas_field", Atomic(Cas, Field);
+    "%atomic_compare_and_exchange_field", Atomic(Compare_and_exchange, Field);
     "%atomic_fetch_add_field", Atomic(Faa, Field);
     "%atomic_load_loc", Atomic(Load, Loc);
     "%atomic_exchange_loc", Atomic(Exchange, Loc);
     "%atomic_cas_loc", Atomic(Cas, Loc);
+    "%atomic_compare_and_exchange_loc", Atomic(Compare_and_exchange, Loc);
     "%atomic_fetch_add_loc", Atomic(Faa, Loc);
     "%atomic_unsafe_index", Atomic_index;
     "%runstack", Primitive (Prunstack, 3);
@@ -688,6 +696,7 @@ let atomic_arity op (kind : atomic_kind) =
     | Load -> 1
     | Exchange -> 2
     | Cas -> 3
+    | Compare_and_exchange -> 3
     | Faa -> 2
   in
   let extra_kind_arity =
@@ -712,6 +721,7 @@ let lambda_of_atomic prim_name loc op (kind : atomic_kind) args =
     | Load -> Patomic_load
     | Exchange -> Pccall prim_atomic_exchange
     | Cas -> Pccall prim_atomic_cas
+    | Compare_and_exchange -> Pccall prim_atomic_compare_and_exchange
     | Faa -> Patomic_fetch_add
   in
   match kind with
