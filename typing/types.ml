@@ -541,32 +541,6 @@ let commu_var () = Cvar {commu=Cunknown}
 
 (**** Representative of a type ****)
 
-let repr_update t_orig d =
-  log_change (Ccompress (t_orig, t_orig.desc, d));
-  t_orig.desc <- d
-
-let rec repr_expand update t_orig t path args =
-  match t.desc with
-  | Tlink t' | Texpand (t', _, _) ->
-      repr_expand true t_orig t' path args
-  | Tfield (_, k, _, t') when field_kind_internal_repr k = FKabsent ->
-      repr_expand true t_orig t' path args
-  | _ ->
-      if update then repr_update t_orig (Texpand (t, path, args));
-      t
-
-let rec repr_link update t_orig t =
-  match t.desc with
-  | Tlink t' ->
-      repr_link true t_orig t'
-  | Texpand (t', path, args) ->
-      repr_expand true t_orig t' path args
-  | Tfield (_, k, _, t') when field_kind_internal_repr k = FKabsent ->
-      repr_link true t_orig t'
-  | _ ->
-      if update then repr_update t_orig (Tlink t);
-      t
-
 (* A non-normalized type may contain an arbitrarily long chain of
    [Tlink] or [Texpand] prefixing the actual node (neither
    [Tlink] nor [Texpand]).
@@ -579,22 +553,40 @@ let rec repr_link update t_orig t =
    Before:
       t -> t1 -(path1,args1)-> t2 -> t3 -(path2,args2)-> t'
    After:
-      t -(path1,args1)-> t'
+      t, t1 -(path1,args1)-> t'
+      t2, t3 -(path2,args2) -> t'
    Before:
       t -> t1 -> t2 -> t'
    After:
-      t -> t'
+      t, t1, t2 -> t'
  *)
 
+let repr_update t_orig d =
+  log_change (Ccompress (t_orig, t_orig.desc, d));
+  t_orig.desc <- d
+
 let repr_slow_path t =
-  match t.desc with
-  | Tlink t' ->
-      repr_link false t t'
-  | Texpand (t', path, args) ->
-      repr_expand false t t' path args
-  | Tfield (_, k, _, t') when field_kind_internal_repr k = FKabsent ->
-      repr_link true t t'
-  | _ -> t
+  let rec repr t =
+    match t.desc with
+    | Tlink t' ->
+      follow t t'
+    | Tfield (_, k, _, t') when field_kind_internal_repr k = FKabsent ->
+      follow t t'
+    | Texpand (t', _, _) ->
+      follow t t'
+    | _ -> t
+  and follow t t' =
+    let tr = repr t' in
+    if tr != t' then begin
+      (* At this point [t'.desc] has been updated to [Tlink] or [Texpand]. *)
+      match t.desc with
+      | Texpand (_, path, args) ->
+        repr_update t (Texpand (tr, path, args))
+      | Tlink _ | Tfield _ -> repr_update t t'.desc
+      | _ -> assert false (* unreachable from [repr] *)
+    end;
+    tr
+  in repr t
 
 (* [repr] is called on almost every access to any type expression, so
    we isolate and inline the simple cases. *)
