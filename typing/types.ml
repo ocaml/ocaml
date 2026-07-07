@@ -612,7 +612,7 @@ let [@inline hint] repr t =
   | Tpackage _
   | Tfunctor _
   | Tsubst _ -> t
-  | _ -> repr_slow_path t
+  | Tlink _ | Texpand _ | Tfield _ -> repr_slow_path t
 
 (* scope_field and marks *)
 
