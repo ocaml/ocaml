@@ -577,6 +577,7 @@ let repr_slow_path t =
     | Tlink t' ->
       follow t t'
     | Tfield (_, k, _, t') when field_kind_internal_repr k = FKabsent ->
+      repr_update t (Tlink t');
       follow t t'
     | Texpand (t', _) ->
       follow t t'
@@ -588,7 +589,7 @@ let repr_slow_path t =
       match t.desc with
       | Texpand (_, abbrev) ->
         repr_update t (Texpand (tr, abbrev))
-      | Tlink _ | Tfield _ -> repr_update t t'.desc
+      | Tlink _ -> repr_update t t'.desc
       | _ -> assert false (* unreachable from [repr] *)
     end;
     tr
