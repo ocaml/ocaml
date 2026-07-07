@@ -494,6 +494,9 @@ OCaml 5.5.1
   ````
   (Florian Angeletti, report by Hazem ElMasry, review by Gabriel Scherer)
 
+- #14871, #14914: Ignore OCAMLTOP_INCLUDE_PATH during the build.
+  (David Allsopp, report by Andreas Rossberg, review by Florian Angeletti)
+
 - #14940, fix a memory leak in the OCaml runtime by bounding the size
   of the internal cache of stacks.
   (Vesa Karvonen, Florian Angeletti, review by Gabriel Scherer)
