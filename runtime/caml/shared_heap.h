@@ -25,6 +25,7 @@
 #include "misc.h"
 #include "gc_stats.h"
 #include "major_gc.h"
+#include "sizeclasses.h"
 
 CAMLextern atomic_uintnat caml_compactions_count;
 
@@ -108,6 +109,86 @@ Caml_inline status caml_allocation_status(void) {
     ? caml_global_heap_state.MARKED
     : caml_global_heap_state.UNMARKED;
 }
+
+/* Notionally-opaque type to support fast inline allocation on a shared heap */
+
+typedef struct shared_heap_fast_data_s *shared_heap_fast_data_p;
+
+/* Get the fast-allocation structure for the given heap. */
+
+shared_heap_fast_data_p caml_shared_fast_data(struct caml_heap_state *);
+
+/* Call back into the shared-heap code from the inline fast allocation
+ * code (below), when the "fast allocation data" is somehow
+ * exhausted. Restores invariant.
+ */
+
+void caml_shared_fast_data_refill(struct caml_heap_state *,
+                                  sizeclass);
+
+/* Expose implementation of this opaque type to allow the inline
+ * function below to access the contents. Clients should not rely on
+ * the contents of this data structure. */
+struct shared_heap_fast_data_s {
+  value **lists[NUM_SIZECLASSES];
+  /* Invariant: `(lists[sz] == NULL || *lists[sz] != NULL)`, that is,
+   *  we don't point to any empty free lists. */
+};
+
+/* This implementation detail is also private to the shared_heap
+ * module.  Free blocks are run-length-encoded: the first block in a
+ * run has the header word `POOL_FREE_HEADER(n)`, where `n` is the
+ * number of other free blocks in the run. */
+#define POOL_BLOCK_FREE_HD(hd) \
+  (Tag_hd(hd) == No_scan_tag && (Color_hd(hd) == NOT_MARKABLE))
+#define POOL_BLOCK_FREE_HP(p) (POOL_BLOCK_FREE_HD(Hd_hp(p)))
+#define POOL_FREE_HEADER(wosize) Make_header(wosize, No_scan_tag, NOT_MARKABLE)
+
+/* Allocates a block of at least `whsize` words, using `fast_data`,
+ * for `domain`, returning a pointer to the header word. Requires
+ * `whsize <= SIZECLASS_MAX`. If we can't do a fast allocation, return
+ * NULL (meaning "use caml_shared_try_alloc instead"). Does not
+ * accumulate shared-heap stats, so the caller should accumulate those
+ * and later call `caml_shared_add_pool_stats`.
+ */
+
+Caml_inline void *caml_shared_fast_alloc (mlsize_t whsize,
+                                          shared_heap_fast_data_p fast_data,
+                                          caml_domain_state *domain)
+{
+  CAMLassert(whsize <= SIZECLASS_MAX);
+
+  sizeclass sz = sizeclass_whsize[whsize];
+  value **free_p = fast_data->lists[sz];
+  if (!free_p) {
+    return NULL;
+  }
+  value *block = *free_p, *next;
+  CAMLassert(block != NULL);
+  size_t free_size = Wosize_hp(block);
+  if (free_size > 0) { /* take one block off the head of the run */
+    next = (value*)(block + whsize_sizeclass[sz]);
+    /* we update the pool header of the next block */
+    *next = POOL_FREE_HEADER(free_size- 1);
+    /* also copy the next_obj pointer from p */
+    CAMLassert(block[1] == 0 || POOL_BLOCK_FREE_HP(block[1]));
+    next[1] = block[1];
+  } else {
+    next = (value*)block[1];
+  }
+
+  *free_p = next;
+  if (!next) caml_shared_fast_data_refill(domain->shared_heap, sz);
+  return (void*)block;
+}
+
+/* Update shared-heap stats at the end of a minor GC, to account for
+ * some number of free-list allocations. */
+
+void caml_shared_add_pool_stats(struct caml_heap_state *,
+                                uintnat /* pool_live_blocks */,
+                                uintnat /* pool_live_words */,
+                                uintnat /* pool_frag_words */);
 
 void caml_redarken_pool(struct pool*, scanning_action, void*);
 

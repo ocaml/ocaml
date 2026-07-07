@@ -96,6 +96,9 @@ Working version
   + #14813: ensure that no orphaned ephemerons remain across GC cycles
   (Gabriel Scherer, review by Damien Doligez)
 
+- #14571: Faster minor GC.
+  (Nick Barnes, review by Damien Doligez).
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14842, #14845: Keep expansion and
