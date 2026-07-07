@@ -60,6 +60,12 @@ val exchange : 'a t -> 'a -> 'a
     otherwise. *)
 val compare_and_set : 'a t -> 'a -> 'a -> bool
 
+(** [compare_and_exchange r expected set] sets the value of [r] to [set] if
+and only if the current value of [r] is physically equal to [expected] -- the
+comparison and the set occur atomically. The function returns the tested value
+of [r], so if it is physically equal to [expected], the [set] happened.*)
+val compare_and_exchange : 'a t -> 'a -> 'a -> 'a
+
 (** [fetch_and_add r n] atomically increments the value of [r] by [n],
     and returns the current value (before the increment). *)
 val fetch_and_add : int t -> int -> int
@@ -110,6 +116,8 @@ module Loc : sig
   val set : 'a t -> 'a -> unit
   external exchange : 'a t -> 'a -> 'a = "%atomic_exchange_loc"
   external compare_and_set : 'a t -> 'a -> 'a -> bool = "%atomic_cas_loc"
+  external compare_and_exchange : 'a t -> 'a -> 'a -> 'a =
+    "%atomic_compare_and_exchange_loc"
   external fetch_and_add : int t -> int -> int = "%atomic_fetch_add_loc"
   val incr : int t -> unit
   val decr : int t -> unit
@@ -152,6 +160,11 @@ module Array : sig
     'a t -> int -> 'a -> 'a -> bool
   val compare_and_set :
     'a t -> int -> 'a -> 'a -> bool
+
+  val unsafe_compare_and_exchange :
+    'a t -> int -> 'a -> 'a -> 'a
+  val compare_and_exchange :
+    'a t -> int -> 'a -> 'a -> 'a
 
   val unsafe_fetch_and_add :
     int t -> int -> int -> int

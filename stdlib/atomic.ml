@@ -116,6 +116,8 @@ module Loc = struct
   external get : 'a t -> 'a = "%atomic_load_loc"
   external exchange : 'a t -> 'a -> 'a = "%atomic_exchange_loc"
   external compare_and_set : 'a t -> 'a -> 'a -> bool = "%atomic_cas_loc"
+  external compare_and_exchange : 'a t -> 'a -> 'a -> 'a =
+    "%atomic_compare_and_exchange_loc"
   external fetch_and_add : int t -> int -> int = "%atomic_fetch_add_loc"
 
   let set t v =
@@ -155,6 +157,8 @@ let compare_and_set t old new_ =
   Loc.compare_and_set [%atomic.loc t.contents] old new_
 let fetch_and_add t incr =
   Loc.fetch_and_add [%atomic.loc t.contents] incr
+let compare_and_exchange t expected set =
+  Loc.compare_and_exchange [%atomic.loc t.contents] expected set
 let incr t =
   Loc.incr [%atomic.loc t.contents]
 let decr t =
@@ -208,6 +212,12 @@ module Array = struct
   let[@inline] compare_and_set t i old new_ =
     check_array_bound t i;
     unsafe_compare_and_set t i old new_
+
+  let[@inline] unsafe_compare_and_exchange t i expected set =
+    Loc.compare_and_exchange (unsafe_index t i) expected set
+  let[@inline] compare_and_exchange t i expected set =
+    check_array_bound t i;
+    unsafe_compare_and_exchange t i expected set
 
   let[@inline] unsafe_fetch_and_add t i incr =
     Loc.fetch_and_add (unsafe_index t i) incr
