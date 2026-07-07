@@ -96,6 +96,12 @@ Working version
   + #14813: ensure that no orphaned ephemerons remain across GC cycles
   (Gabriel Scherer, review by Damien Doligez)
 
+- #14774: wait for all domains to be done marking before asking for
+  another round of ephemeron marking. This can avoid un-necessary work
+  for multicore programs using ephemerons, but it could also make
+  certain GC cycles longer due to ephemeron marking starting later.
+  (Gabriel Scherer, review by B. Szilvasy and Damien Doligez)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14842, #14845: Keep expansion and
