@@ -120,7 +120,9 @@ module Win32 : SYSDEPS = struct
   let current_dir_name = "."
   let parent_dir_name = ".."
   let dir_sep = "\\"
-  let is_dir_sep s i = let c = s.[i] in c = '/' || c = '\\' || c = ':'
+  let is_dir_sep s i =
+    let c = s.[i] in
+    c = '/' || c = '\\' || c = ':' && i = 1
   let is_relative n =
     (String.length n < 1 || n.[0] <> '/')
     && (String.length n < 1 || n.[0] <> '\\')
