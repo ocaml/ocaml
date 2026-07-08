@@ -94,6 +94,32 @@ static void scanmult (const char *opt, uintnat *var)
   default:    *var = (uintnat) val; break;
   }
 }
+static void scanmult_unit(const char *opt, uintnat * var){
+  char mult = ' ';
+  char unit = ' ';
+  unsigned int val = 1;
+  sscanf (opt, "=%u%c%c", &val, &mult, &unit);
+  sscanf (opt, "=0x%x%c%c", &val, &mult, &unit);
+  switch (mult) {
+  case 'k':   val =  val * 1024; break;
+  case 'M':   val =  val * (1024 * 1024); break;
+  case 'G':   val =  val * (1024 * 1024 * 1024); break;
+  default:    break;
+  }
+  // For default unit of the options to be set is word,
+  // but if user specifies `B` i.e. byte, then we should divide `val`
+  // by the `sizeof(value)`.
+  switch (unit) {
+  case 'B':{
+    val =  val / sizeof(value);
+    if(val < 1) { val = 1; }
+    break;
+  }
+  case 'w': /* self assignment is unnecessary */  break;
+  default:  /* self assignment is unnecessary */  break;
+  }
+  *var = (uintnat) val;
+}
 
 void caml_parse_startup_params(struct caml_params *params, const char *opt)
 {
@@ -106,7 +132,7 @@ void caml_parse_startup_params(struct caml_params *params, const char *opt)
     case 'c': scanmult (opt, &params->cleanup_on_exit); break;
     case 'd': scanmult (opt, &params->max_domains); break;
     case 'e': scanmult (opt, &params->runtime_events_log_wsize); break;
-    case 'l': scanmult (opt, &params->init_max_stack_wsz); break;
+    case 'l': scanmult_unit (opt, &params->init_max_stack_wsz); break;
     case 'M': scanmult (opt, &params->init_custom_major_ratio); break;
     case 'm': scanmult (opt, &params->init_custom_minor_ratio); break;
     case 'n': scanmult (opt, &params->init_custom_minor_max_bsz); break;
@@ -116,7 +142,7 @@ void caml_parse_startup_params(struct caml_params *params, const char *opt)
       scanmult (opt, &val);
       caml_runtime_hashtbl_randomized = !!val;
       break;
-    case 's': scanmult (opt, &params->init_minor_heap_wsz); break;
+    case 's': scanmult_unit (opt, &params->init_minor_heap_wsz); break;
     case 't': scanmult (opt, &params->trace_level); break;
     case 'v':
       scanmult (opt, &val);
