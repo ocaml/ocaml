@@ -666,7 +666,7 @@ val unlink : string -> unit
     {ul
     {- [EPERM] on POSIX compliant system}
     {- [EISDIR] on Linux >= 2.1.132}
-    {- [EACCESS] on Windows}}
+    {- [EACCES] on Windows}}
 *)
 
 val rename : src:string -> dst:string -> unit
