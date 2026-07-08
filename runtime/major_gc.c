@@ -1299,7 +1299,7 @@ static void translate_back (pacing_phase p, double *w,
     diffs->ephe = (uintnat) (diffs->ephe * p);
     *w = 0;
   }else{
-    *w -= (uintnat) diff_work;
+    *w -= diff_work;
   }
 }
 
