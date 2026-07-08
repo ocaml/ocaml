@@ -24901,8 +24901,12 @@ fi
 
   test -n "$DIFF" && break
 done
-test -n "$DIFF" || DIFF="as_fn_error $? "ocamltest requires a diff tool" "$LINENO" 5"
+test -n "$DIFF" || DIFF="false"
 
+  if test x"$DIFF" = "xfalse"
+then :
+  as_fn_error $? "ocamltest requires a diff tool" "$LINENO" 5
+fi
   case $DIFF in #(
   diff) :
     flags_to_test='--strip-trailing-cr -u' ;; #(
