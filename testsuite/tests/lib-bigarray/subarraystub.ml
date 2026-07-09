@@ -47,10 +47,10 @@ let () =
   sub_2d_test orig 1 2047 3 47;
   let rec loop () =
     let (ba : (_, _, _) Bigarray.Array2.t) =
-      sub_2d orig 1 2047 3 47 |> Sys.opaque_identity
+      sub_2d orig 1 2047 3 47
     in
     Gc.minor ();
-    ignore ba
+    ignore (Sys.opaque_identity ba)
   in
   Gc.full_major ();
   let collections n =
