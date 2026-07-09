@@ -184,6 +184,13 @@ Working version
   code independent of the number of linked modules.
   (Pierre Oechsel and Tim McGilchrist, review by Stefan Muenzel)
 
+- #13262, #14922: On arm64, use a store-release (`stlr`, or `stlur` when
+  FEAT_LRCPC2 is available) instead of `dmb ishld; str` for the memory barrier
+  following a mutable-field assignment.  A few old cores
+  (Cortex-A53/-A57/-A72/-A73) are slower with a release store and keep the
+  barrier; the default is chosen at configure time and can be overridden.
+  (Sebastian Pop and Xavier Leroy, review by Olivier Nicole)
+
 ### Standard library:
 
 - #10798: Atomic helper function

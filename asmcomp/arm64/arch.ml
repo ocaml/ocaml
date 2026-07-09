@@ -26,9 +26,34 @@ let freebsd = (Config.system = "freebsd")
 
 let top_bits_ignore = (Config.system = "linux")
 
+(* Store-ordering strategy for the multicore memory-model barrier that
+   precedes a non-initializing store to a mutable field or array element.
+
+   By default this is a store-release [stlr], which gives the required
+   load->store ordering in a single instruction; with FEAT_LRCPC2 it becomes
+   [stlur] (a store-release with an unscaled immediate offset, avoiding an
+   address computation).  A few old cores (e.g. Cortex-A53, Cortex-A72) are
+   slower with a release store and instead use a [dmb ishld; str] barrier.
+
+   [configure] selects the default through [Config.model]: "lrcpc2" enables
+   stlur, "arm64_barrier" selects the barrier, anything else uses stlr.  The
+   defaults can be overridden on the command line. *)
+let store_release = ref (Config.model <> "arm64_barrier")
+let lrcpc2 = ref (Config.model = "lrcpc2")
+
 (* Machine-specific command-line options *)
 
-let command_line_options = []
+let command_line_options =
+  [ "-flrcpc2", Arg.Set lrcpc2,
+    " Use FEAT_LRCPC2 store-release with unscaled offset (stlur) for \
+     assignment stores (requires an Armv8.4+ assembler)";
+    "-fno-lrcpc2", Arg.Clear lrcpc2,
+    " Do not use FEAT_LRCPC2 stlur";
+    "-fbarrier-store", Arg.Clear store_release,
+    " Use a dmb ishld; str barrier instead of a store-release for \
+     assignment stores (faster on some old cores)";
+    "-fstore-release", Arg.Set store_release,
+    " Use a store-release (stlr/stlur) for assignment stores (default)" ]
 
 (* Addressing modes *)
 
