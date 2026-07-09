@@ -2517,7 +2517,11 @@ mark_again:
                (budget = get_major_slice_work(mode)) > 0) {
           intnat left = ephe_mark(budget, saved_ephe_round, EPHE_MARK_DEFAULT);
           intnat work_done = budget - left;
+          /* ephe_mark calls caml_darken directly. We must count its
+             work for this slice. */
           work_done += mark_work_done_between_slices();
+
+          mark_work += work_done;
           commit_major_slice_work (work_done);
 
           // FIXME: Can we delete this?
