@@ -165,7 +165,7 @@ let copy_files oc dir =
 
 let clone_files oc dir ic =
   output_endline oc
-    {|dest="$1"'/%s' xargs sh "$1/clone-files" <<'EOF'|} dir;
+    {|src="$2" dest="$1"'/%s' xargs sh "$1/clone-files" <<'EOF'|} dir;
   In_channel.fold_lines (fun _ -> output_endline oc "%s") () ic;
   output_endline oc {|EOF|}
 
@@ -190,20 +190,20 @@ set -eu|};
 set -eu
 mkdir -p "$1"
 rm -f "$1/__cp_test" "$1/__ln_test"
-if cp --reflink=always doc/ocaml/LICENSE "$1/__cp_test" 2>/dev/null; then
+if cp --reflink=always "$2/doc/ocaml/LICENSE" "$1/__cp_test" 2>/dev/null; then
   rm -f "$1/__cp_test"
   CP='cp --reflink=always -%sf'
   if ! test -e "$1/clone-files"; then
-    echo "$CP"' "$@" "$dest/"' > "$1/clone-files"
+    echo 'cd "$src" && '"$CP"' "$@" "$dest/"' > "$1/clone-files"
   fi
 else
   CP='cp -%sf'
   if ! test -e "$1/clone-files"; then
-    if ln -f doc/ocaml/LICENSE "$1/__ln_test" 2>/dev/null; then
+    if ln -f "$2/doc/ocaml/LICENSE" "$1/__ln_test" 2>/dev/null; then
       rm -f "$1/__ln_test"
-      echo 'ln -f "$@" "$dest/"' > "$1/clone-files"
+      echo 'cd "$src" && ln -f "$@" "$dest/"' > "$1/clone-files"
     else
-      echo "$CP"' "$@" "$dest/"' > "$1/clone-files"
+      echo 'cd "$src" && '"$CP"' "$@" "$dest/"' > "$1/clone-files"
     fi
   fi
 fi|} preserve preserve;
@@ -215,7 +215,7 @@ fi|} preserve preserve;
       (*  ld.conf is a configuration file, so is always copied.
           Makefile.config and config.status will both contain the original
           prefix, which must be updated. *)
-      output_endline oc {|cp lib/ocaml/ld.conf "$1/lib/ocaml/ld.conf"
+      output_endline oc {|cp "$2/lib/ocaml/ld.conf" "$1/lib/ocaml/ld.conf"
 cat > "$1/prefix.awk" <<'ENDAWK'
 {
   rest = $0
@@ -226,9 +226,9 @@ cat > "$1/prefix.awk" <<'ENDAWK'
   print rest
 }
 ENDAWK
-prefix="$(sed -ne 's/^prefix *= *//p' lib/ocaml/Makefile.config)"
+prefix="$(sed -ne 's/^prefix *= *//p' "$2/lib/ocaml/Makefile.config")"
 for file in lib/ocaml/Makefile.config share/ocaml/config.status; do
-  O="$prefix" N="$1" awk -f "$1/prefix.awk" "$file" > "$1/$file"
+  O="$prefix" N="$1" awk -f "$1/prefix.awk" "$2/$file" > "$1/$file"
 done
 rm -f "$1/clone-files" "$1/prefix.awk"|};
       process_symlinks oc ~mkdir:false
