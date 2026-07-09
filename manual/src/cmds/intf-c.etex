@@ -2221,7 +2221,7 @@ memory consumed by the custom block being allocated. The argument
 
 For instance, if you are allocating a finalized block holding an X
 Windows bitmap of \var{w} by \var{h} pixels, and one pixel uses one
-word of memory, specify \var{used} = \var{w} * \var{h}$, and
+word of memory, specify $\var{used} = \var{w} * \var{h}$, and
 the GC will manage to keep the X server's memory usage reasonable
 according to the "space_overhead" parameter described in the GC
 module documentation.
