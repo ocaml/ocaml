@@ -1355,7 +1355,7 @@ static void commit_major_slice_work(intnat words_done) {
   diff.on_heap = d->slice_budget;
   diff.off_heap = 0;
   diff.ephe = 0;
-  w = words_done;
+  w = (double) words_done;
   translate_back (ph, &w, &diff);
   d->slice_budget -= diff.on_heap;
 
