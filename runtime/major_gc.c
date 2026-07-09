@@ -1265,9 +1265,9 @@ static intnat get_major_slice_work(collection_slice_mode mode){
                   "compute slice budget: %"CAML_PRIdNAT" alloc-driven; %"
                   CAML_PRIdNAT" explicit; %"CAML_PRIdNAT" chunk;"
                   " %"CAML_PRIdNAT" on-heap; %"CAML_PRIdNAT" off-heap; %"
-                  CAML_PRIdNAT" ephemeron; %u phase",
+                  CAML_PRIdNAT" ephemeron; %d phase",
                   budget, d->slice_budget, chunk_budget, d_on, d_off, d_ephe,
-                  ph);
+                  (int) ph);
 
   return chunk_budget;
 }
