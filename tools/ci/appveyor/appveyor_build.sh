@@ -214,8 +214,8 @@ case "$1" in
       cp "$FULL_BUILD_PREFIX-$PORT/ocaml-compiler-clone.sh" \
            'destdir/share/ocaml/clone'
       cd destdir
-      sh "$FULL_BUILD_PREFIX-$PORT/ocaml-compiler-clone.sh" "$OCAMLROOT/_opam" \
-                                                            "$PWD"
+      sh "$FULL_BUILD_PREFIX-$PORT/ocaml-compiler-clone.sh" "$PWD" \
+                                                            "$OCAMLROOT/_opam"
     )
     rm -rf "$OCAMLROOT"
     $MAKE -C "$FULL_BUILD_PREFIX-$PORT" OPAM_PACKAGE_NAME=ocaml-variants \

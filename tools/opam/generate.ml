@@ -81,8 +81,9 @@ let generate_install file =
 (* [process_clone oc process] processes clone-* in the current directory,
    emitting mkdir commands to [oc] and passing the directory name and a channel
    set to the start of each clone file to [process]. The clone files are erased
-   after processing. *)
-let process_clone oc process =
+   after processing. [prefix] is the literal string to place in double-quotes
+   for the installation prefix (either ["$1"] or ["$2"]). *)
+let process_clone oc ~prefix process =
   let process_file file =
     if String.starts_with ~prefix:"clone-" file then begin
       let dir =
@@ -90,7 +91,7 @@ let process_clone oc process =
                    (String.sub file 6 (String.length file - 6))
         |> valid_section
       in
-      output_endline oc {|mkdir -p "$1"'/%s'|} dir;
+      output_endline oc {|mkdir -p "%s"'/%s'|} prefix dir;
       In_channel.with_open_text file @@ process oc dir;
       remove_file file
     end
@@ -99,11 +100,12 @@ let process_clone oc process =
   Array.sort String.compare files;
   Array.iter process_file files
 
-(* [process_symlinks oc ~mkdir] processes create-symlinks, if it exists, writing
-   any required mkdir commands to [oc] if [~mkdir = true] and also the
+(* [process_symlinks oc ~mkdir ~prefix] processes create-symlinks, if it exists,
+   writing any required mkdir commands to [oc] if [mkdir = true] and also the
    appropriate ln / mklink commands. create-symlinks is erased after
-   processing. *)
-let process_symlinks oc ~mkdir =
+   processing. [prefix] is the literal string to place in double-quotes for the
+   installation prefix (either ["$1"] or ["$2"]). *)
+let process_symlinks oc ~mkdir ~prefix =
   let module StringSet = Set.Make(String) in
   let file = "create-symlinks" in
   if Sys.file_exists file then
@@ -118,7 +120,7 @@ let process_symlinks oc ~mkdir =
       In_channel.with_open_text file @@ fun ic ->
         List.rev (In_channel.fold_lines parse [] ic)
     in
-    output_endline oc {|cd "$1"|};
+    output_endline oc {|cd "%s"|} prefix;
     let _ =
       let create_dir seen (dir, _, _) =
         if not (StringSet.mem dir seen) && String.contains dir '/' then
@@ -144,7 +146,7 @@ let process_symlinks oc ~mkdir =
         output_endline oc {|  $CP '%s/%s' '%s/%s'|} dir target dir source
       in
       output_endline oc {|cmd /c "mklink __ln_test mklink-test"|};
-      output_endline oc {|if test -L "$1/__ln_test"; then|};
+      output_endline oc {|if test -L "%s/__ln_test"; then|} prefix;
       List.iter mklink lines;
       output_endline oc {|else|};
       List.iter cp lines;
@@ -165,7 +167,7 @@ let copy_files oc dir =
 
 let clone_files oc dir ic =
   output_endline oc
-    {|src="$2" dest="$1"'/%s' xargs sh "$1/clone-files" <<'EOF'|} dir;
+    {|src="$1" dest="$2"'/%s' xargs sh "$2/clone-files" <<'EOF'|} dir;
   In_channel.fold_lines (fun _ -> output_endline oc "%s") () ic;
   output_endline oc {|EOF|}
 
@@ -176,8 +178,8 @@ let () =
     Out_channel.with_open_bin (package ^ "-fixup.sh") @@ fun oc ->
       output_endline oc {|#!/bin/sh
 set -eu|};
-      process_clone oc copy_files;
-      process_symlinks oc ~mkdir:true
+      process_clone oc ~prefix:"$1" copy_files;
+      process_symlinks oc ~mkdir:true ~prefix:"$1"
   end else begin
     (* Don't pass -p to cp on Windows - it's never going to be relevant (no
        execute bit which needs preserving) and there are scenarios in which it's
@@ -188,22 +190,22 @@ set -eu|};
     Out_channel.with_open_bin (package ^ "-clone.sh") @@ fun oc ->
       output_endline oc {|#!/bin/sh
 set -eu
-mkdir -p "$1"
-rm -f "$1/__cp_test" "$1/__ln_test"
-if cp --reflink=always "$2/doc/ocaml/LICENSE" "$1/__cp_test" 2>/dev/null; then
-  rm -f "$1/__cp_test"
+mkdir -p "$2"
+rm -f "$2/__cp_test" "$2/__ln_test"
+if cp --reflink=always "$1/doc/ocaml/LICENSE" "$2/__cp_test" 2>/dev/null; then
+  rm -f "$2/__cp_test"
   CP='cp --reflink=always -%sf'
-  if ! test -e "$1/clone-files"; then
-    echo 'cd "$src" && '"$CP"' "$@" "$dest/"' > "$1/clone-files"
+  if ! test -e "$2/clone-files"; then
+    echo 'cd "$src" && '"$CP"' "$@" "$dest/"' > "$2/clone-files"
   fi
 else
   CP='cp -%sf'
-  if ! test -e "$1/clone-files"; then
-    if ln -f "$2/doc/ocaml/LICENSE" "$1/__ln_test" 2>/dev/null; then
-      rm -f "$1/__ln_test"
-      echo 'cd "$src" && ln -f "$@" "$dest/"' > "$1/clone-files"
+  if ! test -e "$2/clone-files"; then
+    if ln -f "$1/doc/ocaml/LICENSE" "$2/__ln_test" 2>/dev/null; then
+      rm -f "$2/__ln_test"
+      echo 'cd "$src" && ln -f "$@" "$dest/"' > "$2/clone-files"
     else
-      echo 'cd "$src" && '"$CP"' "$@" "$dest/"' > "$1/clone-files"
+      echo 'cd "$src" && '"$CP"' "$@" "$dest/"' > "$2/clone-files"
     fi
   fi
 fi|} preserve preserve;
@@ -211,12 +213,12 @@ fi|} preserve preserve;
         output_endline oc "share/ocaml/clone";
         if Sys.file_exists "config.cache" then
           output_endline oc "share/ocaml/config.cache");
-      process_clone oc clone_files;
+      process_clone oc ~prefix:"$2" clone_files;
       (*  ld.conf is a configuration file, so is always copied.
           Makefile.config and config.status will both contain the original
           prefix, which must be updated. *)
-      output_endline oc {|cp "$2/lib/ocaml/ld.conf" "$1/lib/ocaml/ld.conf"
-cat > "$1/prefix.awk" <<'ENDAWK'
+      output_endline oc {|cp "$1/lib/ocaml/ld.conf" "$2/lib/ocaml/ld.conf"
+cat > "$2/prefix.awk" <<'ENDAWK'
 {
   rest = $0
   while ((p = index(rest, ENVIRON["O"]))) {
@@ -226,10 +228,10 @@ cat > "$1/prefix.awk" <<'ENDAWK'
   print rest
 }
 ENDAWK
-prefix="$(sed -ne 's/^prefix *= *//p' "$2/lib/ocaml/Makefile.config")"
+prefix="$(sed -ne 's/^prefix *= *//p' "$1/lib/ocaml/Makefile.config")"
 for file in lib/ocaml/Makefile.config share/ocaml/config.status; do
-  O="$prefix" N="$1" awk -f "$1/prefix.awk" "$2/$file" > "$1/$file"
+  O="$prefix" N="$2" awk -f "$2/prefix.awk" "$1/$file" > "$2/$file"
 done
-rm -f "$1/clone-files" "$1/prefix.awk"|};
-      process_symlinks oc ~mkdir:false
+rm -f "$2/clone-files" "$2/prefix.awk"|};
+      process_symlinks oc ~mkdir:false ~prefix:"$2"
   end
