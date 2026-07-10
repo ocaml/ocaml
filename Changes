@@ -102,6 +102,10 @@ Working version
   certain GC cycles longer due to ephemeron marking starting later.
   (Gabriel Scherer, review by B. Szilvasy and Damien Doligez)
 
+- #14195, #14860: new OCAMLRUNPARAM='S=3M' option to configure the system
+  stack size when creating a thread
+  (Jeanne Pottier, review by Antonin Décimo, request by Nathan Taylor)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14842, #14845: Keep expansion and

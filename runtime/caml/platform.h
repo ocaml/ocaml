@@ -38,6 +38,7 @@
 #include "mlvalues.h"
 #include "sys.h"
 #include "osdeps.h"
+#include "startup_aux.h"
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
@@ -132,14 +133,12 @@ typedef void * caml_plat_thread_attr;
 
 Caml_inline
 int caml_plat_thread_create(caml_plat_thread *restrict thread,
-                            const caml_plat_thread_attr *restrict attr,
                             unsigned ( WINAPI *start_address )( void * ),
                             void *restrict arg)
 {
-  (void) attr; /* unused */
   *thread = (caml_plat_thread) _beginthreadex(
     NULL, /* security: handle can't be inherited */
-    0,    /* stack size */
+    caml_params->init_sys_stack_bsz, /* stack size */
     start_address,
     arg,
     0,    /* run immediately */
@@ -228,11 +227,22 @@ typedef pthread_attr_t caml_plat_thread_attr;
 
 Caml_inline
 int caml_plat_thread_create(caml_plat_thread *restrict thread,
-                            const caml_plat_thread_attr *restrict attr,
                             void *(*start_routine)(void *),
                             void *restrict arg)
 {
-  return pthread_create(thread, attr, start_routine, arg);
+  int res;
+  pthread_attr_t attr;
+  pthread_attr_init(&attr);
+  if (caml_params->init_sys_stack_bsz != 0) {
+    res = pthread_attr_setstacksize(&attr, caml_params->init_sys_stack_bsz);
+    if (res) {
+      pthread_attr_destroy(&attr);
+      return res;
+    }
+  }
+  res = pthread_create(thread, &attr, start_routine, arg);
+  pthread_attr_destroy(&attr);
+  return res;
 }
 
 Caml_inline

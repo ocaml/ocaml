@@ -48,7 +48,7 @@ static int st_thread_create(st_thread_id * res,
   st_thread_id thr;
   thr = (st_thread_id) _beginthreadex(
     NULL, /* security: handle can't be inherited */
-    0,    /* stack size */
+    caml_params->init_sys_stack_bsz, /* stack size */
     start_address,
     arg,
     0,    /* run immediately */
