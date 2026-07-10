@@ -363,56 +363,48 @@ CAMLexport CAMLweakdef void caml_modify (volatile value *fp, value val)
    dependent memory, and [caml_free_dependent_memory] when you
    free it.  In both cases, you pass as argument the size (in bytes)
    of the block being allocated or freed.
+
+   Note: this API is obsolete; custom block allocation does the right
+   thing, which is to call
+   Caml_update_major_allocated_words with kind=off_heap, but only when
+   the block that holds the off-heap memory goes into the major heap
+   (by promotion or direct allocation).
 */
 CAMLexport void caml_alloc_dependent_memory (mlsize_t nbytes)
 {
-  Caml_state->dependent_size += nbytes / sizeof (value);
-  Caml_state->dependent_allocated += nbytes / sizeof (value);
 }
 
 CAMLexport void caml_free_dependent_memory (mlsize_t nbytes)
 {
-  if (Caml_state->dependent_size < nbytes / sizeof (value)){
-    Caml_state->dependent_size = 0;
-  }else{
-    Caml_state->dependent_size -= nbytes / sizeof (value);
-  }
 }
 
 /* Use this function to tell the major GC to speed up when you use
-   finalized blocks to automatically deallocate resources (other
-   than memory). The GC will do at least one cycle every [max]
-   allocated resources; [res] is the number of resources allocated
-   this time.
-   Note that only [res/max] is relevant.  The units (and kind of
-   resource) can change between calls to [caml_adjust_gc_speed].
+   finalized blocks to automatically deallocate off-heap memory.
 
-   If [max] = 0, then we use a number proportional to the major heap
-   size and [caml_custom_major_ratio]. In this case, [mem] should
-   be a number of bytes and the trade-off between GC work and space
-   overhead is under the control of the user through
-   [caml_custom_major_ratio].
+   [res] is the size (in bytes) of off-heap memory just allocated,
+   and [max] is ignored.
 */
 CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
 {
-  if (max == 0) max = caml_custom_get_max_major ();
-  if (res > max) res = max;
-  Caml_state->extra_heap_resources += (double) res / (double) max;
-  if (Caml_state->extra_heap_resources > 0.2){
-    CAML_EV_COUNTER (EV_C_REQUEST_MAJOR_ADJUST_GC_SPEED, 1);
-    caml_request_major_slice (1);
-  }
+  caml_domain_state *d = Caml_state;
+  Caml_update_major_allocated_words(off_heap, d, res / sizeof(value), 1);
 }
 
-/* This function is analogous to [caml_adjust_gc_speed]. When the
-   accumulated sum of [res/max] values reaches 1, a minor GC is
-   triggered.
+/* This function is used to trigger the minor GC whenever the amount of
+   off-heap memory held by the minor heap goes over the limit
+   (minor heap size * [caml_custom_minor_ratio] / 100).
+   [wsz] is a size in words. In the case of custom blocks, it is the
+   size of the off-heap memory held by the custom block that was just
+   allocated on the minor heap.
 */
-CAMLexport void caml_adjust_minor_gc_speed (mlsize_t res, mlsize_t max)
+CAMLexport void caml_adjust_minor_gc_speed (mlsize_t wsz, mlsize_t unused)
 {
-  if (max == 0) max = 1;
-  Caml_state->extra_heap_resources_minor += (double) res / (double) max;
-  if (Caml_state->extra_heap_resources_minor > 1.0) {
+  mlsize_t minor_off_heap_max =
+    (Caml_state->minor_heap_wsz) / 100
+    * atomic_load_relaxed(&caml_custom_minor_ratio);
+
+  Caml_state->minor_off_heap_size += wsz;
+  if (Caml_state->minor_off_heap_size > minor_off_heap_max) {
     caml_request_minor_gc ();
   }
 }
@@ -555,9 +547,12 @@ Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, reserved_t reserved,
       return (value)NULL;
   }
 
-  caml_update_major_allocated_words(
-    dom_st, Whsize_wosize(wosize), 1 /* direct */);
-  if (dom_st->allocated_words_direct > dom_st->minor_heap_wsz / 5) {
+  Caml_update_major_allocated_words(
+    on_heap, dom_st, Whsize_wosize(wosize), 1 /* direct */);
+  if (dom_st->allocated_words_direct->on_heap
+      + dom_st->allocated_words_direct->off_heap
+      + dom_st->allocated_words_direct->ephe
+      > dom_st->minor_heap_wsz / 5) {
     CAML_EV_COUNTER (EV_C_REQUEST_MAJOR_ALLOC_SHR, 1);
     caml_request_major_slice(1);
   }

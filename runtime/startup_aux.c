@@ -57,8 +57,8 @@ void caml_init_startup_params(struct caml_params *params)
 #endif
 
   params->init_percent_free = Percent_free_def;
+  params->init_ephe_percent_free = Ephe_percent_free_def;
   params->init_minor_heap_wsz = Minor_heap_def;
-  params->init_custom_major_ratio = Custom_major_ratio_def;
   params->init_custom_minor_ratio = Custom_minor_ratio_def;
   params->init_custom_minor_max_bsz = Custom_minor_max_bsz_def;
   params->init_max_stack_wsz = Max_stack_def;
@@ -107,11 +107,11 @@ void caml_parse_startup_params(struct caml_params *params, const char *opt)
     case 'd': scanmult (opt, &params->max_domains); break;
     case 'e': scanmult (opt, &params->runtime_events_log_wsize); break;
     case 'l': scanmult (opt, &params->init_max_stack_wsz); break;
-    case 'M': scanmult (opt, &params->init_custom_major_ratio); break;
     case 'm': scanmult (opt, &params->init_custom_minor_ratio); break;
     case 'n': scanmult (opt, &params->init_custom_minor_max_bsz); break;
     case 'o': scanmult (opt, &params->init_percent_free); break;
     case 'p': scanmult (opt, &params->parser_trace); break;
+    case 'q': scanmult (opt, &params->init_ephe_percent_free); break;
     case 'R':
       scanmult (opt, &val);
       caml_runtime_hashtbl_randomized = !!val;

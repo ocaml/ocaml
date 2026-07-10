@@ -154,8 +154,8 @@ static value alloc_shared(caml_domain_state* d,
 {
   void* mem = caml_shared_try_alloc(d->shared_heap, wosize, tag,
                                     reserved);
-  caml_update_major_allocated_words(
-    d, Whsize_wosize(wosize), 0 /* promoted, not direct */);
+  Caml_update_major_allocated_words(
+    on_heap, d, Whsize_wosize(wosize), 0 /* promoted, not direct */);
   if (mem == NULL) {
     caml_fatal_error("allocation failure during minor GC");
   }
@@ -510,7 +510,7 @@ void caml_empty_minor_heap_domain_clear(caml_domain_state* domain)
   clear_table ((struct generic_table *)&minor_tables->ephe_ref);
   clear_table ((struct generic_table *)&minor_tables->custom);
 
-  domain->extra_heap_resources_minor = 0.0;
+  domain->minor_off_heap_size = 0;
 }
 
 /* Try to do a major slice, returns nonzero if there was any work available,
@@ -540,7 +540,7 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
 
   st.domain = domain;
 
-  prev_alloc_words = domain->allocated_words;
+  prev_alloc_words = domain->allocated_words->on_heap;
 
   caml_gc_log ("Minor collection of domain %d starting", domain->id);
   CAML_EV_BEGIN(EV_MINOR);
@@ -694,7 +694,8 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
   caml_reset_young_limit(domain);
 
   domain->stat_minor_words += Wsize_bsize (minor_allocated_bytes);
-  domain->stat_promoted_words += domain->allocated_words - prev_alloc_words;
+  domain->stat_promoted_words +=
+    domain->allocated_words->on_heap - prev_alloc_words;
 
   /* Must be called during the STW section -- before any mutators
      start running, so before arriving at the barrier. */
@@ -724,13 +725,14 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
 
   call_timing_hook(&caml_minor_gc_end_hook);
   CAML_EV_COUNTER(EV_C_MINOR_PROMOTED,
-                  Bsize_wsize(domain->allocated_words - prev_alloc_words));
+                  Bsize_wsize(domain->allocated_words->on_heap
+                              - prev_alloc_words));
   CAML_EV_COUNTER(EV_C_MINOR_PROMOTED_WORDS,
-                  domain->allocated_words - prev_alloc_words);
+                  domain->allocated_words->on_heap - prev_alloc_words);
 
   CAML_EV_COUNTER(EV_C_MINOR_ALLOCATED, minor_allocated_bytes);
   CAML_EV_COUNTER(EV_C_MINOR_ALLOCATED_WORDS,
-                  Whsize_wosize(minor_allocated_bytes));
+                  Wsize_bsize(minor_allocated_bytes));
 
   CAML_EV_END(EV_MINOR);
   if (minor_allocated_bytes == 0)
@@ -796,7 +798,7 @@ static void custom_finalize_minor (caml_domain_state * domain)
     value *v = &elt->block;
     if (Is_block(*v) && Is_young(*v)) {
       if (Is_promoted_hd(Hd_val(*v))) { /* value copied to major heap */
-        caml_adjust_gc_speed(elt->mem, elt->max);
+        Caml_update_major_allocated_words(off_heap, domain, elt->mem, 0);
       } else {
         void (*final_fun)(value) = Custom_ops_val(*v)->finalize;
         if (final_fun != NULL) final_fun(*v);

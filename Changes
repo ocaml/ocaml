@@ -102,6 +102,9 @@ Working version
   certain GC cycles longer due to ephemeron marking starting later.
   (Gabriel Scherer, review by B. Szilvasy and Damien Doligez)
 
+* #14796: Complete overhaul of the GC pacing logic
+  (Damien Doligez, review by ...)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14842, #14845: Keep expansion and

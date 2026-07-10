@@ -901,11 +901,7 @@ static void domain_create(uintnat initial_minor_heap_wsize,
 
   CAMLassert(!interruptor_has_pending(s));
 
-  domain_state->extra_heap_resources = 0.0;
-  domain_state->extra_heap_resources_minor = 0.0;
-
-  domain_state->dependent_size = 0;
-  domain_state->dependent_allocated = 0;
+  domain_state->minor_off_heap_size = 0;
 
   domain_state->sweep_work_done_between_slices = 0;
   domain_state->mark_work_done_between_slices = 0;
@@ -966,11 +962,6 @@ static void domain_create(uintnat initial_minor_heap_wsize,
   domain_state->gc_regs_buckets = NULL;
   domain_state->gc_regs = NULL;
 
-  domain_state->allocated_words = 0;
-  domain_state->allocated_words_direct = 0;
-  domain_state->allocated_words_suspended = 0;
-  domain_state->allocated_words_resumed = 0;
-  domain_state->current_ramp_up_allocated_words_diff = 0;
   domain_state->swept_words = 0;
 
   domain_state->local_roots = NULL;
@@ -2302,6 +2293,9 @@ void caml_domain_terminate(bool last)
        run a new loop iteration. */
     if (!marking_and_sweeping_done(domain_state))
       continue;
+
+    /* Transfer the domain's allocation counts to the global counters. */
+    caml_flush_alloc_counters();
 
     /* Orphan the local shared heap.
        This is only valid when [sweeping_done], and does
