@@ -640,8 +640,8 @@ static intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
 
     CAMLassert (Tag_val(ephe) == Abstract_tag);
     if (is_unmarked(ephe)) {
-      /* The whole ephemeron is dead; simply drop it */
-      budget -= 1;
+      /* The whole ephemeron is dead; simply drop it. Do not decrease
+         budget, as explained in the GC control loop design document. */
     } else {
       caml_ephe_clean(ephe);
       /* Move to live list */
