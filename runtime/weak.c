@@ -77,6 +77,7 @@ CAMLprim value caml_ephe_create (value len)
   if (size < CAML_EPHE_FIRST_KEY || size > Max_wosize)
     caml_invalid_argument ("Weak.create");
   res = caml_alloc_shr (size, Abstract_tag);
+  Caml_update_major_allocated_words(ephe, domain_state, Whsize_wosize(size), 1);
 
   /* Add the new ephemeron to the live list */
   caml_ephe_list_cons_inplace(res, &domain_state->ephe_info->live);
