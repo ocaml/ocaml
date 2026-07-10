@@ -269,3 +269,33 @@ module Pattern_matching_wildcard :
     val allowed : t -> int
   end
 |}]
+
+
+(* Record update expressions should generate atomic reads
+   for omitted atomic fields.
+
+   A bug about this was reported by Ryan Tjoa in #14918.
+*)
+module Record_update_test = struct
+  type t = { x : int; mutable y : int [@atomic] }
+  let update1 (r : t) =
+    { x = 42; y = r.y }
+  let update2 (r : t) =
+    (* This should produce the same code as [update1] above. *)
+    { r with x = 42 }
+end
+(* The output is currently INCORRECT, as [update2] generates
+   a non-atomic read. *)
+[%%expect{|
+(apply (field_mut 1 (global Toploop!)) "Record_update_test/434"
+  (let
+    (update1 = (function r (makemutable 0 (int,int) 42 (atomic_load r 1)))
+     update2 = (function r (makemutable 0 (int,int) 42 (field_int 1 r))))
+    (makeblock 0 update1 update2)))
+module Record_update_test :
+  sig
+    type t = { x : int; mutable y : int [@atomic]; }
+    val update1 : t -> t
+    val update2 : t -> t
+  end
+|}]
