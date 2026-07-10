@@ -3649,7 +3649,12 @@ module Unscoped = struct
   let with_pairs id_pairs env = {env with id_pairs}
   let get_pairs env = env.id_pairs
 
-  let path_equiv env p1 p2 = Path.equiv env.id_pairs p1 p2
+  let path_equiv env p1 p2 =
+    Path.equiv env.id_pairs p1 p2
+    || (* equivalence modulo normalization *)
+    let n1 = normalize_type_path None env p1 in
+    let n2 = normalize_type_path None env p2 in
+    (n1 != p1 || n2 != p2) && Path.same n1 n2
 end
 
 (* Error report *)
