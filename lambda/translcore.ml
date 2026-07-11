@@ -959,6 +959,23 @@ and transl_setinstvar ~scopes loc self var expr =
     [self; var; transl_exp ~scopes expr], loc)
 
 and transl_record ~scopes loc env fields repres opt_init_expr =
+  let atomic_load record_lam lbl =
+    let offset =
+      match lbl.lbl_repres with
+      | Record_regular
+      | Record_inlined _ -> 0
+      | Record_float ->
+          fatal_error
+            "Translcore.transl_record: atomic field in float record"
+      | Record_unboxed _ ->
+          fatal_error
+            "Translcore.transl_record: atomic field in unboxed record"
+      | Record_extension _ -> 1
+    in
+    let idx = Lconst (Const_int (lbl.lbl_pos + offset)) in
+    let loc = of_location ~scopes loc in
+    Lprim(Patomic_load, [record_lam; idx], loc)
+  in
   let size = Array.length fields in
   (* Determine if there are "enough" fields (only relevant if this is a
      functional-style record update *)
@@ -970,13 +987,16 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
     let init_id = Ident.create_local "init" in
     let lv =
       Array.mapi
-        (fun i (_, definition) ->
+        (fun i (lbl, definition) ->
            match definition with
            | Kept (typ, mut) ->
+             if lbl.lbl_atomic = Atomic then
+               atomic_load (Lvar init_id) lbl, value_kind env typ
+             else 
                let field_kind = value_kind env typ in
                let access =
                  match repres with
-                   Record_regular | Record_inlined _ ->
+                 | Record_regular | Record_inlined _ ->
                      Pfield (i, maybe_pointer_type env typ, mut)
                  | Record_unboxed _ -> assert false
                  | Record_extension _ ->
@@ -1030,23 +1050,34 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
     (* Take a shallow copy of the init record, then mutate the fields
        of the copy *)
     let copy_id = Ident.create_local "newrecord" in
+    let assign lbl value_kind lam =
+      let upd =
+        match repres with
+        | Record_regular
+        | Record_inlined _ ->
+            Psetfield(lbl.lbl_pos, value_kind, Assignment)
+        | Record_unboxed _ -> assert false
+        | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
+        | Record_extension _ ->
+            Psetfield(lbl.lbl_pos + 1, value_kind, Assignment)
+      in
+      Lprim(upd, [Lvar copy_id; lam],
+            of_location ~scopes loc)
+    in
     let update_field cont (lbl, definition) =
       match definition with
-      | Kept _ -> cont
+      | Kept (typ, _mut) when lbl.lbl_atomic = Atomic ->
+          (* #14918: for atomic records we need a proper atomic read to
+             take place; Pduprecord will take a non-atomic copy of all
+             fields, so we re-assign the atomic fields afterwards. *)
+          let lam = atomic_load (Lvar copy_id) lbl in
+          let set = assign lbl (maybe_pointer_type env typ) lam in
+          Lsequence(set, cont)
+      | Kept (_typ, _mut) -> cont
       | Overridden (_lid, expr) ->
-          let upd =
-            match repres with
-              Record_regular
-            | Record_inlined _ ->
-                Psetfield(lbl.lbl_pos, maybe_pointer expr, Assignment)
-            | Record_unboxed _ -> assert false
-            | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
-            | Record_extension _ ->
-                Psetfield(lbl.lbl_pos + 1, maybe_pointer expr, Assignment)
-          in
-          Lsequence(Lprim(upd, [Lvar copy_id; transl_exp ~scopes expr],
-                          of_location ~scopes loc),
-                    cont)
+          let lam = transl_exp ~scopes expr in
+          let set = assign lbl (maybe_pointer expr) lam in
+          Lsequence(set, cont)
     in
     begin match opt_init_expr with
       None -> assert false
