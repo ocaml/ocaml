@@ -165,13 +165,17 @@ CAMLdeprecated_typedef(addr, char *);
 #define CAMLalign(n) _Alignas(n)
 #endif
 
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L || \
-    defined(__cplusplus) && !defined(__CYGWIN__)
-    /* #14220: flexlink does not support C++11 's thread_local,
-       so prefer _Thread_local on Cygwin systems. */
-#define CAMLthread_local thread_local
+/* Use CAMLthread_local for symbols with external linkage (on declarations and
+   definitions) for interoperability with C++. C11 _Thread_local may be used for
+   symbols with internal linkage. */
+#if defined(_MSC_VER) && !defined(__clang__)
+#if defined(__cplusplus)
+#define CAMLthread_local(decl) __declspec(thread) decl [[msvc::no_tls_guard]]
 #else
-#define CAMLthread_local _Thread_local
+#define CAMLthread_local(decl) __declspec(thread) decl
+#endif
+#else
+#define CAMLthread_local(decl) __thread decl
 #endif
 
 /* Prefetching */

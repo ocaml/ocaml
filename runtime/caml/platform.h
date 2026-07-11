@@ -632,7 +632,7 @@ Caml_inline void check_err(const char* action, int err)
 }
 
 #ifdef DEBUG
-CAMLextern CAMLthread_local int caml_lockdepth;
+CAMLextern CAMLthread_local(int caml_lockdepth);
 #define DEBUG_LOCK(m) (caml_lockdepth++)
 #define DEBUG_UNLOCK(m) (caml_lockdepth--)
 #else
