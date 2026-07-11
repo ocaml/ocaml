@@ -202,7 +202,7 @@ struct dom_internal {
 };
 typedef struct dom_internal dom_internal;
 
-static CAMLthread_local dom_internal* domain_self;
+static _Thread_local dom_internal* domain_self;
 
 static struct {
   /* enter barrier for STW sections, participating domains arrive into
@@ -359,7 +359,7 @@ static void stop_active_domain(dom_internal* dom) {
   check_stw_domains();
 }
 
-CAMLexport CAMLthread_local caml_domain_state* caml_state;
+CAMLexport CAMLthread_local(caml_domain_state* caml_state);
 
 #ifndef HAS_FULL_THREAD_VARIABLES
 /* Export a getter for caml_state, to be used in DLLs */
@@ -369,7 +369,7 @@ CAMLexport caml_domain_state* caml_get_domain_state(void)
 }
 #endif
 
-static CAMLthread_local uintnat previous_domain_id = -1;
+static _Thread_local uintnat previous_domain_id = -1;
 
 CAMLexport
 bool caml_thread_running_on_expected_domain(uintnat expected_unique_id)

@@ -82,7 +82,7 @@ static char dummy_buff[1];
    currently locked channel (if any), which is then called by
    [caml_raise].
  */
-static CAMLthread_local struct channel* last_channel_locked = NULL;
+static _Thread_local struct channel* last_channel_locked = NULL;
 
 CAMLexport void caml_channel_lock(struct channel *chan)
 {
