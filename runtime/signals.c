@@ -589,7 +589,8 @@ void caml_free_signal_stack(void * signal_stack)
   disable.ss_sp = NULL;  /* not required but avoids a valgrind false alarm */
   disable.ss_size = SIGSTKSZ; /* macOS wants a valid size here */
   if (sigaltstack(&disable, &stk) < 0) {
-    caml_fatal_error("Failed to reset signal stack (err %d)", errno);
+    const char *msg = strerror(errno);
+    caml_fatal_error("Failed to reset signal stack: %s", msg);
   }
   /* Check whether someone else installed their own signal stack */
   if (!(stk.ss_flags & SS_DISABLE) && stk.ss_sp != signal_stack) {
@@ -617,7 +618,8 @@ void caml_init_signals(void)
 #ifdef POSIX_SIGNALS
   caml_signal_stack_0 = caml_init_signal_stack();
   if (caml_signal_stack_0 == NULL) {
-    caml_fatal_error("Failed to allocate signal stack for domain 0");
+    const char *msg = strerror(errno);
+    caml_fatal_error("Failed to allocate signal stack for domain 0: %s", msg);
   }
 
   /* gprof installs a signal handler for SIGPROF.
