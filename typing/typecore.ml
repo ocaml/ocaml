@@ -192,6 +192,7 @@ type error =
   | Invalid_atomic_loc_payload
   | Label_not_atomic of Longident.t
   | Atomic_in_pattern of Longident.t
+  | Atomic_in_functional_update of label
   | Literal_overflow of string
   | Unknown_literal of string * char
   | Illegal_letrec_pat
@@ -2063,6 +2064,10 @@ let forbid_atomic_field_patterns loc penv (label_lid, label, pat) =
   in
   if label.lbl_atomic = Atomic && not (wildcard pat) then
     Error.log_or_raise loc !!penv (Atomic_in_pattern label_lid.txt)
+
+let forbid_atomic_in_record_update loc env lbl =
+  if lbl.lbl_atomic = Atomic then
+    Error.log_or_raise loc env (Atomic_in_functional_update lbl.lbl_name)
 
 (** [type_pat] propagates the expected type, and
     unification may update the typing environment. *)
@@ -5016,6 +5021,7 @@ and type_expect_
                     unify_exp_types loc env ty_arg1 ty_arg2;
                     with_explanation (fun () ->
                         unify_exp_types loc env (instance ty_expected) ty_res2);
+                    forbid_atomic_in_record_update exp.exp_loc env lbl;
                     Kept (ty_arg1, lbl.lbl_mut)
                   end
               in
@@ -8633,6 +8639,13 @@ let report_error ~loc env =
          will happen during pattern matching:@ the field may be read@ \
          zero, one or several times depending on the patterns around it."
         quoted_longident lid
+  | Atomic_in_functional_update l ->
+      Location.errorf ~loc
+        "Functional updates that implicitly read atomic fields (here %a)@ \
+         are forbidden. @{<hint>Hint@}: if you intend to copy the value@ \
+         of an atomic field, do so explicitly:@ %a"
+        Style.inline_code l
+        Style.inline_code ("{ t with " ^ l ^ " = t." ^ l ^ " }")
   | Literal_overflow ty ->
       Location.errorf ~loc
         "Integer literal exceeds the range of representable integers of type %a"

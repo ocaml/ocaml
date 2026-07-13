@@ -970,9 +970,14 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
     let init_id = Ident.create_local "init" in
     let lv =
       Array.mapi
-        (fun i (_, definition) ->
+        (fun i (lbl, definition) ->
            match definition with
            | Kept (typ, mut) ->
+               if lbl.lbl_atomic = Atomic then
+                 (* Rejected during typechecking to avoid need for
+                    implicit atomic loads *)
+                 fatal_error
+                   "transl_record: update expr implicitly copies atomic field";
                let field_kind = value_kind env typ in
                let access =
                  match repres with
@@ -1032,7 +1037,11 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
     let copy_id = Ident.create_local "newrecord" in
     let update_field cont (lbl, definition) =
       match definition with
-      | Kept _ -> cont
+      | Kept _ ->
+          if lbl.lbl_atomic = Atomic then
+            fatal_error
+              "transl_record: update expr implicitly copies atomic field";
+          cont
       | Overridden (_lid, expr) ->
           let upd =
             match repres with
