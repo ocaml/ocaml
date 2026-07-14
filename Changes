@@ -111,6 +111,11 @@ Working version
   GetFileInformationByName call underpinning the CRT's stat implementation.
   (David Allsopp, review by Nicolás Ojeda Bär and Antonin Décimo)
 
+- #14928: Include strerror(errno) in the fatal error message when the signal
+  stack for domain 0 cannot be allocated or reset, aiding diagnosis of startup
+  failures.
+  (Nathan Taylor)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14842, #14845: Keep expansion and
