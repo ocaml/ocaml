@@ -584,12 +584,13 @@ void * caml_init_signal_stack(void)
 void caml_free_signal_stack(void * signal_stack)
 {
 #ifdef POSIX_SIGNALS
+  char buf[128];
   stack_t stk, disable;
   disable.ss_flags = SS_DISABLE;
   disable.ss_sp = NULL;  /* not required but avoids a valgrind false alarm */
   disable.ss_size = SIGSTKSZ; /* macOS wants a valid size here */
   if (sigaltstack(&disable, &stk) < 0) {
-    const char *msg = strerror(errno);
+    char *msg = caml_strerror(errno, buf, sizeof(buf));
     caml_fatal_error("Failed to reset signal stack: %s", msg);
   }
   /* Check whether someone else installed their own signal stack */
@@ -616,9 +617,10 @@ void caml_init_signals(void)
 {
   /* Set up alternate signal stack for domain 0 */
 #ifdef POSIX_SIGNALS
+  char buf[128];
   caml_signal_stack_0 = caml_init_signal_stack();
   if (caml_signal_stack_0 == NULL) {
-    const char *msg = strerror(errno);
+    char *msg = caml_strerror(errno, buf, sizeof(buf));
     caml_fatal_error("Failed to allocate signal stack for domain 0: %s", msg);
   }
 
