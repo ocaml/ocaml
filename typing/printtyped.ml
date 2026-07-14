@@ -866,7 +866,7 @@ and with_constraint i ppf x =
       line i ppf "Twith_modtype\n";
       module_type (i+1) ppf mty
   | Twith_modtypesubst mty ->
-      line i ppf "Twith_modtype\n";
+      line i ppf "Twith_modtypesubst\n";
       module_type (i+1) ppf mty
 
 and module_expr i ppf x =

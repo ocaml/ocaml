@@ -375,6 +375,9 @@ Working version
   certain large types, as seen in #14897.
   (Stefan Muenzel, review by Gabriel Scherer and Vincent Laviron)
 
+- #14932: Fix `-dtypedtree` printing of `Twith_modtypesubst`.
+  (Corentin De Souza, review by Nicolás Ojeda Bär)
+
 ### Build system:
 
 - #14552: Export `AR` and `ARFLAGS` in Makefile.config.
