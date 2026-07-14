@@ -326,7 +326,9 @@ let emit_instr env i =
   | Lop(Iextcall{func; alloc; stack_ofs}) ->
       if stack_ofs > 0 then begin
         `	mv	{emit_reg reg_stack_arg_begin}, sp\n`;
-        `	addi	{emit_reg reg_stack_arg_end}, sp, {emit_int (Misc.align stack_ofs 16)}\n`;
+        (* reg_stack_arg_begin holds sp here *)
+        emit_addimm reg_stack_arg_end reg_stack_arg_begin
+          (Misc.align stack_ofs 16);
         `	la	{emit_reg reg_t2}, {emit_symbol func}\n`;
         `	{emit_call "caml_c_call_stack_args"}\n`;
         record_frame env i.live (Dbg_other i.dbg)
@@ -507,7 +509,7 @@ let emit_instr env i =
   | Lop (Ireturn_addr) ->
       let n = frame_size env in
       if env.f.fun_frame_required then
-        `	ld	{emit_reg i.res.(0)}, {emit_int (n - 8)}(sp)\n`
+        emit_load i.res.(0) (n - 8) "sp"
       else
         `	mv	{emit_reg i.res.(0)}, ra\n`;
   | Lreloadretaddr ->

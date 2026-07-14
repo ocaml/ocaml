@@ -397,6 +397,12 @@ Working version
   Now the runtime reports it as a fatal error instead.
   (Michael Bacarella, review by Gabriel Scherer)
 
+- #14943: On RISC-V, fix assembler errors from Ireturn_addr and Iextcall
+  with stack arguments when the offset exceeds a 12-bit immediate, by routing
+  both through the existing range-checked helpers.
+  (Tim McGilchrist, reported by Zane Hambly, reviews by Nicolás Ojeda Bär,
+   Miod Vallat and Zane Hambly)
+
 - #13777, #14347, #14348, #14421, #14498, #14526: Test that C++
   compilers can link with the OCaml runtime and include its headers.
   (Antonin Décimo, review by David Allsopp and Gabriel Scherer)
