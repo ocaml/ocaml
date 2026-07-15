@@ -489,8 +489,8 @@ module Size = struct
         (* Matches the emission below.  With a store-release (the default:
            stlr, or stlur under -flrcpc2) an Iindexed assignment word store
            needs no prefix (stlur / stlr [base]) or just an add (stlr with a
-           nonzero offset).  Ibased assignments, and the -fbarrier-store path,
-           keep the [dmb ishld; str] barrier. *)
+           nonzero offset).  The -fbarrier-store path keeps the
+           [dmb ishld; str] barrier. *)
         match memory_chunk, assignment, addressing_mode with
         | (Word_int | Word_val), true, Iindexed n
           when !store_release && !lrcpc2 && n >= -256 && n <= 255 ->
@@ -499,6 +499,8 @@ module Size = struct
           0 (* stlr [base] *)
         | (Word_int | Word_val), true, Iindexed n when !store_release ->
           addsub_size n (* add; stlr *)
+        | (Word_int | Word_val), true, Ibased _ when !store_release ->
+          1 (* add :lo12: ; stlr *)
         | (Word_int | Word_val), true, _ -> 1 (* dmb ishld barrier *)
         | _ -> 0
       and store = match memory_chunk with Single -> 2 | _ -> 1 in
@@ -696,7 +698,9 @@ let name_for_float_comparison = function
 
 (* Output a release store [stlr] of register [src] at address [base + addr].
    Since [stlr] does not support addressing modes, we compute [base + addr]
-   explicitly. *)
+   explicitly.  We can also use [stlur] if supported to avoid the
+   [base + addr] computation in some case. *)
+
 let emit_stlr src base addr =
   match addr with
   | Iindexed ofs when !lrcpc2 && ofs >= -256 && ofs <= 255 ->
@@ -708,7 +712,32 @@ let emit_stlr src base addr =
   | Iindexed ofs ->
       emit_addimm reg_tmp1 base ofs;
       `	stlr	{emit_reg src}, [{emit_reg reg_tmp1}]\n`
-  | Ibased _ -> assert false (* Ibased keeps the barrier form; see below *)
+  | Ibased(s, ofs) ->
+      assert (not !Clflags.dlcode);  (* see selection.ml *)
+      (* [base] contains the high bits of [s + ofs], produced by [adrp] *)
+      `	add	{emit_reg reg_tmp1}, {emit_reg base}, #:lo12:{emit_symbol_offset s ofs}\n`;
+      `	stlr	{emit_reg src}, [{emit_reg reg_tmp1}]\n`
+
+(* Output a store of register [src] at address [base + addr], including
+   a load->store barrier, as required by the multicore memory model
+   for a non-initializing store to a mutable field or array element.
+   By default, emit it as a store-release [stlr] (or [stlur] under -flrcpc2):
+   this gives the required ordering in a single instruction
+   and is much cheaper than a standalone [dmb ishld] on modern cores
+   (see https://github.com/ocaml/ocaml/issues/13262).
+   [stlr] requires natural alignment, which is guaranteed for stores of
+   [Word_int] or [Word_val] chunks.  (Unaligned 64-bit stores use the
+   [Sixtyfour] chunk and need no barrier.)
+   A few old cores (e.g. Cortex-A53, Cortex-A72) are faster with
+   [dmb ishld; str] and select it via -fbarrier-store / configure. *)
+
+let emit_store_word_with_barrier src base addr =
+  if !store_release then
+    emit_stlr src base addr
+  else begin
+    `	dmb	ishld\n`;
+    `	str	{emit_reg src}, {emit_addressing addr base}\n`
+  end
 
 (* Output the assembly code for an instruction *)
 let emit_instr env i =
@@ -874,31 +903,13 @@ let emit_instr env i =
         | Sixtyfour ->
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
         | Word_int | Word_val ->
-            begin match assignment with
-            | true ->
-                (* A non-initializing store to a mutable field or array element
-                   needs a load->store barrier for the multicore memory model.
-                   By default emit it as a store-release [stlr] (or [stlur]
-                   under -flrcpc2): this gives the required ordering in a
-                   single instruction and is much cheaper than a standalone
-                   [dmb ishld] on modern cores (see
-                   https://github.com/ocaml/ocaml/issues/13262).  [stlr]
-                   requires natural alignment (guaranteed here: unaligned
-                   64-bit stores use the [Sixtyfour] chunk) and a bare base
-                   register, so [Ibased] (statically-allocated mutable data)
-                   keeps the barrier form.  A few old cores (e.g. Cortex-A53,
-                   Cortex-A72) are faster with [dmb ishld; str] and select it
-                   via -fbarrier-store / configure. *)
-                begin match !store_release, addr with
-                | true, Iindexed _ -> emit_stlr src base addr
-                | _, _ ->
-                    `	dmb	ishld\n`;
-                    `	str	{emit_reg src}, {emit_addressing addr base}\n`
-                end
-            | false ->
-                (* Initializing store *)
-                `	str	{emit_reg src}, {emit_addressing addr base}\n`
-            end
+            if assignment then
+              (* Non-initializing store to a mutable field or array element.
+                 Needs a load->store barrier for the multicore memory model. *)
+              emit_store_word_with_barrier src base addr
+            else
+              (* Initializing store.  No barrier needed *)
+              `	str	{emit_reg src}, {emit_addressing addr base}\n`
         | Double ->
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
         end
