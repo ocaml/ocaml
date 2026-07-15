@@ -115,6 +115,29 @@ let transl_get_field ~scopes loc targ lbl imm_kind =
     let pos = transl_atomic_field ~scopes lbl in
     Lprim (Patomic_load, [targ; pos], loc)
 
+let transl_set_field ~scopes loc trec lbl imm_kind tnewval =
+  let loc = of_location ~scopes loc in
+  match lbl.lbl_atomic with
+  | Nonatomic ->
+    let prim =
+      match lbl.lbl_repres with
+      | Record_regular
+      | Record_inlined _ ->
+        Psetfield(lbl.lbl_pos, imm_kind, Assignment)
+      | Record_unboxed _ -> assert false
+      | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
+      | Record_extension _ ->
+        Psetfield (lbl.lbl_pos + 1, imm_kind, Assignment)
+    in
+    Lprim(prim, [trec; tnewval], loc)
+  | Atomic ->
+    let pos = transl_atomic_field ~scopes lbl in
+    let prim =
+      Primitive.simple
+        ~name:"caml_atomic_exchange_field" ~arity:3 ~alloc:false
+    in
+    Lprim(Pignore, [Lprim (Pccall prim, [trec; pos; tnewval], loc)], loc)
+
 (* To propagate structured constants *)
 
 exception Not_constant
@@ -383,33 +406,12 @@ and transl_exp0 ~in_new_scope ~scopes e =
   | Texp_field (arg, _, lbl) ->
       let targ = transl_exp ~scopes arg in
       transl_get_field ~scopes e.exp_loc targ lbl (maybe_pointer e)
-  | Texp_setfield (arg, _, ({ lbl_atomic = Atomic; _ } as lbl), newval) ->
-      let prim =
-        Primitive.simple
-          ~name:"caml_atomic_exchange_field" ~arity:3 ~alloc:false
-      in
-      let arg = transl_exp ~scopes arg in
-      let field = transl_atomic_field ~scopes lbl in
-      let newval = transl_exp ~scopes newval in
-      let loc = of_location ~scopes e.exp_loc in
-      Lprim (
-        Pignore,
-        [Lprim (Pccall prim, [arg; field; newval], loc)],
-        loc
-      )
   | Texp_setfield(arg, _, lbl, newval) ->
-      let access =
-        match lbl.lbl_repres with
-          Record_regular
-        | Record_inlined _ ->
-          Psetfield(lbl.lbl_pos, maybe_pointer newval, Assignment)
-        | Record_unboxed _ -> assert false
-        | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
-        | Record_extension _ ->
-          Psetfield (lbl.lbl_pos + 1, maybe_pointer newval, Assignment)
-      in
-      Lprim(access, [transl_exp ~scopes arg; transl_exp ~scopes newval],
-            of_location ~scopes e.exp_loc)
+      let trec = transl_exp ~scopes arg in
+      let tnewval = transl_exp ~scopes newval in
+      transl_set_field ~scopes e.exp_loc
+        trec
+        lbl (maybe_pointer newval) tnewval
   | Texp_array (amut, expr_list) ->
       let kind = array_kind e in
       let ll = transl_list ~scopes expr_list in
@@ -1049,19 +1051,11 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
     (* Take a shallow copy of the init record, then mutate the fields
        of the copy *)
     let copy_id = Ident.create_local "newrecord" in
-    let assign lbl value_kind lam =
-      let upd =
-        match repres with
-        | Record_regular
-        | Record_inlined _ ->
-            Psetfield(lbl.lbl_pos, value_kind, Assignment)
-        | Record_unboxed _ -> assert false
-        | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
-        | Record_extension _ ->
-            Psetfield(lbl.lbl_pos + 1, value_kind, Assignment)
-      in
-      Lprim(upd, [Lvar copy_id; lam],
-            of_location ~scopes loc)
+    let get_field lbl imm_kind =
+      transl_get_field ~scopes loc  (Lvar copy_id) lbl imm_kind
+    in
+    let set_field lbl imm_kind lam =
+      transl_set_field ~scopes loc (Lvar copy_id) lbl imm_kind lam
     in
     let update_field cont (lbl, definition) =
       match definition with
@@ -1070,13 +1064,13 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
              take place; Pduprecord will take a non-atomic copy of all
              fields, so we re-assign the atomic fields afterwards. *)
           let imm_kind = maybe_pointer_type env typ in
-          let lam = transl_get_field ~scopes loc  (Lvar copy_id) lbl imm_kind in
-          let set = assign lbl imm_kind lam in
+          let lam = get_field lbl imm_kind in
+          let set = set_field lbl imm_kind lam in
           Lsequence(set, cont)
       | Kept (_typ, _mut) -> cont
       | Overridden (_lid, expr) ->
           let lam = transl_exp ~scopes expr in
-          let set = assign lbl (maybe_pointer expr) lam in
+          let set = set_field lbl (maybe_pointer expr) lam in
           Lsequence(set, cont)
     in
     begin match opt_init_expr with
