@@ -75,6 +75,18 @@ let transl_extension_constructor ~scopes env path ext =
   | Text_rebind(path, _lid) ->
       transl_extension_path loc env path
 
+(* To propagate structured constants *)
+
+exception Not_constant
+
+let extract_constant = function
+    Lconst sc -> sc
+  | _ -> raise Not_constant
+
+let extract_float = function
+    Const_float f -> f
+  | _ -> fatal_error "Translcore.extract_float"
+
 (* Compile record field accesses *)
 
 let transl_atomic_field ~scopes:_ lbl =
@@ -138,17 +150,35 @@ let transl_set_field ~scopes loc trec lbl imm_kind tnewval =
     in
     Lprim(Pignore, [Lprim (Pccall prim, [trec; pos; tnewval], loc)], loc)
 
-(* To propagate structured constants *)
-
-exception Not_constant
-
-let extract_constant = function
-    Lconst sc -> sc
-  | _ -> raise Not_constant
-
-let extract_float = function
-    Const_float f -> f
-  | _ -> fatal_error "Translcore.extract_float"
+let transl_record_init ~scopes loc env fields repres tvals shape =
+  let mut =
+    if Array.exists (fun (lbl, _) -> lbl.lbl_mut = Mutable) fields
+    then Mutable
+    else Immutable in
+  try
+    if mut = Mutable then raise Not_constant;
+    let cl = List.map extract_constant tvals in
+    match repres with
+    | Record_regular -> Lconst(Const_block(0, cl))
+    | Record_inlined tag -> Lconst(Const_block(tag, cl))
+    | Record_unboxed _ -> Lconst(match cl with [v] -> v | _ -> assert false)
+    | Record_float ->
+      Lconst(Const_float_array(List.map extract_float cl))
+    | Record_extension _ ->
+      raise Not_constant
+  with Not_constant ->
+    let loc = of_location ~scopes loc in
+    match repres with
+    | Record_regular ->
+      Lprim(Pmakeblock(0, mut, Some shape), tvals, loc)
+    | Record_inlined tag ->
+      Lprim(Pmakeblock(tag, mut, Some shape), tvals, loc)
+    | Record_unboxed _ -> (match tvals with [v] -> v | _ -> assert false)
+    | Record_float ->
+      Lprim(Pmakearray (Pfloatarray, mut), tvals, loc)
+    | Record_extension path ->
+      let slot = transl_extension_path loc env path in
+      Lprim(Pmakeblock(0, mut, Some (Pgenval :: shape)), slot :: tvals, loc)
 
 (* Insertion of debugging events *)
 
@@ -1011,37 +1041,8 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
                transl_exp ~scopes expr, field_kind)
         fields
     in
-    let ll, shape = List.split (Array.to_list lv) in
-    let mut =
-      if Array.exists (fun (lbl, _) -> lbl.lbl_mut = Mutable) fields
-      then Mutable
-      else Immutable in
-    let lam =
-      try
-        if mut = Mutable then raise Not_constant;
-        let cl = List.map extract_constant ll in
-        match repres with
-        | Record_regular -> Lconst(Const_block(0, cl))
-        | Record_inlined tag -> Lconst(Const_block(tag, cl))
-        | Record_unboxed _ -> Lconst(match cl with [v] -> v | _ -> assert false)
-        | Record_float ->
-            Lconst(Const_float_array(List.map extract_float cl))
-        | Record_extension _ ->
-            raise Not_constant
-      with Not_constant ->
-        let loc = of_location ~scopes loc in
-        match repres with
-          Record_regular ->
-            Lprim(Pmakeblock(0, mut, Some shape), ll, loc)
-        | Record_inlined tag ->
-            Lprim(Pmakeblock(tag, mut, Some shape), ll, loc)
-        | Record_unboxed _ -> (match ll with [v] -> v | _ -> assert false)
-        | Record_float ->
-            Lprim(Pmakearray (Pfloatarray, mut), ll, loc)
-        | Record_extension path ->
-            let slot = transl_extension_path loc env path in
-            Lprim(Pmakeblock(0, mut, Some (Pgenval :: shape)), slot :: ll, loc)
-    in
+    let tvals, shape = List.split (Array.to_list lv) in
+    let lam = transl_record_init ~scopes loc env fields repres tvals shape in
     begin match opt_init_expr with
       None -> lam
     | Some init_expr -> Llet(Strict, Pgenval, init_id,
