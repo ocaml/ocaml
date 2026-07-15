@@ -111,6 +111,9 @@ Working version
   GetFileInformationByName call underpinning the CRT's stat implementation.
   (David Allsopp, review by Nicolás Ojeda Bär and Antonin Décimo)
 
+- #14506: Add frame pointers support for RISC-V Linux.
+  (Miod Vallat and Tim McGilchrist, review by Zane Hambly)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14842, #14845: Keep expansion and

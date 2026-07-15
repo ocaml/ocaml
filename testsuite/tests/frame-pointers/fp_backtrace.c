@@ -124,18 +124,29 @@ void fp_backtrace(CAMLunused value argv0)
 {
   const char* symbol = NULL;
 
-  for (struct frame_info *fi = __builtin_frame_address(0), *next = NULL;
-       fi;
-       fi = next) {
-    next = fi->prev;
+  for (struct frame_info *frame = __builtin_frame_address(0), *next = NULL;
+       frame;
+       frame = next) {
+#if defined(__riscv)
+    /* On RISC-V, __builtin_frame_address returns s0 = CFA, which points
+       past the frame record.  Subtract one record to reach {prev, retaddr}. */
+    frame--;
+#endif
+    next = frame->prev;
 
     /* Detect the simplest kind of infinite loop */
-    if (fi == next) {
+#if defined(__riscv)
+    /* On RISC-V, frame is CFA-16 (record) but next is a CFA value,
+       so a self-loop means next == frame + 1 (in struct units). */
+    if (next == frame + 1) {
+#else
+    if (frame == next) {
+#endif
       fprintf(stderr, "fp_backtrace: loop detected\n");
       break;
     }
 
-    symbol = backtrace_symbol(fi);
+    symbol = backtrace_symbol(frame);
     if (!symbol)
       continue;
 

@@ -22,9 +22,14 @@ let trap_handler_size = 16
 
 class stackframe = object
 
-inherit Stackframegen.stackframe_generic
+inherit Stackframegen.stackframe_generic as super
 
 method trap_handler_size = trap_handler_size
+
+(* When frame pointers are enabled, we must always allocate a frame
+   so that the frame pointer chain is properly maintained. *)
+method! frame_required f contains_calls =
+  Config.with_frame_pointers || super#frame_required f contains_calls
 
 end
 
