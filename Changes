@@ -189,7 +189,7 @@ Working version
   following a mutable-field assignment.  A few old cores
   (Cortex-A53/-A57/-A72/-A73) are slower with a release store and keep the
   barrier; the default is chosen at configure time and can be overridden.
-  (Sebastian Pop and Xavier Leroy, review by Olivier Nicole)
+  (Sebastian Pop and Xavier Leroy, review by Xavier Leroy and Olivier Nicole)
 
 ### Standard library:
 
