@@ -179,6 +179,11 @@ Working version
   The pattern is uncommon in hand-written code but some ppxes produce it.
   (Vincent Laviron, report by Sacha-Élie Ayoun, review by Gabriel Scherer)
 
+- #13217: Generate `caml_program` as a loop over a table of module entry points
+  instead of emitting one call block per module, making the size of the startup
+  code independent of the number of linked modules.
+  (Pierre Oechsel and Tim McGilchrist, review by Stefan Muenzel)
+
 ### Standard library:
 
 - #10798: Atomic helper function
