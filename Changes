@@ -186,7 +186,7 @@ Working version
 
 ### Standard library:
 
-- #???, #13937: Add `{Option,Result}.try_value`
+- #14941, #13937: Add `{Option,Result}.try_value`
   (Michael Neumann, review by ???)
 
 - #10798: Atomic helper function
