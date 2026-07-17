@@ -55,6 +55,8 @@ let exists p = function
   | None -> false
   | Some v -> p v
 
+let try_value o f = match o with | None -> f () | _ -> o
+
 let to_result ~none = function None -> Error none | Some v -> Ok v
 let to_list = function None -> [] | Some v -> [v]
 let to_seq = function None -> Seq.empty | Some v -> Seq.return v
