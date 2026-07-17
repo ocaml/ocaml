@@ -23,6 +23,13 @@ val freebsd : bool
 
 val top_bits_ignore : bool
 
+(* Use a store-release (stlr/stlur) for the assignment memory-model barrier
+   instead of dmb ishld; str. *)
+val store_release : bool ref
+
+(* FEAT_LRCPC2: use store-release with an unscaled immediate offset (stlur). *)
+val lrcpc2 : bool ref
+
 (* Machine-specific command-line options *)
 
 val command_line_options : (string * Arg.spec * string) list

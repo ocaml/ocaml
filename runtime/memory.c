@@ -139,26 +139,24 @@
    This fence is here specifically to ensure the correctness of the
    ARMv8 assembly emitted for atomic writes implemented in C such as
    caml_atomic_exchange.
-   The reason we need it is that the ARMv8 emitted by the OCaml compiler
-   is more optimized than what current C compilers emit. We need to
-   ensure that non-atomic stores are ordered after prior atomic
-   operations and non-atomic loads. (More precisely, we need
-   happens-before between operations that synchronise with a prior
-   atomic operator / write to a prior atomic load, and operations that
-   read from this nonatomic store.) The best sequence a C compiler can
-   emit for nonatomic stores, under this constraint, is `dmb ishld;
-   stlr` (in `caml_modify` for instance).
+   The default ARMv8 instruction emitted by the OCaml compiler for a non-atomic
+   store is `stlr`. A few old cores (e.g. Cortex-A53, Cortex-A72) are faster
+   with `dmb ishld; str` and select it via `-fbarrier-store` / configure.
+   We need to ensure that non-atomic stores are ordered after prior atomic
+   operations and non-atomic loads. (More precisely, we need happens-before
+   between operations that synchronise with a prior atomic operator / write to
+   a prior atomic load, and operations that read from this nonatomic store.)
+   `stlr` provides these guarantees.
 
-   The OCaml compiler, on the other hand, emits `dmb ishld; str` with a
-   plain store, while emitting a `dmb ishst` barrier after atomic
-   operations. `dmb ishld` provides ordering with respect to prior reads
-   (covering both nonatomic loads and atomic ones), while `dmb ishst`
-   provides ordering with respect to prior writes. Since we only need
-   the ordering with respect to prior atomic writes, we can place the
-   `dmb ishst` after each atomic write rather than before nonatomic
-   writes. The extra release fence on the C side is here to emit this
+   When non-atomic stores are compiled as `dmb ishld; str`, however, we need to
+   emit a `dmb ishst` barrier after atomic operations. `dmb ishld` provides
+   ordering with respect to prior reads (covering both nonatomic loads and
+   atomic ones), while `dmb ishst` provides ordering with respect to prior
+   writes. Since we only need the ordering with respect to prior atomic writes,
+   we can place the `dmb ishst` after each atomic write rather than before
+   nonatomic writes. The extra release fence on the C side is here to emit this
    `dmb ishst` on ARMv8, in order to provide ordering to the weak `str`
-   instructions emitted by the OCaml compiler.
+   instructions the OCaml compiler may be configured to emit.
 */
 
 /* Note [MMPS]: Publication safety in the memory model.

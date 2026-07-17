@@ -1779,6 +1779,34 @@ AS_CASE([$target],
     [has_native_backend=yes; arch=amd64; system=none]
 )
 
+# On arm64, choose how the multicore memory-model barrier that precedes a
+# non-initializing store to a mutable field/element is emitted (see
+# https://github.com/ocaml/ocaml/issues/13262).  The default is a
+# store-release (stlr).  If FEAT_LRCPC2 is available we use stlur (a
+# store-release with an unscaled offset, saving an address computation).  A
+# few old cores (Cortex-A53/-A57/-A72/-A73) are slower with a release store,
+# so we keep the dmb ishld; str barrier on them.  This is a build-host
+# heuristic (like the arm32 arch/fpu default) and can be overridden with
+# ocamlopt's -flrcpc2 / -fno-lrcpc2 / -fbarrier-store / -fstore-release.
+AS_IF([test x"$arch" = "xarm64"],
+  [AC_MSG_CHECKING([arm64 store for the assignment memory barrier])
+   AC_RUN_IFELSE(
+     [AC_LANG_PROGRAM([], [[
+        volatile long dst = 0;
+        long src = 1;
+        __asm__ __volatile__(".arch armv8.4-a\n\tstlur %0, [%1, #0]"
+          : : "r" (src), "r" (&dst) : "memory");
+        return dst == 1 ? 0 : 1;
+      ]])],
+     [model=lrcpc2; ocaml_arm64_store="stlur (FEAT_LRCPC2)"],
+     [AS_IF(
+        [test -r /proc/cpuinfo &&
+         grep -Eq 'CPU part.*(0xd03|0xd04|0xd07|0xd08|0xd09)' /proc/cpuinfo],
+        [model=arm64_barrier; ocaml_arm64_store="dmb ishld; str (old core)"],
+        [ocaml_arm64_store="stlr (store-release)"])],
+     [ocaml_arm64_store="stlr (store-release, cross-compiling)"])
+   AC_MSG_RESULT([$ocaml_arm64_store])])
+
 AS_CASE([$arch],
   [amd64],
     [arch_specific_SOURCES='$(intel_SOURCES)'],
