@@ -24,7 +24,7 @@ let main () =
           fiber ();
           loop fibers
         | [] ->
-          while Atomic.get fibers_in == [] do
+          while Atomic.get fibers_in = [] do
             Domain.cpu_relax ()
           done;
           loop (List.rev (Atomic.exchange fibers_in []))
@@ -36,20 +36,23 @@ let main () =
     push fibers_in (fun () -> raise Exit);
     Domain.join receiving_domain
   in
+  let rec busy_wait () =
+    if Atomic.get fibers_in <> [] then
+      (Domain.cpu_relax (); busy_wait ())
+  in
   Fun.protect ~finally begin fun () ->
-    let effc (type a) (e : a Effect.t) =
-      match e with
-      | Migrate ->
-        Some (fun (k : (a, unit) Effect.Deep.continuation) ->
-          push fibers_in (Effect.Deep.continue k))
-      | _ ->
-        None
-    in
-    let handler = { Effect.Deep.retc = Fun.id; exnc = raise; effc } in
-    for _ = 1 to 1_000_000 do
-      Effect.Deep.match_with (fun () -> Effect.perform Migrate) () handler
+    for _ = 1 to 50 do
+      for _ = 1 to 10 do
+        match Effect.perform Migrate with
+        | () -> ()
+        | effect Migrate, k -> push fibers_in (Effect.Deep.continue k)
+      done;
+      busy_wait ();
     done;
-    Printf.printf "OK\n%!"
+    let cache_size = (Gc.quick_stat()).live_stacks_words in
+    if (cache_size < 25000) then
+      Printf.printf "OK\n%!"
+    else Printf.printf "Bad %d\n%!" cache_size
   end
 
 let () = main ()
