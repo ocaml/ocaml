@@ -5248,10 +5248,10 @@ and type_expect_
           exp_attributes = sexp.pexp_attributes;
           exp_env = env }
       in
-      if !Clflags.typing_recovery then
+      begin
         try suspended ()
         with Error.In_context
-            (_, _, Undefined_method (obj, _, _)) ->
+            (_, _, Undefined_method (obj, _, _)) when !Clflags.typing_recovery ->
             rue {
               exp_desc = Texp_send(obj, Tmeth_name met);
               exp_loc = loc; exp_extra = [];
@@ -5259,7 +5259,7 @@ and type_expect_
               exp_attributes =
                 Typing_recovery_state.recovery_attributes sexp.pexp_attributes;
               exp_env = env }
-      else suspended ()
+      end
   | Pexp_new cl ->
       let (cl_path, cl_decl) = Env.lookup_class ~loc:cl.loc cl.txt env in
       begin match cl_decl.cty_new with
@@ -5957,15 +5957,13 @@ and type_function
           in
           (params, body, newtypes, contains_gadt), exp_type)
       in
-      if !Clflags.typing_recovery then
+      begin
         try
           with_explanation ty_fun.explanation (fun () ->
               unify_exp_types loc env exp_type (instance ty_expected))
-        with exn when is_recoverable exn ->
+        with exn when !Clflags.typing_recovery && is_recoverable exn ->
           Typing_recovery.erroneous_type_register ty_expected
-      else
-        with_explanation ty_fun.explanation (fun () ->
-            unify_exp_types loc env exp_type (instance ty_expected));
+      end;
       exp_type, params, body, newtype :: newtypes, contains_gadt
   | { pparam_desc = Pparam_val (arg_label, None, pat); pparam_loc } :: rest
     when is_unpack pat && could_be_functor env ty_expected
