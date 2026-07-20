@@ -609,6 +609,22 @@ void caml_free_stack_memory(struct stack_info* stack) {
 #endif
 }
 
+void caml_free_stack_cache (struct stack_info** stack_cache)
+{
+  if (stack_cache == NULL)
+    return;
+
+  struct stack_info* stored_stack;
+  for (int i = 0; i < NUM_STACK_SIZE_CLASSES; i++) {
+    while (stack_cache[i] != NULL) {
+      stored_stack = stack_cache[i];
+      stack_cache[i] = (struct stack_info*) stored_stack->exception_ptr;
+      caml_free_stack_memory(stored_stack);
+    };
+  }
+  caml_stat_free(stack_cache);
+}
+
 void caml_free_stack (struct stack_info* stack)
 {
   CAMLnoalloc;
