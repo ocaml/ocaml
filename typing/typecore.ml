@@ -5251,7 +5251,8 @@ and type_expect_
       begin
         try suspended ()
         with Error.In_context
-            (_, _, Undefined_method (obj, _, _)) when !Clflags.typing_recovery ->
+            (_, _, Undefined_method (obj, _, _)) when
+            !Clflags.typing_recovery ->
             rue {
               exp_desc = Texp_send(obj, Tmeth_name met);
               exp_loc = loc; exp_extra = [];

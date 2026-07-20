@@ -329,9 +329,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
-- #14241, #14824, #14945: Introduction of a typing recovery mechanism to collect more
-  than one typing error, facilitating integration with editors that
-  need to report more than one error.
+- #14241, #14824, #14945: Introduction of a typing recovery mechanism to
+  collect more than one typing error, facilitating integration with editors
+  that need to report more than one error.
   (Xavier Van de Woestyne, Ulysse Gerard, Thomas Refis and Frédéric
   Bour, review by Florian Angeletti and Thomas Refis)
 
