@@ -66,15 +66,25 @@ let print_label ppf l =
 
 (* If a function returns a functional value, wrap it into a trace code *)
 
+let split_arrow env ty =
+  match get_desc (Ctype.expand_head env ty) with
+  | Tarrow(l, t1, t2, _) -> Some (l, t1, env, t2)
+  | Tfunctor (l,id,pack,t2) ->
+      let t1 = Ctype.newty (Tpackage pack) in
+      let env, t2 = Ctype.open_tfunctor ~loc:Location.none env id pack t2 in
+      Some (l, t1, env, t2)
+  | _ -> None
+
 let rec instrument_result env name ppf clos_typ =
-  match get_desc (Ctype.expand_head env clos_typ) with
-  | Tarrow(l, t1, t2, _) ->
+  match split_arrow env clos_typ with
+  | None -> fun v -> v
+  | Some (l,t1,newenv,t2) ->
       let starred_name =
         match name with
         | Lident s -> Lident(s ^ "*" )
         | Ldot(lid, id) -> Ldot(lid, { id with txt = id.txt ^ "*" })
         | Lapply _ -> fatal_error "Trace.instrument_result" in
-      let trace_res = instrument_result env starred_name ppf t2 in
+      let trace_res = instrument_result newenv starred_name ppf t2 in
       (fun clos_val ->
         Obj.repr (fun arg ->
           if not !may_trace then
@@ -102,7 +112,6 @@ let rec instrument_result env name ppf clos_typ =
               may_trace := true;
               raise exn
           end))
-  | _ -> (fun v -> v)
 
 (* Same as instrument_result, but for a toplevel closure (modified in place) *)
 
@@ -110,9 +119,9 @@ exception Dummy
 let _ = Dummy
 
 let instrument_closure env name ppf clos_typ =
-  match get_desc (Ctype.expand_head env clos_typ) with
-  | Tarrow(l, t1, t2, _) ->
-      let trace_res = instrument_result env name ppf t2 in
+  match split_arrow env clos_typ with
+  | Some(l, t1, newenv, t2) ->
+      let trace_res = instrument_result newenv name ppf t2 in
       (fun actual_code closure arg ->
         if not !may_trace then begin
           try invoke_traced_function actual_code closure arg
@@ -141,7 +150,7 @@ let instrument_closure env name ppf clos_typ =
             may_trace := true;
             raise exn
         end)
-  | _ -> assert false
+  | None -> assert false
 
 (* Given the address of a closure, find its tracing info *)
 
