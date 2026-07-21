@@ -176,6 +176,7 @@ lambda_SOURCES = $(addprefix lambda/, \
   switch.mli switch.ml \
   matching.mli matching.ml \
   value_rec_compiler.mli value_rec_compiler.ml \
+  taglib.mli taglib.ml \
   translobj.mli translobj.ml \
   translattribute.mli translattribute.ml \
   translprim.mli translprim.ml \
