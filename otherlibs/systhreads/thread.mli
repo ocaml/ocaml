@@ -90,7 +90,7 @@ val exit : unit -> unit
 
 val delay: float -> unit
 (** [delay d] suspends the execution of the calling thread for
-   [d] seconds. The other program threads continue to run during
+   at least [d] seconds. The other program threads continue to run during
    this time. *)
 
 val join : t -> unit
