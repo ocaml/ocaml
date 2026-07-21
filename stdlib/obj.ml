@@ -154,3 +154,8 @@ module Ephemeron = struct
   external blit_data : t -> t -> unit = "caml_ephe_blit_data"
 
 end
+
+(* Access reserved bits from the program *)
+external reserved_bits : unit -> int = "caml_obj_reserved_bits" [@@noalloc]
+external get_reserved : t -> int = "caml_obj_get_reserved" [@@noalloc]
+external set_reserved : t -> int -> bool = "caml_obj_set_reserved"

@@ -385,3 +385,67 @@ CAMLprim value caml_update_dummy_lazy(value dummy, value newval)
   }
   return Val_unit;
 }
+
+#if HEADER_RESERVED_BITS > 0
+
+CAMLprim value caml_obj_reserved_bits(value unit)
+{
+  (void)unit;
+  return Val_long(HEADER_RESERVED_BITS);
+}
+
+CAMLprim value caml_obj_get_reserved(value obj)
+{
+  if (Is_block(obj))
+    return Val_long(Reserved_val(obj));
+  else
+    return Val_long(0);
+}
+
+CAMLprim value caml_obj_set_reserved(value obj, value vtag)
+{
+  if (!Is_block(obj))
+    return Val_bool(0);
+
+  header_t old_hd = Hd_val(obj);
+  header_t tag = Hd_reserved(Long_val(vtag));
+  header_t mask = Hd_reserved(1) - 1;
+
+  // FIXME: Protect against a concurrent thread marking the header
+  // I am not sure it is safe, nor if it is alway necessary.
+  while (1) {
+    header_t new_hd = (old_hd & mask) | tag;
+
+    // Atomically swap new header
+    if (atomic_compare_exchange_weak_explicit(
+            Hp_atomic_val(obj),
+            &old_hd, // If swap fails, old_hd is updated to current header
+            new_hd, memory_order_relaxed, memory_order_relaxed))
+      break; // Success! Value committed.
+  }
+
+  return Val_bool(1);
+}
+
+#else
+
+CAMLprim value caml_obj_reserved_bits(value unit)
+{
+  (void)unit;
+  return Val_long(0);
+}
+
+CAMLprim value caml_obj_get_reserved(value obj)
+{
+  if (Is_block(obj))
+    return Val_bool(Profinfo_val(obj));
+  else
+    return Val_bool(0);
+}
+
+CAMLprim value caml_obj_set_reserved(value obj, value tag)
+{
+  return Val_bool(0);
+}
+
+#endif
