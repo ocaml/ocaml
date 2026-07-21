@@ -276,6 +276,7 @@ module Make(Ord: OrderedType) =
               else bal l v rr
 
     let rec union s1 s2 =
+      if s1 == s2 then s1 else
       match (s1, s2) with
         (Empty, t2) -> t2
       | (t1, Empty) -> t1

@@ -418,6 +418,7 @@ module Make(Ord: OrderedType) = struct
           assert false
 
     let rec union f s1 s2 =
+      if s1 == s2 then s1 else
       match (s1, s2) with
       | (Empty, s) | (s, Empty) -> s
       | (Node {l=l1; v=v1; d=d1; r=r1; h=h1},

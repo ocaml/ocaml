@@ -247,6 +247,9 @@ Working version
   than intuition might suggest, when presented with unusual filenames.
   (David Allsopp, review by Nicolás Ojeda Bär and Antonin Décimo)
 
+- #14949: better complexity for {Map,Set}.union on related maps/sets
+  (Valentin Gatien-Baron, review by ..)
+
 ### Other libraries:
 
 * #14788: The Win32 error code `ERROR_DIRECTORY` (= 267) is now mapped to
