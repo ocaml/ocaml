@@ -319,7 +319,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
   | Texp_extension_constructor (_, path) ->
       transl_extension_path (of_location ~scopes e.exp_loc) e.exp_env path
   | Texp_variant(l, arg) ->
-      let tag = Btype.hash_variant l in
+      let tag = Obj.hash_variant l in
       begin match arg with
         None -> Lconst(const_int tag)
       | Some arg ->

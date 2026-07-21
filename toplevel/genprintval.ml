@@ -568,7 +568,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           let tag : int = O.base_obj (O.field obj 0) in
           let rec find = function
             | (l, f) :: fields ->
-                if Btype.hash_variant l = tag then
+                if Obj.hash_variant l = tag then
                   match row_field_repr f with
                   | Rpresent(Some ty) | Reither(_,[ty],_) ->
                       let args =
@@ -583,7 +583,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           let tag : int = O.base_obj obj in
           let rec find = function
             | (l, _) :: fields ->
-                if Btype.hash_variant l = tag then
+                if Obj.hash_variant l = tag then
                   Oval_variant (l, None)
                 else find fields
             | [] -> Oval_stuff "<variant>" in

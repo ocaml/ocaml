@@ -3684,10 +3684,10 @@ and unify_row uenv row1 row2 =
   let r1, r2, pairs = merge_row_fields row1_fields row2_fields in
   if r1 <> [] && r2 <> [] then begin
     let ht = Hashtbl.create (List.length r1) in
-    List.iter (fun (l,_) -> Hashtbl.add ht (hash_variant l) l) r1;
+    List.iter (fun (l,_) -> Hashtbl.add ht (Obj.hash_variant l) l) r1;
     List.iter
       (fun (l,_) ->
-        try raise (Tags(l, Hashtbl.find ht (hash_variant l)))
+        try raise (Tags(l, Hashtbl.find ht (Obj.hash_variant l)))
         with Not_found -> ())
       r2
   end;

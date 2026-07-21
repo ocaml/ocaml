@@ -639,7 +639,7 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
       let module HMap = Numbers.Int.Map in
       let hfields = ref HMap.empty in
       let add_typed_field loc l f =
-        let h = Btype.hash_variant l in
+        let h = Obj.hash_variant l in
         try
           let (l',f') = HMap.find h !hfields in
           (* Check for tag conflicts *)

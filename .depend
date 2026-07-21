@@ -4621,7 +4621,6 @@ lambda/matching.cmo : \
     lambda/debuginfo.cmi \
     typing/data_types.cmi \
     utils/clflags.cmi \
-    typing/btype.cmi \
     parsing/asttypes.cmi \
     lambda/matching.cmi
 lambda/matching.cmx : \
@@ -4646,7 +4645,6 @@ lambda/matching.cmx : \
     lambda/debuginfo.cmx \
     typing/data_types.cmx \
     utils/clflags.cmx \
-    typing/btype.cmx \
     parsing/asttypes.cmx \
     lambda/matching.cmi
 lambda/matching.cmi : \
@@ -4782,7 +4780,6 @@ lambda/translclass.cmo : \
     typing/env.cmi \
     lambda/debuginfo.cmi \
     utils/clflags.cmi \
-    typing/btype.cmi \
     parsing/asttypes.cmi \
     lambda/translclass.cmi
 lambda/translclass.cmx : \
@@ -4803,7 +4800,6 @@ lambda/translclass.cmx : \
     typing/env.cmx \
     lambda/debuginfo.cmx \
     utils/clflags.cmx \
-    typing/btype.cmx \
     parsing/asttypes.cmx \
     lambda/translclass.cmi
 lambda/translclass.cmi : \
@@ -4944,7 +4940,6 @@ lambda/translobj.cmo : \
     typing/env.cmi \
     utils/config.cmi \
     utils/clflags.cmi \
-    typing/btype.cmi \
     parsing/asttypes.cmi \
     lambda/translobj.cmi
 lambda/translobj.cmx : \
@@ -4955,7 +4950,6 @@ lambda/translobj.cmx : \
     typing/env.cmx \
     utils/config.cmx \
     utils/clflags.cmx \
-    typing/btype.cmx \
     parsing/asttypes.cmx \
     lambda/translobj.cmi
 lambda/translobj.cmi : \

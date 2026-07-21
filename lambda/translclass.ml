@@ -1082,10 +1082,10 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
   (* Sort methods by hash *)
   let pub_meths =
     List.sort
-      (fun s s' -> compare (Btype.hash_variant s) (Btype.hash_variant s'))
+      (fun s s' -> compare (Obj.hash_variant s) (Obj.hash_variant s'))
       pub_meths in
   (* Check for hash conflicts *)
-  let tags = List.map Btype.hash_variant pub_meths in
+  let tags = List.map Obj.hash_variant pub_meths in
   let rev_map = List.combine tags pub_meths in
   List.iter2
     (fun tag name ->
