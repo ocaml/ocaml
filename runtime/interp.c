@@ -1431,6 +1431,14 @@ do_resume: {
       goto check_stacks;
     }
 
+    Instruct(NEXT_RESERVED_BITS): {
+#if HEADER_RESERVED_BITS > 0
+      domain_state->next_reserved_bits = *pc;
+#endif
+      pc++;
+      Next;
+    }
+
 #ifndef THREADED_CODE
     default:
 #ifdef _MSC_VER

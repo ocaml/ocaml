@@ -819,6 +819,13 @@ static void extern_rec(struct caml_extern_state* s, value v)
         goto next_item;
       }
     }
+
+#if HEADER_RESERVED_BITS > 0
+    reserved_t reserved = Reserved_hd(hd);
+    if (!(s->extern_flags & COMPAT_32) && reserved)
+      writecode32(s, CODE_RESERVED_BITS, reserved);
+#endif
+
     /* Output the contents of the object */
     switch(tag) {
     case String_tag: {
