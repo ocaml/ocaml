@@ -478,6 +478,11 @@ for an example of careful usage of [Unscoped], by locally shadowing
 [Path] to hide [Path.same].
 "]
 
+(** Equivalence of (mod)type paths modulo path normalization. *)
+val type_path_equiv_modulo : t -> Path.t -> Path.t -> bool
+val modtype_path_equiv_modulo : t -> Path.t -> Path.t -> bool
+
+
 (* Error report *)
 
 type error =

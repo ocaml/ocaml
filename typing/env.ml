@@ -3658,6 +3658,16 @@ module Unscoped = struct
   let path_equiv env p1 p2 = Path.equiv env.id_pairs p1 p2
 end
 
+let type_path_equiv_modulo env p1 p2 =
+  Unscoped.path_equiv env
+    (normalize_type_path None env p1)
+    (normalize_type_path None env p2)
+
+let modtype_path_equiv_modulo env p1 p2 =
+  Unscoped.path_equiv env
+    (normalize_modtype_path env p1)
+    (normalize_modtype_path env p2)
+
 (* Error report *)
 
 open Format_doc

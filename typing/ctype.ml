@@ -51,9 +51,7 @@ module Env_unscoped =
 *)
 let quick_eq_type_path ~normalize env p1 p2 =
   Env_unscoped.path_equiv env p1 p2 ||
-  normalize && Env_unscoped.path_equiv env
-    (Env.normalize_type_path None env p1)
-    (Env.normalize_type_path None env p2)
+  normalize && Env.type_path_equiv_modulo env p1 p2
 
 (* Check that [p1] and [p2] are equivalent, assuming that [p1] and
    [p2] have been normalized. (Typically they are Tconstr paths,
@@ -65,9 +63,7 @@ let eq_expanded_type_path env p1 p2  =
 
 let eq_package_path env p1 p2 =
   Env_unscoped.path_equiv env p1 p2 ||
-  Env_unscoped.path_equiv env
-    (Env.normalize_modtype_path env p1)
-    (Env.normalize_modtype_path env p2)
+  Env.modtype_path_equiv_modulo env p1 p2
 
 (*
    General notes
