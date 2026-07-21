@@ -205,5 +205,9 @@ DOMAIN_STATE(struct caml_exception_context*, external_raise)
 DOMAIN_STATE(struct memprof_domain_s *, memprof)
 DOMAIN_STATE(value *, memprof_young_trigger)
 
+#if HEADER_RESERVED_BITS > 0
+DOMAIN_STATE(reserved_t, next_reserved_bits)
+#endif
+
 DOMAIN_STATE(extra_params_area, extra_params)
 /* This member must occur last, because it is an array, not a scalar */

@@ -115,6 +115,18 @@ sp is a local copy of the global variable Caml_state->current_stack->sp. */
     pc = (code_t) sp[3]; env = sp[4]; extra_args = Long_val(sp[5]); \
     sp += 6; }
 
+#if HEADER_RESERVED_BITS > 0
+
+#define Alloc_shr(wosize, tag)                  \
+  caml_alloc_shr_reserved(wosize, tag, Caml_pop_next_reserved_bits())
+
+#else
+
+#define Alloc_shr(wosize, tag) caml_alloc_shr(wosize, tag)
+
+#endif
+
+
 /* Debugger interface */
 
 #define Setup_for_debugger \
@@ -645,9 +657,9 @@ value caml_bytecode_interpreter(code_t prog, asize_t prog_size,
         for (int i = 0; i < nvars; i++) Field(accu, i + 2) = sp[i];
       } else {
         /* PR#6385: must allocate in major heap */
-        /* caml_alloc_shr and caml_initialize never trigger a GC,
+        /* Alloc_shr and caml_initialize never trigger a GC,
            so no need to Setup_for_gc */
-        accu = caml_alloc_shr(2 + nvars, Closure_tag);
+        accu = Alloc_shr(2 + nvars, Closure_tag);
         for (int i = 0; i < nvars; i++)
           caml_initialize(&Field(accu, i + 2), sp[i]);
       }
@@ -673,9 +685,9 @@ value caml_bytecode_interpreter(code_t prog, asize_t prog_size,
         for (int i = 0; i < nvars; i++, p++) *p = sp[i];
       } else {
         /* PR#6385: must allocate in major heap */
-        /* caml_alloc_shr and caml_initialize never trigger a GC,
+        /* Alloc_shr and caml_initialize never trigger a GC,
            so no need to Setup_for_gc */
-        accu = caml_alloc_shr(blksize, Closure_tag);
+        accu = Alloc_shr(blksize, Closure_tag);
         p = &Field(accu, envofs);
         for (int i = 0; i < nvars; i++, p++) caml_initialize(p, sp[i]);
       }
@@ -767,7 +779,7 @@ value caml_bytecode_interpreter(code_t prog, asize_t prog_size,
         Field(block, 0) = accu;
         for (mlsize_t i = 1; i < wosize; i++) Field(block, i) = *sp++;
       } else {
-        block = caml_alloc_shr(wosize, tag);
+        block = Alloc_shr(wosize, tag);
         caml_initialize(&Field(block, 0), accu);
         for (mlsize_t i = 1; i < wosize; i++)
           caml_initialize(&Field(block, i), *sp++);
@@ -810,7 +822,7 @@ value caml_bytecode_interpreter(code_t prog, asize_t prog_size,
       if (size <= Max_young_wosize / Double_wosize) {
         Alloc_small(block, size * Double_wosize, Double_array_tag, Enter_gc);
       } else {
-        block = caml_alloc_shr(size * Double_wosize, Double_array_tag);
+        block = Alloc_shr(size * Double_wosize, Double_array_tag);
       }
       Store_double_flat_field(block, 0, Double_val(accu));
       for (mlsize_t i = 1; i < size; i++){

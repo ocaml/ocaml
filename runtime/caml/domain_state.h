@@ -71,6 +71,19 @@ CAMLnoret CAMLextern void caml_bad_caml_state(void);
 
 #define Caml_state_field(field) (Caml_state->field)
 
+CAMLno_tsan_for_perf Caml_inline
+reserved_t caml_pop_next_reserved_bits(caml_domain_state * dom_st)
+{
+#if HEADER_RESERVED_BITS > 0
+  reserved_t reserved = dom_st->next_reserved_bits;
+  dom_st->next_reserved_bits = 0;
+  return reserved;
+#else
+  return 0;
+#endif
+}
+#define Caml_pop_next_reserved_bits() caml_pop_next_reserved_bits(Caml_state)
+
 #ifdef __cplusplus
 }
 #endif

@@ -226,23 +226,27 @@ enum caml_alloc_small_flags {
 #define Alloc_small_enter_GC_no_track(dom_st, wosize)    \
   Alloc_small_enter_GC_flags(CAML_DONT_TRACK | CAML_FROM_C, dom_st, wosize)
 
-#define Alloc_small_with_reserved(result, wosize, tag, GC, reserved) do{    \
-                                                CAMLassert ((wosize) >= 1); \
-                                          CAMLassert ((tag_t) (tag) < 256); \
-                                 CAMLassert ((wosize) <= Max_young_wosize); \
-  caml_domain_state* dom_st = Caml_state;                                   \
-  dom_st->young_ptr -=  Whsize_wosize(wosize);                              \
-  if (Caml_check_gc_interrupt(dom_st)) {                                    \
-    GC(dom_st, wosize);                                                     \
-  }                                                                         \
-  Hd_hp (dom_st->young_ptr) =                                               \
-    Make_header_with_reserved((wosize), (tag), 0, (reserved));              \
-  (result) = Val_hp (dom_st->young_ptr);                                    \
-  DEBUG_clear ((result), (wosize));                                         \
-}while(0)
+#define Alloc_small_with_reserved(result, dom_st, wosize, tag, GC, reserved)   \
+  do {                                                                         \
+    CAMLassert((wosize) >= 1);                                                 \
+    CAMLassert((tag_t)(tag) < 256);                                            \
+    CAMLassert((wosize) <= Max_young_wosize);                                  \
+    dom_st->young_ptr -= Whsize_wosize(wosize);                                \
+    if (Caml_check_gc_interrupt(dom_st)) {                                     \
+      GC(dom_st, wosize);                                                      \
+    }                                                                          \
+    Hd_hp(dom_st->young_ptr) =                                                 \
+        Make_header_with_reserved((wosize), (tag), 0, (reserved));             \
+    (result) = Val_hp(dom_st->young_ptr);                                      \
+    DEBUG_clear((result), (wosize));                                           \
+  } while (0)
 
-#define Alloc_small(result, wosize, tag, GC) \
-  Alloc_small_with_reserved(result, wosize, tag, GC, (uintnat)0)
+#define Alloc_small(result, wosize, tag, GC)                                   \
+  do {                                                                         \
+    caml_domain_state *dom_st = Caml_state;                                    \
+    reserved_t reserved = caml_pop_next_reserved_bits(dom_st);                 \
+    Alloc_small_with_reserved(result, dom_st, wosize, tag, GC, reserved);      \
+  } while (0)
 
 #endif /* CAML_INTERNALS */
 
