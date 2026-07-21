@@ -14,6 +14,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_CONFIG_H_NO_TYPEDEFS
+#include "config.h"
 val stack_ctx_words : int
 
 type t =
