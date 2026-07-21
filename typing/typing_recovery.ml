@@ -15,8 +15,7 @@
 
 module RawTypeHash = Types.TransientTypeHash
 
-let is_typemod_recoverable_error : (exn -> bool) ref = ref (fun _ -> false)
-
+let ref_recoverable_handlers : (exn -> bool) list ref = ref []
 let ref_errors : (exn list ref * unit RawTypeHash.t) option ref = ref None
 let ref_monitor_errors =
   (* A ref of ref implements scoped errors.
@@ -53,6 +52,11 @@ let uncatch_errors f =
   ref_errors := None;
   Misc.try_finally f ~always:(fun () -> ref_errors := e)
 
+let register_recoverable handler =
+  ref_recoverable_handlers := handler :: !ref_recoverable_handlers
+
+let is_recoverable exn =
+  List.exists (fun handler -> handler exn) !ref_recoverable_handlers
 
 let erroneous_type_check te =
   let te = Types.Transient_expr.coerce te in
