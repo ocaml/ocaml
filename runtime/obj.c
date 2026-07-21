@@ -469,3 +469,9 @@ CAMLprim value caml_compiler_tags(value unit)
 
   return tag_ref;
 }
+
+CAMLprim value caml_read_tag_section(value unit)
+{
+  // FIXME: Implement for bytecode later
+  return Val_unit;
+}
