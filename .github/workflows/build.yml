@@ -118,7 +118,7 @@ jobs:
             name: extra (debug)
           - id: debug-s4096
             name: extra (debug-s4096)
-      fail-fast: true
+      fail-fast: ${{ needs.config.outputs.full-matrix != 'true' }}
     steps:
       - name: Download Artifact
         uses: actions/download-artifact@v8
@@ -266,7 +266,7 @@ jobs:
     strategy:
       matrix:
         include: ${{ fromJSON(needs.config.outputs.jobs) }}
-      fail-fast: true
+      fail-fast: ${{ needs.config.outputs.full-matrix != 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6

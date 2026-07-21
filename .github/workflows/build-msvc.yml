@@ -27,6 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.matrix.outputs.result}}
+      full-matrix: ${{ steps.matrix.outputs.full-matrix }}
       skip-testsuite: ${{ steps.skip.outputs.result }}
     steps:
       - name: Compute matrix for the "build" job
@@ -49,10 +50,12 @@ jobs:
             // # be changed, and then forcing a re-run of the workflow, rather
             // # than having labelling triggering a fresh workflow event (which
             // # is wasteful).
+            let full_matrix = false;
             if (context.payload.pull_request) {
               const { data: labels } =
                 await github.rest.issues.listLabelsOnIssue({...context.repo, issue_number: context.payload.pull_request.number});
-              if (labels.some(label => label.name === 'CI: Full matrix')) {
+              full_matrix = labels.some(label => label.name === 'CI: Full matrix');
+              if (full_matrix) {
                 console.log('Full matrix requested');
                 // # Test Cygwin as well
                 compilers.push('gcc');
@@ -64,6 +67,7 @@ jobs:
                 libdir.push('relative');
               }
             }
+            core.setOutput('full-matrix', full_matrix);
             return {os: ['windows-latest'], prefix: ['$PROGRAMFILES/Бактріан🐫'], opam: ['false'], config_arg: [''], arch: ['x86_64'], cc: compilers, libdir: libdir, include: include};
       - name: Determine if the testsuite should be skipped
         id: skip
@@ -92,7 +96,7 @@ jobs:
 
     strategy:
       matrix: ${{ fromJSON(needs.config.outputs.matrix) }}
-      fail-fast: true
+      fail-fast: ${{ needs.config.outputs.full-matrix != 'true' }}
 
     steps:
 
