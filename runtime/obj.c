@@ -437,10 +437,7 @@ CAMLprim value caml_obj_reserved_bits(value unit)
 
 CAMLprim value caml_obj_get_reserved(value obj)
 {
-  if (Is_block(obj))
-    return Val_bool(Profinfo_val(obj));
-  else
-    return Val_bool(0);
+  return Val_bool(0);
 }
 
 CAMLprim value caml_obj_set_reserved(value obj, value tag)
