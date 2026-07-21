@@ -50,8 +50,9 @@ module Env_unscoped =
    the slow path on equivalent-modulo-normalization types.
 *)
 let quick_eq_type_path ~normalize env p1 p2 =
-  Env_unscoped.path_equiv env p1 p2 ||
-  normalize && Env.type_path_equiv_modulo env p1 p2
+  if normalize
+  then Env.type_path_equiv_modulo env p1 p2
+  else Env_unscoped.path_equiv env p1 p2
 
 (* Check that [p1] and [p2] are equivalent, assuming that [p1] and
    [p2] have been normalized. (Typically they are Tconstr paths,
