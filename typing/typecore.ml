@@ -410,13 +410,13 @@ end = struct
       Typing_recovery.log_or_raise (freeze_error (loc, env, err))
     else
       raise (In_context (loc, env, err))
-end
 
-let is_recoverable = function
-  | Error.In_context _
-  | Env.Error.In_context _
-  | Typetexp.Error.In_context _ -> true
-  | exn -> !Typing_recovery.is_typemod_recoverable_error exn
+  let () =
+    Typing_recovery.register_recoverable (function
+        | In_context _ -> true
+        | _ -> false
+      )
+end
 
 exception Error_forward of Location.error
 
@@ -2080,7 +2080,7 @@ let rec type_pat
     if !Clflags.typing_recovery then
       Typing_recovery_state.with_saved_types (fun () ->
           try delayed ()
-          with exn when is_recoverable exn ->
+          with exn when Typing_recovery.is_recoverable exn ->
             (* We only want to catch error, not internal exceptions
                such as [Need_backtrack], etc.
 
@@ -4522,7 +4522,8 @@ and type_expect ?recarg env sexp (ty_expected_explained : type_expected) =
         Builtin_attributes.warning_scope sexp.pexp_attributes
           (fun () ->
              type_expect_ ?recarg env sexp ty_expected_explained)
-      with exn when !Clflags.typing_recovery && is_recoverable exn ->
+      with exn when !Clflags.typing_recovery
+                 && Typing_recovery.is_recoverable exn ->
         Typing_recovery.erroneous_type_register ty_expected_explained.ty;
         let loc = sexp.pexp_loc in
         let exp =
@@ -5633,7 +5634,8 @@ and type_expect_
         }
       in
       try delayed ()
-      with exn when !Clflags.typing_recovery && is_recoverable exn ->
+      with exn when !Clflags.typing_recovery
+                 && Typing_recovery.is_recoverable exn ->
         (* The original error has been logged already, and we don't want
            spurious errors to show up on parts that are recovered, so we
            locally redirect all errors to a ref that we never read
@@ -5962,7 +5964,8 @@ and type_function
         try
           with_explanation ty_fun.explanation (fun () ->
               unify_exp_types loc env exp_type (instance ty_expected))
-        with exn when !Clflags.typing_recovery && is_recoverable exn ->
+        with exn when !Clflags.typing_recovery
+                   && Typing_recovery.is_recoverable exn ->
           Typing_recovery.erroneous_type_register ty_expected
       end;
       exp_type, params, body, newtype :: newtypes, contains_gadt
@@ -6051,7 +6054,8 @@ and type_function
         try
           with_explanation ty_fun.explanation (fun () ->
               unify_exp_types loc env exp_type (instance ty_expected))
-        with exn when !Clflags.typing_recovery && is_recoverable exn ->
+        with exn when !Clflags.typing_recovery
+                   && Typing_recovery.is_recoverable exn ->
           Typing_recovery.erroneous_type_register ty_expected
       in
       (* This is quadratic, as it extracts all of the parameters from an arrow
@@ -6325,7 +6329,8 @@ and type_label_access env srecord usage lid =
       wrap_disambiguate "This expression has" (mk_expected ty_exp)
         (Label.disambiguate usage lid env expected_type) labels in
     (record, label, expected_type)
-  with exn when !Clflags.typing_recovery && is_recoverable exn ->
+  with exn when !Clflags.typing_recovery
+             && Typing_recovery.is_recoverable exn ->
     Typing_recovery.erroneous_type_register ty_exp;
     let fake_label = {
       lbl_name = "";
@@ -6766,7 +6771,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
   if !Clflags.typing_recovery then
     Typing_recovery_state.with_saved_types (fun () ->
         try delayed ()
-        with exn when is_recoverable exn ->
+        with exn when Typing_recovery.is_recoverable exn ->
           Typing_recovery.erroneous_type_register ty_expected;
           let loc = sarg.pexp_loc in
           let exp =
@@ -7397,7 +7402,8 @@ and type_function_cases_expect
     try
       unify_exp_types loc env ty_fun (instance ty_expected);
       cases, partial, ty_fun
-    with exn when !Clflags.typing_recovery && is_recoverable exn ->
+    with exn when !Clflags.typing_recovery
+               && Typing_recovery.is_recoverable exn ->
       Typing_recovery.erroneous_type_register ty_expected;
       cases, partial, ty_fun
   end

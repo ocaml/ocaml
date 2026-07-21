@@ -101,6 +101,12 @@ end = struct
 
   let log_or_raise loc err =
     Typing_recovery.log_or_raise (In_context (loc, err))
+
+  let () =
+    Typing_recovery.register_recoverable (function
+        | In_context _ -> true
+        | _ -> false
+      )
 end
 
 let get_unboxed_from_attributes sdecl =
