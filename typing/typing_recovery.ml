@@ -53,8 +53,7 @@ let uncatch_errors f =
   Misc.try_finally f ~always:(fun () -> ref_errors := e)
 
 let register_recoverable handler =
-  if !Clflags.typing_recovery then
-    ref_recoverable_handlers := handler :: !ref_recoverable_handlers
+  ref_recoverable_handlers := handler :: !ref_recoverable_handlers
 
 let is_recoverable exn =
   List.exists (fun handler -> handler exn) !ref_recoverable_handlers

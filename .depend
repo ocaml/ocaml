@@ -2338,13 +2338,11 @@ typing/typing_recovery.cmo : \
     typing/types.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
-    utils/clflags.cmi \
     typing/typing_recovery.cmi
 typing/typing_recovery.cmx : \
     typing/types.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
-    utils/clflags.cmx \
     typing/typing_recovery.cmi
 typing/typing_recovery.cmi : \
     typing/types.cmi \
