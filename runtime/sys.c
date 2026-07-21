@@ -305,6 +305,14 @@ CAMLprim value caml_sys_file_exists(value name)
   return (Val_bool(mode != -1));
 }
 
+CAMLprim value caml_sys_file_exists_syserr(value name)
+{
+  CAMLparam1(name);
+  int mode = caml_sys_file_mode(name);
+  if (mode == -1) caml_sys_error(name);
+  CAMLreturn(Val_bool(1));
+}
+
 CAMLprim value caml_sys_is_directory(value name)
 {
   CAMLparam1(name);
