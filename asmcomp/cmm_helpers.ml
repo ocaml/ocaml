@@ -54,11 +54,14 @@ let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8
 
 (* Loads *)
 
+let mk_load mutability memory_chunk =
+  Cload {memory_chunk; mutability; is_atomic=false}
+
 let mk_load_immut memory_chunk =
-  Cload {memory_chunk; mutability=Immutable; is_atomic=false}
+  mk_load Immutable memory_chunk
 
 let mk_load_mut memory_chunk =
-  Cload {memory_chunk; mutability=Mutable; is_atomic=false}
+  mk_load Mutable memory_chunk
 
 let mk_load_atomic memory_chunk =
   Cload {memory_chunk; mutability=Mutable; is_atomic=true}
@@ -95,6 +98,14 @@ let caml_int64_ops = "caml_int64_ops"
 
 let pos_arity_in_closinfo = 8 * size_addr - 8
        (* arity = the top 8 bits of the closinfo word *)
+
+let arity_offset =
+  if big_endian then 0 else size_addr - 1
+
+let get_arity mut ptr dbg =
+  Cop(
+    mk_load mut Byte_signed,
+    [Cop(Cadda, [ptr; Cconst_int(size_addr + arity_offset, dbg)], dbg)], dbg)
 
 let closure_info ~arity ~startenv =
   assert (-128 <= arity && arity <= 127);
@@ -1804,12 +1815,10 @@ let generic_apply mut clos args dbg =
               bind "cfun"
                 (Cifthenelse(
                     Cop(Ccmpi Ceq
-                       , [Cop(Casr,
-                              [get_field_gen Asttypes.Mutable clos 1 (dbg);
-                               Cconst_int(pos_arity_in_closinfo, dbg)], dbg);
+                       , [ get_arity mut clos dbg;
                           Cconst_int(arity, dbg)], dbg),
                     dbg,
-                    get_field_codepointer Asttypes.Mutable clos 2 (dbg),
+                    get_field_codepointer mut clos 2 (dbg),
                     dbg,
                     Cconst_symbol(apply_function_sym arity, dbg),
                     dbg
