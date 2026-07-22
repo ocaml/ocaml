@@ -889,3 +889,21 @@ stdlib.cmx : \
     stdlib.cmi
 stdlib.cmi : \
     camlinternalFormatBasics.cmi
+stdlib__Intro.cmo : intro.ml \
+    stdlib__Sys.cmi \
+    stdlib__Obj.cmi \
+    stdlib__List.cmi \
+    stdlib__Hashtbl.cmi \
+    stdlib__Char.cmi \
+    stdlib__Array.cmi \
+    stdlib__Intro.cmi
+stdlib__Intro.cmx : intro.ml \
+    stdlib__Sys.cmx \
+    stdlib__Obj.cmx \
+    stdlib__List.cmx \
+    stdlib__Hashtbl.cmx \
+    stdlib__Char.cmx \
+    stdlib__Array.cmx \
+    stdlib__Intro.cmi
+stdlib__Intro.cmi : intro.mli \
+    stdlib__Obj.cmi
