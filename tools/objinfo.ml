@@ -56,6 +56,36 @@ let print_line name =
 let print_required_compunit (Compunit cu_name) =
   printf "\t%s\n" cu_name
 
+let print_array f members =
+  ("[|" ^ String.concat ";" (List.map f (Array.to_list members)) ^ "|]")
+
+let print_approx = function
+  | Obj.Tag_descriptor.Any -> "Any"
+  | Obj.Tag_descriptor.Char -> "Char"
+  | Obj.Tag_descriptor.Int -> "Int"
+  | Obj.Tag_descriptor.Polymorphic_variants -> "Polymorphic_variants"
+  | Obj.Tag_descriptor.Constants strings ->
+      "Constants " ^ print_array (sprintf "%S") strings
+
+let print_block_descriptor =
+  let print_field (f, apx) =
+    Printf.sprintf "(%s, %S)" (print_approx apx) f in
+  function
+  | Obj.Tag_descriptor.Unknown ->
+      printf "\tUnknown\n"
+  | Obj.Tag_descriptor.Array apx ->
+      printf "\tArray %s\n" (print_approx apx)
+  | Obj.Tag_descriptor.Tuple {name; tag; fields} ->
+      printf "\tTuple {name = %s; tag = %d; fields = %s}\n"
+        name tag (print_array print_approx fields)
+  | Obj.Tag_descriptor.Record {name; tag; fields} ->
+      printf "\tRecord {name = %s; tag = %d; fields = %s}\n"
+        name tag (print_array print_field fields)
+  | Obj.Tag_descriptor.Polymorphic_variant ->
+      printf "\tPolymorphic_variant\n"
+  | Obj.Tag_descriptor.Polymorphic_variant_constant name ->
+      printf "\tPolymorphic_variant_constant %S\n" name
+
 let print_cmo_infos cu =
   printf "Unit name: %s\n" (Symtable.Compunit.name cu.cu_name);
   print_string "Interfaces imported:\n";
@@ -69,7 +99,9 @@ let print_cmo_infos cu =
         printf "YES\n";
         printf "Primitives declared in this module:\n";
         List.iter print_line l);
-  printf "Force link: %a\n" yesno_of_bool cu.cu_force_link
+  printf "Force link: %a\n" yesno_of_bool cu.cu_force_link;
+  printf "Block descriptors:\n";
+  List.iter print_block_descriptor cu.cu_block_descs
 
 let print_spaced_string s =
   printf " %s" s

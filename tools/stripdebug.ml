@@ -22,10 +22,12 @@ open Misc
 let remove_header = ref false
 let remove_DBUG = ref true
 let remove_CRCS = ref false
+let remove_BDSC = ref true
 
 let remove_section (s : Bytesections.Name.t) =
   match s with
   | DBUG -> !remove_DBUG
+  | BDSC -> !remove_BDSC
   | CRCS -> !remove_CRCS
   | RNTM -> !remove_header
   | _ -> false
@@ -68,13 +70,20 @@ let options = [
      "remove all debugging information (default)";
   "-keep-debug", Arg.Clear remove_DBUG,
      "preserve all debugging information";
+  "-remove-block-desc", Arg.Set remove_BDSC,
+     "remove all block descriptors (default)";
+  "-keep-block-desc", Arg.Clear remove_BDSC,
+     "preserve all block descriptors";
   "-remove-dynlink", Arg.Set remove_CRCS,
      "remove the data needed for dynamic code loading";
   "-keep-dynlink", Arg.Clear remove_CRCS,
      "preserve the data needed for dynamic code loading (default)";
-  "-all", Arg.Unit (fun () -> remove_header := true; remove_DBUG := true;
-                              remove_CRCS := true),
-     "remove header, debugging info, and dynamic code loading info"
+  "-all", Arg.Unit (fun () ->
+      remove_header := true;
+      remove_DBUG := true;
+      remove_BDSC := true;
+      remove_CRCS := true),
+  "remove header, debugging info, and dynamic code loading info"
 ]
 
 let usage =

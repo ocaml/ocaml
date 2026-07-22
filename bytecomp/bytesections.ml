@@ -30,6 +30,7 @@ module Name = struct
     | PRIM (** primitives names *)
     | RNTM (** The path to the bytecode interpreter (use_runtime mode) *)
     | SYMB (** global identifiers *)
+    | BDSC (** heap block descriptors *)
     | Other of raw_name
 
   let of_string name =
@@ -44,6 +45,7 @@ module Name = struct
     | "DBUG" -> DBUG
     | "CRCS" -> CRCS
     | "RNTM" -> RNTM
+    | "BDSC" -> BDSC
     | name   ->
         if String.length name <> 4 then
           invalid_arg "Bytesections.Name.of_string: must be of size 4";
@@ -60,6 +62,7 @@ module Name = struct
     | DBUG -> "DBUG"
     | CRCS -> "CRCS"
     | RNTM -> "RNTM"
+    | BDSC -> "BDSC"
     | Other n -> n
 end
 

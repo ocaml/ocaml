@@ -200,6 +200,10 @@ let clear_crc_interfaces () =
 
 let debug_info = ref ([] : (int * Instruct.debug_event list * string list) list)
 
+(* Record block descriptions *)
+
+let block_descs = ref []
+
 (* Link in a compilation unit *)
 
 let link_compunit accu output_fun currpos_fun inchan file_name compunit =
@@ -227,6 +231,7 @@ let link_compunit accu output_fun currpos_fun inchan file_name compunit =
       else file_path :: debug_dirs in
     debug_info := (currpos_fun(), debug_event_list, debug_dirs) :: !debug_info
   end;
+  block_descs := compunit.cu_block_descs @ !block_descs;
   output_fun code_block;
   let fold_primitive needs_stdlib name =
     if !Clflags.link_everything then
@@ -633,6 +638,12 @@ let link_bytecode ?final_name tolink exec_name standalone =
        if !Clflags.debug then begin
          output_debug_info outchan;
          Bytesections.record toc_writer DBUG
+       end;
+       (* Debug info *)
+       if not (List.is_empty !block_descs) then begin
+         block_descs := List.sort_uniq compare !block_descs;
+         Marshal.to_channel outchan !block_descs [];
+         Bytesections.record toc_writer BDSC;
        end;
        (* The table of contents and the trailer *)
        Bytesections.write_toc_and_trailer toc_writer;
@@ -1091,4 +1102,5 @@ let reset () =
   lib_dllibs := [];
   Consistbl.clear crc_interfaces;
   debug_info := [];
+  block_descs := [];
   output_code_string_counter := 0

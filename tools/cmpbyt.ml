@@ -28,7 +28,7 @@ let rec cmpbytes ic1 ic2 len ofs =
 
 let skip_section (name : Bytesections.Name.t) =
   match name with
-  | DBUG -> true
+  | DBUG | BDSC -> true
   | _ -> false
 
 let cmpbyt file1 file2 =

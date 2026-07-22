@@ -31,6 +31,7 @@ module Name : sig
     | PRIM (** primitives names *)
     | RNTM (** The path to the bytecode interpreter (use_runtime mode) *)
     | SYMB (** global identifiers *)
+    | BDSC (** heap block descriptors *)
     | Other of raw_name
 
   val of_string : string -> t
