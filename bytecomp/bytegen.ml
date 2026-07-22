@@ -680,7 +680,7 @@ let rec comp_expr stack_info env exp sz cont =
         (Kpush::
          Kconst (Const_int n)::
          Kaddint::cont)
-  | Lprim(Pmakearray (kind, _), args, loc) ->
+  | Lprim(Pmakearray (kind, _, _), args, loc) ->
       let cont = add_pseudo_event loc !compunit_name cont in
       begin match kind with
         Pintarray | Paddrarray ->
@@ -735,10 +735,11 @@ let rec comp_expr stack_info env exp sz cont =
       else
         fatal_error "Reperform used in non-tail position"
   | Lprim (Pduparray (kind, mutability),
-           [Lprim (Pmakearray (kind',_),args,_)], loc) ->
+           [Lprim (Pmakearray (kind',_,_),args,_)], loc) ->
       assert (kind = kind');
       comp_expr stack_info env
-        (Lprim (Pmakearray (kind, mutability), args, loc)) sz cont
+        (Lprim (Pmakearray (kind, mutability, Block_desc.empty), args, loc))
+        sz cont
   | Lprim (Pduparray _, [arg], loc) ->
       let prim_obj_dup =
         Primitive.simple ~name:"caml_obj_dup" ~arity:1 ~alloc:true

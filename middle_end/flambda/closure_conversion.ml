@@ -130,7 +130,7 @@ let rec declare_const t (const : Lambda.structured_constant)
     register_const t
       (Allocated_const (Immutable_float_array (List.map float_of_string c)))
       Names.const_float_array
-  | Const_block (tag, consts) ->
+  | Const_block (tag, consts, _) ->
     let const : Flambda.constant_defining_value =
       Block (Tag.create_exn tag,
              List.map (fun c -> fst (declare_const t c)) consts)

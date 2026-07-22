@@ -212,7 +212,7 @@ let rec transl_const = function
   | Const_int64 i -> Obj.repr i
   | Const_nativeint i -> Obj.repr i
   | Const_immstring s -> Obj.repr s
-  | Const_block(tag, fields) ->
+  | Const_block(tag, fields, _bdesc) ->
       let block = Obj.new_block tag (List.length fields) in
       let transl_field pos cst =
         Obj.set_field block pos (transl_const cst)
@@ -235,11 +235,11 @@ let init () =
         then fatal_error "Symtable.init";
       let global = Global.Glob_predef (Predef_exn name) in
       let c = slot_for_setglobal global in
-      let cst = Const_block
-          (Obj.object_tag,
-           [Const_immstring name;
-            Const_int (-i-1)
-           ])
+      let cst = Const_block (
+          Obj.object_tag,
+          [Const_immstring name; Const_int (-i-1)],
+          Block_desc.empty
+        )
       in
       literal_table := (c, transl_const cst) :: !literal_table)
     Runtimedef.builtin_exceptions;

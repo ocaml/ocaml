@@ -150,8 +150,8 @@ let primitives_table =
     "%field1", Primitive (Pfield(1, Pointer, Mutable), 1);
     "%setfield0", Primitive ((Psetfield(0, Pointer, Assignment)), 2);
     "%setfield1", Primitive ((Psetfield(1, Pointer, Assignment)), 2);
-    "%makeblock", Primitive ((Pmakeblock(0, Immutable, None)), 1);
-    "%makemutable", Primitive ((Pmakeblock(0, Mutable, None)), 1);
+    "%makeblock", Primitive ((Pmakeblock(0, Immutable, empty_block_shape)), 1);
+    "%makemutable", Primitive ((Pmakeblock(0, Mutable, empty_block_shape)), 1);
     "%raise", Raise Raise_regular;
     "%reraise", Raise Raise_reraise;
     "%raise_notrace", Raise Raise_notrace;
@@ -512,10 +512,13 @@ let specialize_primitive env ty ~has_constant_constructor prim =
       | Pbigarray_unknown, Pbigarray_unknown_layout -> None
       | _, _ -> Some (Primitive (Pbigarrayset(unsafe, n, k, l), arity))
     end
-  | Primitive (Pmakeblock(tag, mut, None), arity), fields -> begin
-      let shape = List.map (Typeopt.value_kind env) fields in
-      let useful = List.exists (fun knd -> knd <> Pgenval) shape in
-      if useful then Some (Primitive (Pmakeblock(tag, mut, Some shape), arity))
+  | Primitive (Pmakeblock(tag, mut, {block_kind = None; block_desc}), arity),
+    fields -> begin
+      let block_kind = List.map (Typeopt.value_kind env) fields in
+      let useful = List.exists (fun knd -> knd <> Pgenval) block_kind in
+      if useful then
+        let shape = {block_kind = Some block_kind; block_desc} in
+        Some (Primitive (Pmakeblock(tag, mut, shape), arity))
       else None
     end
   | Comparison(comp, Compare_generic), p1 :: _ ->
@@ -663,7 +666,7 @@ let lambda_of_loc kind sloc =
           Const_int lnum;
           Const_int cnum;
           Const_int enum;
-        ]))
+        ], Block_desc.empty))
   | Loc_FILE -> Lconst (Const_immstring file)
   | Loc_MODULE ->
     let filename = Filename.basename file in
@@ -808,7 +811,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
       lambda_of_loc kind loc
   | Loc kind, [arg] ->
       let lam = lambda_of_loc kind loc in
-      Lprim(Pmakeblock(0, Immutable, None), [lam; arg], loc)
+      Lprim(Pmakeblock(0, Immutable, empty_block_shape), [lam; arg], loc)
   | Send, [obj; meth] ->
       Lsend(Public, meth, obj, [], loc)
   | Send_self, [obj; meth] ->
@@ -901,7 +904,7 @@ let lambda_primitive_needs_event_after = function
      collect the call stack. *)
   | Pduprecord _ | Pccall _ | Pfloatofint | Pnegfloat | Pabsfloat
   | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat | Pstringrefs | Pbytesrefs
-  | Pbytessets | Pmakearray (Pgenarray, _) | Pduparray _
+  | Pbytessets | Pmakearray (Pgenarray, _, _) | Pduparray _
   | Parrayrefu (Pgenarray | Pfloatarray) | Parraysetu (Pgenarray | Pfloatarray)
   | Parrayrefs _ | Parraysets _ | Pbintofint _ | Pcvtbint _ | Pnegbint _
   | Paddbint _ | Psubbint _ | Pmulbint _ | Pdivbint _ | Pmodbint _ | Pandbint _
@@ -923,7 +926,7 @@ let lambda_primitive_needs_event_after = function
   | Pasrint | Pintcomp _ | Poffsetint _ | Poffsetref _ | Pintoffloat
   | Pcompare_ints | Pcompare_floats
   | Pfloatcomp _ | Pstringlength | Pstringrefu | Pbyteslength | Pbytesrefu
-  | Pbytessetu | Pmakearray ((Pintarray | Paddrarray | Pfloatarray), _)
+  | Pbytessetu | Pmakearray ((Pintarray | Paddrarray | Pfloatarray), _, _)
   | Parraylength _ | Parrayrefu _ | Parraysetu _ | Pisint | Pisout
   | Patomic_load
   | Pintofbint _ | Pctconst _ | Pbswap16 | Pint_as_pointer | Popaque | Pdls_get

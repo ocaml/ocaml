@@ -94,7 +94,7 @@ type primitive =
   | Pstringlength | Pstringrefu  | Pstringrefs
   | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
   (* Array operations *)
-  | Pmakearray of array_kind * mutable_flag
+  | Pmakearray of array_kind * mutable_flag * block_desc
   | Pduparray of array_kind * mutable_flag
   | Parraylength of array_kind
   | Parrayrefu of array_kind
@@ -170,8 +170,12 @@ and float_comparison =
 and value_kind =
     Pgenval | Pfloatval | Pboxedintval of boxed_integer | Pintval
 
-and block_shape =
-  value_kind list option
+and block_shape = {
+  block_kind: value_kind list option;
+  block_desc: block_desc;
+}
+
+and block_desc = Block_desc.t
 
 and array_kind =
     Pgenarray | Paddrarray | Pintarray | Pfloatarray
@@ -222,7 +226,7 @@ type structured_constant =
   | Const_int32 of int32
   | Const_int64 of int64
   | Const_nativeint of nativeint
-  | Const_block of int * structured_constant list
+  | Const_block of int * structured_constant list * block_desc
   | Const_float_array of string list
   | Const_immstring of string
 
@@ -1077,7 +1081,7 @@ let find_exact_application kind ~arity args =
           if arity <> List.length tupled_args
           then None
           else Some tupled_args
-      | [Lconst(Const_block (_, const_args))] ->
+      | [Lconst(Const_block (_, const_args, _))] ->
           if arity <> List.length const_args
           then None
           else Some (List.map (fun cst -> Lconst cst) const_args)
@@ -1086,3 +1090,8 @@ let find_exact_application kind ~arity args =
 
 let reset () =
   raise_count := 0
+
+let empty_block_shape = {
+  block_kind = None;
+  block_desc = Block_desc.empty;
+}

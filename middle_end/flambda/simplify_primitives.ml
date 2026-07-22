@@ -110,18 +110,20 @@ let primitive (p : Clambda_primitives.primitive) (args, approxs)
   match p with
   | Pmakeblock(tag_int, Asttypes.Immutable, shape) ->
     let tag = Tag.create_exn tag_int in
-    let shape = match shape with
+    let block_kind = match shape.block_kind with
       | None -> List.map (fun _ -> Lambda.Pgenval) args
-      | Some shape -> shape
+      | Some block_kind -> block_kind
     in
-    let approxs = List.map2 A.augment_with_kind approxs shape in
-    let shape = List.map2 A.augment_kind_with_approx approxs shape in
-    Prim (Pmakeblock(tag_int, Asttypes.Immutable, Some shape), args, dbg),
+    let approxs = List.map2 A.augment_with_kind approxs block_kind in
+    let block_kind = List.map2 A.augment_kind_with_approx approxs block_kind in
+    let shape = {shape with block_kind = Some block_kind} in
+    Prim (Pmakeblock(tag_int, Asttypes.Immutable, shape), args, dbg),
     A.value_block tag (Array.of_list approxs), C.Benefit.zero
   | Praise _ ->
     expr, A.value_bottom, C.Benefit.zero
   | Pmakearray(_, _) when is_empty approxs ->
-    Prim (Pmakeblock(0, Asttypes.Immutable, Some []), [], dbg),
+    let shape = {Lambda. block_kind = Some []; block_desc = Block_desc.empty} in
+    Prim (Pmakeblock(0, Asttypes.Immutable, shape), [], dbg),
     A.value_block (Tag.create_exn 0) [||], C.Benefit.zero
   | Pmakearray (Pfloatarray, Mutable) ->
       let approx =

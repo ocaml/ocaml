@@ -4005,7 +4005,7 @@ let failure_handler ~scopes loc ~failer () =
     Lprim
       ( Praise Raise_regular,
         [ Lprim
-            ( Pmakeblock (0, Immutable, None),
+            ( Pmakeblock (0, Immutable, empty_block_shape),
               [ slot;
                 Lconst
                   (Const_block
@@ -4013,7 +4013,8 @@ let failure_handler ~scopes loc ~failer () =
                        [ Const_immstring fname;
                          Const_int line;
                          Const_int char
-                       ] ))
+                       ],
+                       Block_desc.empty))
               ],
               sloc )
         ],
@@ -4205,7 +4206,7 @@ let assign_pat ~scopes opt nraise catch_ids loc pat lam =
         List.fold_left2
           (fun acc (_, pat) lam -> collect acc pat lam)
           acc patl lams
-    | Tpat_tuple patl, Lconst (Const_block (_, scl)) ->
+    | Tpat_tuple patl, Lconst (Const_block (_, scl, _)) ->
         opt := true;
         let collect_const acc (_, pat) sc = collect acc pat (Lconst sc) in
         List.fold_left2 collect_const acc patl scl
@@ -4349,7 +4350,7 @@ let do_for_multiple_match ~scopes loc idl pat_act_list partial =
   let arg =
     let sloc = Scoped_location.of_location ~scopes loc in
     let args = List.map (fun id -> Lvar id) idl in
-    Lprim (Pmakeblock (0, Immutable, None), args, sloc) in
+    Lprim (Pmakeblock (0, Immutable, empty_block_shape), args, sloc) in
   let input_args = { first = root_arg (Tuple arg) Strict; rest = [] } in
   let handler =
     let rows = map_on_rows (fun p -> (p, [])) pat_act_list in

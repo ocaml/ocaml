@@ -265,7 +265,7 @@ let emit_instr = function
           else (out opCONSTINT; out_int i)
       | Const_char c ->
           out opCONSTINT; out_int (Char.code c)
-      | Const_block(t, []) ->
+      | Const_block(t, [], _) ->
           if t = 0 then out opATOM0 else (out opATOM; out_int t)
       | _ ->
           out opGETGLOBAL; slot_for_literal sc
@@ -397,7 +397,7 @@ let rec emit = function
           else (out opPUSHCONSTINT; out_int i)
       | Const_char c ->
           out opPUSHCONSTINT; out_int(Char.code c)
-      | Const_block(t, []) ->
+      | Const_block(t, [], _) ->
           if t = 0 then out opPUSHATOM0 else (out opPUSHATOM; out_int t)
       | _ ->
           out opPUSHGETGLOBAL; slot_for_literal sc

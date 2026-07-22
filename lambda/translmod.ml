@@ -91,7 +91,7 @@ let rec apply_coercion loc strict restr arg =
           else Lprim(Pfield (pos, Pointer, Mutable), [Lvar id], loc)
         in
         let lam =
-          Lprim(Pmakeblock(0, Immutable, None),
+          Lprim(Pmakeblock(0, Immutable, empty_block_shape),
                 List.map (apply_coercion_field loc get_field) pos_cc_list,
                 loc)
         in
@@ -230,7 +230,8 @@ let undefined_location loc =
   Lconst(Const_block(0,
                      [Const_immstring fname;
                       const_int line;
-                      const_int char]))
+                      const_int char],
+                     Block_desc.empty))
 
 exception Initialization_failure of unsafe_info
 
@@ -242,7 +243,10 @@ let init_shape id modl =
         let info = Unsafe {reason=Unsafe_module_binding;loc; path} in
         raise (Initialization_failure info)
     | Mty_signature sg ->
-        Const_block(0, [Const_block(0, init_shape_struct path env sg)])
+        Const_block(0,
+                    [Const_block(0, init_shape_struct path env sg,
+                                 Block_desc.empty)],
+                    Block_desc.empty)
     | Mty_functor _ ->
         (* can we do better? *)
         let info = Unsafe {reason=Unsafe_functor;loc; path} in
@@ -565,7 +569,7 @@ and transl_structure ~scopes loc fields cc rootpath final_env = function
       let body =
         match cc with
           Tcoerce_none ->
-            Lprim(Pmakeblock(0, Immutable, None),
+            Lprim(Pmakeblock(0, Immutable, empty_block_shape),
                   List.map (fun id -> Lvar id) (List.rev fields), loc)
         | Tcoerce_structure(pos_cc_list, id_pos_list) ->
                 (* Do not ignore id_pos_list ! *)
@@ -580,7 +584,7 @@ and transl_structure ~scopes loc fields cc rootpath final_env = function
             in
             let ids = List.fold_right Ident.Set.add fields Ident.Set.empty in
             let lam =
-              Lprim(Pmakeblock(0, Immutable, None),
+              Lprim(Pmakeblock(0, Immutable, empty_block_shape),
                   List.map
                     (fun (pos, cc) ->
                       match cc with
@@ -1058,7 +1062,7 @@ let transl_store_structure ~scopes glob map prims aliases str =
             Lsequence(lam,
                       Llet(Strict, Pgenval, id,
                            Lambda.subst no_env_update subst
-                             (Lprim(Pmakeblock(0, Immutable, None),
+                             (Lprim(Pmakeblock(0, Immutable, empty_block_shape),
                                     List.map (fun id -> Lvar id)
                                       (defined_idents str.str_items), loc)),
                            Lsequence(store_ident loc id,
@@ -1087,7 +1091,7 @@ let transl_store_structure ~scopes glob map prims aliases str =
             Lsequence(lam,
                       Llet(Strict, Pgenval, id,
                            Lambda.subst no_env_update subst
-                             (Lprim(Pmakeblock(0, Immutable, None),
+                             (Lprim(Pmakeblock(0, Immutable, empty_block_shape),
                                     List.map field map, loc)),
                            Lsequence(store_ident loc id,
                                      transl_store ~scopes rootpath
@@ -1572,13 +1576,13 @@ let get_component = function
 let transl_package_flambda component_names coercion =
   module_block_size component_names coercion,
   apply_coercion Loc_unknown Strict coercion
-    (Lprim(Pmakeblock(0, Immutable, None),
+    (Lprim(Pmakeblock(0, Immutable, empty_block_shape),
            List.map get_component component_names,
            Loc_unknown))
 
 let transl_package component_names target_name coercion =
   let components =
-    Lprim(Pmakeblock(0, Immutable, None),
+    Lprim(Pmakeblock(0, Immutable, empty_block_shape),
           List.map get_component component_names, Loc_unknown) in
   Lprim(Psetglobal target_name,
         [apply_coercion Loc_unknown Strict coercion components],
@@ -1616,7 +1620,7 @@ let transl_store_package component_names target_name coercion =
          0 component_names)
   | Tcoerce_structure (pos_cc_list, _id_pos_list) ->
       let components =
-        Lprim(Pmakeblock(0, Immutable, None),
+        Lprim(Pmakeblock(0, Immutable, empty_block_shape),
               List.map get_component component_names,
               Loc_unknown)
       in

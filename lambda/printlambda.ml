@@ -28,9 +28,9 @@ let rec struct_const ppf = function
   | Const_int32 n -> fprintf ppf "%lil" n
   | Const_int64 n -> fprintf ppf "%LiL" n
   | Const_nativeint n -> fprintf ppf "%nin" n
-  | Const_block(tag, []) ->
+  | Const_block(tag, [], _) ->
       fprintf ppf "[%i]" tag
-  | Const_block(tag, sc1::scl) ->
+  | Const_block(tag, sc1::scl, _) ->
       let sconsts ppf scl =
         List.iter (fun sc -> fprintf ppf "@ %a" struct_const sc) scl in
       fprintf ppf "@[<1>[%i:@ @[%a%a@]]@]" tag struct_const sc1 sconsts scl
@@ -114,11 +114,11 @@ let record_rep ppf r =
   | Record_extension path -> fprintf ppf "ext(%a)" Printtyp.path path
 
 let block_shape ppf shape = match shape with
-  | None | Some [] -> ()
-  | Some l when List.for_all ((=) Pgenval) l -> ()
-  | Some [elt] ->
+  | {block_kind = None | Some []; _} -> ()
+  | {block_kind = Some l; _} when List.for_all ((=) Pgenval) l -> ()
+  | {block_kind = Some [elt]; _} ->
       Format.fprintf ppf " (%s)" (field_kind elt)
-  | Some (h :: t) ->
+  | {block_kind = Some (h :: t); _} ->
       Format.fprintf ppf " (%s" (field_kind h);
       List.iter (fun elt ->
           Format.fprintf ppf ",%s" (field_kind elt))
@@ -252,8 +252,8 @@ let primitive ppf = function
   | Pbytessets -> fprintf ppf "bytes.set"
 
   | Parraylength k -> fprintf ppf "array.length[%s]" (array_kind k)
-  | Pmakearray (k, Mutable) -> fprintf ppf "makearray[%s]" (array_kind k)
-  | Pmakearray (k, Immutable) -> fprintf ppf "makearray_imm[%s]" (array_kind k)
+  | Pmakearray (k, Mutable, _bdesc) -> fprintf ppf "makearray[%s]" (array_kind k)
+  | Pmakearray (k, Immutable, _bdesc) -> fprintf ppf "makearray_imm[%s]" (array_kind k)
   | Pduparray (k, Mutable) -> fprintf ppf "duparray[%s]" (array_kind k)
   | Pduparray (k, Immutable) -> fprintf ppf "duparray_imm[%s]" (array_kind k)
   | Parrayrefu k -> fprintf ppf "array.unsafe_get[%s]" (array_kind k)
