@@ -25,7 +25,7 @@ val make_record : int -> string -> (string * approx) array -> t
 val register_polymorphic_variant : string -> unit
 val make_polymorphic_variant : string -> t
 
-val default : t
+val empty : t
 
 val emit_tags : unit -> t list
 val reset_tags : unit -> unit

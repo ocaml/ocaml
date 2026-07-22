@@ -171,6 +171,7 @@ typing_SOURCES = \
 
 lambda_SOURCES = $(addprefix lambda/, \
   debuginfo.mli debuginfo.ml \
+  block_desc.mli block_desc.ml \
   lambda.mli lambda.ml \
   printlambda.mli printlambda.ml \
   switch.mli switch.ml \

@@ -38,11 +38,11 @@ let make_polymorphic_variant name =
   register_polymorphic_variant name;
   register Polymorphic_variant
 
-let default = Unknown
+let empty = Unknown
 
 let emit_tags () =
   library := List.sort_uniq compare !library;
-  default :: !library
+  empty :: !library
 
 let reset_tags () =
   library := []
