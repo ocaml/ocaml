@@ -181,6 +181,8 @@ alloc_size_class_stack_noexc(mlsize_t wosize, int cache_bucket, value hval,
       cache[cache_bucket] != NULL) {
     stack = cache[cache_bucket];
     cache[cache_bucket] =
+      /* In the cache, reuse the exception_ptr field as an internal
+         linked-list next pointer. */
       (struct stack_info*)stack->exception_ptr;
     CAMLassert(stack->cache_bucket == stack_cache_bucket(wosize));
     hand = stack->handler;
@@ -634,8 +636,11 @@ void caml_free_stack (struct stack_info* stack)
   CAMLassert(cache != NULL);
   if (stack->cache_bucket != -1) {
     struct stack_info* top = (struct stack_info*)cache[stack->cache_bucket];
+    /* When stored inside the cache, the fiber id field is reused to count
+       the number of fibers in the bucket */
     int64_t count = top ? top->id : 0;
     if (count < caml_cache_stacks_per_class) {
+      /* Reuse exception_ptr to point to the next fiber in the bucket. */
       stack->exception_ptr = (void *)top;
       stack->id = count + 1;
       cache[stack->cache_bucket] = stack;
