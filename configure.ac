@@ -15,8 +15,8 @@
 
 # Process this file with autoconf to produce a configure script.
 
-# Require Autoconf 2.71 for repeatability in CI
-AC_PREREQ([2.71])
+# Require Autoconf 2.72 for repeatability in CI
+AC_PREREQ([2.72])
 AC_INIT([OCaml],
         [OCAML__VERSION],
         [caml-list@inria.fr],
