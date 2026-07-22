@@ -687,6 +687,11 @@ void caml_debugger(enum event_kind event, value param)
     case REQ_SET_FORK_MODE:
       caml_debugger_fork_mode = caml_getword(dbg_in);
       break;
+    case REQ_GET_BLOCK_DESCS:
+      val = caml_read_bdsc_section(Val_unit);
+      safe_output_value(dbg_out, val);
+      caml_flush(dbg_out);
+      break;
     }
   }
 }

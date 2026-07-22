@@ -31,6 +31,7 @@
 #include "caml/mlvalues.h"
 #include "caml/fiber.h"
 #include "caml/fail.h"
+#include "caml/debugger.h"
 
 /* Returns the next frame descriptor (or NULL if none is available),
    and updates *pc and *sp to point to the following one.  */

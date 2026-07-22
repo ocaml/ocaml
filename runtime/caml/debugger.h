@@ -39,6 +39,10 @@ CAMLextern void caml_debugger_cleanup_fork (void);
 
 opcode_t caml_debugger_saved_instruction(code_t pc);
 
+/* Let a program read its own block descriptors.
+ * Implemented in backtrace_byt.c (stubbed in backtrace_nat.c). */
+CAMLprim value caml_read_bdsc_section(value unit);
+
 /* Communication protocol */
 
 /* Requests from the debugger to the runtime system */
@@ -93,8 +97,10 @@ enum debugger_request {
   REQ_GET_CLOSURE_CODE = 'C',   /* mlvalue v */
   /* Send the code address of the given closure.
      Reply is one uint32_t. */
-  REQ_SET_FORK_MODE = 'K'       /* uint32_t m */
+  REQ_SET_FORK_MODE = 'K',      /* uint32_t m */
   /* Set whether to follow the child (m=0) or the parent on fork. */
+  REQ_GET_BLOCK_DESCS = 'D'     /* no args */
+  /* Reply is a marshalled list of block descriptors. */
 };
 
 /* Replies to a REQ_GO request. All replies are followed by three uint32_t:
