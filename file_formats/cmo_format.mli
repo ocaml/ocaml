@@ -49,7 +49,8 @@ type compilation_unit =
     cu_primitives: string list;         (* Primitives declared inside *)
     mutable cu_force_link: bool;        (* Must be linked even if unref'ed *)
     mutable cu_debug: int;              (* Position of debugging info, or 0 *)
-    cu_debugsize: int }                 (* Length of debugging info *)
+    cu_debugsize: int;                  (* Length of debugging info *)
+    cu_block_descs: Obj.Tag_descriptor.t list } (* Block descriptors *)
 
 (* Format of a .cmo file:
      magic number (Config.cmo_magic_number)

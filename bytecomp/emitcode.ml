@@ -270,17 +270,29 @@ let emit_instr = function
       | _ ->
           out opGETGLOBAL; slot_for_literal sc
       end
-  | Kmakeblock(n, t) ->
-      if n = 0 then
-        if t = 0 then out opATOM0 else (out opATOM; out_int t)
-      else if n < 4 then (out(opMAKEBLOCK1 + n - 1); out_int t)
+  | Kmakeblock(0, 0, _) -> out opATOM0
+  | Kmakeblock(0, t, _) -> out opATOM; out_int t
+  | Kmakeblock(n, t, bdesc) ->
+      let index = Block_desc.index bdesc in
+      if index <> 0 then (
+        out opNEXT_RESERVED_BITS;
+        out_int index;
+      );
+      if n < 4 then (out(opMAKEBLOCK1 + n - 1); out_int t)
       else (out opMAKEBLOCK; out_int n; out_int t)
   | Kgetfield n ->
       if n < 4 then out(opGETFIELD0 + n) else (out opGETFIELD; out_int n)
   | Ksetfield n ->
       if n < 4 then out(opSETFIELD0 + n) else (out opSETFIELD; out_int n)
-  | Kmakefloatblock(n) ->
-      if n = 0 then out opATOM0 else (out opMAKEFLOATBLOCK; out_int n)
+  | Kmakefloatblock(0, _) -> out opATOM0
+  | Kmakefloatblock(n, bdesc) ->
+      let index = Block_desc.index bdesc in
+      if index <> 0 then (
+        out opNEXT_RESERVED_BITS;
+        out_int index;
+      );
+      out opMAKEFLOATBLOCK;
+      out_int n
   | Kgetfloatfield n -> out opGETFLOATFIELD; out_int n
   | Ksetfloatfield n -> out opSETFLOATFIELD; out_int n
   | Kvectlength -> out opVECTLENGTH
@@ -451,7 +463,8 @@ let to_file outchan artifact_info ~required_globals code =
         (Ident.Set.elements required_globals);
       cu_force_link = !Clflags.link_everything;
       cu_debug = pos_debug;
-      cu_debugsize = size_debug } in
+      cu_debugsize = size_debug;
+      cu_block_descs = Block_desc.emit_tags () } in
   let pos_compunit = pos_out outchan in
   let () =
     (* Remove any cached abbreviation expansion before marshaling.

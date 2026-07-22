@@ -44,9 +44,9 @@ let instruction ppf = function
   | Ksetglobal id -> fprintf ppf "\tsetglobal %a" Ident.print id
   | Kconst cst ->
       fprintf ppf "@[<10>\tconst@ %a@]" Printlambda.structured_constant cst
-  | Kmakeblock(n, m) ->
+  | Kmakeblock(n, m, _) ->
       fprintf ppf "\tmakeblock %i, %i" n m
-  | Kmakefloatblock(n) ->
+  | Kmakefloatblock(n, _) ->
       fprintf ppf "\tmakefloatblock %i" n
   | Kgetfield n -> fprintf ppf "\tgetfield %i" n
   | Ksetfield n -> fprintf ppf "\tsetfield %i" n

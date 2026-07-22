@@ -305,6 +305,13 @@ let package_object_files ~ppf_dump files target coercion =
       List.filter
         (fun (name, _crc) -> not (List.mem name unit_names))
         (Bytelink.extract_crc_interfaces()) in
+    let cu_block_descs =
+      List.sort_uniq compare @@
+      List.concat_map (function
+          | { pm_kind = PM_intf } -> []
+          | { pm_kind = PM_impl { cu_block_descs } } -> cu_block_descs
+        ) members
+    in
     let compunit =
       { cu_name = Compunit targetname;
         cu_pos = pos_code;
@@ -317,7 +324,8 @@ let package_object_files ~ppf_dump files target coercion =
           (Compunit.Set.elements required_compunits);
         cu_force_link = force_link;
         cu_debug = if pos_final > pos_debug then pos_debug else 0;
-        cu_debugsize = pos_final - pos_debug } in
+        cu_debugsize = pos_final - pos_debug;
+        cu_block_descs } in
     Emitcode.marshal_to_channel_with_possibly_32bit_compat
       ~filename:targetfile ~kind:"bytecode unit"
       oc compunit;
