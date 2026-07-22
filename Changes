@@ -195,6 +195,9 @@ Working version
   barrier; the default is chosen at configure time and can be overridden.
   (Sebastian Pop and Xavier Leroy, review by Xavier Leroy and Olivier Nicole)
 
+- #?????: Inline the full-application case of caml_apply
+  (Stefan Muenzel, review by ???)
+
 ### Standard library:
 
 - #10798: Atomic helper function
