@@ -436,3 +436,8 @@ int caml_debug_info_status(void)
 {
   return 1;
 }
+
+CAMLprim value caml_read_bdsc_section(value unit)
+{
+  return Val_unit;
+}

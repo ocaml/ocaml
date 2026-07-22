@@ -608,3 +608,37 @@ debuginfo caml_debuginfo_next(debuginfo dbg)
   /* No inlining in bytecode */
   return NULL;
 }
+
+CAMLprim value caml_read_bdsc_section(value unit)
+{
+  (void)unit;
+  CAMLparam0();
+  CAMLlocal1(library);
+  int fd;
+  char_os *exec_name;
+  struct channel *chan;
+  struct exec_trailer trail;
+
+  library = Val_unit;
+
+  if (caml_params->cds_file == NULL && caml_byte_program_mode == EMBEDDED)
+    CAMLreturn(Val_unit);
+
+  if (caml_params->cds_file != NULL)
+    exec_name = (char_os*) caml_params->cds_file;
+  else
+    exec_name = (char_os*) caml_params->exe_name;
+
+  fd = caml_attempt_open(&exec_name, &trail, 1);
+  if (fd < 0)
+    CAMLreturn(Val_unit);
+
+  caml_read_section_descriptors(fd, &trail);
+  if (caml_seek_optional_section(fd, &trail, "BDSC") != -1) {
+    chan = caml_open_descriptor_in(fd);
+    library = caml_input_val(chan);
+    caml_close_channel(chan);
+  }
+
+  CAMLreturn(library);
+}

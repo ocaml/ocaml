@@ -174,7 +174,7 @@ module Tag_descriptor : sig
   val hash_variant : string -> int
 
   external read_self_descriptors : unit -> t list =
-    "caml_read_tag_section"
+    "caml_read_bdsc_section"
 
   external compiler_tags : unit -> t list ref =
     "caml_compiler_tags"
