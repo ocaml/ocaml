@@ -161,6 +161,13 @@ let fuse_method_arity parent_params parent_body =
     -> parent_params @ method_params, method_body
   | _ -> parent_params, parent_body
 
+(* Generation of block descriptors *)
+
+let current_constructor_name = ref ""
+
+let approx_exp_list el =
+  Array.of_list (List.map (fun e -> Typeopt.approx e.exp_env e.exp_type) el)
+
 (* Translation of expressions *)
 
 let rec iter_exn_names f pat =
@@ -287,13 +294,15 @@ and transl_exp0 ~in_new_scope ~scopes e =
       transl_handler ~scopes e body None exn_pat_expr_list eff_pat_expr_list
   | Texp_tuple el ->
       let ll, shape = transl_list_with_shape ~scopes (List.map snd el) in
+      let bdesc = Block_desc.make_tuple 0 "" (approx_exp_list (List.map snd el)) in
       begin try
-        Lconst(Const_block(0, List.map extract_constant ll, Block_desc.empty))
+        Lconst(Const_block(0, List.map extract_constant ll, bdesc))
       with Not_constant ->
-        Lprim(Pmakeblock(0, Immutable, Some shape, Block_desc.empty), ll,
+        Lprim(Pmakeblock(0, Immutable, Some shape, bdesc), ll,
               (of_location ~scopes e.exp_loc))
       end
   | Texp_construct(_, cstr, args) ->
+      current_constructor_name := cstr.cstr_name;
       let ll, shape = transl_list_with_shape ~scopes args in
       if cstr.cstr_inlined <> None then begin match ll with
         | [x] -> x
@@ -304,10 +313,11 @@ and transl_exp0 ~in_new_scope ~scopes e =
       | Cstr_unboxed ->
           (match ll with [v] -> v | _ -> assert false)
       | Cstr_block n ->
+          let bdesc = Block_desc.make_tuple n cstr.cstr_name (approx_exp_list args) in
           begin try
-            Lconst(Const_block(n, List.map extract_constant ll, Block_desc.empty))
+            Lconst(Const_block(n, List.map extract_constant ll, bdesc))
           with Not_constant ->
-            Lprim(Pmakeblock(n, Immutable, Some shape, Block_desc.empty), ll,
+            Lprim(Pmakeblock(n, Immutable, Some shape, bdesc), ll,
                   of_location ~scopes e.exp_loc)
           end
       | Cstr_extension(path, is_const) ->
@@ -323,14 +333,16 @@ and transl_exp0 ~in_new_scope ~scopes e =
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with
-        None -> Lconst(const_int tag)
+        None ->
+          Block_desc.register_polymorphic_variant l;
+          Lconst(const_int tag)
       | Some arg ->
           let lam = transl_exp ~scopes arg in
+          let bdesc = Block_desc.make_polymorphic_variant l in
           try
-            Lconst(Const_block(0, [const_int tag; extract_constant lam],
-                               Block_desc.empty))
+            Lconst(Const_block(0, [const_int tag; extract_constant lam], bdesc))
           with Not_constant ->
-            Lprim(Pmakeblock(0, Immutable, None, Block_desc.empty),
+            Lprim(Pmakeblock(0, Immutable, None, bdesc),
                   [Lconst(const_int tag); lam],
                   of_location ~scopes e.exp_loc)
       end
@@ -387,11 +399,18 @@ and transl_exp0 ~in_new_scope ~scopes e =
       Lprim(access, [transl_exp ~scopes arg; transl_exp ~scopes newval],
             of_location ~scopes e.exp_loc)
   | Texp_array (amut, expr_list) ->
+      let bdesc =
+        let approx = match expr_list with
+          | [] -> Block_desc.Any
+          | x :: _ -> Typeopt.approx x.exp_env x.exp_type
+        in
+        Block_desc.make_array approx
+      in
       let kind = array_kind e in
       let ll = transl_list ~scopes expr_list in
       let loc = of_location ~scopes e.exp_loc in
       let makearray mutability =
-        Lprim (Pmakearray (kind, mutability, Block_desc.empty), ll, loc)
+        Lprim (Pmakearray (kind, mutability, bdesc), ll, loc)
       in
       let duparray_to_mutable array =
         Lprim (Pduparray (kind, Mutable), [array], loc)
@@ -427,7 +446,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
             let const =
               match kind with
               | Paddrarray | Pintarray ->
-                  Lconst(Const_block(0, cl, Block_desc.empty))
+                  Lconst(Const_block(0, cl, bdesc))
               | Pfloatarray ->
                   Lconst(Const_float_array(List.map extract_float cl))
               | Pgenarray ->
@@ -972,6 +991,24 @@ and transl_setinstvar ~scopes loc self var expr =
 
 and transl_record ~scopes loc env fields repres opt_init_expr =
   let size = Array.length fields in
+  let bdesc =
+    let fields = Array.map (fun (desc,expr) ->
+        let approx = match expr with
+          | Typedtree.Kept (texpr, _) -> Typeopt.approx env texpr
+          | Typedtree.Overridden (_, expr) ->
+              Typeopt.approx expr.exp_env expr.exp_type
+        in
+        (desc.Data_types.lbl_name, approx)) fields
+    in
+    match repres with
+    | Record_regular -> Block_desc.make_record 0 "" fields
+    | Record_inlined tag ->
+        Block_desc.make_record tag !current_constructor_name fields
+    | Record_extension _ ->
+        Block_desc.make_record Obj.object_tag !current_constructor_name fields
+    | Record_float -> Block_desc.make_record Obj.double_array_tag "" fields
+    | Record_unboxed _ -> Block_desc.empty
+  in
   (* Determine if there are "enough" fields (only relevant if this is a
      functional-style record update *)
   let no_init = match opt_init_expr with None -> true | _ -> false in
@@ -1012,8 +1049,8 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
         if mut = Mutable then raise Not_constant;
         let cl = List.map extract_constant ll in
         match repres with
-        | Record_regular -> Lconst(Const_block(0, cl, Block_desc.empty))
-        | Record_inlined tag -> Lconst(Const_block(tag, cl, Block_desc.empty))
+        | Record_regular -> Lconst(Const_block(0, cl, bdesc))
+        | Record_inlined tag -> Lconst(Const_block(tag, cl, bdesc))
         | Record_unboxed _ -> Lconst(match cl with [v] -> v | _ -> assert false)
         | Record_float ->
             Lconst(Const_float_array(List.map extract_float cl))
@@ -1023,17 +1060,17 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
         let loc = of_location ~scopes loc in
         match repres with
           Record_regular ->
-            Lprim(Pmakeblock(0, mut, Some shape, Block_desc.empty),
+            Lprim(Pmakeblock(0, mut, Some shape, bdesc),
                   ll, loc)
         | Record_inlined tag ->
-            Lprim(Pmakeblock(tag, mut, Some shape, Block_desc.empty),
+            Lprim(Pmakeblock(tag, mut, Some shape, bdesc),
                   ll, loc)
         | Record_unboxed _ -> (match ll with [v] -> v | _ -> assert false)
         | Record_float ->
-            Lprim(Pmakearray (Pfloatarray, mut, Block_desc.empty), ll, loc)
+            Lprim(Pmakearray (Pfloatarray, mut, bdesc), ll, loc)
         | Record_extension path ->
             let slot = transl_extension_path loc env path in
-            Lprim(Pmakeblock(0, mut, Some (Pgenval :: shape), Block_desc.empty),
+            Lprim(Pmakeblock(0, mut, Some (Pgenval :: shape), bdesc),
                   slot :: ll, loc)
     in
     begin match opt_init_expr with

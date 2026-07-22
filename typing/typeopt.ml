@@ -227,3 +227,42 @@ let classify_lazy_argument : Typedtree.expression ->
 let value_kind_union k1 k2 =
   if k1 = k2 then k1
   else Pgenval
+
+let cstr_cache = Hashtbl.create 7
+
+let approx env ty =
+  match scrape env ty with
+  | None -> Block_desc.Any
+  | Some ty ->
+      match ty with
+      | Tvar _ | Tfield _ | Tnil | Tlink _ | Tarrow _ | Ttuple _ | Tobject _
+      | Tsubst _ | Tpackage _ | Tunivar _ | Tpoly _ ->
+          Block_desc.Any
+      | Tconstr (p, _, _) when Path.same p Predef.path_int ->
+          Block_desc.Int
+      | Tconstr (p, _, _) when Path.same p Predef.path_char ->
+          Block_desc.Char
+      | Tconstr (p, _, _) ->
+          begin match Env.find_type_descrs p env with
+          | Type_variant ((cstr :: _ as cstrs), _)
+            when cstr.Data_types.cstr_consts > 0 ->
+              begin match Hashtbl.find cstr_cache cstrs with
+              | result -> result
+              | exception Not_found ->
+                  let names = Array.make cstr.Data_types.cstr_consts "" in
+                  List.iter (fun cstr ->
+                      match cstr.Data_types.cstr_tag with
+                      | Data_types.Cstr_constant i ->
+                          names.(i) <- cstr.Data_types.cstr_name
+                      | _ -> ()
+                    ) cstrs;
+                  let result = Block_desc.Constants names in
+                  Hashtbl.add cstr_cache cstrs result;
+                  result
+              end
+          | _ -> Block_desc.Any
+          end
+      | Tvariant _ ->
+          Block_desc.Polymorphic_variants
+      | Tfunctor _ ->
+          Block_desc.Any

@@ -40,3 +40,5 @@ val value_kind_union :
       Lambda.value_kind -> Lambda.value_kind -> Lambda.value_kind
   (** [value_kind_union k1 k2] is a value_kind at least as general as
       [k1] and [k2] *)
+
+val approx : Env.t -> Types.type_expr -> Block_desc.approx
