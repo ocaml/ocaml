@@ -498,6 +498,11 @@ Working version
 
 ### Bug fixes:
 
+- #XXXXX: On POWER, fix assembler errors from frame-management code when the
+  frame size exceeds a signed 16-bit displacement, by routing the affected
+  sequences through range-checked helpers.
+  (Tim McGilchrist, review by )
+
 - #14993: the let-rec check should give generic arrays dynamic size,
   since floats and addresses have different sizes on 32-bit systems.
   (Jeremy Yallop, review by Vincent Laviron)
