@@ -646,7 +646,7 @@ let find h key =
           | Empty -> raise Not_found
           | Cons {id = id3; next = next3} ->
               if compare key (Dynarray.get h.keys id3) = 0 then
-                Dynarray.get h.data id2
+                Dynarray.get h.data id3
               else find_rec h key next3
 
 let rec find_rec_opt h key = function
