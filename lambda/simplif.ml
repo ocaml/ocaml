@@ -249,8 +249,8 @@ let simplify_exits lam =
         (* Simplify Obj.with_tag *)
       | Pccall { Primitive.prim_name = "caml_obj_with_tag"; _ },
         [Lconst (Const_int tag);
-         Lprim (Pmakeblock (_, mut, shape), fields, loc)] ->
-         Lprim (Pmakeblock(tag, mut, shape), fields, loc)
+         Lprim (Pmakeblock (_, mut, shape, bdesc), fields, loc)] ->
+         Lprim (Pmakeblock(tag, mut, shape, bdesc), fields, loc)
       | Pccall { Primitive.prim_name = "caml_obj_with_tag"; _ },
         [Lconst (Const_int tag);
          Lconst (Const_block (_, fields, bdesc))] ->
@@ -550,12 +550,12 @@ let simplify_lets lam =
       Hashtbl.add subst v (simplif (Lvar w));
       simplif l2
   | Llet(Strict, kind, v,
-         Lprim(Pmakeblock(0, Mutable, shape) as prim, [linit], loc), lbody)
+         Lprim(Pmakeblock(0, Mutable, shape, _bdesc) as prim, [linit], loc), lbody)
     when optimize ->
       let slinit = simplif linit in
       let slbody = simplif lbody in
       begin try
-        let kind = match shape.block_kind with
+        let kind = match shape with
           | None -> Pgenval
           | Some [field_kind] -> field_kind
           | Some _ -> assert false

@@ -114,11 +114,11 @@ let record_rep ppf r =
   | Record_extension path -> fprintf ppf "ext(%a)" Printtyp.path path
 
 let block_shape ppf shape = match shape with
-  | {block_kind = None | Some []; _} -> ()
-  | {block_kind = Some l; _} when List.for_all ((=) Pgenval) l -> ()
-  | {block_kind = Some [elt]; _} ->
+  | None | Some [] -> ()
+  | Some l when List.for_all ((=) Pgenval) l -> ()
+  | Some [elt] ->
       Format.fprintf ppf " (%s)" (field_kind elt)
-  | {block_kind = Some (h :: t); _} ->
+  | Some (h :: t) ->
       Format.fprintf ppf " (%s" (field_kind h);
       List.iter (fun elt ->
           Format.fprintf ppf ",%s" (field_kind elt))
@@ -151,9 +151,9 @@ let primitive ppf = function
   | Pignore -> fprintf ppf "ignore"
   | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
-  | Pmakeblock(tag, Immutable, shape) ->
+  | Pmakeblock(tag, Immutable, shape, _bdesc) ->
       fprintf ppf "makeblock %i%a" tag block_shape shape
-  | Pmakeblock(tag, Mutable, shape) ->
+  | Pmakeblock(tag, Mutable, shape, _bdesc) ->
       fprintf ppf "makemutable %i%a" tag block_shape shape
   | Pmakelazyblock Lazy_tag ->
       fprintf ppf "makelazyblock"

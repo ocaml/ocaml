@@ -769,10 +769,10 @@ let rec comp_expr stack_info env exp sz cont =
         | CFnge -> Kccall("caml_ge_float", 2) :: Kboolnot :: cont
       in
       comp_args stack_info env args sz cont
-  | Lprim(Pmakeblock(tag, _mut, shape), args, loc) ->
+  | Lprim(Pmakeblock(tag, _mut, _shape, bdesc), args, loc) ->
       let cont = add_pseudo_event loc !compunit_name cont in
       comp_args stack_info env args sz
-        (Kmakeblock(List.length args, tag, shape.block_desc) :: cont)
+        (Kmakeblock(List.length args, tag, bdesc) :: cont)
   | Lprim(Pmakelazyblock tag, [arg], loc) ->
       let cont = add_pseudo_event loc !compunit_name cont in
       comp_args stack_info env [arg] sz

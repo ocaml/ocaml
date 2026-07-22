@@ -56,7 +56,7 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
-  | Pmakeblock of int * mutable_flag * block_shape
+  | Pmakeblock of int * mutable_flag * block_shape * block_desc
   | Pmakelazyblock of lazy_block_tag
   | Pfield of int * immediate_or_pointer * mutable_flag
   | Pfield_computed
@@ -170,10 +170,7 @@ and float_comparison =
 and value_kind =
     Pgenval | Pfloatval | Pboxedintval of boxed_integer | Pintval
 
-and block_shape = {
-  block_kind: value_kind list option;
-  block_desc: block_desc;
-}
+and block_shape = value_kind list option
 
 and block_desc = Block_desc.t
 
@@ -1090,8 +1087,3 @@ let find_exact_application kind ~arity args =
 
 let reset () =
   raise_count := 0
-
-let empty_block_shape = {
-  block_kind = None;
-  block_desc = Block_desc.empty;
-}

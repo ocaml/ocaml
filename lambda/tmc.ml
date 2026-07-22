@@ -79,6 +79,7 @@ module Constr : sig
     tag : int;
     flag: Asttypes.mutable_flag;
     shape : block_shape;
+    bdesc : Block_desc.t;
     before: lambda list;
     after: lambda list;
     loc : Debuginfo.Scoped_location.t;
@@ -112,6 +113,7 @@ end = struct
     tag : int;
     flag: Asttypes.mutable_flag;
     shape : block_shape;
+    bdesc : Block_desc.t;
     before: lambda list;
     after: lambda list;
     loc : Debuginfo.Scoped_location.t;
@@ -119,7 +121,7 @@ end = struct
 
   let apply constr t =
     let block_args = List.append constr.before @@ t :: constr.after in
-    Lprim (Pmakeblock (constr.tag, constr.flag, constr.shape),
+    Lprim (Pmakeblock (constr.tag, constr.flag, constr.shape, constr.bdesc),
            block_args, constr.loc)
 
   let tmc_placeholder =
@@ -733,11 +735,11 @@ let rec choice ctx t =
         direct = (fun () -> Lapply apply_no_bailout);
       }
 
-  and choice_makeblock ctx ~tail:_ (tag, flag, shape) blockargs loc =
+  and choice_makeblock ctx ~tail:_ (tag, flag, shape, bdesc) blockargs loc =
     let choices = List.map (choice ctx ~tail:false) blockargs in
     match Choice.find_nonambiguous_tmc_call choices with
     | Choice.No_tmc_call args ->
-        Choice.lambda @@ Lprim (Pmakeblock (tag, flag, shape), args, loc)
+        Choice.lambda @@ Lprim (Pmakeblock (tag, flag, shape, bdesc), args, loc)
     | Choice.Ambiguous { explicit; subterms = ambiguous_subterms } ->
         (* An ambiguous term should not lead to an error if it not
            used in TMC position. Consider for example:
@@ -774,7 +776,7 @@ let rec choice ctx t =
         *)
         let term_choice =
           let+ args = Choice.list choices in
-          Lprim (Pmakeblock(tag, flag, shape), args, loc)
+          Lprim (Pmakeblock(tag, flag, shape, bdesc), args, loc)
         in
         { term_choice with
           Choice.dps = Dps.make (fun ~tail:_ ~dst:_ ->
@@ -796,6 +798,7 @@ let rec choice ctx t =
             tag;
             flag;
             shape;
+            bdesc;
             before = List.rev rev_before;
             after;
             loc;
@@ -825,8 +828,8 @@ let rec choice ctx t =
   and choice_prim ctx ~tail prim primargs loc =
     match prim with
     (* The important case is the construction case *)
-    | Pmakeblock (tag, flag, shape) ->
-        choice_makeblock ctx ~tail (tag, flag, shape) primargs loc
+    | Pmakeblock (tag, flag, shape, bdesc) ->
+        choice_makeblock ctx ~tail (tag, flag, shape, bdesc) primargs loc
 
     (* Some primitives have arguments in tail-position *)
     | Popaque ->

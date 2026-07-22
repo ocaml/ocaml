@@ -150,8 +150,8 @@ let primitives_table =
     "%field1", Primitive (Pfield(1, Pointer, Mutable), 1);
     "%setfield0", Primitive ((Psetfield(0, Pointer, Assignment)), 2);
     "%setfield1", Primitive ((Psetfield(1, Pointer, Assignment)), 2);
-    "%makeblock", Primitive ((Pmakeblock(0, Immutable, empty_block_shape)), 1);
-    "%makemutable", Primitive ((Pmakeblock(0, Mutable, empty_block_shape)), 1);
+    "%makeblock", Primitive ((Pmakeblock(0, Immutable, None, Block_desc.empty)), 1);
+    "%makemutable", Primitive ((Pmakeblock(0, Mutable, None, Block_desc.empty)), 1);
     "%raise", Raise Raise_regular;
     "%reraise", Raise Raise_reraise;
     "%raise_notrace", Raise Raise_notrace;
@@ -512,13 +512,12 @@ let specialize_primitive env ty ~has_constant_constructor prim =
       | Pbigarray_unknown, Pbigarray_unknown_layout -> None
       | _, _ -> Some (Primitive (Pbigarrayset(unsafe, n, k, l), arity))
     end
-  | Primitive (Pmakeblock(tag, mut, {block_kind = None; block_desc}), arity),
+  | Primitive (Pmakeblock(tag, mut, None, bdesc), arity),
     fields -> begin
-      let block_kind = List.map (Typeopt.value_kind env) fields in
-      let useful = List.exists (fun knd -> knd <> Pgenval) block_kind in
+      let shape = List.map (Typeopt.value_kind env) fields in
+      let useful = List.exists (fun knd -> knd <> Pgenval) shape in
       if useful then
-        let shape = {block_kind = Some block_kind; block_desc} in
-        Some (Primitive (Pmakeblock(tag, mut, shape), arity))
+        Some (Primitive (Pmakeblock(tag, mut, Some shape, bdesc), arity))
       else None
     end
   | Comparison(comp, Compare_generic), p1 :: _ ->
@@ -811,7 +810,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
       lambda_of_loc kind loc
   | Loc kind, [arg] ->
       let lam = lambda_of_loc kind loc in
-      Lprim(Pmakeblock(0, Immutable, empty_block_shape), [lam; arg], loc)
+      Lprim(Pmakeblock(0, Immutable, None, Block_desc.empty), [lam; arg], loc)
   | Send, [obj; meth] ->
       Lsend(Public, meth, obj, [], loc)
   | Send_self, [obj; meth] ->

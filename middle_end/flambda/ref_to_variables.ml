@@ -127,7 +127,7 @@ let eliminate_ref_of_expr flam =
               defining_expr = Prim(Pmakeblock(0, Asttypes.Mutable, shape), l,_);
               body }
         when convertible_variable var ->
-        let shape = match shape.block_kind with
+        let shape = match shape with
           | None -> List.map (fun _ -> Lambda.Pgenval) l
           | Some shape -> shape
         in

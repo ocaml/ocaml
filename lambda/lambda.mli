@@ -60,7 +60,7 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
-  | Pmakeblock of int * mutable_flag * block_shape
+  | Pmakeblock of int * mutable_flag * block_shape * block_desc
   | Pmakelazyblock of lazy_block_tag
   | Pfield of int * immediate_or_pointer * mutable_flag
   | Pfield_computed
@@ -183,10 +183,7 @@ and array_kind =
 and value_kind =
     Pgenval | Pfloatval | Pboxedintval of boxed_integer | Pintval
 
-and block_shape = {
-  block_kind: value_kind list option;
-  block_desc: block_desc;
-}
+and block_shape = value_kind list option
 
 and block_desc = Block_desc.t
 
@@ -211,8 +208,6 @@ and raise_kind =
   | Raise_regular
   | Raise_reraise
   | Raise_notrace
-
-val empty_block_shape : block_shape
 
 val equal_primitive : primitive -> primitive -> bool
 
