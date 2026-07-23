@@ -592,7 +592,8 @@ and transl_guard ~scopes guard rhs =
 
 and transl_cont cont c_cont body =
   match cont, c_cont with
-  | Some id1, Some (id2, _) -> Llet(Alias, Pgenval, id2, Lvar id1, body)
+  | Some id1, Some {cont_id = id2; _} ->
+      Llet(Alias, Pgenval, id2, Lvar id1, body)
   | None, None
   | Some _, None -> body
   | None, Some _ -> assert false
