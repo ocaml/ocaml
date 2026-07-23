@@ -181,6 +181,8 @@ alloc_size_class_stack_noexc(mlsize_t wosize, int cache_bucket, value hval,
       cache[cache_bucket] != NULL) {
     stack = cache[cache_bucket];
     cache[cache_bucket] =
+      /* In the cache, reuse the exception_ptr field as an internal
+         linked-list next pointer. */
       (struct stack_info*)stack->exception_ptr;
     CAMLassert(stack->cache_bucket == stack_cache_bucket(wosize));
     hand = stack->handler;
@@ -560,6 +562,43 @@ struct stack_info* caml_alloc_main_stack (uintnat init_wsize)
   return stk;
 }
 
+atomic_uintnat caml_cache_stacks_per_class =
+#if defined(USE_MMAP_MAP_STACK)
+  1
+#else
+  128
+#endif
+  ;
+
+void caml_free_stack_memory(struct stack_info* stack) {
+  atomic_fetch_sub(&live_stack_counter,
+                   (value*)(stack->handler+1) - (value*)stack);
+#ifdef DEBUG
+  memset(stack, 0x42, (char*)stack->handler - (char*)stack);
+#endif
+#ifdef USE_MMAP_MAP_STACK
+  munmap(stack, stack->size);
+#else
+  caml_stat_free(stack);
+#endif
+}
+
+void caml_free_stack_cache (struct stack_info** stack_cache)
+{
+  if (stack_cache == NULL)
+    return;
+
+  struct stack_info* stored_stack;
+  for (int i = 0; i < NUM_STACK_SIZE_CLASSES; i++) {
+    while (stack_cache[i] != NULL) {
+      stored_stack = stack_cache[i];
+      stack_cache[i] = (struct stack_info*) stored_stack->exception_ptr;
+      caml_free_stack_memory(stored_stack);
+    };
+  }
+  caml_stat_free(stack_cache);
+}
+
 void caml_free_stack (struct stack_info* stack)
 {
   CAMLnoalloc;
@@ -568,24 +607,24 @@ void caml_free_stack (struct stack_info* stack)
   CAMLassert(stack->magic == 42);
   CAMLassert(cache != NULL);
   if (stack->cache_bucket != -1) {
-    stack->exception_ptr =
-      (void*)(cache[stack->cache_bucket]);
-    cache[stack->cache_bucket] = stack;
+    struct stack_info* top = (struct stack_info*)cache[stack->cache_bucket];
+    /* When stored inside the cache, the fiber id field is reused to count
+       the number of fibers in the bucket */
+    int64_t count = top ? top->id : 0;
+    if (count < caml_cache_stacks_per_class) {
+      /* Reuse exception_ptr to point to the next fiber in the bucket. */
+      stack->exception_ptr = (void *)top;
+      stack->id = count + 1;
+      cache[stack->cache_bucket] = stack;
 #ifdef DEBUG
     memset(Stack_base(stack), 0x42,
            (Stack_high(stack)-Stack_base(stack))*sizeof(value));
 #endif
+    } else {
+      caml_free_stack_memory(stack);
+    }
   } else {
-    atomic_fetch_sub(&live_stack_counter,
-                     (value*)(stack->handler+1) - (value*)stack);
-#ifdef DEBUG
-    memset(stack, 0x42, (char*)stack->handler - (char*)stack);
-#endif
-#ifdef USE_MMAP_MAP_STACK
-    munmap(stack, stack->size);
-#else
-    caml_stat_free(stack);
-#endif
+    caml_free_stack_memory(stack);
   }
 }
 

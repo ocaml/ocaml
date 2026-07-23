@@ -22,6 +22,10 @@ OCaml 5.5.1
   constraints.
   (Stefan Muenzel, review by Florian Angeletti)
 
+- #14940, fix a memory leak in the OCaml runtime by bounding the size
+  of the internal cache of stacks.
+  (Vesa Karvonen, Florian Angeletti, review by Gabriel Scherer)
+
 OCaml 5.5.0 (19 June 2026)
 -------------------------
 
