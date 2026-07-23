@@ -664,10 +664,11 @@ let class_field sub {cf_loc; cf_desc; cf_attributes; _} =
 
 let value_bindings sub (_, list) = List.iter (sub.value_binding sub) list
 
-let case sub {c_lhs; c_guard; c_rhs} =
+let case sub {c_lhs; c_guard; c_rhs; c_cont} =
   sub.pat sub c_lhs;
   Option.iter (sub.expr sub) c_guard;
-  sub.expr sub c_rhs
+  sub.expr sub c_rhs;
+  Option.iter (fun { cont_loc; _} -> sub.location sub cont_loc) c_cont
 
 let value_binding sub ({vb_loc; vb_pat; vb_expr; vb_attributes; _} as vb) =
   sub.item_declaration sub (Value_binding vb);
