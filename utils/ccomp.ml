@@ -194,32 +194,41 @@ let call_linker mode output_name files extra =
             l_prefix (Load_path.get_path_list ()))
           (quote_files ~response_files:true (remove_Wl files))
           extra
-      else
-        let comp, wlbdynamic =
-          match !Clflags.c_compiler, mode with
-          | Some cc, _ -> cc, ""
-          | None, Exe ->
-              if
-                !Clflags.static (* static requested by user via -static *)
-                && String.starts_with ~prefix:"linux" Config.system (* only for Linux for now *)
-              then
-                Config.mkexe ^ " -Wl,-Bstatic", "-Wl,-Bdynamic"
-              else
-                Config.mkexe, ""
-          | None, Dll -> Config.mkdll, ""
-          | None, MainDll -> Config.mkmaindll, ""
-          | None, Partial -> assert false, ""
-        in
-        Printf.sprintf "%s -o %s %s %s %s %s %s %s"
-          comp
-          (Filename.quote output_name)
-          ""  (*(Clflags.std_include_flag "-I")*)
-          (quote_prefixed ~response_files:true "-L"
-             (Load_path.get_path_list ()))
-          (String.concat " " (List.rev !Clflags.all_ccopts))
-          (quote_files ~response_files:true files)
-          wlbdynamic
-          extra
+      else match !Clflags.linking_variant, mode with
+        | None, _ | Some _, (Dll | MainDll | Partial) ->
+            Printf.sprintf "%s -o %s %s %s %s %s %s"
+              (match !Clflags.c_compiler, mode with
+              | Some cc, _ -> cc
+              | None, Exe -> Config.mkexe
+              | None, Dll -> Config.mkdll
+              | None, MainDll -> Config.mkmaindll
+              | None, Partial -> assert false
+              )
+              (Filename.quote output_name)
+              ""  (*(Clflags.std_include_flag "-I")*)
+              (quote_prefixed ~response_files:true "-L"
+                 (Load_path.get_path_list ()))
+              (String.concat " " (List.rev !Clflags.all_ccopts))
+              (quote_files ~response_files:true files)
+              extra
+        | Some (_name, cmd), Exe ->
+            let link_arg_payload =
+              Printf.sprintf "%s\n%s\n%s\n%s\n%s\n%s\n%s\n"
+                (match !Clflags.c_compiler with | Some cc -> cc | None -> Config.mkexe)
+                (Filename.quote output_name)
+                ""  (*(Clflags.std_include_flag "-I")*)
+                (quote_prefixed ~response_files:true "-L"
+                   (Load_path.get_path_list ()))
+                (String.concat " " (List.rev !Clflags.all_ccopts))
+                (quote_files ~response_files:true files)
+                extra
+            in
+            let tmpfile = Filename.temp_file "linking-args" ".tmp" in
+            let oc = open_out_bin tmpfile in
+            output_string oc link_arg_payload;
+            flush oc;
+            (* TODO: cleanup, exc *)
+            Printf.sprintf "%s %s" cmd (Filename.quote tmpfile)
     in
     command cmd
   )

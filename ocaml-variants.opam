@@ -1,5 +1,5 @@
 opam-version: "2.0"
-version: "5.6.0+trunk+static"
+version: "5.6.0+trunk+lnkpipe"
 license: "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception"
 synopsis: "OCaml development version"
 maintainer: "caml-list@inria.fr"

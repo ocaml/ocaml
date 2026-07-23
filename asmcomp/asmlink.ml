@@ -93,26 +93,16 @@ let extract_crc_implementations () =
    See bytecomp/bytelink.ml for comments on the order of C objects. *)
 
 let lib_ccobjs = ref []
-let lib_ccobjs_static = ref []
 let lib_ccobjs_variants = ref Clflags.Linking_variants.M.empty
 let lib_ccopts = ref []
 
 let add_ccobjs origin l =
   if not !Clflags.no_auto_link then begin
     begin match !Clflags.linking_variant with
-    | None ->
-        if !Clflags.static && l.lib_ccobjs_static <> [] then
-           lib_ccobjs := l.lib_ccobjs_static @ !lib_ccobjs
-        else
-          lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs
-    | Some (name, _) when not (Clflags.Linking_variants.M.mem name l.lib_ccobjs_variants) ->
-        if !Clflags.static && l.lib_ccobjs_static <> [] then
-           lib_ccobjs := l.lib_ccobjs_static @ !lib_ccobjs
-        else
-          lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs
-    | Some (name, cmd) ->
-        let objs = Clflags.Linking_variants.M.find name l.lib_ccobjs_variants in
-        lib_ccobjs := (Clflags.Linking_variants.compute_variant cmd objs) @ !lib_ccobjs
+    | Some (name, _) when Clflags.Linking_variants.M.mem name l.lib_ccobjs_variants ->
+        lib_ccobjs := Clflags.Linking_variants.M.find name l.lib_ccobjs_variants @ !lib_ccobjs
+    | None | Some _ ->
+        lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs
     end;
     let replace_origin =
       Misc.replace_substring ~before:"$CAMLORIGIN" ~after:origin
@@ -301,7 +291,6 @@ let link_shared ~ppf_dump objfiles output_name =
       (fun (info, file_name, crc) -> check_consistency file_name info crc)
       units_tolink;
     Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
-    Clflags.ccobjs_static := !Clflags.ccobjs_static @ !lib_ccobjs_static;
     Clflags.ccobjs_variants := Clflags.Linking_variants.merge_objs !Clflags.ccobjs_variants !lib_ccobjs_variants;
     Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
     let objfiles =
@@ -368,7 +357,6 @@ let link ~ppf_dump objfiles output_name =
       units_tolink;
     let crc_interfaces = extract_crc_interfaces () in
     Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
-    Clflags.ccobjs_static := !Clflags.ccobjs_static @ !lib_ccobjs_static;
     Clflags.ccobjs_variants := Clflags.Linking_variants.merge_objs !Clflags.ccobjs_variants !lib_ccobjs_variants;
     Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
                                                  (* put user's opts first *)
@@ -451,6 +439,5 @@ let reset () =
   interfaces := [];
   implementations := [];
   lib_ccobjs := [];
-  lib_ccobjs_static := [];
   lib_ccobjs_variants := Clflags.Linking_variants.M.empty;
   lib_ccopts := []

@@ -15,7 +15,6 @@
 
 module Linking_variants : sig
   module M : Map.S with type key = string
-  val compute_variant : string -> string list -> string list
   val merge_objs : string list M.t -> string list M.t -> string list M.t
 end
 
@@ -78,7 +77,6 @@ type profile_column = [ `Time | `Alloc | `Top_heap | `Abs_top_heap ]
 
 val objfiles : string list ref
 val ccobjs : string list ref
-val ccobjs_static : string list ref
 val ccobjs_variants : string list Linking_variants.M.t ref
 val dllibs : (suffixed:bool * string) list ref
 val cmi_file : string option ref
@@ -210,7 +208,6 @@ val std_include_flag : string -> string
 val std_include_dir : unit -> string list
 val shared : bool ref
 val dlcode : bool ref
-val static : bool ref
 val linking_variant : (string * string) option ref
 val pic_code : bool ref
 val runtime_variant : string ref

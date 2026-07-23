@@ -16,27 +16,6 @@
 module Linking_variants = struct
   module M = Map.Make(String)
 
-  let output_of_command cmd =
-    let tmp = Filename.temp_file "cmd" ".out" in
-    let rc = Sys.command (Printf.sprintf "%s > %s" cmd (Filename.quote tmp)) in
-    let ic = open_in tmp in
-    let len = in_channel_length ic in
-    let s = really_input_string ic len in
-    close_in ic;
-    Sys.remove tmp;
-    if rc <> 0 then failwith "command failed";
-    s
-
-  let compute_variant cmd objs =
-    List.concat_map (fun obj ->
-      let flag_blob =
-        Printf.ksprintf output_of_command "%s %s"
-          cmd
-          obj
-      in
-      List.rev (String.split_on_char ' ' (String.trim flag_blob)))
-    objs
-
   let merge_objs fobjs lobjs =
     M.merge
       (fun _ fobjs lobjs -> match fobjs, lobjs with
@@ -75,7 +54,6 @@ type profile_column = [ `Time | `Alloc | `Top_heap | `Abs_top_heap ]
 
 let objfiles = ref ([] : string list)         (* .cmo and .cma files *)
 and ccobjs = ref ([] : string list)           (* .o, .a, .so and -cclib -lxxx *)
-and ccobjs_static = ref ([] : string list)    (* .o, .a and -cclib-static -lxxx *)
 and ccobjs_variants = ref (Linking_variants.M.empty : string list Linking_variants.M.t)
 and dllibs = ref ([] : (suffixed:bool * string) list)
                                               (* .so, -dllib -lxxx and
@@ -219,7 +197,6 @@ let std_include_dir () =
 
 let shared = ref false (* -shared *)
 let dlcode = ref true (* not -nodynlink *)
-let static = ref false (* -static *)
 let linking_variant = ref None (* -linking-variant *)
 
 let pic_code = ref (match Config.architecture with (* -fPIC *)

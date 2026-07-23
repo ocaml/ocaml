@@ -493,7 +493,6 @@ let read_one_param ppf position name v =
 
   |  "keywords"  -> Clflags.keyword_edition := Some v
 
-  | "static" -> Clflags.static := check_bool ppf name v
   | "linking" -> Clflags.linking_variant := check_linking_variant ppf name v
 
   | _ ->
@@ -638,7 +637,6 @@ type deferred_action =
   | ProcessCFile of string
   | ProcessOtherFile of string
   | ProcessObjects of string list
-  | ProcessObjectsStatic of string list
   | ProcessObjectsVariant of string * string list
   | ProcessDLLs of bool * string list
 
@@ -689,8 +687,6 @@ let process_action ctx action =
       ccobjs := obj_name :: !ccobjs
   | ProcessObjects names ->
       ccobjs := names @ !ccobjs
-  | ProcessObjectsStatic names ->
-      ccobjs_static := names @ !ccobjs_static
   | ProcessObjectsVariant (name, names) ->
       ccobjs_variants := Clflags.Linking_variants.merge_objs (Clflags.Linking_variants.M.singleton name names) !ccobjs_variants
   | ProcessDLLs (suffixed, names) ->

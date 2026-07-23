@@ -53,7 +53,6 @@ type deferred_action =
   | ProcessCFile of string
   | ProcessOtherFile of string
   | ProcessObjects of string list
-  | ProcessObjectsStatic of string list
   | ProcessObjectsVariant of string * string list
   | ProcessDLLs of bool * string list
 
