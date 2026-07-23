@@ -310,6 +310,10 @@ Working version
 
 - #14598: Add `@since` annotations to `Runtime_events`. (Raphaël Proust)
 
+- #14902, #14944: Add documentation on ocamllex `-w` argument in the man page.
+  (Jeanne Pottier, review by Florian Angeletti, Gabriel Scherer
+  and Daniel Bünzli)
+
 ### Compiler user-interface and warnings:
 - #14887: More concise messages for the non-exhaustiveness warning.
   (Luc Maranget, review by Florian Angeletti)
