@@ -56,6 +56,14 @@ let print_line name =
 let print_required_compunit (Compunit cu_name) =
   printf "\t%s\n" cu_name
 
+let block_descs oc lib =
+  let out = output_string oc in
+  Block_desc.iter_library begin fun bdesc ->
+    output_char oc '\t';
+    Intro.Desc.dump out bdesc;
+    output_char oc '\n';
+  end lib
+
 let print_cmo_infos cu =
   printf "Unit name: %s\n" (Symtable.Compunit.name cu.cu_name);
   print_string "Interfaces imported:\n";
@@ -70,12 +78,7 @@ let print_cmo_infos cu =
         printf "Primitives declared in this module:\n";
         List.iter print_line l);
   printf "Force link: %a\n" yesno_of_bool cu.cu_force_link;
-  printf "Block descriptors:\n";
-  List.iter (fun bdesc ->
-      output_char stdout '\t';
-      Intro.Desc.dump (output_string stdout) bdesc;
-      output_char stdout '\n';
-    ) cu.cu_block_descs
+  printf "Block descriptors:\n%a" block_descs cu.cu_block_descs
 
 let print_spaced_string s =
   printf " %s" s
@@ -271,12 +274,7 @@ let print_cmx_infos (ui, crc) =
      | Some pack -> "YES: " ^ pack);
   printf
     "Requires caml_standard_library_nat: %a\n" yesno_of_bool ui.ui_need_stdlib;
-  printf "Block descriptors:\n";
-  List.iter (fun bdesc ->
-      output_char stdout '\t';
-      Intro.Desc.dump (output_string stdout) bdesc;
-      output_char stdout '\n';
-    ) ui.ui_block_descs
+  printf "Block descriptors:\n%a" block_descs ui.ui_block_descs
 
 let print_cmxa_infos (lib : Cmx_format.library_infos) =
   printf "Extra C object files:";

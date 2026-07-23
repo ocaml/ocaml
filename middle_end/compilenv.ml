@@ -90,7 +90,7 @@ let current_unit =
     ui_export_info = default_ui_export_info;
     ui_for_pack = None;
     ui_need_stdlib = false;
-    ui_block_descs = [] }
+    ui_block_descs = Block_desc.empty_library }
 
 let linuxlike_mangling = match Config.system with
   | "macosx"
@@ -140,7 +140,7 @@ let reset ?packname name =
   current_unit.ui_force_link <- !Clflags.link_everything;
   current_unit.ui_for_pack <- packname;
   current_unit.ui_need_stdlib <- false;
-  current_unit.ui_block_descs <- [];
+  current_unit.ui_block_descs <- Block_desc.empty_library;
   Hashtbl.clear exported_constants;
   structured_constants := structured_constants_empty;
   current_unit.ui_export_info <- default_ui_export_info;
@@ -375,7 +375,7 @@ let write_unit_info info filename =
 
 let save_unit_info filename =
   current_unit.ui_imports_cmi <- Env.imports();
-  current_unit.ui_block_descs <- Block_desc.emit_tags ();
+  current_unit.ui_block_descs <- Block_desc.emit ();
   write_unit_info current_unit filename
 
 let current_unit () =

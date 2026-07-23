@@ -675,4 +675,4 @@ val emit_constant_closure :
 val emit_preallocated_blocks :
   Clambda.preallocated_block list -> phrase list -> phrase list
 
-val globals_block_descs: Obj.Tag_descriptor.t list -> Cmm.phrase
+val globals_block_descs: Block_desc.library -> Cmm.phrase

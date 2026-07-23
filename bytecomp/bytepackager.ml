@@ -306,11 +306,12 @@ let package_object_files ~ppf_dump files target coercion =
         (fun (name, _crc) -> not (List.mem name unit_names))
         (Bytelink.extract_crc_interfaces()) in
     let cu_block_descs =
-      List.sort_uniq compare @@
-      List.concat_map (function
-          | { pm_kind = PM_intf } -> []
-          | { pm_kind = PM_impl { cu_block_descs } } -> cu_block_descs
-        ) members
+      Block_desc.link (
+        List.filter_map (function
+            | { pm_kind = PM_intf } -> None
+            | { pm_kind = PM_impl impl } -> Some impl.cu_block_descs
+          ) members
+      )
     in
     let compunit =
       { cu_name = Compunit targetname;

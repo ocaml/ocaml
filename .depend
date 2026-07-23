@@ -2447,6 +2447,7 @@ bytecomp/bytelink.cmo : \
     utils/clflags.cmi \
     utils/ccomp.cmi \
     bytecomp/bytesections.cmi \
+    lambda/block_desc.cmi \
     bytecomp/bytelink.cmi
 bytecomp/bytelink.cmx : \
     bytecomp/symtable.cmx \
@@ -2466,6 +2467,7 @@ bytecomp/bytelink.cmx : \
     utils/clflags.cmx \
     utils/ccomp.cmx \
     bytecomp/bytesections.cmx \
+    lambda/block_desc.cmx \
     bytecomp/bytelink.cmi
 bytecomp/bytelink.cmi : \
     bytecomp/symtable.cmi \
@@ -2496,6 +2498,7 @@ bytecomp/bytepackager.cmo : \
     utils/clflags.cmi \
     bytecomp/bytelink.cmi \
     bytecomp/bytegen.cmi \
+    lambda/block_desc.cmi \
     bytecomp/bytepackager.cmi
 bytecomp/bytepackager.cmx : \
     parsing/unit_info.cmx \
@@ -2520,6 +2523,7 @@ bytecomp/bytepackager.cmx : \
     utils/clflags.cmx \
     bytecomp/bytelink.cmx \
     bytecomp/bytegen.cmx \
+    lambda/block_desc.cmx \
     bytecomp/bytepackager.cmi
 bytecomp/bytepackager.cmi : \
     utils/format_doc.cmi \
@@ -5025,7 +5029,8 @@ file_formats/cmi_format.cmi : \
     typing/types.cmi \
     utils/misc.cmi \
     utils/format_doc.cmi
-file_formats/cmo_format.cmi :
+file_formats/cmo_format.cmi : \
+    lambda/block_desc.cmi
 file_formats/cmt_format.cmo : \
     parsing/unit_info.cmi \
     typing/types.cmi \
@@ -8181,6 +8186,7 @@ tools/objinfo.cmo : \
     file_formats/cmi_format.cmi \
     bytecomp/bytesections.cmi \
     bytecomp/byterntm.cmi \
+    lambda/block_desc.cmi \
     utils/binutils.cmi \
     tools/objinfo.cmi
 tools/objinfo.cmx : \
@@ -8206,6 +8212,7 @@ tools/objinfo.cmx : \
     file_formats/cmi_format.cmx \
     bytecomp/bytesections.cmx \
     bytecomp/byterntm.cmx \
+    lambda/block_desc.cmx \
     utils/binutils.cmx \
     tools/objinfo.cmi
 tools/objinfo.cmi :
@@ -10946,7 +10953,8 @@ otherlibs/dynlink/byte/dynlink_symtable.cmo : \
 otherlibs/dynlink/byte/dynlink_symtable.cmi : \
     otherlibs/dynlink/dynlink_cmo_format.cmi
 otherlibs/dynlink/dynlink.cmi :
-otherlibs/dynlink/dynlink_cmo_format.cmi :
+otherlibs/dynlink/dynlink_cmo_format.cmi : \
+    lambda/block_desc.cmi
 otherlibs/dynlink/dynlink_cmxs_format.cmi :
 otherlibs/dynlink/dynlink_common.cmo : \
     otherlibs/dynlink/dynlink_types.cmi \

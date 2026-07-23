@@ -60,7 +60,7 @@ let init_path ?(standard_library=Config.standard_library)
   in
   Load_path.init ~auto_include ~visible ~hidden;
   Env.reset_cache ();
-  Block_desc.reset_tags ()
+  Block_desc.reset ()
 
 (* Return the initial environment in which compilation proceeds. *)
 

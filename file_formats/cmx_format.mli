@@ -48,7 +48,7 @@ type unit_infos =
     mutable ui_force_link: bool;          (* Always linked *)
     mutable ui_for_pack: string option;   (* Part of a pack *)
     mutable ui_need_stdlib: bool;         (* caml_standard_library_nat needed *)
-    mutable ui_block_descs: Block_desc.t list } (* Block descriptors *)
+    mutable ui_block_descs: Block_desc.library } (* Block descriptors *)
 
 (* Each .a library has a matching .cmxa file that provides the following
    infos on the library: *)

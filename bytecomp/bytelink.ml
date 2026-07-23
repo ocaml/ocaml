@@ -231,7 +231,7 @@ let link_compunit accu output_fun currpos_fun inchan file_name compunit =
       else file_path :: debug_dirs in
     debug_info := (currpos_fun(), debug_event_list, debug_dirs) :: !debug_info
   end;
-  block_descs := compunit.cu_block_descs @ !block_descs;
+  block_descs := compunit.cu_block_descs :: !block_descs;
   output_fun code_block;
   let fold_primitive needs_stdlib name =
     if !Clflags.link_everything then
@@ -641,12 +641,13 @@ let link_bytecode ?final_name tolink exec_name standalone =
        end;
        (* Debug info *)
        if not (List.is_empty !block_descs) then begin
-         block_descs := List.sort_uniq compare !block_descs;
-         List.iter begin fun bdesc ->
+         let descs = Block_desc.link !block_descs in
+         block_descs := [descs];
+         (*List.iter begin fun bdesc ->
            Intro.Desc.dump (output_string stdout) bdesc;
            output_char stdout '\n'
-        end !block_descs;
-         Marshal.to_channel outchan !block_descs [];
+           end !block_descs;*)
+         Marshal.to_channel outchan descs [];
          Bytesections.record toc_writer BDSC;
        end;
        (* The table of contents and the trailer *)
