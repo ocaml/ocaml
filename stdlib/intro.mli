@@ -45,6 +45,18 @@ module Desc : sig
     | Constants of string array
     | Polymorphic_variants
 
+  type t = Obj.Tag_descriptor.t =
+    | Unknown
+    | Array of approx
+    | Tuple  of { name: string; tag: int; fields: approx array }
+    | Record of { name: string; tag: int; fields: (string * approx) array }
+    | Polymorphic_variant
+    | Polymorphic_variant_constant of string
+
+  val dump : (string -> unit) -> t -> unit
+
+  val to_string : t -> string
+
   (* Dynamic object: the pair of an approximation and an arbitrary ocaml value.
      If it is immediate, the approximation is used to get better printing.
      If it is a block, an index can be used to recover printing information. *)

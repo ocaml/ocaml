@@ -465,6 +465,11 @@ let to_file outchan artifact_info ~required_globals code =
       cu_debug = pos_debug;
       cu_debugsize = size_debug;
       cu_block_descs = Block_desc.emit_tags () } in
+  prerr_endline "Emitcode.cu_block_descs";
+  List.iter begin fun bdesc ->
+    Intro.Desc.dump (output_string stderr) bdesc;
+    output_char stderr '\n';
+  end compunit.cu_block_descs;
   let pos_compunit = pos_out outchan in
   let () =
     (* Remove any cached abbreviation expansion before marshaling.

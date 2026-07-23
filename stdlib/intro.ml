@@ -82,6 +82,77 @@ module Desc = struct
     | Constants of string array
     | Polymorphic_variants
 
+  type t = Obj.Tag_descriptor.t =
+    | Unknown
+    | Array of approx
+    | Tuple  of { name: string; tag: int; fields: approx array }
+    | Record of { name: string; tag: int; fields: (string * approx) array }
+    | Polymorphic_variant
+    | Polymorphic_variant_constant of string
+
+  let dump_array o f = function
+    | [||] -> o "[||]"
+    | members ->
+      o "[|";
+      f o members.(0);
+      for i = 1 to Array.length members - 1 do
+        o ";";
+        f o members.(i)
+      done;
+      o "|]"
+
+  let dump_escaped o s =
+    o (Printf.sprintf "%S" s)
+
+  let dump_approx o = function
+    | Any -> o "Any"
+    | Char -> o "Char"
+    | Int -> o "Int"
+    | Polymorphic_variants -> o "Polymorphic_variants"
+    | Constants strings ->
+        o "Constants ";
+        dump_array o dump_escaped strings
+
+  let dump_field o (f, apx) =
+    o "(";
+    dump_approx o apx;
+    o ", ";
+    dump_escaped o f;
+    o ")"
+
+  let dump o = function
+    | Unknown ->
+        o "Unknown"
+    | Array apx ->
+        o "Array ";
+        dump_approx o apx
+    | Tuple {name; tag; fields} ->
+        o "Tuple {name = ";
+        dump_escaped o name;
+        o "; tag = ";
+        o (string_of_int tag);
+        o "; fields = ";
+        dump_array o dump_approx fields;
+        o "}"
+    | Record {name; tag; fields} ->
+        o "Record {name = ";
+        dump_escaped o name;
+        o "; tag = ";
+        o (string_of_int tag);
+        o "; fields = ";
+        dump_array o dump_field fields;
+        o "}"
+    | Polymorphic_variant ->
+        o "Polymorphic_variant"
+    | Polymorphic_variant_constant name ->
+        o "Polymorphic_variant_constant ";
+        dump_escaped o name
+
+  let to_string t =
+    let buf = Buffer.create 63 in
+    dump (Buffer.add_string buf) t;
+    Buffer.contents buf
+
   type dynobj = approx * Obj.t
   let get_approx (approx, _ : dynobj) = approx
   let get_obj (_, obj : dynobj) = obj

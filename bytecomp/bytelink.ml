@@ -642,6 +642,10 @@ let link_bytecode ?final_name tolink exec_name standalone =
        (* Debug info *)
        if not (List.is_empty !block_descs) then begin
          block_descs := List.sort_uniq compare !block_descs;
+         List.iter begin fun bdesc ->
+           Intro.Desc.dump (output_string stdout) bdesc;
+           output_char stdout '\n'
+        end !block_descs;
          Marshal.to_channel outchan !block_descs [];
          Bytesections.record toc_writer BDSC;
        end;

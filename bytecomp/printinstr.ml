@@ -19,13 +19,8 @@ open Format
 open Lambda
 open Instruct
 
-let block_desc = function
-  | Obj.Tag_descriptor.Unknown -> "Unknown"
-  | Obj.Tag_descriptor.Array _ -> "Array _"
-  | Obj.Tag_descriptor.Tuple _ -> "Tuple _"
-  | Obj.Tag_descriptor.Record _ -> "Record _"
-  | Obj.Tag_descriptor.Polymorphic_variant -> "Polymorphic_variant"
-  | Obj.Tag_descriptor.Polymorphic_variant_constant _ -> "Polymorphic_variant_constant _"
+let block_desc ppf bdesc =
+  Intro.Desc.dump (Format.pp_print_string ppf) bdesc
 
 let instruction ppf = function
   | Klabel lbl -> fprintf ppf "L%i:" lbl
@@ -53,9 +48,9 @@ let instruction ppf = function
   | Kconst cst ->
       fprintf ppf "@[<10>\tconst@ %a@]" Printlambda.structured_constant cst
   | Kmakeblock(n, m, bdesc) ->
-      fprintf ppf "\tmakeblock %i, %i, %s" n m (block_desc bdesc)
+      fprintf ppf "\tmakeblock %i, %i, %a" n m block_desc bdesc
   | Kmakefloatblock(n, bdesc) ->
-      fprintf ppf "\tmakefloatblock %i, %s" n (block_desc bdesc)
+      fprintf ppf "\tmakefloatblock %i, %a" n block_desc bdesc
   | Kgetfield n -> fprintf ppf "\tgetfield %i" n
   | Ksetfield n -> fprintf ppf "\tsetfield %i" n
   | Kgetfloatfield n -> fprintf ppf "\tgetfloatfield %i" n
