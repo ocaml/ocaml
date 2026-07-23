@@ -50,25 +50,40 @@ let mk_load_atomic memory_chunk =
 
 let floatarray_tag dbg = Cconst_int (Obj.double_array_tag, dbg)
 
-let block_header tag sz =
+let base_block_header tag sz =
   Nativeint.add (Nativeint.shift_left (Nativeint.of_int sz) 10)
                 (Nativeint.of_int tag)
+
+let reserved_header v =
+  if Config.reserved_header_bits = 0
+  then 0n
+  else Nativeint.shift_left (Nativeint.of_int v)
+         (64 - Config.reserved_header_bits)
+
+let block_header ?desc tag sz =
+  let header = base_block_header tag sz in
+  match desc with
+  | None -> header
+  | Some desc ->
+     Nativeint.logor header
+       (reserved_header (Obj.Tag_descriptor.hash desc))
+
 (* Static data corresponding to "value"s must be marked black in case we are
    in no-naked-pointers mode.  See [caml_darken] and the code below that emits
    structured constants and static module definitions. *)
-let black_block_header tag sz = Nativeint.logor (block_header tag sz) caml_black
-let white_closure_header sz = block_header Obj.closure_tag sz
-let black_closure_header sz = black_block_header Obj.closure_tag sz
-let infix_header ofs = block_header Obj.infix_tag ofs
+let black_block_header ?desc tag sz = Nativeint.logor (block_header ?desc tag sz) caml_black
+let white_closure_header ?desc sz = block_header ?desc Obj.closure_tag sz
+let black_closure_header ?desc sz = black_block_header ?desc Obj.closure_tag sz
+let infix_header ?desc ofs = block_header ?desc Obj.infix_tag ofs
 let float_header = block_header Obj.double_tag (size_float / size_addr)
-let floatarray_header len =
+let floatarray_header ?desc len =
   (* Zero-sized float arrays have tag zero for consistency with
      [caml_alloc_float_array]. *)
   assert (len >= 0);
   if len = 0 then block_header 0 0
-  else block_header Obj.double_array_tag (len * size_float / size_addr)
-let string_header len =
-      block_header Obj.string_tag ((len + size_addr) / size_addr)
+  else block_header ?desc Obj.double_array_tag (len * size_float / size_addr)
+let string_header ?desc len =
+      block_header ?desc Obj.string_tag ((len + size_addr) / size_addr)
 let boxedint32_header = block_header Obj.custom_tag 2
 let boxedint64_header = block_header Obj.custom_tag (1 + 8 / size_addr)
 let boxedintnat_header = block_header Obj.custom_tag 2
@@ -87,9 +102,9 @@ let closure_info ~arity ~startenv =
                       1n))
 
 let alloc_float_header dbg = Cconst_natint (float_header, dbg)
-let alloc_floatarray_header len dbg = Cconst_natint (floatarray_header len, dbg)
-let alloc_closure_header sz dbg = Cconst_natint (white_closure_header sz, dbg)
-let alloc_infix_header ofs dbg = Cconst_natint (infix_header ofs, dbg)
+let alloc_floatarray_header ?desc len dbg = Cconst_natint (floatarray_header ?desc len, dbg)
+let alloc_closure_header ?desc sz dbg = Cconst_natint (white_closure_header ?desc sz, dbg)
+let alloc_infix_header ?desc ofs dbg = Cconst_natint (infix_header ?desc ofs, dbg)
 let alloc_closure_info ~arity ~startenv dbg =
   Cconst_natint (closure_info ~arity ~startenv, dbg)
 let alloc_boxedint32_header dbg = Cconst_natint (boxedint32_header, dbg)
@@ -827,9 +842,9 @@ let call_cached_method obj tag cache pos args dbg =
 
 (* Allocation *)
 
-let make_alloc_generic set_fn dbg tag wordsize args =
+let make_alloc_generic ?desc set_fn dbg tag wordsize args =
   if wordsize <= Config.max_young_wosize then
-    Cop(Calloc, Cconst_natint(block_header tag wordsize, dbg) :: args, dbg)
+    Cop(Calloc, Cconst_natint(block_header ?desc tag wordsize, dbg) :: args, dbg)
   else begin
     let id = V.create_local "*alloc*" in
     let rec fill_fields idx = function
@@ -842,15 +857,15 @@ let make_alloc_generic set_fn dbg tag wordsize args =
          fill_fields 1 args)
   end
 
-let make_alloc dbg tag args =
+let make_alloc ?desc dbg tag args =
   let addr_array_init arr ofs newval dbg =
     Cop(Cextcall("caml_initialize", typ_void, [], false),
         [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
   in
-  make_alloc_generic addr_array_init dbg tag (List.length args) args
+  make_alloc_generic ?desc addr_array_init dbg tag (List.length args) args
 
-let make_float_alloc dbg tag args =
-  make_alloc_generic float_array_set dbg tag
+let make_float_alloc ?desc dbg tag args =
+  make_alloc_generic ?desc float_array_set dbg tag
                      (List.length args * size_float / size_addr) args
 
 (* Bounds checking *)

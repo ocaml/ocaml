@@ -15,6 +15,8 @@ type t = Obj.Tag_descriptor.t =
 
 let dump = Intro.Desc.dump
 
+let compare : t -> t -> int = compare
+
 let format ppf t =
   dump (Format.pp_print_string ppf) t
 

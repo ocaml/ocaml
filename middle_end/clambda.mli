@@ -26,7 +26,7 @@ type ustructured_constant =
   | Uconst_int32 of int32
   | Uconst_int64 of int64
   | Uconst_nativeint of nativeint
-  | Uconst_block of int * uconstant list
+  | Uconst_block of int * uconstant list * block_desc
   | Uconst_float_array of float list
   | Uconst_string of string
   | Uconst_closure of ufunction list * string * uconstant list

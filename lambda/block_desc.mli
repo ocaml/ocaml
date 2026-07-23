@@ -15,6 +15,8 @@ type t = Obj.Tag_descriptor.t =
 
 val dump : (string -> unit) -> t -> unit
 
+val compare : t -> t -> int
+
 val format : Format.formatter -> t -> unit
 
 val mask : int
