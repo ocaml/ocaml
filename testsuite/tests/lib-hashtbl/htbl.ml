@@ -416,9 +416,9 @@ let () =
 let _ =
   print_endline "Testing Hashtbl2 :";
   printf "-- Random integers, large range\n%!";
-  T2I1.test Int.to_string (random_integers 5 250);
+  T2I1.test Int.to_string (random_integers 20_000 1_000_000);
   printf "-- Random integers, narrow range\n%!";
-  T2I2.test Int.to_string (random_integers 5 250);
+  T2I2.test Int.to_string (random_integers 20_000 1_000);
   let d =
     try file_data "../../LICENSE" with Sys_error _ -> string_data in
   printf "-- Strings, generic interface\n%!";
