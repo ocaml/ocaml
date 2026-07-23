@@ -187,7 +187,7 @@ Working version
 ### Standard library:
 
 - #14941, #13937: Add `{Option,Result}.try_value`
-  (Michael Neumann, review by ???)
+  (Michael Neumann, review by Daniel Bünzli, David Allsopp)
 
 - #10798: Atomic helper function
     update : ('a -> 'a) -> 'a t -> unit
