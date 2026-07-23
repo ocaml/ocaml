@@ -2824,3 +2824,5 @@ let emit_preallocated_blocks preallocated_blocks cont =
   in
   let c1 = emit_gc_roots_table ~symbols cont in
   List.fold_left preallocate_block c1 preallocated_blocks
+
+let globals_block_descs v = global_data "caml_globals_block_descs" v

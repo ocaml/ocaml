@@ -32,6 +32,7 @@
 #include "caml/fiber.h"
 #include "caml/fail.h"
 #include "caml/debugger.h"
+#include "caml/intext.h"
 
 /* Returns the next frame descriptor (or NULL if none is available),
    and updates *pc and *sp to point to the following one.  */
@@ -440,5 +441,5 @@ int caml_debug_info_status(void)
 
 CAMLprim value caml_read_bdsc_section(value unit)
 {
-  return Val_unit;
+  return caml_input_value_from_block(caml_globals_block_descs, INT_MAX);
 }
