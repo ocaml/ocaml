@@ -70,7 +70,7 @@ module Index = struct
     index
 end
 
-module Introspect = struct
+module Desc = struct
   type 'a fields = int * (int -> 'a)
   let field_count (count, _ : _ fields) = count
   let field_get (_, getter : _ fields) i = getter i
@@ -217,4 +217,81 @@ module Introspect = struct
       | None -> raw_dynval obj
 
   let self_dynval dynobj = dynval (Index.self_index ()) dynobj
+end
+
+module Print = struct
+  open Format
+
+  let rec print_record ppf fields =
+    for i = 0 to Desc.field_count fields - 1 do
+      let name, value = Desc.field_get fields i in
+      fprintf ppf "@[%s = %a@];@ " name pp_dynobj value
+    done
+
+  and print_fields sep ppf fields =
+    for i = 0 to Desc.field_count fields - 1 do
+      let value = Desc.field_get fields i in
+      if i > 0 then fprintf ppf "%s@ " sep;
+      fprintf ppf "@[%a@]" pp_dynobj value
+    done
+
+  and pp_dynval ppf : Desc.dynval -> _ = function
+    | Desc.String s ->
+        fprintf ppf "%S" s
+    | Desc.Float f ->
+        fprintf ppf "%f" f
+    | Desc.Char c ->
+        fprintf ppf "%C" c
+    | Desc.Int_or_constant (i, keys) ->
+        fprintf ppf "%d" i;
+        List.iter (fprintf ppf " or `%s") keys
+    | Desc.Constant names ->
+        fprintf ppf "%s" (String.concat " or " names)
+    | Desc.Array arr ->
+        fprintf ppf "[|@[<hv>%a@]|]" (print_fields ";") arr
+    | Desc.Tuple { name ="::"; fields } when Desc.field_count fields = 2 ->
+        fprintf ppf "[@[<hv>%a@]]" (print_list true) fields
+    | Desc.Tuple { name; fields } ->
+        fprintf ppf "%s(@[<hv>%a@])"
+          name (print_fields ",") fields
+    | Desc.Record {name; fields} ->
+        fprintf ppf "%s{@[<hv>%a@]}" name print_record fields
+    | Desc.Polymorphic_variant (name, payload) ->
+        fprintf ppf "`%s(@[<hv>%a@])" name pp_dynobj payload
+    | Desc.Closure  -> fprintf ppf "<Closure>"
+    | Desc.Lazy     -> fprintf ppf "<Lazy>"
+    | Desc.Abstract -> fprintf ppf "<Abstract>"
+    | Desc.Custom   -> fprintf ppf "<Custom>"
+    | Desc.Unknown  -> fprintf ppf "<Unknown>"
+
+  and print_list first ppf fields =
+    if not first then fprintf ppf ";@ ";
+    let car = Desc.field_get fields 0 in
+    let cdr = Desc.field_get fields 1 in
+    fprintf ppf "%a" pp_dynobj car;
+    match Desc.self_dynval cdr with
+    | Desc.Constant ["[]"]
+    | Desc.Int_or_constant (0, _) -> ()
+    | Desc.Tuple {name = "::"; fields}
+      when Desc.field_count fields = 2 ->
+        print_list false ppf fields
+    | _ -> fprintf ppf "<malformed list>"
+
+  and pp_dynobj ppf obj =
+    pp_dynval ppf (Desc.self_dynval obj)
+
+  let format_any ppf obj =
+    pp_dynobj ppf (Desc.lift (Obj.repr obj))
+
+  let print_any obj =
+    fprintf Format.std_formatter "%a%!" format_any obj
+
+  let prerr_any obj =
+    fprintf Format.err_formatter "%a%!" format_any obj
+
+  let print_any_endline obj =
+    fprintf Format.std_formatter "%a\n%!" format_any obj
+
+  let prerr_any_endline obj =
+    fprintf Format.err_formatter "%a\n%!" format_any obj
 end

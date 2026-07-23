@@ -32,7 +32,7 @@ module Index : sig
   val self_index : unit -> t
 end
 
-module Introspect : sig
+module Desc : sig
   type 'a fields
   val field_count : 'a fields -> int
   val field_get : 'a fields -> int -> 'a
@@ -78,4 +78,13 @@ module Introspect : sig
 
   (* Introspect an object [Index.self_index] *)
   val self_dynval : dynobj -> dynval
+end
+
+module Print : sig
+  val format_any : Format.formatter -> 'a -> unit
+
+  val print_any : 'a -> unit
+  val prerr_any : 'a -> unit
+  val print_any_endline : 'a -> unit
+  val prerr_any_endline : 'a -> unit
 end
