@@ -605,6 +605,7 @@ G(caml_system__code_begin):
 FUNCTION(caml_call_realloc_stack)
 CFI_STARTPROC
         CFI_SIGNAL_FRAME
+LBL(caml_call_realloc_stack):
         ENTER_FUNCTION
         SAVE_ALL_REGS
         movq    %r10, C_ARG_1 /* argument */
@@ -625,8 +626,8 @@ END_FUNCTION(caml_call_realloc_stack)
 
 FUNCTION(caml_call_realloc_stack_default)
 CFI_STARTPROC
-        mov    $(2*Stack_threshold_words), %r10
-        jmp    GCALL(caml_call_realloc_stack)
+        mov     $(2*Stack_threshold_words), %r10
+        jmp     LBL(caml_call_realloc_stack)
 CFI_ENDPROC
 END_FUNCTION(caml_call_realloc_stack_default)
 
