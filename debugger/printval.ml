@@ -123,12 +123,16 @@ let opaque_printer _kind obj =
           | Tuple {name; fields} ->
               H.add table (get_obj obj) ();
               let tuple = list_fields (print (depth - 1)) fields in
-              Oval_constr (oide_ident name, tuple)
+              if name = ""
+              then Oval_tuple (List.map (fun value -> None, value) tuple)
+              else Oval_constr (oide_ident name, tuple)
           | Record {name; fields} ->
               H.add table (get_obj obj) ();
               let pf (k,v) = (oide_ident k, print (depth - 1) v) in
-              let args = Oval_record (list_fields pf fields) in
-              Oval_constr (oide_ident name, [args])
+              let record = Oval_record (list_fields pf fields) in
+              if name = ""
+              then record
+              else Oval_constr (oide_ident name, [record])
           | Polymorphic_variant (name, tuple) ->
               H.add table (get_obj obj) ();
               Oval_variant (name, Some (print (depth - 1) tuple))
