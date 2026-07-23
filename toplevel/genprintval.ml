@@ -125,14 +125,32 @@ module User_printer = struct
     printers := remove !printers
 end
 
+type opaque_kind =
+  | Opaque_abstract
+  | Opaque_polymorphic
+  | Opaque_function
+  | Opaque_unknown_constructor
+  | Opaque_variant
+  | Opaque_object
+  | Opaque_module
+  | Opaque_extension
+  | Opaque_external
+  | Opaque_untyped_exception
+  | Opaque_untyped_exception_payload
+
+type 'a opaque_printer = opaque_kind -> 'a -> Outcometree.out_value option
+
 module type S =
   sig
     type t
-    val outval_of_untyped_exception : t -> Outcometree.out_value
+    val outval_of_untyped_exception :
+      ?opaque_printer:t opaque_printer ->
+      t -> Outcometree.out_value
     val outval_of_value :
-          int -> int ->
-          (int -> t -> Types.type_expr -> Outcometree.out_value option) ->
-          Env.t -> t -> type_expr -> Outcometree.out_value
+      ?opaque_printer:t opaque_printer ->
+      int -> int ->
+      (int -> t -> Types.type_expr -> Outcometree.out_value option) ->
+      Env.t -> t -> type_expr -> Outcometree.out_value
   end
 
 module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
@@ -148,6 +166,16 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           with _exn -> 0
       end)
 
+    let may_print_opaque (printer : _ opaque_printer option) kind bucket =
+      match printer with
+      | None -> None
+      | Some printer -> printer kind bucket
+
+    let print_opaque printer kind default bucket =
+      match may_print_opaque printer kind bucket with
+      | Some outcome -> outcome
+      | None -> default
+
     let tree_of_name (name : string) =
       Oide_ident (Out_type.Out_name.create name)
 
@@ -155,42 +183,53 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
        hence we cannot print its arguments in general.
        Here, we do a feeble attempt to print
        integer, string and float arguments... *)
-    let outval_of_untyped_exception_args obj start_offset =
+    let outval_of_untyped_exception_args opaque_printer obj start_offset =
       if O.size obj > start_offset then begin
         let list = ref [] in
         for i = start_offset to O.size obj - 1 do
           let arg = O.field obj i in
-          if not (O.is_block arg) then
-            list := Oval_int (O.base_obj arg : int) :: !list
-               (* Note: this could be a char or a constant constructor... *)
-          else if O.tag arg = Obj.string_tag then
-            list :=
-              Oval_string ((O.base_obj arg : string), max_int, Ostr_string)
-              :: !list
-          else if O.tag arg = Obj.double_tag then
-            list := Oval_float (O.base_obj arg : float) :: !list
-          else
-            list := Oval_constr (tree_of_name "_", []) :: !list
+          let outcome =
+            match
+              may_print_opaque opaque_printer
+                Opaque_untyped_exception_payload obj
+            with
+            | Some outcome -> outcome
+            | None when not (O.is_block arg) ->
+                (* Note: this could be a char or a constant constructor... *)
+                Oval_int (O.base_obj arg : int)
+            | None when O.tag arg = Obj.string_tag ->
+                Oval_string ((O.base_obj arg : string), max_int, Ostr_string)
+            | None when O.tag arg = Obj.double_tag ->
+                Oval_float (O.base_obj arg : float)
+            | None -> Oval_constr (tree_of_name "_", [])
+          in
+          list := outcome :: !list
         done;
         List.rev !list
       end
       else []
 
-    let outval_of_untyped_exception bucket =
-      if O.tag bucket <> 0 then
-        let name = (O.base_obj (O.field bucket 0) : string)in
-        Oval_constr (tree_of_name name, [])
-      else
-      let name = (O.base_obj(O.field(O.field bucket 0) 0) : string) in
-      let args =
-        if (name = "Match_failure"
-            || name = "Assert_failure"
-            || name = "Undefined_recursive_module")
-        && O.size bucket = 2
-        && O.tag(O.field bucket 1) = 0
-        then outval_of_untyped_exception_args (O.field bucket 1) 0
-        else outval_of_untyped_exception_args bucket 1 in
-      Oval_constr (tree_of_name name, args)
+    let outval_of_untyped_exception ?opaque_printer bucket =
+      match may_print_opaque opaque_printer Opaque_untyped_exception bucket with
+      | Some outcome -> outcome
+      | None ->
+          if O.tag bucket <> 0 then
+            let name = (O.base_obj (O.field bucket 0) : string)in
+            Oval_constr (tree_of_name name, [])
+          else
+            let name = (O.base_obj(O.field(O.field bucket 0) 0) : string) in
+            let args =
+              if (name = "Match_failure"
+                  || name = "Assert_failure"
+                  || name = "Undefined_recursive_module")
+              && O.size bucket = 2
+              && O.tag(O.field bucket 1) = 0
+              then outval_of_untyped_exception_args
+                  opaque_printer (O.field bucket 1) 0
+              else outval_of_untyped_exception_args
+                  opaque_printer bucket 1
+            in
+            Oval_constr (tree_of_name name, args)
 
     let out_exn path exn =
       Oval_printer (fun ppf -> exn_printer path ppf exn)
@@ -275,7 +314,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
     (* The main printing function *)
 
-    let outval_of_value max_steps max_depth check_depth env obj ty =
+    let outval_of_value
+        ?opaque_printer max_steps max_depth check_depth env obj ty
+      =
 
       let printer_steps = ref max_steps in
 
@@ -297,6 +338,22 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
       let nest f = nest_gen (Oval_stuff "<cycle>") f in
 
+      let opaque_stuff obj op_kind =
+        let default = match op_kind with
+          | Opaque_abstract -> Oval_stuff "<abstr>"
+          | Opaque_polymorphic -> Oval_stuff "<poly>"
+          | Opaque_function -> Oval_stuff "<fun>"
+          | Opaque_unknown_constructor -> Oval_stuff "<unknown constructor>"
+          | Opaque_variant -> Oval_stuff "<variant>"
+          | Opaque_object -> Oval_stuff "<obj>"
+          | Opaque_module -> Oval_stuff "<module>"
+          | Opaque_extension -> Oval_stuff "<extension>"
+          | Opaque_external -> Oval_stuff "<external>"
+          | Opaque_untyped_exception | Opaque_untyped_exception_payload ->
+            assert false
+        in
+        print_opaque opaque_printer op_kind default obj
+      in
       let rec tree_of_val depth obj ty =
         decr printer_steps;
         if !printer_steps < 0 || depth < 0 then Oval_ellipsis
@@ -310,9 +367,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         | exception Not_found ->
           match get_desc ty with
           | Tvar _ | Tunivar _ ->
-              Oval_stuff "<poly>"
+              opaque_stuff obj Opaque_polymorphic
           | Tarrow _ | Tfunctor _ ->
-              Oval_stuff "<fun>"
+              opaque_stuff obj Opaque_function
           | Ttuple(labeled_tys) ->
               Oval_tuple (tree_of_labeled_val_list 0 depth obj labeled_tys)
           | Tconstr(path, ty_list, _) -> begin
@@ -351,7 +408,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 match Env.find_type path env with
                 | exception Not_found
                 | {type_kind = Type_abstract _; type_manifest = None} ->
-                    Oval_stuff "<abstr>"
+                    opaque_stuff obj Opaque_abstract
                 | {type_kind = Type_abstract _; type_manifest = Some body;
                    type_params} ->
                     tree_of_val depth obj
@@ -365,18 +422,18 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 | {type_kind = Type_open} ->
                     tree_of_extension path ty_list depth obj
                 | {type_kind = Type_external _} ->
-                    Oval_stuff "<external>"
+                    opaque_stuff obj Opaque_external
             end
           | Tvariant row ->
               tree_of_polyvariant depth obj row
           | Tobject (_, _) ->
-              Oval_stuff "<obj>"
+              opaque_stuff obj Opaque_object
           | Tsubst _ | Tfield(_, _, _, _) | Tnil | Tlink _ ->
               fatal_error "Printval.outval_of_value"
           | Tpoly (ty, _) ->
               tree_of_val (depth - 1) obj ty
           | Tpackage _ ->
-              Oval_stuff "<module>"
+              opaque_stuff obj Opaque_module
         end
 
       and tree_of_list depth obj ty_arg =
@@ -488,7 +545,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           else Cstr_constant(O.base_obj obj) (* immediate *) in
         match Datarepr.find_constr_by_tag tag constr_list with
         | exception Datarepr.Constr_not_found ->
-            Oval_stuff "<unknown constructor>"
+            opaque_stuff obj Opaque_unknown_constructor
         | {cd_id;cd_args;cd_res} ->
         let type_params =
           match cd_res with
@@ -576,7 +633,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                         Oval_variant (l, Some args)
                   | _ -> find fields
                 else find fields
-            | [] -> Oval_stuff "<variant>" in
+            | [] -> opaque_stuff obj Opaque_variant
+          in
           find (row_fields row)
         else
           let tag : int = O.base_obj obj in
@@ -585,7 +643,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 if Btype.hash_variant l = tag then
                   Oval_variant (l, None)
                 else find fields
-            | [] -> Oval_stuff "<variant>" in
+            | [] -> opaque_stuff obj Opaque_variant
+          in
           find (row_fields row)
 
       and tree_of_labeled_val_list start depth obj labeled_tys =
@@ -661,7 +720,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         | None when Path.same type_path Predef.path_exn->
             outval_of_untyped_exception bucket
         | None ->
-            Oval_stuff "<extension>"
+            opaque_stuff obj Opaque_extension
 
     and instantiate_type env type_params ty_list ty =
       try Ctype.apply env type_params ty ty_list

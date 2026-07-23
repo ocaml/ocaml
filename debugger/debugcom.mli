@@ -105,6 +105,8 @@ val update_follow_fork_mode : unit -> unit
 
 (* Handling of remote values *)
 
+val remote_block_descriptors : unit -> (Obj.Tag_descriptor.t list, string) result
+
 module Remote_value :
   sig
     type t

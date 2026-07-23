@@ -64,14 +64,32 @@ module User_printer : sig
   val remove : Path.t -> unit
 end
 
+type opaque_kind =
+  | Opaque_abstract
+  | Opaque_polymorphic
+  | Opaque_function
+  | Opaque_unknown_constructor
+  | Opaque_variant
+  | Opaque_object
+  | Opaque_module
+  | Opaque_extension
+  | Opaque_external
+  | Opaque_untyped_exception
+  | Opaque_untyped_exception_payload
+
+type 'a opaque_printer = opaque_kind -> 'a -> Outcometree.out_value option
+
 module type S =
   sig
     type t
-    val outval_of_untyped_exception : t -> Outcometree.out_value
+    val outval_of_untyped_exception :
+      ?opaque_printer:t opaque_printer ->
+      t -> Outcometree.out_value
     val outval_of_value :
-          int -> int ->
-          (int -> t -> Types.type_expr -> Outcometree.out_value option) ->
-          Env.t -> t -> type_expr -> Outcometree.out_value
+      ?opaque_printer:t opaque_printer ->
+      int -> int ->
+      (int -> t -> Types.type_expr -> Outcometree.out_value option) ->
+      Env.t -> t -> type_expr -> Outcometree.out_value
   end
 
 module Make(O : OBJ)(_ : EVALPATH with type valu = O.t) :
