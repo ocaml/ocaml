@@ -65,7 +65,7 @@ let rec accumulate ~substitution ~copied_lets ~extracted_lets
     let extracted =
       let renamed = Variable.rename var in
       match named with
-      | Prim (Pmakeblock (tag, Asttypes.Immutable, _value_kind), args, _dbg) ->
+      | Prim (Pmakeblock (tag, Asttypes.Immutable, _value_kind, _bdesc), args, _dbg) ->
         let tag = Tag.create_exn tag in
         let args =
           List.map (fun v ->

@@ -108,7 +108,7 @@ let primitive (p : Clambda_primitives.primitive) (args, approxs)
     : Flambda.named * A.t * Inlining_cost.Benefit.t =
   let fpc = !Clflags.float_const_prop in
   match p with
-  | Pmakeblock(tag_int, Asttypes.Immutable, shape) ->
+  | Pmakeblock(tag_int, Asttypes.Immutable, shape, _bdesc) ->
     let tag = Tag.create_exn tag_int in
     let shape = match shape with
       | None -> List.map (fun _ -> Lambda.Pgenval) args
@@ -116,20 +116,20 @@ let primitive (p : Clambda_primitives.primitive) (args, approxs)
     in
     let approxs = List.map2 A.augment_with_kind approxs shape in
     let shape = List.map2 A.augment_kind_with_approx approxs shape in
-    Prim (Pmakeblock(tag_int, Asttypes.Immutable, Some shape), args, dbg),
+    Prim (Pmakeblock(tag_int, Asttypes.Immutable, Some shape, _bdesc), args, dbg),
     A.value_block tag (Array.of_list approxs), C.Benefit.zero
   | Praise _ ->
     expr, A.value_bottom, C.Benefit.zero
-  | Pmakearray(_, _) when is_empty approxs ->
+  | Pmakearray(_, _, _bdesc) when is_empty approxs ->
     let shape = Some [] in
-    Prim (Pmakeblock(0, Asttypes.Immutable, shape), [], dbg),
+    Prim (Pmakeblock(0, Asttypes.Immutable, shape, _bdesc), [], dbg),
     A.value_block (Tag.create_exn 0) [||], C.Benefit.zero
-  | Pmakearray (Pfloatarray, Mutable) ->
+  | Pmakearray (Pfloatarray, Mutable, _bdesc) ->
       let approx =
         A.value_mutable_float_array ~size:(List.length args)
       in
       expr, approx, C.Benefit.zero
-  | Pmakearray (Pfloatarray, Immutable) ->
+  | Pmakearray (Pfloatarray, Immutable, _bdesc) ->
       let approx =
         A.value_immutable_float_array (Array.of_list approxs)
       in

@@ -13,6 +13,10 @@ type t = Obj.Tag_descriptor.t =
   | Polymorphic_variant
   | Polymorphic_variant_constant of string
 
+val dump : (string -> unit) -> t -> unit
+
+val format : Format.formatter -> t -> unit
+
 val mask : int
 
 val index : t -> int

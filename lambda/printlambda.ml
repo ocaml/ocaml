@@ -151,10 +151,12 @@ let primitive ppf = function
   | Pignore -> fprintf ppf "ignore"
   | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
-  | Pmakeblock(tag, Immutable, shape, _bdesc) ->
-      fprintf ppf "makeblock %i%a" tag block_shape shape
-  | Pmakeblock(tag, Mutable, shape, _bdesc) ->
-      fprintf ppf "makemutable %i%a" tag block_shape shape
+  | Pmakeblock(tag, Immutable, shape, bdesc) ->
+     fprintf ppf "makeblock %i%a %a" tag block_shape shape
+       Block_desc.format bdesc
+  | Pmakeblock(tag, Mutable, shape, bdesc) ->
+     fprintf ppf "makemutable %i%a %a" tag block_shape shape
+       Block_desc.format bdesc
   | Pmakelazyblock Lazy_tag ->
       fprintf ppf "makelazyblock"
   | Pmakelazyblock Forward_tag ->

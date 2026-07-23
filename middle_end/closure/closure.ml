@@ -454,7 +454,7 @@ let simplif_prim_pure ~backend fpc p (args, approxs) dbg =
   let open Clambda_primitives in
   match p, args, approxs with
   (* Block construction *)
-  | Pmakeblock(tag, Immutable, _kind), _, _ ->
+  | Pmakeblock(tag, Immutable, _kind, _bdesc), _, _ ->
       let field = function
         | Value_const c -> c
         | _ -> raise Exit
@@ -506,7 +506,7 @@ let simplif_prim ~backend fpc p (args, approxs as args_approxs) dbg =
     (* XXX : always return the same approxs as simplif_prim_pure? *)
     let approx =
       match p with
-      | P.Pmakeblock(_, Immutable, _kind) ->
+      | P.Pmakeblock(_, Immutable, _kind, _bdesc) ->
           Value_tuple (Array.of_list approxs)
       | _ ->
           Value_unknown
@@ -742,13 +742,13 @@ let bind_params { backend; mutable_vars; _ } loc fdesc params args funct body =
           let p1' = VP.rename p1 in
           let u1, u2 =
             match VP.name p1, a1 with
-            | "*opt*", Uprim(P.Pmakeblock(0, Immutable, kind), [a], dbg) ->
+            | "*opt*", Uprim(P.Pmakeblock(0, Immutable, kind, _bdesc), [a], dbg) ->
                 (* This parameter corresponds to an optional parameter,
                    and although it is used twice pushing the expression down
                    actually allows us to remove the allocation as it will
                    appear once under a Pisint primitive and once under a Pfield
                    primitive (see [simplif_prim_pure]) *)
-                a, Uprim(P.Pmakeblock(0, Immutable, kind),
+                a, Uprim(P.Pmakeblock(0, Immutable, kind, _bdesc),
                          [Uvar (VP.var p1')], dbg)
             | _ ->
                 a1, Uvar (VP.var p1')

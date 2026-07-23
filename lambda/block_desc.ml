@@ -13,6 +13,11 @@ type t = Obj.Tag_descriptor.t =
   | Polymorphic_variant
   | Polymorphic_variant_constant of string
 
+let dump = Intro.Desc.dump
+
+let format ppf t =
+  dump (Format.pp_print_string ppf) t
+
 let mask = (1 lsl Config.reserved_header_bits) - 1
 
 let index t = mask land (Obj.Tag_descriptor.hash t)

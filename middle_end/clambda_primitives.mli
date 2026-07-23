@@ -35,7 +35,7 @@ type lazy_block_tag = Lambda.lazy_block_tag
 type primitive =
   | Pread_symbol of string
   (* Operations on heap blocks *)
-  | Pmakeblock of int * mutable_flag * block_shape
+  | Pmakeblock of int * mutable_flag * block_shape * block_desc
   | Pmakelazyblock of lazy_block_tag
   | Pfield of int * immediate_or_pointer * mutable_flag
   | Pfield_computed
@@ -73,7 +73,7 @@ type primitive =
   | Pstringlength | Pstringrefu  | Pstringrefs
   | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
   (* Array operations *)
-  | Pmakearray of array_kind * mutable_flag
+  | Pmakearray of array_kind * mutable_flag * block_desc
   (** For [Pmakearray], the list of arguments must not be empty.  The empty
       array should be represented by a distinguished constant in the middle
       end. *)
@@ -148,6 +148,9 @@ and value_kind = Lambda.value_kind =
     Pgenval | Pfloatval | Pboxedintval of boxed_integer | Pintval
 
 and block_shape = Lambda.block_shape
+
+and block_desc = Block_desc.t
+
 and boxed_integer = Primitive.boxed_integer =
     Pnativeint | Pint32 | Pint64
 

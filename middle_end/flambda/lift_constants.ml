@@ -58,7 +58,7 @@ let assign_symbols_and_collect_constant_definitions
         (* [Inconstant_idents] always marks these expressions as
            inconstant, so we should never get here. *)
         assert false
-      | Prim (Pmakeblock (tag, _, _value_kind), fields, _) ->
+      | Prim (Pmakeblock (tag, _, _value_kind, _bdesc), fields, _) ->
         assign_symbol ();
         record_definition (AA.Block (Tag.create_exn tag, fields))
       | Read_symbol_field (symbol, field) ->
@@ -93,7 +93,7 @@ let assign_symbols_and_collect_constant_definitions
       | Prim (Pfield _, _, _) ->
         Misc.fatal_errorf "[Pfield] with the wrong number of arguments"
           Flambda.print_named named
-      | Prim (Pmakearray (Pfloatarray as kind, mutability), args, _) ->
+      | Prim (Pmakearray (Pfloatarray as kind, mutability, _bdesc), args, _) ->
         assign_symbol ();
         record_definition (AA.Allocated_const (Array (kind, mutability, args)))
       | Prim (Pduparray (kind, mutability), [arg], _) ->
