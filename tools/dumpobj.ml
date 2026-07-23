@@ -397,7 +397,7 @@ let op_shapes = [
   opBREAK, Nothing;
   opRERAISE, Nothing;
   opRAISE_NOTRACE, Nothing;
-  opNEXT_RESERVED_BITS, Uint_Disp;
+  opNEXT_RESERVED_BITS, Uint;
 ]
 
 let print_event ev =
