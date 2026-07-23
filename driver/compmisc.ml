@@ -59,7 +59,8 @@ let init_path ?(standard_library=Config.standard_library)
       !Clflags.hidden_include_dirs
   in
   Load_path.init ~auto_include ~visible ~hidden;
-  Env.reset_cache ()
+  Env.reset_cache ();
+  Block_desc.reset_tags ()
 
 (* Return the initial environment in which compilation proceeds. *)
 

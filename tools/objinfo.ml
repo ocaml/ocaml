@@ -270,7 +270,13 @@ let print_cmx_infos (ui, crc) =
      | None -> "no"
      | Some pack -> "YES: " ^ pack);
   printf
-    "Requires caml_standard_library_nat: %a\n" yesno_of_bool ui.ui_need_stdlib
+    "Requires caml_standard_library_nat: %a\n" yesno_of_bool ui.ui_need_stdlib;
+  printf "Block descriptors:\n";
+  List.iter (fun bdesc ->
+      output_char stdout '\t';
+      Intro.Desc.dump (output_string stdout) bdesc;
+      output_char stdout '\n';
+    ) ui.ui_block_descs
 
 let print_cmxa_infos (lib : Cmx_format.library_infos) =
   printf "Extra C object files:";

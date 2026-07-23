@@ -243,6 +243,9 @@ let build_package_cmx members cmxfile =
       ui_export_info;
       ui_for_pack = None;
       ui_need_stdlib;
+      ui_block_descs =
+        List.sort_uniq Block_desc.compare
+          (List.concat_map (fun ui -> ui.ui_block_descs) units);
     } in
   Compilenv.write_unit_info pkg_infos cmxfile
 
