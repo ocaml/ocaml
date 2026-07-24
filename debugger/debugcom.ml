@@ -257,7 +257,7 @@ let input_remote_value ic =
 let output_remote_value ic v =
   output_substring ic v 0 value_size
 
-let remote_block_descriptors () : (Obj.Tag_descriptor.t list, string) result =
+let remote_block_descriptors () : (Introspect.Desc.t list, string) result =
   prerr_endline "Request BDSC";
   output_char !conn.io_out 'D';
   flush !conn.io_out;

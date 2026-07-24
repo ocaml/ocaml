@@ -148,34 +148,15 @@ module Ephemeron: sig
       ephemeron could contain *)
 end
 
-(* Access reserved bits from the program *)
+(* Access reserved header bits *)
+
+(* How many bits are reserved *)
 external reserved_bits : unit -> int = "caml_obj_reserved_bits" [@@noalloc]
+
+(* Reserved bits of an existing object (0 if immediate). *)
 external get_reserved : t -> int = "caml_obj_get_reserved" [@@noalloc]
+
+(* Change reserved bits of an existing object (thread-safe).
+   Returns [true] if the bits could be changed.
+   Value is truncated to the lowest [reserved_bits ()] bits. *)
 external set_reserved : t -> int -> bool = "caml_obj_set_reserved"
-
-module Tag_descriptor : sig
-  type approx =
-    | Any
-    | Char
-    | Int
-    | Constants of string array
-    | Polymorphic_variants
-
-  type t =
-    | Unknown
-    | Array of approx
-    | Tuple  of { name: string; tag: int; fields: approx array }
-    | Record of { name: string; tag: int; fields: (string * approx) array }
-    | Polymorphic_variant
-    | Polymorphic_variant_constant of string
-
-  val hash : t -> int
-
-  val hash_variant : string -> int
-
-  external read_self_descriptors : unit -> t list =
-    "caml_read_bdsc_section"
-
-  external compiler_tags : unit -> t list ref =
-    "caml_compiler_tags"
-end

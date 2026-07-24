@@ -401,7 +401,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
   | Texp_array (amut, expr_list) ->
       let bdesc =
         let approx = match expr_list with
-          | [] -> Block_desc.Any
+          | [] -> Introspect.Desc.Any
           | x :: _ -> Typeopt.approx x.exp_env x.exp_type
         in
         Block_desc.make_array approx

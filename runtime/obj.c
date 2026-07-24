@@ -447,7 +447,7 @@ CAMLprim value caml_obj_set_reserved(value obj, value tag)
 
 #endif
 
-CAMLprim value caml_compiler_tags(value unit)
+CAMLprim value caml_compiler_block_descs(value unit)
 {
   (void)unit;
   static value tag_ref = 0;

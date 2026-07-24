@@ -2187,7 +2187,6 @@ typing/typeopt.cmo : \
     typing/ctype.cmi \
     utils/config.cmi \
     utils/clflags.cmi \
-    lambda/block_desc.cmi \
     parsing/asttypes.cmi \
     typing/typeopt.cmi
 typing/typeopt.cmx : \
@@ -2204,7 +2203,6 @@ typing/typeopt.cmx : \
     typing/ctype.cmx \
     utils/config.cmx \
     utils/clflags.cmx \
-    lambda/block_desc.cmx \
     parsing/asttypes.cmx \
     typing/typeopt.cmi
 typing/typeopt.cmi : \

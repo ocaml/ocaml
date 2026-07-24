@@ -155,70 +155,15 @@ module Ephemeron = struct
 
 end
 
-(* Access reserved bits from the program *)
+(* Access reserved header bits *)
+
+(* How many bits are reserved *)
 external reserved_bits : unit -> int = "caml_obj_reserved_bits" [@@noalloc]
+
+(* Reserved bits of an existing object (0 if immediate). *)
 external get_reserved : t -> int = "caml_obj_get_reserved" [@@noalloc]
+
+(* Change reserved bits of an existing object (thread-safe).
+   Returns [true] if the bits could be changed.
+   Value is truncated to the lowest [reserved_bits ()] bits. *)
 external set_reserved : t -> int -> bool = "caml_obj_set_reserved"
-
-module Tag_descriptor = struct
-  type approx =
-    | Any
-    | Char
-    | Int
-    | Constants of string array
-    | Polymorphic_variants
-
-  type t =
-    | Unknown
-    | Array  of approx
-    | Tuple  of { name: string; tag: int; fields: approx array }
-    | Record of { name: string; tag: int; fields: (string * approx) array }
-    | Polymorphic_variant
-    | Polymorphic_variant_constant of string
-
-  (* Copied from Hashtbl, to avoid introducing a dependency *)
-  external seeded_hash_param :
-    int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]
-
-  let hash_combine seed v = seeded_hash_param 10 100 seed v
-
-  external char_code : char -> int = "%identity"
-  external string_get : string -> int -> char = "%string_safe_get"
-  external string_length : string -> int = "%string_length"
-  external array_get : 'a array -> int -> 'a = "%array_safe_get"
-  external array_length : 'a array -> int = "%array_length"
-
-  let hash_array h arr =
-    (* Avoid dependency on Array *)
-    let h = ref h in
-    for i = 0 to array_length arr - 1 do
-      h := hash_combine !h (array_get arr i)
-    done;
-    !h
-
-  let hash_variant s =
-    let accu = ref 0 in
-    for i = 0 to string_length s - 1 do
-      accu := 223 * !accu + char_code (string_get s i)
-    done;
-    (* reduce to 31 bits *)
-    accu := !accu land (1 lsl 31 - 1);
-    (* make it signed for 64 bits architectures *)
-    if !accu > 0x3FFFFFFF then !accu - (1 lsl 31) else !accu
-
-  let hash = function
-    | Unknown -> 0
-    | Array approx -> hash_combine 2 approx
-    | Tuple { name; tag; fields } ->
-        hash_combine (hash_combine (hash_combine 5 tag) name) fields
-    | Record { name; tag; fields } ->
-        hash_array (hash_combine (hash_combine 6 tag) name) fields
-    | Polymorphic_variant -> 7
-    | Polymorphic_variant_constant _ -> 0
-
-  external read_self_descriptors : unit -> t list =
-    "caml_read_bdsc_section"
-
-  external compiler_tags : unit -> t list ref =
-    "caml_compiler_tags"
-end

@@ -60,7 +60,7 @@ let block_descs oc lib =
   let out = output_string oc in
   Block_desc.iter_library begin fun bdesc ->
     output_char oc '\t';
-    Intro.Desc.dump out bdesc;
+    Introspect.Desc.dump out bdesc;
     output_char oc '\n';
   end lib
 

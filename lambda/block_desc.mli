@@ -1,19 +1,8 @@
 (* Descriptors definition and construction *)
 
-type approx = Obj.Tag_descriptor.approx =
-  | Any
-  | Char
-  | Int
-  | Constants of string array
-  | Polymorphic_variants
+type approx = Introspect.Desc.approx
 
-type t = Obj.Tag_descriptor.t =
-  | Unknown
-  | Array of approx
-  | Tuple  of { name: string; tag: int; fields: approx array }
-  | Record of { name: string; tag: int; fields: (string * approx) array }
-  | Polymorphic_variant
-  | Polymorphic_variant_constant of string
+type t = Introspect.Desc.t
 
 val dump : (string -> unit) -> t -> unit
 val compare : t -> t -> int

@@ -20,7 +20,7 @@ open Lambda
 open Instruct
 
 let block_desc ppf bdesc =
-  Intro.Desc.dump (Format.pp_print_string ppf) bdesc
+  Introspect.Desc.dump (Format.pp_print_string ppf) bdesc
 
 let instruction ppf = function
   | Klabel lbl -> fprintf ppf "L%i:" lbl

@@ -105,7 +105,7 @@ STDLIB_MODULE_BASENAMES = \
   moreLabels \
   stdLabels \
   effect \
-  intro
+  introspect
 
 STDLIB_PREFIXED_MODULES = \
   $(filter-out stdlib camlinternal%, $(STDLIB_MODULE_BASENAMES))

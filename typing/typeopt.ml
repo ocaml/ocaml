@@ -231,17 +231,18 @@ let value_kind_union k1 k2 =
 let cstr_cache = Hashtbl.create 7
 
 let approx env ty =
+  let open Introspect in
   match scrape env ty with
-  | None -> Block_desc.Any
+  | None -> Desc.Any
   | Some ty ->
       match ty with
       | Tvar _ | Tfield _ | Tnil | Tlink _ | Tarrow _ | Ttuple _ | Tobject _
       | Tsubst _ | Tpackage _ | Tunivar _ | Tpoly _ ->
-          Block_desc.Any
+          Desc.Any
       | Tconstr (p, _, _) when Path.same p Predef.path_int ->
-          Block_desc.Int
+          Desc.Int
       | Tconstr (p, _, _) when Path.same p Predef.path_char ->
-          Block_desc.Char
+          Desc.Char
       | Tconstr (p, _, _) ->
           begin match Env.find_type_descrs p env with
           | Type_variant ((cstr :: _ as cstrs), _)
@@ -256,13 +257,13 @@ let approx env ty =
                           names.(i) <- cstr.Data_types.cstr_name
                       | _ -> ()
                     ) cstrs;
-                  let result = Block_desc.Constants names in
+                  let result = Desc.Constants names in
                   Hashtbl.add cstr_cache cstrs result;
                   result
               end
-          | _ -> Block_desc.Any
+          | _ -> Desc.Any
           end
       | Tvariant _ ->
-          Block_desc.Polymorphic_variants
+          Desc.Polymorphic_variants
       | Tfunctor _ ->
-          Block_desc.Any
+          Desc.Any

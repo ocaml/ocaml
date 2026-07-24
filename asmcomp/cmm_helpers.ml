@@ -66,7 +66,7 @@ let block_header ?desc tag sz =
   | None -> header
   | Some desc ->
      Nativeint.logor header
-       (reserved_header (Obj.Tag_descriptor.hash desc))
+       (reserved_header (Introspect.Desc.hash desc))
 
 (* Static data corresponding to "value"s must be marked black in case we are
    in no-naked-pointers mode.  See [caml_darken] and the code below that emits

@@ -1,63 +1,49 @@
 (* Descriptors definition and construction *)
 
-type approx = Obj.Tag_descriptor.approx =
-  | Any
-  | Char
-  | Int
-  | Constants of string array
-  | Polymorphic_variants
+open Introspect
 
-type t = Obj.Tag_descriptor.t =
-  | Unknown
-  | Array of approx
-  | Tuple  of { name: string; tag: int; fields: approx array }
-  | Record of { name: string; tag: int; fields: (string * approx) array }
-  | Polymorphic_variant
-  | Polymorphic_variant_constant of string
+type approx = Introspect.Desc.approx
 
-let dump = Intro.Desc.dump
+type t = Introspect.Desc.t
 
-let compare a b =
-  match a, b with
-  | Unknown, Unknown -> 0
-  | Unknown, _ -> -1
-  | _, Unknown -> +1
-  | a, b -> compare a b
+let dump = Desc.dump
+
+let compare = Desc.compare
 
 let format ppf t =
   dump (Format.pp_print_string ppf) t
 
 let mask = (1 lsl Config.reserved_header_bits) - 1
 
-let index t = mask land (Obj.Tag_descriptor.hash t)
+let index t = mask land (Desc.hash t)
 
-external compiler_tags : unit -> t list ref = "caml_compiler_tags"
-let library = compiler_tags ()
+external compiler_descriptors : unit -> Desc.t list ref = "caml_compiler_block_descs"
+let library = compiler_descriptors ()
 
 let register t = library := t :: !library; t
 
 let make_array approx =
-  register (Array approx)
+  register (Desc.Array approx)
 
 let make_tuple tag name fields =
-  register (Tuple {name; tag; fields})
+  register (Desc.Tuple {name; tag; fields})
 
 let make_record tag name fields =
-  register (Record {name; tag; fields})
+  register (Desc.Record {name; tag; fields})
 
 let register_polymorphic_variant name =
-  ignore (register (Polymorphic_variant_constant name) : t)
+  ignore (register (Desc.Polymorphic_variant_constant name) : Desc.t)
 
 let make_polymorphic_variant name =
   register_polymorphic_variant name;
-  register Polymorphic_variant
+  register Desc.Polymorphic_variant
 
-let empty = Unknown
+let empty = Desc.Unknown
 (* Manage collections of descriptors *)
 
 let pending_descriptors () = !library
 
-type library = t list
+type library = Desc.t list
 
 let empty_library = []
 
