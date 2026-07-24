@@ -1231,6 +1231,7 @@ runtime_COMMON_C_SOURCES = \
   hash \
   intern \
   ints \
+  introspect \
   io \
   lexing \
   lf_skiplist \

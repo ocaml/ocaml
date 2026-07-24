@@ -214,8 +214,7 @@ let rec transl_const = function
   | Const_immstring s -> Obj.repr s
   | Const_block(tag, fields, bdesc) ->
       let block = Obj.new_block tag (List.length fields) in
-      (* FIXME: introduce Obj.new_block_with_reserved *)
-      assert (Obj.set_reserved block (Block_desc.index bdesc));
+      ignore (Obj.set_reserved block (Block_desc.index bdesc) : bool);
       let transl_field pos cst =
         Obj.set_field block pos (transl_const cst)
       in

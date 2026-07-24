@@ -245,6 +245,7 @@ enum caml_alloc_small_flags {
   do {                                                                         \
     caml_domain_state *dom_st = Caml_state;                                    \
     reserved_t reserved = caml_pop_next_reserved_bits(dom_st);                 \
+    (void)reserved; /* Silence potential unused warning */                     \
     Alloc_small_with_reserved(result, dom_st, wosize, tag, GC, reserved);      \
   } while (0)
 
