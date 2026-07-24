@@ -914,14 +914,17 @@ let needs_expand env level path args =
     (without this constraint, the type system would actually be unsound.)
 *)
 
+(* Check whether no internal level needs to be updated,
+   including abbreviations *)
 let rec check_level_type_rec visited level ty =
   get_level ty <= level &&
   match get_abbrev ty with
-    Some (path, args) ->
-      Path.scope path <= level &&
-      (args = [] || List.memq ty visited ||
+    Some abbr ->
+      abbr.abbr_level <= level ||
+      Path.scope abbr.abbr_path <= level &&
+      (abbr.abbr_args = [] || List.memq ty visited ||
       let visited = ty :: visited in
-      List.for_all (check_level_type_rec visited level) args)
+      List.for_all (check_level_type_rec visited level) abbr.abbr_args)
   | None -> true
 
 let check_level_type level ty = check_level_type_rec [] level ty
@@ -992,19 +995,38 @@ let rec update_level env level expand ty =
         raise_escape_exn Self
     | _ ->
         set_level ();
-        (* XXX what about abbreviations in Tconstr ? *)
+        (* XXX what about memoized abbreviations in Tconstr ? *)
         iter_type_expr (update_level env level expand) ty;
         update_level_abbrev env level expand ty
   end
   else update_level_abbrev env level expand ty
 
+(* [update_level_abbrev] needs to be called to update levels in abbreviations
+   even if the level of the type itself (which is the level of the expanded
+   form) is already correct.
+   Namely, abbreviations are taken from nodes that are actually ancestors
+   to the expanded version of the type. And, through unification, it may
+   be the case that the same expanded type node can be accessed through
+   different ancestors, holding different abbreviations.
+   We keep an abbreviation if its scope is valid and either all the levels it
+   contains are already low enough (check_level_type) or if we can succesfully
+   update the levels in its arguments. Otherwise, we forget it as invalid.
+   To avoid checking the same abbreviation repeatedly, we store the level
+   we have checked inside it. Since path compression can copy a Texpand to
+   an ancestor node, it would be inefficient to use the level of the node
+   containing the Texpand (the level would have to be copied too). *)
 and update_level_abbrev env level expand ty =
   iter_abbrev
-    (fun p args ->
+    (function {abbr_path=p; abbr_args=args; abbr_level=l} as abbr ->
+      if level >= l then () else
       if level < Path.scope p then forget_abbrev ty else
-      if List.for_all (check_level_type level) args then () else
-      if expand || needs_expand env level p args then forget_abbrev ty else
-      List.iter (update_level env level expand) args)
+      if List.for_all (check_level_type level) args then
+        set_abbrev_level abbr level
+      else if expand || needs_expand env level p args then forget_abbrev ty
+      else begin
+        set_abbrev_level abbr level;
+        List.iter (update_level env level expand) args
+      end)
     ty
 
 let try_update_level env level ty =
@@ -1209,8 +1231,8 @@ let rec inv_type hash pty ty =
   with Not_found ->
     let inv = { inv_type = ty; inv_parents = pty } in
     TypeHash.add hash ty inv;
-    iter_abbrev (fun _ args ->
-      List.iter (inv_type hash [inv]) args
+    iter_abbrev (fun {abbr_args} ->
+      List.iter (inv_type hash [inv]) abbr_args
     ) ty;
     iter_type_expr (inv_type hash [inv]) ty
 
@@ -1280,7 +1302,8 @@ let type_subexpressions_with_free_occurrences ids ty =
   in
   let occurrence_in_abbrev inv =
     iter_abbrev
-      (fun p _ -> if Path.exists_free ids p then add_all_parents ids inv)
+      (fun {abbr_path} ->
+        if Path.exists_free ids abbr_path then add_all_parents ids inv)
       inv.inv_type
   in
   TypeHash.iter (fun ty inv ->
@@ -1488,11 +1511,12 @@ let rec copy ?partial ?keep_names ?scope ?(unscoped = empty_unscoped_mapping)
     in
     let desc' =
       match ty_expand with
-        Some (path, args) ->
-          let path = Path.subst unscoped.map path in
-          let args = List.map copy args in
+        Some abbr ->
+          let path = Path.subst unscoped.map abbr.abbr_path in
+          let args = List.map copy abbr.abbr_args in
           let t' = new_scoped_ty ty_scope desc' in
-          Texpand (t', path, args)
+          Texpand (t', {abbr_path = path; abbr_args = args;
+                        abbr_level = !current_level})
       | None ->
           desc'
     in
@@ -3482,10 +3506,11 @@ and unify3 uenv t1' t2' =
             without_assume_injective uenv (fun uenv -> unify_list uenv tl1 tl2)
           else if in_current_module p1 (* || in_pervasives p1 *)
                || List.exists
-                   (fun (p, _) -> expands_to_datatype (get_env uenv) p)
-                   (Option.to_list (get_abbrev t1') @
-                    Option.to_list (get_abbrev t2') @
-                    [p1, []])
+                   (expands_to_datatype (get_env uenv))
+                   (List.map (fun a -> a.abbr_path)
+                      (Option.to_list (get_abbrev t1') @
+                       Option.to_list (get_abbrev t2'))
+                    @ [p1])
           then
             unify_list uenv tl1 tl2
           else

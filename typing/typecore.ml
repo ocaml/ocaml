@@ -307,8 +307,10 @@ end = struct
         let id_map = (id, new_id) :: id_map in
         let package = deep_copy_package id_map copy_with_map package in
         Tfunctor (l, new_id, package, copy_with_map id_map type_expr)
-    | Texpand (t, p, tl) ->
-        Texpand (copy t, copy_path id_map p, List.map copy tl)
+    | Texpand (t, abbr) ->
+        Texpand (copy t, {abbr_path = copy_path id_map abbr.abbr_path;
+                          abbr_args = List.map copy abbr.abbr_args;
+                          abbr_level = abbr.abbr_level})
     | Tlink _ | Tsubst _ -> assert false
 
 
