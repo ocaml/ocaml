@@ -183,6 +183,15 @@ let macosx = make
     "on a MacOS system"
     "not on a MacOS system")
 
+let beos_system = "beos"
+
+let beos_haiku = make
+  ~name:"beos_haiku"
+  ~description:"Pass if running on a BeOS/Haiku system"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.system = beos_system)
+    "on a BeOS/Haiku system"
+    "not on a beOS/Haiku system")
+
 let not_macos_amd64_tsan = make
   ~name:"not_macos_amd64_tsan"
   ~description:"Pass if not running on a MacOS amd64 system with TSan enabled"
@@ -434,6 +443,7 @@ let _ =
     bsd;
     linux;
     macosx;
+    beos_haiku;
     not_macos_amd64_tsan;
     has_cxx;
     arch32;

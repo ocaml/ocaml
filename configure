@@ -19445,6 +19445,8 @@ then :
     natdynlink=true ;; #(
   i[3456]86-*-haiku*) :
     natdynlink=true ;; #(
+  x86_64-*-haiku*) :
+    natdynlink=true ;; #(
   arm*-*-linux*) :
     natdynlink=true ;; #(
   arm*-*-freebsd*) :
@@ -19689,7 +19691,7 @@ case $target in #(
   x86_64-*-openbsd*) :
     has_native_backend=yes; arch=amd64; system=openbsd ;; #(
   x86_64-*-haiku*) :
-    arch=amd64; system=beos ;; #(
+    has_native_backend=yes; arch=amd64; system=beos ;; #(
   arm64-*-darwin*) :
     has_native_backend=yes; arch=arm64; system=macosx ;; #(
   aarch64-*-darwin*) :
