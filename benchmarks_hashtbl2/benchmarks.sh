@@ -31,7 +31,7 @@ file=replace
 run
 
 bench=add_remove
-params="SIZE=1000 ADD=1000 REMOVE=1000 ITERATIONS=10_000"
+params="ADD=1000 REMOVE=1000 ITERATIONS=10_000"
 file=$bench
 run
 
@@ -41,6 +41,6 @@ file=$bench
 run
 
 bench=filter_map_inplace
-params="SIZE=1000 ITERATIONS=20_000 RATIO=2"
+params="SIZE=1000 ITERATIONS=20_000 RATIO=50"
 file=$bench
 run

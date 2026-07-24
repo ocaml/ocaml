@@ -268,10 +268,8 @@ val stats : ('a, 'b) t -> statistics
 (** {1 Hash tables and Sequences} *)
 
 val to_seq : ('a,'b) t -> ('a * 'b) Seq.t
-(** Iterate on the whole table.  The order in which the bindings
-    appear in the sequence is unspecified. However, if the table contains
-    several bindings for the same key, they appear in reversed order of
-    introduction, that is, the most recent binding appears first.
+(** Iterate on the whole table. The order in which the bindings
+    appear in the sequence is unspecified.
 
     The behavior is not specified if the hash table is modified
     during the iteration.

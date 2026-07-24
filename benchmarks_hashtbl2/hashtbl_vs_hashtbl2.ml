@@ -1,4 +1,4 @@
-(* ./ocamlopt.opt -nostdlib -I stdlib hashtbl_vs_hashtbl2.ml \
+(* ../ocamlopt.opt -nostdlib -I ../stdlib hashtbl_vs_hashtbl2.ml \
    -o hashtbl_vs_hashtbl2.exe *)
 
 let get_param p =
@@ -76,10 +76,10 @@ module Benchmarks (H: HtblSeededS with type key = int) = struct
     let iterations = get_int_param "ITERATIONS" in
     let table = H.create 0 in
     for i = 1 to iterations do
-      for j = i to add_number + i do
+      for j = 1 to add_number do
         H.replace table j j
       done;
-      for k = i to remove_number + i do
+      for k = 1 to remove_number do
         H.remove table k
       done
     done
@@ -122,6 +122,7 @@ module Benchmarks (H: HtblSeededS with type key = int) = struct
     let size = get_int_param "SIZE" in
     let ratio = get_int_param "RATIO" in
     let iterations = get_int_param "ITERATIONS" in
+    let alea = Array.init size (fun _ -> Random.int 100) in
     let table = H.create 0 in
     for i = 1 to size do
       H.add table i i
@@ -129,8 +130,8 @@ module Benchmarks (H: HtblSeededS with type key = int) = struct
     for i = 1 to iterations do
       let copy = H.copy table in
       for l = 1 to 10 do
-        H.filter_map_inplace (fun k i ->
-          if k mod (size/ratio) = 0 then Some (i+1) else None) copy
+        H.filter_map_inplace (fun k v ->
+          if alea.(k mod size) < ratio then Some (v+1) else None) copy
         done
     done
 
