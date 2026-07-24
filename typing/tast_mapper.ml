@@ -878,7 +878,8 @@ let case
     c_lhs = sub.pat sub c_lhs;
     c_guard = Option.map (sub.expr sub) c_guard;
     c_rhs = sub.expr sub c_rhs;
-    c_cont
+    c_cont = Option.map (fun cont ->
+        {cont with cont_loc = sub.location sub cont.cont_loc}) c_cont
   }
 
 let value_binding sub x =

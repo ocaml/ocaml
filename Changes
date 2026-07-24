@@ -408,6 +408,9 @@ Working version
 - #14932: Fix `-dtypedtree` printing of `Twith_modtypesubst`.
   (Corentin De Souza, review by Nicolás Ojeda Bär)
 
+- #14946: Keep the continuation inside the typedtree using a dedicated type.
+  (Xavier Van de Woestyne, review by Florian Angeletti)
+
 ### Build system:
 
 - #14552: Export `AR` and `ARFLAGS` in Makefile.config.

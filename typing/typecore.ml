@@ -686,11 +686,10 @@ let type_continuation_pat env expected_ty sp =
   | Ppat_var name ->
       let id = Ident.create_local name.txt in
       let desc =
-        { val_type = expected_ty; val_kind = Val_reg;
-          Types.val_loc = loc; val_attributes = [];
-          val_uid = Uid.mk ~current_unit:(Env.get_current_unit ()); }
+        { cont_id = id; cont_loc = loc; cont_type = expected_ty;
+          cont_uid = Uid.mk ~current_unit:(Env.get_current_unit ()); }
       in
-        Some (id, desc)
+        Some desc
   | Ppat_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
   | _ -> Error.log_and_raise loc env Invalid_continuation_pattern
@@ -896,13 +895,13 @@ type type_pat_state =
 
 let continuation_variable = function
   | None -> []
-  | Some (id, (desc:Types.value_description)) ->
-    [{pv_id = id;
-     pv_type = desc.val_type;
-     pv_loc = desc.val_loc;
+  | Some {cont_id; cont_loc; cont_type; cont_uid} ->
+    [{pv_id = cont_id;
+     pv_type = cont_type;
+     pv_loc = cont_loc;
      pv_kind = Continuation_var;
-     pv_attributes = desc.val_attributes;
-     pv_uid= desc.val_uid}]
+     pv_attributes = [];
+     pv_uid= cont_uid}]
 
 let create_type_pat_state ?cont allow_modules =
   let tps_module_variables =
@@ -7346,7 +7345,6 @@ and type_cases
     ~type_body:begin
       fun { pc_guard; pc_rhs } pat ~when_env ~ext_env ~cont ~ty_expected
         ~ty_infer ~contains_gadt:_ ->
-        let cont = Option.map (fun (id,_) -> id) cont in
         let guard =
           match pc_guard with
           | None -> None
