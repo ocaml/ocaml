@@ -41,6 +41,11 @@ let test_preds () =
   assert (Char.Ascii.is_control '\n');
   assert (Char.Ascii.is_control '\x7F');
   assert (not (Char.Ascii.is_control ' '));
+  assert (not (Char.Ascii.is_punct ' '));
+  assert (not (Char.Ascii.is_punct '1'));
+  assert (Char.Ascii.is_punct '?');
+  assert (not (Char.Ascii.is_punct 'A'));
+  assert ((Char.Ascii.is_punct '|'));
   ()
 
 let test_decimal () =

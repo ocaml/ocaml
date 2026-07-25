@@ -35,6 +35,7 @@ module C' :
         val is_graphic : char -> bool
         val is_print : char -> bool
         val is_control : char -> bool
+        val is_punct : char -> bool
         val is_digit : char -> bool
         val digit_to_int : char -> int
         val digit_of_int : int -> char

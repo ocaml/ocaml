@@ -197,6 +197,9 @@ Working version
 
 ### Standard library:
 
+- #xxxxx: Add `Char.Ascii.is_punct`
+  (Benoît Jubin, review by xxx)
+
 - #14941, #13937: Add `{Option,Result}.try_value`
   (Michael Neumann, review by Daniel Bünzli, David Allsopp)
 

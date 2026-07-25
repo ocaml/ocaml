@@ -85,6 +85,8 @@ module Ascii = struct
   let is_graphic = function '!' .. '~' -> true | _ -> false
   let is_print = function ' ' .. '~' -> true | _ -> false
   let is_control = function '\x00' .. '\x1F' | '\x7F' -> true | _ -> false
+  let is_punct = function
+  | '!' .. '/' | ':' .. '@' | '[' .. '`' | '{' .. '~' -> true | _ -> false
 
   (* Decimal digits *)
 
