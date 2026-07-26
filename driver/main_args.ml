@@ -869,6 +869,9 @@ module type Core_options = sig
   val _warn_error : string -> unit
   val _warn_help : unit -> unit
 
+  val _g : unit -> unit
+  val _no_g : unit -> unit
+
   val _dno_unique_ids : unit -> unit
   val _dunique_ids : unit -> unit
   val _dno_canonical_ids : unit -> unit
@@ -1273,6 +1276,9 @@ struct
     mk_color F._color;
     mk_error_style F._error_style;
 
+    mk_g_byt F._g;
+    mk_no_g F._no_g;
+
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
     mk_dno_canonical_ids F._dno_canonical_ids;
@@ -1511,6 +1517,8 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_nopervasives F._nopervasives;
     mk_no_unbox_free_vars_of_closures F._no_unbox_free_vars_of_closures;
     mk_no_unbox_specialised_args F._no_unbox_specialised_args;
+    mk_g_opt F._g;
+    mk_no_g F._no_g;
     mk_o2 F._o2;
     mk_o3 F._o3;
     mk_open F._open;
@@ -1744,6 +1752,8 @@ module Default = struct
     let _warn_error s =
       Warnings.parse_options true s |> Option.iter Location.(prerr_alert none)
     let _warn_help = Warnings.help_warnings
+    let _g = set debug
+    let _no_g = clear debug
   end
 
   module Native = struct
