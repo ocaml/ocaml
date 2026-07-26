@@ -528,7 +528,16 @@ let apply_specialised_attribute ppf = function
   | Always_specialise -> fprintf ppf " always_specialise"
   | Never_specialise -> fprintf ppf " never_specialise"
 
-let rec lam ppf = function
+(* -dno-locations also hides the placement of debug events;
+   this is good for the readability of the resulting output (usually
+   the end-user goal when using -dno-locations), as it strongly
+   reduces the nesting level of subterms. *)
+let rec view = function
+  | Levent (expr, _ev) when not !Clflags.locations ->
+    view expr
+  | expr -> expr
+
+let rec lam ppf expr = match view expr with
   | Lvar id ->
       Ident.print ppf id
   | Lmutvar id ->
@@ -555,7 +564,7 @@ let rec lam ppf = function
         | _ -> assert false
         end
       in
-      let rec letbody = function
+      let rec letbody expr = match view expr with
         | Llet(_, k, id, arg, body)
         | Lmutlet(k, id, arg, body) as l ->
            fprintf ppf "@ @[<2>%a =%s%a@ %a@]"
@@ -638,8 +647,13 @@ let rec lam ppf = function
         lam lbody Ident.print param lam lhandler
   | Lifthenelse(lcond, lif, lelse) ->
       fprintf ppf "@[<2>(if@ %a@ %a@ %a)@]" lam lcond lam lif lam lelse
-  | Lsequence(l1, l2) ->
-      fprintf ppf "@[<2>(seq@ %a@ %a)@]" lam l1 sequence l2
+  | Lsequence(_, _) as expr ->
+      let rec flatten ppf expr = match view expr with
+        | Lsequence (l1, l2) ->
+            fprintf ppf "%a@ %a" flatten l1 flatten l2
+        | expr -> lam ppf expr
+      in
+      fprintf ppf "@[<2>(seq@ %a)@]" flatten expr
   | Lwhile(lcond, lbody) ->
       fprintf ppf "@[<2>(while@ %a@ %a)@]" lam lcond lam lbody
   | Lfor(param, lo, hi, dir, body) ->
@@ -663,12 +677,7 @@ let rec lam ppf = function
        | Lev_function -> "funct-body"
        | Lev_pseudo -> "pseudo"
       in
-      (* -dno-locations also hides the placement of debug events;
-         this is good for the readability of the resulting output (usually
-         the end-user goal when using -dno-locations), as it strongly
-         reduces the nesting level of subterms. *)
-      if not !Clflags.locations then lam ppf expr
-      else begin match ev.lev_loc with
+      begin match ev.lev_loc with
       | Loc_unknown ->
         fprintf ppf "@[<2>(%s <unknown location>@ %a)@]" kind lam expr
       | Loc_known {scopes; loc} ->
@@ -683,12 +692,6 @@ let rec lam ppf = function
       end
   | Lifused(id, expr) ->
       fprintf ppf "@[<2>(ifused@ %a@ %a)@]" Ident.print id lam expr
-
-and sequence ppf = function
-  | Lsequence(l1, l2) ->
-      fprintf ppf "%a@ %a" sequence l1 sequence l2
-  | l ->
-      lam ppf l
 
 and lfunction ppf {kind; params; return; body; attr} =
   let pr_params ppf params =
