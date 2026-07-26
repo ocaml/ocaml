@@ -358,10 +358,6 @@ let beta_reduce params body args =
 (* Simplification of lets *)
 
 let simplify_lets lam =
-
-  (* Disable optimisations for bytecode compilation with -g flag *)
-  let optimize = !Clflags.native_code || not !Clflags.debug in
-
   (* First pass: count the occurrences of all let-bound identifiers *)
 
   let occ = (Hashtbl.create 83: (Ident.t, int ref) Hashtbl.t) in
@@ -409,7 +405,7 @@ let simplify_lets lam =
   | Lapply{ap_func = ll; ap_args = args} ->
       let no_opt () = count bv ll; List.iter (count bv) args in
       begin match ll with
-      | Lfunction lf when optimize ->
+      | Lfunction lf ->
           begin match exact_application lf args with
           | None -> no_opt ()
           | Some exact_args ->
@@ -419,7 +415,7 @@ let simplify_lets lam =
       end
   | Lfunction fn ->
       count_lfunction fn
-  | Llet(_str, _k, v, Lvar w, l2) when optimize ->
+  | Llet(_str, _k, v, Lvar w, l2) ->
       (* v will be replaced by w in l2, so each occurrence of v in l2
          increases w's refcount *)
       count (bind_var bv v) l2;
@@ -497,13 +493,13 @@ let simplify_lets lam =
 
   let mklet str kind v e1 e2 =
     match e2 with
-    | Lvar w when optimize && Ident.same v w -> e1
+    | Lvar w when Ident.same v w -> e1
     | _ -> Llet (str, kind,v,e1,e2)
   in
 
   let mkmutlet kind v e1 e2 =
     match e2 with
-    | Lmutvar w when optimize && Ident.same v w -> e1
+    | Lmutvar w when Ident.same v w -> e1
     | _ -> Lmutlet (kind,v,e1,e2)
   in
 
@@ -520,7 +516,7 @@ let simplify_lets lam =
         Lapply {ap with ap_func = simplif ap.ap_func;
                         ap_args = List.map simplif ap.ap_args} in
       begin match ll with
-      | Lfunction lf when optimize ->
+      | Lfunction lf ->
           begin match exact_application lf args with
           | None -> no_opt ()
           | Some exact_args ->
@@ -533,7 +529,7 @@ let simplify_lets lam =
       begin match simplif l with
         Lfunction{kind=Curried; params=params'; return=return2; body;
                   attr=attr2; loc}
-        when kind = Curried && optimize &&
+        when kind = Curried &&
              attr1.may_fuse_arity && attr2.may_fuse_arity &&
              List.length params + List.length params' <= Lambda.max_arity() ->
           (* The return type is the type of the value returned after
@@ -546,12 +542,12 @@ let simplify_lets lam =
       | body ->
           lfunction ~kind ~params ~return:return1 ~body ~attr:attr1 ~loc
       end
-  | Llet(_str, _k, v, Lvar w, l2) when optimize ->
+  | Llet(_str, _k, v, Lvar w, l2)  ->
       Hashtbl.add subst v (simplif (Lvar w));
       simplif l2
   | Llet(Strict, kind, v,
          Lprim(Pmakeblock(0, Mutable, kind_ref) as prim, [linit], loc), lbody)
-    when optimize ->
+    ->
       let slinit = simplif linit in
       let slbody = simplif lbody in
       begin try
@@ -567,7 +563,7 @@ let simplify_lets lam =
   | Llet(Alias, kind, v, l1, l2) ->
       begin match count_var v with
         0 -> simplif l2
-      | 1 when optimize -> Hashtbl.add subst v (simplif l1); simplif l2
+      | 1 -> Hashtbl.add subst v (simplif l1); simplif l2
       | _ -> Llet(Alias, kind, v, simplif l1, simplif l2)
       end
   | Llet(StrictOpt, kind, v, l1, l2) ->
@@ -949,9 +945,7 @@ let simplify_local_functions lam =
 let simplify_lambda lam =
   let lam =
     lam
-    |> (if !Clflags.native_code || not !Clflags.debug
-        then simplify_local_functions else Fun.id
-       )
+    |> simplify_local_functions
     |> simplify_exits
     |> simplify_lets
     |> Tmc.rewrite
