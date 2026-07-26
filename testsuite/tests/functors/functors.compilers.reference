@@ -3,13 +3,16 @@
     (O =
        (function X is_a_functor always_inline
          (let
-           (cow = (function x[int] : int (apply (field_imm 0 X) x))
+           (X =a X
+            cow = (function x[int] : int (apply (field_imm 0 X) x))
             sheep = (function x[int] : int (+ 1 (apply cow x))))
            (makeblock 0 cow sheep)))
      F =
        (function X Y is_a_functor always_inline
          (let
-           (cow =
+           (X =a X
+            Y =a Y
+            cow =
               (function x[int] : int
                 (apply (field_imm 0 Y) (apply (field_imm 0 X) x)))
             sheep = (function x[int] : int (+ 1 (apply cow x))))
@@ -17,7 +20,9 @@
      F1 =
        (function X Y is_a_functor always_inline
          (let
-           (cow =
+           (X =a X
+            Y =a Y
+            cow =
               (function x[int] : int
                 (apply (field_imm 0 Y) (apply (field_imm 0 X) x)))
             sheep = (function x[int] : int (+ 1 (apply cow x))))
@@ -37,7 +42,9 @@
          (F =
             (function X Y is_a_functor always_inline
               (let
-                (cow =
+                (X =a X
+                 Y =a Y
+                 cow =
                    (function x[int] : int
                      (apply (field_imm 0 Y) (apply (field_imm 0 X) x)))
                  sheep = (function x[int] : int (+ 1 (apply cow x))))

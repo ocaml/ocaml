@@ -10,6 +10,7 @@ Fun.todo ();;
 - : unit = ()
 Exception: Fun.Todo
 File "-", line 3
+Raised at <unknown> in file "", line 3, characters 0-11
 Called from unknown location
 |}];;
 

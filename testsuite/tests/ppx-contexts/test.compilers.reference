@@ -2,7 +2,7 @@
 tool_name: "ocamlc"
 open_modules: ["List"]
 for_package: "None"
-use_debug: false
+use_debug: true
 use_threads: true
 recursive_types: true
 principal: true

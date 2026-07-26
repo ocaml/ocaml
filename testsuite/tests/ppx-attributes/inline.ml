@@ -1,5 +1,5 @@
 (* TEST
- flags = "-dlambda -dno-unique-ids";
+ flags = "-dlambda -dno-locations -dno-unique-ids";
  expect;
 *)
 
