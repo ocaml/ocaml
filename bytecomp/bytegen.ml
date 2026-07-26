@@ -225,6 +225,7 @@ let merge_events ev ev' =
     (* Discard following events, supposedly less informative *)
     | Event_after _, (Event_after _ | Event_before) -> ev, ev'
   in
+  if min.ev_kind = Event_pseudo then maj else
   copy_event maj maj.ev_kind (merge_infos maj min) (merge_repr maj min)
 
 let weaken_event ev cont =
