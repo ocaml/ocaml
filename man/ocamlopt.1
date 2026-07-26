@@ -306,13 +306,13 @@ will generate a.cmx and a.o files that can later be used with
 .BR "ocamlopt -pack -o P.cmx a.cmx" .
 .TP
 .B \-g
-Add debugging information while compiling and linking. This option is
+Add debugging information while compiling and linking (deafult). This option is
 required in order to produce stack backtraces when
 the program terminates on an uncaught exception (see
 .BR ocamlrun (1)).
 .TP
 .B \-no-g
-Do not record debugging information (default).
+Do not record debugging information.
 .TP
 .B \-i
 Cause the compiler to print all defined names (with their inferred

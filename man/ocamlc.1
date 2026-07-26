@@ -413,14 +413,14 @@ Note: you can still pack a module that was compiled without
 but in this case exceptions will be printed with the wrong names.
 .TP
 .B \-g
-Add debugging information while compiling and linking. This option is
+Add debugging information while compiling and linking (default). This option is
 required in order to be able to debug the program with
 .BR ocamldebug (1)
 and to produce stack backtraces when
 the program terminates on an uncaught exception.
 .TP
 .B \-no-g
-Do not record debugging information (default).
+Do not record debugging information.
 .TP
 .B \-i
 Cause the compiler to print all defined names (with their inferred

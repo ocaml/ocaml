@@ -148,14 +148,16 @@ let mk_for_pack_opt f =
   \     ocamlopt -pack -o <ident>.cmx"
 
 let mk_g_byt f =
-  "-g", Arg.Unit f, " Save debugging information"
+  "-g", Arg.Unit f,
+  " Save debugging information (default)"
 
 let mk_g_opt f =
-  "-g", Arg.Unit f, " Record debugging information for exception backtrace"
+  "-g", Arg.Unit f,
+  " Record debugging information for exception backtrace (default)"
 
 let mk_no_g f =
   "-no-g", Arg.Unit f,
-  " Do not record debugging information (default)"
+  " Do not record debugging information"
 
 let mk_i f =
   "-i", Arg.Unit f, " Print inferred interface"
