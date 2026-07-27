@@ -22,7 +22,7 @@ type _ extension = ..
 type version = Diagnostic_history.version = { major:int; minor: int}
 type 'a update = 'a Diagnostic_history.update
 
-type 'a typ =
+type _ typ =
   | Unit: unit typ
   | Bool: bool typ
   | Int: int typ
@@ -48,7 +48,7 @@ and ('a,'b,'c) field = {
   id: 'a Type.Id.t;
   range:Diagnostic_history.Lifetime.t
 }
-and 'a bound_field = F: ('a,'b,'c) field * 'a -> 'b bound_field
+and _ bound_field = F: ('a,'b,'c) field * 'a -> 'b bound_field
 and 'id sum =
     Constr: { name:string; typ:'a typ; arg:'a; approx: 'id sum option }
       -> 'id sum
