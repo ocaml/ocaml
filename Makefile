@@ -1020,7 +1020,9 @@ ocaml_SOURCES = toplevel/topstart.mli toplevel/topstart.ml
 
 ocaml_CMO_FILES = toplevel/topstart.cmo
 
+OCAML_OVERRIDE_FLAGS ?=
 .INTERMEDIATE: ocaml.tmp
+ocaml.tmp: CAMLC = $(BOOT_OCAMLC) $(OCAML_OVERRIDE_FLAGS) $(BOOT_STDLIBFLAGS)
 ocaml.tmp: OC_BYTECODE_LINKFLAGS += -I toplevel/byte -linkall -g
 ocaml.tmp: $(ocaml_CMA_FILES) $(ocaml_CMO_FILES)
 	$(V_LINKC)$(LINK_BYTECODE_PROGRAM) -o $@ $^
