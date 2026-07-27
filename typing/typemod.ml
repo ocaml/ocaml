@@ -2448,7 +2448,12 @@ let rec type_module ?(alias=false) ~strengthen ~funct_body anchor env smod =
   if !Clflags.typing_recovery then
     Typing_recovery_state.with_saved_types (fun () ->
         try delayed ()
-        with exn when Typing_recovery.is_recoverable exn  ->
+        with Error.In_context _  ->
+          (* Here, we lose some nodes in the typed tree because we don't
+             catch some errors related to [Env]. However, since we can't
+             synthesize a hole in place of a module, this causes problems
+             for dependent function modules in capturing all recoverable
+             errors here. *)
           { mod_desc = Tmod_structure {
                 str_items = [];
                 str_type = [];
@@ -2760,7 +2765,10 @@ and type_one_application ~ctx:(apply_loc,sfunct,md_f,args)
         | Pmod_ident l -> Includemod.Named_leftmost_functor l.txt
         | _ -> Includemod.Anonymous_functor
       in
-      raise(Includemod.Apply_error {loc=apply_loc;env;app_name;mty_f;args})
+      (* In Merlin, we can recover because we can synthesize an
+         artificial module with a typed hole. *)
+      Typing_recovery.log_and_raise
+        (Includemod.Apply_error {loc=apply_loc;env;app_name;mty_f;args})
 
 and type_open_decl ?used_slot ?toplevel ~funct_body names env sod =
   Builtin_attributes.warning_scope sod.popen_attributes
