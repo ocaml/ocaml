@@ -2452,7 +2452,7 @@ let rec type_module ?(alias=false) ~strengthen ~funct_body anchor env smod =
           (* Here, we would like to be able to catch all recoverable
              errors using [Typing_recovery.is_recoverable], as is the
              case in Merlin. However, in Merlin, nonexistent modules
-             are replaced with typed holes. Here, since we don’t catch
+             are replaced with typed holes. Here, since we don't catch
              the errors, we lose some nodes of the typed tree (those
              that reference nonexistent modules), but we retain the
              recovery mechanism for errors related to module dependent
