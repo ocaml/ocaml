@@ -3669,11 +3669,19 @@ module Unscoped = struct
   let path_equiv env p1 p2 = Path.equiv env.id_pairs p1 p2
 end
 
+let rec path_has_apply : Path.t -> bool = function
+  | Pident _ -> false
+  | Pdot (p, _) | Pextra_ty (p, _) -> path_has_apply p
+  | Papply _ -> true
+
 let module_path_equiv_modulo env p1 p2 =
   p1 == p2 ||
   Unscoped.path_equiv env p1 p2 ||
-  try find_module_and_expand env p1 == find_module_and_expand env p2
+  try
+    if path_has_apply p1 || path_has_apply p2 then raise Not_found;
+    find_module_and_expand env p1 == find_module_and_expand env p2
   with Not_found ->
+    (* fallback in presence of functor applications or missing .cmi. *)
     Unscoped.path_equiv env
       (normalize_module_path None env p1)
       (normalize_module_path None env p2)
@@ -3699,8 +3707,11 @@ let rec type_path_equiv_modulo env p1 p2 =
 let modtype_path_equiv_modulo env p1 p2 =
   p1 == p2 ||
   Unscoped.path_equiv env p1 p2 ||
-  try find_modtype_and_expand env p1 == find_modtype_and_expand env p2
+  try
+    if path_has_apply p1 || path_has_apply p2 then raise Not_found;
+    find_modtype_and_expand env p1 == find_modtype_and_expand env p2
   with Not_found ->
+    (* fallback in presence of functor applications or missing .cmi. *)
     Unscoped.path_equiv env
       (normalize_modtype_path env p1)
       (normalize_modtype_path env p2)
