@@ -695,7 +695,7 @@ type report = {
   footnote: Fmt.t option;
 }
 
-module Error_diagnostic = struct[@warning "-unused-value-declaration"]
+module Error_diagnostic = struct
   type lc = t
   open Diagnostic
   module Error = Compiler_diagnostic.Error
