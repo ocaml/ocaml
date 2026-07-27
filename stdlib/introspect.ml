@@ -9,7 +9,7 @@ module Desc = struct
   type view =
     | Unknown
     | Array of approx
-    | Tuple  of { name: string; tag: int; fields: approx array }
+    | Tuple of { name: string; tag: int; fields: (string * approx) array }
     | Record of { name: string; tag: int; fields: (string * approx) array }
     | Polymorphic_variant
     | Polymorphic_variant_constant of string
@@ -69,7 +69,7 @@ module Desc = struct
         o "; tag = ";
         o (string_of_int tag);
         o "; fields = ";
-        dump_array o dump_approx fields;
+        dump_array o dump_field fields;
         o "}"
     | Record {name; tag; fields} ->
         o "Record {name = ";
@@ -227,7 +227,7 @@ module Dyn = struct
     (* [Constant ["`Bla"]] = `Bla *)
     | Array of t fields
     (* [Array f] = [|f0, f1, f2, ...|] *)
-    | Tuple of { name: string; fields: t fields }
+    | Tuple of { name: string; fields: (string * t) fields }
     (* [Tuple f] = (f0, f1, f2, ...) *)
     | Record of { name: string; fields: (string * t) fields }
     (* [Record f] = { fst f0 : snd f0; fst f1 : snd f1; ... } *)
@@ -271,7 +271,9 @@ module Dyn = struct
       in
       List.find_opt select (Index.lookup_by_reserved_bits t obj)
 
-  let no_approx' (_ : int) (obj : Obj.t) = (Desc.Any, obj)
+  let no_approx (_ : int) (obj : Obj.t) = (Desc.Any, obj)
+
+  let no_name (_ : int) (obj : Obj.t) = ("", (Desc.Any, obj))
 
   let view_raw (obj : Obj.t) =
     if Obj.is_int obj then
@@ -280,15 +282,15 @@ module Dyn = struct
       let tag = Obj.tag obj in
       if tag <= Obj.last_non_constant_constructor_tag then (
         if tag = 0
-        then Tuple { name = ""; fields = fields_of_block no_approx' obj }
+        then Tuple { name = ""; fields = fields_of_block no_name obj }
         else Tuple { name = "Tag#" ^ string_of_int tag;
-                     fields = fields_of_block no_approx' obj }
+                     fields = fields_of_block no_name obj }
       ) else if tag = Obj.string_tag then
         String (Obj.obj obj)
       else if tag = Obj.double_tag then
         Float (Obj.obj obj)
       else if tag = Obj.double_array_tag then
-        Array (fields_of_block no_approx' obj)
+        Array (fields_of_block no_approx obj)
       else if tag = Obj.closure_tag then
         Closure
       else if tag = Obj.lazy_tag then
@@ -330,7 +332,10 @@ module Dyn = struct
           in
           Record { name; fields = fields_of_block get_field obj }
       | Some (Desc.Tuple {name; fields}) ->
-          let get_field i obj = (fields.(i), obj) in
+          let get_field i obj =
+            let name, approx = fields.(i) in
+            (name, (approx, obj))
+          in
           Tuple {name; fields = fields_of_block get_field obj}
       | Some (Desc.Polymorphic_variant) ->
           let name = (Obj.obj (Obj.field obj 0) : int) in
@@ -350,20 +355,14 @@ end
 module Print = struct
   open Format
 
-  let rec print_record ppf fields =
-    for i = 0 to Dyn.field_count fields - 1 do
-      let name, value = Dyn.field_get fields i in
-      fprintf ppf "@[%s = %a@];@ " name pp_dynobj value
-    done
-
-  and print_fields sep ppf fields =
+  let pp_fields pfield sep ppf fields =
     for i = 0 to Dyn.field_count fields - 1 do
       let value = Dyn.field_get fields i in
       if i > 0 then fprintf ppf "%s@ " sep;
-      fprintf ppf "@[%a@]" pp_dynobj value
+      fprintf ppf "@[%a@]" pfield value
     done
 
-  and pp_dynval ppf : Dyn.view -> _ = function
+  let rec pp_dynval ppf : Dyn.view -> _ = function
     | Dyn.String s ->
         fprintf ppf "%S" s
     | Dyn.Float f ->
@@ -376,14 +375,15 @@ module Print = struct
     | Dyn.Constant names ->
         fprintf ppf "%s" (String.concat " or " names)
     | Dyn.Array arr ->
-        fprintf ppf "[|@[<hv>%a@]|]" (print_fields ";") arr
+        fprintf ppf "[|@[<hv>%a@]|]" (pp_fields pp_dynobj ";") arr
     | Dyn.Tuple { name ="::"; fields } when Dyn.field_count fields = 2 ->
-        fprintf ppf "[@[<hv>%a@]]" (print_list true) fields
+        fprintf ppf "[@[<hv>%a@]]" (pp_list true) fields
     | Dyn.Tuple { name; fields } ->
         fprintf ppf "%s(@[<hv>%a@])"
-          name (print_fields ",") fields
+          name (pp_fields pp_tuple_field ",") fields
     | Dyn.Record {name; fields} ->
-        fprintf ppf "%s{@[<hv>%a@]}" name print_record fields
+        fprintf ppf "%s{@[<hv>%a@]}" name
+          (pp_fields pp_record_field ";") fields
     | Dyn.Polymorphic_variant (name, payload) ->
         fprintf ppf "`%s(@[<hv>%a@])" name pp_dynobj payload
     | Dyn.Closure  -> fprintf ppf "<Closure>"
@@ -392,16 +392,25 @@ module Print = struct
     | Dyn.Custom   -> fprintf ppf "<Custom>"
     | Dyn.Unknown  -> fprintf ppf "<Unknown>"
 
-  and print_list first ppf fields =
+  and pp_tuple_field ppf = function
+    | ("", v) -> fprintf ppf "@[%a@]" pp_dynobj v
+    | (k, v)  -> fprintf ppf "~%s:@[%a@]" k pp_dynobj v
+
+  and pp_record_field ppf (k, v) =
+    fprintf ppf "@[%s = %a@]" k pp_dynobj v
+
+  and pp_list first ppf fields =
     if not first then fprintf ppf ";@ ";
-    let car = Dyn.field_get fields 0 in
-    let cdr = Dyn.field_get fields 1 in
-    fprintf ppf "%a" pp_dynobj car;
+    begin match Dyn.field_get fields 0 with
+      | "", car -> fprintf ppf "@[%a@]" pp_dynobj car;
+      | lbl, car -> fprintf ppf "~%s:@[%a@]" lbl pp_dynobj car;
+    end;
+    let _lbl, cdr = Dyn.field_get fields 1 in
     match Dyn.view cdr with
     | Dyn.Constant ["[]"]
     | Dyn.Int_or_constant (0, _) -> ()
     | Dyn.Tuple {name = "::"; fields} when Dyn.field_count fields = 2 ->
-        print_list false ppf fields
+        pp_list false ppf fields
     | _ -> fprintf ppf "<malformed list>"
 
   and pp_dynobj ppf obj =

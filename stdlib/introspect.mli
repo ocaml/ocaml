@@ -13,7 +13,7 @@ module Desc : sig
   type view =
     | Unknown
     | Array of approx
-    | Tuple  of { name: string; tag: int; fields: approx array }
+    | Tuple of { name: string; tag: int; fields: (string * approx) array }
     | Record of { name: string; tag: int; fields: (string * approx) array }
     | Polymorphic_variant
     | Polymorphic_variant_constant of string
@@ -95,7 +95,7 @@ module Dyn : sig
     | Int_or_constant of int * string list
     | Constant of string list
     | Array of t fields
-    | Tuple of { name : string; fields : t fields; }
+    | Tuple of { name : string; fields : (string * t) fields; }
     | Record of { name : string; fields : (string * t) fields; }
     | Polymorphic_variant of string * t
     | Closure

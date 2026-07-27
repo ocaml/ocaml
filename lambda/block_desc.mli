@@ -13,7 +13,7 @@ val index : t -> int
 
 val empty : t
 val make_array : approx -> t
-val make_tuple : int -> string -> approx array -> t
+val make_tuple : int -> string -> (string * approx) array -> t
 val make_record : int -> string -> (string * approx) array -> t
 val register_polymorphic_variant : string -> unit
 val make_polymorphic_variant : string -> t

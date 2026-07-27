@@ -122,10 +122,20 @@ let opaque_printer _kind obj =
               Oval_array (list_fields (print (depth - 1)) fields, Mutable)
           | Tuple {name; fields} ->
               H.add table (Dyn.get_obj obj) ();
-              let tuple = list_fields (print (depth - 1)) fields in
-              if name = ""
-              then Oval_tuple (List.map (fun value -> None, value) tuple)
-              else Oval_constr (oide_ident name, tuple)
+              let pf (k,v) =
+                let k = if k = "" then None else Some k in
+                (k, print (depth - 1) v)
+              in
+              let tuple = list_fields pf fields in
+              if name = "" then
+                Oval_tuple tuple
+              else begin
+                let prj = function (None, v) -> v | (Some _, _) -> raise Exit in
+                match List.map prj tuple with
+                | fields -> Oval_constr (oide_ident name, fields)
+                | exception Exit ->
+                    Oval_constr (oide_ident name, [Oval_tuple tuple])
+              end
           | Record {name; fields} ->
               H.add table (Dyn.get_obj obj) ();
               let pf (k,v) = (oide_ident k, print (depth - 1) v) in

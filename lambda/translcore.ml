@@ -165,8 +165,15 @@ let fuse_method_arity parent_params parent_body =
 
 let current_constructor_name = ref ""
 
-let approx_exp_list el =
-  Array.of_list (List.map (fun e -> Typeopt.approx e.exp_env e.exp_type) el)
+let approx_exp e = Typeopt.approx e.exp_env e.exp_type
+
+let approx_exp_list el = Array.of_list (List.map approx_exp el)
+
+let approx_tuple_fields el =
+  let approx_tuple_field (label, exp) =
+    (Option.value label ~default:"", approx_exp exp)
+  in
+  (Array.of_list (List.map approx_tuple_field el))
 
 (* Translation of expressions *)
 
@@ -294,7 +301,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
       transl_handler ~scopes e body None exn_pat_expr_list eff_pat_expr_list
   | Texp_tuple el ->
       let ll, shape = transl_list_with_shape ~scopes (List.map snd el) in
-      let bdesc = Block_desc.make_tuple 0 "" (approx_exp_list (List.map snd el)) in
+      let bdesc = Block_desc.make_tuple 0 "" (approx_tuple_fields el) in
       begin try
         Lconst(Const_block(0, List.map extract_constant ll, bdesc))
       with Not_constant ->
@@ -313,7 +320,10 @@ and transl_exp0 ~in_new_scope ~scopes e =
       | Cstr_unboxed ->
           (match ll with [v] -> v | _ -> assert false)
       | Cstr_block n ->
-          let bdesc = Block_desc.make_tuple n cstr.cstr_name (approx_exp_list args) in
+          let bdesc =
+            Block_desc.make_tuple n cstr.cstr_name
+              (Array.map (fun v -> ("",v)) (approx_exp_list args))
+          in
           begin try
             Lconst(Const_block(n, List.map extract_constant ll, bdesc))
           with Not_constant ->
