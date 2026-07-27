@@ -66,6 +66,12 @@ val blend : ('a -> 'a -> 'a) -> 'a option -> 'a option -> 'a option
 
     @since 5.5 *)
 
+val all : 'a option list -> 'a list option
+(** [all os] is [Some vs] if every option in [os] is a [Some v] and
+    [None] otherwise
+
+    @since 5.6 *)
+
 val for_all : ('a -> bool) -> 'a option -> bool
 (** [for_all p] behaves like {!List.for_all} [p]
     on a list of zero or one element:

@@ -36,6 +36,13 @@ let blend f o1 o2 = match o1, o2 with
   | (Some _ as x), None | None, (Some _ as x) -> x
   | Some v1, Some v2 -> Some (f v1 v2)
 
+let all os =
+  let rec loop ac = function
+    | [] -> Some (List.rev ac)
+    | Some v :: os -> loop (v::ac) os
+    | None :: _ -> None in
+  loop [] os
+
 let equal eq o0 o1 = match o0, o1 with
 | Some v0, Some v1 -> eq v0 v1
 | None, None -> true

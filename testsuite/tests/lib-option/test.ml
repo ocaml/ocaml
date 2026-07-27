@@ -60,6 +60,12 @@ let test_try_value () =
   assert (Option.try_value None (fun () -> None) = None);
   ()
 
+let test_all () =
+  assert (Option.all [] = Some []);
+  assert (Option.all [Some 1; Some 2; Some 3] = Some [1; 2; 3] );
+  assert (Option.all [Some 1; None; Some 2; None] = None);
+  ()
+
 let test_is_none_some () =
   assert (Option.is_none None = true);
   assert (Option.is_some None = false);
@@ -120,6 +126,7 @@ let tests () =
   test_fold ();
   test_iter ();
   test_try_value ();
+  test_all ();
   test_is_none_some ();
   test_equal ();
   test_compare ();
