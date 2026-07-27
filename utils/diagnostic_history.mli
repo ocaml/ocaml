@@ -124,7 +124,7 @@ val error: 'a update -> string -> error -> unit
 
 (** {2 Error }*)
 
-(** [breaking_change u diag_name] registers an error if [u]* is not a major
+(** [breaking_change u diag_name] registers an error if [u] is not a major
     update.*)
 val breaking_change: 'a update -> string -> unit
 
