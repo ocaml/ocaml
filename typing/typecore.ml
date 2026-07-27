@@ -5055,7 +5055,8 @@ and type_expect_
          which it wouldn't if it didn't know that it was in a record
          expression context. *)
       begin try suspended ()
-      with Error.In_context _ when !Clflags.typing_recovery ->
+      with exn when !Clflags.typing_recovery
+                 && Typing_recovery.is_recoverable exn ->
         re {
           exp_desc = Texp_record {
             fields = [||]; representation = Record_regular;
