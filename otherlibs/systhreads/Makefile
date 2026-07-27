@@ -122,7 +122,6 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(call INSTALL_ITEMS, $(CMIFILES:.cmi=.cmti), lib, $(LIBNAME))
 	$(call INSTALL_ITEMS, $(MLIFILES), lib, $(LIBNAME))
 endif
-	$(call INSTALL_ITEMS, caml/threads.h, lib, $(INSTALL_LIBDIR_CAML))
 
 installopt:
 	$(call INSTALL_ITEMS, libthreadsnat.$(A), lib)
