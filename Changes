@@ -258,6 +258,9 @@ Working version
   the runtime's caml_hash_variant) to Obj.hash_variant.
   (David Allsopp, review by Léo Andrès and Nicolás Ojeda Bär)
 
+- #14964: Add `{Option,Result}.all`
+  (Brian Ward, review by ?)
+
 ### Other libraries:
 
 * #14788: The Win32 error code `ERROR_DIRECTORY` (= 267) is now mapped to
