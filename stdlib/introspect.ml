@@ -134,20 +134,24 @@ module Index = struct
 
   type t = {
     descriptors : (int, Desc.t list) Hashtbl.t;
+    known_variants: (string, unit) Hashtbl.t;
     variants : (int, string list) Hashtbl.t;
   }
 
   let make () : t = {
     descriptors = Hashtbl.create 17;
+    known_variants = Hashtbl.create 17;
     variants = Hashtbl.create 17;
   }
 
   let register (t : t) = function
     | Desc.Polymorphic_variant_constant name ->
-        let i = Desc.hash_variant name in
-        begin match Hashtbl.find t.variants i with
-        | exception Not_found -> Hashtbl.add t.variants i [name]
-        | names -> Hashtbl.replace t.variants i (name :: names)
+        if not (Hashtbl.mem t.known_variants name) then begin
+          Hashtbl.add t.known_variants name ();
+          let i = Desc.hash_variant name in
+          match Hashtbl.find t.variants i with
+          | exception Not_found -> Hashtbl.add t.variants i [name]
+          | names -> Hashtbl.replace t.variants i (name :: names)
         end
     | tag ->
         let i = descriptor_index tag in
