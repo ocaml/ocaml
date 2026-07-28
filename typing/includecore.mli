@@ -42,6 +42,7 @@ type privacy_mismatch =
   | Private_record_type
   | Private_extensible_variant
   | Private_row_type
+  | Private_external_type
 
 type type_kind =
   | Kind_abstract
@@ -92,6 +93,10 @@ type private_object_mismatch =
   | Missing of string
   | Types of Errortrace.equality_error
 
+type alias_mismatch_kind =
+  | Instantiation of type_expr
+  | Manifest
+
 type type_mismatch =
   | Arity
   | Privacy of privacy_mismatch
@@ -105,6 +110,14 @@ type type_mismatch =
   | Variant_mismatch of variant_change list
   | Unboxed_representation of position
   | Immediate of Type_immediacy.Violation.t
+  | Not_an_alias of alias_mismatch
+and alias_mismatch =
+  { kind : alias_mismatch_kind;
+    path1 : Path.t;
+    ty1 : type_expr;
+    path2 : Path.t;
+    ty2 : type_expr;
+    inner : type_mismatch }
 
 val value_descriptions:
   loc:Location.t -> Env.t -> string ->
