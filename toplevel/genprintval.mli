@@ -77,7 +77,16 @@ type opaque_kind =
   | Opaque_untyped_exception
   | Opaque_untyped_exception_payload
 
-type 'a opaque_printer = opaque_kind -> 'a -> Outcometree.out_value option
+type 'a opaque_printer
+  =  ?max_printer_depth:int
+  -> ?printer_steps:int ref
+  -> opaque_kind
+  -> 'a
+  -> Outcometree.out_value option
+
+val obj_printer
+  :  ?index:Introspect.Index.t
+  -> Obj.t opaque_printer
 
 module type S =
   sig

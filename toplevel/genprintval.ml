@@ -138,7 +138,80 @@ type opaque_kind =
   | Opaque_untyped_exception
   | Opaque_untyped_exception_payload
 
-type 'a opaque_printer = opaque_kind -> 'a -> Outcometree.out_value option
+type 'a opaque_printer
+  =  ?max_printer_depth:int
+  -> ?printer_steps:int ref
+  -> opaque_kind
+  -> 'a
+  -> Outcometree.out_value option
+
+module H = Hashtbl.Make(struct type t = Obj.t let equal = (==) let hash = Hashtbl.hash end)
+
+let obj_printer ?index ?(max_printer_depth=20) ?(printer_steps=ref max_int) _kind obj =
+  let open Introspect in
+  let list_fields f fields =
+    let acc = ref [] in
+    for i = Dyn.field_count fields - 1 downto 0 do
+      acc := f (Dyn.field_get fields i) :: !acc
+    done;
+    !acc
+  in
+  let table = H.create 7 in
+  let rec print depth obj =
+    decr printer_steps;
+    if !printer_steps < 0 || depth <= 0 then
+      Outcometree.Oval_ellipsis
+    else if H.mem table (Dyn.get_obj obj) then
+      Outcometree.Oval_stuff "<cycle>"
+    else
+      let open Outcometree in
+      let oide_ident printed_name = Oide_ident {printed_name} in
+      match Dyn.view ?index obj with
+      | String str ->
+          Oval_string (str, 70, Ostr_string)
+      | Float f -> Oval_float f
+      | Int_or_constant (n, []) -> Oval_int n
+      | Char n -> Oval_char n
+      | Int_or_constant (n, name :: _) ->
+          Oval_stuff (Printf.sprintf "%d or `%s" n name)
+      | Constant names ->
+          Oval_stuff (String.concat " or " names)
+      | Array fields ->
+          H.add table (Dyn.get_obj obj) ();
+          Oval_array (list_fields (print (depth - 1)) fields, Mutable)
+      | Tuple {name; fields} ->
+          H.add table (Dyn.get_obj obj) ();
+          let pf (k,v) =
+            let k = if k = "" then None else Some k in
+            (k, print (depth - 1) v)
+          in
+          let tuple = list_fields pf fields in
+          if name = "" then
+            Oval_tuple tuple
+          else begin
+            let prj = function (None, v) -> v | (Some _, _) -> raise Exit in
+            match List.map prj tuple with
+            | fields -> Oval_constr (oide_ident name, fields)
+            | exception Exit ->
+                Oval_constr (oide_ident name, [Oval_tuple tuple])
+          end
+      | Record {name; fields} ->
+          H.add table (Dyn.get_obj obj) ();
+          let pf (k,v) = (oide_ident k, print (depth - 1) v) in
+          let record = Oval_record (list_fields pf fields) in
+          if name = ""
+          then record
+          else Oval_constr (oide_ident name, [record])
+      | Polymorphic_variant (name, tuple) ->
+          H.add table (Dyn.get_obj obj) ();
+          Oval_variant (name, Some (print (depth - 1) tuple))
+      | Closure  -> Oval_stuff "<closure>"
+      | Lazy     -> Oval_stuff "<lazy>"
+      | Abstract -> Oval_stuff "<abstract>"
+      | Custom   -> Oval_stuff "<custom>"
+      | Unknown  -> Oval_stuff "<unknown>"
+  in
+  Some (print max_printer_depth (Dyn.lift obj))
 
 module type S =
   sig
