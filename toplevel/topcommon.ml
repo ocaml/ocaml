@@ -134,10 +134,23 @@ module MakeEvalPrinter (E: EVAL_BASE) = struct
       let same_value v1 v2 = (v1 == v2)
     end)
 
+  let opaque_printer ?max_printer_depth ?printer_steps kind obj =
+    match Genprintval.obj_printer ?max_printer_depth ?printer_steps kind obj with
+    | None -> None
+    | Some out ->
+       match kind with
+       | Genprintval.Opaque_untyped_exception_payload -> Some out
+       | _ ->
+          let printed_name = Genprintval.string_of_opaque_kind kind in
+          (* Hack to get the intended visual result *)
+          Some (Oval_constr (Oide_ident {printed_name}, [out]))
+
   let print_untyped_exception ppf obj =
-    !print_out_value ppf (Printer.outval_of_untyped_exception obj)
+    !print_out_value ppf (Printer.outval_of_untyped_exception
+                            ~opaque_printer obj)
   let outval_of_value env obj ty =
-    Printer.outval_of_value !max_printer_steps !max_printer_depth
+    Printer.outval_of_value
+      ~opaque_printer !max_printer_steps !max_printer_depth
       (fun _ _ _ -> None) env obj ty
   let print_value env obj ppf ty =
     !print_out_value ppf (outval_of_value env obj ty)

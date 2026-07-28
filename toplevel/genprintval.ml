@@ -138,6 +138,19 @@ type opaque_kind =
   | Opaque_untyped_exception
   | Opaque_untyped_exception_payload
 
+let string_of_opaque_kind = function
+  | Opaque_abstract -> "<abstr>"
+  | Opaque_polymorphic -> "<poly>"
+  | Opaque_function -> "<fun>"
+  | Opaque_unknown_constructor -> "<unknown constructor>"
+  | Opaque_variant -> "<variant>"
+  | Opaque_object -> "<obj>"
+  | Opaque_module -> "<module>"
+  | Opaque_extension -> "<extension>"
+  | Opaque_external -> "<external>"
+  | Opaque_untyped_exception -> "<exception>"
+  | Opaque_untyped_exception_payload -> "<exception payload>"
+
 type 'a opaque_printer
   =  ?max_printer_depth:int
   -> ?printer_steps:int ref
@@ -412,19 +425,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       let nest f = nest_gen (Oval_stuff "<cycle>") f in
 
       let opaque_stuff obj op_kind =
-        let default = match op_kind with
-          | Opaque_abstract -> Oval_stuff "<abstr>"
-          | Opaque_polymorphic -> Oval_stuff "<poly>"
-          | Opaque_function -> Oval_stuff "<fun>"
-          | Opaque_unknown_constructor -> Oval_stuff "<unknown constructor>"
-          | Opaque_variant -> Oval_stuff "<variant>"
-          | Opaque_object -> Oval_stuff "<obj>"
-          | Opaque_module -> Oval_stuff "<module>"
-          | Opaque_extension -> Oval_stuff "<extension>"
-          | Opaque_external -> Oval_stuff "<external>"
-          | Opaque_untyped_exception | Opaque_untyped_exception_payload ->
-            assert false
-        in
+        let default = Oval_stuff (string_of_opaque_kind op_kind, None) in
         print_opaque opaque_printer op_kind default obj
       in
       let rec tree_of_val depth obj ty =

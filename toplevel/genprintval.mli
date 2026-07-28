@@ -77,6 +77,8 @@ type opaque_kind =
   | Opaque_untyped_exception
   | Opaque_untyped_exception_payload
 
+val string_of_opaque_kind : opaque_kind -> string
+
 type 'a opaque_printer
   =  ?max_printer_depth:int
   -> ?printer_steps:int ref
