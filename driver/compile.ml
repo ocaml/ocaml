@@ -26,6 +26,7 @@ let interface ~log ~source_file ~output_prefix =
   Compile_common.interface info
 
 (** Bytecode compilation backend for .ml files. *)
+
 let log_if i field printer x =
   Clflags.dump_on_log i.Compile_common.debug_log field  printer x; x
 module D = Compiler_diagnostic.Debug

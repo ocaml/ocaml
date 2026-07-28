@@ -27,7 +27,6 @@ let equal_mutability m1 m2 =
   | Mutable, Mutable | Immutable, Immutable -> true
   | Mutable, Immutable | Immutable, Mutable -> false
 
-
 let mutability_to_string m =
   match m with
   | Mutable -> "mutable"
