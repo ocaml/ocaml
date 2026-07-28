@@ -141,9 +141,8 @@ module MakeEvalPrinter (E: EVAL_BASE) = struct
        match kind with
        | Genprintval.Opaque_untyped_exception_payload -> Some out
        | _ ->
-          let printed_name = Genprintval.string_of_opaque_kind kind in
-          (* Hack to get the intended visual result *)
-          Some (Oval_constr (Oide_ident {printed_name}, [out]))
+          let kind = Genprintval.string_of_opaque_kind kind in
+          Some (Oval_stuff (kind, Some out))
 
   let print_untyped_exception ppf obj =
     !print_out_value ppf (Printer.outval_of_untyped_exception

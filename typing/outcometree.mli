@@ -52,7 +52,7 @@ type out_value =
   | Oval_printer of (Format_doc.formatter -> unit)
   | Oval_record of (out_ident * out_value) list
   | Oval_string of string * int * out_string (* string, size-to-print, kind *)
-  | Oval_stuff of string
+  | Oval_stuff of string * out_value option
   | Oval_tuple of (string option * out_value) list
   | Oval_variant of string * out_value option
   | Oval_lazy of out_value

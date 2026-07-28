@@ -218,7 +218,9 @@ let print_out_value ppf tree =
         fprintf ppf "@[<2>[|%a|]@]" (print_tree_list print_tree_1 ";") tl
     | Oval_constr (name, []) -> print_constr ppf name
     | Oval_variant (name, None) -> fprintf ppf "`%a" print_lident name
-    | Oval_stuff s -> pp_print_string ppf s
+    | Oval_stuff (s, None) -> pp_print_string ppf s
+    | Oval_stuff (s, Some param) ->
+        fprintf ppf "@[<2>%s@ %a@]" s print_constr_param param
     | Oval_record fel ->
         fprintf ppf "@[<1>{%a}@]" (cautious (print_fields true)) fel
     | Oval_ellipsis -> raise Ellipsis

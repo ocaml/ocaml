@@ -42,7 +42,7 @@ let find_named_value name =
 let check_depth depth obj ty =
   if depth <= 0 then begin
     let n = name_value obj ty in
-    Some (Outcometree.Oval_stuff ("$" ^ Int.to_string n))
+    Some (Outcometree.Oval_stuff ("$" ^ Int.to_string n, None))
   end else None
 
 module EvalPath =
@@ -85,7 +85,7 @@ let descriptors = lazy (
 let opaque_printer ?max_printer_depth ?printer_steps kind obj =
   match Debugcom.Remote_value.obj obj with
   | Result.Error msg ->
-      Some (Outcometree.Oval_stuff msg)
+      Some (Outcometree.Oval_stuff (msg, None))
   | Result.Ok obj ->
      Genprintval.obj_printer
        ~index:(Lazy.force descriptors)

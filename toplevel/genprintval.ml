@@ -175,7 +175,7 @@ let obj_printer ?index ?(max_printer_depth=20) ?(printer_steps=ref max_int) _kin
     if !printer_steps < 0 || depth <= 0 then
       Outcometree.Oval_ellipsis
     else if H.mem table (Dyn.get_obj obj) then
-      Outcometree.Oval_stuff "<cycle>"
+      Outcometree.Oval_stuff ("<cycle>", None)
     else
       let open Outcometree in
       let oide_ident printed_name = Oide_ident {printed_name} in
@@ -186,9 +186,9 @@ let obj_printer ?index ?(max_printer_depth=20) ?(printer_steps=ref max_int) _kin
       | Int_or_constant (n, []) -> Oval_int n
       | Char n -> Oval_char n
       | Int_or_constant (n, name :: _) ->
-          Oval_stuff (Printf.sprintf "%d or `%s" n name)
+          Oval_stuff (Printf.sprintf "%d or `%s" n name, None)
       | Constant names ->
-          Oval_stuff (String.concat " or " names)
+          Oval_stuff (String.concat " or " names, None)
       | Array fields ->
           H.add table (Dyn.get_obj obj) ();
           Oval_array (list_fields (print (depth - 1)) fields, Mutable)
@@ -218,11 +218,11 @@ let obj_printer ?index ?(max_printer_depth=20) ?(printer_steps=ref max_int) _kin
       | Polymorphic_variant (name, tuple) ->
           H.add table (Dyn.get_obj obj) ();
           Oval_variant (name, Some (print (depth - 1) tuple))
-      | Closure  -> Oval_stuff "<closure>"
-      | Lazy     -> Oval_stuff "<lazy>"
-      | Abstract -> Oval_stuff "<abstract>"
-      | Custom   -> Oval_stuff "<custom>"
-      | Unknown  -> Oval_stuff "<unknown>"
+      | Closure  -> Oval_stuff ("<closure>", None)
+      | Lazy     -> Oval_stuff ("<lazy>", None)
+      | Abstract -> Oval_stuff ("<abstract>", None)
+      | Custom   -> Oval_stuff ("<custom>", None)
+      | Unknown  -> Oval_stuff ("<unknown>", None)
   in
   Some (print max_printer_depth (Dyn.lift obj))
 
@@ -422,7 +422,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           end
       in
 
-      let nest f = nest_gen (Oval_stuff "<cycle>") f in
+      let nest f = nest_gen (Oval_stuff ("<cycle>", None)) f in
 
       let opaque_stuff obj op_kind =
         let default = Oval_stuff (string_of_opaque_kind op_kind, None) in
@@ -436,7 +436,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         | user_printer ->
            begin match O.obj obj with
            | Ok v -> user_printer v
-           | Error msg -> Oval_stuff msg
+           | Error msg -> Oval_stuff (msg, None)
            end
         | exception Not_found ->
           match get_desc ty with
@@ -523,7 +523,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                                 (O.field obj 0) ty_arg
                   in
                   let next_obj = O.field obj 1 in
-                  nest_gen (Oval_stuff "<cycle>" :: tree :: tree_list)
+                  nest_gen (Oval_stuff ("<cycle>", None) :: tree :: tree_list)
                     (tree_of_conses (tree :: tree_list))
                     depth next_obj ty_arg
                 else tree_list
@@ -577,8 +577,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
             (debugger/printval instantiates Genprintval.Make with
             an Obj module talking over a socket).
           *)
-        if obj_tag = Obj.lazy_tag then Oval_stuff "<lazy>"
-        else if obj_tag = Obj.forcing_tag then Oval_stuff "<lazy (forcing)>"
+        if obj_tag = Obj.lazy_tag then Oval_stuff ("<lazy>", None)
+        else if obj_tag = Obj.forcing_tag then Oval_stuff ("<lazy (forcing)>", None)
         else begin
             let forced_obj =
               if obj_tag = Obj.forward_tag then O.field obj 0 else obj
