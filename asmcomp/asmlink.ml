@@ -272,6 +272,9 @@ let make_shared_startup_file ~ppf_dump units =
   compile_phrase
     (Cmm_helpers.global_table
        (List.map (fun (ui,_) -> ui.ui_symbol) units));
+  let block_descs = List.map (fun (ui,_) -> ui.ui_block_descs) units in
+  compile_phrase (Cmm_helpers.globals_block_descs
+                    (Block_desc.link block_descs));
   if !Clflags.output_complete_object then
     force_linking_of_startup ~ppf_dump;
   (* this is to force a reference to all units, otherwise the linker

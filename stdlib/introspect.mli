@@ -69,6 +69,11 @@ module Index : sig
      If new descriptors are available (for instance because of dynlink or
      dynamic compilation), the index is updated in place. *)
   val self_index : unit -> t
+
+  (* Descriptors of dynamic libraries loaded in the current process.
+     (automatically added to [self_index ()]) *)
+  val dynamic_libraries : unit -> Desc.t list list
+  val add_dynamic_library : Desc.t list -> unit
 end
 
 module Dyn : sig

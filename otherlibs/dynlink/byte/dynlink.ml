@@ -158,6 +158,8 @@ module Bytecode = struct
             seek_in ic compunit.cu_debug;
             [| (Compression.input_value ic : instruct_debug_event list) |]
           end in
+        Introspect.Index.add_dynamic_library
+          (compunit.cu_block_descs : Block_desc.library :> _ list);
         let _, clos = reify_bytecode code events (Some digest) in
         clos
       )

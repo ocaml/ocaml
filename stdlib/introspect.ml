@@ -197,10 +197,35 @@ module Index = struct
     result
   )
 
+  let self_libraries = ref []
+
+  let update_libraries index libraries =
+    match !self_libraries with
+    | last_libraries when libraries != last_libraries ->
+      self_libraries := libraries;
+      let rec aux = function
+        | libraries when libraries == last_libraries -> ()
+        | [] -> ()
+        | library :: libraries ->
+            register_list index library;
+            aux libraries
+      in
+      aux libraries
+    | _ -> ()
+
+  let dynamic_libraries = ref []
+
   let self_index () =
     let lazy index = self_index in
     update_descriptors index !(Desc.compiler_descriptors ());
+    update_libraries index !dynamic_libraries;
     index
+
+  let add_dynamic_library = function
+    | [] -> ()
+    | library -> dynamic_libraries := library :: !dynamic_libraries
+
+  let dynamic_libraries () = !dynamic_libraries
 end
 
 module Dyn = struct

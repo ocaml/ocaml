@@ -51,6 +51,7 @@ module Native = struct
   external ndl_getmap : unit -> global_map list = "caml_natdynlink_getmap"
   external ndl_globals_inited : unit -> int = "caml_natdynlink_globals_inited"
   external ndl_loadsym : string -> Obj.t = "caml_natdynlink_loadsym"
+  external ndl_loadintrospect : ndl_handle -> Introspect.Desc.t list = "caml_natdynlink_loadintrospect"
 
   module Unit_header = struct
     type t = dynunit
@@ -99,6 +100,8 @@ module Native = struct
         ndl_run handle.ndl_handle "_shared_startup"
 
   let run _lock handle ~unit_header ~priv:_ =
+    Introspect.Index.add_dynamic_library
+      (ndl_loadintrospect handle.ndl_handle);
     run_shared_startup handle;
     List.iter (fun cu ->
         try ndl_run handle.ndl_handle cu

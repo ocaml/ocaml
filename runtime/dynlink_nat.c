@@ -221,3 +221,18 @@ CAMLprim value caml_natdynlink_loadsym(value symbol)
   if (!sym) caml_failwith(String_val(symbol));
   CAMLreturn(sym);
 }
+
+CAMLprim value caml_natdynlink_loadintrospect(value handle_v) {
+  CAMLparam1 (handle_v);
+  CAMLlocal1 (result);
+  void* handle = Handle_val(handle_v);
+
+  void *sym = caml_dlsym (handle, "caml_globals_block_descs");
+
+  if (!sym)
+    result = Val_unit;
+  else
+    result = caml_input_value_from_block(sym, INT_MAX);
+
+  CAMLreturn (result);
+}
