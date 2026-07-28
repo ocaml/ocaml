@@ -359,7 +359,16 @@ static void stop_active_domain(dom_internal* dom) {
   check_stw_domains();
 }
 
-CAMLexport CAMLthread_local(caml_domain_state* caml_state);
+/* Use legacy thread-local extensions for symbols with external linkage
+ * (on declarations and definitions) for interoperability with C++. */
+#if defined(_MSC_VER) && !defined(__clang__)
+#if defined(__cplusplus)
+[[msvc::no_tls_guard]]
+#endif
+CAMLexport __declspec(thread) caml_domain_state* caml_state;
+#else
+CAMLexport __thread caml_domain_state* caml_state;
+#endif
 
 #ifndef HAS_FULL_THREAD_VARIABLES
 /* Export a getter for caml_state, to be used in DLLs */

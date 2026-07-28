@@ -47,7 +47,17 @@ enum {
 #define LAST_DOMAIN_STATE_MEMBER extra_params
 
 #if defined(HAS_FULL_THREAD_VARIABLES) || defined(IN_CAML_RUNTIME)
-  CAMLextern CAMLthread_local(caml_domain_state* caml_state);
+/* Use legacy thread-local extensions for symbols with external linkage
+ * (on declarations and definitions) for interoperability with C++.
+ * C11 _Thread_local may be used for symbols with internal linkage. */
+#if defined(_MSC_VER) && !defined(__clang__)
+#if defined(__cplusplus)
+  [[msvc::no_tls_guard]]
+#endif
+  CAMLextern __declspec(thread) caml_domain_state* caml_state;
+#else
+  CAMLextern __thread caml_domain_state* caml_state;
+#endif
   #define Caml_state_opt caml_state
 #else
 #if __has_attribute(pure) || defined(__GNUC__)

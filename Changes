@@ -120,7 +120,7 @@ Working version
 
 - #14911, #14943: Fix declarations of thread-local symbols with external linkage
   for C++ interoperability.
-  (Antonin Décimo, report by Kate Deplaix, review by ??)
+  (Antonin Décimo, report by Kate Deplaix, review by David Allsopp)
 
 ### Type system:
 

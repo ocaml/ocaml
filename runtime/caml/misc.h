@@ -165,19 +165,6 @@ CAMLdeprecated_typedef(addr, char *);
 #define CAMLalign(n) _Alignas(n)
 #endif
 
-/* Use CAMLthread_local for symbols with external linkage (on declarations and
-   definitions) for interoperability with C++. C11 _Thread_local may be used for
-   symbols with internal linkage. */
-#if defined(_MSC_VER) && !defined(__clang__)
-#if defined(__cplusplus)
-#define CAMLthread_local(decl) __declspec(thread) decl [[msvc::no_tls_guard]]
-#else
-#define CAMLthread_local(decl) __declspec(thread) decl
-#endif
-#else
-#define CAMLthread_local(decl) __thread decl
-#endif
-
 /* Prefetching */
 
 #ifdef CAML_INTERNALS
