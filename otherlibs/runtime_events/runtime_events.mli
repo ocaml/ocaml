@@ -193,13 +193,13 @@ The budget in 'work' that a domain has to do during the major slice.
 (**
 Total {b words} allocated in the minor heap of this Domain in the
 last minor collection.
-@since 5.4
+@since 5.5
 *)
 | EV_C_MINOR_PROMOTED_WORDS
 (**
 Total {b words} promoted from the minor heap of this Domain to the major heap
 in the last minor collection.
-@since 5.4
+@since 5.5
 *)
 
 (** The type for span events emitted by the runtime. *)
