@@ -98,6 +98,7 @@ module Dyn : sig
     | Tuple of { name : string; fields : (string * t) fields; }
     | Record of { name : string; fields : (string * t) fields; }
     | Polymorphic_variant of string * t
+    | Extension of string * int * t fields
     | Closure
     | Lazy
     | Abstract

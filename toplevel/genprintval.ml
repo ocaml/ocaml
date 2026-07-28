@@ -218,6 +218,10 @@ let obj_printer ?index ?(max_printer_depth=20) ?(printer_steps=ref max_int) _kin
       | Polymorphic_variant (name, tuple) ->
           H.add table (Dyn.get_obj obj) ();
           Oval_variant (name, Some (print (depth - 1) tuple))
+      | Extension (name, uid, fields) ->
+          let printed_name = Printf.sprintf "%s/%d" name uid in
+          let path = Oide_ident {printed_name} in
+          Oval_constr (path, list_fields (print (depth - 1)) fields)
       | Closure  -> Oval_stuff ("<closure>", None)
       | Lazy     -> Oval_stuff ("<lazy>", None)
       | Abstract -> Oval_stuff ("<abstract>", None)
@@ -277,7 +281,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           let outcome =
             match
               may_print_opaque opaque_printer
-                Opaque_untyped_exception_payload obj
+                Opaque_untyped_exception_payload arg
             with
             | Some outcome -> outcome
             | None when not (O.is_block arg) ->
@@ -296,26 +300,23 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       else []
 
     let outval_of_untyped_exception ?opaque_printer bucket =
-      match may_print_opaque opaque_printer Opaque_untyped_exception bucket with
-      | Some outcome -> outcome
-      | None ->
-          if O.tag bucket <> 0 then
-            let name = (O.base_obj (O.field bucket 0) : string)in
-            Oval_constr (tree_of_name name, [])
-          else
-            let name = (O.base_obj(O.field(O.field bucket 0) 0) : string) in
-            let args =
-              if (name = "Match_failure"
-                  || name = "Assert_failure"
-                  || name = "Undefined_recursive_module")
-              && O.size bucket = 2
-              && O.tag(O.field bucket 1) = 0
-              then outval_of_untyped_exception_args
-                  opaque_printer (O.field bucket 1) 0
-              else outval_of_untyped_exception_args
-                  opaque_printer bucket 1
-            in
-            Oval_constr (tree_of_name name, args)
+      if O.tag bucket <> 0 then
+        let name = (O.base_obj (O.field bucket 0) : string)in
+        Oval_constr (tree_of_name name, [])
+      else
+        let name = (O.base_obj(O.field(O.field bucket 0) 0) : string) in
+        let args =
+          if (name = "Match_failure"
+              || name = "Assert_failure"
+              || name = "Undefined_recursive_module")
+             && O.size bucket = 2
+             && O.tag(O.field bucket 1) = 0
+          then outval_of_untyped_exception_args
+                 opaque_printer (O.field bucket 1) 0
+          else outval_of_untyped_exception_args
+                 opaque_printer bucket 1
+        in
+        Oval_constr (tree_of_name name, args)
 
     let out_exn path exn =
       Oval_printer (fun ppf -> exn_printer path ppf exn)
@@ -792,7 +793,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         match check_depth depth bucket ty with
           Some x -> x
         | None when Path.same type_path Predef.path_exn->
-            outval_of_untyped_exception bucket
+            outval_of_untyped_exception ?opaque_printer bucket
         | None ->
             opaque_stuff obj Opaque_extension
 

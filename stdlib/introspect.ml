@@ -236,6 +236,10 @@ module Dyn = struct
     | Record of { name: string; fields: (string * t) fields }
     (* [Record f] = { fst f0 : snd f0; fst f1 : snd f1; ... } *)
     | Polymorphic_variant of string * t
+    (* [Extension ("Foo", uid, args)] = Foo args
+       given exception Foo (of args)
+          or type t += Foo (of args) *)
+    | Extension of string * int * t fields
     | Closure | Lazy | Abstract | Custom | Unknown
 
   let double_to_wo_shift = match Sys.word_size with
@@ -279,17 +283,35 @@ module Dyn = struct
 
   let no_name (_ : int) (obj : Obj.t) = ("", (Desc.Any, obj))
 
+  let as_extension_tag obj =
+    if Obj.tag obj = Obj.object_tag && Obj.size obj = 2 then
+      let name = Obj.field obj 0 in
+      let uid = Obj.field obj 1 in
+      if Obj.is_int uid && Obj.tag name = Obj.string_tag
+      then Some ((Obj.obj name : string), (Obj.obj uid : int))
+      else None
+    else None
+
   let view_raw (obj : Obj.t) =
     if Obj.is_int obj then
       Int_or_constant (Obj.obj obj, [])
     else
       let tag = Obj.tag obj in
-      if tag <= Obj.last_non_constant_constructor_tag then (
-        if tag = 0
-        then Tuple { name = ""; fields = fields_of_block no_name obj }
-        else Tuple { name = "Tag#" ^ string_of_int tag;
-                     fields = fields_of_block no_name obj }
-      ) else if tag = Obj.string_tag then
+      if tag = 0 then (
+        let size = Obj.size obj in
+        if size >= 2 then
+          match as_extension_tag (Obj.field obj 0) with
+          | None ->
+             Tuple { name = ""; fields = fields_of_block no_name obj }
+          | Some (path, uid) ->
+             let get i = no_approx 0 (Obj.field obj (i + 1)) in
+             Extension (path, uid, {count = size - 1; get})
+        else
+          Tuple { name = ""; fields = fields_of_block no_name obj }
+      ) else if tag <= Obj.last_non_constant_constructor_tag then
+        Tuple { name = "Tag#" ^ string_of_int tag;
+                fields = fields_of_block no_name obj }
+      else if tag = Obj.string_tag then
         String (Obj.obj obj)
       else if tag = Obj.double_tag then
         Float (Obj.obj obj)
@@ -304,7 +326,11 @@ module Dyn = struct
       else if tag = Obj.custom_tag then
         Custom
       else
-        Unknown
+        match as_extension_tag obj with
+        | Some (path, uid) ->
+           let get _ = assert false in
+           Extension (path, uid, {count = 0; get})
+        | None -> Unknown
 
   let view ?(index=Index.self_index ()) (approx, obj) =
     if Obj.is_int obj then
@@ -388,6 +414,9 @@ module Print = struct
     | Dyn.Record {name; fields} ->
         fprintf ppf "%s{@[<hv>%a@]}" name
           (pp_fields pp_record_field ";") fields
+    | Dyn.Extension (name, uid, fields) ->
+        fprintf ppf "%s/%d(@[<hv>%a@])"
+          name uid (pp_fields pp_dynobj ",") fields
     | Dyn.Polymorphic_variant (name, payload) ->
         fprintf ppf "`%s(@[<hv>%a@])" name pp_dynobj payload
     | Dyn.Closure  -> fprintf ppf "<Closure>"
