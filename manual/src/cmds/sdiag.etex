@@ -111,7 +111,7 @@ meaningful evolution of the variants type.
 
 The second rule alleviates this issue by allowing a minor update to change the
 type of a constructor argument to a record type containing the original argument
-inside a "content" field. Client relying on the original scheme can still read
+inside a "contents" field. Client relying on the original scheme can still read
 this compatibility field.
 
 For instance, a minor update might expand the constructor "Report_warning" in
@@ -199,10 +199,10 @@ to parse variant sum as if they were always extensible.
 
 \section{s:metadata-diag}{Compiler diagnostics}
 
-The current schema of compiler diagnostics are hosted on in json-schema format
-on \href{https://github.com/ocaml/ocaml}. Moreover, this section contains a more
-human readable retranscription of those schema in the form of annotated
-algebraic data types.
+The current schema of compiler diagnostics are hosted in json-schema format
+in the compiler source tree in the "diagnostic_schemes" directory.
+Moreover, this section contains a more human readable retranscription of
+those schema in the form of annotated algebraic data types.
 
 The current last version is:
 \begin{itemize}
