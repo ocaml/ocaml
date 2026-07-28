@@ -434,18 +434,18 @@ module Print = struct
     | Dyn.Tuple { name ="::"; fields } when Dyn.field_count fields = 2 ->
         fprintf ppf "[@[<hv>%a@]]" (pp_list true) fields
     | Dyn.Tuple { name; fields } ->
-        fprintf ppf "%s@ (@[<hv>%a@])"
-          name (pp_fields pp_tuple_field ",") fields
+        if name <> "" then fprintf ppf "%s@ " name;
+        fprintf ppf "(@[<hv>%a@])" (pp_fields pp_tuple_field ",") fields
     | Dyn.Record {name; fields} ->
-        fprintf ppf "%s@ {@[<hv>%a@]}" name
-          (pp_fields pp_record_field ";") fields
+        if name <> "" then fprintf ppf "%s@ " name;
+        fprintf ppf "{@[<hv>%a@]}" (pp_fields pp_record_field ";") fields
     | Dyn.Extension (name, uid, fields) when Dyn.field_count fields = 0 ->
         fprintf ppf "%s/%d" name uid
     | Dyn.Extension (name, uid, fields) ->
         fprintf ppf "%s/%d (@[<hv>%a@])"
           name uid (pp_fields pp_dynobj ",") fields
     | Dyn.Polymorphic_variant (name, payload) ->
-        fprintf ppf "`%s (@[<hv>%a@])" name pp_dynobj payload
+        fprintf ppf "`%s@ (@[<hv>%a@])" name pp_dynobj payload
     | Dyn.Closure  -> fprintf ppf "<Closure>"
     | Dyn.Lazy     -> fprintf ppf "<Lazy>"
     | Dyn.Abstract -> fprintf ppf "<Abstract>"
@@ -480,14 +480,14 @@ module Print = struct
     pp_dynobj ppf (Dyn.lift (Obj.repr obj))
 
   let print_any obj =
-    fprintf Format.std_formatter "%a%!" format_any obj
+    fprintf Format.std_formatter "@[%a@]%!" format_any obj
 
   let prerr_any obj =
-    fprintf Format.err_formatter "%a%!" format_any obj
+    fprintf Format.err_formatter "@[%a@]%!" format_any obj
 
   let print_any_endline obj =
-    fprintf Format.std_formatter "%a\n%!" format_any obj
+    fprintf Format.std_formatter "@[%a@]\n%!" format_any obj
 
   let prerr_any_endline obj =
-    fprintf Format.err_formatter "%a\n%!" format_any obj
+    fprintf Format.err_formatter "@[%a@]\n%!" format_any obj
 end
