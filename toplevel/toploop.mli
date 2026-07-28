@@ -124,8 +124,6 @@ val initialize_toplevel_env : unit -> unit
         (* Initialize the typing environment for the toplevel *)
 val print_exception_outcome : exn Format_doc.printer
         (* Print an exception resulting from the evaluation of user code. *)
-
-
 val eval_module_path: Env.t -> Path.t -> Obj.t
 val eval_value_path: Env.t -> Path.t -> Obj.t
 val eval_extension_path: Env.t -> Path.t -> Obj.t
@@ -133,8 +131,8 @@ val eval_class_path: Env.t -> Path.t -> Obj.t
         (* Return the toplevel object referred to by the given path *)
 val record_backtrace : unit -> unit
 
-
 (* Printing of values *)
+
 val print_value:
   Env.t -> Obj.t -> Format_doc.formatter -> Types.type_expr -> unit
 val print_untyped_exception: Obj.t Format_doc.printer

@@ -157,8 +157,8 @@ module Pp = struct
 
 end
 
-  type extension_printer =
-    { extension: 'b. 'b Diagnostic.extension -> 'b printer option}
+type extension_printer =
+  { extension: 'b. 'b Diagnostic.extension -> 'b printer option}
 
 module Fmt = struct
 
@@ -293,49 +293,49 @@ module Fmt = struct
 
 end
 
-  let with_conv ~streaming ~extension conv settings version ppf scheme =
-    let ctx = {
-      Fmt.version=(Diagnostic_validation.exact_version version);
-      conv; ext_printer=extension}
-    in
-    let record ppf (R(def, r)) =
-      let field_names = field_names def in
-      let fs = Diagnostic.fields field_names r in
-      if List.is_empty fs then () else
-        let fields =
-          let meta =
-            Fmt.fields ctx (["metadata"],r) in
-          meta @ Fmt.fields ctx (field_names,r)
-        in
-        Format.fprintf ppf "%t@." (Pp.record ctx.conv fields)
-    in
-    let item ppf (name, V(typ,r)) =
-      Fmt.elt_item ctx ~key:name typ r ppf
-    in
-    Log.make ~streaming ~printer:{record;item} settings version scheme ppf
+let with_conv ~streaming ~extension conv settings version ppf scheme =
+  let ctx = {
+    Fmt.version=(Diagnostic_validation.exact_version version);
+    conv; ext_printer=extension}
+  in
+  let record ppf (R(def, r)) =
+    let field_names = field_names def in
+    let fs = Diagnostic.fields field_names r in
+    if List.is_empty fs then () else
+      let fields =
+        let meta =
+          Fmt.fields ctx (["metadata"],r) in
+        meta @ Fmt.fields ctx (field_names,r)
+      in
+      Format.fprintf ppf "%t@." (Pp.record ctx.conv fields)
+  in
+  let item ppf (name, V(typ,r)) =
+    Fmt.elt_item ctx ~key:name typ r ppf
+  in
+  Log.make ~streaming ~printer:{record;item} settings version scheme ppf
 
-  let structured conv ?color ~version ~device sch =
-    with_conv ~streaming:false ~extension:Fmt.no_extension conv
-      color version device sch
-  let sexp ?color ~version ~device sch =
-    structured Pp.sexp ?color ~version ~device sch
-  let json ?color ~version ~device sch =
-    structured Pp.json ?color ~version ~device sch
-  let direct ?color ~version ~device sch =
-    with_conv ~streaming:true ~extension:(!Fmt.extensions)
-      Pp.direct color version device sch
-  let direct_with_fields ?color ~version ~device sch =
-    with_conv ~streaming:true ~extension:(!Fmt.extensions)
-      Pp.direct_with_fields color version device sch
+let structured conv ?color ~version ~device sch =
+  with_conv ~streaming:false ~extension:Fmt.no_extension conv
+    color version device sch
+let sexp ?color ~version ~device sch =
+  structured Pp.sexp ?color ~version ~device sch
+let json ?color ~version ~device sch =
+  structured Pp.json ?color ~version ~device sch
+let direct ?color ~version ~device sch =
+  with_conv ~streaming:true ~extension:(!Fmt.extensions)
+    Pp.direct color version device sch
+let direct_with_fields ?color ~version ~device sch =
+  with_conv ~streaming:true ~extension:(!Fmt.extensions)
+    Pp.direct_with_fields color version device sch
 
 
-  type t = {
-    name:string;
-    make: 'a. ?color:Misc.Color.setting -> version:Diagnostic_validation.version
-      -> device:Log.Device.t -> 'a Diagnostic.t -> 'a Log.t;
-  }
-  let fmt = { name="direct"; make = direct }
-  let fmt_with_fields = { name="direct_with_fields"; make = direct_with_fields }
-  let add_extension = Fmt.add_extension
-  let sexp = { name="sexp" ; make = sexp }
-  let json = { name = "json"; make = json }
+type t = {
+  name:string;
+  make: 'a. ?color:Misc.Color.setting -> version:Diagnostic_validation.version
+    -> device:Log.Device.t -> 'a Diagnostic.t -> 'a Log.t;
+}
+let fmt = { name="direct"; make = direct }
+let fmt_with_fields = { name="direct_with_fields"; make = direct_with_fields }
+let add_extension = Fmt.add_extension
+let sexp = { name="sexp" ; make = sexp }
+let json = { name = "json"; make = json }
