@@ -147,28 +147,28 @@ slice.
 *)
 | EV_C_MAJOR_ALLOCATED_WORK
 (**
-The amount of major GC 'work' needing to be done as a result of allocations to
+The amount of major GC {b work} needing to be done as a result of allocations to
 the major heap of this Domain in {b words}, since the last major slice.
 @since 5.3
 *)
 | EV_C_MAJOR_DEPENDENT_WORK
 (**
-The amount of major GC 'work' needing to be done as a result of dependent
-allocations to the major heap of this Domain in words, since the last major
+The amount of major GC {b work} needing to be done as a result of dependent
+allocations to the major heap of this Domain in {b words}, since the last major
 slice. Dependent memory is non-heap memory that depends on heap memory being
 collected in order to be freed.
 @since 5.3
 *)
 | EV_C_MAJOR_EXTRA_WORK
 (**
-The amount of major GC 'work' needing to be done as a result of extra
+The amount of major GC {b work} needing to be done as a result of extra
 non-memory resources that are dependent on heap memory being collected in order
 to be freed.
 @since 5.3
 *)
 | EV_C_MAJOR_WORK_COUNTER
 (**
-The global amount of major GC 'work' done by all domains since the program
+The global amount of major GC {b work} done by all domains since the program
 began.
 @since 5.3
 *)
@@ -186,7 +186,7 @@ end of the major slice (see EV_C_MAJOR_WORK_COUNTER).
 *)
 | EV_C_MAJOR_SLICE_BUDGET
 (**
-The budget in 'work' that a domain has to do during the major slice.
+The budget in {b work} that a domain has to do during the major slice.
 @since 5.3
  *)
 | EV_C_MINOR_ALLOCATED_WORDS
