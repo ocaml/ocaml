@@ -397,8 +397,8 @@ Working version
 - #14759: expose the function parsing OCAMLRUNPARAM for easier testing
   (Gabriel Scherer, view by Antonin Décimo and Nicolás Ojeda Bär)
 
-- #14643: Test `-recypes` in addition to `-principal` in expect tests. Run all
-  test variants in the same invocation.
+- #14643, #14959: Test `-recypes` in addition to `-principal` in expect tests.
+  Run all test variants in the same invocation.
   (Stefan Muenzel, review by Alistar O'Brien and Florian Angeletti)
 
 - #14900: Speed up deep_occur_rec, improving typechecking performance of
