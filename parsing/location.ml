@@ -108,6 +108,8 @@ let num_loc_lines = ref 0
    example for the current toplevel phrase. We use this to print
    a blank line between messages of the same batch.
 *)
+let is_first_message () =
+  !num_loc_lines = 0
 
 (* This is used by the toplevel to reset [num_loc_lines] before each phrase *)
 let reset () =
@@ -117,9 +119,6 @@ let reset () =
 let echo_eof () =
   print_newline ();
   incr num_loc_lines
-
-(* This is used by the toplevel and the report printers below. *)
-let is_first_message () = !num_loc_lines = 0
 
 (* Code printing errors and warnings must be wrapped using this function, in
    order to update [num_loc_lines].

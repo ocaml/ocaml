@@ -72,19 +72,19 @@ module Doc: sig
   type t
   type doc = t
 
-module Tree: sig
-  (** Tree representation of a document *)
+  module Tree: sig
+    (** Tree representation of a document *)
 
-  type t =
-    | Box of { kind: box_type; indent:int; subtrees:t list}
-    | Tbox of t list
-    | Tagged of { tag:Format.stag; subtrees: t list }
-    | With_size of {size:int; text:string}
-    | Core of core_elt
+    type t =
+      | Box of { kind: box_type; indent:int; subtrees:t list}
+      | Tbox of t list
+      | Tagged of { tag:Format.stag; subtrees: t list }
+      | With_size of {size:int; text:string}
+      | Core of core_elt
 
-  val parse: doc -> t list
+    val parse: doc -> t list
 
-end
+  end
 
   type ('a,'b) fmt = ('a, t, t,'b) format4
 

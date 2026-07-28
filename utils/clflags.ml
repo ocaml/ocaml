@@ -154,8 +154,6 @@ let dump_regalloc = ref false           (* -dalloc *)
 let dump_reload = ref false             (* -dreload *)
 let dump_scheduling = ref false         (* -dscheduling *)
 let dump_linear = ref false             (* -dlinear *)
-
-
 let keep_startup_file = ref false       (* -dstartup *)
 let profile_columns : profile_column list ref = ref [] (* -dprofile/-dtimings *)
 
@@ -674,36 +672,6 @@ module Dump_option = struct
     | Linear -> "linear"
     | Interval -> "interval"
 
-  let flag = function
-    | Source -> dump_source
-    | Parsetree -> dump_parsetree
-    | Typedtree -> dump_typedtree
-    | Shape -> dump_shape
-    | Match_comp -> dump_matchcomp
-    | Raw_lambda -> dump_rawlambda
-    | Lambda -> dump_lambda
-    | Instr -> dump_instr
-    | Raw_clambda -> dump_rawclambda
-    | Clambda -> dump_clambda
-    | Raw_flambda -> dump_rawflambda
-    | Flambda -> dump_flambda
-    | Flambda_verbose -> dump_flambda_verbose
-    | Cmm -> dump_cmm
-    | Selection -> dump_selection
-    | Combine -> dump_combine
-    | CSE -> dump_cse
-    | Live -> dump_live
-    | Spill -> dump_spill
-    | Split -> dump_split
-    | Reload -> dump_reload
-    | Interf -> dump_interf
-    | Prefer -> dump_prefer
-    | Regalloc -> dump_regalloc
-    | Scheduling -> dump_scheduling
-    | Linear -> dump_linear
-    | Interval -> dump_interval
-
-
   let of_string = function
     | "source" -> Some Source
     | "parsetree" -> Some Parsetree
@@ -732,6 +700,35 @@ module Dump_option = struct
     | "linear" -> Some Linear
     | "interval" -> Some Interval
     | _ -> None
+
+  let flag = function
+    | Source -> dump_source
+    | Parsetree -> dump_parsetree
+    | Typedtree -> dump_typedtree
+    | Shape -> dump_shape
+    | Match_comp -> dump_matchcomp
+    | Raw_lambda -> dump_rawlambda
+    | Lambda -> dump_lambda
+    | Instr -> dump_instr
+    | Raw_clambda -> dump_rawclambda
+    | Clambda -> dump_clambda
+    | Raw_flambda -> dump_rawflambda
+    | Flambda -> dump_flambda
+    | Flambda_verbose -> dump_flambda_verbose
+    | Cmm -> dump_cmm
+    | Selection -> dump_selection
+    | Combine -> dump_combine
+    | CSE -> dump_cse
+    | Live -> dump_live
+    | Spill -> dump_spill
+    | Split -> dump_split
+    | Reload -> dump_reload
+    | Interf -> dump_interf
+    | Prefer -> dump_prefer
+    | Regalloc -> dump_regalloc
+    | Scheduling -> dump_scheduling
+    | Linear -> dump_linear
+    | Interval -> dump_interval
 
   type middle_end =
     | Flambda
