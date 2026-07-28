@@ -180,8 +180,8 @@ program began.
 *)
 | EV_C_MAJOR_SLICE_TARGET
 (**
-The target amount of global 'work' that should be done by all domains at the
-end of the major slice (see EV_C_MAJOR_SLICE_COUNTER).
+The target amount of global {b work} that should be done by all domains at the
+end of the major slice (see EV_C_MAJOR_WORK_COUNTER).
 @since 5.3
 *)
 | EV_C_MAJOR_SLICE_BUDGET
