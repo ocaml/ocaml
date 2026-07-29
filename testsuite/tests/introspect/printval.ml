@@ -1,4 +1,8 @@
-(* TEST *)
+(* TEST
+   setup-ocamlopt.opt-build-env;
+   script = "sh ${test_source_directory}/has-introspect.sh";
+   script;
+*)
 
 open Introspect.Print
 

@@ -1,9 +1,12 @@
 (* TEST
-{
-  toplevel;
-}{
-  toplevel.opt;
-}
+   setup-ocamlopt.opt-build-env;
+   script = "sh ${test_source_directory}/has-introspect.sh";
+   script;
+   {
+     toplevel;
+   }{
+     toplevel.opt;
+   }
 *)
 
 open Introspect.Print;;

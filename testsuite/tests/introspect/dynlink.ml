@@ -1,4 +1,6 @@
 (* TEST
+   script = "sh ${test_source_directory}/has-introspect.sh";
+   script;
    native-dynlink;
    native-compiler;
    readonly_files = "loaded.ml main.ml";
