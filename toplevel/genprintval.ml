@@ -170,6 +170,17 @@ let obj_printer ?index ?(max_printer_depth=20) ?(printer_steps=ref max_int) _kin
     !acc
   in
   let table = H.create 7 in
+  let protect_cycle obj f =
+    let raw = Dyn.get_obj obj in
+    H.add table raw ();
+    match f () with
+    | result ->
+      H.remove table raw;
+      result
+    | exception exn ->
+      H.remove table raw;
+      raise exn
+  in
   let rec print depth obj =
     decr printer_steps;
     if !printer_steps < 0 || depth <= 0 then
@@ -190,10 +201,10 @@ let obj_printer ?index ?(max_printer_depth=20) ?(printer_steps=ref max_int) _kin
       | Constant names ->
           Oval_stuff (String.concat " or " names, None)
       | Array fields ->
-          H.add table (Dyn.get_obj obj) ();
+          protect_cycle obj @@ fun () ->
           Oval_array (list_fields (print (depth - 1)) fields, Mutable)
       | Tuple {name; fields} ->
-          H.add table (Dyn.get_obj obj) ();
+          protect_cycle obj @@ fun () ->
           let pf (k,v) =
             let k = if k = "" then None else Some k in
             (k, print (depth - 1) v)
@@ -209,14 +220,14 @@ let obj_printer ?index ?(max_printer_depth=20) ?(printer_steps=ref max_int) _kin
                 Oval_constr (oide_ident name, [Oval_tuple tuple])
           end
       | Record {name; fields} ->
-          H.add table (Dyn.get_obj obj) ();
+          protect_cycle obj @@ fun () ->
           let pf (k,v) = (oide_ident k, print (depth - 1) v) in
           let record = Oval_record (list_fields pf fields) in
           if name = ""
           then record
           else Oval_constr (oide_ident name, [record])
       | Polymorphic_variant (name, tuple) ->
-          H.add table (Dyn.get_obj obj) ();
+          protect_cycle obj @@ fun () ->
           Oval_variant (name, Some (print (depth - 1) tuple))
       | Extension (name, uid, fields) ->
           let printed_name = Printf.sprintf "%s/%d" name uid in

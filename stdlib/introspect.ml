@@ -412,14 +412,38 @@ end
 module Print = struct
   open Format
 
-  let pp_fields pfield sep ppf fields =
+  let pp_fields f sep ppf fields =
     for i = 0 to Dyn.field_count fields - 1 do
       let value = Dyn.field_get fields i in
       if i > 0 then fprintf ppf "%s@ " sep;
-      fprintf ppf "@[%a@]" pfield value
+      fprintf ppf "@[%a@]" f value
     done
 
-  let rec pp_dynval ppf : Dyn.view -> _ = function
+  let pp_tuple_field f ppf = function
+    | ("", v) -> fprintf ppf "@[%a@]" f v
+    | (k, v)  -> fprintf ppf "~%s:@[%a@]" k f v
+
+  let pp_record_field f ppf (k, v) =
+    fprintf ppf "@[%s = %a@]" k f v
+
+  let rec pp_list f ppf fields =
+    begin match Dyn.field_get fields 0 with
+      | "", car -> fprintf ppf "@[%a@]" f car;
+      | lbl, car -> fprintf ppf "~%s:@[%a@]" lbl f car;
+    end;
+    let _lbl, cdr = Dyn.field_get fields 1 in
+    match Dyn.view cdr with
+    | Dyn.Constant ["[]"]
+    | Dyn.Int_or_constant (0, _) -> ()
+    | Dyn.Tuple {name = "::"; fields} when Dyn.field_count fields = 2 ->
+        pp_list_next f ppf fields
+    | _ -> fprintf ppf "<malformed list>"
+
+  and pp_list_next f ppf fields =
+    fprintf ppf ";@ ";
+    pp_list f ppf fields
+
+  let pp_dynval self ppf : Dyn.view -> _ = function
     | Dyn.String s ->
         fprintf ppf "%S" s
     | Dyn.Float f ->
@@ -432,64 +456,66 @@ module Print = struct
     | Dyn.Constant names ->
         fprintf ppf "%s" (String.concat " or " names)
     | Dyn.Array arr ->
-        fprintf ppf "[|@[<hv>%a@]|]" (pp_fields pp_dynobj ";") arr
+        fprintf ppf "[|@[<hv>%a@]|]" (pp_fields self ";") arr
     | Dyn.Tuple { name ="::"; fields } when Dyn.field_count fields = 2 ->
-        fprintf ppf "[@[<hv>%a@]]" (pp_list true) fields
+        fprintf ppf "[@[<hv>%a@]]" (pp_list self) fields
     | Dyn.Tuple { name; fields } ->
         if name <> "" then fprintf ppf "%s " name;
-        fprintf ppf "(@[<hv>%a@])" (pp_fields pp_tuple_field ",") fields
+        fprintf ppf "(@[<hv>%a@])" (pp_fields (pp_tuple_field self) ",") fields
     | Dyn.Record {name; fields} ->
         if name <> "" then fprintf ppf "%s " name;
-        fprintf ppf "{@[<hv>%a@]}" (pp_fields pp_record_field ";") fields
+        fprintf ppf "{@[<hv>%a@]}" (pp_fields (pp_record_field self) ";") fields
     | Dyn.Extension (name, uid, fields) when Dyn.field_count fields = 0 ->
         fprintf ppf "%s/%d" name uid
     | Dyn.Extension (name, uid, fields) ->
         fprintf ppf "%s/%d (@[<hv>%a@])"
-          name uid (pp_fields pp_dynobj ",") fields
+          name uid (pp_fields self ",") fields
     | Dyn.Polymorphic_variant (name, payload) ->
-        fprintf ppf "`%s (@[<hv>%a@])" name pp_dynobj payload
+        fprintf ppf "`%s (@[<hv>%a@])" name self payload
     | Dyn.Closure  -> fprintf ppf "<Closure>"
     | Dyn.Lazy     -> fprintf ppf "<Lazy>"
     | Dyn.Abstract -> fprintf ppf "<Abstract>"
     | Dyn.Custom   -> fprintf ppf "<Custom>"
     | Dyn.Unknown  -> fprintf ppf "<Unknown>"
 
-  and pp_tuple_field ppf = function
-    | ("", v) -> fprintf ppf "@[%a@]" pp_dynobj v
-    | (k, v)  -> fprintf ppf "~%s:@[%a@]" k pp_dynobj v
+  module H = Hashtbl.Make(struct type t = Obj.t let equal = (==) let hash = Hashtbl.hash end)
 
-  and pp_record_field ppf (k, v) =
-    fprintf ppf "@[%s = %a@]" k pp_dynobj v
+  let pp_dynobj index depth steps ppf obj =
+    let table = H.create 7 in
+    let rec aux depth ppf obj =
+      if depth <= 0 || !steps <= 0 then
+        Format.pp_print_string ppf "..."
+      else (
+        decr steps;
+        let raw = Dyn.get_obj obj in
+        let protect = Obj.is_block raw && Obj.tag raw < Obj.no_scan_tag in
+        if protect && H.mem table raw then
+          Format.pp_print_string ppf "<cycle>"
+        else (
+          if protect then H.add table raw ();
+          pp_dynval (aux (depth - 1)) ppf (Dyn.view ?index obj);
+          H.remove table raw
+        )
+      )
+    in
+    aux (depth - 1) ppf obj
 
-  and pp_list first ppf fields =
-    if not first then fprintf ppf ";@ ";
-    begin match Dyn.field_get fields 0 with
-      | "", car -> fprintf ppf "@[%a@]" pp_dynobj car;
-      | lbl, car -> fprintf ppf "~%s:@[%a@]" lbl pp_dynobj car;
-    end;
-    let _lbl, cdr = Dyn.field_get fields 1 in
-    match Dyn.view cdr with
-    | Dyn.Constant ["[]"]
-    | Dyn.Int_or_constant (0, _) -> ()
-    | Dyn.Tuple {name = "::"; fields} when Dyn.field_count fields = 2 ->
-        pp_list false ppf fields
-    | _ -> fprintf ppf "<malformed list>"
+  let format_any ?index ?(depth=20) ?(steps=ref max_int) ppf obj =
+    pp_dynobj index depth steps ppf (Dyn.lift (Obj.repr obj))
 
-  and pp_dynobj ppf obj =
-    pp_dynval ppf (Dyn.view obj)
+  let print_any ?index ?depth ?steps obj =
+    fprintf Format.std_formatter "@[%a@]%!"
+      (format_any ?index ?depth ?steps) obj
 
-  let format_any ppf obj =
-    pp_dynobj ppf (Dyn.lift (Obj.repr obj))
+  let prerr_any ?index ?depth ?steps obj =
+    fprintf Format.err_formatter "@[%a@]%!"
+      (format_any ?index ?depth ?steps) obj
 
-  let print_any obj =
-    fprintf Format.std_formatter "@[%a@]%!" format_any obj
+  let print_any_endline ?index ?depth ?steps obj =
+    fprintf Format.std_formatter "@[%a@]\n%!"
+      (format_any ?index ?depth ?steps) obj
 
-  let prerr_any obj =
-    fprintf Format.err_formatter "@[%a@]%!" format_any obj
-
-  let print_any_endline obj =
-    fprintf Format.std_formatter "@[%a@]\n%!" format_any obj
-
-  let prerr_any_endline obj =
-    fprintf Format.err_formatter "@[%a@]\n%!" format_any obj
+  let prerr_any_endline ?index ?depth ?steps obj =
+    fprintf Format.err_formatter "@[%a@]\n%!"
+      (format_any ?index ?depth ?steps) obj
 end
