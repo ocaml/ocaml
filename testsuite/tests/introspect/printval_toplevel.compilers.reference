@@ -4,6 +4,8 @@
 - : unit = ()
 [1; 2; 3]
 - : unit = ()
+[1; <cycle>]
+- : unit = ()
 module M :
   sig
     type key = Int.t

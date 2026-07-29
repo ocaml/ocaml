@@ -1,6 +1,7 @@
 1
 "Hello"
 [1; 2; 3]
+[1; <cycle>]
 Node {l = Empty;
       v = 1;
       d = 1;
