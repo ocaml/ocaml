@@ -2977,6 +2977,9 @@ AS_IF([test x"$with_afl" = "xyes"],
   [afl=true],
   [afl=false])
 
+AS_IF([test "$introspect" != "true"],
+  [introspect=false])
+
 # Enable debugging support
 # TODO: add a --disable-debug-info configure option that disables debugging
 # info for both C and OCaml

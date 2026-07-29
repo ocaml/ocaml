@@ -17,6 +17,8 @@ type extern_flags =
     No_sharing
   | Closures
   | Compat_32
+  | Compress_if_possible
+  | Reserved_bits
 
 (* note: this type definition is used in 'runtime/debugger.c' *)
 

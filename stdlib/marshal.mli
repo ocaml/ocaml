@@ -53,9 +53,11 @@
  *)
 
 type extern_flags =
-    No_sharing                          (** Don't preserve sharing *)
-  | Closures                            (** Send function closures *)
-  | Compat_32                           (** Ensure 32-bit compatibility *)
+    No_sharing                      (** Don't preserve sharing *)
+  | Closures                        (** Send function closures *)
+  | Compat_32                       (** Ensure 32-bit compatibility *)
+  | Compress_if_possible            (** Optional compression *)
+  | Reserved_bits                   (** Preserve reserved header bits *)
 
 (** The flags to the [Marshal.to_*] functions below. *)
 

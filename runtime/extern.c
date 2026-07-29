@@ -43,7 +43,8 @@ enum {
   CLOSURES = 2,                 /* Flag to allow marshaling code pointers */
   COMPAT_32 = 4,                /* Flag to ensure that output can safely
                                    be read back on a 32-bit platform */
-  COMPRESSED = 8                /* Flag to request compression if available */
+  COMPRESSED = 8,               /* Flag to request compression if available */
+  RESERVED_BITS = 16            /* Flag to preserved reserved header bits */
 };
 
 /* Stack for pending values to marshal */
@@ -822,7 +823,7 @@ static void extern_rec(struct caml_extern_state* s, value v)
 
 #if HEADER_RESERVED_BITS > 0
     reserved_t reserved = Reserved_hd(hd);
-    if (!(s->extern_flags & COMPAT_32) && reserved)
+    if ((s->extern_flags & RESERVED_BITS) && reserved)
       writecode32(s, CODE_RESERVED_BITS, reserved);
 #endif
 
@@ -924,7 +925,7 @@ static void extern_rec(struct caml_extern_state* s, value v)
 }
 
 static const int extern_flag_values[] = {
-  NO_SHARING, CLOSURES, COMPAT_32, COMPRESSED
+  NO_SHARING, CLOSURES, COMPAT_32, COMPRESSED, RESERVED_BITS
 };
 
 static intnat extern_value(struct caml_extern_state* s, value v, value flags,

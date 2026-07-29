@@ -25082,6 +25082,11 @@ else case e in #(
 esac
 fi
 
+if test "$introspect" != "true"
+then :
+  introspect=false
+fi
+
 # Enable debugging support
 # TODO: add a --disable-debug-info configure option that disables debugging
 # info for both C and OCaml

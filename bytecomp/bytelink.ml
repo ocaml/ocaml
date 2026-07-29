@@ -647,7 +647,7 @@ let link_bytecode ?final_name tolink exec_name standalone =
            Intro.Desc.dump (output_string stdout) bdesc;
            output_char stdout '\n'
            end !block_descs;*)
-         Marshal.to_channel outchan descs [];
+         Marshal.to_channel outchan descs [Marshal.Reserved_bits];
          Bytesections.record toc_writer BDSC;
        end;
        (* The table of contents and the trailer *)
@@ -795,7 +795,8 @@ static int caml_code[] = {
 static char caml_data[] = {
 |};
        output_data_string outchan
-         (Marshal.to_string (Symtable.initial_global_table()) []);
+         (Marshal.to_string (Symtable.initial_global_table())
+            [Marshal.Reserved_bits]);
        output_string outchan {|
 };
 |};
@@ -810,7 +811,7 @@ static char caml_data[] = {
 static char caml_sections[] = {
 |};
        output_data_string outchan
-         (Marshal.to_string sections []);
+         (Marshal.to_string sections [Marshal.Reserved_bits]);
        output_string outchan {|
 };
 

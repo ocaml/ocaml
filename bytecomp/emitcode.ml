@@ -31,7 +31,8 @@ let marshal_to_channel_with_possibly_32bit_compat ~filename ~kind outchan obj =
   try
     Marshal.to_channel outchan obj
       (if !Clflags.bytecode_compatible_32
-       then [Marshal.Compat_32] else [])
+       then [Marshal.Compat_32; Marshal.Reserved_bits]
+       else [Marshal.Reserved_bits])
   with Failure _ ->
     raise (Error (Not_compatible_32 (filename, kind)))
 
