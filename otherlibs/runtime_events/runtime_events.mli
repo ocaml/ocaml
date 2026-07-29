@@ -31,6 +31,25 @@
     zero-impact monitoring of the current process or bindings for other
     languages.
 
+    Three different identifiers appear in this interface and they are not
+    interchangeable:
+
+    - The process PID, as returned by {!Unix.getpid}. This names the process
+    that emitted the events. It appears in the name of the .events file, in
+    {!create_cursor} and as the argument of the [EV_RING_START],
+    [EV_DOMAIN_SPAWN] and [EV_DOMAIN_TERMINATE] lifecycle events.
+
+    - The domain index, as returned by {!Domain.self_index}. This names the
+    ring buffer that a domain emits into and is the first argument passed to
+    every callback. It is unique among the domains running at any one time,
+    but the index of a terminated domain may later be reused by a newly
+    spawned one.
+
+    - The domain unique id, as returned by {!Domain.self}. This is never
+    reused. It is not reported by this module. To tell apart successive
+    domains that occupied the same domain index, pair the
+    [EV_DOMAIN_SPAWN] and [EV_DOMAIN_TERMINATE] lifecycle events for that index.
+
     The runtime events system's behaviour can be controlled by the following
     environment variables:
 
@@ -174,8 +193,8 @@ began.
 *)
 | EV_C_MAJOR_ALLOC_COUNTER
 (**
-The global {b words} of major GC allocations done by all domains since the
-program began.
+The global amount of major GC {b work} required by allocation and other
+resource use in all domains since the program began.
 @since 5.3
 *)
 | EV_C_MAJOR_SLICE_TARGET
@@ -514,12 +533,12 @@ Event indicating that a fork has occurred and the current domain is the child.
 | EV_DOMAIN_SPAWN
 (**
 Event indicating that a new domain has been spawned. Includes the PID of the
-new domain as an argument.
+process as an argument.
 @since 5.0
 *)
 | EV_DOMAIN_TERMINATE
 (**
-Event indicating that a domain has terminated. Includes the PID of the domain
+Event indicating that a domain has terminated. Includes the PID of the process
 as an argument.
 @since 5.0
 *)
