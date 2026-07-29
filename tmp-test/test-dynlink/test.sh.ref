@@ -1,0 +1,12 @@
+ocamlc
+(~x:1, 2, ~y:"hello")
+T {string = "hello"; int = 42; bool = true}
+ocamlc.opt
+(~x:1, 2, ~y:"hello")
+T {string = "hello"; int = 42; bool = true}
+ocamlopt
+(~x:1, 2, ~y:"hello")
+T {string = "hello"; int = 42; bool = true}
+ocamlopt.opt
+(~x:1, 2, ~y:"hello")
+T {string = "hello"; int = 42; bool = true}
