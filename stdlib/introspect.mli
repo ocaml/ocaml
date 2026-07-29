@@ -1,3 +1,5 @@
+val enabled : bool
+
 module Desc : sig
   (* Descriptors are metadata that can often be recovered from OCaml values to
      print a meaningful representation. *)

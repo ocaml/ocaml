@@ -15,12 +15,18 @@ let format ppf t =
 
 let mask = (1 lsl Config.reserved_header_bits) - 1
 
-let index t = mask land (Desc.hash t)
+let index t =
+  if Sys.introspection_enabled then
+    mask land (Desc.hash t)
+  else
+    0
 
 external compiler_descriptors : unit -> Desc.t list ref = "caml_compiler_block_descs"
 let library = compiler_descriptors ()
 
-let register t = library := t :: !library; t
+let register t =
+  if Sys.introspection_enabled then
+    library := t :: !library; t
 
 let make_array approx =
   register (Desc.Array approx)

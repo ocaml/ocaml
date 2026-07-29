@@ -1,3 +1,5 @@
+let enabled = Sys.introspection_enabled
+
 module Desc = struct
   type approx =
     | Any

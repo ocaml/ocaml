@@ -214,7 +214,8 @@ let rec transl_const = function
   | Const_immstring s -> Obj.repr s
   | Const_block(tag, fields, bdesc) ->
       let block = Obj.new_block tag (List.length fields) in
-      ignore (Obj.set_reserved block (Block_desc.index bdesc) : bool);
+      if Sys.introspection_enabled then
+        ignore (Obj.set_reserved block (Block_desc.index bdesc) : bool);
       let transl_field pos cst =
         Obj.set_field block pos (transl_const cst)
       in

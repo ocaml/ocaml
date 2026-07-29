@@ -435,6 +435,11 @@ val development_version : bool
     @since 4.14
 *)
 
+val introspection_enabled : bool
+(** [true] if introspection metadata are available, [false] otherwise.
+    @since FIXME
+*)
+
 type extra_prefix = Plus | Tilde
 (** @since 4.14 *)
 

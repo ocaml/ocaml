@@ -204,6 +204,8 @@ let ocaml_release = {
   extra = @OCAML_RELEASE_EXTRA@
 }
 
+let introspection_enabled = @introspect@
+
 (* Optimization *)
 
 external opaque_identity : 'a -> 'a = "%opaque"
