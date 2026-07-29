@@ -477,6 +477,9 @@ Working version
   constraints.
   (Stefan Muenzel, review by Florian Angeletti)
 
+- #14890, fix pattern compilation in presence of the [min_int] constant pattern
+  (Florian Angeletti, review by Luc Maranget)
+
 OCaml 5.5.1
 -----------
 
