@@ -657,9 +657,12 @@ module Callbacks : sig
       when the runtime leaves a certain phase. The [runtime_counter] callback
       is called when a counter is emitted by the runtime. [lifecycle] callbacks
       are called when the ring undergoes a change in lifecycle and a consumer
-      may need to respond. [alloc] callbacks are currently only called on the
-      instrumented runtime. [lost_events] callbacks are called if the consumer
-      code detects some unconsumed events have been overwritten.
+      may need to respond. The int option is the PID carried by those lifecycle
+      events that have one, and [None] for those that do not. [alloc] callbacks
+      are currently only called on the instrumented runtime. [lost_events]
+      callbacks are called if the consumer code detects some unconsumed events
+      have been overwritten, and are given the number of ring buffer words that
+      were skipped. Events vary in size, so this is not a count of lost events.
       *)
 
   val add_user_event : 'a Type.t ->
