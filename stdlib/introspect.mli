@@ -124,10 +124,10 @@ end
 module Print : sig
   (* High-level printing API *)
 
-  val format_any : Format.formatter -> 'a -> unit
+  val format_any : ?depth:int -> ?steps:int ref -> Format.formatter -> 'a -> unit
 
-  val print_any : 'a -> unit
-  val prerr_any : 'a -> unit
-  val print_any_endline : 'a -> unit
-  val prerr_any_endline : 'a -> unit
+  val print_any : ?depth:int -> ?steps:int ref -> 'a -> unit
+  val prerr_any : ?depth:int -> ?steps:int ref -> 'a -> unit
+  val print_any_endline : ?depth:int -> ?steps:int ref -> 'a -> unit
+  val prerr_any_endline : ?depth:int -> ?steps:int ref -> 'a -> unit
 end
