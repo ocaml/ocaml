@@ -307,6 +307,7 @@ AC_SUBST([native_runtime_id])
 AC_SUBST([suffixing])
 AC_SUBST([runtime_search])
 AC_SUBST([runtime_search_target])
+AC_SUBST([introspect])
 
 ## Generated files
 
@@ -778,6 +779,14 @@ AC_ARG_WITH([flexdll],
 AC_ARG_WITH([zstd],
   [AS_HELP_STRING([--without-zstd],
     [disable compression of compilation artefacts])])
+
+AC_ARG_ENABLE([introspect],
+  [AS_HELP_STRING([--enable-introspect],
+    [enable polymorphic value printing])],
+  [AS_CASE([$enableval],
+    [no],[introspect=false],
+    [yes],[introspect=true],
+    [AC_MSG_ERROR(m4_normalize([valid values are yes or no]))])])
 
 AS_IF([test x"$enable_unix_lib" = "xno"],
   [AS_IF([test x"$enable_ocamldebug" = "xyes"],
@@ -3168,6 +3177,10 @@ mv -f utils/config.common.ml.in.new utils/config.common.ml.in])
 
 # Do not permanently cache the result of flexdll.h
 unset ac_cv_header_flexdll_h
+
+# Introspection requires reserving header bits
+AS_IF([test "$introspect" = "true" -a \( -z "$reserved_header_bits" -o "$reserved_header_bits" = "0" \) ],
+  [AC_MSG_ERROR([--enable-introspect requires that you also set --enable-reserved-header-bits=BITS greater than 0])])
 
 # Evaluate install directories
 # (this is needed for the OCaml configuration module)

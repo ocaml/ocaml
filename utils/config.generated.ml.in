@@ -112,3 +112,5 @@ let suffixing = @suffixing@
 let launch_method = {@QS@|@launch_method_target@|@QS@}
 
 let search_method = {@QS@|@runtime_search_target@|@QS@}
+
+let introspect = @introspect@

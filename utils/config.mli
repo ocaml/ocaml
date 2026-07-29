@@ -433,6 +433,9 @@ val print_config : out_channel -> unit
 val config_var : string -> string option
 (** the configuration value of a variable, if it exists *)
 
+val introspect : bool
+(** Are introspection metadata generated? *)
+
 (**/**)
 
 val merlin : bool

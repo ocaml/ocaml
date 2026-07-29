@@ -88,3 +88,4 @@ let shebangscripts = false
 let suffixing = false
 let launch_method = "sh"
 let search_method = "always"
+let introspect = false
