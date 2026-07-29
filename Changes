@@ -411,6 +411,10 @@ Working version
 - #14946: Keep the continuation inside the typedtree using a dedicated type.
   (Xavier Van de Woestyne, review by Florian Angeletti)
 
+* #14538 Refactor `type_approx` (again) and `type_let_rec` for polymorphic
+  recursion.
+  (Alistair O'Brien, review by ??)
+
 ### Build system:
 
 - #14552: Export `AR` and `ARFLAGS` in Makefile.config.
