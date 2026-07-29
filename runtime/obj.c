@@ -327,10 +327,34 @@ CAMLprim value caml_alloc_dummy_lazy (value unit)
   return caml_alloc(1, 0);
 }
 
+// unsafe as in Unsafe_store_tag_val.
+static void unsafe_store_reserved_bits(value obj, reserved_t res)
+{
+#if HEADER_RESERVED_BITS > 0
+  header_t old_hd = Hd_val(obj);
+  header_t tag = Hd_reserved(res);
+  header_t mask = Hd_reserved(1) - 1;
+
+  // FIXME: Protect against a concurrent thread marking the header
+  // I am not sure if it is safe, nor if it is always necessary.
+  while (1) {
+    header_t new_hd = (old_hd & mask) | tag;
+
+    // Atomically swap new header
+    if (atomic_compare_exchange_weak_explicit(
+            Hp_atomic_val(obj),
+            &old_hd, // If swap fails, old_hd is updated to current header
+            new_hd, memory_order_relaxed, memory_order_relaxed))
+      break; // Success! Value committed.
+  }
+#endif
+}
+
 CAMLprim value caml_update_dummy(value dummy, value newval)
 {
   mlsize_t size;
   tag_t tag;
+  reserved_t res;
 
   tag = Tag_val (newval);
 
@@ -344,7 +368,16 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
          So doing nothing suffices. */
       CAMLassert(Wosize_val(newval) == 0);
       CAMLassert(Tag_val(dummy) == Tag_val(newval));
-  } else if (tag == Double_array_tag){
+    return Val_unit;
+  }
+
+#if HEADER_RESERVED_BITS > 0
+  res = Reserved_val(newval);
+  if (res)
+    unsafe_store_reserved_bits(dummy, res);
+#endif
+
+  if (tag == Double_array_tag){
     CAMLassert (Wosize_val(newval) == Wosize_val(dummy));
     CAMLassert (Tag_val(dummy) != Infix_tag);
     Unsafe_store_tag_val(dummy, Double_array_tag);
@@ -402,27 +435,12 @@ CAMLprim value caml_obj_get_reserved(value obj)
     return Val_long(0);
 }
 
-CAMLprim value caml_obj_set_reserved(value obj, value vtag)
+CAMLprim value caml_obj_set_reserved(value obj, value res)
 {
   if (!Is_block(obj))
     return Val_bool(0);
 
-  header_t old_hd = Hd_val(obj);
-  header_t tag = Hd_reserved(Long_val(vtag));
-  header_t mask = Hd_reserved(1) - 1;
-
-  // FIXME: Protect against a concurrent thread marking the header
-  // I am not sure it is safe, nor if it is alway necessary.
-  while (1) {
-    header_t new_hd = (old_hd & mask) | tag;
-
-    // Atomically swap new header
-    if (atomic_compare_exchange_weak_explicit(
-            Hp_atomic_val(obj),
-            &old_hd, // If swap fails, old_hd is updated to current header
-            new_hd, memory_order_relaxed, memory_order_relaxed))
-      break; // Success! Value committed.
-  }
+  unsafe_store_reserved_bits(obj, Long_val(res));
 
   return Val_bool(1);
 }
