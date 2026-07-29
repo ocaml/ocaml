@@ -412,6 +412,8 @@ end
 module Print = struct
   open Format
 
+  module H = Hashtbl.Make(struct type t = Obj.t let equal = (==) let hash = Hashtbl.hash end)
+
   let pp_fields f sep ppf fields =
     for i = 0 to Dyn.field_count fields - 1 do
       let value = Dyn.field_get fields i in
@@ -426,24 +428,28 @@ module Print = struct
   let pp_record_field f ppf (k, v) =
     fprintf ppf "@[%s = %a@]" k f v
 
-  let rec pp_list f ppf fields =
+  let rec pp_list_elements table f ppf fields =
     begin match Dyn.field_get fields 0 with
-      | "", car -> fprintf ppf "@[%a@]" f car;
-      | lbl, car -> fprintf ppf "~%s:@[%a@]" lbl f car;
+    | "", car -> fprintf ppf "@[%a@]" f car;
+    | lbl, car -> fprintf ppf "~%s:@[%a@]" lbl f car;
     end;
     let _lbl, cdr = Dyn.field_get fields 1 in
     match Dyn.view cdr with
     | Dyn.Constant ["[]"]
     | Dyn.Int_or_constant (0, _) -> ()
     | Dyn.Tuple {name = "::"; fields} when Dyn.field_count fields = 2 ->
-        pp_list_next f ppf fields
+        fprintf ppf ";@ ";
+        let raw = Dyn.get_obj cdr in
+        if H.mem table raw then
+          fprintf ppf "<cycle>"
+        else (
+          H.add table raw ();
+          pp_list_elements table f ppf fields;
+          H.remove table raw
+        )
     | _ -> fprintf ppf "<malformed list>"
 
-  and pp_list_next f ppf fields =
-    fprintf ppf ";@ ";
-    pp_list f ppf fields
-
-  let pp_dynval self ppf : Dyn.view -> _ = function
+  let pp_dynval table self ppf : Dyn.view -> _ = function
     | Dyn.String s ->
         fprintf ppf "%S" s
     | Dyn.Float f ->
@@ -458,7 +464,7 @@ module Print = struct
     | Dyn.Array arr ->
         fprintf ppf "[|@[<hv>%a@]|]" (pp_fields self ";") arr
     | Dyn.Tuple { name ="::"; fields } when Dyn.field_count fields = 2 ->
-        fprintf ppf "[@[<hv>%a@]]" (pp_list self) fields
+        fprintf ppf "[@[<hv>%a@]]" (pp_list_elements table self) fields
     | Dyn.Tuple { name; fields } ->
         if name <> "" then fprintf ppf "%s " name;
         fprintf ppf "(@[<hv>%a@])" (pp_fields (pp_tuple_field self) ",") fields
@@ -478,9 +484,7 @@ module Print = struct
     | Dyn.Custom   -> fprintf ppf "<Custom>"
     | Dyn.Unknown  -> fprintf ppf "<Unknown>"
 
-  module H = Hashtbl.Make(struct type t = Obj.t let equal = (==) let hash = Hashtbl.hash end)
-
-  let pp_dynobj index depth steps ppf obj =
+  let format_any ?index ?(depth=20) ?(steps=ref max_int) ppf obj =
     let table = H.create 7 in
     let rec aux depth ppf obj =
       if depth <= 0 || !steps <= 0 then
@@ -493,15 +497,12 @@ module Print = struct
           Format.pp_print_string ppf "<cycle>"
         else (
           if protect then H.add table raw ();
-          pp_dynval (aux (depth - 1)) ppf (Dyn.view ?index obj);
-          H.remove table raw
+          pp_dynval table (aux (depth - 1)) ppf (Dyn.view ?index obj);
+          if protect then H.remove table raw
         )
       )
     in
-    aux (depth - 1) ppf obj
-
-  let format_any ?index ?(depth=20) ?(steps=ref max_int) ppf obj =
-    pp_dynobj index depth steps ppf (Dyn.lift (Obj.repr obj))
+    aux (depth - 1) ppf (Dyn.lift (Obj.repr obj))
 
   let print_any ?index ?depth ?steps obj =
     fprintf Format.std_formatter "@[%a@]%!"
