@@ -63,7 +63,7 @@ external file_exists : string -> bool = "caml_sys_file_exists"
 *)
 
 external filepath_exists : string -> bool = "caml_sys_filepath_exists"
-(** Tests if a filepath with the given name exists.
+(** Tests if a file path with the given name exists.
 
     [filepath_exists p] is:
     {ul
