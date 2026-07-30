@@ -2,37 +2,37 @@
 42
 
 --- Int boxed ---
-[42]
+(42, 0)
 
 --- Float immediate ---
 3.140000
 
 --- Float boxed ---
-[3.140000]
+(3.140000, 0)
 
 --- Char immediate ---
 97
 
 --- Char boxed ---
-['a']
+(97, 0)
 
 --- Constant (None) immediate ---
 0
 
 --- Constant (None) boxed ---
-[None]
+(0, 0)
 
 --- Constant (True) immediate ---
 1
 
 --- Constant (True) boxed ---
-[true]
+(1, 0)
 
 --- List ---
-[1; 2; 3]
+(1, (2, (3, 0)))
 
 --- Array ---
-[|1; 2; 3|]
+(1, 2, 3)
 
 --- Empty Array ---
 ()
@@ -44,22 +44,22 @@
 0
 
 --- Record ---
-{string = "hello"; int = 42; bool = true}
+("hello", 42, 1)
 
 --- Poly-variant simple ---
-65 or `A
+65
 
 --- Poly-variant with data ---
-`B ("payload")
+(66, "payload")
 
 --- Nested Poly-variant ---
-`C (`D (1))
+(67, (68, 1))
 
 --- Built-in ref ---
-{contents = 10}
+(10)
 
 --- Record-based ref ---
-{contents = 10}
+(10)
 
 --- Closure (capturing x) ---
 <closure>
@@ -71,19 +71,19 @@
 lazy (2)
 
 --- Abstract type ---
-T (42)
+(42)
 
 --- Cyclic List ---
-[1; <cycle>]
+(1, <cycle>)
 
 --- Prefixed cyclic list ---
-[0; 1; <cycle>]
+(0, (1, <cycle>))
 
 --- Indirect cycle ---
-[1; 2; 3; <cycle>]
+(1, (2, (3, <cycle>)))
 
 --- Deeply nested structure ---
-[|[({string = "deep"; int = 1; bool = true}, [1; 2])]|]
+(((("deep", 1, 1), (1, (2, 0))), 0))
 
 --- Constant exception ---
 Foo/
@@ -101,26 +101,12 @@ TBar/ (99)
 0
 
 --- Small set ---
-Node {l = Empty;
-      v = 1;
-      r = Node {l = Empty;
-                v = 2;
-                r = Node {l = Empty; v = 3; r = Empty; h = 1};
-                h = 2};
-      h = 3}
+(0, 1, (0, 2, (0, 3, 0, 1), 2), 3)
 
 --- Empty map ---
 0
 
 --- Small map ---
-Node {l = Empty;
-      v = 1;
-      d = "one";
-      r = Node {l = Empty;
-                v = 2;
-                d = "two";
-                r = Node {l = Empty; v = 3; d = "three"; r = Empty; h = 1};
-                h = 2};
-      h = 3}
+(0, 1, "one", (0, 2, "two", (0, 3, "three", 0, 1), 2), 3)
 
 
