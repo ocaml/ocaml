@@ -62,13 +62,13 @@
 {contents = 10}
 
 --- Closure (capturing x) ---
-<Closure>
+<closure>
 
 --- Lazy (unevaluated) ---
-<Lazy>
+<lazy>
 
 --- Lazy (evaluated) ---
-<Unknown>
+lazy (2)
 
 --- Abstract type ---
 T (42)
