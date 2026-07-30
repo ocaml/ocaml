@@ -238,6 +238,7 @@ let obj_printer ?index ?(max_printer_depth=20) ?(printer_steps=ref max_int) _kin
       | Abstract -> Oval_stuff ("<abstract>", None)
       | Custom   -> Oval_stuff ("<custom>", None)
       | Unknown  -> Oval_stuff ("<unknown>", None)
+      | Forward obj -> Oval_lazy (print (depth - 1) obj)
   in
   Some (print max_printer_depth (Dyn.lift obj))
 

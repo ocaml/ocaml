@@ -268,6 +268,7 @@ module Dyn = struct
           or type t += Foo (of args) *)
     | Extension of string * int * t fields
     | Closure | Lazy | Abstract | Custom | Unknown
+    | Forward of t
 
   let double_to_wo_shift = match Sys.word_size with
     | 64 -> 0
@@ -352,6 +353,8 @@ module Dyn = struct
         Abstract
       else if tag = Obj.custom_tag then
         Custom
+      else if tag = Obj.forward_tag then
+        Forward (lift (Obj.field obj 0))
       else
         match as_extension_tag obj with
         | Some (path, uid) ->
@@ -478,11 +481,12 @@ module Print = struct
           name uid (pp_fields self ",") fields
     | Dyn.Polymorphic_variant (name, payload) ->
         fprintf ppf "`%s (@[<hv>%a@])" name self payload
-    | Dyn.Closure  -> fprintf ppf "<Closure>"
-    | Dyn.Lazy     -> fprintf ppf "<Lazy>"
-    | Dyn.Abstract -> fprintf ppf "<Abstract>"
-    | Dyn.Custom   -> fprintf ppf "<Custom>"
-    | Dyn.Unknown  -> fprintf ppf "<Unknown>"
+    | Dyn.Closure  -> fprintf ppf "<closure>"
+    | Dyn.Lazy     -> fprintf ppf "<lazy>"
+    | Dyn.Abstract -> fprintf ppf "<abstract>"
+    | Dyn.Custom   -> fprintf ppf "<custom>"
+    | Dyn.Unknown  -> fprintf ppf "<unknown>"
+    | Dyn.Forward d -> fprintf ppf "lazy (@[<hv>%a@])" self d
 
   let format_any ?index ?(depth=20) ?(steps=ref max_int) ppf obj =
     let table = H.create 7 in

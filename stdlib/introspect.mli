@@ -111,6 +111,7 @@ module Dyn : sig
     | Abstract
     | Custom
     | Unknown
+    | Forward of t
 
   (* Introspect an object with an index.
      If no index is explicitly provided, it defaults to [Index.self_index ()] *)
