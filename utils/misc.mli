@@ -116,13 +116,12 @@ module Stdlib : sig
   module List : sig
     include module type of struct include List end
 
-    val fold_left4
-      :  ('acc -> 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'acc)
+    val fold_left3
+      :  ('acc -> 'a0 -> 'a1 -> 'a2 -> 'acc)
       -> 'acc
       -> 'a0 list
       -> 'a1 list
       -> 'a2 list
-      -> 'a3 list
       -> 'acc
 
     val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
@@ -146,6 +145,8 @@ module Stdlib : sig
     val iteri2 : (int -> 'a -> 'b -> unit) -> 'a list -> 'b list -> unit
     (** Same as {!List.iter2}, but the function is applied to the index of
         the element as first argument (counting from 0) *)
+
+    val rev_iter : ('a -> unit) -> 'a list -> unit
 
     val split_at : int -> 'a t -> 'a t * 'a t
     (** [split_at n l] returns the pair [before, after] where [before] is
