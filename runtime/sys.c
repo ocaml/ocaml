@@ -307,18 +307,16 @@ CAMLprim value caml_sys_file_exists(value name)
 
 CAMLprim value caml_sys_filepath_exists(value name)
 {
+  CAMLparam1(name);
   int mode = caml_sys_file_mode(name);
 
-  if (mode != -1) {
-    return Val_true;
+  if (mode == -1) {
+    if (errno == ENOTDIR || errno == ENOENT)
+      CAMLreturn(Val_false);
+    caml_sys_error(name);
   }
 
-  if (errno == ENOTDIR || errno == ENOENT) {
-    return Val_false;
-  }
-
-  caml_sys_error(name);
-  return Val_unit;
+  CAMLreturn(Val_true);
 }
 
 CAMLprim value caml_sys_is_directory(value name)
