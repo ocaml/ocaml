@@ -44,7 +44,10 @@ let make_polymorphic_variant name =
   register_polymorphic_variant name;
   register Desc.Polymorphic_variant
 
-let empty = Desc.Unknown
+let empty = Desc.unknown
+
+let simple_ref = Desc.simple_ref
+
 (* Manage collections of descriptors *)
 
 let pending_descriptors () = !library
@@ -56,8 +59,8 @@ let empty_library = []
 let iter_library = List.iter
 
 let emit () =
-  library := List.sort_uniq compare !library;
-  empty :: !library
+  library := List.sort_uniq compare (simple_ref :: !library);
+  !library
 
 let reset () =
   library := []

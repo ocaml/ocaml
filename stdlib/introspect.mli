@@ -22,6 +22,10 @@ module Desc : sig
 
   type t = view
 
+  val unknown : t
+
+  val simple_ref : t
+
   val equal : t -> t -> bool
 
   val compare : t -> t -> int

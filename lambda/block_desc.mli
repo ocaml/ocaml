@@ -12,6 +12,7 @@ val mask : int
 val index : t -> int
 
 val empty : t
+val simple_ref : t
 val make_array : approx -> t
 val make_tuple : int -> string -> (string * approx) array -> t
 val make_record : int -> string -> (string * approx) array -> t

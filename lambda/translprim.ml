@@ -151,7 +151,7 @@ let primitives_table =
     "%setfield0", Primitive ((Psetfield(0, Pointer, Assignment)), 2);
     "%setfield1", Primitive ((Psetfield(1, Pointer, Assignment)), 2);
     "%makeblock", Primitive ((Pmakeblock(0, Immutable, None, Block_desc.empty)), 1);
-    "%makemutable", Primitive ((Pmakeblock(0, Mutable, None, Block_desc.empty)), 1);
+    "%makemutable", Primitive (Pmakeblock(0, Mutable, None, Block_desc.simple_ref), 1);
     "%raise", Raise Raise_regular;
     "%reraise", Raise Raise_reraise;
     "%raise_notrace", Raise Raise_notrace;

@@ -18,6 +18,10 @@ module Desc = struct
 
   type t = view
 
+  let unknown = Unknown
+
+  let simple_ref = Record {name = ""; tag = 0; fields = [|"contents", Any|]}
+
   let compare a b =
     match a, b with
     | Unknown, Unknown -> 0
@@ -54,9 +58,9 @@ module Desc = struct
 
   let dump_field o (f, apx) =
     o "(";
-    dump_approx o apx;
-    o ", ";
     dump_escaped o f;
+    o ", ";
+    dump_approx o apx;
     o ")"
 
   let dump o = function
@@ -140,7 +144,7 @@ module Index = struct
     variants : (int, string list) Hashtbl.t;
   }
 
-  let make () : t = {
+  let raw_make () : t = {
     descriptors = Hashtbl.create 17;
     known_variants = Hashtbl.create 17;
     variants = Hashtbl.create 17;
@@ -161,6 +165,12 @@ module Index = struct
         | exception Not_found -> Hashtbl.add t.descriptors i [tag]
         | tags -> Hashtbl.replace t.descriptors i (tag :: tags)
         end
+
+  let make () =
+    let result = raw_make () in
+    register result Desc.unknown;
+    register result Desc.simple_ref;
+    result
 
   let register_list t tags =
     List.iter (register t) tags
