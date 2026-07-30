@@ -66,6 +66,8 @@ let ocamlopt_default_flags = ""
 
 let flat_float_array = @flat_float_array@
 
+let introspect = @introspect@
+
 let ocamldoc = @build_ocamldoc@
 
 let ocamldebug = @build_ocamldebug@

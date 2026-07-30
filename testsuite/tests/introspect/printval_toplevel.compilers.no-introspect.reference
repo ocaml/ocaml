@@ -1,0 +1,126 @@
+--- Int immediate ---
+42
+
+--- Int boxed ---
+[42]
+
+--- Float immediate ---
+3.140000
+
+--- Float boxed ---
+[3.140000]
+
+--- Char immediate ---
+97
+
+--- Char boxed ---
+['a']
+
+--- Constant (None) immediate ---
+0
+
+--- Constant (None) boxed ---
+[None]
+
+--- Constant (True) immediate ---
+1
+
+--- Constant (True) boxed ---
+[true]
+
+--- List ---
+[1; 2; 3]
+
+--- Array ---
+[|1; 2; 3|]
+
+--- Empty Array ---
+()
+
+--- Tuple ---
+(1, "hello", 3.140000)
+
+--- Empty Tuple ---
+0
+
+--- Record ---
+{string = "hello"; int = 42; bool = true}
+
+--- Poly-variant simple ---
+65 or `A
+
+--- Poly-variant with data ---
+`B ("payload")
+
+--- Nested Poly-variant ---
+`C (`D (1))
+
+--- Built-in ref ---
+{contents = 10}
+
+--- Record-based ref ---
+{contents = 10}
+
+--- Closure (capturing x) ---
+<closure>
+
+--- Lazy (unevaluated) ---
+<lazy>
+
+--- Lazy (evaluated) ---
+lazy (2)
+
+--- Abstract type ---
+T (42)
+
+--- Cyclic List ---
+[1; <cycle>]
+
+--- Prefixed cyclic list ---
+[0; 1; <cycle>]
+
+--- Indirect cycle ---
+[1; 2; 3; <cycle>]
+
+--- Deeply nested structure ---
+[|[({string = "deep"; int = 1; bool = true}, [1; 2])]|]
+
+--- Constant exception ---
+Foo/
+
+--- Parametrized exception ---
+Bar/ (99)
+
+--- Constant extension ---
+TFoo/
+
+--- Parametrized extension ---
+TBar/ (99)
+
+--- Empty set ---
+0
+
+--- Small set ---
+Node {l = Empty;
+      v = 1;
+      r = Node {l = Empty;
+                v = 2;
+                r = Node {l = Empty; v = 3; r = Empty; h = 1};
+                h = 2};
+      h = 3}
+
+--- Empty map ---
+0
+
+--- Small map ---
+Node {l = Empty;
+      v = 1;
+      d = "one";
+      r = Node {l = Empty;
+                v = 2;
+                d = "two";
+                r = Node {l = Empty; v = 3; d = "three"; r = Empty; h = 1};
+                h = 2};
+      h = 3}
+
+

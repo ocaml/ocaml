@@ -1,7 +1,13 @@
 (* TEST
-   script = "sh ${test_source_directory}/has-introspect.sh";
    bytecode;
    native;
+   {
+     introspect;
+     reference = "${test_source_directory}/printval.reference";
+   }{
+     no-introspect;
+     reference = "${test_source_directory}/printval.no-introspect.reference";
+   }
 *)
 
 open Introspect.Print

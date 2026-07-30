@@ -1131,6 +1131,20 @@ let no_flat_float_array = make
     "compiler configured with --disable-flat-float-array"
     "compiler configured with --enable-flat-float")
 
+let introspect = Actions.make
+  ~name:"introspect"
+  ~description:"Passes if the compiler is configured with --enable-introspect"
+  (Actions_helpers.pass_or_skip Ocamltest_config.introspect
+    "compiler configured with --enable-introspect"
+    "compiler configured with --disable-introspect")
+
+let no_introspect = make
+  ~name:"no-introspect"
+  ~description:"Passes if the compiler is configured with --disable-introspect"
+  (Actions_helpers.pass_or_skip (not Ocamltest_config.introspect)
+    "compiler configured with --disable-introspect"
+    "compiler configured with --enable-introspect")
+
 let flambda = Actions.make
   ~name:"flambda"
   ~description:"Passes if the compiler is configured with flambda enabled"
@@ -1400,6 +1414,8 @@ let _ =
     check_ocamlnat_output;
     flat_float_array;
     no_flat_float_array;
+    introspect;
+    no_introspect;
     flambda;
     no_flambda;
     shared_libraries;

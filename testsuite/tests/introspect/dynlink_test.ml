@@ -1,8 +1,12 @@
 (* TEST
-   script = "sh ${test_source_directory}/has-introspect.sh";
-   script;
    readonly_files = "printval.ml";
    {
+     introspect;
+     reference = "${test_source_directory}/dynlink_test.reference";
+   }{
+     no-introspect;
+     reference = "${test_source_directory}/dynlink_test.no-introspect.reference";
+   }{
      native-dynlink;
      native-compiler;
      setup-ocamlopt.opt-build-env;

@@ -1,8 +1,12 @@
 (* TEST
-   script = "sh ${test_source_directory}/has-introspect.sh";
-   script;
    readonly_files = "printval.ml";
    {
+     introspect;
+     reference = "${test_source_directory}/printval_toplevel.compilers.reference";
+   }{
+     no-introspect;
+     reference = "${test_source_directory}/printval_toplevel.compilers.no-introspect.reference";
+   }{
      toplevel;
    }{
      toplevel.opt;

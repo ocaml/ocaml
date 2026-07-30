@@ -94,6 +94,9 @@ val flambda : bool
 val flat_float_array : bool
 (* Whether the compiler was configured with --enable-flat-float-array *)
 
+val introspect : bool
+(** Whether the compiler was configured with --enable-introspect *)
+
 val ocamldoc : bool
 (** Whether ocamldoc has been enabled at configure time *)
 
