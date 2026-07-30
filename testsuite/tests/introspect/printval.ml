@@ -1,6 +1,8 @@
 (* TEST
    script = "sh ${test_source_directory}/has-introspect.sh";
    script;
+   bytecode;
+   native;
 *)
 
 open Introspect.Print

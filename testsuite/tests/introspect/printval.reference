@@ -56,7 +56,7 @@
 `C (`D (1))
 
 --- Built-in ref ---
-(10)
+{contents = 10}
 
 --- Record-based ref ---
 {contents = 10}
@@ -122,4 +122,5 @@ Node {l = Empty;
                 r = Node {l = Empty; v = 3; d = "three"; r = Empty; h = 1};
                 h = 2};
       h = 3}
+
 

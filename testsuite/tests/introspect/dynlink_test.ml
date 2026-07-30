@@ -8,10 +8,12 @@
      setup-ocamlopt.opt-build-env;
      script = "sh ${test_source_directory}/dynlink_test.sh";
      script;
+     check-program-output;
    }{
      setup-ocamlc.byte-build-env;
      script = "sh ${test_source_directory}/dynlink_test_bytecode.sh";
      script;
+     check-program-output;
    }
 *)
 
