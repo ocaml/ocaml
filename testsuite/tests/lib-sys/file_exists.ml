@@ -1,6 +1,7 @@
 (* TEST
  include unix;
  hasunix;
+ not-root;
  not windows;
  bytecode;
  native;
@@ -63,4 +64,9 @@ let () =
   show "filepath_exists with EACCES" (fun () -> Sys.filepath_exists inner);
   Unix.chmod dir 0o755;
   safe_remove inner;
-  safe_rmdir dir
+  safe_rmdir dir;
+
+  (* Pathname is longer than NAME_MAX (ENAMETOOLONG) *)
+  let too_long_pathname = String.make 256 'c' in
+  show "file_exists with ENAMETOOLONG" (fun () -> Sys.file_exists too_long_pathname);
+  show "filepath_exists with ENAMETOOLONG" (fun () -> Sys.filepath_exists too_long_pathname);

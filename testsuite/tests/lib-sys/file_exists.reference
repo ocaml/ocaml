@@ -6,3 +6,5 @@ file_exists with ENOTDIR: false
 filepath_exists with ENOTDIR: false
 file_exists with EACCES: false
 filepath_exists with EACCES: Sys_error: noaccess_dir/inner: Permission denied
+file_exists with ENAMETOOLONG: false
+filepath_exists with ENAMETOOLONG: Sys_error: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc: File name too long
