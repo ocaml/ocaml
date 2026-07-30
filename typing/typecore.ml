@@ -219,6 +219,8 @@ type error =
 let not_principal fmt =
   Format_doc.Doc.kmsg (fun x -> Warnings.Not_principal x) fmt
 
+exception Error_forward of Location.error
+
 module Error : sig
   (* For the purpose of error recovery, we want to ensure that user facing
       errors are always "logged" and never simply raised. *)
@@ -406,7 +408,6 @@ end = struct
     else
       raise (In_context (loc, env, err))
 
-
   let log_or_raise loc env err =
     if !Clflags.typing_recovery then
       Typing_recovery.log_or_raise (freeze_error (loc, env, err))
@@ -415,12 +416,10 @@ end = struct
 
   let () =
     Typing_recovery.register_recoverable (function
-        | In_context _ -> true
+        | In_context _ | Error_forward _ -> true
         | _ -> false
       )
 end
-
-exception Error_forward of Location.error
 
 let check_scope_escape loc env level ty =
   try Ctype.check_scope_escape env level ty
