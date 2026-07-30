@@ -234,11 +234,12 @@ let obj_printer ?index ?(max_printer_depth=20) ?(printer_steps=ref max_int) _kin
           let path = Oide_ident {printed_name} in
           Oval_constr (path, list_fields (print (depth - 1)) fields)
       | Closure  -> Oval_stuff ("<closure>", None)
-      | Lazy     -> Oval_stuff ("<lazy>", None)
       | Abstract -> Oval_stuff ("<abstract>", None)
       | Custom   -> Oval_stuff ("<custom>", None)
       | Unknown  -> Oval_stuff ("<unknown>", None)
-      | Forward obj -> Oval_lazy (print (depth - 1) obj)
+      | Lazy_unforced -> Oval_stuff ("<lazy>", None)
+      | Lazy_forcing  -> Oval_stuff ("<lazy (forcing)>", None)
+      | Lazy_forward obj -> Oval_lazy (print (depth - 1) obj)
   in
   Some (print max_printer_depth (Dyn.lift obj))
 

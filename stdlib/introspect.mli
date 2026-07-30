@@ -107,11 +107,12 @@ module Dyn : sig
     | Polymorphic_variant of string * t
     | Extension of string * int * t fields
     | Closure
-    | Lazy
     | Abstract
     | Custom
     | Unknown
-    | Forward of t
+    | Lazy_unforced
+    | Lazy_forcing
+    | Lazy_forward of t
 
   (* Introspect an object with an index.
      If no index is explicitly provided, it defaults to [Index.self_index ()] *)

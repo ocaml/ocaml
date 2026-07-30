@@ -267,8 +267,10 @@ module Dyn = struct
        given exception Foo (of args)
           or type t += Foo (of args) *)
     | Extension of string * int * t fields
-    | Closure | Lazy | Abstract | Custom | Unknown
-    | Forward of t
+    | Closure | Abstract | Custom | Unknown
+    | Lazy_unforced
+    | Lazy_forcing
+    | Lazy_forward of t
 
   let double_to_wo_shift = match Sys.word_size with
     | 64 -> 0
@@ -347,14 +349,16 @@ module Dyn = struct
         Array (fields_of_block no_approx obj)
       else if tag = Obj.closure_tag then
         Closure
-      else if tag = Obj.lazy_tag then
-        Lazy
       else if tag = Obj.abstract_tag then
         Abstract
       else if tag = Obj.custom_tag then
         Custom
+      else if tag = Obj.lazy_tag then
+        Lazy_unforced
+      else if tag = Obj.forcing_tag then
+        Lazy_forcing
       else if tag = Obj.forward_tag then
-        Forward (lift (Obj.field obj 0))
+        Lazy_forward (lift (Obj.field obj 0))
       else
         match as_extension_tag obj with
         | Some (path, uid) ->
@@ -482,11 +486,12 @@ module Print = struct
     | Dyn.Polymorphic_variant (name, payload) ->
         fprintf ppf "`%s (@[<hv>%a@])" name self payload
     | Dyn.Closure  -> fprintf ppf "<closure>"
-    | Dyn.Lazy     -> fprintf ppf "<lazy>"
     | Dyn.Abstract -> fprintf ppf "<abstract>"
     | Dyn.Custom   -> fprintf ppf "<custom>"
     | Dyn.Unknown  -> fprintf ppf "<unknown>"
-    | Dyn.Forward d -> fprintf ppf "lazy (@[<hv>%a@])" self d
+    | Dyn.Lazy_unforced  -> fprintf ppf "<lazy>"
+    | Dyn.Lazy_forcing   -> fprintf ppf "<lazy (forcing)>"
+    | Dyn.Lazy_forward d -> fprintf ppf "lazy (@[<hv>%a@])" self d
 
   let format_any ?index ?(depth=20) ?(steps=ref max_int) ppf obj =
     let table = H.create 7 in
