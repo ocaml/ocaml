@@ -2,6 +2,7 @@
  include unix;
  hasunix;
  not-root;
+ not windows;
  bytecode;
  native;
 *)
