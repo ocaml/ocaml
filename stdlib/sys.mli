@@ -71,7 +71,8 @@ external filepath_exists : string -> bool = "caml_sys_filepath_exists"
        process can [stat(2)] it successfully. Note that it does
        not mean that you have the rights to operate on the file path.}
     {- [false] if and only if [stat(2)] errors with [ENOTDIR] or [ENOENT].}
-    {- [Sys_error _] if any other [stat(2)] {{:https://pubs.opengroup.org/onlinepubs/9799919799/functions/fstatat.html#tag_17_190_05}
+    {- [Sys_error _] if any other [stat(2)]
+        {{:https://pubs.opengroup.org/onlinepubs/9799919799/functions/fstatat.html#tag_17_190_05}
        error conditions} occurs, and notably [EACCES].}
     }
 *)
