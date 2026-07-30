@@ -1,0 +1,8 @@
+file_exists on existing file: true
+filepath_exists on existing file: true
+file_exists on nonexistent file: false
+filepath_exists on nonexistent file: false
+file_exists with ENOTDIR: false
+filepath_exists with ENOTDIR: false
+file_exists with EACCES: false
+filepath_exists with EACCES: Sys_error: noaccess_dir/inner: Permission denied
