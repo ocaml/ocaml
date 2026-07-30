@@ -1,69 +1,126 @@
+--- Int immediate ---
+42
+
+--- Int boxed ---
+[42]
+
+--- Float immediate ---
+3.140000
+
+--- Float boxed ---
+[3.140000]
+
+--- Char immediate ---
+97
+
+--- Char boxed ---
+['a']
+
+--- Constant (None) immediate ---
+0
+
+--- Constant (None) boxed ---
+[None]
+
+--- Constant (True) immediate ---
 1
-- : unit = ()
-"Hello"
-- : unit = ()
+
+--- Constant (True) boxed ---
+[true]
+
+--- List ---
 [1; 2; 3]
-- : unit = ()
+
+--- Array ---
+[|1; 2; 3|]
+
+--- Empty Array ---
+()
+
+--- Tuple ---
+(1, "hello", 3.140000)
+
+--- Empty Tuple ---
+0
+
+--- Record ---
+{string = "hello"; int = 42; bool = true}
+
+--- Poly-variant simple ---
+65 or `A
+
+--- Poly-variant with data ---
+`B ("payload")
+
+--- Nested Poly-variant ---
+`C (`D (1))
+
+--- Built-in ref ---
+(10)
+
+--- Record-based ref ---
+{contents = 10}
+
+--- Closure (capturing x) ---
+<Closure>
+
+--- Lazy (unevaluated) ---
+<Lazy>
+
+--- Lazy (evaluated) ---
+<Unknown>
+
+--- Abstract type ---
+T (42)
+
+--- Cyclic List ---
 [1; <cycle>]
-- : unit = ()
-module M :
-  sig
-    type key = Int.t
-    type 'a t = 'a Map.Make(Int).t
-    val empty : 'a t
-    val add : key -> 'a -> 'a t -> 'a t
-    val add_to_list : key -> 'a -> 'a list t -> 'a list t
-    val update : key -> ('a option -> 'a option) -> 'a t -> 'a t
-    val singleton : key -> 'a -> 'a t
-    val remove : key -> 'a t -> 'a t
-    val merge :
-      (key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
-    val union : (key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
-    val cardinal : 'a t -> int
-    val bindings : 'a t -> (key * 'a) list
-    val min_binding : 'a t -> key * 'a
-    val min_binding_opt : 'a t -> (key * 'a) option
-    val max_binding : 'a t -> key * 'a
-    val max_binding_opt : 'a t -> (key * 'a) option
-    val choose : 'a t -> key * 'a
-    val choose_opt : 'a t -> (key * 'a) option
-    val find : key -> 'a t -> 'a
-    val find_opt : key -> 'a t -> 'a option
-    val find_first : (key -> bool) -> 'a t -> key * 'a
-    val find_first_opt : (key -> bool) -> 'a t -> (key * 'a) option
-    val find_last : (key -> bool) -> 'a t -> key * 'a
-    val find_last_opt : (key -> bool) -> 'a t -> (key * 'a) option
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val fold : (key -> 'a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
-    val map : ('a -> 'b) -> 'a t -> 'b t
-    val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
-    val filter : (key -> 'a -> bool) -> 'a t -> 'a t
-    val filter_map : (key -> 'a -> 'b option) -> 'a t -> 'b t
-    val partition : (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
-    val split : key -> 'a t -> 'a t * 'a option * 'a t
-    val is_empty : 'a t -> bool
-    val is_singleton : 'a t -> bool
-    val mem : key -> 'a t -> bool
-    val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-    val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
-    val for_all : (key -> 'a -> bool) -> 'a t -> bool
-    val exists : (key -> 'a -> bool) -> 'a t -> bool
-    val to_list : 'a t -> (key * 'a) list
-    val of_list : (key * 'a) list -> 'a t
-    val to_seq : 'a t -> (key * 'a) Seq.t
-    val to_rev_seq : 'a t -> (key * 'a) Seq.t
-    val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
-    val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
-    val of_seq : (key * 'a) Seq.t -> 'a t
-  end
+
+--- Prefixed cyclic list ---
+[0; 1; <cycle>]
+
+--- Indirect cycle ---
+[1; 2; 3; <cycle>]
+
+--- Deeply nested structure ---
+[|[({string = "deep"; int = 1; bool = true}, [1; 2])]|]
+
+--- Constant exception ---
+Foo/
+
+--- Parametrized exception ---
+Bar/ (99)
+
+--- Constant extension ---
+TFoo/
+
+--- Parametrized extension ---
+TBar/ (99)
+
+--- Empty set ---
+0
+
+--- Small set ---
 Node {l = Empty;
       v = 1;
-      d = 1;
       r = Node {l = Empty;
                 v = 2;
-                d = 2;
-                r = Node {l = Empty; v = 3; d = 3; r = Empty; h = 1};
+                r = Node {l = Empty; v = 3; r = Empty; h = 1};
                 h = 2};
       h = 3}
-- : unit = ()
+
+--- Empty map ---
+0
+
+--- Small map ---
+Node {l = Empty;
+      v = 1;
+      d = "one";
+      r = Node {l = Empty;
+                v = 2;
+                d = "two";
+                r = Node {l = Empty; v = 3; d = "three"; r = Empty; h = 1};
+                h = 2};
+      h = 3}
+
 

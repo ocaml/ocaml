@@ -1,9 +1,8 @@
 #!/bin/sh
 set -eu
 
-echo "ocamlopt"
-"$ocamlsrcdir"/ocamlopt.opt -I "$ocamlsrcdir"/stdlib -I "$ocamlsrcdir"/otherlibs/dynlink -o loaded.cmxs -shared loaded.ml
-"$ocamlsrcdir"/ocamlopt.opt -I "$ocamlsrcdir"/stdlib -I "$ocamlsrcdir"/otherlibs/dynlink -o main.exe -I +dynlink dynlink.cmxa main.ml
-./main.exe
+"$ocamlsrcdir"/ocamlopt.opt -I "$ocamlsrcdir"/stdlib -I "$ocamlsrcdir"/otherlibs/dynlink -o printval.cmxs -shared printval.ml
+"$ocamlsrcdir"/ocamlopt.opt -I "$ocamlsrcdir"/stdlib -I "$ocamlsrcdir"/otherlibs/dynlink -o dynlink_test.exe -I +dynlink dynlink.cmxa dynlink_test.ml
+./dynlink_test.exe
 
 exit ${TEST_PASS}
