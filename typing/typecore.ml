@@ -214,6 +214,7 @@ type error =
   | Optional_poly_param of string
   | Cannot_unify_tfunctor_to_tarrow of Errortrace.unification_error
   | Cannot_omit_tfunctor_argument of Ident.Unscoped.t * type_expr
+  | Unexpected_hole
 
 
 let not_principal fmt =
@@ -5612,6 +5613,9 @@ and type_expect_
            exp_attributes = sexp.pexp_attributes;
            exp_env = env }
 
+  | Pexp_hole ->
+      Error.log_and_raise loc env Unexpected_hole
+
   | Pexp_struct_item (si, e) ->
       let tv = newvar () in
       let delayed () =
@@ -8758,6 +8762,9 @@ let report_error ~loc env =
             The module argument %a cannot be omitted in this application.@]"
             print_expanded func_ty
             Style.inline_code (Ident.Unscoped.name id_us)
+  | Unexpected_hole ->
+      Location.errorf ~loc
+        "Uninterpreted expression wildcard %a." Style.inline_code "_"
 
 let report_error ~loc env err =
   Printtyp.wrap_printing_env ~error:true env

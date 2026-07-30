@@ -403,6 +403,8 @@ and expression i ppf x =
       line i ppf "Pexp_struct_item\n";
       structure_item i ppf si;
       expression i ppf e
+  | Pexp_hole ->
+      line i ppf "Pexp_hole\n"
 
 and function_param i ppf { pparam_desc = desc; pparam_loc = loc } =
   match desc with
@@ -872,6 +874,8 @@ and module_expr i ppf x =
   | Pmod_extension (s, arg) ->
       line i ppf "Pmod_extension \"%s\"\n" s.txt;
       payload i ppf arg
+  | Pmod_hole ->
+      line i ppf "Pmod_hole\n"
 
 and structure i ppf x = list i structure_item ppf x
 
