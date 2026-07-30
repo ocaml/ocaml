@@ -1,0 +1,85 @@
+- : int = 1
+val h : int -> 'a -> 'a = <fun>
+val g : _:'a -> 'a = <fun>
+- : int = 3
+val o : ?_:int -> unit -> int = <fun>
+- : int = 5
+Line 5, characters 8-9:
+5 | let x = _;;
+            ^
+Error: Syntax error: wildcard "_" not expected.
+Line 2, characters 1-2:
+2 | (_, 0);;
+     ^
+Error: Syntax error: wildcard "_" not expected.
+type r = { a : int; }
+Line 2, characters 6-7:
+2 | { a = _ };;
+          ^
+Error: Syntax error: wildcard "_" not expected.
+Line 2, characters 4-5:
+2 | 1 + _;;
+        ^
+Error: Syntax error: wildcard "_" not expected.
+Line 2, characters 3-4:
+2 | if _ then 0 else 1;;
+       ^
+Error: Syntax error: wildcard "_" not expected.
+Line 2, characters 1-2:
+2 | (_ : int);;
+     ^
+Error: Syntax error: wildcard "_" not expected.
+Line 2, characters 10-11:
+2 | fun () -> _;;
+              ^
+Error: Syntax error: wildcard "_" not expected.
+Line 2, characters 0-1:
+2 | _.a;;
+    ^
+Error: Syntax error: wildcard "_" not expected.
+Line 5, characters 0-1:
+5 | _ 0;;
+    ^
+Error: Syntax error: wildcard "_" not expected.
+val f : 'a -> 'a = <fun>
+Line 2, characters 2-3:
+2 | f _;;
+      ^
+Error: Syntax error
+Line 2, characters 5-6:
+2 | Some _;;
+         ^
+Error: Syntax error
+Line 2, characters 5-6:
+2 | lazy _;;
+         ^
+Error: Syntax error
+Line 2, characters 5-6:
+2 | f ~x:_;;
+         ^
+Error: Syntax error
+Line 2, characters 3-4:
+2 | g ~_;;
+       ^
+Error: Syntax error
+Line 2, characters 5-6:
+2 | g ~_:_;;
+         ^
+Error: Syntax error
+Line 2, characters 3-4:
+2 | o ?_;;
+       ^
+Error: Syntax error
+Line 2, characters 5-6:
+2 | o ?_:_;;
+         ^
+Error: Syntax error
+Line 4, characters 9-10:
+4 | let x = ~_;;
+             ^
+Error: Syntax error
+Line 2, characters 4-5:
+2 | f ~ _ : 3;;
+        ^
+Error: Syntax error
+
