@@ -1,5 +1,5 @@
 (* TEST
-   introspect;
+   no-introspect;
    readonly_files = "printval.ml";
    {
      toplevel;

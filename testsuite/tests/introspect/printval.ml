@@ -1,12 +1,14 @@
 (* TEST
-   bytecode;
-   native;
    {
      introspect;
      reference = "${test_source_directory}/printval.reference";
+     bytecode;
+     native;
    }{
      no-introspect;
      reference = "${test_source_directory}/printval.no-introspect.reference";
+     bytecode;
+     native;
    }
 *)
 
