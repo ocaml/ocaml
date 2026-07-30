@@ -203,6 +203,10 @@ Working version
 
 ### Standard library:
 
+- #XXXX : Add `Sys.filepath_exists` and improve documentation
+  for `Sys.file_exists`
+  (Khalid Belkassmi E.H., review by __)
+
 - #14941, #13937: Add `{Option,Result}.try_value`
   (Michael Neumann, review by Daniel Bünzli, David Allsopp)
 
