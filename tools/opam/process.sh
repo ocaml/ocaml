@@ -57,10 +57,11 @@ if [ x"$make_args" = 'xinstall' ]; then
     echo "📜 Using make install"
     "$make" install
   else
+    build_dir=$(pwd)
     origin="$(tail -n 1 build-id)"
     origin_prefix="$(opam var --safe --switch="$origin" prefix | tr -d '\r')"
     echo "🪄 Duplicating $origin_prefix"
-    ( cd "$origin_prefix" && sh ./share/ocaml/clone "$prefix" )
+    ( cd "$origin_prefix" && sh ./share/ocaml/clone "$prefix" "$build_dir" )
   fi
 
   exit 0
