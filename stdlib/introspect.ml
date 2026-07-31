@@ -424,16 +424,13 @@ module Dyn = struct
 
   let view_obj ?index ?approx obj = view ?index (lift ?approx obj)
   let view_any ?index ?approx obj = view ?index (lift_any ?approx obj)
-end
-
-module Print = struct
-  open Format
 
   module H = Hashtbl.Make(struct type t = Obj.t let equal = (==) let hash = Hashtbl.hash end)
+  open Format
 
   let pp_fields f sep ppf fields =
-    for i = 0 to Dyn.field_count fields - 1 do
-      let value = Dyn.field_get fields i in
+    for i = 0 to field_count fields - 1 do
+      let value = field_get fields i in
       if i > 0 then fprintf ppf "%s@ " sep;
       fprintf ppf "@[%a@]" f value
     done
@@ -446,17 +443,17 @@ module Print = struct
     fprintf ppf "@[%s = %a@]" k f v
 
   let rec pp_list_elements table f ppf fields =
-    begin match Dyn.field_get fields 0 with
+    begin match field_get fields 0 with
     | "", car -> fprintf ppf "@[%a@]" f car;
     | lbl, car -> fprintf ppf "~%s:@[%a@]" lbl f car;
     end;
-    let _lbl, cdr = Dyn.field_get fields 1 in
-    match Dyn.view cdr with
-    | Dyn.Constant ["[]"]
-    | Dyn.Int_or_constant (0, _) -> ()
-    | Dyn.Tuple {name = "::"; fields} when Dyn.field_count fields = 2 ->
+    let _lbl, cdr = field_get fields 1 in
+    match view cdr with
+    | Constant ["[]"]
+    | Int_or_constant (0, _) -> ()
+    | Tuple {name = "::"; fields} when field_count fields = 2 ->
         fprintf ppf ";@ ";
-        let raw = Dyn.get_obj cdr in
+        let raw = get_obj cdr in
         if H.mem table raw then
           fprintf ppf "<cycle>"
         else (
@@ -466,76 +463,130 @@ module Print = struct
         )
     | _ -> fprintf ppf "<malformed list>"
 
-  let pp_dynval table self ppf : Dyn.view -> _ = function
-    | Dyn.String s ->
+  let pp_dynval table self ppf : view -> _ = function
+    | String s ->
         fprintf ppf "%S" s
-    | Dyn.Float f ->
+    | Float f ->
         fprintf ppf "%f" f
-    | Dyn.Char c ->
+    | Char c ->
         fprintf ppf "%C" c
-    | Dyn.Int_or_constant (i, keys) ->
+    | Int_or_constant (i, keys) ->
         fprintf ppf "%d" i;
         List.iter (fprintf ppf " or `%s") keys
-    | Dyn.Constant names ->
+    | Constant names ->
         fprintf ppf "%s" (String.concat " or " names)
-    | Dyn.Array arr ->
+    | Array arr ->
         fprintf ppf "[|@[<hv>%a@]|]" (pp_fields self ";") arr
-    | Dyn.Tuple { name ="::"; fields } when Dyn.field_count fields = 2 ->
+    | Tuple { name ="::"; fields } when field_count fields = 2 ->
         fprintf ppf "[@[<hv>%a@]]" (pp_list_elements table self) fields
-    | Dyn.Tuple { name; fields } ->
+    | Tuple { name; fields } ->
         if name <> "" then fprintf ppf "%s " name;
         fprintf ppf "(@[<hv>%a@])" (pp_fields (pp_tuple_field self) ",") fields
-    | Dyn.Record {name; fields} ->
+    | Record {name; fields} ->
         if name <> "" then fprintf ppf "%s " name;
         fprintf ppf "{@[<hv>%a@]}" (pp_fields (pp_record_field self) ";") fields
-    | Dyn.Extension (name, uid, fields) when Dyn.field_count fields = 0 ->
+    | Extension (name, uid, fields) when field_count fields = 0 ->
         fprintf ppf "%s/%d" name uid
-    | Dyn.Extension (name, uid, fields) ->
+    | Extension (name, uid, fields) ->
         fprintf ppf "%s/%d (@[<hv>%a@])"
           name uid (pp_fields self ",") fields
-    | Dyn.Polymorphic_variant (name, payload) ->
+    | Polymorphic_variant (name, payload) ->
         fprintf ppf "`%s (@[<hv>%a@])" name self payload
-    | Dyn.Closure  -> fprintf ppf "<closure>"
-    | Dyn.Abstract -> fprintf ppf "<abstract>"
-    | Dyn.Custom   -> fprintf ppf "<custom>"
-    | Dyn.Unknown  -> fprintf ppf "<unknown>"
-    | Dyn.Lazy_unforced  -> fprintf ppf "<lazy>"
-    | Dyn.Lazy_forcing   -> fprintf ppf "<lazy (forcing)>"
-    | Dyn.Lazy_forward d -> fprintf ppf "lazy (@[<hv>%a@])" self d
+    | Closure  -> fprintf ppf "<closure>"
+    | Abstract -> fprintf ppf "<abstract>"
+    | Custom   -> fprintf ppf "<custom>"
+    | Unknown  -> fprintf ppf "<unknown>"
+    | Lazy_unforced  -> fprintf ppf "<lazy>"
+    | Lazy_forcing   -> fprintf ppf "<lazy (forcing)>"
+    | Lazy_forward d -> fprintf ppf "lazy (@[<hv>%a@])" self d
 
-  let format_any ?index ?(depth=20) ?(steps=ref max_int) ppf obj =
-    let table = H.create 7 in
+  let pp_raw table ?index ?(depth=20) ?(steps=ref max_int) ppf obj =
     let rec aux depth ppf obj =
       if depth <= 0 || !steps <= 0 then
         Format.pp_print_string ppf "..."
       else (
         decr steps;
-        let raw = Dyn.get_obj obj in
+        let raw = get_obj obj in
         let protect = Obj.is_block raw && Obj.tag raw < Obj.no_scan_tag in
         if protect && H.mem table raw then
           Format.pp_print_string ppf "<cycle>"
         else (
           if protect then H.add table raw ();
-          pp_dynval table (aux (depth - 1)) ppf (Dyn.view ?index obj);
+          pp_dynval table (aux (depth - 1)) ppf (view ?index obj);
           if protect then H.remove table raw
         )
       )
     in
-    aux (depth - 1) ppf (Dyn.lift (Obj.repr obj))
+    aux (depth - 1) ppf obj
+
+  let pp ?index ?depth ?steps ppf obj =
+    pp_raw (H.create 7) ?index ?depth ?steps ppf obj
+
+  let pp_view ?index ?depth ?steps ppf view =
+    let table = H.create 7 in
+    pp_dynval table (pp_raw table ?index ?depth ?steps) ppf view
+end
+
+module Print = struct
+  let format_any ?index ?depth ?steps ppf any =
+    Dyn.pp ?index ?depth ?steps ppf (Dyn.lift (Obj.repr any))
 
   let print_any ?index ?depth ?steps obj =
-    fprintf Format.std_formatter "@[%a@]%!"
+    Format.fprintf Format.std_formatter "@[%a@]%!"
       (format_any ?index ?depth ?steps) obj
 
   let prerr_any ?index ?depth ?steps obj =
-    fprintf Format.err_formatter "@[%a@]%!"
+    Format.fprintf Format.err_formatter "@[%a@]%!"
       (format_any ?index ?depth ?steps) obj
 
   let print_any_endline ?index ?depth ?steps obj =
-    fprintf Format.std_formatter "@[%a@]\n%!"
+    Format.fprintf Format.std_formatter "@[%a@]\n%!"
       (format_any ?index ?depth ?steps) obj
 
   let prerr_any_endline ?index ?depth ?steps obj =
-    fprintf Format.err_formatter "@[%a@]\n%!"
+    Format.fprintf Format.err_formatter "@[%a@]\n%!"
       (format_any ?index ?depth ?steps) obj
+end
+
+module P_list = struct
+  type any =
+    | []
+    | (::) : 'a * any -> any
+end
+
+module P = struct
+  (* Generic printer when in a hurry *)
+  let fprint oc xs =
+    let ppf = Format.formatter_of_out_channel oc in
+    let rec aux = function
+      | P_list.[] -> ()
+      | P_list.(x :: xs) as self ->
+          let x = match Dyn.view_any self with
+            | Dyn.Tuple {fields; _} | Dyn.Record {fields; _} ->
+                snd (Dyn.field_get fields 0)
+            | _ -> Dyn.lift_any x
+          in
+          begin match Dyn.view x with
+          | Dyn.String s -> Format.pp_print_string ppf s
+          | _ -> Dyn.pp ppf x
+          end;
+          aux xs
+    in
+    aux xs;
+    Format.pp_print_flush ppf ()
+
+  let print xs = fprint stdout xs
+
+  let eprint xs = fprint stderr xs
+
+  let fprintln oc xs =
+    fprint oc xs;
+    output_char oc '\n'
+
+  let println xs =
+    fprintln stdout xs
+
+  let eprintln xs =
+    fprintln stderr xs;
+    flush stderr
 end

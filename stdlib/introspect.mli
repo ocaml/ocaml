@@ -125,6 +125,14 @@ module Dyn : sig
   (* Helpers for quick introspection *)
   val view_obj : ?index:Index.t -> ?approx:Desc.approx -> Obj.t -> view
   val view_any : ?index:Index.t -> ?approx:Desc.approx -> 'a -> view
+
+  val pp
+    :  ?index:Index.t -> ?depth:int -> ?steps:int ref
+    -> Format.formatter -> t -> unit
+
+  val pp_view
+    :  ?index:Index.t -> ?depth:int -> ?steps:int ref
+    -> Format.formatter -> view -> unit
 end
 
 module Print : sig
@@ -149,4 +157,21 @@ module Print : sig
   val prerr_any_endline
     :  ?index:Index.t -> ?depth:int -> ?steps:int ref
     -> 'a -> unit
+end
+
+module P_list : sig
+  type any =
+    | []
+    | (::) : 'a * any -> any
+end
+
+module P : sig
+  (* Generic printer when in a hurry *)
+  val print : P_list.any -> unit
+  val eprint : P_list.any -> unit
+  val fprint : out_channel -> P_list.any -> unit
+
+  val println : P_list.any -> unit
+  val eprintln : P_list.any -> unit
+  val fprintln : out_channel -> P_list.any -> unit
 end
