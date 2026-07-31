@@ -490,12 +490,14 @@ static void socket_poll (HANDLE hStop, void *_data)
 {
   LPSELECTDATA   lpSelectData;
   LPSELECTQUERY    iterQuery;
-  HANDLE           aEvents[MAXIMUM_SELECT_OBJECTS];
+  /* One event per query, plus hStop */
+  HANDLE           aEvents[MAXIMUM_SELECT_OBJECTS + 1];
   DWORD            nEvents;
   long             maskEvents;
   u_long           iMode;
   SELECTMODE       mode;
   WSANETWORKEVENTS events;
+  BOOL             bCollectResults;
 
   lpSelectData = (LPSELECTDATA)_data;
 
@@ -504,6 +506,7 @@ static void socket_poll (HANDLE hStop, void *_data)
   {
     iterQuery = &(lpSelectData->aQueries[nEvents]);
     aEvents[nEvents] = CreateEvent(NULL, TRUE, FALSE, NULL);
+    check_error(lpSelectData, aEvents[nEvents] == NULL);
     maskEvents = 0;
     mode = iterQuery->EMode;
     if ((mode & SELECT_MODE_READ) != 0)
@@ -543,63 +546,66 @@ static void socket_poll (HANDLE hStop, void *_data)
           INFINITE) == WAIT_FAILED);
   };
 
-  if (lpSelectData->nError == 0)
+  /* Results are only meaningful if nothing failed so far, but the events and
+     the WSAEventSelect associations must be released in every case. */
+  bCollectResults = (lpSelectData->nError == 0);
+
+  for (DWORD i = 0; i < lpSelectData->nQueriesCount; i++)
   {
-    for (DWORD i = 0; i < lpSelectData->nQueriesCount; i++)
+    iterQuery = &(lpSelectData->aQueries[i]);
+    if (bCollectResults && WaitForSingleObject(aEvents[i], 0) == WAIT_OBJECT_0)
     {
-      iterQuery = &(lpSelectData->aQueries[i]);
-      if (WaitForSingleObject(aEvents[i], 0) == WAIT_OBJECT_0)
+      DEBUG_PRINT("Socket %d has pending events", (i - 1));
+      /* Find out what kind of events were raised
+       */
+      if (WSAEnumNetworkEvents((SOCKET)(iterQuery->hFileDescr),
+                               aEvents[i], &events) == 0)
       {
-        DEBUG_PRINT("Socket %d has pending events", (i - 1));
-        if (iterQuery != NULL)
+        if ((iterQuery->EMode & SELECT_MODE_READ) != 0
+            && (events.lNetworkEvents & (FD_READ | FD_ACCEPT | FD_CLOSE)) != 0)
         {
-          /* Find out what kind of events were raised
-           */
-          if (WSAEnumNetworkEvents((SOCKET)(iterQuery->hFileDescr),
-                                   aEvents[i], &events) == 0)
-          {
-            if ((iterQuery->EMode & SELECT_MODE_READ) != 0
-                && (events.lNetworkEvents & (FD_READ | FD_ACCEPT | FD_CLOSE))
-                   != 0)
-            {
-              select_data_result_add(lpSelectData, SELECT_MODE_READ,
-                                     iterQuery->lpOrigIdx);
-            }
-            if ((iterQuery->EMode & SELECT_MODE_WRITE) != 0
-                && (events.lNetworkEvents & (FD_WRITE | FD_CONNECT | FD_CLOSE))
-                   != 0)
-            {
-              select_data_result_add(lpSelectData, SELECT_MODE_WRITE,
-                                     iterQuery->lpOrigIdx);
-            }
-            if ((iterQuery->EMode & SELECT_MODE_EXCEPT) != 0
-                && (events.lNetworkEvents & FD_OOB) != 0)
-            {
-              select_data_result_add(lpSelectData, SELECT_MODE_EXCEPT,
-                                     iterQuery->lpOrigIdx);
-            }
-          }
+          select_data_result_add(lpSelectData, SELECT_MODE_READ,
+                                 iterQuery->lpOrigIdx);
+        }
+        if ((iterQuery->EMode & SELECT_MODE_WRITE) != 0
+            && (events.lNetworkEvents & (FD_WRITE | FD_CONNECT | FD_CLOSE))
+               != 0)
+        {
+          select_data_result_add(lpSelectData, SELECT_MODE_WRITE,
+                                 iterQuery->lpOrigIdx);
+        }
+        if ((iterQuery->EMode & SELECT_MODE_EXCEPT) != 0
+            && (events.lNetworkEvents & FD_OOB) != 0)
+        {
+          select_data_result_add(lpSelectData, SELECT_MODE_EXCEPT,
+                                 iterQuery->lpOrigIdx);
         }
       }
-      /* WSAEventSelect() automatically sets socket to nonblocking mode.
-         Restore the blocking one. */
-      if (iterQuery->uFlagsFd & FLAGS_FD_IS_BLOCKING)
-      {
-        DEBUG_PRINT("Restore a blocking socket");
-        iMode = 0;
-        check_error(lpSelectData,
-          WSAEventSelect((SOCKET)(iterQuery->hFileDescr), aEvents[i], 0) != 0 ||
-          ioctlsocket((SOCKET)(iterQuery->hFileDescr), FIONBIO, &iMode) != 0);
-      }
-      else
-      {
-        check_error(lpSelectData,
-          WSAEventSelect((SOCKET)(iterQuery->hFileDescr), aEvents[i], 0) != 0);
-      };
-
-      CloseHandle(aEvents[i]);
-      aEvents[i] = INVALID_HANDLE_VALUE;
     }
+
+    if (aEvents[i] == NULL)
+    {
+      continue;
+    }
+
+    /* WSAEventSelect() automatically sets socket to nonblocking mode.
+       Restore the blocking one. */
+    if (iterQuery->uFlagsFd & FLAGS_FD_IS_BLOCKING)
+    {
+      DEBUG_PRINT("Restore a blocking socket");
+      iMode = 0;
+      check_error(lpSelectData,
+        WSAEventSelect((SOCKET)(iterQuery->hFileDescr), aEvents[i], 0) != 0 ||
+        ioctlsocket((SOCKET)(iterQuery->hFileDescr), FIONBIO, &iMode) != 0);
+    }
+    else
+    {
+      check_error(lpSelectData,
+        WSAEventSelect((SOCKET)(iterQuery->hFileDescr), aEvents[i], 0) != 0);
+    };
+
+    CloseHandle(aEvents[i]);
+    aEvents[i] = INVALID_HANDLE_VALUE;
   }
 }
 
