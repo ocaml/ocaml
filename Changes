@@ -153,7 +153,14 @@ Working version
   parameters occur in the arguments when the parameters are fresh
   variables, avoiding potentially expensive checks with large arguments.
   (Stefan Muenzel, review by Gabriel Scherer, Florian Angeletti, and
-   Jacques Garrigue)
+   Jacques Garrigue, report by Jérôme Vouillon)
+
+- #14897, #14927, #14947, #14950, #14952: optimize the fast-paths
+  on equal type constructors (they apply more often by normalizing
+  type paths, and the check is faster) to avoid potentially
+  expensive expansions in type-comparing functions.
+  (Gabriel Scherer, review by Florian Angeletti and Jacques Garrigue,
+   suggestion by Florian Angeletti, report by Jérôme Vouillon).
 
 ### Code generation and optimizations:
 
