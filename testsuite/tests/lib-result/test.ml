@@ -82,6 +82,13 @@ let test_iters () =
   Result.iter_error set_count (Ok "ha!"); assert (!count = 3);
   ()
 
+let test_try_value () =
+  assert (Result.try_value (Ok 1) (fun _ -> (Ok 2)) = (Ok 1));
+  assert (Result.try_value (Ok 1) (fun _ -> (Error 2)) = (Ok 1));
+  assert (Result.try_value (Error 2) (fun i -> Ok (i+1)) = (Ok 3));
+  assert (Result.try_value (Error 2) (fun i -> Error (i+1)) = (Error 3));
+  ()
+
 let test_is_ok_error () =
   assert (Result.is_ok (Ok 2) = true);
   assert (Result.is_error (Ok 2) = false);
@@ -162,6 +169,7 @@ let tests () =
   test_fold ();
   test_retract ();
   test_iters ();
+  test_try_value ();
   test_is_ok_error ();
   test_equal ();
   test_compare ();

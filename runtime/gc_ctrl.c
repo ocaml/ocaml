@@ -52,6 +52,7 @@ extern _Atomic uintnat caml_custom_minor_ratio; /* see custom.c */
 extern _Atomic uintnat caml_custom_minor_max_bsz; /* see custom.c */
 extern uintnat caml_minor_heap_max_wsz; /* see domain.c */
 extern atomic_uintnat caml_mark_stack_prune_factor; /* see major_gc.c */
+extern atomic_uintnat caml_cache_stacks_per_class; /* see fiber.c */
 
 CAMLprim value caml_gc_quick_stat(value v)
 {
@@ -528,6 +529,7 @@ static struct gc_tweak gc_tweaks[] = {
 #define TWEAK(v) { #v, &caml_##v, 0 }
   TWEAK(mark_stack_prune_factor),
   TWEAK(small_heap_limit),
+  TWEAK(cache_stacks_per_class),
 #undef TWEAK
 };
 

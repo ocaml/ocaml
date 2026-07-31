@@ -106,12 +106,12 @@ module Stdlib = struct
   module List = struct
     include Stdlib.List
 
-    let rec fold_left4 f accu l1 l2 l3 l4 =
-      match (l1, l2, l3, l4) with
-        ([], [], [], []) -> accu
-      | (a1::l1, a2::l2, a3::l3, a4::l4) ->
-          fold_left4 f (f accu a1 a2 a3 a4) l1 l2 l3 l4
-      | (_, _, _, _) -> invalid_arg "List.fold_left4"
+    let rec fold_left3 f accu l1 l2 l3 =
+      match (l1, l2, l3) with
+        ([], [], []) -> accu
+      | (a1::l1, a2::l2, a3::l3) ->
+          fold_left3 f (f accu a1 a2 a3) l1 l2 l3
+      | (_, _, _) -> invalid_arg "List.fold_left3"
 
     let rec compare cmp l1 l2 =
       match l1, l2 with
@@ -147,6 +147,13 @@ module Stdlib = struct
       | (_, _) -> raise (Invalid_argument "iteri2")
 
     let iteri2 f l1 l2 = iteri2 0 f l1 l2
+
+    let rec rev_iter f l =
+      match l with
+      | [] -> ()
+      | x :: xs ->
+          rev_iter f xs;
+          f x
 
     let some_if_all_elements_are_some l =
       let rec aux acc l =
@@ -207,6 +214,7 @@ module Stdlib = struct
           }
       in
       find_prefix ~longest_common_prefix_rev:[] first second
+
   end
 
   module Option = struct

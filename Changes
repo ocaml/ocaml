@@ -18,6 +18,10 @@ Working version
 
 ### Runtime system:
 
+- #10258: Overhaul the locale code used for mingw/msvc in float<->string
+  conversions.
+  (David Allsopp, review by Antonin Décimo)
+
 - #13629: Major GC ephemeron cleanup.
   (Nick Barnes, review by Stephen Dolan and Tim McGilchrist).
 
@@ -116,7 +120,7 @@ Working version
 
 ### Type system:
 
-* #11648, #14766, #14768, #14776, #14842, #14845: Keep expansion and
+* #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
   new well-foundedness check implementation.
   Do expansion in place during unification, rather than only memoizing it
   in a temporary cache. This fixes a number of non-terminations and crashes
@@ -129,9 +133,9 @@ Working version
   implementation strives to follow the specification, some unspecified
   behaviors may change: stricter behavior of the well-foundedness check in
   some cases, or expansions kept in cmis in rare cases.
-  (Jacques Garrigue and Stefan Muenzel, cross reviewed, temporary regression
-   reported by Jeremy Yallop, fix reviewed by Samuel Vivien and
-   Florian Angeletti)
+  (Jacques Garrigue and Stefan Muenzel, cross reviewed,
+   temporary regression reported by Jeremy Yallop, fix reviewed by Samuel
+   Vivien and Florian Angeletti, other regression reported by Florian Angeletti)
 
 - #14512: Improve check for warning 16 (unerasable-optional-argument)
   (Alistair O'Brien, review by Florian Angeletti, Gabriel Scherer)
@@ -144,6 +148,12 @@ Working version
   cyclic types by re-checking well-foundedness when a module constraint is
   used.
   (Stefan Muenzel, report by Leo White, review by Jacques Garrigue)
+
+- #14897, #14913: When instantiating types with arguments, do not check if the
+  parameters occur in the arguments when the parameters are fresh
+  variables, avoiding potentially expensive checks with large arguments.
+  (Stefan Muenzel, review by Gabriel Scherer, Florian Angeletti, and
+   Jacques Garrigue)
 
 ### Code generation and optimizations:
 
@@ -192,6 +202,9 @@ Working version
   (Sebastian Pop and Xavier Leroy, review by Xavier Leroy and Olivier Nicole)
 
 ### Standard library:
+
+- #14941, #13937: Add `{Option,Result}.try_value`
+  (Michael Neumann, review by Daniel Bünzli, David Allsopp)
 
 - #10798: Atomic helper function
     update : ('a -> 'a) -> 'a t -> unit
@@ -247,9 +260,13 @@ Working version
   than intuition might suggest, when presented with unusual filenames.
   (David Allsopp, review by Nicolás Ojeda Bär and Antonin Décimo)
 
+- #14939: Move the compiler's Btype.hash_variant (the OCaml implementation of
+  the runtime's caml_hash_variant) to Obj.hash_variant.
+  (David Allsopp, review by Léo Andrès and Nicolás Ojeda Bär)
+
 - #14909: Add Dynarray.append_iarray, Pqueue.of_iarray
-  (Nicolás Ojeda Bär, suggestion by Andreas Rossberg, review by Daniel Bünzli
-  and Léo Andrès)
+  (Nicolás Ojeda Bär, suggestion by Andreas Rossberg, review by Daniel Bünzli,
+  Léo Andrès, and Olivier Nicole)
 
 ### Other libraries:
 
@@ -306,6 +323,10 @@ Working version
 
 - #14598: Add `@since` annotations to `Runtime_events`. (Raphaël Proust)
 
+- #14902, #14944: Add documentation on ocamllex `-w` argument in the man page.
+  (Jeanne Pottier, review by Florian Angeletti, Gabriel Scherer
+  and Daniel Bünzli)
+
 ### Compiler user-interface and warnings:
 - #14887: More concise messages for the non-exhaustiveness warning.
   (Luc Maranget, review by Florian Angeletti)
@@ -333,9 +354,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
-- #14241, #14824: Introduction of a typing recovery mechanism to collect more
-  than one typing error, facilitating integration with editors that
-  need to report more than one error.
+- #14241, #14824, #14945: Introduction of a typing recovery mechanism to
+  collect more than one typing error, facilitating integration with editors
+  that need to report more than one error.
   (Xavier Van de Woestyne, Ulysse Gerard, Thomas Refis and Frédéric
   Bour, review by Florian Angeletti and Thomas Refis)
 
@@ -386,8 +407,8 @@ Working version
 - #14759: expose the function parsing OCAMLRUNPARAM for easier testing
   (Gabriel Scherer, view by Antonin Décimo and Nicolás Ojeda Bär)
 
-- #14643: Test `-recypes` in addition to `-principal` in expect tests. Run all
-  test variants in the same invocation.
+- #14643, #14959: Test `-recypes` in addition to `-principal` in expect tests.
+  Run all test variants in the same invocation.
   (Stefan Muenzel, review by Alistar O'Brien and Florian Angeletti)
 
 - #14900: Speed up deep_occur_rec, improving typechecking performance of
@@ -396,6 +417,9 @@ Working version
 
 - #14932: Fix `-dtypedtree` printing of `Twith_modtypesubst`.
   (Corentin De Souza, review by Nicolás Ojeda Bär)
+
+- #14946: Keep the continuation inside the typedtree using a dedicated type.
+  (Xavier Van de Woestyne, review by Florian Angeletti)
 
 ### Build system:
 
@@ -463,6 +487,9 @@ Working version
   constraints.
   (Stefan Muenzel, review by Florian Angeletti)
 
+- #14890, fix pattern compilation in presence of the [min_int] constant pattern
+  (Florian Angeletti, review by Luc Maranget)
+
 OCaml 5.5.1
 -----------
 
@@ -479,6 +506,18 @@ OCaml 5.5.1
     f (module struct module type S = P end) (module List)
   ````
   (Florian Angeletti, report by Hazem ElMasry, review by Gabriel Scherer)
+
+- #14871, #14914: Ignore OCAMLTOP_INCLUDE_PATH during the build.
+  (David Allsopp, report by Andreas Rossberg, review by Florian Angeletti)
+
+- #14901, #14923: Fix the generated installation script to cope with macOS's
+  geriatric version of bash when executing in opam's sandbox.
+  (David Allsopp, report by Julian Fondren and Sacha-Élie Ayoun, investigation
+   and initial fix by Kate Deplaix, review by Florian Angeletti)
+
+- #14940, fix a memory leak in the OCaml runtime by bounding the size
+  of the internal cache of stacks.
+  (Vesa Karvonen, Florian Angeletti, review by Gabriel Scherer)
 
 OCaml 5.5.0 (19 June 2026)
 -------------------------

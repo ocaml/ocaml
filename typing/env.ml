@@ -685,6 +685,12 @@ end = struct
 
   let log_or_raise err =
     Typing_recovery.log_or_raise (In_context err)
+
+  let () =
+    Typing_recovery.register_recoverable (function
+        | In_context _ -> true
+        | _ -> false
+      )
 end
 
 let lookup_error loc env err =

@@ -319,7 +319,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
   | Texp_extension_constructor (_, path) ->
       transl_extension_path (of_location ~scopes e.exp_loc) e.exp_env path
   | Texp_variant(l, arg) ->
-      let tag = Btype.hash_variant l in
+      let tag = Obj.hash_variant l in
       begin match arg with
         None -> Lconst(const_int tag)
       | Some arg ->
@@ -592,7 +592,8 @@ and transl_guard ~scopes guard rhs =
 
 and transl_cont cont c_cont body =
   match cont, c_cont with
-  | Some id1, Some id2 -> Llet(Alias, Pgenval, id2, Lvar id1, body)
+  | Some id1, Some {cont_id = id2; _} ->
+      Llet(Alias, Pgenval, id2, Lvar id1, body)
   | None, None
   | Some _, None -> body
   | None, Some _ -> assert false

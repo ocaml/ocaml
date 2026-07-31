@@ -155,10 +155,18 @@ and meth =
   | Tmeth_val of Ident.t
   | Tmeth_ancestor of Ident.t * Path.t
 
+and cont_desc =
+  {
+    cont_id:Ident.t;
+    cont_loc:Location.t;
+    cont_type: Types.type_expr;
+    cont_uid: Uid.t
+  }
+
 and 'k case =
     {
      c_lhs: 'k general_pattern;
-     c_cont: Ident.t option;
+     c_cont: cont_desc option;
      c_guard: expression option;
      c_rhs: expression;
     }

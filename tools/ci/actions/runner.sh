@@ -142,7 +142,7 @@ Install () {
   mkdir -p "share/ocaml"
   cp "$ret/config.status" "$ret/config.cache" "share/ocaml"
   cp "$ret/ocaml-compiler-clone.sh" "share/ocaml/clone"
-  sh $script ~/local/_opam
+  sh $script "$PWD" ~/local/_opam
   cd "$ret"
   rm -rf install
   rm ocaml-compiler-clone.sh

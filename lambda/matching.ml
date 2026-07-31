@@ -2094,7 +2094,7 @@ let divide_variant ~scopes row ctx { cases = cl; args; default = def } =
         if row_field_repr (get_row_field lab row) = Rabsent then
           variants
         else
-          let tag = Btype.hash_variant lab in
+          let tag = Obj.hash_variant lab in
           match pato with
           | None ->
               add_in_div

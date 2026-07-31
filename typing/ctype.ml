@@ -914,14 +914,17 @@ let needs_expand env level path args =
     (without this constraint, the type system would actually be unsound.)
 *)
 
+(* Check whether no internal level needs to be updated,
+   including abbreviations *)
 let rec check_level_type_rec visited level ty =
   get_level ty <= level &&
   match get_abbrev ty with
-    Some (path, args) ->
-      Path.scope path <= level &&
-      (args = [] || List.memq ty visited ||
+    Some abbr ->
+      abbr.abbr_level <= level ||
+      Path.scope abbr.abbr_path <= level &&
+      (abbr.abbr_args = [] || List.memq ty visited ||
       let visited = ty :: visited in
-      List.for_all (check_level_type_rec visited level) args)
+      List.for_all (check_level_type_rec visited level) abbr.abbr_args)
   | None -> true
 
 let check_level_type level ty = check_level_type_rec [] level ty
@@ -992,19 +995,38 @@ let rec update_level env level expand ty =
         raise_escape_exn Self
     | _ ->
         set_level ();
-        (* XXX what about abbreviations in Tconstr ? *)
+        (* XXX what about memoized abbreviations in Tconstr ? *)
         iter_type_expr (update_level env level expand) ty;
         update_level_abbrev env level expand ty
   end
   else update_level_abbrev env level expand ty
 
+(* [update_level_abbrev] needs to be called to update levels in abbreviations
+   even if the level of the type itself (which is the level of the expanded
+   form) is already correct.
+   Namely, abbreviations are taken from nodes that are actually ancestors
+   to the expanded version of the type. And, through unification, it may
+   be the case that the same expanded type node can be accessed through
+   different ancestors, holding different abbreviations.
+   We keep an abbreviation if its scope is valid and either all the levels it
+   contains are already low enough (check_level_type) or if we can succesfully
+   update the levels in its arguments. Otherwise, we forget it as invalid.
+   To avoid checking the same abbreviation repeatedly, we store the level
+   we have checked inside it. Since path compression can copy a Texpand to
+   an ancestor node, it would be inefficient to use the level of the node
+   containing the Texpand (the level would have to be copied too). *)
 and update_level_abbrev env level expand ty =
   iter_abbrev
-    (fun p args ->
+    (function {abbr_path=p; abbr_args=args; abbr_level=l} as abbr ->
+      if level >= l then () else
       if level < Path.scope p then forget_abbrev ty else
-      if List.for_all (check_level_type level) args then () else
-      if expand || needs_expand env level p args then forget_abbrev ty else
-      List.iter (update_level env level expand) args)
+      if List.for_all (check_level_type level) args then
+        set_abbrev_level abbr level
+      else if expand || needs_expand env level p args then forget_abbrev ty
+      else begin
+        set_abbrev_level abbr level;
+        List.iter (update_level env level expand) args
+      end)
     ty
 
 let try_update_level env level ty =
@@ -1209,8 +1231,8 @@ let rec inv_type hash pty ty =
   with Not_found ->
     let inv = { inv_type = ty; inv_parents = pty } in
     TypeHash.add hash ty inv;
-    iter_abbrev (fun _ args ->
-      List.iter (inv_type hash [inv]) args
+    iter_abbrev (fun {abbr_args} ->
+      List.iter (inv_type hash [inv]) abbr_args
     ) ty;
     iter_type_expr (inv_type hash [inv]) ty
 
@@ -1280,7 +1302,8 @@ let type_subexpressions_with_free_occurrences ids ty =
   in
   let occurrence_in_abbrev inv =
     iter_abbrev
-      (fun p _ -> if Path.exists_free ids p then add_all_parents ids inv)
+      (fun {abbr_path} ->
+        if Path.exists_free ids abbr_path then add_all_parents ids inv)
       inv.inv_type
   in
   TypeHash.iter (fun ty inv ->
@@ -1488,11 +1511,12 @@ let rec copy ?partial ?keep_names ?scope ?(unscoped = empty_unscoped_mapping)
     in
     let desc' =
       match ty_expand with
-        Some (path, args) ->
-          let path = Path.subst unscoped.map path in
-          let args = List.map copy args in
+        Some abbr ->
+          let path = Path.subst unscoped.map abbr.abbr_path in
+          let args = List.map copy abbr.abbr_args in
           let t' = new_scoped_ty ty_scope desc' in
-          Texpand (t', path, args)
+          Texpand (t', {abbr_path = path; abbr_args = args;
+                        abbr_level = !current_level})
       | None ->
           desc'
     in
@@ -1846,7 +1870,7 @@ let instance_label ~fixed lbl =
 
 (* NB: since this is [unify_var], it raises [Unify], not [Unify_trace] *)
 let unify_var' = (* Forward declaration *)
-  ref (fun _env _ty1 _ty2 -> assert false)
+  ref (fun ~check_occur:_ _env _ty1 _ty2 -> assert false)
 
 let subst ~env ~level ?scope ~priv ~abbrev ?oty ~params ~args body =
   if List.length params <> List.length args then raise Cannot_subst;
@@ -1868,8 +1892,32 @@ let subst ~env ~level ?scope ~priv ~abbrev ?oty ~params ~args body =
     abbreviations := ref Mnil;
     let uenv = Expression {env; in_subst = true} in
     try
-      !unify_var' uenv body0 body';
-      List.iter2 (!unify_var' uenv) params' args;
+      !unify_var' ~check_occur:true uenv body0 body';
+      let _, first_gen_vars, others =
+        Misc.Stdlib.List.fold_left3
+          (fun (previous_gen, first_gen, others) p p' a ->
+             match get_desc p with
+             | Tvar _ when get_level p = generic_level
+                        && not (List.exists (eq_type p) previous_gen) ->
+                 p :: previous_gen, (p', a) :: first_gen, others
+             | _ ->
+                 previous_gen, first_gen, (p', a) :: others
+          )
+          ([],[],[])
+          params params' args
+      in
+      (* We can elide the occurs-check for the first occurence of parameters
+         that are a generalizable variable (and therefore will be instantiated
+         to a fresh variable).
+         This can be beneficial if the argument is a very large type, where
+         the occurs check would be expensive. Non-generalizable type variables
+         or non-variables cannot avoid the check, since we're not able to show
+         they cannot occur.
+      *)
+      Misc.Stdlib.List.rev_iter
+        (fun (p,a) -> !unify_var' uenv ~check_occur:false p a) first_gen_vars;
+      Misc.Stdlib.List.rev_iter
+        (fun (p,a) -> !unify_var' uenv ~check_occur:true p a) others;
       body'
     with Unify _ ->
       undo_abbrev ();
@@ -3482,10 +3530,11 @@ and unify3 uenv t1' t2' =
             without_assume_injective uenv (fun uenv -> unify_list uenv tl1 tl2)
           else if in_current_module p1 (* || in_pervasives p1 *)
                || List.exists
-                   (fun (p, _) -> expands_to_datatype (get_env uenv) p)
-                   (Option.to_list (get_abbrev t1') @
-                    Option.to_list (get_abbrev t2') @
-                    [p1, []])
+                   (expands_to_datatype (get_env uenv))
+                   (List.map (fun a -> a.abbr_path)
+                      (Option.to_list (get_abbrev t1') @
+                       Option.to_list (get_abbrev t2'))
+                    @ [p1])
           then
             unify_list uenv tl1 tl2
           else
@@ -3684,10 +3733,10 @@ and unify_row uenv row1 row2 =
   let r1, r2, pairs = merge_row_fields row1_fields row2_fields in
   if r1 <> [] && r2 <> [] then begin
     let ht = Hashtbl.create (List.length r1) in
-    List.iter (fun (l,_) -> Hashtbl.add ht (hash_variant l) l) r1;
+    List.iter (fun (l,_) -> Hashtbl.add ht (Obj.hash_variant l) l) r1;
     List.iter
       (fun (l,_) ->
-        try raise (Tags(l, Hashtbl.find ht (hash_variant l)))
+        try raise (Tags(l, Hashtbl.find ht (Obj.hash_variant l)))
         with Not_found -> ())
       r2
   end;
@@ -3923,16 +3972,16 @@ let unify_gadt (penv : Pattern_env.t) ~pat:ty1 ~expected:ty2 =
     Btype.backtrack snap;
     with_univar_pairs [] do_unify_gadt
 
-let unify_var uenv t1 t2 =
+let unify_var ~check_occur uenv t1 t2 =
   if eq_type t1 t2 then () else
   match get_desc t1, get_desc t2 with
-    Tvar _, Tconstr _ when deep_occur t1 t2 ->
+    Tvar _, Tconstr _ when check_occur && deep_occur t1 t2 ->
       unify uenv t1 t2
   | Tvar _, _ ->
       let env = get_env uenv in
       let reset_tracing = check_trace_gadt_instances env in
       begin try
-        occur_for Unify uenv t1 t2;
+        if check_occur then occur_for Unify uenv t1 t2;
         update_level_for Unify env (get_level t1) t2;
         update_scope_for Unify (get_scope t1) t2;
         link_type t1 t2;
@@ -3950,7 +3999,7 @@ let _ = unify_var' := unify_var
 
 (* the final versions of unification functions *)
 let unify_var env ty1 ty2 =
-  unify_var (Expression {env; in_subst = false}) ty1 ty2
+  unify_var ~check_occur:true (Expression {env; in_subst = false}) ty1 ty2
 
 let unify_pairs env ty1 ty2 pairs =
   with_univar_pairs pairs (fun () ->

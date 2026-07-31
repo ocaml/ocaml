@@ -44,6 +44,20 @@ external dup : t -> t = "caml_obj_dup"
 external add_offset : t -> Int32.t -> t = "caml_obj_add_offset"
 external with_tag : int -> t -> t = "caml_obj_with_tag"
 
+(* Prevent module dependency on String and Char *)
+external string_get : string -> int -> char = "%string_safe_get"
+external string_length : string -> int = "%string_length"
+external char_code: char -> int = "%identity"
+let hash_variant s =
+  let accu = ref 0 in
+  for i = 0 to string_length s - 1 do
+    accu := 223 * !accu + char_code (string_get s i)
+  done;
+  (* reduce to 31 bits *)
+  accu := !accu land (1 lsl 31 - 1);
+  (* make it signed for 64 bits architectures *)
+  if !accu > 0x3FFFFFFF then !accu - (1 lsl 31) else !accu
+
 let first_non_constant_constructor_tag = 0
 let last_non_constant_constructor_tag = 243
 

@@ -302,7 +302,3 @@ val annotate_recursive_bindings :
   Env.t -> Typedtree.value_binding list -> Typedtree.value_binding list
 val check_recursive_class_bindings :
   Env.t -> Ident.t list -> Typedtree.class_expr list -> unit
-
-(** Checks whether an exception is potentially recoverable (exposed to the
-    user). *)
-val is_recoverable : exn -> bool

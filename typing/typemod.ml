@@ -100,9 +100,10 @@ end = struct
     Typing_recovery.log_or_raise (In_context (loc, env, err))
 
   let () =
-    Typing_recovery.is_typemod_recoverable_error := (function
+    Typing_recovery.register_recoverable (function
         | In_context _ -> true
-        | _ -> false)
+        | _ -> false
+      )
 end
 
 open Typedtree
@@ -1671,8 +1672,8 @@ and transl_signature env sg =
     | [] -> [], [], env
     | item :: srem -> begin
         match transl_sig_item env item with
-        | exception exn when
-            !Clflags.typing_recovery && Typecore.is_recoverable exn ->
+        | exception exn when !Clflags.typing_recovery
+                          && Typing_recovery.is_recoverable exn ->
             transl_sig env srem
         | (item, sg, newenv) ->
             let (trem, rem, finalenv) = transl_sig newenv srem in
@@ -2832,8 +2833,8 @@ and type_structure ?(toplevel = false)  ~funct_body anchor env sstr =
         match type_str_item ~names ~toplevel ~funct_body
                 anchor env shape_map item
         with
-        | exception exn when
-            !Clflags.typing_recovery && Typecore.is_recoverable exn ->
+        | exception exn when !Clflags.typing_recovery
+                          && Typing_recovery.is_recoverable exn ->
             type_struct env shape_map srem
         | (str, sg, shape_map, newenv) ->
             Cmt_format.set_saved_types

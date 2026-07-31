@@ -117,6 +117,9 @@ let test_fail = Variables.make ("TEST_FAIL",
 let timeout = Variables.make ("timeout",
   "Maximal execution time for every command (in seconds)")
 
+let run_can_skip = Variables.make ("run_can_skip",
+  "Set to \"true\" to allow the run action to return skip status")
+
 let _ = List.iter Variables.register_variable
   [
     arguments;
@@ -149,4 +152,5 @@ let _ = List.iter Variables.register_variable
     test_skip;
     test_fail;
     timeout;
+    run_can_skip;
   ]
