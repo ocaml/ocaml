@@ -48,7 +48,7 @@
    {2 Invariants and valid states}
 
    We enforce the invariant that [length >= 0] at all times.
-   we rely on this invariant for optimization.
+   We rely on this invariant for optimization.
 
    The following conditions define what we call a "valid" dynarray:
    - valid length: [length <= Array.length arr]
@@ -1239,6 +1239,32 @@ let compare cmp a1 a2 =
     r
   end
 
+(** {1:sorting Sorting}*)
+
+let unsafe_stable_sort_sub cmp a init_ofs init_len =
+  let Pack {arr = arr1; length = len1; dummy = dum1} = a in
+  check_valid_length len1 arr1;
+  Array.stable_sort_sub
+    (fun x y ->
+     if Dummy.is_dummy x dum1 || Dummy.is_dummy y dum1
+     then invalid_arg Error.invalid_state_description
+     else cmp (Dummy.unsafe_get x) (Dummy.unsafe_get y))
+    arr1 init_ofs init_len;
+  check_same_length "unsafe_stable_sort_sub" a ~length:len1
+
+let stable_sort_sub cmp a ~pos ~len =
+  if pos < 0 || len < 0 || pos > length a - len
+  then invalid_arg Error.invalid_state_description
+  else unsafe_stable_sort_sub cmp a pos len
+
+let stable_sort cmp a =
+  let Pack {arr; length = len; _} = a in begin
+  check_valid_length len arr;
+  unsafe_stable_sort_sub cmp a 0 (length a);
+  check_same_length "stable_sort" a ~length:len;
+  end
+
+let sort = stable_sort
 (** {1:conversions Conversions to other data structures} *)
 
 (* The eager [to_*] conversion functions behave similarly to iterators
