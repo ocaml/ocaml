@@ -60,7 +60,7 @@ if [ x"$make_args" = 'xinstall' ]; then
     origin="$(tail -n 1 build-id)"
     origin_prefix="$(opam var --safe --switch="$origin" prefix | tr -d '\r')"
     echo "🪄 Duplicating $origin_prefix"
-    ( cd "$origin_prefix" && sh ./share/ocaml/clone "$prefix" )
+    sh "$origin_prefix/share/ocaml/clone" "$origin_prefix" "$prefix"
   fi
 
   exit 0
