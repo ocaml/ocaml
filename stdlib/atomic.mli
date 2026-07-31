@@ -24,7 +24,11 @@
 *)
 
 (** An atomic (mutable) reference to a value of type ['a]. *)
-type !'a t
+type !'a t = private {
+    mutable contents: 'a [@atomic]
+    [@deprecated "Atomic.t 'contents' is exposed only to improve performance"]
+}
+
 
 (** Create an atomic reference. *)
 val make : 'a -> 'a t
