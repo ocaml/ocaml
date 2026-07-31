@@ -606,9 +606,11 @@ stdlib__Oo.cmi : oo.mli \
     camlinternalOO.cmi
 stdlib__Option.cmo : option.ml \
     stdlib__Seq.cmi \
+    stdlib__List.cmi \
     stdlib__Option.cmi
 stdlib__Option.cmx : option.ml \
     stdlib__Seq.cmx \
+    stdlib__List.cmx \
     stdlib__Option.cmi
 stdlib__Option.cmi : option.mli \
     stdlib__Seq.cmi
@@ -727,9 +729,11 @@ stdlib__Repr.cmx : repr.ml \
 stdlib__Repr.cmi : repr.mli
 stdlib__Result.cmo : result.ml \
     stdlib__Seq.cmi \
+    stdlib__List.cmi \
     stdlib__Result.cmi
 stdlib__Result.cmx : result.ml \
     stdlib__Seq.cmx \
+    stdlib__List.cmx \
     stdlib__Result.cmi
 stdlib__Result.cmi : result.mli \
     stdlib__Seq.cmi

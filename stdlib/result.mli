@@ -95,6 +95,12 @@ val try_value : ('a, 'e) result -> ('e -> ('a, 'e) result) -> ('a, 'e) result
 
     @since 5.6 *)
 
+val all : ('a, 'e) result list -> ('a list, 'e) result
+(** [all rs] is [Ok vs] if every result in [rs] is a [Ok v], or
+    [Error e] for the first result which is not.
+
+    @since 5.6 *)
+
 (** {1:preds Predicates and comparisons} *)
 
 val is_ok : ('a, 'e) result -> bool

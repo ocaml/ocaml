@@ -36,6 +36,13 @@ let retract = function Ok v -> v | Error v -> v
 let iter f = function Ok v -> f v | Error _ -> ()
 let iter_error f = function Error e -> f e | Ok _ -> ()
 let try_value r f = match r with | Error e -> f e | _ -> r
+let all rs =
+  let rec loop ac = function
+    | [] -> Ok (List.rev ac)
+    | Ok v :: rs -> loop (v::ac) rs
+    | Error e :: _ -> Error e in
+  loop [] rs
+
 let is_ok = function Ok _ -> true | Error _ -> false
 let is_error = function Error _ -> true | Ok _ -> false
 

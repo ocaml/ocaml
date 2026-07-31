@@ -89,6 +89,12 @@ let test_try_value () =
   assert (Result.try_value (Error 2) (fun i -> Error (i+1)) = (Error 3));
   ()
 
+let test_all () =
+  assert (Result.all [] = Ok []);
+  assert (Result.all [Ok 1; Ok 2; Ok 3] = Ok [1; 2; 3] );
+  assert (Result.all [Ok 1; Error "first"; Ok 2; Error "second"] = Error "first");
+  ()
+
 let test_is_ok_error () =
   assert (Result.is_ok (Ok 2) = true);
   assert (Result.is_error (Ok 2) = false);
@@ -170,6 +176,7 @@ let tests () =
   test_retract ();
   test_iters ();
   test_try_value ();
+  test_all ();
   test_is_ok_error ();
   test_equal ();
   test_compare ();
