@@ -25,6 +25,11 @@ OCaml 5.5.1
 - #14871, #14914: Ignore OCAMLTOP_INCLUDE_PATH during the build.
   (David Allsopp, report by Andreas Rossberg, review by Florian Angeletti)
 
+- #14901, #14923: Fix the generated installation script to cope with macOS's
+  geriatric version of bash when executing in opam's sandbox.
+  (David Allsopp, report by Julian Fondren and Sacha-Élie Ayoun, investigation
+   and initial fix by Kate Deplaix, review by Florian Angeletti)
+
 - #14940, fix a memory leak in the OCaml runtime by bounding the size
   of the internal cache of stacks.
   (Vesa Karvonen, Florian Angeletti, review by Gabriel Scherer)
