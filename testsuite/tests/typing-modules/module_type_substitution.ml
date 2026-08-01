@@ -592,15 +592,18 @@ Error: In this "with" constraint, the new definition of "A"
 
 (** with module type and arrow precedence *)
 
-module type S = sig module type T end
+module type S = sig
+  module type T
+  module type U = T
+end
 
 module type U = S with module type T = S -> S
 [%%expect {|
-module type S = sig module type T end
-module type U = sig module type T = S -> S end
+module type S = sig module type T module type U = T end
+module type U = sig module type T = S -> S module type U = T end
 |}]
 
 module type V = S with module type T := S -> S
 [%%expect {|
-module type V = sig end
+module type V = sig module type U = S -> S end
 |}]
