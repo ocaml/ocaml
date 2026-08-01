@@ -1412,6 +1412,11 @@ and expand_module_path ~lax env path =
   || (match path with Pident id -> not (Ident.persistent id) | _ -> true) ->
       path
 
+let rec find_module_and_expand env path =
+  match find_module_lazy ~alias:true path env with
+  | {mdl_type = MtyL_alias path} -> find_module_and_expand env path
+  | other -> other
+
 let normalize_module_path oloc env path =
   try normalize_module_path ~lax:(oloc = None) env path
   with Not_found ->
@@ -1446,6 +1451,12 @@ and expand_modtype_path env path =
   match (find_modtype_lazy path env).mtdl_type with
   | Some (MtyL_ident path) -> normalize_modtype_path env path
   | _ | exception Not_found -> path
+
+let rec find_modtype_and_expand env path =
+  match find_modtype_lazy path env with
+  | {mtdl_type = Some (MtyL_ident path)} ->
+    find_modtype_and_expand env path
+  | other -> other
 
 let try_normalize normalizer env path =
   let path' = normalizer env path in
@@ -3657,6 +3668,53 @@ module Unscoped = struct
 
   let path_equiv env p1 p2 = Path.equiv env.id_pairs p1 p2
 end
+
+let rec path_has_apply : Path.t -> bool = function
+  | Pident _ -> false
+  | Pdot (p, _) | Pextra_ty (p, _) -> path_has_apply p
+  | Papply _ -> true
+
+let module_path_equiv_modulo env p1 p2 =
+  p1 == p2 ||
+  Unscoped.path_equiv env p1 p2 ||
+  try
+    if path_has_apply p1 || path_has_apply p2 then raise Not_found;
+    find_module_and_expand env p1 == find_module_and_expand env p2
+  with Not_found ->
+    (* fallback in presence of functor applications or missing .cmi. *)
+    Unscoped.path_equiv env
+      (normalize_module_path None env p1)
+      (normalize_module_path None env p2)
+
+let rec type_path_equiv_modulo env p1 p2 =
+  p1 == p2 ||
+  match (p1, p2) with
+  | Pident id1, Pident id2 ->
+    (* these are type paths, not module paths, so we do not
+       need to consider unscoped module equalities. *)
+    Ident.same id1 id2
+  | Pdot (p1, s1), Pdot (p2, s2) ->
+    String.equal s1 s2 && module_path_equiv_modulo env p1 p2
+  | Pextra_ty (p1, extra1), Pextra_ty (p2, extra2) ->
+    let same_extra = match extra1, extra2 with
+      | (Pcstr_ty s1, Pcstr_ty s2) -> String.equal s1 s2
+      | (Pext_ty, Pext_ty) -> true
+      | ((Pcstr_ty _ | Pext_ty), _) -> false
+    in same_extra && type_path_equiv_modulo env p1 p2
+  | Papply _, _ | _, Papply _ -> assert false
+  | (Pident _ | Pdot _ | Pextra_ty _), _ -> false
+
+let modtype_path_equiv_modulo env p1 p2 =
+  p1 == p2 ||
+  Unscoped.path_equiv env p1 p2 ||
+  try
+    if path_has_apply p1 || path_has_apply p2 then raise Not_found;
+    find_modtype_and_expand env p1 == find_modtype_and_expand env p2
+  with Not_found ->
+    (* fallback in presence of functor applications or missing .cmi. *)
+    Unscoped.path_equiv env
+      (normalize_modtype_path env p1)
+      (normalize_modtype_path env p2)
 
 (* Error report *)
 
