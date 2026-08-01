@@ -264,6 +264,10 @@ Working version
   the runtime's caml_hash_variant) to Obj.hash_variant.
   (David Allsopp, review by Léo Andrès and Nicolás Ojeda Bär)
 
+- #14909: Add Dynarray.append_iarray, Pqueue.of_iarray
+  (Nicolás Ojeda Bär, suggestion by Andreas Rossberg, review by Daniel Bünzli,
+  Léo Andrès, and Olivier Nicole)
+
 ### Other libraries:
 
 * #14788: The Win32 error code `ERROR_DIRECTORY` (= 267) is now mapped to
