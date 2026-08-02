@@ -75,6 +75,8 @@ external filepath_exists : string -> bool = "caml_sys_filepath_exists"
         {{:https://pubs.opengroup.org/onlinepubs/9799919799/functions/fstatat.html#tag_17_190_05}
        error conditions} occurs, and notably [EACCES].}
     }
+
+    @since 5.6
 *)
 
 external is_directory : string -> bool = "caml_sys_is_directory"
