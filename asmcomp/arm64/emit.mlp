@@ -543,6 +543,8 @@ module Size = struct
     | Lop (Ispecific (Isignext _)) -> 1
     | Lop (Idls_get) -> 1
     | Lop (Iatomic_fetch_add) -> 5
+    | Lop (Iatomic_exchange) -> 4
+    | Lop (Iatomic_cas) -> 9
     | Lop (Ireturn_addr) -> 1
     | Lreloadretaddr -> 0
     | Lreturn -> epilogue_size f + (if top_bits_ignore then 0 else 1)
@@ -1038,6 +1040,36 @@ let emit_instr env i =
     | Lop(Idls_get) ->
         let offset = Domainstate.(idx_of_field Domain_dls_root) * 8 in
         `	ldr	{emit_reg i.res.(0)}, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`
+    | Lop(Iatomic_exchange) ->
+        (* Same LL/SC shape as fetch-and-add, minus the arithmetic. reg_tmp2
+           takes the stlxr status, which must differ from the data register. *)
+        let lbl = new_label() in
+        `{emit_label lbl}:\n`;
+        `	ldaxr	{emit_reg i.res.(0)}, [{emit_reg i.arg.(0)}]\n`;
+        `	stlxr	{emit_wreg reg_tmp2}, {emit_reg i.arg.(1)}, [{emit_reg i.arg.(0)}]\n`;
+        `	cbnz	{emit_wreg reg_tmp2}, {emit_label lbl}\n`;
+        `	dmb	ishst\n`
+    | Lop(Iatomic_cas) ->
+        (* res.(0) holds the loaded value until the very end, where cset
+           overwrites it with the result. The flags set by cmp survive stlxr,
+           cbnz, b and clrex, so both paths land on the same cset.
+           clrex is not architecturally required for an abandoned ldaxr (ARM
+           ARM B2.10.5) but drops the monitor rather than leaving it marked. *)
+        let lbl = new_label() in
+        let lbl_fail = new_label() in
+        let lbl_done = new_label() in
+        `{emit_label lbl}:\n`;
+        `	ldaxr	{emit_reg i.res.(0)}, [{emit_reg i.arg.(0)}]\n`;
+        `	cmp	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}\n`;
+        `	b.ne	{emit_label lbl_fail}\n`;
+        `	stlxr	{emit_wreg reg_tmp2}, {emit_reg i.arg.(2)}, [{emit_reg i.arg.(0)}]\n`;
+        `	cbnz	{emit_wreg reg_tmp2}, {emit_label lbl}\n`;
+        `	b	{emit_label lbl_done}\n`;
+        `{emit_label lbl_fail}:\n`;
+        `	clrex\n`;
+        `{emit_label lbl_done}:\n`;
+        `	cset	{emit_reg i.res.(0)}, eq\n`;
+        `	dmb	ishst\n`
     | Lop(Iatomic_fetch_add) ->
         (* LL/SC loop, works on baseline ARMv8.0 (no LSE required).
            reg_tmp1 = sum (data), reg_tmp2 = stlxr status (must differ per ARM spec).

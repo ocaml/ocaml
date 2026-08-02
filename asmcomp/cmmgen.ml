@@ -358,6 +358,14 @@ let machtype_of_value_kind (value_kind : Lambda.value_kind) =
   | Pintval ->
       Cmm.typ_int
 
+(* s390x still keeps the C call, as does TSan, where the instrumentation lives
+   in the runtime call. *)
+let native_atomics =
+  not Config.tsan
+  && match Config.architecture with
+     | "amd64" | "arm64" | "riscv" | "power" -> true
+     | _ -> false
+
 (* Translate an expression *)
 
 let rec transl env e =
@@ -481,18 +489,17 @@ let rec transl env e =
           make_alloc dbg tag (List.map (transl env) args)
       | (Pccall prim, args) ->
           transl_ccall env prim args dbg
-      | (Patomic_exchange, args) ->
-          (* Lowered to the C call for now; the native, barrier-free path is
-             added in a later step (only when the value is immediate). *)
-          transl_ccall env
-            (Primitive.simple ~name:"caml_atomic_exchange_field"
-               ~arity:3 ~alloc:false)
-            args dbg
+      | (Patomic_cas, [ptr; ofs; oldval; newval]) when native_atomics ->
+          (* translprim only builds this when the value is immediate, so there
+             is no write barrier to run and the instruction is the whole job. *)
+          tag_int
+            (Cop(Catomic_cas,
+                 [field_address_computed (transl env ptr) (transl env ofs) dbg;
+                  transl env oldval; transl env newval], dbg))
+            dbg
       | (Patomic_cas, args) ->
-          transl_ccall env
-            (Primitive.simple ~name:"caml_atomic_cas_field"
-               ~arity:4 ~alloc:false)
-            args dbg
+          Cop(Cextcall("caml_atomic_cas_field", typ_val, [], false),
+              List.map (transl env) args, dbg)
       | (Pduparray (kind, _), [Uprim (Pmakearray (kind', _), args, _dbg)]) ->
           (* We arrive here in two cases:
              1. When using Closure, all the time.
@@ -580,7 +587,7 @@ let rec transl env e =
       | ((Pfield_computed|Psequand
          | Prunstack | Pperform | Presume | Preperform
          | Pdls_get
-         | Patomic_load | Patomic_fetch_add
+         | Patomic_load | Patomic_fetch_add | Patomic_exchange
          | Psequor | Pnot | Pnegint | Paddint | Psubint
          | Pmulint | Pandint | Porint | Pxorint | Plslint
          | Plsrint | Pasrint | Pintoffloat | Pfloatofint
@@ -1174,6 +1181,17 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
            transl env arg1; transl env arg2; transl env arg3],
            dbg)
 
+  | Patomic_exchange when native_atomics ->
+      (* Only built for immediate values, so the write barrier is a no-op and
+         the swap instruction is the whole job. *)
+      Cop(Catomic_exchange,
+          [field_address_computed (transl env arg1) (transl env arg2) dbg;
+           transl env arg3], dbg)
+
+  | Patomic_exchange ->
+      Cop(Cextcall("caml_atomic_exchange_field", typ_val, [], false),
+          [transl env arg1; transl env arg2; transl env arg3], dbg)
+
   | Patomic_fetch_add ->
       let ptr = transl env arg1 in
       let ofs = transl env arg2 in
@@ -1209,7 +1227,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
   | Pxorbint _ | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp (_, _)
   | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _) | Pbigarraydim _
   | Pstring_load _ | Pbytes_load _ | Pbigstring_load _ | Pbbswap _ | Ppoll
-  | Patomic_exchange | Patomic_cas | Pmakelazyblock _
+  | Patomic_cas | Pmakelazyblock _
     ->
       fatal_errorf "Cmmgen.transl_prim_3: %a"
         Printclambda_primitives.primitive p

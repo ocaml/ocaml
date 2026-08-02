@@ -92,6 +92,21 @@ let build_graph fundecl =
         interf i.next
     | Iop(Itailcall_ind) -> ()
     | Iop(Itailcall_imm _) -> ()
+    | Iop(Iatomic_exchange) ->
+        (* result must differ from address and new value (LL/SC loop) *)
+        add_interf i.res.(0) i.arg.(0);
+        add_interf i.res.(0) i.arg.(1);
+        add_interf_set i.res i.live;
+        add_interf_self i.res;
+        interf i.next
+    | Iop(Iatomic_cas) ->
+        (* result must differ from address and both compared values *)
+        add_interf i.res.(0) i.arg.(0);
+        add_interf i.res.(0) i.arg.(1);
+        add_interf i.res.(0) i.arg.(2);
+        add_interf_set i.res i.live;
+        add_interf_self i.res;
+        interf i.next
     | Iop(Iatomic_fetch_add) ->
         (* result must differ from address and increment (LL/SC loop) *)
         add_interf i.res.(0) i.arg.(0);

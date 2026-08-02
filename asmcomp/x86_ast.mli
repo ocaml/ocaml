@@ -114,6 +114,8 @@ type instruction =
   | CDQ
   | CMOV of condition * arg * arg
   | CMP of arg * arg
+  | CMPXCHG of arg * arg
+  | LOCK_CMPXCHG of arg * arg
   | CMPSD of float_condition * arg * arg
   | COMISD of arg * arg
   | CQO

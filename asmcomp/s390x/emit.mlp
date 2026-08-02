@@ -425,6 +425,9 @@ let emit_instr env i =
           | Double -> "stdy" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
 
+    | Lop(Iatomic_exchange | Iatomic_cas) ->
+        (* cmmgen keeps the C call on s390x, so selection never builds these. *)
+        Misc.fatal_error "native atomic exchange/cas: s390x not implemented"
     | Lop(Iatomic_fetch_add) ->
         `	laag	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, 0({emit_reg i.arg.(0)})\n`
 

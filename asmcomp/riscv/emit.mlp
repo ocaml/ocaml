@@ -546,6 +546,29 @@ let emit_instr env i =
   | Lop (Idls_get) ->
       let ofs = Domainstate.(idx_of_field Domain_dls_root) * 8 in
       `	ld	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg reg_domain_state_ptr})\n`
+  | Lop (Iatomic_exchange) ->
+      (* amoswap.d.aqrl carries both orderings, same as amoadd below. *)
+      `	amoswap.d.aqrl	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, ({emit_reg i.arg.(0)})\n`
+  | Lop (Iatomic_cas) ->
+      (* The canonical sequence from the ISA manual, section 14.3. res.(0)
+         carries the loaded value, then the sc status, then the result, which
+         keeps the loop inside the constrained-LR/SC limits: no loads, stores
+         or backward branches between the lr and the sc.
+         aqrl on the lr and rl on the sc is the seq_cst mapping. The manual
+         warns against rl on an lr without aq, and aq on an sc without rl. *)
+      let lbl = new_label() in
+      let lbl_fail = new_label() in
+      let lbl_done = new_label() in
+      `{emit_label lbl}:\n`;
+      `	lr.d.aqrl	{emit_reg i.res.(0)}, ({emit_reg i.arg.(0)})\n`;
+      `	bne	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, {emit_label lbl_fail}\n`;
+      `	sc.d.rl	{emit_reg i.res.(0)}, {emit_reg i.arg.(2)}, ({emit_reg i.arg.(0)})\n`;
+      `	bnez	{emit_reg i.res.(0)}, {emit_label lbl}\n`;
+      `	li	{emit_reg i.res.(0)}, 1\n`;
+      `	j	{emit_label lbl_done}\n`;
+      `{emit_label lbl_fail}:\n`;
+      `	li	{emit_reg i.res.(0)}, 0\n`;
+      `{emit_label lbl_done}:\n`
   | Lop (Iatomic_fetch_add) ->
       (* amoadd.d.aqrl carries both acquire and release ordering, so no
          trailing fence is needed. *)

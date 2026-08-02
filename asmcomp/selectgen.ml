@@ -87,7 +87,7 @@ let oper_result_type = function
   | Craise _ -> typ_void
   | Ccheckbound -> typ_void
   | Copaque -> typ_val
-  | Catomic_fetch_add -> typ_int
+  | Catomic_fetch_add | Catomic_exchange | Catomic_cas -> typ_int
   | Cpoll -> typ_void
 
 (* Infer the size in bytes of the result of an expression whose evaluation
@@ -328,7 +328,7 @@ method is_simple_expr = function
       begin match op with
         (* The following may have side effects *)
       | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _ | Copaque
-      | Catomic_fetch_add | Cpoll -> false
+      | Catomic_fetch_add | Catomic_exchange | Catomic_cas | Cpoll -> false
         (* The remaining operations are simple if their args are *)
       | Cload _ | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor
       | Cxor | Clsl | Clsr | Casr | Ccmpi _ | Caddv | Cadda | Ccmpa _ | Cnegf
@@ -370,6 +370,7 @@ method effects_of exp =
     let from_op =
       match op with
       | Capply _ | Cextcall _ | Copaque | Catomic_fetch_add
+      | Catomic_exchange | Catomic_cas
       | Cpoll -> EC.arbitrary
       | Calloc -> EC.none
       | Cstore _ -> EC.effect_only Effect.Arbitrary
@@ -438,6 +439,8 @@ method select_operation op args _dbg =
         (* Inversion addr/datum in Istore *)
       end
   | (Catomic_fetch_add, _) -> Iatomic_fetch_add, args
+  | (Catomic_exchange, _) -> Iatomic_exchange, args
+  | (Catomic_cas, _) -> Iatomic_cas, args
   | (Cdls_get, _) -> Idls_get, args
   | (Cpoll, _) -> (Ipoll { return_label = None }), args
   | (Calloc, _) -> (Ialloc {bytes = 0; dbginfo = []}), args

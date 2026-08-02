@@ -494,6 +494,8 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Ispecific _) -> 1
     | Lop(Idls_get) -> 1
     | Lop(Iatomic_fetch_add) -> 7
+    | Lop(Iatomic_exchange) -> 6
+    | Lop(Iatomic_cas) -> 11
     | Lop(Ireturn_addr) -> 1
     | Lreloadretaddr -> 2
     | Lreturn -> 2 + (if fp && f.fun_frame_required then 1 else 0)  (* +1 for restore FP *)
@@ -909,6 +911,38 @@ let emit_instr env i =
     | Lop (Idls_get) ->
         let offset = Domainstate.(idx_of_field Domain_dls_root) * 8 in
         `	ld	{emit_reg i.res.(0)}, {emit_int offset}(30)\n`
+    | Lop (Iatomic_exchange) ->
+        (* Same fencing as fetch-and-add below, minus the arithmetic. *)
+        let lbl = new_label() in
+        `	sync\n`;
+        `{emit_label lbl}:\n`;
+        `	ldarx	{emit_reg i.res.(0)}, 0, {emit_reg i.arg.(0)}\n`;
+        `	stdcx.	{emit_reg i.arg.(1)}, 0, {emit_reg i.arg.(0)}\n`;
+        `	bne-	{emit_label lbl}\n`;
+        `	isync\n`;
+        `	lwsync\n`
+    | Lop (Iatomic_cas) ->
+        (* The compare-and-swap primitive from the Programming Environments
+           Manual D.3, with r0 holding the loaded value. Leaving the
+           reservation behind on the failure path is what that example does.
+           isync and lwsync as for fetch-and-add, see #10995. *)
+        let lbl = new_label() in
+        let lbl_fail = new_label() in
+        let lbl_done = new_label() in
+        `	sync\n`;
+        `{emit_label lbl}:\n`;
+        `	ldarx	0, 0, {emit_reg i.arg.(0)}\n`;
+        `	cmpd	0, {emit_reg i.arg.(1)}\n`;
+        `	bne-	{emit_label lbl_fail}\n`;
+        `	stdcx.	{emit_reg i.arg.(2)}, 0, {emit_reg i.arg.(0)}\n`;
+        `	bne-	{emit_label lbl}\n`;
+        `	li	{emit_reg i.res.(0)}, 1\n`;
+        `	b	{emit_label lbl_done}\n`;
+        `{emit_label lbl_fail}:\n`;
+        `	li	{emit_reg i.res.(0)}, 0\n`;
+        `{emit_label lbl_done}:\n`;
+        `	isync\n`;
+        `	lwsync\n`
     | Lop (Iatomic_fetch_add) ->
         (* trailing lwsync is the release fence, #10995 *)
         let lbl = new_label() in

@@ -169,6 +169,8 @@ and operation =
                    or equal to the bound. *)
   | Copaque (* Sys.opaque_identity *)
   | Catomic_fetch_add (* Atomic read-modify-write: fetch old value and add *)
+  | Catomic_exchange (* Atomic swap: store a value, return the old one *)
+  | Catomic_cas (* Atomic compare-and-set, returns a tagged boolean *)
   | Cdls_get
   | Cpoll
 
