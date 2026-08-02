@@ -129,6 +129,8 @@ type primitive =
   (* Atomic operations *)
   | Patomic_load
   | Patomic_fetch_add
+  | Patomic_exchange
+  | Patomic_cas
   (* Inhibition of optimisation *)
   | Popaque
   (* Fetch domain-local state *)

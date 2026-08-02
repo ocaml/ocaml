@@ -165,6 +165,10 @@ type primitive =
   (* Atomic operations *)
   | Patomic_load
   | Patomic_fetch_add
+  (* Native atomic exchange / compare-and-set, emitted only when the stored
+     value is statically immediate, so no write barrier is required. *)
+  | Patomic_exchange
+  | Patomic_cas
   (* Inhibition of optimisation *)
   | Popaque
   (* Fetching domain-local state *)

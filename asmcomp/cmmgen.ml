@@ -481,6 +481,18 @@ let rec transl env e =
           make_alloc dbg tag (List.map (transl env) args)
       | (Pccall prim, args) ->
           transl_ccall env prim args dbg
+      | (Patomic_exchange, args) ->
+          (* Lowered to the C call for now; the native, barrier-free path is
+             added in a later step (only when the value is immediate). *)
+          transl_ccall env
+            (Primitive.simple ~name:"caml_atomic_exchange_field"
+               ~arity:3 ~alloc:false)
+            args dbg
+      | (Patomic_cas, args) ->
+          transl_ccall env
+            (Primitive.simple ~name:"caml_atomic_cas_field"
+               ~arity:4 ~alloc:false)
+            args dbg
       | (Pduparray (kind, _), [Uprim (Pmakearray (kind', _), args, _dbg)]) ->
           (* We arrive here in two cases:
              1. When using Closure, all the time.
@@ -918,7 +930,7 @@ and transl_prim_1 env p arg dbg =
     | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _)
     | Pbigarraydim _ | Pstring_load _ | Pbytes_load _ | Pbytes_set _
     | Pbigstring_load _ | Pbigstring_set _
-    | Patomic_load | Patomic_fetch_add
+    | Patomic_load | Patomic_fetch_add | Patomic_exchange | Patomic_cas
     )
     ->
       fatal_errorf "Cmmgen.transl_prim_1: %a"
@@ -1111,7 +1123,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
   | Parraysets _ | Pbintofint _ | Pintofbint _ | Pcvtbint (_, _)
   | Pnegbint _ | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _)
   | Pbigarraydim _ | Pbytes_set _ | Pbigstring_set _ | Pbbswap _ | Ppoll
-  | Patomic_fetch_add | Pmakelazyblock _
+  | Patomic_fetch_add | Patomic_exchange | Patomic_cas | Pmakelazyblock _
     ->
       fatal_errorf "Cmmgen.transl_prim_2: %a"
         Printclambda_primitives.primitive p
@@ -1197,7 +1209,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
   | Pxorbint _ | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp (_, _)
   | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _) | Pbigarraydim _
   | Pstring_load _ | Pbytes_load _ | Pbigstring_load _ | Pbbswap _ | Ppoll
-  | Pmakelazyblock _
+  | Patomic_exchange | Patomic_cas | Pmakelazyblock _
     ->
       fatal_errorf "Cmmgen.transl_prim_3: %a"
         Printclambda_primitives.primitive p
