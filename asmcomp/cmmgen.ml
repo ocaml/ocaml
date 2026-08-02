@@ -358,13 +358,8 @@ let machtype_of_value_kind (value_kind : Lambda.value_kind) =
   | Pintval ->
       Cmm.typ_int
 
-(* s390x still keeps the C call, as does TSan, where the instrumentation lives
-   in the runtime call. *)
-let native_atomics =
-  not Config.tsan
-  && match Config.architecture with
-     | "amd64" | "arm64" | "riscv" | "power" -> true
-     | _ -> false
+(* TSan keeps the C call, where the instrumentation lives. *)
+let native_atomics = not Config.tsan
 
 (* Translate an expression *)
 

@@ -425,9 +425,30 @@ let emit_instr env i =
           | Double -> "stdy" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
 
-    | Lop(Iatomic_exchange | Iatomic_cas) ->
-        (* cmmgen keeps the C call on s390x, so selection never builds these. *)
-        Misc.fatal_error "native atomic exchange/cas: s390x not implemented"
+    | Lop(Iatomic_exchange) ->
+        (* csg loads the current value into its first operand when it fails,
+           so the retry needs no reload. res.(0) ends up holding the old
+           value. csg serialises either side of the access (PoP 7-159), which
+           is why there is no fence here, same as laag below.
+           brc 4 is condition code 1, the unequal case. *)
+        let lbl = new_label() in
+        `	lg	{emit_reg i.res.(0)}, 0({emit_reg i.arg.(0)})\n`;
+        `{emit_label lbl}:\n`;
+        `	csg	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, 0({emit_reg i.arg.(0)})\n`;
+        `	brc	4, {emit_label lbl}\n`
+    | Lop(Iatomic_cas) ->
+        (* csg clobbers its first operand on failure, so the expected value is
+           copied into res.(0) first, which interference keeps clear of the
+           arguments. lghi leaves the condition code alone, so the result is
+           materialised the same way as an integer comparison.
+           brc 8 is condition code 0, equal and stored. *)
+        let lbl = new_label() in
+        `	lgr	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}\n`;
+        `	csg	{emit_reg i.res.(0)}, {emit_reg i.arg.(2)}, 0({emit_reg i.arg.(0)})\n`;
+        `	lghi	{emit_reg i.res.(0)}, 1\n`;
+        `	brc	8, {emit_label lbl}\n`;
+        `	lghi	{emit_reg i.res.(0)}, 0\n`;
+        `{emit_label lbl}:\n`
     | Lop(Iatomic_fetch_add) ->
         `	laag	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, 0({emit_reg i.arg.(0)})\n`
 
