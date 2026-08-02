@@ -92,18 +92,15 @@ let build_graph fundecl =
         interf i.next
     | Iop(Itailcall_ind) -> ()
     | Iop(Itailcall_imm _) -> ()
-    | Iop(Iatomic_exchange) ->
-        (* result must differ from address and new value (LL/SC loop) *)
-        add_interf i.res.(0) i.arg.(0);
-        add_interf i.res.(0) i.arg.(1);
-        add_interf_set i.res i.live;
-        add_interf_self i.res;
-        interf i.next
-    | Iop(Iatomic_cas) ->
-        (* result must differ from address and both compared values *)
-        add_interf i.res.(0) i.arg.(0);
-        add_interf i.res.(0) i.arg.(1);
-        add_interf i.res.(0) i.arg.(2);
+    | Iop(Iatomic_exchange | Iatomic_cas) ->
+        (* Every result, including the amd64 scratch, must differ from every
+           argument. The address in particular is still needed after the old
+           value has been loaded, and an LL/SC loop re-reads all of them.
+           Where a backend deliberately ties a result to an argument they are
+           the same register by now, and add_interf ignores that. *)
+        Array.iter
+          (fun r -> Array.iter (fun a -> add_interf r a) i.arg)
+          i.res;
         add_interf_set i.res i.live;
         add_interf_self i.res;
         interf i.next

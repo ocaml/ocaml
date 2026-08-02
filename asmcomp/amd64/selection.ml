@@ -137,10 +137,13 @@ let pseudoregs_for_operation op arg res =
       let treg = Reg.create Int in
       ([| arg.(0); res.(0); arg.(2) |], [| res.(0); treg |])
   (* cmpxchg compares against rax and overwrites it with the value it found,
-     so the expected value goes in rax and the tagged result comes back there
-     too. arg.(3) is &caml_num_domains_running. *)
+     so the expected value goes in rax and the result comes back there too.
+     res.(1) is a scratch for the single-domain path, which loads and stores
+     by hand rather than paying for a cmpxchg it does not need.
+     arg.(3) is &caml_num_domains_running. *)
   | Iatomic_cas ->
-      ([| arg.(0); rax; arg.(2); arg.(3) |], [| rax |])
+      let treg = Reg.create Int in
+      ([| arg.(0); rax; arg.(2); arg.(3) |], [| rax; treg |])
   (* Other instructions are regular *)
   | _ -> raise Use_default
 
