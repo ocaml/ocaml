@@ -56,19 +56,17 @@ fi
 CheckTree () {
   local RET=0
   COMMIT="$1"
-  git branch -qf 'return'
   git checkout -q "$COMMIT"
-  mv configure configure.ref
   tools/autogen
-  if diff -q configure configure.ref >/dev/null ; then
+  if [[ -z $(git status --porcelain) ]]; then
     printf "$COMMIT: \e[32mconfigure.ac generates configure\e[0m\n"
   else
     RET=1
     printf \
       "$COMMIT: \e[${COLOR}mconfigure.ac doesn't generate configure\e[0m\n"
   fi
-  mv configure.ref configure
-  git checkout -q 'return'
+  git checkout -q . &> /dev/null
+  git switch - &> /dev/null
   return $RET
 }
 
