@@ -3557,8 +3557,8 @@ and unify3 uenv t1' t2' =
             unify_list uenv tl1 tl2
           else if can_assume_injective uenv then
             without_assume_injective uenv (fun uenv -> unify_list uenv tl1 tl2)
-          else if in_current_module p1 (* || in_pervasives p1 *)
-               || List.exists
+          else if (* in_current_module p1 || in_pervasives p1 || *)
+                  List.exists
                    (expands_to_datatype (get_env uenv))
                    (List.map (fun a -> a.abbr_path)
                       (Option.to_list (get_abbrev t1') @
