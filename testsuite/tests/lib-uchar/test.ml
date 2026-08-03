@@ -37,7 +37,35 @@ let test_is_valid () =
   assert (not (Uchar.is_valid max_int));
   ()
 
+let test_is_ascii () =
+  assert (Uchar.is_ascii Uchar.min);
+  assert (Uchar.is_ascii (Uchar.of_int 0x007F));
+  assert (not (Uchar.is_ascii (Uchar.of_int 0x0080)));
+  assert (not (Uchar.is_ascii Uchar.max));
+  ()
+
+let test_ascii_to_char () =
+  assert (Uchar.ascii_to_char Uchar.min = '\x00');
+  assert (Uchar.ascii_to_char (Uchar.of_int 0x007F) = '\x7F');
+  assert_raise_invalid_argument Uchar.ascii_to_char (Uchar.of_int 0x0080);
+  assert_raise_invalid_argument Uchar.ascii_to_char Uchar.max;
+  ()
+
 let char_max = Uchar.of_int 0x00FF
+
+let test_is_latin1 () =
+  assert (Uchar.(is_latin1 Uchar.min));
+  assert (Uchar.(is_latin1 char_max));
+  assert (Uchar.(not (is_latin1 (of_int 0x0100))));
+  assert (not (Uchar.is_latin1 Uchar.max));
+  ()
+
+let test_latin1_to_char () =
+  assert (Uchar.(latin1_to_char min) = '\x00');
+  assert (Uchar.(latin1_to_char char_max) = '\xFF');
+  assert_raise_invalid_argument Uchar.latin1_to_char (Uchar.succ char_max);
+  assert_raise_invalid_argument Uchar.latin1_to_char Uchar.max;
+  ()
 
 let test_is_char () =
   assert (Uchar.(is_char Uchar.min));
@@ -121,6 +149,10 @@ let tests () =
   test_succ ();
   test_pred ();
   test_is_valid ();
+  test_is_ascii ();
+  test_ascii_to_char ();
+  test_is_latin1 ();
+  test_latin1_to_char ();
   test_is_char ();
   test_of_char ();
   test_to_char ();
