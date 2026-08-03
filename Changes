@@ -275,6 +275,11 @@ Working version
   (Nicolás Ojeda Bär, suggestion by Andreas Rossberg, review by Daniel Bünzli,
   Léo Andrès, and Olivier Nicole)
 
+- #14981: Add Uchar.{is_ascii,ascii_to_char,is_latin1,latin1_to_char} and
+  tweak the documentation of Uchar.of_char.
+  (Fabian Hemmer, suggestion by Daniel Bünzli, review by Daniel Bünzli and
+  Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 * #14788: The Win32 error code `ERROR_DIRECTORY` (= 267) is now mapped to
