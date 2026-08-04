@@ -141,12 +141,6 @@ CAMLextern value caml_ba_alloc_dims(int flags, int num_dims, void * data,
 CAMLextern uintnat caml_ba_byte_size(struct caml_ba_array * b);
 CAMLextern uintnat caml_ba_num_elts(struct caml_ba_array * b);
 
-#ifdef __cplusplus
-}
-#endif
-
-#ifdef CAML_INTERNALS
-
 CAMLextern const int caml_ba_element_size[];
 CAMLextern void caml_ba_finalize(value v);
 CAMLextern int caml_ba_compare(value v1, value v2);
@@ -154,6 +148,8 @@ CAMLextern intnat caml_ba_hash(value v);
 CAMLextern void caml_ba_serialize(value, uintnat *, uintnat *);
 CAMLextern uintnat caml_ba_deserialize(void * dst);
 
-#endif  /* CAML_INTERNALS */
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CAML_BIGARRAY_H */
