@@ -4096,10 +4096,9 @@ type filtered_arrow =
 
 let function_type l ~param_hole level =
   let t1 =
-    if param_hole then begin
-      assert (not (is_optional l));
+    if param_hole then
       newvar2 level
-    end else begin
+    else begin
       let t1 =
         if is_optional l then
           newty2 ~level
