@@ -440,6 +440,14 @@ Working version
 
 ### Bug fixes:
 
+- #14522: The GC statistics printed at program exit with
+  `OCAMLRUNPARAM=v=0x400` did not agree with the counters reported through
+  runtime_events. The main domain's minor allocations since the last minor
+  collection were never emitted before the runtime_events ring buffer was
+  torn down. The runtime now performs a final minor collection on exit so
+  that these allocations are reported and the two sets of figures match.
+  (Tim McGilchrist and Nikos Gorogiannis, review by XXXXX)
+
 - #13335: Fix infinite loop in runtime_events.c's write_to_ring when an
   event is larger than the configured ring buffer. Only really comes up
   if you run the instrumented runtime with a small OCAMLRUNPARAM=e= setting
