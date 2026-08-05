@@ -646,3 +646,19 @@ val forward_polyo' : ?id:('a. 'a -> 'a) -> unit -> int * string = <fun>
 - : int * string = (3, "three")
 |}];;
 
+(* https://discuss.ocaml.org/t/ocaml-5-5-polymorphic-functions-as-function-arguments *)
+
+type 'a observer = (unit -> 'a) -> 'a
+let blind f = f ()
+
+module Observe : sig
+  val run : ?observer:('a. 'a observer) -> (unit -> 'a) -> 'a
+end = struct
+  let run ?(observer : 'a. 'a observer = blind) f = observer f
+end
+[%%expect {|
+type 'a observer = (unit -> 'a) -> 'a
+val blind : (unit -> 'a) -> 'a = <fun>
+module Observe :
+  sig val run : ?observer:('a. 'a observer) -> (unit -> 'a) -> 'a end
+|}];;
