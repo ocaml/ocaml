@@ -118,6 +118,11 @@ Working version
 - #14506: Add frame pointers support for RISC-V Linux.
   (Miod Vallat and Tim McGilchrist, review by Zane Hambly)
 
+- #14933: Respect `sysconf(_SC_SIGSTKSZ)` when choosing the size for the
+  alternate signal stack, avoiding fatal errors when linked against musl libc on
+  some Intel CPUs.
+  (Nat Mote, review by Florian Angeletti and Miod Vallat)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
