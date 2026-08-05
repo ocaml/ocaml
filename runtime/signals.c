@@ -21,6 +21,9 @@
 #include <errno.h>
 #include <stdbool.h>
 #include "caml/config.h"
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 #ifdef USE_MMAP_MAP_STACK
 #include <sys/mman.h>
 #endif
@@ -544,12 +547,40 @@ CAMLprim value caml_sys_rev_convert_signal_number(value signo)
   return Val_int(caml_rev_convert_signal_number(Int_val(signo)));
 }
 
+#ifdef POSIX_SIGNALS
+/* On Linux, the minimum signal stack size is architecture-dependent, whereas
+ * SIGSTKSZ can be a build-time constant and may be smaller than the run-time
+ * minimum (e.g. on musl with certain Intel CPUs). Thus, we call sysconf for the
+ * run-time value ourselves. */
+Caml_inline size_t caml_sigstksz(void)
+{
+  /* Compute the recommended signal stack size only once. Atomic due to benign
+   * concurrent reads during domain init. */
+  static _Atomic size_t cache = 0;
+  size_t size = atomic_load_relaxed(&cache);
+  if (size == 0) {
+    long sz;
+#ifdef _SC_SIGSTKSZ
+    /* glibc/musl only */
+    sz = sysconf(_SC_SIGSTKSZ);
+    if (sz <= 0)
+      sz = SIGSTKSZ;
+#else
+    sz = SIGSTKSZ;
+#endif
+    size = (size_t) sz;
+    atomic_store_relaxed(&cache, size);
+  }
+  return size;
+}
+#endif /* POSIX_SIGNALS */
+
 void * caml_init_signal_stack(void)
 {
 #ifdef POSIX_SIGNALS
   stack_t stk;
   stk.ss_flags = 0;
-  stk.ss_size = SIGSTKSZ;
+  stk.ss_size = caml_sigstksz();
   /* The memory used for the alternate signal stack must not free'd before
      calling sigaltstack with SS_DISABLE. malloc/mmap is therefore used rather
      than caml_stat_alloc_noexc so that if a shutdown path erroneously fails
@@ -562,7 +593,7 @@ void * caml_init_signal_stack(void)
   if (stk.ss_sp == MAP_FAILED)
     return NULL;
   if (sigaltstack(&stk, NULL) < 0) {
-    munmap(stk.ss_sp, SIGSTKSZ);
+    munmap(stk.ss_sp, stk.ss_size);
     return NULL;
   }
 #else
@@ -586,7 +617,7 @@ void caml_free_signal_stack(void * signal_stack)
   stack_t stk, disable;
   disable.ss_flags = SS_DISABLE;
   disable.ss_sp = NULL;  /* not required but avoids a valgrind false alarm */
-  disable.ss_size = SIGSTKSZ; /* macOS wants a valid size here */
+  disable.ss_size = caml_sigstksz(); /* macOS wants a valid size here */
   if (sigaltstack(&disable, &stk) < 0) {
     caml_fatal_error("Failed to reset signal stack (err %d)", errno);
   }
@@ -598,7 +629,7 @@ void caml_free_signal_stack(void * signal_stack)
   /* Memory was allocated with malloc/mmap directly (see
      caml_init_signal_stack) */
 #ifdef USE_MMAP_MAP_STACK
-  munmap(signal_stack, SIGSTKSZ);
+  munmap(signal_stack, caml_sigstksz());
 #else
   free(signal_stack);
 #endif /* USE_MMAP_MAP_STACK */

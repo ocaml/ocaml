@@ -30,6 +30,11 @@ OCaml 5.5.1
   (David Allsopp, report by Julian Fondren and Sacha-Élie Ayoun, investigation
    and initial fix by Kate Deplaix, review by Florian Angeletti)
 
+- #14933: Respect `sysconf(_SC_SIGSTKSZ)` when choosing the size for the
+  alternate signal stack, avoiding fatal errors when linked against musl libc on
+  some Intel CPUs.
+  (Nat Mote, review by Florian Angeletti and Miod Vallat)
+
 - #14940, fix a memory leak in the OCaml runtime by bounding the size
   of the internal cache of stacks.
   (Vesa Karvonen, Florian Angeletti, review by Gabriel Scherer)
