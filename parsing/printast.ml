@@ -398,7 +398,7 @@ and expression i ppf x =
       line i ppf "Pexp_extension \"%s\"\n" s.txt;
       payload i ppf arg
   | Pexp_unreachable ->
-      line i ppf "Pexp_unreachable"
+      line i ppf "Pexp_unreachable\n"
   | Pexp_struct_item (si, e) ->
       line i ppf "Pexp_struct_item\n";
       structure_item i ppf si;
