@@ -443,13 +443,6 @@ Working version
   (Austin Thierault, review by Antonin Décimo, Edwin Török, David Allsopp and
    Olivier Nicole)
 
-- Improve build reproducibility by letting only otherlibs/{str,unix} build their
-  own .cmi and .cmx. The generic %.cmi/%.cmx rules of the root Makefile were
-  racing with them under make -j and recorded a different source path, which
-  changed the interface digest (and, through it, most other compiled
-  artefacts) as well as the debug info packed into str.a and unix.a.
-  (Bernhard M. Wiedemann)
-
 ### Bug fixes:
 
 - #13335: Fix infinite loop in runtime_events.c's write_to_ring when an
@@ -537,6 +530,13 @@ OCaml 5.5.1
 - #14940, fix a memory leak in the OCaml runtime by bounding the size
   of the internal cache of stacks.
   (Vesa Karvonen, Florian Angeletti, review by Gabriel Scherer)
+
+- #14989: Improve build reproducibility by letting only otherlibs/{str,unix}
+  build their own .cmi and .cmx. The generic %.cmi/%.cmx rules of the root
+  Makefile were racing with them under make -j and recorded a different source
+  path, which changed the interface digest (and, through it, most other compiled
+  artefacts) as well as the debug info packed into str.a and unix.a.
+  (Bernhard M. Wiedemann, review by David Allsopp and Stefan Muenzel)
 
 OCaml 5.5.0 (19 June 2026)
 -------------------------
