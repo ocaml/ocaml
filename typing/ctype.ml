@@ -558,16 +558,6 @@ let without_assume_injective uenv f =
 
 (*** Checks for type definitions ***)
 
-let rec in_current_module = function
-  | Path.Pident _ -> true
-  | Path.Pdot _ | Path.Papply _ -> false
-  | Path.Pextra_ty (p, _) -> in_current_module p
-
-let in_pervasives p =
-  in_current_module p &&
-  try ignore (Env.find_type p Env.initial); true
-  with Not_found -> false
-
 let is_datatype decl=
   match decl.type_kind with
     Type_record _ | Type_variant _ | Type_open | Type_external _ -> true
@@ -2263,9 +2253,7 @@ let rec extract_package_modulo_subtype env ty =
   | _ -> raise Not_found
 
 let is_contractive env p =
-  try
-    let decl = Env.find_type p env in
-    in_pervasives p && decl.type_manifest = None || is_datatype decl
+  try is_datatype (Env.find_type p env)
   with Not_found -> false
 
 
@@ -3557,8 +3545,7 @@ and unify3 uenv t1' t2' =
             unify_list uenv tl1 tl2
           else if can_assume_injective uenv then
             without_assume_injective uenv (fun uenv -> unify_list uenv tl1 tl2)
-          else if (* in_current_module p1 || in_pervasives p1 || *)
-                  List.exists
+          else if List.exists
                    (expands_to_datatype (get_env uenv))
                    (List.map (fun a -> a.abbr_path)
                       (Option.to_list (get_abbrev t1') @
