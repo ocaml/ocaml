@@ -497,6 +497,10 @@ Working version
 - #14890, fix pattern compilation in presence of the [min_int] constant pattern
   (Florian Angeletti, review by Luc Maranget)
 
+* #14982, ?: Remove assumption that abstract types defined in the current
+  module are injective and contractive
+  (Jacques Garrigue, report by Jeremy Yallop)
+
 OCaml 5.5.1
 -----------
 

@@ -536,3 +536,19 @@ Error: In this definition, expected parameter variances are not satisfied.
        The 1st type parameter was expected to be injective invariant,
        but it is invariant.
 |}]
+
+(* #14982 *)
+module type S = sig type 'a t end
+include (struct type 'a t = unit end : S)
+let inj_t : type a b. (a t, b t) Type.eq -> (a, b) Type.eq = function Equal -> Equal
+;;
+[%%expect{|
+module type S = sig type 'a t end
+type 'a t
+Line 3, characters 79-84:
+3 | let inj_t : type a b. (a t, b t) Type.eq -> (a, b) Type.eq = function Equal -> Equal
+                                                                                   ^^^^^
+Error: The constructor "Equal" has type "(a, a) Type.eq"
+       but an expression was expected of type "(a, b) Type.eq"
+       Type "a" is not compatible with type "b"
+|}]
