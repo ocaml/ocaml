@@ -5810,23 +5810,21 @@ and type_newtype
 
     let result, exp_type =
       with_local_level_generalize_structure (fun () -> type_body new_env) in
+    let current = get_current_level () in (* actually = scope *)
+    let ety = Ctype.instance exp_type in
     (* Replace every instance of this type constructor in the resulting
        type. *)
-    let seen = Hashtbl.create 8 in
-    let current = get_current_level () in (* actually = scope *)
-    let rec replace t =
-      if Hashtbl.mem seen (get_id t) then ()
-      else begin
-        Hashtbl.add seen (get_id t) ();
-        match get_desc t with
-        | Tconstr (Path.Pident id', _, _) when id == id' ->
-            assert (get_level t = current);
-            link_type t ty
-        | _ -> Btype.iter_type_expr replace t
-      end
-    in
-    let ety = Ctype.instance exp_type in
-    replace ety;
+    with_type_mark begin fun mark ->
+      let rec replace t =
+        if try_mark_node mark t
+        then match get_desc t with
+          | Tconstr (Path.Pident id', _, _) when id == id' ->
+              assert (get_level t = current);
+              link_type t ty
+          | _ -> Btype.iter_type_expr replace t
+      in
+      replace ety;
+    end;
     (result, ety)
   end
   ~before_generalize:(fun (_,ety) -> enforce_current_level env ety)
