@@ -82,7 +82,7 @@ let _ =
 
 type 'a t
 [%%expect{|
-type 'a t
+type !'a t
 |}]
 
 (* This was correct in OCaml 5.4,

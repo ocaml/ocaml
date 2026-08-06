@@ -1259,7 +1259,7 @@ let add_types_to_env decls shapes env =
     decls shapes env
 
 (* Translate a set of type declarations, mutually recursive or not *)
-let transl_type_decl env rec_flag sdecl_list =
+let transl_type_decl ~impl env rec_flag sdecl_list =
   List.iter check_redefined_unit sdecl_list;
   (* Add dummy types for fixed rows *)
   let fixed_types = List.filter is_fixed_type sdecl_list in
@@ -1396,7 +1396,7 @@ let transl_type_decl env rec_flag sdecl_list =
     try
       decls
       |> name_recursion_decls sdecl_list
-      |> Typedecl_variance.update_decls env sdecl_list
+      |> Typedecl_variance.update_decls ~impl env sdecl_list
       |> Typedecl_immediacy.update_decls env
       |> Typedecl_separability.update_decls env
     with
@@ -2035,7 +2035,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
   end;
   let new_sig_decl = name_recursion sdecl id new_sig_decl in
   let new_type_variance =
-    let required = Typedecl_variance.variance_of_sdecl sdecl in
+    let required = Typedecl_variance.variance_of_sdecl ~impl:false sdecl in
     try
       Typedecl_variance.compute_decl env ~check:(Some id) new_sig_decl required
     with Typedecl_variance.Error (loc, err) ->

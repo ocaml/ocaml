@@ -35,7 +35,7 @@ let () =
 
 (* Side-effect of the fix *)
 
-module M = struct type 'a p end
+module M : sig type 'a p end = struct type 'a p end
 type _ t = W: int M.p t
 [%%expect{|
 module M : sig type 'a p end

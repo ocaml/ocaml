@@ -13,7 +13,7 @@ type 'a t
 type (_,_) eq = Refl : ('a,'a) eq
 [%%expect{|
 module X : sig type 'a t end
-type 'a t
+type !'a t
 type (_, _) eq = Refl : ('a, 'a) eq
 |}]
 

@@ -50,7 +50,7 @@ end ;;
 let g (y : M.j t option) =
   let None = y in () ;;
 [%%expect{|
-module M : sig type 'a d type j = < m : 'c. 'c -> 'c d > end
+module M : sig type !'a d type j = < m : 'c. 'c -> 'c d > end
 Line 6, characters 2-20:
 6 |   let None = y in () ;;
       ^^^^^^^^^^^^^^^^^^
@@ -73,17 +73,11 @@ let g (y : M.j t option) =
 module M :
   sig
     type e
-    type 'a d
+    type !'a d
     type i = < m : 'c. 'c -> 'c d >
     type j = < m : 'c. 'c -> e >
   end
 type _ t = A : M.i t
-Line 9, characters 2-20:
-9 |   let None = y in () ;;
-      ^^^^^^^^^^^^^^^^^^
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-  Here is an example of a case that is not matched: "Some A"
-
 val g : M.j t option -> unit = <fun>
 |}]
 
@@ -99,17 +93,11 @@ let g (y : 'a M.j t option) =
 [%%expect{|
 module M :
   sig
-    type 'a d
+    type !'a d
     type i = < m : 'c. 'c -> 'c d >
     type 'a j = < m : 'c. 'c -> 'a >
   end
 type _ t = A : M.i t
-Line 9, characters 2-20:
-9 |   let None = y in () ;;
-      ^^^^^^^^^^^^^^^^^^
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-  Here is an example of a case that is not matched: "Some A"
-
 val g : 'a M.j t option -> unit = <fun>
 |}]
 
@@ -160,7 +148,7 @@ let f (y : M.j t) = match y with _ -> .;;
 [%%expect{|
 module M :
   sig
-    type 'a a
+    type !'a a
     type i = C of < m : 'c. 'c -> 'c -> 'c >
     type j = C of < m : 'c. 'c -> 'c a >
   end

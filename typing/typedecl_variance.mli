@@ -23,7 +23,7 @@ val variance_of_params :
   (Parsetree.core_type * (Asttypes.variance * Asttypes.injectivity)) list ->
   surface_variance list
 val variance_of_sdecl :
-  Parsetree.type_declaration -> surface_variance list
+  impl:bool -> Parsetree.type_declaration -> surface_variance list
 
 type prop = Variance.t list
 type req = surface_variance list
@@ -65,7 +65,7 @@ val compute_decl :
   Env.t -> check:Ident.t option -> type_declaration -> req -> prop
 
 val update_decls :
-  Env.t -> Parsetree.type_declaration list ->
+  impl:bool -> Env.t -> Parsetree.type_declaration list ->
   (Ident.t * type_declaration) list ->
   (Ident.t * type_declaration) list
 

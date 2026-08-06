@@ -436,11 +436,19 @@ let transl_variance (v, i) =
 let variance_of_params ptype_params =
   List.map transl_variance (List.map snd ptype_params)
 
-let variance_of_sdecl sdecl =
-  variance_of_params sdecl.Parsetree.ptype_params
+let variance_of_sdecl ~impl (sdecl : Parsetree.type_declaration) =
+  let params = sdecl.ptype_params in
+  let params =
+    (* Add injectivity for abstract types in implementations *)
+    if impl && sdecl.ptype_kind = Parsetree.Ptype_abstract
+            && sdecl.ptype_manifest = None
+    then List.map (fun (t, (v,_i)) -> (t, (v, Injective))) params
+    else params
+  in
+  variance_of_params params
 
-let update_decls env sdecls decls =
-  let required = List.map variance_of_sdecl sdecls in
+let update_decls ~impl env sdecls decls =
+  let required = List.map (variance_of_sdecl ~impl) sdecls in
   Typedecl_properties.compute_property property env decls required
 
 let update_class_decls env cldecls =

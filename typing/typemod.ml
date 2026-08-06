@@ -1700,7 +1700,7 @@ and transl_signature env sg =
         newenv
     | Psig_type (rec_flag, sdecls) ->
         let (decls, newenv, _) =
-          Typedecl.transl_type_decl env rec_flag sdecls
+          Typedecl.transl_type_decl ~impl:false env rec_flag sdecls
         in
         List.iter (fun td ->
             Signature_names.check_type names td.typ_loc td.typ_id;
@@ -1715,7 +1715,7 @@ and transl_signature env sg =
         newenv
     | Psig_typesubst sdecls ->
         let (decls, newenv, _) =
-          Typedecl.transl_type_decl env Nonrecursive sdecls
+          Typedecl.transl_type_decl ~impl:false env Nonrecursive sdecls
         in
         List.iter (fun td ->
             if td.typ_kind <> Ttype_abstract || td.typ_manifest = None ||
@@ -2903,7 +2903,7 @@ and type_str_item ~names ~toplevel ~funct_body anchor env shape_map
         newenv
     | Pstr_type (rec_flag, sdecls) ->
         let (decls, newenv, shapes) =
-          Typedecl.transl_type_decl env rec_flag sdecls
+          Typedecl.transl_type_decl ~impl:true env rec_flag sdecls
         in
         List.iter
           Signature_names.(fun td -> check_type names td.typ_loc td.typ_id)

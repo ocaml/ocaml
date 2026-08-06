@@ -80,7 +80,7 @@ type ('dim, 'res, 'a) cross = 'dim
   constraint 'dim =
     [< `three of 'res & 'p2 three * 'p1 one | `two of 'res & 'p2 * 'p1 z ]
   constraint 'a = 'p1 * 'p2
-type (+'dim, +'rank) t
+type (+!'dim, +!'rank) t
 type +'c scalar = ('a one, 'b z) t constraint 'c = 'a * 'b
 type +'c vec2 = ('a two, 'b one) t constraint 'c = 'a * 'b
 module type Vec =
@@ -173,7 +173,7 @@ type ('dim, 'res, 'a) cross = 'dim
   constraint 'dim =
     [< `three of 'res & 'p2 three * 'p1 one | `two of 'res & 'p2 * 'p1 z ]
   constraint 'a = 'p1 * 'p2
-type (+'dim, +'rank) t
+type (+!'dim, +!'rank) t
 type +'c scalar = ('a one, 'b z) t constraint 'c = 'a * 'b
 type +'c vec2 = ('a two, 'b one) t constraint 'c = 'a * 'b
 module type Vec =

@@ -333,7 +333,7 @@ type ('a, 'p) t = private 'a s
 type 'a packed = T : ('a, _) t -> 'a packed [@@unboxed]
 ;;
 [%%expect{|
-type 'a s
+type !'a s
 type ('a, 'p) t = private 'a s
 type 'a packed = T : ('a, 'b) t -> 'a packed [@@unboxed]
 |}];;
@@ -354,7 +354,7 @@ val h : f = {field = []}
 type 'a t [@@immediate];;
 type u = U : 'a t -> u [@@unboxed];;
 [%%expect{|
-type 'a t [@@immediate]
+type !'a t [@@immediate]
 type u = U : 'a t -> u [@@unboxed]
 |}];;
 
