@@ -450,6 +450,15 @@ Working version
 
 ### Bug fixes:
 
+- #14975: Windows: fix handle leak in `Unix.select`. When the file descriptor
+  set contains anything other than sockets, `select` falls back to a worker
+  thread emulation in which any error during setup or waiting caused the whole
+  cleanup loop to be skipped, leaking one event handle per socket and leaving
+  the sockets registered with `WSAEventSelect` and in non-blocking mode. Also
+  fix a one-element overflow of the event array when a worker services
+  `MAXIMUM_SELECT_OBJECTS` sockets.
+  (Romain Beauxis, review by TBD)
+
 - #13335: Fix infinite loop in runtime_events.c's write_to_ring when an
   event is larger than the configured ring buffer. Only really comes up
   if you run the instrumented runtime with a small OCAMLRUNPARAM=e= setting
