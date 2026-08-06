@@ -512,7 +512,7 @@ OCaml 5.5.1
 
 ### Bug fixes:
 
-- #14891, #14982: fix scope error leading to an erroneous typechecking for
+- #14891, #14892: fix scope error leading to an erroneous typechecking for
   non-dependent application of module-dependent function in presence of
   dependent first-class module types:
   ```ocaml
