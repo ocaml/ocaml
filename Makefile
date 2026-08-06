@@ -2260,6 +2260,12 @@ ocamldebug_LIBRARIES = compilerlibs/ocamlcommon \
 otherlibs/unix/unix.cma: otherlibraries
 otherlibs/str/str.cma: otherlibraries
 
+# Root-directory targets depend on these .cmi/.cmx via .depend. The empty
+# recipes keep the generic %.cmi/%.cmx rules from racing with the otherlibs
+# sub-make, which records a different source path and digest in the artefacts.
+otherlibs/unix/unix.cmi otherlibs/str/str.cmi: otherlibraries ;
+otherlibs/unix/unix.cmx otherlibs/str/str.cmx: otherlibrariesopt ;
+
 debugger/%: VPATH += otherlibs/unix otherlibs/dynlink
 
 ocamldebug_COMPILER_SOURCES = $(addprefix toplevel/, \

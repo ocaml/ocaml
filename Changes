@@ -443,6 +443,13 @@ Working version
   (Austin Thierault, review by Antonin Décimo, Edwin Török, David Allsopp and
    Olivier Nicole)
 
+- Improve build reproducibility by letting only otherlibs/{str,unix} build their
+  own .cmi and .cmx. The generic %.cmi/%.cmx rules of the root Makefile were
+  racing with them under make -j and recorded a different source path, which
+  changed the interface digest (and, through it, most other compiled
+  artefacts) as well as the debug info packed into str.a and unix.a.
+  (Bernhard M. Wiedemann)
+
 ### Bug fixes:
 
 - #13335: Fix infinite loop in runtime_events.c's write_to_ring when an
