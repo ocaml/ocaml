@@ -3,7 +3,7 @@
 *)
 
 type z
-type 'a s
+type 'a s = private unit
 type _ nat =
   | Nz : z -> z nat
   | Nss : 'd nat -> 'd s s nat
@@ -12,7 +12,7 @@ type _ nat =
 
 [%%expect{|
 type z
-type 'a s
+type 'a s = private unit
 Lines 3-6, characters 0-27:
 3 | type _ nat =
 4 |   | Nz : z -> z nat
@@ -24,7 +24,7 @@ Error: In the GADT constructor
 |}];;
 
 type z
-type 'a s
+type 'a s = private unit
 type _ nat = ..
 type _ nat += Nz : z -> z nat
 type _ nat += Nss : 'd nat -> 'd s s nat
@@ -32,7 +32,7 @@ type _ nat += Nss : 'd nat -> 'd s s nat
 
 [%%expect{|
 type z
-type 'a s
+type 'a s = private unit
 type _ nat = ..
 type _ nat += Nz : z -> z nat
 Line 5, characters 0-40:

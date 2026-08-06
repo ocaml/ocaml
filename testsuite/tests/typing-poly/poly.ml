@@ -993,7 +993,7 @@ and u = int t
 type 'a t constraint 'a = int;;
 type 'a u = 'a and 'a v = 'a u t;;
 [%%expect {|
-type 'a t constraint 'a = int
+type !'a t constraint 'a = int
 Line 2, characters 26-32:
 2 | type 'a u = 'a and 'a v = 'a u t;;
                               ^^^^^^

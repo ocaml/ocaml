@@ -405,7 +405,7 @@ type cycle = cycle id
 and 'a id = 'a
 and s = cycle t
 [%%expect{|
-type 'a t constraint 'a = 'b * 'c
+type !'a t constraint 'a = 'b * 'c
 Line 2, characters 0-21:
 2 | type cycle = cycle id
     ^^^^^^^^^^^^^^^^^^^^^
@@ -419,7 +419,7 @@ type 'a t = [`Foo]
 type 'a cstr constraint 'a = float
 [%%expect{|
 type +-'a t = [ `Foo ]
-type 'a cstr constraint 'a = float
+type !'a cstr constraint 'a = float
 |}]
 
 type s = int

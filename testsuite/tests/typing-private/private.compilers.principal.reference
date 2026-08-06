@@ -121,7 +121,7 @@ Line 1:
 Error: Type declarations do not match:
          type !'a t = private 'a constraint 'a = < x : int; .. >
        is not included in
-         type 'a t
+         type !'a t
        Their parameters differ
        The type < x : int; .. > is not equal to the type 'a
 type 'a t = private 'a constraint 'a = < x : int; .. >

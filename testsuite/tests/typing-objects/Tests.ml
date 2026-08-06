@@ -776,7 +776,7 @@ x;;
 
 type 'a t;;
 [%%expect{|
-type 'a t
+type !'a t
 |}];;
 fun (x : 'a t as 'a) -> ();;
 [%%expect{|

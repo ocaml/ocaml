@@ -7,7 +7,7 @@
 type 'a abs;;
 type t16 = A : 'a abs -> t16 [@@ocaml.unboxed];;
 [%%expect{|
-type 'a abs
+type !'a abs
 Line 2, characters 0-46:
 2 | type t16 = A : 'a abs -> t16 [@@ocaml.unboxed];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

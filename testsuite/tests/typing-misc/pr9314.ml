@@ -104,7 +104,7 @@ type 'a alpha_of_gamma = < alpha : 'c > alpha
   constraint 'a = < delta : 'b; gamma : < alpha : 'c > >
 type 'a beta_of_delta = < beta : 'b > beta
   constraint 'a = < delta : < beta : 'b >; gamma : 'c >
-type ('a, 'b) alphabeta
+type (!'a, !'b) alphabeta
 module Alphabeta :
   sig
     type ('a, 'just_alpha) t = {

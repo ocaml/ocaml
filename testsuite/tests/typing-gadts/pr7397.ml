@@ -15,7 +15,7 @@ end
 type _ response =
  | C : #a t response;;
 [%%expect{|
-type +'a t
+type +!'a t
 class type a = object method b : b end
 and b = object method a : a end
 type _ response = C : #a t response

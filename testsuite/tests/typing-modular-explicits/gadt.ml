@@ -115,18 +115,17 @@ let f : ( (module X:S) -> (int * 'a) R.n, (module X:S) -> (float * 'b) R.n) Type
   | Type.Equal -> ()
 
 [%%expect{|
-module R : sig type 'a n end
+module R : sig type !'a n end
 module type S = sig type 'a t = X type u type v end
 Line 13, characters 4-14:
 13 |   | Type.Equal -> ()
          ^^^^^^^^^^
 Error: This pattern matches values of type
-         "((module X : S) -> (int * $'a) R.n,
-          (module X : S) -> (int * $'a) R.n)
+         "((module X : S) -> (int * 'a) R.n, (module X : S) -> (int * 'a) R.n)
          Type.eq"
        but a pattern was expected which matches values of type
-         "((module X : S) -> (int * $'a) R.n,
+         "((module X : S) -> (int * 'a) R.n,
           (module X : S) -> (float * 'b) R.n)
          Type.eq"
-       The type constructor "$'a" would escape its scope
+       Type "int" is not compatible with type "float"
 |}]

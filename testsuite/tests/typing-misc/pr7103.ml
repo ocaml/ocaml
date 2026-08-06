@@ -11,7 +11,7 @@ let g : [< `b] t -> unit = fun _ -> ();;
 
 let h : [> `b] t -> unit = fun _ -> ();;
 [%%expect{|
-type 'a t
+type !'a t
 type a
 val f : < .. > t -> unit = <fun>
 val g : [< `b ] t -> unit = <fun>

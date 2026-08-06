@@ -7,7 +7,7 @@ type 'a t;;
 let f (type a) (Neq n : (a, a t) eq) = n;;   (* warn! *)
 [%%expect{|
 type (_, _) eq = Eq : ('a, 'a) eq | Neq : int -> ('a, 'b) eq
-type 'a t
+type !'a t
 Line 3, characters 15-36:
 3 | let f (type a) (Neq n : (a, a t) eq) = n;;   (* warn! *)
                    ^^^^^^^^^^^^^^^^^^^^^

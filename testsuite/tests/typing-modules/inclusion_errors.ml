@@ -57,7 +57,7 @@ end = struct
   type ('b,'c,'a) t = ('b * 'c * 'a * 'c * 'a) x
 end
 [%%expect{|
-type 'a x
+type !'a x
 Lines 4-6, characters 6-3:
 4 | ......struct
 5 |   type ('b,'c,'a) t = ('b * 'c * 'a * 'c * 'a) x

@@ -20,9 +20,9 @@ let vexpr (type visit_action)
   | Global -> fun _ -> raise Exit
 ;;
 [%%expect{|
-type 'a visit_action
+type !'a visit_action
 type insert
-type 'a local_visit_action
+type !'a local_visit_action
 type ('a, 'result, 'visit_action) context =
     Local : ('a, 'a * insert, 'a local_visit_action) context
   | Global : ('a, 'a, 'a visit_action) context

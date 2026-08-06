@@ -13,14 +13,14 @@ type - 'a t;;
 type +- 'a t;;
 type -+ 'a t;;
 [%%expect{|
-type +'a t
-type -'a t
-type +-'a t
-type +-'a t
-type +'a t
-type -'a t
-type +-'a t
-type +-'a t
+type +!'a t
+type -!'a t
+type +-!'a t
+type +-!'a t
+type +!'a t
+type -!'a t
+type +-!'a t
+type +-!'a t
 |}]
 (* Expect doesn't support syntax errors
 type + - 'a t
@@ -61,14 +61,14 @@ type !'a t = (module s with type t = 'a)
 |}]
 
 (* Composition *)
-type -'a n
+type -'a n = private unit
 type +'a p
 type !'a i
 
 type +'a error_np = 'a n p;;
 [%%expect{|
-type -'a n
-type +'a p
+type -'a n = private unit
+type +!'a p
 type !'a i
 Line 5, characters 0-26:
 5 | type +'a error_np = 'a n p;;
@@ -96,7 +96,7 @@ Line 1, characters 0-26:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, expected parameter variances are not satisfied.
        The 1st type parameter was expected to be contravariant,
-       but it is covariant.
+       but it is injective covariant.
 |}]
 
 type -'a error_nn = 'a n n;;

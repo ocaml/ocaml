@@ -43,7 +43,7 @@ class type c = object method m : [ `A ] t end;;
 module M : sig val v : (#c as 'a) -> 'a end =
   struct let v x = ignore (x :> c); x end;;
 [%%expect{|
-type -'a t
+type -!'a t
 class type c = object method m : [ `A ] t end
 module M : sig val v : (#c as 'a) -> 'a end
 |}];;

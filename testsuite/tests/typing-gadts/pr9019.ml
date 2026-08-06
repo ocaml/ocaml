@@ -216,7 +216,7 @@ Exception: Match_failure ("", 9, 2).
 type 'a a = private [< `A of 'a];;
 let f (x : _ a) = match x with `A None -> ();;
 [%%expect{|
-type 'a a = private [< `A of 'a ]
+type !'a a = private [< `A of 'a ]
 Line 2, characters 18-44:
 2 | let f (x : _ a) = match x with `A None -> ();;
                       ^^^^^^^^^^^^^^^^^^^^^^^^^^

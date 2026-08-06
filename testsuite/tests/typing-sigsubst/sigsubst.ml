@@ -143,7 +143,7 @@ module type S = sig
   val x : int mylist t2
 end with type 'a t2 := 'a t
 [%%expect {|
-type 'a t constraint 'a = 'b list
+type !'a t constraint 'a = 'b list
 module type S = sig type 'a mylist = 'a list val x : int mylist t end
 |}]
 
@@ -155,7 +155,7 @@ module type S = sig
   val x : int mylist t2
 end with type 'a t2 := 'a t * bool
 [%%expect {|
-type 'a t constraint 'a = 'b list
+type !'a t constraint 'a = 'b list
 Lines 2-6, characters 16-34:
 2 | ................sig
 3 |   type 'a t2 constraint 'a = 'b list
