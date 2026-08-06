@@ -452,7 +452,7 @@ Working version
 
 - #14993: the let-rec check should give generic arrays dynamic size,
   since floats and addresses have different sizes on 32-bit systems.
-  (Jeremy Yallop)
+  (Jeremy Yallop, review by Vincent Laviron)
 
 - #13335: Fix infinite loop in runtime_events.c's write_to_ring when an
   event is larger than the configured ring buffer. Only really comes up
