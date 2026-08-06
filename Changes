@@ -450,6 +450,9 @@ Working version
 
 ### Bug fixes:
 
+- #14986: Take effect cases into account in the expansiveness check.
+  (Jeremy Yallop)
+
 - #13335: Fix infinite loop in runtime_events.c's write_to_ring when an
   event is larger than the configured ring buffer. Only really comes up
   if you run the instrumented runtime with a small OCAMLRUNPARAM=e= setting
