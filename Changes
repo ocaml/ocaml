@@ -499,7 +499,7 @@ Working version
 
 * #14982: Remove assumption that abstract types defined in the current
   module are injective and contractive
-  (Jacques Garrigue and Jeremy Yallop)
+  (Jeremy Yallop, review by Jacques Garrigue)
 
 OCaml 5.5.1
 -----------
