@@ -1032,7 +1032,8 @@ let update_level_for tr_exn env level ty =
 
 (* Lower the level of a type to the current level *)
 let enforce_current_level env ty =
-  update_level_for Unify env !current_level ty
+  try update_level env !current_level ty
+  with Escape _ -> fatal_error "Ctype.enforce_current_level"
 
 (* Lower level of type variables inside contravariant branches.
 
