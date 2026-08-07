@@ -4066,9 +4066,11 @@ let enforce_current_level env ty =
 
 let expand_head_trace env t =
   let reset_tracing = check_trace_gadt_instances env in
-  let t = expand_head_unif env t in
-  reset_trace_gadt_instances reset_tracing;
-  t
+  match expand_head_unif env t with
+  | t ->
+    reset_trace_gadt_instances reset_tracing;
+    Ok t
+  | exception Unify_trace trace -> Error trace
 
 let instance_funct_nondep_inplace env (tfun : Types.tfunctor) mty =
   let env' = Env.add_module (Ident.of_unscoped tfun.id_us) Mp_present mty env in
@@ -4153,10 +4155,10 @@ let arrow_unify_var ~param_hole l t =
 
 let filter_arrow env ~in_apply t l ~param_hole =
   match expand_head_trace env t with
-  | exception Unify_trace trace ->
+  | Error trace ->
       let t', _, _ = function_type l ~param_hole (get_level t) in
       arrow_unification_error ~in_apply env t t' trace
-  | t ->
+  | Ok t ->
     match get_desc t with
     | Tvar _ -> Ok (arrow_unify_var ~param_hole l t)
     | Tarrow(l', ty_param, ty_ret, _) ->
@@ -4190,10 +4192,10 @@ let filter_arrow env ~in_apply t l ~param_hole =
 
 let filter_functor env t l =
   match expand_head_trace env t with
-  | exception Unify_trace trace ->
+  | Error trace ->
       let t', _, _ = function_type l ~param_hole:false (get_level t) in
       arrow_unification_error ~in_apply:true env t t' trace
-  | t ->
+  | Ok t ->
       match get_desc t with
       | Tfunctor (l', id, pack, ct) ->
           if compatible_labels ~in_pattern_mode:false l l'
@@ -4206,10 +4208,10 @@ let filter_functor env t l =
 let filter_arity env t l =
   let param_hole = false in
   match expand_head_trace env t with
-  | exception Unify_trace trace ->
+  | Error trace ->
       let t', _, _ = function_type l ~param_hole (get_level t) in
       arrow_unification_error ~in_apply:false env t t' trace
-  | t ->
+  | Ok t ->
       match get_desc t with
       | Tvar _ ->
           let ft = arrow_unify_var ~param_hole l t in
@@ -4243,8 +4245,7 @@ let rec filter_method_field env name ty =
       ty', ty1
   in
   let ty =
-    try expand_head_trace env ty
-    with Unify_trace trace ->
+    Result.ok_or_else (expand_head_trace env ty) @@ fun trace ->
       let level = get_level ty in
       let ty', _ = method_type ~level in
       raise (Filter_method_failed
@@ -4277,8 +4278,7 @@ let filter_method env name ty =
       (ty', ty_meth)
   in
   let ty =
-    try expand_head_trace env ty
-    with Unify_trace trace ->
+    Result.ok_or_else (expand_head_trace env ty) @@ fun trace ->
       let level = get_level ty in
       let scope = get_scope ty in
       let ty', _ = object_type ~level ~scope in
