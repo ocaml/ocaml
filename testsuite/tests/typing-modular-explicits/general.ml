@@ -1521,7 +1521,7 @@ Line 1, characters 62-64:
   This extra argument is not expected.
 |}]
 
-(* Bug 14842a *)
+(* Bug #14842a *)
 
 module type S = sig type t type e val v : e -> t end
 let helper (type a) (module M : S with type t = a) _ : a = assert false
@@ -1534,7 +1534,7 @@ val outer : (module M : S with type e = 'a and type t = 'b) -> M.e -> M.t =
   <fun>
 |}]
 
-(* Bug #1842b *)
+(* Bug #14842b *)
 
 module F (Api : sig
   module type Key = sig type t end
