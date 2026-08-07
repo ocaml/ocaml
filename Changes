@@ -407,6 +407,9 @@ Working version
   when mixing self types, local modules and first class modules.
   (Samuel Vivien, review by Florian Angeletti, Jacques Garrigue)
 
+- #14739: Refactor type comparison used when comparing signatures.
+  (Samuel Vivien, review by Jacques Garrigue and Stefan Muenzel)
+
 - #14800: localise `nondep_type_rec` memoisation state in a new
   `Nondep_scope` module (`typing/ctype.ml`).
   (Matthew Marques, review by Stefan Muenzel)
