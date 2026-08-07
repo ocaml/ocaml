@@ -4,6 +4,8 @@ val g : _:'a -> 'a = <fun>
 - : int = 3
 val o : ?_:int -> unit -> int = <fun>
 - : int = 5
+module type S = sig end
+module F : S -> sig end
 Line 5, characters 8-9:
 5 | let x = _;;
             ^
@@ -74,6 +76,42 @@ Line 2, characters 5-6:
 2 | o ?_:_;;
          ^
 Error: Syntax error
+Line 4, characters 11-12:
+4 | module M = _;;
+               ^
+Error: Syntax error
+Line 2, characters 13-14:
+2 | module N = F(_);;
+                 ^
+Error: Syntax error
+Line 2, characters 12-13:
+2 | module O = (_ : S);;
+                ^
+Error: Syntax error
+Line 2, characters 25-26:
+2 | module P = functor () -> _;;
+                             ^
+Error: Syntax error
+Line 2, characters 8-9:
+2 | include _;;
+            ^
+Error: Syntax error
+Line 2, characters 5-6:
+2 | open _;;
+         ^
+Error: Syntax error
+Line 2, characters 31-32:
+2 | module type Q = module type of _;;
+                                   ^
+Error: Syntax error
+Line 2, characters 16-17:
+2 | let p = (module _ : S);;
+                    ^
+Error: Syntax error: module-expr expected.
+Line 2, characters 23-24:
+2 | let q = let module L = _ in ();;
+                           ^
+Error: Syntax error
 Line 4, characters 9-10:
 4 | let x = ~_;;
              ^
@@ -81,5 +119,9 @@ Error: Syntax error
 Line 2, characters 4-5:
 2 | f ~ _ : 3;;
         ^
+Error: Syntax error
+Line 2, characters 13-14:
+2 | module R = F _;;
+                 ^
 Error: Syntax error
 

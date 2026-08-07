@@ -20,6 +20,12 @@ let o ?_:(x = 0) () = x;;
 
 o ?_:(Some 5) ();;
 
+module type S = sig end;;
+
+module F (_ : S) = struct end;;
+
+module _ = struct end;;
+
 (* Section 2: "_" where a general expression can start. The parser
    recognizes these forms in order to report an ad hoc error. *)
 
@@ -64,8 +70,30 @@ o ?_;;
 
 o ?_:_;;
 
-(* Section 4: forms which are always syntax errors. *)
+(* Section 4: "_" where a module expression is allowed. *)
+
+module M = _;;
+
+module N = F(_);;
+
+module O = (_ : S);;
+
+module P = functor () -> _;;
+
+include _;;
+
+open _;;
+
+module type Q = module type of _;;
+
+let p = (module _ : S);;
+
+let q = let module L = _ in ();;
+
+(* Section 5: forms which are always syntax errors. *)
 
 let x = ~_;;
 
 f ~ _ : 3;;
+
+module R = F _;;
