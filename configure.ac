@@ -450,7 +450,7 @@ If your host is 64 bits, you can try with './configure CC="gcc -m64"' \
 
 AS_CASE([$target],
   [*-pc-windows],
-    [AS_IF([test -z "$CC"], [CC=cl])])
+    [: ${CC=cl} ${CXX=cl}])
 
 AC_CHECK_PROG([csc],[csc],[csc])
 AS_IF([test -n "$csc"],
@@ -846,6 +846,7 @@ old_host_os=$host_os
 AS_IF([test x"$host_os" = "xwindows"],[host_os=mingw])
 saved_CFLAGS="$CFLAGS"
 LT_INIT
+LT_LANG([C++]) # To test API interoperability between C and C++
 CFLAGS="$saved_CFLAGS"
 host_os=$old_host_os
 popdef([host_os])dnl
@@ -2924,7 +2925,9 @@ testsuite/tools/test_in_prefix.opt"],
 testsuite/tools/test_in_prefix"])
     testsuite_tools='testsuite/tools/codegen testsuite/tools/expect'
     optional_bytecode_tools="$optional_bytecode_tools $testsuite_tools"
-    OCAML_CXX_COMPILE_STDCXX_11],
+    AX_CXX_COMPILE_STDCXX([11], [], [optional])
+    AS_IF([test x$ac_success = xyes], [ocamltest_CXX="$CXX"])
+],
   [build_ocamltest=false
   ocamltest=''])
 
