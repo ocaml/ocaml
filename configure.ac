@@ -240,7 +240,6 @@ AC_SUBST([optional_libraries])
 AC_SUBST([optional_bytecode_tools])
 AC_SUBST([optional_native_tools])
 AC_SUBST([ocamltest_CPP])
-AC_SUBST([ocamltest_CXX])
 AC_SUBST([ocamltest_libunix])
 AC_SUBST([unix_library])
 AC_SUBST([unix_directory])
@@ -450,7 +449,7 @@ If your host is 64 bits, you can try with './configure CC="gcc -m64"' \
 
 AS_CASE([$target],
   [*-pc-windows],
-    [AS_IF([test -z "$CC"], [CC=cl])
+    [: ${CC=cl} ${CXX=cl}
     ccomp_type=msvc
     S=asm
     SO=dll
@@ -858,6 +857,7 @@ old_host_os=$host_os
 AS_IF([test x"$host_os" = "xwindows"],[host_os=mingw])
 saved_CFLAGS="$CFLAGS"
 LT_INIT
+LT_LANG([C++]) # To test API interoperability between C and C++
 CFLAGS="$saved_CFLAGS"
 host_os=$old_host_os
 popdef([host_os])dnl
@@ -2916,7 +2916,7 @@ testsuite/tools/test_in_prefix.opt"],
 testsuite/tools/test_in_prefix"])
     testsuite_tools='testsuite/tools/codegen testsuite/tools/expect'
     optional_bytecode_tools="$optional_bytecode_tools $testsuite_tools"
-    OCAML_CXX_COMPILE_STDCXX_11],
+    AX_CXX_COMPILE_STDCXX([11], [], [mandatory])],
   [build_ocamltest=false
   ocamltest=''])
 
