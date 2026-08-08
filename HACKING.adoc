@@ -635,7 +635,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 WORKDIR /mnt
 ENTRYPOINT ["tools/autogen"]
 EOF
-git rebase trunk --exec "docker run --rm -it -v $PWD:/mnt ocaml-make-configure:latest"
+git rebase trunk --exec "docker run --rm --user $(id -u):$(id -g) -it -v $PWD:/mnt ocaml-make-configure:latest"
 ----
 
 ==== GitHub's Continuous Integration: GitHub Actions and AppVeyor
