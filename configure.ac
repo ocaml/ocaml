@@ -21,7 +21,7 @@ AC_INIT([OCaml],
         [OCAML__VERSION],
         [caml-list@inria.fr],
         [ocaml],
-        [http://www.ocaml.org])
+        [https://ocaml.org/])
 
 AC_MSG_NOTICE([Configuring OCaml version AC_PACKAGE_VERSION])
 
