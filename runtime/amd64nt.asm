@@ -54,7 +54,7 @@ Caml_state MACRO field:REQ
 ENDM
 
 ; Branch Target Identification for Intel CET
-ENDBR64 MACRO
+CET_ENDBR MACRO
 IFDEF WITH_BTI
         endbr64
 ENDIF
@@ -230,7 +230,7 @@ caml_system__code_begin:
         PUBLIC  caml_call_realloc_stack
         ALIGN   4
 caml_call_realloc_stack:
-        ENDBR64
+        CET_ENDBR
         SAVE_ALL_REGS
         mov     rcx,qword ptr [rsp+8]
         SWITCH_OCAML_TO_C
@@ -249,7 +249,7 @@ L104:
         PUBLIC  caml_call_gc
         ALIGN   4
 caml_call_gc:
-        ENDBR64
+        CET_ENDBR
         SAVE_ALL_REGS
         mov     Caml_state(gc_regs), r15
     ; Call the garbage collector
@@ -264,7 +264,7 @@ caml_call_gc:
         PUBLIC  caml_alloc1
         ALIGN   4
 caml_alloc1:
-        ENDBR64
+        CET_ENDBR
         sub     r15, 16
         cmp     r15, Caml_state(young_limit)
         jb      caml_call_gc
@@ -273,7 +273,7 @@ caml_alloc1:
         PUBLIC  caml_alloc2
         ALIGN   4
 caml_alloc2:
-        ENDBR64
+        CET_ENDBR
         sub     r15, 24
         cmp     r15, Caml_state(young_limit)
         jb      caml_call_gc
@@ -282,7 +282,7 @@ caml_alloc2:
         PUBLIC  caml_alloc3
         ALIGN   4
 caml_alloc3:
-        ENDBR64
+        CET_ENDBR
         sub     r15, 32
         cmp     r15, Caml_state(young_limit)
         jb      caml_call_gc
@@ -291,7 +291,7 @@ caml_alloc3:
         PUBLIC  caml_allocN
         ALIGN   4
 caml_allocN:
-        ENDBR64
+        CET_ENDBR
         cmp     r15, Caml_state(young_limit)
         jb      caml_call_gc
         ret
@@ -328,7 +328,7 @@ ENDM
         PUBLIC  caml_c_call
         ALIGN   4
 caml_c_call:
-        ENDBR64
+        CET_ENDBR
     ; Arguments:
     ;  C arguments         : rcx, rdx, r8 and r9
     ;  C function          : rax
@@ -347,7 +347,7 @@ caml_c_call:
         PUBLIC  caml_c_call_stack_args
         ALIGN 4
 caml_c_call_stack_args:
-        ENDBR64
+        CET_ENDBR
     ; Arguments:
     ;  C arguments         : rcx, rdx, r8 and r9
     ;    C function          : rax
@@ -373,7 +373,7 @@ caml_c_call_stack_args:
         PUBLIC caml_c_call_copy_stack_args
         ALIGN 4
 caml_c_call_copy_stack_args:
-        ENDBR64
+        CET_ENDBR
     ; Set up a frame pointer even without WITH_FRAME_POINTERS,
     ; which we use to pop an unknown number of arguments later
         push    rbp
@@ -401,7 +401,7 @@ L210:
         PUBLIC  caml_start_program
         ALIGN   4
 caml_start_program:
-        ENDBR64
+        CET_ENDBR
     ; Save callee-save registers
         PUSH_CALLEE_SAVE_REGS
     ; First argument (rcx) is Caml_state. Load it in r14
@@ -476,7 +476,7 @@ L108:
         PUBLIC  caml_raise_exn
         ALIGN   4
 caml_raise_exn:
-        ENDBR64
+        CET_ENDBR
         test    qword ptr Caml_state(backtrace_active), 1
         jne     L110
         RESTORE_EXN_HANDLER_OCAML
@@ -499,7 +499,7 @@ L117:
         PUBLIC  caml_reraise_exn
         ALIGN   4
 caml_reraise_exn:
-        ENDBR64
+        CET_ENDBR
         test     qword ptr Caml_state(backtrace_active), 1
         jne     L117
         RESTORE_EXN_HANDLER_OCAML
@@ -510,7 +510,7 @@ caml_reraise_exn:
         PUBLIC  caml_raise_exception
         ALIGN   4
 caml_raise_exception:
-        ENDBR64
+        CET_ENDBR
         mov     r14, rcx                   ; First argument is Caml_state
         mov     rax, rdx                   ; Second argument is exn bucket
         mov     r15, Caml_state(young_ptr) ; Reload alloc ptr
@@ -524,7 +524,7 @@ caml_raise_exception:
         PUBLIC  caml_callback_asm
         ALIGN   4
 caml_callback_asm:
-        ENDBR64
+        CET_ENDBR
         PUSH_CALLEE_SAVE_REGS
     ; Initial loading of arguments
         mov     r14, rcx      ; Caml_state
@@ -538,7 +538,7 @@ caml_callback_asm:
         PUBLIC  caml_callback2_asm
         ALIGN   4
 caml_callback2_asm:
-        ENDBR64
+        CET_ENDBR
         PUSH_CALLEE_SAVE_REGS
     ; Initial loading of arguments
         mov     r14, rcx        ; Caml_state
@@ -552,7 +552,7 @@ caml_callback2_asm:
         PUBLIC  caml_callback3_asm
         ALIGN   4
 caml_callback3_asm:
-        ENDBR64
+        CET_ENDBR
         PUSH_CALLEE_SAVE_REGS
     ; Initial loading of arguments
         mov     r14, rcx        ; Caml_state
@@ -568,7 +568,7 @@ caml_callback3_asm:
         PUBLIC  caml_perform
         ALIGN   4
 caml_perform:
-        ENDBR64
+        CET_ENDBR
     ;  %rax: effect to perform
     ;  %rbx: freshly allocated continuation
         mov     rsi, Caml_state(current_stack) ; %rsi := current_stack
@@ -603,7 +603,7 @@ L112:
         PUBLIC  caml_reperform
         ALIGN   4
 caml_reperform:
-        ENDBR64
+        CET_ENDBR
     ;  %rax: effect to reperform
     ;  %rbx: continuation
         mov     rsi, Caml_state(current_stack) ; %rsi := current_stack
@@ -617,7 +617,7 @@ caml_reperform:
         PUBLIC  caml_resume
         ALIGN   4
 caml_resume:
-        ENDBR64
+        CET_ENDBR
     ; %rax -> Val_ptr(cont_tail), %rbx -> fun, %rdi -> arg
         lea     rsi, [rax-1]  ; %rsi (cont_tail) = Ptr_val(%rax)
     ;  check if stack null, then already used
@@ -640,7 +640,7 @@ L502:
         PUBLIC  caml_runstack
         ALIGN   4
 caml_runstack:
-        ENDBR64
+        CET_ENDBR
     ; %rax -> fiber, %rbx -> fun, %rdi -> arg
         and     rax, -2       ; %rax = Ptr_val(%rax)
     ; save old stack pointer and exception handler
@@ -694,14 +694,14 @@ fiber_exn_handler:
         PUBLIC  caml_ml_array_bound_error
         ALIGN   4
 caml_ml_array_bound_error:
-        ENDBR64
+        CET_ENDBR
         lea     rax, caml_array_bound_error_asm
         jmp     caml_c_call
 
         PUBLIC  caml_assert_stack_invariants
         ALIGN   4
 caml_assert_stack_invariants:
-        ENDBR64
+        CET_ENDBR
         mov     r11, Caml_state(current_stack)
         mov     r10, rsp
         sub     r10, r11
