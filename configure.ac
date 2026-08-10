@@ -2882,7 +2882,8 @@ AS_IF([test x"$enable_bti" = "xyes"],
     [x86_64-*-linux*|x86_64-*-openbsd*|x86_64-*-freebsd*],
       [bti=true
        AC_MSG_NOTICE([emitting endbr64 landing pads for Intel CET/BTI])],
-    [AC_MSG_ERROR([BTI/CET is only supported on x86_64 Linux, OpenBSD, and FreeBSD])]
+    [AC_MSG_ERROR(
+       [BTI/CET is only supported on x86_64 Linux, OpenBSD, and FreeBSD])]
   )],
   [test x"$enable_bti" = "xno"],
   [bti=false
