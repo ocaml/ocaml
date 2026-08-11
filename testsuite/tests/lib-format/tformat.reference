@@ -92,6 +92,8 @@ t
  310 311 312 313 314 315 316
 Delayed printf
  317 318 319
+y
+ 320
 end of tests
 
 All tests succeeded.
