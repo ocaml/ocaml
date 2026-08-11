@@ -297,11 +297,15 @@ module User = struct
      want to write a lot of custom events fast, so we want to cache
      the write buffer across calls.
 
-     To be safe for multi-domain programs, the cache lives in
-     domain-local storage. Each domain caches a single buffer, with
-     the slot emptied while the buffer is in us. Contending threads
-     will allocate a fresh buffer, and the last writer to finish
-     retains its buffer. At most one buffer per domain is kept live. *)
+     The cache lives in domain-local storage. This makes it safe for
+     multi-domain programs. The [Atomic] is also necessary:
+     systhreads of the same domain share the slot, and the runtime
+     can stop a thread, or run a signal handler, in the serializer
+     callback. Each domain caches a single buffer. The slot is empty
+     while the buffer is in use. If two writes on the same domain
+     overlap, the second write allocates a new buffer, and the
+     writer that completes last keeps its buffer. Thus each domain
+     keeps at most one buffer between writes. *)
   let write_buffer = Domain.DLS.new_key (fun () -> Atomic.make Bytes.empty)
 
   let write (type a) (event : a t) (value : a) =

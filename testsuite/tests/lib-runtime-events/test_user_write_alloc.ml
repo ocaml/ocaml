@@ -38,7 +38,7 @@ let () =
   in
   assert (int_words = baseline);
   assert (custom_words = baseline);
-  (* sanity check that the events reached  event ring *)
+  (* Make sure that the events reached the event ring. *)
   let seen = ref 0 in
   let handler _domain_id _ts _event _value = incr seen in
   let cursor = create_cursor None in
