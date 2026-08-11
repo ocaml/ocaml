@@ -23,7 +23,18 @@
 extern "C" {
 #endif
 
-CAMLextern char * caml_format_exception (value);
+/* Returns a string representation of the exception [exn], allocated with
+   [caml_stat_alloc], or NULL if the allocation failed. It is the
+   responsibility of the caller to free it with [caml_stat_free]. */
+CAMLextern char * caml_format_exception (value exn);
+
+/* Same as [caml_format_exception] for the exception carried by [result],
+   or NULL if [result] is not an exception. */
+Caml_inline char * caml_result_format_exception (caml_result result)
+{
+  if (! caml_result_is_exception(result)) return NULL;
+  return caml_format_exception(result.data);
+}
 
 #ifdef __cplusplus
 }

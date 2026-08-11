@@ -1569,6 +1569,12 @@ and macros:
 \item "int caml_result_is_exception(caml_result "\var{res}")"
   (in "<caml/mlvalues.h>") is true if \var{res} represents an exception.
 
+\item "char * caml_result_format_exception(caml_result "\var{res}")"
+  (in "<caml/printexc.h>") returns a string representation of the
+  exception contained in \var{res}, or "NULL" if \var{res} is not an
+  exception. The string is allocated with "caml_stat_alloc" and must be
+  freed by the caller with "caml_stat_free".
+
 \item The macro "CAMLlocalresult(foo)" (in "<caml/memory.h>") is the
   "caml_result" counterpart of "CAMLlocal1": it declares a local
   variable of type "caml_result", whose content is tracked by the

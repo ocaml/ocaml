@@ -102,6 +102,7 @@ typedef struct caml_result_private caml_result;
    - Result_value, Result_exception
    - caml_result_is_exception
    - caml_get_value_or_raise (in fail.h)
+   - caml_result_format_exception (in printexc.h)
 */
 struct caml_result_private {
   int is_exception;

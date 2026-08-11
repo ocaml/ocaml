@@ -123,6 +123,10 @@ Working version
   some Intel CPUs.
   (Nat Mote, review by Florian Angeletti and Miod Vallat)
 
+- #14998: Add `caml_result_format_exception`, to print the exception carried by
+  a `caml_result` without accessing the internal representation of the type.
+  (Romain Beauxis)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
