@@ -142,9 +142,18 @@ let function_variable_alias
     function_decls.funs;
   !fun_var_bindings
 
+(* Invariant parameters for sets with more than 10 functions are likely
+   to be irrelevant, pushing the limit to 100 gives us some margin.
+   The non-linear complexity only becomes a problem with larger sets. *)
+let max_functions_for_transitive_closure = 100
+
+let too_many_functions (decls : Flambda.function_declarations) =
+  Variable.Map.cardinal decls.funs > max_functions_for_transitive_closure
+
 let analyse_functions ~backend ~param_to_param
       ~anything_to_param ~param_to_anywhere
       (decls : Flambda.function_declarations) =
+  if too_many_functions decls then None else
   let function_variable_alias = function_variable_alias ~backend decls in
   let param_indexes_by_fun_vars =
     Variable.Map.map (fun (decl : Flambda.function_declaration) ->
@@ -253,7 +262,7 @@ let analyse_functions ~backend ~param_to_param
                   ~callee_arg:(Parameter.var param) !relation)
          params)
     decls.funs;
-  transitive_closure !relation
+  Some (transitive_closure !relation)
 
 
 (* A parameter [x] of the function [f] is considered as unchanging if
@@ -302,11 +311,13 @@ let invariant_params_in_recursion (decls : Flambda.function_declarations)
     top relation (callee, callee_arg)
   in
   let param_to_anywhere ~caller:_ ~caller_arg:_ relation = relation in
-  let relation =
+  match
     analyse_functions ~backend ~param_to_param
       ~anything_to_param ~param_to_anywhere
       decls
-  in
+  with
+  | None -> Variable.Map.empty
+  | Some relation ->
   let not_unchanging =
     Variable.Pair.Map.fold (fun (func, var) set not_unchanging ->
         match set with
@@ -360,16 +371,18 @@ let invariant_param_sources decls ~backend =
   in
   let anything_to_param ~callee:_ ~callee_arg:_ relation = relation in
   let param_to_anywhere ~caller:_ ~caller_arg:_ relation = relation in
-  let relation =
+  match
     analyse_functions ~backend ~param_to_param
       ~anything_to_param ~param_to_anywhere
       decls
-  in
-  Variable.Pair.Map.fold (fun (_, var) set relation ->
-      match set with
-      | Top -> relation
-      | Implication set -> Variable.Map.add var set relation)
-    relation Variable.Map.empty
+  with
+  | None -> Variable.Map.empty
+  | Some relation ->
+    Variable.Pair.Map.fold (fun (_, var) set relation ->
+        match set with
+        | Top -> relation
+        | Implication set -> Variable.Map.add var set relation)
+      relation Variable.Map.empty
 
 let pass_name = "unused-arguments"
 let () = Clflags.all_passes := pass_name :: !Clflags.all_passes
@@ -383,22 +396,24 @@ let unused_arguments (decls : Flambda.function_declarations) ~backend =
   let param_to_anywhere ~caller ~caller_arg relation =
     top relation (caller, caller_arg)
   in
-  let relation =
-    analyse_functions ~backend ~param_to_param
-      ~anything_to_param ~param_to_anywhere
-      decls
-  in
   let arguments =
-    Variable.Map.fold
-      (fun fun_var decl acc ->
-         List.fold_left
-           (fun acc param ->
-              match Variable.Pair.Map.find (fun_var, param) relation with
-              | exception Not_found -> Variable.Set.add param acc
-              | Implication _ -> Variable.Set.add param acc
-              | Top -> acc)
-           acc (Parameter.List.vars decl.Flambda.params))
-      decls.funs Variable.Set.empty
+    match
+      analyse_functions ~backend ~param_to_param
+        ~anything_to_param ~param_to_anywhere
+        decls
+    with
+    | None -> Variable.Set.empty
+    | Some relation ->
+      Variable.Map.fold
+        (fun fun_var decl acc ->
+           List.fold_left
+             (fun acc param ->
+                match Variable.Pair.Map.find (fun_var, param) relation with
+                | exception Not_found -> Variable.Set.add param acc
+                | Implication _ -> Variable.Set.add param acc
+                | Top -> acc)
+             acc (Parameter.List.vars decl.Flambda.params))
+        decls.funs Variable.Set.empty
   in
   if dump then begin
     Format.printf "Unused arguments: %a@." Variable.Set.print arguments
