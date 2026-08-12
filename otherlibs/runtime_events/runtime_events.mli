@@ -161,7 +161,7 @@ Major heap size in {b words} of a Domain.
 | EV_C_MAJOR_ALLOCATED_WORDS
 (**
 Allocations to the major heap of this Domain in {b words}, since the last major
-slice.
+slice, including words promoted from the minor heap.
 @since 5.3
 *)
 | EV_C_MAJOR_ALLOCATED_WORK
