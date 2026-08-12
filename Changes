@@ -653,6 +653,9 @@ Working version
   `T with module type S = X -> X` as `T with module type S = (X -> X)`
   (Pieter Goetschalckx, review by Gabriel Scherer and Florian Angeletti)
 
+- #15039: Various runtime events documentation improvements
+  (Tim McGilchrist, reviewed by Sadiq Jaffer and Antonin Décimo)
+
 OCaml 5.5.1
 -----------
 
