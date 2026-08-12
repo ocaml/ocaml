@@ -170,7 +170,9 @@ and operation =
   | Copaque (* Sys.opaque_identity *)
   | Catomic_fetch_add (* Atomic read-modify-write: fetch old value and add *)
   | Catomic_exchange (* Atomic swap: store a value, return the old one *)
-  | Catomic_cas (* Atomic compare-and-set, returns a tagged boolean *)
+  | Catomic_compare_exchange (* Atomic compare-and-exchange: store the new
+                                value if the old one matches, and return the
+                                value that was found either way *)
   | Cdls_get
   | Cpoll
 

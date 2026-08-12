@@ -237,7 +237,7 @@ method class_of_operation op =
       if is_atomic then Op_store true
       else Op_load mutability
   | Istore(_,_,asg) -> Op_store asg
-  | Iatomic_fetch_add | Iatomic_exchange | Iatomic_cas ->
+  | Iatomic_fetch_add | Iatomic_exchange | Iatomic_compare_exchange ->
       Op_store true  (* atomic read-modify-write *)
   | Ialloc _ | Ipoll _ -> assert false     (* treated specially *)
   | Iintop(Icheckbound) -> Op_checkbound

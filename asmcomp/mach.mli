@@ -60,7 +60,7 @@ type operation =
                                  (* false = initialization, true = assignment *)
   | Iatomic_fetch_add
   | Iatomic_exchange
-  | Iatomic_cas
+  | Iatomic_compare_exchange
   | Ialloc of { bytes : int; dbginfo : Debuginfo.alloc_dbginfo; }
   | Iintop of integer_operation
   | Iintop_imm of integer_operation * int

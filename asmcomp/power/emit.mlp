@@ -495,7 +495,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Idls_get) -> 1
     | Lop(Iatomic_fetch_add) -> 7
     | Lop(Iatomic_exchange) -> 6
-    | Lop(Iatomic_cas) -> 11
+    | Lop(Iatomic_compare_exchange) -> 8
     | Lop(Ireturn_addr) -> 1
     | Lreloadretaddr -> 2
     | Lreturn -> 2 + (if fp && f.fun_frame_required then 1 else 0)  (* +1 for restore FP *)
@@ -921,25 +921,22 @@ let emit_instr env i =
         `	bne-	{emit_label lbl}\n`;
         `	isync\n`;
         `	lwsync\n`
-    | Lop (Iatomic_cas) ->
+    | Lop (Iatomic_compare_exchange) ->
         (* The compare-and-swap primitive from the Programming Environments
-           Manual D.3, with r0 holding the loaded value. Leaving the
+           Manual D.3. The loaded value is the result now, so ldarx reads
+           straight into res.(0) and the scratch through r0 is gone, as is
+           the pair of li that used to materialise the boolean. Leaving the
            reservation behind on the failure path is what that example does.
            isync and lwsync as for fetch-and-add, see #10995. *)
         let lbl = new_label() in
-        let lbl_fail = new_label() in
         let lbl_done = new_label() in
         `	sync\n`;
         `{emit_label lbl}:\n`;
-        `	ldarx	0, 0, {emit_reg i.arg.(0)}\n`;
-        `	cmpd	0, {emit_reg i.arg.(1)}\n`;
-        `	bne-	{emit_label lbl_fail}\n`;
+        `	ldarx	{emit_reg i.res.(0)}, 0, {emit_reg i.arg.(0)}\n`;
+        `	cmpd	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}\n`;
+        `	bne-	{emit_label lbl_done}\n`;
         `	stdcx.	{emit_reg i.arg.(2)}, 0, {emit_reg i.arg.(0)}\n`;
         `	bne-	{emit_label lbl}\n`;
-        `	li	{emit_reg i.res.(0)}, 1\n`;
-        `	b	{emit_label lbl_done}\n`;
-        `{emit_label lbl_fail}:\n`;
-        `	li	{emit_reg i.res.(0)}, 0\n`;
         `{emit_label lbl_done}:\n`;
         `	isync\n`;
         `	lwsync\n`

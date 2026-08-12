@@ -171,7 +171,7 @@ and operation =
   | Copaque
   | Catomic_fetch_add
   | Catomic_exchange
-  | Catomic_cas
+  | Catomic_compare_exchange
   | Cdls_get
   | Cpoll
 

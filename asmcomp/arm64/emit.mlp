@@ -544,7 +544,7 @@ module Size = struct
     | Lop (Idls_get) -> 1
     | Lop (Iatomic_fetch_add) -> 5
     | Lop (Iatomic_exchange) -> 4
-    | Lop (Iatomic_cas) -> 9
+    | Lop (Iatomic_compare_exchange) -> 8
     | Lop (Ireturn_addr) -> 1
     | Lreloadretaddr -> 0
     | Lreturn -> epilogue_size f + (if top_bits_ignore then 0 else 1)
@@ -1049,10 +1049,10 @@ let emit_instr env i =
         `	stlxr	{emit_wreg reg_tmp2}, {emit_reg i.arg.(1)}, [{emit_reg i.arg.(0)}]\n`;
         `	cbnz	{emit_wreg reg_tmp2}, {emit_label lbl}\n`;
         `	dmb	ishst\n`
-    | Lop(Iatomic_cas) ->
-        (* res.(0) holds the loaded value until the very end, where cset
-           overwrites it with the result. The flags set by cmp survive stlxr,
-           cbnz, b and clrex, so both paths land on the same cset.
+    | Lop(Iatomic_compare_exchange) ->
+        (* res.(0) is the loaded value and now simply stays that way, which is
+           what the operation returns. Both paths still join at the release
+           barrier.
            clrex is not architecturally required for an abandoned ldaxr (ARM
            ARM B2.10.5) but drops the monitor rather than leaving it marked. *)
         let lbl = new_label() in
@@ -1068,7 +1068,6 @@ let emit_instr env i =
         `{emit_label lbl_fail}:\n`;
         `	clrex\n`;
         `{emit_label lbl_done}:\n`;
-        `	cset	{emit_reg i.res.(0)}, eq\n`;
         `	dmb	ishst\n`
     | Lop(Iatomic_fetch_add) ->
         (* LL/SC loop, works on baseline ARMv8.0 (no LSE required).

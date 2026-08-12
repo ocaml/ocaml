@@ -251,7 +251,8 @@ let find_poll_alloc_or_calls instr =
       | Iop(Imove | Ispill | Ireload | Iconst_int _ | Iconst_float _ |
             Iconst_symbol _ | Iextcall { alloc = false } | Istackoffset _ |
             Iload _ | Istore _ | Iatomic_fetch_add |
-            Iatomic_exchange | Iatomic_cas | Iintop _ | Iintop_imm _ |
+            Iatomic_exchange | Iatomic_compare_exchange |
+            Iintop _ | Iintop_imm _ |
             Ifloatofint | Iintoffloat | Inegf | Iabsf | Iaddf | Isubf | Imulf |
             Idivf | Iopaque | Ispecific _ | Idls_get | Icompf _ | Ireturn_addr)
             -> None

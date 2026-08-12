@@ -436,19 +436,15 @@ let emit_instr env i =
         `{emit_label lbl}:\n`;
         `	csg	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, 0({emit_reg i.arg.(0)})\n`;
         `	brc	4, {emit_label lbl}\n`
-    | Lop(Iatomic_cas) ->
-        (* csg clobbers its first operand on failure, so the expected value is
-           copied into res.(0) first, which interference keeps clear of the
-           arguments. lghi leaves the condition code alone, so the result is
-           materialised the same way as an integer comparison.
-           brc 8 is condition code 0, equal and stored. *)
-        let lbl = new_label() in
+    | Lop(Iatomic_compare_exchange) ->
+        (* csg already reports what it found. On a mismatch it loads the
+           storage value into its first operand, and on a match that operand
+           still holds the expected value, which is the same word. So res.(0)
+           is the answer on both paths and there is nothing left to do.
+           The expected value is copied in first because csg clobbers it, and
+           interference keeps res.(0) clear of the arguments. *)
         `	lgr	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}\n`;
-        `	csg	{emit_reg i.res.(0)}, {emit_reg i.arg.(2)}, 0({emit_reg i.arg.(0)})\n`;
-        `	lghi	{emit_reg i.res.(0)}, 1\n`;
-        `	brc	8, {emit_label lbl}\n`;
-        `	lghi	{emit_reg i.res.(0)}, 0\n`;
-        `{emit_label lbl}:\n`
+        `	csg	{emit_reg i.res.(0)}, {emit_reg i.arg.(2)}, 0({emit_reg i.arg.(0)})\n`
     | Lop(Iatomic_fetch_add) ->
         `	laag	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, 0({emit_reg i.arg.(0)})\n`
 

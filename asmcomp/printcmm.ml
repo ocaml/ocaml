@@ -166,7 +166,7 @@ let operation d = function
   | Copaque -> "opaque"
   | Catomic_fetch_add -> "atomic_fetch_add"
   | Catomic_exchange -> "atomic_exchange"
-  | Catomic_cas -> "atomic_cas"
+  | Catomic_compare_exchange -> "atomic_compare_exchange"
   | Cdls_get -> "dls_get"
   | Cpoll -> "poll"
 

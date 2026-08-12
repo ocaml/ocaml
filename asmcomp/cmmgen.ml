@@ -486,12 +486,20 @@ let rec transl env e =
           transl_ccall env prim args dbg
       | (Patomic_cas, [ptr; ofs; oldval; newval]) when native_atomics ->
           (* translprim only builds this when the value is immediate, so there
-             is no write barrier to run and the instruction is the whole job. *)
-          tag_int
-            (Cop(Catomic_cas,
-                 [field_address_computed (transl env ptr) (transl env ofs) dbg;
-                  transl env oldval; transl env newval], dbg))
-            dbg
+             is no write barrier to run and the instruction is the whole job.
+             The instruction reports the value it found, and compare-and-set is
+             that value tested against the expected one. Immediates compare as
+             plain words, so this is the same equality the boolean would have
+             been built from, only spelled once. *)
+          bind "expected" (transl env oldval) (fun expected ->
+            tag_int
+              (Cop(Ccmpi Ceq,
+                   [Cop(Catomic_compare_exchange,
+                        [field_address_computed
+                           (transl env ptr) (transl env ofs) dbg;
+                         expected; transl env newval], dbg);
+                    expected], dbg))
+              dbg)
       | (Patomic_cas, args) ->
           Cop(Cextcall("caml_atomic_cas_field", typ_val, [], false),
               List.map (transl env) args, dbg)

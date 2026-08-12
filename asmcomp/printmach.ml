@@ -143,8 +143,9 @@ let operation op arg ppf res =
       fprintf ppf "atomic_fetch_add [%a] %a" reg arg.(0) reg arg.(1)
   | Iatomic_exchange ->
       fprintf ppf "atomic_exchange [%a] %a" reg arg.(0) reg arg.(1)
-  | Iatomic_cas ->
-      fprintf ppf "atomic_cas [%a] %a %a" reg arg.(0) reg arg.(1) reg arg.(2)
+  | Iatomic_compare_exchange ->
+      fprintf ppf "atomic_compare_exchange [%a] %a %a"
+        reg arg.(0) reg arg.(1) reg arg.(2)
   | Ialloc { bytes = n; } ->
     fprintf ppf "alloc %i" n;
   | Iintop(op) -> fprintf ppf "%a%s%a" reg arg.(0) (intop op) reg arg.(1)

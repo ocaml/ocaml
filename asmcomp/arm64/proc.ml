@@ -271,7 +271,7 @@ let destroyed_at_oper = function
       [| reg_d7 |]            (* d7 / s7 destroyed *)
   | Iop(Iatomic_fetch_add) ->
       [| reg_x16; reg_x17 |]  (* x16=sum, x17=stlxr status in LL/SC loop *)
-  | Iop(Iatomic_exchange | Iatomic_cas) ->
+  | Iop(Iatomic_exchange | Iatomic_compare_exchange) ->
       [| reg_x17 |]           (* x17=stlxr status in LL/SC loop *)
   | _ -> [||]
 
@@ -292,7 +292,8 @@ let max_register_pressure = function
   | Iintoffloat | Ifloatofint
   | Iload{memory_chunk=Single; _} | Istore(Single, _, _) -> [| 23; 31 |]
   | Iatomic_fetch_add -> [| 21; 32 |]  (* x16+x17 used as scratch *)
-  | Iatomic_exchange | Iatomic_cas -> [| 22; 32 |]  (* x17 used as scratch *)
+  | Iatomic_exchange | Iatomic_compare_exchange ->
+      [| 22; 32 |]                (* x17 used as scratch *)
   | _ -> [| 23; 32 |]
 
 (* Calling the assembler *)

@@ -150,7 +150,7 @@ let wrap_entry_exit expr =
             | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat
             | Ccheckbound | Copaque | Cdls_get | Cpoll | Capply _ | Cextcall _
             | Cload _ | Cstore _ | Ccmpi _ | Ccmpa _ | Ccmpf _ | Craise _
-            | Catomic_fetch_add | Catomic_exchange | Catomic_cas ),
+            | Catomic_fetch_add | Catomic_exchange | Catomic_compare_exchange ),
             _,
             _ )
       | Cconst_int (_, _)
@@ -287,10 +287,11 @@ let instrument body =
     | Cop (Catomic_fetch_add, _, _) ->
       invalid_arg
         "instrument: wrong number of arguments for operation Catomic_fetch_add"
-    | Cop ((Catomic_exchange | Catomic_cas), _, _) ->
+    | Cop ((Catomic_exchange | Catomic_compare_exchange), _, _) ->
       (* cmmgen keeps the runtime call under TSan, which carries its own
          instrumentation, so these never reach here. *)
-      invalid_arg "instrument: native atomic exchange/cas under TSan"
+      invalid_arg
+        "instrument: native atomic exchange/compare-exchange under TSan"
     | Cop
         ( (( Capply _ | Caddi | Calloc | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
            | Cand | Cor | Cxor | Clsl | Clsr | Casr | Caddv | Cadda | Cnegf

@@ -141,7 +141,7 @@ let pseudoregs_for_operation op arg res =
      res.(1) is a scratch for the single-domain path, which loads and stores
      by hand rather than paying for a cmpxchg it does not need.
      arg.(3) is &caml_num_domains_running. *)
-  | Iatomic_cas ->
+  | Iatomic_compare_exchange ->
       let treg = Reg.create Int in
       ([| arg.(0); rax; arg.(2); arg.(3) |], [| rax; treg |])
   (* Other instructions are regular *)
@@ -287,8 +287,8 @@ method! select_operation op args dbg =
   | Catomic_exchange ->
       (Iatomic_exchange,
        args @ [Cconst_symbol ("caml_num_domains_running", dbg)])
-  | Catomic_cas ->
-      (Iatomic_cas,
+  | Catomic_compare_exchange ->
+      (Iatomic_compare_exchange,
        args @ [Cconst_symbol ("caml_num_domains_running", dbg)])
   | _ -> super#select_operation op args dbg
 
