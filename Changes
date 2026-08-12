@@ -123,6 +123,12 @@ Working version
   some Intel CPUs.
   (Nat Mote, review by Florian Angeletti and Miod Vallat)
 
+- #14505: Add frame pointer support to POWER linux.
+  Maintains an ELFv2 frame pointer in r31. The allocation pointer is
+  moved from r31 to r23 for enabled and disabled frame pointers.
+  r31 stays allocatable when frame pointers are disabled
+  (Tim McGilchrist, review by Zane Hambly and Olivier Nicole)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
