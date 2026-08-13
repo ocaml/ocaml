@@ -44,6 +44,7 @@ type runtime_counter =
 | EV_C_MAJOR_SLICE_BUDGET
 | EV_C_MINOR_ALLOCATED_WORDS
 | EV_C_MINOR_PROMOTED_WORDS
+| EV_C_MAJOR_DIRECT_ALLOCATED_WORDS
 
 type runtime_phase =
 | EV_EXPLICIT_GC_SET
@@ -154,6 +155,8 @@ let runtime_counter_name counter =
       "major_slice_target"
   | EV_C_MAJOR_SLICE_BUDGET ->
       "major_slice_budget"
+  | EV_C_MAJOR_DIRECT_ALLOCATED_WORDS ->
+      "major_direct_allocated_words"
 
 
 let runtime_phase_name phase =

@@ -157,8 +157,9 @@ typedef enum {
     EV_C_MAJOR_SLICE_BUDGET,
 
     EV_C_MINOR_ALLOCATED_WORDS,
-    EV_C_MINOR_PROMOTED_WORDS
+    EV_C_MINOR_PROMOTED_WORDS,
 
+    EV_C_MAJOR_DIRECT_ALLOCATED_WORDS
 } ev_runtime_counter;
 
 typedef enum {

@@ -1176,7 +1176,8 @@ update_major_slice_work(intnat howmuch,
   if (log_events) {
     CAML_EV_COUNTER(EV_C_MAJOR_HEAP_WORDS, (uintnat)heap_words);
     CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_WORDS, my_alloc_count);
-    /* TODO: add counters for direct, suspended, resumed allocs. */
+    CAML_EV_COUNTER(EV_C_MAJOR_DIRECT_ALLOCATED_WORDS, my_alloc_direct_count);
+    /* TODO: add counters for suspended and resumed allocs. */
     CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_WORK, alloc_work);
     CAML_EV_COUNTER(EV_C_MAJOR_DEPENDENT_WORK, dependent_work);
     CAML_EV_COUNTER(EV_C_MAJOR_EXTRA_WORK, extra_work);

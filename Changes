@@ -146,6 +146,11 @@ Working version
   (Xavier Leroy, report by Akshay Singh, review by Nicolás Ojeda Bär
   and Antonin Décimo)
 
+- #15001: Add EV_C_MAJOR_DIRECT_ALLOCATED_WORDS runtime events counter,
+  reporting the words allocated directly in the major heap as opposed to
+  promoted from the minor heap.
+  (Tim McGilchrist, review by ??????)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
