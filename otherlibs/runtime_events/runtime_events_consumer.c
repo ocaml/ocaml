@@ -506,6 +506,27 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
       if (msg_length > RUNTIME_EVENTS_MAX_MSG_LENGTH
           || ring_masked_pos + msg_length
              > cursor->metadata.ring_size_elements) {
+        /* The header may have been overwritten by the writer wrapping around
+           between the ring_head check above and the read of the header, in
+           which case it is not a header at all. Re-check before reporting
+           corruption, so that an overwrite is reported as lost events. */
+        ring_head =
+          atomic_load_acquire(&runtime_events_buffer_header->ring_head);
+
+        if (ring_head > cursor->current_positions[domain_num]) {
+          int lost_words = ring_head - cursor->current_positions[domain_num];
+          cursor->current_positions[domain_num] = ring_head;
+
+          if (cursor->lost_events) {
+            if( !(cursor->lost_events(domain_num, callback_data,
+                                      lost_words)) ) {
+              early_exit = 1;
+            }
+          }
+
+          continue;
+        }
+
         atomic_store(&cursor->cursor_in_poll, 0);
         return E_CORRUPT_STREAM;
       }
