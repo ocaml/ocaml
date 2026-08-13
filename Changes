@@ -173,7 +173,7 @@ Working version
   rather than going through C
   (Zane Hambly, review by Olivier Nicole and KC Sivaramakrishnan)
 
-- #????: s390x: emit `sqdbr` for square root and `lrvgr` for byte swap
+- #15002: s390x: emit `sqdbr` for square root and `lrvgr` for byte swap
   rather than calling into C
   (Zane Hambly, review by ????)
 * #13919: optimize `lazy v` when `v` is a structured constant
