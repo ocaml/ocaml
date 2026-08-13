@@ -77,7 +77,7 @@ CAMLextern void caml_runtime_events_set_lifecycle(
 /* Set the lost events callback on the cursor */
 CAMLextern void caml_runtime_events_set_lost_events(
     struct caml_runtime_events_cursor *cursor,
-    int (*f)(int domain_id, void *callback_data, int lost_words));
+    int (*f)(int domain_id, void *callback_data, uint64_t lost_words));
 
 /* Set the user events callback on the cursor */
 CAMLextern void caml_runtime_events_set_user_events(
