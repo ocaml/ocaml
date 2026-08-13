@@ -52,7 +52,7 @@ let pseudoregs_for_operation op arg res =
   (* Two-address binary operations: arg.(0) and res.(0) must be the same *)
   | Iintop(Iadd|Isub|Imul|Iand|Ior|Ixor)  | Iaddf|Isubf|Imulf|Idivf ->
       ([|res.(0); arg.(1)|], res)
-  | Ispecific _ ->
+  | Ispecific (Imultaddf | Imultsubf) ->
     ( [| arg.(0); arg.(1); res.(0) |], [| res.(0) |])
   (* One-address unary operations: arg.(0) and res.(0) must be the same *)
   |  Iintop_imm((Imul|Iand|Ior|Ixor), _) -> (res, res)
@@ -61,6 +61,12 @@ let pseudoregs_for_operation op arg res =
 
 let is_immediate n = n <= 0x7FFF_FFFF && n >= -0x8000_0000
 let is_immediate_logical n = n <= 0xFFFF_FFFF && n >= 0
+
+(* If you update [inline_ops], you may need to update [is_simple_expr] and/or
+   [effects_of], below. *)
+let inline_ops =
+  [ "sqrt"; "caml_bswap16_direct"; "caml_int32_direct_bswap";
+    "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
 
 class selector = object (self)
 
@@ -100,8 +106,31 @@ method! select_operation op args dbg =
       (Ispecific Imultaddf, [arg1; arg2; arg3])
   | (Csubf, [Cop(Cmulf, [arg1; arg2], _); arg3]) ->
       (Ispecific Imultsubf, [arg1; arg2; arg3])
+  (* Recognize square root *)
+  | (Cextcall("sqrt", _, _, _), [arg]) ->
+      (Ispecific Isqrtf, [arg])
+  (* Recognize byte swaps *)
+  | (Cextcall("caml_bswap16_direct", _, _, _), _) ->
+      (Ispecific (Ibswap 16), args)
+  | (Cextcall("caml_int32_direct_bswap", _, _, _), _) ->
+      (Ispecific (Ibswap 32), args)
+  | (Cextcall(("caml_int64_direct_bswap"|"caml_nativeint_direct_bswap"),
+              _, _, _), _) ->
+      (Ispecific (Ibswap 64), args)
   | _ ->
       super#select_operation op args dbg
+
+method! is_simple_expr = function
+  (* inlined floating-point ops are simple if their arguments are *)
+  | Cop(Cextcall (fn, _, _, _), args, _) when List.mem fn inline_ops ->
+      List.for_all self#is_simple_expr args
+  | e -> super#is_simple_expr e
+
+method! effects_of e =
+  match e with
+  | Cop(Cextcall (fn, _, _, _), args, _) when List.mem fn inline_ops ->
+      Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
+  | e -> super#effects_of e
 
 method! insert_op_debug env op dbg rs rd =
   try
