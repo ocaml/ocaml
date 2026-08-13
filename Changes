@@ -129,6 +129,9 @@ Working version
   r31 stays allocatable when frame pointers are disabled
   (Tim McGilchrist, review by Zane Hambly and Olivier Nicole)
 
+- #14814: a `caml_result_find_exception` helper for the `caml_result` type
+  (Gabriel Scherer, review by Nicolás Ojeda Bär, request by Chris Vine)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
