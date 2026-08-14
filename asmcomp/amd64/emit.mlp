@@ -950,11 +950,14 @@ let fundecl fundecl =
         emit_call "caml_call_realloc_stack_default";
       end
       else begin
-        (* Pass the desired frame size in r10, since all of the
-           argument-passing registers may be in use. Don't use the
-           stack since we have r10 and r11 available *)
-        I.mov (int desired_frame_size) r10;
+        (* Pass the desired frame size on the stack, since all of the
+           argument-passing registers may be in use.
+           We cannot use r10, because glibc does not preserve it in
+           _dl_runtime_resolve. *)
+        cfi_adjust_cfa_offset 8;
+        I.push (int desired_frame_size);
         emit_call "caml_call_realloc_stack";
+        cfi_adjust_cfa_offset (-8);
       end;
       I.jmp (label ret)
     end

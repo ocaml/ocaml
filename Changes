@@ -134,8 +134,7 @@ Working version
 
 - #?????: When reallocating the stack, consolidate all small-valued
   reallocations in a reallocation twice the stack-threshold, reducing
-  code size in the most common case. In addition, don't use the stack
-  to pass arguments, saving a push/pop. (on AMD64)
+  code size in the most common case (on AMD64).
   (Stefan Muenzel, review by ?????)
 
 ### Type system:

@@ -605,10 +605,9 @@ G(caml_system__code_begin):
 FUNCTION(caml_call_realloc_stack)
 CFI_STARTPROC
         CFI_SIGNAL_FRAME
-LBL(caml_call_realloc_stack):
         ENTER_FUNCTION
         SAVE_ALL_REGS
-        movq    %r10, C_ARG_1 /* argument */
+        movq    RETADDR_ENTRY_SIZE(%rsp), C_ARG_1 /* argument */
         SWITCH_OCAML_TO_C
         C_call  (GCALL(caml_try_realloc_stack))
         SWITCH_C_TO_OCAML
@@ -616,18 +615,21 @@ LBL(caml_call_realloc_stack):
         jz      1f
         RESTORE_ALL_REGS
         LEAVE_FUNCTION
-        ret
+        ret     $8
 1:      RESTORE_ALL_REGS
         LEA_VAR(caml_exn_Stack_overflow, %rax)
-        add     $8, %rsp /* pop retaddr */
+        add     $16, %rsp /* pop argument, retaddr */
         jmp     GCALL(caml_raise_exn)
 CFI_ENDPROC
 END_FUNCTION(caml_call_realloc_stack)
 
 FUNCTION(caml_call_realloc_stack_default)
 CFI_STARTPROC
-        mov     $(2*Stack_threshold_words), %r10
-        jmp     LBL(caml_call_realloc_stack)
+        ENTER_FUNCTION
+        push    $(2*Stack_threshold_words); CFI_ADJUST(8)
+        call   GCALL(caml_call_realloc_stack)
+        LEAVE_FUNCTION
+        ret
 CFI_ENDPROC
 END_FUNCTION(caml_call_realloc_stack_default)
 
