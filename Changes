@@ -181,6 +181,9 @@ Working version
 - #14575: Emit direct assembly for `Atomic.fetch_and_add`
   rather than going through C
   (Zane Hambly, review by Olivier Nicole and KC Sivaramakrishnan)
+
+- #15005: riscv: emit `fsqrt.d` for square root rather than calling into C
+  (Zane Hambly, review by         )
 * #13919: optimize `lazy v` when `v` is a structured constant
   (below a size threshold), so that `Lazy.from_val v` should not be
   necessary anymore in most cases.
