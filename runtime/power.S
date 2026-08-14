@@ -573,21 +573,17 @@ FUNCTION caml_c_call
       Must use C_CALL_TMP (callee-saved r28) because SWITCH_OCAML_TO_C
       clobbers TMP. */
         mr      C_CALL_TMP, SP
+#endif
    /* Switch from OCaml to C */
         SWITCH_OCAML_TO_C
-   /* Create a frame whose back chain points to OCaml stack.
-      This allows frame pointer walking to cross from C to OCaml,
-      similar to ARM64's ENTER_FUNCTION. */
-        stdu    C_CALL_TMP, -RESERVED_STACK(SP)
-#ifdef ASM_CFI_SUPPORTED
-   /* After stdu, SP moved away from c_stack_link. The back chain at SP+0
-      contains OCaml_SP (from C_CALL_TMP). Update CFI to read CFA from there. */
-        .cfi_escape DW_CFA_def_cfa_expression, 3, \
-           DW_OP_breg + DW_REG_sp, 0, DW_OP_deref
-#endif
-#else
-   /* Switch from OCaml to C (no extra frame needed without frame pointers) */
-        SWITCH_OCAML_TO_C
+#ifdef WITH_FRAME_POINTERS
+   /* SP is now the c_stack_link, whose first 32 bytes are a linkage area
+      (Reserved_space_c_stack_link in fiber.h).  Make its back chain point to
+      the OCaml frame so that the frame walker can cross from C to OCaml.
+      Recording it there rather than in a frame pushed below the c_stack_link
+      keeps the C stack unwindable for the TSan raise path, which bounds its
+      walk at the c_stack_link (see caml_tsan_exit_on_raise_c in tsan.c). */
+        std     C_CALL_TMP, 0(SP)
 #endif
    /* Make the exception handler and alloc ptr available to the C code */
         std     ALLOC_PTR, Caml_state(young_ptr)
@@ -598,16 +594,6 @@ FUNCTION caml_c_call
         mr      C_CALL_TOC, 2   /* save current TOC in a callee-save register */
         bctrl
         mr      2, C_CALL_TOC   /* restore current TOC */
-#ifdef WITH_FRAME_POINTERS
-    /* Pop the frame we created */
-        addi    SP, SP, RESERVED_STACK
-#ifdef ASM_CFI_SUPPORTED
-   /* After popping, SP points to c_stack_link again. Restore CFI to read
-      CFA from Cstack_sp (offset 40), matching SWITCH_OCAML_TO_C output. */
-        .cfi_escape DW_CFA_def_cfa_expression, 3, \
-           DW_OP_breg + DW_REG_sp, Cstack_sp_offset, DW_OP_deref
-#endif
-#endif
     /* Restore return address (in register C_CALL_RET_ADDR, preserved by C) */
         mtlr    C_CALL_RET_ADDR
     /* Reload new allocation pointer and exception pointer */
@@ -1000,6 +986,14 @@ FUNCTION caml_start_program
     /* Pop the struct c_stack_link */
         ld      0, Cstack_prev(SP)
         std     0, Caml_state(c_stack)
+#ifdef WITH_FRAME_POINTERS
+    /* The c_stack_link's linkage area is this frame's own, so caml_c_call
+       overwrote our back chain with an OCaml SP to let frame-pointer walking
+       cross from C to OCaml.  The OCaml code has returned, so re-establish it,
+       leaving the chain to our C caller intact for external unwinders. */
+        addi    0, SP, STACKSIZE
+        std     0, 0(SP)
+#endif
     /* Restore callee-save registers */
         addi    TMP, SP, CALLBACK_LINK_SIZE + RESERVED_STACK - 8
         ldu     14, 8(TMP)
