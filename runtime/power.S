@@ -650,14 +650,11 @@ FUNCTION caml_c_call_stack_args
       twice. */
         ld      C_CALL_TMP, 0(SP)       /* actual function frame */
 #endif
-   /* Save return address in a callee-save register */
+   /* Save return address in a callee-save register, and in this frame's LR
+      save area.  caml_raise_exception reads it back from there, through
+      Stack_sp, to start the backtrace when a C call raises. */
         mflr    C_CALL_RET_ADDR
-#ifdef WITH_FRAME_POINTERS
-   /* Saved into the OCaml caller's frame after the copy loop instead, where
-      it cannot be clobbered by the last argument slot. */
-#else
         std     C_CALL_RET_ADDR, LR_SAVE(SP)
-#endif
    /* Switch from OCaml to C */
         SWITCH_OCAML_TO_C
    /* Make the exception handler and alloc ptr available to the C code */
@@ -686,8 +683,9 @@ FUNCTION caml_c_call_stack_args
         cmpdi   TMP, 32
         bge     1b
 #ifdef WITH_FRAME_POINTERS
-   /* Save return address in OCaml caller's frame for frame pointer walking.
-      Must be AFTER the copy loop because main_SP + 16
+   /* Also save the return address in the OCaml caller's frame, which is where
+      the frame walker reads it.  Must be AFTER the copy loop because
+      main_SP + 16
       (= param_SP + stack_ofs + 16)
       can overlap with the last argument slot in the parameter frame. */
         std     C_CALL_RET_ADDR, LR_SAVE(C_CALL_TMP)
