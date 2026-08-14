@@ -175,7 +175,7 @@ Working version
 
 - #15002: s390x: emit `sqdbr` for square root and `lrvgr` for byte swap
   rather than calling into C
-  (Zane Hambly, review by ????)
+  (Zane Hambly, review by         )
 * #13919: optimize `lazy v` when `v` is a structured constant
   (below a size threshold), so that `Lazy.from_val v` should not be
   necessary anymore in most cases.
