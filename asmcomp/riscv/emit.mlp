@@ -273,11 +273,13 @@ let name_for_floatop2 = function
   | Idivf -> "fdiv.d"
   | _ -> Misc.fatal_error "Emit.Iopf2"
 
+(* Three-operand specific operations only, [Isqrtf] is emitted directly. *)
 let name_for_specific = function
   | Imultaddf false -> "fmadd.d"
   | Imultaddf true  -> "fnmadd.d"
   | Imultsubf false -> "fmsub.d"
   | Imultsubf true  -> "fnmsub.d"
+  | _ -> Misc.fatal_error "Emit.name_for_specific"
 
 (* Output the assembly code for an instruction *)
 
@@ -536,6 +538,8 @@ let emit_instr env i =
       `	fcvt.l.d	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, rtz\n`
   | Lop(Iopaque) ->
       assert (i.arg.(0).loc = i.res.(0).loc)
+  | Lop(Ispecific Isqrtf) ->
+      `	fsqrt.d	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
   | Lop(Ispecific sop) ->
       let instr = name_for_specific sop in
       `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`
