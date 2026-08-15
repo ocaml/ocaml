@@ -30,6 +30,7 @@ let command_line_options = []
 type specific_operation =
     Imultaddf                           (* multiply and add *)
   | Imultsubf                           (* multiply and subtract *)
+  | Isqrtf                              (* floating-point square root *)
   | Ialloc_far of                       (* allocation in large functions *)
       { bytes : int; dbginfo : Debuginfo.alloc_dbginfo }
   | Ipoll_far of { return_label : cmm_label option }
@@ -93,6 +94,8 @@ let print_specific_operation printreg op ppf arg =
   | Imultsubf ->
       fprintf ppf "%a *f %a -f %a"
         printreg arg.(0) printreg arg.(1) printreg arg.(2)
+  | Isqrtf ->
+      fprintf ppf "sqrtf %a" printreg arg.(0)
   | Ialloc_far { bytes; _ } ->
       fprintf ppf "alloc_far %d" bytes
   | Ipoll_far _ ->
