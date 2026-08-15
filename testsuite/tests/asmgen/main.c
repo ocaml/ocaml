@@ -28,6 +28,10 @@ void caml_call_realloc_stack(void)
 {
 
 };
+void caml_call_realloc_stack_default(void)
+{
+
+};
 #endif
 
 void caml_ml_array_bound_error(void)

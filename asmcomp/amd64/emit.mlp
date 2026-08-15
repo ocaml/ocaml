@@ -940,15 +940,22 @@ let fundecl fundecl =
   | None -> ()
   | Some (overflow,ret) -> begin
       def_label overflow;
-      (* Pass the desired frame size on the stack, since all of the
-        argument-passing registers may be in use.
-        Also serves to align the stack properly before the call *)
-      I.push (int (Config.stack_threshold + max_frame_size / 8));
-      cfi_adjust_cfa_offset 8;
-        (* measured in words *)
-      emit_call "caml_call_realloc_stack";
-      I.pop r10; (* ignored *)
-      cfi_adjust_cfa_offset (-8);
+      let desired_frame_size =
+        Config.stack_threshold + max_frame_size / 8
+      in
+      if desired_frame_size <= Config.stack_threshold * 2
+      then begin
+        (* Consolidate all small-size stack reallocations in the same function,
+           reducing instruction count in the calling function itself. *)
+        emit_call "caml_call_realloc_stack_default";
+      end
+      else begin
+        (* Pass the desired frame size in r10, since all of the
+           argument-passing registers may be in use. Don't use the
+           stack since we have r10 and r11 available *)
+        I.mov (int desired_frame_size) r10;
+        emit_call "caml_call_realloc_stack";
+      end;
       I.jmp (label ret)
     end
   end;
