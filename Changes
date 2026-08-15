@@ -194,6 +194,9 @@ Working version
 - #15005: riscv: emit `fsqrt.d` for square root rather than calling into C
   (Zane Hambly, review by Miod Vallat and Xavier Leroy)
 
+- #15006: power: emit `fsqrt` for square root rather than calling into C
+  (Zane Hambly, review by         )
+
 - #15008: emit the fused multiply-add for `Float.fma` on arm64, power,
   riscv and s390x rather than calling into C
   (Zane Hambly, review by Miod Vallat and Xavier Leroy)
