@@ -224,7 +224,7 @@ caml_system__code_begin:
         ALIGN   4
 caml_call_realloc_stack:
         SAVE_ALL_REGS
-        mov     rcx,qword ptr [rsp+8]
+        mov     rcx,r10
         SWITCH_OCAML_TO_C
         call    caml_try_realloc_stack
         SWITCH_C_TO_OCAML
@@ -235,8 +235,14 @@ caml_call_realloc_stack:
 L104:
         RESTORE_ALL_REGS
         lea     rax, caml_exn_Stack_overflow
-        add     rsp, 16
+        add     rsp, 8
         jmp     caml_raise_exn
+
+        PUBLIC  caml_call_realloc_stack_default
+        ALIGN   4
+caml_call_realloc_stack_default:
+        mov     r10, 64 ; CR smuenzel: Need to get value from config
+        jmp     caml_call_realloc_stack
 
         PUBLIC  caml_call_gc
         ALIGN   4

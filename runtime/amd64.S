@@ -615,13 +615,23 @@ CFI_STARTPROC
         jz      1f
         RESTORE_ALL_REGS
         LEAVE_FUNCTION
-        ret
+        ret     $8
 1:      RESTORE_ALL_REGS
         LEA_VAR(caml_exn_Stack_overflow, %rax)
         add     $16, %rsp /* pop argument, retaddr */
         jmp     GCALL(caml_raise_exn)
 CFI_ENDPROC
 END_FUNCTION(caml_call_realloc_stack)
+
+FUNCTION(caml_call_realloc_stack_default)
+CFI_STARTPROC
+        ENTER_FUNCTION
+        push    $(2*Stack_threshold_words); CFI_ADJUST(8)
+        call   GCALL(caml_call_realloc_stack)
+        LEAVE_FUNCTION
+        ret
+CFI_ENDPROC
+END_FUNCTION(caml_call_realloc_stack_default)
 
 FUNCTION(caml_call_gc)
 CFI_STARTPROC

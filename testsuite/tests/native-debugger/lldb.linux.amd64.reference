@@ -32,9 +32,9 @@ frame X: meander`_start
 Process XXXX resuming
 Process XXXX stopped
 * thread #1, name = 'XXXX', stop reason = breakpoint 2.1
-    frame #0: 0x00000000000000 meander`caml_program
+    frame #0: 0x00000000000000 meander`caml_startup.code_begin
 (lldb) backtrace
-frame X: meander`caml_program
+frame X: meander`caml_startup.code_begin
 frame X: meander`caml_start_program
 frame X: meander`caml_startup_common
 frame X: meander`caml_startup_common
@@ -62,7 +62,7 @@ frame X: meander`ocaml_to_c
 frame X: meander`caml_c_call
 frame X: meander`camlMeander.omain
 frame X: meander`camlMeander.entry
-frame X: meander`caml_program
+frame X: meander`caml_startup.code_begin
 frame X: meander`caml_start_program
 frame X: meander`caml_startup_common
 frame X: meander`caml_startup_common
@@ -94,7 +94,7 @@ frame X: meander`ocaml_to_c
 frame X: meander`caml_c_call
 frame X: meander`camlMeander.omain
 frame X: meander`camlMeander.entry
-frame X: meander`caml_program
+frame X: meander`caml_startup.code_begin
 frame X: meander`caml_start_program
 frame X: meander`caml_startup_common
 frame X: meander`caml_startup_common

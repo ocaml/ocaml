@@ -132,6 +132,11 @@ Working version
 - #14814: a `caml_result_find_exception` helper for the `caml_result` type
   (Gabriel Scherer, review by Nicolás Ojeda Bär, request by Chris Vine)
 
+- #?????: When reallocating the stack, consolidate all small-valued
+  reallocations in a reallocation twice the stack-threshold, reducing
+  code size in the most common case (on AMD64).
+  (Stefan Muenzel, review by ?????)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
