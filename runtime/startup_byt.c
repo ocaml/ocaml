@@ -552,7 +552,7 @@ CAMLexport void caml_main(char_os **argv)
       break;
     case WRONG_MAGIC:
       error(
-        "the file '%s' has not the right magic number: "\
+        "the file '%s' has not the right magic number: "
         "expected %s, got %s",
         caml_stat_strdup_of_os(exe_name),
         EXEC_MAGIC,
