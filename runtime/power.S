@@ -1416,16 +1416,11 @@ FUNCTION caml_runstack
   /* r3: fiber
      r4: fun
      r5: arg */
-    /* Save return address and TOC */
+    /* Save return address */
         ENTER_FUNCTION
     /*  save old stack pointer and exception handler */
         ld      8, Caml_state(current_stack) /* r8 := old stack */
-    /* Stack_sp records caml_runstack's entry frame, where ENTER_FUNCTION
-       saved LR.  LEAVE_FUNCTION recovers it from Stack_sp + 16.  The TOC is
-       saved just above that, so that it survives a reallocation of this
-       stack: caml_try_realloc_stack copies only [sp, Stack_high). */
         std     SP, Stack_sp(8)
-        std     2, TOC_SAVE_PARENT(SP)
 #ifdef WITH_FRAME_POINTERS
     /* Keep the entry frame for use as fiber_bottom's back chain, then give
        caml_runstack a frame of its own so the back chain can be walked. */
@@ -1493,9 +1488,15 @@ FUNCTION caml_runstack
         std     TMP, Caml_state(current_stack)
         ld      TRAP_PTR, Stack_exception(TMP)
         std     TRAP_PTR, Caml_state(exn_handler)
-    /* restore saved TOC (Stack_sp is caml_runstack's entry frame) */
         ld      27, Stack_sp(TMP)    /* saved across C calls */
-        ld      2, TOC_SAVE_PARENT(27)
+    /* Recompute the TOC, needed by the call below.  It cannot be recovered
+       relative to Stack_sp: that records where the parent resumes, which is
+       the effect handler's frame if an effect was handled on this stack, not
+       caml_runstack's entry frame. */
+        bcl     20, 31, 2f
+2:      mflr    12
+        addis   2, 12, .TOC.- 2b@ha
+        addi    2, 2,  .TOC.- 2b@l
     /* free old stack by switching directly to c_stack;
        this is a no-alloc call */
         ld      SP, Caml_state(c_stack)
