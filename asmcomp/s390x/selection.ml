@@ -65,7 +65,7 @@ let is_immediate_logical n = n <= 0xFFFF_FFFF && n >= 0
 (* If you update [inline_ops], you may need to update [is_simple_expr] and/or
    [effects_of], below. *)
 let inline_ops =
-  [ "sqrt"; "caml_bswap16_direct"; "caml_int32_direct_bswap";
+  [ "sqrt"; "caml_bswap16_direct"; "caml_fma"; "caml_int32_direct_bswap";
     "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
 
 class selector = object (self)
@@ -109,6 +109,11 @@ method! select_operation op args dbg =
   (* Recognize square root *)
   | (Cextcall("sqrt", _, _, _), [arg]) ->
       (Ispecific Isqrtf, [arg])
+  (* Only the unboxed [Float.fma] passes floats in registers, hence the
+     argument types. *)
+  | (Cextcall("caml_fma", _, [XFloat; XFloat; XFloat], false),
+     [arg1; arg2; arg3]) ->
+      (Ispecific Imultaddf, [arg1; arg2; arg3])
   (* Recognize byte swaps *)
   | (Cextcall("caml_bswap16_direct", _, _, _), _) ->
       (Ispecific (Ibswap 16), args)

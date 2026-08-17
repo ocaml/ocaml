@@ -22,7 +22,7 @@ open Mach
 
 (* If you update [inline_ops], you may need to update [is_simple_expr] and/or
    [effects_of], below. *)
-let inline_ops = [ "sqrt" ]
+let inline_ops = [ "sqrt"; "caml_fma" ]
 
 (* Instruction selection *)
 
@@ -76,6 +76,11 @@ method! select_operation op args dbg =
   (* Recognize square root *)
   | (Cextcall("sqrt", _, _, _), [arg]) ->
       (Ispecific Isqrtf, [arg])
+  (* Only the unboxed [Float.fma] passes floats in registers, hence the
+     argument types. *)
+  | (Cextcall("caml_fma", _, [XFloat; XFloat; XFloat], false),
+     [arg1; arg2; arg3]) ->
+      (Ispecific (Imultaddf false), [arg1; arg2; arg3])
   | (Cstore (Word_int | Word_val as memory_chunk, Assignment), [arg1; arg2]) ->
       (* Use trivial addressing mode for non-initializing stores *)
       (Istore (memory_chunk, Iindexed 0, true), [arg2; arg1])
