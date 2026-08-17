@@ -6,10 +6,10 @@
 let opaque = Sys.opaque_identity
 
 let check name got want =
-  (* Equality alone treats 0. and -0. as equal, hence the reciprocals. *)
+  (* Equality alone treats 0. and -0. as equal. *)
   let ok =
     if Float.is_nan want then Float.is_nan got
-    else got = want && 1. /. got = 1. /. want
+    else Int64.bits_of_float got = Int64.bits_of_float want
   in
   if not ok then
     failwith (Printf.sprintf "fma %s: got %h, expected %h" name got want)
