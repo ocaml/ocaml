@@ -187,6 +187,10 @@ Working version
   rather than going through C
   (Zane Hambly, review by Olivier Nicole and KC Sivaramakrishnan)
 
+- #15002: s390x: emit `sqdbr` for square root and `lrvgr` for byte swap
+  rather than calling into C
+  (Zane Hambly, review by         )
+
 - #15005: riscv: emit `fsqrt.d` for square root rather than calling into C
   (Zane Hambly, review by Miod Vallat and Xavier Leroy)
 

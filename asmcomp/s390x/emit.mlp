@@ -284,6 +284,7 @@ let name_for_floatop2 = function
 let name_for_specific = function
     Imultaddf -> "madbr"
   | Imultsubf -> "msdbr"
+  | _ -> Misc.fatal_error "Emit.Ispecific"
 
 (* Output the assembly code for an instruction *)
 
@@ -589,7 +590,24 @@ let emit_instr env i =
         `	cgdbr	{emit_reg i.res.(0)}, 5, {emit_reg i.arg.(0)}\n`
     | Lop(Iopaque) ->
         assert (i.arg.(0).loc = i.res.(0).loc)
-    | Lop(Ispecific sop) ->
+    | Lop(Ispecific Isqrtf) ->
+        `	sqdbr	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
+    | Lop(Ispecific (Ibswap 16)) ->
+        (* Shifting the halfword up to the top means the full 64-bit reverse
+           brings it back down zero-extended, which is what the C version
+           returns. *)
+        `	sllg	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, 48(%r0)\n`;
+        `	lrvgr	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
+    | Lop(Ispecific (Ibswap 32)) ->
+        (* lrvr leaves bits 0-31 alone (PoP 7-328), and the C version returns
+           a sign-extended int32, so lgfr supplies the top half. *)
+        `	lrvr	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`;
+        `	lgfr	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
+    | Lop(Ispecific (Ibswap 64)) ->
+        `	lrvgr	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
+    | Lop(Ispecific (Ibswap _)) ->
+        Misc.fatal_error "Emit.Ibswap: unsupported width"
+    | Lop(Ispecific (Imultaddf | Imultsubf as sop)) ->
         assert (i.arg.(2).loc = i.res.(0).loc);
         let instr = name_for_specific sop in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
