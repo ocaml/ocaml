@@ -1242,9 +1242,8 @@ CAMLprim value caml_ml_runtime_events_create_cursor(value path_pid_option) {
         caml_failwith("Runtime_events: could not map underlying runtime_events."
         );
       case E_NO_CURRENT_RING:
-        caml_failwith(
-        "Runtime_events: no ring for current process. \
-         Was runtime_events started?");
+        caml_failwith("Runtime_events: no ring for current process. "
+                      "Was runtime_events started?");
       default:
         caml_failwith("Runtime_events: could not obtain cursor");
     }

@@ -1180,20 +1180,20 @@ AS_CASE([$target],
       [internal_cflags="$internal_cflags -mprfchw"], [], [$warn_error_flag])])
 
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
-# Enable 64-bit time_t in time.h
 AS_CASE([$target],
   [i686-w64-mingw32*],
-    [internal_cflags="$internal_cflags -mfpmath=sse -msse2"
-    # This instructs _mingw.h to adopt the switch in Visual Studio 8 (2005) to
-    # make time_t a 64-bit value.
-    internal_cppflags="$internal_cppflags -D__MINGW_USE_VC2005_COMPAT"])
+    [internal_cflags="$internal_cflags -mfpmath=sse -msse2"])
 
-# Use 64-bit file offset if possible
-# See also AC_SYS_LARGEFILE
-# Problem: flags are added to CC rather than CPPFLAGS
+# Default to enabling large file support and year 2038 support on 32-bit.
 AS_CASE([$target],
-  [*-w64-mingw32*|*-pc-windows], [],
-  [common_cppflags="$common_cppflags -D_FILE_OFFSET_BITS=64"])
+  [*-pc-windows], [], # LFS and 64-bit time_t are always enabled.
+  [AC_SYS_YEAR2038_RECOMMENDED
+  AS_CASE([$ac_cv_sys_largefile_opts],
+    ["none needed"|"support not detected"], [],
+    [common_cppflags="$common_cppflags $ac_cv_sys_largefile_opts"])
+  AS_CASE([$ac_cv_sys_year2038_opts],
+    ["none needed"|"support not detected"], [],
+    [common_cppflags="$common_cppflags $ac_cv_sys_year2038_opts"])])
 
 # Require Windows 8 / Server 2012 or later
 AS_CASE([$target],
@@ -2856,7 +2856,8 @@ AS_IF([$native_compiler],
 AS_IF([test x"$enable_frame_pointers" = "xyes"],
   [AS_CASE([$target],
     [x86_64-*-linux*|x86_64-*-darwin*|x86_64-*-freebsd*|x86_64-*-dragonfly*| \
-     aarch64-*-linux*|aarch64-*-darwin*|aarch64-*-freebsd*|riscv64-*-linux*],
+     aarch64-*-linux*|aarch64-*-darwin*|aarch64-*-freebsd*|riscv64-*-linux*| \
+     powerpc64-*-linux*|powerpc64le-*-linux*],
      [AS_CASE([$ocaml_cc_vendor],
         [clang-*|gcc-*],
          [common_cflags="$common_cflags -g  -fno-omit-frame-pointer"

@@ -123,6 +123,20 @@ Working version
   some Intel CPUs.
   (Nat Mote, review by Florian Angeletti and Miod Vallat)
 
+- #14505: Add frame pointer support to POWER linux.
+  Maintains an ELFv2 frame pointer in r31. The allocation pointer is
+  moved from r31 to r23 for enabled and disabled frame pointers.
+  r31 stays allocatable when frame pointers are disabled
+  (Tim McGilchrist, review by Zane Hambly and Olivier Nicole)
+
+- #14814: a `caml_result_find_exception` helper for the `caml_result` type
+  (Gabriel Scherer, review by Nicolás Ojeda Bär, request by Chris Vine)
+
+* #14997: Default to and recommend large file and year 2038 support on 32-bit
+  systems. LFS and 64-bit `time_t` _checks_ can be disabled by passing
+  respectively `--disable-largefile` and `--disable-year2038` to configure.
+  (Antonin Décimo, review by Miod Vallat)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
@@ -176,6 +190,9 @@ Working version
 - #15002: s390x: emit `sqdbr` for square root and `lrvgr` for byte swap
   rather than calling into C
   (Zane Hambly, review by         )
+- #15005: riscv: emit `fsqrt.d` for square root rather than calling into C
+  (Zane Hambly, review by Miod Vallat and Xavier Leroy)
+
 * #13919: optimize `lazy v` when `v` is a structured constant
   (below a size threshold), so that `Lazy.from_val v` should not be
   necessary anymore in most cases.
@@ -301,6 +318,11 @@ Working version
   result in some file descriptors being dropped from the result of `Unix.select`
   under certain circumstances.
   (Zhang Rui, review by Nicolás Ojeda Bär, Antonin Décimo and David Allsopp)
+
+- #14984: Cache one write buffer for each domain in
+  `Runtime_events.User.write`, instead of a list for each thread. A write of
+  a custom event does not allocate in the usual single-threaded case.
+  (Anil Madhavapeddy, review by Thomas Leonard and Sadiq Jaffer)
 
 ### Tools:
 
