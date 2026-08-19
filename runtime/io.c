@@ -52,7 +52,9 @@
 
 #if defined(_WIN32)
 #include <io.h>
+#if defined(_MSC_VER)
 #define lseek _lseeki64
+#endif
 #endif
 
 /* Representation of channel status and direction:
