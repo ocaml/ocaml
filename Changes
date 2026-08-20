@@ -550,6 +550,12 @@ Working version
   module are injective and contractive
   (Jeremy Yallop, review by Jacques Garrigue)
 
+- #15015: Fix "corrupt stream" failures in Runtime_events when a slow
+  consumer reads a ring buffer that the producer has overtaken. The consumer
+  now checks whether the ring head has passed its cursor and retries the read
+  instead of reporting a corrupt message header.
+  (Sadiq Jaffer, review by ???)
+
 OCaml 5.5.1
 -----------
 
