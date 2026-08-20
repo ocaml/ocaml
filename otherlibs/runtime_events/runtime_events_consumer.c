@@ -506,6 +506,19 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
       if (msg_length > RUNTIME_EVENTS_MAX_MSG_LENGTH
           || ring_masked_pos + msg_length
              > cursor->metadata.ring_size_elements) {
+        /* It's possible here that the message header has been
+        overwritten by the producer, the head has moved beyond
+        us. If it has then we restart the loop and call the
+        lost_events callback. */
+
+        /* ring_head read must happen after msg_length read */
+        atomic_thread_fence(memory_order_seq_cst);
+
+        ring_head =
+          atomic_load_acquire(&runtime_events_buffer_header->ring_head);
+        if (ring_head > cursor->current_positions[domain_num]) {
+          continue;
+        }
         atomic_store(&cursor->cursor_in_poll, 0);
         return E_CORRUPT_STREAM;
       }
