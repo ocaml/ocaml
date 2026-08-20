@@ -705,6 +705,16 @@ CAMLexport caml_stat_block caml_stat_calloc_noexc(asize_t num, asize_t sz)
   }
 }
 
+/* [sz] is a number of bytes */
+CAMLexport caml_stat_block caml_stat_calloc(asize_t num, asize_t sz)
+{
+  void *result = caml_stat_calloc_noexc(num, sz);
+  /* calloc() may return NULL if size is 0 or number of elements is 0 */
+  if ((result == NULL) && (sz != 0) && (num != 0))
+    caml_raise_out_of_memory();
+  return result;
+}
+
 CAMLexport caml_stat_string caml_stat_strdup_noexc(const char *s)
 {
   size_t slen = strlen(s);

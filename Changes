@@ -15,6 +15,10 @@ OCaml 5.5.1
   ````
   (Florian Angeletti, report by Hazem ElMasry, review by Gabriel Scherer)
 
+- #14872: harden loading of bytecode executable files against corrupted
+  or malicious files having 2^29 TOC entries or more.
+  (Xavier Leroy, review by Nicolás Ojeda Bär)
+
 - #14883, #14884: fix Windows cross-compilation with older mingw32-gcc versions
   (Brian Ward, review by Antonin Décimo and Stefan Muenzel)
 
