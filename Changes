@@ -132,6 +132,10 @@ Working version
 - #14814: a `caml_result_find_exception` helper for the `caml_result` type
   (Gabriel Scherer, review by Nicolás Ojeda Bär, request by Chris Vine)
 
+- #14872: harden loading of bytecode executable files against corrupted
+  or malicious files having 2^29 TOC entries or more.
+  (Xavier Leroy, review by Nicolás Ojeda Bär)
+
 * #14997: Default to and recommend large file and year 2038 support on 32-bit
   systems. LFS and 64-bit `time_t` _checks_ can be disabled by passing
   respectively `--disable-largefile` and `--disable-year2038` to configure.
