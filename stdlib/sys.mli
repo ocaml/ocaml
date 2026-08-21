@@ -43,38 +43,21 @@ val runtime_executable : string
 *)
 
 external file_exists : string -> bool = "caml_sys_file_exists"
-(** Tests if a file with the given name exists.
+(** [file_exists p] tests if the file path [p] exists.
 
-    [file_exists p] is:
-    {ul
-    {- [true] if and only if the file path [p] exists and the calling
-       process can [stat(2)] [p] successfully. Note that it does
-       not mean that you have the rights to operate on the file path.}
-    {- [false] if and only if [stat(2)] on [p] errors. Note that this
-       masks serious
-       {{:https://pubs.opengroup.org/onlinepubs/9799919799/functions/fstatat.html#tag_17_190_05}
-       error conditions} and [EACCES] so the file may still exist. See
-       the warning below.}
-    }
-
-    {b Warning.} Do not report error message to end-users that claim
-    that [p] does not exist based on this function returning [false],
-    use {!Sys.filepath_exists} instead.
+    However, system errors such as insufficient permissions to search directories are
+    returned as [false], in which case the file path may actually exist.
+    It also masks serious error conditions in the system and returns them
+    as [false]. Unless you rely on that behavior, use {!Sys.filepath_exists}
+    instead.
 *)
 
 external filepath_exists : string -> bool = "caml_sys_filepath_exists"
-(** Tests if a file path with the given name exists.
+(** [filepath_exists p] tests if the file path [p] exists.
 
-    [filepath_exists p] is:
-    {ul
-    {- [true] if and only if the file path [p] exists and the calling
-       process can [stat(2)] it successfully. Note that it does
-       not mean that you have the rights to operate on the file path.}
-    {- [false] if and only if [stat(2)] errors with [ENOTDIR] or [ENOENT].}
-    {- [Sys_error _] if any other [stat(2)]
-        {{:https://pubs.opengroup.org/onlinepubs/9799919799/functions/fstatat.html#tag_17_190_05}
-       error conditions} occurs, and notably [EACCES].}
-    }
+    If [false] is returned, the path [p] does not exist on the file system. All other
+    errors, including insufficient permissions to search directories, are reported by
+    a [Sys_error] exception.
 
     @since 5.6
 *)
