@@ -205,7 +205,8 @@ Working version
 
 - #14974 : Add `Sys.filepath_exists` and improve documentation
   for `Sys.file_exists`
-  (Khalid Belkassmi E.H., review by Kate Deplaix and Nicolás Ojeda Bär)
+  (Khalid Belkassmi E.H., review by Kate Deplaix, Nicolás Ojeda Bär,
+   Xavier Leroy and Daniel Bünzli)
 
 - #14941, #13937: Add `{Option,Result}.try_value`
   (Michael Neumann, review by Daniel Bünzli, David Allsopp)
