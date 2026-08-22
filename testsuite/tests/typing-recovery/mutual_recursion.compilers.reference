@@ -4,6 +4,14 @@ File "mutual_recursion.ml", line 11, characters 4-9:
 11 | and (a,b) = (1,2)
          ^^^^^
   Only variables are allowed as left-hand side of let rec
+File "mutual_recursion.ml", line 10, characters 20-21:
+10 | let rec foo x = x + a + b
+                         ^
+  Unbound value a
+File "mutual_recursion.ml", line 10, characters 24-25:
+10 | let rec foo x = x + a + b
+                             ^
+  Unbound value b
 File "mutual_recursion.ml", line 15, characters 13-18:
 15 | let d = 10 + "foo"
                   ^^^^^

@@ -77,20 +77,13 @@ val baz : unit -> ?x:'a -> unit = <fun>
 #rectypes
 
 let rec baz ?x = baz
-[%%expect{||}, Principal.Rectypes{|
+[%%expect{||}, (Principal.Rectypes, Rectypes){|
 Line 1, characters 13-14:
 1 | let rec baz ?x = baz
                  ^
 Warning 16 [unerasable-optional-argument]: this optional argument cannot be erased.
 
 val baz : ?x:'a -> (?x:'a -> 'b as 'b) = <fun>
-|}, Rectypes{|
-Line 1, characters 13-14:
-1 | let rec baz ?x = baz
-                 ^
-Warning 16 [unerasable-optional-argument]: this optional argument cannot be erased.
-
-val baz : ?x:'b -> 'a as 'a = <fun>
 |}]
 
 let rec baz (type a) ?x = baz

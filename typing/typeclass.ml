@@ -801,14 +801,15 @@ let rec class_field_first_pass self_loc cl_num final sign self_scope acc cf =
            add_method loc val_env label.txt priv Concrete ty sign;
            begin
              try
+               let ty_approx =
+                 Type_approx.type_expression ~env:val_env sbody
+               in
                match get_desc ty with
                | Tvar _ ->
-                   let ty' = Ctype.newvar () in
-                   Ctype.unify val_env (Ctype.newmono ty') ty;
-                   type_approx val_env sbody ty'
+                 Ctype.unify val_env (Ctype.newmono ty_approx) ty
                | Tpoly (ty1, tl) ->
-                   let ty1' = Ctype.instance_poly tl ty1 in
-                   type_approx val_env sbody ty1'
+                 let ty1' = Ctype.instance_poly tl ty1 in
+                 Ctype.unify val_env ty_approx ty1'
                | _ -> assert false
              with Ctype.Unify err ->
                Error.log_and_raise loc val_env

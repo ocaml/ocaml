@@ -1627,8 +1627,13 @@ val f : 'a -> int = <fun>
 val g : 'a -> int = <fun>
 type 'a t = Leaf of 'a | Node of ('a * 'a) t
 val depth : 'a t -> int = <fun>
-val depth : 'a t -> int = <fun>
-val d : ('a * 'a) t -> int = <fun>
+Line 6, characters 2-42:
+6 |   function Leaf _ -> 1 | Node x -> 1 + d x
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This expression has type "'a t -> int" which is less general than
+         "'a0. 'a0 t -> int"
+       The type variable "'a" is not generalizable to an universal
+       type variable.
 |}];;
 let rec depth : 'a. 'a t -> _ =
   function Leaf x -> x | Node x -> 1 + depth x;; (* fails *)
@@ -1636,7 +1641,7 @@ let rec depth : 'a. 'a t -> _ =
 Line 2, characters 2-46:
 2 |   function Leaf x -> x | Node x -> 1 + depth x;; (* fails *)
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This definition has type "int t -> int" which is less general than
+Error: This expression has type "int t -> int" which is less general than
          "'a. 'a t -> int"
        The type "int" is not a type variable.
 |}];;
@@ -1646,8 +1651,8 @@ let rec depth : 'a. 'a t -> _ =
 Line 2, characters 2-42:
 2 |   function Leaf x -> x | Node x -> depth x;; (* fails *)
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This definition has type "'a t -> 'a" which is less general than
-         "'a0. 'a0 t -> 'b"
+Error: This expression has type "'a t -> 'a" which is less general than
+         "'a0. 'a0 t -> 'a"
        The type variable "'a" is not generalizable to an universal
        type variable.
 |}];;
@@ -1657,7 +1662,7 @@ let rec depth : 'a 'b. 'a t -> 'b =
 Line 2, characters 2-42:
 2 |   function Leaf x -> x | Node x -> depth x;; (* fails *)
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This definition has type "'b. 'b t -> 'b" which is less general than
+Error: This expression has type "'b. 'b t -> 'b" which is less general than
          "'a 'b. 'a t -> 'b"
        The universal type variable "'b" in the first type matches multiple
        distinct variables in the second type.
@@ -2153,8 +2158,8 @@ let rec foo : 'a . 'a -> 'd = fun x -> x
 Line 1, characters 30-40:
 1 | let rec foo : 'a . 'a -> 'd = fun x -> x
                                   ^^^^^^^^^^
-Error: This definition has type "'a -> 'a" which is less general than
-         "'a0. 'a0 -> 'b"
+Error: This expression has type "'a -> 'a" which is less general than
+         "'a0. 'a0 -> 'a"
        The type variable "'a" is not generalizable to an universal
        type variable.
 |}]
@@ -2234,7 +2239,7 @@ let f x =
 Line 2, characters 6-44:
 2 |   let ref : type a . a option ref = ref None in
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This definition has type "'a option ref" which is less general than
+Error: This expression has type "'a option ref" which is less general than
          "'a0. 'a0 option ref"
        The type variable "'a" is not generalizable to an universal
        type variable.
@@ -2326,7 +2331,7 @@ let explicitly_quantified_row: 'a 'r. (<x:'a; ..> as 'r) -> 'a = fun o -> o#y ()
 Line 1, characters 65-85:
 1 | let explicitly_quantified_row: 'a 'r. (<x:'a; ..> as 'r) -> 'a = fun o -> o#y (); o#x
                                                                      ^^^^^^^^^^^^^^^^^^^^
-Error: This definition has type "'a. < x : 'a; y : unit -> 'b; .. > -> 'a"
+Error: This expression has type "'a. < x : 'a; y : unit -> 'b; .. > -> 'a"
        which is less general than "'a 'c. (< x : 'a; .. > as 'c) -> 'a"
        The type "< y : unit -> 'd; .. >" is not a type variable.
 |}]

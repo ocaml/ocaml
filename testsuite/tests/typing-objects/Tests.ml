@@ -152,8 +152,8 @@ class ['a, 'b] c :
   unit ->
   object
     constraint 'a = int -> 'c
-    constraint 'b = 'a * < x : 'b > * 'c * 'd
-    method f : 'a -> 'b -> unit
+    constraint 'b = 'a * (< x : 'b > as 'e) * 'c * 'd
+    method f : (int -> 'c) -> (int -> 'c) * 'e * 'c * 'd -> unit
   end
 |}];;
 class ['a, 'b] d () = object
@@ -293,7 +293,7 @@ module M :
         constraint 'a = int -> bool
         val x : float list
         val y : 'b
-        method f : 'a -> unit
+        method f : (int -> bool) -> unit
         method g : 'b
       end
   end
@@ -853,7 +853,10 @@ end;;
 [%%expect{|
 class ['a] c :
   unit ->
-  object constraint 'a = unit -> (< .. > as 'b) method m : 'a -> 'b end
+  object
+    constraint 'a = unit -> (< .. > as 'b)
+    method m : (unit -> 'b) -> 'b
+  end
 |}];;
 
 class c () = object (self)

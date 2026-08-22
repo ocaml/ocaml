@@ -24,16 +24,6 @@ Lines 7-10, characters 2-22:
 10 |     with type t = M.t)
 Error: This expression has type "(module S with type t = M.t)"
        but an expression was expected of type "(module S)"
-       The type constructor "M.t" would escape its scope
-|}, Principal{|
-module type S = sig type t end
-Lines 7-10, characters 2-22:
- 7 | ..(module struct
- 8 |     type t = M.t
- 9 |   end : S
-10 |     with type t = M.t)
-Error: This expression has type "(module S with type t = M.t)"
-       but an expression was expected of type "(module S)"
        The constraint on "t" in the first module type is not compatible
        with the declaration of type t in the second module type.
 |}];;
