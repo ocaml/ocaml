@@ -30,6 +30,7 @@ let command_line_options = []
 type specific_operation =
     Imultaddf                           (* multiply and add *)
   | Imultsubf                           (* multiply and subtract *)
+  | Iroundf of float_rounding           (* round to integer *)
   | Ialloc_far of                       (* allocation in large functions *)
       { bytes : int; dbginfo : Debuginfo.alloc_dbginfo }
   | Ipoll_far of { return_label : cmm_label option }
@@ -37,6 +38,12 @@ type specific_operation =
   | Icheckbound_far                     (* bounds check in large functions *)
   | Icheckbound_imm_far of int          (* bounds check in large functions,
                                            constant 2nd arg (the index) *)
+
+and float_rounding =
+    Rnearest_away                       (* to nearest, ties away from zero *)
+  | Rtoward_zero
+  | Rtoward_pos                         (* toward positive infinity *)
+  | Rtoward_neg                         (* toward negative infinity *)
 
 (* Addressing modes *)
 
@@ -93,6 +100,13 @@ let print_specific_operation printreg op ppf arg =
   | Imultsubf ->
       fprintf ppf "%a *f %a -f %a"
         printreg arg.(0) printreg arg.(1) printreg arg.(2)
+  | Iroundf r ->
+      let name = match r with
+        | Rnearest_away -> "roundf"
+        | Rtoward_zero -> "truncf"
+        | Rtoward_pos -> "ceilf"
+        | Rtoward_neg -> "floorf" in
+      fprintf ppf "%s %a" name printreg arg.(0)
   | Ialloc_far { bytes; _ } ->
       fprintf ppf "alloc_far %d" bytes
   | Ipoll_far _ ->

@@ -66,6 +66,7 @@ type specific_operation =
   | Imulsubf      (* floating-point multiply and subtract *)
   | Inegmulsubf   (* floating-point negate, multiply and subtract *)
   | Isqrtf        (* floating-point square root *)
+  | Iroundf of float_rounding (* floating-point round to integer *)
   | Ibswap of int (* endianness conversion *)
   | Imove32       (* 32-bit integer move *)
   | Isignext of int (* sign extension *)
@@ -73,6 +74,12 @@ type specific_operation =
 and arith_operation =
     Ishiftadd
   | Ishiftsub
+
+and float_rounding =
+    Rnearest_away                       (* to nearest, ties away from zero *)
+  | Rtoward_zero
+  | Rtoward_pos                         (* toward positive infinity *)
+  | Rtoward_neg                         (* toward negative infinity *)
 
 (* Sizes, endianness *)
 

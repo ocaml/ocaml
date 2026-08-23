@@ -531,7 +531,8 @@ module Size = struct
     | Lop (Iintop_imm ((Iadd|Isub), n)) -> addsub_size n
     | Lop (Iintop _) -> 1
     | Lop (Iintop_imm _) -> 1
-    | Lop (Ifloatofint | Iintoffloat | Iabsf | Inegf | Ispecific Isqrtf) -> 1
+    | Lop (Ifloatofint | Iintoffloat | Iabsf | Inegf
+          | Ispecific (Isqrtf | Iroundf _)) -> 1
     | Lop (Iaddf | Isubf | Imulf | Idivf | Ispecific Inegmulf) -> 1
     | Lop (Iopaque) -> 0
     | Lop (Ispecific (Imuladdf | Inegmuladdf | Imulsubf | Inegmulsubf)) -> 1
@@ -979,13 +980,18 @@ let emit_instr env i =
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #{emit_int n}\n`
-    | Lop(Ifloatofint | Iintoffloat | Iabsf | Inegf | Ispecific Isqrtf as op) ->
+    | Lop(Ifloatofint | Iintoffloat | Iabsf | Inegf
+         | Ispecific (Isqrtf | Iroundf _) as op) ->
         let instr = (match op with
                      | Ifloatofint      -> "scvtf"
                      | Iintoffloat      -> "fcvtzs"
                      | Iabsf            -> "fabs"
                      | Inegf            -> "fneg"
                      | Ispecific Isqrtf -> "fsqrt"
+                     | Ispecific (Iroundf Rnearest_away) -> "frinta"
+                     | Ispecific (Iroundf Rtoward_zero)  -> "frintz"
+                     | Ispecific (Iroundf Rtoward_pos)   -> "frintp"
+                     | Ispecific (Iroundf Rtoward_neg)   -> "frintm"
                      | _                -> assert false) in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
     | Lop(Iaddf | Isubf | Imulf | Idivf | Ispecific Inegmulf as op) ->
