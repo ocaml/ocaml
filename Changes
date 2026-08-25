@@ -41,6 +41,12 @@ OCaml 5.5.1
   artefacts) as well as the debug info packed into str.a and unix.a.
   (Bernhard M. Wiedemann, review by David Allsopp and Stefan Muenzel)
 
+- #15019: `Marshal.from_{string,bytes}`: guard against overflow in
+  the computation of the total data length.
+  (Xavier Leroy, report by Akshay Singh, review by Nicolás Ojeda Bär
+  and Antonin Décimo)
+
+
 OCaml 5.5.0 (19 June 2026)
 -------------------------
 
