@@ -184,11 +184,6 @@ Caml_inline header_t get_header_val(value v) {
   return spin_on_header(v);
 }
 
-header_t caml_get_header_val(value v) {
-  return get_header_val(v);
-}
-
-
 static int try_update_object_header(value v, volatile value *p, value result,
                                     mlsize_t infix_offset) {
   int success = 0;
@@ -274,13 +269,12 @@ static void oldify_one (void* st_v, value v, volatile value *p)
 
   if (tag == Cont_tag) {
     value stack_value = Field(v, 0);
-    CAMLassert(Wosize_hd(hd) == 2);
+    CAMLassert(Wosize_hd(hd) == 1);
     CAMLassert(infix_offset == 0);
-    result = alloc_shared(st->domain, 2, Cont_tag, Reserved_hd(hd));
+    result = alloc_shared(st->domain, 1, Cont_tag, Reserved_hd(hd));
     if( try_update_object_header(v, p, result, 0) ) {
       struct stack_info* stk = Ptr_val(stack_value);
       Field(result, 0) = stack_value;
-      Field(result, 1) = Field(v, 1);
       if (stk != NULL) {
         caml_scan_stack(&oldify_one, oldify_scanning_flags, st,
                         stk, 0);
@@ -293,7 +287,6 @@ static void oldify_one (void* st_v, value v, volatile value *p)
                                     caml_allocation_status());
       #ifdef DEBUG
       Field(result, 0) = Val_long(1);
-      Field(result, 1) = Val_long(1);
       #endif
     }
   } else if (tag < Infix_tag) {
@@ -343,7 +336,7 @@ static void oldify_one (void* st_v, value v, volatile value *p)
       #endif
     }
 
-  } else if (tag >= No_scan_tag) {
+  } else if (!Scannable_tag(tag)) {
     sz = Wosize_hd (hd);
     st->live_bytes += Bhsize_hd(hd);
     result = alloc_shared(st->domain, sz, tag, Reserved_hd(hd));
@@ -802,7 +795,7 @@ static void custom_finalize_minor (caml_domain_state * domain)
        elt++) {
     value *v = &elt->block;
     if (Is_block(*v) && Is_young(*v)) {
-      if (Is_promoted_hd(get_header_val(*v))) { /* value promoted */
+      if (Is_promoted_hd(Hd_val(*v))) { /* value copied to major heap */
         caml_adjust_gc_speed(elt->mem, elt->max);
       } else {
         void (*final_fun)(value) = Custom_ops_val(*v)->finalize;

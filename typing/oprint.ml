@@ -367,7 +367,9 @@ and print_simple_out_type ppf =
             print_list print_row_field (fun ppf -> fprintf ppf "@;<1 -2>| ")
               ppf fields
         | Ovar_typ typ ->
-           print_simple_out_type ppf typ
+            (* conflict with class argument after arrow at [ t ] *)
+            if closed && tags = None then pp_print_string ppf "| ";
+            print_simple_out_type ppf typ
       in
       fprintf ppf "@[<hov>[%s@[<hv>@[<hv>%a@]%a@]@ ]@]"
         (if closed then if tags = None then " " else "< "

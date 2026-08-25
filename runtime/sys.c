@@ -17,6 +17,7 @@
 
 /* Basic system calls */
 
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -169,7 +170,7 @@ CAMLexport void caml_do_exit(int retcode)
                       (intnat) majwords);
       CAML_GC_MESSAGE(STATS, "minor_collections: %" CAML_PRIdNAT "\n",
                       (intnat) atomic_load(&caml_minor_collections_count));
-      CAML_GC_MESSAGE(STATS, "major_collections: %" CAML_PRIdNAT "\n",
+      CAML_GC_MESSAGE(STATS, "major_collections: %" CAML_PRIuNAT "\n",
                       caml_major_cycles_completed);
       CAML_GC_MESSAGE(STATS, "forced_major_collections: %" CAML_PRIdNAT "\n",
                       (intnat) s.alloc_stats.forced_major_collections);
@@ -275,7 +276,24 @@ static int caml_sys_file_mode(value name)
   if (! caml_string_is_c_safe(name)) { errno = ENOENT; return -1; }
   p = caml_stat_strdup_to_os(String_val(name));
   caml_enter_blocking_section();
+#ifdef _WIN32
+  /* GetFileAttributes and stat() both return the same value on error */
+  static_assert(INVALID_FILE_ATTRIBUTES == ((DWORD)-1), "");
+  /* stat_os continues to be hilariously unreliable on Windows. On Windows 11,
+     GetFileInformationByName is used to implement _wstati64 more quickly than
+     using GetFileInformationByHandleEx. However, GetFileAttributes also doesn't
+     require the file to be opened, so we choose to stick with the
+     tried-and-tested, hopefully hitting fewer kernel bugs in the process. */
+  ret = GetFileAttributes(p);
+  if (ret == INVALID_FILE_ATTRIBUTES)
+    errno = caml_posixerr_of_win32err(GetLastError());
+  else if (ret & FILE_ATTRIBUTE_DIRECTORY)
+    st.st_mode = _S_IFDIR | _S_IEXEC;
+  else
+    st.st_mode = _S_IFREG;
+#else
   ret = stat_os(p, &st);
+#endif
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1) return -1; else return st.st_mode;
@@ -285,6 +303,20 @@ CAMLprim value caml_sys_file_exists(value name)
 {
   int mode = caml_sys_file_mode(name);
   return (Val_bool(mode != -1));
+}
+
+CAMLprim value caml_sys_filepath_exists(value name)
+{
+  CAMLparam1(name);
+  int mode = caml_sys_file_mode(name);
+
+  if (mode == -1) {
+    if (errno == ENOTDIR || errno == ENOENT)
+      CAMLreturn(Val_false);
+    caml_sys_error(name);
+  }
+
+  CAMLreturn(Val_true);
 }
 
 CAMLprim value caml_sys_is_directory(value name)

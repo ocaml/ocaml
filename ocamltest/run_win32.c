@@ -257,7 +257,7 @@ if ( (condition) ) \
   goto cleanup; \
 } else { }
 
-static WCHAR *translate_finename(WCHAR *filename)
+static const WCHAR *translate_finename(const WCHAR *filename)
 {
   if (wcscmp(filename, L"/dev/null") == 0) return L"NUL"; else return filename;
 }
@@ -304,7 +304,7 @@ int run_command(const command_settings *settings)
 
   if (is_defined(settings->stdin_filename))
   {
-    WCHAR *stdin_filename = translate_finename(settings->stdin_filename);
+    const WCHAR *stdin_filename = translate_finename(settings->stdin_filename);
     startup_info.hStdInput = create_input_handle(stdin_filename);
     checkerr( (startup_info.hStdInput == INVALID_HANDLE_VALUE),
       "Could not redirect standard input",
@@ -314,7 +314,8 @@ int run_command(const command_settings *settings)
 
   if (is_defined(settings->stdout_filename))
   {
-    WCHAR *stdout_filename = translate_finename(settings->stdout_filename);
+    const WCHAR *stdout_filename =
+      translate_finename(settings->stdout_filename);
     startup_info.hStdOutput = create_output_handle(
       stdout_filename, settings->append
     );
@@ -338,7 +339,8 @@ int run_command(const command_settings *settings)
 
     if (! stderr_redirected)
     {
-      WCHAR *stderr_filename = translate_finename(settings->stderr_filename);
+      const WCHAR *stderr_filename =
+        translate_finename(settings->stderr_filename);
       startup_info.hStdError = create_output_handle
       (
         stderr_filename, settings->append

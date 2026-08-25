@@ -31,7 +31,7 @@ compiler produces compiled object bytecode in the file \var{x}".cmo".
 
 If the interface file \var{x}".mli" exists, the implementation
 \var{x}".ml" is checked against the corresponding compiled interface
-\var{x}".cmi", which is assumed to exist. If no interface
+\var{x}".cmi", which must exist. If no interface
 \var{x}".mli" is provided, the compilation of \var{x}".ml" produces a
 compiled interface file \var{x}".cmi" in addition to the compiled
 object code file \var{x}".cmo". The file \var{x}".cmi" produced

@@ -2,6 +2,7 @@
  frame_pointers;
  readonly_files = "fp_backtrace.c";
  all_modules = "${readonly_files} reperform.ml";
+ if bsd then flags = "-cclib -lexecinfo";
  native;
 *)
 

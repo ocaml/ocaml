@@ -12,70 +12,100 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let overhead block slot obj =
-  1. -. float_of_int((block / slot) * obj) /. float_of_int block
-
+let pool_words = 4096 (* Number of words in a pool *)
+let header_wsize = 4 (* Wsize_bsize(sizeof(struct pool)) *)
+let max_slot = 128 (* maximum whsize stored in pools (SIZECLASS_MAX) *)
 let max_overhead = 0.101
 
-(*
-  Prevention of false sharing requires certain sizeclasses to be present. This
-  ensures they are generated.
+(* `overhead pool slot whsize` is the fraction of `pool` which would be wasted
+   if slots of size `slot` were used to store blocks of size `whsize` *)
+
+let overhead pool slot whsize =
+  let slots = pool / slot in
+  (1. -. Float.of_int(slots * whsize) /. Float.of_int pool)
+
+(* Prevention of false sharing requires certain slot sizes to be present. This
+   ensures they are generated.
 
   Runtime has a constructor for atomics (`caml_atomic_make_contended`), which
-  aligns them with cache lines to avoid false sharing. The implementation
-  relies on the fact that pools are cache-aligned by design and slots of
-  appropriate size maintain this property. To be precise, slots whose size is a
-  multiple of cache line are laid out in such a way, that their boundaries
-  coincide with boundaries between cache lines.
+  aligns them with cache lines to avoid false sharing. The implementation relies
+  on the fact that pools are cache-aligned by design and slots of appropriate
+  size maintain this property (by padding after the pool header). To be precise,
+  slots whose size is a multiple of the cache line size are laid out in such a
+  way, that their boundaries coincide with boundaries between cache lines.
 *)
-let required_for_contended_atomic = function
+let size_required = function
   | 16 | 32 -> true
   | _ -> false
 
-let rec blocksizes block slot = function
-  | 0 -> []
-  | obj ->
-    if overhead block slot obj > max_overhead
-      || required_for_contended_atomic obj
-    then
-      if overhead block obj obj < max_overhead then
-        obj :: blocksizes block obj (obj - 1)
-      else
-        failwith (Format.sprintf
-          "%d-word objects cannot fit in %d-word arena below %.1f%% overhead"
-                                 obj block (100. *. max_overhead))
-    else blocksizes block slot (obj - 1)
+let avail_pool_words = pool_words - header_wsize
 
-let rec findi_acc i p = function
-  | [] -> raise Not_found
-  | x :: xs -> if p x then i else findi_acc (i + 1) p xs
-let findi = findi_acc 0
+(* `whsize_sizeclass` is the list of actual slot sizes, in ascending order *)
 
-let arena = 4096
-let header_size = 4
-let max_slot = 128
-let avail_arena = arena - header_size
-let sizes = List.rev (blocksizes avail_arena max_int max_slot)
+let whsize_sizeclass =
+  (* whsize_sizeclass' pool last whsize returns the minimal list of slot sizes
+     less than `last` into which `pool` words can be divided, such that:
+     - the required slot sizes are included in the list;
+     - the overhead does not exceed `max_overhead` *)
+  let rec whsize_sizeclass' pool last = function
+    | 0 -> []
+    | whsize ->
+      if overhead pool last whsize > max_overhead
+      || size_required whsize
+      then
+        if overhead pool whsize whsize < max_overhead then
+          whsize :: whsize_sizeclass' pool whsize (whsize - 1)
+        else
+          failwith
+            (Format.sprintf
+               "%d-word blocks won't fit in %d-word pool below %.1f%% overhead"
+               whsize pool (100. *. max_overhead))
+      else whsize_sizeclass' pool last (whsize - 1)
+  in
+  List.rev (whsize_sizeclass' avail_pool_words max_int max_slot)
 
-let rec size_slots n =
-  if n > max_slot then
-    []
-  else
-    findi (fun x -> n <= x) sizes :: size_slots (n + 1)
+(* sizeclass_whsize is the list of indexes into `whsize_sizeclass` for
+   allocating objects of all whsizes from 0 up to and including
+   `max_slot`. There's a dummy value 255 for whsize 0 *)
+let sizeclass_whsize =
+  let rec sizeclass_whsize' whsize =
+    if whsize > max_slot then
+      []
+    else
+      match List.find_index (fun slot -> whsize <= slot) whsize_sizeclass with
+      | Some i -> i :: sizeclass_whsize' (whsize + 1)
+      | None -> assert false
+  in 255 :: (sizeclass_whsize' 1)
 
-let rec wastage =
-  sizes |> List.map (fun s -> avail_arena mod s)
+(* padding_sizeclass is a list giving the number of words of padding which
+   must be placed after the pool header when siots are the corresponding
+   size from `whsize_sizeclass` *)
+let padding_sizeclass =
+  whsize_sizeclass |> List.map (fun slot -> avail_pool_words mod slot)
+
+(* wfrag_whsize is a list giving the number of words left as a fragment when a
+   block of given whsize is allocated. There's a dummy value 255 for whsize
+   0 *)
+let wfrag_whsize =
+  255 :: ((List.tl sizeclass_whsize)
+          |> List.mapi (fun n s -> (List.nth whsize_sizeclass s - n - 1)))
 
 open Format
 
-let rec print_overheads n = function
-  | [] -> ()
-  | s :: ss when n > s -> print_overheads n ss
-  | (s :: _) as ss  ->
-     printf "%3d/%-3d: %.1f%%\n" n s (100. *. overhead avail_arena s n);
-     print_overheads (n+1) ss
+(*
 
-(* let () = print_overheads 1 sizes *)
+   (* Sanity-check code *)
+
+   let rec print_overheads n = function
+     | [] -> ()
+     | s :: ss when n > s -> print_overheads n ss
+     | (s :: _) as ss  ->
+        printf "%3d/%-3d: %.1f%%\n" n s (100. *. overhead avail_pool_words s n);
+        print_overheads (n+1) ss
+
+      let () = print_overheads 1 whsize_sizeclass
+
+*)
 
 let print_list ppf li =
   List.iteri (fun i x ->
@@ -88,33 +118,47 @@ let print_list ppf li =
   ) li
 
 let _ =
-  printf "/* This file is generated by tools/gen_sizeclasses.ml */\n";
-  printf "\n#ifndef CAML_SIZECLASSES_H\n";
-  printf "#define CAML_SIZECLASSES_H\n\n";
-  printf "#define POOL_WSIZE %d\n" arena;
-  printf "#define POOL_HEADER_WSIZE %d\n" header_size;
-  printf "#define SIZECLASS_MAX %d\n" max_slot;
-  printf "#define NUM_SIZECLASSES %d\n" (List.length sizes);
-  printf {|
+  printf {|/* This file is generated by tools/gen_sizeclasses.ml */
+#ifndef CAML_SIZECLASSES_H
+#define CAML_SIZECLASSES_H
+
 #include <assert.h>
 #include <limits.h>
+#include "mlvalues.h"
+
+#define POOL_WSIZE %d
+#define POOL_HEADER_WSIZE %d
+#define SIZECLASS_MAX %d
+#define NUM_SIZECLASSES %d
+|}
+    pool_words header_wsize max_slot (List.length whsize_sizeclass);
+  printf {|
 typedef unsigned char sizeclass;
 static_assert(NUM_SIZECLASSES < (1 << (CHAR_BIT * sizeof(sizeclass))), "");
 
-/* The largest size for this size class.
-   (A gap is left after smaller objects) */
-static const unsigned int wsize_sizeclass[NUM_SIZECLASSES] =@[<2>{ %a };@]
+/* The slot sizes (and therefore the largest whsize) for each size class.
+   (A "fragment" gap is left after smaller objects) */
+static const mlsize_t whsize_sizeclass[NUM_SIZECLASSES] =@[<2>{ %a };@]
 |}
-    print_list sizes;
+    print_list whsize_sizeclass;
   printf {|
-/* The number of padding words to use, at the beginning of a pool
-   of this sizeclass, to reach exactly POOL_WSIZE words. */
-static const unsigned char wastage_sizeclass[NUM_SIZECLASSES] =@[<2>{ %a };@]
+/* The number of padding words left, after the header of a pool
+   of each sizeclass, so that the pool is exactly POOL_WSIZE words. */
+static const unsigned char padding_sizeclass[NUM_SIZECLASSES] =@[<2>{ %a };@]
 |}
-    print_list wastage;
+    print_list padding_sizeclass;
   printf {|
-/* Map from (positive) object sizes to size classes. */
-static const sizeclass sizeclass_wsize[SIZECLASS_MAX + 1] =@[<2>{ %a };@]
+/* The size class (index into whsize_sizeclass) for each
+   whsize from 0 to SIZECLASS_MAX. Dummy value 255 at index 0. */
+static const sizeclass sizeclass_whsize[SIZECLASS_MAX + 1] =@[<2>{ %a };@]
 |}
-    print_list (255 :: size_slots 1);
-  printf "\n#endif /* CAML_SIZECLASSES_H */\n"
+    print_list sizeclass_whsize;
+  printf {|
+/* The size in words of the fragment left in the slot after a block of each
+   whsize from 0 to SIZECLASS_MAX. Dummy value 255 at index 0. */
+static const mlsize_t wfrag_whsize[SIZECLASS_MAX + 1] =@[<2>{ %a };@]
+|}
+    print_list wfrag_whsize;
+  printf {|
+#endif /* CAML_SIZECLASSES_H */
+|}

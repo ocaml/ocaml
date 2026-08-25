@@ -1249,6 +1249,26 @@ val pp_print_array:
   @since 5.1
 *)
 
+val pp_print_iarray:
+  ?pp_sep:(formatter -> unit -> unit) ->
+  (formatter -> 'a -> unit) -> (formatter -> 'a iarray -> unit)
+(** [pp_print_iarray ?pp_sep pp_v ppf a] prints items of immutable array [a],
+  using [pp_v] to print each item, and calling [pp_sep] between items ([pp_sep]
+  defaults to {!pp_print_cut}). Does nothing on empty arrays.
+
+  @since 5.6
+*)
+
+val pp_print_dynarray:
+  ?pp_sep:(formatter -> unit -> unit) ->
+  (formatter -> 'a -> unit) -> (formatter -> 'a Dynarray.t -> unit)
+(** [pp_print_dynarray ?pp_sep pp_v ppf a] prints items of dynarray [a],
+  using [pp_v] to print each item, and calling [pp_sep] between items ([pp_sep]
+  defaults to {!pp_print_cut}). Does nothing on empty arrays.
+
+  @since 5.6
+*)
+
 val pp_print_seq:
   ?pp_sep:(formatter -> unit -> unit) ->
   (formatter -> 'a -> unit) -> (formatter -> 'a Seq.t -> unit)
@@ -1422,7 +1442,7 @@ val sprintf : ('a, unit, string) format -> 'a
   Note that the pretty-printer queue is flushed at the end of {e each
   call} to [sprintf]. Note that you likely want to use {!asprintf} which can
   reuse [%a]-printers defined for {!fprintf}. Contrarily, [sprintf] requires to
-  redefine new [%a]-printers, and is kept only for backward compatility.
+  redefine new [%a]-printers, and is kept only for backward compatibility.
 
   In case of multiple and related calls to [sprintf] to output
   material on a single string, you should consider using [fprintf]
@@ -1650,7 +1670,7 @@ val ldprintf :
       a formatter (into which formatting happens), and the pair itself.
       When printing is done it returns [()].
 
-    - [Format.printf "l = [@[<hov>%a@]]@." ... l] is like [printf], but
+    - [Format.printf "l: [@[<hov>%a@]]@." ... l] is like [printf], but
       with additional formatting instructions (denoted with "@"). The pair
       "[@\[<hov>]" and "[@\]]" is a "horizontal-or-vertical box".
 

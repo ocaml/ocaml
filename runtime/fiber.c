@@ -181,6 +181,8 @@ alloc_size_class_stack_noexc(mlsize_t wosize, int cache_bucket, value hval,
       cache[cache_bucket] != NULL) {
     stack = cache[cache_bucket];
     cache[cache_bucket] =
+      /* In the cache, reuse the exception_ptr field as an internal
+         linked-list next pointer. */
       (struct stack_info*)stack->exception_ptr;
     CAMLassert(stack->cache_bucket == stack_cache_bucket(wosize));
     hand = stack->handler;
@@ -320,6 +322,8 @@ void caml_scan_stack(
   scanning_action f, scanning_action_flags fflags, void* fdata,
   struct stack_info* stack, value* gc_regs)
 {
+  struct stack_info* starting_stack = stack;
+
   while (stack != NULL) {
     scan_stack_frames(f, fflags, fdata, stack, gc_regs);
 
@@ -328,6 +332,7 @@ void caml_scan_stack(
     f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
 
     stack = Stack_parent(stack);
+    if (stack == starting_stack) break;  /* loop detected */
   }
 }
 
@@ -408,6 +413,8 @@ void caml_scan_stack(
 {
   value *low, *high;
 
+  struct stack_info* starting_stack = stack;
+
   while (stack != NULL) {
     CAMLassert(stack->magic == 42);
 
@@ -428,6 +435,7 @@ void caml_scan_stack(
       f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
 
     stack = Stack_parent(stack);
+    if (stack == starting_stack) break;  /* loop detected */
   }
 }
 
@@ -468,7 +476,63 @@ void caml_rewrite_exception_stack(struct stack_info *old_stack,
     fiber_debug_log ("exn_ptr is null");
   }
 }
+
 #endif
+
+#ifdef WITH_FRAME_POINTERS
+
+/* One link of the frame-pointer chain. */
+struct stack_frame {
+  struct stack_frame* prev;
+  void* retaddr;
+};
+
+/* Relocate by [delta] the frame pointers of the OCaml frames lying above the
+   C frame described by [link], for as long as they point inside [old_stack].
+   The OCaml frames have already been copied to the new stack, [link->sp] has
+   not been relocated yet. */
+Caml_inline void relocate_frame_pointers(struct c_stack_link* link,
+                                         struct stack_info* old_stack,
+                                         ptrdiff_t delta)
+{
+#if defined(TARGET_power)
+  /* On Power the c_stack_link sits above the ABI's 32-byte reserved area, so
+     the OCaml frame record is not adjacent to it.  Reach it through
+     [link->sp], which is the address of the innermost OCaml frame record,
+     relocated by [delta] since the stack has already been copied. */
+  struct stack_frame* fp = (struct stack_frame*)((char*)link->sp + delta);
+#elif defined(TARGET_riscv)
+  /* On RISC-V, the frame pointer s0 = CFA = sp + frame_size, pointing to the
+     address just AFTER the {saved_s0, saved_ra} frame record.  So fp->prev
+     gives a CFA value, and the actual frame record is at
+     (CFA - sizeof(struct stack_frame)).  ENTER_FUNCTION sets s0 = sp + 16,
+     so the saved s0 in the C function's frame equals link->sp + 16. */
+  struct stack_frame* fp = ((struct stack_frame*)link) - 1;
+  CAMLassert(fp->prev == (struct stack_frame*)((char*)link->sp + 16));
+#else /* AMD64 and ARM64 */
+  /* The frame pointer is pushed just below the c_stack_link.  This is
+     somewhat tricky to guarantee when there are stack arguments to C calls:
+     see caml_c_call_copy_stack_args */
+  struct stack_frame* fp = ((struct stack_frame*)link) - 1;
+  CAMLassert(fp->prev == (struct stack_frame*)link->sp);
+#endif
+
+#if defined(TARGET_riscv)
+  while ((value*)fp->prev > Stack_base(old_stack) &&
+         (value*)fp->prev <= Stack_high(old_stack)) {
+    fp->prev = (struct stack_frame*)((char*)fp->prev + delta);
+    fp = fp->prev - 1; /* CFA - 16 = frame record */
+  }
+#else
+  while (Stack_base(old_stack) <= (value*)fp->prev &&
+         (value*)fp->prev < Stack_high(old_stack)) {
+    fp->prev = (struct stack_frame*)((char*)fp->prev + delta);
+    fp = fp->prev;
+  }
+#endif
+}
+
+#endif /* WITH_FRAME_POINTERS */
 
 int caml_try_realloc_stack(asize_t required_space)
 {
@@ -516,30 +580,15 @@ int caml_try_realloc_stack(asize_t required_space)
    * multiple c_stack_links to point to the same stack since callbacks are run
    * on existing stacks. */
   {
+    ptrdiff_t delta =
+      (char*)Stack_high(new_stack) - (char*)Stack_high(old_stack);
+
     for (struct c_stack_link *link = Caml_state->c_stack;
          link != NULL;
          link = link->prev) {
       if (link->stack == old_stack) {
-        ptrdiff_t delta =
-          (char*)Stack_high(new_stack) - (char*)Stack_high(old_stack);
 #ifdef WITH_FRAME_POINTERS
-        struct stack_frame {
-          struct stack_frame* prev;
-          void* retaddr;
-        };
-
-        /* Frame pointer is pushed just below the c_stack_link.
-           This is somewhat tricky to guarantee when there are stack
-           arguments to C calls: see caml_c_call_copy_stack_args */
-        struct stack_frame* fp = ((struct stack_frame*)link) - 1;
-        CAMLassert(fp->prev == link->sp);
-
-        /* Rewrite OCaml frame pointers above this C frame */
-        while (Stack_base(old_stack) <= (value*)fp->prev &&
-               (value*)fp->prev < Stack_high(old_stack)) {
-          fp->prev = (struct stack_frame*)((char*)fp->prev + delta);
-          fp = fp->prev;
-        }
+        relocate_frame_pointers(link, old_stack, delta);
 #endif
         link->stack = new_stack;
         link->sp = (char*)link->sp + delta;
@@ -560,6 +609,43 @@ struct stack_info* caml_alloc_main_stack (uintnat init_wsize)
   return stk;
 }
 
+atomic_uintnat caml_cache_stacks_per_class =
+#if defined(USE_MMAP_MAP_STACK)
+  1
+#else
+  128
+#endif
+  ;
+
+void caml_free_stack_memory(struct stack_info* stack) {
+  atomic_fetch_sub(&live_stack_counter,
+                   (value*)(stack->handler+1) - (value*)stack);
+#ifdef DEBUG
+  memset(stack, 0x42, (char*)stack->handler - (char*)stack);
+#endif
+#ifdef USE_MMAP_MAP_STACK
+  munmap(stack, stack->size);
+#else
+  caml_stat_free(stack);
+#endif
+}
+
+void caml_free_stack_cache (struct stack_info** stack_cache)
+{
+  if (stack_cache == NULL)
+    return;
+
+  struct stack_info* stored_stack;
+  for (int i = 0; i < NUM_STACK_SIZE_CLASSES; i++) {
+    while (stack_cache[i] != NULL) {
+      stored_stack = stack_cache[i];
+      stack_cache[i] = (struct stack_info*) stored_stack->exception_ptr;
+      caml_free_stack_memory(stored_stack);
+    };
+  }
+  caml_stat_free(stack_cache);
+}
+
 void caml_free_stack (struct stack_info* stack)
 {
   CAMLnoalloc;
@@ -568,24 +654,24 @@ void caml_free_stack (struct stack_info* stack)
   CAMLassert(stack->magic == 42);
   CAMLassert(cache != NULL);
   if (stack->cache_bucket != -1) {
-    stack->exception_ptr =
-      (void*)(cache[stack->cache_bucket]);
-    cache[stack->cache_bucket] = stack;
+    struct stack_info* top = (struct stack_info*)cache[stack->cache_bucket];
+    /* When stored inside the cache, the fiber id field is reused to count
+       the number of fibers in the bucket */
+    int64_t count = top ? top->id : 0;
+    if (count < caml_cache_stacks_per_class) {
+      /* Reuse exception_ptr to point to the next fiber in the bucket. */
+      stack->exception_ptr = (void *)top;
+      stack->id = count + 1;
+      cache[stack->cache_bucket] = stack;
 #ifdef DEBUG
     memset(Stack_base(stack), 0x42,
            (Stack_high(stack)-Stack_base(stack))*sizeof(value));
 #endif
+    } else {
+      caml_free_stack_memory(stack);
+    }
   } else {
-    atomic_fetch_sub(&live_stack_counter,
-                     (value*)(stack->handler+1) - (value*)stack);
-#ifdef DEBUG
-    memset(stack, 0x42, (char*)stack->handler - (char*)stack);
-#endif
-#ifdef USE_MMAP_MAP_STACK
-    munmap(stack, stack->size);
-#else
-    caml_stat_free(stack);
-#endif
+    caml_free_stack_memory(stack);
   }
 }
 
@@ -649,7 +735,6 @@ CAMLprim value caml_continuation_use_and_update_handler_noexc
     /* The continuation has already been taken */
     return stack;
   }
-  stk = Ptr_val(Field(cont, 1));
   Stack_handle_value(stk) = hval;
   Stack_handle_exception(stk) = hexn;
   Stack_handle_effect(stk) = heff;

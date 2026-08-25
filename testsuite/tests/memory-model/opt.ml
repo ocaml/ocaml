@@ -10,8 +10,8 @@ let (default_avail, default_size, default_nruns) =
   else (2, 1000, 10)
 
 let verbose = ref false
-and size = ref 5000
-and nruns = ref 20
+and size = ref default_size
+and nruns = ref default_nruns
 and navail = ref default_avail
 
 module type Config = sig

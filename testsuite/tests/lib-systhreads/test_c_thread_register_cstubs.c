@@ -41,6 +41,7 @@ value spawn_thread(value clos)
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
   pthread_create(&thr, &attr, thread_func, (void *) clos);
+  (void)pthread_attr_destroy(&attr);
 #endif
   return Val_unit;
 }

@@ -38,6 +38,8 @@ module Float_arg_helper = Arg_helper.Make (struct
   end
 end)
 
+type profile_column = [ `Time | `Alloc | `Top_heap | `Abs_top_heap ]
+
 let objfiles = ref ([] : string list)         (* .cmo and .cma files *)
 and ccobjs = ref ([] : string list)           (* .o, .a, .so and -cclib -lxxx *)
 and dllibs = ref ([] : (suffixed:bool * string) list)
@@ -102,6 +104,7 @@ and recursive_types = ref false         (* -rectypes *)
 and strict_sequence = ref false         (* -strict-sequence *)
 and strict_formats = ref true           (* -strict-formats *)
 and applicative_functors = ref true     (* -no-app-funct *)
+and typing_recovery = ref false          (* -typing-recovery *)
 and make_runtime = ref false            (* -make-runtime *)
 and c_compiler = ref (None: string option) (* -cc *)
 and no_auto_link = ref false            (* -noautolink *)
@@ -111,6 +114,7 @@ and for_package = ref (None: string option) (* -for-pack *)
 and error_size = ref 500                (* -error-size *)
 and float_const_prop = ref true         (* -no-float-const-prop *)
 and no_alias_deps = ref false           (* -no-alias-deps *)
+let bytecode_hints = ref false          (* -no-bytecode-hints *)
 let unique_ids = ref true               (* -d(no-)unique-ids *)
 let canonical_ids = ref false           (* -d(no-)canonical-ids *)
 let locations = ref true                (* -d(no-)locations *)
@@ -151,7 +155,7 @@ let dump_reload = ref false             (* -dreload *)
 let dump_scheduling = ref false         (* -dscheduling *)
 let dump_linear = ref false             (* -dlinear *)
 let keep_startup_file = ref false       (* -dstartup *)
-let profile_columns : Profile.column list ref = ref [] (* -dprofile/-dtimings *)
+let profile_columns : profile_column list ref = ref [] (* -dprofile/-dtimings *)
 
 let native_code = ref false             (* set to true under ocamlopt *)
 

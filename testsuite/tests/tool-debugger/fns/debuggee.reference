@@ -1,0 +1,9 @@
+Loading program... done.
+Breakpoint: 1
+17 let stop = f (1 + 1)<|a|>
+Breakpoint: 2
+13 let f (z:int) = <|b|>z, 2 * z + 1
+z: int = 1
+Breakpoint: 3
+15 let g (module M:T) (x:M.t) y = <|b|>x, 1 + y
+y: int = 100

@@ -1,0 +1,21 @@
+(* TEST
+   native-compiler;
+   not tsan; (* Skip, TSan inserts extra frames into backtraces *)
+   linux;
+   not clang; (* Skip, clang is tested on macOS *)
+   arch_amd64 || arch_arm64 || arch_power || arch_riscv || arch_s390x;
+   script = "sh ${test_source_directory}/has_gdb.sh";
+   script;
+   readonly_files = "meander.ml meander_c.c gdb_test.py";
+   setup-ocamlopt.byte-build-env;
+   program = "${test_build_directory}/meander";
+   flags = "-g -ccopt -O0";
+   all_modules = "meander.ml meander_c.c";
+   ocamlopt.byte;
+   debugger_script = "${test_source_directory}/gdb-script";
+   gdb;
+   script = "sh ${test_source_directory}/sanitize.sh gdb";
+   script;
+   reference = "${test_source_directory}/gdb.${system}.${arch}.reference";
+   check-program-output;
+ *)

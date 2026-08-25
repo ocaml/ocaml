@@ -24,6 +24,8 @@ open Linear
 open Emitaux
 open Emitenv
 
+let fp = Config.with_frame_pointers
+
 (* Reserved space at bottom of stack *)
 
 let reserved_stack_space = 32
@@ -34,9 +36,16 @@ let initial_stack_offset f =
   if f.fun_frame_required then
     reserved_stack_space +                    (* Including the return address *)
     size_int * f.fun_num_stack_slots.(0) +    (* Local int variables *)
-    size_float * f.fun_num_stack_slots.(1)    (* Local float variables *)
+    size_float * f.fun_num_stack_slots.(1) +  (* Local float variables *)
+    (if fp then size_int else 0)              (* Saved frame pointer r31 *)
   else
     0
+
+(* Offset where frame pointer r31 is saved, relative to SP after prologue *)
+let fp_save_offset env =
+  reserved_stack_space + env.stack_offset +
+  env.f.fun_num_stack_slots.(1) * size_float +
+  env.f.fun_num_stack_slots.(0) * size_int
 
 let frame_size env =
   let size =
@@ -61,7 +70,10 @@ let retaddr_offset env = frame_size env + 16
 
 let toc_save_offset env = frame_size env + 8
 
-let trap_size = 16
+(* Trap frame size.  With frame pointers [Lpushtrap] uses [stdu] and the trap
+   data lives inside the new frame (32 + 16); otherwise 16 bytes suffice.
+   Must match [Stackframe.trap_handler_size]. *)
+let trap_size = if fp then 48 else 16
 
 (* Output a label *)
 
@@ -270,8 +282,12 @@ let emit_float_comp cmp arg =
 
 let emit_free_frame env =
   let n = frame_size env in
-  if n > 0 then
+  if n > 0 then begin
+    (* Restore frame pointer before deallocating frame *)
+    if fp && env.f.fun_frame_required then
+      `	ld	31, {emit_int (fp_save_offset env)}(1)\n`;
     `	addi	1, 1, {emit_int n}\n`
+  end
 
 (* Emit a "bl" instruction to a given symbol *)
 
@@ -401,7 +417,9 @@ module BR = Branch_relaxation.Make (struct
   let offset_pc_at_branch = 1
 
   let prologue_size f =
-    if f.fun_frame_required then 4 else 0
+    if f.fun_frame_required then
+      4 + (if fp then 2 else 0)  (* +2 for save old FP and set FP = SP *)
+    else 0
 
   let tocload_size = 2
 
@@ -433,16 +451,16 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Iconst_symbol _) -> tocload_size
     | Lop(Icall_ind) -> 4
     | Lop(Icall_imm _) -> 3
-    | Lop(Itailcall_ind) -> 6
+    | Lop(Itailcall_ind) -> 6 + (if fp && f.fun_frame_required then 1 else 0)
     | Lop(Itailcall_imm { func; _ }) ->
         if func = f.fun_name
         then 1
-        else 6 + tocload_size
+        else 6 + tocload_size + (if fp && f.fun_frame_required then 1 else 0)
     | Lop(Iextcall { alloc; stack_ofs; _}) ->
         if stack_ofs > 0 then tocload_size + 4
         else if alloc then tocload_size + 2
-        else 5
-    | Lop(Istackoffset _) -> 1
+        else 5 + (if fp then 3 else 0)  (* ld+stdu+addi for fp support *)
+    | Lop(Istackoffset n) -> if fp && n > 0 then 3 else 1
     | Lop(Iload {memory_chunk; addressing_mode; is_atomic }) ->
       let loadinstr = load_mnemonic memory_chunk in
       (if is_atomic then 4 else 0) +
@@ -475,9 +493,10 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Iopaque) -> 0
     | Lop(Ispecific _) -> 1
     | Lop(Idls_get) -> 1
+    | Lop(Iatomic_fetch_add) -> 7
     | Lop(Ireturn_addr) -> 1
     | Lreloadretaddr -> 2
-    | Lreturn -> 2
+    | Lreturn -> 2 + (if fp && f.fun_frame_required then 1 else 0)  (* +1 for restore FP *)
     | Llabel _ -> 0
     | Lbranch _ -> 1
     | Lcondbranch (Ifloattest(CFle | CFnle  | CFge | CFnge), _) -> 3
@@ -487,9 +506,9 @@ module BR = Branch_relaxation.Make (struct
         + (if lbl1 = None then 0 else 1)
         + (if lbl2 = None then 0 else 1)
     | Lswitch _ -> 7 + tocload_size
-    | Lentertrap -> 1
+    | Lentertrap -> 1 + (if fp && f.fun_frame_required then 1 else 0)
     | Ladjust_trap_depth _ -> 0
-    | Lpushtrap _ -> 4 + tocload_size
+    | Lpushtrap _ -> (if fp then 6 else 4) + tocload_size
     | Lpoptrap -> 2
     | Lraise (Lambda.Raise_regular | Lambda.Raise_reraise) -> 2
     | Lraise Lambda.Raise_notrace -> 5
@@ -517,25 +536,25 @@ let emit_alloc env i bytes dbginfo far =
   if env.call_gc_label = 0 then env.call_gc_label <- new_label ();
   let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
   `	ld	0, {emit_int offset}(30)\n`;
-  `	addi	31, 31, {emit_int(-bytes)}\n`;
-  `	cmpld	31, 0\n`;
+  `	addi	23, 23, {emit_int(-bytes)}\n`;
+  `	cmpld	23, 0\n`;
   if not far then begin
     `	bltl-	{emit_label env.call_gc_label}\n`;
     record_frame env i.live (Dbg_alloc dbginfo);
-    `	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
+    `	addi	{emit_reg i.res.(0)}, 23, {emit_int size_addr}\n`
   end else begin
     let lbl = new_label() in
     `	bge+	{emit_label lbl}\n`;
     `	bl	{emit_label env.call_gc_label}\n`;
     record_frame env i.live (Dbg_alloc dbginfo);
-    `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
+    `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, 23, {emit_int size_addr}\n`
   end
 
 let emit_poll env i return_label far =
   if env.call_gc_label = 0 then env.call_gc_label <- new_label ();
   let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
   `	ld	0, {emit_int offset}(30)\n`;
-  `	cmpld	31, 0\n`;
+  `	cmpld	23, 0\n`;
   if not far then begin
     begin match return_label with
     | None ->
@@ -597,18 +616,29 @@ let emit_instr env i =
     match i.desc with
     | Lend -> ()
     | Lprologue ->
-      let n = frame_size env in
-      if n > 0 then begin
-        `	addi	1, 1, {emit_int(-n)}\n`;
-        cfi_adjust_cfa_offset n
-      end;
-      if env.f.fun_frame_required then begin
-        let ra = retaddr_offset env in
-        `	mflr	0\n`;
-        `	std	0, {emit_int ra}(1)\n`;
-        cfi_offset ~reg: 65 (* LR *) ~offset: (ra - n);
-        `	std	2, {emit_int(toc_save_offset env)}(1)\n`
-      end
+        let n = frame_size env in
+        if env.f.fun_frame_required then begin
+            `	mflr	0\n`;
+            `	std	0, {emit_int 16}(1)\n`;
+            `	std	2, {emit_int 8}(1)\n`;
+            cfi_offset ~reg: 65 (* LR *) ~offset: 16;
+            if fp then
+              `	std	31, {emit_int(fp_save_offset env - n)}(1)\n`
+         end;
+        if n > 0 then begin
+            if fp then
+              `	stdu	1, {emit_int(-n)}(1)\n`
+            else
+              `	addi	1, 1, {emit_int(-n)}\n`;
+            cfi_adjust_cfa_offset n;
+            (* Note: We don't emit .cfi_offset for r1 (backchain) because trap frames
+               can overwrite the backchain location. The signal frame's val_expression
+               for r1 handles SP restoration during C call unwinding. *)
+            if fp && env.f.fun_frame_required then begin
+              `	mr	31, 1\n`;
+              cfi_offset ~reg: 31 (* FP *) ~offset: (fp_save_offset env - n)
+            end
+        end
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc <> dst.loc then begin
@@ -722,17 +752,49 @@ let emit_instr env i =
         end else begin
           (* Save OCaml stack pointer in a callee-save register *)
           `	mr	28, 1\n`;
+          cfi_remember_state ();
+          cfi_def_cfa_register ~reg:28;
+          if fp then
+            (* Link the stub frame to our caller (not us), so the frame walker
+               does not see this frame twice via our stale SP+16 retaddr. *)
+            `	ld	12, 0(1)\n`;
           (* Switch to C stack *)
           let offset = Domainstate.(idx_of_field Domain_c_stack) * 8 in
           `	ld	1, {emit_int offset}(30)\n`;
+          if fp then begin
+            `	stdu	12, {emit_int (-reserved_stack_space)}(1)\n`;
+            (* Follow the back chain back to the OCaml stack. *)
+            cfi_def_cfa_breg_deref ~reg:1 (* SP *) ~offset:0
+          end;
           emit_call func;
           emit_call_nop();
+          if fp then begin
+            `	addi	1, 1, {emit_int reserved_stack_space}\n`
+          end;
           (* Switch back to OCaml stack *)
-          `	mr	1, 28\n`
+          `	mr	1, 28\n`;
+          cfi_restore_state ()
         end
     | Lop(Istackoffset n) ->
-        `	addi	1, 1, {emit_int (-n)}\n`;
-        adjust_stack_offset env n
+        (* [slot_offset] places outgoing arguments at SP + reserved_stack_space
+           + n, so the allocation must cover the ABI's reserved area too,
+           otherwise they overflow into the caller's frame.  With frame
+           pointers, [stdu] keeps the back chain valid and LR is copied into
+           the new frame.  Without them [addi] suffices. *)
+        if n > 0 then begin
+          let alloc = n + reserved_stack_space in
+          if fp then begin
+            `	ld	0, {emit_int (retaddr_offset env)}(1)\n`;
+            `	stdu	1, {emit_int (-alloc)}(1)\n`;
+            `	std	0, {emit_int (alloc + 16)}(1)\n`
+          end else
+            `	addi	1, 1, {emit_int (-alloc)}\n`;
+          adjust_stack_offset env alloc
+        end else if n < 0 then begin
+          let dealloc = (-n) + reserved_stack_space in
+          `	addi	1, 1, {emit_int dealloc}\n`;
+          adjust_stack_offset env (-dealloc)
+        end
     | Lop(Iload { memory_chunk; addressing_mode; is_atomic }) ->
         let loadinstr = load_mnemonic memory_chunk in
         if is_atomic then
@@ -847,6 +909,17 @@ let emit_instr env i =
     | Lop (Idls_get) ->
         let offset = Domainstate.(idx_of_field Domain_dls_root) * 8 in
         `	ld	{emit_reg i.res.(0)}, {emit_int offset}(30)\n`
+    | Lop (Iatomic_fetch_add) ->
+        (* trailing lwsync is the release fence, #10995 *)
+        let lbl = new_label() in
+        `	sync\n`;
+        `{emit_label lbl}:\n`;
+        `	ldarx	{emit_reg i.res.(0)}, 0, {emit_reg i.arg.(0)}\n`;
+        `	add	0, {emit_reg i.res.(0)}, {emit_reg i.arg.(1)}\n`;
+        `	stdcx.	0, 0, {emit_reg i.arg.(0)}\n`;
+        `	bne-	{emit_label lbl}\n`;
+        `	isync\n`;
+        `	lwsync\n`
     | Lop (Ireturn_addr) ->
         if env.f.fun_frame_required then
         `	ld	{emit_reg i.res.(0)}, {emit_int(retaddr_offset env)}(1)\n`
@@ -926,11 +999,24 @@ let emit_instr env i =
         `	bctr\n`;
         env.jumptables <- List.rev_append (Array.to_list jumptbl) env.jumptables
     | Lentertrap ->
-        emit_reload_toc env
+        emit_reload_toc env;
+        (* After exception unwinding, FP (r31) is stale. Restore FP = SP, but
+           only when this function established a frame pointer. *)
+        if fp && env.f.fun_frame_required then
+          `	mr	31, 1\n`
     | Ladjust_trap_depth { delta_traps } ->
         adjust_stack_offset env (trap_size * delta_traps)
     | Lpushtrap { lbl_handler; } ->
-        `	addi	1, 1, {emit_int (-trap_size)}\n`;
+        if fp then begin
+          (* stdu (not addi) so the frame walker can traverse trap frames.
+             Clear the parent LR save slot (parent_SP + 16) so stale data
+             there is not mistaken for a return address. *)
+          `	stdu	1, {emit_int (-trap_size)}(1)\n`;
+          `	li	0, 0\n`;
+          `	std	0, {emit_int (trap_size + 16)}(1)\n`
+        end
+        else
+          `	addi	1, 1, {emit_int (-trap_size)}\n`;
         adjust_stack_offset env trap_size;
         `	std	29, {emit_int reserved_stack_space}(1)\n`;
         emit_tocload emit_gpr 29 (TocLabel lbl_handler);
@@ -1002,7 +1088,15 @@ let fundecl fundecl =
   `	.align	2\n`;
   (* Dynamic stack checking *)
   let stack_threshold_size = Config.stack_threshold * 8 in (* bytes *)
-  let max_frame_size = frame_size env + fundecl.fun_extra_stack_used in
+  (* The generic stack-usage analysis models each outgoing-argument region as
+     [n] bytes, but [Istackoffset] reserves [n + reserved_stack_space] (the
+     ELFv2 linkage area for the callee) which the analysis does not account for.
+     Outgoing-argument regions are never nested, so adding a single
+     [reserved_stack_space] whenever any extra stack is used covers the deepest
+     region and keeps the stack-overflow check conservative. *)
+  let max_frame_size =
+    frame_size env + fundecl.fun_extra_stack_used
+    + (if fundecl.fun_extra_stack_used > 0 then reserved_stack_space else 0) in
   let handle_overflow = ref None in
   if fundecl.fun_contains_nontail_calls
   || max_frame_size >= stack_threshold_size then begin
@@ -1021,11 +1115,11 @@ let fundecl fundecl =
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   emit_type_directive fundecl.fun_name "@function";
   `{emit_symbol fundecl.fun_name}:\n`;
+  cfi_startproc();
   `0:	addis	2, 12, (.TOC. - 0b)@ha\n`;
   `	addi	2, 2, (.TOC. - 0b)@l\n`;
   `	.localentry {emit_symbol fundecl.fun_name}, . - 0b\n`;
   emit_debug_info fundecl.fun_dbg;
-  cfi_startproc();
   (* Dynamic stack checking *)
   begin match !handle_overflow with
   | None -> ()

@@ -14,6 +14,9 @@ Line 2, characters 42-43:
 Error: The value "s" has type "'a list" but an expression was expected of type
          "'a t" = "'a"
        The type variable "'a" occurs inside "'a list"
+|}, Rectypes{|
+type 'a t = 'a
+val f : (('a list as 'a) list -> 'a t -> 'a) -> 'a -> 'a = <fun>
 |}];;
 
 let f (g : 'a * 'b -> 'a t -> 'a) s = g s s;;
@@ -24,6 +27,8 @@ Line 1, characters 42-43:
 Error: The value "s" has type "'a * 'b" but an expression was expected of type
          "'a t" = "'a"
        The type variable "'a" occurs inside "'a * 'b"
+|}, Rectypes{|
+val f : (('a * 'b as 'a) * 'b -> 'a t -> 'a) -> 'a -> 'a = <fun>
 |}];;
 
 (* #12971 *)
@@ -56,21 +61,36 @@ let wrong_to_seq (xt : 'a t) : 'a Seq.t =
   let T x = xt in
   Seq.cons Seq.empty x
 ;;
-(* Note: the current behavior of this function is believed to be
-   a bug, in the sense that it creates an equi-recursive type even in
-   absence of the -rectypes flag. On the other hand, it does not fail
-   with the Ctype.Escape exception, as it did from 4.13 to 5.1. *)
+(* Note: this function should not be typable, since it creates an
+   equi-recursive type even in absence of the -rectypes flag.
+   Properly detected by keep-expansion. *)
 [%%expect{|
 type 'a t = T of 'a
-val wrong_to_seq : ('a Seq.t as 'a) Seq.t t -> 'a Seq.t Seq.t = <fun>
+Line 4, characters 2-22:
+4 |   Seq.cons Seq.empty x
+      ^^^^^^^^^^^^^^^^^^^^
+Error: This expression has type "'a Seq.t Seq.t" = "unit -> 'a Seq.t Seq.node"
+       but an expression was expected of type
+         "'a Seq.t Seq.t Seq.t" = "unit -> 'a Seq.t Seq.t Seq.node"
+       Type "'a Seq.t" = "unit -> 'a Seq.node" is not compatible with type
+         "'a Seq.t Seq.t" = "unit -> 'a Seq.t Seq.node"
+Hint: This function application is partial, maybe some arguments are missing.
+|}, Rectypes{|
+type 'a t = T of 'a
+val wrong_to_seq : (unit -> 'a Seq.node as 'a) t -> 'a Seq.t = <fun>
 |}];;
 
 let strange x = Seq.[cons x empty; cons empty x];;
 [%%expect{|
-Line 1, characters 12-48:
+Line 1, characters 35-47:
 1 | let strange x = Seq.[cons x empty; cons empty x];;
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "('a Seq.t as 'a) Seq.t -> 'a Seq.t Seq.t list"
+                                       ^^^^^^^^^^^^
+Error: This expression has type "'a Seq.t Seq.t" = "unit -> 'a Seq.t Seq.node"
        but an expression was expected of type
-         "('a Seq.t as 'a) Seq.t -> 'a Seq.t Seq.t list"
+         "'a Seq.t Seq.t Seq.t" = "unit -> 'a Seq.t Seq.t Seq.node"
+       Type "'a Seq.t" = "unit -> 'a Seq.node" is not compatible with type
+         "'a Seq.t Seq.t" = "unit -> 'a Seq.t Seq.node"
+Hint: This function application is partial, maybe some arguments are missing.
+|}, Rectypes{|
+val strange : (unit -> 'a Seq.node as 'a) -> 'a Seq.t list = <fun>
 |}];;

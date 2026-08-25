@@ -35,6 +35,7 @@ let fold ~ok ~error = function Ok v -> ok v | Error e -> error e
 let retract = function Ok v -> v | Error v -> v
 let iter f = function Ok v -> f v | Error _ -> ()
 let iter_error f = function Error e -> f e | Ok _ -> ()
+let try_value r f = match r with | Error e -> f e | _ -> r
 let is_ok = function Ok _ -> true | Error _ -> false
 let is_error = function Error _ -> true | Ok _ -> false
 

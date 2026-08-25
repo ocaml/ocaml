@@ -1,0 +1,17 @@
+empty array
+ 0
+various arrays
+ 1 2 3
+end of tests
+empty iarray
+ 4
+various iarrays
+ 5 6 7
+end of tests
+empty dynarray
+ 8
+various dynarrays
+ 9 10 11
+end of tests
+
+All tests succeeded.

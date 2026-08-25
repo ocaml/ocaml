@@ -1,0 +1,41 @@
+File "bind_existentials.ml", line 1:
+Error: Multiple errors were encountered
+File "bind_existentials.ml", line 20, characters 40-48:
+20 | let a = function Dyn (type a b) (a, x : a ty * b) -> ignore (x : b)
+                                             ^^^^^^^^
+  The local name b can only be given to an existential variable
+  introduced by this GADT constructor.
+  The type annotation tries to bind it to the name a that is already bound.
+File "bind_existentials.ml", line 20, characters 61-62:
+20 | let a = function Dyn (type a b) (a, x : a ty * b) -> ignore (x : b)
+                                                                  ^
+  Unbound value x
+File "bind_existentials.ml", line 29, characters 22-23:
+29 |   | Int (type b) (n : a) -> n
+                           ^
+  The local name b can only be given to an existential variable
+  introduced by this GADT constructor.
+  The type annotation tries to bind it to the type 'a
+  that is not a locally abstract type.
+File "bind_existentials.ml", line 29, characters 28-29:
+29 |   | Int (type b) (n : a) -> n
+                                 ^
+  Unbound value n
+File "bind_existentials.ml", line 40, characters 29-41:
+40 |   | Thunk (type b c) (x, f : b * (b -> c)) -> f x
+                                  ^^^^^^^^^^^^
+  The local name c can only be given to an existential variable
+  introduced by this GADT constructor.
+  The type annotation tries to bind it to the name a that was defined before.
+File "bind_existentials.ml", line 40, characters 46-47:
+40 |   | Thunk (type b c) (x, f : b * (b -> c)) -> f x
+                                                   ^
+  Unbound value f
+File "bind_existentials.ml", line 40, characters 48-49:
+40 |   | Thunk (type b c) (x, f : b * (b -> c)) -> f x
+                                                     ^
+  Unbound value x
+File "bind_existentials.ml", line 42, characters 17-19:
+42 | let t : string = 10
+                      ^^
+  The constant 10 has type int but an expression was expected of type string

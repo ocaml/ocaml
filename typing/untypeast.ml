@@ -70,6 +70,8 @@ type mapper = {
   type_kind: mapper -> T.type_kind -> type_kind;
   value_binding: mapper -> T.value_binding -> value_binding;
   value_description: mapper -> T.value_description -> value_description;
+  primitive_description: mapper -> T.primitive_description
+                         -> primitive_description;
   with_constraint:
     mapper -> (Path.t * Longident.t Location.loc * T.with_constraint)
     -> with_constraint;
@@ -161,8 +163,8 @@ let structure_item sub item =
       Tstr_eval (exp, attrs) -> Pstr_eval (sub.expr sub exp, attrs)
     | Tstr_value (rec_flag, list) ->
         Pstr_value (rec_flag, List.map (sub.value_binding sub) list)
-    | Tstr_primitive vd ->
-        Pstr_primitive (sub.value_description sub vd)
+    | Tstr_primitive pd ->
+        Pstr_primitive (sub.primitive_description sub pd)
     | Tstr_type (rec_flag, list) ->
         Pstr_type (rec_flag, List.map (sub.type_declaration sub) list)
     | Tstr_typext tyext ->
@@ -198,9 +200,18 @@ let value_description sub v =
   let loc = sub.location sub v.val_loc in
   let attrs = sub.attributes sub v.val_attributes in
   Val.mk ~loc ~attrs
-    ~prim:v.val_prim
     (map_loc sub v.val_name)
     (sub.typ sub v.val_desc)
+
+let primitive_description sub p =
+  let loc = sub.location sub p.prim_loc in
+  let attrs = sub.attributes sub p.prim_attributes in
+  let name = map_loc sub p.prim_name in
+  match p.prim_kind with
+  | Tprim_decl (typ, prim) ->
+    Prim.mk_decl ~loc ~attrs ~prim name (sub.typ sub typ)
+  | Tprim_alias (typ, _, lid) ->
+    Prim.mk_alias ~loc ~attrs name (Option.map (sub.typ sub) typ) lid
 
 let module_binding sub mb =
   let loc = sub.location sub mb.mb_loc in
@@ -599,8 +610,8 @@ let signature_item sub item =
   let loc = sub.location sub item.sig_loc in
   let desc =
     match item.sig_desc with
-      Tsig_value v ->
-        Psig_value (sub.value_description sub v)
+      Tsig_value v -> Psig_value (sub.value_description sub v)
+    | Tsig_primitive p -> Psig_primitive (sub.primitive_description sub p)
     | Tsig_type (rec_flag, list) ->
         Psig_type (rec_flag, List.map (sub.type_declaration sub) list)
     | Tsig_typesubst list ->
@@ -947,6 +958,7 @@ let default_mapper =
     type_exception = type_exception;
     extension_constructor = extension_constructor;
     value_description = value_description;
+    primitive_description = primitive_description;
     pat = pattern;
     expr = expression;
     module_declaration = module_declaration;

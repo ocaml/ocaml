@@ -177,6 +177,9 @@ Line 2, characters 16-17:
 Error: The value "a" has type "int * lbl:(int * lbl:'a)"
        but an expression was expected of type "'a"
        The type variable "'a" occurs inside "int * lbl:(int * lbl:'a)"
+|}, Rectypes{|
+val a : int * lbl:(int * lbl:'a) as 'a = (1, ~lbl:(2, ~lbl:<cycle>))
+val b : int * lbl:(int * lbl:'a) as 'a = (2, ~lbl:(1, ~lbl:<cycle>))
 |}]
 
 let rec l = ~lbl: 5, ~lbl2: 10 :: l

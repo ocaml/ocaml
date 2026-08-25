@@ -114,44 +114,74 @@ let run_environment_statement ~add_msg ~report_error env s =
     Error ()
 
 let run ~log ~add_msg ~report_error behavior env summ ast =
-  let run_statement (behavior, env, summ) = function
+  let rec run_test behavior env stmt =
+    let open Result.Syntax in
+    match stmt with
     | Environment_statement s ->
       begin match run_environment_statement ~add_msg ~report_error env s with
-      | Ok env' -> Ok (behavior, env', summ)
-      | Error () -> Error Fail
+      | Ok env' -> Ok (env', Pass)
+      | Error () -> Error ()
       end
-    | Test (sign, name, mods) ->
+    | Not test ->
+      let+ (env', status) = run_test behavior env test in
+      (env', skip_negation status)
+    | And (t1, t2) ->
+      let* (env', status1) = run_test behavior env t1 in
+      begin match status1 with
+      | Fail | Skip -> Ok (env', status1)
+      | Pass -> run_test behavior env' t2
+      end
+    | Or (t1, t2) ->
+      let* (env', status1) = run_test behavior env t1 in
+      begin match status1 with
+      | Fail | Pass -> Ok (env', status1)
+      | Skip -> run_test behavior env' t2
+      end
+    | If (t1, t2, t3) ->
+      let* (env', status1) = run_test behavior env t1 in
+      begin match status1, t3 with
+      | Fail, _ -> Ok (env', status1)
+      | Pass, _ -> run_test behavior env' t2
+      | Skip, Some t3 -> run_test behavior env' t3
+      | Skip, None -> Ok (env', Pass)
+      end
+    | Action { name; modifiers } ->
+      let (msg, env', result) =
+        match behavior with
+        | Skip_all -> ("=> n/a", env, Test_result.skip)
+        | Run ->
+          begin try
+            let testenv = List.fold_left apply_modifiers env modifiers in
+            let test = lookup_test name in
+            let (result, newenv) = Tests.run log testenv test in
+            let msg = Test_result.string_of_result result in
+            (msg, newenv, result)
+          with e ->
+            let bt = Printexc.get_backtrace () in
+            (report_error name.loc e bt, env, Test_result.fail)
+          end
+      in
       let locstr =
         if name.loc = Location.none then
           "default"
         else
           Printf.sprintf "line %d" name.loc.Location.loc_start.Lexing.pos_lnum
       in
-      let (msg, behavior, env, result) =
-        match behavior with
-        | Skip_all -> ("=> n/a", Skip_all, env, Test_result.skip)
-        | Run ->
-          begin try
-            let testenv = List.fold_left apply_modifiers env mods in
-            let test = lookup_test name in
-            let (result, newenv) = Tests.run log testenv test in
-            let result =
-              match sign with
-              | Pos -> result
-              | Neg -> { result with status = skip_negation result.status }
-            in
-            let msg = Test_result.string_of_result result in
-            let sub_behavior =
-              if Test_result.is_pass result then Run else Skip_all in
-            (msg, sub_behavior, newenv, result)
-          with e ->
-            let bt = Printexc.get_backtrace () in
-            (report_error name.loc e bt, Skip_all, env, Test_result.fail)
-          end
-      in
       Printf.ksprintf add_msg "%s (%s) %s" locstr name.node msg;
-      let summ = join_sequential summ result.status in
-      Ok (behavior, env, summ)
+      Ok (env', result.status)
+  in
+  let run_statement (behavior, env, summ) stmt =
+    match run_test behavior env stmt with
+    | Error () -> Error Fail
+    | Ok (env', status) ->
+      let behavior' =
+        match behavior, status with
+        | Skip_all, _ -> Skip_all
+        | Run, Pass -> Run
+        | Run, (Fail | Skip) -> Skip_all
+      in
+      let summ' = join_sequential summ status in
+      Ok (behavior', env', summ')
   in
   let rec run_tree behavior env summ (Ast (stmts, subs)) =
     match List.fold_left_result run_statement (behavior, env, summ) stmts with

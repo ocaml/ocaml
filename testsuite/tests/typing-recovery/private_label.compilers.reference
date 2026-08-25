@@ -1,0 +1,14 @@
+File "private_label.ml", line 1:
+Error: Multiple errors were encountered
+File "private_label.ml", line 13, characters 4-7:
+13 |   x.foo <- 10
+         ^^^
+  Cannot assign field foo of the private type t
+File "private_label.ml", line 19, characters 13-16:
+19 |   let () = x.foo <- y in
+                  ^^^
+  Cannot assign field foo of the private type t
+File "private_label.ml", line 26, characters 13-16:
+26 |   | A x -> x.bar <- 10
+                  ^^^
+  Cannot assign field bar of the private type e.A

@@ -69,6 +69,8 @@ type mapper =
     value_bindings: mapper -> (rec_flag * value_binding list) ->
       (rec_flag * value_binding list);
     value_description: mapper -> value_description -> value_description;
+    primitive_description:
+      mapper -> primitive_description -> primitive_description;
     with_constraint: mapper -> with_constraint -> with_constraint;
   }
 
@@ -166,7 +168,7 @@ let structure_item sub {str_loc; str_desc; str_env} =
     | Tstr_value (rec_flag, list) ->
         let (rec_flag, list) = sub.value_bindings sub (rec_flag, list) in
         Tstr_value (rec_flag, list)
-    | Tstr_primitive v -> Tstr_primitive (sub.value_description sub v)
+    | Tstr_primitive p -> Tstr_primitive (sub.primitive_description sub p)
     | Tstr_type (rec_flag, list) ->
         let (rec_flag, list) = sub.type_declarations sub (rec_flag, list) in
         Tstr_type (rec_flag, list)
@@ -196,6 +198,18 @@ let value_description sub x =
   let val_desc = sub.typ sub x.val_desc in
   let val_attributes = sub.attributes sub x.val_attributes in
   {x with val_loc; val_name; val_desc; val_attributes}
+
+let primitive_description sub x =
+  let prim_loc = sub.location sub x.prim_loc in
+  let prim_name = map_loc sub x.prim_name in
+  let prim_kind =
+    match x.prim_kind with
+    | Tprim_decl (typ, prim) -> Tprim_decl (sub.typ sub typ, prim)
+    | Tprim_alias (typ, path, lid) ->
+      Tprim_alias (Option.map (sub.typ sub) typ, path, map_loc_lid sub lid)
+  in
+  let prim_attributes = sub.attributes sub x.prim_attributes in
+  {x with prim_loc; prim_name; prim_kind; prim_attributes}
 
 let label_decl sub x =
   let ld_loc = sub.location sub x.ld_loc in
@@ -421,7 +435,7 @@ let expr sub x =
           sub.expr sub exp2
         )
     | Texp_atomic_loc (exp, lid, ld) ->
-        Texp_atomic_loc (sub.expr sub exp, map_loc sub lid, ld)
+        Texp_atomic_loc (sub.expr sub exp, map_loc_lid sub lid, ld)
     | Texp_array (mut, list) ->
         Texp_array (mut, List.map (sub.expr sub) list)
     | Texp_ifthenelse (exp1, exp2, expo) ->
@@ -529,6 +543,8 @@ let signature_item sub x =
     match x.sig_desc with
     | Tsig_value v ->
         Tsig_value (sub.value_description sub v)
+    | Tsig_primitive p ->
+        Tsig_primitive (sub.primitive_description sub p)
     | Tsig_type (rec_flag, list) ->
         let (rec_flag, list) = sub.type_declarations sub (rec_flag, list) in
         Tsig_type (rec_flag, list)
@@ -862,7 +878,8 @@ let case
     c_lhs = sub.pat sub c_lhs;
     c_guard = Option.map (sub.expr sub) c_guard;
     c_rhs = sub.expr sub c_rhs;
-    c_cont
+    c_cont = Option.map (fun cont ->
+        {cont with cont_loc = sub.location sub cont.cont_loc}) c_cont
   }
 
 let value_binding sub x =
@@ -920,5 +937,6 @@ let default =
     value_binding;
     value_bindings;
     value_description;
+    primitive_description;
     with_constraint;
   }

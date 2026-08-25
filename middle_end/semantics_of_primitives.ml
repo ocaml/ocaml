@@ -105,6 +105,7 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Pbigstring_load (_, Unsafe) ->
       No_effects, Has_coeffects
   | Parrayrefs _
+  | Pcheckbound
   | Pstringrefs
   | Pbytesrefs
   | Pstring_load (_, Safe)
@@ -116,7 +117,7 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Psetfield _
   | Psetfield_computed _
   | Psetfloatfield _
-  | Patomic_load
+  | Patomic_load | Patomic_fetch_add
   | Parraysetu _
   | Parraysets _
   | Pbytessetu

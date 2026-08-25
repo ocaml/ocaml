@@ -61,7 +61,10 @@ and extra_ty =
 
       For example, in
       {[
-        type person = { name : string; address : {street : string; city : string} }
+        type person = {
+          name : string;
+          address : {street : string; city : string};
+        }
       ]}
 
       The inline record type [{street : string; city : string}] cannot
@@ -83,6 +86,7 @@ val scope: t -> int
 val subst: (Ident.t * t) list -> t -> t
 val check_for_unbound_unscoped_idents:
   Ident.Unscoped.Set.t -> t -> Ident.Unscoped.t option
+val contains_unscoped_ident: t -> bool
 
 val flatten : t -> [ `Contains_apply | `Ok of Ident.t * string list ]
 

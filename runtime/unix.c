@@ -174,10 +174,11 @@ static int cygwin_file_exists(const char * name)
   return ret == 0 && S_ISREG(st.st_mode);
 }
 
-static caml_stat_string cygwin_search_exe_in_path(struct ext_table * path,
+static caml_stat_string cygwin_search_exe_in_path(const struct ext_table * path,
                                                   const char * name)
 {
-  char * dir, * fullname;
+  const char * dir;
+  char * fullname;
   for (const char *p = name; *p != 0; p++) {
     if (*p == '/' || *p == '\\') goto not_found;
   }
@@ -256,7 +257,7 @@ void * caml_globalsym(const char * name)
   return flexdll_dlsym(flexdll_dlopen(NULL,0), name);
 }
 
-char * caml_dlerror(void)
+const char * caml_dlerror(void)
 {
   return flexdll_dlerror();
 }
@@ -295,9 +296,9 @@ void * caml_globalsym(const char * name)
 #endif
 }
 
-char * caml_dlerror(void)
+const char * caml_dlerror(void)
 {
-  return (char*) dlerror();
+  return dlerror();
 }
 
 #endif /* __CYGWIN__ */
@@ -322,7 +323,7 @@ void * caml_globalsym(const char * name)
   return NULL;
 }
 
-char * caml_dlerror(void)
+const char * caml_dlerror(void)
 {
   return "dynamic loading not supported on this platform";
 }

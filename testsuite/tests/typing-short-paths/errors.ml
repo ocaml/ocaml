@@ -31,7 +31,7 @@ type c = M.c
 Line 7, characters 9-18:
 7 | let () = (new M.c)#bar
              ^^^^^^^^^
-Error: This expression has type "c"
+Error: This expression has type "c" = "< foo : int >"
        It has no method "bar"
 |}]
 
@@ -71,6 +71,8 @@ Line 7, characters 35-36:
 Error: The value "x" has type "$a" but an expression was expected of type "'a"
        This instance of "$a" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
        Hint: "$a" is an existential type bound by the constructor "Pair".
 |}]
 
@@ -94,7 +96,7 @@ and 'a z = 'a t
 Line 1, characters 0-16:
 1 | type 'a t = 'a u
     ^^^^^^^^^^^^^^^^
-Error: The type abbreviation "t" is cyclic:
+Error: The definition of "t" contains a cycle:
          "'a t" = "'a u",
          "'a u" = "'a v * 'a",
          "'a v * 'a" contains "'a v",
@@ -102,19 +104,31 @@ Error: The type abbreviation "t" is cyclic:
          "'a w list" contains "'a w",
          "'a w" = "'a option z",
          "'a option z" = "'a option t"
+|}, Rectypes{|
+Line 1, characters 0-16:
+1 | type 'a t = 'a u
+    ^^^^^^^^^^^^^^^^
+Error: This recursive type is not regular.
+       The type constructor "t" is defined as
+         type "'a t"
+       but it is used as
+         "'a option t"
+       after the following expansion(s):
+         "'a u" = "'a v * 'a",
+         "'a v * 'a" contains "'a v",
+         "'a v" = "'a w list",
+         "'a w list" contains "'a w",
+         "'a w" = "'a option z",
+         "'a option z" = "'a option t"
+       All uses need to match the definition for the recursive type to be regular.
 |}]
 
 
 type 'a u = < x : 'a>
 and 'a t = 'a t u;;
 [%%expect{|
-Line 2, characters 0-17:
-2 | and 'a t = 'a t u;;
-    ^^^^^^^^^^^^^^^^^
-Error: The type abbreviation "t" is cyclic:
-         "'a t u" contains "'a t",
-         "'a t" = "'a t u",
-         "'a t u" contains "'a t"
+type 'a u = < x : 'a >
+and 'a t = 'a t u
 |}];; (* fails since 4.04 *)
 
 
@@ -125,9 +139,10 @@ Line 1, characters 0-75:
 1 | module rec A : sig type t = B.t -> int end = struct type t = B.t -> int end
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of "A.t" contains a cycle:
-         "B.t -> int" contains "B.t",
-         "B.t" = "A.t",
          "A.t" = "B.t -> int",
          "B.t -> int" contains "B.t",
          "B.t" = "A.t"
+|}, Rectypes{|
+module rec A : sig type t = B.t -> int end
+and B : sig type t = A.t end
 |}]

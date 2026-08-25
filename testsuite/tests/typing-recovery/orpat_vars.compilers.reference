@@ -1,0 +1,30 @@
+File "orpat_vars.ml", line 1:
+Error: Multiple errors were encountered
+File "orpat_vars.ml", line 11, characters 4-17:
+11 |   | Some x | None -> x
+         ^^^^^^^^^^^^^
+  Variable x must occur on both sides of this | pattern
+File "orpat_vars.ml", line 11, characters 21-22:
+11 |   | Some x | None -> x
+                          ^
+  Unbound value x
+File "orpat_vars.ml", line 16, characters 4-14:
+16 |   | (x, y) | _ -> x
+         ^^^^^^^^^^
+  Variable x must occur on both sides of this | pattern
+File "orpat_vars.ml", line 16, characters 18-19:
+16 |   | (x, y) | _ -> x
+                       ^
+  Unbound value x
+File "orpat_vars.ml", line 21, characters 4-27:
+21 |   | (Some x, y) | (None, y) -> x
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  Variable x must occur on both sides of this | pattern
+File "orpat_vars.ml", line 21, characters 31-32:
+21 |   | (Some x, y) | (None, y) -> x
+                                    ^
+  Unbound value x
+File "orpat_vars.ml", line 23, characters 17-19:
+23 | let c : string = 10
+                      ^^
+  The constant 10 has type int but an expression was expected of type string

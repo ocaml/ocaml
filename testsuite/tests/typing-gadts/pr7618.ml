@@ -25,6 +25,8 @@ Line 4, characters 4-29:
 Error: This pattern matches values of type "(a, b) eq * a list"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}]
 let fails (type a b) (x : (a, b) eq) =
   match x, [] with
@@ -38,6 +40,8 @@ Line 3, characters 4-29:
 Error: This pattern matches values of type "(a, b) eq * a list"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
 |}]
 
 (* branches must be unified! *)

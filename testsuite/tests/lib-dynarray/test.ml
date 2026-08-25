@@ -130,6 +130,11 @@ let () =
   assert (A.to_list a1 = list_range 0 10);;
 
 let () =
+  let a = A.init 5 Fun.id in
+  A.append_iarray a (Iarray.init 5 (fun i -> i + 5));
+  assert (A.to_list a = list_range 0 10);;
+
+let () =
   let empty = A.create ()
   and a2 = A.init 5 (fun i->i) in
   A.append empty a2;
@@ -435,7 +440,7 @@ let () =
 
 (** {1:conversions Conversions to other data structures} *)
 
-(** {of,to}_{list,array,seq{,_rev}{,_rentrant}} *)
+(** {of,to}_{list,array,iarray,seq{,_rev}{,_rentrant}} *)
 
 let () =
   for i = 0 to 1024 do
@@ -443,6 +448,11 @@ let () =
     assert ((ints |> A.of_list |> A.to_list) = ints);
     let arr = Array.of_list ints in
     assert ((arr |> A.of_array |> A.to_array) = arr);
+    let iarr = Iarray.of_list ints in
+    assert ((iarr |> A.of_iarray |> A.to_iarray) = iarr);
+    let dyn = A.of_list ints in
+    A.append_iarray dyn iarr;
+    assert (A.to_list dyn = ints @ ints);
     let seq = Array.to_seq arr in
     [A.to_seq; A.to_seq_reentrant] |> List.iter (fun dynarray_to_seq ->
       assert ((seq |> A.of_seq |> dynarray_to_seq) |> Array.of_seq = arr)

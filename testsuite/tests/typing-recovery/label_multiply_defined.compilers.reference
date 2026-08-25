@@ -1,0 +1,14 @@
+File "label_multiply_defined.ml", line 1:
+Error: Multiple errors were encountered
+File "label_multiply_defined.ml", line 13, characters 2-25:
+13 |   { x = 1; y = 2; x = 3 }
+       ^^^^^^^^^^^^^^^^^^^^^^^
+  The record field label x is defined several times
+File "label_multiply_defined.ml", line 18, characters 2-25:
+18 |   { x = 1; y = 2; y = 3 }
+       ^^^^^^^^^^^^^^^^^^^^^^^
+  The record field label y is defined several times
+File "label_multiply_defined.ml", line 20, characters 17-19:
+20 | let t : string = 10
+                      ^^
+  The constant 10 has type int but an expression was expected of type string

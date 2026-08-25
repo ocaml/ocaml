@@ -51,7 +51,7 @@ given on the command line, instead of linking them into an executable file.
 The name of the library must be set with the "-o" option.
 
 If \comp{"-custom", }"-cclib" or "-ccopt" options are passed on the command
-line, these options are stored in the resulting \qcma library. Then,
+line, these options are stored in the resulting {\qcma} library. Then,
 linking with this library automatically adds back the \comp{"-custom", }
 "-cclib" and "-ccopt" options as if they had been provided on the
 command line, unless the "-noautolink" option is given.
@@ -233,12 +233,12 @@ by the run-time system "ocamlrun" at program start-up time.
 \item["-dllib-suffixed" "-l"\var{libname}]
 As for "-dllib" but the name recorded is mangled with the Runtime ID and host of
 the interpreter before being loaded by the run-time system "ocamlrun" at program
-start-up time. Ths is used for C stub libraries, for example by DLLs produced
+start-up time. This is used for C stub libraries, for example by DLLs produced
 with "ocamlmklib -suffixed".
 }%comp
 
 \comp{\item["-dllpath" \var{dir}]
-Adds the directory \var{dir} to the run-time search path for shared
+Add the directory \var{dir} to the run-time search path for shared
 C libraries.  At link-time, shared libraries are searched in the
 standard search path (the one corresponding to the "-I" option).
 The "-dllpath" option simply stores \var{dir} in the produced
@@ -253,7 +253,7 @@ that can later be included
 as a sub-module (with the given access path) of a compilation unit
 constructed with "-pack".  For instance,
 {\machine\ocamlx\ -for-pack\ P\ -c\ A.ml}
-will generate {\machine a.\cmo}\nat{ and "a.o" files} that can
+will generate {\machine a\cmo}\nat{ and "a.o" files} that can
 later be used with {\machine \ocamlx\ -pack\ -o\ P\cmo\ a\cmo}.
 Note: you can still pack a module that was compiled without
 "-for-pack" but in this case exceptions will be printed with the wrong
@@ -295,7 +295,7 @@ private types or types without a manifest (e.g., abstract types).
 Add the given directory to the list of directories searched for
 \nat{compiled interface files (".cmi"), compiled object code files (".cmx"),
 and libraries (".cmxa").}
-\comp{compiled interface files (".cmi"), compiled object code files ".cmo",
+\comp{compiled interface files (".cmi"), compiled object code files (".cmo"),
 libraries (".cma") and C libraries specified with "-cclib -lxxx".}
 \top{source and compiled files.}
 By default, the current directory is searched first, then the standard
@@ -441,7 +441,7 @@ See section~\ref{ss:custom-runtime} for more information.
 }%comp
 
 \notop{%
-\item["-match-context-rows"]
+\item["-match-context-rows" \var{number}]
 Set the number of rows of context used for optimization during
 pattern matching compilation. The default value is 32. Lower values
 cause faster compilation, but less optimized code. This advanced
@@ -475,7 +475,7 @@ Do not compile assertion checks.  Note that the special form
 
 \notop{%
 \item["-noautolink"]
-When linking \qcma libraries, ignore \comp{"-custom",} "-cclib" and "-ccopt"
+When linking {\qcma} libraries, ignore \comp{"-custom",} "-cclib" and "-ccopt"
 options potentially contained in the libraries (if these options were
 given when building the libraries).  This can be useful if a library
 contains incorrect specifications of C libraries or C options; in this
@@ -530,18 +530,19 @@ object code files (".cmx"), and libraries (".cmxa"). See also option
 }%nat
 
 \notop{%
-\item["-o" \var{output-file}]
-Specify the name of the output file to produce. For executable files, the
-default output name is "a.out" under Unix and "camlprog.exe" under
-Windows. If the "-a" option is given, specify the name of the library
-produced.  If the "-pack" option is given, specify the name of the
-packed object file produced.  If the "-output-obj" or "-output-complete-obj"
-options are given, specify the name of the produced object file.
-\nat{If the "-shared" option is given, specify the name of plugin
-file produced.}
-\comp{If the "-c" option is given, specify the name of the object
-file produced for the {\em next} source file that appears on the
-command line.}
+\item["-o" \var{filename}]
+Specify the name of the final output file, whether it is an executable, a
+compiled object ("-c" option), a library ("-a" option), a packed object ("-pack"
+option), \nat{a dynlinkable plugin ("-shared" option),} or a C source or object
+file ("-output-obj" and "-output-complete-obj" options).
+
+The default output name for an executable depends on the platform, it is "a.out"
+on Unix, "camlprog.exe" on Windows.
+
+This can also be used when compiling but not linking an interface or
+implementation file ("-c" option), in which case it sets both the name of the
+"cmi" or {\qcmo} file, and of the compilation unit to the \var{filename} up to
+the first dot.
 }%notop
 
 \notop{%
@@ -695,7 +696,7 @@ flag, you must use it again for all dependencies.}
 
 \comp{%
 \item["-runtime-search" \var{method}]
-Controls whether the header used by normal bytecode executables is permitted to
+Control whether the header used by normal bytecode executables is permitted to
 search for the interpreter, or requires it to be at a fixed location.
 The following methods are supported:
 \begin{description}
@@ -805,6 +806,11 @@ Force the left-hand part of each sequence to have type unit.
 Reject invalid formats that were accepted in legacy format
 implementations. You should use this flag to detect and fix such
 invalid formats, as they will be rejected by future OCaml versions.
+
+\notop{%
+\item["-typing-recovery"]
+Try to collect all typing errors.
+}
 
 \notop{%
 \item["-unboxed-types"]
@@ -924,7 +930,7 @@ the mnemonic for that warning).
 \input{warnings-help.tex}
 \end{options}
 
-The default setting is "-w +a-4-6-7-9-27-29-32..42-44-45-48-50-60".
+The default setting is "-w +a-4-7-9-27-29-30-32..42-44-45-48-50-60-66..70-74".
 It is displayed by {\machine\ocamlx\ -help}.
 Note that warnings 5 and 10 are not always triggered, depending on
 the internals of the type checker.

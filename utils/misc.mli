@@ -114,7 +114,15 @@ module Stdlib : sig
 
 (** {2 Extensions to the List module} *)
   module List : sig
-    type 'a t = 'a list
+    include module type of struct include List end
+
+    val fold_left3
+      :  ('acc -> 'a0 -> 'a1 -> 'a2 -> 'acc)
+      -> 'acc
+      -> 'a0 list
+      -> 'a1 list
+      -> 'a2 list
+      -> 'acc
 
     val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
     (** The lexicographic order supported by the provided order.
@@ -137,6 +145,8 @@ module Stdlib : sig
     val iteri2 : (int -> 'a -> 'b -> unit) -> 'a list -> 'b list -> unit
     (** Same as {!List.iter2}, but the function is applied to the index of
         the element as first argument (counting from 0) *)
+
+    val rev_iter : ('a -> unit) -> 'a list -> unit
 
     val split_at : int -> 'a t -> 'a t * 'a t
     (** [split_at n l] returns the pair [before, after] where [before] is
@@ -588,6 +598,9 @@ val print_if :
 val print_see_manual : int list Format_doc.printer
 (** See manual section *)
 
+val print_manual_hint : int list Format_doc.printer
+(** Manual hint, reserved for hints that are essentially quoting the manual *)
+
 (** {1 Displaying configuration variables} *)
 
 val show_config_and_exit : unit -> unit
@@ -945,10 +958,6 @@ module RuntimeID : sig
 
   val of_string: string -> t option
   (** Converts the 4-character representation back to a {!t} *)
-
-  val of_zinc_hi: ?dev:bool -> ?release:int -> string -> t option
-  (** Converts hi 2 characters of the representation back to a {!t} (using the
-      default version information from {!Config}. *)
 
   val ocamlrun: string -> t -> string
   (** [ocamlrun variant runtime_id] returns the name for the runtime for the

@@ -156,6 +156,7 @@ DOCUMENTATION_TOOL_CMD=@documentation_tool_cmd@
 # Git submodule)
 FLEXDLL_SOURCE_DIR=@flexdll_source_dir@
 BOOTSTRAPPING_FLEXDLL=@bootstrapping_flexdll@
+FLEXDLL_CC_VAR=@flexdll_cc_var@
 
 ### Where to install documentation
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
@@ -194,8 +195,8 @@ DEFAULT_BUILD_TARGET = @default_build_target@
 # added to both XXX_YYY_COMPFLAGS and XXX_YYY_LINKFLAGS.
 
 OC_COMMON_COMPFLAGS = -g -strict-sequence -principal -absname \
-  -w +a-4-9-40-41-42-44-45-48 -warn-error +a -bin-annot \
-  -strict-formats
+  -w +a-4-9-40-41-42-44-45-48 -warn-error +a -alert @ocaml_deprecated_cli \
+  -bin-annot -strict-formats
 OC_COMMON_LINKFLAGS = $(INCLUDES)
 
 OC_BYTECODE_LINKFLAGS =
@@ -207,11 +208,10 @@ OC_NATIVE_LINKFLAGS = -g
 BUILD_TRIPLET = @build@
 
 # Zinc Runtime ID is needed for installation only
-ZINC_RUNTIME_ID_HI = @zinc_runtime_id_hi@
-ZINC_RUNTIME_ID = @zinc_runtime_id_lo@$(ZINC_RUNTIME_ID_HI)
+ZINC_RUNTIME_ID = @zinc_runtime_id@
 
 # Platform-dependent command to create symbolic links
-LN = @ln@
+LN_S = @LN_S@
 
 # Tool to generate manifests for managed assemblies and unmanaged side-by-side
 # assemblies, for the Windows targets.

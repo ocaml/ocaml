@@ -37,3 +37,27 @@ let protect ~(finally : unit -> unit) work =
       let work_bt = Printexc.get_raw_backtrace () in
       finally_no_exn () ;
       Printexc.raise_with_backtrace work_exn work_bt
+
+type todo = todo_info
+
+type implem = string * int
+(* Hidden type between {!todo_info}. Changing it requires changing the
+   implementation of the [%todo] primitive. *)
+
+let string_of_todo (t : todo) =
+  let (file, line) : implem = Obj.magic t in
+  Printf.sprintf
+    "File %S, line %d"
+    (match file with "" -> "-" | _ -> file)
+    line
+
+exception Todo = Todo
+
+let () =
+  Printexc.register_printer @@ function
+    | Todo info ->
+        Some (
+          Printf.sprintf "Fun.Todo\n%s" (string_of_todo info))
+    | _ -> None
+
+external todo : unit -> _ = "%todo"

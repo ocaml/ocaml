@@ -608,6 +608,8 @@ Error: This pattern matches values of type "a * a vlist"
        but a pattern was expected which matches values of type "$a" = "$0 * $1"
        Type "a" is not compatible with type "$0"
        Hint: "$a" is an existential type bound by the constructor "Tdyn".
+       Hint: "$0" and "$1" are type variables introduced in the equation
+         "$a" = "$0 * $1"
 |}];;
 
 (* Define Sum using object instead of record for first-class polymorphism *)

@@ -1,4 +1,4 @@
-Runtime_events: no ring for current process.          Was runtime_events started?
+Runtime_events: no ring for current process. Was runtime_events started?
 OK
 OK
 Runtime_events: could not create cursor for specified path.

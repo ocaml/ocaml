@@ -813,6 +813,9 @@ variable+="string"
 
 === Actions, hooks and tests
 
+The precise syntax of test headers has yet to be documented thoroughly. For
+now, you can look at `tsl_ast.mli` to explore the concrete syntax.
+
 === Semantics of a test block
 
 === Variables, environments and how they are inherited

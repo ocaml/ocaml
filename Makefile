@@ -128,6 +128,7 @@ typing_SOURCES = \
   typing/subst.mli typing/subst.ml \
   typing/predef.mli typing/predef.ml \
   typing/datarepr.mli typing/datarepr.ml \
+  typing/typing_recovery.mli typing/typing_recovery.ml \
   file_formats/cmi_format.mli file_formats/cmi_format.ml \
   typing/persistent_env.mli typing/persistent_env.ml \
   typing/env.mli typing/env.ml \
@@ -149,6 +150,7 @@ typing_SOURCES = \
   typing/shape_reduce.mli typing/shape_reduce.ml \
   file_formats/cmt_format.mli file_formats/cmt_format.ml \
   typing/cmt2annot.mli typing/cmt2annot.ml \
+  typing/typing_recovery_state.mli typing/typing_recovery_state.ml \
   typing/untypeast.mli typing/untypeast.ml \
   typing/includemod.mli typing/includemod.ml \
   typing/signature_matching.mli typing/signature_matching.ml \
@@ -210,6 +212,7 @@ ocamlcommon_SOURCES = \
 
 ocamlbytecomp_SOURCES = \
   bytecomp/byterntm.mll \
+  bytecomp/opnames.mli bytecomp/opnames.ml \
   bytecomp/instruct.mli bytecomp/instruct.ml \
   bytecomp/bytegen.mli bytecomp/bytegen.ml \
   bytecomp/printinstr.mli bytecomp/printinstr.ml \
@@ -493,10 +496,10 @@ reconfigure:
 	                                    $(ADDITIONAL_CONFIGURE_ARGS)
 
 utils/domainstate.ml: utils/domainstate.ml.c runtime/caml/domain_state.tbl
-	$(V_GEN)$(CPP) -I runtime/caml $< > $@
+	$(V_GEN)$(CPP) -I runtime $< > $@
 
 utils/domainstate.mli: utils/domainstate.mli.c runtime/caml/domain_state.tbl
-	$(V_GEN)$(CPP) -I runtime/caml $< > $@
+	$(V_GEN)$(CPP) -I runtime $< > $@
 
 configure: tools/autogen configure.ac aclocal.m4 build-aux/ocaml_version.m4
 	$<
@@ -640,18 +643,10 @@ FLEXLINK_BUILD_ENV = \
   MSVC_DETECT=0 OCAML_CONFIG_FILE=../Makefile.config \
   CHAINS=$(FLEXDLL_CHAIN) ROOTDIR=..
 ifneq ($(RC),)
-FLEXLINK_BUILD_ENV += RC=$(RC)
+FLEXLINK_BUILD_ENV += RC="$(RC)"
 endif
-ifeq ($(FLEXDLL_CHAIN),cygwin64)
-FLEXLINK_BUILD_ENV += CYG64CC=$(CC)
-else ifeq ($(FLEXDLL_CHAIN),mingw)
-FLEXLINK_BUILD_ENV += MINCC=$(CC)
-else ifeq ($(FLEXDLL_CHAIN),mingw64)
-FLEXLINK_BUILD_ENV += MIN64CC=$(CC)
-else ifeq ($(FLEXDLL_CHAIN),msvc)
-FLEXLINK_BUILD_ENV += MSVCC=$(CC)
-else ifeq ($(FLEXDLL_CHAIN),msvc64)
-FLEXLINK_BUILD_ENV += MSVCC64=$(CC)
+ifneq ($(FLEXDLL_CC_VAR),)
+FLEXLINK_BUILD_ENV += $(FLEXDLL_CC_VAR)="$(CC)"
 endif
 FLEXDLL_SOURCES = \
   $(addprefix $(FLEXDLL_SOURCE_DIR)/, flexdll.c flexdll_initer.c flexdll.h) \
@@ -718,7 +713,7 @@ coldstart: boot/ocamlrun$(EXE) runtime/libcamlrun.$(A)
 	$(MAKE) -C stdlib OCAMLRUN='$$(ROOTDIR)/$<' USE_BOOT_OCAMLC=true all
 	rm -f $(addprefix boot/, libcamlrun.$(A) $(LIBFILES))
 	cp $(addprefix stdlib/, $(LIBFILES)) boot
-	cd boot; $(LN) ../runtime/libcamlrun.$(A) .
+	$(call LINK_IN, boot, ../runtime/libcamlrun.$(A))
 
 # Recompile the core system using the bootstrap compiler
 .PHONY: coreall
@@ -911,7 +906,7 @@ flexlink.opt$(EXE): \
 	  flexlink.exe
 	cp $(FLEXDLL_SOURCE_DIR)/flexlink.exe $@
 	rm -f $(OPT_BINDIR)/flexlink$(EXE)
-	cd $(OPT_BINDIR); $(LN) $(call ROOT_FROM, $(OPT_BINDIR))/$@ flexlink$(EXE)
+	cd $(OPT_BINDIR) && $(LN_S) $(call ROOT_FROM, $(OPT_BINDIR))/$@ flexlink$(EXE)
 
 else
 
@@ -960,11 +955,14 @@ clean::
 # Build the manual latex files from the etex source files
 # (see manual/README.md)
 .PHONY: manual-pregen
-manual-pregen: opt.opt
-	cd manual; $(MAKE) clean && $(MAKE) pregen-etex
+manual-pregen: opt.opt | manual
+	$(MAKE) -C manual clean
+	$(MAKE) -C manual pregen-etex
 
+ifneq "$(wildcard manual)" ""
 clean::
 	$(MAKE) -C manual clean
+endif
 
 # The clean target
 clean:: partialclean
@@ -1102,7 +1100,7 @@ endif
 # to add otherlibs/dynlink/native to the search path as well
 
 otherlibs/dynlink/dynlink.cmx : otherlibs/dynlink/native/dynlink.cmx
-	cd otherlibs/dynlink; $(LN) native/dynlink.cmx .
+	$(call LINK_IN, otherlibs/dynlink, native/dynlink.cmx)
 
 DYNLINK_DEPEND_DUMMY_FILES = \
   otherlibs/dynlink/dynlink.ml \
@@ -1147,28 +1145,28 @@ beforedepend:: lambda/runtimedef.ml
 # Choose the right machine-dependent files
 
 asmcomp/arch.mli: asmcomp/$(ARCH)/arch.mli
-	@cd asmcomp; $(LN) $(ARCH)/arch.mli .
+	@$(call LINK_IN, asmcomp, $(ARCH)/arch.mli)
 
 asmcomp/arch.ml: asmcomp/$(ARCH)/arch.ml
-	@cd asmcomp; $(LN) $(ARCH)/arch.ml .
+	@$(call LINK_IN, asmcomp, $(ARCH)/arch.ml)
 
 asmcomp/proc.ml: asmcomp/$(ARCH)/proc.ml
-	@cd asmcomp; $(LN) $(ARCH)/proc.ml .
+	@$(call LINK_IN, asmcomp, $(ARCH)/proc.ml)
 
 asmcomp/selection.ml: asmcomp/$(ARCH)/selection.ml
-	@cd asmcomp; $(LN) $(ARCH)/selection.ml .
+	@$(call LINK_IN, asmcomp, $(ARCH)/selection.ml)
 
 asmcomp/CSE.ml: asmcomp/$(ARCH)/CSE.ml
-	@cd asmcomp; $(LN) $(ARCH)/CSE.ml .
+	@$(call LINK_IN, asmcomp, $(ARCH)/CSE.ml)
 
 asmcomp/reload.ml: asmcomp/$(ARCH)/reload.ml
-	@cd asmcomp; $(LN) $(ARCH)/reload.ml .
+	@$(call LINK_IN, asmcomp, $(ARCH)/reload.ml)
 
 asmcomp/scheduling.ml: asmcomp/$(ARCH)/scheduling.ml
-	@cd asmcomp; $(LN) $(ARCH)/scheduling.ml .
+	@$(call LINK_IN, asmcomp, $(ARCH)/scheduling.ml)
 
 asmcomp/stackframe.ml: asmcomp/$(ARCH)/stackframe.ml
-	@cd asmcomp; $(LN) $(ARCH)/stackframe.ml .
+	@$(call LINK_IN, asmcomp, $(ARCH)/stackframe.ml)
 
 # Preprocess the code emitters
 cvt_emit = tools/cvt_emit$(EXE)
@@ -1693,14 +1691,17 @@ runtime: stdlib/libcamlrun.$(A)
 .PHONY: makeruntime
 makeruntime: runtime-all
 stdlib/libcamlrun.$(A): runtime-all
-	cd stdlib; $(LN) ../runtime/libcamlrun.$(A) .
+	$(call LINK_IN, stdlib, ../runtime/libcamlrun.$(A))
 clean::
 	rm -f $(addprefix runtime/, *.o *.obj *.a *.lib *.so *.dll)
 	rm -f $(addprefix runtime/, ocamlrun ocamlrund ocamlruni ocamlruns sak)
 	rm -f $(addprefix runtime/, \
 	  ocamlrun.exe ocamlrund.exe ocamlruni.exe ocamlruns.exe sak.exe)
+# jumptbl.h and opnames.h stopped being generated in #14488, but the two headers
+# continue to be removed as otherwise when switching between branches based
+# before this change the (stale) headers trip the C/C++ compatibility tests.
 	rm -f runtime/primitives runtime/primitives*.new runtime/prims.c \
-	  $(runtime_BUILT_HEADERS)
+	  $(runtime_BUILT_HEADERS) runtime/caml/jumptbl.h runtime/caml/opnames.h
 	rm -f runtime/domain_state.inc
 	rm -rf $(DEPDIR)
 	rm -f stdlib/libcamlrun.a stdlib/libcamlrun.lib
@@ -1711,9 +1712,9 @@ runtimeopt: stdlib/libasmrun.$(A)
 .PHONY: makeruntimeopt
 makeruntimeopt: runtime-allopt
 stdlib/libasmrun.$(A): runtime-allopt
-	cd stdlib; $(LN) ../runtime/libasmrun.$(A) .
+	$(call LINK_IN, stdlib, ../runtime/libasmrun.$(A))
 stdlib/libcomprmarsh.$(A): runtime/libcomprmarsh.$(A)
-	cd stdlib; $(LN) ../runtime/libcomprmarsh.$(A) .
+	$(call LINK_IN, stdlib, ../runtime/libcomprmarsh.$(A))
 
 clean::
 	rm -f stdlib/libasmrun.a stdlib/libasmrun.lib
@@ -1765,6 +1766,7 @@ ocamllex_SOURCES = $(addprefix lex/,\
   lexgen.mli lexgen.ml \
   compact.mli compact.ml \
   common.mli common.ml \
+  exhaustiveness.mli exhaustiveness.ml \
   output.mli output.ml \
   outputbis.mli outputbis.ml \
   main.mli main.ml)
@@ -2030,6 +2032,11 @@ ocamltest_DEPEND_FILES := $(wildcard $(DEPDIR)/ocamltest/*.$(D))
 .PHONY: $(ocamltest_DEPEND_FILES)
 include $(ocamltest_DEPEND_FILES)
 
+ocamltest/ocamltest_unix.cmo: \
+  $(addsuffix .cmi, $(unix_library)) ocamltest/ocamltest_unix.cmi
+ocamltest/ocamltest_unix.cmx: \
+  $(addsuffix .cmx, $(unix_library)) ocamltest/ocamltest_unix.cmi
+
 ocamltest/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 
 ocamltest/%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
@@ -2174,7 +2181,8 @@ partialclean::
 ocamltest/ocamltest_config.ml ocamltest/ocamltest_unix.ml: config.status
 	./$< $@
 
-beforedepend:: ocamltest/ocamltest_config.ml ocamltest/ocamltest_unix.ml
+beforedepend:: ocamltest/ocamltest_config.ml ocamltest/tsl_lexer.ml \
+               ocamltest/tsl_parser.ml ocamltest/tsl_parser.mli
 
 # Documentation
 
@@ -2251,6 +2259,12 @@ ocamldebug_LIBRARIES = compilerlibs/ocamlcommon \
 
 otherlibs/unix/unix.cma: otherlibraries
 otherlibs/str/str.cma: otherlibraries
+
+# Root-directory targets depend on these .cmi/.cmx via .depend. The empty
+# recipes keep the generic %.cmi/%.cmx rules from racing with the otherlibs
+# sub-make, which records a different source path and digest in the artefacts.
+otherlibs/unix/unix.cmi otherlibs/str/str.cmi: otherlibraries ;
+otherlibs/unix/unix.cmx otherlibs/str/str.cmx: otherlibrariesopt ;
 
 debugger/%: VPATH += otherlibs/unix otherlibs/dynlink
 
@@ -2484,7 +2498,6 @@ ocamlcp_ocamloptp_SOURCES = \
   build_path_prefix_map.mli build_path_prefix_map.ml \
   format_doc.mli format_doc.ml \
   misc.mli misc.ml \
-  profile.mli profile.ml \
   warnings.mli warnings.ml \
   identifiable.mli identifiable.ml \
   numbers.mli numbers.ml \
@@ -2492,6 +2505,7 @@ ocamlcp_ocamloptp_SOURCES = \
   local_store.mli local_store.ml \
   load_path.mli load_path.ml \
   clflags.mli clflags.ml \
+  profile.mli profile.ml \
   terminfo.mli terminfo.ml \
   location.mli location.ml \
   ccomp.mli ccomp.ml \
@@ -2541,16 +2555,8 @@ ocamlcmt_SOURCES = tools/ocamlcmt.mli tools/ocamlcmt.ml
 
 dumpobj_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
 dumpobj_SOURCES = $(addprefix tools/, \
-  opnames.mli opnames.ml \
   dumpobj.mli dumpobj.ml)
 
-tools/opnames.ml: tools/opnames.ml.c runtime/caml/opcodes.h
-	$(V_GEN)$(CPP) -I runtime $< > $@
-
-clean::
-	rm -f tools/opnames.ml
-
-beforedepend:: tools/opnames.ml
 
 # Display info on compiled files
 
@@ -2673,10 +2679,13 @@ bytecomp/opcodes.ml: bytecomp/opcodes.ml.c runtime/caml/opcodes.h
 bytecomp/opcodes.mli: bytecomp/opcodes.ml
 	$(V_GEN)$(CAMLC) -i $< > $@
 
-partialclean::
-	rm -f bytecomp/opcodes.ml bytecomp/opcodes.mli
+bytecomp/opnames.ml: bytecomp/opnames.ml.c runtime/caml/opcodes.h
+	$(V_GEN)$(CPP) -I runtime $< > $@
 
-beforedepend:: bytecomp/opcodes.ml bytecomp/opcodes.mli
+partialclean::
+	rm -f bytecomp/opcodes.ml bytecomp/opcodes.mli bytecomp/opnames.ml
+
+beforedepend:: bytecomp/opcodes.ml bytecomp/opcodes.mli bytecomp/opnames.ml
 
 ifneq "$(wildcard .git)" ""
 include Makefile.dev
@@ -2705,6 +2714,12 @@ partialclean::
 %.depend: beforedepend
 	$(V_OCAMLDEP)$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I $* $(INCLUDES) \
 	  $(OCAMLDEPFLAGS) $*/*.mli $*/*.ml > $@
+
+ocamltest.depend: beforedepend
+	$(V_OCAMLDEP)$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I ocamltest $(INCLUDES) \
+	  $(OCAMLDEPFLAGS) \
+	  $(filter-out ocamltest/ocamltest_unix.ml, \
+	               $(ocamltest_ML_FILES) $(ocamltest_MLI_FILES)) > $@
 
 asmcomp.depend:: beforedepend $(cvt_emit)
 	$(V_OCAMLDEP)$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I asmcomp $(INCLUDES) \
@@ -2775,7 +2790,9 @@ distclean: clean
 ifneq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
 	$(MAKE) -C flexdll distclean MSVC_DETECT=0
 endif
+ifneq "$(wildcard manual)" ""
 	$(MAKE) -C manual distclean
+endif
 	rm -f ocamldoc/META
 	rm -f $(addprefix ocamltest/,ocamltest_config.ml ocamltest_unix.ml)
 	rm -f otherlibs/dynlink/META otherlibs/dynlink/dynlink_config.ml \

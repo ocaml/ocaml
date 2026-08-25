@@ -120,7 +120,9 @@ module Win32 : SYSDEPS = struct
   let current_dir_name = "."
   let parent_dir_name = ".."
   let dir_sep = "\\"
-  let is_dir_sep s i = let c = s.[i] in c = '/' || c = '\\' || c = ':'
+  let is_dir_sep s i =
+    let c = s.[i] in
+    c = '/' || c = '\\' || c = ':' && i = 1
   let is_relative n =
     (String.length n < 1 || n.[0] <> '/')
     && (String.length n < 1 || n.[0] <> '\\')
@@ -172,13 +174,13 @@ Quoting commands for execution by cmd.exe is difficult.
    protect it against the processing performed by the C runtime system,
    then cmd.exe's special characters are escaped with '^', using
    the "quote_cmd" function below.  For more details, see
-   https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23
+   https://web.archive.org/web/20251122022701/https://learn.microsoft.com/en-us/archive/blogs/twistylittlepassagesallalike/everyone-quotes-command-line-arguments-the-wrong-way
 2- The command and the redirection files, if any, must be double-quoted
-   in case they contain spaces.  This quoting is interpreted by cmd.exe,
-   not by the C runtime system, hence the "quote" function above
-   cannot be used.  The two characters we don't know how to quote
-   inside a double-quoted cmd.exe string are double-quote and percent.
-   We just fail if the command name or the redirection file names
+   if they contain any of the special characters which are valid in filenames.
+   This quoting is interpreted by cmd.exe, not by the C runtime system, hence
+   the "quote" function above cannot be used.  The two characters we don't know
+   how to quote inside a double-quoted cmd.exe string are double-quote and
+   percent.  We just fail if the command name or the redirection file names
    contain a double quote (not allowed in Windows file names, anyway)
    or a percent.  See function "quote_cmd_filename" below.
 3- The whole string passed to Sys.command is then enclosed in double
@@ -207,7 +209,9 @@ Quoting commands for execution by cmd.exe is difficult.
     in
     if String.exists (function '\"' | '%' -> true | _ -> false) f then
       failwith ("Filename.quote_command: bad file name " ^ f)
-    else if String.contains f ' ' then
+    else if String.exists (function
+              | ' ' | '(' | ')' | '!' | '^' | '&' -> true
+              | _ -> false) f then
       String.concat "" ["\""; f; "\""]
     else
       f

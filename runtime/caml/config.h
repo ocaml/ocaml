@@ -187,6 +187,9 @@ typedef uintptr_t uintnat;
 /* Default maximum size of the stack (words). */
 /* (1 Gib for 64-bit platforms, 512 Mib for 32-bit platforms) */
 #define Max_stack_def (128 * 1024 * 1024)
+/* Default system stack size for new pthreads (bytes). */
+/* 0 stands for the default system value. */
+#define Sys_stack_def (0)
 
 
 /* Maximum size of a block allocated in the young generation (words). */
@@ -211,6 +214,11 @@ typedef uintptr_t uintnat;
    the dead objects and the free list represent this percentage of the
    total size of live objects. */
 #define Percent_free_def 120
+
+/* Default "small heap mode" setting for the major GC.  The GC will
+   add an Idle phase when the sweeping work for a cycle is smaller than
+   this limit. */
+#define Small_heap_limit_def 262144
 
 /* Default setting for the major GC slice smoothing window: 1
    (i.e. no smoothing)

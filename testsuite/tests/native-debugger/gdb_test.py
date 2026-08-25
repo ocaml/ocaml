@@ -19,5 +19,32 @@ class PrintBacktrace (gdb.Command):
 
 PrintBacktrace ()
 
+class BreakStartProgram (gdb.Command):
+  """Set breakpoint inside caml_start_program at a valid instruction boundary.
+     A hardcoded byte offset does not work across architectures.
+     """
+
+  def __init__ (self):
+    super (BreakStartProgram, self).__init__ (
+      "break_start_program", gdb.COMMAND_BREAKPOINTS)
+
+  def invoke (self, arg, from_tty):
+    arch = gdb.selected_inferior().architecture()
+    start = int(gdb.parse_and_eval("&caml_start_program"))
+    arch_name = arch.name()
+    # Disassemble the function entry to find the correct offset.
+    # On s390x the 3rd instruction is the shared entry point used
+    # by callbacks, so use the 2nd instruction instead.
+    if "s390" in arch_name:
+      insns = arch.disassemble(start, count=2)
+      offset = insns[1]['addr'] - start
+    else:
+      insns = arch.disassemble(start, count=3)
+      offset = insns[2]['addr'] - start
+    gdb.execute("break *(&caml_start_program+%d)" % offset)
+
+BreakStartProgram ()
+
 # Usage:
 # (gdb) print-backtrace
+# (gdb) break_start_program

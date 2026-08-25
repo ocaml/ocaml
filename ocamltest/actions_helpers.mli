@@ -37,9 +37,9 @@ val readonly_files : Environments.t -> string list
 
 val setup_symlinks : string -> string -> string list -> unit
 
-val setup_build_env : bool -> string list -> Actions.code
+val setup_build_env : add_testfile:bool -> string list -> Actions.code
 
-val setup_simple_build_env : bool -> string list -> Actions.code
+val setup_simple_build_env : add_testfile:bool -> string list -> Actions.code
 
 val run_cmd :
   ?environment : string array ->
@@ -50,8 +50,13 @@ val run_cmd :
   ?timeout : int ->
   out_channel -> Environments.t -> string list -> int
 
-val run : string -> bool -> bool -> Variables.t
-                 -> Variables.t option -> Actions.code
+val run :
+  log_message:string ->
+  redirect_output:bool ->
+  can_skip:bool ->
+  prog:Variables.t ->
+  args:(Variables.t option) ->
+  Actions.code
 
 val run_program : Actions.code
 

@@ -1,0 +1,18 @@
+File "not_subtype.ml", line 1:
+Error: Multiple errors were encountered
+File "not_subtype.ml", line 18, characters 8-35:
+18 | let f = (g: u -> unit :> v -> unit)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  Type ((int * int -> unit) -> unit) -> unit is not a subtype of
+    ((float * float -> unit) -> unit) -> unit
+  Type float is not a subtype of int
+File "not_subtype.ml", line 32, characters 12-23:
+32 |   let g x = (x: a :> b) in
+                 ^^^^^^^^^^^
+  Type < foo : int -> int > is not a subtype of
+    < bar : int -> int; foo : int -> int >
+  The first object type has no method bar
+File "not_subtype.ml", line 35, characters 17-19:
+35 | let t : string = 10
+                      ^^
+  The constant 10 has type int but an expression was expected of type string

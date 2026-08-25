@@ -152,8 +152,7 @@ let reset_for_saving () = new_id := -1
 
 let newpersty desc =
   decr new_id;
-  create_expr
-    desc ~level:generic_level ~scope:Btype.lowest_level ~id:!new_id
+  create_expr desc ~level:generic_level ~scope:Btype.lowest_level ~id:!new_id
 
 (* ensure that all occurrences of 'Tvar None' are physically shared *)
 let tvar_none = Tvar None
@@ -227,8 +226,8 @@ let apply_type_function params args body =
           let desc' = Tfunctor (l, id, pack', copy t2) in
           Transient_expr.set_stub_desc t desc';
           t
-      | (Tvar _ | Tarrow _ | Ttuple _ | Tfield _ | Tnil | Tlink _ | Tunivar _
-            | Tpoly _ | Tconstr _ | Tobject _ | Tpackage _) as desc ->
+      | ( Tvar _ | Tarrow _ | Ttuple _ | Tfield _ | Tnil | Tlink _ | Tunivar _
+        | Tpoly _ | Tconstr _ | Tobject _ | Tpackage _ | Texpand _ ) as desc ->
           let t = newgenstub ~scope:(get_scope ty) in
           For_copy.redirect_desc copy_scope ty (Tsubst (t, None));
           let desc' = copy_type_desc copy desc in
@@ -237,10 +236,9 @@ let apply_type_function params args body =
     in
     copy body)
 
-
 (* Similar to [Ctype.nondep_type_rec]. *)
 let rec typexp copy_scope s ty =
-  let desc = get_desc ty in
+  let desc = get_folded_desc ~keep_Tvar:false ty in
   match desc with
     Tvar _ | Tunivar _ ->
       if s.for_saving || get_id ty < 0 then
@@ -270,8 +268,9 @@ let rec typexp copy_scope s ty =
       if s.for_saving then newpersty (Tvar None)
       else newgenstub ~scope:(get_scope ty)
     in
-    For_copy.redirect_desc copy_scope ty (Tsubst (ty', None));
-    let desc =
+    if get_desc ty == desc then
+      For_copy.redirect_desc copy_scope ty (Tsubst (ty', None));
+    let desc' =
       if has_fixed_row then
         match get_desc tm with (* PR#7348 *)
           Tconstr (Pdot(m,i), tl, _abbrev) ->
@@ -351,10 +350,10 @@ let rec typexp copy_scope s ty =
       | Tfield(_label, kind, _t1, t2) when field_kind_repr kind = Fabsent ->
           Tlink (typexp copy_scope s t2)
       | Tvar _ | Tarrow _ | Ttuple _ | Tfield _ | Tnil | Tlink _
-      | Tunivar _ | Tpoly _ | Tsubst _ ->
+      | Tunivar _ | Tpoly _ | Tsubst _ | Texpand _ ->
           copy_type_desc (typexp copy_scope s) desc
     in
-    Transient_expr.set_stub_desc ty' desc;
+    Transient_expr.set_stub_desc ty' desc';
     ty'
 and package copy_scope s {pack_path; pack_constraints} =
   {
@@ -436,6 +435,7 @@ let type_declaration s decl =
 let class_signature copy_scope s sign =
   { csig_self = typexp copy_scope s sign.csig_self;
     csig_self_row = typexp copy_scope s sign.csig_self_row;
+    csig_dummy_method = field_kind_internal_repr sign.csig_dummy_method;
     csig_vars =
       Vars.map
         (function (m, v, t) -> (m, v, typexp copy_scope s t))

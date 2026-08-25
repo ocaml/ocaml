@@ -1,0 +1,5 @@
+ocamllex fatal warning [missing-case]:
+File "fatal_warning.mll", lines 9-10, characters 20-11: rule "missing_case" is not exhaustive.
+Here is an example of nonmatching input:
+""
+Hint: consider adding '| "" { ... }'

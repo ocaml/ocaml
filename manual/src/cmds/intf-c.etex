@@ -12,6 +12,7 @@ these C functions can call back to OCaml code.
 \begin{syntax}
 definition: ...
             | 'external' value-name ':' typexpr '=' external-declaration
+            | 'external' value-name [':' typexpr] '=' value-path
 ;
 external-declaration: string-literal [ string-literal [ string-literal ] ]
 \end{syntax}
@@ -47,6 +48,12 @@ corresponding OCaml function. On the other hand, it should not be used
 in library modules if they have side-effects at toplevel, as this
 direct call interferes with the linker's algorithm for removing unused
 modules from libraries at link-time.
+
+The second form of declaration seen above enables one to re-bind a
+previously-declared primitive under a new name. This will copy the type, C
+function name(s), and any additional information as discussed in
+section~\ref{s:C-cheaper-call}. One may optionally ascribe a type to the new
+binding as well. This feature is only available in OCaml 5.6 or later.
 
 The arity (number of arguments) of a primitive is automatically
 determined from its OCaml type in the "external" declaration, by
@@ -1924,6 +1931,11 @@ freed by "caml_shutdown". For ensuring compatibility with legacy C stubs that
 have used "caml_stat_*" incorrectly, this behaviour is only enabled if the
 runtime is started with a specialized "caml_startup_pooled" function.
 \end{itemize}
+
+One should make sure to join all domains into the main domain before calling
+"caml_shutdown". If there are more than one domain alive when calling
+"caml_shutdown", a warning will be issued and no attempt will be made to
+terminate other domains.
 
 As a shared library may have several clients simultaneously, it is made for
 convenience that "caml_startup" (and "caml_startup_pooled") may be called

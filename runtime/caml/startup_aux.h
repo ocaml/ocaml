@@ -52,6 +52,7 @@ struct caml_params {
   uintnat init_custom_minor_ratio;
   uintnat init_custom_minor_max_bsz;
   uintnat init_max_stack_wsz;
+  uintnat init_sys_stack_bsz;
 
   uintnat backtrace_enabled;
   uintnat runtime_warnings;
@@ -59,6 +60,10 @@ struct caml_params {
   uintnat event_trace;
   uintnat max_domains;
 };
+
+void caml_init_startup_params(struct caml_params *params);
+void caml_parse_startup_params(struct caml_params *, const char *);
+void caml_validate_startup_params(const struct caml_params *);
 
 extern const struct caml_params* const caml_params;
 

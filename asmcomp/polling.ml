@@ -250,9 +250,10 @@ let find_poll_alloc_or_calls instr =
       | Iop(Iextcall { alloc = true }) -> Some (External_call, i.dbg)
       | Iop(Imove | Ispill | Ireload | Iconst_int _ | Iconst_float _ |
             Iconst_symbol _ | Iextcall { alloc = false } | Istackoffset _ |
-            Iload _ | Istore _ | Iintop _ | Iintop_imm _ | Ifloatofint |
-            Iintoffloat | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf |
-            Iopaque | Ispecific _ | Idls_get | Icompf _ | Ireturn_addr) -> None
+            Iload _ | Istore _ | Iatomic_fetch_add | Iintop _ | Iintop_imm _ |
+            Ifloatofint | Iintoffloat | Inegf | Iabsf | Iaddf | Isubf | Imulf |
+            Idivf | Iopaque | Ispecific _ | Idls_get | Icompf _ | Ireturn_addr)
+            -> None
       | Iend | Ireturn | Iifthenelse _ | Iswitch _ | Icatch _ | Iexit _ |
         Itrywith _ | Iraise _ -> None
     in

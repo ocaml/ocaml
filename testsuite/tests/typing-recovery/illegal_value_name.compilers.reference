@@ -1,0 +1,18 @@
+File "illegal_value_name.ml", line 1:
+Error: Multiple errors were encountered
+File "illegal_value_name.ml", line 11, characters 6-11:
+11 |   let (~##) x = x + 1 and (#~#) x y = x + y in
+           ^^^^^
+  ~## is not a valid value identifier.
+File "illegal_value_name.ml", line 11, characters 26-31:
+11 |   let (~##) x = x + 1 and (#~#) x y = x + y in
+                               ^^^^^
+  #~# is not a valid value identifier.
+File "illegal_value_name.ml", line 12, characters 10-13:
+12 |   (~##10) #~# 10
+               ^^^
+  #~# is not a valid value identifier.
+File "illegal_value_name.ml", line 12, characters 3-6:
+12 |   (~##10) #~# 10
+        ^^^
+  ~## is not a valid value identifier.

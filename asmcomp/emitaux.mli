@@ -87,6 +87,10 @@ val cfi_def_cfa_offset : int -> unit
 val cfi_remember_state : unit -> unit
 val cfi_restore_state : unit -> unit
 val cfi_def_cfa_register: reg:int -> unit
+val cfi_val_offset: reg:int -> offset:int -> unit
+val cfi_def_cfa_breg_deref: reg:int -> offset:int -> unit
+(** [.cfi_escape] for CFA = *(reg + offset).  [offset] must fit in a
+    single-byte SLEB128 (-64..63). *)
 
 val binary_backend_available: bool ref
     (** Is a binary backend available.  If yes, we don't need

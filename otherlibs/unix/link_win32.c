@@ -21,6 +21,7 @@
 #include <caml/osdeps.h>
 #include "caml/unixsupport.h"
 #include <windows.h>
+#include <errno.h>
 
 CAMLprim value caml_unix_link(value follow, value path1, value path2)
 {

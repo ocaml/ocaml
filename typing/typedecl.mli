@@ -36,6 +36,10 @@ val transl_value_decl:
     Env.t -> Location.t ->
     Parsetree.value_description -> Typedtree.value_description * Env.t
 
+val transl_prim_desc:
+    Env.t -> Location.t ->
+    Parsetree.primitive_description -> Typedtree.primitive_description * Env.t
+
 (* If the [fixed_row_path] optional argument is provided,
    the [Parsetree.type_declaration] argument should satisfy [is_fixed_type] *)
 val transl_with_constraint:
@@ -56,6 +60,10 @@ val approx_type_decl:
     explanation:Types.type_origin -> Parsetree.type_declaration list ->
                                   (Ident.t * type_declaration) list
 
+val check_well_founded_decl:
+  abs_env:Env.t ->final_env:Env.t -> is_decl_path:(Path.t -> bool) ->
+  Location.t -> Path.t -> Types.type_declaration -> unit
+
 (** [check_recmod_typedecl ~abs_env env loc recmod_ids path decl]
    - [recmod_ids] is the list of recursively-defined module idents.
    - [path, decl] is the type declaration to be checked.
@@ -65,8 +73,8 @@ val approx_type_decl:
       recursive module definitions.
 *)
 val check_recmod_typedecl:
-    abs_env:Env.t -> Env.t -> Location.t -> Ident.t list -> Path.t ->
-    type_declaration -> unit
+    abs_env:Env.t ->
+    Env.t -> Location.t -> Ident.t list -> Path.t -> type_declaration -> unit
 val check_coherence:
     Env.t -> Location.t -> Path.t -> type_declaration -> unit
 
@@ -79,6 +87,8 @@ type reaching_type_path = reaching_type_step list
 and reaching_type_step =
   | Expands_to of type_expr * type_expr
   | Contains of type_expr * type_expr
+  | Parameter of Path.t * int * type_expr
+  | Considered_abstract of Path.t
 
 type error =
     Repeated_parameter
@@ -99,7 +109,11 @@ type error =
     }
   | Null_arity_external
   | Missing_native_external
-  | Unbound_type_var of type_expr * type_declaration
+  | Unbound_type_var of {
+      var: type_expr;
+      params: type_expr list;
+      decl: type_declaration;
+    }
   | Cannot_extend_private_type of Path.t
   | Not_extensible_type of Path.t
   | Extension_mismatch of Path.t * Env.t * Includecore.type_mismatch
@@ -109,8 +123,6 @@ type error =
   | Rebind_private of Longident.t
   | Variance of Typedecl_variance.error
   | Unavailable_type_constructor of Path.t
-  | Unbound_type_var_ext of type_expr * extension_constructor
-  | Val_in_structure
   | Multiple_native_repr_attributes
   | Cannot_unbox_or_untag_type of native_repr_kind
   | Deep_unbox_or_untag_attribute of native_repr_kind
@@ -123,7 +135,14 @@ type error =
   | Invalid_private_row_declaration of type_expr
   | Atomic_field_must_be_mutable of string
   | External_with_non_syntactic_arity
+  | Primitive_alias_does_not_refer_to_primitive of value_kind
+  | Primitive_type_mismatch of Env.t * Errortrace.unification_error
 
-exception Error of Location.t * error
+module Error : sig
+    type exn += private In_context of Location.t * error
+
+  val log_or_raise : Location.t -> error -> unit
+  val log_and_raise : Location.t -> error -> 'a
+end
 
 val report_error: loc:Location.t -> error -> Location.report

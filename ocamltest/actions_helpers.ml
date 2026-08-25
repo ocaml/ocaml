@@ -77,12 +77,12 @@ let setup_symlinks test_source_directory build_directory files =
         else
           Sys.remove dst
     in
-      Unix.symlink src dst in
+      Ocamltest_unix.symlink src dst in
   let copy filename =
     let src = Filename.concat test_source_directory filename in
     let dst = Filename.concat build_directory filename in
     Sys.copy_file src dst in
-  let f = if Unix.has_symlink () then symlink else copy in
+  let f = if Ocamltest_unix.has_symlink () then symlink else copy in
   Sys.make_directory build_directory;
   List.iter f files
 
@@ -94,7 +94,7 @@ let setup_subdirectories source_directory build_directory subdirs =
   in
   List.iter cp_dir subdirs
 
-let setup_build_env add_testfile additional_files (_log : out_channel) env =
+let setup_build_env ~add_testfile additional_files (_log : out_channel) env =
   let source_dir = (test_source_directory env) in
   let build_dir = (test_build_directory env) in
   let some_files = additional_files @ (readonly_files env) in
@@ -108,11 +108,11 @@ let setup_build_env add_testfile additional_files (_log : out_channel) env =
   Sys.chdir build_dir;
   (Test_result.pass, env)
 
-let setup_simple_build_env add_testfile additional_files log env =
+let setup_simple_build_env ~add_testfile additional_files log env =
   let build_env = Environments.add
     Builtin_variables.test_build_directory
     (test_build_directory_prefix env) env in
-  setup_build_env add_testfile additional_files log build_env
+  setup_build_env ~add_testfile additional_files log build_env
 
 let run_cmd
     ?(environment=[||])
@@ -196,11 +196,11 @@ let run_cmd
   n
 
 let run
-    (log_message : string)
-    (redirect_output : bool)
-    (can_skip : bool)
-    (prog_variable : Variables.t)
-    (args_variable : Variables.t option)
+    ~(log_message : string)
+    ~(redirect_output : bool)
+    ~(can_skip : bool)
+    ~prog:(prog_variable : Variables.t)
+    ~args:(args_variable : Variables.t option)
     (log : out_channel)
     (env : Environments.t)
   =
@@ -241,13 +241,22 @@ let run
       else (Test_result.fail_with_reason reason, env)
     end
 
-let run_program =
+let run_program
+    (log : out_channel)
+    (env : Environments.t)
+  =
+  let can_skip =
+    let run_can_skip =
+    Environments.lookup_as_bool Builtin_variables.run_can_skip env in
+    run_can_skip = Some true in
   run
-    "Running program"
-    true
-    false
-    Builtin_variables.program
-    (Some Builtin_variables.arguments)
+    ~log_message:"Running program"
+    ~redirect_output:true
+    ~can_skip
+    ~prog:Builtin_variables.program
+    ~args:(Some Builtin_variables.arguments)
+    log
+    env
 
 let run_script log env =
   let response_file = Filename.temp_file "ocamltest-" ".response" in
@@ -256,11 +265,11 @@ let run_script log env =
   let scriptenv = Environments.add
     Builtin_variables.ocamltest_response response_file env in
   let (result, newenv) = run
-    "Running script"
-    true
-    true
-    Builtin_variables.script
-    None
+    ~log_message:"Running script"
+    ~redirect_output:true
+    ~can_skip:true
+    ~prog:Builtin_variables.script
+    ~args:None
     log scriptenv in
   let final_value =
     if Test_result.is_pass result then begin

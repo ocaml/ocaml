@@ -51,7 +51,7 @@
 
  (**
     Unsynchronized accesses to a hash table may lead to an invalid hash table
-    state. Thus, concurrent accesses to a hash tables must be synchronized
+    state. Thus, concurrent accesses to a hash table must be synchronized
     (for instance with a {!Mutex.t}).
 *)
 
@@ -187,9 +187,9 @@ val iter : f:(key:'a -> data:'b -> unit) -> ('a, 'b) t -> unit
 val filter_map_inplace: f:(key:'a -> data:'b -> 'b option) -> ('a, 'b) t ->
     unit
 (** [Hashtbl.filter_map_inplace ~f tbl] applies [f] to all bindings in
-    table [tbl] and update each binding depending on the result of
+    table [tbl] and updates each binding depending on the result of
     [f].  If [f] returns [None], the binding is discarded.  If it
-    returns [Some new_val], the binding is update to associate the key
+    returns [Some new_val], the binding is updated to associate the key
     to [new_val].
 
     Other comments for {!iter} apply as well.
@@ -365,6 +365,14 @@ module type HashedType =
       (** A hashing function on keys. It must be such that if two keys are
           equal according to [equal], then they have identical hash values
           as computed by [hash].
+
+          The hash value of a key should remain constant as long as the key is
+          in the table. In particular, if the hash function depends on mutable
+          key data, then that data must not be mutated while the key is in the
+          table. Similarly, as the hash function may be called while the table
+          itself is being modified, it should avoid accessing the table as
+          part of its computation.
+
           Examples: suitable ([equal], [hash]) pairs for arbitrary key
           types include
 -         ([(=)], {!hash}) for comparing objects by structure

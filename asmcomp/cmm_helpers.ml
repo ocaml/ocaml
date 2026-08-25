@@ -2594,7 +2594,20 @@ let emit_float_array_constant symb fields cont =
     (Misc.map_end (fun f -> Cdouble f) fields cont)
 
 (* Generate the entry point *)
-
+(*
+ * CAMLprim value caml_program()
+ * {
+ *   int id = 0;
+ *   while (true) {
+ *     if (id == len_caml_globals_entry_functions) goto out;
+ *     caml_globals_entry_functions[id]();
+ *     caml_globals_inited += 1;
+ *     id += 1;
+ *   }
+ *   out:
+ *   return 1;
+ * }
+ *)
 let entry_point namelist =
   let dbg = placeholder_dbg in
   let cconst_int i = Cconst_int (i, dbg ()) in
@@ -2605,23 +2618,48 @@ let entry_point namelist =
          Cop(Caddi, [Cop(mk_load_mut Word_int,
                        [cconst_symbol "caml_globals_inited"], dbg ());
                      cconst_int 1], dbg ())], dbg ()) in
+  let table_symbol =
+    Compilenv.make_symbol (Some "caml_globals_entry_functions") in
+  let call i =
+    (* address of caml_globals_entry_functions[i] *)
+    let entry_slot =
+      Cop(Cadda, [cconst_symbol table_symbol;
+                  Cop(Clsl, [i; cconst_int (Misc.log2 Arch.size_addr)],
+                      dbg ())], dbg ()) in
+    Csequence(Cop(Capply typ_void,
+                  [Cop(mk_load_immut Word_int, [entry_slot], dbg ())], dbg ()),
+              incr_global_inited ()) in
+  let data =
+    List.map
+      (fun name ->
+        Csymbol_address (Compilenv.make_symbol ~unitname:name (Some "entry")))
+      namelist in
+  let data = Cdefine_symbol table_symbol :: data in
+  let raise_num = Lambda.next_raise_count () in
+  let id = VP.create (V.create_local "*id*") in
+  let var_id = Cvar (VP.var id) in
+  let high = cconst_int (List.length namelist) in
   let body =
-    List.fold_right
-      (fun name next ->
-        let entry_sym = Compilenv.make_symbol ~unitname:name (Some "entry") in
-        Csequence(Cop(Capply typ_void,
-                         [cconst_symbol entry_sym], dbg ()),
-                  Csequence(incr_global_inited (), next)))
-      namelist (cconst_int 1) in
+    let next_iteration =
+      Cexit(raise_num, [Cop(Caddi, [var_id; cconst_int 1], dbg ())]) in
+    Ccatch(Recursive,
+           [raise_num, [id, typ_int],
+            Cifthenelse(Cop(Ccmpi Ceq, [var_id; high], dbg ()),
+                        dbg (), Ctuple [],
+                        dbg (), Csequence(call var_id, next_iteration),
+                        dbg ()),
+            dbg ()],
+           Cexit(raise_num, [cconst_int 0])) in
   let fun_name = "caml_program" in
   let fun_dbg = placeholder_fun_dbg ~human_name:fun_name in
-  Cfunction {fun_name;
-             fun_args = [];
-             fun_body = body;
-             fun_codegen_options = [Reduce_code_size];
-             fun_poll = Default_poll;
-             fun_dbg;
-            }
+  [ Cdata data;
+    Cfunction {fun_name;
+               fun_args = [];
+               fun_body = Csequence(body, cconst_int 1);
+               fun_codegen_options = [Reduce_code_size];
+               fun_poll = Default_poll;
+               fun_dbg;
+              } ]
 
 (* Generate the table of globals *)
 

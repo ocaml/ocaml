@@ -8,7 +8,7 @@ type s = x:int -> y:float -> unit
 type t = y:int -> x:float -> unit
 type silly = {silly: 'a.'a};;
 let eql : (s, t) eql = Refl;;
-[%%expect{|
+[%%expect{||}, (Principal.Nolabel, Rectypes.Nolabel, Nolabel){|
 type (_, _) eql = Refl : ('a, 'a) eql
 type s = x:int -> y:float -> unit
 type t = y:int -> x:float -> unit

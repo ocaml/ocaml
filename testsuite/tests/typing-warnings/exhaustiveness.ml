@@ -386,3 +386,57 @@ Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 module Single_row_optim :
   sig type t = A | B val non_exhaustive : t * t * t * t -> unit end
 |}]
+
+module PrintPat = struct
+(* New presentation  of counter-examples of exhaustiveness.
+   The new presentation as patterns still can be used to complement
+    the flagged pattern-matching expression, conveys the same information
+    as before and is more concise.
+*)
+  module T = struct
+    type r = { x:int; y:int; z:bool;}
+    type t = A | B of int | C of int * int | D of int * int * r
+    type t2 = E of { a:r; b:r; }
+  end
+
+  let f = function
+    | T.A -> 0
+
+  let g = function
+    | T.D (_,_,{T.z=true;_}) -> 0
+
+  let h = function
+    | T.E { a={T.z=true; _}; b=_; } -> ()
+end;;
+[%%expect {|
+Lines 13-14, characters 10-14:
+13 | ..........function
+14 |     | T.A -> 0
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+  Here is an example of a case that is not matched: "(B _|C _|D _)"
+
+Lines 16-17, characters 10-33:
+16 | ..........function
+17 |     | T.D (_,_,{T.z=true;_}) -> 0
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+  Here is an example of a case that is not matched: "D (_, _, {z=false; _ })"
+
+Lines 19-20, characters 10-41:
+19 | ..........function
+20 |     | T.E { a={T.z=true; _}; b=_; } -> ()
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+  Here is an example of a case that is not matched: "E {a={z=false; _ }; _ }"
+
+module PrintPat :
+  sig
+    module T :
+      sig
+        type r = { x : int; y : int; z : bool; }
+        type t = A | B of int | C of int * int | D of int * int * r
+        type t2 = E of { a : r; b : r; }
+      end
+    val f : T.t -> int
+    val g : T.t -> int
+    val h : T.t2 -> unit
+  end
+|}]

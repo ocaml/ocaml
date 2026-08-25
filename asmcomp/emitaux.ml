@@ -55,19 +55,23 @@ let emit_symbol s =
 let emit_string_literal s =
   let last_was_escape = ref false in
   emit_string "\"";
+  (* Avoid producing '??' to avoid assembler warnings about trigraphs *)
+  let last_was_question_mark = ref false in
   for i = 0 to String.length s - 1 do
     let c = s.[i] in
     if c >= '0' && c <= '9' then
       if !last_was_escape
       then Printf.fprintf !output_channel "\\%o" (Char.code c)
       else output_char !output_channel c
-    else if c >= ' ' && c <= '~' && c <> '"' (* '"' *) && c <> '\\' then begin
+    else if c >= ' ' && c <= '~' && c <> '"' (* '"' *) && c <> '\\' &&
+              (c <> '?' || not !last_was_question_mark) then begin
       output_char !output_channel c;
       last_was_escape := false
     end else begin
       Printf.fprintf !output_channel "\\%o" (Char.code c);
       last_was_escape := true
-    end
+    end;
+    last_was_question_mark := (c = '?')
   done;
   emit_string "\""
 
@@ -427,6 +431,31 @@ let cfi_def_cfa_register ~reg =
     emit_string "\t.cfi_def_cfa_register ";
     emit_int reg;
     emit_string "\n"
+  end
+
+let cfi_val_offset ~reg ~offset =
+  if is_cfi_enabled () then begin
+    emit_string "\t.cfi_escape 0x14, "; (* DW_CFA_val_offset (0x14) *)
+    emit_int reg;
+    emit_string ", ";
+    emit_int offset;
+    emit_string "\n"
+  end
+
+(* Emit a DWARF CFI expression of the form CFA = *(reg + offset), i.e.
+   follow a pointer stored at [reg + offset].  Used by backends (POWER)
+   where the canonical frame address lives behind a back-chain link.
+   The expression is 3 bytes: DW_OP_breg+reg, sleb128(offset), DW_OP_deref;
+   [offset] must fit in a single-byte SLEB128 (-64..63). *)
+let cfi_def_cfa_breg_deref ~reg ~offset =
+  assert (-64 <= offset && offset < 64);
+  if is_cfi_enabled () then begin
+    (* DW_CFA_def_cfa_expression, length=3 *)
+    emit_string "\t.cfi_escape 0x0f, 3, ";
+    emit_int (0x70 + reg);                 (* DW_OP_breg + reg *)
+    emit_string ", ";
+    emit_int offset;
+    emit_string ", 0x06\n"                 (* DW_OP_deref *)
   end
 
 (* Emit debug information *)

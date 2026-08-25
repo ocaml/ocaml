@@ -520,15 +520,15 @@ external hypot : float -> float -> float = "caml_hypot_float" "caml_hypot"
 
 external cosh : float -> float = "caml_cosh_float" "cosh"
   [@@unboxed] [@@noalloc]
-(** Hyperbolic cosine.  Argument is in radians. *)
+(** Hyperbolic cosine. *)
 
 external sinh : float -> float = "caml_sinh_float" "sinh"
   [@@unboxed] [@@noalloc]
-(** Hyperbolic sine.  Argument is in radians. *)
+(** Hyperbolic sine. *)
 
 external tanh : float -> float = "caml_tanh_float" "tanh"
   [@@unboxed] [@@noalloc]
-(** Hyperbolic tangent.  Argument is in radians. *)
+(** Hyperbolic tangent. *)
 
 external acosh : float -> float = "caml_acosh_float" "caml_acosh"
   [@@unboxed] [@@noalloc]

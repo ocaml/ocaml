@@ -44,6 +44,7 @@ type abstract_type_constr = [
   | `Floatarray
   | `Iarray
   | `Atomic_loc
+  | `Todo_info
 ]
 type data_type_constr = [
   | `Bool
@@ -80,6 +81,7 @@ let all_type_constrs : type_constr list = [
   `Floatarray;
   `Iarray;
   `Atomic_loc;
+  `Todo_info;
 ]
 
 let ident_int = ident_create "int"
@@ -103,6 +105,7 @@ and ident_extension_constructor = ident_create "extension_constructor"
 and ident_floatarray = ident_create "floatarray"
 and ident_iarray = ident_create "iarray"
 and ident_atomic_loc = ident_create "atomic_loc"
+and ident_todo_info = ident_create "todo_info"
 
 let ident_of_type_constr : type_constr -> Ident.t = function
   | `Int -> ident_int
@@ -126,6 +129,7 @@ let ident_of_type_constr : type_constr -> Ident.t = function
   | `Floatarray -> ident_floatarray
   | `Iarray -> ident_iarray
   | `Atomic_loc -> ident_atomic_loc
+  | `Todo_info -> ident_todo_info
 
 (* names used for Type_external *)
 let name_of_type_constr = function
@@ -150,6 +154,7 @@ let name_of_type_constr = function
   | `Floatarray -> "floatarray"
   | `Iarray -> "iarray"
   | `Atomic_loc -> "atomic_loc"
+  | `Todo_info -> "todo_info"
 
 let path_int = Pident ident_int
 and path_char = Pident ident_char
@@ -172,6 +177,7 @@ and path_extension_constructor = Pident ident_extension_constructor
 and path_floatarray = Pident ident_floatarray
 and path_iarray = Pident ident_iarray
 and path_atomic_loc = Pident ident_atomic_loc
+and path_todo_info = Pident ident_todo_info
 
 let path_of_type_constr typ =
   Pident (ident_of_type_constr typ)
@@ -198,6 +204,7 @@ and type_extension_constructor = tconstr path_extension_constructor []
 and type_floatarray = tconstr path_floatarray []
 and type_iarray t = tconstr path_iarray [t]
 and type_atomic_loc t = tconstr path_atomic_loc [t]
+and type_todo_info = tconstr path_todo_info []
 
 let find_type_constr =
   let all_predef_paths =
@@ -221,6 +228,7 @@ and ident_assert_failure = ident_create "Assert_failure"
 and ident_undefined_recursive_module =
         ident_create "Undefined_recursive_module"
 and ident_continuation_already_taken = ident_create "Continuation_already_taken"
+and ident_todo = ident_create "Todo"
 
 let all_predef_exns = [
   ident_match_failure;
@@ -236,11 +244,13 @@ let all_predef_exns = [
   ident_assert_failure;
   ident_undefined_recursive_module;
   ident_continuation_already_taken;
+  ident_todo;
 ]
 
 let path_match_failure = Pident ident_match_failure
 and path_assert_failure = Pident ident_assert_failure
 and path_undefined_recursive_module = Pident ident_undefined_recursive_module
+and path_todo = Pident ident_todo
 
 let ident_false = ident_create "false"
 and ident_true = ident_create "true"
@@ -321,7 +331,7 @@ let decl_of_type_constr tconstr =
   | `Float
   | `Floatarray
   | `Nativeint | `Int32 | `Int64
-  | `Extension_constructor
+  | `Extension_constructor | `Todo_info
     -> decl0 ()
   | `Bool ->
       let kind = variant [cstr ident_false [];
@@ -387,6 +397,7 @@ let build_initial_env add_type add_extension empty_env =
   |> add_extension ident_stack_overflow []
   |> add_extension ident_sys_blocked_io []
   |> add_extension ident_sys_error [type_string]
+  |> add_extension ident_todo [tconstr path_todo_info []]
   |> add_extension ident_undefined_recursive_module
        [newgenty (Ttuple[None, type_string; None, type_int; None, type_int])]
   |> add_extension ident_continuation_already_taken []

@@ -74,6 +74,13 @@ let () =
   let xs = Seq.(take 7 (cycle !?[1;2;3])) in
   assert (!!xs = [1;2;3;1;2;3;1])
 
+(* [cycle] doesn't repeat or cache computations *)
+let () =
+  let forces = ref 0 in
+  let xs () = incr forces; Seq.return 1 () in
+  let length = Seq.(length (take 3 (cycle xs))) in
+  assert (length = !forces)
+
 (* [iterate] *)
 let () =
   let f x = x + 7 in
@@ -140,6 +147,11 @@ let () =
   assert (head seq = 10);
   assert (Seq.length (Seq.take 1_000_000 seq) = 1_000_000);
   ()
+
+(* [forever] isn't too eager *)
+let () =
+  let f () = failwith "forever evaluated" in
+  Fun.const () (Seq.forever f)
 
 (* [scan] must not invoke [f] too early. (An easy trap to fall into.)
    The function [f] does not tolerate being invoked 4 times. Indeed, in
@@ -329,5 +341,16 @@ let () =
   match Seq.concat do_not_force_too_much () with
   | Seq.Nil -> assert false
   | Seq.Cons ((), seq) -> ignore seq
+
+(* ints_in_range *)
+let () =
+  (* start < stop example *)
+  assert ((List.of_seq (Seq.ints_in_range ~first:0 ~last:5)) = [0;1;2;3;4;5]);
+  (* start > stop example *)
+  assert ((List.of_seq (Seq.ints_in_range ~first:5 ~last:0 )) = []);
+  (* start > stop example *)
+  assert ((List.of_seq (Seq.ints_in_range ~first:6 ~last:6 ))= [6]);
+;;
+
 
 let () = print_endline "OK";;

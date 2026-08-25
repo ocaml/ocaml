@@ -547,6 +547,9 @@ d2: [a -> t1; b -> t4; c -> t7]
 
 \noindent represents two domains "d1" and "d2" and their frontiers.
 
+A created domain inherits the frontier of its creator domain at the point
+"Domain.spawn" is called.
+
 \subsection{ss:mm_na_access}{Non-atomic accesses}
 
 Let us now define the semantics of non-atomic reads and writes. Suppose domain

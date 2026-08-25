@@ -15,6 +15,7 @@
 
 (* Generation of bytecode + relocation information *)
 
+open Asttypes
 open Config
 open Misc
 open Lambda
@@ -196,6 +197,9 @@ let record_event ev =
   ev.ev_pos <- !out_position;
   events := ev :: !events
 
+let hints = ref ([] : (int * optimization_hint) list)
+let record_hint hint = hints := (!out_position, hint) :: !hints
+
 (* Initialization *)
 
 let clear() =
@@ -204,6 +208,7 @@ let clear() =
   reloc_info := [];
   debug_dirs := String.Set.empty;
   events := [];
+  hints := [];
   out_buffer := create_bigarray 0
 
 let init () =
@@ -222,6 +227,9 @@ and emit_branch_comp = function
 | Ceq -> out opBEQ    | Cne -> out opBNEQ
 | Clt -> out opBLTINT | Cle -> out opBLEINT
 | Cgt -> out opBGTINT | Cge -> out opBGEINT
+
+let integer_comparison_of_physical : physical_comparison -> integer_comparison =
+  function CPeq -> Ceq | CPneq -> Cne
 
 let emit_instr = function
     Klabel lbl -> define_label lbl
@@ -246,11 +254,14 @@ let emit_instr = function
   | Kreturn n -> out opRETURN; out_int n
   | Krestart -> out opRESTART
   | Kgrab n -> out opGRAB; out_int n
-  | Kclosure(lbl, n) -> out opCLOSURE; out_int n; out_label lbl
-  | Kclosurerec(lbls, n) ->
-      out opCLOSUREREC; out_int (List.length lbls); out_int n;
+  | Kclosure(lbl, n, hint) ->
+      record_hint (Hint_closures [hint]);
+      out opCLOSURE; out_int n; out_label lbl
+  | Kclosurerec(lbl_hints, n) ->
+      record_hint (Hint_closures (List.map snd lbl_hints));
+      out opCLOSUREREC; out_int (List.length lbl_hints); out_int n;
       let org = !out_position in
-      List.iter (out_label_with_orig org) lbls
+      List.iter (fun (lbl, _) -> out_label_with_orig org lbl) lbl_hints
   | Koffsetclosure ofs ->
       if ofs = -3 || ofs = 0 || ofs = 3
       then out (opOFFSETCLOSURE0 + ofs / 3)
@@ -270,7 +281,10 @@ let emit_instr = function
       | _ ->
           out opGETGLOBAL; slot_for_literal sc
       end
-  | Kmakeblock(n, t) ->
+  | Kmakeblock(n, t, mut) ->
+      (match mut with
+       | Immutable -> record_hint Hint_immutable_block
+       | Mutable -> ());
       if n = 0 then
         if t = 0 then out opATOM0 else (out opATOM; out_int t)
       else if n < 4 then (out(opMAKEBLOCK1 + n - 1); out_int t)
@@ -279,11 +293,16 @@ let emit_instr = function
       if n < 4 then out(opGETFIELD0 + n) else (out opGETFIELD; out_int n)
   | Ksetfield n ->
       if n < 4 then out(opSETFIELD0 + n) else (out opSETFIELD; out_int n)
-  | Kmakefloatblock(n) ->
+  | Kmakefloatblock(n, mut) ->
+      (match mut with
+       | Immutable -> record_hint Hint_immutable_block
+       | Mutable -> ());
       if n = 0 then out opATOM0 else (out opMAKEFLOATBLOCK; out_int n)
   | Kgetfloatfield n -> out opGETFLOATFIELD; out_int n
   | Ksetfloatfield n -> out opSETFLOATFIELD; out_int n
-  | Kvectlength -> out opVECTLENGTH
+  | Kvectlength kind ->
+      record_hint (Hint_arraylength kind);
+      out opVECTLENGTH
   | Kgetvectitem -> out opGETVECTITEM
   | Ksetvectitem -> out opSETVECTITEM
   | Kgetstringchar -> out opGETSTRINGCHAR
@@ -307,7 +326,8 @@ let emit_instr = function
   | Kraise Raise_reraise -> out opRERAISE
   | Kraise Raise_notrace -> out opRAISE_NOTRACE
   | Kcheck_signals -> out opCHECK_SIGNALS
-  | Kccall(name, n) ->
+  | Kccall(name, n, hint) ->
+      (match hint with Some h -> record_hint (Hint_ccall h) | None -> ());
       if n <= 5
       then (out (opC_CALL1 + n - 1); slot_for_c_prim name)
       else (out opC_CALLN; out_int n; slot_for_c_prim name)
@@ -317,7 +337,11 @@ let emit_instr = function
   | Kandint -> out opANDINT  | Korint -> out opORINT
   | Kxorint -> out opXORINT  | Klslint -> out opLSLINT
   | Klsrint -> out opLSRINT  | Kasrint -> out opASRINT
-  | Kintcomp c -> emit_comp c
+  | Kintcomp c ->
+      emit_comp c
+  | Kphyscomp c ->
+      record_hint (Hint_physical_comparison);
+      emit_comp (integer_comparison_of_physical c)
   | Koffsetint n -> out opOFFSETINT; out_int n
   | Koffsetref n -> out opOFFSETREF; out_int n
   | Kisint -> out opISINT
@@ -355,6 +379,19 @@ let rec emit = function
         out_const k ;
         out_label lbl ;
         emit rem
+  | Kpush::Kconst k::Kphyscomp c::Kbranchif lbl::rem
+      when is_immed_const k ->
+        emit_branch_comp (integer_comparison_of_physical c) ;
+        out_const k ;
+        out_label lbl ;
+        emit rem
+  | Kpush::Kconst k::Kphyscomp c::Kbranchifnot lbl::rem
+      when is_immed_const k ->
+        emit_branch_comp
+          (negate_integer_comparison (integer_comparison_of_physical c)) ;
+        out_const k ;
+        out_label lbl ;
+        emit rem
 (* same for range tests *)
   | Kpush::Kconst k::Kisout::Kbranchif lbl::rem
       when is_immed_const k ->
@@ -376,7 +413,7 @@ let rec emit = function
       if n < 8 then out(opPUSHACC0 + n) else (out opPUSHACC; out_int n);
       emit c
   | Kpush :: Kenvacc n :: c ->
-      if n >= 1 && n < 4
+      if n >= 1 && n <= 4
       then out(opPUSHENVACC1 + n - 1)
       else (out opPUSHENVACC; out_int n);
       emit c
@@ -439,6 +476,11 @@ let to_file outchan artifact_info ~required_globals code =
       (p, pos_out outchan - p)
     end else
       (0, 0) in
+  let (pos_hint, size_hint) =
+    let p = pos_out outchan in
+    Compression.output_value outchan !hints;
+    (p, pos_out outchan - p)
+  in
   let compunit =
     { cu_name = Cmo_format.Compunit (Unit_info.Artifact.modname artifact_info);
       cu_pos = pos_code;
@@ -451,12 +493,14 @@ let to_file outchan artifact_info ~required_globals code =
         (Ident.Set.elements required_globals);
       cu_force_link = !Clflags.link_everything;
       cu_debug = pos_debug;
-      cu_debugsize = size_debug } in
+      cu_debugsize = size_debug;
+      cu_hint = pos_hint;
+      cu_hintsize = size_hint } in
   let pos_compunit = pos_out outchan in
   let () =
     (* Remove any cached abbreviation expansion before marshaling.
        See doc-comment for [Types.abbrev_memo] *)
-    Btype.cleanup_abbrev ();
+    Btype.cleanup_abbrev_memo ();
     marshal_to_channel_with_possibly_32bit_compat
       ~filename:(Unit_info.Artifact.filename artifact_info)
       ~kind:"bytecode unit"
@@ -488,4 +532,4 @@ let to_packed_file outchan code =
   let events = !events in
   let debug_dirs = !debug_dirs in
   let size = !out_position in
-  (size, reloc, events, debug_dirs))
+  (size, reloc, events, debug_dirs, !hints))

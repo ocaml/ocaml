@@ -3,23 +3,40 @@ File "pr4018_bad.ml", line 42, characters 11-17:
                 ^^^^^^
 Error: This type entity = < destroy_subject : id subject; entity_id : id >
        should be an instance of type
-         < destroy_subject : < add_observer : 'a entity_container -> 'b; .. >;
+         < destroy_subject : < add_observer : < add_entity : 'a -> 'b;
+                                                notify : 'a -> id -> unit > ->
+                                              'b;
+                               .. >;
            .. >
          as 'a
        Type
          id subject =
-           < add_observer : (id subject, id) observer -> unit;
+           < add_observer : < notify : < add_observer : 'c;
+                                         notify_observers : id -> unit > ->
+                                       id -> unit > ->
+                            unit as 'c;
              notify_observers : id -> unit >
        is not compatible with type
-         < add_observer : < destroy_subject : 'c; .. > entity_container -> 'b;
+         < add_observer : < add_entity : (< destroy_subject : 'd; .. > as 'a) ->
+                                         'b;
+                            notify : 'a -> id -> unit > ->
+                          'b;
            .. >
-         as 'c
-       Type (id subject, id) observer = < notify : id subject -> id -> unit >
+         as 'd
+       Type
+         (< add_observer : < notify : 'e -> id -> unit > -> unit;
+            notify_observers : id -> unit >
+          as 'e, id)
+         observer =
+           < notify : < add_observer : 'f -> unit;
+                        notify_observers : id -> unit > ->
+                      id -> unit as 'g >
+           as 'f = < notify : 'g >
        is not compatible with type
-         (< destroy_subject : < add_observer : 'd -> 'b; .. >; .. > as 'a)
-         entity_container as 'd =
-           < add_entity : 'a -> 'b; notify : 'a -> id -> unit >
-       The method add_observer has type (id subject, id) observer -> unit,
-       but the expected method type was
-       < destroy_subject : < add_observer : 'e; .. >; .. > entity_container ->
-       'b as 'e
+         < add_entity : (< destroy_subject : < add_observer : 'h -> 'b; .. >;
+                           .. >
+                         as 'a) ->
+                        'b;
+           notify : 'a -> id -> unit >
+         as 'h
+       The first object type has no method add_entity

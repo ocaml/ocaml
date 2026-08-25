@@ -52,6 +52,16 @@ let emit_call s =
   else
    `	brasl	%r14, {emit_symbol s}\n`
 
+(* GOT-indirect call for runtime glue only -- avoids PLT lazy binding
+   trampoline which corrupts the heap when r15 points at the OCaml
+   fiber stack instead of a C stack frame (see #13693). *)
+let emit_call_got s =
+  if !Clflags.pic_code then begin
+   `	lgrl	%r1, {emit_symbol s}@GOT\n`;
+   `	basr	%r14, %r1\n`
+  end else
+   `	brasl	%r14, {emit_symbol s}\n`
+
 (* Output a label *)
 
 let label_prefix = ".L"
@@ -87,23 +97,6 @@ let reg_f15 = check_phys_reg 115 "%f15"
 let reg_r7 = check_phys_reg 5 "%r7"
 let reg_stack_arg_begin = check_phys_reg 7 "%r9"
 let reg_stack_arg_end = check_phys_reg 6 "%r8"
-
-let cfi_startproc () =
-  if Config.asm_cfi_supported then begin
-    emit_string "\t.cfi_startproc\n";
-  end
-
-let cfi_endproc () =
-  if Config.asm_cfi_supported then begin
-    emit_string "\t.cfi_endproc\n";
-  end
-
-let cfi_def_cfa_register reg =
-  if Config.asm_cfi_supported then begin
-    emit_string "\t.cfi_def_cfa_register ";
-    emit_string reg;
-    emit_string "\n"
-  end
 
 (* Output a stack reference *)
 
@@ -202,7 +195,7 @@ let record_frame env live dbg =
   `{emit_label lbl}:`
 
 let emit_call_gc gc =
-  `{emit_label gc.gc_lbl}:`; emit_call "caml_call_gc";
+  `{emit_label gc.gc_lbl}:`; emit_call_got "caml_call_gc";
   `{emit_label gc.gc_frame_lbl}:	brcl	15, {emit_label gc.gc_return_lbl}\n`
 
 let bound_error_label env dbg =
@@ -222,7 +215,7 @@ let bound_error_label env dbg =
  end
 
 let emit_call_bound_error bd =
-  `{emit_label bd.bd_lbl}:`; emit_call "caml_ml_array_bound_error";
+  `{emit_label bd.bd_lbl}:`; emit_call_got "caml_ml_array_bound_error";
   `{emit_label bd.bd_frame}:\n`
 
 let emit_call_bound_errors env =
@@ -230,7 +223,7 @@ let emit_call_bound_errors env =
   match env.bound_error_call with
   | None -> ()
   | Some lbl ->
-    `{emit_label lbl}:`; emit_call "caml_ml_array_bound_error"
+    `{emit_label lbl}:`; emit_call_got "caml_ml_array_bound_error"
 
 (* Masks for conditional branches after comparisons *)
 
@@ -291,6 +284,7 @@ let name_for_floatop2 = function
 let name_for_specific = function
     Imultaddf -> "madbr"
   | Imultsubf -> "msdbr"
+  | _ -> Misc.fatal_error "Emit.Ispecific"
 
 (* Output the assembly code for an instruction *)
 
@@ -301,8 +295,15 @@ let emit_instr env i =
     | Lprologue ->
       let n = frame_size env in
       emit_stack_adjust n;
-      if env.f.fun_frame_required then
-        `	stg	%r14, {emit_int(n - size_addr)}(%r15)\n`
+      (* Use cfi_def_cfa_offset to SET the CFA, not adjust it.
+         The s390x CIE has a default offset of 160 for C ABI, but OCaml
+         has its own stack layout. CFA = sp + n after allocation. *)
+      cfi_def_cfa_offset n;
+      cfi_val_offset ~reg:15 ~offset:0;
+      if env.f.fun_frame_required then begin
+        `	stg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
+        cfi_offset ~reg:14 ~offset:(-size_addr)
+      end
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc <> dst.loc then begin
@@ -371,20 +372,17 @@ let emit_instr env i =
           `	lgr	{emit_reg reg_stack_arg_begin}, %r15\n`;
           `	lay	{emit_reg reg_stack_arg_end}, {emit_int stack_ofs}(%r15)\n`;
           emit_load_symbol_addr reg_r7 func;
-          emit_call "caml_c_call_stack_args";
+          emit_call_got "caml_c_call_stack_args";
           `{record_frame env i.live (Dbg_other i.dbg)}\n`
         end else if alloc then begin
           emit_load_symbol_addr reg_r7 func;
-          emit_call "caml_c_call";
+          emit_call_got "caml_c_call";
           `{record_frame env i.live (Dbg_other i.dbg)}\n`
         end else begin
           (* Save OCaml SP in C callee-save register *)
           `	lgr	%r12, %r15\n`;
           cfi_remember_state ();
-          cfi_def_cfa_register "%r12";
-          (* NB: gdb has asserts on contiguous stacks that mean it
-             will not unwind through this unless we were to tag this
-             calling frame with cfi_signal_frame in its definition. *)
+          cfi_def_cfa_register ~reg:12;
           let offset = Domainstate.(idx_of_field Domain_c_stack) * 8 in
           `	lg	%r15, {emit_int offset}(%r10)\n`;
           emit_call func;
@@ -394,6 +392,7 @@ let emit_instr env i =
 
      | Lop(Istackoffset n) ->
         emit_stack_adjust n;
+        if n <> 0 then cfi_adjust_cfa_offset n;
         env.stack_offset <- env.stack_offset + n
 
      | Lop(Iload { memory_chunk; addressing_mode; _ }) ->
@@ -426,6 +425,9 @@ let emit_instr env i =
           | Double -> "stdy" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
 
+    | Lop(Iatomic_fetch_add) ->
+        `	laag	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, 0({emit_reg i.arg.(0)})\n`
+
     | Lop(Ialloc { bytes = n; dbginfo }) ->
         let lbl_frame_lbl = record_frame_label env i.live (Dbg_alloc dbginfo) in
         if env.f.fun_fast then begin
@@ -443,12 +445,12 @@ let emit_instr env i =
               gc_frame_lbl = lbl_frame_lbl } :: env.call_gc_sites
         end else begin
           begin match n with
-          | 16 -> `	{emit_call "caml_alloc1"}\n`
-          | 24 -> `	{emit_call "caml_alloc2"}\n`
-          | 32 -> `	{emit_call "caml_alloc3"}\n`
+          | 16 -> `	{emit_call_got "caml_alloc1"}\n`
+          | 24 -> `	{emit_call_got "caml_alloc2"}\n`
+          | 32 -> `	{emit_call_got "caml_alloc3"}\n`
           | _  ->
               `	lay	%r11, {emit_int(-n)}(%r11)\n`;
-              `	{emit_call "caml_allocN"}\n`
+              `	{emit_call_got "caml_allocN"}\n`
           end;
           `{emit_label lbl_frame_lbl}:\n`;
           `	la	{emit_reg i.res.(0)}, 8(%r11)\n`
@@ -588,7 +590,24 @@ let emit_instr env i =
         `	cgdbr	{emit_reg i.res.(0)}, 5, {emit_reg i.arg.(0)}\n`
     | Lop(Iopaque) ->
         assert (i.arg.(0).loc = i.res.(0).loc)
-    | Lop(Ispecific sop) ->
+    | Lop(Ispecific Isqrtf) ->
+        `	sqdbr	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
+    | Lop(Ispecific (Ibswap 16)) ->
+        (* Shifting the halfword up to the top means the full 64-bit reverse
+           brings it back down zero-extended, which is what the C version
+           returns. *)
+        `	sllg	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, 48(%r0)\n`;
+        `	lrvgr	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
+    | Lop(Ispecific (Ibswap 32)) ->
+        (* lrvr leaves bits 0-31 alone (PoP 7-328), and the C version returns
+           a sign-extended int32, so lgfr supplies the top half. *)
+        `	lrvr	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`;
+        `	lgfr	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
+    | Lop(Ispecific (Ibswap 64)) ->
+        `	lrvgr	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
+    | Lop(Ispecific (Ibswap _)) ->
+        Misc.fatal_error "Emit.Ibswap: unsupported width"
+    | Lop(Ispecific (Imultaddf | Imultsubf as sop)) ->
         assert (i.arg.(2).loc = i.res.(0).loc);
         let instr = name_for_specific sop in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
@@ -674,10 +693,12 @@ let emit_instr env i =
         (* each trap occupies 16 bytes on the stack *)
         let delta = 16 * delta_traps in
         emit_stack_adjust delta;
+        if delta <> 0 then cfi_adjust_cfa_offset delta;
         env.stack_offset <- env.stack_offset + delta
     | Lpushtrap { lbl_handler; } ->
         env.stack_offset <- env.stack_offset + 16;
         emit_stack_adjust 16;
+        cfi_adjust_cfa_offset 16;
         `	larl	%r14, {emit_label lbl_handler}\n`;
         `	stg	%r14, {emit_int size_addr}(%r15)\n`;
         `	stg	%r13, 0(%r15)\n`;
@@ -685,14 +706,15 @@ let emit_instr env i =
     | Lpoptrap ->
         `	lg	%r13, 0(%r15)\n`;
         emit_stack_adjust (-16);
+        cfi_adjust_cfa_offset (-16);
         env.stack_offset <- env.stack_offset - 16
     | Lraise k ->
         begin match k with
         | Lambda.Raise_regular->
-          emit_call "caml_raise_exn";
+          emit_call_got "caml_raise_exn";
           `{record_frame env Reg.Set.empty (Dbg_raise i.dbg)}\n`
         | Lambda.Raise_reraise ->
-          emit_call "caml_reraise_exn";
+          emit_call_got "caml_reraise_exn";
           `{record_frame env Reg.Set.empty (Dbg_raise i.dbg)}\n`
         | Lambda.Raise_notrace ->
           `	lg	%r1, {emit_int size_addr}(%r13)\n`;
@@ -723,6 +745,10 @@ let fundecl fundecl =
   `	.align	8\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
   cfi_startproc ();
+  (* Reset CFA from CIE default (r15+160) to r15+0 at function entry.
+     This ensures correct unwinding even when stopped before the prologue. *)
+  cfi_def_cfa_offset 0;
+  cfi_val_offset ~reg:15 ~offset:0;
 
   (* Dynamic stack checking *)
   let stack_threshold_size = Config.stack_threshold * 8 in (* bytes *)
@@ -753,11 +779,18 @@ let fundecl fundecl =
       `{emit_label overflow}:\n`;
       let s = (Config.stack_threshold + max_frame_size / 8) in
       `	lay	%r15, -8(%r15)\n`;
+      (* Set CFA = sp + 8 after allocating 8 bytes *)
+      cfi_def_cfa_offset 8;
+      cfi_val_offset ~reg:15 ~offset:0;
       `	stg	%r14, 0(%r15)\n`;
+      cfi_offset ~reg:14 ~offset:(-8);
       `	lgfi	%r12, {emit_int s}\n`;
-      emit_call "caml_call_realloc_stack";
+      emit_call_got "caml_call_realloc_stack";
       `	lg	%r14, 0(%r15)\n`;
       `	la	%r15, 8(%r15)\n`;
+      (* Back to entry state: CFA = sp + 0 *)
+      cfi_def_cfa_offset 0;
+      cfi_val_offset ~reg:15 ~offset:0;
       `	brcl	15, {emit_label ret}\n`
     end
   end;

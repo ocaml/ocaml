@@ -24,7 +24,7 @@
           (glob_files power/*.ml)
           (glob_files riscv/*.ml)
           (glob_files s390x/*.ml))
- (action  (bash "cp `grep '^ARCH=' %{conf} | cut -d'=' -f2`/*.ml .")))
+ (action  (bash "cp %{read-lines:../build-aux/arch}/*.ml .")))
 
 (rule
  (targets emit.ml)
@@ -39,7 +39,7 @@
    (no-infer
     (progn
       (with-stdout-to contains-input-name
-        (bash "echo `grep '^ARCH=' %{conf} | cut -d'=' -f2`/emit.mlp"))
+        (bash "echo %{read-lines:../build-aux/arch}/emit.mlp"))
       (with-stdout-to %{targets}
         (progn
           (bash "echo \\# 1 \\\"`cat contains-input-name`\\\"")

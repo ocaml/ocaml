@@ -110,8 +110,7 @@ boot/menhir:
 
 .PHONY: import-menhirLib
 import-menhirLib: | boot/menhir
-	@cp $(addprefix $(shell $(MENHIR) --suggest-menhirLib)/menhirLib.,ml mli) $|
-
+	$(MENHIR) --dump-menhirLib boot/menhir/
 
 ## demote-menhir
 

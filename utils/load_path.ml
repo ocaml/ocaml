@@ -131,11 +131,13 @@ let remove_dir dir =
   let hidden = List.filter (fun d -> Dir.path d <> dir) !hidden_dirs in
   if    List.compare_lengths visible !visible_dirs <> 0
      || List.compare_lengths hidden !hidden_dirs <> 0 then begin
+    let saved_auto_include = !auto_include_callback in
     reset ();
     visible_dirs := visible;
     hidden_dirs := hidden;
     List.iter prepend_add hidden;
-    List.iter prepend_add visible
+    List.iter prepend_add visible;
+    auto_include_callback := saved_auto_include
   end
 
 (* General purpose version of function to add a new entry to load path: We only
@@ -144,9 +146,10 @@ let remove_dir dir =
 let add (dir : Dir.t) =
   assert (not Config.merlin || Local_store.is_bound ());
   let update base fn visible_files hidden_files =
-    if dir.hidden && not (STbl.mem !hidden_files base) then
-      STbl.replace !hidden_files base fn
-    else if not (STbl.mem !visible_files base) then
+    if dir.hidden then begin
+      if not (STbl.mem !hidden_files base) then
+        STbl.replace !hidden_files base fn
+    end else if not (STbl.mem !visible_files base) then
       STbl.replace !visible_files base fn
   in
   List.iter

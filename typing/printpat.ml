@@ -46,6 +46,13 @@ let pretty_extra ppf (cstr, _loc, _attrs) pretty_rest rest =
   | Tpat_open _ ->
      fprintf ppf "@[(# %a)@]" pretty_rest rest
 
+let rec is_underscore v =
+  match v.pat_desc with
+  | Tpat_any -> true
+  | Tpat_record (lvs,_) ->  List.for_all is_field_underscore lvs
+  | _ -> false
+and is_field_underscore (_,_,v) = is_underscore v
+
 let rec pretty_val : type k . _ -> k general_pattern -> _ = fun ppf v ->
   match v.pat_extra with
     | extra :: rem ->
@@ -68,7 +75,10 @@ let rec pretty_val : type k . _ -> k general_pattern -> _ = fun ppf v ->
         ("::", [v1;v2], None) ->
           fprintf ppf "@[%a::@,%a@]" pretty_car v1 pretty_cdr v2
       | (_, _, None) ->
-          fprintf ppf "@[<2>%s@ @[(%a)@]@]" name (pretty_vals ",") vs
+          if List.for_all is_underscore vs then
+            fprintf ppf "@[<2>%s _@]" name
+          else
+            fprintf ppf "@[<2>%s@ @[(%a)@]@]" name (pretty_vals ",") vs
       | (_, _, Some ([], _t)) ->
           fprintf ppf "@[<2>%s@ @[(%a : _)@]@]" name (pretty_vals ",") vs
       | (_, _, Some (vl, _t)) ->
@@ -81,10 +91,8 @@ let rec pretty_val : type k . _ -> k general_pattern -> _ = fun ppf v ->
   | Tpat_variant (l, Some w, _) ->
       fprintf ppf "@[<2>`%s@ %a@]" l pretty_arg w
   | Tpat_record (lvs,_) ->
-      let filtered_lvs = List.filter
-          (function
-            | (_,_,{pat_desc=Tpat_any}) -> false (* do not show lbl=_ *)
-            | _ -> true) lvs in
+      let filtered_lvs = (* do not show lbl=_ *)
+        List.filter (Fun.negate is_field_underscore) lvs in
       begin match filtered_lvs with
       | [] -> fprintf ppf "{ _ }"
       | (_, lbl, _) :: q ->

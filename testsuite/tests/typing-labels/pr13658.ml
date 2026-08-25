@@ -8,7 +8,7 @@
 let x =
   fun (f : (?opt:int -> 'a) as 'a) -> f 3;;
 
-[%%expect{|
+[%%expect{||}, (Principal.Rectypes, Rectypes){|
 Line 2, characters 40-41:
 2 |   fun (f : (?opt:int -> 'a) as 'a) -> f 3;;
                                             ^
@@ -21,7 +21,7 @@ This argument cannot be applied without label
 let x =
   fun (f : (x:string -> y:int -> 'a) as 'a) -> f 3;;
 
-[%%expect{|
+[%%expect{||}, (Principal.Rectypes, Rectypes){|
 Line 2, characters 49-50:
 2 |   fun (f : (x:string -> y:int -> 'a) as 'a) -> f 3;;
                                                      ^
@@ -41,16 +41,16 @@ let u () =
   Format.printf "!@.";
   ignore f
 
-[%%expect{|
-val f : x:string -> y:string -> 'a as 'a = <fun>
-val u : unit -> unit = <fun>
-|}, Principal{|
+[%%expect{||}, Principal.Rectypes{|
 val f : x:string -> y:string -> (x:string -> y:string -> 'a as 'a) = <fun>
+val u : unit -> unit = <fun>
+|}, Rectypes{|
+val f : x:string -> y:string -> 'a as 'a = <fun>
 val u : unit -> unit = <fun>
 |}]
 
 let f g = g ?x:(g ?x:(Some g)) 0
-[%%expect{|
+[%%expect{||}, (Principal.Rectypes, Rectypes){|
 Line 1, characters 15-30:
 1 | let f g = g ?x:(g ?x:(Some g)) 0
                    ^^^^^^^^^^^^^^^
@@ -61,41 +61,41 @@ Hint: This function application is partial, maybe some arguments are missing.
 |}]
 
 let f g = g ?x:(Some (g ?x:(Some g))) ?x:(Some g)
-[%%expect{|
+[%%expect{||}, (Principal.Rectypes, Rectypes){|
 val f : (?x:'a -> 'a as 'a) -> 'a = <fun>
 |}]
 
 let rec f ?x = f
 let () = Clflags.classic := true;;
-[%%expect {|
-Line 1, characters 11-12:
-1 | let rec f ?x = f
-               ^
-Warning 16 [unerasable-optional-argument]: this optional argument cannot be erased.
-
-val f : ?x:'b -> 'a as 'a = <fun>
-|}, Principal{|
+[%%expect {||}, Principal.Rectypes.Nolabel{|
 Line 1, characters 11-12:
 1 | let rec f ?x = f
                ^
 Warning 16 [unerasable-optional-argument]: this optional argument cannot be erased.
 
 val f : ?x:'a -> (?x:'a -> 'b as 'b) = <fun>
+|}, Rectypes.Nolabel{|
+Line 1, characters 11-12:
+1 | let rec f ?x = f
+               ^
+Warning 16 [unerasable-optional-argument]: this optional argument cannot be erased.
+
+val f : ?x:'b -> 'a as 'a = <fun>
 |}]
 
 let () = f 3
-[%%expect{|
-Line 1, characters 11-12:
-1 | let () = f 3
-               ^
-Error: The function applied to this argument has type
-         ?x:'a -> ?x:'a -> (?x:'a -> 'b as 'b)
-This argument cannot be applied without label
-|}, Principal{|
+[%%expect{||}, Principal.Rectypes.Nolabel{|
 Line 1, characters 11-12:
 1 | let () = f 3
                ^
 Error: The function applied to this argument has type
          ?x:'a -> ?x:'a -> ?x:'a -> (?x:'a -> 'b as 'b)
+This argument cannot be applied without label
+|}, Rectypes.Nolabel{|
+Line 1, characters 11-12:
+1 | let () = f 3
+               ^
+Error: The function applied to this argument has type
+         ?x:'a -> ?x:'a -> (?x:'a -> 'b as 'b)
 This argument cannot be applied without label
 |}]

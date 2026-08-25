@@ -182,6 +182,7 @@ let configuration_variables () =
   p_bool "native_dynlink" native_dynlink;
   p_bool "naked_pointers" naked_pointers;
   p_bool "with_codegen_invariants" with_codegen_invariants;
+  p_int "reserved_header_bits" reserved_header_bits;
 
   p "exec_magic_number" exec_magic_number;
   p "cmi_magic_number" cmi_magic_number;

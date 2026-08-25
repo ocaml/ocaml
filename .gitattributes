@@ -44,6 +44,21 @@
 # the lines involved in the conflict, which is arguably worse
 #/Changes                 merge=union
 
+testsuite/Makefile       export-subst
+
+# Files and directories excluded from git-generated tarballs.
+.github                  export-ignore
+manual                   export-ignore
+release-info             export-ignore
+testsuite/tests          export-ignore
+tools/ci                 export-ignore
+.gitattributes           export-ignore
+.gitignore               export-ignore
+.gitmodules              export-ignore
+.mailmap                 export-ignore
+ocaml-variants.install   export-ignore
+ocaml-variants.opam      export-ignore
+
 # No header for text and META files (would be too obtrusive).
 *.md                     typo.missing-header
 README*                  typo.missing-header
@@ -112,6 +127,7 @@ runtime/sak.c            typo.non-ascii
 tools/opam/process.sh    typo.non-ascii
 
 testsuite/tests/**                                      typo.missing-header typo.long-line=may
+testsuite/tests/basic-manyargs/outgoing_stack_args_.c   typo.missing-header=false
 testsuite/tests/lib-bigarray-2/bigarrf.f                typo.tab linguist-language=Fortran
 testsuite/tests/lib-unix/win-stat/fakeclock.c           typo.missing-header=false
 testsuite/tests/misc-unsafe/almabench.ml                typo.long-line
@@ -123,6 +139,7 @@ testsuite/tests/typing-unicode/*.ml                     typo.non-ascii
 testsuite/tests/tool-toplevel/strings.ml                typo.non-ascii
 testsuite/tests/win-unicode/*.ml                        typo.non-ascii
 testsuite/tests/unicode/見.ml                           typo.non-ascii
+testsuite/tests/unicode/utf8_lexeme.ml                  typo.non-ascii
 testsuite/tests/lib-format/unicode.ml                   typo.non-ascii
 testsuite/tests/lib-string/test_string.ml               typo.non-ascii
 testsuite/tests/lib-uchar/test.ml                       typo.non-ascii

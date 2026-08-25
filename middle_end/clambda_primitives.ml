@@ -87,6 +87,7 @@ type primitive =
   | Pisint
   (* Test if the (integer) argument is outside an interval *)
   | Pisout
+  | Pcheckbound
   (* Operations on boxed integers (Nativeint.t, Int32.t, Int64.t) *)
   | Pbintofint of boxed_integer
   | Pintofbint of boxed_integer
@@ -124,6 +125,7 @@ type primitive =
   | Pint_as_pointer
   (* Atomic operations *)
   | Patomic_load
+  | Patomic_fetch_add
   (* Inhibition of optimisation *)
   | Popaque
   (* Fetch domain-local state *)

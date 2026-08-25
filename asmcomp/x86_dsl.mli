@@ -196,6 +196,8 @@ module I : sig
   val subsd: arg -> arg -> unit
   val test: arg -> arg -> unit
   val ucomisd: arg -> arg -> unit
+  val lock_xadd: arg -> arg -> unit
+  val xadd: arg -> arg -> unit
   val xchg: arg -> arg -> unit
   val xor: arg -> arg -> unit
   val xorpd: arg -> arg -> unit

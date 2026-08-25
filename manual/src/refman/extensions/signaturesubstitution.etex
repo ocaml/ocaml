@@ -70,9 +70,7 @@ specification:
         | 'type' type-subst { 'and' type-subst }
         | 'module' module-name ':=' extended-module-path
         | 'module' 'type' module-name ':=' module-type
-
 ;
-
 type-subst:
           [type-params] typeconstr-name ':=' typexpr { type-constraint }
 \end{syntax}

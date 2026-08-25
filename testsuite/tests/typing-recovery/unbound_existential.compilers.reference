@@ -1,0 +1,23 @@
+File "unbound_existential.ml", line 1:
+Error: Multiple errors were encountered
+File "unbound_existential.ml", line 14, characters 38-39:
+14 | let a = function Dyn (type a) (w, x : _) -> 100
+                                           ^
+  This type does not bind all existentials in the constructor:
+    type a. 'a ty * 'a
+File "unbound_existential.ml", line 15, characters 36-53:
+15 | let b = function C (type a) (x, f : a * (a -> a list)) ->
+                                         ^^^^^^^^^^^^^^^^^
+  This type does not bind all existentials in the constructor:
+    type a. a * (a -> a list)File "unbound_existential.ml", line 16, characters 19-20:
+16 |   let () = ignore (x : a) in
+                                                                                            ^
+                                                                      
+Unbound value xFile "unbound_existential.ml", line 20, characters 17-18:
+20 | let t : string = c
+                                                                                          ^
+                                                                      
+The value c has type
+                                                                    int
+                                                                    but an expression was expected of type
+                                                                    string

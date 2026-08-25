@@ -89,6 +89,7 @@ let iter_on_annots (it : Tast_iterator.iterator) = function
 let iter_on_declaration f decl =
   match decl with
   | Value vd -> f vd.val_val.val_uid decl;
+  | Primitive pd -> f pd.prim_val.val_uid decl;
   | Value_binding vb ->
       let bound_idents = let_bound_idents_full [vb] in
       List.iter (fun (_, _, _, uid) -> f uid decl) bound_idents
@@ -330,10 +331,12 @@ let iter_on_occurrences
           f ~namespace:Module sig_env ms_manifest ms_txt
       | Tsig_typext { tyext_path; tyext_txt } ->
           f ~namespace:Type sig_env tyext_path tyext_txt
-      | Tsig_value _ | Tsig_type _ | Tsig_typesubst _ | Tsig_exception _
-      | Tsig_module _ | Tsig_recmodule _ | Tsig_modtype _ | Tsig_modtypesubst _
-      | Tsig_open _ | Tsig_include _ | Tsig_class _ | Tsig_class_type _
-      | Tsig_attribute _ -> ());
+      | Tsig_primitive { prim_kind = Tprim_alias (_, path, txt) } ->
+          f ~namespace:Value sig_env path txt
+      | Tsig_primitive { prim_kind = Tprim_decl _ } | Tsig_value _ | Tsig_type _
+      | Tsig_typesubst _ | Tsig_exception _ | Tsig_module _ | Tsig_recmodule _
+      | Tsig_modtype _ | Tsig_modtypesubst _ | Tsig_open _ | Tsig_include _
+      | Tsig_class _ | Tsig_class_type _ | Tsig_attribute _ -> ());
       default_iterator.signature_item sub sig_item);
 
   structure_item =
@@ -461,7 +464,16 @@ let save_cmt target binary_annots initial_env cmi shape =
            | None -> None
            | Some cmi -> Some (output_cmi temp_file_name oc cmi)
          in
-         let sourcefile = Unit_info.Artifact.source_file target in
+         (* We use the input_source_file because the human_source_file may not
+            exist (or may have changed), so computing the digest may fail or
+            produce inconsistent results. Merlin expects the cmt_sourcefile to
+            be the file we computed the digest of, which is why we use the
+            input_source_file for that as well.
+
+            Or from another perspective, cmt files are meant to be metadata
+            for a compiled file, which is why we want to associate it with
+            the input_source_file rather than the human_source_file. *)
+         let sourcefile = Unit_info.Artifact.input_source_file target in
          let cmt_ident_occurrences =
           if !Clflags.store_occurrences then
             index_occurrences binary_annots

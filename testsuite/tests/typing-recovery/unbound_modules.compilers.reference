@@ -1,0 +1,11 @@
+File "unbound_modules.ml", line 1:
+Error: Multiple errors were encountered
+File "unbound_modules.ml", line 12, characters 11-18:
+12 |   let open Unknown in
+                ^^^^^^^
+  Unbound module Unknown
+File "unbound_modules.ml", line 17, characters 11-15:
+17 |   let open Lsit in
+                ^^^^
+  Unbound module Lsit
+Hint:    Did you mean List?

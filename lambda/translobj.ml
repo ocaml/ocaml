@@ -43,7 +43,7 @@ let method_cache = ref lambda_unit
 let method_count = ref 0
 let method_table = ref []
 
-let meth_tag s = Lconst(Const_int(Btype.hash_variant s))
+let meth_tag s = Lconst(Const_int(Obj.hash_variant s))
 
 let next_cache tag =
   let n = !method_count in

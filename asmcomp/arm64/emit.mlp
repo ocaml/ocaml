@@ -33,6 +33,7 @@ let reg_domain_state_ptr = phys_reg 25 (* x28 *)
 let reg_trap_ptr = phys_reg 23 (* x26 *)
 let reg_alloc_ptr = phys_reg 24 (* x27 *)
 let reg_tmp1 = phys_reg 26 (* x16 *)
+let reg_tmp2 = phys_reg 27 (* x17 *)
 let reg_x8 = phys_reg 8 (* x8 *)
 let reg_stack_arg_begin = phys_reg 17  (* x20 *)
 let reg_stack_arg_end  = phys_reg 18 (* x21 *)
@@ -54,9 +55,11 @@ let emit_label_type lbl ty =
 
 (* Output a pseudo-register *)
 
-let emit_reg = function
-    {loc = Reg r} -> emit_string (register_name r)
-  | _ -> fatal_error "Emit.emit_reg"
+let reg_name = function
+  | {loc = Reg r} -> register_name r
+  | _ -> fatal_error "Emit.reg_name"
+
+let emit_reg l = emit_string (reg_name l)
 
 (* Likewise, but with the 32-bit name of the register *)
 
@@ -249,16 +252,28 @@ let is_immediate_float bits =
   let mant = Int64.logand bits 0xF_FFFF_FFFF_FFFFL in
   exp >= -3 && exp <= 4 && Int64.logand mant 0xF_0000_0000_0000L = mant
 
+(* Set [rd] to [rs + n]. *)
+
+let emit_addimm_gen rd rs n =
+  let insn = if n >= 0 then "add" else "sub" in
+  let n = abs n in
+  if n <= 0xFFF then
+    `	{emit_string insn}	{emit_string rd}, {emit_string rs}, #{emit_int n}\n`
+  else begin
+    assert (n <= 0xFFF_FFF);
+    let nl = n land 0xFFF and nh = n land 0xFFF_000 in
+    `	{emit_string insn}	{emit_string rd}, {emit_string rs}, #{emit_int nh}\n`;
+    if nl <> 0 then
+    `	{emit_string insn}	{emit_string rd}, {emit_string rd}, #{emit_int nl}\n`
+  end
+
 (* Adjust sp (up or down) by the given byte amount *)
 
 let emit_stack_adjustment n =
-  let instr = if n < 0 then "sub" else "add" in
-  let m = abs n in
-  assert (m < 0x1_000_000);
-  let ml = m land 0xFFF and mh = m land 0xFFF_000 in
-  if mh <> 0 then `	{emit_string instr}	sp, sp, #{emit_int mh}\n`;
-  if ml <> 0 then `	{emit_string instr}	sp, sp, #{emit_int ml}\n`;
-  if n <> 0 then cfi_adjust_cfa_offset (-n)
+  if n <> 0 then begin
+    emit_addimm_gen "sp" "sp" n;
+    cfi_adjust_cfa_offset (-n)
+  end
 
 (* Deallocate the stack frame and reload the return address
    before a return or tail call *)
@@ -278,29 +293,11 @@ let output_epilogue env f =
 
 (* Output add-immediate / sub-immediate / cmp-immediate instructions *)
 
-let rec emit_addimm rd rs n =
-  if n < 0 then emit_subimm rd rs (-n)
-  else if n <= 0xFFF then
-    `	add	{emit_reg rd}, {emit_reg rs}, #{emit_int n}\n`
-  else begin
-    assert (n <= 0xFFF_FFF);
-    let nl = n land 0xFFF and nh = n land 0xFFF_000 in
-    `	add	{emit_reg rd}, {emit_reg rs}, #{emit_int nh}\n`;
-    if nl <> 0 then
-    `	add	{emit_reg rd}, {emit_reg rd}, #{emit_int nl}\n`
-  end
+let emit_addimm rd rs n =
+  emit_addimm_gen (reg_name rd) (reg_name rs) n
 
-and emit_subimm rd rs n =
-  if n < 0 then emit_addimm rd rs (-n)
-  else if n <= 0xFFF then
-    `	sub	{emit_reg rd}, {emit_reg rs}, #{emit_int n}\n`
-  else begin
-    assert (n <= 0xFFF_FFF);
-    let nl = n land 0xFFF and nh = n land 0xFFF_000 in
-    `	sub	{emit_reg rd}, {emit_reg rs}, #{emit_int nh}\n`;
-    if nl <> 0 then
-      `	sub	{emit_reg rd}, {emit_reg rd}, #{emit_int nl}\n`
-  end
+let emit_subimm rd rs n =
+  emit_addimm rd rs (-n)
 
 let emit_cmpimm rs n =
   if n >= 0
@@ -440,9 +437,7 @@ module Size = struct
   let addsub_size n =
     let m = abs n in
     assert (m < 0x1_000_000);
-    let ml = m land 0xFFF and mh = m land 0xFFF_000 in
-    max 1 ((if mh <> 0 then 1 else 0) +
-           (if ml <> 0 then 1 else 0))
+    if m <= 0xFFF then 1 else if m land 0xFFF = 0 then 1 else 2
 
   let stack_adj_size n =
     (* see emit_stack_adjustment *)
@@ -451,7 +446,9 @@ module Size = struct
   let prologue_size f =
     let stk = initial_stack_offset f in
     (if stk > 0 then stack_adj_size (-stk) else 0)
-    + (if f.fun_frame_required then (if fp then 2 else 1) else 0)
+    + (if f.fun_frame_required
+       then if fp then 1 + addsub_size (stk - 16) else 1
+       else 0)
 
   let epilogue_size f =
     let stk = initial_stack_offset f in
@@ -489,10 +486,22 @@ module Size = struct
         | Iindexed _ -> 0
         | Ibased _ -> 1
       and pre_store =
-        match memory_chunk, assignment, macosx, addressing_mode with
-        | (Word_int | Word_val), true, true, Iindexed 0 -> 0
-        | (Word_int | Word_val), true, true, _ -> 1  (* Compute dest address *)
-        | (Word_int | Word_val), true, false, _ -> 1 (* Barrier instruction *)
+        (* Matches the emission below.  With a store-release (the default:
+           stlr, or stlur under -flrcpc2) an Iindexed assignment word store
+           needs no prefix (stlur / stlr [base]) or just an add (stlr with a
+           nonzero offset).  The -fbarrier-store path keeps the
+           [dmb ishld; str] barrier. *)
+        match memory_chunk, assignment, addressing_mode with
+        | (Word_int | Word_val), true, Iindexed n
+          when !store_release && !lrcpc2 && n >= -256 && n <= 255 ->
+          0 (* stlur, no addr calc *)
+        | (Word_int | Word_val), true, Iindexed 0 when !store_release ->
+          0 (* stlr [base] *)
+        | (Word_int | Word_val), true, Iindexed n when !store_release ->
+          addsub_size n (* add; stlr *)
+        | (Word_int | Word_val), true, Ibased _ when !store_release ->
+          1 (* add :lo12: ; stlr *)
+        | (Word_int | Word_val), true, _ -> 1 (* dmb ishld barrier *)
         | _ -> 0
       and store = match memory_chunk with Single -> 2 | _ -> 1 in
       based + pre_store + store
@@ -533,6 +542,7 @@ module Size = struct
     | Lop (Ispecific Imove32) -> 1
     | Lop (Ispecific (Isignext _)) -> 1
     | Lop (Idls_get) -> 1
+    | Lop (Iatomic_fetch_add) -> 5
     | Lop (Ireturn_addr) -> 1
     | Lreloadretaddr -> 0
     | Lreturn -> epilogue_size f + (if top_bits_ignore then 0 else 1)
@@ -553,7 +563,7 @@ module Size = struct
         + begin match lbl1 with None -> 0 | Some _ -> 1 end
         + begin match lbl2 with None -> 0 | Some _ -> 1 end
     | Lswitch jumptbl -> 3 + Array.length jumptbl
-    | Lentertrap -> if fp then 1 else 0
+    | Lentertrap -> if fp then 2 (* over-approximation *) else 0
     | Ladjust_trap_depth _ -> 0
     | Lpushtrap _ -> 3
     | Lpoptrap -> 1
@@ -688,18 +698,46 @@ let name_for_float_comparison = function
 
 (* Output a release store [stlr] of register [src] at address [base + addr].
    Since [stlr] does not support addressing modes, we compute [base + addr]
-   explicitly. *)
+   explicitly.  We can also use [stlur] if supported to avoid the
+   [base + addr] computation in some case. *)
+
 let emit_stlr src base addr =
-  assert macosx;
-  let dest_reg =
-    match addr with
-    | Iindexed 0 -> base
-    | Iindexed ofs ->
-        `	add	{emit_reg reg_tmp1}, {emit_reg base}, #{emit_int ofs}\n`;
-        reg_tmp1
-    | Ibased _ -> assert false (* Ibased is not emitted under macOS *)
-  in
-  `	stlr	{emit_reg src}, [{emit_reg dest_reg}]\n`
+  match addr with
+  | Iindexed ofs when !lrcpc2 && ofs >= -256 && ofs <= 255 ->
+      (* FEAT_LRCPC2: store-release with an unscaled immediate offset, so no
+         separate address computation is needed. *)
+      `	stlur	{emit_reg src}, [{emit_reg base}, #{emit_int ofs}]\n`
+  | Iindexed 0 ->
+      `	stlr	{emit_reg src}, [{emit_reg base}]\n`
+  | Iindexed ofs ->
+      emit_addimm reg_tmp1 base ofs;
+      `	stlr	{emit_reg src}, [{emit_reg reg_tmp1}]\n`
+  | Ibased(s, ofs) ->
+      assert (not !Clflags.dlcode);  (* see selection.ml *)
+      (* [base] contains the high bits of [s + ofs], produced by [adrp] *)
+      `	add	{emit_reg reg_tmp1}, {emit_reg base}, #:lo12:{emit_symbol_offset s ofs}\n`;
+      `	stlr	{emit_reg src}, [{emit_reg reg_tmp1}]\n`
+
+(* Output a store of register [src] at address [base + addr], including
+   a load->store barrier, as required by the multicore memory model
+   for a non-initializing store to a mutable field or array element.
+   By default, emit it as a store-release [stlr] (or [stlur] under -flrcpc2):
+   this gives the required ordering in a single instruction
+   and is much cheaper than a standalone [dmb ishld] on modern cores
+   (see https://github.com/ocaml/ocaml/issues/13262).
+   [stlr] requires natural alignment, which is guaranteed for stores of
+   [Word_int] or [Word_val] chunks.  (Unaligned 64-bit stores use the
+   [Sixtyfour] chunk and need no barrier.)
+   A few old cores (e.g. Cortex-A53, Cortex-A72) are faster with
+   [dmb ishld; str] and select it via -fbarrier-store / configure. *)
+
+let emit_store_word_with_barrier src base addr =
+  if !store_release then
+    emit_stlr src base addr
+  else begin
+    `	dmb	ishld\n`;
+    `	str	{emit_reg src}, {emit_addressing addr base}\n`
+  end
 
 (* Output the assembly code for an instruction *)
 let emit_instr env i =
@@ -721,7 +759,7 @@ let emit_instr env i =
       if n > 0 then begin
           emit_stack_adjustment (-n);
           if env.f.fun_frame_required && fp then
-            `	add	x29,  sp, #{emit_int (n-16)}\n`;
+            emit_addimm_gen "x29" "sp" (n - 16)
       end
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
@@ -865,19 +903,13 @@ let emit_instr env i =
         | Sixtyfour ->
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
         | Word_int | Word_val ->
-            begin match assignment, macosx with
-            | true, true ->
-                (* Release store for assignments on macOS. See
-                   https://github.com/ocaml/ocaml/issues/13262. *)
-                emit_stlr src base addr
-            | true, false ->
-                (* Memory model barrier for assignments. *)
-                `	dmb	ishld\n`;
-                `	str	{emit_reg src}, {emit_addressing addr base}\n`
-            | _, _ ->
-                (* Initializing store *)
-                `	str	{emit_reg src}, {emit_addressing addr base}\n`
-            end
+            if assignment then
+              (* Non-initializing store to a mutable field or array element.
+                 Needs a load->store barrier for the multicore memory model. *)
+              emit_store_word_with_barrier src base addr
+            else
+              (* Initializing store.  No barrier needed *)
+              `	str	{emit_reg src}, {emit_addressing addr base}\n`
         | Double ->
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
         end
@@ -1006,6 +1038,17 @@ let emit_instr env i =
     | Lop(Idls_get) ->
         let offset = Domainstate.(idx_of_field Domain_dls_root) * 8 in
         `	ldr	{emit_reg i.res.(0)}, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`
+    | Lop(Iatomic_fetch_add) ->
+        (* LL/SC loop, works on baseline ARMv8.0 (no LSE required).
+           reg_tmp1 = sum (data), reg_tmp2 = stlxr status (must differ per ARM spec).
+           Trailing dmb ishst is the atomic-store release barrier from #10972. *)
+        let lbl = new_label() in
+        `{emit_label lbl}:\n`;
+        `	ldaxr	{emit_reg i.res.(0)}, [{emit_reg i.arg.(0)}]\n`;
+        `	add	{emit_reg reg_tmp1}, {emit_reg i.res.(0)}, {emit_reg i.arg.(1)}\n`;
+        `	stlxr	{emit_wreg reg_tmp2}, {emit_reg reg_tmp1}, [{emit_reg i.arg.(0)}]\n`;
+        `	cbnz	{emit_wreg reg_tmp2}, {emit_label lbl}\n`;
+        `	dmb	ishst\n`
     | Lop(Ireturn_addr) ->
         let n = frame_size env in
         if env.f.fun_frame_required then
@@ -1086,7 +1129,7 @@ let emit_instr env i =
     | Lentertrap ->
        if fp then begin
          let delta = (frame_size env) - 16 (* return address + frame pointer *) in
-         `	add	x29, sp, #{emit_int delta}\n`
+         emit_addimm_gen "x29" "sp" delta
        end
     | Ladjust_trap_depth { delta_traps } ->
         (* each trap occupies 16 bytes on the stack *)
@@ -1125,7 +1168,7 @@ let emit_instr_debug env i =
   `{emit_label lbl}:\n`;
   emit_instr env i;
   let sz = Size.instr_size env.f i.desc * 4 in
-  `	.ifne (. - {emit_label lbl}) - {emit_int sz}\n`;
+  `	.ifgt (. - {emit_label lbl}) - {emit_int sz}\n`;
   `	.error \"Emit.instr_size: instruction length mismatch\"\n`;
   `	.endif\n`
 
@@ -1136,7 +1179,7 @@ let rec emit_all env lbl_start acc i =
      if debug then begin
        (* acc measures in units of 32-bit instructions *)
        let sz = acc * 4 in
-       `	.ifne (. - {emit_label lbl_start}) - {emit_int sz}\n`;
+       `	.ifgt (. - {emit_label lbl_start}) - {emit_int sz}\n`;
        `	.error \"Emit.instr_size: instruction length mismatch\"\n`;
        `	.endif\n`;
        end
@@ -1247,6 +1290,9 @@ let data l =
 let begin_assembly() =
   reset_debug_info();
   `	.file	\"\"\n`;  (* PR#7037 *)
+  (* [stlur] (enabled by -flrcpc2) needs an Armv8.4 assembler; macOS's
+     assembler already accepts it. *)
+  if !lrcpc2 && not macosx then `	.arch	armv8.4-a\n`;
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   `	.data\n`;
   `	.globl	{emit_symbol lbl_begin}\n`;

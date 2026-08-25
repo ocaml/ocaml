@@ -53,6 +53,13 @@ let test_iter () =
   Option.iter set_count None; assert (!count = 2);
   ()
 
+let test_try_value () =
+  assert (Option.try_value (Some 1) (fun () -> (Some 2)) = (Some 1));
+  assert (Option.try_value (Some 1) (fun () -> None) = (Some 1));
+  assert (Option.try_value None (fun () -> (Some 2)) = (Some 2));
+  assert (Option.try_value None (fun () -> None) = None);
+  ()
+
 let test_is_none_some () =
   assert (Option.is_none None = true);
   assert (Option.is_some None = false);
@@ -112,6 +119,7 @@ let tests () =
   test_map ();
   test_fold ();
   test_iter ();
+  test_try_value ();
   test_is_none_some ();
   test_equal ();
   test_compare ();

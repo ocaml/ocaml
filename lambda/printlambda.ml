@@ -133,6 +133,10 @@ let integer_comparison ppf = function
   | Cgt -> fprintf ppf ">"
   | Cge -> fprintf ppf ">="
 
+let physical_comparison ppf = function
+  | CPeq -> fprintf ppf "=="
+  | CPneq -> fprintf ppf "!="
+
 let float_comparison ppf = function
   | CFeq -> fprintf ppf "==."
   | CFneq -> fprintf ppf "!=."
@@ -228,6 +232,7 @@ let primitive ppf = function
   | Plsrint -> fprintf ppf "lsr"
   | Pasrint -> fprintf ppf "asr"
   | Pintcomp(cmp) -> integer_comparison ppf cmp
+  | Pphyscomp(cmp) -> physical_comparison ppf cmp
   | Pcompare_ints -> fprintf ppf "compare_ints"
   | Pcompare_floats -> fprintf ppf "compare_floats"
   | Pcompare_bints bi -> fprintf ppf "compare_bints %s" (boxed_integer_name bi)
@@ -274,6 +279,7 @@ let primitive ppf = function
      fprintf ppf "sys.constant_%s" const_name
   | Pisint -> fprintf ppf "isint"
   | Pisout -> fprintf ppf "isout"
+  | Pcheckbound -> fprintf ppf "checkbound"
   | Pbintofint bi -> print_boxed_integer "of_int" ppf bi
   | Pintofbint bi -> print_boxed_integer "to_int" ppf bi
   | Pcvtbint (bi1, bi2) -> print_boxed_integer_conversion ppf bi1 bi2
@@ -355,6 +361,7 @@ let primitive ppf = function
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
   | Patomic_load -> fprintf ppf "atomic_load"
+  | Patomic_fetch_add -> fprintf ppf "atomic_fetch_add"
   | Popaque -> fprintf ppf "opaque"
   | Pdls_get -> fprintf ppf "dls_get"
   | Ppoll -> fprintf ppf "poll"
@@ -392,6 +399,7 @@ let name_of_primitive = function
   | Plsrint -> "Plsrint"
   | Pasrint -> "Pasrint"
   | Pintcomp _ -> "Pintcomp"
+  | Pphyscomp _ -> "Pphyscomp"
   | Pcompare_ints -> "Pcompare_ints"
   | Pcompare_floats -> "Pcompare_floats"
   | Pcompare_bints _ -> "Pcompare"
@@ -424,6 +432,7 @@ let name_of_primitive = function
   | Pctconst _ -> "Pctconst"
   | Pisint -> "Pisint"
   | Pisout -> "Pisout"
+  | Pcheckbound -> "Pcheckbound"
   | Pbintofint _ -> "Pbintofint"
   | Pintofbint _ -> "Pintofbint"
   | Pcvtbint _ -> "Pcvtbint"
@@ -462,6 +471,7 @@ let name_of_primitive = function
   | Pbbswap _ -> "Pbbswap"
   | Pint_as_pointer -> "Pint_as_pointer"
   | Patomic_load -> "Patomic_load"
+  | Patomic_fetch_add -> "Patomic_fetch_add"
   | Popaque -> "Popaque"
   | Prunstack -> "Prunstack"
   | Presume -> "Presume"

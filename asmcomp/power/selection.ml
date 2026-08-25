@@ -49,6 +49,10 @@ let is_immediate_logical n = n <= 0xFFFF && n >= 0
 
 (* Instruction selection *)
 
+(* If you update [inline_ops], you may need to update [is_simple_expr] and/or
+   [effects_of], below. *)
+let inline_ops = [ "caml_fma" ]
+
 class selector = object (self)
 
 inherit Selectgen.selector_generic as super
@@ -67,6 +71,18 @@ method! is_immediate op n =
   | Icheckbound -> 0 <= n && n <= 0x7FFF
     (* twlle takes a 16-bit signed immediate but performs an unsigned compare *)
   | _ -> super#is_immediate op n
+
+method! is_simple_expr = function
+  (* inlined floating-point ops are simple if their arguments are *)
+  | Cop(Cextcall (fn, _, _, _), args, _) when List.mem fn inline_ops ->
+      List.for_all self#is_simple_expr args
+  | e -> super#is_simple_expr e
+
+method! effects_of e =
+  match e with
+  | Cop(Cextcall (fn, _, _, _), args, _) when List.mem fn inline_ops ->
+      Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
+  | e -> super#effects_of e
 
 method select_addressing _chunk exp =
   match select_addr exp with
@@ -88,6 +104,11 @@ method! select_operation op args dbg =
       (Ispecific Imultaddf, [arg1; arg2; arg3])
   | (Csubf, [Cop(Cmulf, [arg1; arg2], _); arg3]) ->
       (Ispecific Imultsubf, [arg1; arg2; arg3])
+  (* Only the unboxed [Float.fma] passes floats in registers, hence the
+     argument types. *)
+  | (Cextcall("caml_fma", _, [XFloat; XFloat; XFloat], false),
+     [arg1; arg2; arg3]) ->
+      (Ispecific Imultaddf, [arg1; arg2; arg3])
   | _ ->
       super#select_operation op args dbg
 

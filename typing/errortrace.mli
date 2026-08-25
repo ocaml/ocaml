@@ -87,11 +87,20 @@ type 'variety obj =
   | Abstract_row : position -> _ obj
   (* Unification *)
   | Self_cannot_be_closed : unification obj
+  (* Equality & Moregen *)
+  | Kind_differ : string * field_kind_view * field_kind_view -> comparison obj
 
 type first_class_module =
     | Package_cannot_scrape of Path.t
     | Package_inclusion of Format_doc.doc
     | Package_coercion of Format_doc.doc
+    | Constraint_on_missing_type of position * string list
+    | Constraint_with_deps of position * string list
+    | Constraint_on_mismatched_type of {
+        pos:position;
+        decl:Types.type_declaration;
+        lhs:string list
+      }
 
 type univar =
   | Var_mismatch of { order:order; diff:type_expr diff }
@@ -117,6 +126,10 @@ type 'variety trace = (type_expr,     'variety) t
 type 'variety error = (expanded_type, 'variety) t
 
 val map : ('a -> 'b) -> ('a, 'variety) t -> ('b, 'variety) t
+
+val map_types :
+  (type_expr -> type_expr) ->
+  (expanded_type, 'variety) t -> (expanded_type, 'variety) t
 
 val incompatible_fields :
   name:string -> got:type_expr -> expected:type_expr -> (type_expr, _) elt
@@ -182,4 +195,6 @@ module Subtype : sig
     trace:error_trace -> unification_trace:unification_error_trace -> error
 
   val map : ('a -> 'b) -> 'a t -> 'b t
+
+  val map_types : (type_expr -> type_expr) -> expanded_type t -> expanded_type t
 end

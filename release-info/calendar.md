@@ -8,21 +8,21 @@ accident if this prospective calendar ever matches the real release calendar.
 
 
 # Main versions
-(Last updated on 22 January 2026)
+(Last updated on 22 June 2026)
 
 ## OCaml 5.7.0
 
 |    Release            | Expected (early)   | Expected (late)      | Actual      |
 |-----------------------|--------------------|----------------------|-------------|
-| Feature freeze        | 1st January 2027   |                      |             |
-| Release               | 1st April   2027   |                      |               |
+| Feature freeze        | 1st April 2027     |                      |             |
+| Release               | 1st June  2027     |                      |             |
 
 ## OCaml 5.6.0
 
-|    Release            | Expected (early)   | Expected (late)      | Actual      |
-|-----------------------|--------------------|----------------------|-------------|
-| Feature freeze        | 1st August 2026    |  1st September 2026  |             |
-| Release               | 1st October        |  1st December        |               |
+|    Release            | Expected (early)    | Expected (late)      | Actual      |
+|-----------------------|---------------------|----------------------|-------------|
+| Feature freeze        | 15th September 2026 |  1st October 2026    |             |
+| Release               | 15th December       |  1st February        |             |
 
 
 ## OCaml 5.5.0
@@ -30,10 +30,10 @@ accident if this prospective calendar ever matches the real release calendar.
 |    Release            | Expected (early)  | Expected (late)    | Actual        |
 |-----------------------|-------------------|--------------------|---------------|
 | Feature freeze        | 1st January 2026  |  (same)            |  22nd January |
-| 1st alpha release     | 7 February        | 22nd February      |               |
-| 1st beta release      | 1st March         |  1st May           |               |
-| 1st release candidate | 15th April        |  15th May          |               |
-| Release               | 1st May           |  1st June          |               |
+| 1st alpha release     | 7 February        | 22nd February      | 25th February |
+| 1st beta release      | 1st March         | 1st May            |    20th April |
+| 1st release candidate | 15th April        | 15th May           |     10th June |
+| Release               | 1st May           | 1st June           |     19th June |
 
 
 ## OCaml 5.4.0

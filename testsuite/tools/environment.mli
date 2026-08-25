@@ -149,7 +149,7 @@ val run_process :
     - If [Unix.create_process] fails with [ENOENT] for a {v #! v}-style bytecode
       image, this is translated to exit code 127
     - [SIGABRT] is converted to exit code 134
-    - On s390x and riscv, [SIGSEGV] is converted to exit code 139 *)
+    - On riscv, [SIGSEGV] is converted to exit code 139 *)
 
 val run_process_with_test_env :
   ?runtime:bool

@@ -42,13 +42,13 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
     }else{
       Caml_check_caml_state();
       Alloc_small (result, wosize, tag, Alloc_small_enter_GC);
-      if (tag < No_scan_tag){
+      if (Scannable_tag(tag)){
         for (mlsize_t i = 0; i < wosize; i++) Field (result, i) = Val_unit;
       }
     }
   } else {
     result = caml_alloc_shr (wosize, tag);
-    if (tag < No_scan_tag) {
+    if (Scannable_tag(tag)) {
       for (mlsize_t i = 0; i < wosize; i++) Field (result, i) = Val_unit;
     }
     result = caml_check_urgent_gc (result);
@@ -66,7 +66,7 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
 #ifdef NATIVE_CODE
 CAMLexport value caml_alloc_shr_check_gc (mlsize_t wosize, tag_t tag)
 {
-  CAMLassert(tag < No_scan_tag);
+  CAMLassert(Scannable_tag(tag));
   caml_check_urgent_gc (Val_unit);
   value result = caml_alloc_shr (wosize, tag);
   for (mlsize_t i = 0; i < wosize; i++) Field (result, i) = Val_unit;

@@ -116,7 +116,7 @@ module ParamsUnificationEnv :
       sig type 'a u = 'a list type +'a t constraint 'a = 'b u end
     type +'a t = 'b constraint 'a = 'b list
     module type Sig2 =
-      sig type 'a u = 'a list type +'a t = 'a t/2 constraint 'a = 'b u end
+      sig type 'a u = 'a list type +'a t = 'b u t/2 constraint 'a = 'b u end
   end
 |}]
 
@@ -262,8 +262,12 @@ module type T = S with type 'a t = 'b constraint 'a = < m : 'b >;;
 [%%expect{|
 module type S =
   sig type 'a t = 'a constraint 'a = < m : r > and r = < m : r > t end
-Uncaught exception: Stack overflow
-
+Line 7, characters 23-64:
+7 | module type T = S with type 'a t = 'b constraint 'a = < m : 'b >;;
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The definition of "t" contains a cycle:
+         "< m : r > t/2" = "r",
+         "r" = "< m : r > t/2"
 |}]
 
 (* Correct *)

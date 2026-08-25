@@ -114,11 +114,11 @@ val prepared_type_expr: type_expr printer
     {!Variable_names.reserve}), but should not have had its cycles marked. *)
 val type_expr_with_reserved_names: type_expr printer
 
-type 'a diff = Same of 'a | Diff of 'a * 'a
+type expansion_diff
 val trees_of_type_expansion:
-  type_or_scheme -> Errortrace.expanded_type -> out_type diff
+  type_or_scheme -> Errortrace.expanded_type -> expansion_diff
 val prepare_expansion: Errortrace.expanded_type -> Errortrace.expanded_type
-val pp_type_expansion: out_type diff printer
+val pp_type_expansion: expansion_diff printer
 val hide_variant_name: Types.type_expr -> Types.type_expr
 
 
@@ -249,11 +249,18 @@ end
 module Internal_names: sig
   val add: Path.t -> unit
   val reset: unit -> unit
-  val print_explanations: Env.t -> formatter -> unit
+
+  type explanation =
+    | Existential of { constructor : string }
+    | Equation of { lhs : type_expr; rhs : type_expr }
+
+  val explain : Env.t -> (Path.t list * explanation) list
 end
 
-(** Reset all contexts *)
+(** Reset all contexts, except for weak names *)
 val reset: unit -> unit
+
+val reset_weak_names: unit -> unit
 
 (** Reset all contexts except for conflicts *)
 val reset_except_conflicts: unit -> unit

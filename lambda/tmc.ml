@@ -849,6 +849,7 @@ let rec choice ctx t =
     | Pandint | Porint | Pxorint
     | Plslint | Plsrint | Pasrint
     | Pintcomp _
+    | Pphyscomp _
     | Poffsetint _ | Poffsetref _
     | Pintoffloat | Pfloatofint
     | Pnegfloat | Pabsfloat
@@ -857,7 +858,7 @@ let rec choice ctx t =
     | Pstringlength | Pstringrefu  | Pstringrefs
     | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
     | Parraylength _ | Parrayrefu _ | Parraysetu _ | Parrayrefs _ | Parraysets _
-    | Pisint | Pisout
+    | Pisint | Pisout | Pcheckbound
     | Pignore
     | Pcompare_ints | Pcompare_floats | Pcompare_bints _
 
@@ -865,7 +866,7 @@ let rec choice ctx t =
     | Prunstack | Pperform | Presume | Preperform | Pdls_get
 
     (* we don't handle atomic primitives *)
-    | Patomic_load
+    | Patomic_load | Patomic_fetch_add
 
     (* we don't handle array indices as destinations yet *)
     | (Pmakearray _ | Pduparray _)

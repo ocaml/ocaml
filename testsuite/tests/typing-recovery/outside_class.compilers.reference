@@ -1,0 +1,18 @@
+File "outside_class.ml", line 1:
+Error: Multiple errors were encountered
+File "outside_class.ml", line 10, characters 8-20:
+10 | let x = {< y = 12 >}
+             ^^^^^^^^^^^^
+  This object duplication occurs outside a method definition
+File "outside_class.ml", line 13, characters 10-24:
+13 |   let o = {< foo = 10 >} in
+               ^^^^^^^^^^^^^^
+  This object duplication occurs outside a method definition
+File "outside_class.ml", line 16, characters 14-24:
+16 |       val y = {<x = 15>}
+                   ^^^^^^^^^^
+  This object duplication occurs outside a method definition
+File "outside_class.ml", line 20, characters 17-19:
+20 | let x : string = 10
+                      ^^
+  The constant 10 has type int but an expression was expected of type string

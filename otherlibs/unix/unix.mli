@@ -666,7 +666,7 @@ val unlink : string -> unit
     {ul
     {- [EPERM] on POSIX compliant system}
     {- [EISDIR] on Linux >= 2.1.132}
-    {- [EACCESS] on Windows}}
+    {- [EACCES] on Windows}}
 *)
 
 val rename : string -> string -> unit
@@ -1277,10 +1277,10 @@ val alarm : int -> int
    @raise Invalid_argument on Windows *)
 
 val sleep : int -> unit
-(** Stop execution for the given number of seconds. *)
+(** Stop execution for at least the given number of seconds. *)
 
 val sleepf : float -> unit
-(** Stop execution for the given number of seconds.  Like [sleep],
+(** Stop execution for at least the given number of seconds.  Like [sleep],
     but fractions of seconds are supported.
 
     @since 4.03 (4.12 in UnixLabels) *)

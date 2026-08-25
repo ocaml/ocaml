@@ -61,6 +61,8 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Plsrint -> Plsrint
   | Pasrint -> Pasrint
   | Pintcomp comp -> Pintcomp comp
+  | Pphyscomp CPeq -> Pintcomp Ceq
+  | Pphyscomp CPneq -> Pintcomp Cne
   | Pcompare_ints -> Pcompare_ints
   | Pcompare_floats -> Pcompare_floats
   | Pcompare_bints bi -> Pcompare_bints bi
@@ -92,6 +94,7 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Parraysets kind -> Parraysets kind
   | Pisint -> Pisint
   | Pisout -> Pisout
+  | Pcheckbound -> Pcheckbound
   | Pcvtbint (src, dest) -> Pcvtbint (src, dest)
   | Pnegbint bi -> Pnegbint bi
   | Paddbint bi -> Paddbint bi
@@ -147,6 +150,7 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Pbswap16 -> Pbswap16
   | Pint_as_pointer -> Pint_as_pointer
   | Patomic_load -> Patomic_load
+  | Patomic_fetch_add -> Patomic_fetch_add
   | Popaque -> Popaque
   | Pdls_get -> Pdls_get
   | Ppoll -> Ppoll

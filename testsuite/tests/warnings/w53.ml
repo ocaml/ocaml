@@ -205,6 +205,9 @@ module type TestNoallocSig = sig
 
   external y : (int64 [@noalloc]) -> (int64 [@noalloc]) = "x" (* rejected *)
   external z : int64 -> int64 = "x" [@@noalloc] (* accepted *)
+  external u : (int64 [@noalloc]) -> (int64 [@noalloc]) = z (* rejected *)
+  external v = z [@@noalloc] (* rejected *)
+  external w : int64 -> int64 = z [@@noalloc] (* rejected *)
 end
 
 module TestNoallocStruct = struct
@@ -214,6 +217,9 @@ module TestNoallocStruct = struct
 
   external y : (int64 [@noalloc]) -> (int64 [@noalloc]) = "x" (* rejected *)
   external z : int64 -> int64 = "x" [@@noalloc] (* accepted *)
+  external u : (int64 [@noalloc]) -> (int64 [@noalloc]) = z (* rejected *)
+  external v = z [@@noalloc] (* rejected *)
+  external w : int64 -> int64 = z [@@noalloc] (* rejected *)
 end
 
 
@@ -277,6 +283,12 @@ module type TestUnboxedSig = sig
 
   external z : float -> float = "x" "y" [@@unboxed] (* accepted *)
 
+  external u : (float [@unboxed]) -> (float [@unboxed]) = z (* rejected *)
+
+  external v = z [@@unboxed] (* rejected *)
+
+  external w : float -> float = z [@@unboxed] (* rejected *)
+
   [@@@unboxed] (* rejected *)
 end
 
@@ -286,6 +298,12 @@ module TestUnboxedStruct = struct
   let y = 10 [@@unboxed] (* rejected *)
 
   external z : float -> float = "x" "y" [@@unboxed] (* accepted *)
+
+  external u : (float [@unboxed]) -> (float [@unboxed]) = z (* rejected *)
+
+  external v = z [@@unboxed] (* rejected *)
+
+  external w : float -> float = z [@@unboxed] (* rejected *)
 
   [@@@unboxed] (* rejected *)
 end
@@ -298,6 +316,9 @@ module type TestUntaggedSig = sig
 
   external y : (int [@untagged]) -> (int [@untagged]) = "x" "y" (* accepted *)
   external z : int -> int = "x" "y" [@@untagged] (* accepted *)
+  external u : (int [@untagged]) -> (int [@untagged]) = z (* rejected *)
+  external v = z [@@untagged] (* rejected *)
+  external w : int -> int = z [@@untagged] (* rejected *)
 end
 
 module TestUntaggedStruct = struct
@@ -307,6 +328,9 @@ module TestUntaggedStruct = struct
 
   external y : (int [@untagged]) -> (int [@untagged]) = "x" "y" (* accepted *)
   external z : int -> int = "x" "y" [@@untagged] (* accepted *)
+  external u : (int [@untagged]) -> (int [@untagged]) = z (* rejected *)
+  external v = z [@@untagged] (* rejected *)
+  external w : int -> int = z [@@untagged] (* rejected *)
 end
 
 

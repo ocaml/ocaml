@@ -39,9 +39,11 @@ module TransientTypeMap = Map.Make(TransientTypeOps)
 module TypeMap = struct
   include TransientTypeMap
   let add ty = wrap_repr add ty
+  let add_to_list ty = wrap_repr add_to_list ty
   let find ty = wrap_repr find ty
   let singleton ty = wrap_repr singleton ty
   let fold f = TransientTypeMap.fold (wrap_type_expr f)
+  let update ty = wrap_repr update ty
 end
 module TypeHash = struct
   include TransientTypeHash
@@ -176,6 +178,11 @@ let type_origin decl =
 
 let dummy_method = "*dummy method*"
 
+let get_constr_desc ty =
+  match get_abbrev ty with
+    Some abbr -> Tconstr (abbr.abbr_path, abbr.abbr_args, ref Mnil)
+  | None -> get_desc ty
+
                   (********************************)
                   (*  Utilities for poly types    *)
                   (********************************)
@@ -201,7 +208,6 @@ let tpoly_get_mono_opt ty =
   | Tpoly(ty, []) -> Some ty
   | Tpoly _ -> None
   | _ -> assert false
-
 
 (**** Representative of a type ****)
 
@@ -237,15 +243,7 @@ let static_row row =
     (fun (_,f) -> match row_field_repr f with Reither _ -> false | _ -> true)
     (row_fields row)
 
-let hash_variant s =
-  let accu = ref 0 in
-  for i = 0 to String.length s - 1 do
-    accu := 223 * !accu + Char.code s.[i]
-  done;
-  (* reduce to 31 bits *)
-  accu := !accu land (1 lsl 31 - 1);
-  (* make it signed for 64 bits architectures *)
-  if !accu > 0x3FFFFFFF then !accu - (1 lsl 31) else !accu
+let hash_variant = Obj.hash_variant
 
 let proxy ty =
   match get_desc ty with
@@ -295,7 +293,7 @@ let is_constr_row ~allow_ident t =
 (* TODO: where should this really be *)
 (* Set row_name in Env, cf. GPR#1204/1329 *)
 let set_static_row_name decl path =
-  match decl.type_manifest with
+  if decl.type_private = Public then match decl.type_manifest with
     None -> ()
   | Some ty ->
       match get_desc ty with
@@ -323,18 +321,17 @@ let fold_row f init row =
   match get_desc (row_more row) with
   | Tvar _ | Tunivar _ | Tsubst _ | Tconstr _ | Tnil ->
     begin match
-      Option.map (fun (_,l) -> List.fold_left f result l) (row_name row)
+      row_name row
     with
     | None -> result
-    | Some result -> result
+    | Some (_,l) -> List.fold_left f result l
     end
   | _ -> assert false
 
 let iter_row f row =
   fold_row (fun () v -> f v) () row
 
-let fold_type_expr f init ty =
-  match get_desc ty with
+let fold_type_desc f init = function
     Tvar _              -> init
   | Tarrow (_, ty1, ty2, _) ->
       let result = f init ty1 in
@@ -352,13 +349,11 @@ let fold_type_expr f init ty =
       let result = f init ty1 in
       f result ty2
   | Tnil                -> init
-  | Tlink _             -> assert false
-  | Tsubst _            -> init
   | Tunivar _           -> init
   | Tpoly (ty, tyl)     ->
       let result = f init ty in
       List.fold_left f result tyl
-  | Tpackage pack ->
+  | Tpackage pack       ->
       List.fold_left
         (fun result (_n, ty) -> f result ty) init pack.pack_constraints
   | Tfunctor (_, _, pack, ty) ->
@@ -366,14 +361,33 @@ let fold_type_expr f init ty =
         List.fold_left (fun result (_n, ty) -> f result ty) init
           pack.pack_constraints in
       f res ty
+  | Tlink _
+  | Texpand _           -> assert false
+  | Tsubst _            -> init
 
+let fold_type_expr f init ty =
+  fold_type_desc f init (get_desc ty)
+
+(* Rather than creating a closure that captures [f], we pass [f] as the
+   fold accumulator. This means we avoid closure allocation in [iter_*].
+*)
 let iter_type_expr f ty =
-  fold_type_expr (fun () v -> f v) () ty
+  let (_ : type_expr -> unit) =
+    fold_type_expr (fun f v -> f v; f) f ty
+  in
+  ()
 
-let rec iter_abbrev f = function
+let iter_type_desc f desc =
+  let (_ : type_expr -> unit) =
+    fold_type_desc (fun f v -> f v; f) f desc
+  in
+  ()
+
+let rec iter_abbrev_memo f = function
     Mnil                   -> ()
-  | Mcons(_, _, ty, ty', rem) -> f ty; f ty'; iter_abbrev f rem
-  | Mlink rem              -> iter_abbrev f !rem
+  | Mcons { abbreviation; expansion; rem; _ } ->
+      f abbreviation; f expansion; iter_abbrev_memo f rem
+  | Mlink rem              -> iter_abbrev_memo f !rem
 
 let iter_type_expr_cstr_args f = function
   | Cstr_tuple tl -> List.iter f tl
@@ -553,7 +567,7 @@ let copy_row f fixed row keep more =
 
 let copy_commu c = if is_commu_ok c then commu_ok else commu_var ()
 
-let rec copy_type_desc ?(keep_names=false) f = function
+let copy_type_desc ?(keep_names=false) f = function
     Tvar _ as ty        -> if keep_names then ty else Tvar None
   | Tarrow (p, ty1, ty2, c)-> Tarrow (p, f ty1, f ty2, copy_commu c)
   | Ttuple l            -> Ttuple (List.map (fun (label, t) -> label, f t) l)
@@ -566,8 +580,6 @@ let rec copy_type_desc ?(keep_names=false) f = function
       Tfield (p, field_kind_internal_repr k, f ty1, f ty2)
       (* the kind is kept shared, with indirections removed for performance *)
   | Tnil                -> Tnil
-  | Tlink ty            -> copy_type_desc f (get_desc ty)
-  | Tsubst _            -> assert false
   | Tunivar _ as ty     -> ty (* always keep the name *)
   | Tpoly (ty, tyl)     ->
       let tyl = List.map f tyl in
@@ -575,10 +587,13 @@ let rec copy_type_desc ?(keep_names=false) f = function
   | Tpackage pack       ->
       let pack_constraints =
         List.map (fun (n, ty) -> (n, f ty)) pack.pack_constraints in
-      Tpackage {pack with pack_constraints}
+      Tpackage { pack with pack_constraints }
   | Tfunctor _ ->
       (* doing this would break unicity of unscoped binding in Tfunctor *)
       assert false
+  | Tlink _
+  | Tsubst _
+  | Texpand _           -> assert false
 
 (* TODO: rename to [module Copy_scope] *)
 module For_copy : sig
@@ -621,9 +636,9 @@ let lte_public p1 p2 =  (* Private <= Public *)
 
 let rec find_expans priv p1 = function
     Mnil -> None
-  | Mcons (priv', p2, _ty0, ty, _)
-    when lte_public priv priv' && Path.same p1 p2 -> Some ty
-  | Mcons (_, _, _, _, rem)   -> find_expans priv p1 rem
+  | Mcons { privacy = priv'; path = p2; expansion; _}
+    when lte_public priv priv' && Path.same p1 p2 -> Some expansion
+  | Mcons { rem; _ }   -> find_expans priv p1 rem
   | Mlink {contents = rem} -> find_expans priv p1 rem
 
 (* debug: check for cycles in abbreviation. only works with -principal
@@ -642,14 +657,14 @@ let rec check_expans visited ty =
 let memo = s_ref []
         (* Contains the list of saved abbreviation expansions. *)
 
-let cleanup_abbrev () =
+let cleanup_abbrev_memo () =
         (* Remove all memorized abbreviation expansions. *)
   List.iter (fun abbr -> abbr := Mnil) !memo;
   memo := []
 
-let memorize_abbrev mem priv path v v' =
+let memorize_abbrev mem privacy path abbreviation expansion =
         (* Memorize the expansion of an abbreviation. *)
-  mem := Mcons (priv, path, v, v', !mem);
+  mem := Mcons { privacy; path; abbreviation; expansion; rem = !mem };
   (* check_expans [] v; *)
   memo := mem :: !memo
 
@@ -657,15 +672,16 @@ let rec forget_abbrev_rec mem path =
   match mem with
     Mnil ->
       mem
-  | Mcons (_, path', _, _, rem) when Path.same path path' ->
+  | Mcons { path = path'; rem; _ } when Path.same path path' ->
       rem
-  | Mcons (priv, path', v, v', rem) ->
-      Mcons (priv, path', v, v', forget_abbrev_rec rem path)
+  | Mcons { privacy; path = path'; abbreviation; expansion; rem } ->
+      Mcons { privacy; path = path'; abbreviation; expansion;
+              rem = forget_abbrev_rec rem path}
   | Mlink mem' ->
       mem' := forget_abbrev_rec !mem' path;
       raise Exit
 
-let forget_abbrev mem path =
+let forget_abbrev_memo mem path =
   try mem := forget_abbrev_rec !mem path with Exit -> ()
 
 (* debug: check for invalid abbreviations
@@ -683,7 +699,7 @@ let check_memorized_abbrevs () =
 (* Re-export backtrack *)
 
 let snapshot = snapshot
-let backtrack = backtrack ~cleanup_abbrev
+let backtrack = backtrack ~cleanup:cleanup_abbrev_memo
 
                   (**********************************)
                   (*  Utilities for labels          *)
@@ -821,3 +837,57 @@ let instance_variable_type label sign =
   match Vars.find label sign.csig_vars with
   | (_, _, ty) -> ty
   | exception Not_found -> assert false
+
+(* Deep occurences and folded description *)
+
+(* Return whether [t0] occurs in [ty]. Objects are also traversed. *)
+exception Occur
+
+let deep_occur_rec mark t0 =
+  (* In order to avoid calling [repr] repeatedly on the same type, we use
+     [Transient_expr] to witness that [repr] has been called. This also
+     means we can directly access [level] and [desc]. This transformation
+     is valid as long as no type expressions are not modified during the
+     lifetime of the Transient expression. We achieve a speedup on very
+     large types between 20% and 45%. *)
+  let t0 = Transient_expr.repr t0 in
+  let rec occur ty =
+    let ty' = Transient_expr.repr ty in
+    if ty'.level >= t0.level && Transient_expr.try_mark_node mark ty' then begin
+      if Transient_expr.eq t0 ty' then raise Occur;
+      iter_type_desc occur ty'.desc;
+      iter_abbrev occur_abbrev ty
+    end
+  and occur_abbrev abbr = List.iter occur abbr.abbr_args
+  in
+  occur
+
+let deep_occur t0 ty =
+  try
+    with_type_mark (fun mark -> deep_occur_rec mark t0 ty);
+    false
+  with
+  | Occur -> true
+
+let deep_occur_list t0 tyl =
+  try
+    with_type_mark (fun mark -> List.iter (deep_occur_rec mark t0) tyl);
+    false
+  with
+  | Occur -> true
+
+let get_folded_desc ~keep_Tvar ty =
+  let desc = get_desc ty in
+  (* Need to first check for Tsubst, as its presence indicates an already
+     copied node, meaning that we should ignore the abbreviation *)
+  match desc with
+  | Tsubst _ -> desc
+  | Tvar _ when keep_Tvar -> desc
+  | _ ->
+      (* Only re-instate an abbreviation if there is no risk to hide
+         something *)
+      match get_abbrev ty with
+      | Some abbr when not (Path.contains_unscoped_ident abbr.abbr_path ||
+                            deep_occur_list ty abbr.abbr_args) ->
+          Tconstr (abbr.abbr_path, abbr.abbr_args, ref Mnil)
+      | _ -> desc

@@ -55,7 +55,7 @@ type ast_t =
   | Ast_Bold of ast_t list
   | Ast_Link of string
   | Ast_Mref of string * ast_t list
-val inlineseq_from_astseq : ast_t list -> inkind inline_t list = <fun>
+val inlineseq_from_astseq : ast_t list -> [ | inkind ] inline_t list = <fun>
 |}];;
 
 (* OK *)
@@ -109,4 +109,6 @@ Error: This constructor has type "[< inkind > `Nonlink ] inline_t"
        is not compatible with type "a" = "[< `Link | `Nonlink ]"
        The second variant type is bound to "$'a",
        it may not allow the tag(s) "`Nonlink"
+       Hint: "$'a" is a type variable introduced in the equation
+         "a" = "[< inkind ]"
 |}];;

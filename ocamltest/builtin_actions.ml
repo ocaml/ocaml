@@ -88,6 +88,13 @@ let libwin32unix = make
     "win32 variant of the unix library available"
     "win32 variant of the unix library not available")
 
+let has_reserved_header_bits = make
+  ~name:"has_reserved_header_bits"
+  ~description:"Pass if some of the bits in the header are reserved"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.reserved_header_bits <> 0)
+    (Printf.sprintf "%d bits reserved" Ocamltest_config.reserved_header_bits)
+    "No header bits are reserved")
+
 let hassysthreads = make
   ~name:"hassysthreads"
   ~description:"Pass if the systhreads library is available"
@@ -148,7 +155,7 @@ let target_windows = make
 
 let is_bsd_system s =
   match s with
-  | "bsd_elf" | "netbsd" | "freebsd" | "openbsd" -> true
+  | "bsd_elf" | "netbsd" | "freebsd" | "openbsd" | "dragonfly" -> true
   | _ -> false
 
 let bsd = make
@@ -169,8 +176,8 @@ let linux = make
 
 let macos_system = "macosx"
 
-let macos = make
-  ~name:"macos"
+let macosx = make
+  ~name:"macosx"
   ~description:"Pass if running on a MacOS system"
   (Actions_helpers.pass_or_skip (Ocamltest_config.system = macos_system)
     "on a MacOS system"
@@ -280,27 +287,48 @@ let tsan = make
 let has_symlink = make
   ~name:"has_symlink"
   ~description:"Pass if symbolic links are available"
-  (Actions_helpers.pass_or_skip (Unix.has_symlink () )
+  (Actions_helpers.pass_or_skip (Ocamltest_unix.has_symlink () )
     "symlinks available"
     "symlinks not available")
 
 let not_root = make
   ~name:"not-root"
   ~description:"Skip test if the current user is root"
-  (Actions_helpers.pass_or_skip (Unix.getuid () <> 0)
+  (Actions_helpers.pass_or_skip (Ocamltest_unix.getuid () <> 0)
     "current user is not root"
     "current user is root")
+
+let cold =
+  let cold_default =
+    (* cold tests are enabled by default *)
+    true in
+  let cold_tests_enabled = match Sys.getenv_opt "OCAMLTEST_COLD_TESTS" with
+    | None -> cold_default
+    | Some "1" -> true
+    | Some "0" -> false
+    | Some s ->
+      Printf.eprintf
+        "Unknown value '%s' for OCAMLTEST_COLD_TESTS, expected '0' or '1'.\n%!"
+        s;
+      cold_default
+  in
+  make
+    ~name:"cold"
+    ~description:"Pass when 'cold' tests are enabled (OCAMLTEST_COLD_TESTS=1)"
+    (Actions_helpers.pass_or_skip cold_tests_enabled
+       "cold tests enabled"
+       "cold tests disabled")
 
 let setup_build_env = make
   ~name:"setup-build-env"
   ~description:"Create a dedicated directory for the test and populates it"
-  (Actions_helpers.setup_build_env true [])
+  (Actions_helpers.setup_build_env ~add_testfile:true [])
 
 let setup_simple_build_env = make
   ~name:"setup-simple-build-env"
   ~description:"Do not create a dedicated directory, but only sets the \
     test_build_directory variable"
-  (Actions_helpers.setup_simple_build_env true [])
+  (Actions_helpers.setup_simple_build_env ~add_testfile:true [])
 
 let run = make
   ~name:"run"
@@ -394,6 +422,7 @@ let _ =
     dumpenv;
     hasunix;
     hassysthreads;
+    has_reserved_header_bits;
     hasstr;
     multicore;
     libunix;
@@ -404,13 +433,14 @@ let _ =
     target_windows;
     bsd;
     linux;
-    macos;
+    macosx;
     not_macos_amd64_tsan;
     has_cxx;
     arch32;
     arch64;
     has_symlink;
     not_root;
+    cold;
     setup_build_env;
     setup_simple_build_env;
     run;

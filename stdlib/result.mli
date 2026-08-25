@@ -66,7 +66,7 @@ val map : ('a -> 'b) -> ('a, 'e) result -> ('b, 'e) result
 (** [map f r] is [Ok (f v)] if [r] is [Ok v] and [r] if [r] is [Error _]. *)
 
 val product : ('a, 'e) result -> ('b, 'e) result -> ('a * 'b, 'e) result
-(** [product r0 r1] is [Ok (v0, v1)] if [r0] is [Ok v0] and [r1] is [Ok v2]
+(** [product r0 r1] is [Ok (v0, v1)] if [r0] is [Ok v0] and [r1] is [Ok v1]
     and otherwise returns the error of [r0], if any, or the error of [r1].
 
     @since 5.4 *)
@@ -89,6 +89,11 @@ val iter : ('a -> unit) -> ('a, 'e) result -> unit
 
 val iter_error : ('e -> unit) -> ('a, 'e) result -> unit
 (** [iter_error f r] is [f e] if [r] is [Error e] and [()] otherwise. *)
+
+val try_value : ('a, 'e) result -> ('e -> ('a, 'e) result) -> ('a, 'e) result
+(** [try_value r f] is [f e] if [r] is [Error e] and [r] otherwise.
+
+    @since 5.6 *)
 
 (** {1:preds Predicates and comparisons} *)
 

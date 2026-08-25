@@ -1,0 +1,11 @@
+File "name_type_mismatch.ml", line 1:
+Error: Multiple errors were encountered
+File "name_type_mismatch.ml", line 13, characters 11-14:
+13 | let x = ({ M.x = 0 }: t)
+                ^^^
+  The field M.x belongs to the record type M.t
+  but a field was expected belonging to the record type t
+File "name_type_mismatch.ml", line 17, characters 17-19:
+17 | let t : string = 10
+                      ^^
+  The constant 10 has type int but an expression was expected of type string

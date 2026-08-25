@@ -218,9 +218,11 @@ INSTALL_DESPATCH_install_MKDIR = \
   $(MKDIR) $(call QUOTE_SINGLE,$(INSTALL_SECTION_$(1))$(addprefix /,$(2))) \
     $(SH_AND)
 
+LINK_IN = cd $(1) && $(LN_S) $(2) .
+
 MK_LINK = \
   (cd "$(INSTALL_SECTION_$(2))$(addprefix /,$(3))" && \
-    $(LN) $(call QUOTE_SINGLE,$(1)) $(call QUOTE_SINGLE,$(4)))
+    $(LN_S) $(call QUOTE_SINGLE,$(1)) $(call QUOTE_SINGLE,$(4)))
 
 INSTALL_DESPATCH_install_ITEM = \
   $(INSTALL_CMD_$(2)) $(1) \
@@ -243,7 +245,7 @@ INSTALL_DESPATCH_display_MKDIR = \
     -> MKDIR $(INSTALL_SECTION_$(1))$(addprefix /,$(2))) $(SH_AND)
 
 MKLINK_display = \
-  echo $(call QUOTE_SINGLE,-> LN \
+  echo $(call QUOTE_SINGLE,-> LN_S \
          $(abspath $(INSTALL_SECTION_$(2))$(addprefix /,$(3))/$(1)) -> \
          $(if $(4),$(4),$(notdir $(1))))
 
@@ -311,7 +313,7 @@ ADD_LINE = $(call INVOKE, echo, $(2)) >> $(1)
 # These can then be munged to a cd + ln combination in the fixup script.
 # If symlinks are not supported, $1 is instead used to create an additional copy
 # of the file, using the .install file.
-ifeq "$(firstword $(LN))" "ln"
+ifeq "$(firstword $(LN_S))" "ln"
 RECORD_SYMLINK_TO_INSTALL = \
   $(call ADD_LINE, $(ROOTDIR)/create-symlinks, \
     $(patsubst lib%,lib,$(2))$(addprefix /,$(3)) $(4) $(5))
@@ -402,7 +404,7 @@ INSTALL_DESPATCH_opam_BEGIN = \
 # then munge clone-* and create-symlinks into the fixup script.
 INSTALL_DESPATCH_opam_END = \
   $(OCAMLRUN) ./ocaml$(EXE) $(STDLIBFLAGS) \
-    tools/opam/generate.ml $(INSTALL_MODE) $(OPAM_PACKAGE_NAME) '$(LN)'
+    tools/opam/generate.ml $(INSTALL_MODE) $(OPAM_PACKAGE_NAME) '$(LN_S)'
 
 # Generate $(OPAM_PACKAGE_NAME)-clone.sh (INSTALL_MODE=clone)
 
@@ -869,3 +871,9 @@ export CYGWIN := $(strip \
 export MSYS := $(strip \
   $(filter-out winsymlinks winsymlinks:%, $(MSYS)) winsymlinks:nativestrict)
 endif
+
+# Invocations of the compilers during the build use -nostdlib which ensures that
+# existing installations and the OCAMLLIB/CAMLLIB environment variables don't
+# affect the build. There isn't an equivalent flag for the toplevel's
+# OCAMLTOP_INCLUDE_PATH, so it's scrubbed from the environment instead.
+unexport OCAMLTOP_INCLUDE_PATH

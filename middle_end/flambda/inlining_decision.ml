@@ -513,17 +513,30 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
   match function_decl.function_body with
   | None -> original, original_r
   | Some { stub; _ } ->
-    if stub then begin
-      let fun_vars = Variable.Map.keys function_decls.funs in
-      let function_body = get_function_body function_decl in
-      let body, r =
-        Inlining_transforms.inline_by_copying_function_body ~env
-          ~r ~fun_vars ~lhs_of_application
-          ~closure_id_being_applied ~specialise_requested ~inline_requested
-          ~function_decl ~function_body ~args ~dbg ~simplify
-      in
-      simplify env r body
-    end else if E.never_inline env then
+    if stub
+    then if E.stub_inlining_allowed env function_decls.set_of_closures_origin
+      then begin
+        let env =
+          E.inside_inlined_stub_function env
+            function_decls.set_of_closures_origin
+        in
+        let fun_vars = Variable.Map.keys function_decls.funs in
+        let function_body = get_function_body function_decl in
+        let body, r =
+          Inlining_transforms.inline_by_copying_function_body ~env
+            ~r ~fun_vars ~lhs_of_application
+            ~closure_id_being_applied ~specialise_requested ~inline_requested
+            ~function_decl ~function_body ~args ~dbg ~simplify
+        in
+        simplify env r body
+      end else
+        (* It is extremely uncommon for stub inlining to be disallowed, but in
+           that case we want to prevent any kind of inlining.
+           The only known case is through recursive calls inside default
+           argument stubs
+           let rec f ?(x = f ()) () = x + 1 *)
+        original, original_r
+    else if E.never_inline env then
       (* This case only occurs when examining the body of a stub function
          but not in the context of inlining said function.  As such, there
          is nothing to do here (and no decision to report). *)

@@ -102,8 +102,9 @@
 
    Using release stores for all writes also ensures publication safety
    for newly-allocated objects, and isn't necessary for initialising
-   writes. The cost is free on x86, but requires a fence in
-   caml_modify on weakly-ordered architectures (ARM, Power).
+   writes (more about publication safety in note [MMPS]). The cost is
+   free on x86, but requires a fence in caml_modify on weakly-ordered
+   architectures (ARM, Power).
 
    However, instead of using acquire loads for all reads, an
    optimisation is possible. (Optimising reads is more important than
@@ -129,6 +130,128 @@
    (They're still useful, though: they serve to inhibit an overeager C
    compiler's optimisations). On ARMv8, actual hardware fences are
    generated.
+
+   And finally, you will see additional release fences after atomic
+   writes, like this:
+
+      atomic_thread_fence(memory_order_release)
+
+   This fence is here specifically to ensure the correctness of the
+   ARMv8 assembly emitted for atomic writes implemented in C such as
+   caml_atomic_exchange.
+   The default ARMv8 instruction emitted by the OCaml compiler for a non-atomic
+   store is `stlr`. A few old cores (e.g. Cortex-A53, Cortex-A72) are faster
+   with `dmb ishld; str` and select it via `-fbarrier-store` / configure.
+   We need to ensure that non-atomic stores are ordered after prior atomic
+   operations and non-atomic loads. (More precisely, we need happens-before
+   between operations that synchronise with a prior atomic operator / write to
+   a prior atomic load, and operations that read from this nonatomic store.)
+   `stlr` provides these guarantees.
+
+   When non-atomic stores are compiled as `dmb ishld; str`, however, we need to
+   emit a `dmb ishst` barrier after atomic operations. `dmb ishld` provides
+   ordering with respect to prior reads (covering both nonatomic loads and
+   atomic ones), while `dmb ishst` provides ordering with respect to prior
+   writes. Since we only need the ordering with respect to prior atomic writes,
+   we can place the `dmb ishst` after each atomic write rather than before
+   nonatomic writes. The extra release fence on the C side is here to emit this
+   `dmb ishst` on ARMv8, in order to provide ordering to the weak `str`
+   instructions the OCaml compiler may be configured to emit.
+*/
+
+/* Note [MMPS]: Publication safety in the memory model.
+
+   Care must be taken to ensure the publication of initialising writes
+   in newly allocated values to all domains that might see these
+   objects.
+
+   The only way a newly allocated value can be made visible to another domain
+   is either via `Domain.spawn` or by mutation of a pointer field.
+   `Domain.spawn` is fully synchronizing; mutating a pointer field is
+   necessarily done via `caml_modify`, which performs the following:
+
+      atomic_thread_fence(atomic_order_acquire);
+      atomic_store_release(p, v);
+
+   where `p` is the field's adress. The release store ensures that
+   initialising writes into `p` to other domains. To see why, consider
+   the OCaml program:
+
+      let r : int ref ref = ref (ref 0)
+
+      let t0 () = (* Domain 0 *)
+        let v = ref 42
+        r := v
+
+      let t1 () = (* Domain 1 *)
+        let r1 = !r in
+        let r2 = !r1 in
+        print_int r2
+
+   Let us try to understand its execution at a slightly lower level by
+   rewriting it in C:
+
+      // These three initial writes can be considered to be immediately
+      // propagated to all CPUs
+      value **r = alloc_small(1);
+      *r = alloc_small(1);
+      **r = Val_int(0);
+
+      P0() {
+        value *v = alloc_small(1);
+        *v = Val_int(42);
+
+        // This is `caml_modify`:
+        atomic_thread_fence(acquire);
+        atomic_store_release(r, v);
+      }
+
+      P1() {
+        value *r1 = atomic_load_relaxed(r);
+        value r2 = atomic_load_relaxed(r1);
+        print_int(Int_val(r2));
+      }
+
+   Now, suppose that `r1` contains `v`. Will the load from `r1` in P1
+   see the initializing store to `v`, i.e., `*v = Val_int(42);`? If not,
+   `r2` will contain uninitialised garbage, which is very bad (notably
+   because it breaks type safety). Publication safety consists in
+   assuring that this doesn't happen. In the program above, it doesn't.
+
+   Indeed, this program may appear racy, but in fact it isn't. The
+   reasoning goes as follows:
+
+   - The release store in P0 is also a release fence, i.e. it guarantees
+     that all stores before it in program order also happen-before it.
+   - If r1 = v in P1, then necessarily the store of v in r got
+     propagated to CPU 1 before the first load of P1. If r1 != v, then
+     the second load is not from v and thus there is no race on v.
+   - There is an address dependency from the first load to the second in
+     P1, so the second cannot be reorder before the first, because the
+     first load must be performed for the CPU to know which location the
+     second load should access.
+
+   In other words, the store of 42 to v in P0 is necessarily executed
+   before the store of v to r, which is necessarily executed before the
+   load from r in P1 (assuming it returns v), which is necessarily
+   executed before the load from v in P1. Hence, there is no data race
+   on v, and either this program prints 0 or it prints 42.
+
+   The reasoning makes use of address dependencies, which are not part
+   of the C11 memory model. However, in practice they do create
+   happens-before ordering in practice. This is the case, for example,
+   in the Linux Kernel Memory Model (LKMM). In the C11 model, two things
+   are missing:
+
+   - C11 considers that only an acquire load that reads from a release
+     store can establish a hb relation. The LKMM relaxes this by
+     allowing the same reasoning on "relaxed" loads that read from a
+     release store (the LKMM does not use the term of "relaxed" atomics
+     but employs `READ_ONCE` and `WRITE_ONCE` which are similar)
+   - C11 does not have the notion of address/data dependencies:
+     `memory_order_consume` has proven impossible to implement in
+     compilers, preventing us from using it and forcing us to reason
+     outside of C11.
 */
 
 /* Note [MMMOC]: Mixing the Memory Models of OCaml and C.
@@ -438,7 +561,7 @@ Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, reserved_t reserved,
   }
 
 #ifdef DEBUG
-  if (tag < No_scan_tag) {
+  if (Scannable_tag(tag)) {
     for (mlsize_t i = 0; i < wosize; i++)
       Op_hp(v)[i] = Debug_uninit_major;
   }
@@ -585,44 +708,6 @@ CAMLexport caml_stat_block caml_stat_alloc_noexc(asize_t sz)
   }
 }
 
-/* [sz] and [modulo] are numbers of bytes */
-CAMLexport void* caml_stat_alloc_aligned_noexc(asize_t sz, int modulo,
-                                               caml_stat_block *b)
-{
-  char *raw_mem;
-  uintnat aligned_mem;
-  CAMLassert(0 <= modulo);
-  CAMLassert(modulo < Page_size);
-  raw_mem = (char *) caml_stat_alloc_noexc(sz + Page_size);
-  if (raw_mem == NULL) return NULL;
-  *b = raw_mem;
-  raw_mem += modulo;                /* Address to be aligned */
-  aligned_mem = (((uintnat) raw_mem / Page_size + 1) * Page_size);
-#ifdef DEBUG
-  {
-    uintnat *p0 = (void *) *b;
-    uintnat *p1 = (void *) (aligned_mem - modulo);
-    uintnat *p2 = (void *) (aligned_mem - modulo + sz);
-    uintnat *p3 = (void *) ((char *) *b + sz + Page_size);
-    for (uintnat *p = p0; p < p1; p++) *p = Debug_filler_align;
-    for (uintnat *p = p1; p < p2; p++) *p = Debug_uninit_align;
-    for (uintnat *p = p2; p < p3; p++) *p = Debug_filler_align;
-  }
-#endif
-  return (char *) (aligned_mem - modulo);
-}
-
-/* [sz] and [modulo] are numbers of bytes */
-CAMLexport void* caml_stat_alloc_aligned(asize_t sz, int modulo,
-                                         caml_stat_block *b)
-{
-  void *result = caml_stat_alloc_aligned_noexc(sz, modulo, b);
-  /* malloc() may return NULL if size is 0 */
-  if ((result == NULL) && (sz != 0))
-    caml_raise_out_of_memory();
-  return result;
-}
-
 /* [sz] is a number of bytes */
 CAMLexport caml_stat_block caml_stat_alloc(asize_t sz)
 {
@@ -703,6 +788,16 @@ CAMLexport caml_stat_block caml_stat_calloc_noexc(asize_t num, asize_t sz)
       memset(result, 0, total);
     return result;
   }
+}
+
+/* [sz] is a number of bytes */
+CAMLexport caml_stat_block caml_stat_calloc(asize_t num, asize_t sz)
+{
+  void *result = caml_stat_calloc_noexc(num, sz);
+  /* calloc() may return NULL if size is 0 or number of elements is 0 */
+  if ((result == NULL) && (sz != 0) && (num != 0))
+    caml_raise_out_of_memory();
+  return result;
 }
 
 CAMLexport caml_stat_string caml_stat_strdup_noexc(const char *s)

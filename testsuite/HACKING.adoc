@@ -12,7 +12,7 @@ a specific sub-directory.
 
 There are many kind of tests already, so the easiest way to start is
 to extend or copy an existing test. To learn how to write new tests
-using ocamltest, read link:../ocamltest/OCAMLTEST.org[].
+using ocamltest, read xref:../ocamltest/OCAMLTEST.adoc[].
 
 == Sorts of tests
 

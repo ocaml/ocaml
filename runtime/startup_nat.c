@@ -69,6 +69,13 @@ static void init_segments(void)
   caml_register_code_fragment(&caml_system__code_begin,
                               &caml_system__code_end,
                               DIGEST_IGNORE, NULL);
+#ifdef FUNCTION_SECTIONS
+  /* And the "hot" code for OcamlFDO */
+  extern char caml_hot__code_begin, caml_hot__code_end;
+  caml_register_code_fragment(&caml_hot__code_begin,
+                              &caml_hot__code_end,
+                              DIGEST_IGNORE, NULL);
+#endif /* FUNCTION_SECTIONS */
 }
 
 extern value caml_start_program (caml_domain_state*);

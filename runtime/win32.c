@@ -249,7 +249,7 @@ void * caml_globalsym(const char * name)
   return flexdll_dlsym(flexdll_wdlopen(NULL,0), name);
 }
 
-char * caml_dlerror(void)
+const char * caml_dlerror(void)
 {
   return flexdll_dlerror();
 }
@@ -275,7 +275,7 @@ void * caml_globalsym(const char * name)
   return NULL;
 }
 
-char * caml_dlerror(void)
+const char * caml_dlerror(void)
 {
   return "dynamic loading not supported on this platform";
 }
@@ -1264,6 +1264,7 @@ static const struct error_entry win_error_table[] = {
     ERROR_SHARING_BUFFER_EXCEEDED - ERROR_WRITE_PROTECT,
     EACCES },
   { ERROR_PRIVILEGE_NOT_HELD, 0, EPERM},
+  { ERROR_DIRECTORY, 0, ENOTDIR },
   { WSAEINVAL, 0, EINVAL },
   { WSAEACCES, 0, EACCES },
   { WSAEBADF, 0, EBADF },

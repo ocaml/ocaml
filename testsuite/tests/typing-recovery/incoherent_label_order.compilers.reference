@@ -1,0 +1,12 @@
+File "incoherent_label_order.ml", line 1:
+Error: Multiple errors were encountered
+File "incoherent_label_order.ml", line 10, characters 23-24:
+10 | let g f = f ~x:0 ~y:0; f ~y:0 ~x:0
+                            ^
+  This function is applied to arguments
+  in an order different from other calls.
+  This is only allowed when the real type is known.
+File "incoherent_label_order.ml", line 11, characters 14-16:
+11 | let t : int = ""
+                   ^^
+  This constant has type string but an expression was expected of type int

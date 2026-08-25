@@ -121,6 +121,7 @@ let pgetglobal = "Pgetglobal"
 let pignore = "Pignore"
 let pint_as_pointer = "Pint_as_pointer"
 let pintcomp = "Pintcomp"
+let pphyscomp = "Pphyscomp"
 let pcompare_ints = "Pcompare_ints"
 let pcompare_floats = "Pcompare_floats"
 let pcompare_bints = "Pcompare_bints"
@@ -128,6 +129,7 @@ let pintofbint = "Pintofbint"
 let pintoffloat = "Pintoffloat"
 let pisint = "Pisint"
 let pisout = "Pisout"
+let pcheckbound = "Pcheckbound"
 let plslbint = "Plslbint"
 let plslint = "Plslint"
 let plsrbint = "Plsrbint"
@@ -171,6 +173,7 @@ let psubint = "Psubint"
 let pxorbint = "Pxorbint"
 let pxorint = "Pxorint"
 let patomic_load = "Patomic_load"
+let patomic_fetch_add = "Patomic_fetch_add"
 let prunstack = "Prunstack"
 let pperform = "Pperform"
 let presume = "Presume"
@@ -229,6 +232,7 @@ let pgetglobal_arg = "Pgetglobal_arg"
 let pignore_arg = "Pignore_arg"
 let pint_as_pointer_arg = "Pint_as_pointer_arg"
 let pintcomp_arg = "Pintcomp_arg"
+let pphyscomp_arg = "Pphyscomp_arg"
 let pcompare_ints_arg = "Pcompare_ints_arg"
 let pcompare_floats_arg = "Pcompare_floats_arg"
 let pcompare_bints_arg = "Pcompare_bints_arg"
@@ -236,6 +240,7 @@ let pintofbint_arg = "Pintofbint_arg"
 let pintoffloat_arg = "Pintoffloat_arg"
 let pisint_arg = "Pisint_arg"
 let pisout_arg = "Pisout_arg"
+let pcheckbound_arg = "Pcheckbound_arg"
 let plslbint_arg = "Plslbint_arg"
 let plslint_arg = "Plslint_arg"
 let plsrbint_arg = "Plsrbint_arg"
@@ -282,6 +287,7 @@ let psubint_arg = "Psubint_arg"
 let pxorbint_arg = "Pxorbint_arg"
 let pxorint_arg = "Pxorint_arg"
 let patomic_load_arg = "Patomic_load_arg"
+let patomic_fetch_add_arg = "Patomic_fetch_add_arg"
 let prunstack_arg = "Prunstack_arg"
 let pperform_arg = "Pperform_arg"
 let presume_arg = "Presume_arg"
@@ -354,6 +360,7 @@ let of_primitive : Lambda.primitive -> string = function
   | Plsrint -> plsrint
   | Pasrint -> pasrint
   | Pintcomp _ -> pintcomp
+  | Pphyscomp _ -> pphyscomp
   | Pcompare_ints -> pcompare_ints
   | Pcompare_floats -> pcompare_floats
   | Pcompare_bints _ -> pcompare_bints
@@ -386,6 +393,7 @@ let of_primitive : Lambda.primitive -> string = function
   | Pctconst _ -> pctconst
   | Pisint -> pisint
   | Pisout -> pisout
+  | Pcheckbound -> pcheckbound
   | Pbintofint _ -> pbintofint
   | Pintofbint _ -> pintofbint
   | Pcvtbint _ -> pcvtbint
@@ -425,6 +433,7 @@ let of_primitive : Lambda.primitive -> string = function
   | Pint_as_pointer -> pint_as_pointer
   | Popaque -> popaque
   | Patomic_load -> patomic_load
+  | Patomic_fetch_add -> patomic_fetch_add
   | Prunstack -> prunstack
   | Pperform -> pperform
   | Presume -> presume
@@ -465,6 +474,7 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Plsrint -> plsrint_arg
   | Pasrint -> pasrint_arg
   | Pintcomp _ -> pintcomp_arg
+  | Pphyscomp _ -> pphyscomp_arg
   | Pcompare_ints -> pcompare_ints_arg
   | Pcompare_floats -> pcompare_floats_arg
   | Pcompare_bints _ -> pcompare_bints_arg
@@ -497,6 +507,7 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Pctconst _ -> pctconst_arg
   | Pisint -> pisint_arg
   | Pisout -> pisout_arg
+  | Pcheckbound -> pcheckbound_arg
   | Pbintofint _ -> pbintofint_arg
   | Pintofbint _ -> pintofbint_arg
   | Pcvtbint _ -> pcvtbint_arg
@@ -536,6 +547,7 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Pint_as_pointer -> pint_as_pointer_arg
   | Popaque -> popaque_arg
   | Patomic_load -> patomic_load_arg
+  | Patomic_fetch_add -> patomic_fetch_add_arg
   | Prunstack -> prunstack_arg
   | Pperform -> pperform_arg
   | Presume -> presume_arg

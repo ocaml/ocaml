@@ -520,6 +520,22 @@ static void write_to_ring(ev_category category, ev_message_type type,
   /* account for header and timestamp (which are both uint64) */
   uint64_t length_with_header_ts = event_length + 2;
 
+  /* We must fatal error if the event is larger than the ring buffer.
+     Otherwise the loop below loops forever. In practice only the
+     alloc event can hit this, which is emitted by the instrumented
+     runtime. But users can also create arbitrarily sized events.
+     Closes #13335. */
+  if (length_with_header_ts > ring_size_words) {
+    int min_e = 0;
+    while ((1ULL << min_e) < length_with_header_ts) min_e++;
+    caml_fatal_error(
+        "runtime_events: event of %" PRIu64 " words exceeds the ring buffer "
+        "(%d words, from OCAMLRUNPARAM=e=%" CAML_PRIuNAT "). "
+        "Use OCAMLRUNPARAM=e=%d or higher.",
+        length_with_header_ts, ring_size_words,
+        caml_params->runtime_events_log_wsize, min_e);
+  }
+
   /* there is a ring buffer (made up of header and data) for each domain */
   struct runtime_events_buffer_header *domain_ring_header =
       get_ring_buffer_by_domain_id(Caml_state->id);

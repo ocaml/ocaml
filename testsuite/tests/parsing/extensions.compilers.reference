@@ -250,7 +250,7 @@
       signature_item (extensions.ml[22,507+8]..[22,507+25])
         Psig_module "M" (extensions.ml[22,507+15]..[22,507+16])
         module_type (extensions.ml[22,507+19]..[22,507+25])
-          Pmod_extension "baz"
+          Pmty_extension "baz"
           []
     ]
   structure_item (extensions.ml[23,534+0]..[25,606+23])
@@ -292,14 +292,12 @@
                 core_type (extensions.ml[24,573+19]..[24,573+20])
                   Ptyp_constr "t" (extensions.ml[24,573+19]..[24,573+20])
                   []
-                []
             signature_item (extensions.ml[24,573+22]..[24,573+31])
               Psig_value
               value_description "y" (extensions.ml[24,573+26]..[24,573+27]) (extensions.ml[24,573+22]..[24,573+31])
                 core_type (extensions.ml[24,573+30]..[24,573+31])
                   Ptyp_constr "t" (extensions.ml[24,573+30]..[24,573+31])
                   []
-                []
           ]
         expression (extensions.ml[25,606+4]..[25,606+23])
           Pexp_extension "foo"

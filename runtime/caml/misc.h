@@ -177,15 +177,32 @@ CAMLdeprecated_typedef(addr, char *);
 /* Prefetching */
 
 #ifdef CAML_INTERNALS
+
 #if (__has_builtin(__builtin_prefetch) || defined(__GNUC__))
-#define caml_prefetch(p) __builtin_prefetch((p), 1, 3)
-/* 1 = intent to write; 3 = all cache levels */
-#elif defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_AMD64))
+#define caml_prefetchr(p) \
+  __builtin_prefetch((p), 0 /* rw: read */,  3 /* locality: all cache levels */)
+#define caml_prefetchw(p) \
+  __builtin_prefetch((p), 1 /* rw: write */, 3 /* locality: all cache levels */)
+
+#elif defined(_MSC_VER)
 #include <intrin.h>
-#define caml_prefetch(p) _mm_prefetch((char const *) p, _MM_HINT_T0)
-/* PreFetchCacheLine(PF_TEMPORAL_LEVEL_1, p) */
-#else
-#define caml_prefetch(p)
+#if (defined(_M_IX86) || defined(_M_AMD64)) && !defined(_M_ARM64EC)
+#define caml_prefetchr(p) \
+  _mm_prefetch((char const *)(p), _MM_HINT_T0)   /* prefetcht0 */
+#define caml_prefetchw(p) \
+  _mm_prefetch((char const *)(p), _MM_HINT_ENTA) /* prefetchw  */
+/* We would like to use _ET0 here, but it is not defined in Windows headers. */
+
+#elif defined(_M_ARM64) || defined(_M_ARM64EC)
+#define caml_prefetchr(p) __prefetch2((p), 0)  /* prfm pldl1keep */
+#define caml_prefetchw(p) __prefetch2((p), 16) /* prfm pstl1keep */
+#endif
+#endif
+
+#if !defined(caml_prefetchr)
+/* Not GCC or Clang or MSVC */
+#define caml_prefetchr(p) ((void)(p))
+#define caml_prefetchw(p) ((void)(p))
 #endif
 #endif /* CAML_INTERNALS */
 
@@ -618,9 +635,6 @@ CAMLextern int caml_read_directory(char_os * dirname,
                                    struct ext_table * contents);
 
 /* Deprecated aliases */
-#define caml_aligned_malloc \
-   CAML_DEPRECATED("caml_aligned_malloc", "caml_stat_alloc_aligned_noexc") \
-   caml_stat_alloc_aligned_noexc
 #define caml_strdup \
    CAML_DEPRECATED("caml_strdup", "caml_stat_strdup") \
    caml_stat_strdup

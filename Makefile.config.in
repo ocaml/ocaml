@@ -75,7 +75,8 @@ LDFLAGS?=@LDFLAGS@
 CPP=@CPP@
 
 ### How to invoke ar
-ARCMD=@AR@
+AR=@AR@
+ARFLAGS=@ARFLAGS@
 
 ### Extension of object files
 O=@OBJEXT@
@@ -176,6 +177,11 @@ NATDYNLINKOPTS=@natdynlinkopts@
 SYSLIB=@syslib@
 MKLIB=@mklib@
 
+# Flags for building the mingw-w64 and MSVC versions of stdlib/tmpheader.exe.
+HEADER_CFLAGS=@header_cflags@
+HEADER_LDFLAGS=@header_ldflags@
+HEADER_LIBS=@header_libs@
+
 # The following variable defines flags to be passed to the C preprocessor
 # when compiling C files to be linked with native code. This includes
 # the native runtime itself and can also include the stub code around
@@ -225,6 +231,10 @@ BYTECODE_RUNTIME_ID=@bytecode_runtime_id@
 NATIVE_RUNTIME_ID=@native_runtime_id@
 
 # Deprecated variables
+
+## Variables deprecated since OCaml 5.6
+
+ARCMD=$(AR)
 
 ## Variables deprecated since OCaml 5.3
 

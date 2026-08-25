@@ -1,3 +1,17 @@
+OCaml 5.5.0 (19 June 2026)
+--------------------------
+
+Some of the highlights of OCaml 5.5.0 are:
+
+- Module-dependent functions
+- Polymorphic functions as function arguments
+- Relocatable compiler
+- Extended local definitions
+- Search and replace substring functions
+- External types
+- Garbage collector improvements
+- Around 60 new functions in the standard library
+
 OCaml 5.4.0 (9 October 2025)
 ----------------------------
 

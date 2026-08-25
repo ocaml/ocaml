@@ -1,0 +1,21 @@
+File "missing_type_constraint.ml", line 1:
+Error: Multiple errors were encountered
+File "missing_type_constraint.ml", line 14, characters 30-36:
+14 | let a = function Dyn (type a) (w, x) -> 10
+                                   ^^^^^^
+  Existential types introduced in a constructor pattern
+  must be bound by a type constraint on the argument.
+File "missing_type_constraint.ml", line 16, characters 32-38:
+16 |   let x = function Dyn (type a) (w, x) -> 10 in
+                                     ^^^^^^
+  Existential types introduced in a constructor pattern
+  must be bound by a type constraint on the argument.
+File "missing_type_constraint.ml", line 17, characters 32-38:
+17 |   let y = function Dyn (type a) (c, k) -> 10 in
+                                     ^^^^^^
+  Existential types introduced in a constructor pattern
+  must be bound by a type constraint on the argument.
+File "missing_type_constraint.ml", line 22, characters 17-18:
+22 | let t : string = r
+                      ^
+  The value r has type int but an expression was expected of type string

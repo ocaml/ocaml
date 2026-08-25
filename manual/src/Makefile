@@ -56,7 +56,7 @@ $(DIRS):
 
 pdf: files latex_files | texstuff
 	cd texstuff \
-	  && TEXINPUTS=$(TEXINPUTS) lualatex manual.tex
+	  && TEXINPUTS=$(TEXINPUTS) pdflatex manual.tex
 
 index: | texstuff
 	cd texstuff \
@@ -146,7 +146,7 @@ cmds/warnings-help.etex: $(ROOTDIR)/utils/warnings.ml $(ROOTDIR)/ocamlc
 	 echo "%";\
 	 $(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlc -warn-help \
 	 | LC_ALL=C sed -e 's/^ *\([0-9][0-9]*\) *\[\([a-z][a-z-]*\)\]\(.*\)/\\item[\1 "\2"] \3/' \
-	                -e 's/^ *\([0-9A-Z][0-9]*\) *\([^]].*\)/\\item[\1] \2/'\
+	                -e 's/^ *\([0-9A-Z][0-9]*\)  *\([^]].*\)/\\item[\1] \2/'\
 	 | sed -e 's/@/\\@/g' \
 	) >$@
 #	sed --inplace is not portable, emulate

@@ -121,6 +121,7 @@ module type Compiler_options = sig
   val _without_runtime : unit -> unit
   val _set_runtime_default : string -> unit
   val _short_paths : unit -> unit
+  val _typing_recovery : unit -> unit
   val _thread : unit -> unit
   val _v : unit -> unit
   val _verbose : unit -> unit
@@ -169,6 +170,7 @@ module type Bytecomp_options = sig
   val _launch_method : string -> unit
   val _search_method : string -> unit
   val _output_complete_exe : unit -> unit
+  val _bytecode_hints : unit -> unit
 
   val _dinstr : unit -> unit
   val _dcamlprimc : unit -> unit

@@ -509,9 +509,9 @@ module Digraph = struct
   let rec hyperedges_of_memo ty params id abbrev dg =
     match abbrev with
     | Types.Mnil -> dg
-    | Types.Mcons (_priv, _p, t1, t2, rem) ->
-        let s, dg = ty params t1 dg in
-        let exp, dg = ty params t2 dg in
+    | Types.Mcons { abbreviation; expansion; rem; _ } ->
+        let s, dg = ty params abbreviation dg in
+        let exp, dg = ty params expansion dg in
         dg |>
         add memo
           (Hyperedge
@@ -525,9 +525,9 @@ module Digraph = struct
   let rec edges_of_memo ty params abbrev dg =
     match abbrev with
     | Types.Mnil -> dg
-    | Types.Mcons (_priv, _p, t1, t2, rem) ->
-        let x, dg = ty params t1 dg in
-        let y, dg = ty params t2 dg in
+    | Types.Mcons { abbreviation; expansion; rem; _ } ->
+        let x, dg = ty params abbreviation dg in
+        let y, dg = ty params expansion dg in
         dg |> add memo (Edge (x,y)) |> edges_of_memo ty params rem
     | Types.Mlink rem -> edges_of_memo ty params !rem dg
 
@@ -683,8 +683,8 @@ module Digraph = struct
     | Types.Tarrow(l,t1,t2,_) ->
        mk "→%a" Pp.exponent_of_label l |> numbered [t1; t2]
     | Types.Tfunctor(l,us,{pack_path; pack_constraints},t2) ->
-        mk "→%a (%s : %a)" Pp.exponent_of_label l
-                    (Ident.Unscoped.name us)
+        mk "→%a (%a : %a)" Pp.exponent_of_label l
+                    Ident.Unscoped.print us
                     pp_path pack_path
           |> package_constraints params id pack_constraints
           |> numbered [t2]
@@ -725,6 +725,8 @@ module Digraph = struct
           ~color ~id ~desc
     | Types.Tnil -> mk "[Nil]"
     | Types.Tlink t -> add_tynode Decoration.(make [Style Dash]) |> std_edge t
+    | Types.Texpand (t, _) ->
+        add_tynode Decoration.(make [Style Dash]) |> std_edge t
     | Types.Tsubst (t, o) ->
         let dg = add_tynode (labelr "[Subst]") |> std_edge t in
         begin match o with

@@ -441,6 +441,16 @@ Error: Variant tags "`azdwbie" and "`c7diagq" have the same hash value.
        Change one of them.
 |}]
 
+let _ = object(_ : < x : [ `azdwbie ] -> unit; .. >)
+  method x : [ `c7diagq ] -> unit = fun _ -> ()
+end
+
+[%%expect{|
+Line 1:
+Error: In this program, variant constructors "`azdwbie" and "`c7diagq"
+       have the same hash value. Change one of them.
+|}]
+
 
 type t = {x:unit}
 type s = {y:unit}
@@ -492,4 +502,15 @@ Error: Type "u -> unit" is not a subtype of "v -> unit"
        Type "u0" = "int * int -> unit" is not a subtype of
          "v0" = "float * float -> unit"
        Type "float" is not a subtype of "int"
+|}]
+
+(* Too many arguments *)
+
+let f: _ -> int = fun x y -> 0
+[%%expect {|
+Line 1, characters 18-30:
+1 | let f: _ -> int = fun x y -> 0
+                      ^^^^^^^^^^^^
+Error: This function expects too many arguments, it should have type
+       "'a -> int"
 |}]

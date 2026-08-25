@@ -105,11 +105,20 @@ type 'variety obj =
   | Abstract_row : position -> _ obj
   (* Unification *)
   | Self_cannot_be_closed : unification obj
+  (* Equality & Moregen *)
+  | Kind_differ : string * field_kind_view * field_kind_view -> comparison obj
 
 type first_class_module =
     | Package_cannot_scrape of Path.t
     | Package_inclusion of Format_doc.doc
     | Package_coercion of Format_doc.doc
+    | Constraint_on_missing_type of position * string list
+    | Constraint_with_deps of position * string list
+    | Constraint_on_mismatched_type of {
+        pos:position;
+        decl:Types.type_declaration;
+        lhs:string list
+      }
 
 type univar =
   | Var_mismatch of { order:order; diff:type_expr diff }
@@ -135,6 +144,11 @@ type ('a, 'variety) t = ('a, 'variety) elt list
 type 'variety trace = (type_expr,     'variety) t
 type 'variety error = (expanded_type, 'variety) t
 
+let map_desc f { ty; expanded } =
+  let ty = f ty in
+  let expanded = f expanded in
+  { ty; expanded }
+
 let map_elt (type variety) f : ('a, variety) elt -> ('b, variety) elt = function
   | Diff x -> Diff (map_diff f x)
   | Escape {kind = Equation x; context} ->
@@ -149,6 +163,8 @@ let map_elt (type variety) f : ('a, variety) elt -> ('b, variety) elt = function
 
 let map f t = List.map (map_elt f) t
 
+let map_types f = map (map_desc f)
+
 let incompatible_fields ~name ~got ~expected =
   Incompatible_fields { name; diff={got; expected} }
 
@@ -158,6 +174,7 @@ let swap_elt (type variety) : ('a, variety) elt -> ('a, variety) elt = function
     Incompatible_fields { name; diff = swap_diff diff}
   | Obj (Missing_field(pos,s)) -> Obj (Missing_field(swap_position pos,s))
   | Obj (Abstract_row pos) -> Obj (Abstract_row (swap_position pos))
+  | Obj (Kind_differ (name, k1, k2)) -> Obj (Kind_differ (name, k2, k1))
   | Variant (Fixed_row(pos,k,f)) ->
     Variant (Fixed_row(swap_position pos,k,f))
   | Variant (No_tags(pos,f)) ->
@@ -168,6 +185,15 @@ let swap_elt (type variety) : ('a, variety) elt -> ('a, variety) elt = function
         diff = swap_diff d.diff
       })
   | Univar (Quantification_mismatch _) as x -> x
+  | First_class_module (Constraint_on_missing_type (pos,lhs)) ->
+    First_class_module (Constraint_on_missing_type (swap_position pos,lhs))
+  | First_class_module (Constraint_with_deps (pos,lhs)) ->
+    First_class_module (Constraint_with_deps (swap_position pos,lhs))
+  | First_class_module (Constraint_on_mismatched_type r) ->
+      let c =
+        Constraint_on_mismatched_type { r with pos = swap_position r.pos}
+      in
+      First_class_module c
   | x -> x
 
 let swap_trace e = List.map swap_elt e
@@ -222,4 +248,11 @@ module Subtype = struct
     | Diff x -> Diff (map_diff f x)
 
   let map f t = List.map (map_elt f) t
+
+  let map_desc f { ty; expanded } =
+    let ty = f ty in
+    let expanded = f expanded in
+    { ty; expanded }
+
+  let map_types f = map (map_desc f)
 end

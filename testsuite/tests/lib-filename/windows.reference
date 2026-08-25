@@ -1,0 +1,7 @@
+==== Executable (legal file name) targets, must not inject
+stdout &: "\"true  >\"out&false\"\"" -> 0
+stdout &&: "\"true  >\"out&&false\"\"" -> 0
+stdout (): "\"true  >\"out(false)\"\"" -> 0
+stdout (: "\"true  >\"out(false)\"\"" -> 0
+stdout ): "\"true  >\"out(false)\"\"" -> 0
+stderr &: "\"true  2>\"err&false\"\"" -> 0

@@ -92,6 +92,7 @@ void spawn_thread_internal(bool specific_domain, uintnat first_domain_unique_id,
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
   pthread_create(&thr, &attr, thread_func, args);
+  (void)pthread_attr_destroy(&attr);
 #endif
 }
 

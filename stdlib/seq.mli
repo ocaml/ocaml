@@ -777,9 +777,9 @@ val partition : ('a -> bool) -> 'a t -> 'a t * 'a t
     [filter p xs, filter (fun x -> not (p x)) xs].
 
     Consuming both of the sequences returned by [partition p xs] causes
-    [xs] to be consumed twice and causes the function [f] to be applied
-    twice to each element of the list.
-    Therefore, [f] should be pure and cheap.
+    [xs] to be consumed twice and causes the function [p] to be applied
+    twice to each element of the sequence.
+    Therefore, [p] should be pure and cheap.
     Furthermore, [xs] should be persistent and cheap.
     If that is not the case, use [partition p (memoize xs)].
 
@@ -818,3 +818,17 @@ val ints : int -> int t
     counting up.
 
     @since 4.14 *)
+
+val ints_in_range: first:int -> last:int -> int t
+(** [ints_in_range ~first ~last] is the sequence of integers beginning at
+    [first] (included) and counting up to [last] (included)
+
+    For example,
+    {[
+      ints_in_range ~first:1 ~last:5
+    ]}
+
+    yields [1], [2], [3], [4] and [5]
+
+    @since 5.6
+*)

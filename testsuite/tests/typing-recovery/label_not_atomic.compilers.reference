@@ -1,0 +1,15 @@
+File "label_not_atomic.ml", line 1:
+Error: Multiple errors were encountered
+File "label_not_atomic.ml", line 12, characters 12-29:
+12 |   let f t = [%atomic.loc t.x], [%atomic.loc t.y]
+                 ^^^^^^^^^^^^^^^^^
+  The record field x is not atomic
+File "label_not_atomic.ml", line 17, characters 21-22:
+17 |   a + (int_of_string b)
+                          ^
+  The value b has type string atomic_loc
+  but an expression was expected of type string
+File "label_not_atomic.ml", line 19, characters 17-21:
+19 | let t : string = f ()
+                      ^^^^
+  This expression has type int but an expression was expected of type string

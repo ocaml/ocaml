@@ -20,6 +20,7 @@
 #include <caml/fail.h>
 #include "caml/unixsupport.h"
 #include <stdio.h>
+#include <errno.h>
 #include <caml/signals.h>
 
 #ifndef INVALID_SET_FILE_POINTER

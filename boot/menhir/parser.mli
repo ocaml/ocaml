@@ -210,3 +210,11 @@ module Incremental : sig
   val implementation: Lexing.position -> (Parsetree.structure) MenhirInterpreter.checkpoint
   
 end
+
+(* The parse tables. *)
+
+(* Warning: this submodule is undocumented. In the future,
+   its type could change, or it could disappear altogether. *)
+
+module Tables : MenhirLib.TableFormat.TABLES
+  with type token = token

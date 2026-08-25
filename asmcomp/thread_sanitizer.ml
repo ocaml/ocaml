@@ -149,7 +149,8 @@ let wrap_entry_exit expr =
             | Cor | Cxor | Clsl | Clsr | Casr | Caddv | Cadda | Cnegf | Cabsf
             | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat
             | Ccheckbound | Copaque | Cdls_get | Cpoll | Capply _ | Cextcall _
-            | Cload _ | Cstore _ | Ccmpi _ | Ccmpa _ | Ccmpf _ | Craise _ ),
+            | Cload _ | Cstore _ | Ccmpi _ | Ccmpa _ | Ccmpf _ | Craise _
+            | Catomic_fetch_add ),
             _,
             _ )
       | Cconst_int (_, _)
@@ -259,6 +260,33 @@ let instrument body =
              Cop (Craise kind, [arg_exp], dbg)))
     | Cop (Craise _, ([] | _ :: _ :: _), _) ->
       invalid_arg "instrument: wrong number of arguments for operation Craise"
+    | Cop (Catomic_fetch_add, [loc; incr], dbginfo) ->
+      (* Replace the atomic fetch-add with a call to
+         [__tsan_atomic64_fetch_add]. OCaml values are word-sized, so we use
+         the 64-bit variant (on 64-bit platforms) with sequential consistency
+         to match the semantics of the native atomic fetch-add. *)
+      let loc_id = VP.create (V.create_local "loc") in
+      let loc_exp = Cvar (VP.var loc_id) in
+      let incr_id = VP.create (V.create_local "incr") in
+      let incr_exp = Cvar (VP.var incr_id) in
+      Clet
+        ( incr_id,
+          aux incr,
+          Clet
+            ( loc_id,
+              aux loc,
+              Cop
+                ( Cextcall
+                    ( Printf.sprintf "__tsan_atomic%d_fetch_add"
+                        Sys.word_size,
+                      typ_val,
+                      [],
+                      false ),
+                  [loc_exp; incr_exp; TSan_memory_order.seq_cst],
+                  dbginfo ) ) )
+    | Cop (Catomic_fetch_add, _, _) ->
+      invalid_arg
+        "instrument: wrong number of arguments for operation Catomic_fetch_add"
     | Cop
         ( (( Capply _ | Caddi | Calloc | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
            | Cand | Cor | Cxor | Clsl | Clsr | Casr | Caddv | Cadda | Cnegf

@@ -42,7 +42,7 @@ val escaped : char -> string
     with special characters escaped following the lexical conventions
     of OCaml.
     All characters outside the ASCII printable range \[[0x20];[0x7E]\] are
-    escaped, as well as backslash, double-quote, and single-quote. *)
+    escaped, as well as backslash and single-quote. *)
 
 (** {1:predicates Predicates and comparisons}
 

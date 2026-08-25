@@ -111,18 +111,6 @@ type type_desc =
   | Tnil
   (** [Tnil] ==> [<...; >] *)
 
-  | Tlink of type_expr
-  (** Indirection used by unification engine. *)
-
-  | Tsubst of type_expr * type_expr option
-  (** [Tsubst] is used temporarily to store information in low-level
-      functions manipulating representation of types, such as
-      instantiation or copy.
-      The first argument contains a copy of the original node.
-      The second is available only when the first is the row variable of
-      a polymorphic variant.  It then contains a copy of the whole variant.
-      This constructor should not appear outside of these cases. *)
-
   | Tvariant of row_desc
   (** Representation of polymorphic variants, see [row_desc]. *)
 
@@ -140,6 +128,28 @@ type type_desc =
 
   | Tfunctor of arg_label * Ident.Unscoped.t * package * type_expr
   (** Type of a dependent arrow *)
+
+  | Texpand of type_expr * abbrev
+  (** [Texpand] is like [Tlink] but the result of an expansion;
+      [abbrev] remember the original declaration. *)
+
+  | Tlink of type_expr
+  (** Indirection used by unification engine. *)
+
+  | Tsubst of type_expr * type_expr option
+  (** [Tsubst] is used temporarily to store information in low-level
+      functions manipulating representation of types, such as
+      instantiation or copy.
+      The first argument contains a copy of the original node.
+      The second is available only when the first is the row variable of
+      a polymorphic variant.  It then contains a copy of the whole variant.
+      This constructor should not appear outside of these cases. *)
+
+(** [abbrev] remembers information about an expanded type abbreviation *)
+and abbrev =
+    { abbr_path : Path.t;
+      abbr_args : type_expr list;
+      mutable abbr_level : int }
 
 (** [package] corresponds to the type of a first-class module *)
 and package =
@@ -166,17 +176,21 @@ and fixed_explanation =
     tail.
 
     Note on marshalling: [abbrev_memo] must not appear in saved types.
-    [Btype], with [cleanup_abbrev] and [memo], takes care of tracking and
+    [Btype], with [cleanup_abbrev_memo] and [memo], takes care of tracking and
     removing abbreviations.
 *)
 and abbrev_memo =
   | Mnil (** No known abbreviation *)
 
-  | Mcons of private_flag * Path.t * type_expr * type_expr * abbrev_memo
+  | Mcons of
+      { privacy : private_flag;
+        path : Path.t;
+        abbreviation : type_expr;
+        expansion : type_expr;
+        rem : abbrev_memo }
   (** Found one abbreviation.
       A valid abbreviation should be at least as visible and reachable by the
-      same path.
-      The first expression is the abbreviation and the second the expansion. *)
+      same path. *)
 
   | Mlink of abbrev_memo ref
   (** Abbreviations can be found after this indirection *)
@@ -258,6 +272,13 @@ val try_mark_node: type_mark -> type_expr -> bool
 
            Return false if it was already marked *)
 
+(** Handle kept abbreviations *)
+val get_abbrev: type_expr -> abbrev option
+val iter_abbrev: (abbrev -> unit) -> type_expr -> unit
+val forget_abbrev: type_expr -> unit
+val ignore_abbrev: type_expr -> type_expr
+val set_abbrev_level: abbrev -> int -> unit
+
 (** Transient [type_expr].
     Should only be used immediately after [Transient_expr.repr] *)
 type transient_expr = private
@@ -286,9 +307,12 @@ module Transient_expr : sig
           Fail if already instantiated. *)
 
   val try_mark_node: type_mark -> transient_expr -> bool
+
+  val eq : transient_expr -> transient_expr -> bool
 end
 
-val create_expr: type_desc -> level: int -> scope: int -> id: int -> type_expr
+val create_expr:
+    type_desc -> level: int -> scope: int -> id: int -> type_expr
 
 (** Functions and definitions moved from Btype *)
 
@@ -479,6 +503,7 @@ and self_meths =
 and class_signature =
   { csig_self: type_expr;
     mutable csig_self_row: type_expr;
+    mutable csig_dummy_method : field_kind;
     mutable csig_vars: (mutable_flag * virtual_flag * type_expr) Vars.t;
     mutable csig_meths: (method_privacy * virtual_flag * type_expr) Meths.t; }
 
@@ -587,6 +612,7 @@ and type_origin =
   | Rec_check_regularity       (* See Typedecl.transl_type_decl *)
   | Approx_recmod
   | Existential of string
+  | Equation of type_expr * type_expr
 
 and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
@@ -751,25 +777,34 @@ type snapshot
         (* A snapshot for backtracking *)
 val snapshot: unit -> snapshot
         (* Make a snapshot for later backtracking. Costs nothing *)
-val backtrack: cleanup_abbrev:(unit -> unit) -> snapshot -> unit
+val backtrack: cleanup:(unit -> unit) -> snapshot -> unit
         (* Backtrack to a given snapshot. Only possible if you have
            not already backtracked to a previous snapshot.
-           Calls [cleanup_abbrev] internally *)
+           Calls [cleanup] internally *)
 val undo_first_change_after: snapshot -> unit
         (* Backtrack only the first change after a snapshot.
            Does not update the list of changes *)
 val undo_compress: snapshot -> unit
         (* Backtrack only path compression. Only meaningful if you have
            not already backtracked to a previous snapshot.
-           Does not call [cleanup_abbrev] *)
+           Does not call [cleanup] *)
 
 (** Functions to use when modifying a type (only Ctype?).
     The old values are logged and reverted on backtracking.
  *)
 
+val link_expand: type_expr -> type_expr -> unit
+        (* Set the desc field of [t1] to [Texpand (t2, p)],
+           assuming that [t1] is [Tconstr (p, args, _)], and
+           logging the old values if there is an active snapshot.
+           To be used only when expanding a type abbreviation. *)
 val link_type: type_expr -> type_expr -> unit
         (* Set the desc field of [t1] to [Tlink t2], logging the old
-           value if there is an active snapshot *)
+           values if there is an active snapshot.
+           To be used during unification.
+           Must only be used if
+           - [t1] is [Tvar], or
+           - [t1] and [t2] have the same [type_desc] constructor. *)
 val set_type_desc: type_expr -> type_desc -> unit
         (* Set directly the desc field, without sharing *)
 val set_level: type_expr -> int -> unit

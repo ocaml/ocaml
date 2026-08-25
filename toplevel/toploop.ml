@@ -425,7 +425,7 @@ let prepare ppf ?input () =
   Topcommon.set_paths ?dir ();
   begin try
     initialize_toplevel_env ()
-  with Env.Error _ | Typetexp.Error _ as exn ->
+  with Env.Error.In_context _ | Typetexp.Error.In_context _ as exn ->
     Location.report_exception ppf exn; raise (Compenv.Exit_with_status 2)
   end;
   try

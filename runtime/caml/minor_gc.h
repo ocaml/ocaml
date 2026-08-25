@@ -95,7 +95,6 @@ extern void caml_empty_minor_heaps_once(void); /* out STW */
 void caml_alloc_small_dispatch (caml_domain_state* domain,
                                 intnat wosize, int flags,
                                 int nallocs, unsigned char* encoded_alloc_lens);
-header_t caml_get_header_val(value v);
 void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv);
 extern void caml_realloc_ref_table (struct caml_ref_table *);
 extern void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *);

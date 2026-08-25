@@ -50,6 +50,10 @@ let flags env = Environments.safe_lookup Ocaml_variables.flags env
 
 let last_flags env = Environments.safe_lookup Ocaml_variables.last_flags env
 
+let ocamllex_exit_status env =
+  Actions_helpers.exit_status_of_variable
+    env Ocaml_variables.ocamllex_exit_status
+
 let ocamllex_flags env =
   Environments.safe_lookup Ocaml_variables.ocamllex_flags env
 
@@ -95,6 +99,7 @@ type module_generator = {
   description : string;
   command : string;
   flags : Environments.t -> string;
+  expected_exit_status : Environments.t -> int;
   generated_compilation_units :
     string -> (string * Ocaml_filetypes.t) list
 }
@@ -104,6 +109,7 @@ let ocamllex =
   description = "lexer";
   command = Ocaml_commands.ocamlrun_ocamllex;
   flags = ocamllex_flags;
+  expected_exit_status = ocamllex_exit_status;
   generated_compilation_units =
     fun lexer_name -> [(lexer_name, Ocaml_filetypes.Implementation)]
 }
@@ -113,6 +119,7 @@ let ocamlyacc =
   description = "parser";
   command = Ocaml_files.ocamlyacc;
   flags = ocamlyacc_flags;
+  expected_exit_status = (fun _env -> 0);
   generated_compilation_units =
     fun parser_name ->
       [
@@ -135,7 +142,7 @@ let generate_module generator output_variable input log env =
     generator.flags env;
     input_file
   ] in
-  let expected_exit_status = 0 in
+  let expected_exit_status = generator.expected_exit_status env in
   let exit_status =
     Actions_helpers.run_cmd
       ~environment:default_ocaml_env
@@ -266,9 +273,9 @@ let compile_program (compiler : Ocaml_compilers.compiler) log env =
         c_headers_flags;
         Ocaml_flags.stdlib;
         directory_flags env;
-        flags env;
         libraries;
         backend_default_flags env compiler#target;
+        flags env;
         backend_flags env compiler#target;
         compile_flags;
         output;
@@ -308,9 +315,9 @@ let compile_module compiler module_ log env =
     Ocaml_flags.stdlib;
     c_headers_flags;
     directory_flags env;
-    flags env;
     libraries compiler#target env;
     backend_default_flags env compiler#target;
+    flags env;
     backend_flags env compiler#target;
     "-c " ^ module_;
   ] in
@@ -405,7 +412,7 @@ let setup_tool_build_env tool log env =
   Sys.force_remove tool_output_file;
   let env =
     Environments.add Builtin_variables.test_build_directory build_dir env in
-  Actions_helpers.setup_build_env false source_modules log env
+  Actions_helpers.setup_build_env ~add_testfile:false source_modules log env
 
 let setup_compiler_build_env (compiler : Ocaml_compilers.compiler) log env =
   let (r, env) = setup_tool_build_env compiler log env in
@@ -589,7 +596,8 @@ let ocamlobjinfo =
     )
 
 let ocamltest_action log env =
-  let (_, env) = Actions_helpers.setup_simple_build_env false [] log env in
+  let (_, env) =
+    Actions_helpers.setup_simple_build_env ~add_testfile:false [] log env in
   let program = Environments.safe_lookup Builtin_variables.program env in
   let what = Printf.sprintf "Running ocamltest on %s" program in
   Printf.fprintf log "%s\n%!" what;
@@ -800,17 +808,15 @@ let cc =
   Actions.make ~name:"cc" ~description:"Run C compiler to build the program"
     run_cc
 
-let run_expect_once input_file principal log env =
+let run_expect_once input_file log env =
   let expect_flags = Sys.safe_getenv "EXPECT_FLAGS" in
   let repo_root = "-repo-root " ^ Ocaml_directories.srcdir in
-  let principal_flag = if principal then "-principal" else "" in
   let commandline =
   [
     Ocaml_commands.ocamlrun_expect;
     expect_flags;
     flags env;
     repo_root;
-    principal_flag;
     input_file
   ] in
   let exit_status =
@@ -823,27 +829,29 @@ let run_expect_once input_file principal log env =
     (Test_result.fail_with_reason reason, env)
   end
 
-let run_expect_twice input_file log env =
+let run_expect_variants input_file log env =
   let corrected filename = Filename.make_filename filename "corrected" in
-  let (result1, env1) = run_expect_once input_file false log env in
-  if Test_result.is_pass result1 then begin
-    let intermediate_file = corrected input_file in
-    let (result2, env2) =
-      run_expect_once intermediate_file true log env1 in
-    if Test_result.is_pass result2 then begin
-      let output_file = corrected intermediate_file in
-      let output_env = Environments.add_bindings
-      [
-        Builtin_variables.reference, input_file;
-        Builtin_variables.output, output_file
-      ] env2 in
-      (Test_result.pass, output_env)
-    end else (result2, env2)
-  end else (result1, env1)
+  let (result, env') =
+    run_expect_once input_file log env in
+  if Test_result.is_pass result
+  then begin
+    let output_file = corrected input_file in
+    let output_env = Environments.add_bindings
+        [
+          Builtin_variables.reference, input_file;
+          Builtin_variables.output, output_file
+        ] env in
+    (Test_result.pass, output_env)
+  end
+  else (result, env')
 
 let run_expect log env =
-  let input_file = Actions_helpers.testfile env in
-  run_expect_twice input_file log env
+  if Environments.is_variable_defined Ocaml_variables.libraries env then
+    let reason = "include is not supported with expect tests" in
+    (Test_result.fail_with_reason reason, env)
+  else
+    let input_file = Actions_helpers.testfile env in
+    run_expect_variants input_file log env
 
 let run_expect =
   Actions.make ~name:"run-expect" ~description:"Run expect test" run_expect
@@ -1148,6 +1156,7 @@ let config_variables _log env =
     Ocaml_variables.ocamlrunparam, Sys.safe_getenv "OCAMLRUNPARAM";
     Ocaml_variables.ocamlsrcdir, Ocaml_directories.srcdir;
     Ocaml_variables.os_type, Sys.os_type;
+    Ocaml_variables.system, Ocamltest_config.system;
   ] env
 
 let flat_float_array = Actions.make

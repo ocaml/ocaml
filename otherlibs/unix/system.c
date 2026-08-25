@@ -23,6 +23,7 @@
 #include "caml/unixsupport.h"
 #include <process.h>
 #include <stdio.h>
+#include <errno.h>
 
 CAMLprim value caml_unix_system(value command)
 {

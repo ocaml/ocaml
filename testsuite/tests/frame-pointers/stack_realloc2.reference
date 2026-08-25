@@ -1,5 +1,6 @@
 camlStack_realloc2.callback
 caml_start_program
+caml_callback_exn
 caml_callback
 c_fun
 caml_c_call

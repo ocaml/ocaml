@@ -8,6 +8,10 @@ set -eu
 # - Replace mutex IDs like 'M87' with 'M<implemspecific>'
 # - Replace the complete path of the program by '<systemspecific>/' followed by
 #   the program filename.
+# - Drop certain functions from the callstack that are known to create portability issues
+#   'caml_plat_thread_create' does not show on macosx (#14472)
+#   To avoid discrepancies when dropping stack entries,
+#   we also replace the `#NN` index by just a dash.
 script1='s/pid=[[:digit:]]+/pid=<implemspecific>/
 s/tid=[[:digit:]]+/tid=<implemspecific>/
 
@@ -19,8 +23,12 @@ s/tid=[[:digit:]]+/tid=<implemspecific>/
   s/M([0-9]+) \(0x[[:xdigit:]]+\)/M\1 (<implemspecific>)/
 }
 
+/caml_plat_thread_create/ {
+  d
+}
+
 /#[0-9]+/ {
-  s/(#[0-9]+) ([^ ]*) [^ ]*(\(discriminator [0-9]+\))? \(([^ ]*)\)/\1 \2 <implemspecific> (\4)/
+  s/(#[0-9]+) ([^ ]*) [^ ]*(\(discriminator [0-9]+\))? \(([^ ]*)\)/- \2 <implemspecific> (\4)/
   s/(caml[a-zA-Z_0-9]+)[$.]([a-zA-Z_0-9]+)_[[:digit:]]+/\1$\2_<implemspecific>/
   s/(caml[a-zA-Z_0-9]+)[$.]([a-zA-Z_0-9]+)/\1$\2/
   s/\((.+)+0x[[:xdigit:]]+\)/(<implemspecific>)/
@@ -37,7 +45,7 @@ s/ M[0-9]+/ M<implemspecific>/
 
 # To ignore differences in compiler function inlining, kill backtrace after
 # caml_start_program or caml_startup*.
-script2='/^[[:space:]]+#[[:digit:]]+ (caml_start_program|caml_startup)/, /^$/ {
+script2='/^[[:space:]]+- (caml_start_program|caml_startup)/, /^$/ {
   /^$/ !d
 }'
 

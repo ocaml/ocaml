@@ -1,88 +1,3 @@
-module General = struct
-(******************************************************************************)
-(*                                                                            *)
-(*                                    Menhir                                  *)
-(*                                                                            *)
-(*   Copyright Inria. All rights reserved. This file is distributed under     *)
-(*   the terms of the GNU Library General Public License version 2, with a    *)
-(*   special exception on linking, as described in the file LICENSE.          *)
-(*                                                                            *)
-(******************************************************************************)
-
-(* --------------------------------------------------------------------------- *)
-
-(* Lists. *)
-
-let rec take n xs =
-  match n, xs with
-  | 0, _
-  | _, [] ->
-      []
-  | _, (x :: xs as input) ->
-     let xs' = take (n - 1) xs in
-     if xs == xs' then
-       input
-     else
-       x :: xs'
-
-let rec drop n xs =
-  match n, xs with
-  | 0, _ ->
-      xs
-  | _, [] ->
-      []
-  | _, _ :: xs ->
-      drop (n - 1) xs
-
-let rec uniq1 cmp x ys =
-  match ys with
-  | [] ->
-      []
-  | y :: ys ->
-      if cmp x y = 0 then
-        uniq1 cmp x ys
-      else
-        y :: uniq1 cmp y ys
-
-let uniq cmp xs =
-  match xs with
-  | [] ->
-      []
-  | x :: xs ->
-      x :: uniq1 cmp x xs
-
-let weed cmp xs =
-  uniq cmp (List.sort cmp xs)
-
-(* --------------------------------------------------------------------------- *)
-
-(* Streams. *)
-
-type 'a stream =
-    'a head Lazy.t
-
-and 'a head =
-  | Nil
-  | Cons of 'a * 'a stream
-
-(* The length of a stream. *)
-
-let rec length xs =
-  match Lazy.force xs with
-  | Nil ->
-      0
-  | Cons (_, xs) ->
-      1 + length xs
-
-(* Folding over a stream. *)
-
-let rec foldr f xs accu =
-  match Lazy.force xs with
-  | Nil ->
-      accu
-  | Cons (x, xs) ->
-      f x (foldr f xs accu)
-end
 module Convert = struct
 (******************************************************************************)
 (*                                                                            *)
@@ -216,62 +131,55 @@ module IncrementalEngine = struct
 
 type position = Lexing.position
 
-open General
-
-(* This signature describes the incremental LR engine. *)
-
-(* In this mode, the user controls the lexer, and the parser suspends
-   itself when it needs to read a new token. *)
-
+(**This signature describes the incremental LR engine. When the engine
+   is used in this mode, the user controls the lexer, and the parser
+   suspends itself when it needs to read a new token. *)
 module type INCREMENTAL_ENGINE = sig
 
   type token
 
-  (* A value of type [production] is (an index for) a production. The start
-     productions (which do not exist in an \mly file, but are constructed by
+  (**A value of type {!production} is (an index for) a production. The start
+     productions (which do not exist in an [.mly] file, but are constructed by
      Menhir internally) are not part of this type. *)
-
   type production
 
-  (* The type ['a checkpoint] represents an intermediate or final state of the
+  (**A value of type ['a env] represents a configuration of the automaton:
+     current state, stack, lookahead token, etc. The parameter ['a] is the
+     type of the semantic value that will eventually be produced if the parser
+     succeeds.
+
+     In normal operation, the parser works with checkpoints: see the functions
+     {!offer} and {!resume}. However, it is also possible to work directly with
+     environments (see the functions {!pop}, {!force_reduction}, and [feed]) and
+     to reconstruct a checkpoint out of an environment (see {!input_needed}).
+     This is considered advanced functionality; its purpose is to allow error
+     recovery strategies to be programmed by the user. *)
+  type 'a env
+
+  (**The type ['a checkpoint] represents an intermediate or final state of the
      parser. An intermediate checkpoint is a suspension: it records the parser's
      current state, and allows parsing to be resumed. The parameter ['a] is
      the type of the semantic value that will eventually be produced if the
-     parser succeeds. *)
+     parser succeeds.
 
-  (* [Accepted] and [Rejected] are final checkpoints. [Accepted] carries a
-     semantic value. *)
+     [Accepted] and [Rejected] are final checkpoints. [Accepted] carries a
+     semantic value.
 
-  (* [InputNeeded] is an intermediate checkpoint. It means that the parser wishes
-     to read one token before continuing. *)
+     [InputNeeded] is an intermediate checkpoint. It means that the parser wishes
+     to read one token before continuing.
 
-  (* [Shifting] is an intermediate checkpoint. It means that the parser is taking
+     [Shifting] is an intermediate checkpoint. It means that the parser is taking
      a shift transition. It exposes the state of the parser before and after
      the transition. The Boolean parameter tells whether the parser intends to
      request a new token after this transition. (It always does, except when
-     it is about to accept.) *)
+     it is about to accept.)
 
-  (* [AboutToReduce] is an intermediate checkpoint. It means that the parser is
+     [AboutToReduce] is an intermediate checkpoint. It means that the parser is
      about to perform a reduction step. It exposes the parser's current
-     state as well as the production that is about to be reduced. *)
+     state as well as the production that is about to be reduced.
 
-  (* [HandlingError] is an intermediate checkpoint. It means that the parser has
+     [HandlingError] is an intermediate checkpoint. It means that the parser has
      detected an error and is currently handling it, in several steps. *)
-
-  (* A value of type ['a env] represents a configuration of the automaton:
-     current state, stack, lookahead token, etc. The parameter ['a] is the
-     type of the semantic value that will eventually be produced if the parser
-     succeeds. *)
-
-  (* In normal operation, the parser works with checkpoints: see the functions
-     [offer] and [resume]. However, it is also possible to work directly with
-     environments (see the functions [pop], [force_reduction], and [feed]) and
-     to reconstruct a checkpoint out of an environment (see [input_needed]).
-     This is considered advanced functionality; its purpose is to allow error
-     recovery strategies to be programmed by the user. *)
-
-  type 'a env
-
   type 'a checkpoint = private
     | InputNeeded of 'a env
     | Shifting of 'a env * 'a env * bool
@@ -280,22 +188,16 @@ module type INCREMENTAL_ENGINE = sig
     | Accepted of 'a
     | Rejected
 
-  (* [offer] allows the user to resume the parser after it has suspended
+  (**[offer] allows the user to resume the parser after it has suspended
      itself with a checkpoint of the form [InputNeeded env]. [offer] expects
      the old checkpoint as well as a new token and produces a new checkpoint.
      It does not raise any exception. *)
-
   val offer:
     'a checkpoint ->
     token * position * position ->
     'a checkpoint
 
-  (* [resume] allows the user to resume the parser after it has suspended
-     itself with a checkpoint of the form [Shifting _], [AboutToReduce _], or
-     [HandlingError _]. [resume] expects the old checkpoint and produces a
-     new checkpoint. It does not raise any exception. *)
-
-  (* The optional argument [strategy] influences the manner in which [resume]
+  (**The optional argument [strategy] influences the manner in which {!resume}
      deals with checkpoints of the form [HandlingError _]. Its default value
      is [`Legacy]. It can be briefly described as follows:
 
@@ -309,45 +211,44 @@ module type INCREMENTAL_ENGINE = sig
        perfect backward compatibility is required, the legacy strategy
        should be selected.
 
-     More details on these strategies appear in the file [Engine.ml]. *)
-
+     More details on strategies appear in the file [Engine.ml]. *)
   type strategy =
     [ `Legacy | `Simplified ]
 
+  (**[resume] allows the user to resume the parser after it has suspended
+     itself with a checkpoint of the form [Shifting _], [AboutToReduce _], or
+     [HandlingError _]. [resume] expects the old checkpoint and produces a
+     new checkpoint. It does not raise any exception. *)
   val resume:
     ?strategy:strategy ->
     'a checkpoint ->
     'a checkpoint
 
-  (* A token supplier is a function of no arguments which delivers a new token
+  (**A token supplier is a function of no arguments which delivers a new token
      (together with its start and end positions) every time it is called. *)
-
   type supplier =
     unit -> token * position * position
 
-  (* A pair of a lexer and a lexing buffer can be easily turned into a
-     supplier. *)
-
+  (**A pair of a lexer and a lexing buffer can be turned into a supplier. *)
   val lexer_lexbuf_to_supplier:
     (Lexing.lexbuf -> token) ->
     Lexing.lexbuf ->
     supplier
 
-  (* The functions [offer] and [resume] are sufficient to write a parser loop.
+  (**The functions {!offer} and {!resume} are sufficient to write a parser loop.
      One can imagine many variations (which is why we expose these functions
      in the first place!). Here, we expose a few variations of the main loop,
      ready for use. *)
 
-  (* [loop supplier checkpoint] begins parsing from [checkpoint], reading
+  (**[loop supplier checkpoint] begins parsing from [checkpoint], reading
      tokens from [supplier]. It continues parsing until it reaches a
      checkpoint of the form [Accepted v] or [Rejected]. In the former case, it
      returns [v]. In the latter case, it raises the exception [Error].
      The optional argument [strategy], whose default value is [Legacy],
-     is passed to [resume] and influences the error-handling strategy. *)
-
+     is passed to {!resume} and influences the error-handling strategy. *)
   val loop: ?strategy:strategy -> supplier -> 'a checkpoint -> 'a
 
-  (* [loop_handle succeed fail supplier checkpoint] begins parsing from
+  (**[loop_handle succeed fail supplier checkpoint] begins parsing from
      [checkpoint], reading tokens from [supplier]. It continues parsing until
      it reaches a checkpoint of the form [Accepted v] or [HandlingError env]
      (or [Rejected], but that should not happen, as [HandlingError _] will be
@@ -358,13 +259,12 @@ module type INCREMENTAL_ENGINE = sig
      to run. For this reason, there is no [strategy] parameter. Instead, the
      user can implement her own error handling code, in the [fail]
      continuation. *)
-
   val loop_handle:
     ('a -> 'answer) ->
     ('a checkpoint -> 'answer) ->
     supplier -> 'a checkpoint -> 'answer
 
-  (* [loop_handle_undo] is analogous to [loop_handle], except it passes a pair
+  (**[loop_handle_undo] is analogous to [loop_handle], except it passes a pair
      of checkpoints to the failure continuation.
 
      The first (and oldest) checkpoint is the last [InputNeeded] checkpoint that
@@ -376,234 +276,199 @@ module type INCREMENTAL_ENGINE = sig
 
      [loop_handle_undo] must initially be applied to an [InputNeeded] checkpoint.
      The parser's initial checkpoints satisfy this constraint. *)
-
   val loop_handle_undo:
     ('a -> 'answer) ->
     ('a checkpoint -> 'a checkpoint -> 'answer) ->
     supplier -> 'a checkpoint -> 'answer
 
-  (* [shifts checkpoint] assumes that [checkpoint] has been obtained by
+  (**[shifts checkpoint] assumes that [checkpoint] has been obtained by
      submitting a token to the parser. It runs the parser from [checkpoint],
      through an arbitrary number of reductions, until the parser either
      accepts this token (i.e., shifts) or rejects it (i.e., signals an error).
      If the parser decides to shift, then [Some env] is returned, where [env]
      is the parser's state just before shifting. Otherwise, [None] is
-     returned. *)
+     returned.
 
-  (* It is desirable that the semantic actions be side-effect free, or that
+     It is desirable that the semantic actions be side-effect free, or that
      their side-effects be harmless (replayable). *)
-
   val shifts: 'a checkpoint -> 'a env option
 
-  (* The function [acceptable] allows testing, after an error has been
+  (**The function [acceptable] allows testing, after an error has been
      detected, which tokens would have been accepted at this point. It is
      implemented using [shifts]. Its argument should be an [InputNeeded]
-     checkpoint. *)
+     checkpoint.
 
-  (* For completeness, one must undo any spurious reductions before carrying out
+     For completeness, one must undo any spurious reductions before carrying out
      this test -- that is, one must apply [acceptable] to the FIRST checkpoint
-     that is passed by [loop_handle_undo] to its failure continuation. *)
+     that is passed by [loop_handle_undo] to its failure continuation.
 
-  (* This test causes some semantic actions to be run! The semantic actions
-     should be side-effect free, or their side-effects should be harmless. *)
+     This test causes some semantic actions to be run! The semantic actions
+     should be side-effect free, or their side-effects should be harmless.
 
-  (* The position [pos] is used as the start and end positions of the
+     The position [pos] is used as the start and end positions of the
      hypothetical token, and may be picked up by the semantic actions. We
      suggest using the position where the error was detected. *)
-
   val acceptable: 'a checkpoint -> token -> position -> bool
 
-  (* The abstract type ['a lr1state] describes the non-initial states of the
+  (**The abstract type ['a lr1state] describes the non-initial states of the
      LR(1) automaton. The index ['a] represents the type of the semantic value
      associated with this state's incoming symbol. *)
-
   type 'a lr1state
 
-  (* The states of the LR(1) automaton are numbered (from 0 and up). *)
-
+  (**The states of the LR(1) automaton are numbered (from 0 and up). *)
   val number: _ lr1state -> int
 
   (* Productions are numbered. *)
 
-  (* [find_production i] requires the index [i] to be valid. Use with care. *)
-
+  (**[production_index] maps a production to its integer index. *)
   val production_index: production -> int
+
+  (**[find_production] maps a production index to a production.
+     Its argument must be a valid index; use with care. *)
   val find_production: int -> production
 
-  (* An element is a pair of a non-initial state [s] and a semantic value [v]
+  (**An element is a pair of a non-initial state [s] and a semantic value [v]
      associated with the incoming symbol of this state. The idea is, the value
      [v] was pushed onto the stack just before the state [s] was entered. Thus,
      for some type ['a], the state [s] has type ['a lr1state] and the value [v]
      has type ['a]. In other words, the type [element] is an existential type. *)
-
   type element =
     | Element: 'a lr1state * 'a * position * position -> element
 
-  (* The parser's stack is (or, more precisely, can be viewed as) a stream of
-     elements. The type [stream] is defined by the module [General]. *)
+  (**The parser's stack is (or, more precisely, can be viewed as) a stream of
+     elements. The functions {!top} and {!pop} offer access to this stream. *)
 
-  (* As of 2017/03/31, the types [stream] and [stack] and the function [stack]
-     are DEPRECATED. They might be removed in the future. An alternative way
-     of inspecting the stack is via the functions [top] and [pop]. *)
-
-  type stack = (* DEPRECATED *)
-    element stream
-
-  (* This is the parser's stack, a stream of elements. This stream is empty if
-     the parser is in an initial state; otherwise, it is non-empty.  The LR(1)
-     automaton's current state is the one found in the top element of the
-     stack. *)
-
-  val stack: 'a env -> stack (* DEPRECATED *)
-
-  (* [top env] returns the parser's top stack element. The state contained in
+  (**[top env] returns the parser's top stack element. The state contained in
      this stack element is the current state of the automaton. If the stack is
      empty, [None] is returned. In that case, the current state of the
      automaton must be an initial state. *)
-
   val top: 'a env -> element option
 
-  (* [pop_many i env] pops [i] cells off the automaton's stack. This is done
+  (**[pop_many i env] pops [i] cells off the automaton's stack. This is done
      via [i] successive invocations of [pop]. Thus, [pop_many 1] is [pop]. The
      index [i] must be nonnegative. The time complexity is O(i). *)
-
   val pop_many: int -> 'a env -> 'a env option
 
-  (* [get i env] returns the parser's [i]-th stack element. The index [i] is
+  (**[get i env] returns the parser's [i]-th stack element. The index [i] is
      0-based: thus, [get 0] is [top]. If [i] is greater than or equal to the
      number of elements in the stack, [None] is returned. The time complexity
      is O(i). *)
-
   val get: int -> 'a env -> element option
 
-  (* [current_state_number env] is (the integer number of) the automaton's
+  (**[current_state_number env] is (the integer number of) the automaton's
      current state. This works even if the automaton's stack is empty, in
      which case the current state is an initial state. This number can be
      passed as an argument to a [message] function generated by [menhir
      --compile-errors]. *)
-
   val current_state_number: 'a env -> int
 
-  (* [equal env1 env2] tells whether the parser configurations [env1] and
+  (**[equal env1 env2] tells whether the parser configurations [env1] and
      [env2] are equal in the sense that the automaton's current state is the
      same in [env1] and [env2] and the stack is *physically* the same in
      [env1] and [env2]. If [equal env1 env2] is [true], then the sequence of
-     the stack elements, as observed via [pop] and [top], must be the same in
+     the stack elements, as observed via {!pop} and {!top}, must be the same in
      [env1] and [env2]. Also, if [equal env1 env2] holds, then the checkpoints
      [input_needed env1] and [input_needed env2] must be equivalent. The
      function [equal] has time complexity O(1). *)
-
   val equal: 'a env -> 'a env -> bool
 
-  (* These are the start and end positions of the current lookahead token. If
-     invoked in an initial state, this function returns a pair of twice the
-     initial position. *)
-
+  (**[positions env] returns the start and end positions of the current
+     lookahead token. In an initial state, a pair of twice the initial
+     position is returned. *)
   val positions: 'a env -> position * position
 
-  (* When applied to an environment taken from a checkpoint of the form
+  (**When applied to an environment taken from a checkpoint of the form
      [AboutToReduce (env, prod)], the function [env_has_default_reduction]
      tells whether the reduction that is about to take place is a default
      reduction. *)
-
   val env_has_default_reduction: 'a env -> bool
 
-  (* [state_has_default_reduction s] tells whether the state [s] has a default
+  (**[state_has_default_reduction s] tells whether the state [s] has a default
      reduction. This includes the case where [s] is an accepting state. *)
-
   val state_has_default_reduction: _ lr1state -> bool
 
-  (* [pop env] returns a new environment, where the parser's top stack cell
+  (**[pop env] returns a new environment, where the parser's top stack cell
      has been popped off. (If the stack is empty, [None] is returned.) This
      amounts to pretending that the (terminal or nonterminal) symbol that
      corresponds to this stack cell has not been read. *)
-
   val pop: 'a env -> 'a env option
 
-  (* [force_reduction prod env] should be called only if in the state [env]
+  (**[force_reduction prod env] should be called only if in the state [env]
      the parser is capable of reducing the production [prod]. If this
      condition is satisfied, then this production is reduced, which means that
      its semantic action is executed (this can have side effects!) and the
      automaton makes a goto (nonterminal) transition. If this condition is not
      satisfied, [Invalid_argument _] is raised. *)
-
   val force_reduction: production -> 'a env -> 'a env
 
-  (* [input_needed env] returns [InputNeeded env]. That is, out of an [env]
+  (**[input_needed env] returns [InputNeeded env]. That is, out of an [env]
      that might have been obtained via a series of calls to the functions
      [pop], [force_reduction], [feed], etc., it produces a checkpoint, which
      can be used to resume normal parsing, by supplying this checkpoint as an
-     argument to [offer]. *)
+     argument to [offer].
 
-  (* This function should be used with some care. It could "mess up the
+     This function should be used with some care. It could "mess up the
      lookahead" in the sense that it allows parsing to resume in an arbitrary
      state [s] with an arbitrary lookahead symbol [t], even though Menhir's
      reachability analysis (menhir --list-errors) might well think that it is
      impossible to reach this particular configuration. If one is using
      Menhir's new error reporting facility, this could cause the parser to
      reach an error state for which no error message has been prepared. *)
-
   val input_needed: 'a env -> 'a checkpoint
 
 end
 
-(* This signature is a fragment of the inspection API that is made available
+(**This signature is a fragment of the inspection API that is made available
    to the user when [--inspection] is used. This fragment contains type
    definitions for symbols. *)
-
 module type SYMBOLS = sig
 
-  (* The type ['a terminal] represents a terminal symbol. The type ['a
-     nonterminal] represents a nonterminal symbol. In both cases, the index
-     ['a] represents the type of the semantic values associated with this
-     symbol. The concrete definitions of these types are generated. *)
-
+  (**The type ['a terminal] represents a terminal symbol. Its parameter ['a]
+     represents the type of the semantic values associated with this symbol.
+     The concrete definitions of this type is generated. *)
   type 'a terminal
+
+  (**The type ['a nonterminal] represents a nonterminal symbol. Its parameter
+     ['a] represents the type of the semantic values associated with this
+     symbol. The concrete definitions of this type is generated. *)
   type 'a nonterminal
 
-  (* The type ['a symbol] represents a terminal or nonterminal symbol. It is
+  (**The type ['a symbol] represents a terminal or nonterminal symbol. It is
      the disjoint union of the types ['a terminal] and ['a nonterminal]. *)
-
   type 'a symbol =
     | T : 'a terminal -> 'a symbol
     | N : 'a nonterminal -> 'a symbol
 
-  (* The type [xsymbol] is an existentially quantified version of the type
-     ['a symbol]. This type is useful in situations where the index ['a]
-     is not statically known. *)
-
+  (**The type [xsymbol] is an existentially quantified version of the type ['a
+     symbol]. This type is useful in situations where ['a] is not statically
+     known. *)
   type xsymbol =
     | X : 'a symbol -> xsymbol
 
 end
 
-(* This signature describes the inspection API that is made available to the
+(**This signature describes the inspection API that is made available to the
    user when [--inspection] is used. *)
-
 module type INSPECTION = sig
 
   (* The types of symbols are described above. *)
-
   include SYMBOLS
 
-  (* The type ['a lr1state] is meant to be the same as in [INCREMENTAL_ENGINE]. *)
-
+  (**The type ['a lr1state] is meant to be the same as in {!INCREMENTAL_ENGINE}. *)
   type 'a lr1state
 
-  (* The type [production] is meant to be the same as in [INCREMENTAL_ENGINE].
+  (**The type [production] is meant to be the same as in {!INCREMENTAL_ENGINE}.
      It represents a production of the grammar. A production can be examined
-     via the functions [lhs] and [rhs] below. *)
-
+     via the functions {!lhs} and {!rhs} below. *)
   type production
 
-  (* An LR(0) item is a pair of a production [prod] and a valid index [i] into
+  (**An LR(0) item is a pair of a production [prod] and a valid index [i] into
      this production. That is, if the length of [rhs prod] is [n], then [i] is
      comprised between 0 and [n], inclusive. *)
-
   type item =
       production * int
 
-  (* Ordering functions. *)
+  (** The following are total ordering functions. *)
 
   val compare_terminals: _ terminal -> _ terminal -> int
   val compare_nonterminals: _ nonterminal -> _ nonterminal -> int
@@ -611,73 +476,63 @@ module type INSPECTION = sig
   val compare_productions: production -> production -> int
   val compare_items: item -> item -> int
 
-  (* [incoming_symbol s] is the incoming symbol of the state [s], that is,
+  (**[incoming_symbol s] is the incoming symbol of the state [s], that is,
      the symbol that the parser must recognize before (has recognized when)
      it enters the state [s]. This function gives access to the semantic
      value [v] stored in a stack element [Element (s, v, _, _)]. Indeed,
      by case analysis on the symbol [incoming_symbol s], one discovers the
      type ['a] of the value [v]. *)
-
   val incoming_symbol: 'a lr1state -> 'a symbol
 
-  (* [items s] is the set of the LR(0) items in the LR(0) core of the LR(1)
+  (**[items s] is the set of the LR(0) items in the LR(0) core of the LR(1)
      state [s]. This set is not epsilon-closed. This set is presented as a
      list, in an arbitrary order. *)
-
   val items: _ lr1state -> item list
 
-  (* [lhs prod] is the left-hand side of the production [prod]. This is
+  (**[lhs prod] is the left-hand side of the production [prod]. This is
      always a non-terminal symbol. *)
-
   val lhs: production -> xsymbol
 
-  (* [rhs prod] is the right-hand side of the production [prod]. This is
+  (**[rhs prod] is the right-hand side of the production [prod]. This is
      a (possibly empty) sequence of (terminal or nonterminal) symbols. *)
-
   val rhs: production -> xsymbol list
 
-  (* [nullable nt] tells whether the non-terminal symbol [nt] is nullable.
+  (**[nullable nt] tells whether the non-terminal symbol [nt] is nullable.
      That is, it is true if and only if this symbol produces the empty
      word [epsilon]. *)
-
   val nullable: _ nonterminal -> bool
 
-  (* [first nt t] tells whether the FIRST set of the nonterminal symbol [nt]
+  (**[first nt t] tells whether the FIRST set of the nonterminal symbol [nt]
      contains the terminal symbol [t]. That is, it is true if and only if
      [nt] produces a word that begins with [t]. *)
-
   val first: _ nonterminal -> _ terminal -> bool
 
-  (* [xfirst] is analogous to [first], but expects a first argument of type
+  (**[xfirst] is analogous to [first], but expects a first argument of type
      [xsymbol] instead of [_ terminal]. *)
-
   val xfirst: xsymbol -> _ terminal -> bool
 
-  (* [foreach_terminal] enumerates the terminal symbols, including [error].
-     [foreach_terminal_but_error] enumerates the terminal symbols, excluding
-     [error]. *)
-
+  (**[foreach_terminal] enumerates the terminal symbols, including [error]. *)
   val foreach_terminal:           (xsymbol -> 'a -> 'a) -> 'a -> 'a
+
+  (**[foreach_terminal_but_error] enumerates the terminal symbols, excluding
+     [error]. *)
   val foreach_terminal_but_error: (xsymbol -> 'a -> 'a) -> 'a -> 'a
 
-  (* The type [env] is meant to be the same as in [INCREMENTAL_ENGINE]. *)
-
+  (**The type [env] is meant to be the same as in {!INCREMENTAL_ENGINE}. *)
   type 'a env
 
-  (* [feed symbol startp semv endp env] causes the parser to consume the
+  (**[feed symbol startp semv endp env] causes the parser to consume the
      (terminal or nonterminal) symbol [symbol], accompanied with the semantic
      value [semv] and with the start and end positions [startp] and [endp].
      Thus, the automaton makes a transition, and reaches a new state. The
      stack grows by one cell. This operation is permitted only if the current
      state (as determined by [env]) has an outgoing transition labeled with
      [symbol]. Otherwise, [Invalid_argument _] is raised. *)
-
   val feed: 'a symbol -> position -> 'a -> position -> 'b env -> 'b env
 
 end
 
-(* This signature combines the incremental API and the inspection API. *)
-
+(**This signature combines the incremental API and the inspection API. *)
 module type EVERYTHING = sig
 
   include INCREMENTAL_ENGINE
@@ -700,8 +555,8 @@ module EngineTypes = struct
 (*                                                                            *)
 (******************************************************************************)
 
-(* This file defines several types and module types that are used in the
-   specification of module [Engine]. *)
+(**This module defines several types and module types that are used in the
+   specification of the module {!Engine}. *)
 
 (* --------------------------------------------------------------------------- *)
 
@@ -711,82 +566,70 @@ module EngineTypes = struct
 
 (* --------------------------------------------------------------------------- *)
 
-(* A stack is a linked list of cells. A sentinel cell -- which is its own
+(**A stack is a linked list of cells. A sentinel cell -- which is its own
    successor -- is used to mark the bottom of the stack. The sentinel cell
    itself is not significant -- it contains dummy values. *)
-
 type ('state, 'semantic_value) stack = {
 
-  (* The state that we should go back to if we pop this stack cell. *)
+  state: 'state;
+  (**The state that we should go back to if we pop this stack cell.
 
-  (* This convention means that the state contained in the top stack cell is
+     This convention means that the state contained in the top stack cell is
      not the current state [env.current]. It also means that the state found
      within the sentinel is a dummy -- it is never consulted. This convention
      is the same as that adopted by the code-based back-end. *)
 
-  state: 'state;
-
-  (* The semantic value associated with the chunk of input that this cell
-     represents. *)
-
   semv: 'semantic_value;
-
-  (* The start and end positions of the chunk of input that this cell
+  (**The semantic value associated with the chunk of input that this cell
      represents. *)
 
   startp: Lexing.position;
-  endp: Lexing.position;
+  (**The start position of the chunk of input that this cell represents. *)
 
-  (* The next cell down in the stack. If this is a self-pointer, then this
-     cell is the sentinel, and the stack is conceptually empty. *)
+  endp: Lexing.position;
+  (**The end position of the chunk of input that this cell represents. *)
 
   next: ('state, 'semantic_value) stack;
+  (**The next cell down in the stack. If this is a self-pointer, then this
+     cell is the sentinel, and the stack is conceptually empty. *)
 
 }
 
 (* --------------------------------------------------------------------------- *)
 
-(* A parsing environment contains all of the parser's state (except for the
+(**A parsing environment contains all of the parser's state (except for the
    current program point). *)
-
 type ('state, 'semantic_value, 'token) env = {
 
-  (* If this flag is true, then the first component of [env.triple] should
+  error: bool;
+  (**If this flag is true, then the first component of [env.triple] should
      be ignored, as it has been logically overwritten with the [error]
      pseudo-token. *)
 
-  error: bool;
-
-  (* The last token that was obtained from the lexer, together with its start
+  triple: 'token * Lexing.position * Lexing.position;
+  (**The last token that was obtained from the lexer, together with its start
      and end positions. Warning: before the first call to the lexer has taken
      place, a dummy (and possibly invalid) token is stored here. *)
 
-  triple: 'token * Lexing.position * Lexing.position;
-
-  (* The stack. In [CodeBackend], it is passed around on its own,
-     whereas, here, it is accessed via the environment. *)
-
   stack: ('state, 'semantic_value) stack;
-
-  (* The current state. In [CodeBackend], it is passed around on its
-     own, whereas, here, it is accessed via the environment. *)
+  (**The stack. *)
 
   current: 'state;
+  (**The current state. *)
 
 }
 
 (* --------------------------------------------------------------------------- *)
 
-(* A number of logging hooks are used to (optionally) emit logging messages. *)
-
-(* The comments indicate the conventional messages that correspond
-   to these hooks in the code-based back-end; see [CodeBackend]. *)
-
+(**A number of logging hooks are used to (optionally) emit logging messages. *)
 module type LOG = sig
 
   type state
   type terminal
   type production
+
+  (* The comments below indicate the conventional messages that correspond to
+     these hooks. *)
 
   (* State %d: *)
 
@@ -824,98 +667,96 @@ end
 
 (* --------------------------------------------------------------------------- *)
 
-(* This signature describes the parameters that must be supplied to the LR
+(**This signature describes the parameters that must be supplied to the LR
    engine. *)
-
 module type TABLE = sig
 
-  (* The type of automaton states. *)
-
+  (**The type of automaton states. *)
   type state
 
-  (* States are numbered. *)
-
+  (**States are numbered. *)
   val number: state -> int
 
-  (* The type of tokens. These can be thought of as real tokens, that is,
+  (**The type of tokens. These can be thought of as real tokens, that is,
      tokens returned by the lexer. They carry a semantic value. This type
      does not include the [error] pseudo-token. *)
-
   type token
 
-  (* The type of terminal symbols. These can be thought of as integer codes.
+  (**The type of terminal symbols. These can be thought of as integer codes.
      They do not carry a semantic value. This type does include the [error]
      pseudo-token. *)
-
   type terminal
 
-  (* The type of nonterminal symbols. *)
-
+  (**The type of nonterminal symbols. *)
   type nonterminal
 
-  (* The type of semantic values. *)
-
+  (**The type of semantic values. *)
   type semantic_value
 
-  (* A token is conceptually a pair of a (non-[error]) terminal symbol and
-     a semantic value. The following two functions are the pair projections. *)
-
+  (**A token is conceptually a pair of a (non-[error]) terminal symbol and a
+     semantic value. The function [token2terminal] is the first the pair
+     projection. *)
   val token2terminal: token -> terminal
+
+  (**A token is conceptually a pair of a (non-[error]) terminal symbol and a
+     semantic value. The function [token2value] is the second the pair
+     projection. *)
   val token2value: token -> semantic_value
 
   (* Even though the [error] pseudo-token is not a real token, it is a
      terminal symbol. Furthermore, for regularity, it must have a semantic
      value. *)
-
+  (**The terminal symbol associated with the [error] token. *)
   val error_terminal: terminal
+
+  (**The semantic value associated with the [error] token. *)
   val error_value: semantic_value
 
-  (* [foreach_terminal] allows iterating over all terminal symbols. *)
-
+  (**[foreach_terminal] iterates over all terminal symbols. *)
   val foreach_terminal: (terminal -> 'a -> 'a) -> 'a -> 'a
 
-  (* The type of productions. *)
-
+  (**The type of productions. *)
   type production
 
+  (**[production_index] maps a production to its integer index. *)
   val production_index: production -> int
+
+  (**[find_production] maps a production index to a production.
+     Its argument must be a valid index; use with care. *)
   val find_production: int -> production
 
-  (* If a state [s] has a default reduction on production [prod], then, upon
+  (**If a state [s] has a default reduction on production [prod], then, upon
      entering [s], the automaton should reduce [prod] without consulting the
-     lookahead token. The following function allows determining which states
-     have default reductions. *)
+     lookahead token.
 
-  (* Instead of returning a value of a sum type -- either [DefRed prod], or
-     [NoDefRed] -- it accepts two continuations, and invokes just one of
-     them. This mechanism allows avoiding a memory allocation. *)
-
+     [default_reduction s] determines whether the state [s] has a default
+     reduction. Instead of returning a value of a sum type -- say, either
+     [DefRed prod] or [NoDefRed] -- it accepts two continuations, and invokes
+     just one of them. *)
   val default_reduction:
     state ->
     ('env -> production -> 'answer) ->
     ('env -> 'answer) ->
     'env -> 'answer
 
-  (* An LR automaton can normally take three kinds of actions: shift, reduce,
+  (**An LR automaton can normally take three kinds of actions: shift, reduce,
      or fail. (Acceptance is a particular case of reduction: it consists in
-     reducing a start production.) *)
+     reducing a start production.)
 
-  (* There are two variants of the shift action. [shift/discard s] instructs
+     There are two variants of the shift action. [shift/discard s] instructs
      the automaton to discard the current token, request a new one from the
      lexer, and move to state [s]. [shift/nodiscard s] instructs it to move to
      state [s] without requesting a new token. This instruction should be used
-     when [s] has a default reduction on [#]. See [CodeBackend.gettoken] for
-     details. *)
+     when [s] has a default reduction on [#].
 
-  (* This is the automaton's action table. It maps a pair of a state and a
-     terminal symbol to an action. *)
+     The function [action] provides access to the automaton's action table. It
+     maps a pair of a state and a terminal symbol to an action.
 
-  (* Instead of returning a value of a sum type -- one of shift/discard,
+     Instead of returning a value of a sum type -- one of shift/discard,
      shift/nodiscard, reduce, or fail -- this function accepts three
-     continuations, and invokes just one them. This mechanism allows avoiding
-     a memory allocation. *)
+     continuations, and invokes just one them.
 
-  (* In summary, the parameters to [action] are as follows:
+     The parameters of the function [action] are as follows:
 
      - the first two parameters, a state and a terminal symbol, are used to
        look up the action table;
@@ -935,7 +776,6 @@ module type TABLE = sig
 
      - the last parameter is the environment; it is not used, only passed
        along to the selected continuation. *)
-
   val action:
     state ->
     terminal ->
@@ -955,31 +795,35 @@ module type TABLE = sig
      accounts for the possible existence of a default reduction. *)
   val may_reduce_prod : state -> terminal -> production -> bool
 
-  (* This is the automaton's goto table. This table maps a pair of a state
-     and a nonterminal symbol to a new state. By extension, it also maps a
-     pair of a state and a production to a new state. *)
+  (**The function [goto_nt] provides access to the automaton's goto table. It
+     maps a pair of a state [s] and a nonterminal symbol [nt] to a state. The
+     function call [goto_nt s nt] is permitted ONLY if the state [s] has an
+     outgoing transition labeled [nt]. Otherwise, its result is undefined. *)
+  val goto_nt : state -> nonterminal -> state
 
-  (* The function [goto_nt] can be applied to [s] and [nt] ONLY if the state
-     [s] has an outgoing transition labeled [nt]. Otherwise, its result is
-     undefined. Similarly, the call [goto_prod prod s] is permitted ONLY if
-     the state [s] has an outgoing transition labeled with the nonterminal
-     symbol [lhs prod]. The function [maybe_goto_nt] involves an additional
-     dynamic check and CAN be called even if there is no outgoing transition. *)
-
-  val       goto_nt  : state -> nonterminal -> state
+  (**The function [goto_prod] also provides access to the goto table. It maps
+     a pair of a production [prod] and a state [s] to a state. The call
+     [goto_prod prod s] is permitted ONLY if the state [s] has an outgoing
+     transition labeled with the nonterminal symbol [lhs prod]. *)
   val       goto_prod: state -> production  -> state
+
+  (**The function [maybe_goto_nt] serves the same purpose as [goto_nt].
+     Compared to [goto_nt], it involves an additional dynamic check, so it CAN
+     be called even the state [s] has no outgoing transition labeled [nt]. *)
   val maybe_goto_nt:   state -> nonterminal -> state option
 
-  (* [lhs prod] returns the left-hand side of production [prod],
+  (**[lhs prod] returns the left-hand side of production [prod],
      a nonterminal symbol. *)
-
   val lhs: production -> nonterminal
 
-  (* [is_start prod] tells whether the production [prod] is a start production. *)
-
+  (**[is_start prod] tells whether the production [prod] is a start
+     production. *)
   val is_start: production -> bool
 
-  (* By convention, a semantic action is responsible for:
+  (**A semantic action can raise the exception [Error]. *)
+  exception Error
+
+  (**By convention, a semantic action is responsible for:
 
      1. fetching whatever semantic values and positions it needs off the stack;
 
@@ -991,37 +835,30 @@ module type TABLE = sig
      4. pushing a new stack cell, which contains the three values
         computed in step 3;
 
-     5. returning the new stack computed in steps 2 and 4.
-
-     Point 1 is essentially forced upon us: if semantic values were fetched
-     off the stack by this interpreter, then the calling convention for
-     semantic actions would be variadic: not all semantic actions would have
-     the same number of arguments. The rest follows rather naturally. *)
-
-  (* Semantic actions are allowed to raise [Error]. *)
-
-  exception Error
-
+     5. returning the new stack computed in steps 2 and 4.  *)
   type semantic_action =
       (state, semantic_value, token) env -> (state, semantic_value) stack
 
+  (* Point 1 above is essentially forced upon us: if semantic values were
+     fetched off the stack by this interpreter, then the calling convention
+     for semantic actions would be variadic: not all semantic actions would
+     have the same number of arguments. The rest follows rather naturally. *)
+
+  (**The function [semantic_action] maps a production to its semantic action. *)
   val semantic_action: production -> semantic_action
 
-  (* [may_reduce state prod] tests whether the state [state] is capable of
+  (**[may_reduce state prod] tests whether the state [state] is capable of
      reducing the production [prod]. This function is currently costly and
      is not used by the core LR engine. It is used in the implementation
      of certain functions, such as [force_reduction], which allow the engine
      to be driven programmatically. *)
-
   val may_reduce: state -> production -> bool
 
-  (* If the flag [log] is false, then the logging functions are not called.
+  (**If the flag [log] is false, then the logging functions are not called.
      If it is [true], then they are called. *)
-
   val log : bool
 
-  (* The logging hooks required by the LR engine. *)
-
+  (**The logging hooks required by the LR engine. *)
   module Log : LOG
     with type state := state
      and type terminal := terminal
@@ -1031,10 +868,8 @@ end
 
 (* --------------------------------------------------------------------------- *)
 
-(* This signature describes the monolithic (traditional) LR engine. *)
-
-(* In this interface, the parser controls the lexer. *)
-
+(**This signature describes the monolithic (traditional) LR engine. When the
+   engine is used in this mode, the parser controls the lexer. *)
 module type MONOLITHIC_ENGINE = sig
 
   type state
@@ -1043,12 +878,11 @@ module type MONOLITHIC_ENGINE = sig
 
   type semantic_value
 
-  (* An entry point to the engine requires a start state, a lexer, and a lexing
-     buffer. It either succeeds and produces a semantic value, or fails and
-     raises [Error]. *)
-
   exception Error
 
+  (**An entry point to the engine requires a start state, a lexer, and a
+     lexing buffer. It either succeeds and produces a semantic value, or fails
+     and raises {!Error}. *)
   val entry:
     (* strategy: *) [ `Legacy | `Simplified ] -> (* see [IncrementalEngine] *)
     state ->
@@ -1060,34 +894,30 @@ end
 
 (* --------------------------------------------------------------------------- *)
 
-(* The following signatures describe the incremental LR engine. *)
+(**This signature describes just the entry point of the incremental LR engine.
+   It is a supplement to {!IncrementalEngine.INCREMENTAL_ENGINE}.
 
-(* First, see [INCREMENTAL_ENGINE] in the file [IncrementalEngine.ml]. *)
-
-(* The [start] function is set apart because we do not wish to publish
-   it as part of the generated [parser.mli] file. Instead, the table
-   back-end will publish specialized versions of it, with a suitable
-   type cast. *)
-
+   The [start] function is set apart because we do not wish to publish it as
+   part of the generated file  [parser.mli]. Instead, the table back-end will
+   publish specialized versions of it, with a suitable type cast. *)
 module type INCREMENTAL_ENGINE_START = sig
-
-  (* [start] is an entry point. It requires a start state and a start position
-     and begins the parsing process. If the lexer is based on an OCaml lexing
-     buffer, the start position should be [lexbuf.lex_curr_p]. [start] produces
-     a checkpoint, which usually will be an [InputNeeded] checkpoint. (It could
-     be [Accepted] if this starting state accepts only the empty word. It could
-     be [Rejected] if this starting state accepts no word at all.) It does not
-     raise any exception. *)
-
-  (* [start s pos] should really produce a checkpoint of type ['a checkpoint],
-     for a fixed ['a] that depends on the state [s]. We cannot express this, so
-     we use [semantic_value checkpoint], which is safe. The table back-end uses
-     [Obj.magic] to produce safe specialized versions of [start]. *)
 
   type state
   type semantic_value
   type 'a checkpoint
 
+  (**[start] is an entry point. It requires a start state and a start position
+     and begins the parsing process. If the lexer is based on an OCaml lexing
+     buffer, the start position should be [lexbuf.lex_curr_p]. [start] produces
+     a checkpoint, which usually will be an [InputNeeded] checkpoint. (It could
+     be [Accepted] if this starting state accepts only the empty word. It could
+     be [Rejected] if this starting state accepts no word at all.) It does not
+     raise any exception.
+
+     [start s pos] should really produce a checkpoint of type ['a checkpoint],
+     for a fixed ['a] that depends on the state [s]. We cannot express this, so
+     we use [semantic_value checkpoint], which is safe. The table back-end uses
+     [Obj.magic] to produce safe specialized versions of [start]. *)
   val start:
     state ->
     Lexing.position ->
@@ -1097,9 +927,8 @@ end
 
 (* --------------------------------------------------------------------------- *)
 
-(* This signature describes the LR engine, which combines the monolithic
+(**This signature describes the LR engine, which combines the monolithic
    and incremental interfaces. *)
-
 module type ENGINE = sig
 
   include MONOLITHIC_ENGINE
@@ -1241,31 +1070,13 @@ module Make (T : TABLE) = struct
 
   (* ------------------------------------------------------------------------ *)
 
-  (* In the code-based back-end, the [run] function is sometimes responsible
-     for pushing a new cell on the stack. This is motivated by code sharing
-     concerns. In this interpreter, there is no such concern; [run]'s caller
-     is always responsible for updating the stack. *)
+  (* In this interpreter, the caller of [run] is responsible for updating the
+     stack. *)
 
-  (* In the code-based back-end, there is a [run] function for each state
-     [s]. This function can behave in two slightly different ways, depending
-     on when it is invoked, or (equivalently) depending on [s].
-
-     If [run] is invoked after shifting a terminal symbol (or, equivalently,
-     if [s] has a terminal incoming symbol), then [run] discards a token,
-     unless [s] has a default reduction on [#]. (Indeed, in that case,
-     requesting the next token might drive the lexer off the end of the input
-     stream.)
-
-     If, on the other hand, [run] is invoked after performing a goto
-     transition, or invoked directly by an entry point, then there is nothing
-     to discard.
-
-     These two cases are reflected in [CodeBackend.gettoken].
-
-     Here, the code is structured in a slightly different way. It is up to the
-     caller of [run] to indicate whether to discard a token, via the parameter
-     [please_discard]. This flag is set when [s] is being entered by shifting
-     a terminal symbol and [s] does not have a default reduction on [#]. *)
+  (* It is also up to the caller of [run] to indicate whether to discard a
+     token, via the parameter [please_discard]. This flag is set when [s] is
+     being entered by shifting a terminal symbol and [s] does not have a
+     default reduction on [#]. *)
 
   (* The following recursive group of functions are tail recursive, produce a
      checkpoint of type [semantic_value checkpoint], and cannot raise an
@@ -1303,9 +1114,7 @@ module Make (T : TABLE) = struct
 
   and check_for_default_reduction env =
 
-    (* Examine what situation we are in. This case analysis is analogous to
-       that performed in [CodeBackend.gettoken], in the sub-case where we do
-       not have a terminal incoming symbol. *)
+    (* Examine what situation we are in. *)
 
     T.default_reduction
       env.current
@@ -1861,51 +1670,10 @@ module Make (T : TABLE) = struct
      value associated with (the incoming symbol of) this state. Note that the
      type [element] is an existential type. *)
 
-  (* As of 2017/03/31, the type [stack] and the function [stack] are DEPRECATED.
-     If desired, they could now be implemented outside Menhir, by relying on
-     the functions [top] and [pop]. *)
+  (* Access to the stack is offered by the functions [top] and [pop]. *)
 
   type element =
     | Element: 'a lr1state * 'a * position * position -> element
-
-  open General
-
-  type stack =
-    element stream
-
-  (* If [current] is the current state and [cell] is the top stack cell,
-     then [stack cell current] is a view of the parser's state as a stream
-     of elements. *)
-
-  let rec stack cell current : element stream =
-    lazy (
-      (* The stack is empty iff the top stack cell is its own successor. In
-         that case, the current state [current] should be an initial state
-         (which has no incoming symbol).
-         We do not allow the user to inspect this state. *)
-      let next = cell.next in
-      if next == cell then
-        Nil
-      else
-        (* Construct an element containing the current state [current] as well
-           as the semantic value contained in the top stack cell. This semantic
-           value is associated with the incoming symbol of this state, so it
-           makes sense to pair them together. The state has type ['a state] and
-           the semantic value has type ['a], for some type ['a]. Here, the OCaml
-           type-checker thinks ['a] is [semantic_value] and considers this code
-           well-typed. Outside, we will use magic to provide the user with a way
-           of inspecting states and recovering the value of ['a]. *)
-        let element = Element (
-          current,
-          cell.semv,
-          cell.startp,
-          cell.endp
-        ) in
-        Cons (element, stack next cell.state)
-    )
-
-  let stack env : element stream =
-    stack env.stack env.current
 
   (* As explained above, the function [top] allows access to the top stack
      element only if the stack is nonempty, i.e., only if the current state
@@ -1915,8 +1683,21 @@ module Make (T : TABLE) = struct
     let cell = env.stack in
     let next = cell.next in
     if next == cell then
+      (* The stack is empty iff the top stack cell is its own successor. In
+         that case, the current state [current] should be an initial state
+         (which has no incoming symbol). We do not allow the user to inspect
+         this state. *)
       None
     else
+      (* Construct an element containing the current state [env.current], the
+         semantic value contained in the top stack cell, and a pair of
+         positions. The semantic value is associated with the incoming symbol
+         of this state, so it makes sense to pair them together. The state has
+         type ['a state] and the semantic value has type ['a], for some type
+         ['a]. Here, the OCaml type-checker thinks ['a] is [semantic_value]
+         and considers this code well-typed. Outside, we will use magic to
+         provide the user with a way of inspecting states and recovering the
+         value of ['a]. *)
       Some (Element (env.current, cell.semv, cell.startp, cell.endp))
 
   (* [equal] compares the stacks for physical equality, and compares the
@@ -2420,68 +2201,6 @@ module Make
 
 end
 end
-module InfiniteArray = struct
-(******************************************************************************)
-(*                                                                            *)
-(*                                    Menhir                                  *)
-(*                                                                            *)
-(*   Copyright Inria. All rights reserved. This file is distributed under     *)
-(*   the terms of the GNU Library General Public License version 2, with a    *)
-(*   special exception on linking, as described in the file LICENSE.          *)
-(*                                                                            *)
-(******************************************************************************)
-
-(** This module implements infinite arrays, that is, arrays that grow
-    transparently upon demand. *)
-
-type 'a t = {
-    default: 'a;
-    mutable table: 'a array;
-    mutable extent: int; (* the index of the greatest [set] ever, plus one *)
-  }
-
-let default_size =
-  16384 (* must be non-zero *)
-
-let make x = {
-  default = x;
-  table = Array.make default_size x;
-  extent = 0;
-}
-
-let rec new_length length i =
-  if i < length then
-    length
-  else
-    new_length (2 * length) i
-
-let ensure a i =
-  assert (0 <= i);
-  let table = a.table in
-  let length = Array.length table in
-  if i >= length then begin
-    let table' = Array.make (new_length (2 * length) i) a.default in
-    Array.blit table 0 table' 0 length;
-    a.table <- table'
-  end
-
-let get a i =
-  ensure a i;
-  Array.unsafe_get a.table (i)
-
-let set a i x =
-  ensure a i;
-  Array.unsafe_set a.table (i) x;
-  if a.extent <= i then
-    a.extent <- i + 1
-
-let extent a =
-  a.extent
-
-let domain a =
-  Array.sub a.table 0 a.extent
-
-end
 module PackedIntArray = struct
 (******************************************************************************)
 (*                                                                            *)
@@ -2636,18 +2355,41 @@ let pack (a : int array) : t =
 
 (* Access to a string. *)
 
-let read (s : string) (i : int) : int =
+let[@inline] read (s : string) (i : int) : int =
   Char.code (String.unsafe_get s i)
 
-(* [get1 t i] returns the integer stored in the packed array [t] at index [i].
-   It assumes (and does not check) that the array's bit width is [1]. The
-   parameter [t] is just a string. *)
-
-let get1 (s : string) (i : int) : int =
+let[@inline] get1 (s : string) (i : int) : int =
   let c = read s (i lsr 3) in
   let c = c lsr ((lnot i) land 0b111) in
   let c = c land 0b1 in
   c
+
+let[@inline] get2 (s : string) (i : int) : int =
+  let c = read s (i lsr 2) in
+  let c = c lsr (2 * ((lnot i) land 0b11)) in
+  let c = c land 0b11 in
+  c
+
+let[@inline] get4 (s : string) (i : int) : int =
+  let c = read s (i lsr 1) in
+  let c = c lsr (4 * ((lnot i) land 0b1)) in
+  let c = c land 0b1111 in
+  c
+
+let get8 =
+  read
+
+let[@inline] get16 (s : string) (i : int) : int =
+  let j = 2 * i in
+  (read s j) lsl 8 + read s (j + 1)
+
+let[@inline] get32 (s : string) (i : int) : int =
+  let j = 4 * i in
+  (((read s j lsl 8) + read s (j + 1)) lsl 8 + read s (j + 2)) lsl 8 + read s (j + 3)
+
+(* [get] is now commented out, as it is no longer used. Only its specialized
+   variants are used. This is in principle faster (though we have not found
+   a significant difference in practice).
 
 (* [get t i] returns the integer stored in the packed array [t] at index [i]. *)
 
@@ -2659,36 +2401,20 @@ let get ((k, s) : t) (i : int) : int =
   | 1 ->
       get1 s i
   | 2 ->
-      let c = read s (i lsr 2) in
-      let c = c lsr (2 * ((lnot i) land 0b11)) in
-      let c = c land 0b11 in
-      c
+      get2 s i
   | 4 ->
-      let c = read s (i lsr 1) in
-      let c = c lsr (4 * ((lnot i) land 0b1)) in
-      let c = c land 0b1111 in
-      c
+      get4 s i
   | 8 ->
-      read s i
+      get8 s i
   | 16 ->
-      let j = 2 * i in
-      (read s j) lsl 8 + read s (j + 1)
+      get16 s i
   | _ ->
       assert (k = 32); (* 64 bits unlikely, not supported *)
-      let j = 4 * i in
-      (((read s j lsl 8) + read s (j + 1)) lsl 8 + read s (j + 2)) lsl 8 + read s (j + 3)
+      get32 s i
 
-(* [unflatten1 (n, data) i j] accesses the two-dimensional bitmap
-   represented by [(n, data)] at indices [i] and [j]. The integer
-   [n] is the width of the bitmap; the string [data] is the second
-   component of the packed array obtained by encoding the table as
-   a one-dimensional array. *)
-
-let unflatten1 (n, data) i j =
-   get1 data (n * i + j)
-
+ *)
 end
-module RowDisplacement = struct
+module RowDisplacementDecode = struct
 (******************************************************************************)
 (*                                                                            *)
 (*                                    Menhir                                  *)
@@ -2699,43 +2425,22 @@ module RowDisplacement = struct
 (*                                                                            *)
 (******************************************************************************)
 
-(* This module compresses a two-dimensional table, where some values
-   are considered insignificant, via row displacement. *)
+(* -------------------------------------------------------------------------- *)
 
-(* This idea reportedly appears in Aho and Ullman's ``Principles
-   of Compiler Design'' (1977). It is evaluated in Tarjan and Yao's
-   ``Storing a Sparse Table'' (1979) and in Dencker, Dürre, and Heuft's
-   ``Optimization of Parser Tables for Portable Compilers'' (1984). *)
-
-(* A compressed table is represented as a pair of arrays. The
-   displacement array is an array of offsets into the data array. *)
-
+(**A displacement is a nonnegative integer, which, once decoded in a certain
+   way, represents a possibly negative offset into a data array. *)
 type displacement =
   int
 
-type 'a table =
-  displacement array * (* displacement *)
-            'a array   (* data *)
+(* A compressed table is represented as a pair of a displacement array and a
+   data array. The displacement array is an array of (encoded) offsets into
+   the data array. *)
 
-(* In a natural version of this algorithm, displacements would be greater
-   than (or equal to) [-n]. However, in the particular setting of Menhir,
-   both arrays are intended to be compressed with [PackedIntArray], which
-   does not efficiently support negative numbers. For this reason, we are
-   careful not to produce negative displacements. *)
+(* -------------------------------------------------------------------------- *)
 
-(* In order to avoid producing negative displacements, we simply use the
-   least significant bit as the sign bit. This is implemented by [encode]
-   and [decode] below. *)
-
-(* One could also think, say, of adding [n] to every displacement, so as
-   to ensure that all displacements are nonnegative. This would work, but
-   would require [n] to be published, for use by the decoder. *)
-
-let encode (displacement : int) : displacement =
-  if displacement >= 0 then
-    displacement lsl 1
-  else
-    (-displacement) lsl 1 + 1
+(* In order to avoid producing negative displacements, we encode displacements
+   by moving to the sign bit to the least significant position. This decoding
+   function undoes this. *)
 
 let[@inline] decode (displacement : displacement) : int =
   if displacement land 1 = 0 then
@@ -2743,210 +2448,40 @@ let[@inline] decode (displacement : displacement) : int =
   else
     -(displacement lsr 1)
 
-(* It is reasonable to assume that, as matrices grow large, their
-   density becomes low, i.e., they have many insignificant entries.
-   As a result, it is important to work with a sparse data structure
-   for rows. We internally represent a row as a list of its
-   significant entries, where each entry is a pair of a [j] index and
-   an element. *)
-
-type 'a row =
-    (int * 'a) list
-
-(* [compress equal insignificant dummy m n t] turns the two-dimensional table
-   [t] into a compressed table. The parameter [equal] is equality of data
-   values. The parameter [insignificant] determines which data values are
-   insignificant, and can thus be overwritten with other values. The parameter
-   [dummy] is used to fill holes in the data array. [m] and [n] are the
-   integer dimensions of the table [t]. *)
-
-let compress
-    (equal : 'a -> 'a -> bool)
-    (insignificant : 'a -> bool)
-    (dummy : 'a)
-    (m : int) (n : int)
-    (t : 'a array array)
-    : 'a table =
-
-  (* Be defensive. *)
-
-  assert (Array.length t = m);
-  assert begin
-    for i = 0 to m - 1 do
-      assert (Array.length t.(i) = n)
-    done;
-    true
-  end;
-
-  (* This turns a row-as-array into a row-as-sparse-list. The row is
-     accompanied by its index [i] and by its rank (the number of its
-     significant entries, that is, the length of the row-as-a-list. *)
-
-  let sparse (i : int) (line : 'a array) : int * int * 'a row (* index, rank, row *) =
-
-    let rec loop (j : int) (rank : int) (row : 'a row) =
-      if j < 0 then
-        i, rank, row
-      else
-        let x = line.(j) in
-        if insignificant x then
-          loop (j - 1) rank row
-        else
-          loop (j - 1) (1 + rank) ((j, x) :: row)
-    in
-
-    loop (n - 1) 0 []
-
-  in
-
-  (* Construct an array of all rows, together with their index and rank. *)
-
-  let rows : (int * int * 'a row) array = (* index, rank, row *)
-    Array.mapi sparse t
-  in
-
-  (* Sort this array by decreasing rank. This does not have any impact
-     on correctness, but reportedly improves compression. The
-     intuitive idea is that rows with few significant elements are
-     easy to fit, so they should be inserted last, after the problem
-     has become quite constrained by fitting the heavier rows. This
-     heuristic is attributed to Ziegler. *)
-
-  Array.fast_sort (fun (_, rank1, _) (_, rank2, _) ->
-    compare rank2 rank1
-  ) rows;
-
-  (* Allocate a one-dimensional array of displacements. *)
-
-  let displacement : int array =
-    Array.make m 0
-  in
-
-  (* Allocate a one-dimensional, infinite array of values. Indices
-     into this array are written [k]. *)
-
-  let data : 'a InfiniteArray.t =
-    InfiniteArray.make dummy
-  in
-
-  (* Determine whether [row] fits at offset [k] within the current [data]
-     array, up to extension of this array. *)
-
-  (* Note that this check always succeeds when [k] equals the length of
-     the [data] array. Indeed, the loop is then skipped. This property
-     guarantees the termination of the recursive function [fit] below. *)
-
-  let fits k (row : 'a row) : bool =
-
-    let d = InfiniteArray.extent data in
-
-    let rec loop = function
-      | [] ->
-          true
-      | (j, x) :: row ->
-
-          (* [x] is a significant element. *)
-
-          (* By hypothesis, [k + j] is nonnegative. If it is greater than or
-             equal to the current length of the data array, stop -- the row
-             fits. *)
-
-          assert (k + j >= 0);
-
-          if k + j >= d then
-            true
-
-          (* We now know that [k + j] is within bounds of the data
-             array. Check whether it is compatible with the element [y] found
-             there. If it is, continue. If it isn't, stop -- the row does not
-             fit. *)
-
-          else
-            let y = InfiniteArray.get data (k + j) in
-            if insignificant y || equal x y then
-              loop row
-            else
-              false
-
-    in
-    loop row
-
-  in
-
-  (* Find the leftmost position where a row fits. *)
-
-  (* If the leftmost significant element in this row is at offset [j],
-     then we can hope to fit as far left as [-j] -- so this element
-     lands at offset [0] in the data array. *)
-
-  (* Note that displacements may be negative. This means that, for
-     insignificant elements, accesses to the data array could fail: they could
-     be out of bounds, either towards the left or towards the right. This is
-     not a problem, as long as [get] is invoked only at significant
-     elements. *)
-
-  let rec fit k row : int =
-    if fits k row then
-      k
-    else
-      fit (k + 1) row
-  in
-
-  let fit row =
-    match row with
-    | [] ->
-        0 (* irrelevant *)
-    | (j, _) :: _ ->
-        fit (-j) row
-  in
-
-  (* Write [row] at (compatible) offset [k]. *)
-
-  let rec write k = function
-    | [] ->
-        ()
-    | (j, x) :: row ->
-        InfiniteArray.set data (k + j) x;
-        write k row
-  in
-
-  (* Iterate over the sorted array of rows. Fit and write each row at
-     the leftmost compatible offset. Update the displacement table. *)
-
-  Array.iter (fun (i, _, row) ->
-    let k = fit row in (* if [row] has leading insignificant elements, then [k] can be negative *)
-    write k row;
-    displacement.(i) <- encode k
-  ) rows;
-
-  (* Return the compressed tables. *)
-
-  displacement, InfiniteArray.domain data
+(* -------------------------------------------------------------------------- *)
 
 (* [get ct i j] returns the value found at indices [i] and [j] in the
-   compressed table [ct]. This function call is permitted only if the
-   value found at indices [i] and [j] in the original table is
-   significant -- otherwise, it could fail abruptly. *)
+   compressed table [ct]. This call is permitted only if the value found at
+   indices [i] and [j] in the original table is significant. *)
 
-(* Together, [compress] and [get] have the property that, if the value
-   found at indices [i] and [j] in an uncompressed table [t] is
-   significant, then [get (compress t) i j] is equal to that value. *)
+(* Together, [compress] and [get] have the property that, if the value found
+   at indices [i] and [j] in an uncompressed table [t] is significant, then
+   [get (compress t) i j] is equal to that value. *)
+
+(* Unused:
 
 let get (displacement, data) i j =
   assert (0 <= i && i < Array.length displacement);
   let k = decode displacement.(i) in
   assert (0 <= k + j && k + j < Array.length data);
-    (* failure of this assertion indicates an attempt to access an
+    (* Failure of the above assertion indicates an attempt to access an
        insignificant element that happens to be mapped out of the bounds
        of the [data] array. *)
   data.(k + j)
 
-(* [getget] is a variant of [get] which only requires read access,
-   via accessors, to the two components of the table. *)
+ *)
 
-let[@inline] getget get_displacement get_data (displacement, data) i j =
+(* -------------------------------------------------------------------------- *)
+
+(* This variant of [get] requires read access, via accessors, to the two
+   components of the table. It is otherwise identical to [get] above. *)
+
+let[@inline] get get_displacement get_data (displacement, data) i j =
   let k = decode (get_displacement displacement i) in
   get_data data (k + j)
+
+(* Specialized copies of [get] are generated by the table back-end.
+   See [TableUtils]. *)
 end
 module LinearizedArray = struct
 (******************************************************************************)
@@ -2999,16 +2534,9 @@ let length ((_, entry) : 'a t) : int =
 let row_length ((_, entry) : 'a t) i : int =
   entry.(i + 1) - entry.(i)
 
-let row_length_via get_entry i =
-  get_entry (i + 1) - get_entry i
-
 let read ((data, entry) as la : 'a t) i j : 'a =
   assert (0 <= j && j < row_length la i);
   data.(entry.(i) + j)
-
-let read_via get_data get_entry i j =
-  assert (0 <= j && j < row_length_via get_entry i);
-  get_data (get_entry i + j)
 
 let write ((data, entry) as la : 'a t) i j (v : 'a) : unit =
   assert (0 <= j && j < row_length la i);
@@ -3025,7 +2553,6 @@ let read_row_via get_data get_entry i =
 
 let read_row ((data, entry) : 'a t) i : 'a list =
   read_row_via (Array.get data) (Array.get entry) i
-
 end
 module TableFormat = struct
 (******************************************************************************)
@@ -3038,28 +2565,27 @@ module TableFormat = struct
 (*                                                                            *)
 (******************************************************************************)
 
-(* This signature defines the format of the parse tables. It is used as
-   an argument to [TableInterpreter.Make]. *)
-
+(**This signature defines the format of the parse tables.
+   It is used as an argument to [TableInterpreter.Make]. *)
 module type TABLES = sig
 
-  (* This is the parser's type of tokens. *)
-
+  (**The type of tokens. *)
   type token
 
-  (* This maps a token to its internal (generation-time) integer code. *)
+  (**[terminal_count] is the number of terminal symbols, without [#]. *)
+  val terminal_count: int
 
+  (**[token2terminal] maps a token to a terminal symbol, represented
+     by its internal integer code. *)
   val token2terminal: token -> int
 
-  (* This is the integer code for the error pseudo-token. *)
-
+  (**[error_terminal] is the integer code of the special token [error]. *)
   val error_terminal: int
 
-  (* This maps a token to its semantic value. *)
-
+  (**[token2value] maps a token to its semantic value. *)
   val token2value: token -> Obj.t
 
-  (* Traditionally, an LR automaton is described by two tables, namely, an
+  (**Traditionally, an LR automaton is described by two tables, namely, an
      action table and a goto table. See, for instance, the Dragon book.
 
      The action table is a two-dimensional matrix that maps a state and a
@@ -3074,91 +2600,71 @@ module type TABLES = sig
      In Menhir, things are slightly different. If a state has a default
      reduction on token [#], then that reduction must be performed without
      consulting the lookahead token. As a result, we must first determine
-     whether that is the case, before we can obtain a lookahead token and use it
-     as an index in the action table.
+     whether that is the case, before we can obtain a lookahead token and use
+     it as an index in the action table.
 
-     Thus, Menhir's tables are as follows.
+     Thus, Menhir's tables are as follows. *)
 
-     A one-dimensional default reduction table maps a state to either ``no
-     default reduction'' (encoded as: 0) or ``by default, reduce prod''
-     (encoded as: 1 + prod). The action table is looked up only when there
-     is no default reduction. *)
+  (**The default reduction table, a one-dimensional table, maps a state to
+     either ``no default reduction'' (encoded as: 0) or ``by default, reduce
+     prod'' (encoded as: 1 + prod). The action table is looked up only when
+     there is no default reduction. *)
+  val default_reduction: int -> int
 
-  val default_reduction: PackedIntArray.t
-
-  (* Menhir follows Dencker, Dürre and Heuft, who point out that, although the
+  (**Menhir follows Dencker, Dürre and Heuft, who point out that, although the
      action table is not sparse by nature (i.e., the error entries are
      significant), it can be made sparse by first factoring out a binary error
-     matrix, then replacing the error entries in the action table with undefined
-     entries. Thus:
+     matrix, then replacing the error entries in the action table with
+     undefined entries. Thus: *)
 
-     A two-dimensional error bitmap maps a state and a terminal to either
-     ``fail'' (encoded as: 0) or ``do not fail'' (encoded as: 1). The action
-     table, which is now sparse, is looked up only in the latter case. *)
+  (**The error bitmap, a two-dimensional table, maps a state and a terminal
+     symbol to either "fail" (encoded as: 0) or "do not fail" (encoded as: 1).
+     The action table is looked up only in the latter case.
 
-  (* The error bitmap is flattened into a one-dimensional table; its width is
-     recorded so as to allow indexing. The table is then compressed via
-     [PackedIntArray]. The bit width of the resulting packed array must be
-     [1], so it is not explicitly recorded. *)
+     The function [error] offers read access to the error bitmap.
 
-  (* The error bitmap does not contain a column for the [#] pseudo-terminal.
-     Thus, its width is [Terminal.n - 1]. We exploit the fact that the integer
-     code assigned to [#] is greatest: the fact that the right-most column
-     in the bitmap is missing does not affect the code for accessing it. *)
+     The error bitmap does not contain a column for the [#] pseudo-terminal.
+     Thus, its width is [terminal_count]. *)
+  val error: int -> int -> int
 
-  val error: int (* width of the bitmap *) * string (* second component of [PackedIntArray.t] *)
+  (**The action table, a two-dimensional table, maps a state and a terminal
+     to one of ``shift to state s and discard the current token'' (encoded
+     as: [s | 10]), ``shift to state s without discarding the current token''
+     (encoded as: [es | 11]), or ``reduce prod'' (encoded as: [prod | 01]).
 
-  (* A two-dimensional action table maps a state and a terminal to one of
-     ``shift to state s and discard the current token'' (encoded as: s | 10),
-     ``shift to state s without discarding the current token'' (encoded as: s |
-     11), or ``reduce prod'' (encoded as: prod | 01). *)
-
-  (* The action table is first compressed via [RowDisplacement], then packed
-     via [PackedIntArray]. *)
-
-  (* Like the error bitmap, the action table does not contain a column for the
+     Like the error bitmap, the action table does not contain a column for the
      [#] pseudo-terminal. *)
+  val action: int -> int -> int
 
-  val action: PackedIntArray.t * PackedIntArray.t
+  (**A one-dimensional table, [lhs], maps a production to its left-hand side
+     (a non-terminal symbol). *)
+  val lhs: int -> int
 
-  (* A one-dimensional lhs table maps a production to its left-hand side (a
-     non-terminal symbol). *)
+  (**The goto table, a two-dimensional table, maps a state and a non-terminal
+     symbol to either undefined (encoded as: 0) or a new state s (encoded as:
+     1 + s).. *)
+  val goto: int -> int -> int
 
-  val lhs: PackedIntArray.t
-
-  (* A two-dimensional goto table maps a state and a non-terminal symbol to
-     either undefined (encoded as: 0) or a new state s (encoded as: 1 + s). *)
-
-  (* The goto table is first compressed via [RowDisplacement], then packed
-     via [PackedIntArray]. *)
-
-  val goto: PackedIntArray.t * PackedIntArray.t
-
-  (* The number of start productions. A production [prod] is a start
-     production if and only if [prod < start] holds. This is also the
-     number of start symbols. A nonterminal symbol [nt] is a start
-     symbol if and only if [nt < start] holds. *)
-
+  (**[start] is the number of start productions. A production [prod] is a
+     start production if and only if [prod < start] holds. This is also the
+     number of start symbols. A nonterminal symbol [nt] is a start symbol if
+     and only if [nt < start] holds. *)
   val start: int
 
-  (* A one-dimensional semantic action table maps productions to semantic
-     actions. The calling convention for semantic actions is described in
-     [EngineTypes]. This table contains ONLY NON-START PRODUCTIONS, so the
-     indexing is off by [start]. Be careful. *)
-
+  (**The semantic action table, a one-dimensional table, maps productions to
+     semantic actions. The calling convention for semantic actions is
+     described in [EngineTypes]. This table contains ONLY NON-START
+     PRODUCTIONS, so the indexing is off by [start]. Be careful. *)
   val semantic_action: ((int, Obj.t, token) EngineTypes.env ->
                         (int, Obj.t)        EngineTypes.stack) array
 
-  (* The parser defines its own [Error] exception. This exception can be
-     raised by semantic actions and caught by the engine, and raised by the
-     engine towards the final user. *)
-
+  (**The exception [Error] can be raised by semantic actions, caught by the
+     engine, and raised again by the engine for the final user to observe. *)
   exception Error
 
-  (* The parser indicates whether to generate a trace. Generating a
-     trace requires two extra tables, which respectively map a
-     terminal symbol and a production to a string. *)
-
+  (**[trace] indicates whether a trace should be generated. Generating a trace
+     requires two extra tables, which respectively map a terminal symbol and a
+     production to a string. *)
   val trace: (string array * string array) option
 
 end
@@ -3174,67 +2680,57 @@ module InspectionTableFormat = struct
 (*                                                                            *)
 (******************************************************************************)
 
-(* This signature defines the format of the tables that are produced (in
+(**This signature defines the format of the tables that are produced (in
    addition to the tables described in [TableFormat]) when the command line
    switch [--inspection] is enabled. It is used as an argument to
-   [InspectionTableInterpreter.Make]. *)
-
+   {!InspectionTableInterpreter.Make}. *)
 module type TABLES = sig
 
   (* The types of symbols. *)
-
   include IncrementalEngine.SYMBOLS
 
-  (* The type ['a lr1state] describes an LR(1) state. The generated parser defines
-     it internally as [int]. *)
-
+  (**The type ['a lr1state] describes an LR(1) state. The generated parser
+     defines it internally as [int]. *)
   type 'a lr1state
 
-  (* Some of the tables that follow use encodings of (terminal and
+  (**Some of the tables that follow use encodings of (terminal and
      nonterminal) symbols as integers. So, we need functions that
      map the integer encoding of a symbol to its algebraic encoding. *)
 
+  (**[terminal] maps an integer code for a terminal symbol to a (terminal)
+     symbol. *)
   val    terminal: int -> xsymbol
+
+  (**[nonterminal] maps an integer code for a nonterminal symbol to a
+     (nonterminal) symbol. *)
   val nonterminal: int -> xsymbol
 
-  (* The left-hand side of every production already appears in the
+  (**The left-hand side of every production already appears in the
      signature [TableFormat.TABLES], so we need not repeat it here. *)
 
-  (* The right-hand side of every production. This a linearized array
-     of arrays of integers, whose [data] and [entry] components have
-     been packed. The encoding of symbols as integers in described in
+  (**The table [rhs] provides access to the right-hand side of every
+     production. The encoding of symbols as integers in described in
      [TableBackend]. *)
+  val rhs: int -> int list
 
-  val rhs: PackedIntArray.t * PackedIntArray.t
+  (**A mapping of every (non-initial) state to its LR(0) core. *)
+  val lr0_core: int -> int
 
-  (* A mapping of every (non-initial) state to its LR(0) core. *)
+  (**A mapping of every LR(0) state to its set of LR(0) items. Each item is
+     represented in its packed form (see [Item]) as an integer. *)
+  val lr0_items: int -> int list
 
-  val lr0_core: PackedIntArray.t
+  (**A mapping of every LR(0) state to its incoming symbol, if it has one. *)
+  val lr0_incoming: int -> int
 
-  (* A mapping of every LR(0) state to its set of LR(0) items. Each item is
-     represented in its packed form (see [Item]) as an integer. Thus the
-     mapping is an array of arrays of integers, which is linearized and
-     packed, like [rhs]. *)
+  (**A table that tells which non-terminal symbols are nullable. *)
+  val nullable: int -> int (* 0 or 1 *)
 
-  val lr0_items: PackedIntArray.t * PackedIntArray.t
-
-  (* A mapping of every LR(0) state to its incoming symbol, if it has one. *)
-
-  val lr0_incoming: PackedIntArray.t
-
-  (* A table that tells which non-terminal symbols are nullable. *)
-
-  val nullable: string
-    (* This is a packed int array of bit width 1. It can be read
-       using [PackedIntArray.get1]. *)
-
-  (* A two-table dimensional table, indexed by a nonterminal symbol and
+  (**A two-table dimensional table, indexed by a nonterminal symbol and
      by a terminal symbol (other than [#]), encodes the FIRST sets. *)
-
-  val first: int (* width of the bitmap *) * string (* second component of [PackedIntArray.t] *)
+  val first: int -> int -> int (* 0 or 1 *)
 
 end
-
 end
 module InspectionTableInterpreter = struct
 (******************************************************************************)
@@ -3294,17 +2790,6 @@ module Make
 
   include IT
 
-  (* This auxiliary function decodes a packed linearized array, as created by
-     [TableBackend.linearize_and_marshal1]. Here, we read a row all at once. *)
-
-  let read_packed_linearized
-    (data, entry : PackedIntArray.t * PackedIntArray.t) (i : int) : int list
-  =
-    LinearizedArray.read_row_via
-      (PackedIntArray.get data)
-      (PackedIntArray.get entry)
-      i
-
   (* This auxiliary function decodes a symbol. The encoding was done by
      [encode_symbol] or [encode_symbol_option] in the table back-end. *)
 
@@ -3328,13 +2813,13 @@ module Make
      nonterminal symbols, we add [start] to account for the presence of the
      start symbols. *)
 
-  let n2i (nt : 'a IT.nonterminal) : int =
+  let[@inline] n2i (nt : 'a IT.nonterminal) : int =
     let answer = TT.start + Obj.magic nt in
     (* For safety, check that the above cast produced a correct result. *)
     assert (IT.nonterminal answer = X (N nt));
     answer
 
-  let t2i (t : 'a IT.terminal) : int =
+  let[@inline] t2i (t : 'a IT.terminal) : int =
     let answer = Obj.magic t in
     (* For safety, check that the above cast produced a correct result. *)
     assert (IT.terminal answer = X (T t));
@@ -3342,11 +2827,11 @@ module Make
 
   (* Ordering functions. *)
 
-  let compare_terminals t1 t2 =
+  let[@inline] compare_terminals t1 t2 =
     (* Subtraction is safe because overflow is impossible. *)
     t2i t1 - t2i t2
 
-  let compare_nonterminals nt1 nt2 =
+  let[@inline] compare_nonterminals nt1 nt2 =
     (* Subtraction is safe because overflow is impossible. *)
     n2i nt1 - n2i nt2
 
@@ -3361,7 +2846,7 @@ module Make
     | X (N nt1), X (N nt2) ->
         compare_nonterminals nt1 nt2
 
-  let compare_productions prod1 prod2 =
+  let[@inline] compare_productions prod1 prod2 =
     (* Subtraction is safe because overflow is impossible. *)
     prod1 - prod2
 
@@ -3378,8 +2863,8 @@ module Make
      appropriate choice of ['a]. *)
 
   let incoming_symbol (s : 'a IT.lr1state) : 'a IT.symbol =
-    let core = PackedIntArray.get IT.lr0_core s in
-    let symbol = decode_symbol (PackedIntArray.get IT.lr0_incoming core) in
+    let core = IT.lr0_core s in
+    let symbol = decode_symbol (IT.lr0_incoming core) in
     match symbol with
     | IT.X symbol ->
         Obj.magic symbol
@@ -3388,13 +2873,13 @@ module Make
      to decode the symbol. *)
 
   let lhs prod =
-    IT.nonterminal (PackedIntArray.get TT.lhs prod)
+    IT.nonterminal (TT.lhs prod)
 
   (* The function [rhs] reads the table [IT.rhs] and uses [decode_symbol]
      to decode the symbol. *)
 
   let rhs prod =
-    List.map decode_symbol (read_packed_linearized IT.rhs prod)
+    List.map decode_symbol (IT.rhs prod)
 
   (* The function [items] maps the LR(1) state [s] to its LR(0) core,
      then uses [core] as an index into the table [IT.lr0_items]. The
@@ -3402,7 +2887,7 @@ module Make
      essentially a copy of [Item.export]. *)
 
   type item =
-      int * int
+    int * int
 
   let low_bits =
     10
@@ -3410,31 +2895,31 @@ module Make
   let low_limit =
     1 lsl low_bits
 
-  let export t : item =
+  let[@inline] export t : item =
     (t lsr low_bits, t mod low_limit)
 
   let items s =
     (* Map [s] to its LR(0) core. *)
-    let core = PackedIntArray.get IT.lr0_core s in
+    let core = IT.lr0_core s in
     (* Now use [core] to look up the table [IT.lr0_items]. *)
-    List.map export (read_packed_linearized IT.lr0_items core)
+    List.map export (IT.lr0_items core)
 
   (* The function [nullable] maps the nonterminal symbol [nt] to its
      integer code, which it uses to look up the array [IT.nullable].
      This yields 0 or 1, which we map back to a Boolean result. *)
 
-  let decode_bool i =
+  let[@inline] decode_bool i =
     assert (i = 0 || i = 1);
     i = 1
 
   let nullable nt =
-    decode_bool (PackedIntArray.get1 IT.nullable (n2i nt))
+    decode_bool (IT.nullable (n2i nt))
 
   (* The function [first] maps the symbols [nt] and [t] to their integer
      codes, which it uses to look up the matrix [IT.first]. *)
 
   let first nt t =
-    decode_bool (PackedIntArray.unflatten1 IT.first (n2i nt) (t2i t))
+    decode_bool (IT.first (n2i nt) (t2i t))
 
   let xfirst symbol t =
     match symbol with
@@ -3443,10 +2928,6 @@ module Make
     | X (N nt) ->
         first nt t
 
-  (* The function [foreach_terminal] exploits the fact that the
-     first component of [TT.error] is [Terminal.n - 1], i.e., the
-     number of terminal symbols, including [error] but not [#]. *)
-
   let rec foldij i j f accu =
     if i = j then
       accu
@@ -3454,13 +2935,13 @@ module Make
       foldij (i + 1) j f (f i accu)
 
   let foreach_terminal f accu =
-    let n, _ = TT.error in
+    let n = TT.terminal_count in
     foldij 0 n (fun i accu ->
       f (IT.terminal i) accu
     ) accu
 
   let foreach_terminal_but_error f accu =
-    let n, _ = TT.error in
+    let n = TT.terminal_count in
     foldij 0 n (fun i accu ->
       if i = TT.error_terminal then
         accu
@@ -3586,10 +3067,6 @@ module MakeEngineTable (T : TableFormat.TABLES) = struct
   let error_value =
     Obj.repr ()
 
-  (* The function [foreach_terminal] exploits the fact that the
-     first component of [T.error] is [Terminal.n - 1], i.e., the
-     number of terminal symbols, including [error] but not [#]. *)
-
   (* There is similar code in [InspectionTableInterpreter]. The
      code there contains an additional conversion of the type
      [terminal] to the type [xsymbol]. *)
@@ -3601,7 +3078,7 @@ module MakeEngineTable (T : TableFormat.TABLES) = struct
       foldij (i + 1) j f (f i accu)
 
   let foreach_terminal f accu =
-    let n, _ = T.error in
+    let n = T.terminal_count in
     foldij 0 n (fun i accu ->
       f i accu
     ) accu
@@ -3623,7 +3100,7 @@ module MakeEngineTable (T : TableFormat.TABLES) = struct
     i
 
   let default_reduction state defred nodefred env =
-    let code = PackedIntArray.get T.default_reduction state in
+    let code = T.default_reduction state in
     if code = 0 then
       (* no default reduction *)
       nodefred env
@@ -3635,20 +3112,10 @@ module MakeEngineTable (T : TableFormat.TABLES) = struct
   let is_start prod =
     prod < T.start
 
-  (* This auxiliary function helps access a compressed, two-dimensional
-     matrix, like the action and goto tables. *)
-
-  let unmarshal2 table i j =
-    RowDisplacement.getget
-      PackedIntArray.get
-      PackedIntArray.get
-      table
-      i j
-
   let action state terminal value shift reduce fail env =
-    match PackedIntArray.unflatten1 T.error state terminal with
+    match T.error state terminal with
     | 1 ->
-        let action = unmarshal2 T.action state terminal in
+        let action = T.action state terminal in
         let opcode = action land 0b11
         and param = action lsr 2 in
         if opcode >= 0b10 then
@@ -3665,9 +3132,9 @@ module MakeEngineTable (T : TableFormat.TABLES) = struct
         fail env
 
   let maybe_shift_t state terminal =
-    match PackedIntArray.unflatten1 T.error state terminal with
+    match T.error state terminal with
     | 1 ->
-        let action = unmarshal2 T.action state terminal in
+        let action = T.action state terminal in
         let opcode = action land 0b11 in
         if opcode >= 0b10 then
           (* 0b10 : shift/discard *)
@@ -3683,12 +3150,12 @@ module MakeEngineTable (T : TableFormat.TABLES) = struct
         None
 
   let may_reduce_prod state terminal prod =
-    let code = PackedIntArray.get T.default_reduction state in
+    let code = T.default_reduction state in
     if code = 0 then
       (* no default reduction *)
-      match PackedIntArray.unflatten1 T.error state terminal with
+      match T.error state terminal with
       | 1 ->
-          let action = unmarshal2 T.action state terminal in
+          let action = T.action state terminal in
           let opcode = action land 0b11 in
           if opcode >= 0b10 then
             (* 0b10 : shift/discard *)
@@ -3708,18 +3175,18 @@ module MakeEngineTable (T : TableFormat.TABLES) = struct
       prod = prod'
 
   let goto_nt state nt =
-    let code = unmarshal2 T.goto state nt in
+    let code = T.goto state nt in
     (* code = 1 + state *)
     code - 1
 
   let[@inline] lhs prod =
-    PackedIntArray.get T.lhs prod
+    T.lhs prod
 
   let goto_prod state prod =
     goto_nt state (lhs prod)
 
   let maybe_goto_nt state nt =
-    let code = unmarshal2 T.goto state nt in
+    let code = T.goto state nt in
     (* If [code] is 0, there is no outgoing transition.
        If [code] is [1 + state], there is a transition towards [state]. *)
     assert (0 <= code);
@@ -3836,5 +3303,5 @@ module MakeEngineTable (T : TableFormat.TABLES) = struct
 end
 end
 module StaticVersion = struct
-let require_20250912 = ()
+let require_20260209 = ()
 end

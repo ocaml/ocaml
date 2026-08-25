@@ -158,3 +158,6 @@ val has_relative_libdir : bool
 val suffixing : bool
 (** Whether C stub library filenames are being mangled with the Bytecode
     Runtime ID and {!Config.target}. *)
+
+val reserved_header_bits : int
+(** How many bits of a block's header are reserved *)

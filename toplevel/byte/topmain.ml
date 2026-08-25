@@ -41,7 +41,7 @@ let dir_trace ppf lid =
           && (match
                 Types.get_desc
                   (Ctype.expand_head !Topcommon.toplevel_env desc.val_type)
-              with Tarrow _ -> true | _ -> false)
+              with Tarrow _ | Tfunctor _ -> true | _ -> false)
           then begin
           match is_traced clos with
           | Some opath ->

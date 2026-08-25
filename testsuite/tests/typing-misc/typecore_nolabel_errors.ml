@@ -13,13 +13,13 @@ let check f = f ()
 
 let f ~x = ()
 let () = check f;;
-[%%expect {|
+[%%expect {||}, (Principal.Nolabel, Rectypes.Nolabel, Nolabel){|
 val check : (unit -> 'a) -> 'a = <fun>
 val f : x:'a -> unit = <fun>
 |}]
 
 let () = f ~y:1
-[%%expect {|
+[%%expect {||}, (Principal.Nolabel, Rectypes.Nolabel, Nolabel){|
 Line 1, characters 14-15:
 1 | let () = f ~y:1
                   ^
@@ -29,7 +29,7 @@ This argument cannot be applied with label "~y"
 
 let f ?x ~a ?y ~z () = ()
 let g = f ?y:None ?x:None ~a:()
-[%%expect {|
+[%%expect {||}, (Principal.Nolabel, Rectypes.Nolabel, Nolabel){|
 val f : ?x:'a -> a:'b -> ?y:'c -> z:'d -> unit -> unit = <fun>
 Line 2, characters 13-17:
 2 | let g = f ?y:None ?x:None ~a:()
@@ -42,7 +42,7 @@ Since OCaml 4.11, optional arguments do not commute when -nolabels is given
 
 let f (g: ?x:_ -> _) = g ~y:None ?x:None; g ?x:None ()
 
-[%%expect{|
+[%%expect{||}, (Principal.Nolabel, Rectypes.Nolabel, Nolabel){|
 Line 1, characters 28-32:
 1 | let f (g: ?x:_ -> _) = g ~y:None ?x:None; g ?x:None ()
                                 ^^^^
@@ -56,7 +56,7 @@ Since OCaml 4.11, optional arguments do not commute when -nolabels is given
 let f i ?(a=0) ?(b=0) ?(c=0) ~x j =
   i + a + b + c + x + j
 ;;
-[%%expect{|
+[%%expect{||}, (Principal.Nolabel, Rectypes.Nolabel, Nolabel){|
 val f : int -> ?a:int -> ?b:int -> ?c:int -> x:int -> int -> int = <fun>
 |}]
 ;;
@@ -64,7 +64,7 @@ val f : int -> ?a:int -> ?b:int -> ?c:int -> x:int -> int -> int = <fun>
 (* [a], [b] and [c] can be commuted without issues *)
 
 f 3 ~c:2 ~a:1 ~b:0 ~x:4 5;;
-[%%expect{|
+[%%expect{||}, (Principal.Nolabel, Rectypes.Nolabel, Nolabel){|
 Line 1, characters 7-8:
 1 | f 3 ~c:2 ~a:1 ~b:0 ~x:4 5;;
            ^
@@ -79,7 +79,7 @@ Since OCaml 4.11, optional arguments do not commute when -nolabels is given
    argument, but compare the reported function types: *)
 
 f 3 ~a:1 ~b:2 5 ~c:0 ~x:4;;
-[%%expect{|
+[%%expect{||}, (Principal.Nolabel, Rectypes.Nolabel, Nolabel){|
 Line 1, characters 14-15:
 1 | f 3 ~a:1 ~b:2 5 ~c:0 ~x:4;;
                   ^
@@ -91,7 +91,7 @@ Since OCaml 4.11, optional arguments do not commute when -nolabels is given
 ;;
 
 f 3 ~a:1 ~c:2 5 ~b:0 ~x:4;;
-[%%expect{|
+[%%expect{||}, (Principal.Nolabel, Rectypes.Nolabel, Nolabel){|
 Line 1, characters 12-13:
 1 | f 3 ~a:1 ~c:2 5 ~b:0 ~x:4;;
                 ^
@@ -103,7 +103,7 @@ Since OCaml 4.11, optional arguments do not commute when -nolabels is given
 ;;
 
 f 3 ~b:1 ~c:2 5 ~a:0 ~x:4;;
-[%%expect{|
+[%%expect{||}, (Principal.Nolabel, Rectypes.Nolabel, Nolabel){|
 Line 1, characters 7-8:
 1 | f 3 ~b:1 ~c:2 5 ~a:0 ~x:4;;
            ^
@@ -118,13 +118,13 @@ Since OCaml 4.11, optional arguments do not commute when -nolabels is given
    https://github.com/ocaml/ocaml/pull/9411 *)
 
 let f ?x ?y () = ();;
-[%%expect{|
+[%%expect{||}, (Principal.Nolabel, Rectypes.Nolabel, Nolabel){|
 val f : ?x:'a -> ?y:'b -> unit -> unit = <fun>
 |}]
 ;;
 
 f ~y:3;;
-[%%expect{|
+[%%expect{||}, (Principal.Nolabel, Rectypes.Nolabel, Nolabel){|
 Line 1, characters 5-6:
 1 | f ~y:3;;
          ^

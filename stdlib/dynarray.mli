@@ -144,6 +144,11 @@ val append_array : 'a t -> 'a array -> unit
     ]}
 *)
 
+val append_iarray : 'a t -> 'a iarray -> unit
+(** Like {!append_array} but with an immutable array.
+
+    @since 5.6 *)
+
 val append_list : 'a t -> 'a list -> unit
 (** Like {!append_array} but with a list. *)
 
@@ -197,7 +202,9 @@ val blit : src:'a t -> src_pos:int -> dst:'a t -> dst_pos:int -> len:int -> unit
 
     @raise Invalid_argument if [src_pos] and [len] do not designate
     a valid subarray of [src], or if [dst_pos] is strictly below [0]
-    or strictly above [length dst]. *)
+    or strictly above [length dst].
+
+    @since 5.3 *)
 
 (** {1:removing Removing elements} *)
 
@@ -451,7 +458,22 @@ val of_array : 'a array -> 'a t
 val to_array : 'a t -> 'a array
 (** [to_array a] returns a fixed-sized array corresponding to the
     dynamic array [a]. This always allocate a new array and copies
-    elements into it. *)
+    elements into it.
+
+    @since 5.6 *)
+
+val of_iarray : 'a iarray -> 'a t
+(** [of_iarray a] returns a dynamic array corresponding to the
+    immutable array [a]. Operates in [O(n)] time in the length of [a] by making
+    a copy.
+
+    @since 5.6 *)
+
+val to_iarray : 'a t -> 'a iarray
+(** [to_iarray a] returns an immutable array corresponding to the dynamic array
+    [a]. This always allocates a new array and copies elements into it.
+
+    @since 5.6 *)
 
 val of_list : 'a list -> 'a t
 (** [of_list l] is the array containing the elements of [l] in
@@ -626,7 +648,9 @@ val unsafe_to_iarray : capacity:int -> ('a t -> unit) -> 'a iarray
 
     This function is unsafe because type safety may be broken by concurrent
     writes to the dynarray from other domains, without proper synchronization,
-    before [f] returns. *)
+    before [f] returns.
+
+    @since 5.4 *)
 
 
 (** {1:examples Code examples}

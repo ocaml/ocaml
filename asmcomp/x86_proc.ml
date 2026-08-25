@@ -27,6 +27,7 @@ type system =
   | S_freebsd
   | S_netbsd
   | S_openbsd
+  | S_dragonfly
 
   | S_unknown
 
@@ -43,6 +44,7 @@ let system = match Config.system with
   | "freebsd" -> S_freebsd
   | "netbsd" -> S_netbsd
   | "openbsd" -> S_openbsd
+  | "dragonfly" -> S_dragonfly
 
   | _ -> S_unknown
 
@@ -54,19 +56,23 @@ let windows =
 let string_of_string_literal s =
   let b = Buffer.create (String.length s + 2) in
   let last_was_escape = ref false in
+  (* Avoid producing '??' to avoid assembler warnings about trigraphs *)
+  let last_was_question_mark = ref false in
   for i = 0 to String.length s - 1 do
     let c = s.[i] in
     if c >= '0' && c <= '9' then
       if !last_was_escape
       then Printf.bprintf b "\\%o" (Char.code c)
       else Buffer.add_char b c
-    else if c >= ' ' && c <= '~' && c <> '"' (* '"' *) && c <> '\\' then begin
+    else if c >= ' ' && c <= '~' && c <> '"' (* '"' *) && c <> '\\' &&
+              (c <> '?' || not !last_was_question_mark) then begin
       Buffer.add_char b c;
       last_was_escape := false
     end else begin
       Printf.bprintf b "\\%o" (Char.code c);
       last_was_escape := true
-    end
+    end;
+    last_was_question_mark := (c = '?')
   done;
   Buffer.contents b
 
@@ -249,7 +255,7 @@ let compile infile outfile =
   if masm then
     Ccomp.command (Config.asm ^
                    Filename.quote outfile ^ " " ^ Filename.quote infile ^
-                   (if !Clflags.verbose then "" else ">NUL"))
+                   (if !Clflags.verbose then "" else ">" ^ Filename.null))
   else
     Ccomp.command (Config.asm ^ " " ^
                    (String.concat " " (Misc.debug_prefix_map_flags ())) ^

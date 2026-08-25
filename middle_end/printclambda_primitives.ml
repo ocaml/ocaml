@@ -169,6 +169,7 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
   | Parraysets k -> fprintf ppf "array.set[%s]" (array_kind k)
   | Pisint -> fprintf ppf "isint"
   | Pisout -> fprintf ppf "isout"
+  | Pcheckbound -> fprintf ppf "checkbound"
   | Pbintofint bi -> print_boxed_integer "of_int" ppf bi
   | Pintofbint bi -> print_boxed_integer "to_int" ppf bi
   | Pcvtbint (bi1, bi2) ->
@@ -218,6 +219,7 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
   | Patomic_load -> fprintf ppf "atomic_load"
+  | Patomic_fetch_add -> fprintf ppf "atomic_fetch_add"
   | Popaque -> fprintf ppf "opaque"
   | Pdls_get -> fprintf ppf "dls_get"
   | Ppoll -> fprintf ppf "poll"

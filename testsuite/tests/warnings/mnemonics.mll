@@ -17,12 +17,16 @@ rule seek_let_number_function = parse
   { () }
 | to_eol
   { seek_let_number_function lexbuf }
+| ""
+  { failwith "failed to parse warnings.ml" }
 
 and constructors = parse
 | ws* '|' ws* (constr as c) (ws* '_')? ws* "->" ws* (int as n) to_eol
   { (c, int_of_string n) :: constructors lexbuf }
 | ws* ";;" ws* eol
   { [] }
+| ""
+  { failwith "failed to parse warnings.ml" }
 
 and mnemonics = parse
 | ws* (int as n) ws+ '[' (mnemo as s) ']' to_eol
@@ -31,6 +35,8 @@ and mnemonics = parse
   { mnemonics lexbuf }
 | eof
   { [] }
+| ""
+  { failwith "failed to parse warnings.ml" }
 
 {
 let ocamlsrcdir = Sys.getenv "ocamlsrcdir"

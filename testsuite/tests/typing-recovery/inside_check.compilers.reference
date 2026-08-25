@@ -1,0 +1,16 @@
+File "inside_check.ml", line 1:
+Error: Multiple errors were encountered
+File "inside_check.ml", line 13, characters 2-46:
+13 |   fun ?opt:(Eq = assert false) () x y -> x + y
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  The syntactic arity of the function doesn't match the type constraint:
+  This function has 4 syntactic arguments, but its type is constrained to
+    ?opt:(a, int -> int -> int) eq -> unit -> a.
+   Hint: consider splitting the function definition into
+     fun ... gadt_pat -> fun ...
+     where gadt_pat is the pattern with the GADT constructor that
+     introduces the local type equation on a.
+  File "inside_check.ml", line 15, characters 12-19:
+  15 | let x:int = "hello"
+                   ^^^^^^^
+    This constant has type string but an expression was expected of type int

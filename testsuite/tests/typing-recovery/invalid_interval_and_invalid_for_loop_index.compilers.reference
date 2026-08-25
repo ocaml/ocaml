@@ -1,0 +1,14 @@
+File "invalid_interval_and_invalid_for_loop_index.ml", line 1:
+Error: Multiple errors were encountered
+File "invalid_interval_and_invalid_for_loop_index.ml", line 11, characters 4-5:
+11 |   | 0 .. 10 -> ()
+         ^
+  Only character intervals are supported in patterns.
+File "invalid_interval_and_invalid_for_loop_index.ml", line 13, characters 8-13:
+13 |       | "foo" .. "bar" -> ()
+             ^^^^^
+  Only character intervals are supported in patterns.
+File "invalid_interval_and_invalid_for_loop_index.ml", line 15, characters 14-22:
+15 |           for (Some i) = 1 to 10 do
+                   ^^^^^^^^
+  Invalid for-loop index: only variables and _ are allowed.

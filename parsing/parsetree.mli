@@ -113,7 +113,7 @@ and core_type_desc =
            Invariant: [n >= 2].
         *)
   | Ptyp_constr of Longident.t loc * core_type list
-      (** [Ptyp_constr(lident, l)] represents:
+      (** [Ptyp_constr(tconstr, l)] represents:
             - [tconstr]               when [l=[]],
             - [T tconstr]             when [l=[T]],
             - [(T1, ..., Tn) tconstr] when [l=[T1 ; ... ; Tn]].
@@ -174,6 +174,10 @@ and core_type_desc =
 
            - As the {{!value_description.pval_type}[pval_type]} field of a
            {!value_description}.
+
+           - As the {!core_type} in the
+           {{!primitive_description.pprim_kind}[pprim_kind]} field of a
+           {!primitive_description}.
          *)
   | Ptyp_package of package_type  (** [(module S)]. *)
   | Ptyp_open of Longident.t loc * core_type (** [M.(T)] *)
@@ -526,16 +530,34 @@ and value_description =
     {
      pval_name: string loc;
      pval_type: core_type;
-     pval_prim: string list;
      pval_attributes: attributes;  (** [... [\@\@id1] [\@\@id2]] *)
      pval_loc: Location.t;
     }
-(** Values of type {!value_description} represents:
-    - [val x: T],
-            when {{!value_description.pval_prim}[pval_prim]} is [[]]
-    - [external x: T = "s1" ... "sn"]
-            when {{!value_description.pval_prim}[pval_prim]} is [["s1";..."sn"]]
+(** Values of type {!value_description} represent [val x: T]. *)
+
+(** {2 Primitive descriptions} *)
+
+and primitive_description =
+  {
+    pprim_name: string loc;
+    pprim_kind: primitive_kind;
+    pprim_attributes: attributes;
+    pprim_loc: Location.t
+  }
+(** Values of type {!primitive_description} represent:
+  - [external x: T = "s1" ... "sn"] when
+    {{!primitive_description.pprim_kind}[pprim_kind]} is
+    [Pprim_decl (T, ["s1";..."sn"])].
+  - [external x: T = M.y] when {{!primitive_description.pprim_kind}[pprim_kind]}
+    is [Pprim_alias (Some T, M.y)]
+  - [external x = M.y] when {{!primitive_description.pprim_kind}[pprim_kind]}
+    is [Pprim_alias (None, M.y)]
 *)
+
+and primitive_kind =
+  | Pprim_decl of core_type * string list
+  | Pprim_alias of core_type option * Longident.t loc
+(** See the comment on {{!primitive_description}[primitive_description]}. *)
 
 (** {2 Type declarations} *)
 
@@ -597,7 +619,8 @@ and label_declaration =
      pld_inline_record: label_declaration list option;
       (** When [Some fields], the field's type is an inline record definition.
           [pld_type] is set to a dummy type; the actual type is the inline
-          record with the given [fields]. When [None], this is a normal field. *)
+          record with the given [fields]. When [None], this is a normal
+          field. *)
      pld_loc: Location.t;
      pld_attributes: attributes;  (** [l : T [\@id1] [\@id2]] *)
     }
@@ -925,9 +948,11 @@ and signature_item =
 
 and signature_item_desc =
   | Psig_value of value_description
-      (** - [val x: T]
-            - [external x: T = "s1" ... "sn"]
-         *)
+      (** [val x: T] *)
+  | Psig_primitive of primitive_description
+      (** - [external x: T = "s1" ... "sn" ]
+          - [external x = y]
+          - [external x: T = y] *)
   | Psig_type of rec_flag * type_declaration list
       (** [type t1 = ... and ... and tn  = ...] *)
   | Psig_typesubst of type_declaration list
@@ -1075,9 +1100,12 @@ and structure_item_desc =
             - [let rec P1 = E1 and ... and Pn = EN ]
                 when [rec] is {{!Asttypes.rec_flag.Recursive}[Recursive]}.
         *)
-  | Pstr_primitive of value_description
-      (** - [val x: T]
-            - [external x: T = "s1" ... "sn" ]*)
+  | Pstr_val of value_description
+      (** [val x: T] *)
+  | Pstr_primitive of primitive_description
+      (** - [external x: T = "s1" ... "sn" ]
+          - [external x = y]
+          - [external x: T = y] *)
   | Pstr_type of rec_flag * type_declaration list
       (** [type t1 = ... and ... and tn = ...] *)
   | Pstr_typext of type_extension  (** [type t1 += ...] *)

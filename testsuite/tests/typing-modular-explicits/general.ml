@@ -126,6 +126,8 @@ Line 3, characters 6-7:
           ^
 Error: The value "m" has type "(module Typ with type t = int)"
        but an expression was expected of type "(module Typ)"
+       The constraint on "t" in the first module type is not compatible
+       with the declaration of type t in the second module type.
 |}]
 
 (** From here we will test things with labels *)
@@ -346,7 +348,7 @@ let s_list_arrayb =
       string_of_int [|[3; 2]; [2]; []|]
 
 [%%expect{|
-val s_list_arrayb : string list Array.t = [|["3"; "2"]; ["2"]; []|]
+val s_list_arrayb : string list array = [|["3"; "2"]; ["2"]; []|]
 |}]
 
 module F () : Map = struct
@@ -777,10 +779,22 @@ let apply_small_annot2 (f : (module T : Typ) -> T.t -> T.t) g (module T : Typ) x
   g (module T) x
 
 [%%expect{|
+Line 2, characters 10-26:
+2 |   let _ = merge_no_mod f g in
+              ^^^^^^^^^^^^^^^^
+Warning 5 [ignored-partial-application]: this function application is partial,
+  maybe some arguments are missing.
+
 val apply_small_annot2 :
   ((module T : Typ) -> T.t -> T.t) ->
   ((module T : Typ) -> T.t -> T.t) -> (module T : Typ) -> T.t -> T.t = <fun>
 |}, Principal{|
+Line 2, characters 10-26:
+2 |   let _ = merge_no_mod f g in
+              ^^^^^^^^^^^^^^^^
+Warning 5 [ignored-partial-application]: this function application is partial,
+  maybe some arguments are missing.
+
 Line 3, characters 2-3:
 3 |   g (module T) x
       ^
@@ -1423,4 +1437,113 @@ module M : sig type a = int type v = [ `A of a ] end
 val f : (module M : T) -> ([> M.v ] as 'a) -> 'a = <fun>
 val u : ((module M : T) -> ([> M.v ] as 'a) -> 'a) -> (module T) -> 'a -> 'a =
   <fun>
+|}]
+
+(* Test shadowing of an include that could cause an error due to a module
+   not matching an inferred signature. *)
+
+module U = struct
+  type t = unit = ()
+end
+module M = struct
+  include U
+  type t = float
+  module type S = sig type t end
+  let f : (module X:S) -> X.t -> int = fun (module X:S)     _  -> 3
+end
+
+[%%expect{|
+module U : sig type t = unit = () end
+module M :
+  sig
+    type t = float
+    module type S = sig type t end
+    val f : (module X : S) -> X.t -> int
+  end
+|}]
+
+module type T = sig
+  type t
+end
+
+module F (X : T) = struct
+  type t = (module Y : T) -> Y.t -> X.t
+end
+
+module M = F(struct type t = float end)
+
+[%%expect{|
+module type T = sig type t end
+module F : (X : T) -> sig type t = (module Y : T) -> Y.t -> X.t end
+module M : sig type t = (module Y : T) -> Y.t -> float end
+|}]
+
+(** Warnings *)
+
+module type Iter = sig
+  type 'a t
+  val iter: ('a -> unit) -> 'a t -> unit
+end
+let iter (module M:Iter) f x = M.iter f x
+[%%expect {|
+module type Iter = sig type 'a t val iter : ('a -> unit) -> 'a t -> unit end
+val iter : (module M : Iter) -> ('a -> unit) -> 'a M.t -> unit = <fun>
+|}]
+let too_many_arg = iter (module Iarray) (Format.printf "%d@.") [|0;1;2|] ()
+[%%expect {|
+Line 1, characters 19-75:
+1 | let too_many_arg = iter (module Iarray) (Format.printf "%d@.") [|0;1;2|] ()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The function "iter" has type
+         "(module M : Iter) -> ('b -> unit) -> 'b M.t -> unit"
+       It is applied to too many arguments
+Line 1, characters 71-73:
+1 | let too_many_arg = iter (module Iarray) (Format.printf "%d@.") [|0;1;2|] ()
+                                                                           ^^
+  Hint: Did you forget a ";"?
+Line 1, characters 73-75:
+1 | let too_many_arg = iter (module Iarray) (Format.printf "%d@.") [|0;1;2|] ()
+                                                                             ^^
+  This extra argument is not expected.
+|}]
+
+let too_many_arg_bis = map (module Iarray) succ [| 0; 1; 2 |] ()
+[%%expect {|
+Line 1, characters 23-64:
+1 | let too_many_arg_bis = map (module Iarray) succ [| 0; 1; 2 |] ()
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The function "map" has type
+         "(module M : Map) -> ('c -> 'd) -> 'c M.t -> 'd M.t"
+       It is applied to too many arguments
+Line 1, characters 62-64:
+1 | let too_many_arg_bis = map (module Iarray) succ [| 0; 1; 2 |] ()
+                                                                  ^^
+  This extra argument is not expected.
+|}]
+
+module type S = sig type t type e val v : e -> t end
+let helper (type a) (module M : S with type t = a) _ : a = assert false
+let outer (type a) (type b) (module M : S with type e = a and type t = b) e =
+  helper (module M) (M.v e)
+[%%expect {|
+module type S = sig type t type e val v : e -> t end
+val helper : (module S with type t = 'a) -> 'b -> 'a = <fun>
+val outer : (module M : S with type e = 'a and type t = 'b) -> M.e -> M.t =
+  <fun>
+|}]
+
+
+(* Bug #14891: nondep package type *)
+
+module type N = sig module type T end
+module type S = sig type 'a t end
+let f (module M:N) (x:(module M.T)) = x
+let app = f (module struct module type T = S end)
+let ok = f (module struct module type T = S end) (module List:S)
+[%%expect {|
+module type N = sig module type T end
+module type S = sig type 'a t end
+val f : (module M : N) -> (module M.T) -> (module M.T) = <fun>
+val app : (module S) -> (module S) = <fun>
+val ok : (module S) = <module>
 |}]

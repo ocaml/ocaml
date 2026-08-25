@@ -27,11 +27,16 @@ open Emitenv
 (* Layout of the stack.  The C stack must be 16-aligned, but 8-alignment
    is enough for the OCaml stack. *)
 
+let fp = Config.with_frame_pointers
+
 let frame_size env =
   env.stack_offset +                     (* Trap frame, outgoing parameters *)
   size_int * env.f.fun_num_stack_slots.(0) +    (* Local int variables *)
   size_float * env.f.fun_num_stack_slots.(1) +  (* Local float variables *)
-  (if env.f.fun_frame_required then size_addr else 0) (* Return address *)
+  (if env.f.fun_frame_required then
+     (* Return address + optional frame pointer *)
+     size_addr + (if fp then size_addr else 0)
+   else 0)
 
 let slot_offset env loc cls =
   match loc with
@@ -80,8 +85,8 @@ let reg_tmp = phys_reg 23 (* t1 *)
 let reg_tmp2 = phys_reg 22 (* t0 *)
 let reg_t2 = phys_reg 16 (* t2 *)
 let reg_domain_state_ptr = phys_reg 26 (* s11 *)
-let reg_trap_ptr = phys_reg 24 (* s1 *)
-let reg_alloc_ptr = phys_reg 25 (* s10 *)
+let reg_trap_ptr = phys_reg 24 (* s10 *)
+let reg_alloc_ptr = phys_reg 25 (* s1 *)
 let reg_stack_arg_begin = phys_reg 9 (* s3 *)
 let reg_stack_arg_end = phys_reg 10 (* s4 *)
 
@@ -107,15 +112,19 @@ let emit_stack_adjustment n =
     cfi_adjust_cfa_offset (-n)
   end
 
-(* Output add-immediate instruction, clobbers reg_tmp2 *)
+(* Output add-immediate instruction, clobbers reg_tmp2.
+   The _gen form names its registers as strings, so that it can be used
+   with sp, which is not one of the allocatable registers. *)
 
-let emit_addimm rd rs n =
+let emit_addimm_gen rd rs n =
   if is_immediate n then
-    `	addi	{emit_reg rd}, {emit_reg rs}, {emit_int n}\n`
+    `	addi	{emit_string rd}, {emit_string rs}, {emit_int n}\n`
   else begin
     `	li	{emit_reg reg_tmp2}, {emit_int n}\n`;
-    `	add	{emit_reg rd}, {emit_reg rs}, {emit_reg reg_tmp2}\n`
+    `	add	{emit_string rd}, {emit_string rs}, {emit_reg reg_tmp2}\n`
   end
+
+let emit_addimm rd rs n = emit_addimm_gen (reg_name rd) (reg_name rs) n
 
 (* Output memory operation with a possibly non-immediate offset,
    clobbers reg_tmp *)
@@ -134,6 +143,20 @@ let reload_ra n =
 
 let store_ra n =
   emit_mem_op "sd" "ra" (n - 8) "sp"
+
+let reload_fp n =
+  emit_mem_op "ld" "s0" (n - 16) "sp"
+
+let store_fp n =
+  emit_mem_op "sd" "s0" (n - 16) "sp"
+
+let output_epilogue env =
+  let n = frame_size env in
+  if env.f.fun_frame_required then begin
+    reload_ra n;
+    if fp then reload_fp n
+  end;
+  emit_stack_adjustment n
 
 let emit_store rs ofs rd =
   emit_mem_op "sd" (reg_name rs) ofs rd
@@ -250,11 +273,13 @@ let name_for_floatop2 = function
   | Idivf -> "fdiv.d"
   | _ -> Misc.fatal_error "Emit.Iopf2"
 
+(* Three-operand specific operations only, [Isqrtf] is emitted directly. *)
 let name_for_specific = function
   | Imultaddf false -> "fmadd.d"
   | Imultaddf true  -> "fnmadd.d"
   | Imultsubf false -> "fmsub.d"
   | Imultsubf true  -> "fnmsub.d"
+  | _ -> Misc.fatal_error "Emit.name_for_specific"
 
 (* Output the assembly code for an instruction *)
 
@@ -267,7 +292,12 @@ let emit_instr env i =
       emit_stack_adjustment (-n);
       if env.f.fun_frame_required then begin
         store_ra n;
-        cfi_offset ~reg:1 (* ra *) ~offset:(-8)
+        cfi_offset ~reg:1 (* ra *) ~offset:(-8);
+        if fp then begin
+          store_fp n;
+          cfi_offset ~reg:8 (* s0 = x8 *) ~offset:(-16);
+          emit_addimm_gen "s0" "sp" n
+        end;
       end;
   | Lop(Imove | Ispill | Ireload) ->
       let src = i.arg.(0) and dst = i.res.(0) in
@@ -310,23 +340,21 @@ let emit_instr env i =
       `	{emit_call func}\n`;
       record_frame env i.live (Dbg_other i.dbg)
   | Lop(Itailcall_ind) ->
-      let n = frame_size env in
-      if env.f.fun_frame_required then reload_ra n;
-      emit_stack_adjustment n;
+      output_epilogue env;
       `	jr	{emit_reg i.arg.(0)}\n`
   | Lop(Itailcall_imm {func}) ->
       if func = env.f.fun_name then begin
         `	j	{emit_label env.f.fun_tailrec_entry_point_label}\n`
       end else begin
-        let n = frame_size env in
-        if env.f.fun_frame_required then reload_ra n;
-        emit_stack_adjustment n;
+        output_epilogue env;
         `	{emit_tail func}\n`
       end
   | Lop(Iextcall{func; alloc; stack_ofs}) ->
       if stack_ofs > 0 then begin
         `	mv	{emit_reg reg_stack_arg_begin}, sp\n`;
-        `	addi	{emit_reg reg_stack_arg_end}, sp, {emit_int (Misc.align stack_ofs 16)}\n`;
+        (* reg_stack_arg_begin holds sp here *)
+        emit_addimm reg_stack_arg_end reg_stack_arg_begin
+          (Misc.align stack_ofs 16);
         `	la	{emit_reg reg_t2}, {emit_symbol func}\n`;
         `	{emit_call "caml_c_call_stack_args"}\n`;
         record_frame env i.live (Dbg_other i.dbg)
@@ -335,16 +363,32 @@ let emit_instr env i =
         `	{emit_call "caml_c_call"}\n`;
         record_frame env i.live (Dbg_other i.dbg)
       end else begin
-        (* store ocaml stack in s0, which is marked as being destroyed
-           at noalloc calls *)
-        `	mv	s0, sp\n`;
-        cfi_remember_state ();
-        cfi_def_cfa_register ~reg:8;
-        let ofs = Domainstate.(idx_of_field Domain_c_stack) * 8 in
-        `	ld	sp, {emit_int ofs}({emit_reg reg_domain_state_ptr})\n`;
-        `	{emit_call func}\n`;
-        `	mv	sp, s0\n`;
-        cfi_restore_state ()
+        if fp then begin
+          (* save ocaml stack to C stack around the call *)
+          `	mv	{emit_reg reg_tmp}, sp\n`;
+          cfi_remember_state ();
+          (* sp leaves the OCaml stack, so anchor the CFA on s0 *)
+          cfi_def_cfa_register ~reg:8;
+          cfi_def_cfa_offset 0;
+          let ofs = Domainstate.(idx_of_field Domain_c_stack) * 8 in
+          `	ld	sp, {emit_int ofs}({emit_reg reg_domain_state_ptr})\n`;
+          `	addi	sp, sp, -16\n`;
+          `	sd	{emit_reg reg_tmp}, 0(sp)\n`;
+          `	{emit_call func}\n`;
+          `	ld	sp, 0(sp)\n`;
+          cfi_restore_state ();
+        end else begin
+          (* store ocaml stack in s0, which is marked as being destroyed
+             at noalloc calls *)
+          `	mv	s0, sp\n`;
+          cfi_remember_state ();
+          cfi_def_cfa_register ~reg:8;
+          let ofs = Domainstate.(idx_of_field Domain_c_stack) * 8 in
+          `	ld	sp, {emit_int ofs}({emit_reg reg_domain_state_ptr})\n`;
+          `	{emit_call func}\n`;
+          `	mv	sp, s0\n`;
+          cfi_restore_state ();
+        end
       end
   | Lop(Istackoffset n) ->
       assert (n mod 16 = 0);
@@ -494,16 +538,22 @@ let emit_instr env i =
       `	fcvt.l.d	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, rtz\n`
   | Lop(Iopaque) ->
       assert (i.arg.(0).loc = i.res.(0).loc)
+  | Lop(Ispecific Isqrtf) ->
+      `	fsqrt.d	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
   | Lop(Ispecific sop) ->
       let instr = name_for_specific sop in
       `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`
   | Lop (Idls_get) ->
       let ofs = Domainstate.(idx_of_field Domain_dls_root) * 8 in
       `	ld	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg reg_domain_state_ptr})\n`
+  | Lop (Iatomic_fetch_add) ->
+      (* amoadd.d.aqrl carries both acquire and release ordering, so no
+         trailing fence is needed. *)
+      `	amoadd.d.aqrl	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, ({emit_reg i.arg.(0)})\n`
   | Lop (Ireturn_addr) ->
       let n = frame_size env in
       if env.f.fun_frame_required then
-        `	ld	{emit_reg i.res.(0)}, {emit_int (n - 8)}(sp)\n`
+        emit_load i.res.(0) (n - 8) "sp"
       else
         `	mv	{emit_reg i.res.(0)}, ra\n`;
   | Lreloadretaddr ->
@@ -511,6 +561,7 @@ let emit_instr env i =
       reload_ra n
   | Lreturn ->
       let n = frame_size env in
+      if fp && env.f.fun_frame_required then reload_fp n;
       emit_stack_adjustment n;
       `	ret\n`
   | Llabel lbl ->
@@ -567,17 +618,28 @@ let emit_instr env i =
   | Lswitch jumptbl ->
       let lbl = new_label() in
       `	la	{emit_reg reg_tmp}, {emit_label lbl}\n`;
-      `	slli	t0, {emit_reg i.arg.(0)}, 2\n`;
-      `	add	{emit_reg reg_tmp}, {emit_reg reg_tmp}, t0\n`;
+      `	slli	{emit_reg reg_tmp2}, {emit_reg i.arg.(0)}, 2\n`;
+      `	add	{emit_reg reg_tmp}, {emit_reg reg_tmp}, {emit_reg reg_tmp2}\n`;
       `	jr	{emit_reg reg_tmp}\n`;
+      (* The following jump instructions must be encoded in 32 bits,
+         so we disable code compression temporarily. *)
+      `.option push\n`;
+      `.option norvc\n`;
       `{emit_label lbl}:\n`;
       for i = 0 to Array.length jumptbl - 1 do
         `	j	{emit_label jumptbl.(i)}\n`
-      done
+      done;
+      `.option pop\n`
   | Lentertrap ->
-      ()
+      if fp then begin
+        (* Recompute the frame pointer after entering an exception handler.
+           On RISC-V, s0 points to CFA (sp at function entry), so we need
+           s0 = sp + frame_size. *)
+        let delta = frame_size env in
+        emit_addimm_gen "s0" "sp" delta
+      end
   | Ladjust_trap_depth { delta_traps } ->
-      (* each trap occupes 16 bytes on the stack *)
+      (* Each trap occupies 16 bytes on the stack *)
       let delta = 16 * delta_traps in
       cfi_adjust_cfa_offset delta;
       env.stack_offset <- env.stack_offset + delta

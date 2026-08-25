@@ -1,0 +1,19 @@
+File "not_an_extension_constructor.ml", line 1:
+Error: Multiple errors were encountered
+File "not_an_extension_constructor.ml", line 11, characters 32-33:
+11 | let x = [%extension_constructor A]
+                                     ^
+  This constructor is not an extension constructor.
+File "not_an_extension_constructor.ml", line 13, characters 34-35:
+13 |   let a = [%extension_constructor B]
+                                       ^
+  This constructor is not an extension constructor.
+File "not_an_extension_constructor.ml", line 14, characters 34-35:
+14 |   and b = [%extension_constructor C] in
+                                       ^
+  This constructor is not an extension constructor.
+File "not_an_extension_constructor.ml", line 18, characters 14-15:
+18 | let t : int = u
+                   ^
+  The value u has type 'a * 'b * 'c but an expression was expected of type
+    int

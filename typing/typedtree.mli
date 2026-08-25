@@ -304,10 +304,18 @@ and meth =
   | Tmeth_val of Ident.t
   | Tmeth_ancestor of Ident.t * Path.t
 
+and cont_desc =
+  {
+    cont_id:Ident.t;
+    cont_loc:Location.t;
+    cont_type: Types.type_expr;
+    cont_uid: Uid.t
+  }
+
 and 'k case =
     {
      c_lhs: 'k general_pattern;
-     c_cont: Ident.t option;
+     c_cont: cont_desc option;
      c_guard: expression option;
      c_rhs: expression;
     }
@@ -487,7 +495,7 @@ and structure_item =
 and structure_item_desc =
     Tstr_eval of expression * attributes
   | Tstr_value of rec_flag * value_binding list
-  | Tstr_primitive of value_description
+  | Tstr_primitive of primitive_description
   | Tstr_type of rec_flag * type_declaration list
   | Tstr_typext of type_extension
   | Tstr_exception of type_exception
@@ -577,6 +585,7 @@ and signature_item =
 
 and signature_item_desc =
     Tsig_value of value_description
+  | Tsig_primitive of primitive_description
   | Tsig_type of rec_flag * type_declaration list
   | Tsig_typesubst of type_declaration list
   | Tsig_typext of type_extension
@@ -716,10 +725,22 @@ and value_description =
     val_name: string loc;
     val_desc: core_type;
     val_val: Types.value_description;
-    val_prim: string list;
     val_loc: Location.t;
     val_attributes: attributes;
-    }
+  }
+
+and primitive_description =
+  { prim_id: Ident.t;
+    prim_name: string loc;
+    prim_kind: primitive_kind;
+    prim_val: Types.value_description;
+    prim_loc: Location.t;
+    prim_attributes: attributes;
+  }
+
+and primitive_kind =
+  | Tprim_decl of core_type * string list
+  | Tprim_alias of core_type option * Path.t * Longident.t loc
 
 and type_declaration =
   {
@@ -878,6 +899,7 @@ type implementation = {
 
 type item_declaration =
   | Value of value_description
+  | Primitive of primitive_description
   | Value_binding of value_binding
   | Type of type_declaration
   | Constructor of constructor_declaration

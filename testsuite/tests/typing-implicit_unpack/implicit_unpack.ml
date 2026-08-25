@@ -10,7 +10,7 @@
    be used in function definition, match clauses, and let ... in.
 
    New: implicit pack is also supported, and you only need to be able
-   to infer the the module type path from the context.
+   to infer the module type path from the context.
  *)
 (* ocaml -principal *)
 
@@ -345,6 +345,7 @@ module type MapT =
     val split : key -> 'a t -> 'a t * 'a option * 'a t
     val is_empty : 'a t -> bool
     val is_singleton : 'a t -> bool
+    val singleton_to_binding : 'a t -> (key * 'a) option
     val mem : key -> 'a t -> bool
     val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
     val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
@@ -402,6 +403,7 @@ module SSMap :
     val split : key -> 'a t -> 'a t * 'a option * 'a t
     val is_empty : 'a t -> bool
     val is_singleton : 'a t -> bool
+    val singleton_to_binding : 'a t -> (key * 'a) option
     val mem : key -> 'a t -> bool
     val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
     val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int

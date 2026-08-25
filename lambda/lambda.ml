@@ -82,6 +82,7 @@ type primitive =
   | Pandint | Porint | Pxorint
   | Plslint | Plsrint | Pasrint
   | Pintcomp of integer_comparison
+  | Pphyscomp of physical_comparison
   | Pcompare_ints | Pcompare_floats | Pcompare_bints of boxed_integer
   | Poffsetint of int
   | Poffsetref of int
@@ -105,6 +106,7 @@ type primitive =
   | Pisint
   (* Test if the (integer) argument is outside an interval *)
   | Pisout
+  | Pcheckbound
   (* Operations on boxed integers (Nativeint.t, Int32.t, Int64.t) *)
   | Pbintofint of boxed_integer
   | Pintofbint of boxed_integer
@@ -154,6 +156,7 @@ type primitive =
   | Pint_as_pointer
   (* Atomic operations *)
   | Patomic_load
+  | Patomic_fetch_add
   (* Inhibition of optimisation *)
   | Popaque
   (* Fetching domain-local state *)
@@ -163,6 +166,9 @@ type primitive =
 
 and integer_comparison =
     Ceq | Cne | Clt | Cgt | Cle | Cge
+
+and physical_comparison =
+    CPeq | CPneq
 
 and float_comparison =
     CFeq | CFneq | CFlt | CFnlt | CFgt | CFngt | CFle | CFnle | CFge | CFnge
@@ -691,6 +697,9 @@ let next_raise_count () =
   incr raise_count ;
   !raise_count
 
+let reset_raise_count () =
+  raise_count := 0
+
 (* Anticipated staticraise, for guards *)
 let staticfail = Lstaticraise (0,[])
 
@@ -760,6 +769,10 @@ let rec make_sequence fn = function
   | [x] -> fn x
   | x::rem ->
       let lam = fn x in Lsequence(lam, make_sequence fn rem)
+
+let make_atomic_loc ~loc arg field =
+  let shape = Some [Pgenval; Pintval] in
+  Lprim (Pmakeblock (0, Immutable, shape), [arg; field], loc)
 
 (* Apply a substitution to a lambda-term.
    Assumes that the image of the substitution is out of reach
@@ -1006,6 +1019,10 @@ let bind_with_value_kind str (var, kind) exp body =
 
 let bind str var exp body =
   bind_with_value_kind str (var, Pgenval) exp body
+
+let negate_physical_comparison = function
+  | CPeq -> CPneq
+  | CPneq -> CPeq
 
 let negate_integer_comparison = function
   | Ceq -> Cne

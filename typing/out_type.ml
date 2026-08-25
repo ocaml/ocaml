@@ -488,10 +488,12 @@ let rec uniq = function
     [] -> true
   | a :: l -> not (List.memq (a : int) l) && uniq l
 
+let printer_get_desc ty = get_folded_desc ~keep_Tvar:true ty
+
 let rec normalize_type_path ?(cache=false) env p =
   try
     let (params, ty, _) = Env.find_type_expansion p env in
-    match get_desc ty with
+    match printer_get_desc ty with
       Tconstr (p1, tyl, _) ->
         if List.length params = List.length tyl
         && List.for_all2 eq_type params tyl
@@ -675,7 +677,7 @@ let nameable_row row =
    short-circuits the traversal of the [type_expr], so that it covers only the
    subterms that would be printed by the type printer. *)
 let printer_iter_type_expr f ty =
-  match get_desc ty with
+  match printer_get_desc ty with
   | Tconstr(p, tyl, _) ->
       let (_p', s) = best_type_path p in
       List.iter f (apply_subst s tyl)
@@ -705,16 +707,17 @@ let printer_iter_type_expr f ty =
   | _ ->
       Btype.iter_type_expr f ty
 
-let quoted_ident ppf x =
-  Style.as_inline_code !Oprint.out_ident ppf x
-
 module Internal_names : sig
 
   val reset : unit -> unit
 
   val add : Path.t -> unit
 
-  val print_explanations : Env.t -> Fmt.formatter -> unit
+  type explanation =
+    | Existential of { constructor : string }
+    | Equation of { lhs : type_expr; rhs : type_expr }
+
+  val explain : Env.t -> (Path.t list * explanation) list
 
 end = struct
 
@@ -732,48 +735,80 @@ end = struct
         end
     | Pdot _ | Papply _ | Pextra_ty _ -> ()
 
-  let print_explanations env ppf =
-    let constrs =
+  type explanation =
+    | Existential of { constructor : string }
+    | Equation of { lhs : type_expr; rhs : type_expr }
+
+  let explain env =
+    let fold_type_origin f acc =
       Ident.Set.fold
         (fun id acc ->
-          let p = Pident id in
-          match Env.find_type p env with
-          | exception Not_found -> acc
-          | decl ->
-              match type_origin decl with
-              | Existential constr ->
-                  let prev = String.Map.find_opt constr acc in
-                  let prev = Option.value ~default:[] prev in
-                  String.Map.add constr (tree_of_path None p :: prev) acc
-              | Definition | Rec_check_regularity | Approx_recmod -> acc)
-        !names String.Map.empty
+           let p = Pident id in
+           match Env.find_type p env with
+           | exception Not_found -> acc
+           | decl ->
+               f p (type_origin decl) acc
+        ) !names acc
     in
-    String.Map.iter
-      (fun constr out_idents ->
-        match out_idents with
-        | [] -> ()
-        | [out_ident] ->
-            fprintf ppf
-              "@ @[<2>@{<hint>Hint@}:@ %a@ is an existential type@ \
-               bound by the constructor@ %a.@]"
-              quoted_ident out_ident
-              Style.inline_code constr
-        | out_ident :: out_idents ->
-            fprintf ppf
-              "@ @[<2>@{<hint>Hint@}:@ %a@ and %a@ are existential types@ \
-               bound by the constructor@ %a.@]"
-              (Fmt.pp_print_list
-                 ~pp_sep:(fun ppf () -> fprintf ppf ",@ ")
-                 quoted_ident)
-              (List.rev out_idents)
-              quoted_ident out_ident
-              Style.inline_code constr)
-      constrs
-
+    let constrs =
+      fold_type_origin
+        (fun p origin acc ->
+           match origin with
+           | Existential constr ->
+               String.Map.add_to_list constr p acc
+           | Approx_recmod | Definition | Equation _ | Rec_check_regularity ->
+               acc)
+        String.Map.empty
+    in
+    let existentials =
+      String.Map.fold
+        (fun constructor out_idents acc ->
+           match out_idents with
+           | [] -> acc
+           | idents ->
+               (idents, Existential { constructor }) :: acc)
+        constrs
+        []
+      |> List.rev
+    in
+    let eqns =
+      fold_type_origin
+        (fun p origin acc ->
+           match origin with
+           | Equation (t1, t2) ->
+               let t1, t2 =
+                 if get_id t1 < get_id t2 then t1, t2 else t2, t1
+               in
+               TypeMap.update
+                 t1
+                 (fun ps ->
+                    let ps = Option.value ~default:TypeMap.empty ps in
+                    Some (TypeMap.add_to_list t2 p ps)
+                 )
+                 acc
+           | Approx_recmod | Existential _
+           | Definition | Rec_check_regularity -> acc)
+        TypeMap.empty
+    in
+    let from_eqns =
+      TypeMap.fold
+        (fun lhsty rhs acc ->
+           TypeMap.fold
+             (fun rhsty out_idents acc ->
+                (List.rev out_idents, Equation { lhs = lhsty; rhs = rhsty })
+                :: acc
+             )
+             rhs acc
+        )
+        eqns []
+    in
+    existentials @ from_eqns
+    |> List.map (fun (ids, r) -> List.sort Path.compare ids, r)
 end
 
 module Variable_names : sig
   val reset_names : unit -> unit
+  val reset_weak_names : unit -> unit
 
   val add_subst : (type_expr * type_expr) list -> unit
 
@@ -814,6 +849,11 @@ end = struct
     name_counter := 0;
     named_vars := [];
     visited_for_named_vars := []
+
+  let reset_weak_names () =
+    named_weak_vars := String.Set.empty;
+    weak_var_map := TypeMap.empty;
+    weak_counter := 1
 
   let add_named_var tty =
     match tty.desc with
@@ -974,14 +1014,14 @@ module Aliases = struct
   let add_printed ty = add_printed_proxy (proxy ty)
 
   let aliasable ty =
-    match get_desc ty with
+    match printer_get_desc ty with
       Tvar _ | Tunivar _ | Tpoly _ -> false
     | Tconstr (p, _, _) ->
         not (is_nth (snd (best_type_path p)))
     | _ -> true
 
   let should_visit_object ty =
-    match get_desc ty with
+    match printer_get_desc ty with
     | Tvariant row -> not (static_row row)
     | Tobject _ -> opened_object ty
     | _ -> false
@@ -989,9 +1029,8 @@ module Aliases = struct
   let rec mark_loops_rec visited ty =
     let px = proxy ty in
     if List.memq px visited && aliasable ty then add_proxy px else
-      let tty = Transient_expr.repr ty in
       let visited = px :: visited in
-      match tty.desc with
+      match printer_get_desc ty with
       | Tvariant _ | Tobject _ ->
           if List.memq px !visited_objects then add_proxy px else begin
             if should_visit_object ty then
@@ -1036,6 +1075,8 @@ let reset () =
   Ident_conflicts.reset ();
   reset_except_conflicts ()
 
+let reset_weak_names () = Variable_names.reset_weak_names ()
+
 let prepare_for_printing tyl =
   reset_except_conflicts ();
   List.iter prepare_type tyl
@@ -1076,7 +1117,7 @@ let print_labels = ref true
 let with_labels b f = Misc.protect_refs [R (print_labels,b)] f
 
 let alias_nongen_row mode px ty =
-    match get_desc ty with
+    match printer_get_desc ty with
     | Tvariant _ | Tobject _ ->
         if is_non_gen mode (Transient_expr.type_expr px) then
           Aliases.add_proxy px
@@ -1091,7 +1132,7 @@ let rec tree_of_typexp mode ty =
 
   let pr_typ () =
     let tty = Transient_expr.repr ty in
-    match tty.desc with
+    match printer_get_desc ty with
     | Tvar _ ->
         let non_gen = is_non_gen mode ty in
         let name_gen = Variable_names.new_var_name ~non_gen ty in
@@ -1104,7 +1145,7 @@ let rec tree_of_typexp mode ty =
           if is_optional l then
             if tpoly_is_mono ty1 then
               let mono = tpoly_get_mono ty1 in
-              match get_desc mono with
+              match printer_get_desc mono with
               | Tconstr(path, [ty], _)
                 when Path.same path Predef.path_option ->
                   (* If we properly aliased the labeled argument, we
@@ -1185,12 +1226,9 @@ let rec tree_of_typexp mode ty =
             let args = tree_of_typlist mode (apply_subst s tyl) in
             let out_variant =
               if is_nth s then List.hd args else Otyp_constr (id, args) in
-            if closed && all_present then
-              out_variant
-            else
-              let tags =
-                if all_present then None else Some (List.map fst present) in
-              Otyp_variant (Ovar_typ out_variant, closed, tags)
+            let tags =
+              if all_present then None else Some (List.map fst present) in
+            Otyp_variant (Ovar_typ out_variant, closed, tags)
         | _ ->
             let fields = List.map (tree_of_row_field mode) fields in
             let tags =
@@ -1204,7 +1242,7 @@ let rec tree_of_typexp mode ty =
     | Tsubst _ ->
         (* This case should only happen when debugging the compiler *)
         Otyp_stuff "<Tsubst>"
-    | Tlink _ ->
+    | Tlink _ | Texpand _ ->
         fatal_error "Out_type.tree_of_typexp"
     | Tpoly (ty, []) ->
         tree_of_typexp mode ty
@@ -1287,7 +1325,7 @@ and tree_of_typobject mode fi nm =
 and tree_of_typfields mode rest = function
   | [] ->
       let open_row =
-        match get_desc rest with
+        match printer_get_desc rest with
         | Tconstr (Pident p, _, _)
           when Btype.is_row_name (Ident.name p) ->
             Orow_open_anonymous
@@ -1440,7 +1478,7 @@ let prepare_decl id decl =
     | Some ty ->
         let ty =
           (* Special hack to hide row name *)
-          match get_desc ty with
+          match printer_get_desc ty with
             Tvariant row ->
               begin match row_name row with
                 Some (Pident id', _) when Ident.same id id' ->
@@ -1483,7 +1521,7 @@ let tree_of_type_decl id decl =
     | _ -> {ot_non_gen=false; ot_name="?"; ot_variance}
   in
   let type_defined decl =
-    let abstr =
+    let non_inferable_variance =
       match decl.type_kind with
         Type_abstract _ ->
           decl.type_manifest = None || decl.type_private = Private
@@ -1495,16 +1533,18 @@ let tree_of_type_decl id decl =
       | Type_open ->
           decl.type_manifest = None
       | Type_external _ ->
-          assert (decl.type_manifest = None); true
+          true
     in
     let vari =
       List.map2
         (fun ty v ->
           let is_var = is_Tvar ty in
-          let with_variance = !Clflags.print_variance || abstr || not is_var in
+          let with_variance =
+            !Clflags.print_variance || non_inferable_variance || not is_var
+          in
           let with_injectivity =
             !Clflags.print_variance ||
-            (abstr || not is_var) &&
+            (non_inferable_variance || not is_var) &&
             type_kind_is_abstract decl &&
             match decl.type_manifest with
             | None -> true
@@ -2018,8 +2058,8 @@ let print_items showval env x =
 
 let same_path t t' =
   let open Types in
-  eq_type t t' ||
-  match get_desc t, get_desc t' with
+  eq_type t t' && get_abbrev t = None && get_abbrev t' = None ||
+  match printer_get_desc t, printer_get_desc t' with
     Tconstr(p,tl,_), Tconstr(p',tl',_) ->
       let (p1, s1) = best_type_path p and (p2, s2)  = best_type_path p' in
       begin match s1, s2 with
@@ -2030,41 +2070,79 @@ let same_path t t' =
           List.for_all2 eq_type tl tl'
       | _ -> false
       end
-  | _ ->
-      false
+  | _ -> false
 
-type 'a diff = Same of 'a | Diff of 'a * 'a
+type expansion_diff =
+  { ty : out_type
+  ; expanded : out_type option
+  ; manifest : out_type option
+  }
 
 let trees_of_type_expansion mode Errortrace.{ty = t; expanded = t'} =
+  let manifest =
+    match get_abbrev t with
+    | None -> None
+    | Some {abbr_path=tconstr; abbr_args=params} ->
+        let should_use_manifest =
+          match printer_get_desc t with
+          | Tconstr (p, tl, _) ->
+              not(
+                (Path.same p tconstr)
+                && List.length tl = List.length params
+                && List.for_all2 eq_type tl params
+              )
+          | _ -> true
+        in
+        if not should_use_manifest then None
+        else begin
+          List.iter Aliases.mark_loops params;
+          Some (Otyp_constr (tree_of_path (Some Type) tconstr,
+                             tree_of_typlist mode params))
+        end
+  in
   Aliases.reset ();
   Aliases.mark_loops t;
   if same_path t t'
-  then begin Aliases.add_delayed (proxy t); Same (tree_of_typexp mode t) end
+  then begin
+    Aliases.add_delayed (proxy t);
+    { ty = tree_of_typexp mode t
+    ; expanded = None
+    ; manifest
+    }
+  end
   else begin
-    Aliases.mark_loops t';
     let t' = if proxy t == proxy t' then unalias t' else t' in
+    Aliases.mark_loops t';
     (* beware order matter due to side effect,
        e.g. when printing object types *)
     let first = tree_of_typexp mode t in
     let second = tree_of_typexp mode t' in
-    if first = second then Same first
-    else Diff(first,second)
+    { ty = first
+    ; expanded = if first = second then None else Some second
+    ; manifest
+    }
   end
 
 let pp_type ppf t =
   Style.as_inline_code !Oprint.out_type ppf t
 
 let pp_type_expansion ppf = function
-  | Same t -> pp_type ppf t
-  | Diff(t,t') ->
+  | { ty; expanded = None; manifest = None } -> pp_type ppf ty
+  | { ty = second; expanded = None; manifest = Some first }
+  | { ty = first; expanded = Some second; manifest = None } ->
       fprintf ppf "@[<2>%a@ =@ %a@]"
-        pp_type t
-        pp_type t'
+        pp_type first
+        pp_type second
+  | { ty = second; expanded = Some third; manifest = Some first } ->
+      fprintf ppf "@[<2>%a@ =@ %a@ =@ %a@]"
+        pp_type first
+        pp_type second
+        pp_type third
 
 (* Hide variant name and var, to force printing the expanded type *)
 let hide_variant_name t =
   let open Types in
-  match get_desc t with
+  match printer_get_desc t with
   | Tvariant row ->
       let Row {fields; more; name; fixed; closed} = row_repr row in
       if name = None then t else

@@ -190,6 +190,7 @@ method private instr_in_basic_block instr try_nesting =
 
 method is_store = function
     Istore(_, _, _) -> true
+  | Iatomic_fetch_add -> true  (* atomic read-modify-write *)
   | Iload {is_atomic = true} -> true
   | _ -> false
 

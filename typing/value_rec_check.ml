@@ -196,26 +196,24 @@ let classify_expression : Typedtree.expression -> sd =
         Dynamic
 
     | Texp_array _ ->
-        Static
+       begin match Typeopt.array_kind e with
+       | Pgenarray -> Dynamic
+       | Pfloatarray | Paddrarray | Pintarray -> Static
+       end
     | Texp_pack mexp ->
         classify_module_expression env mexp
     | Texp_function _ ->
         Static
     | Texp_lazy e ->
-      (* The code below was copied (in part) from translcore.ml *)
       begin match Typeopt.classify_lazy_argument e with
-      | `Constant_or_function ->
-        (* A constant expr (of type <> float if [Config.flat_float_array] is
-           true) gets compiled as itself. *)
+      | Eager Shortcut ->
+          (* compiled to [e] directly. *)
           classify_expression env e
-      | `Float_that_cannot_be_shortcut
-      | `Identifier `Forward_value ->
-          (* Forward blocks *)
+      | Eager Forward ->
+          (* [e] is placed inside a Forward block *)
           Static
-      | `Identifier `Other ->
-          classify_expression env e
-      | `Other ->
-          (* other cases compile to a lazy block holding a function *)
+      | Lazy_thunk ->
+          (* [e] is placed inside a Lazy thunk. *)
           Static
       end
 
@@ -440,7 +438,7 @@ sig
 
   val equal : t -> t -> bool
 end = struct
-  module M = Map.Make(Ident)
+  module M = Ident.Map
 
   (** A "t" maps each rec-bound variable to an access status *)
   type t = Mode.t M.t
@@ -453,10 +451,8 @@ end = struct
   let empty = M.empty
 
   let join (x: t) (y: t) =
-    M.fold
-      (fun (id: Ident.t) (v: Mode.t) (tbl: t) ->
-         let v' = find id tbl in
-         M.add id (Mode.join v v') tbl)
+    M.union
+      (fun _id v1 v2 -> Some (Mode.join v1 v2))
       x y
 
   let join_list li = List.fold_left join empty li
@@ -899,11 +895,12 @@ let rec expression : Typedtree.expression -> term_judg =
         G |- lazy e: m
       *)
       let lazy_mode = match Typeopt.classify_lazy_argument e with
-        | `Constant_or_function
-        | `Identifier _
-        | `Float_that_cannot_be_shortcut ->
+        | Eager _ ->
+          (* We pessimize [Eager Forward] into [Return] instead of [Guarded],
+             so that this check remains robust to adding more shortcutting
+             in the future. *)
           Return
-        | `Other ->
+        | Lazy_thunk ->
           Delay
       in
       expression e << lazy_mode

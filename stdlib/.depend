@@ -242,6 +242,7 @@ stdlib__Dynarray.cmo : dynarray.ml \
     stdlib__Seq.cmi \
     stdlib__Printf.cmi \
     stdlib__Obj.cmi \
+    stdlib__Iarray.cmi \
     camlinternalOO.cmi \
     stdlib__Array.cmi \
     stdlib__Dynarray.cmi
@@ -251,6 +252,7 @@ stdlib__Dynarray.cmx : dynarray.ml \
     stdlib__Seq.cmx \
     stdlib__Printf.cmx \
     stdlib__Obj.cmx \
+    stdlib__Iarray.cmx \
     camlinternalOO.cmx \
     stdlib__Array.cmx \
     stdlib__Dynarray.cmi
@@ -345,7 +347,9 @@ stdlib__Format.cmo : format.ml \
     stdlib__Queue.cmi \
     stdlib__List.cmi \
     stdlib__Int.cmi \
+    stdlib__Iarray.cmi \
     stdlib__Either.cmi \
+    stdlib__Dynarray.cmi \
     stdlib__Domain.cmi \
     camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi \
@@ -362,7 +366,9 @@ stdlib__Format.cmx : format.ml \
     stdlib__Queue.cmx \
     stdlib__List.cmx \
     stdlib__Int.cmx \
+    stdlib__Iarray.cmx \
     stdlib__Either.cmx \
+    stdlib__Dynarray.cmx \
     stdlib__Domain.cmx \
     camlinternalFormatBasics.cmx \
     camlinternalFormat.cmx \
@@ -374,13 +380,18 @@ stdlib__Format.cmi : format.mli \
     stdlib.cmi \
     stdlib__Seq.cmi \
     stdlib__Either.cmi \
+    stdlib__Dynarray.cmi \
     stdlib__Domain.cmi \
     stdlib__Buffer.cmi
 stdlib__Fun.cmo : fun.ml \
+    stdlib__Printf.cmi \
     stdlib__Printexc.cmi \
+    stdlib__Obj.cmi \
     stdlib__Fun.cmi
 stdlib__Fun.cmx : fun.ml \
+    stdlib__Printf.cmx \
     stdlib__Printexc.cmx \
+    stdlib__Obj.cmx \
     stdlib__Fun.cmi
 stdlib__Fun.cmi : fun.mli
 stdlib__Gc.cmo : gc.ml \
@@ -405,7 +416,6 @@ stdlib__Gc.cmi : gc.mli \
     stdlib__Printexc.cmi
 stdlib__Hashtbl.cmo : hashtbl.ml \
     stdlib__Sys.cmi \
-    stdlib__String.cmi \
     stdlib__Seq.cmi \
     stdlib__Random.cmi \
     stdlib__Obj.cmi \
@@ -416,7 +426,6 @@ stdlib__Hashtbl.cmo : hashtbl.ml \
     stdlib__Hashtbl.cmi
 stdlib__Hashtbl.cmx : hashtbl.ml \
     stdlib__Sys.cmx \
-    stdlib__String.cmx \
     stdlib__Seq.cmx \
     stdlib__Random.cmx \
     stdlib__Obj.cmx \
@@ -485,10 +494,12 @@ stdlib__Int64.cmi : int64.mli
 stdlib__Lazy.cmo : lazy.ml \
     stdlib__Obj.cmi \
     camlinternalLazy.cmi \
+    stdlib__Atomic.cmi \
     stdlib__Lazy.cmi
 stdlib__Lazy.cmx : lazy.ml \
     stdlib__Obj.cmx \
     camlinternalLazy.cmx \
+    stdlib__Atomic.cmx \
     stdlib__Lazy.cmi
 stdlib__Lazy.cmi : lazy.mli \
     camlinternalLazy.cmi
@@ -643,6 +654,7 @@ stdlib__Printexc.cmo : printexc.ml \
     stdlib.cmi \
     stdlib__Printf.cmi \
     stdlib__Obj.cmi \
+    stdlib__List.cmi \
     stdlib__Buffer.cmi \
     stdlib__Atomic.cmi \
     stdlib__Array.cmi \
@@ -651,6 +663,7 @@ stdlib__Printexc.cmx : printexc.ml \
     stdlib.cmx \
     stdlib__Printf.cmx \
     stdlib__Obj.cmx \
+    stdlib__List.cmx \
     stdlib__Buffer.cmx \
     stdlib__Atomic.cmx \
     stdlib__Array.cmx \

@@ -185,6 +185,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       let args =
         if (name = "Match_failure"
             || name = "Assert_failure"
+            || name = "Todo"
             || name = "Undefined_recursive_module")
         && O.size bucket = 2
         && O.tag(O.field bucket 1) = 0
@@ -308,7 +309,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
            | Error msg -> Oval_stuff msg
            end
         | exception Not_found ->
-          match get_desc ty with
+          match Btype.get_constr_desc ty with
           | Tvar _ | Tunivar _ ->
               Oval_stuff "<poly>"
           | Tarrow _ | Tfunctor _ ->
@@ -371,7 +372,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               tree_of_polyvariant depth obj row
           | Tobject (_, _) ->
               Oval_stuff "<obj>"
-          | Tsubst _ | Tfield(_, _, _, _) | Tnil | Tlink _ ->
+          | Tsubst _ | Tfield(_, _, _, _) | Tnil | Tlink _ | Texpand _ ->
               fatal_error "Printval.outval_of_value"
           | Tpoly (ty, _) ->
               tree_of_val (depth - 1) obj ty
@@ -567,7 +568,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           let tag : int = O.base_obj (O.field obj 0) in
           let rec find = function
             | (l, f) :: fields ->
-                if Btype.hash_variant l = tag then
+                if Obj.hash_variant l = tag then
                   match row_field_repr f with
                   | Rpresent(Some ty) | Reither(_,[ty],_) ->
                       let args =
@@ -582,7 +583,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           let tag : int = O.base_obj obj in
           let rec find = function
             | (l, _) :: fields ->
-                if Btype.hash_variant l = tag then
+                if Obj.hash_variant l = tag then
                   Oval_variant (l, None)
                 else find fields
             | [] -> Oval_stuff "<variant>" in

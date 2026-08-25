@@ -1,26 +1,42 @@
 (* TEST
+ hasunix;
+ include unix;
  ocamlopt_flags += " -O3 ";
+ { bytecode; } { native; }
 *)
+
+(* This test performs busy-waiting on a thunk being forced by a concurrent domain.
+   This is a terrible idea but it should not blow up. *)
 let rec safe_force l =
   try Lazy.force l with
   | Lazy.Undefined ->
       Domain.cpu_relax ();
       safe_force l
 
-let f count =
-  let _n = (Domain.self ():> int) in
-  let r = ref 0 in
-  for i = 1 to count do
-    incr r;
-  done;
-  !r
+let mut = Mutex.create ()
+let () = Mutex.lock mut
 
-let l = lazy (f 1_000_000_000)
-let d1 =
-  Domain.spawn (fun () ->
-      let _n = (Domain.self ():> int) in
-      safe_force l)
-let n2 = safe_force l
-let n1 = Domain.join d1
+let thunk_calls = Atomic.make 0
 
-let _ = Printf.printf "n1=%d n2=%d\n" n1 n2
+(* We use a thunk that will wait until [mut]
+   is unlocked to run, and then wait a bit. *)
+let l = lazy (
+  Mutex.protect mut (fun () -> Unix.sleepf 0.1);
+  Atomic.incr thunk_calls
+)
+
+(* start forcing the thunk in another domain *)
+let d1 = Domain.spawn (fun () -> safe_force l)
+
+(* unlock [mut] to start sleeping *)
+let () = Mutex.unlock mut
+
+(* we also force in the main domain,
+   which should run into the busy-waiting behavior of [safe_force] *)
+let t2 = safe_force l
+
+let () = Domain.join d1
+
+let () =
+  (* ensure that the thunk was called exactly once *)
+  assert (Atomic.get thunk_calls = 1)

@@ -547,32 +547,30 @@ caml_callback3_asm:
 caml_perform:
     ;  %rax: effect to perform
     ;  %rbx: freshly allocated continuation
-        mov     rsi, Caml_state(current_stack) ; %rsi := old stack
-        lea     rdi, [rsi + 1] ; %rdi (last_fiber) := Val_ptr(old stack)
+        mov     rsi, Caml_state(current_stack) ; %rsi := current_stack
+        lea     rdi, [rsi + 1] ; %rdi := Val_ptr(current_stack)
         mov     qword ptr [rbx], rdi ; Initialise continuation
+        mov     rdx, rsi ; %rdx := cont_head
 do_perform:
-    ;  %rax: effect to perform
-    ;  %rbx: continuation
-    ;  %rdi: last_fiber
-    ;  %rsi: old stack *;
-        mov     qword ptr [rbx+8], rdi  ; Set last fiber field in continuation
-        mov     r11, qword ptr [rsi+16] ; %r11 := old stack -> handler
-        mov     r10, qword ptr [r11+24] ; %r10 := parent stack
-        cmp     r10, 0                  ; parent is NULL?
+    ;  %rdi: Val_ptr(current_stack)
+    ;  %rsi: current_stack
+    ;  %rdx: cont_head
+        mov     r11, qword ptr [rsi+16] ; %r11 := current_stack -> handler
+        mov     r10, qword ptr [r11+24] ; %r10 := parent_stack
+        cmp     r10, 0                  ; parent_stack is NULL?
         je      L112
         SWITCH_OCAML_STACKS ; preserves r11 and rsi
-     ; We have to null the Handler_parent after the switch because the
-     ; Handler_parent is needed to unwind the stack for backtraces
-        mov     qword ptr [r11+24], 0 ; Set parent of performer to NULL
-        mov     rsi, qword ptr [r11+16]  ; %rsi := effect handler
-        jmp     caml_apply3
+     ; We have to update the Handler_parent after the switch because the
+     ; Handler_parent is needed to unwind the stack for backtraces.
+        mov     qword ptr [rbx], rdi ; Update continuation with new cont_tail
+        mov     qword ptr [r11+24], rdx ; Connect new cont_tail to cont_head
+        mov     rdi, qword ptr [r11+16]  ; %rdi := effect handler
+        jmp     caml_apply2
 L112:
-    ; Switch back to original performer before raising Effect.Unhandled
-    ; (no-op unless this is a reperform)
-        mov     r10, qword ptr [rbx]  ; load performer stack from continuation
-        sub     r10, 1       ; r10 := Ptr_val(r10)
-        mov     rsi, Caml_state(current_stack)
-        SWITCH_OCAML_STACKS
+    ; No parent stack. Switch back to original performer before raising
+    ; Effect.Unhandled.
+        mov     r10, rdx ; %r10 := cont_head
+        SWITCH_OCAML_STACKS ; SWITCH_OCAML_STACK (source=%rsi, target=%r10)
     ; No parent stack. Raise Effect.Unhandled.
         mov     rcx, rax
         lea     rax, caml_raise_unhandled_effect
@@ -583,24 +581,28 @@ L112:
 caml_reperform:
     ;  %rax: effect to reperform
     ;  %rbx: continuation
-    ;  %rdi: last_fiber
-        mov     rsi, Caml_state(current_stack)    ; %rsi := old stack
+        mov     rsi, Caml_state(current_stack) ; %rsi := current_stack
+        mov     rdi, qword ptr [rbx] ; %rdi := Val_ptr(cont_tail)
         mov     r10, qword ptr [rdi+15]
-        mov     qword ptr [r10+24], rsi       ; Append to last_fiber
-        lea     rdi, [rsi + 1]  ; %rdi (last_fiber) := Val_ptr(old stack)
+        mov     rdx, qword ptr [r10+24] ; %rdx := cont_head
+        mov     qword ptr [r10+24], rsi ; parent(cont_tail) := current_stack
+        lea     rdi, [rsi + 1]  ; %rdi := Val_ptr(current_stack)
         jmp     do_perform
 
         PUBLIC  caml_resume
         ALIGN   4
 caml_resume:
-    ; %rax -> fiber, %rbx -> fun, %rdi -> arg, %rsi -> last_fiber
-        lea     r10, [rax-1]  ; %r10 (new stack) = Ptr_val(%rax)
-        mov     rax, rdi      ; %rax := argument to the function in %rbx
+    ; %rax -> Val_ptr(cont_tail), %rbx -> fun, %rdi -> arg
+        lea     rsi, [rax-1]  ; %rsi (cont_tail) = Ptr_val(%rax)
     ;  check if stack null, then already used
-        test    r10, r10
+        test    rsi, rsi
         jz      L502
+        mov     rax, rdi      ; %rax := argument to the function in %rbx
+   ; Load cont_head, the fiber at which we will resume
+        mov     r10, qword ptr [rsi+16]
+        mov     r10, qword ptr [r10+24] ; %r10 = cont_head
     ; Add current stack to the last fiber
-        mov     rdi, qword ptr [rsi+15]
+        mov     rdi, qword ptr [rsi+16]
         mov     rsi, Caml_state(current_stack)
         mov     qword ptr [rdi+24], rsi
         SWITCH_OCAML_STACKS
