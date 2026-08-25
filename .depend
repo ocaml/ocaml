@@ -8530,6 +8530,7 @@ debugger/debugcom.cmo : \
     debugger/int64ops.cmi \
     bytecomp/instruct.cmi \
     debugger/input_handling.cmi \
+    utils/config.cmi \
     debugger/debugcom.cmi
 debugger/debugcom.cmx : \
     debugger/primitives.cmx \
@@ -8537,6 +8538,7 @@ debugger/debugcom.cmx : \
     debugger/int64ops.cmx \
     bytecomp/instruct.cmx \
     debugger/input_handling.cmx \
+    utils/config.cmx \
     debugger/debugcom.cmi
 debugger/debugcom.cmi : \
     debugger/primitives.cmi \
