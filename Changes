@@ -141,6 +141,11 @@ Working version
   respectively `--disable-largefile` and `--disable-year2038` to configure.
   (Antonin Décimo, review by Miod Vallat)
 
+- #15019: `Marshal.from_{string,bytes}`: guard against overflow in
+  the computation of the total data length.
+  (Xavier Leroy, report by Akshay Singh, review by Nicolás Ojeda Bär
+  and Antonin Décimo)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
