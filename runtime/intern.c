@@ -903,10 +903,9 @@ static void caml_parse_header(struct caml_intern_state* s,
   default:
     intern_failwith2(fun_name, "bad object");
   }
-  h->total_len = h->header_len + h->data_len;
-  if (h->total_len < h->data_len) {
-      intern_failwith2
-        (fun_name, "object too large to be read back on this platform");
+  if (caml_uadd_overflow(h->header_len, h->data_len, &h->total_len)) {
+    intern_failwith2
+      (fun_name, "object too large to be read back on this platform");
   }
 }
 
@@ -1154,8 +1153,7 @@ CAMLprim value caml_marshal_data_size(value buff, value ofs)
   default:
     caml_failwith("Marshal.data_size: bad object");
   }
-  total_len = header_len + data_len;
-  if (total_len < data_len) {
+  if (caml_uadd_overflow(header_len, data_len, &total_len)) {
     caml_failwith("Marshal.data_size: "
                   "object too large to be read back on this platform");
   }
