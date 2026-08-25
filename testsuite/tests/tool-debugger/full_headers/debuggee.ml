@@ -13,6 +13,7 @@ let () = main ()
 *)
 
 (* TEST
+ arch64;
  flags += " -g ";
  debugger_script = "${test_source_directory}/input_script";
  debugger;
