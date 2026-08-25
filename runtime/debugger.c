@@ -656,8 +656,8 @@ void caml_debugger(enum event_kind event, value param)
     case REQ_GET_HEADER:
       val = getval(dbg_in);
 #ifdef ARCH_SIXTYFOUR
-      caml_putword(dbg_out, (uint32_t) Hd_val(val));
       caml_putword(dbg_out, (uint32_t) (Hd_val(val) >> 32));
+      caml_putword(dbg_out, (uint32_t) Hd_val(val));
 #else
       caml_putword(dbg_out, Hd_val(val));
 #endif

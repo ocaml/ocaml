@@ -378,7 +378,7 @@ Working version
 
 - #15022: ocamldebug: requesting a header through the debugger protocol now
   returns the full header instead of the low 32 bits.
-  (Vincent Laviron, review by ...)
+  (Vincent Laviron, review by Xavier Leroy)
 
 ### Manual and documentation:
 

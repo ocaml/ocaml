@@ -1,6 +1,6 @@
 (* TEST_BELOW *)
 
-let arr = Array.make (1 lsl 25) 42
+let arr = Array.make (1 lsl 22) 42
 
 let main () =
   ignore (Sys.opaque_identity arr)

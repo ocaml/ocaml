@@ -260,7 +260,7 @@ let output_remote_value ic v =
 let tag_of_header header =
   Nativeint.to_int (Nativeint.logand header 0xFFn)
 
-let only_non_reserved_bits header =
+let header_without_reserved_bits header =
   if Config.reserved_header_bits > 0 then
     let mask =
       Nativeint.sub
@@ -275,8 +275,8 @@ let input_binary_nativeint ic =
   match Sys.word_size with
   | 32 -> Nativeint.of_int (input_binary_int ic)
   | 64 ->
-      let low = input_binary_int ic in
       let high = input_binary_int ic in
+      let low = input_binary_int ic in
       Nativeint.(add (of_int low) (shift_left (of_int high) 32))
   | _ -> failwith "Unsupported word size"
 
@@ -325,7 +325,7 @@ module Remote_value =
         output_remote_value !conn.io_out v;
         flush !conn.io_out;
         let header = input_binary_nativeint !conn.io_in in
-        let header = only_non_reserved_bits header in
+        let header = header_without_reserved_bits header in
         if tag_of_header header = Obj.double_array_tag && Sys.word_size = 32
         then Nativeint.(to_int (shift_right_logical header 11))
         else Nativeint.(to_int (shift_right_logical header 10))
