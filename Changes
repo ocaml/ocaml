@@ -515,6 +515,11 @@ Working version
   module are injective and contractive
   (Jeremy Yallop, review by Jacques Garrigue)
 
+- #14999, #15000: Fix integer overflow in the runtime_events ring buffer size
+  computation. With OCAMLRUNPARAM=e=21 or higher the ring file was created
+  undersized and custom event registration wrote through a truncated offset.
+  (Tim McGilchrist, review by Xavier Leroy and Sadiq Jaffer)
+
 OCaml 5.5.1
 -----------
 
