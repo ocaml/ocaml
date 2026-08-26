@@ -212,23 +212,16 @@ let call_linker mode output_name files extra =
               (quote_files ~response_files:true files)
               extra
         | Some (_name, cmd), Exe ->
-            let link_arg_payload =
-              Printf.sprintf "%s\n%s\n%s\n%s\n%s\n%s\n%s\n"
-                (match !Clflags.c_compiler with | Some cc -> cc | None -> Config.mkexe)
-                (Filename.quote output_name)
-                ""  (*(Clflags.std_include_flag "-I")*)
-                (quote_prefixed ~response_files:true "-L"
-                   (Load_path.get_path_list ()))
-                (String.concat " " (List.rev !Clflags.all_ccopts))
-                (quote_files ~response_files:true files)
-                extra
-            in
-            let tmpfile = Filename.temp_file "linking-args" ".tmp" in
-            let oc = open_out_bin tmpfile in
-            output_string oc link_arg_payload;
-            flush oc;
-            (* TODO: cleanup, exc *)
-            Printf.sprintf "%s %s" cmd (Filename.quote tmpfile)
+            Printf.sprintf
+              "env %s %s %s %s %s %s %s"
+                (Filename.quote ("OCAML_LINK_INFO_CC=" ^ (match !Clflags.c_compiler with | Some cc -> cc | None -> Config.mkexe)))
+                (Filename.quote ("OCAML_LINK_INFO_O=" ^ (Filename.quote output_name)))
+                (Filename.quote ("OCAML_LINK_INFO_DASHL=" ^ (quote_prefixed ~response_files:true "-L"
+                   (Load_path.get_path_list ()))))
+                (Filename.quote ("OCAML_LINK_INFO_CCOPTS=" ^ (String.concat " " (List.rev !Clflags.all_ccopts))))
+                (Filename.quote ("OCAML_LINK_INFO_FILES=" ^ (quote_files ~response_files:true files)))
+                (Filename.quote ("OCAML_LINK_INFO_EXTRA=" ^ extra))
+                cmd
     in
     command cmd
   )
