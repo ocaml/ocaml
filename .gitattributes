@@ -122,7 +122,7 @@ otherlibs/unix/stat_win32.c        typo.long-line
 otherlibs/unix/symlink_win32.c     typo.long-line
 
 # Some Unicode characters here and there
-utils/misc.ml            typo.non-ascii
+utils/utf8_lexeme.ml     typo.non-ascii
 runtime/sak.c            typo.non-ascii
 tools/opam/process.sh    typo.non-ascii
 

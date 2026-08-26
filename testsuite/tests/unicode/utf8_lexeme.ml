@@ -3,7 +3,7 @@
  expect;
 *)
 
-module Utf8 = Misc.Utf8_lexeme
+module Utf8 = Utf8_lexeme
 type 'a mismatch = { output: 'a; expected: 'a }
 type test_result = (unit, (Utf8.t, Utf8.t) Result.t mismatch) result
 let test f input expected : test_result =
@@ -11,7 +11,7 @@ let test f input expected : test_result =
   if output = expected then Ok ()
   else Error { output; expected }
 [%%expect {|
-module Utf8 = Misc.Utf8_lexeme
+module Utf8 = Utf8_lexeme
 type 'a mismatch = { output : 'a; expected : 'a; }
 type test_result = (unit, (Utf8.t, Utf8.t) Result.t mismatch) result
 val test :

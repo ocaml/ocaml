@@ -483,6 +483,9 @@ Working version
 - #14946: Keep the continuation inside the typedtree using a dedicated type.
   (Xavier Van de Woestyne, review by Florian Angeletti)
 
+- #15023: Extract Utf8_lexeme out of Misc into utils/utf8_lexeme.ml(i)
+  (Thomas Refis, review by Nicolás Ojeda Bär)
+
 ### Build system:
 
 - #14552: Export `AR` and `ARFLAGS` in Makefile.config.
