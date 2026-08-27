@@ -23,6 +23,11 @@
 #include "mlvalues.h"
 #include "roots.h"
 
+#ifdef DEBUG
+/* The code that registered [r], or NULL. */
+void * caml_global_root_origin(value * r);
+#endif
+
 void caml_scan_global_roots(scanning_action f, void* fdata);
 void caml_scan_global_young_roots(scanning_action f, void* fdata);
 

@@ -59,6 +59,58 @@ struct skiplist caml_global_roots_old = SKIPLIST_STATIC_INITIALIZER;
      then neither [caml_global_roots_young] nor [caml_global_roots_old] contain
      it. */
 
+#if defined(DEBUG) && (defined(__GNUC__) || defined(__clang__))
+#define Caller_pc __builtin_return_address(0)
+#else
+#define Caller_pc NULL
+#endif
+
+#ifdef DEBUG
+
+/* Where each root was registered from, so a root found broken can name the
+   code that owns it. */
+static struct skiplist roots_origin = SKIPLIST_STATIC_INITIALIZER;
+
+/* A root registered or removed from inside a scan finds roots_mutex already
+   held; see caml_delete_global_root. */
+Caml_inline void lock_roots(void)
+{
+  if (iterating_roots == 0) caml_plat_lock_blocking(&roots_mutex);
+}
+
+Caml_inline void unlock_roots(void)
+{
+  if (iterating_roots == 0) caml_plat_unlock(&roots_mutex);
+}
+
+static void record_root_origin(value * r, void * pc)
+{
+  lock_roots();
+  caml_skiplist_insert(&roots_origin, (uintnat) r, (uintnat) pc);
+  unlock_roots();
+}
+
+static void forget_root_origin(value * r)
+{
+  lock_roots();
+  caml_skiplist_remove(&roots_origin, (uintnat) r);
+  unlock_roots();
+}
+
+void * caml_global_root_origin(value * r)
+{
+  uintnat pc;
+  if (! caml_skiplist_find(&roots_origin, (uintnat) r, &pc)) return NULL;
+  return (void *) pc;
+}
+
+#else
+
+#define record_root_origin(r, pc) ((void) (pc))
+#define forget_root_origin(r) ((void) 0)
+
+#endif /* DEBUG */
+
 /* Insertion and deletion */
 
 Caml_inline void caml_insert_global_root(struct skiplist * list, value * r)
@@ -88,6 +140,7 @@ Caml_inline void caml_delete_global_root(struct skiplist * list, value * r)
 CAMLexport void caml_register_global_root(value *r)
 {
   CAMLassert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
+  record_root_origin(r, Caller_pc);
   caml_insert_global_root(&caml_global_roots, r);
 }
 
@@ -95,6 +148,7 @@ CAMLexport void caml_register_global_root(value *r)
 
 CAMLexport void caml_remove_global_root(value *r)
 {
+  forget_root_origin(r);
   caml_delete_global_root(&caml_global_roots, r);
 }
 
@@ -117,6 +171,7 @@ CAMLexport void caml_register_generational_global_root(value *r)
 {
   Caml_check_caml_state();
   CAMLassert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
+  record_root_origin(r, Caller_pc);
 
   switch(classify_gc_root(*r)) {
     case YOUNG:
@@ -133,6 +188,7 @@ CAMLexport void caml_register_generational_global_root(value *r)
 
 CAMLexport void caml_remove_generational_global_root(value *r)
 {
+  forget_root_origin(r);
   switch(classify_gc_root(*r)) {
     case OLD:
       caml_delete_global_root(&caml_global_roots_old, r);
