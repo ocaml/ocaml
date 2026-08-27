@@ -154,6 +154,11 @@ class GDBTarget:
             if len > 0:
                 return text[:len]
 
+    def source_location(self, address):
+        sal = gdb.find_pc_line(address)
+        if sal.symtab is not None and sal.line != 0:
+            return f'{sal.symtab.filename}:{sal.line}'
+
     def mapping(self, addr):
         # Annoyingly the progspace.solib_name() and
         # objfile_for_address() functions either aren't reliably
@@ -263,6 +268,17 @@ class OCamlFind(gdb.Command):
         ocaml.Finder(target).find(arg, val)
 
 OCamlFind()
+
+class OCamlRoots(gdb.Command):
+    "ocaml roots: report any damaged C global root, and what registered it."
+    def __init__(self):
+        super(OCamlRoots, self).__init__("ocaml roots", gdb.COMMAND_USER)
+
+    def invoke(self, arg, from_tty):
+        self.dont_repeat()
+        ocaml.Roots(GDBTarget()).check()
+
+OCamlRoots()
 
 # A convenience function $Array which casts a value to an array of values.
 

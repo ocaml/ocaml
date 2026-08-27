@@ -359,6 +359,13 @@ Working version
 
 ### Tools:
 
+- #NNNNN: an "ocaml roots" command for the GDB and LLDB plugins, which walks
+  the C global roots of a core or a live process, reports any cell that no
+  longer matches the key it was inserted under together with the code that
+  registered that root, and names the root the collector was following when
+  it faulted. Needs a runtime built for debugging.
+  (Romain Beauxis, review by XXX)
+
 - #14318, #14709, ocamldoc: use "Module_name (Library name)" rather than
    "Library name: Module_name" as the title of html pages.
    (Florian Angeletti, report by Antonin Décimo, review by Nicolás Ojeda Bär)
