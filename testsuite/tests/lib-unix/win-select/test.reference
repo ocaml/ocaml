@@ -1,1 +1,4 @@
 SUCCESS: Pipe handle is still tracked.
+BUG REPRODUCED: Socket uses an index from another list.
+BUG REPRODUCED: Wrong write descriptor returned.
+BUG REPRODUCED: Duplicate changed a result index.
