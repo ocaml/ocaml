@@ -318,6 +318,20 @@ Caml_inline void caml_iterate_global_roots(scanning_action f,
     })
 }
 
+/* Walk every root without collecting, so that a caller can find which of its
+   own steps damages one. */
+CAMLprim value caml_check_global_roots(value unit)
+{
+#ifdef DEBUG
+  caml_plat_lock_blocking(&roots_mutex);
+  caml_skiplist_check(&caml_global_roots, "caml_global_roots");
+  caml_skiplist_check(&caml_global_roots_young, "caml_global_roots_young");
+  caml_skiplist_check(&caml_global_roots_old, "caml_global_roots_old");
+  caml_plat_unlock(&roots_mutex);
+#endif
+  return Val_unit;
+}
+
 /* Scan all global roots */
 void caml_scan_global_roots(scanning_action f, void* fdata) {
   caml_plat_lock_blocking(&roots_mutex);
