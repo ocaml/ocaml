@@ -1610,8 +1610,13 @@ let ldprintf fmt args ppf = lfprintf ppf fmt args
 (* Flushing standard formatters at end of execution. *)
 
 let flush_standard_formatters () =
-  pp_print_flush (DLS.get std_formatter_key) ();
-  pp_print_flush (DLS.get err_formatter_key) ()
+  let ignore_sys_error f =
+    try f ()
+    with Sys_error _ ->
+      () (* ignore channels closed during a preceding flush. *)
+  in
+  ignore_sys_error (fun () -> pp_print_flush (DLS.get std_formatter_key) ());
+  ignore_sys_error (fun () -> pp_print_flush (DLS.get err_formatter_key) ())
 
 let () = at_exit flush_standard_formatters
 
