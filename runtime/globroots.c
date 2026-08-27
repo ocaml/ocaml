@@ -104,10 +104,22 @@ void * caml_global_root_origin(value * r)
   return (void *) pc;
 }
 
+/* The key is about to be dereferenced, so a damaged one is worth more than a
+   fault inside the collector. */
+static void check_root(struct skipcell * e, value * r)
+{
+  if (Skipcell_ok(e)) return;
+  caml_fatal_error("global root at %p was registered by %p and now reads %p",
+                   (void *) Skipcell_key_of_check(e),
+                   caml_global_root_origin((value *) Skipcell_key_of_check(e)),
+                   (void *) r);
+}
+
 #else
 
 #define record_root_origin(r, pc) ((void) (pc))
 #define forget_root_origin(r) ((void) 0)
+#define check_root(e, r) ((void) 0)
 
 #endif /* DEBUG */
 
@@ -300,6 +312,7 @@ Caml_inline void caml_iterate_global_roots(scanning_action f,
         caml_skiplist_remove(rootlist, e->key);
       } else {
         value * r = (value *) (e->key);
+        check_root(e, r);
         f(fdata, *r, r);
       }
     })

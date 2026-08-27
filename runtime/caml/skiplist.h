@@ -39,8 +39,29 @@ struct skiplist {
 struct skipcell {
   uintnat key;
   uintnat data;
+#ifdef DEBUG
+  uintnat check;                /* key, obfuscated: see caml_skiplist_check */
+#endif
   struct skipcell * forward[]; /* flexible array member */
 };
+
+#ifdef DEBUG
+/* Arbitrary. It has to be non-zero, so that a cell zeroed wholesale fails the
+   check, and it is xored so that the key a cell was inserted with can be had
+   back from the stamp. */
+#define SKIPCELL_STAMP ((uintnat) 0x9E3779B97F4A7C15ULL)
+#define Check_of(k) ((k) ^ SKIPCELL_STAMP)
+#define Skipcell_ok(e) ((e)->check == Check_of((e)->key))
+#define Skipcell_key_of_check(e) Check_of((e)->check)
+
+/* The stamp, as a symbol. */
+extern const uintnat caml_skipcell_stamp;
+
+/* Fail if any cell's key no longer matches what it was inserted with. A key
+   is read as an address by some users, so a write landing on one is found by
+   dereferencing it. */
+extern void caml_skiplist_check(struct skiplist * sk, const char * what);
+#endif
 
 /* Initialize a skip list, statically */
 #define SKIPLIST_STATIC_INITIALIZER { {0, }, 0 }

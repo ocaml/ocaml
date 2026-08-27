@@ -28,6 +28,28 @@
 /* Size of struct skipcell, in bytes, without the forward array */
 #define SIZEOF_SKIPCELL sizeof(struct skipcell)
 
+#ifdef DEBUG
+
+/* So that whatever reads a cell back -- a debugger on a core, say -- can have
+   the stamp from the image rather than a copy of it. */
+CAMLexport const uintnat caml_skipcell_stamp = SKIPCELL_STAMP;
+
+#define Set_check(f) ((f)->check = Check_of((f)->key))
+
+void caml_skiplist_check(struct skiplist * sk, const char * what)
+{
+  FOREACH_SKIPLIST_ELEMENT(e, sk, {
+      if (! Skipcell_ok(e))
+        caml_fatal_error("%s: skiplist cell at %p has key %" CAML_PRIxNAT
+                         ", inserted with %" CAML_PRIxNAT,
+                         what, (void *) e, e->key, Skipcell_key_of_check(e));
+    })
+}
+
+#else
+#define Set_check(f) ((void) 0)
+#endif /* DEBUG */
+
 /* Generate a random level for a new node: 0 with probability 3/4,
    1 with probability 3/16, 2 with probability 3/64, etc.
    We use a simple linear congruential PRNG (see Knuth vol 2) instead
@@ -153,6 +175,7 @@ int caml_skiplist_insert(struct skiplist * sk,
     caml_fatal_error("caml_skiplist_insert: out of memory");
   f->key = key;
   f->data = data;
+  Set_check(f);
   for (int i = 0; i <= new_level; i++) {
     f->forward[i] = *update[i];
     *update[i] = f;
