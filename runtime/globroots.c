@@ -34,6 +34,19 @@ static caml_plat_mutex roots_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 /* Greater than zero when the current thread is scanning the roots */
 static CAMLthread_local int iterating_roots = 0;
 
+#ifdef DEBUG
+/* The root being handed to the collector, or NULL. A root holding a value that
+   is no longer one takes the collector down with it, somewhere that names only
+   the collector; this says which root it was. Per thread, domains scanning at
+   the same time being the normal case. */
+CAMLexport CAMLthread_local value * caml_root_being_scanned = NULL;
+#define Begin_scanning(r) (caml_root_being_scanned = (r))
+#define End_scanning() (caml_root_being_scanned = NULL)
+#else
+#define Begin_scanning(r) ((void) 0)
+#define End_scanning() ((void) 0)
+#endif
+
 enum { ROOT_PRESENT = 0, ROOT_DELETED = 1 };
 
 /* The three global root lists.
@@ -313,7 +326,9 @@ Caml_inline void caml_iterate_global_roots(scanning_action f,
       } else {
         value * r = (value *) (e->key);
         check_root(e, r);
+        Begin_scanning(r);
         f(fdata, *r, r);
+        End_scanning();
       }
     })
 }

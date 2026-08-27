@@ -26,6 +26,9 @@
 #ifdef DEBUG
 /* The code that registered [r], or NULL. */
 void * caml_global_root_origin(value * r);
+
+/* The root this thread is handing to the collector, or NULL. */
+extern CAMLthread_local value * caml_root_being_scanned;
 #endif
 
 void caml_scan_global_roots(scanning_action f, void* fdata);
