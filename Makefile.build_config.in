@@ -233,3 +233,10 @@ TSAN=@tsan@
 TSAN_NATIVE_RUNTIME_C_SOURCES = @tsan_native_runtime_c_sources@
 
 RUNTIME_SEARCH = @runtime_search@
+
+# The magic numbers used by Dynlink, as OCaml quoted strings
+CMXS_MAGIC_TOKEN = {magic|@CMXS_MAGIC_NUMBER@|magic}
+CMO_MAGIC_TOKEN = {magic|@CMO_MAGIC_NUMBER@|magic}
+CMA_MAGIC_TOKEN = {magic|@CMA_MAGIC_NUMBER@|magic}
+BYTECODE_RUNTIME_TOKEN = {@QS@|@bytecode_runtime_id@|@QS@}
+TARGET_TOKEN = {@QS@|@target@|@QS@}
