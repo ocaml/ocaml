@@ -203,6 +203,7 @@ struct dom_internal {
 typedef struct dom_internal dom_internal;
 
 static CAMLthread_local dom_internal* domain_self;
+static CAMLthread_local bool is_backup_thread;
 
 static struct {
   /* enter barrier for STW sections, participating domains arrive into
@@ -1168,6 +1169,7 @@ backup_thread_func(void* v)
 
   domain_self = di;
   caml_state = di->state;
+  is_backup_thread = true;
 
   msg = atomic_load_acquire (&di->backup_thread_msg);
   while (msg != BT_TERMINATE) {
@@ -2177,8 +2179,7 @@ CAMLexport int caml_bt_is_in_blocking_section(void)
 
 CAMLexport int caml_bt_is_self(void)
 {
-  return caml_plat_thread_equal(domain_self->backup_thread,
-                                caml_plat_thread_self());
+  return is_backup_thread;
 }
 
 CAMLexport intnat caml_domain_is_multicore (void)
