@@ -142,7 +142,10 @@ https://github.com/ocaml/ocaml/issues
 
 To be effective, bug reports should include a complete program (preferably
 small) that exhibits the unexpected behavior, and the configuration you are
-using (machine type, etc).
+using (machine type, etc), it is also preferable to avoid adding
+LLM-generated contents or explanation to your bug report, see
+link:AI.md#guidelines-relevant-to-ai-assisted-bug-reports[AI.md] for a more
+in-depth explanation.
 
 == Contributing
 
