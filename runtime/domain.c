@@ -190,7 +190,6 @@ struct dom_internal {
   struct interruptor interruptor;
 
   /* backup thread */
-  caml_plat_thread backup_thread;
   atomic_uintnat backup_thread_msg;
   caml_plat_mutex domain_lock;
   caml_plat_cond domain_cond;
@@ -1224,6 +1223,7 @@ backup_thread_func(void* v)
 static value install_backup_thread_exn (dom_internal* di)
 {
   int err;
+  caml_plat_thread backup_thread;
 #ifndef _WIN32
   sigset_t mask, old_mask;
 #endif
@@ -1246,7 +1246,7 @@ static value install_backup_thread_exn (dom_internal* di)
 #endif
 
   atomic_store_release(&di->backup_thread_msg, BT_ENTERING_OCAML);
-  err = caml_plat_thread_create(&di->backup_thread, 0, backup_thread_func,
+  err = caml_plat_thread_create(&backup_thread, 0, backup_thread_func,
                                 (void*)di);
 
 #ifndef _WIN32
@@ -1255,7 +1255,7 @@ static value install_backup_thread_exn (dom_internal* di)
 
   if (err != 0)
       return caml_check_error_exn(err, "failed to create domain backup thread");
-  caml_plat_thread_detach(di->backup_thread);
+  caml_plat_thread_detach(backup_thread);
   return Val_unit;
 }
 
