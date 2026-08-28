@@ -147,6 +147,7 @@ Line 3, characters 4-8:
 3 |     let+ x = 1 in
         ^^^^
 Error: Unbound value "(let+)"
+Hint: Did you mean "let@"?
 |}];;
 
 module And_unbound = struct
