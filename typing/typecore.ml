@@ -5801,20 +5801,24 @@ and type_newtype
     let scope = create_scope () in
     let (id, new_env) = Env.enter_type ~scope name decl env in
 
-    let result, exp_type = type_body new_env in
+    let result, exp_type =
+      with_local_level_generalize_structure (fun () -> type_body new_env) in
     (* Replace every instance of this type constructor in the resulting
        type. *)
     let seen = Hashtbl.create 8 in
+    let current = get_current_level () in (* actually = scope *)
     let rec replace t =
       if Hashtbl.mem seen (get_id t) then ()
       else begin
         Hashtbl.add seen (get_id t) ();
         match get_desc t with
-        | Tconstr (Path.Pident id', _, _) when id == id' -> link_type t ty
+        | Tconstr (Path.Pident id', _, _) when id == id' ->
+            assert (get_level t = current);
+            link_type t ty
         | _ -> Btype.iter_type_expr replace t
       end
     in
-    let ety = Subst.type_expr Subst.identity exp_type in
+    let ety = Ctype.instance exp_type in
     replace ety;
     (result, ety)
   end
