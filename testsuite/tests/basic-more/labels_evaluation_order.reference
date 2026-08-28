@@ -5,3 +5,19 @@ b argument
 a parameter
 b parameter
 c parameter
+F
+A
+C
+B
+E
+D
+function eager
+x argument
+function delay
+function f
+param a
+param b
+function g
+param c
+param d
+end
