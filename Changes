@@ -1886,6 +1886,9 @@ OCaml 5.4.0 (9 October 2025)
 - #13818: better delimited hints in error message
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #13978: more detailed private type explanation with emphasize on
+  implementation and interface usage.
+
 ### Internal/compiler-libs changes:
 
 - #13539, #13776: Use nanosleep instead of usleep or select, if available.
