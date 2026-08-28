@@ -1,0 +1,60 @@
+opam-version: "2.0"
+synopsis: "The OCaml compiler (system version, from outside of opam)"
+maintainer: [
+  "David Allsopp <dra27@dra27.uk>"
+  "Florian Angeletti <florian.angeletti@inria.fr>"
+]
+license: "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception"
+authors: "Xavier Leroy and many contributors"
+homepage: "https://ocaml.org"
+bug-reports: "https://github.com/ocaml/opam-repository/issues"
+dev-repo: "git+https://github.com/ocaml/ocaml"
+depends: [
+  "ocaml" {= version & post}
+
+  # General base- packages
+  "base-unix" {post}
+  "base-bigarray" {post}
+  "base-threads" {post}
+  "base-domains" {post}
+  "base-nnp" {post}
+  "base-effects" {post}
+
+  # Architecture (Windows-only at present)
+  "host-arch-x86_32" {os = "win32" & ?sys-ocaml-arch & sys-ocaml-arch = "i686" & post}
+  "host-arch-x86_64" {os = "win32" & ?sys-ocaml-arch & sys-ocaml-arch = "x86_64" & post}
+  "host-arch-unknown" {os = "win32" & (!(?sys-ocaml-arch) |
+                       sys-ocaml-arch != "i686" &
+                       sys-ocaml-arch != "x86_64") & post}
+
+  # System (Windows-only at present)
+  "host-system-mingw" {os = "win32" & ?sys-ocaml-arch & sys-ocaml-libc = "msvc" & sys-ocaml-cc = "cc" & post}
+  "host-system-msvc" {os = "win32" & ?sys-ocaml-arch & sys-ocaml-cc = "msvc" & post}
+  "host-system-other" {os = "win32" & ?sys-ocaml-arch & sys-ocaml-libc != "msvc" & post}
+
+  # Environment configuration (Windows-only)
+  # NB There are not "system" distributions of OCaml on Windows; the support
+  # here is intended for binary caching setups, choosing to install a build
+  # of OCaml external to opam, but still using opam to provide the C compiler
+  # configuration.
+  "conf-mingw-w64-gcc-x86_64" {?sys-ocaml-arch & sys-ocaml-arch = "x86_64" & sys-ocaml-libc = "msvc" & sys-ocaml-cc = "cc" & post}
+  "conf-mingw-w64-gcc-i686" {?sys-ocaml-arch & sys-ocaml-arch = "i686" & sys-ocaml-libc = "msvc" & sys-ocaml-cc = "cc" & post}
+  "conf-mingw-w64-zstd-x86_64" {?sys-ocaml-arch & sys-ocaml-arch = "x86_64" & sys-ocaml-libc = "msvc" & sys-ocaml-cc = "cc" & post}
+  "conf-mingw-w64-zstd-i686" {?sys-ocaml-arch & sys-ocaml-arch = "i686" & sys-ocaml-libc = "msvc" & sys-ocaml-cc = "cc" & post}
+  "ocaml-env-mingw32" {?sys-ocaml-arch & sys-ocaml-libc = "msvc" & sys-ocaml-arch = "i686" & sys-ocaml-cc = "cc" & post}
+  "ocaml-env-mingw64" {?sys-ocaml-arch & sys-ocaml-libc = "msvc" & sys-ocaml-arch = "x86_64" & sys-ocaml-cc = "cc" & post}
+  "ocaml-env-msvc32" {?sys-ocaml-arch & sys-ocaml-arch = "i686" & sys-ocaml-cc = "msvc" & post}
+  "ocaml-env-msvc64" {?sys-ocaml-arch & sys-ocaml-arch = "x86_64" & sys-ocaml-cc = "msvc" & post}
+]
+conflict-class: "ocaml-core-compiler"
+available: sys-ocaml-version > "5.6.0+dev" & sys-ocaml-version < "5.6.0+devA" & (os != "win32" | sys-ocaml-libc = "msvc")
+flags: [compiler avoid-version]
+build: ["ocaml" "gen_ocaml_config.ml" "" name]
+extra-source "gen_ocaml_config.ml" {
+  src:
+    "https://raw.githubusercontent.com/ocaml/ocaml/1f98b5bb12e5e1bf7c9502cb2e736b7af4a207f7/tools/opam/gen_ocaml-system_config.ml"
+  checksum: [
+    "sha256=3d173f9401705ab2cad7c9137dd5a902eb09f3ac685677284e4f38d05c6285e1"
+    "md5=b8451d97ddc26b9866cffd546d62ca5b"
+  ]
+}
