@@ -18,6 +18,11 @@ Working version
 
 ### Runtime system:
 
+- #XXXXX: Move the C part of the threads library into the runtime, so
+  that e.g. caml_c_thread_register always works. The threads library
+  itself is unchanged; the stub libraries remain as empty placeholders.
+  (Nick Barnes, review by ???)
+
 - #10258: Overhaul the locale code used for mingw/msvc in float<->string
   conversions.
   (David Allsopp, review by Antonin Décimo)

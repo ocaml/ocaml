@@ -157,3 +157,14 @@ type error = DT.error =
 
 exception Error = DT.Error
 let error_message = DT.error_message
+
+(* The systhreads implementation lives in the runtime (threads.c), but
+   nothing statically linked necessarily refers to it, so the linker may
+   omit it: in particular flexlink only exports symbols of objects it
+   itself pulled into the link. Reference it here so that every program
+   able to load OCaml code dynamically can resolve the primitives of a
+   dynamically-loaded threads library. (This is at the end of the file
+   so as not to disturb source locations that appear in the reference
+   output of backtrace tests.) *)
+external thread_initialize : unit -> unit = "caml_thread_initialize"
+let (_ : unit -> unit) = Sys.opaque_identity thread_initialize

@@ -44,6 +44,12 @@ extern char caml_system__code_begin, caml_system__code_end;
    They use the old `__` separator convention because the new convention
    gives `caml_system$code_begin`, which is not a valid C identifier. */
 
+/* Nothing in the runtime or in statically-linked OCaml code necessarily
+   refers to threads.c, so the linker may omit it from libasmrun; force it
+   into every native program so that dynamically-loaded code can use it. */
+extern int caml_c_thread_register(void);
+int (*caml_force_link_systhreads)(void) = &caml_c_thread_register;
+
 /* Initialize the static data and code area limits. */
 
 struct segment { char * begin; char * end; };
