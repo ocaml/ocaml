@@ -109,6 +109,7 @@ val new_global_var: ?name:string -> unit -> type_expr
 val newobj: type_expr -> type_expr
 val newconstr: Path.t -> type_expr list -> type_expr
 val newmono : type_expr -> type_expr
+val newmono_package : ?level:int -> package -> type_expr
         (* Create a new, monomorphic type *)
 val none: type_expr
         (* A dummy type expression *)
