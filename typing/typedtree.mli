@@ -243,6 +243,7 @@ and expression_desc =
             - Any mix, e.g. [(L1: E1, E2)]
                  when [el] is [(Some L1, E1); (None, E2)]
           *)
+  | Texp_tuple_proj of expression * tuple_field
   | Texp_construct of
       Longident.t loc * Data_types.constructor_description * expression list
         (** C                []
@@ -298,6 +299,12 @@ and expression_desc =
   | Texp_unreachable
   | Texp_extension_constructor of Longident.t loc * Path.t
   | Texp_struct_item of structure_item * expression
+
+and tuple_field =
+  | Ttf_label of { label : string loc; index : int }
+    (** [Ttf_label { label = L; index }] represents the tuple
+        field [.~L]. [index] is position of the field inside the
+        tuple (0-based). *)
 
 and meth =
     Tmeth_name of string

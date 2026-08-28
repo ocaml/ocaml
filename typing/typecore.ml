@@ -214,7 +214,9 @@ type error =
   | Optional_poly_param of string
   | Cannot_unify_tfunctor_to_tarrow of Errortrace.unification_error
   | Cannot_omit_tfunctor_argument of Ident.Unscoped.t * type_expr
-
+  | Expr_not_a_tuple_type of type_expr
+  | Tuple_label_not_found of type_expr * string
+  | Ambiguous_tuple_type
 
 let not_principal fmt =
   Format_doc.Doc.kmsg (fun x -> Warnings.Not_principal x) fmt
@@ -633,6 +635,20 @@ let extract_label_names env ty =
   match extract_concrete_record env ty with
   | Record_type (_, _,fields) -> List.map (fun l -> l.Types.ld_id) fields
   | Not_a_record_type | Maybe_a_record_type -> assert false
+
+type tuple_extraction_result =
+  | Tuple_type of (string option * type_expr) list
+  | Not_a_tuple_type
+  | Maybe_a_tuple_type
+
+let extract_tuple env ty =
+  match get_desc (expand_head env ty) with
+  | Ttuple comps -> Tuple_type comps
+  | Tpoly _ | Tconstr _
+  | Tarrow _ | Tfunctor _ | Tobject _ | Tfield _ | Tnil
+  | Tvariant _ | Tpackage _ | Tunivar _ -> Not_a_tuple_type
+  | Tvar _ -> Maybe_a_tuple_type
+  | Tlink _ | Tsubst _ | Texpand _ -> assert false
 
 let is_principal ty =
   not !Clflags.principal || get_level ty = generic_level
@@ -3569,6 +3585,8 @@ let rec is_nonexpansive exp =
         ) cases
   | Texp_tuple el ->
       List.for_all (fun (_, e) -> is_nonexpansive e) el
+  | Texp_tuple_proj (exp, _fld) ->
+      is_nonexpansive exp
   | Texp_construct( _, _, el) ->
       List.for_all is_nonexpansive el
   | Texp_variant(_, arg) -> is_nonexpansive_opt arg
@@ -4012,7 +4030,7 @@ let check_partial_application ~statement exp =
               | _ -> false) exp_extra then check_statement ()
           else begin
             match exp_desc with
-            | Texp_ident _ | Texp_constant _ | Texp_tuple _
+            | Texp_ident _ | Texp_constant _ | Texp_tuple _ | Texp_tuple_proj _
             | Texp_construct _ | Texp_variant _ | Texp_record _
             | Texp_atomic_loc _ | Texp_field _ | Texp_setfield _ | Texp_array _
             | Texp_while _ | Texp_for _ | Texp_instvar _
@@ -4855,6 +4873,14 @@ and type_expect_
         exp_type = newty (Ttuple (List.map (fun (l, e) -> l, e.exp_type) expl));
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
+  | Pexp_tuple_proj (stuple, fld) ->
+      let tuple, fld, ty_arg = type_tuple_proj ~env stuple fld in
+      rue {
+        exp_desc = Texp_tuple_proj (tuple, fld);
+        exp_loc = loc; exp_extra = [];
+        exp_type = ty_arg;
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env }
   | Pexp_construct(lid, sarg) ->
       type_construct env ~sexp lid sarg ty_expected_explained
   | Pexp_variant(l, sarg) ->
@@ -5069,7 +5095,12 @@ and type_expect_
       end
   | Pexp_field(srecord, lid) ->
       let record, label, ty_arg =
-        solve_Pexp_field ~label_usage:Env.Projection env sexp srecord lid
+        type_record_label_proj
+          ~env
+          ~usage:Env.Projection
+          sexp
+          srecord
+          lid
       in
       rue {
         exp_desc = Texp_field(record, lid, label);
@@ -5079,7 +5110,7 @@ and type_expect_
         exp_env = env }
   | Pexp_setfield(srecord, lid, snewval) ->
       let (record, label, expected_type) =
-        type_label_access env srecord Env.Mutation lid in
+        type_record_label_access ~env ~usage:Env.Mutation srecord lid in
       let ty_record =
         if expected_type = None then newvar () else record.exp_type in
       let (label_loc, label, newval) =
@@ -5585,7 +5616,12 @@ and type_expect_
                   )
                } ] ->
           let record, label, ty_arg =
-            solve_Pexp_field ~label_usage:Env.Mutation env sexp srecord lid
+            type_record_label_proj
+              ~env
+              ~usage:Env.Mutation
+              sexp
+              srecord
+              lid
           in
           Env.mark_label_used Env.Projection label.lbl_uid;
           if label.lbl_atomic = Nonatomic then
@@ -6309,7 +6345,64 @@ and type_moddep_fun ~env ~name ~pack_param ~rest ~arg_label ~first
 
 
 
-and type_label_access env srecord usage lid =
+and type_record_label ~env ~record_ty ~expected_type ~usage lid =
+  try
+    let labels = Env.lookup_all_labels ~loc:lid.loc usage lid.txt env in
+    wrap_disambiguate "This expression has" (mk_expected record_ty)
+      (Label.disambiguate usage lid env expected_type)
+      labels
+  with
+    exn
+  when !Clflags.typing_recovery && Typing_recovery.is_recoverable exn
+  ->
+    Typing_recovery.erroneous_type_register record_ty;
+    (* Fake label for recovery *)
+    {
+      lbl_name = "";
+      lbl_res = record_ty;
+      lbl_arg = newvar ();
+      lbl_mut = Mutable;
+      lbl_pos = 0;
+      lbl_all = [||];
+      lbl_repres = Record_regular;
+      lbl_private = Public;
+      lbl_loc = lid.loc;
+      lbl_attributes = [];
+      lbl_uid = Uid.internal_not_actually_unique;
+      lbl_atomic = Nonatomic;
+    }
+
+
+and type_labeled_tuple_label
+    ~env
+    ~tuple_loc
+    ~tuple_ty
+    ~expected_tuple_type
+    lbl
+  =
+  match expected_tuple_type with
+  | None ->
+    let error = Ambiguous_tuple_type in
+    Error.log_and_raise tuple_loc env error
+  | Some tuple_comps ->
+    match
+      List.find_mapi
+        (fun i comp ->
+          match comp with
+          | Some comp_lbl, comp_ty when lbl.txt = comp_lbl -> Some (i, comp_ty)
+          | _ -> None)
+        tuple_comps
+    with
+    | None ->
+      let error = Tuple_label_not_found (tuple_ty, lbl.txt) in
+      Error.log_and_raise lbl.loc env error
+    | Some (idx, comp_ty) ->
+      if not (is_principal tuple_ty) then
+        Location.prerr_warning tuple_loc
+          (not_principal "this type-based tuple projection disambiguation");
+      (comp_ty, idx)
+
+and type_record_label_access ~env ~usage srecord lid =
   let record =
     with_local_level_generalize_structure_if_principal
       (fun () -> type_exp ~recarg:Allowed env srecord)
@@ -6324,43 +6417,55 @@ and type_label_access env srecord usage lid =
         let err = Expr_not_a_record_type ty_exp in
         Error.log_and_raise record.exp_loc env err
   in
-  try
-    let labels = Env.lookup_all_labels ~loc:lid.loc usage lid.txt env in
-    let label =
-      wrap_disambiguate "This expression has" (mk_expected ty_exp)
-        (Label.disambiguate usage lid env expected_type) labels in
-    (record, label, expected_type)
-  with exn when !Clflags.typing_recovery
-             && Typing_recovery.is_recoverable exn ->
-    Typing_recovery.erroneous_type_register ty_exp;
-    let fake_label = {
-      lbl_name = "";
-      lbl_res = ty_exp;
-      lbl_arg = newvar ();
-      lbl_mut = Mutable;
-      lbl_pos = 0;
-      lbl_all = [||];
-      lbl_repres = Record_regular;
-      lbl_private = Public;
-      lbl_loc = lid.loc;
-      lbl_attributes = [];
-      lbl_uid = Uid.internal_not_actually_unique;
-      lbl_atomic = Nonatomic;
-    } in
-    (record, fake_label, expected_type)
-
-and solve_Pexp_field ~label_usage env sexp srecord lid =
-  let (record, label, _) =
-    type_label_access env srecord label_usage lid
+  let label =
+    type_record_label ~env ~record_ty:ty_exp ~expected_type ~usage lid
   in
-  let (_, ty_arg, ty_res) = instance_label ~fixed:false label in
+  (record, label, expected_type)
+
+(* Types a tuple projection [e.~l] using type-based disambiguation.
+   When no information is available, i.e the type of the tuple
+   expression is a unification variable, the default behaviour
+   is to fail with an ambiguous tuple type error. *)
+and type_tuple_label_proj ~env stuple lbl =
+  let tuple =
+    with_local_level_generalize_structure_if_principal
+      (fun () -> type_exp env stuple)
+  in
+  let tuple_ty = tuple.exp_type in
+  let expected_tuple_type =
+    match extract_tuple env tuple_ty with
+    | Tuple_type comps -> Some comps
+    | Maybe_a_tuple_type -> None
+    | Not_a_tuple_type ->
+        let error = Expr_not_a_tuple_type tuple_ty in
+        Error.log_and_raise tuple.exp_loc env error
+  in
+  let comp_ty, idx =
+    type_labeled_tuple_label
+      ~env
+      ~tuple_loc:tuple.exp_loc
+      ~tuple_ty
+      ~expected_tuple_type
+      lbl
+  in
+  let fld = Ttf_label { label = lbl; index = idx } in
+  (tuple, fld, comp_ty)
+
+and type_tuple_proj ~env stuple fld =
+  match fld with
+  | Ptf_label lbl ->
+      type_tuple_label_proj ~env stuple lbl
+
+(* Types a record projection [e.l]. *)
+and type_record_label_proj ~env ~usage sexp srecord lid =
+  let record, label, _ = type_record_label_access ~env ~usage srecord lid in
+  let _, ty_arg, ty_res = instance_label ~fixed:false label in
   unify_exp ~sexp env record ty_res;
   (record, label, ty_arg)
 
 (* Typing format strings for printing or reading.
    These formats are used by functions in modules Printf, Format, and Scanf.
    (Handling of * modifiers contributed by Thorsten Ohl.) *)
-
 and type_format loc str env =
   let loc = {loc with Location.loc_ghost = true} in
   try
@@ -8755,6 +8860,20 @@ let report_error ~loc env =
             The module argument %a cannot be omitted in this application.@]"
             print_expanded func_ty
             Style.inline_code (Ident.Unscoped.name id_us)
+  | Expr_not_a_tuple_type ty ->
+      Location.errorf ~loc
+        "@[This expression has type %a@ \
+         which is not a tuple.@]"
+        (Style.as_inline_code Printtyp.type_expr) ty
+  | Tuple_label_not_found (ty, lbl) ->
+      Location.errorf ~loc
+        "@[No field %a for the tuple %a.@]"
+         (Style.as_inline_code Format_doc.pp_print_string) lbl
+         (Style.as_inline_code Printtyp.type_expr) ty
+  | Ambiguous_tuple_type ->
+      Location.errorf ~loc
+        "@[The type of the tuple expression is ambiguous.@ \
+        Could not determine the type of the tuple projection.@]"
 
 let report_error ~loc env err =
   Printtyp.wrap_printing_env ~error:true env

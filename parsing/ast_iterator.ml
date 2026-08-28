@@ -419,6 +419,10 @@ module E = struct
         iter_opt (sub.typ sub) ty1;
         sub.typ sub ty2
 
+  let iter_tuple_field sub fld =
+    match fld with
+    | Ptf_label lbl -> iter_loc iter_string sub lbl
+
   let iter sub {pexp_loc = loc; pexp_desc = desc; pexp_attributes = attrs} =
     sub.location sub loc;
     sub.attributes sub attrs;
@@ -438,6 +442,8 @@ module E = struct
         sub.expr sub e; sub.cases sub pel
     | Pexp_try (e, pel) -> sub.expr sub e; sub.cases sub pel
     | Pexp_tuple el -> List.iter (fun (_, e) -> sub.expr sub e) el
+    | Pexp_tuple_proj (e, fld) ->
+        sub.expr sub e; iter_tuple_field sub fld
     | Pexp_construct (lid, arg) ->
         iter_loc_lid sub lid; iter_opt (sub.expr sub) arg
     | Pexp_variant (_lab, eo) ->

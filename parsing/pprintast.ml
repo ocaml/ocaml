@@ -140,6 +140,8 @@ let tyvar_of_name s =
   else
     "'" ^ s
 
+let with_loc pr ppf x = pr ppf x.txt
+
 module Doc = struct
 (* Turn an arbitrary variable name into a valid OCaml identifier by adding \#
    in case it is a keyword, or parenthesis when it is an infix or prefix
@@ -185,6 +187,13 @@ module Doc = struct
   let constr ppf l = any_longident ~kind:Constr ppf l
   let type_longident ppf l = any_longident ~kind:Type ppf l
 
+  let string = Format_doc.pp_print_string
+
+  let tuple_field ppf fld =
+    match fld with
+    | Ptf_label lbl ->
+        Format_doc.fprintf ppf "%a" (with_loc string) lbl
+
   let tyvar ppf s =
     Format_doc.fprintf ppf "%s" (tyvar_of_name s)
 
@@ -216,6 +225,10 @@ module Doc = struct
       | Pexp_send (parent, meth) ->
           Option.map
             (printf "#%s" meth.txt)
+            (nominal_exp doc parent)
+      | Pexp_tuple_proj (parent, fld) ->
+          Option.map
+            (printf ".%t" (Format_doc.doc_printer tuple_field fld))
             (nominal_exp doc parent)
       (* String constants are syntactically too complex. For example, the
          quotes conflict with the 'inline_code' style and they might contain
@@ -358,7 +371,6 @@ let paren: 'a . ?first:space_formatter -> ?last:space_formatter ->
     if b then (pp f "("; pp f first; fu f x; pp f last; pp f ")")
     else fu f x
 
-let with_loc pr ppf x = pr ppf x.txt
 let longident_loc = with_loc longident
 
 let constant_desc f = function
@@ -413,6 +425,8 @@ let tyvar ppf v = Format_doc.compat Doc.tyvar ppf v
 
 let tyvar_loc f str = tyvar f str.txt
 let string_quot f x = pp f "`%a" ident_of_name x
+
+let string = Format.pp_print_string
 
 let labelled printer f (label, c) =
   match label with
@@ -825,6 +839,11 @@ and function_params_then_body ctxt f params constraint_ body ~delimiter =
     delimiter
     (function_body (under_functionrhs ctxt)) body
 
+and tuple_field f fld =
+  match fld with
+  | Ptf_label lbl ->
+      pp f "%a" (with_loc string) lbl
+
 and expression ctxt f x =
   if x.pexp_attributes <> [] then
     pp f "((%a)@,%a)" (expression ctxt) {x with pexp_attributes=[]}
@@ -999,7 +1018,8 @@ and expression2 ctxt f x =
         pp f "@[<hov2>%a.%a@]" (simple_expr ctxt) e longident_loc li
     | Pexp_send (e, s) ->
         pp f "@[<hov2>%a#%a@]" (simple_expr ctxt) e ident_of_name s.txt
-
+    | Pexp_tuple_proj (e, fld) ->
+        pp f "@[<hov2>%a.%a@]" (simple_expr ctxt) e tuple_field fld
     | _ -> simple_expr ctxt f x
 
 and simple_expr ctxt f x =

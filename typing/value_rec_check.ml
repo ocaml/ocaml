@@ -224,6 +224,7 @@ let classify_expression : Typedtree.expression -> sd =
     | Texp_ifthenelse _
     | Texp_send _
     | Texp_field _
+    | Texp_tuple_proj _
     | Texp_assert _
     | Texp_try _
     | Texp_override _
@@ -652,6 +653,13 @@ let rec expression : Typedtree.expression -> term_judg =
               list expression delayed << Guard]
     | Texp_tuple exprs ->
       list expression (List.map snd exprs) << Guard
+    | Texp_tuple_proj (e, _fld) ->
+      (*
+        G |- e: m[Dereference]
+        -----------------------
+        G |- e.~l: m
+      *)
+      expression e << Dereference
     | Texp_atomic_loc (expr, _, _) ->
       expression expr << Guard
     | Texp_array (_, exprs) ->
