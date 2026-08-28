@@ -1998,7 +1998,16 @@ AS_IF([$has_c99_float_ops],
     with --enable-imprecise-c99-float-ops]))])])
 
 ## getentropy
-AC_CHECK_FUNC([getentropy], [AC_DEFINE([HAS_GETENTROPY], [1])])
+AC_CHECK_DECL([getentropy],
+  [AC_DEFINE([HAS_GETENTROPY], [1])],
+  [],
+  dnl  POSIX says this is in <unistd.h>, but who knows when Apple
+  dnl  adds that? It doesn't seem to be there as of macOS 13
+  dnl  headers.
+  [[#include <unistd.h>
+    #ifdef __APPLE__
+    #include <sys/random.h>
+    #endif]])
 
 ## getrusage
 AC_CHECK_FUNC([getrusage], [AC_DEFINE([HAS_GETRUSAGE], [1])])
