@@ -132,10 +132,19 @@ Working version
 - #14814: a `caml_result_find_exception` helper for the `caml_result` type
   (Gabriel Scherer, review by Nicolás Ojeda Bär, request by Chris Vine)
 
+- #14872: harden loading of bytecode executable files against corrupted
+  or malicious files having 2^29 TOC entries or more.
+  (Xavier Leroy, review by Nicolás Ojeda Bär)
+
 * #14997: Default to and recommend large file and year 2038 support on 32-bit
   systems. LFS and 64-bit `time_t` _checks_ can be disabled by passing
   respectively `--disable-largefile` and `--disable-year2038` to configure.
   (Antonin Décimo, review by Miod Vallat)
+
+- #15019: `Marshal.from_{string,bytes}`: guard against overflow in
+  the computation of the total data length.
+  (Xavier Leroy, report by Akshay Singh, review by Nicolás Ojeda Bär
+  and Antonin Décimo)
 
 ### Type system:
 
@@ -243,6 +252,11 @@ Working version
   (Sebastian Pop and Xavier Leroy, review by Xavier Leroy and Olivier Nicole)
 
 ### Standard library:
+
+- #14974 : Add `Sys.filepath_exists` and improve documentation
+  for `Sys.file_exists`
+  (Khalid Belkassmi E.H., review by Kate Deplaix, Nicolás Ojeda Bär,
+   Xavier Leroy and Daniel Bünzli)
 
 - #14941, #13937: Add `{Option,Result}.try_value`
   (Michael Neumann, review by Daniel Bünzli, David Allsopp)
@@ -472,6 +486,9 @@ Working version
 - #14946: Keep the continuation inside the typedtree using a dedicated type.
   (Xavier Van de Woestyne, review by Florian Angeletti)
 
+- #15023: Extract Utf8_lexeme out of Misc into utils/utf8_lexeme.ml(i)
+  (Thomas Refis, review by Nicolás Ojeda Bär)
+
 ### Build system:
 
 - #14552: Export `AR` and `ARFLAGS` in Makefile.config.
@@ -548,6 +565,11 @@ Working version
 * #14982: Remove assumption that abstract types defined in the current
   module are injective and contractive
   (Jeremy Yallop, review by Jacques Garrigue)
+
+- #14999, #15000: Fix integer overflow in the runtime_events ring buffer size
+  computation. With OCAMLRUNPARAM=e=21 or higher the ring file was created
+  undersized and custom event registration wrote through a truncated offset.
+  (Tim McGilchrist, review by Xavier Leroy and Sadiq Jaffer)
 
 OCaml 5.5.1
 -----------

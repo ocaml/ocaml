@@ -155,11 +155,13 @@ utils/local_store.cmx : \
     utils/local_store.cmi
 utils/local_store.cmi :
 utils/misc.cmo : \
+    utils/utf8_lexeme.cmi \
     utils/format_doc.cmi \
     utils/config.cmi \
     utils/build_path_prefix_map.cmi \
     utils/misc.cmi
 utils/misc.cmx : \
+    utils/utf8_lexeme.cmx \
     utils/format_doc.cmx \
     utils/config.cmx \
     utils/build_path_prefix_map.cmx \
@@ -216,6 +218,11 @@ utils/terminfo.cmo : \
 utils/terminfo.cmx : \
     utils/terminfo.cmi
 utils/terminfo.cmi :
+utils/utf8_lexeme.cmo : \
+    utils/utf8_lexeme.cmi
+utils/utf8_lexeme.cmx : \
+    utils/utf8_lexeme.cmi
+utils/utf8_lexeme.cmi :
 utils/warnings.cmo : \
     utils/misc.cmi \
     utils/format_doc.cmi \
@@ -414,6 +421,7 @@ parsing/docstrings.cmi : \
     parsing/location.cmi
 parsing/lexer.cmo : \
     utils/warnings.cmi \
+    utils/utf8_lexeme.cmi \
     parsing/parser.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
@@ -422,6 +430,7 @@ parsing/lexer.cmo : \
     parsing/lexer.cmi
 parsing/lexer.cmx : \
     utils/warnings.cmx \
+    utils/utf8_lexeme.cmx \
     parsing/parser.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
@@ -567,6 +576,7 @@ parsing/syntaxerr.cmi : \
     parsing/location.cmi
 parsing/unit_info.cmo : \
     utils/warnings.cmi \
+    utils/utf8_lexeme.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
@@ -574,6 +584,7 @@ parsing/unit_info.cmo : \
     parsing/unit_info.cmi
 parsing/unit_info.cmx : \
     utils/warnings.cmx \
+    utils/utf8_lexeme.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
     utils/load_path.cmx \
@@ -731,6 +742,7 @@ typing/datarepr.cmi : \
     typing/data_types.cmi
 typing/env.cmo : \
     utils/warnings.cmi \
+    utils/utf8_lexeme.cmi \
     parsing/unit_info.cmi \
     typing/typing_recovery.cmi \
     typing/types.cmi \
@@ -758,6 +770,7 @@ typing/env.cmo : \
     typing/env.cmi
 typing/env.cmx : \
     utils/warnings.cmx \
+    utils/utf8_lexeme.cmx \
     parsing/unit_info.cmx \
     typing/typing_recovery.cmx \
     typing/types.cmx \
@@ -1137,17 +1150,17 @@ typing/mtype.cmi : \
     typing/ident.cmi \
     typing/env.cmi
 typing/oprint.cmo : \
+    utils/utf8_lexeme.cmi \
     parsing/pprintast.cmi \
     typing/outcometree.cmi \
-    utils/misc.cmi \
     parsing/lexer.cmi \
     utils/format_doc.cmi \
     parsing/asttypes.cmi \
     typing/oprint.cmi
 typing/oprint.cmx : \
+    utils/utf8_lexeme.cmx \
     parsing/pprintast.cmx \
     typing/outcometree.cmi \
-    utils/misc.cmx \
     parsing/lexer.cmx \
     utils/format_doc.cmx \
     parsing/asttypes.cmx \
@@ -8549,11 +8562,11 @@ debugger/debugger_config.cmx : \
     debugger/debugger_config.cmi
 debugger/debugger_config.cmi :
 debugger/debugger_lexer.cmo : \
-    utils/misc.cmi \
+    utils/utf8_lexeme.cmi \
     debugger/debugger_parser.cmi \
     debugger/debugger_lexer.cmi
 debugger/debugger_lexer.cmx : \
-    utils/misc.cmx \
+    utils/utf8_lexeme.cmx \
     debugger/debugger_parser.cmx \
     debugger/debugger_lexer.cmi
 debugger/debugger_lexer.cmi : \
@@ -9579,20 +9592,20 @@ ocamldoc/odoc_latex_style.cmx : \
     ocamldoc/odoc_latex_style.cmi
 ocamldoc/odoc_latex_style.cmi :
 ocamldoc/odoc_lexer.cmo : \
+    utils/utf8_lexeme.cmi \
     otherlibs/str/str.cmi \
     ocamldoc/odoc_parser.cmi \
     ocamldoc/odoc_messages.cmi \
     ocamldoc/odoc_global.cmi \
     ocamldoc/odoc_comments_global.cmi \
-    utils/misc.cmi \
     ocamldoc/odoc_lexer.cmi
 ocamldoc/odoc_lexer.cmx : \
+    utils/utf8_lexeme.cmx \
     otherlibs/str/str.cmx \
     ocamldoc/odoc_parser.cmx \
     ocamldoc/odoc_messages.cmx \
     ocamldoc/odoc_global.cmx \
     ocamldoc/odoc_comments_global.cmx \
-    utils/misc.cmx \
     ocamldoc/odoc_lexer.cmi
 ocamldoc/odoc_lexer.cmi : \
     ocamldoc/odoc_parser.cmi
@@ -9734,12 +9747,12 @@ ocamldoc/odoc_name.cmi : \
     parsing/longident.cmi \
     typing/ident.cmi
 ocamldoc/odoc_ocamlhtml.cmo : \
+    utils/utf8_lexeme.cmi \
     otherlibs/str/str.cmi \
-    utils/misc.cmi \
     ocamldoc/odoc_ocamlhtml.cmi
 ocamldoc/odoc_ocamlhtml.cmx : \
+    utils/utf8_lexeme.cmx \
     otherlibs/str/str.cmx \
-    utils/misc.cmx \
     ocamldoc/odoc_ocamlhtml.cmi
 ocamldoc/odoc_ocamlhtml.cmi :
 ocamldoc/odoc_parameter.cmo : \

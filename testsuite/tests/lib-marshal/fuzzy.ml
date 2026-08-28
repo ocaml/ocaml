@@ -79,6 +79,17 @@ let test ic =
   end;
   Gc.full_major()
 
+(* Same, but use Marshal.from_string instead *)
+
+let test_string ic =
+  In_channel.set_binary_mode ic true;
+  let s = In_channel.input_all ic in
+  begin try
+    ignore (Marshal.from_string s 0)
+  with Failure _ | Invalid_argument _ | Out_of_memory -> ()
+  end;
+  Gc.full_major()
+
 (* Internal fuzzing.  Rather naive. *)
 
 let random_offset b =
@@ -123,7 +134,7 @@ let fuzz1 () =
       end;
       Gc.full_major()
     done;
-    Bytes.set_uint8 b i (Bytes.get_uint8 b i)
+    Bytes.set_uint8 b i (String.get_uint8 d i)
   done
 
 let () =
@@ -135,7 +146,9 @@ let () =
     "-x", Arg.Unit fuzz1,
       "<num iter>  Perform internal fuzzing test (exhaustive 1-byte)";
     "-r", Arg.Unit (fun () -> test stdin),
-      "  Read marshaled data from standard input"
+      "  Read marshaled data from standard input";
+    "-s", Arg.Unit (fun () -> test_string stdin),
+      "  Read marshaled data from standard input via a string"
   ]
   (fun s -> raise (Arg.Bad ("don't know what to do with " ^ s)))
   "Usage: fuzzy [option].\nOptions are:"

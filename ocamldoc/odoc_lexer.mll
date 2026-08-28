@@ -89,22 +89,22 @@ let remove_stars s =
   Str.global_replace (Str.regexp ("^"^blank^"*\\*")) "" s
 
 let validate_encoding raw_name =
-  match Misc.Utf8_lexeme.normalize raw_name with
+  match Utf8_lexeme.normalize raw_name with
   | Error s -> failwith (Format.asprintf "Invalid encoding %s" s)
   | Ok name -> name
 
 let validate_ident raw_name =
   let name = validate_encoding raw_name in
-  match Misc.Utf8_lexeme.validate_identifier name with
-  | Misc.Utf8_lexeme.Valid -> name
-  | Misc.Utf8_lexeme.Invalid_character u ->
+  match Utf8_lexeme.validate_identifier name with
+  | Utf8_lexeme.Valid -> name
+  | Utf8_lexeme.Invalid_character u ->
     failwith (Format.asprintf "Invalid character U+%04X" (Uchar.to_int u))
-  | Misc.Utf8_lexeme.Invalid_beginning u  ->
+  | Utf8_lexeme.Invalid_beginning u  ->
     failwith (Format.asprintf "Invalid first character U+%04X" (Uchar.to_int u))
 
  let validate_exception_uident raw_name =
     let name = validate_ident raw_name in
-    if Misc.Utf8_lexeme.is_capitalized name then name else
+    if Utf8_lexeme.is_capitalized name then name else
       failwith (Format.asprintf "Invalid exception name: %s" name)
 }
 
