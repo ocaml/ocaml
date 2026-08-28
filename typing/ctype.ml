@@ -6019,9 +6019,9 @@ and subtype_labeled_list env trace labeled_tl1 labeled_tl2 constraints =
   if 0 <> List.compare_lengths labeled_tl1 labeled_tl2 then
     subtype_error ~env ~trace ~unification_trace:[];
   List.fold_left2
-    (fun constraints (label1, ty1) (label2, ty2) ->
-      if not (Option.equal String.equal label1 label2) then
-        subtype_error ~env ~trace ~unification_trace:[];
+    (fun constraints (_label1, ty1) (_label2, ty2) ->
+      (* We explicitly ignore the labels here to allow coercion
+         across labels. *)
       subtype_rec
         env
         (Subtype.Diff { got = ty1; expected = ty2 } :: trace)
