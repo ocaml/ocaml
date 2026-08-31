@@ -1392,8 +1392,9 @@ let find_shape env (ns : Shape.Sig_component_kind.t) id =
   | Class_type ->
       (IdTbl.find_same id env.cltypes).cltda_shape
 
-let shape_of_path ~namespace env =
-  Shape.of_path ~namespace ~find_shape:(find_shape env)
+let shape_of_path ~namespace env = function
+  | Pextra_ty (_, Pfld_ty _) -> raise Not_found
+  | path -> Shape.of_path ~namespace ~find_shape:(find_shape env) path
 
 let shape_or_leaf uid = function
   | None -> Shape.leaf uid
@@ -3248,6 +3249,37 @@ let lookup_type ~errors ~use ~loc lid env =
   let (path, tda) = lookup_type_full ~errors ~use ~loc lid env in
   path, tda.tda_declaration
 
+let lookup_type_projection ~errors ~use ~loc ~path type_lid fields env =
+  let extend_lid lid field =
+    let loc =
+      { lid.loc with
+        loc_end = field.loc.loc_end;
+        loc_ghost = lid.loc.loc_ghost || field.loc.loc_ghost;
+      }
+    in
+    { txt = Ldot (lid, field); loc }
+  in
+  let full_lid = List.fold_left extend_lid type_lid fields in
+  let projected_type =
+    try
+      let parent_type_data = find_type_data path env in
+      let _, path, projected_type_data =
+        List.fold_left
+          (fun (lid, path, _) field ->
+             let lid = extend_lid lid field in
+             let path = Pextra_ty (path, Pfld_ty field.txt) in
+             let type_data = find_type_data path env in
+             use_type ~use ~loc:lid.loc path type_data;
+             lid, path, type_data)
+          (type_lid, path, parent_type_data)
+          fields
+      in
+      path, projected_type_data.tda_declaration
+    with Not_found ->
+      may_lookup_error errors loc env (Unbound_type full_lid.txt)
+  in
+  projected_type
+
 let lookup_modtype_lazy ~errors ~use ~loc lid env =
   match lid with
   | Lident s -> lookup_ident_modtype ~errors ~use ~loc s env
@@ -3383,6 +3415,9 @@ let lookup_value ?(use=true) ~loc lid env =
 
 let lookup_type ?(use=true) ~loc lid env =
   lookup_type ~errors:true ~use ~loc lid env
+
+let lookup_type_projection ?(use=true) ~loc ~path type_lid fields env =
+  lookup_type_projection ~errors:true ~use ~loc ~path type_lid fields env
 
 let lookup_modtype ?(use=true) ~loc lid env =
   lookup_modtype ~errors:true ~use ~loc lid env
@@ -3757,7 +3792,11 @@ let quoted_longident = Style.as_inline_code Pprintast.Doc.longident
 let quoted_constr = Style.as_inline_code Pprintast.Doc.constr
 
 let spellcheck extract env lid =
-  let choices ~path name = Misc.spellcheck (extract path env) name in
+  let choices ~path name =
+    match extract path env with
+    | names -> Misc.spellcheck names name
+    | exception Not_found -> []
+  in
     match lid with
     | Longident.Lapply _ -> None
     | Longident.Lident s ->
