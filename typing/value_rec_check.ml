@@ -204,6 +204,7 @@ let classify_expression : Typedtree.expression -> sd =
         classify_module_expression env mexp
     | Texp_function _ ->
         Static
+    | Texp_elide_opt_thunk _ -> Static
     | Texp_lazy e ->
       begin match Typeopt.classify_lazy_argument e with
       | Eager Shortcut ->
@@ -650,6 +651,7 @@ let rec expression : Typedtree.expression -> term_judg =
         join [expression e << function_mode;
               list expression applied << Dereference;
               list expression delayed << Guard]
+    | Texp_elide_opt_thunk { f=e; _ } -> expression e << Dereference
     | Texp_tuple exprs ->
       list expression (List.map snd exprs) << Guard
     | Texp_atomic_loc (expr, _, _) ->

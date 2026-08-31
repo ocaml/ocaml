@@ -340,6 +340,7 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
         | (_, Arg exp) -> sub.expr sub exp
         | (_, Omitted ()) -> ())
         list
+  | Texp_elide_opt_thunk { f; _ } ->  sub.expr sub f
   | Texp_match (exp, cases, effs, _) ->
       sub.expr sub exp;
       List.iter (sub.case sub) cases;

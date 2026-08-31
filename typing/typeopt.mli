@@ -17,6 +17,7 @@
 
 val is_function_type :
       Env.t -> Types.type_expr -> (Types.type_expr * Types.type_expr) option
+
 val is_base_type : Env.t -> Types.type_expr -> Path.t -> bool
 
 val maybe_pointer_type : Env.t -> Types.type_expr
@@ -29,6 +30,9 @@ val array_pattern_kind : Typedtree.pattern -> Lambda.array_kind
 val bigarray_type_kind_and_layout :
       Env.t -> Types.type_expr -> Lambda.bigarray_kind * Lambda.bigarray_layout
 val value_kind : Env.t -> Types.type_expr -> Lambda.value_kind
+
+val function_kinds:
+  Env.t -> Types.type_expr -> Lambda.value_kind * Lambda.value_kind
 
 (** [lazy_summary] describes how the expression [lazy e] must be compiled. *)
 type lazy_summary =

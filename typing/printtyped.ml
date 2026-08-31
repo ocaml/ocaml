@@ -381,6 +381,9 @@ and expression i ppf x =
       line i ppf "Texp_apply\n";
       expression i ppf e;
       list i label_x_apply_arg ppf l;
+  | Texp_elide_opt_thunk r ->
+      line i ppf "Texp_elide_opt_thunk (%d)\n" r.n_options;
+      expression i ppf r.f;
   | Texp_match (e, l1, l2, partial) ->
       line i ppf "Texp_match%a\n" fmt_partiality partial;
       expression i ppf e;

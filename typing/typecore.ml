@@ -3551,6 +3551,7 @@ let rec is_nonexpansive exp =
       is_nonexpansive body
   | Texp_apply(e, (_,Omitted ())::el) ->
       is_nonexpansive e && List.for_all is_nonexpansive_arg (List.map snd el)
+  | Texp_elide_opt_thunk f -> is_nonexpansive f.f
   | Texp_match(e, cases, _, _) ->
      (* Not sure this is necessary, if [e] is nonexpansive then we shouldn't
          care if there are exception patterns. But the previous version enforced
@@ -4019,7 +4020,7 @@ let check_partial_application ~statement exp =
             | Texp_setinstvar _ | Texp_override _ | Texp_assert _
             | Texp_lazy _ | Texp_object _ | Texp_pack _ | Texp_unreachable
             | Texp_extension_constructor _ | Texp_ifthenelse (_, _, None)
-            | Texp_function _ ->
+            | Texp_function _ | Texp_elide_opt_thunk _ ->
                 check_statement ()
             | Texp_match (_, cases, eff_cases, _) ->
                 List.iter (fun {c_rhs; _} -> check c_rhs) cases;
@@ -4033,7 +4034,8 @@ let check_partial_application ~statement exp =
             | Texp_let (_, _, e) | Texp_sequence (_, e)
             | Texp_struct_item (_, e) ->
                 check e
-            | Texp_apply _ | Texp_send _ | Texp_new _ | Texp_letop _ ->
+            | Texp_apply _ | Texp_send _ | Texp_new _
+            | Texp_letop _ ->
                 Location.prerr_warning exp_loc
                   Warnings.Ignored_partial_application
           end
@@ -6649,7 +6651,7 @@ and type_label_exp create env loc ty_expected
 
 and type_argument_ ?explanation ?recarg env sarg ty_expected' ty_expected =
   (* ty_expected' may be generic *)
-  let no_labels ty =
+  let no_labels env ty =
     let ls, ~is_ret_tvar = arrow_labels env ty in
     not is_ret_tvar && List.for_all ((=) Nolabel) ls
   in
@@ -6659,7 +6661,12 @@ and type_argument_ ?explanation ?recarg env sarg ty_expected' ty_expected =
       let te = expand_head env ty_expected' in
       match get_desc te with
         Tarrow(Nolabel,_,ty_res0,_) ->
-          Some (no_labels ty_res0, get_level te)
+          Some (no_labels env ty_res0, get_level te)
+      | Tfunctor(Nolabel,id,arg,ty_res0)->
+          let env, ty_res0 =
+            Ctype.open_tfunctor env ~loc:Location.none id arg ty_res0
+          in
+          Some (no_labels env ty_res0, get_level te)
       | _ -> None
     in
     (* Need to be careful not to expand local constraints here *)
@@ -6676,19 +6683,22 @@ and type_argument_ ?explanation ?recarg env sarg ty_expected' ty_expected =
         with_local_level_generalize_structure_if_principal
           (fun () -> type_exp env sarg)
       in
-      let rec make_args args ty_fun =
+      let rec make_args (nargs,lbls) ty_fun =
         match get_desc (expand_head env ty_fun) with
-        | Tarrow (l,ty_arg,ty_fun,_) when is_optional l ->
-            let ty =
-              option_none env (instance (tpoly_get_mono ty_arg)) sarg.pexp_loc
+        | Tarrow (l,_,ty_fun,_) when is_optional l ->
+            make_args (1 + nargs, l :: lbls) ty_fun
+        | Tarrow (l,_, ty_res',_) when l = Nolabel || !Clflags.classic ->
+            nargs, List.rev lbls, ty_fun, no_labels env ty_res'
+        | Tfunctor (l,id,arg, ty_res') when l = Nolabel || !Clflags.classic ->
+            let env, ty =
+              Ctype.open_tfunctor env ~loc:Location.none id arg ty_res'
             in
-            make_args ((l, Arg ty) :: args) ty_fun
-        | Tarrow (l,_,ty_res',_) when l = Nolabel || !Clflags.classic ->
-            List.rev args, ty_fun, no_labels ty_res'
-        | Tvar _ ->  List.rev args, ty_fun, false
-        |  _ -> [], texp.exp_type, false
+            nargs, List.rev lbls, ty_fun, no_labels env ty
+        | Tvar _ ->  nargs, List.rev lbls, ty_fun, false
+        |  _ -> 0, [],
+                texp.exp_type, false
       in
-      let args, ty_fun', simple_res = make_args [] texp.exp_type
+      let n_options, lbls, ty_fun', simple_res = make_args (0,[]) texp.exp_type
       and texp = {texp with exp_type = instance texp.exp_type} in
       if not (simple_res || safe_expect) then begin
         unify_exp ~sexp:sarg env texp ty_expected;
@@ -6697,67 +6707,17 @@ and type_argument_ ?explanation ?recarg env sarg ty_expected' ty_expected =
       let warn = !Clflags.principal &&
         (lv <> generic_level || get_level ty_fun' <> generic_level)
       and ty_fun = instance ty_fun' in
-      let ty_arg, ty_res =
-        match get_desc (expand_head env ty_expected) with
-          Tarrow(Nolabel,ty_arg,ty_res,_) -> ty_arg, ty_res
-        | _ -> assert false
-      in
       unify_exp ~sexp:sarg env {texp with exp_type = ty_fun} ty_expected;
-      if args = [] then texp else
-      (* eta-expand to avoid side effects *)
-      let var_pair name ty =
-        let id = Ident.create_local name in
-        let desc =
-          { val_type = ty; val_kind = Val_reg;
-            val_attributes = [];
-            val_loc = Location.none;
-            val_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
-          }
-        in
-        let exp_env = Env.add_value id desc env in
-        {pat_desc =
-          Tpat_var (id, mknoloc name, desc.val_uid);
-         pat_type = ty;
-         pat_extra=[];
-         pat_attributes = [];
-         pat_loc = Location.none; pat_env = env},
-        {exp_type = ty; exp_loc = Location.none; exp_env = exp_env;
-         exp_extra = []; exp_attributes = [];
-         exp_desc =
-         Texp_ident(Path.Pident id, mknoloc (Longident.Lident name), desc)}
-      in
-      let eta_pat, eta_var = var_pair "eta" ty_arg in
-      let func texp =
-        let e =
-          {texp with exp_type = ty_res; exp_desc =
-           Texp_apply
-             (texp,
-              args @ [Nolabel, Arg eta_var])}
-        in
-        let cases = [ case eta_pat e ] in
-        let cases_loc = { texp.exp_loc with loc_ghost = true } in
-        let param = name_cases "param" cases in
-        { texp with exp_type = ty_fun; exp_desc =
-          Texp_function ([],
-            Tfunction_cases
-              { cases; partial = Total; param; loc = cases_loc;
-                exp_extra = None; attributes = [];
-              })
-        }
-      in
+      if n_options = 0 then texp else begin
       Location.prerr_warning texp.exp_loc
         (Warnings.Eliminated_optional_arguments
-           (List.map (fun (l, _) -> Asttypes.string_of_label l) args));
+           (List.map Asttypes.string_of_label lbls));
       if warn then Location.prerr_warning texp.exp_loc
           (Warnings.Non_principal_labels "eliminated optional argument");
       (* let-expand to have side effects *)
-      let let_pat, let_var = var_pair "arg" texp.exp_type in
-      re { texp with exp_type = ty_fun; exp_desc =
-           Texp_let (Nonrecursive,
-                     [{vb_pat=let_pat; vb_expr=texp; vb_attributes=[];
-                       vb_loc=Location.none; vb_rec_kind = Dynamic;
-                      }],
-                     func let_var) }
+      let exp_desc = Texp_elide_opt_thunk { f = texp; n_options } in
+      re { texp with exp_type = ty_fun; exp_desc }
+      end
       end
   | None ->
       let texp = type_expect ?recarg env sarg

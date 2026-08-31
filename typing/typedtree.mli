@@ -298,6 +298,9 @@ and expression_desc =
   | Texp_unreachable
   | Texp_extension_constructor of Longident.t loc * Path.t
   | Texp_struct_item of structure_item * expression
+  | Texp_elide_opt_thunk of { f :expression; n_options:int }
+    (** [Texp_elide_opt_eta_expand {f=exp;n_options}] can be extended to
+         [let f = exp in fun x -> f ?_:None ?_:None .... x ]*)
 
 and meth =
     Tmeth_name of string

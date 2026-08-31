@@ -214,7 +214,8 @@ let iter_on_occurrences
       | Texp_extension_constructor (lid, path) ->
           f ~namespace:Extension_constructor exp_env path lid
       | Texp_constant _ | Texp_let _ | Texp_function _ | Texp_apply _
-      | Texp_match _ | Texp_try _ | Texp_tuple _ | Texp_variant _ | Texp_array _
+      | Texp_elide_opt_thunk _ | Texp_match _ | Texp_try _
+      | Texp_tuple _ | Texp_variant _ | Texp_array _
       | Texp_ifthenelse _ | Texp_sequence _ | Texp_while _ | Texp_for _
       | Texp_send _
       | Texp_assert _ | Texp_lazy _
