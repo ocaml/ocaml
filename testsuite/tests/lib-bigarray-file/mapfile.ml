@@ -106,9 +106,22 @@ let tests () =
           Printf.eprintf "Unexpected error %s\n%!" (Unix.error_message err);
           false
       end;
-    Unix.close fd;
-    (* Invalid handle *)
+    (* Overflow in byte size *)
     test 2 true
+      begin try
+        (* 2^64 bytes *)
+        let d = 0x1_0000 in
+        ignore (Unix.map_file fd char c_layout false [|d;d;d;d|]);
+        false
+      with
+      | Failure _ -> true
+      | Unix.Unix_error(err, _, _) ->
+          Printf.eprintf "Unexpected error %s\n%!" (Unix.error_message err);
+          false
+      end;
+    (* Invalid handle *)
+    Unix.close fd;
+    test 3 true
       begin try
         ignore (Unix.map_file fd float64 c_layout true [|-1; 100|]); false
       with
@@ -116,8 +129,7 @@ let tests () =
       | Unix.Unix_error(err, _, _) ->
           Printf.eprintf "Unexpected error %s\n%!" (Unix.error_message err);
           false
-      end
-
+      end;
   end;
   (* Force garbage collection of the mapped bigarrays above, otherwise
      Win32 doesn't let us erase the file.  Notice the begin...end above
