@@ -206,6 +206,7 @@ static void intern_cleanup(void)
   if (intern_obj_table != NULL) {
     caml_stat_free(intern_obj_table);
     intern_obj_table = NULL;
+    obj_counter = 0;
   }
   if (intern_extra_block != NULL) {
     /* free newly allocated heap chunk */
@@ -683,6 +684,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
 {
   mlsize_t wosize;
 
+  obj_counter = 0;
   if (whsize == 0) {
     CAMLassert (intern_extra_block == NULL && intern_block == 0
          && intern_obj_table == NULL);
@@ -730,7 +732,6 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
     intern_dest_end = intern_dest + whsize;
     CAMLassert (intern_extra_block == NULL);
   }
-  obj_counter = 0;
   if (num_objects > 0) {
     intern_obj_table =
       (value *) caml_stat_calloc_noexc(num_objects, sizeof(value));
