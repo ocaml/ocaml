@@ -478,23 +478,22 @@ static value ephe_blit_keys (value es, mlsize_t offset_s,
                              value ed, mlsize_t offset_d, mlsize_t length)
 {
   CAMLparam2(es,ed);
+  /* We only need to clean the destination when it has data,
+     as the keys themselves are going to be replaced. */
+  bool ed_has_data = caml_ephe_check_data(ed);
 
   if (length == 0) CAMLreturn(Val_unit);
 
-  /* We clean the source and destination ephemerons before performing the blit.
-   * This guarantees that none of the keys and the data fields being accessed
-   * during a blit operation is unmarked during [Phase_sweep]. */
-  caml_ephe_clean(es);
-  caml_ephe_clean(ed);
-
   if (offset_d < offset_s) {
     for (long i = 0; i < length; i++) {
-      caml_ephe_await_key(ed, offset_d + i);
+      do_check_key_clean(es, offset_s + i);
+      if (ed_has_data) do_check_key_clean(ed, offset_d + i);
       ephe_modify(ed, offset_d + i, Ephe_key(es, offset_s + i));
     }
   } else {
     for (long i = length - 1; i >= 0; i--) {
-      caml_ephe_await_key(ed, offset_d + i);
+      do_check_key_clean(es, offset_s + i);
+      if (ed_has_data) do_check_key_clean(ed, offset_d + i);
       ephe_modify(ed, offset_d + i, Ephe_key(es, offset_s + i));
     }
   }
