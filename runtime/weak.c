@@ -97,7 +97,7 @@ CAMLprim value caml_weak_create (value len)
 
    The dead keys must be removed from the ephemerons and data removed
    when one of the keys is dead. Here we call it cleaning the ephemerons.
-   A specific phase of the GC is dedicated to this, Phase_clean. This
+   A specific phase of the GC is dedicated to this, [Phase_sweep_ephe]. This
    phase is just after the mark phase, so the white values are dead
    values. It iterates the function caml_ephe_clean through all the
    ephemerons.
@@ -116,9 +116,9 @@ CAMLprim value caml_weak_create (value len)
      trigger the cleaning of the ephemerons when the accessed key is
      dead. This test is fast.
 
-     In the case of value getter and value setter, there is no fast
+     In the case of data getter and data setter, there is no fast
      test because the removing of the data depend of the deadliness of the keys.
-     We must always try to clean the ephemerons.
+     We must always try to clean the whole ephemerons.
 
  */
 
