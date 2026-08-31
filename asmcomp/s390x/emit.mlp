@@ -425,6 +425,26 @@ let emit_instr env i =
           | Double -> "stdy" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
 
+    | Lop(Iatomic_exchange) ->
+        (* csg loads the current value into its first operand when it fails,
+           so the retry needs no reload. res.(0) ends up holding the old
+           value. csg serialises either side of the access (PoP 7-159), which
+           is why there is no fence here, same as laag below.
+           brc 4 is condition code 1, the unequal case. *)
+        let lbl = new_label() in
+        `	lg	{emit_reg i.res.(0)}, 0({emit_reg i.arg.(0)})\n`;
+        `{emit_label lbl}:\n`;
+        `	csg	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, 0({emit_reg i.arg.(0)})\n`;
+        `	brc	4, {emit_label lbl}\n`
+    | Lop(Iatomic_compare_exchange) ->
+        (* csg already reports what it found. On a mismatch it loads the
+           storage value into its first operand, and on a match that operand
+           still holds the expected value, which is the same word. So res.(0)
+           is the answer on both paths and there is nothing left to do.
+           The expected value is copied in first because csg clobbers it, and
+           interference keeps res.(0) clear of the arguments. *)
+        `	lgr	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}\n`;
+        `	csg	{emit_reg i.res.(0)}, {emit_reg i.arg.(2)}, 0({emit_reg i.arg.(0)})\n`
     | Lop(Iatomic_fetch_add) ->
         `	laag	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, 0({emit_reg i.arg.(0)})\n`
 

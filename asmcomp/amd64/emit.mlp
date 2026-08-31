@@ -758,6 +758,44 @@ let emit_instr env fallthrough i =
       def_label lbl_multi;
       I.lock_xadd (res i 0) (mem64 QWORD 0 (arg64 i 0));
       def_label lbl_done
+  | Lop (Iatomic_exchange) ->
+      (* res.(0) arrives holding the new value and leaves holding the old one.
+         xchg against memory carries an implicit lock, so the single-domain
+         path spells it out as a load and a store through res.(1). *)
+      let lbl_multi = new_label() in
+      let lbl_done = new_label() in
+      I.cmp (int 1) (mem64 QWORD 0 (arg64 i 2));
+      I.jne (label lbl_multi);
+      I.mov (mem64 QWORD 0 (arg64 i 0)) (res i 1);
+      I.mov (res i 0) (mem64 QWORD 0 (arg64 i 0));
+      I.mov (res i 1) (res i 0);
+      I.jmp (label lbl_done);
+      def_label lbl_multi;
+      I.xchg (res i 0) (mem64 QWORD 0 (arg64 i 0));
+      def_label lbl_done
+  | Lop (Iatomic_compare_exchange) ->
+      (* rax holds the expected value on entry and cmpxchg overwrites it with
+         whatever it found, which is exactly the result, so the locked path
+         needs nothing after it. A lone domain does the compare and the store
+         by hand through res.(1): an unlocked cmpxchg would still serialise on
+         the same port, the same reason fetch-and-add does not use an unlocked
+         xadd here. That path has to copy the value it loaded into rax itself,
+         since rax is still holding the expected value. *)
+      let lbl_multi = new_label() in
+      let lbl_stored = new_label() in
+      let lbl_done = new_label() in
+      I.cmp (int 1) (mem64 QWORD 0 (arg64 i 3));
+      I.jne (label lbl_multi);
+      I.mov (mem64 QWORD 0 (arg64 i 0)) (res i 1);
+      I.cmp (res i 1) (arg i 1);
+      I.jne (label lbl_stored);
+      I.mov (arg i 2) (mem64 QWORD 0 (arg64 i 0));
+      def_label lbl_stored;
+      I.mov (res i 1) (res i 0);
+      I.jmp (label lbl_done);
+      def_label lbl_multi;
+      I.lock_cmpxchg (arg i 2) (mem64 QWORD 0 (arg64 i 0));
+      def_label lbl_done
   | Lop (Ireturn_addr) ->
       let offset = frame_size env - 8 in
       I.mov (mem64 QWORD offset RSP) (res i 0)

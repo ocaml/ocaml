@@ -358,6 +358,9 @@ let machtype_of_value_kind (value_kind : Lambda.value_kind) =
   | Pintval ->
       Cmm.typ_int
 
+(* TSan keeps the C call, where the instrumentation lives. *)
+let native_atomics = not Config.tsan
+
 (* Translate an expression *)
 
 let rec transl env e =
@@ -481,6 +484,25 @@ let rec transl env e =
           make_alloc dbg tag (List.map (transl env) args)
       | (Pccall prim, args) ->
           transl_ccall env prim args dbg
+      | (Patomic_cas, [ptr; ofs; oldval; newval]) when native_atomics ->
+          (* translprim only builds this when the value is immediate, so there
+             is no write barrier to run and the instruction is the whole job.
+             The instruction reports the value it found, and compare-and-set is
+             that value tested against the expected one. Immediates compare as
+             plain words, so this is the same equality the boolean would have
+             been built from, only spelled once. *)
+          bind "expected" (transl env oldval) (fun expected ->
+            tag_int
+              (Cop(Ccmpi Ceq,
+                   [Cop(Catomic_compare_exchange,
+                        [field_address_computed
+                           (transl env ptr) (transl env ofs) dbg;
+                         expected; transl env newval], dbg);
+                    expected], dbg))
+              dbg)
+      | (Patomic_cas, args) ->
+          Cop(Cextcall("caml_atomic_cas_field", typ_val, [], false),
+              List.map (transl env) args, dbg)
       | (Pduparray (kind, _), [Uprim (Pmakearray (kind', _), args, _dbg)]) ->
           (* We arrive here in two cases:
              1. When using Closure, all the time.
@@ -568,7 +590,7 @@ let rec transl env e =
       | ((Pfield_computed|Psequand
          | Prunstack | Pperform | Presume | Preperform
          | Pdls_get
-         | Patomic_load | Patomic_fetch_add
+         | Patomic_load | Patomic_fetch_add | Patomic_exchange
          | Psequor | Pnot | Pnegint | Paddint | Psubint
          | Pmulint | Pandint | Porint | Pxorint | Plslint
          | Plsrint | Pasrint | Pintoffloat | Pfloatofint
@@ -918,7 +940,7 @@ and transl_prim_1 env p arg dbg =
     | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _)
     | Pbigarraydim _ | Pstring_load _ | Pbytes_load _ | Pbytes_set _
     | Pbigstring_load _ | Pbigstring_set _
-    | Patomic_load | Patomic_fetch_add
+    | Patomic_load | Patomic_fetch_add | Patomic_exchange | Patomic_cas
     )
     ->
       fatal_errorf "Cmmgen.transl_prim_1: %a"
@@ -1111,7 +1133,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
   | Parraysets _ | Pbintofint _ | Pintofbint _ | Pcvtbint (_, _)
   | Pnegbint _ | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _)
   | Pbigarraydim _ | Pbytes_set _ | Pbigstring_set _ | Pbbswap _ | Ppoll
-  | Patomic_fetch_add | Pmakelazyblock _
+  | Patomic_fetch_add | Patomic_exchange | Patomic_cas | Pmakelazyblock _
     ->
       fatal_errorf "Cmmgen.transl_prim_2: %a"
         Printclambda_primitives.primitive p
@@ -1162,6 +1184,17 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
            transl env arg1; transl env arg2; transl env arg3],
            dbg)
 
+  | Patomic_exchange when native_atomics ->
+      (* Only built for immediate values, so the write barrier is a no-op and
+         the swap instruction is the whole job. *)
+      Cop(Catomic_exchange,
+          [field_address_computed (transl env arg1) (transl env arg2) dbg;
+           transl env arg3], dbg)
+
+  | Patomic_exchange ->
+      Cop(Cextcall("caml_atomic_exchange_field", typ_val, [], false),
+          [transl env arg1; transl env arg2; transl env arg3], dbg)
+
   | Patomic_fetch_add ->
       let ptr = transl env arg1 in
       let ofs = transl env arg2 in
@@ -1197,7 +1230,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
   | Pxorbint _ | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp (_, _)
   | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _) | Pbigarraydim _
   | Pstring_load _ | Pbytes_load _ | Pbigstring_load _ | Pbbswap _ | Ppoll
-  | Pmakelazyblock _
+  | Patomic_cas | Pmakelazyblock _
     ->
       fatal_errorf "Cmmgen.transl_prim_3: %a"
         Printclambda_primitives.primitive p

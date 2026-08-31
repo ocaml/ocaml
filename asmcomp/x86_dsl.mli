@@ -114,6 +114,8 @@ module I : sig
   val call: arg -> unit
   val cdq: unit -> unit
   val cmp: arg -> arg -> unit
+  val cmpxchg: arg -> arg -> unit
+  val lock_cmpxchg: arg -> arg -> unit
   val cmpsd : float_condition -> arg -> arg -> unit
   val comisd: arg -> arg -> unit
   val cqo: unit -> unit

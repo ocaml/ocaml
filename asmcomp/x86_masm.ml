@@ -124,6 +124,8 @@ let print_instr b = function
   | CDQ -> i0 b "cdq"
   | CMOV (c, arg1, arg2) -> i2 b ("cmov" ^ string_of_condition c) arg1 arg2
   | CMP (arg1, arg2) -> i2 b "cmp" arg1 arg2
+  | CMPXCHG (arg1, arg2) -> i2 b "cmpxchg" arg1 arg2
+  | LOCK_CMPXCHG (arg1, arg2) -> i2 b "lock cmpxchg" arg1 arg2
   | CMPSD (c, arg1, arg2) ->
       i2 b ("cmp" ^ string_of_float_condition c ^ "sd") arg1 arg2
   | COMISD (arg1, arg2) -> i2 b "comisd" arg1 arg2
