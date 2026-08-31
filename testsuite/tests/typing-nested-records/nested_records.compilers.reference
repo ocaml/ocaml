@@ -26,7 +26,7 @@ val cfg : config =
 val server_host : string = "localhost"
 val db_host : string = "db.local"
 val get_hosts : config -> string * string = <fun>
-val get_server : config -> { host : string; port : int; } = <fun>
+val get_server : config -> config.server = <fun>
 Line 1, characters 19-23:
 1 | let standalone = { host = "test"; port = 99 };;
                        ^^^^

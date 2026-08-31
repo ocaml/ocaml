@@ -56,7 +56,13 @@ exception Error of Location.t * error
 let get_variance ty visited =
   try TypeMap.find ty !visited with Not_found -> Variance.null
 
-let compute_variance env visited vari ty =
+let make p n i =
+  let open Variance in
+  set_if p May_pos (set_if n May_neg (set_if i Inj null))
+
+let injective = Variance.(set Inj null)
+
+let rec compute_variance env expanding approximations visited vari ty =
   let rec compute_variance_rec env vari ty =
     (* Format.eprintf "%a: %x@." Printtyp.type_expr ty (Obj.magic vari); *)
     let vari' = get_variance ty visited in
@@ -82,9 +88,16 @@ let compute_variance env visited vari ty =
         if tl = [] then () else begin
           try
             let decl = Env.find_type path env in
+            let variance =
+              match path, decl.type_kind with
+              | Path.Pextra_ty (_, Path.Pfld_ty _), Type_record (fields, _) ->
+                  compute_inline_record_variance
+                    env expanding approximations path decl fields
+              | _ -> decl.type_variance
+            in
             List.iter2
               (fun ty v -> compute_variance_rec env (compose vari v) ty)
-              tl decl.type_variance
+              tl variance
           with Not_found ->
             List.iter (compute_variance_rec env unknown) tl
         end
@@ -117,13 +130,11 @@ let compute_variance env visited vari ty =
   in
   compute_variance_rec env vari ty
 
-let make p n i =
-  let open Variance in
-  set_if p May_pos (set_if n May_neg (set_if i Inj null))
-
-let injective = Variance.(set Inj null)
-
-let compute_variance_type env ~check (required, loc) decl tyl =
+and compute_variance_type
+    ?(expanding = ref Path.Set.empty)
+    ?(approximations = ref Path.Map.empty)
+    ?(use_requirements = true)
+    env ~check (required, loc) decl tyl =
   (* Requirements *)
   let check_injectivity = Btype.type_kind_is_abstract decl in
   let required =
@@ -143,7 +154,9 @@ let compute_variance_type env ~check (required, loc) decl tyl =
   let open Variance in
   List.iter
     (fun (cn,ty) ->
-      compute_variance env tvl (if cn then full else covariant) ty)
+      compute_variance
+        env expanding approximations tvl
+        (if cn then full else covariant) ty)
     tyl;
   (* Infer injectivity of constrained parameters *)
   if check_injectivity then
@@ -169,7 +182,8 @@ let compute_variance_type env ~check (required, loc) decl tyl =
             | _ -> Btype.iter_type_expr check ty
           end
         in
-        try check ty; compute_variance env tvl injective ty
+        try check ty;
+            compute_variance env expanding approximations tvl injective ty
         with Exit -> ())
       params;
   begin match check with
@@ -200,7 +214,7 @@ let compute_variance_type env ~check (required, loc) decl tyl =
         if Btype.is_Tvar ty then () else
         let v =
           if p then if n then full else covariant else conjugate covariant in
-        compute_variance env tvl2 v ty)
+         compute_variance env expanding approximations tvl2 v ty)
       params required;
     let visited = ref TypeSet.empty in
     let rec check ty =
@@ -244,18 +258,80 @@ let compute_variance_type env ~check (required, loc) decl tyl =
   List.map2
     (fun ty (p, n, _i) ->
       let v = get_variance ty tvl in
+      let concr = not (Btype.type_kind_is_abstract decl) in
+      if not use_requirements then union v (make false false concr) else
       let tr = decl.type_private in
       (* Use required variance where relevant *)
-      let concr = not (Btype.type_kind_is_abstract decl) in
-      let (p, n) =
-        if tr = Private || not (Btype.is_Tvar ty) then (p, n) (* set *)
-        else (false, false) (* only check *)
-      and i = concr in
-      let v = union v (make p n i) in
+      let p, n =
+        if tr = Private || not (Btype.is_Tvar ty) then p, n (* set *)
+        else false, false (* only check *)
+      in
+      let v = union v (make p n concr) in
       if not concr || Btype.is_Tvar ty then v else
-      union v
-        (if p then if n then full else covariant else conjugate covariant))
+        union v
+          (if p then if n then full else covariant
+           else conjugate covariant))
     params required
+
+and compute_inline_record_variance
+    env expanding approximations path decl fields =
+  let open Variance in
+  let rec owner_path = function
+    | Path.Pextra_ty (path, Path.Pfld_ty _) -> owner_path path
+    | path -> path
+  in
+  let initial =
+    match Path.Map.find_opt path !approximations with
+    | Some variance -> variance
+    | None ->
+        let owner = Env.find_type (owner_path path) env in
+        let rec owner_variance param params variances =
+          match params, variances with
+          | owner_param :: params, variance :: variances ->
+              if eq_type param owner_param then variance
+              else owner_variance param params variances
+          | [], [] -> assert false
+          | [], _ :: _ | _ :: _, [] -> assert false
+        in
+        (* Constrained parameters keep their owner's variance. *)
+        List.map
+          (fun param ->
+             if Btype.is_Tvar param then null
+             else owner_variance param owner.type_params owner.type_variance)
+          decl.type_params
+  in
+  if Path.Set.mem path !expanding then initial else
+  let required = List.map (fun _ -> false, false, false) decl.type_params in
+  let variance_decl = { decl with type_private = Public } in
+  let field_types =
+    List.map
+      (fun { Types.ld_mutable; ld_type } ->
+         ld_mutable = Mutable, ld_type)
+      fields
+  in
+  (* Variance grows monotonically over a finite lattice. *)
+  let rec fixpoint variance =
+    approximations := Path.Map.add path variance !approximations;
+    let old_expanding = !expanding in
+    expanding := Path.Set.add path old_expanding;
+    let computed =
+      Misc.try_finally
+        (fun () ->
+           compute_variance_type
+             ~expanding ~approximations ~use_requirements:false
+             env ~check:None (required, decl.type_loc) variance_decl
+             field_types)
+        ~always:(fun () -> expanding := old_expanding)
+    in
+    let variance = List.map2 union variance computed in
+    match Path.Map.find_opt path !approximations with
+    | Some previous when List.for_all2 eq previous variance ->
+        let variance = List.map strengthen variance in
+        approximations := Path.Map.add path variance !approximations;
+        variance
+    | Some _ | None -> fixpoint variance
+  in
+  fixpoint initial
 
 let add_false = List.map (fun ty -> false, ty)
 
@@ -395,6 +471,36 @@ let check_variance_extension env decl ext rloc =
 let compute_decl env ~check decl req =
   compute_variance_decl env ~check decl (req, decl.type_loc)
 
+let rec update_inline_record_decl env path decl =
+  let decl = update_nested_record_variance env path decl in
+  let type_variance =
+    match decl.type_kind with
+    | Type_record (fields, _) ->
+        compute_inline_record_variance
+          env (ref Path.Set.empty) (ref Path.Map.empty) path decl fields
+    | Type_abstract _ | Type_variant _ | Type_open | Type_external _ ->
+        assert false
+  in
+  { decl with type_variance }
+
+and update_nested_record_variance env path decl =
+  match decl.type_kind with
+  | Type_record (labels, rep) ->
+      let labels =
+        List.map
+          (fun label ->
+             let ld_inlined =
+               let path =
+                 Path.Pextra_ty (path, Path.Pfld_ty (Ident.name label.ld_id))
+               in
+               Option.map (update_inline_record_decl env path) label.ld_inlined
+             in
+             { label with ld_inlined })
+          labels
+      in
+      { decl with type_kind = Type_record (labels, rep) }
+  | Type_abstract _ | Type_variant _ | Type_open | Type_external _ -> decl
+
 let check_decl env id decl req =
   ignore (compute_variance_decl env ~check:(Some id) decl (req, decl.type_loc))
 
@@ -441,7 +547,18 @@ let variance_of_sdecl sdecl =
 
 let update_decls env sdecls decls =
   let required = List.map variance_of_sdecl sdecls in
-  Typedecl_properties.compute_property property env decls required
+  let decls =
+    Typedecl_properties.compute_property property env decls required
+  in
+  let computed_env =
+    List.fold_right
+      (fun (id, decl) env -> Env.add_type ~check:false id decl env)
+      decls env
+  in
+  List.map
+    (fun (id, decl) ->
+       id, update_nested_record_variance computed_env (Path.Pident id) decl)
+    decls
 
 let update_class_decls env cldecls =
   let decls, required =

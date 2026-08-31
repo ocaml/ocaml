@@ -414,8 +414,8 @@ let rec tree_of_path ?(disambiguation=true) namespace p =
       let t2 = tree_of_path (Some Module) p2 in
       Oide_apply (t1, t2)
   | Pextra_ty (p, extra) -> begin
-      (* inline record types are syntactically prevented from escaping their
-         binding scope, and are never shown to users. *)
+      (* Constructor inline record types cannot escape their binding scope.
+         Field inline record types use their dotted source name. *)
       match extra with
         Pcstr_ty s | Pfld_ty s ->
           Oide_dot (tree_of_path (Some Type) p, s)
@@ -521,7 +521,7 @@ let penalty s =
 let rec path_size = function
     Pident id ->
       penalty (Ident.name id), -Ident.scope id
-  | Pdot (p, _) | Pextra_ty (p, Pcstr_ty _) ->
+  | Pdot (p, _) | Pextra_ty (p, (Pcstr_ty _ | Pfld_ty _)) ->
       let (l, b) = path_size p in (1+l, b)
   | Papply (p1, p2) ->
       let (l, b) = path_size p1 in
@@ -1174,27 +1174,6 @@ let rec tree_of_typexp mode ty =
                       tree_of_package mode pack, ty)
     | Ttuple tyl ->
         Otyp_tuple (tree_of_labeled_typlist mode tyl)
-    | Tconstr(p, _tyl, _abbrev) when Path.is_field_typath p ->
-        begin match
-          try Some (Env.find_type p !printing_env) with Not_found -> None
-        with
-        | Some decl -> begin
-            match decl.type_kind with
-            | Type_record (inner_lbls, _) ->
-                let mk_label l =
-                  { olab_name = Ident.name l.ld_id;
-                    olab_mut = l.ld_mutable;
-                    olab_atomic = l.ld_atomic;
-                    olab_type = tree_of_typexp Type l.ld_type;
-                  }
-                in
-                Otyp_record (List.map mk_label inner_lbls)
-            | _ ->
-                Otyp_constr (tree_of_path (Some Type) p, [])
-          end
-        | None ->
-            Otyp_constr (tree_of_path (Some Type) p, [])
-        end
     | Tconstr(p, tyl, _abbrev) ->
         let p', s = best_type_path p in
         let tyl' = apply_subst s tyl in
