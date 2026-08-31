@@ -21,6 +21,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include "caml/alloc.h"
 #include "caml/callback.h"
 #include "caml/codefrag.h"
@@ -42,10 +43,12 @@
 struct intern_item {
   volatile value * dest;
   intnat arg;
-  enum {
+  enum intern_operation {
     OReadItems, /* read arg items and store them in dest[0], dest[1], ... */
+    OReadItemsOrCodePointers, /* likewise, but code pointers are allowed */
     OFreshOID,  /* generate a fresh OID and store it in *dest */
-    OShift      /* offset *dest by arg */
+    OShift,     /* offset *dest by arg */
+    OCheckClosure /* check that dest is a well-formed closure */
   } op;
 };
 
@@ -263,6 +266,50 @@ Caml_inline void readblock(struct caml_intern_state* s,
   intern_check_read(s, len);
   memcpy(dest, s->intern_src, len);
   s->intern_src += len;
+}
+
+/* Well-formedness checks on a closure */
+
+static bool well_formed_closure(value v)
+{
+  asize_t sz, envofs, i;
+  value cinfo;
+#define CHECK(b) if (! (b)) return false
+  sz = Wosize_val(v);
+  CHECK(sz >= 2);
+  // Check the first closure
+  cinfo = Closinfo_val(v);
+  CHECK(Is_long(cinfo));
+  envofs = Start_env_closinfo(cinfo);
+  CHECK(envofs >= 2 && envofs <= sz);
+  // Check the infix closures that can follow
+  i = 0;
+  while (1) {
+    // Skip to the next closure
+    int arity = Arity_closinfo(cinfo);
+    if (arity == 0 || arity == 1)
+      i += 3; // bytecode closure or native closure with arity 1
+    else
+      i += 4; // native closure with arity != 1: one extra entry points
+    if (i >= envofs) break;
+    if (i + 1 >= sz) return false;
+    // Check infix header and closure info
+    header_t h = (header_t) Field(v, i - 1);
+    CHECK(Tag_hd(h) == Infix_tag && Wosize_hd(h) == i);
+    cinfo = Field(v, i + 1);
+    CHECK(Is_long(cinfo));
+    CHECK(Start_env_closinfo(cinfo) + i == envofs);
+  }
+  i -= 1;
+  CHECK(i == envofs);
+  // Check that the environment part of the closure contains no code pointers
+  for (; i < sz; i++) {
+    value vi = Field(v, i);
+    if (Is_block(vi))
+      CHECK(caml_find_code_fragment_by_pc((char *) vi) == NULL);
+  }
+  return true;
+#undef CHECK
 }
 
 static void intern_init(struct caml_intern_state* s, const void * src,
@@ -529,6 +576,7 @@ static void intern_rec(struct caml_intern_state* s,
   struct custom_operations * ops;
   char * codeptr;
   struct intern_item * sp;
+  enum intern_operation iop;
   caml_domain_state * d = Caml_state;
 
   sp = s->intern_stack;
@@ -540,8 +588,9 @@ static void intern_rec(struct caml_intern_state* s,
   while(sp != s->intern_stack) {
 
   /* Interpret next item on the stack */
+  iop = sp->op;
   dest = sp->dest;
-  switch (sp->op) {
+  switch (iop) {
   case OFreshOID:
     /* Refresh the object ID */
     /* but do not do it for predefined exception slots */
@@ -566,7 +615,16 @@ static void intern_rec(struct caml_intern_state* s,
     /* Pop item and iterate */
     sp--;
     break;
+  case OCheckClosure:
+    /* Check that the closure is well-formed */
+    if (! well_formed_closure((value) dest)) {
+      intern_cleanup_failwith2(s, fun_name, "ill-formed function closure");
+    }
+    /* Pop item and iterate */
+    sp--;
+    break;
   case OReadItems:
+  case OReadItemsOrCodePointers:
     /* Pop item */
     sp->dest++;
     if (--(sp->arg) == 0) sp--;
@@ -583,8 +641,9 @@ static void intern_rec(struct caml_intern_state* s,
       } else {
         v = intern_alloc_obj (s, d, size, tag);
         intern_record_obj(s, v);
-        /* For objects, we need to freshen the oid */
-        if (tag == Object_tag) {
+        switch (tag) {
+        case Object_tag:
+          /* For objects, we need to freshen the oid */
           if (CAMLunlikely(size < 2))
             intern_cleanup_failwith2(s, fun_name, "bad object block");
           /* Request to read rest of the elements of the block */
@@ -596,9 +655,24 @@ static void intern_rec(struct caml_intern_state* s,
           sp->arg = 1;
           /* Finally read first two block elements: method table and old OID */
           ReadItems(s, &Field(v, 0), 2);
-        } else
-          /* If it's not an object then read the contents of the block */
+          break;
+        case Closure_tag:
+          /* For closures, we need to validate the closure after reading it */
+          PushItem(s);
+          sp->op = OCheckClosure;
+          sp->dest = (value*) v;
+          sp->arg = 0;          /* irrelevant */
+          /* Code pointers are allowed in a closure block */
+          PushItem(s);
+          sp->op = OReadItemsOrCodePointers;
+          sp->dest = &Field(v, 0);
+          sp->arg = size;
+          break;
+        default:
+          /* Read the contents of the block */
           ReadItems(s, &Field(v, 0), size);
+          break;
+        }
       }
     } else {
       /* Small integer */
@@ -715,6 +789,8 @@ static void intern_rec(struct caml_intern_state* s,
         goto read_double_array;
 #endif
       case CODE_CODEPOINTER:
+        if (iop != OReadItemsOrCodePointers)
+          intern_cleanup_failwith2(s, fun_name, "code pointer outside closure");
         ofs = read32u(s);
         readblock(s, digest, 16);
         codeptr = intern_resolve_code_pointer(digest, ofs);
