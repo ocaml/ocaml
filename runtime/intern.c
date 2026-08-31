@@ -449,6 +449,7 @@ static void intern_alloc_storage(struct caml_intern_state* s, mlsize_t whsize,
   mlsize_t wosize;
   value v;
 
+  s->obj_counter = 0;
   if (whsize == 0) {
     CAMLassert (s->intern_obj_table == NULL);
     return;
@@ -465,7 +466,6 @@ static void intern_alloc_storage(struct caml_intern_state* s, mlsize_t whsize,
     CAMLassert (s->intern_dest == NULL);
   }
   s->intern_num_objects = num_objects;
-  s->obj_counter = 0;
   if (num_objects > 0) {
     s->intern_obj_table =
       (value *) caml_stat_calloc_noexc(num_objects, sizeof(value));
@@ -476,8 +476,6 @@ static void intern_alloc_storage(struct caml_intern_state* s, mlsize_t whsize,
   } else {
     CAMLassert(s->intern_obj_table == NULL);
   }
-
-  return;
 }
 
 static value intern_alloc_obj(struct caml_intern_state* s, caml_domain_state* d,
