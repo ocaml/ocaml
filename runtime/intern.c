@@ -646,6 +646,9 @@ static void intern_rec(value *dest)
             intern_src += 8;
           }
 #endif
+          if (expected_size > Bsize_wsize(Max_wosize - 1)) {
+            intern_cleanup_failwith("custom block size too large");
+          }
           size = ops->deserialize((void *) (intern_dest + 2));
           if (size != expected_size) {
             intern_cleanup();
