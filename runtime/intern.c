@@ -781,6 +781,9 @@ static void intern_rec(struct caml_intern_state* s,
           s->intern_src += 8;
         }
 #endif
+        if (expected_size > Bsize_wsize(Max_wosize - 1)) {
+          intern_cleanup_failwith2(s, fun_name, "custom block size too large");
+        }
         temp_size = 1 + (expected_size + sizeof(value) - 1) / sizeof(value);
         v = intern_alloc_obj(s, d, temp_size, Abstract_tag);
         Custom_ops_val(v) = ops;
