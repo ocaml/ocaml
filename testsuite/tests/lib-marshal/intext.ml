@@ -548,6 +548,28 @@ let test_infix () =
   test 606 (even' 142 = true);
   test 607 (even' 142 = even 142)
 
+(* Test for infix pointers, with functions of arity >= 2 *)
+let test_infix2 () =
+  let t = true and
+      f = false in
+  let rec odd n z =
+    if n = z
+    then f
+    else even (n-1) z
+  and even n z =
+    if n = z
+    then t
+    else odd (n-1) z
+  in
+  let s = Marshal.to_string (odd, even) [Marshal.Closures] in
+  let (odd', even': (int -> int -> bool) * (int -> int -> bool))
+      = Marshal.from_string s 0 in
+  test 650 (odd' 41 0 = odd 41 0);
+  test 651 (odd' 142 0 = odd 142 0);
+  test 652 (odd' 142 3 = odd 142 3);
+  test 653 (even' 41 0 = even 41 0);
+  test 654 (even' 142 0 = even 142 0);
+  test 655 (even' 142 3 = even 142 3)
 
 let test_mutual_rec_regression () =
   (* this regression was reported by Cedric Pasteur in PR#5772 *)
@@ -629,6 +651,7 @@ let main() =
     test_deep();
     test_objects();
     test_infix ();
+    test_infix2 ();
     test_mutual_rec_regression ();
     test_end_of_file_regression ();
     test_buggy_serialisers ();
