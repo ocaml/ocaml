@@ -46,6 +46,12 @@ OCaml 5.5.1
   (Xavier Leroy, report by Akshay Singh, review by Nicolás Ojeda Bär
   and Antonin Décimo)
 
+- #15029: Fix a regression on Windows where an OCaml thread that never
+  yielded voluntarily would keep the runtime lock forever, so that the other
+  threads of its domain never ran. Preemptive switching between systhreads had
+  no effect; only explicit calls to `Thread.yield` or blocking sections would
+  let other threads run.
+  (Nicolás Ojeda Bär, report by Daniel Larraz, review by Antonin Décimo)
 
 OCaml 5.5.0 (19 June 2026)
 -------------------------
