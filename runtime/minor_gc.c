@@ -737,7 +737,7 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
 
   CAML_EV_COUNTER(EV_C_MINOR_ALLOCATED, minor_allocated_bytes);
   CAML_EV_COUNTER(EV_C_MINOR_ALLOCATED_WORDS,
-                  Whsize_wosize(minor_allocated_bytes));
+                  Wsize_bsize(minor_allocated_bytes));
 
   CAML_EV_END(EV_MINOR);
   if (minor_allocated_bytes == 0)
