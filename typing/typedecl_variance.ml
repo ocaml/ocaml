@@ -62,7 +62,7 @@ let make p n i =
 
 let injective = Variance.(set Inj null)
 
-let rec compute_variance env expanding approximations visited vari ty =
+let rec compute_variance env expanding variances_by_projection visited vari ty =
   let rec compute_variance_rec env vari ty =
     (* Format.eprintf "%a: %x@." Printtyp.type_expr ty (Obj.magic vari); *)
     let vari' = get_variance ty visited in
@@ -92,7 +92,7 @@ let rec compute_variance env expanding approximations visited vari ty =
               match path, decl.type_kind with
               | Path.Pextra_ty (_, Path.Pfld_ty _), Type_record (fields, _) ->
                   compute_inline_record_variance
-                    env expanding approximations path decl fields
+                    env expanding variances_by_projection path decl fields
               | _ -> decl.type_variance
             in
             List.iter2
@@ -132,7 +132,7 @@ let rec compute_variance env expanding approximations visited vari ty =
 
 and compute_variance_type
     ?(expanding = ref Path.Set.empty)
-    ?(approximations = ref Path.Map.empty)
+    ?(variances_by_projection = ref Path.Map.empty)
     ?(use_requirements = true)
     env ~check (required, loc) decl tyl =
   (* Requirements *)
@@ -155,7 +155,7 @@ and compute_variance_type
   List.iter
     (fun (cn,ty) ->
       compute_variance
-        env expanding approximations tvl
+        env expanding variances_by_projection tvl
         (if cn then full else covariant) ty)
     tyl;
   (* Infer injectivity of constrained parameters *)
@@ -183,7 +183,8 @@ and compute_variance_type
           end
         in
         try check ty;
-            compute_variance env expanding approximations tvl injective ty
+            compute_variance
+              env expanding variances_by_projection tvl injective ty
         with Exit -> ())
       params;
   begin match check with
@@ -214,7 +215,7 @@ and compute_variance_type
         if Btype.is_Tvar ty then () else
         let v =
           if p then if n then full else covariant else conjugate covariant in
-         compute_variance env expanding approximations tvl2 v ty)
+         compute_variance env expanding variances_by_projection tvl2 v ty)
       params required;
     let visited = ref TypeSet.empty in
     let rec check ty =
@@ -274,14 +275,14 @@ and compute_variance_type
     params required
 
 and compute_inline_record_variance
-    env expanding approximations path decl fields =
+    env expanding variances_by_projection path decl fields =
   let open Variance in
   let rec owner_path = function
     | Path.Pextra_ty (path, Path.Pfld_ty _) -> owner_path path
     | path -> path
   in
-  let initial =
-    match Path.Map.find_opt path !approximations with
+  let default_variance =
+    match Path.Map.find_opt path !variances_by_projection with
     | Some variance -> variance
     | None ->
         let owner = Env.find_type (owner_path path) env in
@@ -300,7 +301,7 @@ and compute_inline_record_variance
              else owner_variance param owner.type_params owner.type_variance)
           decl.type_params
   in
-  if Path.Set.mem path !expanding then initial else
+  if Path.Set.mem path !expanding then default_variance else
   let required = List.map (fun _ -> false, false, false) decl.type_params in
   let variance_decl = { decl with type_private = Public } in
   let field_types =
@@ -310,28 +311,30 @@ and compute_inline_record_variance
       fields
   in
   (* Variance grows monotonically over a finite lattice. *)
-  let rec fixpoint variance =
-    approximations := Path.Map.add path variance !approximations;
+  let rec fixpoint current_variance =
+    variances_by_projection :=
+      Path.Map.add path current_variance !variances_by_projection;
     let old_expanding = !expanding in
     expanding := Path.Set.add path old_expanding;
-    let computed =
+    let new_variance =
       Misc.try_finally
         (fun () ->
            compute_variance_type
-             ~expanding ~approximations ~use_requirements:false
+             ~expanding ~variances_by_projection ~use_requirements:false
              env ~check:None (required, decl.type_loc) variance_decl
              field_types)
         ~always:(fun () -> expanding := old_expanding)
     in
-    let variance = List.map2 union variance computed in
-    match Path.Map.find_opt path !approximations with
-    | Some previous when List.for_all2 eq previous variance ->
-        let variance = List.map strengthen variance in
-        approximations := Path.Map.add path variance !approximations;
-        variance
-    | Some _ | None -> fixpoint variance
+    let merged_variance = List.map2 union current_variance new_variance in
+    match Path.Map.find_opt path !variances_by_projection with
+    | Some previous when List.for_all2 eq previous merged_variance ->
+        let final_variance = List.map strengthen merged_variance in
+        variances_by_projection :=
+          Path.Map.add path final_variance !variances_by_projection;
+        final_variance
+    | Some _ | None -> fixpoint merged_variance
   in
-  fixpoint initial
+  fixpoint default_variance
 
 let add_false = List.map (fun ty -> false, ty)
 
