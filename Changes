@@ -496,6 +496,10 @@ Working version
   (Austin Thierault, review by Antonin Décimo, Edwin Török, David Allsopp and
    Olivier Nicole)
 
+- #14915: Remove OCaml's environment variables (CAML_LD_LIBRARY_PATH, etc.) from
+  the build environment.
+  (David Allsopp, review by Antonin Décimo)
+
 ### Bug fixes:
 
 - #14993: the let-rec check should give generic arrays dynamic size,
