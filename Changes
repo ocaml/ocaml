@@ -580,6 +580,10 @@ Working version
   out-of-range value and crashed when matching on it.
   (Tim McGilchrist, review by Florian Angeletti)
 
+- #14969: Fix the units of the runtime events counter EV_C_MINOR_ALLOCATED_WORDS
+  to report as the number of words of minor heap consumed, including headers.
+  (Tim McGilchrist, review by Nicolás Ojeda Bär)
+
 OCaml 5.5.1
 -----------
 
