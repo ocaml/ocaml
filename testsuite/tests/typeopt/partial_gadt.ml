@@ -19,7 +19,7 @@ let curried : type a. a rep -> a -> float = fun Float a -> a +. 1.
 [%%expect {|
 (let
   (curried =
-     (function param[int] a[float] : float
+     (function param[int] a : float
        (if param (raise (makeblock 0 (global Match_failure!) [0: "" 1 48]))
          (+. a 1.))))
   (apply (field_mut 1 (global Toploop!)) "curried" curried))
@@ -39,7 +39,7 @@ let curried_first : type a b. unit list -> (a,float) Type.eq -> b rep -> a -> b 
 [%%expect {|
 (let
   (curried_first =
-     (function param param[int] param[int] a[float] b[float] : float
+     (function param param[int] param[int] a b : float
        (if param (raise (makeblock 0 (global Match_failure!) [0: "" 2 6]))
          (if param (raise (makeblock 0 (global Match_failure!) [0: "" 2 20]))
            (+. a b)))))

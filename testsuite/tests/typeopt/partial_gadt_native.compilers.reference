@@ -3,7 +3,7 @@
     (f =
        (function b[int] x[float] : float
          (catch (if b (exit 4 0 (+. x x)) (exit 4 1 (opaque 0)))
-          with (4 param[int] param[float])
+          with (4 param[int] param)
            (if param
              (raise
                (makeblock 0 (global Match_failure!)
