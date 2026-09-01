@@ -21,11 +21,13 @@ type mut_record =
     mutable f : int; }
 
 let go () =
-  let pre_before = Gc.minor_words () in
-  let before = Gc.minor_words () in
-  let alloc_per_minor_words = int_of_float (before -. pre_before) in
+  let alloc_per_minor_words =
+    let first = Gc.minor_words () in
+    let second = Gc.minor_words () in
+    int_of_float (second -. first) in
   if Sys.backend_type = Sys.Native then assert (alloc_per_minor_words = 0);
-  let allocs = ref alloc_per_minor_words in
+  let allocs = ref 0 in (* put this before [before] as [ref] may allocate *)
+  let before = Gc.minor_words () in
   let n = 1_000_000 in
   for i = 1 to n do
     Sys.opaque_identity (ref i)

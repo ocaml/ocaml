@@ -11,6 +11,11 @@ let f () =
   let n_allocated = ref 0 in
   let n_promoted = ref 0 in
   let n_deallocated = ref 0 in
+
+  (* create these before we start tracking allocations *)
+  let r = ref 42 in
+  let s = ref [] in
+
   let _:MP.t =
     let alloc_minor _info =
       incr n_allocated;
@@ -30,8 +35,6 @@ let f () =
     MP.start ~callstack_size:0 ~sampling_rate:1.
       { MP.null_tracker with alloc_minor; promote; dealloc_minor }
   in
-  let r = ref 42 in
-  let s = ref [] in
   for i = 1 to 10_000 do
     incr r;
     (* This is a largeish, combined, non-constant allocation,

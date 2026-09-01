@@ -156,7 +156,8 @@
          (let
            (uncurry =
               (function f param
-                (apply f (field_imm 0 param) (field_imm 1 param)))
+                (let (y =a (field_imm 1 param) x =a (field_imm 0 param))
+                  (apply f x y)))
             map =
               (function f l
                 (apply (field_imm 20 (global Stdlib__List!))
@@ -195,7 +196,8 @@
              (let
                (uncurry =
                   (function f param
-                    (apply f (field_imm 0 param) (field_imm 1 param)))
+                    (let (y =a (field_imm 1 param) x =a (field_imm 0 param))
+                      (apply f x y)))
                 map =
                   (function f l
                     (apply (field_imm 20 (global Stdlib__List!))
