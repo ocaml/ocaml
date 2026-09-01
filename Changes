@@ -580,6 +580,12 @@ Working version
   out-of-range value and crashed when matching on it.
   (Tim McGilchrist, review by Florian Angeletti)
 
+* #15010: Fix truncation of the lost event count in runtime_events_consumer.c
+  The count is a difference of two uint64_t ring positions but was passed to
+  the callback as an int. caml_runtime_events_set_lost_events now takes a
+  callback whose lost_words parameter is uint64_t, the OCaml API is unchanged.
+  (Tim McGilchrist, review by Sadiq Jaffer and Miod Vallat)
+
 OCaml 5.5.1
 -----------
 
