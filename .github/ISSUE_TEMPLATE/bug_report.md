@@ -12,6 +12,8 @@ Welcome to OCaml's Issue tracker!
 OCaml's developers use this tracker for bugs and feature requests only, rather
 than user support.
 
+**Note**: please do not include AI-generated text in your issue description or further comments. For more details, see our [guidelines relevant to AI-assisted bug reports](https://github.com/ocaml/ocaml/blob/trunk/AI.md#guidelines-relevant-to-ai-assisted-bug-reports).
+
 If you have questions about *using* OCaml, please ask at
 https://discuss.ocaml.org (more people read Discuss than this tracker, and
 you'll get confirmation of whether you've really found a bug or need a new
