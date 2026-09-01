@@ -69,7 +69,8 @@ method! is_immediate op n =
   | Iand | Ior | Ixor -> is_immediate_logical n
   | Icomp c -> self#is_immediate_test c n
   | Icheckbound -> 0 <= n && n <= 0x7FFF
-    (* twlle takes a 16-bit signed immediate but performs an unsigned compare *)
+    (* cmpldi takes a 16-bit unsigned immediate,
+       so this limit is conservative *)
   | _ -> super#is_immediate op n
 
 method! is_simple_expr = function
