@@ -43,6 +43,13 @@ OCaml 5.5.1
   of the internal cache of stacks.
   (Vesa Karvonen, Florian Angeletti, review by Gabriel Scherer)
 
+- #14966: add the missing EV_MINOR_EPHE_CLEAN constructor to
+  Runtime_events.runtime_phase, introduced in #13643. The runtime has emitted
+  this phase since 5.4, when a minor collection has to clean locked ephemerons,
+  but the OCaml type had no constructor for it, so consumers were handed an
+  out-of-range value and crashed when matching on it.
+  (Tim McGilchrist, review by Florian Angeletti)
+
 - #14989: Improve build reproducibility by letting only otherlibs/{str,unix}
   build their own .cmi and .cmx. The generic %.cmi/%.cmx rules of the root
   Makefile were racing with them under make -j and recorded a different source

@@ -469,6 +469,13 @@ Event spanning a domain needing to empty its minor heap for a new allocation.
 This includes time spent trying to become stop-the-world leader.
 @since 5.4
 *)
+| EV_MINOR_EPHE_CLEAN
+(**
+Event spanning the cleaning of ephemerons whose keys were locked during a minor
+GC. Keys that were promoted are updated to their new location and ephemerons
+whose keys were collected are emptied.
+@since 5.4
+*)
 
 (** Lifecycle events for Runtime_events and domains. *)
 type lifecycle =
