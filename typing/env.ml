@@ -2385,6 +2385,23 @@ let freeze_local_equations env = env.local_constraints
 let restrict_local_equations local_constraints env =
   { env with local_constraints }
 
+let freeze_if_new_local_equations ~prev env =
+  let included_in x y =
+    let exception Not_included in
+    let merge _ x y =
+      match x, y with
+      | Some _, None -> raise Not_included
+      | _ -> None
+    in
+    match Path.Map.merge merge x y with
+    | exception Not_included -> false
+    | _ -> true
+  in
+  if prev.local_constraints == env.local_constraints ||
+     included_in env.local_constraints prev.local_constraints
+  then None
+  else Some prev.local_constraints
+
 (* Non-lazy version of scrape_alias *)
 let scrape_alias t mty =
   mty |> Subst.Lazy.of_modtype |> scrape_alias t |> Subst.Lazy.force_modtype

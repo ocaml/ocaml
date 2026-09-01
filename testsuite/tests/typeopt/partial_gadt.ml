@@ -39,7 +39,7 @@ let curried_first : type a b. unit list -> (a,float) Type.eq -> b rep -> a -> b 
 [%%expect {|
 (let
   (curried_first =
-     (function param param[int] param[int] a b : float
+     (function param param[int] param[int] a[float] b : float
        (if param (raise (makeblock 0 (global Match_failure!) [0: "" 2 6]))
          (if param (raise (makeblock 0 (global Match_failure!) [0: "" 2 20]))
            (+. a b)))))
