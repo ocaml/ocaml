@@ -28,12 +28,19 @@ val command_line_options : (string * Arg.spec * string) list
 type specific_operation =
     Imultaddf                           (* multiply and add *)
   | Imultsubf                           (* multiply and subtract *)
+  | Iroundf of float_rounding           (* round to integer *)
   | Ialloc_far of                       (* allocation in large functions *)
       { bytes : int; dbginfo : Debuginfo.alloc_dbginfo }
   | Ipoll_far of { return_label : cmm_label option }
                                         (* poll point in large functions *)
   | Icheckbound_far                     (* bounds check in large functions *)
   | Icheckbound_imm_far of int          (* bounds check in large functions *)
+
+and float_rounding =
+    Rnearest_away                       (* to nearest, ties away from zero *)
+  | Rtoward_zero
+  | Rtoward_pos                         (* toward positive infinity *)
+  | Rtoward_neg                         (* toward negative infinity *)
 
 (* Addressing modes *)
 

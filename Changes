@@ -207,6 +207,10 @@ Working version
   riscv and s390x rather than calling into C
   (Zane Hambly, review by Miod Vallat and Xavier Leroy)
 
+- #15017: emit the rounding instructions for `Float.round`, `Float.trunc`,
+  `ceil` and `floor` on arm64 and power rather than calling into C
+  (Zane Hambly, review by Miod Vallat and Nicolás Ojeda Bär)
+
 * #13919: optimize `lazy v` when `v` is a structured constant
   (below a size threshold), so that `Lazy.from_val v` should not be
   necessary anymore in most cases.

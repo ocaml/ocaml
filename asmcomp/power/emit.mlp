@@ -972,6 +972,13 @@ let emit_instr env i =
         `	ld	{emit_reg i.res.(0)}, -16(1)\n`
     | Lop(Iopaque) ->
         assert (i.arg.(0).loc = i.res.(0).loc)
+    | Lop(Ispecific(Iroundf r)) ->
+        let instr = (match r with
+                     | Rnearest_away -> "frin"
+                     | Rtoward_zero  -> "friz"
+                     | Rtoward_pos   -> "frip"
+                     | Rtoward_neg   -> "frim") in
+        `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
     | Lop(Ispecific sop) ->
         let instr = name_for_specific sop in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`
