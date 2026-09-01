@@ -3,6 +3,11 @@ OCaml 4.14 maintenance version
 
 ### Bug fixes:
 
+- #15019, #15030: `Marshal.from_{string,bytes}`: guard against overflow in
+  the computation of the total data length.
+  (Xavier Leroy, report by Akshay Singh, review by Nicolás Ojeda Bär
+  and Antonin Décimo)
+
 
 OCaml 4.14.4 (15 June 2026)
 ------------------------------
