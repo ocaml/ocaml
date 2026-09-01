@@ -3249,36 +3249,37 @@ let lookup_type ~errors ~use ~loc lid env =
   let (path, tda) = lookup_type_full ~errors ~use ~loc lid env in
   path, tda.tda_declaration
 
+let extend_type_projection_lid lid field =
+  let loc =
+    { lid.loc with
+      loc_end = field.loc.loc_end;
+      loc_ghost = lid.loc.loc_ghost || field.loc.loc_ghost;
+    }
+  in
+  { txt = Ldot (lid, field); loc }
+
+let lookup_type_projection_fields ~use type_lid path fields env =
+  let tda = find_type_data path env in
+  let _, path, tda =
+    List.fold_left
+      (fun (lid, path, _) field ->
+         let lid = extend_type_projection_lid lid field in
+         let path = Pextra_ty (path, Pfld_ty field.txt) in
+         let tda = find_type_data path env in
+         use_type ~use ~loc:lid.loc path tda;
+         lid, path, tda)
+      (type_lid, path, tda)
+      fields
+  in
+  path, tda.tda_declaration
+
 let lookup_type_projection ~errors ~use ~loc ~path type_lid fields env =
-  let extend_lid lid field =
-    let loc =
-      { lid.loc with
-        loc_end = field.loc.loc_end;
-        loc_ghost = lid.loc.loc_ghost || field.loc.loc_ghost;
-      }
-    in
-    { txt = Ldot (lid, field); loc }
+  let full_lid =
+    List.fold_left extend_type_projection_lid type_lid fields
   in
-  let full_lid = List.fold_left extend_lid type_lid fields in
-  let projected_type =
-    try
-      let parent_type_data = find_type_data path env in
-      let _, path, projected_type_data =
-        List.fold_left
-          (fun (lid, path, _) field ->
-             let lid = extend_lid lid field in
-             let path = Pextra_ty (path, Pfld_ty field.txt) in
-             let type_data = find_type_data path env in
-             use_type ~use ~loc:lid.loc path type_data;
-             lid, path, type_data)
-          (type_lid, path, parent_type_data)
-          fields
-      in
-      path, projected_type_data.tda_declaration
-    with Not_found ->
-      may_lookup_error errors loc env (Unbound_type full_lid.txt)
-  in
-  projected_type
+  try lookup_type_projection_fields ~use type_lid path fields env
+  with Not_found ->
+    may_lookup_error errors loc env (Unbound_type full_lid.txt)
 
 let lookup_modtype_lazy ~errors ~use ~loc lid env =
   match lid with
