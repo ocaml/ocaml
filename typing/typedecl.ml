@@ -333,7 +333,7 @@ let compute_record_rep env ?(unbox=false) lbls =
   then Record_float
   else Record_regular
 
-let make_inline_record_decl ~uid ~loc ~private_ ~parent_params lbls rep =
+let make_inline_record_decl ~uid ~loc ~private_ ~params lbls rep =
   let free_variables =
     Ctype.free_variables_list
       (List.map (fun (label : Types.label_declaration) -> label.ld_type) lbls)
@@ -341,7 +341,7 @@ let make_inline_record_decl ~uid ~loc ~private_ ~parent_params lbls rep =
   let type_params =
     List.filter
       (fun param -> List.exists (eq_type param) free_variables)
-      parent_params
+      params
   in
   let arity = List.length type_params in
   { type_params;
@@ -426,15 +426,15 @@ let transl_labels env univars closed lbls =
   check_duplicate_labels lbls;
   List.split (List.map (transl_label env univars closed) lbls)
 
-let rec transl_inline_labels
-    env univars closed ~rec_flag ~path ~parent_params ~private_ lbls =
+let rec transl_labels_with_inline
+    env univars closed ~rec_flag ~path ~params ~private_ lbls =
   assert (lbls <> []);
   check_duplicate_labels lbls;
   let transl_label' label =
     match label.pld_inline_record with
     | Some inner_fields ->
         transl_inline_label
-          env univars closed ~rec_flag ~path ~parent_params ~private_
+          env univars closed ~rec_flag ~path ~params ~private_
           label inner_fields
     | None ->
         transl_label env univars closed label
@@ -442,7 +442,7 @@ let rec transl_inline_labels
   List.split (List.map transl_label' lbls)
 
 and transl_inline_label env univars closed
-    ~rec_flag ~path ~parent_params ~private_
+    ~rec_flag ~path ~params ~private_
     ({pld_name=name; pld_loc=loc; pld_attributes=attrs; _} as label)
     inner_fields =
   Builtin_attributes.warning_scope attrs
@@ -450,8 +450,8 @@ and transl_inline_label env univars closed
        let current_unit = Env.get_current_unit () in
        let field_path = Path.Pextra_ty (path, Pfld_ty name.txt) in
        let inner_lbls, inner_lbls' =
-         transl_inline_labels
-           env univars closed ~rec_flag ~path:field_path ~parent_params
+         transl_labels_with_inline
+           env univars closed ~rec_flag ~path:field_path ~params
            ~private_ inner_fields
        in
        let inner_rep = compute_record_rep env inner_lbls' in
@@ -462,7 +462,7 @@ and transl_inline_label env univars closed
        in
        let inline_decl =
          make_inline_record_decl
-           ~uid ~loc ~private_ ~parent_params inner_lbls' inner_rep
+           ~uid ~loc ~private_ ~params inner_lbls' inner_rep
        in
        let cty =
          inline_record_type env loc field_path inline_decl.type_params
@@ -671,9 +671,9 @@ let transl_declaration rec_flag env sdecl (id, uid) =
           Ttype_variant tcstrs, Type_variant (cstrs, rep)
       | Ptype_record lbls ->
           let lbls, lbls' =
-            transl_inline_labels
+            transl_labels_with_inline
               env None true ~rec_flag ~path:(Path.Pident id)
-              ~parent_params:params ~private_:sdecl.ptype_private lbls
+              ~params ~private_:sdecl.ptype_private lbls
           in
           let rep = compute_record_rep env ~unbox lbls' in
           Ttype_record lbls, Type_record(lbls', rep)
