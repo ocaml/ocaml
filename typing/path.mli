@@ -56,21 +56,19 @@ and extra_ty =
         [Pextra_ty (Pident `Error`, Pext_ty)].
   *)
   | Pfld_ty of string
-  (** [Pextra_ty (p, Pfld_ty f)] is the type of the inline record for
-      field [f] inside record type [p].
+  (** [Pextra_ty (p, Pfld_ty f)] is the inline record type declared
+      by field [f] of record type [p].
 
-      For example, in
+      For example, the type of [address] below has path
+      [Pextra_ty (Pident `person`, Pfld_ty "address")] and can be
+      named as [person.address].
+
       {[
         type person = {
           name : string;
           address : {street : string; city : string};
         }
       ]}
-
-      The inline record type [{street : string; city : string}] cannot
-      be named by the user in the surface syntax, but internally
-      it has the path
-        [Pextra_ty (Pident `person`, Pfld_ty "address")].
   *)
 
 val same: t -> t -> bool
@@ -104,7 +102,6 @@ val heads: t -> Ident.t list
 val last: t -> string
 
 val is_constructor_typath: t -> bool
-val is_field_typath: t -> bool
 
 module Map : Map.S with type key = t
 module Set : Set.S with type elt = t

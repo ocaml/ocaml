@@ -158,6 +158,7 @@ type label_mismatch =
   | Type of Errortrace.equality_error
   | Mutability of position
   | Atomicity of position
+  | Nested_record
 
 type record_change =
   (Types.label_declaration, Types.label_declaration, label_mismatch)
@@ -279,6 +280,8 @@ let report_label_mismatch first second env ppf err =
       Format_doc.fprintf ppf "%s is atomic and %s is not."
         (String.capitalize_ascii (choose ord first second))
         (choose_other ord first second)
+  | Nested_record ->
+      Format_doc.fprintf ppf "Their nested record definitions differ."
 
 let pp_record_diff first second prefix decl env ppf (x : record_change) =
   match x with
@@ -481,7 +484,7 @@ let report_type_mismatch first second decl env ppf err =
 
 module Record_diffing = struct
 
-  let compare_labels env params1 params2
+  let rec compare_labels ~loc env params1 params2
       (ld1 : Types.label_declaration)
       (ld2 : Types.label_declaration) =
     if ld1.ld_mutable <> ld2.ld_mutable
@@ -502,9 +505,21 @@ module Record_diffing = struct
     match Ctype.equal env true tl1 tl2 with
     | exception Ctype.Equality err ->
         Some (Type err : label_mismatch)
-    | () -> None
+    | () ->
+        match ld1.ld_inlined, ld2.ld_inlined with
+        | None, None -> None
+        | Some decl1, Some decl2 ->
+            begin match decl1.type_kind, decl2.type_kind with
+            | Type_record (labels1, rep1), Type_record (labels2, rep2)
+              when rep1 = rep2
+                   && equal ~loc env
+                        decl1.type_params decl2.type_params labels1 labels2 ->
+                None
+            | _ -> Some Nested_record
+            end
+        | None, Some _ | Some _, None -> Some Nested_record
 
-  let rec equal ~loc env params1 params2
+  and equal ~loc env params1 params2
       (labels1 : Types.label_declaration list)
       (labels2 : Types.label_declaration list) =
     match labels1, labels2 with
@@ -520,7 +535,7 @@ module Record_diffing = struct
             loc
             ld1.ld_attributes ld2.ld_attributes
             (Ident.name ld1.ld_id);
-          match compare_labels env params1 params2 ld1 ld2 with
+          match compare_labels ~loc env params1 params2 ld1 ld2 with
           | Some _ -> false
           (* add arguments to the parameters, cf. PR#7378 *)
           | None ->
@@ -545,21 +560,21 @@ module Record_diffing = struct
            (in inline records) *)
         x.data.ld_type::params1, y.data.ld_type::params2
 
-  let test _loc env (params1,params2)
+  let test loc env (params1,params2)
       ({pos; data=lbl1}: Diff.left)
       ({data=lbl2; _ }: Diff.right)
     =
     let name1, name2 = Ident.name lbl1.ld_id, Ident.name lbl2.ld_id in
     if  name1 <> name2 then
       let types_match =
-        match compare_labels env params1 params2 lbl1 lbl2 with
+        match compare_labels ~loc env params1 params2 lbl1 lbl2 with
         | Some _ -> false
         | None -> true
       in
       Error
         (Diffing_with_keys.Name {types_match; pos; got=name1; expected=name2})
     else
-      match compare_labels env params1 params2 lbl1 lbl2 with
+      match compare_labels ~loc env params1 params2 lbl1 lbl2 with
       | Some reason ->
           Error (
             Diffing_with_keys.Type {pos; got=lbl1; expected=lbl2; reason}

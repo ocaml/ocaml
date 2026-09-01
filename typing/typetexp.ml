@@ -25,6 +25,97 @@ open Ctype
 
 exception Already_bound
 
+type type_longident =
+  | Type_longident of Longident.t
+  | Type_projection of Longident.t Location.loc * string Location.loc list
+
+let classify_type_longident lid =
+  let ends_in_lident = function
+    | Longident.Lident name
+    | Longident.Ldot (_, { txt = name; _ }) ->
+        not (Misc.Utf8_lexeme.is_capitalized name)
+    | Longident.Lapply _ -> false
+  in
+  let rec split fields ({ txt; _ } as lid) =
+    match txt with
+    | Longident.Ldot (prefix, field) when ends_in_lident prefix.txt ->
+        split (field :: fields) prefix
+    | Longident.Lident _ | Longident.Ldot _ | Longident.Lapply _ ->
+        match fields with
+        | [] -> Type_longident lid.txt
+        | _ :: _ -> Type_projection (lid, fields)
+  in
+  split [] lid
+
+let lookup_type_application ?(use = true) env lid =
+  match classify_type_longident lid with
+  | Type_longident type_lid ->
+      let path, decl = Env.lookup_type ~use ~loc:lid.loc type_lid env in
+      path, decl, instance_list decl.type_params, None
+  | Type_projection (type_lid, fields) ->
+      let alias_path, alias_decl =
+        Env.lookup_type ~use ~loc:type_lid.loc type_lid.txt env
+      in
+      let alias_params = instance_list alias_decl.type_params in
+      let alias_type = newconstr alias_path alias_params in
+      let target_type =
+        if Btype.type_kind_is_abstract alias_decl then
+          expand_head_nolink env alias_type
+        else
+          alias_type
+      in
+      let target_path, target_args =
+        match get_desc target_type with
+        | Tconstr (path, args, _) -> path, args
+        | _ -> alias_path, alias_params
+      in
+      let path, decl =
+        Env.lookup_type_projection
+          ~use ~loc:lid.loc ~path:target_path type_lid fields env
+      in
+      if Path.same alias_path target_path then
+        path, decl, instance_list decl.type_params, None
+      else
+        let target_decl = Env.find_type target_path env in
+        let argument_for_parameter param =
+          snd
+            (List.find
+               (fun (target_param, _) -> eq_type param target_param)
+               (List.combine target_decl.type_params target_args))
+        in
+        let target_args = List.map argument_for_parameter decl.type_params in
+        let free_variables = free_variables_list target_args in
+        let params =
+          List.filter
+            (fun param -> List.exists (eq_type param) free_variables)
+            alias_params
+        in
+        path, decl, params, Some target_args
+
+let lookup_type ?use env lid =
+  let path, decl, _, _ = lookup_type_application ?use env lid in
+  path, decl
+
+let apply_type_arguments env type_params target_args type_args =
+  match target_args with
+  | None -> type_args
+  | Some target_args ->
+      List.map
+        (fun target_arg ->
+           apply ~use_current_level:true env type_params target_arg type_args)
+        target_args
+
+let approx_type_application env lid type_args =
+  let path, _, type_params, target_args =
+    lookup_type_application ~use:false env lid
+  in
+  if List.length type_args <> List.length type_params then None
+  else
+    let type_args =
+      apply_type_arguments env type_params target_args type_args
+    in
+    Some (newconstr path type_args)
+
 type error =
   | Unbound_type_variable of string * string list
   | No_type_wildcards
@@ -540,18 +631,20 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
     in
     ctyp (Ttyp_tuple ctys) ty
   | Ptyp_constr(lid, stl) ->
-      let (path, decl) = Env.lookup_type ~loc:lid.loc lid.txt env in
+      let path, decl, type_params, target_args =
+        lookup_type_application env lid
+      in
       let stl =
         match stl with
-        | [ {ptyp_desc=Ptyp_any} as t ] when decl.type_arity > 1 ->
-            List.map (fun _ -> t) decl.type_params
+        | [ {ptyp_desc=Ptyp_any} as t ] when List.length type_params > 1 ->
+            List.map (fun _ -> t) type_params
         | _ -> stl
       in
-      if List.length stl <> decl.type_arity then
+      if List.length stl <> List.length type_params then
         Error.log_and_raise styp.ptyp_loc env
-          (Type_arity_mismatch(lid.txt, decl.type_arity, List.length stl));
+          (Type_arity_mismatch
+             (lid.txt, List.length type_params, List.length stl));
       let args = List.map (transl_type env ~policy ~row_context) stl in
-      let params = instance_list decl.type_params in
       let unify_param =
         match decl.type_manifest with
           None -> unify_var
@@ -563,10 +656,13 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
            try unify_param env ty' cty.ctyp_type with Unify err ->
              let err = Errortrace.swap_unification_error err in
              Error.log_and_raise sty.ptyp_loc env (Type_mismatch err)
-        )
-        (List.combine stl args) params;
-      let constr =
-        newconstr path (List.map (fun ctyp -> ctyp.ctyp_type) args) in
+         )
+        (List.combine stl args) type_params;
+      let type_args = List.map (fun ctyp -> ctyp.ctyp_type) args in
+      let target_args =
+        apply_type_arguments env type_params target_args type_args
+      in
+      let constr = newconstr path target_args in
       ctyp (Ttyp_constr (path, lid, args)) constr
   | Ptyp_object (fields, o) ->
       let ty, fields = transl_fields env ~policy ~row_context o fields in

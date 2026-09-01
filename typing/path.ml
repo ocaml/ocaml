@@ -197,11 +197,6 @@ let is_constructor_typath p =
   | Pextra_ty (_, (Pcstr_ty _ | Pext_ty)) -> true
   | Pextra_ty (_, Pfld_ty _) -> false
 
-let is_field_typath p =
-  match p with
-  | Pextra_ty (_, Pfld_ty _) -> true
-  | _ -> false
-
 module T = struct
   type nonrec t = t
   let compare = compare

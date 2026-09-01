@@ -4168,6 +4168,7 @@ label_longident:
 ;
 type_longident:
     mk_longident(mod_ext_longident, LIDENT)  { $1 }
+  | type_longident DOT LIDENT { ldot $1 $loc($1) $3 $loc($3) }
 ;
 mod_longident:
     mk_longident(mod_longident, UIDENT)  { $1 }

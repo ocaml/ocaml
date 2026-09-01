@@ -96,7 +96,8 @@ let rec lident_of_path =
   | Path.Pident id -> Longident.Lident (Ident.name id)
   | Path.Papply (p1, p2) ->
       Longident.Lapply (noloc_lident_of_path p1, noloc_lident_of_path p2)
-  | Path.Pdot (p, s) | Path.Pextra_ty (p, Pcstr_ty s) ->
+  | Path.Pdot (p, s)
+  | Path.Pextra_ty (p, (Pcstr_ty s | Pfld_ty s)) ->
       Longident.Ldot (noloc_lident_of_path p, mknoloc s)
   | Path.Pextra_ty (p, _) -> lident_of_path p
 
@@ -259,13 +260,22 @@ let constructor_declaration sub cd =
     ?res:(Option.map (sub.typ sub) cd.cd_res)
     (map_loc sub cd.cd_name)
 
-let label_declaration sub ld =
+let rec label_declaration sub ld =
   let loc = sub.location sub ld.ld_loc in
   let attrs = sub.attributes sub ld.ld_attributes in
+  let inline_record =
+    Option.map (List.map (label_declaration sub)) ld.ld_inline_record
+  in
+  let typ =
+    match inline_record with
+    | None -> sub.typ sub ld.ld_type
+    | Some _ -> Typ.any ~loc ()
+  in
   Type.field ~loc ~attrs
     ~mut:ld.ld_mutable
+    ?inline_record
     (map_loc sub ld.ld_name)
-    (sub.typ sub ld.ld_type)
+    typ
 
 let type_extension sub tyext =
   let attrs = sub.attributes sub tyext.tyext_attributes in

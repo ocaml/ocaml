@@ -112,4 +112,45 @@ type t =
   | (::)
 let f (x : t) = match x with | (::) -> 4
 - : unit = ()
+|}];;
+
+let inline_record_has_dummy_type s =
+  let pe = Parse.implementation (Lexing.from_string s) in
+  let te,_,_,_,_ = Typemod.type_structure Env.initial pe in
+  match Untypeast.untype_structure te with
+  | [{ pstr_desc = Pstr_type (_, [
+          { ptype_kind = Ptype_record [
+                { pld_type = { ptyp_desc = Ptyp_any; _ };
+                  pld_inline_record = Some _; _ }
+              ]; _ }
+        ]); _ }] ->
+      true
+  | _ -> false
+;;
+
+[%%expect{|
+val inline_record_has_dummy_type : string -> bool = <fun>
+|}];;
+
+inline_record_has_dummy_type {|type t = { inner : { value : int } }|};;
+
+[%%expect{|
+- : bool = true
+|}]
+
+let parent = Ident.create_local "t";;
+let nested_path =
+  Path.Pextra_ty (Path.Pident parent, Path.Pfld_ty "inner")
+;;
+
+Untypeast.lident_of_path nested_path
+|> Longident.flatten
+|> String.concat "."
+;;
+
+[%%expect{|
+val parent : Ident.t = <abstr>
+val nested_path : Path.t =
+  Path.Pextra_ty (Path.Pident <abstr>, Path.Pfld_ty "inner")
+- : string = "t.inner"
 |}]

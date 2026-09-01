@@ -369,25 +369,25 @@ and package copy_scope s {pack_path; pack_constraints} =
 let type_expr s ty =
   For_copy.with_scope (fun copy_scope -> typexp copy_scope s ty)
 
-let label_declaration copy_scope s l =
+let rec label_declaration copy_scope s l =
   {
     ld_id = l.ld_id;
     ld_mutable = l.ld_mutable;
     ld_atomic = l.ld_atomic;
     ld_type = typexp copy_scope s l.ld_type;
-    ld_inlined = l.ld_inlined;
+    ld_inlined = Option.map (type_declaration' copy_scope s) l.ld_inlined;
     ld_loc = loc s l.ld_loc;
     ld_attributes = attrs s l.ld_attributes;
     ld_uid = l.ld_uid;
   }
 
-let constructor_arguments copy_scope s = function
+and constructor_arguments copy_scope s = function
   | Cstr_tuple l ->
       Cstr_tuple (List.map (typexp copy_scope s) l)
   | Cstr_record l ->
       Cstr_record (List.map (label_declaration copy_scope s) l)
 
-let constructor_declaration copy_scope s c =
+and constructor_declaration copy_scope s c =
   {
     cd_id = c.cd_id;
     cd_args = constructor_arguments copy_scope s c.cd_args;
@@ -397,7 +397,7 @@ let constructor_declaration copy_scope s c =
     cd_uid = c.cd_uid;
   }
 
-let type_declaration' copy_scope s decl =
+and type_declaration' copy_scope s decl =
   { type_params = List.map (typexp copy_scope s) decl.type_params;
     type_arity = decl.type_arity;
     type_kind =
