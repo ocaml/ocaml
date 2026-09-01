@@ -351,6 +351,11 @@ Working version
   a custom event does not allocate in the usual single-threaded case.
   (Anil Madhavapeddy, review by Thomas Leonard and Sadiq Jaffer)
 
+- #15025: Fix two bugs in the Win32 version of `Unix.select` that could result
+  in failure or incorrect results being returned when the same file descriptor
+  appeared more than one input list or more than once in a single input list.
+  (Nicolás Ojeda Bär, report by Zhang Rui, review by Antonin Décimo)
+
 ### Tools:
 
 - #14318, #14709, ocamldoc: use "Module_name (Library name)" rather than
