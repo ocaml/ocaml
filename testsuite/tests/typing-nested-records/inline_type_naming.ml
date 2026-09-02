@@ -78,7 +78,8 @@ val get_value : 'a wrapper -> 'a = <fun>
 
 (* ===== Multiple type parameters: arity of inline field types ===== *)
 
-(* Inline field types inherit all parent type parameters. *)
+(* Inline field types keep the parent type parameters that their fields
+   reference, in parent declaration order. *)
 type ('a, 'b) either_record = {
   left : { payload : 'a };
   right : { payload : 'b };
