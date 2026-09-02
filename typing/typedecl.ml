@@ -85,6 +85,7 @@ type error =
   | External_with_non_syntactic_arity
   | Primitive_alias_does_not_refer_to_primitive of value_kind
   | Primitive_type_mismatch of Env.t * Errortrace.unification_error
+  | Nested_record_in_constructor
 
 open Typedtree
 
@@ -413,6 +414,11 @@ let inline_record_type env loc path params =
 
 let transl_label env univars closed
     ({pld_type=arg; pld_attributes=attrs; _} as label) =
+  begin match label.pld_inline_record with
+  | Some _ ->
+      Error.log_and_raise label.pld_loc Nested_record_in_constructor
+  | None -> ()
+  end;
   Builtin_attributes.warning_scope attrs
     (fun () ->
        let arg = Ast_helper.Typ.force_poly arg in
@@ -2862,6 +2868,10 @@ let report_error ~loc = function
         Errortrace_report.unification ppf env err
           (msg "Type")
           (msg "is not compatible with type")
+  | Nested_record_in_constructor ->
+      Location.errorf ~loc
+        "Nested record definitions are not supported inside@ \
+         constructor inline records."
 
 let () =
   Location.register_error_of_exn
