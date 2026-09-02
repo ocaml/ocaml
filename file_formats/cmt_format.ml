@@ -382,10 +382,7 @@ let index_occurrences binary_annots =
       let module_ = Shape.Sig_component_kind.Module in
       match lid.Location.txt, path with
       | Longident.Ldot (lid', _), Path.Pextra_ty (path', Path.Pfld_ty _) ->
-        (* Projected types such as [t.a] must be matched before
-           [Path.scrape_extra_ty] drops the [Pfld_ty] projection and leaves
-           the [Ldot] source without a matching path component. Store the
-           full projected occurrence, then index the parent type path. *)
+        (* Preserve the projection before [Path.scrape_extra_ty] removes it. *)
         reduce_and_store ~namespace lid path;
         index_components Shape.Sig_component_kind.Type lid' path'
       | _, _ ->

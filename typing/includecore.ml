@@ -484,6 +484,20 @@ let report_type_mismatch first second decl env ppf err =
 
 module Record_diffing = struct
 
+  let nested_record_arities_differ = function
+    | Some decl1, Some decl2 ->
+        List.compare_lengths decl1.type_params decl2.type_params <> 0
+    | None, None | None, Some _ | Some _, None -> false
+
+  let compare_label_types env params1 params2
+      (ld1 : Types.label_declaration)
+      (ld2 : Types.label_declaration) =
+    let tl1 = params1 @ [ld1.ld_type] in
+    let tl2 = params2 @ [ld2.ld_type] in
+    match Ctype.equal env true tl1 tl2 with
+    | exception Ctype.Equality err -> Some (Type err : label_mismatch)
+    | () -> None
+
   let rec compare_labels ~loc env params1 params2
       (ld1 : Types.label_declaration)
       (ld2 : Types.label_declaration) =
@@ -500,32 +514,25 @@ module Record_diffing = struct
       in
       Some (Atomicity  ord)
     else
-    match ld1.ld_inlined, ld2.ld_inlined with
-    | Some decl1, Some decl2
-      when List.compare_lengths decl1.type_params decl2.type_params <> 0 ->
-        (* An arity mismatch between nested declarations also shows up as
-           type constructors applied to argument lists of different
-           lengths, which [Ctype.equal] cannot compare. *)
-        Some Nested_record
-    | _ ->
-    let tl1 = params1 @ [ld1.ld_type] in
-    let tl2 = params2 @ [ld2.ld_type] in
-    match Ctype.equal env true tl1 tl2 with
-    | exception Ctype.Equality err ->
-        Some (Type err : label_mismatch)
-    | () ->
-        match ld1.ld_inlined, ld2.ld_inlined with
-        | None, None -> None
-        | Some decl1, Some decl2 ->
-            begin match decl1.type_kind, decl2.type_kind with
-            | Type_record (labels1, rep1), Type_record (labels2, rep2)
-              when rep1 = rep2
-                   && equal ~loc env
-                        decl1.type_params decl2.type_params labels1 labels2 ->
-                None
-            | _ -> Some Nested_record
-            end
-        | None, Some _ | Some _, None -> Some Nested_record
+      let nested_records = ld1.ld_inlined, ld2.ld_inlined in
+      if nested_record_arities_differ nested_records then Some Nested_record
+      else
+        match compare_label_types env params1 params2 ld1 ld2 with
+        | Some _ as mismatch -> mismatch
+        | None -> compare_nested_records ~loc env nested_records
+
+  and compare_nested_records ~loc env = function
+    | None, None -> None
+    | Some decl1, Some decl2 ->
+        begin match decl1.type_kind, decl2.type_kind with
+        | Type_record (labels1, rep1), Type_record (labels2, rep2)
+          when rep1 = rep2
+               && equal ~loc env
+                    decl1.type_params decl2.type_params labels1 labels2 ->
+            None
+        | _ -> Some Nested_record
+        end
+    | None, Some _ | Some _, None -> Some Nested_record
 
   and equal ~loc env params1 params2
       (labels1 : Types.label_declaration list)

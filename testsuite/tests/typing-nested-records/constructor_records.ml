@@ -2,8 +2,7 @@
  expect;
 *)
 
-(* Nested record definitions are rejected inside constructor inline
-   records, for all constructor paths. *)
+(* Reject nested records in every constructor form. *)
 
 type variant = A of { value : { x : int } }
 [%%expect{|
@@ -43,7 +42,7 @@ Error: Nested record definitions are not supported inside
        constructor inline records.
 |}]
 
-(* Nested record definitions are still supported in ordinary records. *)
+(* Ordinary records still allow them. *)
 
 type ordinary = { value : { x : int } }
 [%%expect{|

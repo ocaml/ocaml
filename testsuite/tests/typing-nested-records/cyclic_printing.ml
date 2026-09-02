@@ -2,31 +2,25 @@
  expect;
 *)
 
-(* Regression tests for non-termination when printing declarations whose
-   nested record fields contain cyclic types. The printer must prepare
-   inner field types so that cycles print as finite [as 'a] aliases. *)
-
-(* A cyclic polymorphic variant inside a nested record used to make the
-   printer loop forever. *)
+(* Cyclic nested field types must print without looping. *)
 type t = { a : { x : [`A of 'b] as 'b } }
 [%%expect{|
 type t = { a : { x : [ `A of 'a ] as 'a; }; }
 |}]
 
-(* Same cyclic type, two nested records deep. *)
+(* This also works at greater depth. *)
 type u = { outer : { inner : { y : [`B of 'c] as 'c } } }
 [%%expect{|
 type u = { outer : { inner : { y : [ `B of 'a ] as 'a; }; }; }
 |}]
 
-(* Control: a non-cyclic polymorphic variant in a nested record prints
-   with a stable constructor order. *)
+(* Preserve variant constructor order. *)
 type v = { tag : { k : [`First | `Second | `Third] } }
 [%%expect{|
 type v = { tag : { k : [ `First | `Second | `Third ]; }; }
 |}]
 
-(* Control: ordinary records and constructor records are unchanged. *)
+(* Preserve ordinary and constructor records. *)
 type plain = { p : int; q : string }
 type cstr = C of { r : int; s : bool }
 [%%expect{|
@@ -34,8 +28,7 @@ type plain = { p : int; q : string; }
 type cstr = C of { r : int; s : bool; }
 |}]
 
-(* An error message that prints a declaration containing the cyclic
-   nested field must also terminate. *)
+(* Error printing must terminate too. *)
 module M : sig
   type w = { a : { x : [`A of 'b] as 'b } }
 end = struct

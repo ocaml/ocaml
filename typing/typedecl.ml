@@ -174,13 +174,7 @@ let enter_type ?abstract_abbrevs rec_flag env sdecl (id, uid) =
   in
   add_type ~check:true id decl env
 
-(* Positions, in parent declaration order, of the parent type parameters
-   whose names the source syntax of a nested record's fields references.
-   These positions are the canonical parameter selection for a nested
-   type: the recursive placeholder and the final translated declaration
-   must both use them, so that the projected type has one arity during
-   and after the translation of its recursive group.  Names bound by an
-   inner [Ptyp_poly] shadow parent parameters. *)
+(* Source positions keep recursive placeholders and final declarations at the same arity. *)
 let nested_param_positions sparams labels =
   let variables = ref String.Set.empty in
   let bound = ref String.Set.empty in
@@ -343,14 +337,9 @@ let compute_record_rep env ?(unbox=false) lbls =
   then Record_float
   else Record_regular
 
-(* [params] must already be the canonical parameter selection computed
-   by [nested_param_positions]: it is what keeps this declaration's arity
-   equal to the arity of the recursive placeholder registered for the
-   same path. *)
 let make_inline_record_decl ~uid ~loc ~private_ ~params lbls rep =
-  let type_params = params in
-  let arity = List.length type_params in
-  { type_params;
+  let arity = List.length params in
+  { type_params = params;
     type_arity = arity;
     type_kind = Type_record (lbls, rep);
     type_private = private_;
@@ -437,9 +426,6 @@ let transl_labels env univars closed lbls =
   check_duplicate_labels lbls;
   List.split (List.map (transl_label env univars closed) lbls)
 
-(* [sparams] are the source parameters of the enclosing type declaration
-   and [params] their translated counterparts, in the same order.  Nested
-   types at every depth select their parameters from this one list. *)
 let rec transl_labels_with_inline
     env univars closed ~rec_flag ~path ~sparams ~params ~private_ lbls =
   assert (lbls <> []);
@@ -571,11 +557,7 @@ let shape_map_cstrs =
       @@ Shape.str ~uid:cd_uid cstr_shape_map)
     (Shape.Map.empty)
 
-(* The shape of a record type is built from [Types.label_declaration]s
-   because they carry the [ld_inlined] declaration of nested inline
-   records. Each nested declaration is added as a [Type] item alongside
-   the [Label] item of its field so that [Pfld_ty] projections such as
-   [t.a] resolve to the nested declaration's own uid. *)
+(* Nested field declarations are both label and type shape components. *)
 let rec shape_of_record_types ~uid labels =
   let map =
     List.fold_left
@@ -1577,12 +1559,11 @@ let transl_type_decl env rec_flag sdecl_list =
     Ctype.with_local_level_generalize begin fun () ->
       (* Enter types. *)
       let temp_env =
-        List.fold_left2 (enter_type rec_flag) env sdecl_list ids_list in
-      let temp_env =
         List.fold_left2
-          (fun env sdecl (id, _) ->
+          (fun env sdecl ((id, _) as id_uid) ->
+             let env = enter_type rec_flag env sdecl id_uid in
              add_nested_type_placeholders rec_flag sdecl id env)
-          temp_env sdecl_list ids_list
+          env sdecl_list ids_list
       in
       (* Translate each declaration. *)
       let current_slot = ref None in
@@ -1697,9 +1678,9 @@ let transl_type_decl env rec_flag sdecl_list =
         Error.log_and_raise loc (Separability err)
   in
   (* Check re-exports before adding the nested aliases that they imply. *)
-  let final_env = add_types_to_env decls shapes env in
-  List.iter2 (check_abbrev final_env) sdecl_list decls;
-  let decls = List.map (add_nested_reexport_aliases final_env) decls in
+  let coherence_env = add_types_to_env decls shapes env in
+  List.iter2 (check_abbrev coherence_env) sdecl_list decls;
+  let decls = List.map (add_nested_reexport_aliases coherence_env) decls in
   (* Compute the final environment with type properties and nested aliases. *)
   let final_env = add_types_to_env decls shapes env in
   (* Keep original declaration *)

@@ -2,9 +2,7 @@
  expect;
 *)
 
-(* Regression test: inclusion between nested record declarations whose
-   parameter lists have different lengths must report a normal mismatch,
-   not raise a fatal [Invalid_argument]. *)
+(* Canonical parameter selection gives both sides the same arity. The internal guard is tested in inclusion_arity_internal.ml. *)
 
 module type S = sig
   type ('a, 'b) t = { n : { value : 'a } } constraint 'a = 'b
@@ -16,30 +14,10 @@ end
 [%%expect{|
 module type S =
   sig type ('b, 'a) t = { n : { value : 'b; }; } constraint 'a = 'b end
-Lines 5-7, characters 15-3:
-5 | ...............struct
-6 |   type ('a, 'b) t = { n : { value : ('b as 'a) } }
-7 | end
-Error: Signature mismatch:
-       Modules do not match:
-         sig
-           type ('a, 'b) t = { n : { value : 'a; }; } constraint 'b = 'a
-         end
-       is not included in
-         S
-       Type declarations do not match:
-         type ('a, 'b) t = { n : { value : 'a; }; } constraint 'b = 'a
-       is not included in
-         type ('b, 'a) t = { n : { value : 'b; }; } constraint 'a = 'b
-       Fields do not match:
-         "n : { value : 'a; };"
-       is not the same as:
-         "n : { value : 'b; };"
-       Their nested record definitions differ.
+module M : S
 |}]
 
-(* Reverse inclusion direction: the constraint form is checked against
-   the alias form, which reaches the comparison in the other order. *)
+(* Check the reverse direction. *)
 
 module type S2 = sig
   type ('a, 'b) t = { n : { value : ('b as 'a) } }
@@ -51,29 +29,10 @@ end
 [%%expect{|
 module type S2 =
   sig type ('a, 'b) t = { n : { value : 'a; }; } constraint 'b = 'a end
-Lines 5-7, characters 17-3:
-5 | .................struct
-6 |   type ('a, 'b) t = { n : { value : 'a } } constraint 'a = 'b
-7 | end
-Error: Signature mismatch:
-       Modules do not match:
-         sig
-           type ('b, 'a) t = { n : { value : 'b; }; } constraint 'a = 'b
-         end
-       is not included in
-         S2
-       Type declarations do not match:
-         type ('b, 'a) t = { n : { value : 'b; }; } constraint 'a = 'b
-       is not included in
-         type ('a, 'b) t = { n : { value : 'a; }; } constraint 'b = 'a
-       Fields do not match:
-         "n : { value : 'b; };"
-       is not the same as:
-         "n : { value : 'a; };"
-       Their nested record definitions differ.
+module M2 : S2
 |}]
 
-(* Equal-arity nested declarations must keep matching. *)
+(* Equal-arity nested declarations keep matching. *)
 
 module type S3 = sig
   type 'a t = { n : { value : 'a } }
