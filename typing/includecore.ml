@@ -500,6 +500,14 @@ module Record_diffing = struct
       in
       Some (Atomicity  ord)
     else
+    match ld1.ld_inlined, ld2.ld_inlined with
+    | Some decl1, Some decl2
+      when List.compare_lengths decl1.type_params decl2.type_params <> 0 ->
+        (* An arity mismatch between nested declarations also shows up as
+           type constructors applied to argument lists of different
+           lengths, which [Ctype.equal] cannot compare. *)
+        Some Nested_record
+    | _ ->
     let tl1 = params1 @ [ld1.ld_type] in
     let tl2 = params2 @ [ld2.ld_type] in
     match Ctype.equal env true tl1 tl2 with
@@ -522,6 +530,10 @@ module Record_diffing = struct
   and equal ~loc env params1 params2
       (labels1 : Types.label_declaration list)
       (labels2 : Types.label_declaration list) =
+    (* Nested declarations may disagree on arity; [Ctype.equal] raises
+       [Invalid_argument] on lists of different lengths, so reject the
+       mismatch here instead. *)
+    List.compare_lengths params1 params2 = 0 &&
     match labels1, labels2 with
     | [], [] -> true
     | _ :: _ , [] | [], _ :: _ -> false
