@@ -976,14 +976,16 @@ and constructor_arguments i ppf = function
   | Cstr_tuple l -> list i core_type ppf l
   | Cstr_record l -> list i label_decl ppf l
 
-and label_decl i ppf {ld_id; ld_name= _; ld_mutable; ld_atomic; ld_type; ld_loc;
-                      ld_attributes} =
+and label_decl i ppf {ld_id; ld_name= _; ld_mutable; ld_atomic; ld_type;
+                      ld_inline_record; ld_loc; ld_attributes} =
   line i ppf "%a\n" fmt_location ld_loc;
   attributes i ppf ld_attributes;
   line (i+1) ppf "%a\n" fmt_mutable_flag ld_mutable;
   line (i+1) ppf "%a\n" fmt_atomic_flag ld_atomic;
   line (i+1) ppf "%a" fmt_ident ld_id;
-  core_type (i+1) ppf ld_type
+  (match ld_inline_record with
+   | Some fields -> list (i+1) label_decl ppf fields
+   | None -> core_type (i+1) ppf ld_type)
 
 and longident_x_pattern i ppf (li, _, p) =
   line i ppf "%a\n" fmt_longident li;
