@@ -799,6 +799,7 @@ struct marshal_header {
   uint32_t magic;
   int header_len;
   uintnat data_len;
+  uintnat total_len; /* header_len + data_len */
   uintnat num_objects;
   uintnat whsize;
 };
@@ -841,6 +842,13 @@ static void caml_parse_header(char * fun_name,
     errmsg[sizeof(errmsg) - 1] = 0;
     snprintf(errmsg, sizeof(errmsg) - 1,
              "%s: bad object",
+             fun_name);
+    caml_failwith(errmsg);
+  }
+  if (caml_uadd_overflow(h->header_len, h->data_len, &h->total_len)) {
+    errmsg[sizeof(errmsg) - 1] = 0;
+    snprintf(errmsg, sizeof(errmsg) - 1,
+             "%s: object too large to be read back on this platform",
              fun_name);
     caml_failwith(errmsg);
   }
@@ -915,7 +923,8 @@ CAMLexport value caml_input_val_from_bytes(value str, intnat ofs)
   /* Initialize global state */
   intern_init(&Byte_u(str, ofs), caml_string_length(str) - ofs, NULL);
   caml_parse_header("input_val_from_string", &h);
-  if (ofs + h.header_len + h.data_len > caml_string_length(str))
+  if (ofs < 0 || ofs + h.total_len < h.total_len ||
+      ofs + h.total_len > caml_string_length(str))
     caml_failwith("input_val_from_string: bad length");
   /* Allocate result */
   intern_alloc(h.whsize, h.num_objects);
@@ -961,7 +970,7 @@ CAMLexport value caml_input_value_from_block(char * data, intnat len)
   /* Initialize global state */
   intern_init(data, len, NULL);
   caml_parse_header("input_value_from_block", &h);
-  if (h.header_len + h.data_len > len)
+  if (h.total_len > len)
     caml_failwith("input_val_from_block: bad length");
   intern_src_end = intern_src + h.data_len;
   return input_val_from_block(&h);
@@ -978,7 +987,7 @@ CAMLprim value caml_marshal_data_size(value buff, value ofs)
 {
   uint32_t magic;
   int header_len;
-  uintnat data_len;
+  uintnat data_len, total_len;
 
   intern_src = &Byte_u(buff, Long_val(ofs));
   intern_src_end = &Byte_u(buff, caml_string_length(buff));
@@ -1001,7 +1010,12 @@ CAMLprim value caml_marshal_data_size(value buff, value ofs)
   default:
     caml_failwith("Marshal.data_size: bad object");
   }
-  return Val_long((header_len - 20) + data_len);
+  if (caml_uadd_overflow(header_len, data_len, &total_len)
+      || total_len > Max_long + 20) {
+    caml_failwith("Marshal.data_size: "
+                  "object too large to be read back on this platform");
+  }
+  return Val_long(total_len - 20);
 }
 
 /* Resolution of code pointers */
