@@ -1387,9 +1387,19 @@ let syntactic_variance
   if mem Inj vi then Injective else NoInjectivity in
   (v, i)
 
+(* Prepare a record label, including the labels of any nested record
+   declaration, so that cycles and aliases in inner field types are
+   registered before the declaration is converted to [Outcometree]. *)
+let rec prepare_label l =
+  prepare_type l.ld_type;
+  match l.ld_inlined with
+  | Some { type_kind = Type_record (inner_lbls, _); _ } ->
+      List.iter prepare_label inner_lbls
+  | Some _ | None -> ()
+
 let prepare_type_constructor_arguments = function
   | Cstr_tuple l -> List.iter prepare_type l
-  | Cstr_record l -> List.iter (fun l -> prepare_type l.ld_type) l
+  | Cstr_record l -> List.iter prepare_label l
 
 let rec tree_of_label l =
   let typ = match l.ld_inlined with
@@ -1486,7 +1496,7 @@ let prepare_decl id decl =
            Option.iter prepare_type c.cd_res)
         cstrs
   | Type_record(l, _rep) ->
-      List.iter (fun l -> prepare_type l.ld_type) l
+      List.iter prepare_label l
   | Type_open -> ()
   | Type_external _ -> ()
   end;
