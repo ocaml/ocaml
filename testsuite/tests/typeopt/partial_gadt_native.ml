@@ -1,4 +1,5 @@
 (* TEST
+no-flambda; (* different lambda output *)
 flags="-dlambda -dno-locations -dno-unique-ids";
 native;
 *)

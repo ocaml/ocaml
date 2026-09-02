@@ -7,7 +7,7 @@
            (if param
              (raise
                (makeblock 0 (global Match_failure!)
-                 [0: "partial_gadt_native.ml" 11 14]))
+                 [0: "partial_gadt_native.ml" 12 14]))
              (+. param 1.)))))
     (setfield_ptr(root-init) 0 (global Partial_gadt_native!) f))
   0)
