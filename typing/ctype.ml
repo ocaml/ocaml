@@ -1069,6 +1069,11 @@ let update_level_for tr_exn env level ty =
     update_level env level ty
   with Escape e -> raise_for tr_exn (Escape e)
 
+(* Lower the level of a type to the current level *)
+let enforce_current_level env ty =
+  try update_level env !current_level ty
+  with Escape _ -> fatal_error "Ctype.enforce_current_level"
+
 (* Lower level of type variables inside contravariant branches.
 
    Note: this implies that only variables in *strictly positive*
@@ -4023,9 +4028,6 @@ let unify_pairs env ty1 ty2 pairs =
 
 let unify env ty1 ty2 =
   unify_pairs env ty1 ty2 []
-
-(* Lower the level of a type to the current level *)
-let enforce_current_level env ty = unify_var env (newvar ()) ty
 
 
 (**** Special cases of unification ****)
