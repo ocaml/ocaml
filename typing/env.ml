@@ -1392,9 +1392,8 @@ let find_shape env (ns : Shape.Sig_component_kind.t) id =
   | Class_type ->
       (IdTbl.find_same id env.cltypes).cltda_shape
 
-let shape_of_path ~namespace env = function
-  | Pextra_ty (_, Pfld_ty _) -> raise Not_found
-  | path -> Shape.of_path ~namespace ~find_shape:(find_shape env) path
+let shape_of_path ~namespace env path =
+  Shape.of_path ~namespace ~find_shape:(find_shape env) path
 
 let shape_or_leaf uid = function
   | None -> Shape.leaf uid

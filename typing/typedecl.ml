@@ -571,6 +571,31 @@ let shape_map_cstrs =
       @@ Shape.str ~uid:cd_uid cstr_shape_map)
     (Shape.Map.empty)
 
+(* The shape of a record type is built from [Types.label_declaration]s
+   because they carry the [ld_inlined] declaration of nested inline
+   records. Each nested declaration is added as a [Type] item alongside
+   the [Label] item of its field so that [Pfld_ty] projections such as
+   [t.a] resolve to the nested declaration's own uid. *)
+let rec shape_of_record_types ~uid labels =
+  let map =
+    List.fold_left
+      (fun map (label : Types.label_declaration) ->
+        let map = Shape.Map.add_label map label.ld_id label.ld_uid in
+        match label.ld_inlined with
+        | None -> map
+        | Some decl ->
+            Shape.Map.add_type map label.ld_id (shape_of_nested_type decl))
+      Shape.Map.empty labels
+  in
+  Shape.str ~uid map
+
+and shape_of_nested_type (decl : Types.type_declaration) =
+  match decl.type_kind with
+  | Type_record (labels, _) ->
+      shape_of_record_types ~uid:decl.type_uid labels
+  | Type_variant _ | Type_abstract _ | Type_open | Type_external _ ->
+      Shape.leaf decl.type_uid
+
 let param_types params = List.map (fun (cty,_vi) -> cty.ctyp_type) params
 
 let transl_declaration rec_flag env sdecl (id, uid) =
@@ -759,7 +784,12 @@ let transl_declaration rec_flag env sdecl (id, uid) =
       let uid = decl.typ_type.type_uid in
       match decl.typ_kind with
       | Ttype_variant cstrs -> Shape.str ~uid (shape_map_cstrs cstrs)
-      | Ttype_record labels -> Shape.str ~uid (shape_map_labels labels)
+      | Ttype_record _ ->
+          begin match decl.typ_type.type_kind with
+          | Type_record (labels, _) -> shape_of_record_types ~uid labels
+          | Type_variant _ | Type_abstract _ | Type_open
+          | Type_external _ -> assert false
+          end
       | Ttype_abstract | Ttype_open | Ttype_external _ -> Shape.leaf uid
     in
     decl, typ_shape

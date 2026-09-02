@@ -380,6 +380,15 @@ let index_occurrences binary_annots =
        should make these successive reductions fast. *)
     let rec index_components namespace lid path  =
       let module_ = Shape.Sig_component_kind.Module in
+      match lid.Location.txt, path with
+      | Longident.Ldot (lid', _), Path.Pextra_ty (path', Path.Pfld_ty _) ->
+        (* Projected types such as [t.a] must be matched before
+           [Path.scrape_extra_ty] drops the [Pfld_ty] projection and leaves
+           the [Ldot] source without a matching path component. Store the
+           full projected occurrence, then index the parent type path. *)
+        reduce_and_store ~namespace lid path;
+        index_components Shape.Sig_component_kind.Type lid' path'
+      | _, _ ->
       let scraped_path = Path.scrape_extra_ty path in
       match lid.Location.txt, scraped_path with
       | Longident.Ldot (lid', _), Path.Pdot (path', _) ->
