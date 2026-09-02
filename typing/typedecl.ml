@@ -174,7 +174,14 @@ let enter_type ?abstract_abbrevs rec_flag env sdecl (id, uid) =
   in
   add_type ~check:true id decl env
 
-let nested_type_placeholder ~current_unit sdecl labels loc =
+(* Positions, in parent declaration order, of the parent type parameters
+   whose names the source syntax of a nested record's fields references.
+   These positions are the canonical parameter selection for a nested
+   type: the recursive placeholder and the final translated declaration
+   must both use them, so that the projected type has one arity during
+   and after the translation of its recursive group.  Names bound by an
+   inner [Ptyp_poly] shadow parent parameters. *)
+let nested_param_positions sparams labels =
   let variables = ref String.Set.empty in
   let bound = ref String.Set.empty in
   let default = Ast_iterator.default_iterator in
@@ -198,18 +205,20 @@ let nested_type_placeholder ~current_unit sdecl labels loc =
     }
   in
   List.iter (iterator.label_declaration iterator) labels;
-  let type_params =
-    List.filter_map
-      (fun (param, _) ->
-         match param.ptyp_desc with
-         | Ptyp_var name when String.Set.mem name !variables ->
-             Some (Btype.newgenvar ())
-         | Ptyp_any | Ptyp_var _ | Ptyp_arrow _ | Ptyp_tuple _
-         | Ptyp_constr _ | Ptyp_object _ | Ptyp_class _ | Ptyp_alias _
-         | Ptyp_variant _ | Ptyp_poly _ | Ptyp_package _
-         | Ptyp_open _ | Ptyp_extension _ | Ptyp_functor _ -> None)
-      sdecl.ptype_params
-  in
+  List.filter_map
+    (fun (position, (param, _)) ->
+       match param.ptyp_desc with
+       | Ptyp_var name when String.Set.mem name !variables ->
+           Some position
+       | Ptyp_any | Ptyp_var _ | Ptyp_arrow _ | Ptyp_tuple _
+       | Ptyp_constr _ | Ptyp_object _ | Ptyp_class _ | Ptyp_alias _
+       | Ptyp_variant _ | Ptyp_poly _ | Ptyp_package _
+       | Ptyp_open _ | Ptyp_extension _ | Ptyp_functor _ -> None)
+    (List.mapi (fun position param -> (position, param)) sparams)
+
+let nested_type_placeholder ~current_unit sdecl labels loc =
+  let positions = nested_param_positions sdecl.ptype_params labels in
+  let type_params = List.map (fun _ -> Btype.newgenvar ()) positions in
   let arity = List.length type_params in
   { type_params;
     type_arity = arity;
@@ -334,16 +343,12 @@ let compute_record_rep env ?(unbox=false) lbls =
   then Record_float
   else Record_regular
 
+(* [params] must already be the canonical parameter selection computed
+   by [nested_param_positions]: it is what keeps this declaration's arity
+   equal to the arity of the recursive placeholder registered for the
+   same path. *)
 let make_inline_record_decl ~uid ~loc ~private_ ~params lbls rep =
-  let free_variables =
-    Ctype.free_variables_list
-      (List.map (fun (label : Types.label_declaration) -> label.ld_type) lbls)
-  in
-  let type_params =
-    List.filter
-      (fun param -> List.exists (eq_type param) free_variables)
-      params
-  in
+  let type_params = params in
   let arity = List.length type_params in
   { type_params;
     type_arity = arity;
@@ -432,15 +437,18 @@ let transl_labels env univars closed lbls =
   check_duplicate_labels lbls;
   List.split (List.map (transl_label env univars closed) lbls)
 
+(* [sparams] are the source parameters of the enclosing type declaration
+   and [params] their translated counterparts, in the same order.  Nested
+   types at every depth select their parameters from this one list. *)
 let rec transl_labels_with_inline
-    env univars closed ~rec_flag ~path ~params ~private_ lbls =
+    env univars closed ~rec_flag ~path ~sparams ~params ~private_ lbls =
   assert (lbls <> []);
   check_duplicate_labels lbls;
   let transl_label' label =
     match label.pld_inline_record with
     | Some inner_fields ->
         transl_inline_label
-          env univars closed ~rec_flag ~path ~params ~private_
+          env univars closed ~rec_flag ~path ~sparams ~params ~private_
           label inner_fields
     | None ->
         transl_label env univars closed label
@@ -448,7 +456,7 @@ let rec transl_labels_with_inline
   List.split (List.map transl_label' lbls)
 
 and transl_inline_label env univars closed
-    ~rec_flag ~path ~params ~private_
+    ~rec_flag ~path ~sparams ~params ~private_
     ({pld_name=name; pld_loc=loc; pld_attributes=attrs; _} as label)
     inner_fields =
   Builtin_attributes.warning_scope attrs
@@ -457,7 +465,7 @@ and transl_inline_label env univars closed
        let field_path = Path.Pextra_ty (path, Pfld_ty name.txt) in
        let inner_lbls, inner_lbls' =
          transl_labels_with_inline
-           env univars closed ~rec_flag ~path:field_path ~params
+           env univars closed ~rec_flag ~path:field_path ~sparams ~params
            ~private_ inner_fields
        in
        let inner_rep = compute_record_rep env inner_lbls' in
@@ -466,9 +474,13 @@ and transl_inline_label env univars closed
          | Asttypes.Nonrecursive -> Uid.mk ~current_unit
          | Asttypes.Recursive -> (Env.find_type field_path env).type_uid
        in
+       let nested_params =
+         List.map (List.nth params)
+           (nested_param_positions sparams inner_fields)
+       in
        let inline_decl =
          make_inline_record_decl
-           ~uid ~loc ~private_ ~params inner_lbls' inner_rep
+           ~uid ~loc ~private_ ~params:nested_params inner_lbls' inner_rep
        in
        let cty =
          inline_record_type env loc field_path inline_decl.type_params
@@ -679,7 +691,8 @@ let transl_declaration rec_flag env sdecl (id, uid) =
           let lbls, lbls' =
             transl_labels_with_inline
               env None true ~rec_flag ~path:(Path.Pident id)
-              ~params ~private_:sdecl.ptype_private lbls
+              ~sparams:sdecl.ptype_params ~params
+              ~private_:sdecl.ptype_private lbls
           in
           let rep = compute_record_rep env ~unbox lbls' in
           Ttype_record lbls, Type_record(lbls', rep)
