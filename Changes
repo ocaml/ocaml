@@ -146,6 +146,14 @@ Working version
   (Xavier Leroy, report by Akshay Singh, review by Nicolás Ojeda Bär
   and Antonin Décimo)
 
+- #NNNNN: a debug runtime records what registered each global root, and stamps
+  each skiplist cell with the key it was inserted under, so that a root damaged
+  by a stray write is refused by the scan and reported with its registrant
+  instead of faulting inside the collector. The root being scanned is also left
+  in a thread-local, so that a collector taken down by a root holding something
+  that is no longer a value can still be traced back to what registered it.
+  (Romain Beauxis, review by XXX)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
@@ -333,6 +341,12 @@ Working version
   (Fabian Hemmer, suggestion by Daniel Bünzli, review by Daniel Bünzli and
   Nicolás Ojeda Bär)
 
+- #NNNNN: Add Gc.check_roots, which walks the C global roots on demand and
+  fails naming a damaged one, for finding which step of a program broke it
+  rather than waiting for the collection that trips over it. Does nothing
+  outside a runtime built for debugging.
+  (Romain Beauxis, review by XXX)
+
 ### Other libraries:
 
 * #14788: The Win32 error code `ERROR_DIRECTORY` (= 267) is now mapped to
@@ -357,6 +371,13 @@ Working version
   (Nicolás Ojeda Bär, report by Zhang Rui, review by Antonin Décimo)
 
 ### Tools:
+
+- #NNNNN: an "ocaml roots" command for the GDB and LLDB plugins, which walks
+  the C global roots of a core or a live process, reports any cell that no
+  longer matches the key it was inserted under together with the code that
+  registered that root, and names the root the collector was following when
+  it faulted. Needs a runtime built for debugging.
+  (Romain Beauxis, review by XXX)
 
 - #14318, #14709, ocamldoc: use "Module_name (Library name)" rather than
    "Library name: Module_name" as the title of html pages.

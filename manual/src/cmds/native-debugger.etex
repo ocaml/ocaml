@@ -172,6 +172,19 @@ $1 = caml:14
 
 \end{verbatim}
 
+The plugin also provides \texttt{ocaml roots}, which walks the C global roots and reports any whose skiplist cell no longer matches the key it was inserted under, along with the code that registered it. This needs a runtime built for debugging (\texttt{-runtime-variant d}), which is what keeps the stamp and the table of registrants; against any other runtime the command says so rather than reporting nothing. It reads a core as readily as a live process, which is the case it is meant for: a root damaged by a stray write takes the collector down long after whoever damaged it returned, so the backtrace names only the collector.
+
+\begin{verbatim}
+(gdb) ocaml roots
+caml_global_roots: cell filed under 0x10000005528a0
+  inserted under      0x5528a0 (metadata_charset)
+  registered by       metadata_open + 39 at stubs.c:76 (0x49966c)
+
+7 roots checked, 1 damaged
+\end{verbatim}
+
+A root left holding something that is no longer a value damages no cell, and the collector faults following it. The command then reports the root that was under the scan, which the runtime leaves in a thread-local for exactly this.
+
 We can also print other kinds of OCaml values. In order to illustrate this, consider the following program:
 
 \begin{caml_example*}{verbatim}
@@ -340,6 +353,8 @@ heap exploration (see 'help ocaml' for more information).
 (value) 41 caml:20
 (lldb)
 \end{verbatim}
+
+The \texttt{ocaml roots} command described in the GDB section above is available here too, and behaves the same way.
 
 Note: above we are using an ARM64 Linux machine, so our first argument is passed in the first register \texttt{x0}.
 
