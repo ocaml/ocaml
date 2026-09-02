@@ -18,6 +18,9 @@ Working version
 
 ### Runtime system:
 
+- #14988: Don't copy continuations in Weak.get_copy.
+  (Jeremy Yallop, review by Stefan Muenzel)
+
 - #10258: Overhaul the locale code used for mingw/msvc in float<->string
   conversions.
   (David Allsopp, review by Antonin Décimo)
