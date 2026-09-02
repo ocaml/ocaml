@@ -167,6 +167,11 @@ DOCDIR=@docdir@
 TARGET_LIBDIR=@TARGET_LIBDIR@
 TARGET_LIBDIR_IS_RELATIVE=@target_libdir_is_relative@
 
+### Where to look for the standard library on host
+# The difference with LIBDIR (in Makefile.config) is that this is just the
+# relative path when --with-relative-libdir is enabled
+HOST_LIBDIR=@host_libdir@
+
 unix_directory = @unix_directory@
 unix_library = @unix_library@
 

@@ -812,6 +812,7 @@ target_libdir_is_relative
 ar_supports_response_files
 QS
 TARGET_LIBDIR
+host_libdir
 ocaml_libdir
 ocaml_bindir
 ocaml_prefix
@@ -3710,6 +3711,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L038
 
 
 
+
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.build_config"
@@ -4121,11 +4123,17 @@ fi
 
 # Environment-specific set-up
 
+case $host in #(
+  *-w64-mingw32*|*-pc-windows) :
+    host_dir_sep='\' ;; #(
+  *) :
+    host_dir_sep='/' ;;
+esac
 case $target in #(
   *-w64-mingw32*|*-pc-windows) :
-    default_separator='\' ;; #(
+    target_dir_sep='\' ;; #(
   *) :
-    default_separator='/' ;;
+    target_dir_sep='/' ;;
 esac
 
 # Environment variables that are taken into account
@@ -4428,7 +4436,7 @@ then :
   no) :
     ocaml_additional_stublibs_dir='' ;; #(
   yes) :
-    ocaml_additional_stublibs_dir="..${default_separator}stublibs" ;; #(
+    ocaml_additional_stublibs_dir="..${host_dir_sep}stublibs" ;; #(
   *) :
     ocaml_additional_stublibs_dir="$withval" ;;
 esac
@@ -4517,7 +4525,7 @@ then :
   no) :
     bindir_to_libdir='' ;; #(
   yes) :
-    bindir_to_libdir="..${default_separator}lib${default_separator}ocaml" ;; #(
+    bindir_to_libdir="..${host_dir_sep}lib${host_dir_sep}ocaml" ;; #(
   *) :
     bindir_to_libdir="$withval" ;;
 esac
@@ -25550,7 +25558,10 @@ then :
   if test x"$bindir_to_libdir" != 'x'
 then :
   ocaml_libdir="$bindir_to_libdir"
-    target_libdir_is_relative=true
+    if test x"$TARGET_LIBDIR" = x
+then :
+  target_libdir_is_relative=true
+fi
     case $cygwin_build_env,$host in #(
   true,*-w64-mingw32*|true,*-pc-windows) :
     build_bindir_to_libdir="$(LC_ALL=C.UTF-8 cygpath \
@@ -25575,9 +25586,26 @@ fi ;;
 esac
 fi
 
-if test x"$bindir_to_libdir" != 'x' && test x"$TARGET_LIBDIR" != 'x'
+case $TARGET_LIBDIR in #(
+  .|..|.${target_dir_sep}*|..${target_dir_sep}*) :
+    target_libdir_is_relative=true ;; #(
+  *) :
+     ;;
+esac
+
+host_libdir='${TARGET_LIBDIR}'
+
+if $cross_compiler
+then :
+  if test x"$bindir_to_libdir" != 'x'
+then :
+  host_libdir="$bindir_to_libdir"
+fi
+else $as_nop
+  if test x"$bindir_to_libdir" != 'x' && test x"$TARGET_LIBDIR" != 'x'
 then :
   as_fn_error $? "--with-relative-libdir and TARGET_LIBDIR cannot both be specified" "$LINENO" 5
+fi
 fi
 
 # Define a few macros that were defined in config/m-nt.h
@@ -26863,7 +26891,7 @@ fi
 ocaml_additional_stublibs_dir=\
 '$(echo "$ocaml_additional_stublibs_dir" | sed -e "s/'/'\"'\"'/g")'
   ocaml_libdir='$(echo "$ocaml_libdir" | sed -e "s/'/'\"'\"'/g")'
-  default_separator='$default_separator'
+  host_dir_sep='$host_dir_sep'
   supports_shared_libraries='$supports_shared_libraries'
 
 _ACEOF
@@ -28044,7 +28072,7 @@ ltmain=$ac_aux_dir/ltmain.sh
   test x"$ocaml_additional_stublibs_dir" = 'x' || \
     echo "$ocaml_additional_stublibs_dir" > runtime/ld.conf
   if $supports_shared_libraries; then
-    echo ".${default_separator}stublibs" >> runtime/ld.conf
+    echo ".${host_dir_sep}stublibs" >> runtime/ld.conf
   fi
   echo "." >> runtime/ld.conf ;;
 
