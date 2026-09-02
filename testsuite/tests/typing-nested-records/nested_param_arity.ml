@@ -2,19 +2,10 @@
  expect;
 *)
 
-(* A nested type selects its parameters by the source positions of the
-   parent parameters that its fields reference.  The recursive
-   placeholder and the final declaration must use the same positions, so
-   a projected type has one arity during and after the translation of
-   its recursive group. *)
+(* Recursive placeholders and final declarations must select the same parent parameter positions. *)
 
-(* ===== Reported alias case ===== *)
+(* Aliases must not change projected arity during recursive translation. *)
 
-(* The alias unifies both parent parameters during translation.  The
-   placeholder and the final declaration both keep one parameter: the
-   position of ['b], the only parameter the source references.  This
-   used to crash constraint checking with
-   [Invalid_argument("List.exists2")]. *)
 type ('a, 'b) t = {
   n : { value : ('b as 'a) };
   recursive_use : int t.n option;
@@ -24,13 +15,12 @@ type ('a, 'b) t = { n : { value : 'a; }; recursive_use : int t.n option; }
   constraint 'b = 'a
 |}]
 
-(* The projected type keeps the same arity after the recursive group. *)
 let after_group (x : int t.n) : int = x.value
 [%%expect{|
 val after_group : int t.n -> int = <fun>
 |}]
 
-(* ===== Wrong arity is a normal diagnostic ===== *)
+(* Wrong arity reports an error. *)
 
 let wrong_arity (x : (int, string) t.n) = x.value
 [%%expect{|
@@ -41,7 +31,7 @@ Error: The type constructor "t.n" expects 1 argument(s),
        but is here applied to 2 argument(s)
 |}]
 
-(* ===== Alias that unifies two parent parameters, without recursion ===== *)
+(* Aliases without recursion use the same rule. *)
 
 type ('a, 'b) unified = {
   u : { first : 'a; second : ('a as 'b) };
@@ -56,10 +46,8 @@ let use_unified (x : int unified.u) = (x.first, x.second)
 val use_unified : int unified.u -> int * int = <fun>
 |}]
 
-(* ===== [Ptyp_poly] shadowing a parent parameter name ===== *)
+(* Locally quantified variables do not select same-named parent parameters. *)
 
-(* The locally bound ['a] shadows the parent parameter, so the nested
-   type has no parameters. *)
 type 'a shadowed = {
   s : { apply : 'a. 'a -> int };
 }
@@ -72,7 +60,7 @@ let use_shadowed (x : shadowed.s) = x.apply ()
 val use_shadowed : shadowed.s -> int = <fun>
 |}]
 
-(* The bound name shadows only itself: ['b] is still selected. *)
+(* Only the locally bound name is shadowed. *)
 type ('a, 'b) partly_shadowed = {
   s : { apply : 'a. 'a -> 'b };
   loop : bool partly_shadowed.s option;
@@ -89,10 +77,7 @@ let use_partly_shadowed (x : int partly_shadowed.s) : int = x.apply ()
 val use_partly_shadowed : int partly_shadowed.s -> int = <fun>
 |}]
 
-(* ===== Unused and phantom parent parameters ===== *)
-
-(* The phantom parameter is dropped from the projection, in the
-   recursive use and afterwards. *)
+(* Unused parent parameters are not selected. *)
 type ('a, 'phantom) with_phantom = {
   p : { value : 'a };
   again : int with_phantom.p option;
@@ -109,8 +94,7 @@ let use_phantom (x : (int, string) with_phantom) : int with_phantom.p = x.p
 val use_phantom : (int, string) with_phantom -> int with_phantom.p = <fun>
 |}]
 
-(* A nested type that references no parent parameter has no
-   parameters. *)
+(* A projection with no parent references has arity zero. *)
 type ('a, 'b) all_unused = {
   ground : { flag : bool };
   tie : all_unused.ground option;
@@ -122,10 +106,7 @@ type ('a, 'b) all_unused = {
 }
 |}]
 
-(* ===== Two-level nesting: order stays parent order at each level ===== *)
-
-(* The outer nested type references ['c] before ['b] in field order, but
-   both levels keep parent declaration order: ('b, 'c). *)
+(* Parameter order follows the parent declaration. *)
 type ('a, 'b, 'c) three = {
   outer : { left : 'c; inner : { pair : 'b * 'c } };
 }
@@ -135,8 +116,6 @@ type ('a, 'b, 'c) three = {
 }
 |}]
 
-(* left = 'c: with arguments (string, bool), left is bool.  This fails
-   to type-check if the parameters were in field traversal order. *)
 let outer_order (x : (string, bool) three.outer) : bool = x.left
 [%%expect{|
 val outer_order : (string, bool) three.outer -> bool = <fun>
@@ -148,7 +127,7 @@ let inner_order (x : (string, bool) three.outer.inner) : string * bool =
 val inner_order : (string, bool) three.outer.inner -> string * bool = <fun>
 |}]
 
-(* ===== Mutually recursive declarations using projected types ===== *)
+(* Mutual recursion uses the same selection rule. *)
 
 type ('a, 'b) left = {
   payload : { this : 'a };

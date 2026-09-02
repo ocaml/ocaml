@@ -489,20 +489,16 @@ let rec update_inline_record_decl env path decl =
 and update_nested_record_variance env path decl =
   match decl.type_kind with
   | Type_record (labels, rep) ->
-      let labels =
-        List.map
-          (fun label ->
-             let ld_inlined =
-               let path =
-                 Path.Pextra_ty (path, Path.Pfld_ty (Ident.name label.ld_id))
-               in
-               Option.map (update_inline_record_decl env path) label.ld_inlined
-             in
-             { label with ld_inlined })
-          labels
-      in
+      let labels = List.map (update_nested_label_variance env path) labels in
       { decl with type_kind = Type_record (labels, rep) }
   | Type_abstract _ | Type_variant _ | Type_open | Type_external _ -> decl
+
+and update_nested_label_variance env path label =
+  let path = Path.Pextra_ty (path, Path.Pfld_ty (Ident.name label.ld_id)) in
+  let ld_inlined =
+    Option.map (update_inline_record_decl env path) label.ld_inlined
+  in
+  { label with ld_inlined }
 
 let check_decl env id decl req =
   ignore (compute_variance_decl env ~check:(Some id) decl (req, decl.type_loc))

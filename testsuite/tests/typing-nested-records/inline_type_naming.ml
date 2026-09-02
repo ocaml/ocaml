@@ -2,7 +2,7 @@
  expect;
 *)
 
-(* ===== Basic type naming: type_name.field as a type expression ===== *)
+(* Basic type naming: type_name.field as a type expression *)
 
 type http_request = {
   headers : { content_type : string; authorization : string };
@@ -29,7 +29,7 @@ val build_headers : http_request.headers =
   {content_type = "text/html"; authorization = "Bearer xyz"}
 |}]
 
-(* ===== Nested inline record types ===== *)
+(* Nested inline record types *)
 
 type config = {
   server : { host : string; port : int; tls : { enabled : bool; cert : string } };
@@ -54,7 +54,7 @@ let get_tls (c : config) : config.server.tls = c.server.tls
 val get_tls : config -> config.server.tls = <fun>
 |}]
 
-(* ===== Parametric types ===== *)
+(* Parametric types *)
 
 type 'a wrapper = {
   inner : { value : 'a; label : string };
@@ -76,10 +76,9 @@ let get_value (w : 'a wrapper) = w.inner.value
 val get_value : 'a wrapper -> 'a = <fun>
 |}]
 
-(* ===== Multiple type parameters: arity of inline field types ===== *)
+(* Multiple type parameters: arity of inline field types *)
 
-(* Inline field types keep the parent type parameters that their fields
-   reference, in parent declaration order. *)
+(* Inline field types keep referenced parent parameters in declaration order. *)
 type ('a, 'b) either_record = {
   left : { payload : 'a };
   right : { payload : 'b };
@@ -136,7 +135,7 @@ val ordered_data : (int, string) parameter_order.data =
   {first = 1; second = "two"}
 |}]
 
-(* ===== Disambiguating overlapping field names ===== *)
+(* Disambiguating overlapping field names *)
 
 type t1 = { data : { x : int } }
 type t2 = { data : { x : string; y : bool } }
@@ -156,7 +155,7 @@ let f2 (d : t2.data) = d.x
 val f2 : t2.data -> string = <fun>
 |}]
 
-(* ===== Type naming with modules ===== *)
+(* Type naming with modules *)
 
 module M = struct
   type t = { info : { name : string; age : int } }
@@ -183,7 +182,7 @@ module Qualified : sig module Request : sig type headers = int end end
 val qualified_headers : Qualified.Request.headers = 1
 |}]
 
-(* ===== Round-trip: inline type printed in function signatures ===== *)
+(* Round-trip: inline type printed in function signatures *)
 
 type person = {
   name : string;
@@ -203,7 +202,7 @@ val get_address : person -> person.address = <fun>
 val update_address : person -> person.address -> person = <fun>
 |}]
 
-(* ===== Type declarations still show inline records expanded ===== *)
+(* Type declarations still show inline records expanded *)
 
 (* When defining a type, the inline record fields are shown in full *)
 type foo = { bar : { baz : int; qux : string } }
@@ -217,7 +216,7 @@ let extract_bar (f : foo) : foo.bar = f.bar
 val extract_bar : foo -> foo.bar = <fun>
 |}]
 
-(* ===== Error: non-existent inline field ===== *)
+(* Error: non-existent inline field *)
 
 type err1 = { a : { x : int } }
 
@@ -230,7 +229,7 @@ Line 3, characters 11-27:
 Error: Unbound type constructor "err1.nonexistent"
 |}]
 
-(* ===== Error: field exists but is not an inline record ===== *)
+(* Error: field exists but is not an inline record *)
 
 type err2 = { name : string; data : { x : int } }
 
@@ -243,7 +242,7 @@ Line 3, characters 11-20:
 Error: Unbound type constructor "err2.name"
 |}]
 
-(* ===== Inline record types work in other type contexts ===== *)
+(* Inline record types work in other type contexts *)
 
 type with_opt = { payload : { data : int } }
 
@@ -258,7 +257,7 @@ let payload_list : with_opt.payload list = []
 val payload_list : with_opt.payload list = []
 |}]
 
-(* ===== Recursive use of nested type names ===== *)
+(* Recursive use of nested type names *)
 
 type +'a recursive = {
   inner : { value : 'a; next : 'a recursive.inner option };
@@ -333,7 +332,7 @@ type ('a, 'b) recursive_poly = {
 and recursive_poly_user = { value : int recursive_poly.inner; }
 |}]
 
-(* ===== Signatures ===== *)
+(* Signatures *)
 
 module Public_api : sig
   type t = { info : { name : string } }
@@ -347,7 +346,7 @@ module Public_api :
   sig type t = { info : { name : string; }; } val get_info : t -> t.info end
 |}]
 
-(* ===== Substitution through functors ===== *)
+(* Substitution through functors *)
 
 module Make (X : sig type t end) = struct
   type wrapped = { inner : { value : X.t; nested : { value : X.t } } }
@@ -375,7 +374,7 @@ val unwrap_nested_int : Int_wrapped.wrapped.inner.nested -> int = <fun>
 val unwrap_direct : Make(Int_arg).wrapped.inner -> Int_arg.t = <fun>
 |}]
 
-(* ===== Destructive substitutions ===== *)
+(* Destructive substitutions *)
 
 module type Has_type = sig
   type t
@@ -416,7 +415,7 @@ module type Module_substituted =
   sig module A : sig val value : Replacement.t.inner end end
 |}]
 
-(* ===== Private parent records ===== *)
+(* Private parent records *)
 
 module Private : sig
   type t = private { inner : { value : int } }
@@ -444,7 +443,7 @@ Line 1, characters 40-53:
 Error: Cannot create values of the private type "Private.t.inner"
 |}]
 
-(* ===== Transparent aliases ===== *)
+(* Transparent aliases *)
 
 type alias_source = { inner : { value : int } }
 type alias = alias_source
@@ -513,7 +512,7 @@ Line 7, characters 29-50:
 Error: Unbound type constructor "Private_alias.t.inner"
 |}]
 
-(* ===== Variance ===== *)
+(* Variance *)
 
 type (+'a, -'b) variance = {
   inner : { value : 'a; apply : 'b -> unit };
@@ -569,7 +568,7 @@ and 'a variance_right = {
 }
 |}]
 
-(* ===== Record re-export coherence ===== *)
+(* Record re-export coherence *)
 
 type source = { inner : { value : int } }
 [%%expect{|

@@ -1387,9 +1387,6 @@ let syntactic_variance
   if mem Inj vi then Injective else NoInjectivity in
   (v, i)
 
-(* Prepare a record label, including the labels of any nested record
-   declaration, so that cycles and aliases in inner field types are
-   registered before the declaration is converted to [Outcometree]. *)
 let rec prepare_label l =
   prepare_type l.ld_type;
   match l.ld_inlined with
