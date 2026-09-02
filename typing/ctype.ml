@@ -106,7 +106,6 @@ let eq_package_path env p1 p2 =
 
 exception Unify_trace    of unification trace
 exception Equality_trace of comparison  trace
-exception Moregen_trace  of comparison  trace
 
 exception Unify    of unification_error
 exception Equality of equality_error
@@ -119,7 +118,6 @@ exception Escape of type_expr escape
    functions as a parameter *)
 type _ trace_exn =
 | Unify    : unification trace_exn
-| Moregen  : comparison  trace_exn
 | Equality : comparison  trace_exn
 
 let raise_trace_for
@@ -129,7 +127,6 @@ let raise_trace_for
   match tr_exn with
   | Unify    -> raise (Unify_trace    tr)
   | Equality -> raise (Equality_trace tr)
-  | Moregen  -> raise (Moregen_trace  tr)
 
 (* Uses of this function are a bit suspicious, as we usually want to maintain
    trace information; sometimes it makes sense, however, since we're maintaining
@@ -4642,341 +4639,7 @@ let generalize_class_signature_spine sign =
                         (*  Matching between type schemes  *)
                         (***********************************)
 
-(* Level of the subject, should be just below generic_level *)
-let subject_level = generic_level - 1
-
-(*
-   Update the level of [ty]. First check that the levels of generic
-   variables from the subject are not lowered.
-*)
-let moregen_occur env level ty =
-  with_type_mark begin fun mark ->
-    let rec occur ty =
-      let lv = get_level ty in
-      if lv <= level then () else
-      if is_Tvar ty && lv >= subject_level then raise Occur else
-      if try_mark_node mark ty then iter_type_expr occur ty
-    in
-    try
-      occur ty
-    with Occur ->
-      raise_unexplained_for Moregen
-  end;
-  (* also check for free univars *)
-  occur_univar_or_unscoped_for Moregen env ty;
-  update_level_for Moregen env level ty
-
-let may_instantiate t1 = get_level t1 <> subject_level
-
-let rec moregen type_pairs env t1 t2 =
-  if eq_type t1 t2 then () else
-
-  try
-    match (get_desc t1, get_desc t2) with
-      (Tvar _, _) when may_instantiate t1 ->
-        moregen_occur env (get_level t1) t2;
-        update_scope_for Moregen (get_scope t1) t2;
-        occur_for Moregen (Expression {env; in_subst = false}) t1 t2;
-        link_type t1 t2
-    | (Tconstr (p1, [], _), Tconstr (p2, [], _))
-      when quick_eq_type_path ~normalize:false env p1 p2 ->
-        ()
-    | _ ->
-        let t1' = expand_head env t1 in
-        let t2' = expand_head env t2 in
-        (* Expansion may have changed the representative of the types... *)
-        if eq_type t1' t2' then () else
-        if not (TypePairs.mem type_pairs (t1', t2')) then begin
-          TypePairs.add type_pairs (t1', t2');
-          match (get_desc t1', get_desc t2') with
-            (Tvar _, _) when may_instantiate t1' ->
-              moregen_occur env (get_level t1') t2;
-              update_scope_for Moregen (get_scope t1') t2;
-              link_type t1' t2
-          | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) ->
-              eq_labels Moregen ~in_pattern_mode:false l1 l2;
-              moregen type_pairs env t1 t2;
-              moregen type_pairs env u1 u2
-          | (Tfunctor (l1, id1, pack1, t1), Tfunctor (l2, id2, pack2, t2)) ->
-              eq_labels Moregen ~in_pattern_mode:false l1 l2;
-              moregen_package type_pairs env
-                (get_level t1') pack1 (get_level t2') pack2;
-              let mty1 = modtype_of_package env Location.none pack1 in
-              let mty2 = modtype_of_package env Location.none pack2 in
-              enter_functor_with_mtys_for Moregen env id1 mty1 t1' id2 mty2 t2'
-                  (fun new_env -> moregen type_pairs new_env t1 t2)
-          | Tarrow (l1, t1, u1, _), Tfunctor (l2, id2, pack2, u2) ->
-                eq_labels Moregen ~in_pattern_mode:false l1 l2;
-                let t2 = newmono_package pack2 in
-                moregen type_pairs env t1 t2;
-                let mty = modtype_of_package env Location.none pack2 in
-                let env' = Env.add_module (Ident.of_unscoped id2)
-                                          Mp_present mty env in
-                identifier_escape_for Moregen env' [id2] u2;
-                moregen type_pairs env u1 u2
-          | Tfunctor (l1, id1, pack1, u1), Tarrow (l2, t2, u2, _) ->
-                eq_labels Moregen ~in_pattern_mode:false l1 l2;
-                let t1 = newmono_package pack1 in
-                moregen type_pairs env t1 t2;
-                let mty = modtype_of_package env Location.none pack1 in
-                let env' = Env.add_module (Ident.of_unscoped id1)
-                                          Mp_present mty env in
-                identifier_escape_for Moregen env' [id1] u1;
-                moregen type_pairs env u1 u2
-          | (Ttuple tl1, Ttuple tl2) ->
-              moregen_labeled_list type_pairs env tl1 tl2
-          | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
-                when eq_expanded_type_path env p1 p2 ->
-              moregen_list type_pairs env tl1 tl2
-          | (Tpackage pack1, Tpackage pack2) ->
-              moregen_package type_pairs env (get_level t1') pack1
-                (get_level t2') pack2
-          | (Tnil,  Tconstr _ ) -> raise_for Moregen (Obj (Abstract_row Second))
-          | (Tconstr _,  Tnil ) -> raise_for Moregen (Obj (Abstract_row First))
-          | (Tvariant row1, Tvariant row2) ->
-              moregen_row type_pairs env row1 row2
-          | (Tobject (fi1, _nm1), Tobject (fi2, _nm2)) ->
-              moregen_fields type_pairs env fi1 fi2
-          | (Tfield _, Tfield _) ->           (* Actually unused *)
-              moregen_fields type_pairs env t1' t2'
-          | (Tnil, Tnil) ->
-              ()
-          | (Tpoly (t1, []), Tpoly (t2, [])) ->
-              moregen type_pairs env t1 t2
-          | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
-              enter_poly_for Moregen env t1 tl1 t2 tl2
-                (moregen type_pairs env)
-          | (Tunivar _, Tunivar _) ->
-              unify_univar_for Moregen t1' t2' !univar_pairs
-          | (_, _) ->
-              raise_unexplained_for Moregen
-        end
-  with Moregen_trace trace ->
-    raise_trace_for Moregen (Diff {got = t1; expected = t2} :: trace)
-
-
-and moregen_list type_pairs env tl1 tl2 =
-  if List.length tl1 <> List.length tl2 then
-    raise_unexplained_for Moregen;
-  List.iter2 (moregen type_pairs env) tl1 tl2
-
-and moregen_labeled_list type_pairs env labeled_tl1
-    labeled_tl2 =
-  if 0 <> List.compare_lengths labeled_tl1 labeled_tl2 then
-    raise_unexplained_for Moregen;
-  List.iter2
-    (fun (label1, ty1) (label2, ty2) ->
-      if not (Option.equal String.equal label1 label2) then
-        raise_unexplained_for Moregen;
-      moregen type_pairs env ty1 ty2)
-    labeled_tl1 labeled_tl2
-
-and moregen_package type_pairs env lvl1 pack1 lvl2 pack2 =
-  match
-    compare_package env (moregen type_pairs env)
-      lvl1 pack1 lvl2 pack2
-  with
-  | Ok () -> ()
-  | Error fme -> raise_for Moregen (First_class_module fme)
-
-and moregen_fields type_pairs env ty1 ty2 =
-  let (fields1, rest1) = flatten_fields ty1
-  and (fields2, rest2) = flatten_fields ty2 in
-  let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
-  begin
-    match miss1 with
-    | (n, _, _) :: _ -> raise_for Moregen (Obj (Missing_field (Second, n)))
-    | [] -> ()
-  end;
-  moregen type_pairs env rest1
-    (build_fields (get_level ty2) miss2 rest2);
-  List.iter
-    (fun (name, k1, t1, k2, t2) ->
-       moregen_kind name k1 k2;
-       try moregen type_pairs env t1 t2 with Moregen_trace trace ->
-         raise_trace_for Moregen
-           (incompatible_fields ~name ~got:t1 ~expected:t2 :: trace)
-    )
-    pairs
-
-and moregen_kind name k1 k2 =
-  let k1 = field_kind_repr k1 in
-  let k2 = field_kind_repr k2 in
-  match k1, k2 with
-  | (Fpublic, Fpublic)
-  | (Fprivate, Fprivate)               -> ()
-  | _ ->
-    raise_for Moregen (Obj (Kind_differ (name, k1, k2)))
-
-and moregen_row type_pairs env row1 row2 =
-  let Row {fields = row1_fields; more = rm1; closed = row1_closed} =
-    row_repr row1 in
-  let Row {fields = row2_fields; more = rm2; closed = row2_closed;
-           fixed = row2_fixed} = row_repr row2 in
-  if eq_type rm1 rm2 then () else
-  let may_inst =
-    is_Tvar rm1 && may_instantiate rm1 || get_desc rm1 = Tnil in
-  let r1, r2, pairs = merge_row_fields row1_fields row2_fields in
-  let r1, r2 =
-    if row2_closed then
-      filter_row_fields may_inst r1, filter_row_fields false r2
-    else r1, r2
-  in
-  begin
-    if r1 <> [] then raise_for Moregen (Variant (No_tags (Second, r1)))
-  end;
-  if row1_closed then begin
-    match row2_closed, r2 with
-    | false, _ -> raise_for Moregen (Variant (Openness Second))
-    | _, _ :: _ -> raise_for Moregen (Variant (No_tags (First, r2)))
-    | _, [] -> ()
-  end;
-  let md1 = get_desc rm1 (* This lets us undo a following [link_type] *) in
-  begin match md1, get_desc rm2 with
-    Tunivar _, Tunivar _ ->
-      unify_univar_for Moregen rm1 rm2 !univar_pairs
-  | Tunivar _, _ | _, Tunivar _ ->
-      raise_unexplained_for Moregen
-  | _ when static_row row1 -> ()
-  | _ when may_inst ->
-      let ext =
-        newgenty (Tvariant
-                    (create_row ~fields:r2 ~more:rm2 ~name:None
-                       ~fixed:row2_fixed ~closed:row2_closed))
-      in
-      moregen_occur env (get_level rm1) ext;
-      update_scope_for Moregen (get_scope rm1) ext;
-      (* This [link_type] has to be undone if the rest of the function fails *)
-      link_type rm1 ext
-  | Tconstr _, Tconstr _ ->
-      moregen type_pairs env rm1 rm2
-  | _ -> raise_unexplained_for Moregen
-  end;
-  try
-    List.iter
-      (fun (l,f1,f2) ->
-         if f1 == f2 then () else
-         match row_field_repr f1, row_field_repr f2 with
-         (* Both matching [Rpresent]s *)
-         | Rpresent(Some t1), Rpresent(Some t2) -> begin
-             try
-               moregen type_pairs env t1 t2
-             with Moregen_trace trace ->
-               raise_trace_for Moregen
-                 (Variant (Incompatible_types_for l) :: trace)
-           end
-         | Rpresent None, Rpresent None -> ()
-         (* Both [Reither] *)
-         | Reither(c1, tl1, _), Reither(c2, tl2, m2) -> begin
-             try
-               if not (eq_row_field_ext f1 f2) then begin
-                 if c1 && not c2 then raise_unexplained_for Moregen;
-                 let f2' =
-                   rf_either [] ~use_ext_of:f2 ~no_arg:c2 ~matched:m2 in
-                 link_row_field_ext ~inside:f1 f2';
-                 if List.length tl1 = List.length tl2 then
-                   List.iter2 (moregen type_pairs env) tl1 tl2
-                 else match tl2 with
-                   | t2 :: _ ->
-                     List.iter
-                       (fun t1 -> moregen type_pairs env t1 t2)
-                       tl1
-                   | [] -> if tl1 <> [] then raise_unexplained_for Moregen
-               end
-             with Moregen_trace trace ->
-               raise_trace_for Moregen
-                 (Variant (Incompatible_types_for l) :: trace)
-           end
-         (* Generalizing [Reither] *)
-         | Reither(false, tl1, _), Rpresent(Some t2) when may_inst -> begin
-             try
-               link_row_field_ext ~inside:f1 f2;
-               List.iter
-                 (fun t1 -> moregen type_pairs env t1 t2)
-                 tl1
-             with Moregen_trace trace ->
-               raise_trace_for Moregen
-                 (Variant (Incompatible_types_for l) :: trace)
-           end
-         | Reither(true, [], _), Rpresent None when may_inst ->
-             link_row_field_ext ~inside:f1 f2
-         | Reither(_, _, _), Rabsent when may_inst ->
-             link_row_field_ext ~inside:f1 f2
-         (* Both [Rabsent]s *)
-         | Rabsent, Rabsent -> ()
-         (* Mismatched constructor arguments *)
-         | Rpresent (Some _), Rpresent None
-         | Rpresent None, Rpresent (Some _) ->
-             raise_for Moregen (Variant (Incompatible_types_for l))
-         (* Mismatched presence *)
-         | Reither _, Rpresent _ ->
-             raise_for Moregen
-               (Variant (Presence_not_guaranteed_for (First, l)))
-         | Rpresent _, Reither _ ->
-             raise_for Moregen
-               (Variant (Presence_not_guaranteed_for (Second, l)))
-         (* Missing tags *)
-         | Rabsent, (Rpresent _ | Reither _) ->
-             raise_for Moregen (Variant (No_tags (First, [l, f2])))
-         | (Rpresent _ | Reither _), Rabsent ->
-             raise_for Moregen (Variant (No_tags (Second, [l, f1]))))
-      pairs
-  with exn ->
-    (* Undo [link_type] if we failed *)
-    set_type_desc rm1 md1; raise exn
-
-(* Must empty univar_pairs first *)
-let moregen type_pairs env patt subj =
-  with_univar_pairs [] @@ wrap_trace_gadt_instances env @@ fun () ->
-    moregen type_pairs env patt subj
-
-(*
-   Non-generic variable can be instantiated only if [inst_nongen] is
-   true. So, [inst_nongen] should be set to false if the subject might
-   contain non-generic variables (and we do not want them to be
-   instantiated).
-   Usually, the subject is given by the user, and the pattern
-   is unimportant.  So, no need to propagate abbreviations.
-*)
-let moregeneral env pat_sch subj_sch =
-  (* Moregen splits the generic level into two finer levels:
-     [generic_level] and [subject_level = generic_level - 1].
-     In order to properly detect and print weak variables when
-     printing errors, we need to merge those levels back together.
-     We do that by starting at level [subject_level - 1], using
-     [with_local_level_generalize] to first set the current level
-     to [subject_level], and then generalize nodes at [subject_level]
-     on exit.
-     Strictly speaking, we could avoid generalizing when there is no error,
-     as nodes at level [subject_level] are never unified with nodes of
-     the original types, but that would be rather ad hoc.
- *)
-  with_level ~level:(subject_level - 1) begin fun () ->
-    match with_local_level_generalize begin fun () ->
-      assert (!current_level = subject_level);
-      (*
-        Generic variables are first duplicated with [instance].  So,
-        their levels are lowered to [subject_level].  The subject is
-        then copied with [duplicate_type].  That way, its levels won't be
-        changed.
-       *)
-      let subj_inst = instance subj_sch in
-      let subj = duplicate_type subj_inst in
-      (* Duplicate generic variables *)
-      let patt = generic_instance pat_sch in
-      try Ok (moregen (TypePairs.create 13) env patt subj)
-      with Moregen_trace trace -> Error trace
-    end with
-    | Ok () -> ()
-    | Error trace -> raise (Moregen (expand_to_moregen_error env trace))
-  end
-
-let is_moregeneral env pat_sch subj_sch =
-  match moregeneral env pat_sch subj_sch with
-  | () -> true
-  | exception Moregen _ -> false
-
-(* Alternative approach: "rigidify" a type scheme,
+(* Alternative approach to moregen: "rigidify" a type scheme,
    and check validity after unification *)
 (* Simpler, no? *)
 
@@ -5043,7 +4706,44 @@ let does_match env ty ty' =
 
                  (*********************************************)
                  (*  Equivalence between parameterized types  *)
+                 (*     And matching between type schemes     *)
                  (*********************************************)
+
+(* Level of the subject, should be just below generic_level *)
+let subject_level = generic_level - 1
+
+(*
+   Update the level of [ty]. First check that the levels of generic
+   variables from the subject are not lowered.
+*)
+let moregen_occur env level ty =
+  with_type_mark begin fun mark ->
+    let rec occur ty =
+      let lv = get_level ty in
+      if lv <= level then () else
+      if is_Tvar ty && lv >= subject_level then raise Occur else
+      if try_mark_node mark ty then iter_type_expr occur ty
+    in
+    try
+      occur ty
+    with Occur ->
+      raise_unexplained_for Equality
+  end;
+  (* also check for free univars *)
+  occur_univar_or_unscoped_for Equality env ty;
+  update_level_for Equality env level ty
+
+let may_instantiate t1 = get_level t1 <> subject_level
+
+type eq_kind =
+  | Equality of bool
+  | Moregen
+
+type comparison_context = {
+  kind : eq_kind;
+  type_pairs : TypePairs.t;
+  subst : (type_expr * type_expr) list ref;
+}
 
 let expand_head_rigid env ty =
   let old = !rigid_variants in
@@ -5051,23 +4751,23 @@ let expand_head_rigid env ty =
   let ty' = expand_head_nolink env ty in
   rigid_variants := old; ty'
 
-let eqtype_subst type_pairs subst t1 t2 =
+let eqtype_subst context t1 t2 =
   if List.exists
       (fun (t,t') ->
         let found1 = eq_type t1 t in
         let found2 = eq_type t2 t' in
         if found1 && found2 then true else
         if found1 || found2 then raise_unexplained_for Equality else false)
-      !subst
+      !(context.subst)
   then ()
   else begin
-    subst := (t1, t2) :: !subst;
-    TypePairs.add type_pairs (t1, t2)
+    context.subst := (t1, t2) :: !(context.subst);
+    TypePairs.add context.type_pairs (t1, t2)
   end
 
-let rec eqtype rename type_pairs subst env t1 t2 =
+let rec eqtype context env t1 t2 =
   let check_phys_eq t1 t2 =
-    not rename && eq_type t1 t2
+    context.kind <> Equality true && eq_type t1 t2
   in
   (* Checking for physical equality of type representatives when [rename] is
      true would be incorrect: imagine comparing ['a * 'a] with ['b * 'a]. The
@@ -5080,77 +4780,88 @@ let rec eqtype rename type_pairs subst env t1 t2 =
   if check_phys_eq t1 t2 then () else
   try
     match (get_desc t1, get_desc t2) with
-      (Tvar _, Tvar _) when rename ->
-        eqtype_subst type_pairs subst t1 t2
+      (Tvar _, Tvar _) when context.kind = Equality true ->
+        eqtype_subst context t1 t2
+    | (Tvar _, _) when context.kind = Moregen && may_instantiate t1 ->
+        moregen_occur env (get_level t1) t2;
+        update_scope_for Equality (get_scope t1) t2;
+        occur_for Equality (Expression {env; in_subst = false}) t1 t2;
+        link_type t1 t2
     | (Tconstr (p1, [], _), Tconstr (p2, [], _))
       when quick_eq_type_path ~normalize:false env p1 p2 ->
         ()
     | _ ->
-        let t1' = expand_head_rigid env t1 in
-        let t2' = expand_head_rigid env t2 in
+        let expand_fun =
+          if context.kind = Moregen then expand_head else expand_head_rigid
+        in
+        let t1' = expand_fun env t1 in
+        let t2' = expand_fun env t2 in
         (* Expansion may have changed the representative of the types... *)
         if check_phys_eq t1' t2' then () else
-        if not (TypePairs.mem type_pairs (t1', t2')) then begin
-          TypePairs.add type_pairs (t1', t2');
+        if not (TypePairs.mem context.type_pairs (t1', t2')) then begin
+          TypePairs.add context.type_pairs (t1', t2');
           match (get_desc t1', get_desc t2') with
-            (Tvar _, Tvar _) when rename ->
-              eqtype_subst type_pairs subst t1' t2'
+            (Tvar _, Tvar _) when context.kind = Equality true ->
+              eqtype_subst context t1' t2'
+          | (Tvar _, _) when context.kind = Moregen && may_instantiate t1' ->
+              moregen_occur env (get_level t1') t2;
+              update_scope_for Equality (get_scope t1') t2;
+              link_type t1' t2
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) ->
               eq_labels Equality ~in_pattern_mode:false l1 l2;
-              eqtype rename type_pairs subst env t1 t2;
-              eqtype rename type_pairs subst env u1 u2
+              eqtype context env t1 t2;
+              eqtype context env u1 u2
           | (Tfunctor (l1, id1, pack1, t1), Tfunctor (l2, id2, pack2, t2)) ->
               eq_labels Equality ~in_pattern_mode:false l1 l2;
-              eqtype_package rename type_pairs subst env
+              eqtype_package context env
                 (get_level t1') pack1 (get_level t2') pack2;
               let mty1 = modtype_of_package env Location.none pack1 in
               let mty2 = modtype_of_package env Location.none pack2 in
               enter_functor_with_mtys_for Equality env id1 mty1 t1' id2 mty2 t2'
-                  (fun new_env -> eqtype rename type_pairs subst new_env t1 t2)
+                  (fun new_env -> eqtype context new_env t1 t2)
           | (Tfunctor (l1, id1, pack1, u1), Tarrow (l2, t2, u2, _)) ->
               eq_labels Equality ~in_pattern_mode:false l1 l2;
               let t1 = newmono_package pack1 in
-              eqtype rename type_pairs subst env t1 t2;
+              eqtype context env t1 t2;
               let mty = modtype_of_package env Location.none pack1 in
               let env' = Env.add_module (Ident.of_unscoped id1)
                                         Mp_present mty env in
               identifier_escape_for Equality env' [id1] u1;
-              eqtype rename type_pairs subst env u1 u2
+              eqtype context env u1 u2
           | (Tarrow (l1, t1, u1, _), Tfunctor (l2, id2, pack2, u2)) ->
               eq_labels Equality ~in_pattern_mode:false l1 l2;
               let t2 = newmono_package pack2 in
-              eqtype rename type_pairs subst env t1 t2;
+              eqtype context env t1 t2;
               let mty = modtype_of_package env Location.none pack2 in
               let env' = Env.add_module (Ident.of_unscoped id2)
                                         Mp_present mty env in
               identifier_escape_for Equality env' [id2] u2;
-              eqtype rename type_pairs subst env u1 u2
+              eqtype context env u1 u2
           | (Ttuple tl1, Ttuple tl2) ->
-              eqtype_labeled_list rename type_pairs subst env tl1 tl2
+              eqtype_labeled_list context env tl1 tl2
           | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
                 when quick_eq_type_path ~normalize:true env p1 p2 ->
-              eqtype_list_same_length rename type_pairs subst env tl1 tl2
+              eqtype_list_same_length context env tl1 tl2
           | (Tpackage pack1, Tpackage pack2) ->
-              eqtype_package rename type_pairs subst env
+              eqtype_package context env
                 (get_level t1') pack1 (get_level t2') pack2
           | (Tnil,  Tconstr _ ) ->
               raise_for Equality (Obj (Abstract_row Second))
           | (Tconstr _,  Tnil ) ->
               raise_for Equality (Obj (Abstract_row First))
           | (Tvariant row1, Tvariant row2) ->
-              eqtype_row rename type_pairs subst env row1 row2
+              eqtype_row context env row1 row2
           | (Tobject (fi1, _nm1), Tobject (fi2, _nm2)) ->
-              eqtype_fields rename type_pairs subst env fi1 fi2
+              eqtype_fields context env fi1 fi2
           | (Tfield _, Tfield _) ->       (* Actually unused *)
-              eqtype_fields rename type_pairs subst env
-                t1' t2'
+              eqtype_fields context env t1' t2'
           | (Tnil, Tnil) ->
               ()
           | (Tpoly (t1, []), Tpoly (t2, [])) ->
-              eqtype rename type_pairs subst env t1 t2
+              eqtype context env t1 t2
           | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
               enter_poly_for Equality env t1 tl1 t2 tl2
-                (eqtype rename type_pairs subst env)
+                (eqtype context env)
           | (Tunivar _, Tunivar _) ->
               unify_univar_for Equality t1' t2' !univar_pairs
           | (_, _) ->
@@ -5159,52 +4870,53 @@ let rec eqtype rename type_pairs subst env t1 t2 =
   with Equality_trace trace ->
     raise_trace_for Equality (Diff {got = t1; expected = t2} :: trace)
 
-and eqtype_list_same_length rename type_pairs subst env tl1 tl2 =
-  List.iter2 (eqtype rename type_pairs subst env) tl1 tl2
+and eqtype_list_same_length context env tl1 tl2 =
+  List.iter2 (eqtype context env) tl1 tl2
 
-and eqtype_labeled_list rename type_pairs subst env labeled_tl1 labeled_tl2 =
+and eqtype_labeled_list context env labeled_tl1 labeled_tl2 =
   if 0 <> List.compare_lengths labeled_tl1 labeled_tl2 then
     raise_unexplained_for Equality;
   List.iter2
     (fun (label1, ty1) (label2, ty2) ->
       if not (Option.equal String.equal label1 label2) then
         raise_unexplained_for Equality;
-      eqtype rename type_pairs subst env ty1 ty2)
+      eqtype context env ty1 ty2)
     labeled_tl1 labeled_tl2
 
-and eqtype_package rename type_pairs subst env lvl1 pack1 lvl2 pack2 =
+and eqtype_package context env lvl1 pack1 lvl2 pack2 =
   match
-    compare_package env (eqtype rename type_pairs subst env)
-      lvl1 pack1 lvl2 pack2
+    compare_package env (eqtype context env) lvl1 pack1 lvl2 pack2
   with
   | Ok () -> ()
   | Error fme -> raise_for Equality (First_class_module fme)
 
-and eqtype_fields rename type_pairs subst env ty1 ty2 =
+and eqtype_fields context env ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1 in
   let (fields2, rest2) = flatten_fields ty2 in
   (* First check if same row => already equal *)
-  let same_row =
+  let same_row = context.kind <> Moregen &&
     (* [not rename]: see comment at top of [eqtype] *)
-    (not rename && eq_type rest1 rest2) ||
-    TypePairs.mem type_pairs (rest1,rest2)
+    ((context.kind <> Equality true && eq_type rest1 rest2) ||
+     TypePairs.mem context.type_pairs (rest1,rest2))
   in
   if same_row then () else
   (* Try expansion, needed when called from Includecore.type_manifest *)
-  match get_desc (expand_head_rigid env rest2) with
-    Tobject(ty2,_) -> eqtype_fields rename type_pairs subst env ty1 ty2
+  match get_desc (expand_head_rigid env rest2), context.kind with
+    Tobject(ty2,_), Equality _ ->
+      eqtype_fields context env ty1 ty2
   | _ ->
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
   match miss1, miss2 with
   | ((n, _, _)::_, _) -> raise_for Equality (Obj (Missing_field (Second, n)))
-  | (_, (n, _, _)::_) -> raise_for Equality (Obj (Missing_field (First, n)))
-  | [], [] ->
-      eqtype rename type_pairs subst env rest1 rest2;
+  | (_, (n, _, _)::_) when context.kind <> Moregen ->
+    raise_for Equality (Obj (Missing_field (First, n)))
+  | [], _ ->
+      eqtype context env rest1 (build_fields (get_level ty2) miss2 rest2);
       List.iter
         (function (name, k1, t1, k2, t2) ->
            eqtype_kind name k1 k2;
            try
-             eqtype rename type_pairs subst env t1 t2;
+             eqtype context env t1 t2;
            with Equality_trace trace ->
              raise_trace_for Equality
                (incompatible_fields ~name ~got:t1 ~expected:t2 :: trace))
@@ -5219,10 +4931,17 @@ and eqtype_kind name k1 k2 =
   | _                    ->
     raise_for Equality (Obj (Kind_differ (name, k1, k2)))
 
-and eqtype_row rename type_pairs subst env row1 row2 =
+and eqtype_row context env row1 row2 =
+  match context.kind with
+  | Equality _ ->
+    eqtype_row_equality context env row1 row2
+  | Moregen ->
+    eqtype_row_moregen context env row1 row2
+
+and eqtype_row_equality context env row1 row2 =
   (* Try expansion, needed when called from Includecore.type_manifest *)
   match get_desc (expand_head_rigid env (row_more row2)) with
-    Tvariant row2 -> eqtype_row rename type_pairs subst env row1 row2
+    Tvariant row2 -> eqtype_row_equality context env row1 row2
   | _ ->
   let r1, r2, pairs = merge_row_fields (row_fields row1) (row_fields row2) in
   if row_closed row1 <> row_closed row2 then begin
@@ -5246,7 +4965,7 @@ and eqtype_row rename type_pairs subst env row1 row2 =
     | _ :: _ as r2 -> raise_for Equality (Variant (No_tags (First, r2)))
   end;
   if not (static_row row1) then
-    eqtype rename type_pairs subst env (row_more row1) (row_more row2);
+    eqtype context env (row_more row1) (row_more row2);
   List.iter
     (fun (l,f1,f2) ->
        if f1 == f2 then () else
@@ -5254,7 +4973,7 @@ and eqtype_row rename type_pairs subst env row1 row2 =
        (* Both matching [Rpresent]s *)
        | Rpresent(Some t1), Rpresent(Some t2) -> begin
            try
-             eqtype rename type_pairs subst env t1 t2
+             eqtype context env t1 t2
            with Equality_trace trace ->
              raise_trace_for Equality
                (Variant (Incompatible_types_for l) :: trace)
@@ -5265,15 +4984,15 @@ and eqtype_row rename type_pairs subst env row1 row2 =
        | Reither(c1, t1::tl1, _), Reither(c2, t2::tl2, _)
          when c1 = c2 -> begin
            try
-             eqtype rename type_pairs subst env t1 t2;
+             eqtype context env t1 t2;
              if List.length tl1 = List.length tl2 then
                (* if same length allow different types (meaning?) *)
-               List.iter2 (eqtype rename type_pairs subst env) tl1 tl2
+               List.iter2 (eqtype context env) tl1 tl2
              else begin
                (* otherwise everything must be equal *)
-               List.iter (eqtype rename type_pairs subst env t1) tl2;
+               List.iter (eqtype context env t1) tl2;
                List.iter
-                 (fun t1 -> eqtype rename type_pairs subst env t1 t2) tl1
+                 (fun t1 -> eqtype context env t1 t2) tl1
              end
            with Equality_trace trace ->
              raise_trace_for Equality
@@ -5300,13 +5019,182 @@ and eqtype_row rename type_pairs subst env row1 row2 =
            raise_for Equality (Variant (No_tags (Second, [l, f1]))))
     pairs
 
+and eqtype_row_moregen context env row1 row2 =
+  let Row {fields = row1_fields; more = rm1; closed = row1_closed} =
+    row_repr row1 in
+  let Row {fields = row2_fields; more = rm2; closed = row2_closed;
+           fixed = row2_fixed} = row_repr row2 in
+  if eq_type rm1 rm2 then () else
+  let may_inst =
+    is_Tvar rm1 && may_instantiate rm1 || get_desc rm1 = Tnil in
+  let r1, r2, pairs = merge_row_fields row1_fields row2_fields in
+  let r1, r2 =
+    if row2_closed then
+      filter_row_fields may_inst r1, filter_row_fields false r2
+    else r1, r2
+  in
+  begin
+    if r1 <> [] then raise_for Equality (Variant (No_tags (Second, r1)))
+  end;
+  if row1_closed then begin
+    match row2_closed, r2 with
+    | false, _ -> raise_for Equality (Variant (Openness Second))
+    | _, _ :: _ -> raise_for Equality (Variant (No_tags (First, r2)))
+    | _, [] -> ()
+  end;
+  let md1 = get_desc rm1 (* This lets us undo a following [link_type] *) in
+  begin match md1, get_desc rm2 with
+    Tunivar _, Tunivar _ ->
+      unify_univar_for Equality rm1 rm2 !univar_pairs
+  | Tunivar _, _ | _, Tunivar _ ->
+      raise_unexplained_for Equality
+  | _ when static_row row1 -> ()
+  | _ when may_inst ->
+      let ext =
+        newgenty (Tvariant
+                    (create_row ~fields:r2 ~more:rm2 ~name:None
+                       ~fixed:row2_fixed ~closed:row2_closed))
+      in
+      moregen_occur env (get_level rm1) ext;
+      update_scope_for Equality (get_scope rm1) ext;
+      (* This [link_type] has to be undone if the rest of the function fails *)
+      link_type rm1 ext
+  | Tconstr _, Tconstr _ ->
+      eqtype context env rm1 rm2
+  | _ -> raise_unexplained_for Equality
+  end;
+  try
+    List.iter
+      (fun (l,f1,f2) ->
+         if f1 == f2 then () else
+         match row_field_repr f1, row_field_repr f2 with
+         (* Both matching [Rpresent]s *)
+         | Rpresent(Some t1), Rpresent(Some t2) -> begin
+             try
+               eqtype context env t1 t2
+             with Equality_trace trace ->
+               raise_trace_for Equality
+                 (Variant (Incompatible_types_for l) :: trace)
+           end
+         | Rpresent None, Rpresent None -> ()
+         (* Both [Reither] *)
+         | Reither(c1, tl1, _), Reither(c2, tl2, m2) -> begin
+             try
+               if not (eq_row_field_ext f1 f2) then begin
+                 if c1 && not c2 then raise_unexplained_for Equality;
+                 let f2' =
+                   rf_either [] ~use_ext_of:f2 ~no_arg:c2 ~matched:m2 in
+                 link_row_field_ext ~inside:f1 f2';
+                 if List.length tl1 = List.length tl2 then
+                   List.iter2 (eqtype context env) tl1 tl2
+                 else match tl2 with
+                   | t2 :: _ ->
+                     List.iter
+                       (fun t1 -> eqtype context env t1 t2)
+                       tl1
+                   | [] -> if tl1 <> [] then raise_unexplained_for Equality
+               end
+             with Equality_trace trace ->
+               raise_trace_for Equality
+                 (Variant (Incompatible_types_for l) :: trace)
+           end
+         (* Generalizing [Reither] *)
+         | Reither(false, tl1, _), Rpresent(Some t2) when may_inst -> begin
+             try
+               link_row_field_ext ~inside:f1 f2;
+               List.iter
+                 (fun t1 -> eqtype context env t1 t2)
+                 tl1
+             with Equality_trace trace ->
+               raise_trace_for Equality
+                 (Variant (Incompatible_types_for l) :: trace)
+           end
+         | Reither(true, [], _), Rpresent None when may_inst ->
+             link_row_field_ext ~inside:f1 f2
+         | Reither(_, _, _), Rabsent when may_inst ->
+             link_row_field_ext ~inside:f1 f2
+         (* Both [Rabsent]s *)
+         | Rabsent, Rabsent -> ()
+         (* Mismatched constructor arguments *)
+         | Rpresent (Some _), Rpresent None
+         | Rpresent None, Rpresent (Some _) ->
+             raise_for Equality (Variant (Incompatible_types_for l))
+         (* Mismatched presence *)
+         | Reither _, Rpresent _ ->
+             raise_for Equality
+               (Variant (Presence_not_guaranteed_for (First, l)))
+         | Rpresent _, Reither _ ->
+             raise_for Equality
+               (Variant (Presence_not_guaranteed_for (Second, l)))
+         (* Missing tags *)
+         | Rabsent, (Rpresent _ | Reither _) ->
+             raise_for Equality (Variant (No_tags (First, [l, f2])))
+         | (Rpresent _ | Reither _), Rabsent ->
+             raise_for Equality (Variant (No_tags (Second, [l, f1]))))
+      pairs
+  with exn ->
+    (* Undo [link_type] if we failed *)
+    set_type_desc rm1 md1; raise exn
+
+(* Must empty univar_pairs first *)
+let moregen type_pairs env patt subj =
+  with_univar_pairs [] (fun () ->
+    eqtype {kind = Moregen; type_pairs; subst = ref []} env patt subj)
+
+(*
+   Non-generic variable can be instantiated only if [inst_nongen] is
+   true. So, [inst_nongen] should be set to false if the subject might
+   contain non-generic variables (and we do not want them to be
+   instantiated).
+   Usually, the subject is given by the user, and the pattern
+   is unimportant.  So, no need to propagate abbreviations.
+*)
+let moregeneral env pat_sch subj_sch =
+  (* Moregen splits the generic level into two finer levels:
+     [generic_level] and [subject_level = generic_level - 1].
+     In order to properly detect and print weak variables when
+     printing errors, we need to merge those levels back together.
+     We do that by starting at level [subject_level - 1], using
+     [with_local_level_generalize] to first set the current level
+     to [subject_level], and then generalize nodes at [subject_level]
+     on exit.
+     Strictly speaking, we could avoid generalizing when there is no error,
+     as nodes at level [subject_level] are never unified with nodes of
+     the original types, but that would be rather ad hoc.
+ *)
+  with_level ~level:(subject_level - 1) begin fun () ->
+    match with_local_level_generalize begin fun () ->
+      assert (!current_level = subject_level);
+      (*
+        Generic variables are first duplicated with [instance].  So,
+        their levels are lowered to [subject_level].  The subject is
+        then copied with [duplicate_type].  That way, its levels won't be
+        changed.
+       *)
+      let subj_inst = instance subj_sch in
+      let subj = duplicate_type subj_inst in
+      (* Duplicate generic variables *)
+      let patt = generic_instance pat_sch in
+      try Ok (moregen (TypePairs.create 13) env patt subj)
+      with Equality_trace trace -> Error trace
+    end with
+    | Ok () -> ()
+    | Error trace -> raise (Moregen (expand_to_moregen_error env trace))
+  end
+
+let is_moregeneral env pat_sch subj_sch =
+  match moregeneral env pat_sch subj_sch with
+  | () -> true
+  | exception Moregen _ -> false
+
 (* Must empty univar_pairs first *)
 let eqtype_list_same_length rename type_pairs subst env tl1 tl2 =
+  let kind = Equality rename in
   with_univar_pairs [] (fun () ->
     let snap = Btype.snapshot () in
     Misc.try_finally
       ~always:(fun () -> backtrack snap)
-      (fun () -> eqtype_list_same_length rename type_pairs subst env tl1 tl2))
+      (fun () -> eqtype_list_same_length {kind; type_pairs; subst} env tl1 tl2))
 
 let eqtype rename type_pairs subst env t1 t2 =
   eqtype_list_same_length rename type_pairs subst env [t1] [t2]
@@ -5423,7 +5311,7 @@ let rec moregen_clty ~arrow_index trace type_pairs env cty1 cty2 =
     | Cty_arrow (l1, ty1, cty1'), Cty_arrow (l2, ty2, cty2') when l1 = l2 ->
         let arrow_index = arrow_index + 1 in
         begin
-          try moregen type_pairs env ty1 ty2 with Moregen_trace trace ->
+          try moregen type_pairs env ty1 ty2 with Equality_trace trace ->
             raise (Failure [
                 CM_Parameter_mismatch
                   (arrow_index, env, expand_to_moregen_error env trace)])
@@ -5440,7 +5328,7 @@ let rec moregen_clty ~arrow_index trace type_pairs env cty1 cty2 =
              | (_, _, ty') ->
                  match moregen type_pairs env ty' ty with
                  | () -> ()
-                 | exception Moregen_trace trace ->
+                 | exception Equality_trace trace ->
                      raise (Failure [
                        CM_Meth_type_mismatch
                          (lab,
@@ -5458,7 +5346,7 @@ let rec moregen_clty ~arrow_index trace type_pairs env cty1 cty2 =
              | (_, _, ty') ->
                  match moregen type_pairs env ty' ty with
                  | () -> ()
-                 | exception Moregen_trace trace ->
+                 | exception Equality_trace trace ->
                      raise (Failure [
                        CM_Val_type_mismatch
                          (lab,
