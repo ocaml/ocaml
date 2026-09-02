@@ -252,6 +252,10 @@ Working version
   barrier; the default is chosen at configure time and can be overridden.
   (Sebastian Pop and Xavier Leroy, review by Xavier Leroy and Olivier Nicole)
 
+- #14977: expose Atomic.t representation in the interface for better
+  code generation.
+  (Edwin Török, suggestions by Vincent Laviron, Daniel Bünzli, review by ...)
+
 ### Standard library:
 
 - #14974 : Add `Sys.filepath_exists` and improve documentation
