@@ -67,7 +67,10 @@
 
 (** The type for counter events emitted by the runtime. Counter events are used
   to measure a quantity at a point in time or record the occurrence of an event.
-  In the latter case their value will be one. *)
+  In the latter case their value will be one.
+
+  Block sizes reported by these counters, in {b words} or {b bytes}, include
+  the header words. *)
 type runtime_counter =
 | EV_C_FORCE_MINOR_ALLOC_SMALL
 (**
