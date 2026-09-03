@@ -17,8 +17,9 @@ Working version
   (Stephen Dolan, review by Damien Doligez)
 
 ### Runtime system:
+
 - #14773 : Activate Haiku native backend
-  (Sylvain Kerjean, review by David Allsopp, Kate Deplaix and Nicolas Ojeda Bar)
+  (Sylvain Kerjean, review by Kate Deplaix and Nicolas Ojeda Bar)
   Enable native-code backend and testsuite on BeOS/Haiku.
 
 - #10258: Overhaul the locale code used for mingw/msvc in float<->string
