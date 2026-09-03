@@ -52,7 +52,7 @@ let is_immediate_logical n = n <= 0xFFFF && n >= 0
 (* If you update [inline_ops], you may need to update [is_simple_expr] and/or
    [effects_of], below. *)
 let inline_ops =
-  [ "caml_fma"; "caml_round"; "caml_trunc"; "ceil"; "floor" ]
+  [ "sqrt"; "caml_fma"; "caml_round"; "caml_trunc"; "ceil"; "floor" ]
 
 class selector = object (self)
 
@@ -106,6 +106,9 @@ method! select_operation op args dbg =
       (Ispecific Imultaddf, [arg1; arg2; arg3])
   | (Csubf, [Cop(Cmulf, [arg1; arg2], _); arg3]) ->
       (Ispecific Imultsubf, [arg1; arg2; arg3])
+  (* Recognize square root *)
+  | (Cextcall("sqrt", _, _, _), [arg]) ->
+      (Ispecific Isqrtf, [arg])
   (* Only the unboxed [Float.fma] passes floats in registers, hence the
      argument types. *)
   | (Cextcall("caml_fma", _, [XFloat; XFloat; XFloat], false),
