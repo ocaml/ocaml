@@ -172,6 +172,9 @@ CAMLexport value caml_alloc_tuple(mlsize_t n)
 }
 
 /* [len] is a number of bytes (chars) */
+CAMLno_tsan /* Avoid instrumenting initializing writes with TSan: they should
+               never cause data races (albeit for reasons outside of the C11
+               memory model). */
 CAMLexport value caml_alloc_string (mlsize_t len)
 {
   value result;
@@ -192,6 +195,9 @@ CAMLexport value caml_alloc_string (mlsize_t len)
 }
 
 /* [len] is a number of bytes (chars) */
+CAMLno_tsan /* Avoid instrumenting initializing writes with TSan: they should
+               never cause data races (albeit for reasons outside of the C11
+               memory model). */
 CAMLexport value caml_alloc_initialized_string (mlsize_t len, const char *p)
 {
   value result = caml_alloc_string (len);
