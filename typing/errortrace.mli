@@ -148,6 +148,8 @@ val swap_trace : ('a, 'variety) t -> ('a, 'variety) t
 
 type unification_error = private { trace : unification error } [@@unboxed]
 
+type 'a unification_result = ('a, unification_error) result
+
 type equality_error = private
   { trace : comparison error;
     subst : (type_expr * type_expr) list }

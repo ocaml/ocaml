@@ -441,6 +441,10 @@ Working version
 - #14413: Introduce and use the C2y countof operator.
   (Antonin Décimo, review by David Allsopp)
 
+- #14425: Use result rather than exception for multiple unification functions.
+  (Samuel Vivien, review by Jacques Garrigue, Gabriel Scherer and
+   Alistair O'Brien)
+
 - #14483: Reset type ID and level counters between compilations to restore
   reproducibility of debug information between `ocamlc -c foo.mli foo.ml` versus
   `ocamlc -c foo.mli; ocamlc -c foo.ml`. Also hashcons the identifiers used for

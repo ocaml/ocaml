@@ -28,6 +28,7 @@ open Btype
 open Ctype
 
 module Style = Misc.Style
+module Result = Misc.Stdlib.Result
 
 type type_forcing_context =
   | If_conditional
@@ -701,12 +702,13 @@ let type_continuation_pat env expected_ty sp =
 let unify_exp_types ?sexp loc env ty expected_ty =
   (* Format.eprintf "@[%a@ %a@]@." Printtyp.raw_type_expr exp.exp_type
     Printtyp.raw_type_expr expected_ty; *)
-  try
+  match
     unify env ty expected_ty
   with
-    Unify err ->
+  | Ok () -> ()
+  | Error err ->
       Error.log_and_raise loc env (Expr_type_clash(err, None, sexp))
-  | Tags(l1,l2) ->
+  | exception Tags(l1,l2) ->
       Typetexp.Error.log_and_raise loc env (Typetexp.Variant_tags (l1, l2))
 
 (* Getting proper location of already typed expressions.
@@ -743,10 +745,11 @@ let (!!) (penv : Pattern_env.t) = penv.env
 (* If [penv] is available, calling this function requires
    [penv.in_counterexample = false] *)
 let unify_pat_types ?sdesc_for_hint loc env ty ty' =
-  try unify env ty ty' with
-  | Unify err ->
+  match unify env ty ty' with
+  | Ok () -> ()
+  | Error err ->
       Error.log_and_raise loc env (Pattern_type_clash(err, sdesc_for_hint))
-  | Tags(l1,l2) ->
+  | exception Tags(l1,l2) ->
       Typetexp.Error.log_and_raise loc env (Typetexp.Variant_tags (l1, l2))
 
 (* GADT unification inside solve_Ppat_construct and check_counter_example_pat *)
@@ -754,14 +757,15 @@ let unify_pat_types ?sdesc_for_hint loc env ty ty' =
    [penv.in_counterexample = false] (see [unify_gadt] for details) *)
 let nothing_equated = TypePairs.create 0
 let unify_pat_types_return_equated_pairs ~refine loc penv ~pat ~expected =
-  try
+  match
     if refine || penv.Pattern_env.in_counterexample
     then unify_gadt penv ~pat ~expected
-    else (unify !!penv pat expected; nothing_equated)
+    else (Result.map (fun () -> nothing_equated) (unify !!penv pat expected))
   with
-  | Unify err ->
+  | Ok type_pairs -> type_pairs
+  | Error err ->
       Error.log_and_raise loc !!penv (Pattern_type_clash(err, None))
-  | Tags(l1,l2) ->
+  | exception Tags(l1,l2) ->
       Typetexp.Error.log_and_raise loc !!penv (Typetexp.Variant_tags (l1, l2))
 
 (* Unify pattern types in functions that can be called either from
@@ -1006,13 +1010,12 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
           if x1==x2 then
             unify_vars rem1 rem2
           else begin
-            begin try
-              unify_var env (newvar ()) t1;
-              unify env t1 t2
-            with
-            | Unify err ->
-                Error.log_and_raise loc env (Or_pattern_type_clash(x1, err))
-            end;
+            Result.ok_or_else
+              (Result.bind
+                 (unify_var env (newvar ()) t1)
+                 (fun () -> unify env t1 t2))
+              (fun err ->
+                 Error.log_and_raise loc env (Or_pattern_type_clash(x1, err)));
           (x2,x1)::unify_vars rem1 rem2
           end
       | [],[] -> []
@@ -3318,8 +3321,9 @@ let collect_unknown_apply_args env funct ty_fun0 rev_args sargs =
                   then
                     Location.prerr_warning sarg.pexp_loc
                       Warnings.Ignored_extra_argument;
-                  unify env ty_fun
-                    (newty (Tarrow(lbl,ty_param,ty_res,commu_var ())));
+                  Result.get_ok
+                    (unify env ty_fun
+                      (newty (Tarrow(lbl,ty_param,ty_res,commu_var ()))));
                   (`Arrow ty_arg, ty_res)
               | Tarrow (l, ty_param, ty_res, _)
                 when labels_match ~param:l ~arg:lbl ->
@@ -3818,9 +3822,9 @@ let type_approx_constraint env constraint_ ~loc ty_expected =
   match constraint_ with
   | Pconstraint constrain ->
       let ty_constrain = approx_type env constrain in
-      begin try unify env ty_constrain ty_expected with Unify err ->
-        Error.log_and_raise loc env (Expr_type_clash (err, None, None))
-      end;
+      Result.ok_or_else (unify env ty_constrain ty_expected)
+        (fun err ->
+          Error.log_and_raise loc env (Expr_type_clash (err, None, None)));
       ty_constrain
   | Pcoerce (constrain, coerce) ->
       let ty_constrain = match constrain with
@@ -3828,9 +3832,9 @@ let type_approx_constraint env constraint_ ~loc ty_expected =
         | Some sty -> approx_type env sty
       in
       let ty_coerce = approx_type env coerce in
-      begin try unify env ty_coerce ty_expected with Unify err ->
-        Error.log_and_raise loc env (Expr_type_clash (err, None, None))
-      end;
+      Result.ok_or_else (unify env ty_coerce ty_expected)
+        (fun err ->
+          Error.log_and_raise loc env (Expr_type_clash (err, None, None)));
       ty_constrain
 
 let type_approx_constraint_opt env constraint_ ~loc ty_expected =
@@ -3878,9 +3882,9 @@ let rec type_approx env sexp ty_expected =
 and type_tuple_approx (env: Env.t) loc ty_expected l =
   let labeled_tys = List.map (fun (label, _) -> label, newvar ()) l in
   let ty = newty (Ttuple labeled_tys) in
-  begin try unify env ty ty_expected with Unify err ->
-    Error.log_and_raise loc env (Expr_type_clash (err, None, None))
-  end;
+  Result.ok_or_else (unify env ty ty_expected)
+    (fun err ->
+      Error.log_and_raise loc env (Expr_type_clash (err, None, None)));
   List.iter2
     (fun (_, e) (_, ty) -> type_approx env e ty)
     l labeled_tys
@@ -4326,8 +4330,7 @@ type type_function_result_param =
 (** lower the level of function arguments to the level of the application *)
 let lower_args outer_level env ty_fun =
   let lower env ty =
-    try Ctype.unify_var env (newvar2 outer_level) ty
-    with Unify _ -> assert false
+    Result.get_ok (Ctype.unify_var env (newvar2 outer_level) ty)
   in
   let rec lower_args env seen ty_fun =
     let ty = expand_head env ty_fun in
@@ -4378,10 +4381,11 @@ let enforce_syntactic_arity ~loc env exp_type result_params body =
                  error to help the error printing code's heuristic to
                  identify the type equation at fault.
               *)
-              (try
-                 unify env tarrow ty;
-                 fatal_error "unification unexpectedly succeeded"
-               with Unify trace -> trace)
+              (match
+                 unify env tarrow ty
+               with
+                 | Ok () -> fatal_error "unification unexpectedly succeeded"
+                 | Error trace -> trace)
           | Label_mismatch _ ->
               fatal_error
                 "Label_mismatch not expected as this point; this should\
@@ -5236,7 +5240,7 @@ and type_expect_
               instance_poly tl ty
           | Tvar _ ->
               let ty' = newvar () in
-              unify env (instance typ) (newty(Tpoly(ty',[])));
+              unify_exn env (instance typ) (newty(Tpoly(ty',[])));
               (* if not !Clflags.nolabels then
                  Location.prerr_warning loc (Warnings.Unknown_method met); *)
               ty'
@@ -5510,12 +5514,11 @@ and type_expect_
             in
             newty (Tarrow(Nolabel, newmono ty_andops, ty_fun, commu_ok))
           in
-          begin try
-            unify env op_type ty_op
-          with Unify err ->
-            Error.log_or_raise let_loc env
-              (Letop_type_clash(slet.pbop_op.txt, err))
-          end;
+          Result.ok_or_else
+            (unify env op_type ty_op)
+            (fun err ->
+              Error.log_or_raise let_loc env
+                (Letop_type_clash(slet.pbop_op.txt, err)));
           (op_path, op_desc, op_type, spat_params, ty_params,
            ty_func_result, ty_result, ty_andops)
         end
@@ -5622,7 +5625,7 @@ and type_expect_
         end ~before_generalize: begin fun (newenv, _si, exp) ->
           (* Ensure that local definitions do not leak. *)
           (* Required for implicit unpack *)
-          unify_var newenv tv exp.exp_type
+          unify_var_exn newenv tv exp.exp_type
         end
         in
         re {
@@ -5700,7 +5703,7 @@ and type_coerce
             let snap = snapshot () in
             let ty, _b = enlarge_type env (generic_instance ty') in
             try
-              force (); Ctype.unify env arg_type ty; true
+              force (); Ctype.unify_exn env arg_type ty; true
             with Unify _ ->
               backtrack snap; false
           then ()
@@ -5717,7 +5720,9 @@ and type_coerce
       | _ ->
           let ty, b = enlarge_type env (generic_instance ty') in
           force ();
-          begin try Ctype.unify env arg_type ty with Unify err ->
+          begin match Ctype.unify env arg_type ty with
+          | Ok () -> ()
+          | Error err ->
             let expanded = full_expand ~may_forget_scope:true env ty' in
             Error.log_and_raise loc_arg env
               (Coercion_failure ({ ty = ty'; expanded }, err, b))
@@ -6000,10 +6005,7 @@ and type_function
         | Some default ->
             assert (is_optional arg_label);
             let ty_default = newvar () in
-            begin
-              try unify env (type_option ty_default) ty_arg_mono
-              with Unify _ -> assert false;
-            end;
+            Result.get_ok (unify env (type_option ty_default) ty_arg_mono);
             (* Issue#12668: Retain type-directed disambiguation of
                ?x:(y : Variant.t = Constr)
             *)
@@ -6219,13 +6221,12 @@ and type_moddep_fun ~env ~name ~pack_param ~rest ~arg_label ~first
         (None, Some cpack, pack)
     | Some (id, pack', ety), Some pack_param ->
         let cpack, pack = type_pack pack_param in
-        begin try
-          unify env
-            (newty (Tfunctor (arg_label, id, pack, newvar())))
-            (newty (Tfunctor (arg_label, id, pack', newvar())))
-        with Unify trace ->
-            Error.log_and_raise loc env (Expr_type_clash(trace, None, None))
-        end;
+        Result.ok_or_else
+          (unify env
+             (newty (Tfunctor (arg_label, id, pack, newvar())))
+             (newty (Tfunctor (arg_label, id, pack', newvar()))))
+          (fun trace ->
+              Error.log_and_raise loc env (Expr_type_clash(trace, None, None)));
         (Some (id, ety), Some cpack, pack)
     | Some (id, pack', ety), None ->
         if not (is_principal ty_expected)
@@ -6624,11 +6625,10 @@ and type_label_exp create env loc ty_expected
             with_local_level_generalize_structure_if separate
               (fun () -> instance_label ~fixed:true label)
           in
-          begin try
-            unify env (instance ty_res) (instance ty_expected)
-          with Unify err ->
-            Error.log_and_raise lid.loc env (Label_mismatch(lid.txt, err))
-          end;
+          Result.ok_or_else
+            (unify env (instance ty_res) (instance ty_expected))
+            (fun err ->
+              Error.log_and_raise lid.loc env (Label_mismatch(lid.txt, err)));
           (* Instantiate so that we can generalize internal nodes *)
           let ty_arg = instance ty_arg in
           (vars, ty_arg)
@@ -6834,7 +6834,7 @@ and type_apply_arg env ~app_loc (lbl, arg) =
               in
               let (ty_arg0', vars0) = tpoly_get_poly ty_arg0 in
               let vars0, ty_arg0' = instance_poly_fixed vars0 ty_arg0' in
-              List.iter2 (fun ty ty' -> unify_var env ty ty') vars vars0;
+              List.iter2 (fun ty ty' -> unify_var_exn env ty ty') vars vars0;
               let arg =
                 type_argument env sarg ty_arg' ty_arg0'
               in
@@ -7837,21 +7837,20 @@ and type_andops env sarg sands expected_ty =
               newty (Tarrow(Nolabel, newmono ty_arg, ty_result, commu_ok)) in
             let ty_op =
               newty (Tarrow(Nolabel, newmono ty_rest, ty_rest_fun, commu_ok)) in
-            begin try
-              unify env op_type ty_op
-            with Unify err ->
-              Error.log_and_raise sop.loc env (Andop_type_clash(sop.txt, err))
-            end;
+            Result.ok_or_else
+              (unify env op_type ty_op)
+              (fun err ->
+                Error.log_and_raise sop.loc env
+                  (Andop_type_clash(sop.txt, err)));
             (op_path, op_desc, op_type, ty_arg, ty_rest, ty_result)
           end
         in
         let let_arg, rest = loop env let_sarg rest ty_rest in
         let exp = type_expect env sexp (mk_expected ty_arg) in
-        begin try
-          unify env (instance ty_result) (instance expected_ty)
-        with Unify err ->
-          Error.log_and_raise loc env (Bindings_type_clash(err))
-        end;
+        Result.ok_or_else
+          (unify env (instance ty_result) (instance expected_ty))
+          (fun err ->
+            Error.log_and_raise loc env (Bindings_type_clash(err)));
         let andop =
           { bop_op_name = sop;
             bop_op_path = op_path;
