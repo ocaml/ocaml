@@ -208,7 +208,7 @@ Working version
   (Zane Hambly, review by Miod Vallat and Xavier Leroy)
 
 - #15006: power: emit `fsqrt` for square root rather than calling into C
-  (Zane Hambly, review by         )
+  (Zane Hambly, review by Miod Vallat and Xavier Leroy)
 
 - #15008: emit the fused multiply-add for `Float.fma` on arm64, power,
   riscv and s390x rather than calling into C
