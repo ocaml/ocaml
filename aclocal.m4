@@ -29,6 +29,7 @@ m4_include([build-aux/lt~obsolete.m4])
 
 # Macros from the autoconf macro archive
 m4_include([build-aux/ax_check_compile_flag.m4])
+m4_include([build-aux/ax_cxx_compile_stdcxx.m4])
 m4_include([build-aux/ax_func_which_gethostbyname_r.m4])
 m4_include([build-aux/ax_prog_cc_for_build.m4])
 m4_include([build-aux/ax_pthread.m4])
@@ -651,37 +652,3 @@ AC_DEFUN([OCAML_CHECK_WINDOWS_TRIPLET], [
     [*-pc-windows*],
       [AC_MSG_ERROR([unknown MSVC variant])])
 ])
-
-# It's difficult to use AC_PROG_CXX or AX_CXX_COMPILE_STDCXX conditionally.
-# This macro is only used for ocamltest to call the C++11 compiler if the
-# default C compiler also can build C++.
-AC_DEFUN([OCAML_CXX_COMPILE_STDCXX_11], [
-  AC_MSG_CHECKING([for a C++11 compiler])
-  AC_CACHE_VAL([ocaml_cv_prog_cxx], [
-    AS_CASE(["$ccomp_type"],
-      [cc], [
-        saved_CC="$CC"
-        saved_CFLAGS="$CFLAGS"
-        AS_IF([test x"$CXX" = x],
-          [CC="$CC -xc++"; CFLAGS="$CXXFLAGS"], [CC="$CXX"; CFLAGS="$CXXFLAGS"])
-        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-#if !defined(__cplusplus) || __cplusplus < 201103L
-#error "No C++11 support"
-/* This extra test is added to ignore C++ support when compiling with musl
-   (where the -xc++ flag will get passed through to gcc, but the headers are
-   not available). */
-#elif defined(__has_include) && !__has_include(<atomic>)
-#error "Missing <atomic> header"
-#endif
-#include <iostream>
-          ]])],
-          [ocaml_cv_prog_cxx="$CC"],
-          [ocaml_cv_prog_cxx=""])
-        CC="$saved_CC"
-        CFLAGS="$saved_CFLAGS"],
-      [msvc], [
-        # cl.exe selects between C and C++ based on the file extension
-        ocaml_cv_prog_cxx="$CC"],
-      [ocaml_cv_prog_cxx=""])])
-  AC_MSG_RESULT([${ocaml_cv_prog_cxx:-none found}])
-  ocamltest_CXX="$ocaml_cv_prog_cxx"])

@@ -31,7 +31,7 @@ let cc = {@QS@|@CC@|@QS@}
 
 let cflags = {@QS@|@common_cflags@|@QS@}
 
-let cxx = {@QS@|@ocamltest_CXX@|@QS@}
+let cxx = {@QS@|@CXX@|@QS@}
 
 let ccomp_type = {@QS@|@ccomp_type@|@QS@}
 
