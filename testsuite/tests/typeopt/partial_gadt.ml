@@ -26,6 +26,20 @@ let curried : type a. a rep -> a -> float = fun Float a -> a +. 1.
 val curried : 'a rep -> 'a -> float = <fun>
 |}]
 
+let opt (type a) ?p:(Type.Equal:(a,float) Type.eq=assert false) (x:a) = 1. +. x
+[%%expect {|
+(let
+  (opt =
+     (function *opt* x : float
+       (let
+         (*match* =
+            (if *opt* (field_imm 0 *opt*)
+              (raise (makeblock 0 (global Assert_failure!) [0: "" 1 50]))))
+         (+. 1. x))))
+  (apply (field_mut 1 (global Toploop!)) "opt" opt))
+val opt : ?p:('a, float) Type.eq -> 'a -> float = <fun>
+|}]
+
 let curried_ok : type a. (a,float) Type.eq -> a -> float = fun Type.Equal a -> a +. 1.
 [%%expect {|
 (let (curried_ok = (function param[int] a[float] : float (+. a 1.)))

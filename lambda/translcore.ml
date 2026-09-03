@@ -838,9 +838,15 @@ and transl_curried_function ~scopes ~env loc return repr params body =
       let env = match fp.fp_kind with
         | Tparam_pat pat | Tparam_optional_default (pat,_) -> pat.pat_env
       in
-      let local_equations = match local_equations, fp.fp_partial with
-        | Some _ , _ | _, Total -> local_equations
-        | None, Partial -> Env.freeze_if_new_local_equations ~prev:prev_env env
+      let local_equations =
+        match local_equations, fp.fp_partial, fp.fp_kind with
+        | Some _, _, _ -> local_equations
+        | None, Total, Tparam_pat _ -> local_equations
+        | None, Partial, _
+        (* in default arguments [?(pat=exp)], [exp] can raise and
+           thus even a [Total] pattern can fail. *)
+        | None, _, Tparam_optional_default _ ->
+                Env.freeze_if_new_local_equations ~prev:prev_env env
       in
       (local_equations,env), (fp, local_equations)
     ) (None, env) params in
