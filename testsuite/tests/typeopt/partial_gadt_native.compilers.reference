@@ -1,13 +1,13 @@
 (seq
   (let
-    (f =
-       (function b[int] x[float] : float
-         (catch (if b (exit 4 0 (+. x x)) (exit 4 1 (opaque 0)))
-          with (4 param[int] param)
-           (if param
+    (f/0 =
+       (function b/0[int] x/0[float] : float
+         (catch (if b/0 (exit 4 0 (+. x/0 x/0)) (exit 4 1 (opaque 0)))
+          with (4 param/0[int] param/1)
+           (if param/0
              (raise
-               (makeblock 0 (global Match_failure!)
+               (makeblock 0 (global Match_failure/0!)
                  [0: "partial_gadt_native.ml" 12 14]))
-             (+. param 1.)))))
-    (setfield_ptr(root-init) 0 (global Partial_gadt_native!) f))
+             (+. param/1 1.)))))
+    (setfield_ptr(root-init) 0 (global Partial_gadt_native!) f/0))
   0)
