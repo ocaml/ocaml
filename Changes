@@ -18,6 +18,10 @@ Working version
 
 ### Runtime system:
 
+- #14773 : Activate Haiku native backend
+  (Sylvain Kerjean, review by Kate Deplaix and Nicolas Ojeda Bar)
+  Enable native-code backend and testsuite on BeOS/Haiku.
+
 - #10258: Overhaul the locale code used for mingw/msvc in float<->string
   conversions.
   (David Allsopp, review by Antonin Décimo)
@@ -210,6 +214,10 @@ Working version
   riscv and s390x rather than calling into C
   (Zane Hambly, review by Miod Vallat and Xavier Leroy)
 
+- #15017: emit the rounding instructions for `Float.round`, `Float.trunc`,
+  `ceil` and `floor` on arm64 and power rather than calling into C
+  (Zane Hambly, review by Miod Vallat and Nicolás Ojeda Bär)
+
 * #13919: optimize `lazy v` when `v` is a structured constant
   (below a size threshold), so that `Lazy.from_val v` should not be
   necessary anymore in most cases.
@@ -323,6 +331,10 @@ Working version
   (Nicolás Ojeda Bär, suggestion by Andreas Rossberg, review by Daniel Bünzli,
   Léo Andrès, and Olivier Nicole)
 
+- #15026: Fix report #14765 of an uncaught exception when flushing formatters
+  at program exit.
+  (Olivier Nicole, report by Olivier Andrieu, review by Gabriel Scherer)
+
 - #14981: Add Uchar.{is_ascii,ascii_to_char,is_latin1,latin1_to_char} and
   tweak the documentation of Uchar.of_char.
   (Fabian Hemmer, suggestion by Daniel Bünzli, review by Daniel Bünzli and
@@ -345,6 +357,11 @@ Working version
   `Runtime_events.User.write`, instead of a list for each thread. A write of
   a custom event does not allocate in the usual single-threaded case.
   (Anil Madhavapeddy, review by Thomas Leonard and Sadiq Jaffer)
+
+- #15025: Fix two bugs in the Win32 version of `Unix.select` that could result
+  in failure or incorrect results being returned when the same file descriptor
+  appeared more than one input list or more than once in a single input list.
+  (Nicolás Ojeda Bär, report by Zhang Rui, review by Antonin Décimo)
 
 ### Tools:
 
@@ -501,6 +518,11 @@ Working version
 
 ### Bug fixes:
 
+- #15021: On POWER, fix assembler errors from frame-management code when the
+  frame size exceeds a signed 16-bit displacement, by routing the affected
+  sequences through range-checked helpers.
+  (Tim McGilchrist, review by Miod Vallat and Zane Hambly)
+
 - #14993: the let-rec check should give generic arrays dynamic size,
   since floats and addresses have different sizes on 32-bit systems.
   (Jeremy Yallop, review by Vincent Laviron)
@@ -571,6 +593,17 @@ Working version
   undersized and custom event registration wrote through a truncated offset.
   (Tim McGilchrist, review by Xavier Leroy and Sadiq Jaffer)
 
+- #14966: add the missing EV_MINOR_EPHE_CLEAN constructor to
+  Runtime_events.runtime_phase, introduced in #13643. The runtime has emitted
+  this phase since 5.4, when a minor collection has to clean locked ephemerons,
+  but the OCaml type had no constructor for it, so consumers were handed an
+  out-of-range value and crashed when matching on it.
+  (Tim McGilchrist, review by Florian Angeletti)
+
+- #14969: Fix the units of the runtime events counter EV_C_MINOR_ALLOCATED_WORDS
+  to report as the number of words of minor heap consumed, including headers.
+  (Tim McGilchrist, review by Nicolás Ojeda Bär)
+
 OCaml 5.5.1
 -----------
 
@@ -606,6 +639,13 @@ OCaml 5.5.1
   path, which changed the interface digest (and, through it, most other compiled
   artefacts) as well as the debug info packed into str.a and unix.a.
   (Bernhard M. Wiedemann, review by David Allsopp and Stefan Muenzel)
+
+- #15029: Fix a regression on Windows where an OCaml thread that never
+  yielded voluntarily would keep the runtime lock forever, so that the other
+  threads of its domain never ran. Preemptive switching between systhreads had
+  no effect; only explicit calls to `Thread.yield` or blocking sections would
+  let other threads run.
+  (Nicolás Ojeda Bär, report by Daniel Larraz, review by Antonin Décimo)
 
 OCaml 5.5.0 (19 June 2026)
 -------------------------

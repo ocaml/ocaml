@@ -27,11 +27,6 @@ let () =
   assert (x == true); (* Should trigger signal_handle for sigwinch *)
   r := false;
 
-  Sys.set_signal Sys.sigio (Signal_handle (fun _ -> r := true));
-  Unix.kill (Unix.getpid ()) Sys.sigio;
-  let x = !r in
-  assert (x == true); (* Should trigger signal_handle for sigio *)
-
   (* Signals should map to POSIX standard names *)
   let signals = [(sighup, "SIGHUP");
                  (sigint, "SIGINT");

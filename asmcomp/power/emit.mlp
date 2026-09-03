@@ -70,6 +70,16 @@ let retaddr_offset env = frame_size env + 16
 
 let toc_save_offset env = frame_size env + 8
 
+(* Upper bound on the r1-relative displacements emitted for [f]: the deepest
+   frame, plus the linkage and incoming-argument areas above it. *)
+let max_frame_offset f =
+  let incoming =
+    Reg.Set.fold
+      (fun r ofs -> match r.loc with Stack (Incoming n) -> max ofs n | _ -> ofs)
+      f.fun_args 0 in
+  Misc.align (initial_stack_offset f) 16
+  + f.fun_extra_stack_used + 2 * reserved_stack_space + incoming + 16
+
 (* Trap frame size.  With frame pointers [Lpushtrap] uses [stdu] and the trap
    data lives inside the new frame (32 + 16); otherwise 16 bytes suffice.
    Must match [Stackframe.trap_handler_size]. *)
@@ -106,18 +116,6 @@ let emit_reg r =
   match r.loc with
   | Reg r -> emit_string (register_name r)
   | _ -> Misc.fatal_error "Emit.emit_reg"
-
-(* Output a stack reference *)
-
-let emit_stack env r =
-  match r.loc with
-  | Stack (Domainstate n) ->
-      let ofs = n + Domainstate.(idx_of_field Domain_extra_params) * 8 in
-      `{emit_int ofs}(30)`
-  | Stack s ->
-      let ofs = slot_offset env s (register_class r) in
-      `{emit_int ofs}(1)`
-  | _ -> Misc.fatal_error "Emit.emit_stack"
 
 (* Split a 32-bit integer constants in two 16-bit halves *)
 
@@ -240,6 +238,67 @@ let emit_load_store instr addressing_mode addr n arg =
   | Iindexed2 ->
       `	{emit_string instr}x	{emit_reg arg}, {emit_reg addr.(n)}, {emit_reg addr.(n+1)}\n`
 
+(* Frame-management offsets can exceed a signed 16-bit displacement.  These
+   helpers fall back to a longer sequence, using the non-allocatable temporaries
+   r11/r12.  Offsets are multiples of 8, so a split low half stays DS-valid. *)
+
+(* [reg <- n], reg <> 0 *)
+let emit_li reg n =
+  if is_immediate n then
+    `	li	{emit_gpr reg}, {emit_int n}\n`
+  else begin
+    let (lo, hi) = low_high_s n in
+    `	addis	{emit_gpr reg}, 0, {emit_int hi}\n`;
+    if lo <> 0 then
+      `	addi	{emit_gpr reg}, {emit_gpr reg}, {emit_int lo}\n`
+  end
+
+(* [reg <- reg + n], reg <> 0 *)
+let emit_addi_inplace reg n =
+  if is_immediate n then begin
+    if n <> 0 then
+      `	addi	{emit_gpr reg}, {emit_gpr reg}, {emit_int n}\n`
+  end else begin
+    let (lo, hi) = low_high_s n in
+    `	addis	{emit_gpr reg}, {emit_gpr reg}, {emit_int hi}\n`;
+    if lo <> 0 then
+      `	addi	{emit_gpr reg}, {emit_gpr reg}, {emit_int lo}\n`
+  end
+
+(* "instr datareg, ofs(1)".  The long form computes the address in [tmp], a GPR
+   other than 0 and 1, so stores need [datareg] <> [tmp].  [ofs] must be
+   4-aligned, as the split preserves [ofs] mod 4 without re-checking it. *)
+let emit_sp_mem instr emit_data datareg ofs tmp =
+  if is_immediate ofs && valid_offset instr ofs then
+    `	{emit_string instr}	{emit_data datareg}, {emit_int ofs}(1)\n`
+  else begin
+    let (lo, hi) = low_high_s ofs in
+    assert (valid_offset instr lo);
+    `	addis	{emit_gpr tmp}, 1, {emit_int hi}\n`;
+    `	{emit_string instr}	{emit_data datareg}, {emit_int lo}({emit_gpr tmp})\n`
+  end
+
+(* Spill/reload [valreg] via the slot [memreg].  Long form clobbers [tmp] *)
+let emit_reg_stack instr env valreg memreg tmp =
+  match memreg.loc with
+  | Stack (Domainstate n) ->
+      let ofs = n + Domainstate.(idx_of_field Domain_extra_params) * 8 in
+      `	{emit_string instr}	{emit_reg valreg}, {emit_int ofs}(30)\n`
+  | Stack s ->
+      let ofs = slot_offset env s (register_class memreg) in
+      emit_sp_mem instr emit_reg valreg ofs tmp
+  | _ -> Misc.fatal_error "Emit.emit_reg_stack"
+
+(* Push an [n]-byte frame keeping the back chain, like "stdu 1, -n(1)".
+   The long form clobbers r12. *)
+let emit_frame_push n =
+  if is_immediate (-n) then
+    `	stdu	1, {emit_int (-n)}(1)\n`
+  else begin
+    emit_li 12 (-n);
+    `	stdux	1, 1, 12\n`
+  end
+
 (* After a comparison, extract the result as 0 or 1 *)
 
 let emit_extract_crbit bitnum negated res =
@@ -285,8 +344,8 @@ let emit_free_frame env =
   if n > 0 then begin
     (* Restore frame pointer before deallocating frame *)
     if fp && env.f.fun_frame_required then
-      `	ld	31, {emit_int (fp_save_offset env)}(1)\n`;
-    `	addi	1, 1, {emit_int n}\n`
+      emit_sp_mem "ld" emit_gpr 31 (fp_save_offset env) 31;
+    emit_addi_inplace 1 n
   end
 
 (* Emit a "bl" instruction to a given symbol *)
@@ -302,7 +361,7 @@ let emit_call_nop () =
 (* Reload the TOC register r2 from the value saved on the stack *)
 
 let emit_reload_toc env =
-  `	ld	2, {emit_int (toc_save_offset env)}(1)\n`
+  emit_sp_mem "ld" emit_gpr 2 (toc_save_offset env) 2
 
 (* Adjust stack_offset and emit corresponding CFI directive *)
 
@@ -416,9 +475,12 @@ module BR = Branch_relaxation.Make (struct
 
   let offset_pc_at_branch = 1
 
+  let large_frame f = not (is_immediate (max_frame_offset f))
+
   let prologue_size f =
     if f.fun_frame_required then
-      4 + (if fp then 2 else 0)  (* +2 for save old FP and set FP = SP *)
+      if large_frame f then (if fp then 9 else 5)
+      else 4 + (if fp then 2 else 0)  (* +2 for save old FP and set FP = SP *)
     else 0
 
   let tocload_size = 2
@@ -436,10 +498,15 @@ module BR = Branch_relaxation.Make (struct
       end
     | Iindexed2 -> 1
 
-  let instr_size f = function
+  (* Budget the longer out-of-range forms.  Over-estimating is safe *)
+  let instr_size f =
+    let large = large_frame f in
+    let if_large n = if large then n else 0 in
+    let fp_save = if fp && f.fun_frame_required then 1 else 0 in
+    function
     | Lend -> 0
     | Lprologue -> prologue_size f
-    | Lop(Imove | Ispill | Ireload) -> 1
+    | Lop(Imove | Ispill | Ireload) -> 1 + if_large 1
     | Lop(Iconst_int n) ->
       if is_native_immediate n then 1
       else if (let (_lo, hi) = native_low_high_s n in
@@ -449,18 +516,20 @@ module BR = Branch_relaxation.Make (struct
       else tocload_size
     | Lop(Iconst_float _) -> tocload_size
     | Lop(Iconst_symbol _) -> tocload_size
-    | Lop(Icall_ind) -> 4
-    | Lop(Icall_imm _) -> 3
-    | Lop(Itailcall_ind) -> 6 + (if fp && f.fun_frame_required then 1 else 0)
+    | Lop(Icall_ind) -> 4 + if_large 1
+    | Lop(Icall_imm _) -> 3 + if_large 1
+    | Lop(Itailcall_ind) -> 6 + fp_save + if_large 3
     | Lop(Itailcall_imm { func; _ }) ->
         if func = f.fun_name
         then 1
-        else 6 + tocload_size + (if fp && f.fun_frame_required then 1 else 0)
+        else 6 + tocload_size + fp_save + if_large 3
     | Lop(Iextcall { alloc; stack_ofs; _}) ->
-        if stack_ofs > 0 then tocload_size + 4
+        if stack_ofs > 0
+        then tocload_size + 4 + (if is_immediate stack_ofs then 0 else 1)
         else if alloc then tocload_size + 2
         else 5 + (if fp then 3 else 0)  (* ld+stdu+addi for fp support *)
-    | Lop(Istackoffset n) -> if fp && n > 0 then 3 else 1
+    | Lop(Istackoffset n) ->
+        if fp && n > 0 then 3 + if_large 4 else 1 + if_large 1
     | Lop(Iload {memory_chunk; addressing_mode; is_atomic }) ->
       let loadinstr = load_mnemonic memory_chunk in
       (if is_atomic then 4 else 0) +
@@ -494,9 +563,9 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Ispecific _) -> 1
     | Lop(Idls_get) -> 1
     | Lop(Iatomic_fetch_add) -> 7
-    | Lop(Ireturn_addr) -> 1
-    | Lreloadretaddr -> 2
-    | Lreturn -> 2 + (if fp && f.fun_frame_required then 1 else 0)  (* +1 for restore FP *)
+    | Lop(Ireturn_addr) -> if f.fun_frame_required then 1 + if_large 1 else 1
+    | Lreloadretaddr -> 2 + if_large 1
+    | Lreturn -> 2 + fp_save + if_large (1 + fp_save)
     | Llabel _ -> 0
     | Lbranch _ -> 1
     | Lcondbranch (Ifloattest(CFle | CFnle  | CFge | CFnge), _) -> 3
@@ -506,7 +575,7 @@ module BR = Branch_relaxation.Make (struct
         + (if lbl1 = None then 0 else 1)
         + (if lbl2 = None then 0 else 1)
     | Lswitch _ -> 7 + tocload_size
-    | Lentertrap -> 1 + (if fp && f.fun_frame_required then 1 else 0)
+    | Lentertrap -> 1 + fp_save + if_large 1
     | Ladjust_trap_depth _ -> 0
     | Lpushtrap _ -> (if fp then 6 else 4) + tocload_size
     | Lpoptrap -> 2
@@ -623,13 +692,13 @@ let emit_instr env i =
             `	std	2, {emit_int 8}(1)\n`;
             cfi_offset ~reg: 65 (* LR *) ~offset: 16;
             if fp then
-              `	std	31, {emit_int(fp_save_offset env - n)}(1)\n`
+              emit_sp_mem "std" emit_gpr 31 (fp_save_offset env - n) 12
          end;
         if n > 0 then begin
             if fp then
-              `	stdu	1, {emit_int(-n)}(1)\n`
+              emit_frame_push n
             else
-              `	addi	1, 1, {emit_int(-n)}\n`;
+              emit_addi_inplace 1 (-n);
             cfi_adjust_cfa_offset n;
             (* Note: We don't emit .cfi_offset for r1 (backchain) because trap frames
                can overwrite the backchain location. The signal frame's val_expression
@@ -648,13 +717,13 @@ let emit_instr env i =
             | {loc = Reg _; typ = Float}, {loc = Reg _; typ = Float} ->
                 `	fmr	{emit_reg dst}, {emit_reg src}\n`
             | {loc = Reg _; typ = (Val | Int | Addr)}, {loc = Stack _} ->
-                `	std	{emit_reg src}, {emit_stack env dst}\n`
+                emit_reg_stack "std" env src dst 12
             | {loc = Reg _; typ = Float}, {loc = Stack _} ->
-                `	stfd	{emit_reg src}, {emit_stack env dst}\n`
+                emit_reg_stack "stfd" env src dst 12
             | {loc = Stack _; typ = (Val | Int | Addr)}, {loc = Reg _} ->
-                `	ld	{emit_reg dst}, {emit_stack env src}\n`
+                emit_reg_stack "ld" env dst src 12
             | {loc = Stack _; typ = Float}, {loc = Reg _} ->
-                `	lfd	{emit_reg dst}, {emit_stack env src}\n`
+                emit_reg_stack "lfd" env dst src 12
             | (_, _) ->
                 Misc.fatal_error "Emit: Imove"
         end
@@ -718,7 +787,7 @@ let emit_instr env i =
         `	mtctr	{emit_reg i.arg.(0)}\n`;
         `	mr	12, {emit_reg i.arg.(0)}\n`;   (* addr of fn in r12 *)
         if env.f.fun_frame_required then begin
-          `	ld	11, {emit_int(retaddr_offset env)}(1)\n`;
+          emit_sp_mem "ld" emit_gpr 11 (retaddr_offset env) 11;
           `	mtlr	11\n`
         end;
         emit_free_frame env;
@@ -730,7 +799,7 @@ let emit_instr env i =
           emit_tocload emit_gpr 12 (TocSym func); (* addr of fn must be in r12 *)
           `	mtctr	12\n`;
           if env.f.fun_frame_required then begin
-            `	ld	11, {emit_int(retaddr_offset env)}(1)\n`;
+            emit_sp_mem "ld" emit_gpr 11 (retaddr_offset env) 11;
             `	mtlr	11\n`
           end;
           emit_free_frame env;
@@ -739,7 +808,7 @@ let emit_instr env i =
     | Lop(Iextcall { func; alloc; stack_ofs }) ->
         if stack_ofs > 0 then begin
           emit_tocload emit_gpr 25 (TocSym func);
-         `	li	24, {emit_int stack_ofs}\n`;
+          emit_li 24 stack_ofs;
              (* size in bytes of stack area containing the arguments *)
           emit_call "caml_c_call_stack_args";
           record_frame env i.live (Dbg_other i.dbg);
@@ -784,15 +853,15 @@ let emit_instr env i =
         if n > 0 then begin
           let alloc = n + reserved_stack_space in
           if fp then begin
-            `	ld	0, {emit_int (retaddr_offset env)}(1)\n`;
-            `	stdu	1, {emit_int (-alloc)}(1)\n`;
-            `	std	0, {emit_int (alloc + 16)}(1)\n`
+            emit_sp_mem "ld" emit_gpr 0 (retaddr_offset env) 12;
+            emit_frame_push alloc;
+            emit_sp_mem "std" emit_gpr 0 (alloc + 16) 12
           end else
-            `	addi	1, 1, {emit_int (-alloc)}\n`;
+            emit_addi_inplace 1 (-alloc);
           adjust_stack_offset env alloc
         end else if n < 0 then begin
           let dealloc = (-n) + reserved_stack_space in
-          `	addi	1, 1, {emit_int dealloc}\n`;
+          emit_addi_inplace 1 dealloc;
           adjust_stack_offset env (-dealloc)
         end
     | Lop(Iload { memory_chunk; addressing_mode; is_atomic }) ->
@@ -905,6 +974,13 @@ let emit_instr env i =
         assert (i.arg.(0).loc = i.res.(0).loc)
     | Lop(Ispecific Isqrtf) ->
         `	fsqrt	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
+    | Lop(Ispecific(Iroundf r)) ->
+        let instr = (match r with
+                     | Rnearest_away -> "frin"
+                     | Rtoward_zero  -> "friz"
+                     | Rtoward_pos   -> "frip"
+                     | Rtoward_neg   -> "frim") in
+        `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
     | Lop(Ispecific sop) ->
         let instr = name_for_specific sop in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`
@@ -924,11 +1000,11 @@ let emit_instr env i =
         `	lwsync\n`
     | Lop (Ireturn_addr) ->
         if env.f.fun_frame_required then
-        `	ld	{emit_reg i.res.(0)}, {emit_int(retaddr_offset env)}(1)\n`
+          emit_sp_mem "ld" emit_reg i.res.(0) (retaddr_offset env) 12
         else
         `	mflr	{emit_reg i.res.(0)}\n`
     | Lreloadretaddr ->
-        `	ld	11, {emit_int(retaddr_offset env)}(1)\n`;
+        emit_sp_mem "ld" emit_gpr 11 (retaddr_offset env) 11;
         `	mtlr	11\n`
     | Lreturn ->
         emit_free_frame env;
@@ -1106,7 +1182,7 @@ let fundecl fundecl =
     (* The return address is saved in a register not used for param passing *)
     (* The size is passed in a register normally not used for param passing *)
     `{emit_label overflow}:	mflr	28\n`;
-    `	li	27, {emit_int (Config.stack_threshold + max_frame_size / 8)}\n`;
+    emit_li 27 (Config.stack_threshold + max_frame_size / 8);
     emit_call "caml_call_realloc_stack";
     emit_call_nop ();
     `	mtlr	28\n`;
@@ -1131,7 +1207,7 @@ let fundecl fundecl =
       let f = max_frame_size + threshold_offset in
       let offset = Domainstate.(idx_of_field Domain_current_stack) * 8 in
       `	ld	11, {emit_int offset}(30)\n`;
-      `	addi	11, 11, {emit_int f}\n`;
+      emit_addi_inplace 11 f;
       `	cmpld	1, 11\n`;
       `	ble-	{emit_label overflow}\n`;
       `{emit_label ret}:\n`

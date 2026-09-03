@@ -1153,7 +1153,8 @@ CAMLprim value caml_marshal_data_size(value buff, value ofs)
   default:
     caml_failwith("Marshal.data_size: bad object");
   }
-  if (caml_uadd_overflow(header_len, data_len, &total_len)) {
+  if (caml_uadd_overflow(header_len, data_len, &total_len)
+      || total_len > Max_long + 20) {
     caml_failwith("Marshal.data_size: "
                   "object too large to be read back on this platform");
   }

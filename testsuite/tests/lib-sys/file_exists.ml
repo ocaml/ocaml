@@ -20,10 +20,12 @@ let safe_remove filename =
 let safe_rmdir dirname =
   try Sys.rmdir dirname with Sys_error _ -> ()
 
-let show name f =
+let show ?(expect_either=[]) name f =
   print_string name; print_string ": ";
   (try print_string (string_of_bool (f ()))
-   with Sys_error msg -> print_string "Sys_error: "; print_string msg);
+   with Sys_error msg -> print_string "Sys_error: ";
+     if List.mem msg expect_either then print_string "$EXPECTED"
+     else print_string msg);
   print_newline ()
 
 let () =
@@ -69,4 +71,9 @@ let () =
   (* Pathname is longer than NAME_MAX (ENAMETOOLONG) *)
   let too_long_pathname = String.make 256 'c' in
   show "file_exists with ENAMETOOLONG" (fun () -> Sys.file_exists too_long_pathname);
-  show "filepath_exists with ENAMETOOLONG" (fun () -> Sys.filepath_exists too_long_pathname);
+  show "filepath_exists with ENAMETOOLONG"
+    ~expect_either:[
+      too_long_pathname ^": File name too long";
+      too_long_pathname ^": Filename too long"
+    ]
+    (fun () -> Sys.filepath_exists too_long_pathname);

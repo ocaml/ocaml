@@ -51,7 +51,8 @@ let is_immediate_logical n = n <= 0xFFFF && n >= 0
 
 (* If you update [inline_ops], you may need to update [is_simple_expr] and/or
    [effects_of], below. *)
-let inline_ops = [ "sqrt"; "caml_fma" ]
+let inline_ops =
+  [ "sqrt"; "caml_fma"; "caml_round"; "caml_trunc"; "ceil"; "floor" ]
 
 class selector = object (self)
 
@@ -69,7 +70,8 @@ method! is_immediate op n =
   | Iand | Ior | Ixor -> is_immediate_logical n
   | Icomp c -> self#is_immediate_test c n
   | Icheckbound -> 0 <= n && n <= 0x7FFF
-    (* twlle takes a 16-bit signed immediate but performs an unsigned compare *)
+    (* cmpldi takes a 16-bit unsigned immediate,
+       so this limit is conservative *)
   | _ -> super#is_immediate op n
 
 method! is_simple_expr = function
@@ -112,6 +114,16 @@ method! select_operation op args dbg =
   | (Cextcall("caml_fma", _, [XFloat; XFloat; XFloat], false),
      [arg1; arg2; arg3]) ->
       (Ispecific Imultaddf, [arg1; arg2; arg3])
+  (* Only the unboxed rounding externals pass their argument in a
+     register, hence the argument type. *)
+  | (Cextcall("caml_round", _, [XFloat], false), _) ->
+      (Ispecific (Iroundf Rnearest_away), args)
+  | (Cextcall("caml_trunc", _, [XFloat], false), _) ->
+      (Ispecific (Iroundf Rtoward_zero), args)
+  | (Cextcall("ceil", _, [XFloat], false), _) ->
+      (Ispecific (Iroundf Rtoward_pos), args)
+  | (Cextcall("floor", _, [XFloat], false), _) ->
+      (Ispecific (Iroundf Rtoward_neg), args)
   | _ ->
       super#select_operation op args dbg
 
