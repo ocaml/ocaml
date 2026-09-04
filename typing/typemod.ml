@@ -101,7 +101,7 @@ end = struct
 
   let () =
     Typing_recovery.register_recoverable (function
-        | In_context _ -> true
+        | In_context _ | Error_forward _ -> true
         | _ -> false
       )
 end
@@ -154,10 +154,15 @@ let initial_env ~loc ~initially_opened_module
     try
       snd (type_open_ Override env loc {txt;loc})
     with
-    | Typetexp.Error.In_context _
-    | Cmi_format.Error _
-    | Env.Error.In_context _
-    | Persistent_env.Error _ when !Clflags.typing_recovery -> env
+      (Typetexp.Error.In_context _
+      | Cmi_format.Error _
+      | Env.Error.In_context _
+      | Persistent_env.Error _) as exn when !Clflags.typing_recovery ->
+        (* Handles errors when the file is empty (but the context is
+           incorrect). If the error has already been logged, it will
+           be overwritten by the final set. *)
+        Typing_recovery.log_or_raise exn;
+        env
   in
   let add_units env units =
     String.Set.fold
@@ -2755,7 +2760,10 @@ and type_one_application ~ctx:(apply_loc,sfunct,md_f,args)
         | Pmod_ident l -> Includemod.Named_leftmost_functor l.txt
         | _ -> Includemod.Anonymous_functor
       in
-      raise(Includemod.Apply_error {loc=apply_loc;env;app_name;mty_f;args})
+      (* In Merlin, we can recover because we can synthesize an
+         artificial module with a typed hole. *)
+      Typing_recovery.log_and_raise
+        (Includemod.Apply_error {loc=apply_loc;env;app_name;mty_f;args})
 
 and type_open_decl ?used_slot ?toplevel ~funct_body names env sod =
   Builtin_attributes.warning_scope sod.popen_attributes
