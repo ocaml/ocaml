@@ -443,13 +443,20 @@ static void intern_rec(value *dest)
       tag = code & 0xF;
       size = (code >> 4) & 0x7;
     read_block:
-      if (size == 0) {
-        v = Atom(tag);
+      if (CAMLunlikely(size == 0)) {
+        if (CAMLlikely(tag < Closure_tag))
+          v = Atom(tag);
+        else
+          intern_cleanup_failwith("bad atom tag");
       } else {
-        v = intern_alloc_obj(size, tag);
+        v = intern_alloc_obj (size, tag);
         intern_record_obj(v);
-        /* For objects, we need to freshen the oid */
-        if (tag == Object_tag) {
+        if (CAMLlikely(tag <= Closure_tag)) {
+          /* Read the contents of the block */
+          ReadItems(&Field(v, 0), size);
+        }
+        else if (tag == Object_tag) {
+          /* For objects, we need to freshen the oid */
           if (CAMLunlikely(size < 2))
             intern_cleanup_failwith("input_value: bad object block");
           /* Request to read rest of the elements of the block */
@@ -461,9 +468,9 @@ static void intern_rec(value *dest)
           sp->arg = 1;
           /* Finally read first two block elements: method table and old OID */
           ReadItems(&Field(v, 0), 2);
-        } else
-          /* If it's not an object then read the contents of the block */
-          ReadItems(&Field(v, 0), size);
+        } else {
+          intern_cleanup_failwith("bad block tag");
+        }
       }
     } else {
       /* Small integer */
