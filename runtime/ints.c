@@ -134,7 +134,7 @@ CAMLprim value caml_bswap16(value v)
 
 #define INTNAT_BITS (8 * sizeof(uintnat))
 
-#if defined(__GNUC__)
+#if __has_builtin(__builtin_clzll) || defined(__GNUC__)
 #ifdef ARCH_SIXTYFOUR
 #define CAML_BUILTIN_CLZ __builtin_clzll
 #define CAML_BUILTIN_CTZ __builtin_ctzll
