@@ -56,12 +56,18 @@ type label_mismatch =
   | Type of Errortrace.equality_error
   | Mutability of position
   | Atomicity of position
-  | Nested_record
+  | Kind of position
+  | Nested_record of inline_record_mismatch
 
-type record_change =
+and inline_record_mismatch =
+  | Arity
+  | Record_mismatch of record_mismatch
+  | Unboxed_representation of position
+
+and record_change =
   (Types.label_declaration as 'ld, 'ld, label_mismatch) Diffing_with_keys.change
 
-type record_mismatch =
+and record_mismatch =
   | Label_mismatch of record_change list
   | Unboxed_float_representation of position
 
