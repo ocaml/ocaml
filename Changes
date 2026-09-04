@@ -337,6 +337,11 @@ Working version
   (Fabian Hemmer, suggestion by Daniel Bünzli, review by Daniel Bünzli and
   Nicolás Ojeda Bär)
 
+- #15009: Improve Set.union, Set.inter, and Set.diff on physically shared sets,
+  avoiding unnecessary traversal and allocations and preserving sharing when the
+  result is unchanged.
+  (Nicolás Ojeda Bär, review by Vincent Laviron)
+
 ### Other libraries:
 
 * #14788: The Win32 error code `ERROR_DIRECTORY` (= 267) is now mapped to
