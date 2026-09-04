@@ -21,7 +21,7 @@ AC_INIT([OCaml],
         [OCAML__VERSION],
         [caml-list@inria.fr],
         [ocaml],
-        [http://www.ocaml.org])
+        [https://ocaml.org/])
 
 AC_MSG_NOTICE([Configuring OCaml version AC_PACKAGE_VERSION])
 
@@ -1197,7 +1197,7 @@ AS_CASE([$target],
 
 # Require Windows 8 / Server 2012 or later
 AS_CASE([$target],
-  [*-w64-mingw32*|*-pc-windows],
+  [*-pc-cygwin|*-w64-mingw32*|*-pc-windows],
     [internal_cppflags="$internal_cppflags -D_WIN32_WINNT=0x602"])
 
 # Adjust according to target
@@ -2934,7 +2934,8 @@ AS_IF([$build_ocamltest],
   AC_CONFIG_LINKS([
     ocamltest/ocamltest_unix.ml:${ocamltest_unix_mod}
   ])
-  AC_CHECK_PROGS([DIFF], [patdiff diff],
+  AC_CHECK_PROGS([DIFF], [patdiff diff], [false])
+  AS_IF([test x"$DIFF" = "xfalse"],
     [AC_MSG_ERROR([ocamltest requires a diff tool])])
   AS_CASE([$DIFF], [diff], [flags_to_test='--strip-trailing-cr -u'])
   AC_CACHE_CHECK([for extra $DIFF flags],

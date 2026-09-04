@@ -673,7 +673,7 @@ PACKAGE_TARNAME='ocaml'
 PACKAGE_VERSION='5.6.0+dev0-2026-01-26'
 PACKAGE_STRING='OCaml 5.6.0+dev0-2026-01-26'
 PACKAGE_BUGREPORT='caml-list@inria.fr'
-PACKAGE_URL='http://www.ocaml.org'
+PACKAGE_URL='https://ocaml.org/'
 
 ac_unique_file="runtime/interp.c"
 # Factoring default headers for most tests.
@@ -1870,7 +1870,7 @@ Use these variables to override the choices made by 'configure' or to help
 it to find libraries and programs with nonstandard names/locations.
 
 Report bugs to <caml-list@inria.fr>.
-OCaml home page: <http://www.ocaml.org>.
+OCaml home page: <https://ocaml.org/>.
 _ACEOF
 ac_status=$?
 fi
@@ -16304,7 +16304,7 @@ esac
 
 # Require Windows 8 / Server 2012 or later
 case $target in #(
-  *-w64-mingw32*|*-pc-windows) :
+  *-pc-cygwin|*-w64-mingw32*|*-pc-windows) :
     internal_cppflags="$internal_cppflags -D_WIN32_WINNT=0x602" ;; #(
   *) :
      ;;
@@ -25126,8 +25126,12 @@ fi
 
   test -n "$DIFF" && break
 done
-test -n "$DIFF" || DIFF="as_fn_error $? "ocamltest requires a diff tool" "$LINENO" 5"
+test -n "$DIFF" || DIFF="false"
 
+  if test x"$DIFF" = "xfalse"
+then :
+  as_fn_error $? "ocamltest requires a diff tool" "$LINENO" 5
+fi
   case $DIFF in #(
   diff) :
     flags_to_test='--strip-trailing-cr -u' ;; #(
@@ -26446,7 +26450,7 @@ Configuration commands:
 $config_commands
 
 Report bugs to <caml-list@inria.fr>.
-OCaml home page: <http://www.ocaml.org>."
+OCaml home page: <https://ocaml.org/>."
 
 _ACEOF
 ac_cs_config=`printf "%s\n" "$ac_configure_args" | sed "$ac_safe_unquote"`
