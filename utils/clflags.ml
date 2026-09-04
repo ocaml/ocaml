@@ -13,6 +13,18 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module Linking_variants = struct
+  module M = Map.Make(String)
+
+  let merge_objs fobjs lobjs =
+    M.merge
+      (fun _ fobjs lobjs -> match fobjs, lobjs with
+        | None, None -> None
+        | Some objs, None | None, Some objs -> Some objs
+        | Some fobjs, Some lobjs -> Some (fobjs @ lobjs))
+      fobjs lobjs
+end
+
 (* Command-line parameters *)
 
 module Int_arg_helper = Arg_helper.Make (struct
@@ -42,6 +54,7 @@ type profile_column = [ `Time | `Alloc | `Top_heap | `Abs_top_heap ]
 
 let objfiles = ref ([] : string list)         (* .cmo and .cma files *)
 and ccobjs = ref ([] : string list)           (* .o, .a, .so and -cclib -lxxx *)
+and ccobjs_variants = ref (Linking_variants.M.empty : string list Linking_variants.M.t)
 and dllibs = ref ([] : (suffixed:bool * string) list)
                                               (* .so, -dllib -lxxx and
                                                  -dllib-suffixed -lxxx *)
@@ -184,6 +197,7 @@ let std_include_dir () =
 
 let shared = ref false (* -shared *)
 let dlcode = ref true (* not -nodynlink *)
+let linking_o = ref None (* -linking-o *)
 
 let pic_code = ref (match Config.architecture with (* -fPIC *)
                      | "amd64" | "s390x" -> true

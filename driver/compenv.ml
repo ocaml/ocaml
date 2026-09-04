@@ -627,6 +627,7 @@ type deferred_action =
   | ProcessCFile of string
   | ProcessOtherFile of string
   | ProcessObjects of string list
+  | ProcessObjectsVariant of string * string list
   | ProcessDLLs of bool * string list
 
 let c_object_of_filename name =
@@ -676,6 +677,8 @@ let process_action ctx action =
       ccobjs := obj_name :: !ccobjs
   | ProcessObjects names ->
       ccobjs := names @ !ccobjs
+  | ProcessObjectsVariant (name, names) ->
+      ccobjs_variants := Clflags.Linking_variants.merge_objs (Clflags.Linking_variants.M.singleton name names) !ccobjs_variants
   | ProcessDLLs (suffixed, names) ->
       dllibs := (List.map (fun n -> (~suffixed, n)) names) @ !dllibs
   | ProcessOtherFile name ->

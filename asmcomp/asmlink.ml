@@ -93,11 +93,18 @@ let extract_crc_implementations () =
    See bytecomp/bytelink.ml for comments on the order of C objects. *)
 
 let lib_ccobjs = ref []
+let lib_ccobjs_variants = ref Clflags.Linking_variants.M.empty
 let lib_ccopts = ref []
 
 let add_ccobjs origin l =
   if not !Clflags.no_auto_link then begin
-    lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs;
+    begin match !Clflags.linking_o with
+    | Some (name, _) when name <> "" && Clflags.Linking_variants.M.mem name l.lib_ccobjs_variants ->
+        let newobjs = List.map (fun s -> String.concat ":" [name; s]) (Clflags.Linking_variants.M.find name l.lib_ccobjs_variants) in
+        lib_ccobjs := newobjs @ !lib_ccobjs
+    | None | Some _ ->
+        lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs
+    end;
     let replace_origin =
       Misc.replace_substring ~before:"$CAMLORIGIN" ~after:origin
     in
@@ -285,6 +292,7 @@ let link_shared ~ppf_dump objfiles output_name =
       (fun (info, file_name, crc) -> check_consistency file_name info crc)
       units_tolink;
     Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
+    Clflags.ccobjs_variants := Clflags.Linking_variants.merge_objs !Clflags.ccobjs_variants !lib_ccobjs_variants;
     Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
     let objfiles =
       List.rev (List.filter_map object_file_name_of_file obj_infos) @
@@ -350,6 +358,7 @@ let link ~ppf_dump objfiles output_name =
       units_tolink;
     let crc_interfaces = extract_crc_interfaces () in
     Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
+    Clflags.ccobjs_variants := Clflags.Linking_variants.merge_objs !Clflags.ccobjs_variants !lib_ccobjs_variants;
     Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
                                                  (* put user's opts first *)
     let startup =
@@ -431,4 +440,5 @@ let reset () =
   interfaces := [];
   implementations := [];
   lib_ccobjs := [];
+  lib_ccobjs_variants := Clflags.Linking_variants.M.empty;
   lib_ccopts := []

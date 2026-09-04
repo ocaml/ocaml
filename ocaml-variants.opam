@@ -1,5 +1,5 @@
 opam-version: "2.0"
-version: "5.6.0+trunk"
+version: "5.6.0+trunk+lnkpipe"
 license: "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception"
 synopsis: "OCaml development version"
 maintainer: "caml-list@inria.fr"
@@ -111,7 +111,7 @@ build: [
   [make "-j%{jobs}%"]
   [make "INSTALL_MODE=opam" "install"]
 ]
-install: ["sh" "./%{name}%-fixup.sh" prefix]
+install: [make "install"]
 depopts: [
   "ocaml-option-32bit"
   "ocaml-option-afl"
