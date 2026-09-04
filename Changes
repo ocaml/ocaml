@@ -601,6 +601,9 @@ Working version
   to report as the number of words of minor heap consumed, including headers.
   (Tim McGilchrist, review by Nicolás Ojeda Bär)
 
+- #?????: Various runtime events documentation improvements
+  (Tim McGilchrist, reviewed by ??????)
+
 OCaml 5.5.1
 -----------
 

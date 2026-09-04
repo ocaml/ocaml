@@ -31,6 +31,25 @@
     zero-impact monitoring of the current process or bindings for other
     languages.
 
+    Three different identifiers appear in this interface and they are not
+    interchangeable:
+
+    - The process PID, as returned by {!Unix.getpid}. This names the process
+    that emitted the events. It appears in the name of the .events file, in
+    {!create_cursor} and as the argument of the [EV_RING_START],
+    [EV_DOMAIN_SPAWN] and [EV_DOMAIN_TERMINATE] lifecycle events.
+
+    - The domain index, as returned by {!Domain.self_index}. This names the
+    ring buffer that a domain emits into and is the first argument passed to
+    every callback. It is unique among the domains running at any one time,
+    but the index of a terminated domain may later be reused by a newly
+    spawned one.
+
+    - The domain unique id, as returned by {!Domain.self}. This is never
+    reused. It is not reported by this module. To tell apart successive
+    domains that occupied the same domain index, pair the
+    [EV_DOMAIN_SPAWN] and [EV_DOMAIN_TERMINATE] lifecycle events for that index.
+
     The runtime events system's behaviour can be controlled by the following
     environment variables:
 
@@ -48,7 +67,10 @@
 
 (** The type for counter events emitted by the runtime. Counter events are used
   to measure a quantity at a point in time or record the occurrence of an event.
-  In the latter case their value will be one. *)
+  In the latter case their value will be one.
+
+  Block sizes reported by these counters, in {b words} or {b bytes}, include
+  the header words. *)
 type runtime_counter =
 | EV_C_FORCE_MINOR_ALLOC_SMALL
 (**
@@ -142,64 +164,64 @@ Major heap size in {b words} of a Domain.
 | EV_C_MAJOR_ALLOCATED_WORDS
 (**
 Allocations to the major heap of this Domain in {b words}, since the last major
-slice.
+slice, including words promoted from the minor heap.
 @since 5.3
 *)
 | EV_C_MAJOR_ALLOCATED_WORK
 (**
-The amount of major GC 'work' needing to be done as a result of allocations to
+The amount of major GC {b work} needing to be done as a result of allocations to
 the major heap of this Domain in {b words}, since the last major slice.
 @since 5.3
 *)
 | EV_C_MAJOR_DEPENDENT_WORK
 (**
-The amount of major GC 'work' needing to be done as a result of dependent
-allocations to the major heap of this Domain in words, since the last major
+The amount of major GC {b work} needing to be done as a result of dependent
+allocations to the major heap of this Domain in {b words}, since the last major
 slice. Dependent memory is non-heap memory that depends on heap memory being
 collected in order to be freed.
 @since 5.3
 *)
 | EV_C_MAJOR_EXTRA_WORK
 (**
-The amount of major GC 'work' needing to be done as a result of extra
+The amount of major GC {b work} needing to be done as a result of extra
 non-memory resources that are dependent on heap memory being collected in order
 to be freed.
 @since 5.3
 *)
 | EV_C_MAJOR_WORK_COUNTER
 (**
-The global amount of major GC 'work' done by all domains since the program
+The global amount of major GC {b work} done by all domains since the program
 began.
 @since 5.3
 *)
 | EV_C_MAJOR_ALLOC_COUNTER
 (**
-The global {b words} of major GC allocations done by all domains since the
-program began.
+The global amount of major GC {b work} required by allocation and other
+resource use in all domains since the program began.
 @since 5.3
 *)
 | EV_C_MAJOR_SLICE_TARGET
 (**
-The target amount of global 'work' that should be done by all domains at the
-end of the major slice (see EV_C_MAJOR_SLICE_COUNTER).
+The target amount of global {b work} that should be done by all domains at the
+end of the major slice (see EV_C_MAJOR_WORK_COUNTER).
 @since 5.3
 *)
 | EV_C_MAJOR_SLICE_BUDGET
 (**
-The budget in 'work' that a domain has to do during the major slice.
+The budget in {b work} that a domain has to do during the major slice.
 @since 5.3
  *)
 | EV_C_MINOR_ALLOCATED_WORDS
 (**
 Total {b words} allocated in the minor heap of this Domain in the
 last minor collection.
-@since 5.4
+@since 5.5
 *)
 | EV_C_MINOR_PROMOTED_WORDS
 (**
 Total {b words} promoted from the minor heap of this Domain to the major heap
 in the last minor collection.
-@since 5.4
+@since 5.5
 *)
 
 (** The type for span events emitted by the runtime. *)
@@ -514,12 +536,12 @@ Event indicating that a fork has occurred and the current domain is the child.
 | EV_DOMAIN_SPAWN
 (**
 Event indicating that a new domain has been spawned. Includes the PID of the
-new domain as an argument.
+process as an argument.
 @since 5.0
 *)
 | EV_DOMAIN_TERMINATE
 (**
-Event indicating that a domain has terminated. Includes the PID of the domain
+Event indicating that a domain has terminated. Includes the PID of the process
 as an argument.
 @since 5.0
 *)
@@ -638,9 +660,12 @@ module Callbacks : sig
       when the runtime leaves a certain phase. The [runtime_counter] callback
       is called when a counter is emitted by the runtime. [lifecycle] callbacks
       are called when the ring undergoes a change in lifecycle and a consumer
-      may need to respond. [alloc] callbacks are currently only called on the
-      instrumented runtime. [lost_events] callbacks are called if the consumer
-      code detects some unconsumed events have been overwritten.
+      may need to respond. The int option is the PID carried by those lifecycle
+      events that have one, and [None] for those that do not. [alloc] callbacks
+      are currently only called on the instrumented runtime. [lost_events]
+      callbacks are called if the consumer code detects some unconsumed events
+      have been overwritten, and are given the number of ring buffer words that
+      were skipped. Events vary in size, so this is not a count of lost events.
       *)
 
   val add_user_event : 'a Type.t ->
