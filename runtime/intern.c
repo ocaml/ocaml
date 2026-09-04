@@ -475,20 +475,20 @@ static struct intern_item * intern_resize_stack(struct caml_intern_state* s,
 }
 
 /* Convenience macros for requesting operation on the stack */
-#define PushItem(s)                                                     \
-  do {                                                                  \
-    sp++;                                                               \
-    if (sp >= s->intern_stack_limit) sp = intern_resize_stack(s, sp);   \
+
+#define PushOperation(s,sp,_op,_dest,_arg)                                  \
+  do {                                                                      \
+    sp++;                                                                   \
+    if (sp >= s->intern_stack_limit) sp = intern_resize_stack(s, sp);       \
+    sp->op = _op;                                                           \
+    sp->dest = _dest;                                                       \
+    sp->arg = _arg;                                                         \
   } while(0)
 
-#define ReadItems(s,_dest,_n)                                           \
-  do {                                                                  \
-    if (_n > 0) {                                                       \
-      PushItem(s);                                                      \
-      sp->op = OReadItems;                                              \
-      sp->dest = _dest;                                                 \
-      sp->arg = _n;                                                     \
-    }                                                                   \
+#define ReadItems(s,sp,_dest,_n)                                            \
+  do {                                                                      \
+    CAMLassert((_n) > 0);                                                   \
+    PushOperation(s, sp, OReadItems, _dest, _n);                            \
   } while(0)
 
 static void intern_alloc_storage(struct caml_intern_state* s, mlsize_t whsize,
@@ -582,7 +582,7 @@ static void intern_rec(struct caml_intern_state* s,
   sp = s->intern_stack;
 
   /* Initially let's try to read the first object from the stream */
-  ReadItems(s, dest, 1);
+  ReadItems(s, sp, dest, 1);
 
   /* The un-marshaler loop, the recursion is unrolled */
   while(sp != s->intern_stack) {
@@ -646,31 +646,22 @@ static void intern_rec(struct caml_intern_state* s,
         intern_record_obj(s, v);
         if (CAMLlikely(tag < Forcing_tag)) {
           /* Read the contents of the block */
-          ReadItems(s, &Field(v, 0), size);
+          ReadItems(s, sp, &Field(v, 0), size);
         } else if (tag == Closure_tag) {
           /* For closures, we need to validate the closure after reading it */
-          PushItem(s);
-          sp->op = OCheckClosure;
-          sp->dest = (value*) v;
-          sp->arg = 0;          /* irrelevant */
+          PushOperation(s, sp, OCheckClosure, (value*) v, 0);
           /* Code pointers are allowed in a closure block */
-          PushItem(s);
-          sp->op = OReadItemsOrCodePointers;
-          sp->dest = &Field(v, 0);
-          sp->arg = size;
+          PushOperation(s, sp, OReadItemsOrCodePointers, &Field(v, 0), size);
         } else if (tag == Object_tag) {
           /* For objects, we need to freshen the oid */
           if (CAMLunlikely(size < 2))
             intern_cleanup_failwith2(s, fun_name, "bad object block");
           /* Request to read rest of the elements of the block */
-          ReadItems(s, &Field(v, 2), size - 2);
+          if (size > 2) ReadItems(s, sp, &Field(v, 2), size - 2);
           /* Request freshing OID */
-          PushItem(s);
-          sp->op = OFreshOID;
-          sp->dest = (value*) v;
-          sp->arg = 1;
+          PushOperation(s, sp, OFreshOID, (value*) v, 0);
           /* Finally read first two block elements: method table and old OID */
-          ReadItems(s, &Field(v, 0), 2);
+          ReadItems(s, sp, &Field(v, 0), 2);
         } else {
           intern_cleanup_failwith2(s, fun_name, "bad block tag");
         }
@@ -812,11 +803,8 @@ static void intern_rec(struct caml_intern_state* s,
       case CODE_INFIXPOINTER:
         ofs = read32u(s);
         /* Read a value to *dest, then offset *dest by ofs */
-        PushItem(s);
-        sp->dest = dest;
-        sp->op = OShift;
-        sp->arg = ofs;
-        ReadItems(s, dest, 1);
+        PushOperation(s, sp, OShift, dest, ofs);
+        ReadItems(s, sp, dest, 1);
         continue;  /* with next iteration of main loop, skipping *dest = v */
       case OLD_CODE_CUSTOM:
         intern_cleanup_failwith2(s, fun_name, "custom blocks serialized with "
