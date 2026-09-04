@@ -97,7 +97,7 @@ CAMLprim value caml_weak_create (value len)
 
    The dead keys must be removed from the ephemerons and data removed
    when one of the keys is dead. Here we call it cleaning the ephemerons.
-   A specific phase of the GC is dedicated to this, Phase_clean. This
+   A specific phase of the GC is dedicated to this, [Phase_sweep_ephe]. This
    phase is just after the mark phase, so the white values are dead
    values. It iterates the function caml_ephe_clean through all the
    ephemerons.
@@ -116,9 +116,9 @@ CAMLprim value caml_weak_create (value len)
      trigger the cleaning of the ephemerons when the accessed key is
      dead. This test is fast.
 
-     In the case of value getter and value setter, there is no fast
+     In the case of data getter and data setter, there is no fast
      test because the removing of the data depend of the deadliness of the keys.
-     We must always try to clean the ephemerons.
+     We must always try to clean the whole ephemerons.
 
  */
 
@@ -478,23 +478,22 @@ static value ephe_blit_keys (value es, mlsize_t offset_s,
                              value ed, mlsize_t offset_d, mlsize_t length)
 {
   CAMLparam2(es,ed);
+  /* We only need to clean the destination when it has data,
+     as the keys themselves are going to be replaced. */
+  bool ed_has_data = caml_ephe_check_data(ed);
 
   if (length == 0) CAMLreturn(Val_unit);
 
-  /* We clean the source and destination ephemerons before performing the blit.
-   * This guarantees that none of the keys and the data fields being accessed
-   * during a blit operation is unmarked during [Phase_sweep]. */
-  caml_ephe_clean(es);
-  caml_ephe_clean(ed);
-
   if (offset_d < offset_s) {
     for (long i = 0; i < length; i++) {
-      caml_ephe_await_key(ed, offset_d + i);
+      do_check_key_clean(es, offset_s + i);
+      if (ed_has_data) do_check_key_clean(ed, offset_d + i);
       ephe_modify(ed, offset_d + i, Ephe_key(es, offset_s + i));
     }
   } else {
     for (long i = length - 1; i >= 0; i--) {
-      caml_ephe_await_key(ed, offset_d + i);
+      do_check_key_clean(es, offset_s + i);
+      if (ed_has_data) do_check_key_clean(ed, offset_d + i);
       ephe_modify(ed, offset_d + i, Ephe_key(es, offset_s + i));
     }
   }
