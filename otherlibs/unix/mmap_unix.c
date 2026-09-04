@@ -50,20 +50,19 @@ extern value caml_unix_mapped_alloc(int, int, void *, intnat *);
 static int caml_grow_file(int fd, file_offset size)
 {
   char c;
-  int p;
 
   /* First use pwrite for growing - it is a conservative method, as it
      can never happen that we shrink by accident
    */
 #ifdef HAS_PWRITE
   c = 0;
-  p = pwrite(fd, &c, 1, size - 1);
+  ssize_t p = pwrite(fd, &c, 1, size - 1);
 #else
 
   /* Emulate pwrite with lseek. This should only be necessary on ancient
      systems nowadays
    */
-  file_offset currpos;
+  file_offset currpos, p;
   currpos = lseek(fd, 0, SEEK_CUR);
   if (currpos != -1) {
     p = lseek(fd, size - 1, SEEK_SET);
@@ -87,7 +86,7 @@ static int caml_grow_file(int fd, file_offset size)
     p = ftruncate(fd, size);
   }
 #endif
-  return p;
+  return (int) p;
 }
 
 

@@ -339,16 +339,21 @@ Working version
 
 ### Other libraries:
 
-* #14788: The Win32 error code `ERROR_DIRECTORY` (= 267) is now mapped to
-  `ENOTDIR` instead of `EUNKNOWNERR(-267)` when raised by functions in the
-  `Unix` module (eg `Unix.opendir`).
-  (Nicolás Ojeda Bär, report by Adrián Montesinos González, review by Gabriel
-  Scherer)
+- #14740: Various fixes in libunix. Fix compilation failures if gethostname or
+  IPv6 are not available. Add blocking sections to the wrappers of realpath and
+  lockf. Fix missing root registration.
+  (Antonin Décimo, review by Gabriel Scherer)
 
 - #14764: Fix a bug in the Win32 implementation of the `Unix` library that could
   result in some file descriptors being dropped from the result of `Unix.select`
   under certain circumstances.
   (Zhang Rui, review by Nicolás Ojeda Bär, Antonin Décimo and David Allsopp)
+
+* #14788: The Win32 error code `ERROR_DIRECTORY` (= 267) is now mapped to
+  `ENOTDIR` instead of `EUNKNOWNERR(-267)` when raised by functions in the
+  `Unix` module (eg `Unix.opendir`).
+  (Nicolás Ojeda Bär, report by Adrián Montesinos González, review by Gabriel
+  Scherer)
 
 - #14984: Cache one write buffer for each domain in
   `Runtime_events.User.write`, instead of a list for each thread. A write of

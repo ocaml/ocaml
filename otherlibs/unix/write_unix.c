@@ -15,6 +15,7 @@
 
 #include <errno.h>
 #include <string.h>
+#include <stdbool.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
@@ -66,6 +67,7 @@ CAMLprim value caml_unix_write_bigarray(value vfd, value vbuf,
   ofs = Long_val(vofs);
   len = Long_val(vlen);
   int fd = Int_val(vfd);
+  bool single = Bool_val(vsingle);
   written = 0;
   caml_enter_blocking_section();
   while (len > 0) {
@@ -78,7 +80,7 @@ CAMLprim value caml_unix_write_bigarray(value vfd, value vbuf,
     written += ret;
     ofs += ret;
     len -= ret;
-    if (Bool_val(vsingle)) break;
+    if (single) break;
   }
   caml_leave_blocking_section();
   CAMLreturn(Val_long(written));
