@@ -636,13 +636,29 @@ static void intern_rec(struct caml_intern_state* s,
       tag = code & 0xF;
       size = (code >> 4) & 0x7;
     read_block:
-      if (size == 0) {
-        v = Atom(tag);
+      if (CAMLunlikely(size == 0)) {
+        if (CAMLlikely(tag < Forcing_tag))
+          v = Atom(tag);
+        else
+          intern_cleanup_failwith2(s, fun_name, "bad atom tag");
       } else {
         v = intern_alloc_obj (s, d, size, tag);
         intern_record_obj(s, v);
-        switch (tag) {
-        case Object_tag:
+        if (CAMLlikely(tag < Forcing_tag)) {
+          /* Read the contents of the block */
+          ReadItems(s, &Field(v, 0), size);
+        } else if (tag == Closure_tag) {
+          /* For closures, we need to validate the closure after reading it */
+          PushItem(s);
+          sp->op = OCheckClosure;
+          sp->dest = (value*) v;
+          sp->arg = 0;          /* irrelevant */
+          /* Code pointers are allowed in a closure block */
+          PushItem(s);
+          sp->op = OReadItemsOrCodePointers;
+          sp->dest = &Field(v, 0);
+          sp->arg = size;
+        } else if (tag == Object_tag) {
           /* For objects, we need to freshen the oid */
           if (CAMLunlikely(size < 2))
             intern_cleanup_failwith2(s, fun_name, "bad object block");
@@ -655,23 +671,8 @@ static void intern_rec(struct caml_intern_state* s,
           sp->arg = 1;
           /* Finally read first two block elements: method table and old OID */
           ReadItems(s, &Field(v, 0), 2);
-          break;
-        case Closure_tag:
-          /* For closures, we need to validate the closure after reading it */
-          PushItem(s);
-          sp->op = OCheckClosure;
-          sp->dest = (value*) v;
-          sp->arg = 0;          /* irrelevant */
-          /* Code pointers are allowed in a closure block */
-          PushItem(s);
-          sp->op = OReadItemsOrCodePointers;
-          sp->dest = &Field(v, 0);
-          sp->arg = size;
-          break;
-        default:
-          /* Read the contents of the block */
-          ReadItems(s, &Field(v, 0), size);
-          break;
+        } else {
+          intern_cleanup_failwith2(s, fun_name, "bad block tag");
         }
       }
     } else {
