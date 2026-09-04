@@ -158,13 +158,19 @@ type label_mismatch =
   | Type of Errortrace.equality_error
   | Mutability of position
   | Atomicity of position
-  | Nested_record
+  | Kind of position
+  | Nested_record of inline_record_mismatch
 
-type record_change =
+and inline_record_mismatch =
+  | Arity
+  | Record_mismatch of record_mismatch
+  | Unboxed_representation of position
+
+and record_change =
   (Types.label_declaration, Types.label_declaration, label_mismatch)
     Diffing_with_keys.change
 
-type record_mismatch =
+and record_mismatch =
   | Label_mismatch of record_change list
   | Unboxed_float_representation of position
 
@@ -268,7 +274,19 @@ let report_privacy_mismatch ppf err =
        (if singular then "A private" else "Private")
        item
 
-let report_label_mismatch first second env ppf err =
+let report_patch pr_diff first second decl env ppf patch =
+  let nl ppf () = Fmt.fprintf ppf "@," in
+  let no_prefix _ppf _ = () in
+  match patch with
+  | [ elt ] ->
+      Fmt.fprintf ppf "@[<hv>%a@]"
+        (pr_diff first second no_prefix decl env) elt
+  | _ ->
+      let pp_diff = pr_diff first second Diffing_with_keys.prefix decl env in
+      Fmt.fprintf ppf "@[<hv>%a@]"
+        (Fmt.pp_print_list ~pp_sep:nl pp_diff) patch
+
+let rec report_label_mismatch first second env ppf err =
   match (err : label_mismatch) with
   | Type err ->
       report_type_inequality env ppf err
@@ -280,10 +298,27 @@ let report_label_mismatch first second env ppf err =
       Format_doc.fprintf ppf "%s is atomic and %s is not."
         (String.capitalize_ascii (choose ord first second))
         (choose_other ord first second)
-  | Nested_record ->
-      Format_doc.fprintf ppf "Their nested record definitions differ."
+  | Kind ord ->
+      Format_doc.fprintf ppf
+        "%s uses a nested record definition and %s doesn't."
+        (String.capitalize_ascii (choose ord first second))
+        (choose_other ord first second)
+  | Nested_record err ->
+      report_inline_record_mismatch first second env ppf err
 
-let pp_record_diff first second prefix decl env ppf (x : record_change) =
+and report_inline_record_mismatch first second env ppf err =
+  let pr fmt = Fmt.fprintf ppf fmt in
+  match (err : inline_record_mismatch) with
+  | Arity ->
+      pr "Their nested record definitions have different arities."
+  | Record_mismatch err ->
+      report_record_mismatch first second "nested record" env ppf err
+  | Unboxed_representation ord ->
+      pr "Their internal representations differ:@ %s %s %s."
+        (choose ord first second) "nested record"
+        "uses unboxed representation"
+
+and pp_record_diff first second prefix decl env ppf (x : record_change) =
   match x with
   | Delete cd ->
       Fmt.fprintf ppf "%aAn extra field, %a, is provided in %s %s."
@@ -315,21 +350,9 @@ let pp_record_diff first second prefix decl env ppf (x : record_change) =
         "@[<2>%aField %a has been moved@ from@ position %d@ to %d.@]"
         prefix x Style.inline_code name expected got
 
-let report_patch pr_diff first second decl env ppf patch =
-  let nl ppf () = Fmt.fprintf ppf "@," in
-  let no_prefix _ppf _ = () in
-  match patch with
-  | [ elt ] ->
-      Fmt.fprintf ppf "@[<hv>%a@]"
-        (pr_diff first second no_prefix decl env) elt
-  | _ ->
-      let pp_diff = pr_diff first second Diffing_with_keys.prefix decl env in
-      Fmt.fprintf ppf "@[<hv>%a@]"
-        (Fmt.pp_print_list ~pp_sep:nl pp_diff) patch
-
-let report_record_mismatch first second decl env ppf err =
+and report_record_mismatch first second decl env ppf err =
   let pr fmt = Fmt.fprintf ppf fmt in
-  match err with
+  match (err : record_mismatch) with
   | Label_mismatch patch ->
       report_patch pp_record_diff first second decl env ppf patch
   | Unboxed_float_representation ord ->
@@ -484,6 +507,14 @@ let report_type_mismatch first second decl env ppf err =
 
 module Record_diffing = struct
 
+  module Defs = struct
+    type left = Types.label_declaration
+    type right = left
+    type diff = label_mismatch
+    type state = type_expr list * type_expr list
+  end
+  module Diff = Diffing_with_keys.Define(Defs)
+
   let nested_record_arities_differ = function
     | Some decl1, Some decl2 ->
         List.compare_lengths decl1.type_params decl2.type_params <> 0
@@ -515,7 +546,10 @@ module Record_diffing = struct
       Some (Atomicity  ord)
     else
       let nested_records = ld1.ld_inlined, ld2.ld_inlined in
-      if nested_record_arities_differ nested_records then Some Nested_record
+      (* [Ctype.equal] assumes equal argument-list lengths for matching type
+         constructors. *)
+      if nested_record_arities_differ nested_records
+      then Some (Nested_record Arity)
       else
         match compare_label_types env params1 params2 ld1 ld2 with
         | Some _ as mismatch -> mismatch
@@ -525,22 +559,20 @@ module Record_diffing = struct
     | None, None -> None
     | Some decl1, Some decl2 ->
         begin match decl1.type_kind, decl2.type_kind with
-        | Type_record (labels1, rep1), Type_record (labels2, rep2)
-          when rep1 = rep2
-               && equal ~loc env
-                    decl1.type_params decl2.type_params labels1 labels2 ->
-            None
-        | _ -> Some Nested_record
+        | Type_record (labels1, rep1), Type_record (labels2, rep2) ->
+            Option.map
+              (fun err -> Nested_record err)
+              (compare_with_representation ~loc env
+                 decl1.type_params decl2.type_params
+                 labels1 labels2 rep1 rep2)
+        | _ -> assert false
         end
-    | None, Some _ | Some _, None -> Some Nested_record
+    | None, Some _ -> Some (Kind Second : label_mismatch)
+    | Some _, None -> Some (Kind First : label_mismatch)
 
   and equal ~loc env params1 params2
       (labels1 : Types.label_declaration list)
       (labels2 : Types.label_declaration list) =
-    (* Nested declarations may disagree on arity; [Ctype.equal] raises
-       [Invalid_argument] on lists of different lengths, so reject the
-       mismatch here instead. *)
-    List.compare_lengths params1 params2 = 0 &&
     match labels1, labels2 with
     | [], [] -> true
     | _ :: _ , [] | [], _ :: _ -> false
@@ -563,15 +595,7 @@ module Record_diffing = struct
                 rem1 rem2
         end
 
-  module Defs = struct
-    type left = Types.label_declaration
-    type right = left
-    type diff = label_mismatch
-    type state = type_expr list * type_expr list
-  end
-  module Diff = Diffing_with_keys.Define(Defs)
-
-  let update (d:Diff.change) (params1,params2 as st) =
+  and update (d:Diff.change) (params1,params2 as st) =
     match d with
     | Insert _ | Change _ | Delete _ -> st
     | Keep (x,y,_) ->
@@ -579,7 +603,7 @@ module Record_diffing = struct
            (in inline records) *)
         x.data.ld_type::params1, y.data.ld_type::params2
 
-  let test loc env (params1,params2)
+  and test loc env (params1,params2)
       ({pos; data=lbl1}: Diff.left)
       ({data=lbl2; _ }: Diff.right)
     =
@@ -600,7 +624,7 @@ module Record_diffing = struct
           )
       | None -> Ok ()
 
-  let weight: Diff.change -> _ = function
+  and weight: Diff.change -> _ = function
     | Insert _ | Delete _ ->
      (* Insertion and deletion are symmetrical for definitions *)
         100
@@ -633,8 +657,9 @@ module Record_diffing = struct
             Name_change]. And with the constranit [Type_change < Name_change],
             we have [Type_change Delete^D < Delete^D Name_change]. *)
 
-  let key (x: Defs.left) = Ident.name x.ld_id
-  let diffing loc env params1 params2 cstrs_1 cstrs_2 =
+  and key (x: Defs.left) = Ident.name x.ld_id
+
+  and diffing loc env params1 params2 cstrs_1 cstrs_2 =
     let module Compute = Diff.Simple(struct
         let key_left = key
         let key_right = key
@@ -645,28 +670,28 @@ module Record_diffing = struct
     in
     Compute.diff (params1,params2) cstrs_1 cstrs_2
 
-  let compare ~loc env params1 params2 l r =
-    if equal ~loc env params1 params2 l r then
-      None
-    else
-      Some (diffing loc env params1 params2 l r)
-
-
-  let compare_with_representation ~loc env params1 params2 l r rep1 rep2 =
+  and compare_with_representation ~loc env params1 params2 l r rep1 rep2 =
     if not (equal ~loc env params1 params2 l r) then
       let patch = diffing loc env params1 params2 l r in
-      Some (Record_mismatch (Label_mismatch patch))
+      Some
+        (Record_mismatch (Label_mismatch patch) : inline_record_mismatch)
     else
      match rep1, rep2 with
      | Record_unboxed _, Record_unboxed _ -> None
-     | Record_unboxed _, _ -> Some (Unboxed_representation First)
-     | _, Record_unboxed _ -> Some (Unboxed_representation Second)
+     | Record_unboxed _, _ ->
+         Some (Unboxed_representation First : inline_record_mismatch)
+     | _, Record_unboxed _ ->
+         Some (Unboxed_representation Second : inline_record_mismatch)
 
      | Record_float, Record_float -> None
      | Record_float, _ ->
-        Some (Record_mismatch (Unboxed_float_representation First))
+        Some
+          (Record_mismatch (Unboxed_float_representation First)
+            : inline_record_mismatch)
      | _, Record_float ->
-        Some (Record_mismatch (Unboxed_float_representation Second))
+        Some
+          (Record_mismatch (Unboxed_float_representation Second)
+            : inline_record_mismatch)
 
      | Record_regular, Record_regular
      | Record_inlined _, Record_inlined _
@@ -674,6 +699,12 @@ module Record_diffing = struct
      | (Record_regular|Record_inlined _|Record_extension _),
        (Record_regular|Record_inlined _|Record_extension _) ->
         assert false
+
+  let compare ~loc env params1 params2 l r =
+    if equal ~loc env params1 params2 l r then
+      None
+    else
+      Some (diffing loc env params1 params2 l r)
 
 end
 
@@ -1052,10 +1083,18 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           mark usage labels1;
           if equality then mark Env.Exported labels2
         end;
-        Record_diffing.compare_with_representation ~loc env
-          decl1.type_params decl2.type_params
-          labels1 labels2
-          rep1 rep2
+        begin match
+          Record_diffing.compare_with_representation ~loc env
+            decl1.type_params decl2.type_params
+            labels1 labels2
+            rep1 rep2
+        with
+        | None -> None
+        | Some (Unboxed_representation ord) ->
+            Some (Unboxed_representation ord : type_mismatch)
+        | Some (Record_mismatch mismatch) -> Some (Record_mismatch mismatch)
+        | Some Arity -> assert false
+        end
     | (Type_open, Type_open) -> None
     | (Type_external n1, Type_external n2) when n1 = n2 -> None
     | (_, _) -> Some (Kind (of_kind decl1.type_kind, of_kind decl2.type_kind))

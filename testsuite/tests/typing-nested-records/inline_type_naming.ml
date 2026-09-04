@@ -585,7 +585,11 @@ Error: This variant or record definition does not match that of type "source"
          "inner : { value : int; };"
        is not the same as:
          "inner : { value : string; };"
-       Their nested record definitions differ.
+       Fields do not match:
+         "value : int;"
+       is not the same as:
+         "value : string;"
+       The type "int" is not equal to the type "string"
 |}]
 
 type compatible_reexport = source = { inner : { value : int } }
@@ -638,7 +642,15 @@ Error: This variant or record definition does not match that of type
          "inner : { nested : { value : int; }; };"
        is not the same as:
          "inner : { nested : { value : string; }; };"
-       Their nested record definitions differ.
+       Fields do not match:
+         "nested : { value : int; };"
+       is not the same as:
+         "nested : { value : string; };"
+       Fields do not match:
+         "value : int;"
+       is not the same as:
+         "value : string;"
+       The type "int" is not equal to the type "string"
 |}]
 
 type compatible_deep_reexport = deep_source = {
