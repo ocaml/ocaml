@@ -37,21 +37,62 @@ val set_paths :
 
 (* The interactive toplevel loop *)
 
-val loop : formatter -> unit
+module type S = sig
+  type log
+  type debug_log
 
-(* Read and execute a script from the given file *)
+  val prepare : log -> ?input:input -> unit -> bool
+  (** Setup the load paths and initial toplevel environment and load compilation
+      units in {!preload_objects}. *)
 
-val run_script : formatter -> input -> string array -> bool
-        (* true if successful, false if error *)
+  val loop : log -> unit
+
+  (* Read and execute a script from the given file *)
+  val run_script : log -> input -> string array -> bool
+  (* true if successful, false if error *)
+
+  val execute_phrase : bool -> log -> Parsetree.toplevel_phrase -> bool
+  (* Execute the given toplevel phrase. Return [true] if the
+     phrase executed with no errors and [false] otherwise.
+     First bool says whether the values and types of the results
+     should be printed. Uncaught exceptions are always printed. *)
+
+  val preprocess_phrase :
+    debug_log -> Parsetree.toplevel_phrase -> Parsetree.toplevel_phrase
+  (* Preprocess the given toplevel phrase using regular and ppx
+     preprocessors. Return the updated phrase. *)
+
+  val use_input : log -> input -> bool
+  val use_output : log -> string -> bool
+  val use_silently : log -> input -> bool
+  val mod_use_input : log -> input -> bool
+  val use_file : log -> string -> bool
+  (* Read and execute commands from a file.
+     [use_input] prints the types and values of the results.
+     [use_silently] does not print them.
+     [mod_use_input] wrap the file contents into a module. *)
+
+  val load_file: log -> string -> bool
+end
+
+module V2: S with
+  type log := Toplevel_diagnostic.id Log.t
+  and type debug_log := Compiler_diagnostic.Debug.id Log.t
+
+include S with
+  type log := Format.formatter and type debug_log := Format.formatter
+
 
 (* Interface with toplevel directives *)
 
+type 'a directive = 'a -> unit
+
 type directive_fun =
-   | Directive_none of (unit -> unit)
-   | Directive_string of (string -> unit)
-   | Directive_int of (int -> unit)
-   | Directive_ident of (Longident.t -> unit)
-   | Directive_bool of (bool -> unit)
+  | Directive_none of unit directive
+  | Directive_string of string directive
+  | Directive_int of int directive
+  | Directive_ident of Longident.t directive
+  | Directive_bool of bool directive
 
 type directive_info = {
   section: string;
@@ -81,26 +122,8 @@ val toplevel_env : Env.t ref
         (* Typing environment for the toplevel *)
 val initialize_toplevel_env : unit -> unit
         (* Initialize the typing environment for the toplevel *)
-val print_exception_outcome : formatter -> exn -> unit
+val print_exception_outcome : exn Format_doc.printer
         (* Print an exception resulting from the evaluation of user code. *)
-val execute_phrase : bool -> formatter -> Parsetree.toplevel_phrase -> bool
-        (* Execute the given toplevel phrase. Return [true] if the
-           phrase executed with no errors and [false] otherwise.
-           First bool says whether the values and types of the results
-           should be printed. Uncaught exceptions are always printed. *)
-val preprocess_phrase :
-      formatter -> Parsetree.toplevel_phrase ->  Parsetree.toplevel_phrase
-        (* Preprocess the given toplevel phrase using regular and ppx
-           preprocessors. Return the updated phrase. *)
-val use_input : formatter -> input -> bool
-val use_output : formatter -> string -> bool
-val use_silently : formatter -> input -> bool
-val mod_use_input : formatter -> input -> bool
-val use_file : formatter -> string -> bool
-        (* Read and execute commands from a file.
-           [use_input] prints the types and values of the results.
-           [use_silently] does not print them.
-           [mod_use_input] wrap the file contents into a module. *)
 val eval_module_path: Env.t -> Path.t -> Obj.t
 val eval_value_path: Env.t -> Path.t -> Obj.t
 val eval_extension_path: Env.t -> Path.t -> Obj.t
@@ -108,12 +131,11 @@ val eval_class_path: Env.t -> Path.t -> Obj.t
         (* Return the toplevel object referred to by the given path *)
 val record_backtrace : unit -> unit
 
-val load_file: formatter -> string -> bool
-
 (* Printing of values *)
 
-val print_value: Env.t -> Obj.t -> formatter -> Types.type_expr -> unit
-val print_untyped_exception: formatter -> Obj.t -> unit
+val print_value:
+  Env.t -> Obj.t -> Format_doc.formatter -> Types.type_expr -> unit
+val print_untyped_exception: Obj.t Format_doc.printer
 
 val max_printer_depth: int ref
 val max_printer_steps: int ref
@@ -124,21 +146,21 @@ val parse_toplevel_phrase : (Lexing.lexbuf -> Parsetree.toplevel_phrase) ref
 val parse_use_file : (Lexing.lexbuf -> Parsetree.toplevel_phrase list) ref
 val print_location : formatter -> Location.t -> unit
 val print_error : formatter -> Location.error -> unit
-val print_warning : Location.t -> formatter -> Warnings.t -> unit
+val print_warning: Location.t -> Warnings.t -> unit
+val log_warning :
+  Location.t -> Compiler_diagnostic.id Log.t -> Warnings.t -> unit
 val input_name : string ref
 
-val print_out_value :
-  (formatter -> Outcometree.out_value -> unit) ref
 
 type 'a oprinter := 'a Oprint.printer
+val print_out_value : Outcometree.out_value oprinter
 val print_out_type : Outcometree.out_type oprinter
 val print_out_class_type : Outcometree.out_class_type oprinter
 val print_out_module_type : Outcometree.out_module_type oprinter
 val print_out_type_extension : Outcometree.out_type_extension oprinter
 val print_out_sig_item : Outcometree.out_sig_item oprinter
 val print_out_signature : Outcometree.out_sig_item list oprinter
-val print_out_phrase :
-  (formatter -> Outcometree.out_phrase -> unit) ref
+val print_out_phrase : Outcometree.out_phrase oprinter
 
 (* Hooks for external line editor *)
 
@@ -184,12 +206,8 @@ val split_path : string -> string list
     On Windows, entries are separated by semicolons. Sections of entries may be
     double-quoted (which allows semicolons in filenames to be quoted). The
     double-quote characters are stripped (i.e. [f"o"o = foo]; also
-    [split_path "foo\";\";bar" = ["foo;"; "bar"]) *)
+    [split_path "foo\";\";bar"] = ["foo;"; "bar"]) *)
 
 val preload_objects : string list ref
 (** List of compilation units to be loaded before entering the interactive
     loop. *)
-
-val prepare : Format.formatter -> ?input:input -> unit -> bool
-(** Setup the load paths and initial toplevel environment and load compilation
-    units in {!preload_objects}. *)

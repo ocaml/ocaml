@@ -71,6 +71,13 @@ utils_SOURCES = $(addprefix utils/, \
   arg_helper.mli arg_helper.ml \
   local_store.mli local_store.ml \
   load_path.mli load_path.ml \
+  diagnostic_history.mli diagnostic_history.ml \
+  diagnostic.mli diagnostic.ml \
+  diagnostic_validation.mli diagnostic_validation.ml \
+  log.mli log.ml \
+  compiler_diagnostic.mli compiler_diagnostic.ml \
+  diagnostic_backends.mli diagnostic_backends.ml \
+  conf_diagnostic.mli conf_diagnostic.ml \
   clflags.mli clflags.ml \
   profile.mli profile.ml \
   terminfo.mli terminfo.ml \
@@ -221,7 +228,6 @@ ocamlbytecomp_SOURCES = \
   bytecomp/bytelink.mli bytecomp/bytelink.ml \
   bytecomp/bytelibrarian.mli bytecomp/bytelibrarian.ml \
   bytecomp/bytepackager.mli bytecomp/bytepackager.ml \
-  driver/errors.mli driver/errors.ml \
   driver/compile.mli driver/compile.ml \
   driver/maindriver.mli driver/maindriver.ml
 
@@ -280,7 +286,6 @@ asmcomp_SOURCES = \
   asmcomp/asmlink.mli asmcomp/asmlink.ml \
   asmcomp/asmlibrarian.mli asmcomp/asmlibrarian.ml \
   asmcomp/asmpackager.mli asmcomp/asmpackager.ml \
-  driver/opterrors.mli driver/opterrors.ml \
   driver/optcompile.mli driver/optcompile.ml \
   driver/optmaindriver.mli driver/optmaindriver.ml
 
@@ -388,6 +393,7 @@ ocamloptcomp_SOURCES = $(ocamlmiddleend_SOURCES) $(asmcomp_SOURCES)
 
 ocamltoplevel_SOURCES = $(addprefix toplevel/, \
   genprintval.mli genprintval.ml \
+  toplevel_diagnostic.mli toplevel_diagnostic.ml \
   topcommon.mli topcommon.ml \
   native/tophooks.mli native/tophooks.ml \
   byte/topeval.mli byte/topeval.ml \
@@ -543,7 +549,8 @@ clean::
 	  tools/ocamlobjinfo $(addprefix tools/ocamlobjinfo,.opt .exe .opt.exe)
 
 TOOLS_NAT = $(TOOLS_TO_INSTALL_NAT)
-TOOLS_BYT = $(TOOLS_TO_INSTALL_BYT) dumpobj primreq stripdebug cmpbyt
+TOOLS_BYT = $(TOOLS_TO_INSTALL_BYT) dumpobj primreq stripdebug cmpbyt \
+  ocamldiaginfo
 
 TOOLS_NAT_PROGRAMS = $(addprefix tools/,$(TOOLS_NAT))
 TOOLS_BYT_PROGRAMS = $(addprefix tools/,$(TOOLS_BYT))
@@ -2271,6 +2278,7 @@ debugger/%: VPATH += otherlibs/unix otherlibs/dynlink
 
 ocamldebug_COMPILER_SOURCES = $(addprefix toplevel/, \
   genprintval.mli genprintval.ml \
+  toplevel_diagnostic.mli toplevel_diagnostic.ml \
   topprinters.mli topprinters.ml)
 
 # The modules listed in the following variable are packed into ocamldebug.cmo
@@ -2478,6 +2486,13 @@ ocamlprof_SOURCES = \
   arg_helper.mli arg_helper.ml \
   local_store.mli local_store.ml \
   load_path.mli load_path.ml \
+  diagnostic_history.mli diagnostic_history.ml \
+  diagnostic.mli diagnostic.ml \
+  diagnostic_validation.mli diagnostic_validation.ml \
+  log.mli log.ml \
+  compiler_diagnostic.mli compiler_diagnostic.ml \
+  diagnostic_backends.mli diagnostic_backends.ml \
+  conf_diagnostic.mli conf_diagnostic.ml \
   clflags.mli clflags.ml \
   terminfo.mli terminfo.ml \
   warnings.mli warnings.ml \
@@ -2501,12 +2516,19 @@ ocamlcp_ocamloptp_SOURCES = \
   format_doc.mli format_doc.ml \
   utf8_lexeme.mli utf8_lexeme.ml \
   misc.mli misc.ml \
+  diagnostic_history.mli diagnostic_history.ml \
+  diagnostic.mli diagnostic.ml \
+  diagnostic_validation.mli diagnostic_validation.ml \
+  log.mli log.ml \
+  compiler_diagnostic.mli compiler_diagnostic.ml \
+  diagnostic_backends.mli diagnostic_backends.ml \
   warnings.mli warnings.ml \
   identifiable.mli identifiable.ml \
   numbers.mli numbers.ml \
   arg_helper.mli arg_helper.ml \
   local_store.mli local_store.ml \
   load_path.mli load_path.ml \
+  conf_diagnostic.mli conf_diagnostic.ml \
   clflags.mli clflags.ml \
   profile.mli profile.ml \
   terminfo.mli terminfo.ml \
@@ -2546,6 +2568,13 @@ ocamlmktop_SOURCES = \
   arg_helper.mli arg_helper.ml \
   local_store.mli local_store.ml \
   load_path.mli load_path.ml \
+  diagnostic_history.mli diagnostic_history.ml \
+  diagnostic.mli diagnostic.ml \
+  diagnostic_validation.mli diagnostic_validation.ml \
+  log.mli log.ml \
+  compiler_diagnostic.mli compiler_diagnostic.ml \
+  diagnostic_backends.mli diagnostic_backends.ml \
+  conf_diagnostic.mli conf_diagnostic.ml \
   clflags.mli clflags.ml \
   profile.mli profile.ml \
   ccomp.mli ccomp.ml \
@@ -2568,6 +2597,12 @@ dumpobj_SOURCES = $(addprefix tools/, \
 ocamlobjinfo_LIBRARIES = \
   $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp ocamlmiddleend)
 ocamlobjinfo_SOURCES = tools/objinfo.mli tools/objinfo.ml
+
+# Display info on the compiler diagnostic
+
+ocamldiaginfo_LIBRARIES = \
+  $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp ocamltoplevel)
+ocamldiaginfo_SOURCES = tools/diaginfo.mli tools/diaginfo.ml
 
 # Scan object files for required primitives
 

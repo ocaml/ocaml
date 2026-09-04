@@ -936,8 +936,8 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
        the [Unbox_closures] output, this also prevents applying
        [Unbox_closures] over and over.) *)
     let set_of_closures =
-      let ppf_dump = Inline_and_simplify_aux.Env.ppf_dump env in
-      match Remove_free_vars_equal_to_args.run ~ppf_dump set_of_closures with
+      let log = Inline_and_simplify_aux.Env.log env in
+      match Remove_free_vars_equal_to_args.run ~log set_of_closures with
       | None -> set_of_closures
       | Some set_of_closures -> set_of_closures
     in
@@ -1658,13 +1658,13 @@ let add_predef_exns_to_environment ~env ~backend =
     env
     Predef.all_predef_exns
 
-let run ~never_inline ~backend ~prefixname ~round ~ppf_dump program =
+let run ~never_inline ~backend ~prefixname ~round ~log program =
   let r = R.create () in
   let report = !Clflags.inlining_report in
   if never_inline then Clflags.inlining_report := false;
   let initial_env =
     add_predef_exns_to_environment
-      ~env:(E.create ~never_inline ~backend ~round ~ppf_dump)
+      ~env:(E.create ~never_inline ~backend ~round ~log)
       ~backend
   in
   let result, r = simplify_program initial_env r program in

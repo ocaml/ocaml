@@ -1,0 +1,14 @@
+\begin{camlexample}{verbatim}
+\begin{caml}
+\begin{camlinput}
+type metadata = {
+  deprecated_paths: string array array option [@optional];
+  invalid_paths: string array array option [@optional];
+  valid: validity;
+  downward_compatible: bool;
+  version: int * int;
+} [@@since 1.0]
+[@@version 1.0]
+\end{camlinput}
+\end{caml}
+\end{camlexample}

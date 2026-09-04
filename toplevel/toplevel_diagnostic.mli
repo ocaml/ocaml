@@ -2,9 +2,9 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*             Florian Angeletti, projet Cambium, Inria Paris             *)
 (*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*   Copyright 2024 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
@@ -13,7 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* This module should be removed.  We keep it for now, to avoid
-   breaking external tools depending on it. *)
+include Compiler_diagnostic.Record
 
-let report_error = Location.report_exception
+val output: Format_doc.doc optional_field
+val backtrace: Format_doc.doc optional_field
+val compiler: Compiler_diagnostic.id Diagnostic.record optional_field
+val errors: Format_doc.doc list optional_field
+val trace: Format_doc.doc list optional_field
+
+val separate_new_message: id Log.t -> unit

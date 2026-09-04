@@ -11,8 +11,11 @@ let diff =
   | [_; diff] -> diff
   | _ -> "diff -u"
 
+
+let log = Location.log_on_device Log.Device.std
+
 let report_err exn =
-  Location.report_exception Format.std_formatter exn
+  Location.log_exception log exn
 
 let remove_locs =
   let open Ast_mapper in

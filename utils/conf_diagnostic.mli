@@ -13,6 +13,23 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Error report *)
+(** System configuration
 
-val report_error: Format.formatter -> exn -> unit
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
+*)
+
+module Versions: Diagnostic_history.S
+
+include Diagnostic.Record with type vl := Versions.id
+
+val print : id Log.t -> unit
+val var : string -> string option
+  (** the configuration value of a variable, if it exists *)
+
+  (** {1 Displaying configuration variables} *)
+
+val show_variable_and_exit : string -> unit
+(** Display the value of the given configuration variable,
+    then exit the program with code 0. *)

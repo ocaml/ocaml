@@ -352,13 +352,6 @@ let split_chunks phrases =
   in
   loop phrases [] []
 
-module Compiler_messages = struct
-  let capture ppf ~f =
-    Misc.protect_refs
-      [ R (Location.formatter_for_warnings, ppf) ]
-      f
-end
-
 let collect_formatters buf pps ~f =
   let ppb = Format.formatter_of_buffer buf in
   let out_functions = Format.pp_get_formatter_out_functions ppb () in
@@ -382,15 +375,19 @@ let collect_formatters buf pps ~f =
   | exception exn -> restore (); raise exn
 
 (* Invariant: ppf = Format.formatter_of_buffer buf *)
-let capture_everything buf ppf ~f =
+let capture_everything buf ~f =
   collect_formatters buf [Format.std_formatter; Format.err_formatter]
-                     ~f:(fun () -> Compiler_messages.capture ppf ~f)
+    ~f
 
-let exec_phrase ppf phrase =
+
+let exec_phrase log phrase =
+  let log_if kind pr x =
+    Clflags.dump_on_log (Topcommon.debug_log log) kind pr x
+  in
   Location.reset ();
-  if !Clflags.dump_parsetree then Printast. top_phrase ppf phrase;
-  if !Clflags.dump_source    then Pprintast.top_phrase ppf phrase;
-  Toploop.execute_phrase true ppf phrase
+  log_if Compiler_diagnostic.Debug.parsetree Printast.top_phrase phrase;
+  log_if Compiler_diagnostic.Debug.source Pprintast.top_phrase phrase;
+  Toploop.V2.execute_phrase true log phrase
 
 let parse_contents ~fname contents =
   let lexbuf = Lexing.from_string contents in
@@ -457,7 +454,9 @@ let eval_expect_file _fname ~file_contents =
   let ppf = Format.formatter_of_buffer buf in
   let () =
     visible_inline_code ();
-    Misc.Style.set_tag_handling ppf in
+    Misc.Style.set_tag_handling ~color:false ppf in
+  let dev = Log.Device.make (ref ppf) in
+  let log = Topcommon.log_on_device dev in
   let exec_phrases phrases =
     let phrases =
       match min_line_number phrases with
@@ -465,7 +464,8 @@ let eval_expect_file _fname ~file_contents =
       | Some lnum -> shift_lines (1 - lnum) phrases
     in
     (* For formatting purposes *)
-    Buffer.add_char buf '\n';
+    let () = Log.itemd Toplevel_diagnostic.trace log "" in
+    let clog = Topcommon.compiler_log log in
     let skipped_phrases =
       List.fold_left phrases ~init:None ~f:(fun acc phrase ->
           match (phrase : Parsetree.toplevel_phrase) with
@@ -476,39 +476,35 @@ let eval_expect_file _fname ~file_contents =
           | None ->
               let snap = Btype.snapshot () in
               try
-                if exec_phrase ppf phrase
+                if exec_phrase log phrase
                 then acc
                 else Some 0
               with exn ->
                 let bt = Printexc.get_raw_backtrace () in
-                begin try Location.report_exception ppf exn
+                begin try Location.log_exception clog exn
                 with _ ->
                   Format.fprintf ppf "Uncaught exception: %s\n%s\n"
                     (Printexc.to_string exn)
                     (Printexc.raw_backtrace_to_string bt)
                 end;
                 Btype.backtrack snap;
+                Log.flush log;
                 Some 0
       )
     in
-    Format.pp_print_flush ppf ();
-    let len = Buffer.length buf in
-    if len > 0 && Buffer.nth buf (len - 1) <> '\n' then
-      (* For formatting purposes *)
-      Buffer.add_char buf '\n';
     begin match skipped_phrases with
     | None | Some 0 -> ()
     | Some i ->
-        Format.fprintf ppf
-          "Unexecuted phrases: %i phrases did not execute due to an error\n" i
+        Log.itemd Toplevel_diagnostic.errors log
+          "Unexecuted phrases: %i phrases did not execute due to an error" i
     end;
-    Format.pp_print_flush ppf ();
+    Log.flush log;
     let s = Buffer.contents buf in
     Buffer.clear buf;
     Misc.delete_eol_spaces s
   in
   let corrected_expectations =
-    capture_everything buf ppf ~f:(fun () ->
+    capture_everything buf ~f:(fun () ->
         List.fold_left chunks ~init:[] ~f:(fun acc chunk ->
             let output = exec_phrases chunk.phrases in
             eval_expectation chunk.expectation ~output :: acc)
@@ -518,7 +514,7 @@ let eval_expect_file _fname ~file_contents =
     match trailing_code with
     | None -> ""
     | Some phrases ->
-      capture_everything buf ppf ~f:(fun () -> exec_phrases phrases)
+      capture_everything buf ~f:(fun () -> exec_phrases phrases)
   in
   let trailing_output =
     Parameter.Set.Map.singleton (Parameter.Set.get_current ())
@@ -719,5 +715,7 @@ let () =
     Printf.eprintf "expect: no input file\n";
     exit 2
   with exn ->
-    Location.report_exception Format.err_formatter exn;
+    let log = Location.log_on_device Log.Device.err in
+    Location.log_exception  log exn;
+    Log.flush log;
     exit 2

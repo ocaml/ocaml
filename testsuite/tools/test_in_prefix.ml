@@ -186,7 +186,12 @@ let () =
     error = no_markup [Bold; FG Red];
     loc = no_markup [Bold; FG Blue];
     hint = no_markup [Bold; FG Green];
-    inline_code = no_markup [FG Blue]});
+    inline_code = no_markup [FG Blue];
+    insertion = no_markup [Bold; FG Red];
+    deletion = no_markup [Bold; FG Red];
+    modification = no_markup [Bold; FG Yellow];
+    preservation = no_markup [Bold; FG Green];
+  });
   print_summary config header_size
                 ~prefix ~bindir_suffix ~libdir_suffix
                 ~relocatable ~target_relocatable ~reproducible;

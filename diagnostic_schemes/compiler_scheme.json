@@ -1,0 +1,740 @@
+{
+  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+  "$id" :
+    "https://github.com/ocaml/ocaml/blob/trunk/diagnostic_schemes/compiler.json",
+  "version" : "0.1",
+  "$defs" :
+    {
+      "box_type" :
+        {
+          "description" : "Format box kind (h,v,hv, b, hov)",
+          "oneOf" :
+            [{ "const" : "B" }, { "const" : "HoV" }, { "const" : "HV" },
+              { "const" : "V" }, { "const" : "H" }]
+        },
+      "debug" :
+        {
+          "type" : "object",
+          "description" : "Debugging output for compiler developers",
+          "properties" :
+            {
+              "profile" :
+                {
+                  "type" : "array",
+                  "prefixItems" :
+                    [{ "type" : "array", "items" : { "type" : "string" } },
+                      {
+                        "type" : "array",
+                        "items" : { "$ref" : "#/$defs/profile" }
+                      }]
+                },
+              "cmm_invariant" : { "type" : "string" },
+              "linear" :
+                { "type" : "array", "items" : { "type" : "string" } },
+              "mach" : { "type" : "array", "items" : { "type" : "string" } },
+              "unbox_specialised_args" :
+                { "type" : "array", "items" : { "type" : "string" } },
+              "unbox_closures" :
+                { "type" : "array", "items" : { "type" : "string" } },
+              "unbox_free_vars_of_closures" :
+                { "type" : "array", "items" : { "type" : "string" } },
+              "remove_free_vars_equal_to_args" :
+                { "type" : "array", "items" : { "type" : "string" } },
+              "cmm" : { "type" : "array", "items" : { "type" : "string" } },
+              "raw_clambda" :
+                { "type" : "array", "items" : { "type" : "string" } },
+              "clambda" :
+                { "type" : "array", "items" : { "type" : "string" } },
+              "rawflambda" :
+                { "type" : "array", "items" : { "type" : "string" } },
+              "flambda" :
+                { "type" : "array", "items" : { "type" : "string" } },
+              "rawlambda" : { "type" : "string" },
+              "lambda" : { "type" : "string" },
+              "instr" : { "type" : "string" },
+              "shape" : { "type" : "string" },
+              "typedtree" : { "type" : "string" },
+              "source" : { "type" : "string" },
+              "parsetree" : { "type" : "string" }
+            },
+          "required" : []
+        },
+      "error_kind" :
+        {
+          "description" : "Kind of reports (error,warning,alert)",
+          "oneOf" :
+            [{
+               "oneOf" :
+                 [{
+                    "type" : "array",
+                    "prefixItems" :
+                      [{ "const" : "Report_warning_as_error" },
+                        { "type" : "string" }]
+                  },
+                   {
+                     "type" : "array",
+                     "prefixItems" :
+                       [{ "const" : "Report_warning_as_error" },
+                         {
+                           "type" : "object",
+                           "description" :
+                             "expanded record for forward compatibility",
+                           "properties" :
+                             {
+                               "contents" :
+                                 {
+                                   "type" : "array",
+                                   "prefixItems" : [{ "type" : "string" }]
+                                 },
+                               "next" : { "type" : "object" }
+                             },
+                           "required" : ["contents"]
+                         }]
+                   }]
+             },
+              {
+                "oneOf" :
+                  [{
+                     "type" : "array",
+                     "prefixItems" :
+                       [{ "const" : "Report_warning" },
+                         { "type" : "string" }]
+                   },
+                    {
+                      "type" : "array",
+                      "prefixItems" :
+                        [{ "const" : "Report_warning" },
+                          {
+                            "type" : "object",
+                            "description" :
+                              "expanded record for forward compatibility",
+                            "properties" :
+                              {
+                                "contents" :
+                                  {
+                                    "type" : "array",
+                                    "prefixItems" : [{ "type" : "string" }]
+                                  },
+                                "next" : { "type" : "object" }
+                              },
+                            "required" : ["contents"]
+                          }]
+                    }]
+              },
+              {
+                "oneOf" :
+                  [{
+                     "type" : "array",
+                     "prefixItems" :
+                       [{ "const" : "Report_alert_as_error" },
+                         { "type" : "string" }]
+                   },
+                    {
+                      "type" : "array",
+                      "prefixItems" :
+                        [{ "const" : "Report_alert_as_error" },
+                          {
+                            "type" : "object",
+                            "description" :
+                              "expanded record for forward compatibility",
+                            "properties" :
+                              {
+                                "contents" :
+                                  {
+                                    "type" : "array",
+                                    "prefixItems" : [{ "type" : "string" }]
+                                  },
+                                "next" : { "type" : "object" }
+                              },
+                            "required" : ["contents"]
+                          }]
+                    }]
+              },
+              {
+                "oneOf" :
+                  [{
+                     "type" : "array",
+                     "prefixItems" :
+                       [{ "const" : "Report_alert" }, { "type" : "string" }]
+                   },
+                    {
+                      "type" : "array",
+                      "prefixItems" :
+                        [{ "const" : "Report_alert" },
+                          {
+                            "type" : "object",
+                            "description" :
+                              "expanded record for forward compatibility",
+                            "properties" :
+                              {
+                                "contents" :
+                                  {
+                                    "type" : "array",
+                                    "prefixItems" : [{ "type" : "string" }]
+                                  },
+                                "next" : { "type" : "object" }
+                              },
+                            "required" : ["contents"]
+                          }]
+                    }]
+              }, { "const" : "Report_error" }]
+        },
+      "error_msg" :
+        {
+          "type" : "object",
+          "description" : "Error message bundled with an optional location",
+          "properties" :
+            {
+              "loc" : { "$ref" : "#/$defs/loc" },
+              "msg" :
+                {
+                  "type" : "array",
+                  "items" : { "$ref" : "#/$defs/structured_text" }
+                }
+            },
+          "required" : ["msg"]
+        },
+      "error_report" :
+        {
+          "type" : "object",
+          "description" : "Error and warning reports",
+          "properties" :
+            {
+              "footnote" :
+                {
+                  "type" : "array",
+                  "items" : { "$ref" : "#/$defs/structured_text" }
+                },
+              "sub" :
+                {
+                  "type" : "array",
+                  "items" : { "$ref" : "#/$defs/error_msg" }
+                },
+              "main" : { "$ref" : "#/$defs/error_msg" },
+              "kind" : { "$ref" : "#/$defs/error_kind" }
+            },
+          "required" : ["main", "kind"]
+        },
+      "format_tag" :
+        {
+          "description" : "Format semantic tag",
+          "oneOf" :
+            [{ "const" : "Preservation" }, { "const" : "Modification" },
+              { "const" : "Insertion" }, { "const" : "Deletion" },
+              { "const" : "Hint" }, { "const" : "Inline_code" },
+              { "const" : "Loc" }, { "const" : "Warning" },
+              { "const" : "Error" },
+              {
+                "oneOf" :
+                  [{
+                     "type" : "array",
+                     "prefixItems" :
+                       [{ "const" : "String_tag" }, { "type" : "string" }]
+                   },
+                    {
+                      "type" : "array",
+                      "prefixItems" :
+                        [{ "const" : "String_tag" },
+                          {
+                            "type" : "object",
+                            "description" :
+                              "expanded record for forward compatibility",
+                            "properties" :
+                              {
+                                "contents" :
+                                  {
+                                    "type" : "array",
+                                    "prefixItems" : [{ "type" : "string" }]
+                                  },
+                                "next" : { "type" : "object" }
+                              },
+                            "required" : ["contents"]
+                          }]
+                    }]
+              },
+              {
+                "oneOf" :
+                  [{
+                     "type" : "array",
+                     "prefixItems" :
+                       [{ "const" : "Unknown_format_tag" },
+                         { "type" : "string" }]
+                   },
+                    {
+                      "type" : "array",
+                      "prefixItems" :
+                        [{ "const" : "Unknown_format_tag" },
+                          {
+                            "type" : "object",
+                            "description" :
+                              "expanded record for forward compatibility",
+                            "properties" :
+                              {
+                                "contents" :
+                                  {
+                                    "type" : "array",
+                                    "prefixItems" : [{ "type" : "string" }]
+                                  },
+                                "next" : { "type" : "object" }
+                              },
+                            "required" : ["contents"]
+                          }]
+                    }]
+              }]
+        },
+      "loc" :
+        {
+          "type" : "object",
+          "description" : "Source location information",
+          "properties" :
+            {
+              "characters" :
+                {
+                  "type" : "array",
+                  "prefixItems" :
+                    [{ "type" : "integer" }, { "type" : "integer" }]
+                },
+              "stop_line" : { "type" : "integer" },
+              "start_line" : { "type" : "integer" },
+              "file" : { "type" : "string" }
+            },
+          "required" : []
+        },
+      "metadata" :
+        {
+          "type" : "object",
+          "description" : "Diagnostic metadata",
+          "properties" :
+            {
+              "deprecated_paths" :
+                {
+                  "type" : "array",
+                  "items" :
+                    { "type" : "array", "items" : { "type" : "string" } }
+                },
+              "invalid_paths" :
+                {
+                  "type" : "array",
+                  "items" :
+                    { "type" : "array", "items" : { "type" : "string" } }
+                },
+              "valid" : { "$ref" : "#/$defs/validity" },
+              "downward_compatible" : { "type" : "boolean" },
+              "version" :
+                {
+                  "type" : "array",
+                  "prefixItems" :
+                    [{ "type" : "integer" }, { "type" : "integer" }]
+                }
+            },
+          "required" : ["valid", "downward_compatible", "version"]
+        },
+      "profile" :
+        {
+          "type" : "object",
+          "description" :
+            "Profiling information for the compilation pipeline",
+          "properties" :
+            {
+              "children" :
+                {
+                  "type" : "array",
+                  "items" : { "$ref" : "#/$defs/profile" }
+                },
+              "columns" :
+                { "type" : "array", "items" : { "type" : "number" } },
+              "name" : { "type" : "string" }
+            },
+          "required" : ["name"]
+        },
+      "structured_text" :
+        {
+          "description" :
+            "Structured text, using Format_doc.t as a serialization format for Format printers.",
+          "oneOf" :
+            [{
+               "oneOf" :
+                 [{
+                    "type" : "array",
+                    "prefixItems" :
+                      [{ "const" : "Tbox" },
+                        {
+                          "type" : "array",
+                          "items" : { "$ref" : "#/$defs/structured_text" }
+                        }]
+                  },
+                   {
+                     "type" : "array",
+                     "prefixItems" :
+                       [{ "const" : "Tbox" },
+                         {
+                           "type" : "object",
+                           "description" :
+                             "expanded record for forward compatibility",
+                           "properties" :
+                             {
+                               "contents" :
+                                 {
+                                   "type" : "array",
+                                   "prefixItems" :
+                                     [{
+                                        "type" : "array",
+                                        "items" :
+                                          {
+                                            "$ref" :
+                                              "#/$defs/structured_text"
+                                          }
+                                      }]
+                                 },
+                               "next" : { "type" : "object" }
+                             },
+                           "required" : ["contents"]
+                         }]
+                   }]
+             },
+              {
+                "oneOf" :
+                  [{
+                     "type" : "array",
+                     "prefixItems" :
+                       [{ "const" : "Tag" },
+                         { "$ref" : "#/$defs/format_tag" },
+                         {
+                           "type" : "array",
+                           "items" : { "$ref" : "#/$defs/structured_text" }
+                         }]
+                   },
+                    {
+                      "type" : "array",
+                      "prefixItems" :
+                        [{ "const" : "Tag" },
+                          {
+                            "type" : "object",
+                            "description" :
+                              "expanded record for forward compatibility",
+                            "properties" :
+                              {
+                                "contents" :
+                                  {
+                                    "type" : "array",
+                                    "prefixItems" :
+                                      [{ "$ref" : "#/$defs/format_tag" },
+                                        {
+                                          "type" : "array",
+                                          "items" :
+                                            {
+                                              "$ref" :
+                                                "#/$defs/structured_text"
+                                            }
+                                        }]
+                                  },
+                                "next" : { "type" : "object" }
+                              },
+                            "required" : ["contents"]
+                          }]
+                    }]
+              },
+              {
+                "oneOf" :
+                  [{
+                     "type" : "array",
+                     "prefixItems" :
+                       [{ "const" : "Box" }, { "$ref" : "#/$defs/box_type" },
+                         { "type" : "integer" },
+                         {
+                           "type" : "array",
+                           "items" : { "$ref" : "#/$defs/structured_text" }
+                         }]
+                   },
+                    {
+                      "type" : "array",
+                      "prefixItems" :
+                        [{ "const" : "Box" },
+                          {
+                            "type" : "object",
+                            "description" :
+                              "expanded record for forward compatibility",
+                            "properties" :
+                              {
+                                "contents" :
+                                  {
+                                    "type" : "array",
+                                    "prefixItems" :
+                                      [{ "$ref" : "#/$defs/box_type" },
+                                        { "type" : "integer" },
+                                        {
+                                          "type" : "array",
+                                          "items" :
+                                            {
+                                              "$ref" :
+                                                "#/$defs/structured_text"
+                                            }
+                                        }]
+                                  },
+                                "next" : { "type" : "object" }
+                              },
+                            "required" : ["contents"]
+                          }]
+                    }]
+              },
+              {
+                "oneOf" :
+                  [{
+                     "type" : "array",
+                     "prefixItems" :
+                       [{ "const" : "With_size" }, { "type" : "integer" },
+                         { "type" : "string" }]
+                   },
+                    {
+                      "type" : "array",
+                      "prefixItems" :
+                        [{ "const" : "With_size" },
+                          {
+                            "type" : "object",
+                            "description" :
+                              "expanded record for forward compatibility",
+                            "properties" :
+                              {
+                                "contents" :
+                                  {
+                                    "type" : "array",
+                                    "prefixItems" :
+                                      [{ "type" : "integer" },
+                                        { "type" : "string" }]
+                                  },
+                                "next" : { "type" : "object" }
+                              },
+                            "required" : ["contents"]
+                          }]
+                    }]
+              },
+              {
+                "oneOf" :
+                  [{
+                     "type" : "array",
+                     "prefixItems" :
+                       [{ "const" : "Deprecated" }, { "type" : "string" }]
+                   },
+                    {
+                      "type" : "array",
+                      "prefixItems" :
+                        [{ "const" : "Deprecated" },
+                          {
+                            "type" : "object",
+                            "description" :
+                              "expanded record for forward compatibility",
+                            "properties" :
+                              {
+                                "contents" :
+                                  {
+                                    "type" : "array",
+                                    "prefixItems" : [{ "type" : "string" }]
+                                  },
+                                "next" : { "type" : "object" }
+                              },
+                            "required" : ["contents"]
+                          }]
+                    }]
+              }, { "const" : "If_newline" }, { "const" : "Newline" },
+              {
+                "oneOf" :
+                  [{
+                     "type" : "array",
+                     "prefixItems" :
+                       [{ "const" : "Flush" }, { "type" : "boolean" }]
+                   },
+                    {
+                      "type" : "array",
+                      "prefixItems" :
+                        [{ "const" : "Flush" },
+                          {
+                            "type" : "object",
+                            "description" :
+                              "expanded record for forward compatibility",
+                            "properties" :
+                              {
+                                "contents" :
+                                  {
+                                    "type" : "array",
+                                    "prefixItems" : [{ "type" : "boolean" }]
+                                  },
+                                "next" : { "type" : "object" }
+                              },
+                            "required" : ["contents"]
+                          }]
+                    }]
+              },
+              {
+                "oneOf" :
+                  [{
+                     "type" : "array",
+                     "prefixItems" :
+                       [{ "const" : "Break" },
+                         {
+                           "type" : "array",
+                           "prefixItems" :
+                             [{ "type" : "string" }, { "type" : "integer" },
+                               { "type" : "string" }]
+                         },
+                         {
+                           "type" : "array",
+                           "prefixItems" :
+                             [{ "type" : "string" }, { "type" : "integer" },
+                               { "type" : "string" }]
+                         }]
+                   },
+                    {
+                      "type" : "array",
+                      "prefixItems" :
+                        [{ "const" : "Break" },
+                          {
+                            "type" : "object",
+                            "description" :
+                              "expanded record for forward compatibility",
+                            "properties" :
+                              {
+                                "contents" :
+                                  {
+                                    "type" : "array",
+                                    "prefixItems" :
+                                      [{
+                                         "type" : "array",
+                                         "prefixItems" :
+                                           [{ "type" : "string" },
+                                             { "type" : "integer" },
+                                             { "type" : "string" }]
+                                       },
+                                        {
+                                          "type" : "array",
+                                          "prefixItems" :
+                                            [{ "type" : "string" },
+                                              { "type" : "integer" },
+                                              { "type" : "string" }]
+                                        }]
+                                  },
+                                "next" : { "type" : "object" }
+                              },
+                            "required" : ["contents"]
+                          }]
+                    }]
+              },
+              {
+                "oneOf" :
+                  [{
+                     "type" : "array",
+                     "prefixItems" :
+                       [{ "const" : "Simple_break" }, { "type" : "integer" },
+                         { "type" : "integer" }]
+                   },
+                    {
+                      "type" : "array",
+                      "prefixItems" :
+                        [{ "const" : "Simple_break" },
+                          {
+                            "type" : "object",
+                            "description" :
+                              "expanded record for forward compatibility",
+                            "properties" :
+                              {
+                                "contents" :
+                                  {
+                                    "type" : "array",
+                                    "prefixItems" :
+                                      [{ "type" : "integer" },
+                                        { "type" : "integer" }]
+                                  },
+                                "next" : { "type" : "object" }
+                              },
+                            "required" : ["contents"]
+                          }]
+                    }]
+              }, { "const" : "Set_tab" },
+              {
+                "oneOf" :
+                  [{
+                     "type" : "array",
+                     "prefixItems" :
+                       [{ "const" : "Tab_break" }, { "type" : "integer" },
+                         { "type" : "integer" }]
+                   },
+                    {
+                      "type" : "array",
+                      "prefixItems" :
+                        [{ "const" : "Tab_break" },
+                          {
+                            "type" : "object",
+                            "description" :
+                              "expanded record for forward compatibility",
+                            "properties" :
+                              {
+                                "contents" :
+                                  {
+                                    "type" : "array",
+                                    "prefixItems" :
+                                      [{ "type" : "integer" },
+                                        { "type" : "integer" }]
+                                  },
+                                "next" : { "type" : "object" }
+                              },
+                            "required" : ["contents"]
+                          }]
+                    }]
+              },
+              {
+                "oneOf" :
+                  [{
+                     "type" : "array",
+                     "prefixItems" :
+                       [{ "const" : "Text" }, { "type" : "string" }]
+                   },
+                    {
+                      "type" : "array",
+                      "prefixItems" :
+                        [{ "const" : "Text" },
+                          {
+                            "type" : "object",
+                            "description" :
+                              "expanded record for forward compatibility",
+                            "properties" :
+                              {
+                                "contents" :
+                                  {
+                                    "type" : "array",
+                                    "prefixItems" : [{ "type" : "string" }]
+                                  },
+                                "next" : { "type" : "object" }
+                              },
+                            "required" : ["contents"]
+                          }]
+                    }]
+              }]
+        },
+      "validity" :
+        {
+          "description" :
+            "Status of the current diagnostic: - Full: fully valid\n             - Deprecated: some of the contents is deprecated according to the current scheme\n             - Invalid: invalid data",
+          "oneOf" :
+            [{ "const" : "Invalid" }, { "const" : "Deprecated" },
+              { "const" : "Full" }]
+        }
+    },
+  "schema" : { "type" : "object" },
+  "type" : "object",
+  "description" : "Compiler diagnostic for the OCaml compiler",
+  "properties" :
+    {
+      "metadata" :
+        {
+          "description" :
+            "This field describes the scheme version used to generate the diagnostic instance, and if this instance is valid according to this scheme.",
+          "$ref" : "#/$defs/metadata"
+        },
+      "alerts" :
+        { "type" : "array", "items" : { "$ref" : "#/$defs/error_report" } },
+      "warnings" :
+        { "type" : "array", "items" : { "$ref" : "#/$defs/error_report" } },
+      "error" : { "$ref" : "#/$defs/error_report" },
+      "debug" : { "$ref" : "#/$defs/debug" }
+    },
+  "required" : ["metadata"]
+}

@@ -8,6 +8,7 @@ let x = ()
 {
  "x"[value] -> <.0>;
  }
+
 val x : unit = ()
 |}]
 
@@ -16,6 +17,7 @@ external y : int -> int = "%identity"
 {
  "y"[value] -> <.1>;
  }
+
 external y : int -> int = "%identity"
 |}]
 
@@ -30,6 +32,7 @@ and foo = Bar
                "A"[constructor] -> {<.4>};
                };
  }
+
 type t = A of foo
 and foo = Bar
 |}]
@@ -41,6 +44,7 @@ end
 {
  "S"[module type] -> <.7>;
  }
+
 module type S = sig type t end
 |}]
 
@@ -49,6 +53,7 @@ exception E
 {
  "E"[extension constructor] -> {<.8>};
  }
+
 exception E
 |}]
 
@@ -57,6 +62,7 @@ type ext = ..
 {
  "ext"[type] -> <.9>;
  }
+
 type ext = ..
 |}]
 
@@ -66,6 +72,7 @@ type ext += A | B
  "A"[extension constructor] -> {<.10>};
  "B"[extension constructor] -> {<.11>};
  }
+
 type ext += A | B
 |}]
 
@@ -78,6 +85,7 @@ end
                  "C"[extension constructor] -> {<.12>};
                  };
  }
+
 module M : sig type ext += C end
 |}]
 
@@ -86,6 +94,7 @@ module _ = struct
 end
 [%%expect{|
 {}
+
 |}]
 
 module rec M1 : sig
@@ -116,6 +125,7 @@ end
     "x"[value] -> <.31>;
     };
  }
+
 module rec M1 : sig type t = C of M2.t end
 and M2 : sig type t val x : t end
 |}]
@@ -127,6 +137,7 @@ class c = object end
  "c"[class] -> <.32>;
  "c"[class type] -> <.32>;
  }
+
 class c : object  end
 |}]
 
@@ -136,6 +147,7 @@ class type c = object end
  "c"[type] -> <.35>;
  "c"[class type] -> <.35>;
  }
+
 class type c = object  end
 |}]
 
@@ -144,5 +156,6 @@ type u = t
 {
  "u"[type] -> <.36>;
  }
+
 type u = t
 |}]

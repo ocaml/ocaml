@@ -499,6 +499,7 @@ let print_version_num () =
   exit 0
 
 let main () =
+  let log = Location.log_on_device Log.Device.err in
   try
     Option.iter Location.(prerr_alert none) @@ Warnings.parse_options false "a";
     Arg.parse_expand [
@@ -531,6 +532,7 @@ let main () =
       fprintf Format.err_formatter "@[%s@]@." msg;
       exit 2
   | exn ->
-      Location.report_exception Format.err_formatter exn
+      Location.log_exception log exn;
+      Log.flush log
 
 let _ = main ()

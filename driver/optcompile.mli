@@ -15,10 +15,13 @@
 
 (** Native compilation for .ml and .mli files. *)
 
-val interface: source_file:string -> output_prefix:string -> unit
+val interface:
+  log:Compiler_diagnostic.id Log.t -> source_file:string ->
+  output_prefix:string -> unit
 
 val implementation:
    backend:(module Backend_intf.S)
+   -> log:Compiler_diagnostic.id Log.t
    -> start_from:Clflags.Compiler_pass.t
    -> source_file:string -> output_prefix:string -> unit
 

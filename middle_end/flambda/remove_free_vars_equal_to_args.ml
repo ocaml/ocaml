@@ -18,6 +18,7 @@
 open! Int_replace_polymorphic_compare
 
 let pass_name = "remove-free-vars-equal-to-args"
+let field = Compiler_diagnostic.Debug.remove_free_vars_equal_to_args
 let () = Pass_wrapper.register ~pass_name
 
 let rewrite_one_function_decl ~(function_decl : Flambda.function_declaration)
@@ -92,8 +93,8 @@ let rewrite_one_set_of_closures (set_of_closures : Flambda.set_of_closures) =
     in
     Some set_of_closures
 
-let run ~ppf_dump set_of_closures =
-  Pass_wrapper.with_dump ~ppf_dump ~pass_name ~input:set_of_closures
+let run ~log set_of_closures =
+  Pass_wrapper.with_log ~log ~field ~pass_name ~input:set_of_closures
     ~print_input:Flambda.print_set_of_closures
     ~print_output:Flambda.print_set_of_closures
     ~f:(fun () -> rewrite_one_set_of_closures set_of_closures)

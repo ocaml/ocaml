@@ -15,7 +15,6 @@
 
 (* The interactive toplevel loop *)
 
-open Format
 open Misc
 open Parsetree
 open Types
@@ -88,11 +87,12 @@ include Topcommon.MakeEvalPrinter(EvalBase)
 
 let may_trace = ref false (* Global lock on tracing *)
 
-let load_lambda ppf ~module_ident ~required_globals phrase_name lam size =
-  if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
+let load_lambda dlog ~module_ident ~required_globals phrase_name lam size =
+  Clflags.dump_on_log dlog Compiler_diagnostic.Debug.raw_lambda
+    Printlambda.lambda lam;
   let slam = Simplif.simplify_lambda lam in
-  if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
-
+  Clflags.dump_on_log dlog Compiler_diagnostic.Debug.lambda
+    Printlambda.lambda slam;
   let program =
     { Lambda.
       code = slam;
@@ -101,7 +101,7 @@ let load_lambda ppf ~module_ident ~required_globals phrase_name lam size =
       required_globals;
     }
   in
-  Tophooks.load ppf phrase_name program
+  Tophooks.load dlog phrase_name program
 
 (* Print the outcome of an evaluation *)
 
@@ -156,14 +156,14 @@ let name_expression ~loc ~attrs exp =
    in
    str, sg
 
-let execute_phrase print_outcome ppf phr =
+let execute_phrase print_outcome log phr =
   match phr with
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
       incr phrase_seqid;
       let phrase_name = "TOP" ^ string_of_int !phrase_seqid in
       Compilenv.reset ?packname:None phrase_name;
-      let (str, sg', newenv) = typecheck_phrase ppf oldenv sstr in
+      let (str, sg', newenv) = typecheck_phrase (debug_log log) oldenv sstr in
       (* `let _ = <expression>` or even just `<expression>` require special
          handling in toplevels, or nothing is displayed. In bytecode, the
          lambda for <expression> is directly executed and the result _is_ the
@@ -201,7 +201,8 @@ let execute_phrase print_outcome ppf phr =
       begin try
         toplevel_env := newenv;
         let res =
-          load_lambda ppf ~required_globals ~module_ident phrase_name res size
+          load_lambda (debug_log log)
+            ~required_globals ~module_ident phrase_name res size
         in
         let out_phr =
           match res with
@@ -243,8 +244,7 @@ let execute_phrase print_outcome ppf phr =
         begin match out_phr with
         | Ophr_signature [] -> ()
         | _ ->
-            Location.separate_new_message ppf;
-            !print_out_phrase ppf out_phr;
+            Log.d Toplevel_diagnostic.output log "%a" !print_out_phrase out_phr;
         end;
         begin match out_phr with
         | Ophr_eval (_, _) | Ophr_signature _ -> true
@@ -254,7 +254,7 @@ let execute_phrase print_outcome ppf phr =
         toplevel_env := oldenv; raise x
       end
   | Ptop_dir {pdir_name = {Location.txt = dir_name}; pdir_arg } ->
-      try_run_directive ppf dir_name pdir_arg
+      try_run_directive log dir_name pdir_arg
 
 
 (* API compat *)
@@ -266,19 +266,21 @@ let setvalue _ _ = assert false
 
 (* Load in-core a .cmxs file *)
 
-let load_file _ (* fixme *) ppf name0 =
+let load_file _ (* fixme *) log name0 =
   let name =
     try Some (Load_path.find name0)
     with Not_found -> None
   in
   match name with
-  | None -> fprintf ppf "File not found: %s@." name0; false
+  | None ->
+      Log.itemd Toplevel_diagnostic.errors log "File not found: %s" name0;
+      false
   | Some name ->
     let fn,tmp =
       if Filename.check_suffix name ".cmx" || Filename.check_suffix name ".cmxa"
       then
         let cmxs = Filename.temp_file "caml" ".cmxs" in
-        Asmlink.link_shared ~ppf_dump:ppf [name] cmxs;
+        Asmlink.link_shared ~log:(debug_log log) [name] cmxs;
         cmxs,true
       else
         name,false
@@ -290,12 +292,12 @@ let load_file _ (* fixme *) ppf name0 =
       try Dynlink.loadfile fn; true
       with
       | Dynlink.Error err ->
-        fprintf ppf "Error while loading %s: %s.@."
+        Log.itemd Toplevel_diagnostic.errors log "Error while loading %s: %s."
           name (Dynlink.error_message err);
         false
       | exn ->
-        print_exception_outcome ppf exn;
-        false
+          Log.d Toplevel_diagnostic.output log "%a" print_exception_outcome exn;
+          false
     in
     if tmp then (try Sys.remove fn with Sys_error _ -> ());
     success
