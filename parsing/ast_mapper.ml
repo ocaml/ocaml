@@ -844,11 +844,14 @@ let default_mapper =
       );
 
     label_declaration =
-      (fun this {pld_name; pld_type; pld_loc; pld_mutable; pld_attributes} ->
+      (fun this {pld_name; pld_type; pld_loc; pld_mutable;
+                 pld_inline_record; pld_attributes} ->
          Type.field
            (map_loc map_string this pld_name)
            (this.typ this pld_type)
            ~mut:pld_mutable
+           ?inline_record:(Option.map
+             (List.map (this.label_declaration this)) pld_inline_record)
            ~loc:(this.location this pld_loc)
            ~attrs:(this.attributes this pld_attributes)
       );

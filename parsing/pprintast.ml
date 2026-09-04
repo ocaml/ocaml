@@ -1753,12 +1753,23 @@ and type_def_list ctxt f (rf, exported, l) =
                  (list ~sep:"@," (type_decl "and" Recursive)) xs
 
 and record_declaration ctxt f lbls =
-  let type_record_field f pld =
-    pp f "@[<2>%a%a:@;%a@;%a@]"
-      mutable_flag pld.pld_mutable
-      ident_of_name pld.pld_name.txt
-      (core_type ctxt) pld.pld_type
-      (attributes ctxt) pld.pld_attributes
+  let rec type_record_field f pld =
+    match pld.pld_inline_record with
+    | Some fields ->
+      pp f "@[<2>%a%a:@;%a@;%a@]"
+        mutable_flag pld.pld_mutable
+        ident_of_name pld.pld_name.txt
+        (inline_record ctxt) fields
+        (attributes ctxt) pld.pld_attributes
+    | None ->
+      pp f "@[<2>%a%a:@;%a@;%a@]"
+        mutable_flag pld.pld_mutable
+        ident_of_name pld.pld_name.txt
+        (core_type ctxt) pld.pld_type
+        (attributes ctxt) pld.pld_attributes
+  and inline_record _ctxt f fields =
+    pp f "{@\n%a}"
+      (list type_record_field ~sep:";@\n") fields
   in
   pp f "{@\n%a}"
     (list type_record_field ~sep:";@\n" )  lbls

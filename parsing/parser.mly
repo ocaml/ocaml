@@ -3558,6 +3558,11 @@ label_declaration:
     mutable_flag mkrhs(label) COLON poly_type_no_attr attributes
       { let info = symbol_info $endpos in
         Type.field $2 $4 ~mut:$1 ~attrs:$5 ~loc:(make_loc $sloc) ~info }
+  | mutable_flag mkrhs(label) COLON LBRACE label_declarations RBRACE attributes
+      { let info = symbol_info $endpos in
+        let dummy_typ = Typ.any ~loc:(make_loc $sloc) () in
+        Type.field $2 dummy_typ ~mut:$1 ~inline_record:$5
+          ~attrs:$7 ~loc:(make_loc $sloc) ~info }
 ;
 label_declaration_semi:
     mutable_flag mkrhs(label) COLON poly_type_no_attr attributes SEMI attributes
@@ -3567,6 +3572,16 @@ label_declaration_semi:
           | None -> symbol_info $endpos
        in
        Type.field $2 $4 ~mut:$1 ~attrs:($5 @ $7) ~loc:(make_loc $sloc) ~info }
+  | mutable_flag mkrhs(label) COLON LBRACE label_declarations RBRACE
+    attributes SEMI attributes
+      { let info =
+          match rhs_info $endpos($7) with
+          | Some _ as info_before_semi -> info_before_semi
+          | None -> symbol_info $endpos
+       in
+       let dummy_typ = Typ.any ~loc:(make_loc $sloc) () in
+       Type.field $2 dummy_typ ~mut:$1 ~inline_record:$5
+         ~attrs:($7 @ $9) ~loc:(make_loc $sloc) ~info }
 ;
 
 /* Type Extensions */
@@ -4153,6 +4168,7 @@ label_longident:
 ;
 type_longident:
     mk_longident(mod_ext_longident, LIDENT)  { $1 }
+  | type_longident DOT LIDENT { ldot $1 $loc($1) $3 $loc($3) }
 ;
 mod_longident:
     mk_longident(mod_longident, UIDENT)  { $1 }

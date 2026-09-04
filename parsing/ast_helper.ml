@@ -582,11 +582,12 @@ module Type = struct
     }
 
   let field ?(loc = !default_loc) ?(attrs = []) ?(info = empty_info)
-        ?(mut = Immutable) name typ =
+        ?(mut = Immutable) ?inline_record name typ =
     {
      pld_name = name;
      pld_mutable = mut;
      pld_type = typ;
+     pld_inline_record = inline_record;
      pld_loc = loc;
      pld_attributes = add_info_attrs info attrs;
     }

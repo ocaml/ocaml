@@ -616,6 +616,11 @@ and label_declaration =
      pld_name: string loc;
      pld_mutable: mutable_flag;
      pld_type: core_type;
+     pld_inline_record: label_declaration list option;
+      (** When [Some fields], the field's type is an inline record definition.
+          [pld_type] is set to a dummy type; the actual type is the inline
+          record with the given [fields]. When [None], this is a normal
+          field. *)
      pld_loc: Location.t;
      pld_attributes: attributes;  (** [l : T [\@id1] [\@id2]] *)
     }
@@ -625,7 +630,10 @@ and label_declaration =
                              is {{!Asttypes.mutable_flag.Immutable}[Immutable]},
    - [{ ...; mutable l: T; ... }]
                            when {{!label_declaration.pld_mutable}[pld_mutable]}
-                             is {{!Asttypes.mutable_flag.Mutable}[Mutable]}.
+                             is {{!Asttypes.mutable_flag.Mutable}[Mutable]},
+   - [{ ...; l: \{ f1: T1; ...; fn: Tn \}; ... }]
+                           when {{!label_declaration.pld_inline_record}
+                             [pld_inline_record]} is [Some [f1; ...; fn]].
 
    Note: [T] can be a {{!core_type_desc.Ptyp_poly}[Ptyp_poly]}.
 *)

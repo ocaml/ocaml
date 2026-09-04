@@ -209,7 +209,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
          turn. *)
 
       (* Start by transforming the path [M.N.t] into the Longident [M.N.Foo]. *)
-      let lid = match Untypeast.lident_of_path ty_path with
+      let lid =
+        match Untypeast.lident_of_path (Path.scrape_extra_ty ty_path) with
         | Lident _ -> Lident name
         | Ldot (p,_) -> Ldot(p, Location.mknoloc name)
         | x -> x
