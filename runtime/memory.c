@@ -476,7 +476,7 @@ CAMLprim value caml_atomic_exchange (value ref, value v)
   return caml_atomic_exchange_field(ref, Val_long(0), v);
 }
 
-CAMLprim value caml_atomic_cas_field (
+CAMLprim value caml_atomic_compare_and_exchange_field (
   value obj, value vfield, value oldval, value newval)
 {
   intnat field = Long_val(vfield);
@@ -486,9 +486,9 @@ CAMLprim value caml_atomic_cas_field (
     if (*p == oldval) {
       *p = newval;
       write_barrier(obj, field, oldval, newval);
-      return Val_true;
+      return oldval;
     } else {
-      return Val_false;
+      return *p;
     }
   } else {
     /* need a real CAS */
@@ -497,12 +497,19 @@ CAMLprim value caml_atomic_cas_field (
     atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
     if (cas_ret) {
       write_barrier(obj, field, oldval, newval);
-      return Val_true;
-    } else {
-      return Val_false;
     }
+    return oldval;
   }
 }
+
+CAMLprim value caml_atomic_cas_field (
+  value obj, value vfield, value oldval, value newval)
+{
+  value res = caml_atomic_compare_and_exchange_field(
+                obj, vfield, oldval, newval);
+  return Val_bool(res == oldval);
+}
+
 CAMLprim value caml_atomic_cas (value ref, value oldval, value newval)
 {
   return caml_atomic_cas_field(ref, Val_long(0), oldval, newval);
