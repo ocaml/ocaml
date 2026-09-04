@@ -735,7 +735,7 @@ and transl_apply ~scopes
    the function as taking each argument individually (in
    [trans_curried_function]).
 *)
-and transl_function_without_attributes ~scopes loc repr params body =
+and transl_function_without_attributes ~scopes ~env loc repr params body =
   let return =
     match body with
     | Tfunction_body body ->
@@ -746,9 +746,9 @@ and transl_function_without_attributes ~scopes loc repr params body =
         (* With Camlp4/ppx, a pattern matching might be empty *)
         Pgenval
   in
-  transl_tupled_function ~scopes loc return repr params body
+  transl_tupled_function ~scopes ~env loc return repr params body
 
-and transl_tupled_function ~scopes loc return repr params body =
+and transl_tupled_function ~scopes ~env loc return repr params body =
   (* Cases are eligible for flattening if they belong to the only param. *)
   let eligible_cases =
     match params, body with
@@ -772,6 +772,11 @@ and transl_tupled_function ~scopes loc return repr params body =
             (fun {c_lhs; c_guard; c_rhs} ->
               (Matching.flatten_pattern size c_lhs, c_guard, c_rhs))
             cases in
+        (* if the match is partial, we cannot rely on GADT equations *)
+        let local_equations = match partial with
+          | Partial -> Some (Env.freeze_local_equations env)
+          | Total -> None
+        in
         let kinds =
           (* All the patterns might not share the same types. We must take the
              union of the patterns types *)
@@ -779,13 +784,13 @@ and transl_tupled_function ~scopes loc return repr params body =
           | [] -> assert false
           | (pats, _, _) :: cases ->
               let first_case_kinds =
-                List.map (fun pat -> value_kind pat.pat_env pat.pat_type) pats
+                List.map (pattern_kind local_equations) pats
               in
               List.fold_left
                 (fun kinds (pats, _, _) ->
                   List.map2 (fun kind pat ->
                     value_kind_union kind
-                      (value_kind pat.pat_env pat.pat_type))
+                      (pattern_kind local_equations pat))
                     kinds pats)
                 first_case_kinds cases
         in
@@ -797,11 +802,11 @@ and transl_tupled_function ~scopes loc return repr params body =
          Matching.for_tupled_function ~scopes loc params
            (transl_tupled_cases ~scopes pats_expr_list) partial)
     with Matching.Cannot_flatten ->
-      transl_curried_function ~scopes loc return repr params body
+      transl_curried_function ~scopes ~env loc return repr params body
       end
-  | _ -> transl_curried_function ~scopes loc return repr params body
+  | _ -> transl_curried_function ~scopes ~env loc return repr params body
 
-and transl_curried_function ~scopes loc return repr params body =
+and transl_curried_function ~scopes ~env loc return repr params body =
   let cases_param, body =
     match body with
     | Tfunction_body body ->
@@ -826,13 +831,32 @@ and transl_curried_function ~scopes loc return repr params body =
         in
         Some (param, kind), body
   in
+  (* We freeze local GADTs equations to the set existing before the
+     first partial match that introduces new equations to avoid using equations
+     that are only valid if a match succeeds. *)
+  let _, params = List.fold_left_map (fun (local_equations, prev_env) fp ->
+      let env = match fp.fp_kind with
+        | Tparam_pat pat | Tparam_optional_default (pat,_) -> pat.pat_env
+      in
+      let local_equations =
+        match local_equations, fp.fp_partial, fp.fp_kind with
+        | Some _, _, _ -> local_equations
+        | None, Total, Tparam_pat _ -> local_equations
+        | None, Partial, _
+        (* in default arguments [?(pat=exp)], [exp] can raise and
+           thus even a [Total] pattern can fail. *)
+        | None, _, Tparam_optional_default _ ->
+                Env.freeze_if_new_local_equations ~prev:prev_env env
+      in
+      (local_equations,env), (fp, local_equations)
+    ) (None, env) params in
   let body, params =
-    List.fold_right (fun fp (body, params) ->
+    List.fold_right (fun (fp, local_equations) (body, params) ->
       let param = fp.fp_param in
       let param_loc = fp.fp_loc in
       match fp.fp_kind with
       | Tparam_pat pat ->
-          let kind = value_kind pat.pat_env pat.pat_type in
+          let kind = pattern_kind local_equations pat in
           let body =
             Matching.for_function ~scopes param_loc None (Lvar param)
               [ pat, body ]
@@ -883,7 +907,8 @@ and transl_function ~scopes e params body =
     event_function ~scopes e
       (function repr ->
          let params, body = fuse_method_arity params body in
-         transl_function_without_attributes ~scopes e.exp_loc repr params body)
+         let env = e.exp_env and loc = e.exp_loc in
+         transl_function_without_attributes ~env ~scopes loc repr params body)
   in
   let attr = function_attribute_disallowing_arity_fusion in
   let loc = of_location ~scopes e.exp_loc in
@@ -1277,7 +1302,7 @@ and transl_letop ~scopes loc env let_ ands param case partial =
         (function repr ->
            let loc = case.c_rhs.exp_loc in
            let ghost_loc = { loc with loc_ghost = true } in
-           transl_function_without_attributes ~scopes loc repr []
+           transl_function_without_attributes ~scopes ~env loc repr []
              (Tfunction_cases
                 { cases = [case]; param; partial; loc = ghost_loc;
                   exp_extra = None; attributes = []; }))

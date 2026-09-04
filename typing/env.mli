@@ -339,6 +339,11 @@ val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> class_type_declaration -> t -> t
 val add_local_constraint: Path.t -> type_declaration -> t -> t
 
+type local_equations
+val freeze_local_equations: t -> local_equations
+val freeze_if_new_local_equations: prev:t -> t -> local_equations option
+val restrict_local_equations: local_equations -> t -> t
+
 (* Insertion of persistent signatures *)
 
 (* [add_persistent_structure id env] is an environment such that
