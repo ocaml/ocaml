@@ -208,7 +208,7 @@ val std_include_flag : string -> string
 val std_include_dir : unit -> string list
 val shared : bool ref
 val dlcode : bool ref
-val linking_variant : (string * string) option ref
+val linking_o : (string * string) option ref
 val pic_code : bool ref
 val runtime_variant : string ref
 val with_runtime : bool ref

@@ -98,9 +98,10 @@ let lib_ccopts = ref []
 
 let add_ccobjs origin l =
   if not !Clflags.no_auto_link then begin
-    begin match !Clflags.linking_variant with
-    | Some (name, _) when Clflags.Linking_variants.M.mem name l.lib_ccobjs_variants ->
-        lib_ccobjs := Clflags.Linking_variants.M.find name l.lib_ccobjs_variants @ !lib_ccobjs
+    begin match !Clflags.linking_o with
+    | Some (name, _) when name <> "" && Clflags.Linking_variants.M.mem name l.lib_ccobjs_variants ->
+        let newobjs = List.map (fun s -> String.concat ":" [name; s]) (Clflags.Linking_variants.M.find name l.lib_ccobjs_variants) in
+        lib_ccobjs := newobjs @ !lib_ccobjs
     | None | Some _ ->
         lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs
     end;

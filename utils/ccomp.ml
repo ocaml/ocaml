@@ -194,7 +194,7 @@ let call_linker mode output_name files extra =
             l_prefix (Load_path.get_path_list ()))
           (quote_files ~response_files:true (remove_Wl files))
           extra
-      else match !Clflags.linking_variant, mode with
+      else match !Clflags.linking_o, mode with
         | None, _ | Some _, (Dll | MainDll | Partial) ->
             Printf.sprintf "%s -o %s %s %s %s %s %s"
               (match !Clflags.c_compiler, mode with
@@ -211,17 +211,21 @@ let call_linker mode output_name files extra =
               (String.concat " " (List.rev !Clflags.all_ccopts))
               (quote_files ~response_files:true files)
               extra
-        | Some (_name, cmd), Exe ->
-            Printf.sprintf
-              "env %s %s %s %s %s %s %s"
-                (Filename.quote ("OCAML_LINK_INFO_CC=" ^ (match !Clflags.c_compiler with | Some cc -> cc | None -> Config.mkexe)))
-                (Filename.quote ("OCAML_LINK_INFO_O=" ^ (Filename.quote output_name)))
-                (Filename.quote ("OCAML_LINK_INFO_DASHL=" ^ (quote_prefixed ~response_files:true "-L"
-                   (Load_path.get_path_list ()))))
-                (Filename.quote ("OCAML_LINK_INFO_CCOPTS=" ^ (String.concat " " (List.rev !Clflags.all_ccopts))))
-                (Filename.quote ("OCAML_LINK_INFO_FILES=" ^ (quote_files ~response_files:true files)))
-                (Filename.quote ("OCAML_LINK_INFO_EXTRA=" ^ extra))
-                cmd
+        | Some (_name, o), Exe ->
+            let oc = open_out o in
+            output_string oc
+              (Printf.sprintf
+                "CC: %s\nO: %s\nDASHL: %s\nCCOPTS: %s\nFILES: %s\nEXTRA: %s\n"
+                (match !Clflags.c_compiler with | Some cc -> cc | None -> Config.mkexe)
+                (Filename.quote output_name)
+                (quote_prefixed ~response_files:true "-L"
+                   (Load_path.get_path_list ()))
+                (String.concat " " (List.rev !Clflags.all_ccopts))
+                (quote_files ~response_files:true files)
+                extra
+              );
+            flush oc;
+            "true"
     in
     command cmd
   )

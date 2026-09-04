@@ -158,14 +158,6 @@ let check_bool ppf name s =
       "bad value %s for %s" s name;
     false
 
-let check_linking_variant ppf name s =
-  match String.split_on_char ':' s with
-  | [n; v] -> Some (n, v)
-  | _ ->
-    Printf.ksprintf (print_error ppf)
-      "bad value %s for %s" s name;
-    None
-
 let decode_compiler_pass ppf v ~name ~filter =
   let module P = Clflags.Compiler_pass in
   let passes = P.available_pass_names ~filter ~native:!native_code in
@@ -492,8 +484,6 @@ let read_one_param ppf position name v =
       handle_dump_option ppf v
 
   |  "keywords"  -> Clflags.keyword_edition := Some v
-
-  | "linking" -> Clflags.linking_variant := check_linking_variant ppf name v
 
   | _ ->
     if not (List.mem name !can_discard) then begin
