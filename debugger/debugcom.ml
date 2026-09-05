@@ -257,6 +257,29 @@ let input_remote_value ic =
 let output_remote_value ic v =
   output_substring ic v 0 value_size
 
+let tag_of_header header =
+  Nativeint.to_int (Nativeint.logand header 0xFFn)
+
+let header_without_reserved_bits header =
+  if Config.reserved_header_bits > 0 then
+    let mask =
+      Nativeint.sub
+        (Nativeint.shift_left 1n (Sys.word_size - Config.reserved_header_bits))
+        1n
+    in
+    Nativeint.logand header mask
+  else
+    header
+
+let input_binary_nativeint ic =
+  match Sys.word_size with
+  | 32 -> Nativeint.of_int (input_binary_int ic)
+  | 64 ->
+      let high = input_binary_int ic in
+      let low = input_binary_int ic in
+      Nativeint.(add (of_int low) (shift_left (of_int high) 32))
+  | _ -> failwith "Unsupported word size"
+
 module Remote_value =
   struct
     type t = Remote of string | Local of Obj.t
@@ -292,8 +315,8 @@ module Remote_value =
           output_char !conn.io_out 'H';
           output_remote_value !conn.io_out v;
           flush !conn.io_out;
-          let header = input_binary_int !conn.io_in in
-          header land 0xFF
+          let header = input_binary_nativeint !conn.io_in in
+          tag_of_header header
 
     let size = function
     | Local obj -> Obj.size obj
@@ -301,10 +324,11 @@ module Remote_value =
         output_char !conn.io_out 'H';
         output_remote_value !conn.io_out v;
         flush !conn.io_out;
-        let header = input_binary_int !conn.io_in in
-        if header land 0xFF = Obj.double_array_tag && Sys.word_size = 32
-        then header lsr 11
-        else header lsr 10
+        let header = input_binary_nativeint !conn.io_in in
+        let header = header_without_reserved_bits header in
+        if tag_of_header header = Obj.double_array_tag && Sys.word_size = 32
+        then Nativeint.(to_int (shift_right_logical header 11))
+        else Nativeint.(to_int (shift_right_logical header 10))
 
     let field v n =
       match v with
