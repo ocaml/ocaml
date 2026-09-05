@@ -41,6 +41,8 @@ type specific_operation =
   | Ifloatarithmem of float_operation * addressing_mode
                                        (* Float arith operation with memory *)
   | Ibswap of int                      (* endianness conversion *)
+  | Iclz                               (* count leading zeros *)
+  | Ictz                               (* count trailing zeros *)
   | Isqrtf                             (* Float square root *)
   | Ifloatsqrtf of addressing_mode     (* Float square root from memory *)
   | Isextend32                         (* 32 to 64 bit conversion with sign
@@ -123,6 +125,10 @@ let print_specific_operation printreg op ppf arg =
                    (Array.sub arg 1 (Array.length arg - 1))
   | Ibswap i ->
       fprintf ppf "bswap_%i %a" i printreg arg.(0)
+  | Iclz ->
+      fprintf ppf "clz %a" printreg arg.(0)
+  | Ictz ->
+      fprintf ppf "ctz %a" printreg arg.(0)
   | Isextend32 ->
       fprintf ppf "sextend32 %a" printreg arg.(0)
   | Izextend32 ->
@@ -138,7 +144,7 @@ let win64 =
 (* Specific operations that are pure *)
 
 let operation_is_pure = function
-  | Ilea _ | Ibswap _ | Isqrtf | Isextend32 | Izextend32 -> true
+  | Ilea _ | Ibswap _ | Iclz | Ictz | Isqrtf | Isextend32 | Izextend32 -> true
   | Ifloatarithmem _ | Ifloatsqrtf _ -> true
   | _ -> false
 

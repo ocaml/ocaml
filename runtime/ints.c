@@ -127,6 +127,102 @@ CAMLprim value caml_bswap16(value v)
                     ((x & 0xFF00) >> 8))));
 }
 
+/* Bit counting over the Sys.int_size bits of an untagged integer, which
+   arrives sign-extended in an intnat.  Shifting the sign copy out, or
+   forcing the top bit on, makes the count come out over Sys.int_size bits
+   and keeps the builtins away from zero. */
+
+#define INTNAT_BITS (8 * sizeof(uintnat))
+
+#if __has_builtin(__builtin_clzll) || defined(__GNUC__)
+#ifdef ARCH_SIXTYFOUR
+#define CAML_BUILTIN_CLZ __builtin_clzll
+#define CAML_BUILTIN_CTZ __builtin_ctzll
+#define CAML_BUILTIN_POPCOUNT __builtin_popcountll
+#else
+#define CAML_BUILTIN_CLZ __builtin_clz
+#define CAML_BUILTIN_CTZ __builtin_ctz
+#define CAML_BUILTIN_POPCOUNT __builtin_popcount
+#endif
+#endif
+
+intnat caml_int_clz_direct(intnat v)
+{
+  uintnat x = ((uintnat) v << 1) | 1;
+#ifdef CAML_BUILTIN_CLZ
+  return CAML_BUILTIN_CLZ(x);
+#else
+  /* Hacker's Delight (2 ed.), algorithm 5.12 */
+  intnat n = INTNAT_BITS;
+  uintnat y;
+#ifdef ARCH_SIXTYFOUR
+  y = x >> 32; if (y != 0) { n -= 32; x = y; }
+#endif
+  y = x >> 16; if (y != 0) { n -= 16; x = y; }
+  y = x >>  8; if (y != 0) { n -=  8; x = y; }
+  y = x >>  4; if (y != 0) { n -=  4; x = y; }
+  y = x >>  2; if (y != 0) { n -=  2; x = y; }
+  y = x >>  1;
+  return y != 0 ? n - 2 : n - (intnat) x;
+#endif
+}
+
+intnat caml_int_ctz_direct(intnat v)
+{
+  uintnat x = (uintnat) v | ((uintnat) 1 << (INTNAT_BITS - 1));
+#ifdef CAML_BUILTIN_CTZ
+  return CAML_BUILTIN_CTZ(x);
+#else
+  /* Hacker's Delight (2 ed.), algorithm 5.21 */
+  intnat n = INTNAT_BITS - 1;
+  uintnat y;
+#ifdef ARCH_SIXTYFOUR
+  y = x << 32; if (y != 0) { n -= 32; x = y; }
+#endif
+  y = x << 16; if (y != 0) { n -= 16; x = y; }
+  y = x <<  8; if (y != 0) { n -=  8; x = y; }
+  y = x <<  4; if (y != 0) { n -=  4; x = y; }
+  y = x <<  2; if (y != 0) { n -=  2; x = y; }
+  y = x <<  1;
+  return y != 0 ? n - 1 : n;
+#endif
+}
+
+intnat caml_int_popcount_direct(intnat v)
+{
+  uintnat x = (uintnat) v << 1;
+#ifdef CAML_BUILTIN_POPCOUNT
+  return CAML_BUILTIN_POPCOUNT(x);
+#else
+  /* Hacker's Delight (2 ed.), algorithm 5.2 */
+  x = x - ((x >> 1) & (uintnat) 0x5555555555555555ULL);
+  x = (x & (uintnat) 0x3333333333333333ULL)
+      + ((x >> 2) & (uintnat) 0x3333333333333333ULL);
+  x = (x + (x >> 4)) & (uintnat) 0x0F0F0F0F0F0F0F0FULL;
+  x = x + (x >> 8);
+  x = x + (x >> 16);
+#ifdef ARCH_SIXTYFOUR
+  x = x + (x >> 32);
+#endif
+  return x & 0xFF;
+#endif
+}
+
+CAMLprim value caml_int_clz(value v)
+{
+  return Val_long(caml_int_clz_direct(Long_val(v)));
+}
+
+CAMLprim value caml_int_ctz(value v)
+{
+  return Val_long(caml_int_ctz_direct(Long_val(v)));
+}
+
+CAMLprim value caml_int_popcount(value v)
+{
+  return Val_long(caml_int_popcount_direct(Long_val(v)));
+}
+
 /* Tagged integers */
 
 CAMLprim value caml_int_compare(value v1, value v2)

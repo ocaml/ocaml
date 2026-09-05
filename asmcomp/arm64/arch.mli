@@ -70,6 +70,8 @@ type specific_operation =
   | Ibswap of int (* endianness conversion *)
   | Imove32       (* 32-bit integer move *)
   | Isignext of int (* sign extension *)
+  | Iclz          (* count leading zeros *)
+  | Ictz          (* count trailing zeros *)
 
 and arith_operation =
     Ishiftadd

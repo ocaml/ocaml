@@ -211,6 +211,11 @@ Working version
   riscv and s390x rather than calling into C
   (Zane Hambly, review by Miod Vallat and Xavier Leroy)
 
+- #15018: implement `Int.popcount`, `Int.leading_zeros` and
+  `Int.trailing_zeros` as C primitives rather than in OCaml, and emit
+  `leading_zeros` and `trailing_zeros` natively on amd64 and arm64
+  (Zane Hambly, review by         )
+
 - #15017: emit the rounding instructions for `Float.round`, `Float.trunc`,
   `ceil` and `floor` on arm64 and power rather than calling into C
   (Zane Hambly, review by Miod Vallat and Nicolás Ojeda Bär)

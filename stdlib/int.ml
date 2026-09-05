@@ -41,24 +41,8 @@ let compare : int -> int -> int = Stdlib.compare
 let min x y : t = if x <= y then x else y
 let max x y : t = if x >= y then x else y
 
-(* Number of leading zeros.  Hacker's Delight (2 ed.), algorithm 5.12 *)
-
-let leading_zeros x =
-  let x = ref x and n = ref Sys.int_size in
-  if Sys.int_size > 32 then begin
-    let y = shift_right_logical !x 32 in
-    if y <> 0 then (n := !n - 32; x := y)
-  end;
-  let y = shift_right_logical !x 16 in
-  if y <> 0 then (n := !n - 16; x := y);
-  let y = shift_right_logical !x  8 in
-  if y <> 0 then (n := !n -  8; x := y);
-  let y = shift_right_logical !x  4 in
-  if y <> 0 then (n := !n -  4; x := y);
-  let y = shift_right_logical !x 2 in
-  if y <> 0 then (n := !n -  2; x := y);
-  let y = shift_right_logical !x 1 in
-  if y <> 0 then !n - 2 else !n - !x
+external leading_zeros : (int [@untagged]) -> (int [@untagged])
+  = "caml_int_clz" "caml_int_clz_direct" [@@noalloc]
 
 let unsigned_bitsize x =
   Sys.int_size - leading_zeros x
@@ -71,46 +55,11 @@ let leading_sign_bits x =
 let signed_bitsize x =
   Sys.int_size - leading_sign_bits x
 
-(* Number of trailing zeros.  Hacker's Delight (2 ed.), algorithm 5.21 *)
+external trailing_zeros : (int [@untagged]) -> (int [@untagged])
+  = "caml_int_ctz" "caml_int_ctz_direct" [@@noalloc]
 
-let trailing_zeros x =
-  if x = 0 then Sys.int_size else begin
-    let x = ref x and n = ref (Sys.int_size - 1) in
-    if Sys.int_size > 32 then begin
-      let y = shift_left !x 32 in
-      if y <> 0 then (n := !n - 32; x := y)
-    end;
-    let y = shift_left !x 16 in
-    if y <> 0 then (n := !n - 16; x := y);
-    let y = shift_left !x  8 in
-    if y <> 0 then (n := !n -  8; x := y);
-    let y = shift_left !x  4 in
-    if y <> 0 then (n := !n -  4; x := y);
-    let y = shift_left !x  2 in
-    if y <> 0 then (n := !n -  2; x := y);
-    let y = shift_left !x  1 in
-    if y <> 0 then !n - 1 else !n
-  end
-
-(* Population count.  Hacker's Delight (2 ed.), algorithm 5.2 *)
-
-external int64_to_int : int64 -> int = "%int64_to_int"
-let cst1 = int64_to_int 0x5555_5555_5555_5555L
-let cst2 = int64_to_int 0x3333_3333_3333_3333L
-let cst3 = int64_to_int 0x0F0F_0F0F_0F0F_0F0FL
-
-let popcount x =
-  let x = sub x (logand (shift_right_logical x 1) cst1) in
-  let x = add (logand x cst2)
-              (logand (shift_right_logical x 2) cst2) in
-  let x = logand (add x (shift_right_logical x 4)) cst3 in
-  let x = add x (shift_right_logical x 8) in
-  let x = add x (shift_right_logical x 16) in
-  if Sys.int_size > 32 then begin
-    let x = add x (shift_right_logical x 32) in
-    x land 0x7F
-  end else
-    x land 0x3F
+external popcount : (int [@untagged]) -> (int [@untagged])
+  = "caml_int_popcount" "caml_int_popcount_direct" [@@noalloc]
 
 external to_float : int -> float = "%floatofint"
 external of_float : float -> int = "%intoffloat"
