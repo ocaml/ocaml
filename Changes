@@ -16,6 +16,11 @@ Working version
 - #14692: Allow unparenthesized application expressions in record update syntax
   (Stephen Dolan, review by Damien Doligez)
 
+- #14985: Enable the use of polymorphic types in optional function parameters
+    let run ?(observer : 'a. (unit -> 'a) -> 'a = fun k -> k ()) = ...
+    let run' ?(observer : 'a. ((unit -> 'a) -> 'a) option) = ...
+  (Alistair O'Brien, review by Florian Angeletti)
+
 ### Runtime system:
 
 - #14773 : Activate Haiku native backend
