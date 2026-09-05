@@ -465,6 +465,7 @@ caml_result caml_gc_ramp_up(value callback, uintnat *out_suspended_words) {
        outer phase. */
 
     CAML_GC_MESSAGE(SLICESIZE, "Entering a GC ramp-up phase.\n");
+    CAML_EV_BEGIN(EV_EXPLICIT_GC_RAMP_UP);
 
     intnat ramp_up_already = (Caml_state->gc_policy & CAML_GC_RAMP_UP);
     if (!ramp_up_already)
@@ -490,6 +491,8 @@ caml_result caml_gc_ramp_up(value callback, uintnat *out_suspended_words) {
 
     if (!ramp_up_already)
       Caml_state->gc_policy = (Caml_state->gc_policy & ~CAML_GC_RAMP_UP);
+
+    CAML_EV_END(EV_EXPLICIT_GC_RAMP_UP);
 
     return res;
 }

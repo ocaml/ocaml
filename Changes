@@ -150,6 +150,14 @@ Working version
   (Xavier Leroy, report by Akshay Singh, review by Nicolás Ojeda Bär
   and Antonin Décimo)
 
+- #15001: Add runtime events counters EV_C_MAJOR_DIRECT_ALLOCATED_WORDS,
+  EV_C_MAJOR_SUSPENDED_ALLOCATED_WORDS and EV_C_MAJOR_RESUMED_ALLOCATED_WORDS,
+  reporting the words allocated directly in the major heap as opposed to
+  promoted from the minor heap, the words suspended during a GC ramp-up phase
+  and the words returned by Gc.ramp_down. Add the span
+  EV_EXPLICIT_GC_RAMP_UP covering a call to Gc.ramp_up.
+  (Tim McGilchrist, review by Sadiq Jaffer and Gabriel Scherer)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
