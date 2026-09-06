@@ -637,22 +637,24 @@ static void intern_rec(struct caml_intern_state* s,
       size = (code >> 4) & 0x7;
     read_block:
       if (CAMLunlikely(size == 0)) {
-        if (CAMLlikely(tag < Forcing_tag))
-          v = Atom(tag);
-        else
+        if (CAMLunlikely(tag >= Forcing_tag))
           intern_cleanup_failwith2(s, fun_name, "bad atom tag");
+        v = Atom(tag);
       } else {
         v = intern_alloc_obj (s, d, size, tag);
         intern_record_obj(s, v);
-        if (CAMLlikely(tag < Forcing_tag)) {
+        switch(tag) {
+        default:   // below Forcing_tag + Forcing_tag, Lazy_tag, Forward_tag
           /* Read the contents of the block */
           ReadItems(s, sp, &Field(v, 0), size);
-        } else if (tag == Closure_tag) {
+          break;
+        case Closure_tag:
           /* For closures, we need to validate the closure after reading it */
           PushOperation(s, sp, OCheckClosure, (value*) v, 0);
           /* Code pointers are allowed in a closure block */
           PushOperation(s, sp, OReadItemsOrCodePointers, &Field(v, 0), size);
-        } else if (tag == Object_tag) {
+          break;
+        case Object_tag:
           /* For objects, we need to freshen the oid */
           if (CAMLunlikely(size < 2))
             intern_cleanup_failwith2(s, fun_name, "bad object block");
@@ -662,8 +664,11 @@ static void intern_rec(struct caml_intern_state* s,
           PushOperation(s, sp, OFreshOID, (value*) v, 0);
           /* Finally read first two block elements: method table and old OID */
           ReadItems(s, sp, &Field(v, 0), 2);
-        } else {
+          break;
+        case Infix_tag: case Cont_tag: case Abstract_tag: case String_tag:
+        case Double_tag: case Double_array_tag: case Custom_tag:
           intern_cleanup_failwith2(s, fun_name, "bad block tag");
+          break;
         }
       }
     } else {
