@@ -26,7 +26,11 @@ let bigint = Int64.to_int 0x123456789ABCDEF0L
 let rec fib n =
   if n < 2 then 1 else fib(n-1) + fib(n-2)
 
-let test_out filename =
+let lazy_u = lazy (fib 20)
+let lazy_e1 = Lazy.force (lazy (fib 10))
+let lazy_e2 = Lazy.force (lazy 3.14)
+
+let test_out ?(flags = []) filename =
   let oc = open_out_bin filename in
   output_value oc 1;
   output_value oc (-1);
@@ -54,21 +58,28 @@ let test_out filename =
   output_value oc z;
   output_value oc [|1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16|];
   let rec big n = if n <= 0 then A else H(n, big(n-1)) in
-  output_value oc (big 1000);
-  Marshal.to_channel oc y [Marshal.No_sharing];
-  Marshal.to_channel oc fib [Marshal.Closures];
-  output_value oc (Int32.of_string "0");
-  output_value oc (Int32.of_string "123456");
-  output_value oc (Int32.of_string "-123456");
-  output_value oc (Int64.of_string "0");
-  output_value oc (Int64.of_string "123456789123456");
-  output_value oc (Int64.of_string "-123456789123456");
-  output_value oc (Nativeint.of_string "0");
-  output_value oc (Nativeint.of_string "123456");
-  output_value oc (Nativeint.of_string "-123456");
-  output_value oc (Nativeint.shift_left (Nativeint.of_string "123456789") 32);
-  output_value oc (Nativeint.shift_left (Nativeint.of_string "-123456789") 32);
-  let i = Int64.of_string "123456789123456" in output_value oc (i,i);
+  Marshal.to_channel oc (big 1000) flags;
+  Marshal.to_channel oc y (Marshal.No_sharing :: flags);
+  Marshal.to_channel oc fib (Marshal.Closures :: flags);
+  Marshal.to_channel oc (Int32.of_string "0") flags;
+  Marshal.to_channel oc (Int32.of_string "123456") flags;
+  Marshal.to_channel oc (Int32.of_string "-123456") flags;
+  Marshal.to_channel oc (Int64.of_string "0") flags;
+  Marshal.to_channel oc (Int64.of_string "123456789123456") flags;
+  Marshal.to_channel oc (Int64.of_string "-123456789123456") flags;
+  Marshal.to_channel oc (Nativeint.of_string "0") flags;
+  Marshal.to_channel oc (Nativeint.of_string "123456") flags;
+  Marshal.to_channel oc (Nativeint.of_string "-123456") flags;
+  Marshal.to_channel oc
+    (Nativeint.shift_left (Nativeint.of_string "123456789") 32) flags;
+  Marshal.to_channel oc
+    (Nativeint.shift_left (Nativeint.of_string "-123456789") 32) flags;
+  let i = Int64.of_string "123456789123456" in
+    Marshal.to_channel oc (i,i) flags;
+  Marshal.to_channel oc lazy_u (Marshal.Closures :: flags);
+  Marshal.to_channel oc lazy_e1 flags;
+  Marshal.to_channel oc lazy_e2 flags;
+  Marshal.to_channel oc [||] flags;
   close_out oc
 
 
@@ -152,6 +163,10 @@ let test_in filename =
   test 37 (i = Int64.of_string "123456789123456");
   test 38 (j = Int64.of_string "123456789123456");
   test 39 (i == j);
+  test 40 (Lazy.force (input_value ic) = fib 20);
+  test 41 (Lazy.force (input_value ic) = fib 10);
+  test 42 (Lazy.force (input_value ic) = 3.14);
+  test 43 (Array.length (input_value ic) = 0);
   close_in ic
 
 let test_string () =
