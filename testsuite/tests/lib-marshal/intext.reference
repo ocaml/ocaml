@@ -38,6 +38,10 @@ Test 36 passed.
 Test 37 passed.
 Test 38 passed.
 Test 39 passed.
+Test 40 passed.
+Test 41 passed.
+Test 42 passed.
+Test 43 passed.
 Default flags (again)
 Test 1 passed.
 Test 2 passed.
@@ -78,6 +82,10 @@ Test 36 passed.
 Test 37 passed.
 Test 38 passed.
 Test 39 passed.
+Test 40 passed.
+Test 41 passed.
+Test 42 passed.
+Test 43 passed.
 Marshal.to_string
 Test 101 passed.
 Test 102 passed.
