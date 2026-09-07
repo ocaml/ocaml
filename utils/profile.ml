@@ -189,10 +189,11 @@ let compute_other_category (E table : hierarchy) (total : Measure_diff.t) =
   !r
 
 type row_data = R of string * (float * display) list * row_data list
+type data = row_data list
 
 module Profile_report = struct
   module D = Diagnostic
-  type _ D.extension += Profile: (string list * row_data list) D.extension
+  type _ D.extension += Profile: (string list * data) D.extension
   let v1 = Compiler_diagnostic.v1
   include D.New_record(Compiler_diagnostic.V)(struct
       let name = "profile"
