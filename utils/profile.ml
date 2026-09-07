@@ -219,8 +219,8 @@ module Profile_report = struct
     D.Custom {id = Profile; pull; default }
 end
 let profile =
-  Compiler_diagnostic.(Debug.new_field_opt v1 "profile" Profile_report.typ)
-let () = Compiler_diagnostic.(Debug.seal v1)
+  Compiler_diagnostic.(Dev.new_field_opt v1 "profile" Profile_report.typ)
+let () = Compiler_diagnostic.(Dev.seal v1)
 
 let rec rows_of_hierarchy ~nesting make_row name measure_diff hierarchy env =
   let rows =

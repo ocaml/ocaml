@@ -12,10 +12,10 @@
             [{ "const" : "B" }, { "const" : "HoV" }, { "const" : "HV" },
               { "const" : "V" }, { "const" : "H" }]
         },
-      "debug" :
+      "dev" :
         {
           "type" : "object",
-          "description" : "Debugging output for compiler developers",
+          "description" : "Reports for compiler developers",
           "properties" :
             {
               "profile" :
@@ -734,7 +734,7 @@
       "warnings" :
         { "type" : "array", "items" : { "$ref" : "#/$defs/error_report" } },
       "error" : { "$ref" : "#/$defs/error_report" },
-      "debug" : { "$ref" : "#/$defs/debug" }
+      "dev" : { "$ref" : "#/$defs/dev" }
     },
   "required" : ["metadata"]
 }

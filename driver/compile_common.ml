@@ -18,7 +18,7 @@ open Misc
 type info = {
   target: Unit_info.t;
   env : Env.t;
-  debug_log : Compiler_diagnostic.Debug.id Log.t;
+  dev_log : Dev_log.t;
   tool_name : string;
   native : bool;
 }
@@ -28,19 +28,17 @@ let with_info ~native ~tool_name ~dump_ext ~log unit_info k =
   Env.set_current_unit unit_info ;
   let env = Compmisc.initial_env() in
   let dump_file = String.concat "." [Unit_info.prefix unit_info; dump_ext] in
-  Compmisc.with_debug_log ~file_prefix:dump_file log (fun debug_log ->
+  Compmisc.with_dev_log ~file_prefix:dump_file log (fun dev_log ->
       k {
         target = unit_info;
         env;
-        debug_log;
+        dev_log;
         tool_name;
         native;
       }
     )
 
-let log_if i field printer x =
-  Clflags.dump_on_log i.debug_log field printer x; x
-module D = Compiler_diagnostic.Debug
+let log_if i field printer x = Clflags.dump_on_log i.dev_log field printer x; x
 
 module Parse_result = struct
   type 'a t = { ast : 'a; info : info }
@@ -63,15 +61,15 @@ let parse_intf i =
     ~tool_name:i.tool_name
     (Unit_info.human_source_file i.target)
   |> Parse_result.update_unit_info ~info:i
-  |> Parse_result.log_ast_if D.parsetree Printast.interface
-  |> Parse_result.log_ast_if D.source Pprintast.signature
+  |> Parse_result.log_ast_if Dev_log.parsetree Printast.interface
+  |> Parse_result.log_ast_if Dev_log.source Pprintast.signature
 
 let typecheck_intf { Parse_result.ast; info } =
   Profile.(record_call typing) @@ fun () ->
   let tsg =
     ast
     |> Typemod.type_interface info.target info.env
-    |> log_if info D.typedtree Printtyped.interface
+    |> log_if info Dev_log.typedtree Printtyped.interface
   in
   let alerts = Builtin_attributes.alerts_of_sig ~mark:true ast in
   let sg = tsg.Typedtree.sig_type in
@@ -111,14 +109,14 @@ let parse_impl i =
     ~tool_name:i.tool_name
     (Unit_info.human_source_file i.target)
   |> Parse_result.update_unit_info ~info:i
-  |> Parse_result.log_ast_if D.parsetree Printast.implementation
-  |> Parse_result.log_ast_if D.source Pprintast.structure
+  |> Parse_result.log_ast_if Dev_log.parsetree Printast.implementation
+  |> Parse_result.log_ast_if Dev_log.source Pprintast.structure
 
 let typecheck_impl { Parse_result.ast = parsetree; info = i } =
   parsetree
   |> Profile.(record typing) (Typemod.type_implementation i.target i.env)
-  |> log_if i D.typedtree Printtyped.implementation_with_coercion
-  |> log_if i D.shape
+  |> log_if i Dev_log.typedtree Printtyped.implementation_with_coercion
+  |> log_if i Dev_log.shape
     (fun fmt {Typedtree.shape; _} -> Shape.print fmt shape)
 
 let implementation info ~backend =

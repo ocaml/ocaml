@@ -18,7 +18,7 @@
 open! Int_replace_polymorphic_compare
 
 let pass_name = "remove-free-vars-equal-to-args"
-let field = Compiler_diagnostic.Debug.remove_free_vars_equal_to_args
+let field = Dev_log.remove_free_vars_equal_to_args
 let () = Pass_wrapper.register ~pass_name
 
 let rewrite_one_function_decl ~(function_decl : Flambda.function_declaration)

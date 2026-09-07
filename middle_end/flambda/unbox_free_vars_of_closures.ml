@@ -20,7 +20,7 @@ open! Int_replace_polymorphic_compare
 module B = Inlining_cost.Benefit
 
 let pass_name = "unbox-free-vars-of-closures"
-let field = Compiler_diagnostic.Debug.unbox_free_vars_of_closures
+let field = Dev_log.unbox_free_vars_of_closures
 let () = Pass_wrapper.register ~pass_name
 
 (* CR-someday mshinwell: Nearly but not quite the same as something that

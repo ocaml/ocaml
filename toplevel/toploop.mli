@@ -39,7 +39,7 @@ val set_paths :
 
 module type S = sig
   type log
-  type debug_log
+  type dev_log
 
   val prepare : log -> ?input:input -> unit -> bool
   (** Setup the load paths and initial toplevel environment and load compilation
@@ -58,7 +58,7 @@ module type S = sig
      should be printed. Uncaught exceptions are always printed. *)
 
   val preprocess_phrase :
-    debug_log -> Parsetree.toplevel_phrase -> Parsetree.toplevel_phrase
+    dev_log -> Parsetree.toplevel_phrase -> Parsetree.toplevel_phrase
   (* Preprocess the given toplevel phrase using regular and ppx
      preprocessors. Return the updated phrase. *)
 
@@ -77,11 +77,10 @@ end
 
 module V2: S with
   type log := Toplevel_diagnostic.id Log.t
-  and type debug_log := Compiler_diagnostic.Debug.id Log.t
+  and type dev_log := Dev_log.t
 
 include S with
-  type log := Format.formatter and type debug_log := Format.formatter
-
+  type log := Format.formatter and type dev_log := Format.formatter
 
 (* Interface with toplevel directives *)
 

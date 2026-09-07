@@ -19,7 +19,7 @@ let raw_clambda_dump_if log
       ((ulambda, _, structured_constants) : Clambda.with_constants) =
   if Clflags.Dump_option.(get Raw_clambda || get Clambda) then
     begin
-      let log fmt = Log.itemf Compiler_diagnostic.Debug.clambda log fmt in
+      let log fmt = Log.itemf Dev_log.clambda log fmt in
       log "@.clambda:@.";
       log "%a" Printclambda.clambda ulambda;
       List.iter (fun { Clambda. symbol; definition; _ } ->
@@ -29,7 +29,7 @@ let raw_clambda_dump_if log
         structured_constants
     end;
   if Clflags.Dump_option.get Cmm then
-    Log.itemf Compiler_diagnostic.Debug.cmm log "@.cmm:@."
+    Log.itemf Dev_log.cmm log "@.cmm:@."
 
 let lambda_to_clambda ~backend ~prefixname:_ ~log
       (lambda : Lambda.program) =

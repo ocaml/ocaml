@@ -128,10 +128,10 @@ let dump_file ~file_prefix =
       in
       Some (Log.Device.out_channel ch)
 
-let with_debug_log ~file_prefix log f =
+let with_dev_log ~file_prefix log f =
   match dump_file ~file_prefix with
-  | None -> f (Log.detach log Compiler_diagnostic.debug)
+  | None -> f (Log.detach log Compiler_diagnostic.dev)
   | Some device ->
-      Log.redirect log Compiler_diagnostic.debug device;
-      let dlog = Log.detach log Compiler_diagnostic.debug in
+      Log.redirect log Compiler_diagnostic.dev device;
+      let dlog = Log.detach log Compiler_diagnostic.dev in
       Fun.protect ~finally:(fun () -> Log.close dlog) (fun () -> f dlog)

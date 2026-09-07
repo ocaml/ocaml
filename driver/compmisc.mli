@@ -22,9 +22,8 @@ val initial_env : unit -> Env.t
 val set_from_env : 'a option ref -> 'a Clflags.env_reader -> unit
 val read_clflags_from_env : unit -> unit
 
-val with_debug_log:
-  file_prefix:string -> Compiler_diagnostic.id Log.t
-  -> (Compiler_diagnostic.Debug.id Log.t -> 'a) -> 'a
+val with_dev_log:
+  file_prefix:string -> Compiler_diagnostic.id Log.t -> (Dev_log.t -> 'a) -> 'a
 
 
 val auto_include : Load_path.auto_include_callback

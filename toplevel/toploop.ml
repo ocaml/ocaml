@@ -40,7 +40,7 @@ let use_lexbuf log ~wrap_in_module lb ~modpath ~filename =
     try
       List.iter
         (fun ph ->
-           let ph = preprocess_phrase (debug_log log) ph in
+           let ph = preprocess_phrase (dev_log log) ph in
            if not (execute_phrase !use_print_results log ph) then
              raise Exit
         )
@@ -363,7 +363,7 @@ let rec get_phrases log lb phrs =
 let process_phrase log snap phr =
   snap := Btype.snapshot ();
   Warnings.reset_fatal ();
-  let phr = preprocess_phrase (debug_log log) phr in
+  let phr = preprocess_phrase (dev_log log) phr in
   Env.reset_cache_toplevel ();
   ignore(execute_phrase true log phr);
   Log.flush log
@@ -460,7 +460,7 @@ let prepare log ?input () =
 (** External api *)
 module type S = sig
   type log
-  type debug_log
+  type dev_log
 
   val prepare : log -> ?input:input -> unit -> bool
   (** Setup the load paths and initial toplevel environment and load compilation
@@ -479,7 +479,7 @@ module type S = sig
      should be printed. Uncaught exceptions are always printed. *)
 
   val preprocess_phrase :
-    debug_log -> Parsetree.toplevel_phrase -> Parsetree.toplevel_phrase
+    dev_log -> Parsetree.toplevel_phrase -> Parsetree.toplevel_phrase
   (* Preprocess the given toplevel phrase using regular and ppx
      preprocessors. Return the updated phrase. *)
 
@@ -523,7 +523,7 @@ let run_script ppf i s = with_log ppf (fun log () -> V2.run_script log i s)
 let execute_phrase p = with_log1 (V2.execute_phrase p)
 let preprocess_phrase ppf phrase =
   with_log ppf (fun log () ->
-      V2.preprocess_phrase (Topcommon.debug_log log) phrase
+      V2.preprocess_phrase (Topcommon.dev_log log) phrase
     )
 let use_input = with_log1 V2.use_input
 let use_output = with_log1 V2.use_output
