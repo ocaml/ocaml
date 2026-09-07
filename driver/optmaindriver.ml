@@ -93,8 +93,8 @@ let process argv log ppf =
   else if !Clflags.make_package then begin
     Compmisc.init_path ();
     let target = Compenv.extract_output !Clflags.output_name in
-    Compmisc.with_debug_log ~file_prefix:target log (fun debug_log ->
-    Asmpackager.package_files ~log:debug_log (Compmisc.initial_env ())
+    Compmisc.with_dev_log ~file_prefix:target log (fun dev_log ->
+    Asmpackager.package_files ~log:dev_log (Compmisc.initial_env ())
       (Compenv.get_objfiles ~with_ocamlparam:false) target ~backend
       );
     Warnings.check_fatal ();
@@ -102,8 +102,8 @@ end
   else if !Clflags.shared then begin
     Compmisc.init_path ();
     let target = Compenv.extract_output !Clflags.output_name in
-    Compmisc.with_debug_log ~file_prefix:target log (fun debug_log ->
-        Asmlink.link_shared ~log:debug_log
+    Compmisc.with_dev_log ~file_prefix:target log (fun dev_log ->
+        Asmlink.link_shared ~log:dev_log
           (Compenv.get_objfiles ~with_ocamlparam:false) target
       );
       Warnings.check_fatal ();
@@ -126,9 +126,9 @@ end
         Compenv.default_output !Clflags.output_name
     in
     Compmisc.init_path ();
-    Compmisc.with_debug_log ~file_prefix:target log (fun debug_log ->
+    Compmisc.with_dev_log ~file_prefix:target log (fun dev_log ->
     let objs = Compenv.get_objfiles ~with_ocamlparam:true in
-    Asmlink.link ~log:debug_log objs target;
+    Asmlink.link ~log:dev_log objs target;
     Warnings.check_fatal ();
       )
   end
@@ -152,7 +152,7 @@ let main argv ppf =
     | () ->
         let print_profile = not @@ List.is_empty !Clflags.profile_columns in
         if print_profile then
-          Compmisc.with_debug_log ~file_prefix:"profile" !log
+          Compmisc.with_dev_log ~file_prefix:"profile" !log
             (Profile.report !Clflags.profile_columns);
         0
   in

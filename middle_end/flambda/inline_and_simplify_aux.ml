@@ -23,7 +23,7 @@ module Env = struct
   type t = {
     backend : (module Backend_intf.S);
     round : int;
-    log : Compiler_diagnostic.Debug.id Log.t;
+    log : Dev_log.t;
     approx : (scope * Simple_value_approx.t) Variable.Map.t;
     approx_mutable : Simple_value_approx.t Mutable_variable.Map.t;
     approx_sym : Simple_value_approx.t Symbol.Map.t;

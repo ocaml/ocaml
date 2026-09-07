@@ -82,7 +82,7 @@ let process continue argv log ppf =
     Compmisc.init_path ();
     let extracted_output = Compenv.extract_output !Clflags.output_name in
     let revd = Compenv.get_objfiles ~with_ocamlparam:false in
-    Compmisc.with_debug_log ~file_prefix:extracted_output log (fun log ->
+    Compmisc.with_dev_log ~file_prefix:extracted_output log (fun log ->
         Bytepackager.package_files ~log (Compmisc.initial_env ())
           revd (extracted_output));
     Warnings.check_fatal ();
@@ -126,7 +126,7 @@ let main argv ppf =
     | _ ->
         let print_profile = not @@ List.is_empty !Clflags.profile_columns in
         if print_profile then
-          Compmisc.with_debug_log ~file_prefix:"profile" !log
+          Compmisc.with_dev_log ~file_prefix:"profile" !log
             (Profile.report !Clflags.profile_columns);
         0
     | exception x ->

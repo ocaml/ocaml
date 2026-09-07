@@ -16,9 +16,7 @@
 (* "Package" a set of .cmo files into one .cmo file having the
    original compilation units as sub-modules. *)
 
-val package_files:
-  log:Compiler_diagnostic.Debug.id Log.t -> Env.t -> string list -> string ->
-  unit
+val package_files: log:Dev_log.t -> Env.t -> string list -> string -> unit
 
 type error =
     Forward_reference of string * Cmo_format.compunit

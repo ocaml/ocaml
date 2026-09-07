@@ -29,9 +29,7 @@ let interface ~log ~source_file ~output_prefix =
 
 let (|>>) (x, y) f = (x, f y)
 
-let dump_if i field printer x =
-  Clflags.dump_on_log i.debug_log field printer x; x
-module D = Compiler_diagnostic.Debug
+let dump_if i field printer x = Clflags.dump_on_log i.dev_log field printer x; x
 
 (** Native compilation backend for .ml files. *)
 
@@ -52,9 +50,9 @@ let flambda i backend Typedtree.{structure; coercion; _} =
       let () =
         let (module_ident, main_module_block_size), code =
           ((module_ident, main_module_block_size), code)
-          |>> dump_if i D.raw_lambda Printlambda.lambda
+          |>> dump_if i Dev_log.raw_lambda Printlambda.lambda
           |>> Simplif.simplify_lambda
-          |>> dump_if i D.lambda Printlambda.lambda
+          |>> dump_if i Dev_log.lambda Printlambda.lambda
         in
 
         if Clflags.(should_stop_after Compiler_pass.Lambda) then () else (
@@ -70,7 +68,7 @@ let flambda i backend Typedtree.{structure; coercion; _} =
             ~backend
             ~prefixname:(Unit_info.prefix i.target)
             ~middle_end:Flambda_middle_end.lambda_to_clambda
-            ~log:i.debug_log
+            ~log:i.dev_log
             program)
       in
       Compilenv.save_unit_info Unit_info.(Artifact.filename @@ cmx i.target))
@@ -81,19 +79,19 @@ let clambda i backend Typedtree.{structure; coercion; _} =
   (structure, coercion)
   |> Profile.(record transl)
     (Translmod.transl_store_implementation (Unit_info.modname i.target))
-  |> dump_if i D.raw_lambda Printlambda.program
+  |> dump_if i Dev_log.raw_lambda Printlambda.program
   |> Profile.(record generate)
     (fun program ->
        let code = Simplif.simplify_lambda program.Lambda.code in
        { program with Lambda.code }
-       |> dump_if i D.lambda Printlambda.program
+       |> dump_if i Dev_log.lambda Printlambda.program
        |>(fun lambda ->
            if Clflags.(should_stop_after Compiler_pass.Lambda) then () else
              Asmgen.compile_implementation
                ~backend
                ~prefixname:(Unit_info.prefix i.target)
                ~middle_end:Closure_middle_end.lambda_to_clambda
-               ~log:i.debug_log
+               ~log:i.dev_log
                lambda;
            Compilenv.save_unit_info
              Unit_info.(Artifact.filename @@ cmx i.target)))

@@ -99,12 +99,12 @@ Main:
       Seal
     compiler
       Declaration
-      New label debug, ?debug
+      New label dev, ?dev
       New label error, ?error_report
       New label warnings, ?l error_report
       New label alerts, ?l error_report
       Seal
-    debug
+    dev
       Declaration
       New label parsetree, ?s
       New label source, ?s

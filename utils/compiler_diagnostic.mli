@@ -13,19 +13,17 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module D := Diagnostic
-
 (** Compiler diagnostic version line *)
 module V: Diagnostic_history.S
 val v1: V.id Diagnostic_history.update
-module type Record = D.Record with type vl := V.id
-module type Sum = D.Sum with type vl := V.id
+module type Record = Diagnostic.Record with type vl := V.id
+module type Sum = Diagnostic.Sum with type vl := V.id
 
 type doc = Format_doc.doc
 
 module Structured_text: sig
   module Format_tag: Sum
-  type _ D.extension += Doc: Format_doc.Doc.t D.extension
+  type _ Diagnostic.extension += Doc: Format_doc.Doc.t Diagnostic.extension
 
   (** [register_tag0 stag] add a new constructor of arity [0] to [Format_tag]
       for a [Format.stag] constructor. *)
@@ -37,40 +35,21 @@ module Structured_text: sig
       [Format.stag] argument to a pre-existing [Format_tag] variant. *)
   val register_tag:
     Obj.Extension_constructor.t
-    -> (Diagnostic.version option -> Format.stag -> Format_tag.id D.sum)
+    -> ( Diagnostic.version option -> Format.stag
+        -> Format_tag.id Diagnostic.sum )
     -> unit
 
-  val typ: doc D.typ
+  val typ: doc Diagnostic.typ
 end
 
-(** Debugging output enabled with [-d...] flags (e.g [-dsource]) *)
-module Debug: sig
-  include Record
-  val source: string optional_field
-  val parsetree: string optional_field
-  val typedtree: string optional_field
-  val shape: string optional_field
-  val instr: string optional_field
-  val raw_lambda: string optional_field
-  val lambda: string optional_field
-  val flambda: string list optional_field
-  val raw_flambda: string list optional_field
-  val clambda: string list optional_field
-  val raw_clambda: string list optional_field
-  val cmm: string list optional_field
-  val remove_free_vars_equal_to_args: string list optional_field
-  val unbox_free_vars_of_closures: string list optional_field
-  val unbox_closures:string list optional_field
-  val unbox_specialised_args:string list  optional_field
-  val mach: string list optional_field
-  val linear: string list optional_field
-  val cmm_invariant: string optional_field
-end
+(** Debugging output enabled with [-d...] flags (e.g [-dsource]).
+    The related fields are defined in Dev_log*)
+module Dev: Record
 
 (** Error report record, the related fields are defined in {!Location} *)
 module Error: Record
 
 include Record
-val debug: Debug.id D.record optional_field
+val dev: Dev.id Diagnostic.record optional_field
 val doc: Format_doc.t Diagnostic.typ
 val ldoc: Format_doc.t list Diagnostic.typ

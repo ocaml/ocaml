@@ -28,8 +28,7 @@ let interface ~log ~source_file ~output_prefix =
 (** Bytecode compilation backend for .ml files. *)
 
 let log_if i field printer x =
-  Clflags.dump_on_log i.Compile_common.debug_log field  printer x; x
-module D = Compiler_diagnostic.Debug
+  Clflags.dump_on_log i.Compile_common.dev_log field  printer x; x
 
 let to_bytecode i Typedtree.{structure; coercion; _} =
   (structure, coercion)
@@ -38,11 +37,11 @@ let to_bytecode i Typedtree.{structure; coercion; _} =
   |> Profile.(record ~accumulate:true generate)
     (fun { Lambda.code = lambda; required_globals } ->
        lambda
-       |> log_if i D.raw_lambda Printlambda.lambda
+       |> log_if i Dev_log.raw_lambda Printlambda.lambda
        |> Simplif.simplify_lambda
-       |> log_if i D.lambda Printlambda.lambda
+       |> log_if i Dev_log.lambda Printlambda.lambda
        |> Bytegen.compile_implementation (Unit_info.modname i.target)
-       |> log_if i D.instr Printinstr.instrlist
+       |> log_if i Dev_log.instr Printinstr.instrlist
        |> fun bytecode -> bytecode, required_globals
     )
 
