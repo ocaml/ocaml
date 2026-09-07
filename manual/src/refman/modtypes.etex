@@ -280,14 +280,17 @@ one may use the abbreviated form
 Assuming @module-type@ denotes a signature, the expression
 @module-type 'with' mod-constraint@ @{ 'and' mod-constraint }@ denotes
 the same signature where type equations have been added to some of the
-type specifications, as described by the constraints following the
-"with" keyword. The constraint @'type' [type-parameters] typeconstr
+type specifications and some new components have been added to submodules,
+as described by the constraints following the "with" keyword.
+The constraint @'type' [type-parameters] typeconstr
 '=' typexpr@  adds the type equation @'=' typexpr@ to the specification
 of the type component named @typeconstr@ of the constrained signature.
 The constraint @'module' module-path '=' extended-module-path@ adds
 type equations to all type components of the sub-structure denoted by
 @module-path@, making them equivalent to the corresponding type
-components of the structure denoted by @extended-module-path@.
+components of the structure denoted by @extended-module-path@ and
+add the other components of the @extended-module-path@ structure to the
+@module-path@ substructure.
 
 For instance, if the module type name "S" is bound to the signature
 \begin{verbatim}
