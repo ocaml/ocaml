@@ -42,7 +42,7 @@ module S :
   sig
     type id
     type 'a constructor
-    type t = id Diagnostic.diagnostic
+    type nonrec t = id Diagnostic.t
     type raw_type = id Diagnostic.sum
     val scheme : t
     val raw_type : id Diagnostic.sum Diagnostic.typ
@@ -120,7 +120,7 @@ module Inline_b :
     type 'a optional_field = ('a, [ `opt ]) any_field
     type 'a field = ('a, [ `req ]) any_field
     type definition = id Diagnostic.record
-    type t = id Diagnostic.diagnostic
+    type nonrec t = id Diagnostic.t
     type raw_type = definition
     val scheme : t
     val raw_type : definition Diagnostic.typ
@@ -210,7 +210,7 @@ module R :
     type 'a optional_field = ('a, [ `opt ]) any_field
     type 'a field = ('a, [ `req ]) any_field
     type definition = id Diagnostic.record
-    type t = id Diagnostic.diagnostic
+    type nonrec t = id Diagnostic.t
     type raw_type = definition
     val scheme : t
     val raw_type : definition Diagnostic.typ

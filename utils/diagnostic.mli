@@ -15,8 +15,7 @@
 
 
  (** The definition of a representation scheme for a type *)
-type 'a t
-type 'a diagnostic = 'a t
+type !'a t
 
 (** Version and update types *)
 type 'a update = 'a Diagnostic_history.update
@@ -72,7 +71,7 @@ module type Def = sig
   type 'a label
 
   type definition
-  type t = id diagnostic
+  type nonrec t = id t
   type raw_type = definition
 
   val scheme: t
