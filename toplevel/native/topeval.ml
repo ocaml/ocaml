@@ -88,11 +88,9 @@ include Topcommon.MakeEvalPrinter(EvalBase)
 let may_trace = ref false (* Global lock on tracing *)
 
 let load_lambda dlog ~module_ident ~required_globals phrase_name lam size =
-  Clflags.dump_on_log dlog Compiler_diagnostic.Debug.raw_lambda
-    Printlambda.lambda lam;
+  Clflags.dump_on_log dlog Dev_log.raw_lambda Printlambda.lambda lam;
   let slam = Simplif.simplify_lambda lam in
-  Clflags.dump_on_log dlog Compiler_diagnostic.Debug.lambda
-    Printlambda.lambda slam;
+  Clflags.dump_on_log dlog Dev_log.lambda Printlambda.lambda slam;
   let program =
     { Lambda.
       code = slam;
@@ -163,7 +161,7 @@ let execute_phrase print_outcome log phr =
       incr phrase_seqid;
       let phrase_name = "TOP" ^ string_of_int !phrase_seqid in
       Compilenv.reset ?packname:None phrase_name;
-      let (str, sg', newenv) = typecheck_phrase (debug_log log) oldenv sstr in
+      let (str, sg', newenv) = typecheck_phrase (dev_log log) oldenv sstr in
       (* `let _ = <expression>` or even just `<expression>` require special
          handling in toplevels, or nothing is displayed. In bytecode, the
          lambda for <expression> is directly executed and the result _is_ the
@@ -201,7 +199,7 @@ let execute_phrase print_outcome log phr =
       begin try
         toplevel_env := newenv;
         let res =
-          load_lambda (debug_log log)
+          load_lambda (dev_log log)
             ~required_globals ~module_ident phrase_name res size
         in
         let out_phr =
@@ -280,7 +278,7 @@ let load_file _ (* fixme *) log name0 =
       if Filename.check_suffix name ".cmx" || Filename.check_suffix name ".cmxa"
       then
         let cmxs = Filename.temp_file "caml" ".cmxs" in
-        Asmlink.link_shared ~log:(debug_log log) [name] cmxs;
+        Asmlink.link_shared ~log:(dev_log log) [name] cmxs;
         cmxs,true
       else
         name,false

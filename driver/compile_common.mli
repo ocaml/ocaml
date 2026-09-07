@@ -19,7 +19,7 @@
 type info = {
   target : Unit_info.t;
   env : Env.t;
-  debug_log : Compiler_diagnostic.Debug.id Log.t;
+  dev_log : Dev_log.t;
   tool_name : string;
   native : bool;
 }

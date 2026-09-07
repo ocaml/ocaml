@@ -21,6 +21,6 @@
 val lambda_to_clambda
    : backend:(module Backend_intf.S)
   -> prefixname:string
-  -> log:Compiler_diagnostic.Debug.id Log.t
+  -> log:Dev_log.t
   -> Lambda.program
   -> Clambda.with_constants

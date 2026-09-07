@@ -29,7 +29,7 @@ let compile_file filename =
   lb.Lexing.lex_curr_p <- Lexing.{ lb.lex_curr_p with pos_fname = filename };
   let compiler_log =
     Location.log_on_device Log.Device.std in
-  let log = Log.detach compiler_log Compiler_diagnostic.debug in
+  let log = Log.detach compiler_log Compiler_diagnostic.dev in
   try
     while true do
       Asmgen.compile_phrase ~log

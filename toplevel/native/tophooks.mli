@@ -19,8 +19,7 @@
 
 type lookup_fn = string -> Obj.t option
 type load_fn =
-  Compiler_diagnostic.Debug.id Log.t -> string -> Lambda.program ->
-  Topcommon.evaluation_outcome
+  Dev_log.t -> string -> Lambda.program -> Topcommon.evaluation_outcome
 
 val lookup : lookup_fn
 (** Find a global symbol by name. Default implementation may be overridden

@@ -17,7 +17,7 @@
    original compilation units as sub-modules. *)
 
 val package_files
-   : log:Compiler_diagnostic.Debug.id Log.t
+   : log:Dev_log.t
   -> Env.t
   -> string list
   -> string

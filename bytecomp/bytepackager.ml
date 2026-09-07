@@ -236,8 +236,7 @@ let build_global_target ~log oc target_name state components coercion =
     Translmod.transl_package
       components (Ident.create_persistent target_name) coercion in
   let lam = Simplif.simplify_lambda lam in
-  Clflags.dump_on_log log Compiler_diagnostic.Debug.lambda
-    Printlambda.lambda lam;
+  Clflags.dump_on_log log Dev_log.lambda Printlambda.lambda lam;
   let instrs =
     Bytegen.compile_implementation target_name lam in
   let size, pack_relocs, pack_events, pack_debug_dirs, pack_hints =

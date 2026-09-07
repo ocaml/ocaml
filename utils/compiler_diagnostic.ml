@@ -169,38 +169,15 @@ module Structured_text = struct
 
 
 
-module Debug = struct
-  include New_record(V)
-      (struct
-        let name = "debug"
-        let description = "Debugging output for compiler developers"
-        let update = v1
-      end)
-      ()
-  let slist = List String
-
-  let parsetree = new_field_opt v1 "parsetree" String
-  let source = new_field_opt v1 "source" String
-  let typedtree = new_field_opt v1 "typedtree" String
-  let shape = new_field_opt v1 "shape" String
-  let instr = new_field_opt v1 "instr" String
-  let lambda = new_field_opt v1 "lambda" String
-  let raw_lambda = new_field_opt v1 "rawlambda" String
-  let flambda = new_field_opt v1 "flambda" slist
-  let raw_flambda = new_field_opt v1 "rawflambda" slist
-  let clambda = new_field_opt v1 "clambda" slist
-  let raw_clambda = new_field_opt v1 "raw_clambda" slist
-  let cmm = new_field_opt v1 "cmm" slist
-  let remove_free_vars_equal_to_args =
-    new_field_opt v1 "remove_free_vars_equal_to_args" slist
-  let unbox_free_vars_of_closures =
-    new_field_opt v1 "unbox_free_vars_of_closures" slist
-  let unbox_closures = new_field_opt v1 "unbox_closures" slist
-  let unbox_specialised_args = new_field_opt v1 "unbox_specialised_args" slist
-  let mach = new_field_opt v1 "mach" slist
-  let linear = new_field_opt v1 "linear" slist
-  let cmm_invariant = new_field_opt v1 "cmm_invariant" String
-end
+module Dev =
+  New_record(V)
+    (struct
+      let name = "dev"
+      let description =
+        "Reports for compiler developers"
+      let update = v1
+    end)
+    ()
 
 module Error =
   New_record(V)
@@ -218,7 +195,7 @@ include New_record(V)
       let update = v1
     end)
     ()
-let debug = new_field_opt v1  "debug" (Record Debug.scheme)
+let dev = new_field_opt v1 "dev" (Record Dev.scheme)
 
 let doc = Structured_text.typ
 let ldoc = List Structured_text.typ
