@@ -101,7 +101,7 @@ let device_redirection key r =
 let iter_redirection f r =
   Label_map.iter (fun _ (x,_) -> Option.iter f x) r.map
 
-type 'a log =
+type 'a t =
   {
       redirections: redirections;
       version: Diagnostic_validation.version;
@@ -117,9 +117,6 @@ let log_store log = match log.mode with
 
 let log_scheme log = log.scheme
 let log_version log = Diagnostic_validation.exact_version log.version
-
-type 'a t = 'a log
-
 
 (** {1:log_scheme_versionning  Current version of the log } *)
 
@@ -236,7 +233,7 @@ let itemf field log fmt = Format.kasprintf (cons log field) fmt
 let d field log fmt = Format_doc.kdoc_printf (set log field) fmt
 let itemd field log fmt = Format_doc.kdoc_printf (cons log field) fmt
 
-let flush: type a. a log -> unit = fun log ->
+let flush: type a. a t -> unit = fun log ->
   begin match log.mode with
   | Delayed { output=None; store } -> R.reset store
   | Streaming output -> Device.flush output
@@ -252,7 +249,7 @@ let separate log = match log.mode with
   | Streaming d -> Device.separate d
   | _ -> ()
 
-let close: type a. a log -> unit = fun log ->
+let close: type a. a t -> unit = fun log ->
   match log.mode with
   | Streaming d ->
       Device.close_stream d; iter_redirection Device.close0 log.redirections
