@@ -635,35 +635,34 @@ let mk_error_style f =
     \  be set through the OCAML_ERROR_STYLE environment variable."
 
 let mk_log_format f =
-  let symbols = ["stdout-full"; "stdout-light"; "sexp"; "json"] in
+  let symbols = ["fmt-light"; "fmt-full"; "sexp"; "json"] in
   "-log-format", Arg.Symbol (symbols, f),
   Printf.sprintf
-    "<format>  Control the way error messages and warnings are printed\n\
+    "  Control the format of compiler diagnostics.\n\
     \    The following formats are supported:\n\
-    \      stdout-light   classic mode\n\
-    \      stdout-full    classic mode with label names\n\
-    \      json           json object\n\
-    \      sexp           s-expression\n\
-    \    The default setting is 'fmt'.\n\
-    \  If the option is not specified, these setting can alternatively\n\
-    \  be set through the OCAML_LOG_FORMAT environment variable."
+    \      fmt-light    classic mode\n\
+    \      fmt-full     classic mode with label names\n\
+    \      json         json object\n\
+    \      sexp         s-expression\n\
+    \    The default setting is 'fmt-light'.\n\
+    \    If the option is not specified, these setting can alternatively\n\
+    \    be set through the OCAML_LOG_FORMAT environment variable."
 
 let mk_log_version f =
   "-log-version", Arg.String f,
   Printf.sprintf
-    "<version>  Control the way compiler diagnostics are printed.\n\
+    "<version>  Control which version of compiler diagnostics is printed.\n\
     \    The compiler restricts the schema of the printed diagnostics to the\n\
-    \    required possibly older version. Previous minor versions are fully\n\
-    \    supported. Only the previous major version is partially supported.\n\
-    \  If the option is not specified, these setting can alternatively\n\
-    \  be set through the OCAML_LOG_VERSION environment variable."
+    \    required version.\n\
+    \    If the option is not specified, these setting can alternatively\n\
+    \    be set through the OCAML_LOG_VERSION environment variable."
 
 let mk_log_file f =
   "-log-file", Arg.String f,
   Printf.sprintf
-    "<filename>  Output compiler diagnostics to <filename>.\n
-    \  If the option is not specified, these setting can alternatively\n\
-    \  be set through the OCAML_LOG_FILE environment variable."
+    "<filename>  Output compiler diagnostics to <filename>.\n\
+    \    If the option is not specified, these setting can alternatively\n\
+    \    be set through the OCAML_LOG_FILE environment variable."
 
 
 let mk_where f =
