@@ -43,33 +43,33 @@ let main_log rlog ppf =
 
 let process argv log ppf =
   let program = "ocamlopt" in
-    Compenv.readenv !log Before_args;
-    Compenv.parse_arguments (ref argv) Compenv.anonymous program;
-    Compmisc.read_clflags_from_env ();
-    let log = main_log log ppf in
-    if !Clflags.plugin then
-      Compenv.fatal "-plugin is only supported up to OCaml 4.08.0";
-    begin try
-      Compenv.process_deferred_actions {
-        log;
-        compile_implementation = Optcompile.implementation ~backend;
-        compile_interface = Optcompile.interface;
-        ocaml_mod_ext = ".cmx";
-        ocaml_lib_ext = ".cmxa";
-      }
-    with Arg.Bad msg ->
-      begin
-        prerr_endline msg;
-        Clflags.print_arguments program;
-        exit 2
-      end
-    end;
-    Compenv.readenv log Before_link;
-    if
-      List.length (List.filter (fun x -> !x)
-                     [make_package; make_archive; shared;
-                      Compenv.stop_early; output_c_object]) > 1
-    then
+  Compenv.readenv !log Before_args;
+  Compenv.parse_arguments (ref argv) Compenv.anonymous program;
+  Compmisc.read_clflags_from_env ();
+  let log = main_log log ppf in
+  if !Clflags.plugin then
+    Compenv.fatal "-plugin is only supported up to OCaml 4.08.0";
+  begin try
+    Compenv.process_deferred_actions {
+      log;
+      compile_implementation = Optcompile.implementation ~backend;
+      compile_interface = Optcompile.interface;
+      ocaml_mod_ext = ".cmx";
+      ocaml_lib_ext = ".cmxa";
+    }
+  with Arg.Bad msg ->
+    begin
+      prerr_endline msg;
+      Clflags.print_arguments program;
+      exit 2
+    end
+  end;
+  Compenv.readenv log Before_link;
+  if
+    List.length (List.filter (fun x -> !x)
+                   [make_package; make_archive; shared;
+                    Compenv.stop_early; output_c_object]) > 1
+  then
     begin
       let module P = Clflags.Compiler_pass in
       match !stop_after with
