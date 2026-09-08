@@ -299,32 +299,39 @@ module Make (K : Hashtbl.HashedType) : (S with type data = K.t) = struct
   )
 
   (* The result of [locate] functions: either we found an equal
-     element at a certain position, or we stopped on a void slot. *)
+     element at a certain position, or we stopped on a void or dead slot. *)
   type finding =
     | Found of int * data
     | Void of int
+    | Dead of int
 
   let[@inline] pos ~mask h = (h : Hash.t :> int) land mask
   let[@inline] next_pos ~mask i = (i + 1) land mask
 
   (* /!\ This is the hot loop of most operations. *)
-  let rec locate_loop ~mask ~travel keys k hashes h i =
+  let rec locate_loop ~mask ~travel keys k hashes h ~first_dead i =
     if verbose then incr locate_travel;
     incr travel;
     let h' = Array.unsafe_get hashes i in
     let i' = next_pos ~mask i in
     if h' <> h then
-      if h' = Hash.void then Void i
-      else locate_loop ~mask ~travel keys k hashes h i'
+      if h' = Hash.void then (
+        if first_dead < 0 then Void i
+        else Dead first_dead
+      )
+      else locate_loop ~mask ~travel keys k hashes h ~first_dead i'
     else
       match Weak.get keys i with
-      | Some k' when K.equal k k' -> Found (i, k')
-      | _ ->
+      | Some k' ->
+        if K.equal k k' then Found (i, k')
+        else locate_loop ~mask ~travel keys k hashes h ~first_dead i'
+      | None ->
         (* When a value has been erased by the GC (case [None]), we must
            keep looking further for another value with the same hash. It
            would be incorrect to treat it as a [void] hash, for the same
            reason that François distinguishes [tomb] from [void]. *)
-        locate_loop ~mask ~travel keys k hashes h i'
+        let first_dead = if first_dead < 0 then i else first_dead in
+        locate_loop ~mask ~travel keys k hashes h ~first_dead i'
 
   (** Locate an element starting from a given position [i].
       This is used to implement [find_all]. *)
@@ -333,7 +340,7 @@ module Make (K : Hashtbl.HashedType) : (S with type data = K.t) = struct
     if verbose then incr locate_calls;
     locate_loop
       ~mask:t.mask ~travel:t.travel
-      t.keys k t.hashes h i
+      t.keys k t.hashes h ~first_dead:(-1) i
 
   let[@inline] locate t k h =
     locate_from t k h (pos ~mask:t.mask h)
@@ -527,7 +534,7 @@ module Make (K : Hashtbl.HashedType) : (S with type data = K.t) = struct
     maybe_resize t;
     let h = Hash.of_int (K.hash k) in
     match locate t k h with
-    | Void _i ->
+    | Void _ | Dead _ ->
       if verbose then incr misses;
       None
     | Found (_i, k') ->
@@ -539,7 +546,7 @@ module Make (K : Hashtbl.HashedType) : (S with type data = K.t) = struct
     maybe_resize t;
     let h = Hash.of_int (K.hash k) in
     match locate t k h with
-    | Void _i ->
+    | Void _ | Dead _ ->
       if verbose then incr misses;
       raise Not_found
     | Found (_i, k') ->
@@ -551,7 +558,7 @@ module Make (K : Hashtbl.HashedType) : (S with type data = K.t) = struct
     maybe_resize t;
     let h = Hash.of_int (K.hash k) in
     match locate t k h with
-    | Void _i ->
+    | Void _ | Dead _ ->
       if verbose then incr misses;
       false
     | Found (_i, _k') ->
@@ -565,7 +572,7 @@ module Make (K : Hashtbl.HashedType) : (S with type data = K.t) = struct
     (* We choose to count a non-empty list as a (single) hit,
        and an empty list as a miss. *)
     match locate t k h with
-    | Void _i ->
+    | Void _ | Dead _ ->
       if verbose then incr misses;
       []
     | Found (i, k') ->
@@ -574,7 +581,7 @@ module Make (K : Hashtbl.HashedType) : (S with type data = K.t) = struct
 
   and find_rest t k h ~last acc =
     match locate_from t k h (next_pos ~mask:t.mask last) with
-    | Void _i ->
+    | Void _ | Dead _ ->
       acc
     | Found (i', k') ->
       find_rest t k h ~last:i' (k' :: acc)
@@ -592,6 +599,11 @@ module Make (K : Hashtbl.HashedType) : (S with type data = K.t) = struct
       Weak.set t.keys i (Some k);
       Array.unsafe_set t.hashes i h;
       t.occupation <- t.occupation + 1;
+      k
+    | Dead i ->
+      if verbose then incr misses;
+      Weak.set t.keys i (Some k);
+      Array.unsafe_set t.hashes i h;
       k
 
   let add t k =
@@ -611,7 +623,7 @@ module Make (K : Hashtbl.HashedType) : (S with type data = K.t) = struct
     maybe_resize t;
     let h = Hash.of_int (K.hash k) in
     match locate t k h with
-    | Void _ ->
+    | Void _ | Dead _ ->
       if verbose then incr misses;
       ()
     | Found (i, _) ->
@@ -619,7 +631,10 @@ module Make (K : Hashtbl.HashedType) : (S with type data = K.t) = struct
       (* Notice that here we can leave the hash unchanged, instead of
          having to use a dedicated [tombstone] value as in typical
          implementations. Erasing the key suffices. Keys removed from
-         the table behave like keys removed by the GC. *)
+         the table behave like keys removed by the GC.
+
+         But: as we leave the hash unchanged, we do not decrease
+         [occupation]. *)
       Weak.set t.keys i None
 
   (** The interface of the [stats] function in Weak is not structured,
