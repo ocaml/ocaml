@@ -76,7 +76,7 @@ module type S = sig
 end
 
 module V2: S with
-  type log := Toplevel_diagnostic.id Log.t
+  type log := Toplog.t
   and type dev_log := Dev_log.t
 
 include S with

@@ -464,7 +464,7 @@ let eval_expect_file _fname ~file_contents =
       | Some lnum -> shift_lines (1 - lnum) phrases
     in
     (* For formatting purposes *)
-    let () = Log.itemd Toplevel_diagnostic.trace log "" in
+    let () = Log.itemd Toplog.trace log "" in
     let clog = Topcommon.compiler_log log in
     let skipped_phrases =
       List.fold_left phrases ~init:None ~f:(fun acc phrase ->
@@ -495,7 +495,7 @@ let eval_expect_file _fname ~file_contents =
     begin match skipped_phrases with
     | None | Some 0 -> ()
     | Some i ->
-        Log.itemd Toplevel_diagnostic.errors log
+        Log.itemd Toplog.errors log
           "Unexecuted phrases: %i phrases did not execute due to an error" i
     end;
     Log.flush log;

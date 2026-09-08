@@ -59,13 +59,13 @@ val record_backtrace : unit -> unit
 
 (*Log creation *)
 
-val directive_log: Toplevel_diagnostic.id Log.t ref
+val directive_log: Toplog.t ref
 val errorf: ('a, Format_doc.formatter, unit) format -> 'a
 val tracef: ('a, Format_doc.formatter, unit) format -> 'a
 
-val log_on_device: Log.Device.t -> Toplevel_diagnostic.id Log.t
-val compiler_log: Toplevel_diagnostic.id Log.t -> Compiler_diagnostic.id Log.t
-val dev_log: Toplevel_diagnostic.id Log.t -> Dev_log.t
+val log_on_device: Log.Device.t -> Toplog.t
+val compiler_log: Toplog.t -> Compiler_diagnostic.id Log.t
+val dev_log: Toplog.t -> Dev_log.t
 
 (* Printing of values *)
 
@@ -153,8 +153,7 @@ val get_directive_info : string -> directive_info option
 val all_directive_names : unit -> string list
 
 val try_run_directive :
-   Toplevel_diagnostic.id Log.t -> string ->
-   Parsetree.directive_argument option -> bool
+  Toplog.t -> string -> Parsetree.directive_argument option -> bool
 
 val[@deprecated] directive_table : (string, directive_fun) Hashtbl.t
   (* @deprecated please use [add_directive] instead of inserting

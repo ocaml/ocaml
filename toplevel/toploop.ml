@@ -32,7 +32,7 @@ let use_lexbuf log ~wrap_in_module lb ~modpath ~filename =
   Location.init lb filename;
   (* Skip initial #! line if any *)
   Lexer.skip_hash_bang lb;
-  let main_log = Log.detach log Toplevel_diagnostic.compiler in
+  let main_log = Log.detach log Toplog.compiler in
   Misc.protect_refs
     [ R (Location.input_name, filename);
       R (Location.input_lexbuf, Some lb); ]
@@ -52,7 +52,7 @@ let use_lexbuf log ~wrap_in_module lb ~modpath ~filename =
     with
     | Exit -> false
     | Sys.Break ->
-        Log.itemd Toplevel_diagnostic.errors log "Interrupted."; false
+        Log.itemd Toplog.errors log "Interrupted."; false
     | x -> Location.log_exception main_log x; false)
 
 (** [~modpath] is used to determine the module name when [wrap_in_module]
@@ -78,8 +78,7 @@ let use_output log command =
          use_file log ~wrap_in_module:false ~modpath:""
            ~filepath:fn ~filename:"(command-output)"
        | n ->
-         Log.itemd Toplevel_diagnostic.errors log
-           "Command exited with code %d." n;
+         Log.itemd Toplog.errors log "Command exited with code %d." n;
          false)
 
 let use_input log ~wrap_in_module input =
@@ -96,7 +95,7 @@ let use_input log ~wrap_in_module input =
     | filename ->
       use_file log ~wrap_in_module ~modpath:name ~filename ~filepath:filename
     | exception Not_found ->
-      Log.itemd Toplevel_diagnostic.errors log "Cannot find file %s." name;
+      Log.itemd Toplog.errors log "Cannot find file %s." name;
       false
 
 let mod_use_input ppf input =
@@ -115,7 +114,7 @@ let load_file = load_file false
 
 let load_explicit_ocamlinit log f =
   if Sys.file_exists f then ignore (use_silently log (File f) )
-  else Log.itemd Toplevel_diagnostic.errors log "Init file not found: \"%s\"." f
+  else Log.itemd Toplog.errors log "Init file not found: \"%s\"." f
 
 (* Execute a script.  If [name] is "", read the script from stdin. *)
 
@@ -417,7 +416,7 @@ let loop log =
     with
     | End_of_file -> raise (Compenv.Exit_with_status 0)
     | Sys.Break ->
-        Log.itemd Toplevel_diagnostic.errors log "Interrupted.";
+        Log.itemd Toplog.errors log "Interrupted.";
         Log.flush log;
         Btype.backtrack !snap
     | PPerror -> ()
@@ -451,7 +450,7 @@ let prepare log ?input () =
   with x ->
     try Location.log_exception (compiler_log log) x; false
     with x ->
-      Log.itemd Toplevel_diagnostic.errors log
+      Log.itemd Toplog.errors log
         "Uncaught exception: %s"
         (Printexc.to_string x);
       false
