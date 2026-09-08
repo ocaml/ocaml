@@ -326,6 +326,17 @@ external compact : unit -> unit = "caml_gc_compaction"
 (** Perform a full major collection and compact the heap.  Note that heap
    compaction is a lengthy operation. *)
 
+external check_roots : unit -> unit = "caml_check_global_roots"
+(** Check the C global roots for damage, and fail naming the root and the code
+    that registered it. What it reads is kept only by a runtime built for
+    debugging; anywhere else it returns without looking.
+
+    A root broken by a stray write is found by the collector walking it, which
+    can be long afterwards; calling this between steps narrows down which one
+    did it.
+
+    @since 5.5 *)
+
 val print_stat : out_channel -> unit
 (** Print the current values of the memory management counters (in
    human-readable form) of the total program into the channel argument. *)

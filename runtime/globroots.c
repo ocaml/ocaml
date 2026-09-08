@@ -34,6 +34,19 @@ static caml_plat_mutex roots_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 /* Greater than zero when the current thread is scanning the roots */
 static CAMLthread_local int iterating_roots = 0;
 
+#ifdef DEBUG
+/* The root being handed to the collector, or NULL. A root holding a value that
+   is no longer one takes the collector down with it, somewhere that names only
+   the collector; this says which root it was. Per thread, domains scanning at
+   the same time being the normal case. */
+CAMLexport CAMLthread_local value * caml_root_being_scanned = NULL;
+#define Begin_scanning(r) (caml_root_being_scanned = (r))
+#define End_scanning() (caml_root_being_scanned = NULL)
+#else
+#define Begin_scanning(r) ((void) 0)
+#define End_scanning() ((void) 0)
+#endif
+
 enum { ROOT_PRESENT = 0, ROOT_DELETED = 1 };
 
 /* The three global root lists.
@@ -58,6 +71,70 @@ struct skiplist caml_global_roots_old = SKIPLIST_STATIC_INITIALIZER;
    - Otherwise (the root contains a pointer outside of the heap or an integer),
      then neither [caml_global_roots_young] nor [caml_global_roots_old] contain
      it. */
+
+#if defined(DEBUG) && (defined(__GNUC__) || defined(__clang__))
+#define Caller_pc __builtin_return_address(0)
+#else
+#define Caller_pc NULL
+#endif
+
+#ifdef DEBUG
+
+/* Where each root was registered from, so a root found broken can name the
+   code that owns it. */
+static struct skiplist roots_origin = SKIPLIST_STATIC_INITIALIZER;
+
+/* A root registered or removed from inside a scan finds roots_mutex already
+   held; see caml_delete_global_root. */
+Caml_inline void lock_roots(void)
+{
+  if (iterating_roots == 0) caml_plat_lock_blocking(&roots_mutex);
+}
+
+Caml_inline void unlock_roots(void)
+{
+  if (iterating_roots == 0) caml_plat_unlock(&roots_mutex);
+}
+
+static void record_root_origin(value * r, void * pc)
+{
+  lock_roots();
+  caml_skiplist_insert(&roots_origin, (uintnat) r, (uintnat) pc);
+  unlock_roots();
+}
+
+static void forget_root_origin(value * r)
+{
+  lock_roots();
+  caml_skiplist_remove(&roots_origin, (uintnat) r);
+  unlock_roots();
+}
+
+void * caml_global_root_origin(value * r)
+{
+  uintnat pc;
+  if (! caml_skiplist_find(&roots_origin, (uintnat) r, &pc)) return NULL;
+  return (void *) pc;
+}
+
+/* The key is about to be dereferenced, so a damaged one is worth more than a
+   fault inside the collector. */
+static void check_root(struct skipcell * e, value * r)
+{
+  if (Skipcell_ok(e)) return;
+  caml_fatal_error("global root at %p was registered by %p and now reads %p",
+                   (void *) Skipcell_key_of_check(e),
+                   caml_global_root_origin((value *) Skipcell_key_of_check(e)),
+                   (void *) r);
+}
+
+#else
+
+#define record_root_origin(r, pc) ((void) (pc))
+#define forget_root_origin(r) ((void) 0)
+#define check_root(e, r) ((void) 0)
+
+#endif /* DEBUG */
 
 /* Insertion and deletion */
 
@@ -88,6 +165,7 @@ Caml_inline void caml_delete_global_root(struct skiplist * list, value * r)
 CAMLexport void caml_register_global_root(value *r)
 {
   CAMLassert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
+  record_root_origin(r, Caller_pc);
   caml_insert_global_root(&caml_global_roots, r);
 }
 
@@ -95,6 +173,7 @@ CAMLexport void caml_register_global_root(value *r)
 
 CAMLexport void caml_remove_global_root(value *r)
 {
+  forget_root_origin(r);
   caml_delete_global_root(&caml_global_roots, r);
 }
 
@@ -117,6 +196,7 @@ CAMLexport void caml_register_generational_global_root(value *r)
 {
   Caml_check_caml_state();
   CAMLassert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
+  record_root_origin(r, Caller_pc);
 
   switch(classify_gc_root(*r)) {
     case YOUNG:
@@ -133,6 +213,7 @@ CAMLexport void caml_register_generational_global_root(value *r)
 
 CAMLexport void caml_remove_generational_global_root(value *r)
 {
+  forget_root_origin(r);
   switch(classify_gc_root(*r)) {
     case OLD:
       caml_delete_global_root(&caml_global_roots_old, r);
@@ -244,9 +325,26 @@ Caml_inline void caml_iterate_global_roots(scanning_action f,
         caml_skiplist_remove(rootlist, e->key);
       } else {
         value * r = (value *) (e->key);
+        check_root(e, r);
+        Begin_scanning(r);
         f(fdata, *r, r);
+        End_scanning();
       }
     })
+}
+
+/* Walk every root without collecting, so that a caller can find which of its
+   own steps damages one. */
+CAMLprim value caml_check_global_roots(value unit)
+{
+#ifdef DEBUG
+  caml_plat_lock_blocking(&roots_mutex);
+  caml_skiplist_check(&caml_global_roots, "caml_global_roots");
+  caml_skiplist_check(&caml_global_roots_young, "caml_global_roots_young");
+  caml_skiplist_check(&caml_global_roots_old, "caml_global_roots_old");
+  caml_plat_unlock(&roots_mutex);
+#endif
+  return Val_unit;
 }
 
 /* Scan all global roots */

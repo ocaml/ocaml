@@ -27,6 +27,10 @@ def __lldb_init_module(d, _internal_dict):
                     f'{__name__}.OCamlFind '
                     'ocaml find'
                     )
+    d.HandleCommand('command script add --class '
+                    f'{__name__}.OCamlRoots '
+                    'ocaml roots'
+                    )
     print("OCaml support module loaded. Values of type 'value' will now\n"
           "print as OCaml values, and an 'ocaml' command is available for\n"
           "heap exploration (see 'help ocaml' for more information).")
@@ -51,6 +55,19 @@ class OCamlFind:
         return "Describe the location of the given OCaml value in the heap."
     def get_long_help(self):
         return "Describe the location of the given OCaml value in the heap."
+
+
+class OCamlRoots:
+    def __init__(self, debugger, internal_dict):
+        super()
+
+    def __call__(self, debugger, command, exe_ctx, result):
+        ocaml.Roots(get_target()).check()
+
+    def get_short_help(self):
+        return "Report any damaged C global root, and what registered it."
+    def get_long_help(self):
+        return self.get_short_help()
 
 
 # These three classes (LLDBType, LLDBValue, LLDBTarget) provide a
@@ -186,6 +203,11 @@ class LLDBTarget:
         addr = lldb.SBAddress(address, self._target)
         if addr.IsValid() and addr.symbol and addr.symbol.name:
             return addr.symbol.name
+
+    def source_location(self, address):
+        entry = lldb.SBAddress(address, self._target).line_entry
+        if entry.IsValid() and entry.file:
+            return f'{entry.file.basename}:{entry.line}'
 
     def mapping(self, addr):
         address = self._address(addr)

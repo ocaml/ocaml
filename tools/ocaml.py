@@ -33,6 +33,9 @@
 #
 #     symbol(address): the symbol name associated with the given address.
 #
+#     source_location(address): "file:line" for the given code address,
+#         or None when the image carries no line information for it.
+#
 #     mapping(address): a string describing any file mapping
 #         associated with the address, or None. Blocks on the Caml
 #         heap do not have an associated file mapping.
@@ -651,3 +654,141 @@ class Finder:
                 print(f"  {where}")
         else:
             print(f"{expr} {str(val)} not found on heap")
+
+
+# The C global roots.
+#
+# Each list is a skiplist keyed by the address of the root. A runtime built
+# for debugging stamps every cell with the key it was inserted under and
+# records what registered each root, which is what lets a damaged cell be
+# named here rather than faulting the collector later.
+
+GLOBAL_ROOT_LISTS = ('caml_global_roots',
+                     'caml_global_roots_young',
+                     'caml_global_roots_old')
+
+# A damaged forward pointer must not turn the walk into a loop.
+MAX_ROOT_CELLS = 1 << 20
+
+DEBUG_RUNTIME_NEEDED = ("this needs a runtime built for debugging, reached "
+                        "through -runtime-variant d")
+
+
+def _read(thunk, default=None):
+    """Reading a damaged structure raises in some debuggers and returns
+    nonsense in others; neither should end the walk."""
+    try:
+        return thunk()
+    except Exception:
+        return default
+
+
+class Roots:
+    """Check each C global root against the key it was inserted with, and
+    name the code that registered a damaged one."""
+
+    def __init__(self, target):
+        self._target = target
+        self._origins = None
+
+    def stamp(self):
+        """The runtime exports what it stamps cells with, so it is read from
+        the image rather than kept as a second copy here."""
+        v = _read(lambda: self._target.global_variable('caml_skipcell_stamp'))
+        return None if v is None else _read(lambda: v.unsigned())
+
+    def cells(self, name):
+        "Walk one skiplist, yielding (address, fields) per cell."
+        sk = _read(lambda: self._target.global_variable(name))
+        if sk is None:
+            return
+        node = _read(lambda: sk.struct()['forward'].sub(0))
+        for _ in range(MAX_ROOT_CELLS):
+            address = _read(lambda: node.unsigned(), 0) if node else 0
+            if not address:
+                return
+            fields = _read(lambda: node.dereference().struct())
+            if fields is None:
+                print(f"  {name}: truncated, the cell at {address:#x} "
+                      f"is unreadable")
+                return
+            yield address, fields
+            node = _read(lambda: fields['forward'].sub(0))
+
+    def origins(self):
+        "The recorded registrant of each root, keyed by the root's address."
+        if self._origins is None:
+            self._origins = {}
+            for _, fields in self.cells('roots_origin'):
+                key = _read(lambda: fields['key'].unsigned())
+                pc = _read(lambda: fields['data'].unsigned())
+                if key is not None and pc is not None:
+                    self._origins[key] = pc
+        return self._origins
+
+    def registrant(self, root):
+        """Name the call site. The recorded pc is a return address, so the
+        lookup is one byte back, inside the call rather than after it."""
+        pc = self.origins().get(root)
+        if not pc:
+            return "no origin recorded"
+        site = pc - 1
+        who = _read(lambda: self._target.symbol(site)) or "unknown"
+        where = _read(lambda: self._target.source_location(site))
+        if where:
+            return f"{who} at {where} ({pc:#x})"
+        return f"{who} ({pc:#x}), no line info"
+
+    def named(self, address):
+        """A root that lives in a static has a name; one inside a malloc'd
+        table does not."""
+        who = _read(lambda: self._target.symbol(address))
+        return f" ({who})" if who else ""
+
+    def scanning(self):
+        """A root holding something that is no longer a value takes the
+        collector down when it is followed, leaving every cell intact. The
+        variable is per thread, so a core reports the thread that died."""
+        v = _read(lambda:
+                  self._target.global_variable('caml_root_being_scanned'))
+        address = _read(lambda: v.unsigned(), 0) if v is not None else 0
+        if not address:
+            return
+        held = _read(lambda: v.dereference().unsigned())
+        print(f"the collector was following the root at {address:#x}"
+              f"{self.named(address)}")
+        print(f"  it holds             "
+              f"{'unreadable' if held is None else format(held, '#x')}")
+        print(f"  registered by        {self.registrant(address)}")
+        print()
+
+    def check(self):
+        "Report every damaged root, then the root under the scan."
+        stamp = self.stamp()
+        if stamp is None:
+            print(f"no caml_skipcell_stamp: {DEBUG_RUNTIME_NEEDED}")
+            return
+        damaged = 0
+        total = 0
+        for name in GLOBAL_ROOT_LISTS:
+            for address, fields in self.cells(name):
+                if 'check' not in fields:
+                    print(f"cells carry no stamp: {DEBUG_RUNTIME_NEEDED}")
+                    return
+                key = _read(lambda: fields['key'].unsigned())
+                check = _read(lambda: fields['check'].unsigned())
+                if key is None or check is None:
+                    print(f"{name}: unreadable cell at {address:#x}")
+                    damaged += 1
+                    continue
+                total += 1
+                if check == key ^ stamp:
+                    continue
+                damaged += 1
+                was = check ^ stamp
+                print(f"{name}: cell filed under {key:#x}")
+                print(f"  inserted under      {was:#x}{self.named(was)}")
+                print(f"  registered by       {self.registrant(was)}")
+                print()
+        self.scanning()
+        print(f"{total} roots checked, {damaged} damaged")
