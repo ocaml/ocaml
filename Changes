@@ -7,6 +7,11 @@ Working version
 
 ### Runtime system:
 
+- #15049: Add a runtime events lifecycle event EV_PROCESS_CREATE, emitted on
+  all platforms when a child process is created by Unix.create_process and the
+  functions built on it.
+  (Tim McGilchrist, review by Sadiq Jaffer)
+
 ### Code generation and optimizations:
 
 - #14980: Emit direct assembly for `Atomic.exchange` and
