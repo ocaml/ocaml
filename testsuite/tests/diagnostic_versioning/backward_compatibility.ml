@@ -117,8 +117,8 @@ module Inline_b :
   sig
     type id
     type ('a, 'opt) any_field = ('a, id, 'opt) Diagnostic.field
-    type 'a optional_field = ('a, [ `opt ]) any_field
-    type 'a field = ('a, [ `req ]) any_field
+    type 'a optional_field = ('a, [ `Opt ]) any_field
+    type 'a field = ('a, [ `Req ]) any_field
     type definition = id Diagnostic.record
     type nonrec t = id Diagnostic.t
     type raw_type = definition
@@ -207,8 +207,8 @@ module R :
   sig
     type id
     type ('a, 'opt) any_field = ('a, id, 'opt) Diagnostic.field
-    type 'a optional_field = ('a, [ `opt ]) any_field
-    type 'a field = ('a, [ `req ]) any_field
+    type 'a optional_field = ('a, [ `Opt ]) any_field
+    type 'a field = ('a, [ `Req ]) any_field
     type definition = id Diagnostic.record
     type nonrec t = id Diagnostic.t
     type raw_type = definition

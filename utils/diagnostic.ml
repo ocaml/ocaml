@@ -68,7 +68,7 @@ and 'a t = {
 }
 and 'a record = 'a bound_field Label_map.t ref
 
-type ('a,'b) optional_field = ('a,'b, [`opt]) field
+type ('a,'b) optional_field = ('a,'b, [`Opt]) field
 type 'a diagnostic = 'a t
 
 type typed_record = R: 'a t * 'a record -> typed_record
@@ -196,8 +196,8 @@ end
 module type Record = sig
   type id
   type ('a,'opt) any_field = ('a,id,'opt) field
-  type 'a optional_field = ('a,[`opt]) any_field
-  type 'a field = ('a,[`req]) any_field
+  type 'a optional_field = ('a,[`Opt]) any_field
+  type 'a field = ('a,[`Req]) any_field
   include Def
     with type id := id
      and type definition = id record
@@ -425,8 +425,8 @@ module New_record(Vl:H.S)(Info:Info with type vl:=Vl.id)() = struct
   include New_local_def ()
   type definition = id record
   type ('a,'opt) any_field = ('a,id,'opt) field
-  type 'a optional_field = ('a,[`opt]) any_field
-  type 'a field = ('a,[`req]) any_field
+  type 'a optional_field = ('a,[`Opt]) any_field
+  type 'a field = ('a,[`Req]) any_field
   type raw_type = id record
   let scheme = {
     name = Info.name;
