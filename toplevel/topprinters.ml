@@ -153,9 +153,7 @@ let report_error  = function
       Format_doc.doc_printf "The printer named %a is not installed.@."
         (Style.as_inline_code Printtyp.Doc.path) path
 
-let log_error log error =
-  Log.cons log Toplevel_diagnostic.errors (report_error error)
-
+let log_error log error = Log.cons log Toplog.errors (report_error error)
 
 let find_printer env lid =
   match Env.find_value_by_name lid env with

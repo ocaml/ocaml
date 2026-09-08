@@ -21,11 +21,11 @@ val dir_remove_directory : string -> unit
 val dir_cd : string -> unit
 
 module V2: sig
-  val dir_load : Toplevel_diagnostic.id Log.t -> string -> unit
-  val dir_use : Toplevel_diagnostic.id Log.t -> string -> unit
-  val dir_use_output : Toplevel_diagnostic.id Log.t -> string -> unit
-  val dir_install_printer : Toplevel_diagnostic.id Log.t -> Longident.t -> unit
-  val dir_remove_printer : Toplevel_diagnostic.id Log.t -> Longident.t -> unit
+  val dir_load : Toplog.t -> string -> unit
+  val dir_use : Toplog.t -> string -> unit
+  val dir_use_output : Toplog.t -> string -> unit
+  val dir_install_printer : Toplog.t -> Longident.t -> unit
+  val dir_remove_printer : Toplog.t -> Longident.t -> unit
 end
 val dir_load : Format.formatter -> string -> unit
 val dir_use : Format.formatter -> string -> unit
@@ -52,4 +52,4 @@ val section_options : string
 val section_undocumented : string
 
 (* Here for backwards compatibility, use [Toploop.load_file]. *)
-val[@deprecated] load_file :  Toplevel_diagnostic.id Log.t -> string -> bool
+val[@deprecated] load_file : Toplog.t -> string -> bool

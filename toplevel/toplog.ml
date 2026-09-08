@@ -29,3 +29,4 @@ let trace = new_field_opt v1 "trace" ldoc
 let () = seal v1
 
 let separate_new_message = Location.separate_new_message
+type t = id Log.t

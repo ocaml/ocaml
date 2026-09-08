@@ -352,11 +352,9 @@ let all_directive_names () =
 module Style = Misc.Style
 let inline_code = Style.inline_code
 
-let directive_log = ref (Log.tmp Toplevel_diagnostic.scheme)
-let tracef f =
-  Log.itemd Toplevel_diagnostic.trace !directive_log f
-let errorf f =
-  Log.itemd Toplevel_diagnostic.errors !directive_log f
+let directive_log = ref (Log.tmp Toplog.scheme)
+let tracef f = Log.itemd Toplog.trace !directive_log f
+let errorf f = Log.itemd Toplog.errors !directive_log f
 
 let try_run_directive dir_name pdir_arg =
   begin match get_directive dir_name with
@@ -426,7 +424,7 @@ let try_run_directive log dir_name pdir_arg =
     )
 
 let compiler_log log =
-  let clog = Log.detach log Toplevel_diagnostic.compiler in
+  let clog = Log.detach log Toplog.compiler in
   Location.current_log := clog;
   if !Location.formatter_for_warnings != Format.err_formatter then
     begin
@@ -440,7 +438,7 @@ let log_on_device device =
     Clflags.create_log
       ~default_backend:Diagnostic_backends.fmt
       Compiler_diagnostic.V.history
-      Toplevel_diagnostic.scheme
+      Toplog.scheme
       device
   in
   let _ = compiler_log log in
