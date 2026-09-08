@@ -242,7 +242,7 @@ let execute_phrase print_outcome log phr =
         begin match out_phr with
         | Ophr_signature [] -> ()
         | _ ->
-            Log.d Toplevel_diagnostic.output log "%a" !print_out_phrase out_phr;
+            Log.d Toplog.output log "%a" !print_out_phrase out_phr;
         end;
         begin match out_phr with
         | Ophr_eval (_, _) | Ophr_signature _ -> true
@@ -271,7 +271,7 @@ let load_file _ (* fixme *) log name0 =
   in
   match name with
   | None ->
-      Log.itemd Toplevel_diagnostic.errors log "File not found: %s" name0;
+      Log.itemd Toplog.errors log "File not found: %s" name0;
       false
   | Some name ->
     let fn,tmp =
@@ -290,11 +290,11 @@ let load_file _ (* fixme *) log name0 =
       try Dynlink.loadfile fn; true
       with
       | Dynlink.Error err ->
-        Log.itemd Toplevel_diagnostic.errors log "Error while loading %s: %s."
+        Log.itemd Toplog.errors log "Error while loading %s: %s."
           name (Dynlink.error_message err);
         false
       | exn ->
-          Log.d Toplevel_diagnostic.output log "%a" print_exception_outcome exn;
+          Log.d Toplog.output log "%a" print_exception_outcome exn;
           false
     in
     if tmp then (try Sys.remove fn with Sys_error _ -> ());

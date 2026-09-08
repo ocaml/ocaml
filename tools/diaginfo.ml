@@ -599,13 +599,13 @@ let schemas compiler_version =
     (Record Diagnostic.Metadata.scheme)
   |> Defs.add_refs (Some config_version) (Record Conf_diagnostic.scheme)
   |> Defs.add_refs (Some compiler_version) (Record Compiler_diagnostic.scheme)
-  |> Defs.add_refs (Some compiler_version) (Record Toplevel_diagnostic.scheme)
+  |> Defs.add_refs (Some compiler_version) (Record Toplog.scheme)
 
 let roots =
   String_set.of_list Diagnostic.[
     scheme_name Conf_diagnostic.scheme;
     scheme_name Compiler_diagnostic.scheme;
-    scheme_name Toplevel_diagnostic.scheme;
+    scheme_name Toplog.scheme;
   ]
 
 let pp_schema version schemas name =

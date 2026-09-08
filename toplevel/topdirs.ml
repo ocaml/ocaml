@@ -202,7 +202,8 @@ let _ = add_directive "remove_printer"
 let parse_warnings iserr log s =
   try Option.iter Location.(prerr_alert none) @@ Warnings.parse_options iserr s
   with Arg.Bad err ->
-    Log.itemd Toplevel_diagnostic.errors log "%s." err; action_on_suberror true
+    Log.itemd Toplog.errors log "%s." err;
+    action_on_suberror true
 
 (* Typing information *)
 
@@ -242,8 +243,7 @@ let show_prim to_sig log lid =
     let id = Ident.create_persistent s in
     let sg = to_sig env loc id lid in
     Printtyp.wrap_printing_env ~error:false env
-      (fun () -> Log.d Toplevel_diagnostic.output log "@[%a@]"
-          Printtyp.Doc.signature sg)
+      (fun () -> Log.d Toplog.output log "@[%a@]" Printtyp.Doc.signature sg)
   with
   | Not_found -> Topcommon.errorf "@[Unknown element.@]"
   | Exit -> ()
@@ -626,8 +626,7 @@ let print_directives ppf () =
   List.iter (print_section ppf) (directive_sections ())
 
 let log_directives () =
-  Log.d Toplevel_diagnostic.output !Topcommon.directive_log "@[<v>%a@]"
-    print_directives ()
+  Log.d Toplog.output !Topcommon.directive_log "@[<v>%a@]" print_directives ()
 
 let _ = add_directive "help"
     (Directive_none log_directives)
