@@ -650,7 +650,7 @@ let with_log f ppf x =
   let dev = Log.Device.make (ref ppf) in
   let log = Topcommon.log_on_device dev in
   Fun.protect (fun () -> f log x)
-  ~finally:(fun () -> Log.flush log)
+    ~finally:(fun () -> Log.flush log)
 
 let dir_load = with_log V2.dir_load
 let dir_use = with_log V2.dir_use
