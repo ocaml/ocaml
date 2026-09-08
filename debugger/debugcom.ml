@@ -277,7 +277,13 @@ let input_binary_nativeint ic =
   | 64 ->
       let high = input_binary_int ic in
       let low = input_binary_int ic in
-      Nativeint.(add (of_int low) (shift_left (of_int high) 32))
+      (* [low] was sent as an unsigned 32-bit integer, but [input_binary_int]
+         sign-extended it. Masking the high bits away recovers the original
+         unsigned number. *)
+      let low_masked =
+        Nativeint.(logand (of_int low) 0xFFFF_FFFFn)
+      in
+      Nativeint.(add low_masked (shift_left (of_int high) 32))
   | _ -> failwith "Unsupported word size"
 
 module Remote_value =
