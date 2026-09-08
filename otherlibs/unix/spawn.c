@@ -14,10 +14,12 @@
 /**************************************************************************/
 
 #define _GNU_SOURCE  /* helps to find execvpe() */
+#define CAML_INTERNALS
 #include <errno.h>
 #include <sys/types.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
+#include <caml/runtime_events.h>
 #include "caml/unixsupport.h"
 
 extern char ** environ;
@@ -78,6 +80,7 @@ CAMLprim value caml_unix_spawn(value executable, /* string */
   caml_unix_cstringvect_free(argv);
   if (Is_some(optenv)) caml_unix_cstringvect_free(envp);
   if (r != 0) caml_unix_error(r, "create_process", executable);
+  CAML_EV_LIFECYCLE(EV_PROCESS_CREATE, pid);
   return Val_long(pid);
 }
 
@@ -116,6 +119,7 @@ CAMLprim value caml_unix_spawn(value executable, /* string */
     caml_unix_cstringvect_free(argv);
     if (envp != NULL) caml_unix_cstringvect_free(envp);
     if (pid == -1) caml_uerror("create_process", executable);
+    CAML_EV_LIFECYCLE(EV_PROCESS_CREATE, pid);
     return Val_long(pid);
   }
   /* This is the child process */

@@ -551,6 +551,12 @@ Event indicating that a domain has terminated. Includes the PID of the domain
 as an argument.
 @since 5.0
 *)
+| EV_PROCESS_CREATE
+(**
+Event indicating that a child process has been created. Includes the PID of the
+new process as an argument.
+@since 5.6
+*)
 
 val lifecycle_name : lifecycle -> string
 (** Return a string representation of a given lifecycle event type. *)
