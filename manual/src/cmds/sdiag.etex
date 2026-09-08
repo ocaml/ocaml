@@ -4,10 +4,12 @@
 Both the bytecode and native compiler can emit diagnostic under
 a structured format by using the "-log-format <format>" flag.
 Supported formats are currently
-\begin{itemize}
-\item json
-\item s-expression
-\end{itemize}
+\begin{description}
+\item[fmt-light] classic mode
+\item[fmt-full] classic mode with label names
+\item[json] json object
+\item[sexp] s-expression
+\end{description}
 
 The flag "-log-file <path>" determine where the diagnostics are stored if
 present. Otherwise, the structured diagnostic are displayed on the terminal
