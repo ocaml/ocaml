@@ -22,8 +22,8 @@ type 'a update = 'a Diagnostic_history.update
 type version = Diagnostic_history.version
 
 type ('id,'a,_) field
-type ('id,'a) optional_field = ('id,'a,[`opt]) field
-(** A field of type ['a] for the a ['id log]. The [optional_field] name is only
+type ('id,'a) optional_field = ('id,'a, [`Opt]) field
+(** A field of type ['a] for the a ['id log]. This [optional_field] type is only
     used for documentation purpose. *)
 
 (** Embeded sum and record types *)
@@ -88,8 +88,8 @@ module type Record = sig
   (** type tag for the record *)
   type id
   type ('a, 'opt) any_field = ('a,id,'opt) field
-  type 'a optional_field = ('a,[`opt]) any_field
-  type 'a field = ('a,[`req]) any_field
+  type 'a optional_field = ('a, [`Opt]) any_field
+  type 'a field = ('a, [`Req]) any_field
   include Def
     with type id := id
      and type definition = id record

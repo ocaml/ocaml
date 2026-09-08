@@ -325,14 +325,16 @@ val create_log:
   -> Log.Device.t
   -> 'a Log.t
 
-(** dump content on log if the field was enabled *)
+(** dump content on log if the field was enabled,
+    overwrite the log entry on multiple write. *)
 val dump_on_log:
-  'id Log.t -> (string, 'id, [`opt]) Log.field ->
-  (Format.formatter -> 'a -> unit) -> 'a -> unit
+  'id Log.t -> (string, 'id, [`Opt]) Log.field
+  -> (Format.formatter -> 'a -> unit) -> 'a -> unit
 
-(** dump content on log if the field was enabled *)
+(** dump content on log if the field was enabled,
+    add to the log entry on each write. *)
 val dump_item_on_log:
-  'id Log.t -> (string list,'id, [`opt]) Log.field
+  'id Log.t ->  (string list, 'id, [`Opt]) Log.field
   -> ('b, Format.formatter, unit) format -> 'b
 
 val show_config_and_exit : unit -> unit
