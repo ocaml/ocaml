@@ -1,0 +1,4 @@
+File "functor_type_extension.ml", line 12, characters 16-20:
+12 | type t = (module%foo M : S) -> int
+                     ^^^^
+Error: Syntax error: extension not expected.
