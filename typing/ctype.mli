@@ -475,7 +475,8 @@ val match_class_types:
 val equal: Env.t -> bool -> type_expr list -> type_expr list -> unit
         (* [equal env [x1...xn] tau [y1...yn] sigma]
            checks whether the parameterized types
-           [/\x1.../\xn.tau] and [/\y1.../\yn.sigma] are equivalent. *)
+           [/\x1.../\xn.tau] and [/\y1.../\yn.sigma] are equivalent.
+           The caller must ensure that both lists have the same length. *)
 val eq_package_path : Env.t -> Path.t -> Path.t -> bool
 val is_equal : Env.t -> bool -> type_expr list -> type_expr list -> bool
 val equal_private :
