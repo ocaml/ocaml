@@ -385,17 +385,12 @@ external link : ?follow:bool -> string -> string -> unit = "caml_unix_link"
 external realpath : string -> string = "caml_unix_realpath"
 
 let realpath p =
-  let cleanup p = (* Remove any \\?\ prefix. *)
-    if String.starts_with ~prefix:{|\\?\|} p
-    then (String.sub p 4 (String.length p - 4))
-    else p
-  in
-  try cleanup (realpath p) with
+  try realpath p with
   | (Unix_error (EACCES, _, _)) as e ->
       (* On Windows this can happen on *files* on which you don't have
          access. POSIX realpath(3) works in this case, we emulate this. *)
       try
-        let dir = cleanup (realpath (Filename.dirname p)) in
+        let dir = realpath (Filename.dirname p) in
         Filename.concat dir (Filename.basename p)
       with _ -> raise e
 

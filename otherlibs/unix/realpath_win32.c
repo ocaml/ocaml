@@ -73,7 +73,7 @@ CAMLprim value caml_unix_realpath (value p)
     caml_uerror ("realpath", p);
   }
 
-  rp = caml_copy_string_of_utf16 (wr);
+  rp = caml_copy_string_of_utf16 (caml_win32_strip_device_prefix (wr));
   CloseHandle (h);
   caml_stat_free (wr);
   CAMLreturn (rp);

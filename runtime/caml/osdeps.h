@@ -123,6 +123,8 @@ CAMLextern int caml_posixerr_of_win32err(unsigned int win32err);
 CAMLextern int caml_win32_rename(const wchar_t *, const wchar_t *);
 CAMLextern int caml_win32_unlink(const wchar_t *);
 
+CAMLextern wchar_t *caml_win32_strip_device_prefix(wchar_t *);
+
 extern void caml_probe_win32_version(void);
 extern void caml_setup_win32_terminal(void);
 extern void caml_restore_win32_terminal(void);

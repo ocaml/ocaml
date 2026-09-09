@@ -368,6 +368,11 @@ Working version
   appeared more than one input list or more than once in a single input list.
   (Nicolás Ojeda Bär, report by Zhang Rui, review by Antonin Décimo)
 
+- #15044: `Unix.realpath`: On Windows, improve normalization of UNC paths. For
+  example, `\\?\UNC\server\share` is now mapped to `\\server\share` rather than
+  `UNC\server\share`.
+  (Nicolás Ojeda Bär, report by ????)
+
 ### Tools:
 
 - #14318, #14709, ocamldoc: use "Module_name (Library name)" rather than
