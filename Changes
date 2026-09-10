@@ -297,7 +297,7 @@ Working version
 - #15009: Improve Set.union, Set.inter, and Set.diff on physically shared sets,
   avoiding unnecessary traversal and allocations and preserving sharing when the
   result is unchanged.
-  (Nicolás Ojeda Bär, review by Vincent Laviron)
+  (Nicolás Ojeda Bär, review by Vincent Laviron and Olivier Nicole)
 
 ### Other libraries:
 
