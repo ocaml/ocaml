@@ -609,6 +609,10 @@ Working version
   to report as the number of words of minor heap consumed, including headers.
   (Tim McGilchrist, review by Nicolás Ojeda Bär)
 
+- #15048: Remove the generated output file when ocamllex reports a fatal
+  missing-case warning.
+  (cuishuang)
+
 OCaml 5.5.1
 -----------
 

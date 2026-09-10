@@ -71,6 +71,8 @@ let _ =
 
 let exit_code_for_known_error = 3
 
+exception Fatal_warning
+
 let main () =
 
   let source_name = match !source_name with
@@ -100,7 +102,7 @@ let main () =
      | Error ->
          match Exhaustiveness.check ~fatal:true transitions entries with
          | Ok () -> ()
-         | Error () -> exit exit_code_for_known_error);
+         | Error () -> raise Fatal_warning);
     if !ml_automata then begin
       Outputbis.output_lexdef
         ic oc tr
@@ -144,6 +146,7 @@ let main () =
         fprintf stderr
           "File \"%s\":\ntransition table overflow, automaton is too big\n"
           source_name
+    | Fatal_warning -> ()
     | _ ->
         Printexc.raise_with_backtrace exn bt
     end;
