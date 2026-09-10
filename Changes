@@ -18,6 +18,9 @@ Working version
 
 ### Runtime system:
 
+- #15062: Always advance GC work counter in an explicit idle slice
+  (Nick Barnes, revie2w by ???)
+
 - #14988: Don't copy continuations in Weak.get_copy.
   (Jeremy Yallop, review by Stefan Muenzel)
 
