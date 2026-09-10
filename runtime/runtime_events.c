@@ -223,8 +223,15 @@ char_os* caml_runtime_events_current_location(void) {
   }
 }
 
-/* Write a lifecycle event and then trigger a stop the world to tear down the
-  ring buffers */
+/* Write a lifecycle event and then trigger a stop-the-world to tear down the
+  ring buffers.
+
+  This is idempotent: the teardown clears [runtime_events_enabled], so a
+  second call returns without doing anything. Callers rely on that, as the
+  ring is torn down by whichever of [caml_domain_terminate] and
+  [caml_do_exit] is reached first. The guard is also what makes the call safe
+  once the last domain has terminated, since [caml_try_run_on_all_domains]
+  could no longer run. */
 void caml_runtime_events_destroy(void) {
   if (atomic_load_acquire(&runtime_events_enabled)) {
     write_to_ring(
