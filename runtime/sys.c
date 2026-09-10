@@ -180,14 +180,17 @@ CAMLexport void caml_do_exit(int retcode)
     }
   }
 
-/* Tear down runtime_events before we leave */
-CAML_RUNTIME_EVENTS_DESTROY();
-
 #ifndef NATIVE_CODE
   caml_debugger(PROGRAM_EXIT, Val_unit);
 #endif
   if (caml_params->cleanup_on_exit)
     caml_shutdown();
+  /* Fallback teardown. The ring is normally taken down by
+     [caml_domain_terminate], which runs later. This covers the paths where
+     that does not happen: [cleanup_on_exit] unset, or [caml_shutdown]
+     returning early with other domains still active. It is a no-op once the
+     ring is down. */
+  CAML_RUNTIME_EVENTS_DESTROY();
 #ifdef _WIN32
   caml_restore_win32_terminal();
 #endif
