@@ -385,12 +385,18 @@ external link : ?follow:bool -> string -> string -> unit = "caml_unix_link"
 external realpath : string -> string = "caml_unix_realpath"
 
 let realpath p =
-  try realpath p with
+  let cleanup p = (* cf. `caml_locate_standard_library` in runtime/win32.c *)
+    assert (String.sub p 0 4 = {|\\?\|});
+    if String.starts_with ~prefix:{|\\?\UNC\|} p
+    then "\\" ^ String.sub p 7 (String.length p - 7)
+    else String.sub p 4 (String.length p - 4)
+  in
+  try cleanup (realpath p) with
   | (Unix_error (EACCES, _, _)) as e ->
       (* On Windows this can happen on *files* on which you don't have
          access. POSIX realpath(3) works in this case, we emulate this. *)
       try
-        let dir = realpath (Filename.dirname p) in
+        let dir = cleanup (realpath (Filename.dirname p)) in
         Filename.concat dir (Filename.basename p)
       with _ -> raise e
 

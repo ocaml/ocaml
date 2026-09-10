@@ -1343,28 +1343,6 @@ value caml_win32_get_temp_path(void)
   CAMLreturn(caml_copy_string_of_utf16(buf));
 }
 
-/* Convert a path in the Win32 device namespace into the equivalent DOS path:
-
-     \\?\C:\foo         ->  C:\foo
-     \\?\UNC\srv\share  ->  \\srv\share
-
-   Any other path is returned unchanged. In particular \\?\Volume{...}\foo, on
-   a volume which has no drive letter, has no DOS equivalent.
-
-   The result points into the argument, which may be modified in place. */
-CAMLexport wchar_t *caml_win32_strip_device_prefix(wchar_t *path)
-{
-  if (wcsncmp(path, L"\\\\?\\", 4) != 0) /* Not a Win32 device path */
-    return path;
-  if (wcsncmp(path + 4, L"UNC\\", 4) == 0) { /* UNC path: \\?\UNC\foo */
-    path[6] = L'\\';
-    return path + 6;
-  }
-  if (path[4] != L'\0' && path[5] == L':') /* Local path: \\?\C:\foo */
-    return path + 4;
-  return path;
-}
-
 CAMLextern char_os* caml_locate_standard_library (const wchar_t *exe_name,
                                                   const wchar_t *stdlib_default,
                                                   wchar_t **dirname)
@@ -1420,8 +1398,20 @@ CAMLextern char_os* caml_locate_standard_library (const wchar_t *exe_name,
                        && resolved_candidate[3] == '\\');
 
       caml_stat_free(candidate);
-      candidate =
-        caml_stat_wcsdup(caml_win32_strip_device_prefix(resolved_candidate));
+
+      if (l >= 8 && resolved_candidate[4] == 'U'
+                 && resolved_candidate[5] == 'N'
+                 && resolved_candidate[6] == 'C'
+                 && resolved_candidate[7] == '\\') {
+        /* NT native UNC path (\\?\UNC\foo). We change the last C to a backslash
+           (\\?\UN\\foo) and then include that altered character and the
+           original final slash to create a normal UNC path. */
+        resolved_candidate[6] = '\\';
+        candidate = caml_stat_wcsdup(resolved_candidate + 6);
+      } else {
+        /* Local device path */
+        candidate = caml_stat_wcsdup(resolved_candidate + 4);
+      }
     }
 
     /* It should be another Impossible Thing for l == 0 in the above. If that
