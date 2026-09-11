@@ -131,25 +131,21 @@ esac
 # be verbose and stop on error
 set -ex
 
-# On PowerPC, the OCAML_CONFIGURE_OPTIONS is used to specify which C
-# compiler to use. However with the introduction of autoconf the way
-# to do that has changed. Once all the branches on which we do CI will use
-# autoconf, the variable shall be updated on the host. But until then,
-# we leave it with its legacy value and override it here.
 CCOMP=
 case $NODE_NAME in
+  # On PowerPC, the OCAML_CONFIGURE_OPTIONS is used to specify which C compiler
+  # to use. However with the introduction of autoconf the way to do that has
+  # changed. Once all the branches on which we do CI will use autoconf, the
+  # variable shall be updated on the host. But until then, we leave it with its
+  # legacy value and override it here.
   ocaml-ppc-32)
     CCOMP="CC='gcc -m32'"
     OCAML_CONFIGURE_OPTIONS=;;
   ocaml-ppc-64)
     CCOMP="CC='gcc -m64'"
     OCAML_CONFIGURE_OPTIONS=;;
-esac
-
-# On 32-bit machines, support for years beyond 2038 may not be present, so we
-# disable the configure check for it.
-CCOMP=
-case $NODE_NAME in
+  # On 32-bit machines, support for years beyond 2038 may not be present, so we
+  # disable the configure check for it.
   ocaml-arm-32|ocaml-linux-32)
     OCAML_CONFIGURE_OPTIONS="--disable-year2038";;
 esac
