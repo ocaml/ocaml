@@ -146,6 +146,14 @@ case $NODE_NAME in
     OCAML_CONFIGURE_OPTIONS=;;
 esac
 
+# On 32-bit machines, support for years beyond 2038 may not be present, so we
+# disable the configure check for it.
+CCOMP=
+case $NODE_NAME in
+  ocaml-arm-32|ocaml-linux-32)
+    OCAML_CONFIGURE_OPTIONS="--disable-year2038";;
+esac
+
 #########################################################################
 # set up variables
 
