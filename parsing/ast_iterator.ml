@@ -744,9 +744,14 @@ let default_iterator =
       );
 
     label_declaration =
-      (fun this {pld_name; pld_type; pld_loc; pld_mutable = _; pld_attributes}->
+      (fun this {pld_name; pld_type; pld_loc; pld_mutable = _;
+                 pld_inline_record; pld_attributes}->
          iter_loc iter_string this pld_name;
          this.typ this pld_type;
+         (match pld_inline_record with
+          | None -> ()
+          | Some fields ->
+              List.iter (this.label_declaration this) fields);
          this.location this pld_loc;
          this.attributes this pld_attributes
       );

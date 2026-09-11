@@ -234,7 +234,8 @@ module Type:
       str ->
       constructor_declaration
     val field: ?loc:loc -> ?attrs:attrs -> ?info:info ->
-      ?mut:mutable_flag -> str -> core_type -> label_declaration
+      ?mut:mutable_flag -> ?inline_record:label_declaration list ->
+      str -> core_type -> label_declaration
   end
 
 (** Type extensions *)

@@ -325,7 +325,7 @@ let rec iter_path_apply p ~f =
      iter_path_apply p1 ~f;
      iter_path_apply p2 ~f;
      f p1 p2 (* after recursing, so we know both paths are well typed *)
-  | Pextra_ty _ -> assert false
+  | Pextra_ty (p, _) -> iter_path_apply p ~f
 
 (** Checks if a flat (without functor applications) path [path] admits [~prefix]
     as a prefix, i.e. if [path = ~prefix::suffix]. The [~strict] flag indicates
@@ -811,10 +811,7 @@ module Merge = struct
         match type_decl_is_alias sdecl with
         | Some lid ->
             (* if the type is an alias of [lid], replace by the definition *)
-            let replacement, _ =
-              try Env.find_type_by_name lid.txt env
-              with Not_found -> assert false
-            in
+            let replacement, _ = Typetexp.lookup_type ~use:false env lid in
             Some(fun s path -> Subst.Unsafe.add_type_path path replacement s)
         | None ->
            (* if the type is not an alias, try to inline it *)

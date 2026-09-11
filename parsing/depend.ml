@@ -131,9 +131,14 @@ let add_opt add_fn bv = function
     None -> ()
   | Some x -> add_fn bv x
 
-let add_constructor_arguments bv = function
+let rec add_label_decl bv l =
+  match l.pld_inline_record with
+  | Some fields -> List.iter (fun l -> add_label_decl bv l) fields
+  | None -> add_type bv l.pld_type
+
+and add_constructor_arguments bv = function
   | Pcstr_tuple l -> List.iter (add_type bv) l
-  | Pcstr_record l -> List.iter (fun l -> add_type bv l.pld_type) l
+  | Pcstr_record l -> List.iter (fun l -> add_label_decl bv l) l
 
 let add_constructor_decl bv pcd =
   add_constructor_arguments bv pcd.pcd_args;
@@ -149,7 +154,7 @@ let add_type_declaration bv td =
     | Ptype_variant cstrs ->
         List.iter (add_constructor_decl bv) cstrs
     | Ptype_record lbls ->
-        List.iter (fun pld -> add_type bv pld.pld_type) lbls
+        List.iter (fun pld -> add_label_decl bv pld) lbls
     | Ptype_open -> ()
     | Ptype_external _ -> ()
   in

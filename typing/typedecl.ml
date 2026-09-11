@@ -85,6 +85,7 @@ type error =
   | External_with_non_syntactic_arity
   | Primitive_alias_does_not_refer_to_primitive of value_kind
   | Primitive_type_mismatch of Env.t * Errortrace.unification_error
+  | Nested_record_in_constructor
 
 open Typedtree
 
@@ -173,6 +174,89 @@ let enter_type ?abstract_abbrevs rec_flag env sdecl (id, uid) =
   in
   add_type ~check:true id decl env
 
+(* Source positions keep recursive placeholders and final declarations at the same arity. *)
+let nested_param_positions sparams labels =
+  let variables = ref String.Set.empty in
+  let bound = ref String.Set.empty in
+  let default = Ast_iterator.default_iterator in
+  let iterator =
+    { default with
+      typ =
+        (fun iterator typ ->
+           match typ.ptyp_desc with
+           | Ptyp_var name when not (String.Set.mem name !bound) ->
+               variables := String.Set.add name !variables
+           | Ptyp_poly (names, body) ->
+               let old_bound = !bound in
+               bound :=
+                 List.fold_left
+                   (fun bound name -> String.Set.add name.txt bound)
+                   old_bound names;
+               Misc.try_finally
+                 (fun () -> iterator.typ iterator body)
+                 ~always:(fun () -> bound := old_bound)
+           | _ -> default.typ iterator typ)
+    }
+  in
+  List.iter (iterator.label_declaration iterator) labels;
+  List.filter_map
+    (fun (position, (param, _)) ->
+       match param.ptyp_desc with
+       | Ptyp_var name when String.Set.mem name !variables ->
+           Some position
+       | Ptyp_any | Ptyp_var _ | Ptyp_arrow _ | Ptyp_tuple _
+       | Ptyp_constr _ | Ptyp_object _ | Ptyp_class _ | Ptyp_alias _
+       | Ptyp_variant _ | Ptyp_poly _ | Ptyp_package _
+       | Ptyp_open _ | Ptyp_extension _ | Ptyp_functor _ -> None)
+    (List.mapi (fun position param -> (position, param)) sparams)
+
+let nested_type_placeholder ~current_unit sdecl labels loc =
+  let positions = nested_param_positions sdecl.ptype_params labels in
+  let type_params = List.map (fun _ -> Btype.newgenvar ()) positions in
+  let arity = List.length type_params in
+  { type_params;
+    type_arity = arity;
+    type_kind = Type_abstract Definition;
+    type_private = sdecl.ptype_private;
+    type_manifest = None;
+    type_variance = Variance.unknown_signature ~injective:true ~arity;
+    type_separability = Types.Separability.default_signature ~arity;
+    type_is_newtype = false;
+    type_expansion_scope = Btype.lowest_level;
+    type_loc = loc;
+    type_attributes = [];
+    type_immediate = Unknown;
+    type_unboxed_default = false;
+    type_uid = Uid.mk ~current_unit;
+  }
+
+let add_nested_type_placeholders rec_flag sdecl id env =
+  match rec_flag with
+  | Asttypes.Nonrecursive -> env
+  | Asttypes.Recursive ->
+      let current_unit = Env.get_current_unit () in
+      let rec add_labels parent env labels =
+        List.fold_left
+          (fun env label ->
+             match label.pld_inline_record with
+             | None -> env
+             | Some labels ->
+                 let path =
+                   Path.Pextra_ty (parent, Path.Pfld_ty label.pld_name.txt)
+                 in
+                   let decl =
+                     nested_type_placeholder
+                       ~current_unit sdecl labels label.pld_loc
+                  in
+                 let env = Env.add_local_constraint path decl env in
+                 add_labels path env labels)
+          env labels
+      in
+      match sdecl.ptype_kind with
+      | Ptype_record labels -> add_labels (Path.Pident id) env labels
+      | Ptype_abstract | Ptype_variant _ | Ptype_open
+      | Ptype_external _ -> env
+
 (* Determine if a type's values are represented by floats at run-time. *)
 let is_float env ty =
   match Typedecl_unboxed.get_unboxed_type_representation env ty with
@@ -245,50 +329,151 @@ let make_params env params =
   in
     List.map make_param params
 
-let transl_labels env univars closed lbls =
-  assert (lbls <> []);
+let compute_record_rep env ?(unbox=false) lbls =
+  if unbox then Record_unboxed false
+  else if List.for_all (fun (l : Types.label_declaration) ->
+      is_float env l.ld_type && l.ld_atomic = Nonatomic
+    ) lbls
+  then Record_float
+  else Record_regular
+
+let make_inline_record_decl ~uid ~loc ~private_ ~params lbls rep =
+  let arity = List.length params in
+  { type_params = params;
+    type_arity = arity;
+    type_kind = Type_record (lbls, rep);
+    type_private = private_;
+    type_manifest = None;
+    type_variance = Variance.unknown_signature ~injective:true ~arity;
+    type_separability = Misc.replicate_list Types.Separability.Ind arity;
+    type_is_newtype = false;
+    type_expansion_scope = Btype.lowest_level;
+    type_loc = loc;
+    type_attributes = [];
+    type_immediate = Unknown;
+    type_unboxed_default = false;
+    type_uid = uid;
+  }
+
+let check_duplicate_labels lbls =
   let all_labels = ref String.Set.empty in
   List.iter
     (fun {pld_name = {txt=name; loc}} ->
        if String.Set.mem name !all_labels then
          Error.log_and_raise loc (Duplicate_label name);
        all_labels := String.Set.add name !all_labels)
-    lbls;
-  let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;
-          pld_attributes=attrs} =
-    Builtin_attributes.warning_scope attrs
-      (fun () ->
-         let arg = Ast_helper.Typ.force_poly arg in
-         let cty = transl_simple_type env ?univars ~closed arg in
-         let is_atomic = Builtin_attributes.has_atomic attrs in
-         let is_mutable = match mut with Mutable -> true | Immutable -> false in
-         if is_atomic && not is_mutable then
-           Error.log_and_raise loc (Atomic_field_must_be_mutable name.txt);
-         {ld_id = Ident.create_local name.txt;
-          ld_name = name;
-          ld_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
-          ld_mutable = mut;
-          ld_atomic = if is_atomic then Atomic else Nonatomic;
-          ld_type = cty; ld_loc = loc; ld_attributes = attrs}
-      )
+    lbls
+
+let mk_label ~current_unit
+    {pld_name=name; pld_mutable=mut; pld_loc=loc; pld_attributes=attrs; _}
+    cty ~inline_record ~inline_decl =
+  let is_atomic = Builtin_attributes.has_atomic attrs in
+  let is_mutable = match mut with Mutable -> true | Immutable -> false in
+  if is_atomic && not is_mutable then
+    Error.log_and_raise loc (Atomic_field_must_be_mutable name.txt);
+  let ld =
+    {ld_id = Ident.create_local name.txt;
+     ld_name = name;
+     ld_uid = Uid.mk ~current_unit;
+     ld_mutable = mut;
+     ld_atomic = if is_atomic then Atomic else Nonatomic;
+     ld_type = cty;
+     ld_inline_record = inline_record;
+     ld_loc = loc;
+     ld_attributes = attrs}
   in
-  let lbls = List.map mk lbls in
-  let lbls' =
-    List.map
-      (fun ld ->
-         let ty = ld.ld_type.ctyp_type in
-         let ty = match get_desc ty with Tpoly(t,[]) -> t | _ -> ty in
-         {Types.ld_id = ld.ld_id;
-          ld_mutable = ld.ld_mutable;
-          ld_atomic = ld.ld_atomic;
-          ld_type = ty;
-          ld_loc = ld.ld_loc;
-          ld_attributes = ld.ld_attributes;
-          ld_uid = ld.ld_uid;
-         }
-      )
-      lbls in
-  lbls, lbls'
+  let ty = ld.ld_type.ctyp_type in
+  let ty = match get_desc ty with Tpoly(t,[]) -> t | _ -> ty in
+  ld,
+  {Types.ld_id = ld.ld_id;
+   ld_mutable = ld.ld_mutable;
+   ld_atomic = ld.ld_atomic;
+   ld_type = ty;
+   ld_inlined = inline_decl;
+   ld_loc = ld.ld_loc;
+   ld_attributes = ld.ld_attributes;
+   ld_uid = ld.ld_uid}
+
+let inline_record_type env loc path params =
+  let lid =
+    let loc = { loc with Location.loc_ghost = true } in
+    Location.mkloc (Longident.Lident (Path.last path)) loc
+  in
+  { ctyp_desc = Typedtree.Ttyp_constr (path, lid, []);
+    ctyp_type = Btype.newgenty (Tconstr (path, params, ref Mnil));
+    ctyp_env = env;
+    ctyp_loc = loc;
+    ctyp_attributes = [];
+  }
+
+let transl_label env univars closed
+    ({pld_type=arg; pld_attributes=attrs; _} as label) =
+  begin match label.pld_inline_record with
+  | Some _ ->
+      Error.log_and_raise label.pld_loc Nested_record_in_constructor
+  | None -> ()
+  end;
+  Builtin_attributes.warning_scope attrs
+    (fun () ->
+       let arg = Ast_helper.Typ.force_poly arg in
+       let cty = transl_simple_type env ?univars ~closed arg in
+       mk_label ~current_unit:(Env.get_current_unit ()) label cty
+         ~inline_record:None ~inline_decl:None
+    )
+
+let transl_labels env univars closed lbls =
+  assert (lbls <> []);
+  check_duplicate_labels lbls;
+  List.split (List.map (transl_label env univars closed) lbls)
+
+let rec transl_labels_with_inline
+    env univars closed ~rec_flag ~path ~sparams ~params ~private_ lbls =
+  assert (lbls <> []);
+  check_duplicate_labels lbls;
+  let transl_label' label =
+    match label.pld_inline_record with
+    | Some inner_fields ->
+        transl_inline_label
+          env univars closed ~rec_flag ~path ~sparams ~params ~private_
+          label inner_fields
+    | None ->
+        transl_label env univars closed label
+  in
+  List.split (List.map transl_label' lbls)
+
+and transl_inline_label env univars closed
+    ~rec_flag ~path ~sparams ~params ~private_
+    ({pld_name=name; pld_loc=loc; pld_attributes=attrs; _} as label)
+    inner_fields =
+  Builtin_attributes.warning_scope attrs
+    (fun () ->
+       let current_unit = Env.get_current_unit () in
+       let field_path = Path.Pextra_ty (path, Pfld_ty name.txt) in
+       let inner_lbls, inner_lbls' =
+         transl_labels_with_inline
+           env univars closed ~rec_flag ~path:field_path ~sparams ~params
+           ~private_ inner_fields
+       in
+       let inner_rep = compute_record_rep env inner_lbls' in
+       let uid =
+         match rec_flag with
+         | Asttypes.Nonrecursive -> Uid.mk ~current_unit
+         | Asttypes.Recursive -> (Env.find_type field_path env).type_uid
+       in
+       let nested_params =
+         List.map (List.nth params)
+           (nested_param_positions sparams inner_fields)
+       in
+       let inline_decl =
+         make_inline_record_decl
+           ~uid ~loc ~private_ ~params:nested_params inner_lbls' inner_rep
+       in
+       let cty =
+         inline_record_type env loc field_path inline_decl.type_params
+       in
+       mk_label ~current_unit label cty
+         ~inline_record:(Some inner_lbls) ~inline_decl:(Some inline_decl)
+    )
 
 let transl_constructor_arguments env univars closed = function
   | Pcstr_tuple l ->
@@ -372,9 +557,30 @@ let shape_map_cstrs =
       @@ Shape.str ~uid:cd_uid cstr_shape_map)
     (Shape.Map.empty)
 
+(* Nested field declarations are both label and type shape components. *)
+let rec shape_of_record_types ~uid labels =
+  let map =
+    List.fold_left
+      (fun map (label : Types.label_declaration) ->
+        let map = Shape.Map.add_label map label.ld_id label.ld_uid in
+        match label.ld_inlined with
+        | None -> map
+        | Some decl ->
+            Shape.Map.add_type map label.ld_id (shape_of_nested_type decl))
+      Shape.Map.empty labels
+  in
+  Shape.str ~uid map
+
+and shape_of_nested_type (decl : Types.type_declaration) =
+  match decl.type_kind with
+  | Type_record (labels, _) ->
+      shape_of_record_types ~uid:decl.type_uid labels
+  | Type_variant _ | Type_abstract _ | Type_open | Type_external _ ->
+      Shape.leaf decl.type_uid
+
 let param_types params = List.map (fun (cty,_vi) -> cty.ctyp_type) params
 
-let transl_declaration env sdecl (id, uid) =
+let transl_declaration rec_flag env sdecl (id, uid) =
   (* Bind type parameters *)
   TyVarEnv.reset();
   let tparams = make_params env sdecl.ptype_params in
@@ -489,19 +695,13 @@ let transl_declaration env sdecl (id, uid) =
         let tcstrs, cstrs = List.split (List.map make_cstr scstrs) in
           Ttype_variant tcstrs, Type_variant (cstrs, rep)
       | Ptype_record lbls ->
-          let lbls, lbls' = transl_labels env None true lbls in
-          let rep =
-            if unbox then (
-              Record_unboxed false
-            ) else if
-              List.for_all (fun (l : Types.label_declaration) ->
-                is_float env l.ld_type && l.ld_atomic = Nonatomic
-              ) lbls'
-            then
-              Record_float
-            else
-              Record_regular
+          let lbls, lbls' =
+            transl_labels_with_inline
+              env None true ~rec_flag ~path:(Path.Pident id)
+              ~sparams:sdecl.ptype_params ~params
+              ~private_:sdecl.ptype_private lbls
           in
+          let rep = compute_record_rep env ~unbox lbls' in
           Ttype_record lbls, Type_record(lbls', rep)
       | Ptype_open -> Ttype_open, Type_open
       in
@@ -566,7 +766,12 @@ let transl_declaration env sdecl (id, uid) =
       let uid = decl.typ_type.type_uid in
       match decl.typ_kind with
       | Ttype_variant cstrs -> Shape.str ~uid (shape_map_cstrs cstrs)
-      | Ttype_record labels -> Shape.str ~uid (shape_map_labels labels)
+      | Ttype_record _ ->
+          begin match decl.typ_type.type_kind with
+          | Type_record (labels, _) -> shape_of_record_types ~uid labels
+          | Type_variant _ | Type_abstract _ | Type_open
+          | Type_external _ -> assert false
+          end
       | Ttype_abstract | Ttype_open | Ttype_external _ -> Shape.leaf uid
     in
     decl, typ_shape
@@ -733,6 +938,66 @@ let check_coherence env loc dpath decl =
 
 let check_abbrev env sdecl (id, decl) =
   check_coherence env sdecl.ptype_loc (Path.Pident id) decl
+
+let add_nested_reexport_aliases env (id, decl) =
+  let select_arguments params args selected_params =
+    let bindings = List.combine params args in
+    List.map
+      (fun selected ->
+         snd (List.find (fun (param, _) -> eq_type selected param) bindings))
+      selected_params
+  in
+  let rec add_labels source_parent source_args labels =
+    List.map
+      (fun ({ Types.ld_id; ld_inlined; _ } as label) ->
+         match ld_inlined with
+         | None -> label
+         | Some nested_decl ->
+              let source_path =
+                Path.Pextra_ty
+                  (source_parent, Path.Pfld_ty (Ident.name ld_id))
+              in
+              let source_parent_decl = Env.find_type source_parent env in
+              let source_decl = Env.find_type source_path env in
+              let source_args =
+                select_arguments
+                  source_parent_decl.type_params source_args
+                  source_decl.type_params
+              in
+             let type_kind =
+               match nested_decl.type_kind with
+               | Type_record (labels, rep) ->
+                   Type_record
+                     (add_labels source_path source_args labels, rep)
+               | Type_abstract _ | Type_variant _ | Type_open
+               | Type_external _ -> assert false
+             in
+             let manifest =
+               Btype.newgenty (Tconstr (source_path, source_args, ref Mnil))
+             in
+             { label with
+               ld_inlined =
+                  Some {
+                    nested_decl with
+                    type_kind;
+                    type_manifest = Some manifest;
+                  }
+             })
+      labels
+  in
+  match decl.type_kind, decl.type_manifest with
+  | Type_record (labels, rep), Some manifest ->
+      begin match Btype.get_constr_desc manifest with
+      | Tconstr (source_path, source_args, _) ->
+          id,
+          { decl with
+            type_kind =
+              Type_record (add_labels source_path source_args labels, rep)
+          }
+      | _ -> id, decl
+      end
+  | (Type_abstract _ | Type_variant _ | Type_record _ | Type_open
+    | Type_external _), _ -> id, decl
 
 
 (* Note: Well-foundedness for OCaml types
@@ -1294,7 +1559,12 @@ let transl_type_decl env rec_flag sdecl_list =
     Ctype.with_local_level_generalize begin fun () ->
       (* Enter types. *)
       let temp_env =
-        List.fold_left2 (enter_type rec_flag) env sdecl_list ids_list in
+        List.fold_left2
+          (fun env sdecl ((id, _) as id_uid) ->
+             let env = enter_type rec_flag env sdecl id_uid in
+             add_nested_type_placeholders rec_flag sdecl id env)
+          env sdecl_list ids_list
+      in
       (* Translate each declaration. *)
       let current_slot = ref None in
       let warn_unused =
@@ -1323,7 +1593,7 @@ let transl_type_decl env rec_flag sdecl_list =
         current_slot := slot;
         Builtin_attributes.warning_scope
           name_sdecl.ptype_attributes
-          (fun () -> transl_declaration temp_env name_sdecl id)
+          (fun () -> transl_declaration rec_flag temp_env name_sdecl id)
       in
       let tdecls =
         List.map2 transl_declaration sdecl_list (List.map ids_slots ids_list) in
@@ -1407,10 +1677,12 @@ let transl_type_decl env rec_flag sdecl_list =
     | Typedecl_separability.Error (loc, err) ->
         Error.log_and_raise loc (Separability err)
   in
-  (* Compute the final environment with variance and immediacy *)
+  (* Check re-exports before adding the nested aliases that they imply. *)
+  let coherence_env = add_types_to_env decls shapes env in
+  List.iter2 (check_abbrev coherence_env) sdecl_list decls;
+  let decls = List.map (add_nested_reexport_aliases coherence_env) decls in
+  (* Compute the final environment with type properties and nested aliases. *)
   let final_env = add_types_to_env decls shapes env in
-  (* Check re-exportation *)
-  List.iter2 (check_abbrev final_env) sdecl_list decls;
   (* Keep original declaration *)
   let final_decls =
     List.map2
@@ -2620,6 +2892,10 @@ let report_error ~loc = function
         Errortrace_report.unification ppf env err
           (msg "Type")
           (msg "is not compatible with type")
+  | Nested_record_in_constructor ->
+      Location.errorf ~loc
+        "Nested record definitions are not supported inside@ \
+         constructor inline records."
 
 let () =
   Location.register_error_of_exn

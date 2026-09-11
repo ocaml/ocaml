@@ -1209,6 +1209,30 @@ let rec find_type_data path env =
           | Pext_ty ->
               let cda = find_extension_full p env in
               type_of_cstr path cda.cda_description
+          | Pfld_ty name ->
+              let tda = find_type_data p env in
+              let lbl = match tda.tda_descriptions with
+                | Type_record (labels, _) ->
+                    List.find (fun l -> l.lbl_name = name) labels
+                | Type_variant _ | Type_abstract _ | Type_open
+                | Type_external _ ->
+                    raise Not_found
+              in
+              (match lbl.lbl_inlined with
+               | Some decl ->
+                   let labels =
+                     List.map snd (Datarepr.labels_of_type path decl)
+                   in
+                   begin match decl.type_kind with
+                   | Type_record (_, repr) ->
+                     {
+                       tda_declaration = decl;
+                       tda_descriptions = Type_record (labels, repr);
+                       tda_shape = Shape.leaf decl.type_uid;
+                     }
+                   | _ -> raise Not_found
+                   end
+               | None -> raise Not_found)
         end
     end
 and find_cstr path name env =
@@ -1229,7 +1253,8 @@ let find_label path name env =
 
 let find_path_extra path =
   match path with
-  | Pident _ | Pdot _ | Papply _ | Pextra_ty (_,Pext_ty) -> raise Not_found
+  | Pident _ | Pdot _ | Papply _
+  | Pextra_ty (_, (Pext_ty | Pfld_ty _)) -> raise Not_found
   | Pextra_ty (ty, Pcstr_ty name) -> ty, name
 
 let find_modtype_lazy path env =
@@ -1367,8 +1392,8 @@ let find_shape env (ns : Shape.Sig_component_kind.t) id =
   | Class_type ->
       (IdTbl.find_same id env.cltypes).cltda_shape
 
-let shape_of_path ~namespace env =
-  Shape.of_path ~namespace ~find_shape:(find_shape env)
+let shape_of_path ~namespace env path =
+  Shape.of_path ~namespace ~find_shape:(find_shape env) path
 
 let shape_or_leaf uid = function
   | None -> Shape.leaf uid
@@ -3223,6 +3248,38 @@ let lookup_type ~errors ~use ~loc lid env =
   let (path, tda) = lookup_type_full ~errors ~use ~loc lid env in
   path, tda.tda_declaration
 
+let extend_type_projection_lid lid field =
+  let loc =
+    { lid.loc with
+      loc_end = field.loc.loc_end;
+      loc_ghost = lid.loc.loc_ghost || field.loc.loc_ghost;
+    }
+  in
+  { txt = Ldot (lid, field); loc }
+
+let lookup_type_projection_fields ~use type_lid path fields env =
+  let tda = find_type_data path env in
+  let _, path, tda =
+    List.fold_left
+      (fun (lid, path, _) field ->
+         let lid = extend_type_projection_lid lid field in
+         let path = Pextra_ty (path, Pfld_ty field.txt) in
+         let tda = find_type_data path env in
+         use_type ~use ~loc:lid.loc path tda;
+         lid, path, tda)
+      (type_lid, path, tda)
+      fields
+  in
+  path, tda.tda_declaration
+
+let lookup_type_projection ~errors ~use ~loc ~path type_lid fields env =
+  let full_lid =
+    List.fold_left extend_type_projection_lid type_lid fields
+  in
+  try lookup_type_projection_fields ~use type_lid path fields env
+  with Not_found ->
+    may_lookup_error errors loc env (Unbound_type full_lid.txt)
+
 let lookup_modtype_lazy ~errors ~use ~loc lid env =
   match lid with
   | Lident s -> lookup_ident_modtype ~errors ~use ~loc s env
@@ -3358,6 +3415,9 @@ let lookup_value ?(use=true) ~loc lid env =
 
 let lookup_type ?(use=true) ~loc lid env =
   lookup_type ~errors:true ~use ~loc lid env
+
+let lookup_type_projection ?(use=true) ~loc ~path type_lid fields env =
+  lookup_type_projection ~errors:true ~use ~loc ~path type_lid fields env
 
 let lookup_modtype ?(use=true) ~loc lid env =
   lookup_modtype ~errors:true ~use ~loc lid env
@@ -3699,7 +3759,8 @@ let rec type_path_equiv_modulo env p1 p2 =
     let same_extra = match extra1, extra2 with
       | (Pcstr_ty s1, Pcstr_ty s2) -> String.equal s1 s2
       | (Pext_ty, Pext_ty) -> true
-      | ((Pcstr_ty _ | Pext_ty), _) -> false
+      | (Pfld_ty s1, Pfld_ty s2) -> String.equal s1 s2
+      | ((Pcstr_ty _ | Pext_ty | Pfld_ty _), _) -> false
     in same_extra && type_path_equiv_modulo env p1 p2
   | Papply _, _ | _, Papply _ -> assert false
   | (Pident _ | Pdot _ | Pextra_ty _), _ -> false
@@ -3731,7 +3792,11 @@ let quoted_longident = Style.as_inline_code Pprintast.Doc.longident
 let quoted_constr = Style.as_inline_code Pprintast.Doc.constr
 
 let spellcheck extract env lid =
-  let choices ~path name = Misc.spellcheck (extract path env) name in
+  let choices ~path name =
+    match extract path env with
+    | names -> Misc.spellcheck names name
+    | exception Not_found -> []
+  in
     match lid with
     | Longident.Lapply _ -> None
     | Longident.Lident s ->

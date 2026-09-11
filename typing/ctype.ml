@@ -1656,7 +1656,7 @@ let instance_parameterized_type ?keep_names ?scope sch_args sch =
     (ty_args, ty)
   )
 
-let map_kind f = function
+let rec map_kind f = function
   | Type_abstract r -> Type_abstract r
   | Type_open -> Type_open
   | Type_variant (cl, rep) ->
@@ -1664,17 +1664,30 @@ let map_kind f = function
         List.map
           (fun c ->
              {c with
-              cd_args = map_type_expr_cstr_args f c.cd_args;
+              cd_args = map_constructor_arguments f c.cd_args;
               cd_res = Option.map f c.cd_res
              })
           cl, rep)
   | Type_record (fl, rr) ->
-      Type_record (
-        List.map
-          (fun l ->
-             {l with ld_type = f l.ld_type}
-          ) fl, rr)
+      Type_record (List.map (map_label_declaration f) fl, rr)
   | Type_external name -> Type_external name
+
+and map_label_declaration f l =
+  { l with
+    ld_type = f l.ld_type;
+    ld_inlined = Option.map (map_type_declaration f) l.ld_inlined;
+  }
+
+and map_type_declaration f decl =
+  { decl with
+    type_params = List.map f decl.type_params;
+    type_kind = map_kind f decl.type_kind;
+    type_manifest = Option.map f decl.type_manifest;
+  }
+
+and map_constructor_arguments f = function
+  | Cstr_tuple l -> Cstr_tuple (List.map f l)
+  | Cstr_record l -> Cstr_record (List.map (map_label_declaration f) l)
 
 let instance_declaration decl =
   For_copy.with_scope (fun copy_scope ->
