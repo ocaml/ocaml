@@ -201,6 +201,28 @@ Total {b words} promoted from the minor heap of this Domain to the major heap
 in the last minor collection.
 @since 5.4
 *)
+| EV_C_MAJOR_DIRECT_ALLOCATED_WORDS
+(**
+Direct allocations to the major heap of this Domain in {b words}, since the
+last major slice. This excludes words promoted from the minor heap, which are
+counted in EV_C_MAJOR_ALLOCATED_WORDS.
+@since 5.6
+*)
+| EV_C_MAJOR_SUSPENDED_ALLOCATED_WORDS
+(**
+Allocations of this Domain in {b words} that were suspended during a GC
+ramp-up phase, since the last major slice. The major slice paces against
+EV_C_MAJOR_ALLOCATED_WORDS less this counter plus
+EV_C_MAJOR_RESUMED_ALLOCATED_WORDS. Zero outside a ramp-up phase.
+@since 5.6
+*)
+| EV_C_MAJOR_RESUMED_ALLOCATED_WORDS
+(**
+Allocations of this Domain in {b words} returned by Gc.ramp_down since the
+last major slice. Work suspended during a ramp-up phase and never resumed is
+never collected against.
+@since 5.6
+*)
 
 (** The type for span events emitted by the runtime. *)
 type runtime_phase =
@@ -475,6 +497,12 @@ Event spanning the cleaning of ephemerons whose keys were locked during a minor
 GC. Keys that were promoted are updated to their new location and ephemerons
 whose keys were collected are emptied.
 @since 5.4
+*)
+| EV_EXPLICIT_GC_RAMP_UP
+(**
+Event spanning a call to Gc.ramp_up, during which the major slice suspends the
+collection work that new allocations would otherwise incur.
+@since 5.6
 *)
 
 (** Lifecycle events for Runtime_events and domains. *)

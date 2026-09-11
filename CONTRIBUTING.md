@@ -7,21 +7,15 @@ OCaml distribution. These are just guidelines, not rules, use your
 best judgment and feel free to propose changes to this document itself
 in a pull request.
 
-This document assumes that you have a patch against the sources of the
-compiler distribution, that you wish to submit to the OCaml
-maintainers upstream. See [INSTALL.adoc](INSTALL.adoc) for details on
-how to build the compiler distribution from sources. See
-[HACKING.adoc](HACKING.adoc) for details on how to modify the sources.
-
 ## Contribution
 
 Modifying the sources is far from the only way to contribute to the
-OCaml distribution. Bug reports (in particular when they come with
-a reproducible example), simple typos or clarifications in the
-documentation also help, and help evaluating and integrating existing
-change proposals also helps. Providing good answers on the discussion
-forums, or asking the good questions that highlight deficiencies in
-existing documentations, also help.
+OCaml distribution. Other contributions include:
+- Bug reports (in particular when they come with a reproducible example).
+- Simple typos or clarifications in the documentation
+- Help evaluating and integrating existing change proposals.
+- Providing good answers on the discussion forums
+- Asking questions that highlight deficiencies in existing documentations.
 
 There are also many valuable ways to contribute to the wider OCaml
 ecosystem that do not involve changes to the OCaml distribution.
@@ -30,6 +24,13 @@ The rest of the document is concerned with the form of change
 proposals against the OCaml distribution. (Code changes, but also
 improvement to documentation or implementation comments, which are
 valuable changes on their own.)
+
+This document assumes that you have a patch against the sources of the
+compiler distribution or an idea for such a patch.
+
+This document is concerned with the process of getting your work merged
+upstream. For advice on how to build the compiler from sources
+see [INSTALL.adoc](INSTALL.adoc) and [HACKING.adoc](HACKING.adoc) instead.
 
 ## Workflow
 
@@ -84,6 +85,7 @@ The current list of maintainers is as follows:
 - @OlivierNicole Olivier Nicole
 - @sadiqj Sadiq Jaffer
 - @shindere Sébastien Hinderer
+- @smuenzel Stefan Muenzel
 - @stedolan Stephen Dolan
 - @trefis Thomas Refis
 - @xavierleroy Xavier Leroy
@@ -113,6 +115,25 @@ the PR or issue.
 ### Releases
 
 For more information about when and how new releases are published, see [the release introduction](release-info/introduction.md).
+
+## Pull-Request guideline
+
+You should open a pull request as a way to discuss the changes you are
+proposing. In some cases, you can open a pull request which contains proposed
+changes directly. In other cases, you should first open a pull request on the
+https://github.com/ocaml/RFCs repository to discuss some aspects of your changes.
+
+Chose the pull request route if you have a mature implementation, if you have
+already discussed the changes in advance, if your changes are purely
+implementation details without wider implications, or some such situation.
+
+Chose the RFC route if you merely have a prototype, if you haven't discussed or
+iterated on your design much, if your changes may impact the ecosystem at large
+(the users, the libraries, the build systems, etc.). Basically, use the RFC route
+to get more feedback on the earlier stages of your work.
+
+The rest of this document is concerned only with the pull request route. For
+the RFC route, you can find some documentation on the RFC repository directly.
 
 ## Coding guidelines
 

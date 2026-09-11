@@ -18,6 +18,9 @@ Working version
 
 ### Runtime system:
 
+- #14988: Don't copy continuations in Weak.get_copy.
+  (Jeremy Yallop, review by Stefan Muenzel)
+
 - #14773 : Activate Haiku native backend
   (Sylvain Kerjean, review by Kate Deplaix and Nicolas Ojeda Bar)
   Enable native-code backend and testsuite on BeOS/Haiku.
@@ -145,10 +148,18 @@ Working version
   respectively `--disable-largefile` and `--disable-year2038` to configure.
   (Antonin Décimo, review by Miod Vallat)
 
-- #15019: `Marshal.from_{string,bytes}`: guard against overflow in
-  the computation of the total data length.
+- #15019, #15030, OSEC-2026-18: `Marshal.from_{string,bytes}`: guard against
+  overflow in the computation of the total data length.
   (Xavier Leroy, report by Akshay Singh, review by Nicolás Ojeda Bär
   and Antonin Décimo)
+
+- #15001: Add runtime events counters EV_C_MAJOR_DIRECT_ALLOCATED_WORDS,
+  EV_C_MAJOR_SUSPENDED_ALLOCATED_WORDS and EV_C_MAJOR_RESUMED_ALLOCATED_WORDS,
+  reporting the words allocated directly in the major heap as opposed to
+  promoted from the minor heap, the words suspended during a GC ramp-up phase
+  and the words returned by Gc.ramp_down. Add the span
+  EV_EXPLICIT_GC_RAMP_UP covering a call to Gc.ramp_up.
+  (Tim McGilchrist, review by Sadiq Jaffer and Gabriel Scherer)
 
 ### Type system:
 
@@ -259,6 +270,10 @@ Working version
   barrier; the default is chosen at configure time and can be overridden.
   (Sebastian Pop and Xavier Leroy, review by Xavier Leroy and Olivier Nicole)
 
+- #14898, #15035: do not trust GADT equations introduced by refutable arguments
+  in the Lambda IR.
+  (Florian Angeletti, report by Nathanaëlle Courant, review by Gabriel Scherer)
+
 ### Standard library:
 
 - #14974 : Add `Sys.filepath_exists` and improve documentation
@@ -339,6 +354,11 @@ Working version
   tweak the documentation of Uchar.of_char.
   (Fabian Hemmer, suggestion by Daniel Bünzli, review by Daniel Bünzli and
   Nicolás Ojeda Bär)
+
+- #15009: Improve Set.union, Set.inter, and Set.diff on physically shared sets,
+  avoiding unnecessary traversal and allocations and preserving sharing when the
+  result is unchanged.
+  (Nicolás Ojeda Bär, review by Vincent Laviron and Olivier Nicole)
 
 ### Other libraries:
 
@@ -528,6 +548,9 @@ Working version
 
 ### Bug fixes:
 
+- #14986: Take effect cases into account in the expansiveness check.
+  (Jeremy Yallop, review by Florian Angeletti)
+
 - #15021: On POWER, fix assembler errors from frame-management code when the
   frame size exceeds a signed 16-bit displacement, by routing the affected
   sequences through range-checked helpers.
@@ -536,7 +559,7 @@ Working version
 - #14993: the let-rec check should give generic arrays dynamic size,
   since floats and addresses have different sizes on 32-bit systems.
   (Jeremy Yallop, review by Vincent Laviron)
-
+  
 - #13335: Fix infinite loop in runtime_events.c's write_to_ring when an
   event is larger than the configured ring buffer. Only really comes up
   if you run the instrumented runtime with a small OCAMLRUNPARAM=e= setting
@@ -613,6 +636,13 @@ Working version
 - #14969: Fix the units of the runtime events counter EV_C_MINOR_ALLOCATED_WORDS
   to report as the number of words of minor heap consumed, including headers.
   (Tim McGilchrist, review by Nicolás Ojeda Bär)
+
+- #15016, #14151: Fix spurious "Runtime_events: corrupt stream" failures when a
+  consumer falls behind the producer. The consumer now reports an overwritten
+  ring slot as lost events rather than corruption, and write_to_ring publishes
+  the ring head advance before overwriting the slots that advance releases.
+  (Tim McGilchrist, reported by mattiasdrp, review by Sadiq Jaffer and
+   Zane Hambly)
 
 OCaml 5.5.1
 -----------

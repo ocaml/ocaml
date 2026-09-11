@@ -2380,6 +2380,11 @@ let add_local_constraint path info env =
   { env with
     local_constraints = Path.Map.add path info env.local_constraints }
 
+type local_equations = Types.type_declaration Path.Map.t
+let freeze_local_equations env = env.local_constraints
+let restrict_local_equations local_constraints env =
+  { env with local_constraints }
+
 (* Non-lazy version of scrape_alias *)
 let scrape_alias t mty =
   mty |> Subst.Lazy.of_modtype |> scrape_alias t |> Subst.Lazy.force_modtype
