@@ -371,7 +371,7 @@ Working version
 - #15044: `Unix.realpath`: On Windows, improve normalization of UNC paths. For
   example, `\\?\UNC\server\share` is now mapped to `\\server\share` rather than
   `UNC\server\share`.
-  (Nicolás Ojeda Bär, review by David Allsopp)
+  (Nicolás Ojeda Bär, review by David Allsopp and Antonin Décimo)
 
 ### Tools:
 
