@@ -5369,6 +5369,7 @@ middle_end/closure/closure_middle_end.cmo : \
     utils/log.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
+    utils/dev_log.cmi \
     middle_end/compilenv.cmi \
     middle_end/closure/closure.cmi \
     utils/clflags.cmi \
@@ -5380,6 +5381,7 @@ middle_end/closure/closure_middle_end.cmx : \
     utils/log.cmx \
     lambda/lambda.cmx \
     typing/ident.cmx \
+    utils/dev_log.cmx \
     middle_end/compilenv.cmx \
     middle_end/closure/closure.cmx \
     utils/clflags.cmx \
@@ -5387,6 +5389,7 @@ middle_end/closure/closure_middle_end.cmx : \
     middle_end/closure/closure_middle_end.cmi
 middle_end/closure/closure_middle_end.cmi : \
     lambda/lambda.cmi \
+    utils/dev_log.cmi \
     middle_end/clambda.cmi \
     middle_end/backend_intf.cmi
 middle_end/flambda/alias_analysis.cmo : \
@@ -5930,6 +5933,7 @@ middle_end/flambda/flambda_middle_end.cmo : \
     middle_end/flambda/flambda_iterators.cmi \
     middle_end/flambda/flambda_invariants.cmi \
     middle_end/flambda/flambda.cmi \
+    utils/dev_log.cmi \
     lambda/debuginfo.cmi \
     middle_end/compilenv.cmi \
     middle_end/flambda/base_types/closure_id.cmi \
@@ -5966,6 +5970,7 @@ middle_end/flambda/flambda_middle_end.cmx : \
     middle_end/flambda/flambda_iterators.cmx \
     middle_end/flambda/flambda_invariants.cmx \
     middle_end/flambda/flambda.cmx \
+    utils/dev_log.cmx \
     lambda/debuginfo.cmx \
     middle_end/compilenv.cmx \
     middle_end/flambda/base_types/closure_id.cmx \
@@ -5977,6 +5982,7 @@ middle_end/flambda/flambda_middle_end.cmx : \
     middle_end/flambda/flambda_middle_end.cmi
 middle_end/flambda/flambda_middle_end.cmi : \
     lambda/lambda.cmi \
+    utils/dev_log.cmi \
     middle_end/clambda.cmi \
     middle_end/backend_intf.cmi
 middle_end/flambda/flambda_to_clambda.cmo : \
@@ -5999,6 +6005,7 @@ middle_end/flambda/flambda_to_clambda.cmo : \
     middle_end/flambda/flambda_utils.cmi \
     middle_end/flambda/flambda.cmi \
     middle_end/flambda/export_info.cmi \
+    utils/dev_log.cmi \
     lambda/debuginfo.cmi \
     middle_end/compilenv.cmi \
     middle_end/compilation_unit.cmi \
@@ -6029,6 +6036,7 @@ middle_end/flambda/flambda_to_clambda.cmx : \
     middle_end/flambda/flambda_utils.cmx \
     middle_end/flambda/flambda.cmx \
     middle_end/flambda/export_info.cmx \
+    utils/dev_log.cmx \
     lambda/debuginfo.cmx \
     middle_end/compilenv.cmx \
     middle_end/compilation_unit.cmx \
@@ -6043,6 +6051,7 @@ middle_end/flambda/flambda_to_clambda.cmi : \
     middle_end/symbol.cmi \
     middle_end/flambda/flambda.cmi \
     middle_end/flambda/export_info.cmi \
+    utils/dev_log.cmi \
     middle_end/clambda.cmi
 middle_end/flambda/flambda_utils.cmo : \
     middle_end/variable.cmi \
@@ -6322,6 +6331,7 @@ middle_end/flambda/inline_and_simplify.cmi : \
     middle_end/variable.cmi \
     middle_end/flambda/inline_and_simplify_aux.cmi \
     middle_end/flambda/flambda.cmi \
+    utils/dev_log.cmi \
     middle_end/backend_intf.cmi
 middle_end/flambda/inline_and_simplify_aux.cmo : \
     middle_end/variable.cmi \
@@ -6340,6 +6350,7 @@ middle_end/flambda/inline_and_simplify_aux.cmo : \
     middle_end/flambda/freshening.cmi \
     middle_end/flambda/flambda_utils.cmi \
     middle_end/flambda/flambda.cmi \
+    utils/dev_log.cmi \
     lambda/debuginfo.cmi \
     middle_end/compilation_unit.cmi \
     middle_end/flambda/base_types/closure_origin.cmi \
@@ -6364,6 +6375,7 @@ middle_end/flambda/inline_and_simplify_aux.cmx : \
     middle_end/flambda/freshening.cmx \
     middle_end/flambda/flambda_utils.cmx \
     middle_end/flambda/flambda.cmx \
+    utils/dev_log.cmx \
     lambda/debuginfo.cmx \
     middle_end/compilation_unit.cmx \
     middle_end/flambda/base_types/closure_origin.cmx \
@@ -6383,6 +6395,7 @@ middle_end/flambda/inline_and_simplify_aux.cmi : \
     middle_end/flambda/inlining_cost.cmi \
     middle_end/flambda/freshening.cmi \
     middle_end/flambda/flambda.cmi \
+    utils/dev_log.cmi \
     lambda/debuginfo.cmi \
     middle_end/flambda/base_types/closure_origin.cmi \
     middle_end/flambda/base_types/closure_id.cmi \
@@ -6680,6 +6693,7 @@ middle_end/flambda/pass_wrapper.cmx : \
     utils/clflags.cmx \
     middle_end/flambda/pass_wrapper.cmi
 middle_end/flambda/pass_wrapper.cmi : \
+    utils/dev_log.cmi \
     utils/compiler_diagnostic.cmi
 middle_end/flambda/projection.cmo : \
     middle_end/variable.cmi \
@@ -6729,6 +6743,7 @@ middle_end/flambda/remove_free_vars_equal_to_args.cmo : \
     utils/int_replace_polymorphic_compare.cmi \
     middle_end/flambda/flambda_utils.cmi \
     middle_end/flambda/flambda.cmi \
+    utils/dev_log.cmi \
     middle_end/flambda/remove_free_vars_equal_to_args.cmi
 middle_end/flambda/remove_free_vars_equal_to_args.cmx : \
     middle_end/variable.cmx \
@@ -6737,9 +6752,11 @@ middle_end/flambda/remove_free_vars_equal_to_args.cmx : \
     utils/int_replace_polymorphic_compare.cmx \
     middle_end/flambda/flambda_utils.cmx \
     middle_end/flambda/flambda.cmx \
+    utils/dev_log.cmx \
     middle_end/flambda/remove_free_vars_equal_to_args.cmi
 middle_end/flambda/remove_free_vars_equal_to_args.cmi : \
-    middle_end/flambda/flambda.cmi
+    middle_end/flambda/flambda.cmi \
+    utils/dev_log.cmi
 middle_end/flambda/remove_unused_arguments.cmo : \
     middle_end/variable.cmi \
     middle_end/flambda/projection.cmi \
@@ -7014,6 +7031,7 @@ middle_end/flambda/un_anf.cmo : \
     middle_end/printclambda.cmi \
     utils/misc.cmi \
     lambda/lambda.cmi \
+    utils/dev_log.cmi \
     lambda/debuginfo.cmi \
     utils/clflags.cmi \
     middle_end/clambda_primitives.cmi \
@@ -7027,6 +7045,7 @@ middle_end/flambda/un_anf.cmx : \
     middle_end/printclambda.cmx \
     utils/misc.cmx \
     lambda/lambda.cmx \
+    utils/dev_log.cmx \
     lambda/debuginfo.cmx \
     utils/clflags.cmx \
     middle_end/clambda_primitives.cmx \
@@ -7036,6 +7055,7 @@ middle_end/flambda/un_anf.cmx : \
     middle_end/flambda/un_anf.cmi
 middle_end/flambda/un_anf.cmi : \
     middle_end/symbol.cmi \
+    utils/dev_log.cmi \
     middle_end/clambda.cmi
 middle_end/flambda/unbox_closures.cmo : \
     middle_end/variable.cmi \
@@ -7045,6 +7065,7 @@ middle_end/flambda/unbox_closures.cmo : \
     middle_end/flambda/flambda_utils.cmi \
     middle_end/flambda/flambda_iterators.cmi \
     middle_end/flambda/flambda.cmi \
+    utils/dev_log.cmi \
     middle_end/flambda/base_types/closure_id.cmi \
     utils/clflags.cmi \
     middle_end/flambda/augment_specialised_args.cmi \
@@ -7057,6 +7078,7 @@ middle_end/flambda/unbox_closures.cmx : \
     middle_end/flambda/flambda_utils.cmx \
     middle_end/flambda/flambda_iterators.cmx \
     middle_end/flambda/flambda.cmx \
+    utils/dev_log.cmx \
     middle_end/flambda/base_types/closure_id.cmx \
     utils/clflags.cmx \
     middle_end/flambda/augment_specialised_args.cmx \
@@ -7079,6 +7101,7 @@ middle_end/flambda/unbox_free_vars_of_closures.cmo : \
     middle_end/flambda/flambda_iterators.cmi \
     middle_end/flambda/flambda.cmi \
     middle_end/flambda/extract_projections.cmi \
+    utils/dev_log.cmi \
     utils/clflags.cmi \
     middle_end/flambda/unbox_free_vars_of_closures.cmi
 middle_end/flambda/unbox_free_vars_of_closures.cmx : \
@@ -7094,6 +7117,7 @@ middle_end/flambda/unbox_free_vars_of_closures.cmx : \
     middle_end/flambda/flambda_iterators.cmx \
     middle_end/flambda/flambda.cmx \
     middle_end/flambda/extract_projections.cmx \
+    utils/dev_log.cmx \
     utils/clflags.cmx \
     middle_end/flambda/unbox_free_vars_of_closures.cmi
 middle_end/flambda/unbox_free_vars_of_closures.cmi : \
@@ -7108,6 +7132,7 @@ middle_end/flambda/unbox_specialised_args.cmo : \
     middle_end/flambda/inline_and_simplify_aux.cmi \
     middle_end/flambda/flambda.cmi \
     middle_end/flambda/extract_projections.cmi \
+    utils/dev_log.cmi \
     utils/clflags.cmi \
     middle_end/flambda/augment_specialised_args.cmi \
     middle_end/flambda/unbox_specialised_args.cmi
@@ -7119,6 +7144,7 @@ middle_end/flambda/unbox_specialised_args.cmx : \
     middle_end/flambda/inline_and_simplify_aux.cmx \
     middle_end/flambda/flambda.cmx \
     middle_end/flambda/extract_projections.cmx \
+    utils/dev_log.cmx \
     utils/clflags.cmx \
     middle_end/flambda/augment_specialised_args.cmx \
     middle_end/flambda/unbox_specialised_args.cmi

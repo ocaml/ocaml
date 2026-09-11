@@ -35,7 +35,12 @@ val filename_of_input: input -> string
 val set_paths :
   ?auto_include:Load_path.auto_include_callback -> ?dir:string -> unit -> unit
 
-(* The interactive toplevel loop *)
+(** The interactive toplevel loop, the interface is currently duplicated
+    between a [log] based version and a compatibility version using
+    [Format.formatter].
+    The second version is the current default, but the default might be
+    switched later on
+*)
 
 module type S = sig
   type log
@@ -75,9 +80,10 @@ module type S = sig
   val load_file: log -> string -> bool
 end
 
-module V2: S with
-  type log := Toplog.t
-  and type dev_log := Dev_log.t
+module Eval: S with type log := Toplog.t and type dev_log := Dev_log.t
+
+module Eval_fmt : S with
+  type log := Format.formatter and type dev_log := Format.formatter
 
 include S with
   type log := Format.formatter and type dev_log := Format.formatter
