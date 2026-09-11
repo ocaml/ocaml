@@ -54,6 +54,7 @@
 #include "caml/fail.h"
 #include "caml/gc_ctrl.h"
 #include "caml/major_gc.h"
+#include "caml/minor_gc.h"
 #include "caml/io.h"
 #include "caml/mlvalues.h"
 #include "caml/osdeps.h"
@@ -136,6 +137,12 @@ CAMLexport void caml_do_exit(int retcode)
 {
   caml_domain_state* domain_state = Caml_state;
   struct gc_stats s;
+
+  /* Report minor heap allocations. With [cleanup_on_exit] the collection in
+     [caml_domain_terminate] reports them instead. */
+  if (!caml_params->cleanup_on_exit)
+    caml_ev_minor_allocated((uintnat)domain_state->young_end
+                            - (uintnat)domain_state->young_ptr);
 
   if ((atomic_load_relaxed(&caml_verb_gc) & CAML_GC_MSG_STATS) != 0) {
     caml_compute_gc_stats(&s);
