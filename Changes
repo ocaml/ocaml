@@ -118,6 +118,13 @@ Working version
   Fixes an error on Windows with allocating long paths to this file.
   (Tim McGilchrist, review by Antonin Décimo)
 
+- #14605, #15243: On POWER, fix a TSan fatal error and corrupted
+  backtraces when a C call takes more arguments than fit in registers, and
+  a segfault when a fiber completes after an effect was handled on its
+  parent stack.
+  (Tim McGilchrist and Miod Vallat, reported by KC Sivaramakrishnan,
+   reviews by Miod Vallat and Zane Hambly)
+
 OCaml 5.6.0
 -----------
 
