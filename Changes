@@ -12,6 +12,13 @@ Working version
   functions built on it.
   (Tim McGilchrist, review by Sadiq Jaffer)
 
+- #15068: Tear down the runtime events ring later, so that events emitted
+  while the program shuts down are recorded, and the ring file is no longer
+  leaked by programs that embed the runtime and call caml_shutdown. Report
+  the minor heap allocation outstanding at exit. EV_DOMAIN_TERMINATE is no
+  longer emitted for the initial domain.
+  (Tim McGilchrist, review by Sadiq Jaffer)
+
 ### Code generation and optimizations:
 
 - #14980: Emit direct assembly for `Atomic.exchange` and
