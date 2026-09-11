@@ -87,6 +87,99 @@ let extract_float = function
     Const_float f -> f
   | _ -> fatal_error "Translcore.extract_float"
 
+(* Compile record field accesses *)
+
+let transl_atomic_field ~scopes:_ lbl =
+  let offset =
+    match lbl.lbl_repres with
+    | Record_regular
+    | Record_inlined _ -> 0
+    | Record_float ->
+        fatal_error
+          "Translcore.transl_atomic_field: atomic field in float record"
+    | Record_unboxed _ ->
+        fatal_error
+          "Translcore.transl_atomic_field: atomic field in unboxed record"
+    | Record_extension _ -> 1
+  in
+  Lconst (Const_int (lbl.lbl_pos + offset))
+
+let transl_get_field ~scopes loc targ lbl imm_kind =
+  let loc = of_location ~scopes loc in
+  let unboxed =
+    match lbl.lbl_repres with Record_unboxed _ -> true | _ -> false
+  in
+  if unboxed then targ else
+  match lbl.lbl_atomic with
+  | Nonatomic ->
+    let prim =
+      match lbl.lbl_repres with
+      | Record_regular | Record_inlined _ ->
+        Pfield (lbl.lbl_pos, imm_kind, lbl.lbl_mut)
+      | Record_unboxed _ -> assert false
+      | Record_float ->
+        Pfloatfield lbl.lbl_pos
+      | Record_extension _ ->
+        Pfield (lbl.lbl_pos + 1, imm_kind, lbl.lbl_mut)
+    in
+    Lprim(prim, [targ], loc)
+  | Atomic ->
+    let pos = transl_atomic_field ~scopes lbl in
+    Lprim (Patomic_load, [targ; pos], loc)
+
+let transl_set_field ~scopes loc trec lbl imm_kind tnewval =
+  let loc = of_location ~scopes loc in
+  match lbl.lbl_atomic with
+  | Nonatomic ->
+    let prim =
+      match lbl.lbl_repres with
+      | Record_regular
+      | Record_inlined _ ->
+        Psetfield(lbl.lbl_pos, imm_kind, Assignment)
+      | Record_unboxed _ -> assert false
+      | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
+      | Record_extension _ ->
+        Psetfield (lbl.lbl_pos + 1, imm_kind, Assignment)
+    in
+    Lprim(prim, [trec; tnewval], loc)
+  | Atomic ->
+    let pos = transl_atomic_field ~scopes lbl in
+    let prim =
+      Primitive.simple
+        ~name:"caml_atomic_exchange_field" ~arity:3 ~alloc:false
+    in
+    Lprim(Pignore, [Lprim (Pccall prim, [trec; pos; tnewval], loc)], loc)
+
+let transl_record_init ~scopes loc env fields repres tvals shape =
+  let mut =
+    if Array.exists (fun (lbl, _) -> lbl.lbl_mut = Mutable) fields
+    then Mutable
+    else Immutable in
+  try
+    if mut = Mutable then raise Not_constant;
+    let cl = List.map extract_constant tvals in
+    match repres with
+    | Record_regular -> Lconst(Const_block(0, cl))
+    | Record_inlined tag -> Lconst(Const_block(tag, cl))
+    | Record_unboxed _ -> Lconst(match cl with [v] -> v | _ -> assert false)
+    | Record_float ->
+      Lconst(Const_float_array(List.map extract_float cl))
+    | Record_extension _ ->
+      raise Not_constant
+  with Not_constant ->
+    let loc = of_location ~scopes loc in
+    match repres with
+    | Record_regular ->
+      Lprim(Pmakeblock(0, mut, Some shape), tvals, loc)
+    | Record_inlined tag ->
+      Lprim(Pmakeblock(tag, mut, Some shape), tvals, loc)
+    | Record_unboxed _ -> (match tvals with [v] -> v | _ -> assert false)
+    | Record_float ->
+      Lprim(Pmakearray (Pfloatarray, mut), tvals, loc)
+    | Record_extension path ->
+      let slot = transl_extension_path loc env path in
+      Lprim(Pmakeblock(0, mut, Some (Pgenval :: shape)), slot :: tvals, loc)
+
 (* Insertion of debugging events *)
 
 let event_before ~scopes exp lam =
@@ -337,52 +430,18 @@ and transl_exp0 ~in_new_scope ~scopes e =
         fields representation extended_expression
   | Texp_atomic_loc (arg, _, lbl) ->
       let loc = of_location ~scopes e.exp_loc in
-      let (arg, lbl) = transl_atomic_loc ~scopes arg lbl in
-      make_atomic_loc ~loc arg lbl
-  | Texp_field (arg, _, ({ lbl_atomic = Atomic; _ } as lbl)) ->
-      let arg, lbl = transl_atomic_loc ~scopes arg lbl in
-      let loc = of_location ~scopes e.exp_loc in
-      Lprim (Patomic_load, [arg; lbl], loc)
+      let arg = transl_exp ~scopes arg in
+      let field = transl_atomic_field ~scopes lbl in
+      make_atomic_loc ~loc arg field
   | Texp_field (arg, _, lbl) ->
       let targ = transl_exp ~scopes arg in
-      begin match lbl.lbl_repres with
-          Record_regular | Record_inlined _ ->
-          Lprim (Pfield (lbl.lbl_pos, maybe_pointer e, lbl.lbl_mut), [targ],
-                 of_location ~scopes e.exp_loc)
-        | Record_unboxed _ -> targ
-        | Record_float ->
-          Lprim (Pfloatfield lbl.lbl_pos, [targ],
-                 of_location ~scopes e.exp_loc)
-        | Record_extension _ ->
-          Lprim (Pfield (lbl.lbl_pos + 1, maybe_pointer e, lbl.lbl_mut), [targ],
-                 of_location ~scopes e.exp_loc)
-      end
-  | Texp_setfield (arg, _, ({ lbl_atomic = Atomic; _ } as lbl), newval) ->
-      let prim =
-        Primitive.simple
-          ~name:"caml_atomic_exchange_field" ~arity:3 ~alloc:false
-      in
-      let arg, lbl = transl_atomic_loc ~scopes arg lbl in
-      let newval = transl_exp ~scopes newval in
-      let loc = of_location ~scopes e.exp_loc in
-      Lprim (
-        Pignore,
-        [Lprim (Pccall prim, [arg; lbl; newval], loc)],
-        loc
-      )
+      transl_get_field ~scopes e.exp_loc targ lbl (maybe_pointer e)
   | Texp_setfield(arg, _, lbl, newval) ->
-      let access =
-        match lbl.lbl_repres with
-          Record_regular
-        | Record_inlined _ ->
-          Psetfield(lbl.lbl_pos, maybe_pointer newval, Assignment)
-        | Record_unboxed _ -> assert false
-        | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
-        | Record_extension _ ->
-          Psetfield (lbl.lbl_pos + 1, maybe_pointer newval, Assignment)
-      in
-      Lprim(access, [transl_exp ~scopes arg; transl_exp ~scopes newval],
-            of_location ~scopes e.exp_loc)
+      let trec = transl_exp ~scopes arg in
+      let tnewval = transl_exp ~scopes newval in
+      transl_set_field ~scopes e.exp_loc
+        trec
+        lbl (maybe_pointer newval) tnewval
   | Texp_array (amut, expr_list) ->
       let kind = array_kind e in
       let ll = transl_list ~scopes expr_list in
@@ -970,58 +1029,21 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
        taken from init_expr if any *)
     let init_id = Ident.create_local "init" in
     let lv =
-      Array.mapi
-        (fun i (_, definition) ->
+      Array.map
+        (fun (lbl, definition) ->
            match definition with
-           | Kept (typ, mut) ->
+           | Kept (typ, _) ->
+               let imm_kind = maybe_pointer_type env typ in
                let field_kind = value_kind env typ in
-               let access =
-                 match repres with
-                   Record_regular | Record_inlined _ ->
-                     Pfield (i, maybe_pointer_type env typ, mut)
-                 | Record_unboxed _ -> assert false
-                 | Record_extension _ ->
-                     Pfield (i + 1, maybe_pointer_type env typ, mut)
-                 | Record_float -> Pfloatfield i in
-               Lprim(access, [Lvar init_id],
-                     of_location ~scopes loc),
+               transl_get_field ~scopes loc (Lvar init_id) lbl imm_kind,
                field_kind
            | Overridden (_lid, expr) ->
                let field_kind = value_kind expr.exp_env expr.exp_type in
                transl_exp ~scopes expr, field_kind)
         fields
     in
-    let ll, shape = List.split (Array.to_list lv) in
-    let mut =
-      if Array.exists (fun (lbl, _) -> lbl.lbl_mut = Mutable) fields
-      then Mutable
-      else Immutable in
-    let lam =
-      try
-        if mut = Mutable then raise Not_constant;
-        let cl = List.map extract_constant ll in
-        match repres with
-        | Record_regular -> Lconst(Const_block(0, cl))
-        | Record_inlined tag -> Lconst(Const_block(tag, cl))
-        | Record_unboxed _ -> Lconst(match cl with [v] -> v | _ -> assert false)
-        | Record_float ->
-            Lconst(Const_float_array(List.map extract_float cl))
-        | Record_extension _ ->
-            raise Not_constant
-      with Not_constant ->
-        let loc = of_location ~scopes loc in
-        match repres with
-          Record_regular ->
-            Lprim(Pmakeblock(0, mut, Some shape), ll, loc)
-        | Record_inlined tag ->
-            Lprim(Pmakeblock(tag, mut, Some shape), ll, loc)
-        | Record_unboxed _ -> (match ll with [v] -> v | _ -> assert false)
-        | Record_float ->
-            Lprim(Pmakearray (Pfloatarray, mut), ll, loc)
-        | Record_extension path ->
-            let slot = transl_extension_path loc env path in
-            Lprim(Pmakeblock(0, mut, Some (Pgenval :: shape)), slot :: ll, loc)
-    in
+    let tvals, shape = List.split (Array.to_list lv) in
+    let lam = transl_record_init ~scopes loc env fields repres tvals shape in
     begin match opt_init_expr with
       None -> lam
     | Some init_expr -> Llet(Strict, Pgenval, init_id,
@@ -1031,23 +1053,27 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
     (* Take a shallow copy of the init record, then mutate the fields
        of the copy *)
     let copy_id = Ident.create_local "newrecord" in
+    let get_field lbl imm_kind =
+      transl_get_field ~scopes loc  (Lvar copy_id) lbl imm_kind
+    in
+    let set_field lbl imm_kind lam =
+      transl_set_field ~scopes loc (Lvar copy_id) lbl imm_kind lam
+    in
     let update_field cont (lbl, definition) =
       match definition with
-      | Kept _ -> cont
+      | Kept (typ, _mut) when lbl.lbl_atomic = Atomic ->
+          (* #14918: for atomic records we need a proper atomic read to
+             take place; Pduprecord will take a non-atomic copy of all
+             fields, so we re-assign the atomic fields afterwards. *)
+          let imm_kind = maybe_pointer_type env typ in
+          let lam = get_field lbl imm_kind in
+          let set = set_field lbl imm_kind lam in
+          Lsequence(set, cont)
+      | Kept (_typ, _mut) -> cont
       | Overridden (_lid, expr) ->
-          let upd =
-            match repres with
-              Record_regular
-            | Record_inlined _ ->
-                Psetfield(lbl.lbl_pos, maybe_pointer expr, Assignment)
-            | Record_unboxed _ -> assert false
-            | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
-            | Record_extension _ ->
-                Psetfield(lbl.lbl_pos + 1, maybe_pointer expr, Assignment)
-          in
-          Lsequence(Lprim(upd, [Lvar copy_id; transl_exp ~scopes expr],
-                          of_location ~scopes loc),
-                    cont)
+          let lam = transl_exp ~scopes expr in
+          let set = set_field lbl (maybe_pointer expr) lam in
+          Lsequence(set, cont)
     in
     begin match opt_init_expr with
       None -> assert false
@@ -1058,23 +1084,6 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
              Array.fold_left update_field (Lvar copy_id) fields)
     end
   end
-
-and transl_atomic_loc ~scopes arg lbl =
-  let arg = transl_exp ~scopes arg in
-  let offset =
-    match lbl.lbl_repres with
-    | Record_regular
-    | Record_inlined _ -> 0
-    | Record_float ->
-        fatal_error
-          "Translcore.transl_atomic_loc: atomic field in float record"
-    | Record_unboxed _ ->
-        fatal_error
-          "Translcore.transl_atomic_loc: atomic field in unboxed record"
-    | Record_extension _ -> 1
-  in
-  let lbl = Lconst (Const_int (lbl.lbl_pos + offset)) in
-  (arg, lbl)
 
 and transl_match ~scopes e arg pat_expr_list partial =
   let rewrite_case (val_cases, exn_cases, static_handlers as acc)
