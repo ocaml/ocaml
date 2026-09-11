@@ -123,81 +123,84 @@ let _ = add_directive "cd" (Directive_string dir_cd)
       doc = "Change the current working directory.";
     }
 
-let dir_load log name =
-  action_on_suberror (Topeval.load_file false log name)
+module Dir = struct
 
-let _ = add_directive "load" (Directive_string (with_log dir_load))
-    {
-      section = section_run;
-      doc = "Load in memory a bytecode object, produced by ocamlc.";
-    }
+  let load log name =
+    action_on_suberror (Topeval.load_file false log name)
 
-let load_rec log name =
-  action_on_suberror (Topeval.load_file true log name)
+  let _ = add_directive "load" (Directive_string (with_log load))
+      {
+        section = section_run;
+        doc = "Load in memory a bytecode object, produced by ocamlc.";
+      }
 
-let _ = add_directive "load_rec"
-    (Directive_string (with_log load_rec))
-    {
-      section = section_run;
-      doc = "As #load, but loads dependencies recursively.";
-    }
+  let load_rec log name =
+    action_on_suberror (Topeval.load_file true log name)
 
-let load_file log s = Topeval.load_file false log s
+  let _ = add_directive "load_rec"
+      (Directive_string (with_log load_rec))
+      {
+        section = section_run;
+        doc = "As #load, but loads dependencies recursively.";
+      }
 
-(* Load commands from a file *)
+  let load_file log s = Topeval.load_file false log s
 
-let dir_use log name =
-  action_on_suberror (V2.use_input log (Toploop.File name))
-let dir_use_output log name = action_on_suberror (V2.use_output log name)
-let dir_mod_use log name =
-  action_on_suberror (V2.mod_use_input log (Toploop.File name))
+  (* Load commands from a file *)
 
-let _ = add_directive "use" (Directive_string (with_log dir_use))
-    {
-      section = section_run;
-      doc = "Read, compile and execute source phrases from the given file.";
-    }
+  let use log name =
+    action_on_suberror (Eval.use_input log (Toploop.File name))
+  let use_output log name = action_on_suberror (Eval.use_output log name)
+  let mod_use log name =
+    action_on_suberror (Eval.mod_use_input log (Toploop.File name))
 
-let _ = add_directive "use_output"
-    (Directive_string (with_log dir_use_output))
-    {
-      section = section_run;
-      doc = "Execute a command and read, compile and execute source phrases \
-             from its output.";
-    }
+  let _ = add_directive "use" (Directive_string (with_log use))
+      {
+        section = section_run;
+        doc = "Read, compile and execute source phrases from the given file.";
+      }
 
-let _ = add_directive "mod_use" (Directive_string (with_log dir_mod_use))
-    {
-      section = section_run;
-      doc = "Usage is identical to #use but #mod_use \
-             wraps the contents in a module.";
-    }
+  let _ = add_directive "use_output"
+      (Directive_string (with_log use_output))
+      {
+        section = section_run;
+        doc = "Execute a command and read, compile and execute source phrases \
+               from its output.";
+      }
 
-(* Install, remove a printer *)
+  let _ = add_directive "mod_use" (Directive_string (with_log mod_use))
+      {
+        section = section_run;
+        doc = "Usage is identical to #use but #mod_use \
+               wraps the contents in a module.";
+      }
 
-let dir_install_printer log lid =
-  match Topprinters.install eval_value_path !toplevel_env lid with
-  | Error error -> Topprinters.log_error log error
-  | Ok () -> ()
+  (* Install, remove a printer *)
 
-let dir_remove_printer log lid =
-  match Topprinters.remove !toplevel_env lid with
-  | Error error -> Topprinters.log_error log error
-  | Ok () -> ()
+  let install_printer log lid =
+    match Topprinters.install eval_value_path !toplevel_env lid with
+    | Error error -> Topprinters.log_error log error
+    | Ok () -> ()
 
-let _ = add_directive "install_printer"
-    (Directive_ident (with_log dir_install_printer))
-    {
-      section = section_print;
-      doc = "Registers a printer for values of a certain type.";
-    }
+  let remove_printer log lid =
+    match Topprinters.remove !toplevel_env lid with
+    | Error error -> Topprinters.log_error log error
+    | Ok () -> ()
 
-let _ = add_directive "remove_printer"
-    (Directive_ident (with_log dir_remove_printer))
-    {
-      section = section_print;
-      doc = "Remove the named function from the table of toplevel printers.";
-    }
+  let _ = add_directive "install_printer"
+      (Directive_ident (with_log install_printer))
+      {
+        section = section_print;
+        doc = "Registers a printer for values of a certain type.";
+      }
+
+  let _ = add_directive "remove_printer"
+      (Directive_ident (with_log remove_printer))
+      {
+        section = section_print;
+        doc = "Remove the named function from the table of toplevel printers.";
+      }
+end
 
 let parse_warnings iserr log s =
   try Option.iter Location.(prerr_alert none) @@ Warnings.parse_options iserr s
@@ -638,22 +641,15 @@ let _ = add_directive "help"
 
 (** External API *)
 
-module V2 = struct
-  let dir_load = dir_load
-  let dir_use = dir_use
-  let dir_use_output = dir_use_output
-  let dir_install_printer = dir_install_printer
-  let dir_remove_printer = dir_remove_printer
-end
-
 let with_log f ppf x =
   let dev = Log.Device.make (ref ppf) in
   let log = Topcommon.log_on_device dev in
   Fun.protect (fun () -> f log x)
     ~finally:(fun () -> Log.flush log)
 
-let dir_load = with_log V2.dir_load
-let dir_use = with_log V2.dir_use
-let dir_use_output = with_log V2.dir_use_output
-let dir_install_printer = with_log V2.dir_install_printer
-let dir_remove_printer = with_log V2.dir_remove_printer
+let load_file = with_log Dir.load_file
+let dir_load = with_log Dir.load
+let dir_use = with_log Dir.use
+let dir_use_output = with_log Dir.use_output
+let dir_install_printer = with_log Dir.install_printer
+let dir_remove_printer = with_log Dir.remove_printer
