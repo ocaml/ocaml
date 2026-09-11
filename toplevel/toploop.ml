@@ -495,7 +495,7 @@ module type S = sig
   val load_file: log -> string -> bool
 end
 
-module V2 = struct
+module Eval = struct
   let prepare = prepare
   let loop = loop
   let run_script = run_script
@@ -509,24 +509,29 @@ module V2 = struct
   let load_file = load_file
 end
 
-let with_log ppf f =
-  let dev = Log.Device.make (ref ppf) in
-  let log = Topcommon.log_on_device dev in
-  Fun.protect ~finally:(fun () -> Log.flush log) (fun () -> f log ())
+module Eval_fmt = struct
+  open struct
+    let with_log ppf f =
+    let dev = Log.Device.make (ref ppf) in
+    let log = Topcommon.log_on_device dev in
+    Fun.protect ~finally:(fun () -> Log.flush log) (fun () -> f log ())
 
-let with_log1 f ppf x = with_log ppf (fun log () -> f log x)
-
-let prepare ppf ?input x = with_log ppf (fun log () -> V2.prepare log ?input x)
-let loop ppf = with_log ppf V2.loop
-let run_script ppf i s = with_log ppf (fun log () -> V2.run_script log i s)
-let execute_phrase p = with_log1 (V2.execute_phrase p)
-let preprocess_phrase ppf phrase =
-  with_log ppf (fun log () ->
-      V2.preprocess_phrase (Topcommon.dev_log log) phrase
-    )
-let use_input = with_log1 V2.use_input
-let use_output = with_log1 V2.use_output
-let use_silently = with_log1 V2.use_silently
-let mod_use_input = with_log1 V2.mod_use_input
-let use_file = with_log1 V2.use_file
-let load_file = with_log1 V2.load_file
+    let with_log1 f ppf x = with_log ppf (fun log () -> f log x)
+  end
+  let prepare ppf ?input x =
+    with_log ppf (fun log () -> Eval.prepare log ?input x)
+  let loop ppf = with_log ppf Eval.loop
+  let run_script ppf i s = with_log ppf (fun log () -> Eval.run_script log i s)
+  let execute_phrase p = with_log1 (Eval.execute_phrase p)
+  let preprocess_phrase ppf phrase =
+    with_log ppf (fun log () ->
+        Eval.preprocess_phrase (Topcommon.dev_log log) phrase
+      )
+  let use_input = with_log1 Eval.use_input
+  let use_output = with_log1 Eval.use_output
+  let use_silently = with_log1 Eval.use_silently
+  let mod_use_input = with_log1 Eval.mod_use_input
+  let use_file = with_log1 Eval.use_file
+  let load_file = with_log1 Eval.load_file
+end
+include Eval_fmt

@@ -172,8 +172,8 @@ let input_argument name =
       in
       Compenv.readenv clog Before_link;
       Compmisc.read_clflags_from_env ();
-      if Toploop.V2.prepare log ~input:name () &&
-         Toploop.V2.run_script log name newargs
+      if Toploop.Eval.prepare log ~input:name () &&
+         Toploop.Eval.run_script log name newargs
       then raise (Compenv.Exit_with_status 0)
       else raise (Compenv.Exit_with_status 2)
     end
@@ -213,9 +213,9 @@ let main () =
   let tlog = Location.log_on_device ~prev:log setup_dev in
   Log.flush tlog;
   let log = Topcommon.log_on_device Log.Device.std in
-  if not (Toploop.V2.prepare log ()) then raise (Compenv.Exit_with_status 2);
+  if not (Toploop.Eval.prepare log ()) then raise (Compenv.Exit_with_status 2);
   Compmisc.init_path ();
-  Toploop.V2.loop log
+  Toploop.Eval.loop log
 
 let main () =
   match main () with

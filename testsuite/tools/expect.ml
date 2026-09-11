@@ -387,7 +387,7 @@ let exec_phrase log phrase =
   Location.reset ();
   log_if Dev_log.parsetree Printast.top_phrase phrase;
   log_if Dev_log.source Pprintast.top_phrase phrase;
-  Toploop.V2.execute_phrase true log phrase
+  Toploop.Eval.execute_phrase true log phrase
 
 let parse_contents ~fname contents =
   let lexbuf = Lexing.from_string contents in

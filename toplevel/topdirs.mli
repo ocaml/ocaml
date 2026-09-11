@@ -20,19 +20,18 @@ val dir_directory : string -> unit
 val dir_remove_directory : string -> unit
 val dir_cd : string -> unit
 
-module V2: sig
-  val dir_load : Toplog.t -> string -> unit
-  val dir_use : Toplog.t -> string -> unit
-  val dir_use_output : Toplog.t -> string -> unit
-  val dir_install_printer : Toplog.t -> Longident.t -> unit
-  val dir_remove_printer : Toplog.t -> Longident.t -> unit
+module Dir: sig
+  val load : Toplog.t -> string -> unit
+  val use : Toplog.t -> string -> unit
+  val use_output : Toplog.t -> string -> unit
+  val install_printer : Toplog.t -> Longident.t -> unit
+  val remove_printer : Toplog.t -> Longident.t -> unit
 end
 val dir_load : Format.formatter -> string -> unit
 val dir_use : Format.formatter -> string -> unit
 val dir_use_output : Format.formatter -> string -> unit
 val dir_install_printer : Format.formatter -> Longident.t -> unit
 val dir_remove_printer : Format.formatter -> Longident.t -> unit
-
 
 
 (* These are now injected from [Topeval], for the bytecode toplevel only:
@@ -52,4 +51,4 @@ val section_options : string
 val section_undocumented : string
 
 (* Here for backwards compatibility, use [Toploop.load_file]. *)
-val[@deprecated] load_file : Toplog.t -> string -> bool
+val[@deprecated] load_file : Format.formatter -> string -> bool
