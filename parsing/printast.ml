@@ -139,6 +139,11 @@ let labeled_tuple_element f i ppf (l, ct) =
   option i string ppf l;
   f i ppf ct
 
+let tuple_field i ppf fld =
+  match fld with
+  | Ptf_label lbl ->
+      string_loc i ppf lbl
+
 let rec core_type i ppf x =
   line i ppf "core_type %a\n" fmt_location x.ptyp_loc;
   attributes i ppf x.ptyp_attributes;
@@ -309,6 +314,10 @@ and expression i ppf x =
   | Pexp_tuple (l) ->
       line i ppf "Pexp_tuple\n";
       list i (labeled_tuple_element expression) ppf l;
+  | Pexp_tuple_proj (e, f) ->
+      line i ppf "Pexp_tuple_proj\n";
+      expression i ppf e;
+      tuple_field i ppf f;
   | Pexp_construct (li, eo) ->
       line i ppf "Pexp_construct %a\n" fmt_longident_loc li;
       option i expression ppf eo;

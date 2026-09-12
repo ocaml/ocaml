@@ -2622,6 +2622,8 @@ simple_expr:
       { Pexp_override [] }
   | simple_expr DOT mkrhs(label_longident)
       { Pexp_field($1, $3) }
+  | simple_expr DOT tuple_field
+      { Pexp_tuple_proj($1, $3) }
   | od=open_dot_declaration DOT LPAREN seq_expr RPAREN
       { Pexp_struct_item(Str.open_ od, $4) }
   | od=open_dot_declaration DOT LBRACELESS object_expr_content GREATERRBRACE
@@ -4172,6 +4174,11 @@ clty_longident:
 ;
 class_longident:
    mk_longident(mod_longident,LIDENT) { $1 }
+;
+
+tuple_field:
+  TILDE label = mkrhs(LIDENT)
+    { Ptf_label label }
 ;
 
 /* BEGIN AVOID */

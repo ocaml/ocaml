@@ -521,9 +521,6 @@ rule token = parse
       { UNDERSCORE }
   | "~"
       { TILDE }
-  | ".~"
-      { error lexbuf
-          (Reserved_sequence (".~", Some "is reserved for use in MetaOCaml")) }
   | "~" (identstart identchar * as name) ':'
       { check_label_name lexbuf name;
         LABEL name }

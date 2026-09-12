@@ -406,6 +406,11 @@ let value_binding sub vb =
   in
   Vb.mk ~loc ~attrs ?value_constraint pat (sub.expr sub vb.vb_expr)
 
+let tuple_field sub fld =
+  match fld with
+  | Ttf_label { label; index = _ } ->
+      Ptf_label (map_loc sub label)
+
 let expression sub exp =
   let loc = sub.location sub exp.exp_loc in
   let attrs = sub.attributes sub exp.exp_attributes in
@@ -497,6 +502,8 @@ let expression sub exp =
         Pexp_try (sub.expr sub exp, merged_cases)
     | Texp_tuple list ->
         Pexp_tuple (List.map (fun (lbl, e) -> lbl, sub.expr sub e) list)
+    | Texp_tuple_proj (exp, fld) ->
+        Pexp_tuple_proj (sub.expr sub exp, tuple_field sub fld)
     | Texp_construct (lid, _, args) ->
         Pexp_construct (map_loc sub lid,
           (match args with

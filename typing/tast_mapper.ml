@@ -354,6 +354,12 @@ let function_param sub fp =
     fp_loc;
   }
 
+let tuple_field sub fld =
+  match fld with
+  | Ttf_label { label; index } ->
+      let label = map_loc sub label in
+      Ttf_label { label; index }
+
 let extra sub = function
   | Texp_constraint cty ->
     Texp_constraint (sub.typ sub cty)
@@ -410,6 +416,8 @@ let expr sub x =
         )
     | Texp_tuple list ->
         Texp_tuple (List.map (fun (label, e) -> label, sub.expr sub e) list)
+    | Texp_tuple_proj (exp, fld) ->
+        Texp_tuple_proj (sub.expr sub exp, tuple_field sub fld)
     | Texp_construct (lid, cd, args) ->
         Texp_construct (map_loc_lid sub lid, cd, List.map (sub.expr sub) args)
     | Texp_variant (l, expo) ->

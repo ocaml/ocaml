@@ -111,6 +111,7 @@ and expression_desc =
   | Texp_match of expression * computation case list * value case list * partial
   | Texp_try of expression * value case list * value case list
   | Texp_tuple of (string option * expression) list
+  | Texp_tuple_proj of expression * tuple_field
   | Texp_construct of
       Longident.t loc * constructor_description * expression list
   | Texp_variant of label * expression option
@@ -149,6 +150,9 @@ and expression_desc =
   | Texp_unreachable
   | Texp_extension_constructor of Longident.t loc * Path.t
   | Texp_struct_item of structure_item * expression
+
+and tuple_field =
+  | Ttf_label of { label : string loc; index : int }
 
 and meth =
   | Tmeth_name of string

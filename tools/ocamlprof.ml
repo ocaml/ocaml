@@ -221,6 +221,8 @@ and rw_exp iflag sexp =
 
   | Pexp_tuple sexpl ->
     List.iter (fun (_, e) -> rewrite_exp iflag e) sexpl
+  | Pexp_tuple_proj (sexp, _) ->
+    rewrite_exp iflag sexp
 
   | Pexp_construct(_, None) -> ()
   | Pexp_construct(_, Some sarg) ->
