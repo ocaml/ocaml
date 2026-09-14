@@ -1399,6 +1399,7 @@ module Format         = Format
 module Fun            = Fun
 module Gc             = Gc
 module Hashtbl        = Hashtbl
+module Hashtbl2       = Hashtbl2
 module Iarray         = Iarray
 module In_channel     = In_channel
 module Int            = Int
