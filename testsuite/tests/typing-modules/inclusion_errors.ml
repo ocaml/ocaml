@@ -2158,3 +2158,19 @@ Error: Signature mismatch:
        The value "vwxy" is required but not provided.
        Hint:     "vwxx" is a close match.
 |}]
+
+type t = ..
+type _ s = ..
+
+module M : sig
+  type t += A
+end = struct
+  type _ s += A
+end
+
+[%%expect{|
+type t = ..
+type _ s = ..
+Uncaught exception: Ctype.Equality_trace(0)
+
+|}]
