@@ -592,6 +592,9 @@ Working version
   (Austin Thierault, review by Antonin Décimo, Edwin Török, David Allsopp and
    Olivier Nicole)
 
+- #15067, #15071: Fix detection of functions available in the future on macOS.
+  (Antonin Décimo, review by Nicolás Ojeda Bär and Damien Doligez)
+
 ### Bug fixes:
 
 - #15072, #15075: Fix `Runtime_events` cursors becoming permanently unusable
