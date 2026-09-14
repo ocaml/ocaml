@@ -644,6 +644,10 @@ Working version
   (Tim McGilchrist, reported by mattiasdrp, review by Sadiq Jaffer and
    Zane Hambly)
 
+* #14978: fix precedence of `with module type` construct in order to parse
+  `T with module type S = X -> X` as `T with module type S = (X -> X)`
+  (Pieter Goetschalckx, review by Gabriel Scherer and Florian Angeletti)
+
 OCaml 5.5.1
 -----------
 
