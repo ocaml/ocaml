@@ -1106,6 +1106,10 @@ for flag in \
       [cc_warnings="$cc_warnings $flag"], [], [$warn_error_flag])
 done
 
+AX_CHECK_COMPILE_FLAG([-Werror=unguarded-availability-new],
+  [# Append to common_cflags with Autoconf 2.73.
+  CFLAGS="-Werror=unguarded-availability-new $CFLAGS"], [], [$warn_error_flag])
+
 AS_CASE([$enable_warn_error,OCAML__DEVELOPMENT_VERSION],
   [yes,*|,true],
     [cc_warnings="$cc_warnings $warn_error_flag"],
@@ -2610,11 +2614,11 @@ AC_CHECK_FUNC([nice], [AC_DEFINE([HAS_NICE], [1])])
 
 ## dup3
 
-AC_CHECK_FUNC([dup3], [AC_DEFINE([HAS_DUP3], [1])])
+AC_CHECK_DECL([dup3], [AC_CHECK_FUNC([dup3], [AC_DEFINE([HAS_DUP3], [1])])])
 
 ## pipe2
 
-AC_CHECK_FUNC([pipe2], [AC_DEFINE([HAS_PIPE2], [1])])
+AC_CHECK_DECL([pipe2], [AC_CHECK_FUNC([pipe2], [AC_DEFINE([HAS_PIPE2], [1])])])
 
 ## accept4
 

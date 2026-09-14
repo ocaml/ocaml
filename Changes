@@ -551,6 +551,10 @@ Working version
   (Austin Thierault, review by Antonin Décimo, Edwin Török, David Allsopp and
    Olivier Nicole)
 
+- #15067, 15071: Fix detection of functions available in the future on
+  macOS and Android.
+  (Antonin Décimo, review by ?)
+
 ### Bug fixes:
 
 - #14986: Take effect cases into account in the expansiveness check.
