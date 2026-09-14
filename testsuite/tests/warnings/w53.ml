@@ -568,4 +568,3 @@ module TestDeprecatedUnlabelledStruct = struct
 
   [@@@deprecated_unlabelled] (* rejected *)
 end
-

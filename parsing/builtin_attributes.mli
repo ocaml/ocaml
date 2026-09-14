@@ -131,7 +131,7 @@ val check_deprecated_mutable_inclusion:
   def:Location.t -> use:Location.t -> Location.t -> Parsetree.attributes ->
   Parsetree.attributes -> string -> unit
 
-(** [Some msg] if the value description carries a [@deprecated_unlabelled]
+(** [Some msg] if the value description carries a "deprecated_unlabelled"
     attribute, where [msg] is the extra message given by its payload (the
     empty string when there is none). *)
 val deprecated_unlabelled_of_attrs: Parsetree.attributes -> string option
