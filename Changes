@@ -648,6 +648,10 @@ Working version
   `T with module type S = X -> X` as `T with module type S = (X -> X)`
   (Pieter Goetschalckx, review by Gabriel Scherer and Florian Angeletti)
 
+- #15069: Fix unchaught exception when comparing signatures adding the same
+  extension constructor to types with different arities
+  (Samuel Vivien, reported by Florian Angeletti, review by Florian Angeletti)
+
 OCaml 5.5.1
 -----------
 
