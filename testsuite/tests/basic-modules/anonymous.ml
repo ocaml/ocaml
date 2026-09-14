@@ -55,7 +55,7 @@ let drop _ = ()
 let () = drop s.cell
 
 (* TEST
- flags = "-c -nostdlib -nopervasives -dlambda -dno-unique-ids";
+ flags = "-c -nostdlib -nopervasives -dlambda -dno-locations -dno-unique-ids";
  {
    setup-ocamlc.byte-build-env;
    ocamlc.byte;

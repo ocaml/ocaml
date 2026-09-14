@@ -1,13 +1,3 @@
-File "w47_inline.ml", line 30, characters 20-22:
-30 |   let[@local never] f2 x = x (* ok *) in
-                         ^^
-Warning 26 [unused-var]: unused variable f2.
-
-File "w47_inline.ml", line 31, characters 24-26:
-31 |   let[@local malformed] f3 x = x (* bad payload *) in
-                             ^^
-Warning 26 [unused-var]: unused variable f3.
-
 File "w47_inline.ml", line 15, characters 23-29:
 15 | let d = (fun x -> x) [@inline malformed attribute] (* rejected *)
                             ^^^^^^
@@ -45,7 +35,7 @@ Warning 47 [attribute-payload]: illegal payload for attribute local.
   It must be either 'never', 'always', 'maybe' or empty
 
 File "w47_inline.ml", line 32, characters 17-26:
-32 |   let[@local] f4 x = 2 * x (* not local *) in
+32 |   let[@local] f4 x = 2 * x (* not local: it is used both inside r and
                       ^^^^^^^^^
 Warning 55 [inlining-impossible]: Cannot inline:
   This function cannot be compiled into a static continuation
