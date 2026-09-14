@@ -130,6 +130,10 @@ Working version
 
 ### Bug fixes:
 
+- #15405: Close each domain's EV_STW_LEADER or EV_STW_HANDLER runtime
+  event before tearing down the runtime events ring.
+  (Edwin Török and Tim McGilchrist, review by ???)
+
 - #15252, #15368, #15369, #15371, #15380: check arguments to Unix.kill, waitpid,
   alarm, mktime and Sys.signal before narrowing. Unix.alarm rejects negative
   delays. On Unix, getpwuid, getgrgid, setuid, setgid and initgroups

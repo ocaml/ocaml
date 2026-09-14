@@ -136,9 +136,16 @@ static void write_to_ring(ev_category category, ev_message_type type,
 static void events_register_write_buffer(int index, value event_name);
 static void runtime_events_create_from_stw_single(void);
 
+struct teardown_request {
+  /* Whether to delete the ring file */
+  int remove_file;
+  /* Domain requesting the teardown and the STW section leader */
+  caml_domain_state *leader;
+};
+
 static void stw_teardown_runtime_events(
   caml_domain_state *domain_state,
-  void *remove_file_data, int num_participating,
+  void *data, int num_participating,
   caml_domain_state **participating_domains);
 
 void caml_runtime_events_init(void) {
@@ -240,10 +247,10 @@ void caml_runtime_events_destroy(void) {
 
     /* clean up runtime_events when we exit if we haven't been instructed to
       preserve the file. */
-    int remove_file = preserve_ring ? 0 : 1;
+    struct teardown_request req =
+      { .remove_file = preserve_ring ? 0 : 1, .leader = Caml_state };
     do {
-      caml_try_run_on_all_domains(&stw_teardown_runtime_events,
-                                  &remove_file, NULL);
+      caml_try_run_on_all_domains(&stw_teardown_runtime_events, &req, NULL);
     }
     while( atomic_load_acquire(&runtime_events_enabled) );
   }
@@ -466,15 +473,19 @@ static void stw_create_runtime_events(
   }
 }
 
-/* Stop-the-world which calls the teardown code */
+/* Stop-the-world which calls the teardown code. */
 static void stw_teardown_runtime_events(
   caml_domain_state *domain_state,
-  void *remove_file_data, int num_participating,
+  void *data, int num_participating,
   caml_domain_state **participating_domains)
 {
+  struct teardown_request *req = data;
+  if (domain_state == req->leader)
+    CAML_EV_END(EV_STW_LEADER);
+  else
+    CAML_EV_END(EV_STW_HANDLER);
   Caml_global_barrier_if_final(num_participating) {
-    int remove_file = *(int*)remove_file_data;
-    runtime_events_teardown_from_stw_single(remove_file);
+    runtime_events_teardown_from_stw_single(req->remove_file);
   }
 }
 
