@@ -545,3 +545,27 @@ module TestAlertClass = struct
       [@@@alert foo "foo"] (* accepted *)
     end
 end
+
+module type TestDeprecatedUnlabelledSig = sig
+  type t1 = Foo1 [@deprecated_unlabelled] (* rejected *)
+
+  val x : foo:int -> int [@deprecated_unlabelled] (* rejected *)
+
+  type 'a t2 = 'a [@@deprecated_unlabelled] (* rejected *)
+
+  val y : foo:int -> int [@@deprecated_unlabelled] (* accepted *)
+
+  external z : foo:int -> int = "%identity"
+    [@@deprecated_unlabelled] (* accepted *)
+
+  [@@@deprecated_unlabelled] (* rejected *)
+end
+
+module TestDeprecatedUnlabelledStruct = struct
+  let x = 5 [@deprecated_unlabelled] (* rejected *)
+
+  let y = 10 [@@deprecated_unlabelled] (* rejected *)
+
+  [@@@deprecated_unlabelled] (* rejected *)
+end
+
