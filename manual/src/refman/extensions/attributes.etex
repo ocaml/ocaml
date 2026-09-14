@@ -226,6 +226,19 @@ Some attributes are understood by the compiler:
   will be triggered.  If the payload of the attribute is a string
   literal, the alert message includes this text.
 \item
+  "ocaml.deprecated_unlabelled" or "deprecated_unlabelled", applied to a
+  value declaration ("val" or "external").  It records that this value
+  used to have no labelled parameter.  Applying it while omitting all
+  the labels is already allowed, and normally triggers warning 6 (see
+  \ref{ss:warn6}); when this attribute is present, the "deprecated"
+  alert is triggered instead.  For instance, given the declaration
+  "val add : x:int -> y:int -> int [@@deprecated_unlabelled]", the
+  application "add 1 2" is accepted, means "add ~x:1 ~y:2", and triggers
+  the "deprecated" alert.  If the payload of the attribute is a string
+  literal, the alert message includes this text.  This attribute is meant
+  to ease the migration of a library that adds labels to the parameters
+  of an existing function.
+\item
   "ocaml.ppwarning" or "ppwarning", in any context, with a string
   literal payload.  The text is reported as warning (22) by the compiler
   (currently, the warning location is the location of the string
