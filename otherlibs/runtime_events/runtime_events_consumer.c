@@ -534,9 +534,15 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
         continue;
       }
 
+      /* Every message carries a header and a timestamp, except runtime
+         padding (EV_INTERNAL) which is header only. EV_INTERNAL and
+         EV_USER_MSG_TYPE_UNIT share the same type value, so we need to
+         make sure it's EV_INTERNAL and a runtime (rather than user)
+         message. */
       if (!msg_length
           || (msg_length < 2
-              && RUNTIME_EVENTS_ITEM_TYPE(header) != EV_INTERNAL)) {
+              && !(RUNTIME_EVENTS_ITEM_IS_RUNTIME(header)
+                   && RUNTIME_EVENTS_ITEM_TYPE(header) == EV_INTERNAL))) {
         atomic_store(&cursor->cursor_in_poll, 0);
         return E_CORRUPT_STREAM;
       }
@@ -577,7 +583,8 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
           break;
         case EV_ALLOC:
           if (cursor->alloc) {
-            if (msg_length < 3) {
+            /* the alloc callback reads every bucket */
+            if (msg_length < 2 + RUNTIME_EVENTS_NUM_ALLOC_BUCKETS) {
               atomic_store(&cursor->cursor_in_poll, 0);
               return E_CORRUPT_STREAM;
             }
@@ -660,7 +667,11 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
             break;
           default: // custom
             if (cursor->user_custom) {
-              /* msg_length could be genuinely 2 here */
+              /* we have to have a message length of at least 3 */
+              if (msg_length < 3) {
+                atomic_store(&cursor->cursor_in_poll, 0);
+                return E_CORRUPT_STREAM;
+              }
               if( !cursor->user_custom(domain_num, callback_data, buf[1],
                                       event_id, event_name,
                                       msg_length - 2, &buf[2]) ) {
@@ -717,6 +728,11 @@ struct callbacks_exception_holder {
   value* callbacks_val;
   value* exception;
   value* wrapper;
+  /* set by a callback that detects a malformed event, since callbacks can
+     only stop the read loop and cannot return E_CORRUPT_STREAM themselves.
+     The exception field in this struct is only for carrying exceptions
+     raised by callbacks we call. */
+  int corrupt_stream;
 };
 
 static int ml_runtime_begin(int domain_id, void *callback_data,
@@ -1161,12 +1177,21 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
     // deserialize the value and prepare the callback payload
 
     const char* data_str = (const char*) event_data;
+
     uintnat string_len = event_data_len * sizeof(uint64_t) - 1;
     // because the ring buffer is 64-bits aligned, the whole ocaml value is
     // transferred, including the padding bytes and the last byte containing
     // the number of padding bytes. This information is crucial to determine
     // the true size of the string.
-    uintnat caml_string_len = string_len - data_str[string_len];
+    uintnat caml_string_len =
+      string_len - (unsigned char)data_str[string_len];
+
+    // if the string length is over the max msg length, the stream is
+    // corrupt.
+    if (caml_string_len > RUNTIME_EVENTS_MAX_MSG_LENGTH) {
+      holder->corrupt_stream = 1;
+      CAMLreturnT(int, 0);
+    }
 
     record = Field(event_type, 0);
     deserializer = Field(record, 1);
@@ -1298,7 +1323,7 @@ CAMLprim value caml_ml_runtime_events_read_poll(value wrapper,
   runtime_events_error res;
 
   struct callbacks_exception_holder holder = {
-    &callbacks_val, &exception, &wrapper };
+    &callbacks_val, &exception, &wrapper, 0 };
   exception = Val_unit;
 
   if (cursor == NULL) {
@@ -1315,6 +1340,11 @@ CAMLprim value caml_ml_runtime_events_read_poll(value wrapper,
   /* Check if we early exited with an exception */
   if( exception != Val_unit ) {
     caml_raise(exception);
+  }
+
+  /* Check if a callback early exited because of a malformed event */
+  if (holder.corrupt_stream) {
+    res = E_CORRUPT_STREAM;
   }
 
   if (res != E_SUCCESS) {
