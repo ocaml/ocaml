@@ -1027,3 +1027,38 @@ File "w53.ml", line 539, characters 10-15:
 539 |       [@@@alert foo "foo"] (* rejected *)
                 ^^^^^
 Warning 53 [misplaced-attribute]: the alert attribute cannot appear in this context
+
+File "w53.ml", line 550, characters 19-40:
+550 |   type t1 = Foo1 [@deprecated_unlabelled] (* rejected *)
+                         ^^^^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the deprecated_unlabelled attribute cannot appear in this context
+
+File "w53.ml", line 552, characters 27-48:
+552 |   val x : foo:int -> int [@deprecated_unlabelled] (* rejected *)
+                                 ^^^^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the deprecated_unlabelled attribute cannot appear in this context
+
+File "w53.ml", line 554, characters 21-42:
+554 |   type 'a t2 = 'a [@@deprecated_unlabelled] (* rejected *)
+                           ^^^^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the deprecated_unlabelled attribute cannot appear in this context
+
+File "w53.ml", line 561, characters 6-27:
+561 |   [@@@deprecated_unlabelled] (* rejected *)
+            ^^^^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the deprecated_unlabelled attribute cannot appear in this context
+
+File "w53.ml", line 565, characters 14-35:
+565 |   let x = 5 [@deprecated_unlabelled] (* rejected *)
+                    ^^^^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the deprecated_unlabelled attribute cannot appear in this context
+
+File "w53.ml", line 567, characters 16-37:
+567 |   let y = 10 [@@deprecated_unlabelled] (* rejected *)
+                      ^^^^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the deprecated_unlabelled attribute cannot appear in this context
+
+File "w53.ml", line 569, characters 6-27:
+569 |   [@@@deprecated_unlabelled] (* rejected *)
+            ^^^^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the deprecated_unlabelled attribute cannot appear in this context

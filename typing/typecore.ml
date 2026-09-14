@@ -3402,6 +3402,16 @@ let collect_unknown_apply_args env funct ty_fun0 rev_args sargs =
   in
   loop ty_fun0 rev_args sargs
 
+(* [@@deprecated_unlabelled] on a value declaration records that this value
+   used to have no labelled parameter: an application that omits all the
+   labels is still accepted, but triggers a deprecation alert instead of
+   warning 6. *)
+let deprecated_unlabelled funct =
+  match funct.exp_desc with
+  | Texp_ident (_, _, vd) ->
+      Builtin_attributes.deprecated_unlabelled_of_attrs vd.val_attributes
+  | _ -> None
+
 let collect_apply_args env funct ignore_labels ty_fun ty_fun0 sargs =
   let warned = ref false in
   let rec loop visited ty_fun ty_fun0 rev_args sargs =
@@ -6896,11 +6906,20 @@ and type_application env app_loc funct sargs =
           List.length labels = List.length sargs &&
           List.for_all (fun (l,_) -> l = Nolabel) sargs &&
           List.exists (fun l -> l <> Nolabel) labels &&
-          (Location.prerr_warning
-             funct.exp_loc
-             (Warnings.Labels_omitted
-                (List.map Asttypes.string_of_label
-                          (List.filter ((<>) Nolabel) labels)));
+          (begin match deprecated_unlabelled funct with
+           | Some msg ->
+               (* This function used to have no labels: alert instead of
+                  reporting warning 6. *)
+               let txt = "omitting the labels in this application" in
+               Location.deprecated funct.exp_loc
+                 (if msg = "" then txt else txt ^ "\n" ^ msg)
+           | None ->
+               Location.prerr_warning
+                 funct.exp_loc
+                 (Warnings.Labels_omitted
+                    (List.map Asttypes.string_of_label
+                       (List.filter ((<>) Nolabel) labels)))
+           end;
            true)
         end
       in

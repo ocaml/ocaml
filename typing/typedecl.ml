@@ -1806,6 +1806,7 @@ let check_unboxable env loc ty =
 let transl_value_decl env loc valdecl =
   let cty = Typetexp.transl_type_scheme env valdecl.pval_type in
   let ty = cty.ctyp_type in
+  Builtin_attributes.mark_deprecated_unlabelled_used valdecl.pval_attributes;
   let v =
     { val_type = ty; val_kind = Val_reg; Types.val_loc = loc;
       val_attributes = valdecl.pval_attributes;
@@ -1864,6 +1865,8 @@ let transl_prim_desc env loc primdesc =
       && prim.prim_native_name = ""
       then Error.log_and_raise pprim_type.ptyp_loc Missing_native_external;
       check_unboxable env loc ty;
+      Builtin_attributes.mark_deprecated_unlabelled_used
+        primdesc.pprim_attributes;
       { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
         val_attributes = primdesc.pprim_attributes;
         val_uid = Uid.mk ~current_unit:(Env.get_current_unit ());

@@ -61,6 +61,7 @@ let builtin_attrs =
   ; "boxed"
   ; "deprecated"
   ; "deprecated_mutable"
+  ; "deprecated_unlabelled"
   ; "explicit_arity"
   ; "immediate"
   ; "immediate64"
@@ -184,6 +185,12 @@ let mark_deprecated_mutable_used l =
     then mark_used a.attr_name)
     l
 
+let mark_deprecated_unlabelled_used l =
+  List.iter (fun a ->
+    if attr_equals_builtin a "deprecated_unlabelled"
+    then mark_used a.attr_name)
+    l
+
 let mark_payload_attrs_used payload =
   let iter =
     { Ast_iterator.default_iterator
@@ -273,6 +280,12 @@ let check_deprecated_mutable_inclusion ~def ~use loc attrs1 attrs2 s =
   | Some txt, None ->
       Location.deprecated ~def ~use loc
         (Printf.sprintf "mutating field %s" (cat s txt))
+
+let rec deprecated_unlabelled_of_attrs = function
+  | [] -> None
+  | attr :: _ when attr_equals_builtin attr "deprecated_unlabelled" ->
+    Some (string_of_opt_payload attr.attr_payload)
+  | _ :: tl -> deprecated_unlabelled_of_attrs tl
 
 let rec attrs_of_sig = function
   | {psig_desc = Psig_attribute a} :: tl ->

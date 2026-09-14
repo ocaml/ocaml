@@ -16,6 +16,13 @@ Working version
 - #14692: Allow unparenthesized application expressions in record update syntax
   (Stephen Dolan, review by Damien Doligez)
 
+- New attribute `[@@deprecated_unlabelled]` on value declarations, which
+  records that the value used to have no labelled parameter: applying it with
+  all the labels omitted keeps working, but triggers a `deprecated` alert
+  instead of warning 6.  This eases the migration of libraries that add labels
+  to the parameters of existing functions.
+  (Nicolás Ojeda Bär)
+
 ### Runtime system:
 
 - #14988: Don't copy continuations in Weak.get_copy.
