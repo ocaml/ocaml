@@ -31,7 +31,7 @@ let _dump_function_sizes flam ~backend =
           | None -> assert false)
         set_of_closures.function_decls.funs)
 
-let lambda_to_flambda ~ppf_dump ~prefixname ~backend ~size
+let lambda_to_flambda ~log ~prefixname ~backend ~size
       ~module_ident ~module_initializer =
   Profile.record_call "flambda" (fun () ->
     let previous_warning_reporter = !Location.warning_reporter in
@@ -65,11 +65,13 @@ let lambda_to_flambda ~ppf_dump ~prefixname ~backend ~size
          in
          let (+-+) flam (name, pass) =
            incr pass_number;
-           if !Clflags.dump_flambda_verbose then begin
-             Format.fprintf ppf_dump "@.PASS: %s@." name;
-             Format.fprintf ppf_dump "Before pass %d, round %d:@ %a@."
+           if Clflags.Dump_option.get Flambda_verbose then begin
+             let log fmt =
+               Log.itemf Compiler_diagnostic.Debug.flambda log fmt in
+             log  "@.PASS: %s@." name;
+             log "Before pass %d, round %d:@ %a@."
                !pass_number !round_number Flambda.print_program flam;
-             Format.fprintf ppf_dump "\n@?"
+             log "\n@?"
            end;
            let flam = Profile.record ~accumulate:true name pass flam in
            if !Clflags.flambda_invariant_checks then begin
@@ -85,10 +87,9 @@ let lambda_to_flambda ~ppf_dump ~prefixname ~backend ~size
                   |> Closure_conversion.lambda_to_flambda ~backend
                        ~module_ident ~size)
            in
-           if !Clflags.dump_rawflambda
-           then
-             Format.fprintf ppf_dump "After closure conversion:@ %a@."
-               Flambda.print_program flam;
+           Clflags.dump_item_on_log log Compiler_diagnostic.Debug.raw_flambda
+             "After closure conversion:@ %a@."
+             Flambda.print_program flam;
            check flam;
            let fast_mode flam =
              pass_number := 0;
@@ -101,7 +102,7 @@ let lambda_to_flambda ~ppf_dump ~prefixname ~backend ~size
                   Lift_let_to_initialize_symbol.lift ~backend)
              +-+ ("Inline_and_simplify",
                   Inline_and_simplify.run ~never_inline:false ~backend
-                    ~prefixname ~round ~ppf_dump)
+                    ~prefixname ~round ~log)
              +-+ ("Remove_unused_closure_vars 2",
                   Remove_unused_closure_vars.remove_unused_closure_variables
                     ~remove_direct_call_surrogates:false)
@@ -132,14 +133,14 @@ let lambda_to_flambda ~ppf_dump ~prefixname ~backend ~size
                       ~remove_direct_call_surrogates:false)
                +-+ ("Inline_and_simplify",
                     Inline_and_simplify.run ~never_inline:false ~backend
-                      ~prefixname ~round ~ppf_dump)
+                      ~prefixname ~round ~log)
                +-+ ("Remove_unused_closure_vars 2",
                     Remove_unused_closure_vars.remove_unused_closure_variables
                       ~remove_direct_call_surrogates:false)
                +-+ ("lift_lets 3", Lift_code.lift_lets)
                +-+ ("Inline_and_simplify noinline",
                     Inline_and_simplify.run ~never_inline:true ~backend
-                      ~prefixname ~round ~ppf_dump)
+                      ~prefixname ~round ~log)
                +-+ ("Remove_unused_closure_vars 3",
                     Remove_unused_closure_vars.remove_unused_closure_variables
                       ~remove_direct_call_surrogates:false)
@@ -186,36 +187,36 @@ let lambda_to_flambda ~ppf_dump ~prefixname ~backend ~size
                     "[@unrolled] attribute was not used on this function \
                      application (the optimizer did not know what function \
                      was being applied)"));
-           if !Clflags.dump_flambda
-           then
-             Format.fprintf ppf_dump "End of middle end:@ %a@."
-               Flambda.print_program flam;
+           Clflags.dump_item_on_log log Compiler_diagnostic.Debug.flambda
+             "End of middle end:@ %a@."
+             Flambda.print_program flam;
            check flam;
            (* CR-someday mshinwell: add -d... option for this *)
            (* dump_function_sizes flam ~backend; *)
            flam))
       )
 
-let flambda_raw_clambda_dump_if ppf
+let flambda_raw_clambda_dump_if log
       ({ Flambda_to_clambda. expr = ulambda; preallocated_blocks = _;
         structured_constants; exported = _; } as input) =
-  if !Clflags.dump_rawclambda then
+  if Clflags.Dump_option.get Raw_clambda then
     begin
-      Format.fprintf ppf "@.clambda (before Un_anf):@.";
-      Printclambda.clambda ppf ulambda;
+      let log fmt = Log.itemf Compiler_diagnostic.Debug.raw_clambda log fmt in
+      log "@.clambda (before Un_anf):@.";
+      log "%a" Printclambda.clambda ulambda;
       Symbol.Map.iter (fun sym cst ->
-          Format.fprintf ppf "%a:@ %a@."
+          log "%a:@ %a@."
             Symbol.print sym
             Printclambda.structured_constant cst)
         structured_constants
     end;
-  if !Clflags.dump_cmm then Format.fprintf ppf "@.cmm:@.";
+  Clflags.dump_item_on_log log Compiler_diagnostic.Debug.cmm "@.cmm:@.";
   input
 
-let lambda_to_clambda ~backend ~prefixname ~ppf_dump
+let lambda_to_clambda ~backend ~prefixname ~log
       (program : Lambda.program) =
   let program =
-    lambda_to_flambda ~ppf_dump ~prefixname ~backend
+    lambda_to_flambda ~log ~prefixname ~backend
       ~size:program.main_module_block_size
       ~module_ident:program.module_ident
       ~module_initializer:program.code
@@ -224,14 +225,14 @@ let lambda_to_clambda ~backend ~prefixname ~ppf_dump
   let clambda, preallocated_blocks, constants =
     Profile.record_call "backend" (fun () ->
       (program, export)
-      |> Flambda_to_clambda.convert ~ppf_dump
-      |> flambda_raw_clambda_dump_if ppf_dump
+      |> Flambda_to_clambda.convert ~log
+      |> flambda_raw_clambda_dump_if log
       |> (fun { Flambda_to_clambda. expr; preallocated_blocks;
                 structured_constants; exported; } ->
            Compilenv.set_export_info exported;
            let clambda =
              Un_anf.apply ~what:(Compilenv.current_unit_symbol ())
-               ~ppf_dump expr
+               ~log expr
            in
            clambda, preallocated_blocks, structured_constants))
   in

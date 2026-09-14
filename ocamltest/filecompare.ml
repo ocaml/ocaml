@@ -233,7 +233,7 @@ let diff files =
   let diff_flags = String.words Ocamltest_config.diff_flags in
   let diff_flags =
     if Ocamltest_config.diff_supports_color then
-      (if Misc.Color.is_enabled () then "--color=always" else "--color=never")
+      (if Misc.Style.enable_color None then "--color=always" else "--color=never")
       :: diff_flags
     else diff_flags
   in

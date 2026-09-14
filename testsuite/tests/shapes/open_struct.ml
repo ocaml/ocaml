@@ -12,6 +12,7 @@ open struct
 end
 [%%expect{|
 {}
+
 module M : sig type t = A end
 |}]
 
@@ -22,6 +23,7 @@ include M
                "A"[constructor] -> {<.1>};
                };
  }
+
 type t = M.t = A
 |}]
 
@@ -36,6 +38,7 @@ module N = M
                         };
           });
  }
+
 module N = M
 |}]
 
@@ -56,6 +59,7 @@ end
                                 };
                   };
  }
+
 module M' : sig type t = A end
 |}]
 
@@ -70,6 +74,7 @@ module N' = M'
                         };
           });
  }
+
 module N' = M'
 |}]
 
@@ -89,6 +94,7 @@ end
                     };
     };
  }
+
 module Test : sig module M : sig type t = A end end
 |}]
 
@@ -101,6 +107,7 @@ include Test
                                };
                  };
  }
+
 module M = Test.M
 |}]
 
@@ -115,5 +122,6 @@ module N = M
                         };
           });
  }
+
 module N = M
 |}]

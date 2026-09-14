@@ -435,6 +435,44 @@ let error_style_reader = {
   env_var = "OCAML_ERROR_STYLE";
 }
 
+let log_format = ref None
+let log_format_reader = {
+  parse = (function
+      | "stdout-light" -> Some Diagnostic_backends.fmt
+      | "stdout-full" -> Some Diagnostic_backends.fmt_with_fields
+      | "json" -> Some Diagnostic_backends.json
+      | "sexp" -> Some Diagnostic_backends.sexp
+      | _ -> None
+    );
+  print = (fun x -> x.Diagnostic_backends.name);
+  usage={|expected "stdout", "json", or "sexp"|};
+  env_var = "OCAML_LOG_FORMAT"
+}
+
+let log_version = ref None
+let log_version_reader =
+  let parse s =
+    Scanf.sscanf_opt s "%d.%d"
+      (fun major minor -> Diagnostic_history.version ~minor ~major)
+  in
+  {
+    parse;
+    print = (Format.asprintf "%a" Diagnostic_history.pp);
+    usage={|expected "%d.%d"|};
+    env_var = "OCAML_LOG_VERSION"
+  }
+
+let log_file = ref None
+let log_file_reader =
+  {
+    parse = (fun x -> Some x);
+    print = Fun.id;
+    usage={|expected "filename"|};
+    env_var = "OCAML_LOG_FILE"
+  }
+
+
+
 let unboxed_types = ref false
 
 (* This is used by the -save-ir-after option. *)
@@ -586,12 +624,14 @@ module Dump_option = struct
     | Clambda
     | Raw_flambda
     | Flambda
+    | Flambda_verbose
     | Cmm
     | Selection
     | Combine
     | CSE
     | Live
     | Spill
+    | Reload
     | Split
     | Interf
     | Prefer
@@ -616,12 +656,14 @@ module Dump_option = struct
     | Clambda -> "clambda"
     | Raw_flambda -> "rawflambda"
     | Flambda -> "flambda"
+    | Flambda_verbose -> "flambda_verbose"
     | Cmm -> "cmm"
     | Selection -> "selection"
     | Combine -> "combine"
     | CSE -> "cse"
     | Live -> "live"
     | Spill -> "spill"
+    | Reload -> "reload"
     | Split -> "split"
     | Interf -> "interf"
     | Prefer -> "prefer"
@@ -643,6 +685,7 @@ module Dump_option = struct
     | "clambda" -> Some Clambda
     | "rawflambda" -> Some Raw_flambda
     | "flambda" -> Some Flambda
+    | "flambda_verbose" -> Some Flambda_verbose
     | "cmm" -> Some Cmm
     | "selection" -> Some Selection
     | "combine" -> Some Combine
@@ -671,6 +714,7 @@ module Dump_option = struct
     | Clambda -> dump_clambda
     | Raw_flambda -> dump_rawflambda
     | Flambda -> dump_flambda
+    | Flambda_verbose -> dump_flambda_verbose
     | Cmm -> dump_cmm
     | Selection -> dump_selection
     | Combine -> dump_combine
@@ -678,6 +722,7 @@ module Dump_option = struct
     | Live -> dump_live
     | Spill -> dump_spill
     | Split -> dump_split
+    | Reload -> dump_reload
     | Interf -> dump_interf
     | Prefer -> dump_prefer
     | Regalloc -> dump_regalloc
@@ -716,6 +761,7 @@ module Dump_option = struct
       -> Middle Any
     | Raw_flambda
     | Flambda
+    | Flambda_verbose
       -> Middle Flambda
     | Cmm
     | Selection
@@ -723,6 +769,7 @@ module Dump_option = struct
     | CSE
     | Live
     | Spill
+    | Reload
     | Split
     | Interf
     | Prefer
@@ -731,6 +778,13 @@ module Dump_option = struct
     | Linear
     | Interval
       -> Backend
+
+  let set option b = flag option := b
+  let get option = !(flag option)
+  let get_from_name name =
+    match of_string name with
+    | None -> false
+    | Some x -> get x
 
   let available (option : t) : (unit, string) result =
     let pass = Result.ok () in
@@ -809,3 +863,48 @@ let create_usage_msg program =
 
 let print_arguments program =
   Arg.usage !arg_spec (create_usage_msg program)
+
+
+let create_log_device ppf =
+  match !log_file with
+  | None -> Log.Device.make (ref ppf)
+  | Some f ->
+      let out = Out_channel.open_text f in
+      let on_close () = Out_channel.close out in
+      let ppf = Format.formatter_of_out_channel out in
+      Log.Device.make ~on_close (ref ppf)
+
+let create_log ~default_backend history scheme device =
+  let current_version = Diagnostic_history.current_version history in
+  let version = match !log_version with
+    | None -> Diagnostic_validation.Downward_compatible current_version
+    | Some v -> Diagnostic_validation.Exact v
+  in
+  let backend =
+    Option.value ~default:default_backend !log_format
+  in
+  backend.Diagnostic_backends.make ?color:!color ~version ~device scheme
+
+let dump_on_log log field pr x =
+  let status = Dump_option.(get_from_name @@ Diagnostic.field_name field) in
+  Log.log_if log field status pr x
+
+let dump_item_on_log log field fmt =
+  if Dump_option.(get_from_name @@ Diagnostic.field_name field) then
+    Log.itemf field log fmt
+  else
+    (* the formatter argument is not used *)
+    Format.ifprintf Format.std_formatter fmt
+
+(* showing configuration and configuration variables *)
+let show_config_and_exit () =
+  let device = create_log_device Format.std_formatter in
+  let log =
+    create_log
+      ~default_backend:Diagnostic_backends.fmt_with_fields
+      Conf_diagnostic.Versions.history
+      Conf_diagnostic.scheme
+      device
+  in
+  Conf_diagnostic.print log;
+  exit 0

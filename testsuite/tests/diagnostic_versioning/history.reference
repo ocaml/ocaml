@@ -1,0 +1,200 @@
+Metadata:
+  v1.0
+    metadata
+      Declaration
+      New label version, i*i
+      New label downward_compatible, b
+      New label valid, validity
+      New label invalid_paths, ?l l s
+      New label deprecated_paths, ?l l s
+      Seal
+    validity
+      Declaration
+      New label Full
+      New label Deprecated
+      New label Invalid
+      Seal
+Config:
+  v1.0
+    config
+      Declaration
+      New label version, s
+      New label standard_library_default, s
+      New label standard_library_relative, l s
+      New label standard_library, s
+      New label ccomp_type, s
+      New label c_compiler, s
+      New label bytecode_cflags, s
+      New label ocamlc_cflags, s
+      New label bytecode_cppflags, s
+      New label ocamlc_cppflags, s
+      New label native_cflags, s
+      New label ocamlopt_cflags, s
+      New label native_cppflags, s
+      New label ocamlopt_cppflags, s
+      New label bytecomp_c_compiler, s
+      New label native_c_compiler, s
+      New label bytecomp_c_libraries, s
+      New label native_c_libraries, s
+      New label compression_c_libraries, s
+      New label native_ldflags, s
+      New label native_pack_linker, s
+      New label native_compiler, b
+      New label architecture, s
+      New label model, s
+      New label int_size, i
+      New label word_size, i
+      New label system, s
+      New label asm, s
+      New label asm_cfi_supported, b
+      New label with_frame_pointers, b
+      New label ext_exe, s
+      New label ext_obj, s
+      New label ext_asm, s
+      New label ext_lib, s
+      New label ext_dll, s
+      New label os_type, s
+      New label default_executable_name, s
+      New label systhread_supported, b
+      New label host, s
+      New label target, s
+      New label bytecode_runtime_id, s
+      New label native_runtime_id, s
+      New label flambda, b
+      New label safe_string, b
+      New label default_safe_string, b
+      New label flat_float_array, b
+      New label align_double, b
+      New label align_int64, b
+      New label function_sections, b
+      New label afl_instrument, b
+      New label tsan, b
+      New label windows_unicode, b
+      New label supports_shared_libraries, b
+      New label native_dynlink, b
+      New label naked_pointers, b
+      New label with_codegen_invariants, b
+      New label reserved_header_bits, i
+      New label exec_magic_number, s
+      New label cmi_magic_number, s
+      New label cmo_magic_number, s
+      New label cma_magic_number, s
+      New label cmx_magic_number, s
+      New label cmxa_magic_number, s
+      New label ast_impl_magic_number, s
+      New label ast_intf_magic_number, s
+      New label cmxs_magic_number, s
+      New label cmt_magic_number, s
+      New label linear_magic_number, s
+      Seal
+Main:
+  v0.1
+    box_type
+      Declaration
+      New label H
+      New label V
+      New label HV
+      New label HoV
+      New label B
+      Seal
+    compiler
+      Declaration
+      New label debug, ?debug
+      New label error, ?error_report
+      New label warnings, ?l error_report
+      New label alerts, ?l error_report
+      Seal
+    debug
+      Declaration
+      New label parsetree, ?s
+      New label source, ?s
+      New label typedtree, ?s
+      New label shape, ?s
+      New label instr, ?s
+      New label lambda, ?s
+      New label rawlambda, ?s
+      New label flambda, ?l s
+      New label rawflambda, ?l s
+      New label clambda, ?l s
+      New label raw_clambda, ?l s
+      New label cmm, ?l s
+      New label remove_free_vars_equal_to_args, ?l s
+      New label unbox_free_vars_of_closures, ?l s
+      New label unbox_closures, ?l s
+      New label unbox_specialised_args, ?l s
+      New label mach, ?l s
+      New label linear, ?l s
+      New label cmm_invariant, ?s
+      New label profile, ?l s*l profile
+      Seal
+    error_kind
+      Declaration
+      New label Report_error
+      New label Report_alert, s
+      New label Report_alert_as_error, s
+      New label Report_warning, s
+      New label Report_warning_as_error, s
+      Seal
+    error_msg
+      Declaration
+      New label msg, l structured_text
+      New label loc, ?loc
+      Seal
+    error_report
+      Declaration
+      New label kind, error_kind
+      New label main, error_msg
+      New label sub, ?l error_msg
+      New label footnote, ?l structured_text
+      Seal
+    format_tag
+      Declaration
+      New label Unknown_format_tag, s
+      New label String_tag, s
+      New label Error
+      New label Warning
+      New label Loc
+      New label Inline_code
+      New label Hint
+      New label Deletion
+      New label Insertion
+      New label Modification
+      New label Preservation
+      Seal
+    loc
+      Declaration
+      New label file, ?s
+      New label start_line, ?i
+      New label stop_line, ?i
+      New label characters, ?i*i
+      Seal
+    profile
+      Declaration
+      New label name, s
+      New label columns, ?l f
+      New label children, ?l profile
+      Seal
+    structured_text
+      Declaration
+      New label Text, s
+      New label Tab_break, i*i
+      New label Set_tab
+      New label Simple_break, i*i
+      New label Break, (s*i*s)*(s*i*s)
+      New label Flush, b
+      New label Newline
+      New label If_newline
+      New label Deprecated, s
+      New label With_size, i*s
+      New label Box, box_type*i*l structured_text
+      New label Tag, format_tag*l structured_text
+      New label Tbox, l structured_text
+      Seal
+    toplevel
+      Declaration
+      New label output, ?l structured_text
+      New label backtrace, ?l structured_text
+      New label compiler, ?compiler
+      New label errors, ?l l structured_text
+      New label trace, ?l l structured_text
+      Seal

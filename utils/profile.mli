@@ -31,7 +31,12 @@ val record_call : ?accumulate:bool -> string -> (unit -> 'a) -> 'a
 val record : ?accumulate:bool -> string -> ('a -> 'b) -> 'a -> 'b
 (** [record pass f arg] records the profile information of [f arg] *)
 
-val print : Format.formatter -> Clflags.profile_column list -> unit
+type column = [ `Time | `Alloc | `Top_heap | `Abs_top_heap ]
+val report: column list -> Compiler_diagnostic.Debug.id Log.t -> unit
+
+type row_data
+val gather: column list -> row_data list
+val print : Format.formatter -> row_data list -> unit
 (** Prints the selected recorded profiling information to the formatter. *)
 
 (** Command line flags *)

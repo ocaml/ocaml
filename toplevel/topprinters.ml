@@ -141,17 +141,21 @@ let match_printer_type env ty =
   | Some _ as res -> res
   | None -> match_generic_printer_type env ty
 
-
-let report_error ppf = function
+module Style = Misc.Style
+let report_error  = function
   | `Unbound_identifier lid ->
-      Format.fprintf ppf "Unbound value %a.@."
-        Printtyp.longident lid
+      Format_doc.doc_printf "Unbound value %a.@."
+        (Style.as_inline_code Printtyp.Doc.longident) lid
   | `Wrong_type lid ->
-      Format.fprintf ppf "%a has the wrong type for a printing function.@."
-        Printtyp.longident lid
+      Format_doc.doc_printf "%a has the wrong type for a printing function.@."
+        (Style.as_inline_code Printtyp.Doc.longident) lid
   | `No_active_printer path ->
-      Format.fprintf ppf "The printer named %a is not installed.@."
-        Printtyp.path path
+      Format_doc.doc_printf "The printer named %a is not installed.@."
+        (Style.as_inline_code Printtyp.Doc.path) path
+
+let log_error log error =
+  Log.cons log Toplevel_diagnostic.errors (report_error error)
+
 
 let find_printer env lid =
   match Env.find_value_by_name lid env with

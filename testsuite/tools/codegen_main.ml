@@ -27,9 +27,12 @@ let compile_file filename =
   let ic = open_in filename in
   let lb = Lexing.from_channel ic in
   lb.Lexing.lex_curr_p <- Lexing.{ lb.lex_curr_p with pos_fname = filename };
+  let compiler_log =
+    Location.log_on_device Log.Device.std in
+  let log = Log.detach compiler_log Compiler_diagnostic.debug in
   try
     while true do
-      Asmgen.compile_phrase ~ppf_dump:Format.std_formatter
+      Asmgen.compile_phrase ~log
         (Parsecmm.phrase Lexcmm.token lb)
     done
   with
@@ -55,27 +58,31 @@ let compile_file filename =
 
 let usage = "Usage: codegen <options> <files>\noptions are:"
 
+let set_dump flag =
+  Arg.Unit (fun () -> Clflags.Dump_option.set flag true)
+
 let main() =
   Arg.parse [
      "-S", Arg.Set write_asm_file,
        " Output file to filename.s (default is stdout)";
      "-g", Arg.Set Clflags.debug, "";
-     "-dcmm", Arg.Set dump_cmm, "";
-     "-dcse", Arg.Set dump_cse, "";
-     "-dsel", Arg.Set dump_selection, "";
-     "-dlive", Arg.Unit(fun () -> dump_live := true ), "";
-     "-dspill", Arg.Set dump_spill, "";
-     "-dsplit", Arg.Set dump_split, "";
-     "-dinterf", Arg.Set dump_interf, "";
-     "-dprefer", Arg.Set dump_prefer, "";
-     "-dalloc", Arg.Set dump_regalloc, "";
-     "-dreload", Arg.Set dump_reload, "";
-     "-dscheduling", Arg.Set dump_scheduling, "";
-     "-dlinear", Arg.Set dump_linear, "";
+     "-dcmm", set_dump Cmm, "";
+     "-dcse", set_dump CSE, "";
+     "-dsel", set_dump Selection, "";
+     "-dlive",  set_dump Live, "";
+     "-dspill", set_dump Spill, "";
+     "-dsplit", set_dump Split, "";
+     "-dinterf", set_dump Interf, "";
+     "-dprefer", set_dump Prefer, "";
+     "-dalloc", set_dump Regalloc, "";
+     "-dreload", set_dump Reload, "";
+     "-dscheduling", set_dump Scheduling, "";
+     "-dlinear", set_dump Linear, "";
      "-dtimings", Arg.Unit (fun () -> profile_columns := [ `Time ]), "";
     ] compile_file usage
 
 let () =
   main ();
-  Profile.print Format.std_formatter !Clflags.profile_columns;
+  let rows = Profile.gather !Clflags.profile_columns in
+  Profile.print Format.std_formatter rows;
   exit 0

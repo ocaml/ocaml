@@ -18,24 +18,29 @@ open Misc
 type info = {
   target: Unit_info.t;
   env : Env.t;
-  ppf_dump : Format.formatter;
+  debug_log : Compiler_diagnostic.Debug.id Log.t;
   tool_name : string;
   native : bool;
 }
 
-let with_info ~native ~tool_name ~dump_ext unit_info k =
+let with_info ~native ~tool_name ~dump_ext ~log unit_info k =
   Compmisc.init_path ();
   Env.set_current_unit unit_info ;
   let env = Compmisc.initial_env() in
   let dump_file = String.concat "." [Unit_info.prefix unit_info; dump_ext] in
-  Compmisc.with_ppf_dump ~file_prefix:dump_file @@ fun ppf_dump ->
-  k {
-    target = unit_info;
-    env;
-    ppf_dump;
-    tool_name;
-    native;
-  }
+  Compmisc.with_debug_log ~file_prefix:dump_file log (fun debug_log ->
+      k {
+        target = unit_info;
+        env;
+        debug_log;
+        tool_name;
+        native;
+      }
+    )
+
+let log_if i field printer x =
+  Clflags.dump_on_log i.debug_log field printer x; x
+module D = Compiler_diagnostic.Debug
 
 module Parse_result = struct
   type 'a t = { ast : 'a; info : info }
@@ -47,8 +52,8 @@ module Parse_result = struct
     in
     { ast; info = { info with target = new_target } }
 
-  let print_ast_if flag ppf { ast; info } =
-    { ast = print_if info.ppf_dump flag ppf ast; info }
+  let log_ast_if flag pr { ast; info } =
+    { ast = log_if info flag pr ast; info }
 end
 
 (** Compile a .mli file *)
@@ -58,15 +63,15 @@ let parse_intf i =
     ~tool_name:i.tool_name
     (Unit_info.human_source_file i.target)
   |> Parse_result.update_unit_info ~info:i
-  |> Parse_result.print_ast_if Clflags.dump_parsetree Printast.interface
-  |> Parse_result.print_ast_if Clflags.dump_source Pprintast.signature
+  |> Parse_result.log_ast_if D.parsetree Printast.interface
+  |> Parse_result.log_ast_if D.source Pprintast.signature
 
 let typecheck_intf { Parse_result.ast; info } =
   Profile.(record_call typing) @@ fun () ->
   let tsg =
     ast
     |> Typemod.type_interface info.target info.env
-    |> print_if info.ppf_dump Clflags.dump_typedtree Printtyped.interface
+    |> log_if info D.typedtree Printtyped.interface
   in
   let alerts = Builtin_attributes.alerts_of_sig ~mark:true ast in
   let sg = tsg.Typedtree.sig_type in
@@ -101,22 +106,19 @@ let interface info =
 
 
 (** Frontend for a .ml file *)
-
 let parse_impl i =
   Pparse.parse_implementation
     ~tool_name:i.tool_name
     (Unit_info.human_source_file i.target)
   |> Parse_result.update_unit_info ~info:i
-  |> Parse_result.print_ast_if Clflags.dump_parsetree Printast.implementation
-  |> Parse_result.print_ast_if Clflags.dump_source Pprintast.structure
+  |> Parse_result.log_ast_if D.parsetree Printast.implementation
+  |> Parse_result.log_ast_if D.source Pprintast.structure
 
 let typecheck_impl { Parse_result.ast = parsetree; info = i } =
   parsetree
-  |> Profile.(record typing)
-    (Typemod.type_implementation i.target i.env)
-  |> print_if i.ppf_dump Clflags.dump_typedtree
-    Printtyped.implementation_with_coercion
-  |> print_if i.ppf_dump Clflags.dump_shape
+  |> Profile.(record typing) (Typemod.type_implementation i.target i.env)
+  |> log_if i D.typedtree Printtyped.implementation_with_coercion
+  |> log_if i D.shape
     (fun fmt {Typedtree.shape; _} -> Shape.print fmt shape)
 
 let implementation info ~backend =

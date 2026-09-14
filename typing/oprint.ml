@@ -255,7 +255,7 @@ let print_out_value ppf tree =
   in
   cautious print_tree_1 ppf tree
 
-let out_value = ref (compat print_out_value)
+let out_value = ref print_out_value
 
 (* Types *)
 
@@ -866,17 +866,15 @@ let _ = out_functor_parameters := print_out_functor_parameters
 
 (* Phrases *)
 
-open Format
-
 let print_out_exception ppf exn outv =
   match exn with
-    Sys.Break -> fprintf ppf "Interrupted.@."
-  | Out_of_memory -> fprintf ppf "Out of memory during evaluation.@."
+    Sys.Break -> fprintf ppf "Interrupted."
+  | Out_of_memory -> fprintf ppf "Out of memory during evaluation."
   | Stack_overflow ->
-      fprintf ppf "Stack overflow during evaluation (looping recursion?).@."
+      fprintf ppf "Stack overflow during evaluation (looping recursion?)."
   | _ -> match Printexc.use_printers exn with
-        | None -> fprintf ppf "@[Exception:@ %a.@]@." !out_value outv
-        | Some s -> fprintf ppf "@[Exception:@ %s@]@." s
+        | None -> fprintf ppf "@[Exception:@ %a.@]" !out_value outv
+        | Some s -> fprintf ppf "@[Exception:@ %s@]" s
 
 let rec print_items ppf =
   function
@@ -902,26 +900,25 @@ let rec print_items ppf =
           otyext_constructors = exts;
           otyext_private = ext.oext_private }
       in
-        fprintf ppf "@[%a@]" (Format_doc.compat !out_type_extension) te;
+        fprintf ppf "@[%a@]" !out_type_extension te;
         if items <> [] then fprintf ppf "@ %a" print_items items
   | (tree, valopt) :: items ->
       begin match valopt with
         Some v ->
-          fprintf ppf "@[<2>%a =@ %a@]" (Format_doc.compat !out_sig_item) tree
+          fprintf ppf "@[<2>%a =@ %a@]" !out_sig_item tree
             !out_value v
-      | None -> fprintf ppf "@[%a@]" (Format_doc.compat !out_sig_item) tree
+      | None -> fprintf ppf "@[%a@]" !out_sig_item tree
       end;
       if items <> [] then fprintf ppf "@ %a" print_items items
 
 let print_out_phrase ppf =
   function
     Ophr_eval (outv, ty) ->
-      fprintf ppf "@[- : %a@ =@ %a@]@." (compat !out_type) ty !out_value outv
+      fprintf ppf "@[- : %a@ =@ %a@]" !out_type ty !out_value outv
   | Ophr_signature [] -> ()
-  | Ophr_signature items -> fprintf ppf "@[<v>%a@]@." print_items items
+  | Ophr_signature items -> fprintf ppf "@[<v>%a@]" print_items items
   | Ophr_exception (exn, outv) -> print_out_exception ppf exn outv
 
 let out_phrase = ref print_out_phrase
 
 type 'a printer = 'a Format_doc.printer ref
-type 'a toplevel_printer = (Format.formatter -> 'a -> unit) ref

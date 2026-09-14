@@ -15,21 +15,23 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-let raw_clambda_dump_if ppf
+let raw_clambda_dump_if log
       ((ulambda, _, structured_constants) : Clambda.with_constants) =
-  if !Clflags.dump_rawclambda || !Clflags.dump_clambda then
+  if Clflags.Dump_option.(get Raw_clambda || get Clambda) then
     begin
-      Format.fprintf ppf "@.clambda:@.";
-      Printclambda.clambda ppf ulambda;
+      let log fmt = Log.itemf Compiler_diagnostic.Debug.clambda log fmt in
+      log "@.clambda:@.";
+      log "%a" Printclambda.clambda ulambda;
       List.iter (fun { Clambda. symbol; definition; _ } ->
-          Format.fprintf ppf "%s:@ %a@."
+          log "%s:@ %a@."
             symbol
             Printclambda.structured_constant definition)
         structured_constants
     end;
-  if !Clflags.dump_cmm then Format.fprintf ppf "@.cmm:@."
+  if Clflags.Dump_option.get Cmm then
+    Log.itemf Compiler_diagnostic.Debug.cmm log "@.cmm:@."
 
-let lambda_to_clambda ~backend ~prefixname:_ ~ppf_dump
+let lambda_to_clambda ~backend ~prefixname:_ ~log
       (lambda : Lambda.program) =
   let clambda =
     Closure.intro ~backend ~size:lambda.main_module_block_size lambda.code
@@ -54,5 +56,5 @@ let lambda_to_clambda ~backend ~prefixname:_ ~ppf_dump
   let clambda_and_constants =
     clambda, [preallocated_block], constants
   in
-  raw_clambda_dump_if ppf_dump clambda_and_constants;
+  raw_clambda_dump_if log clambda_and_constants;
   clambda_and_constants

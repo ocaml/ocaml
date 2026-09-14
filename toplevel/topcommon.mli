@@ -45,18 +45,29 @@ val initialize_toplevel_env : unit -> unit
         (* Initialize the typing environment for the toplevel *)
 
 val preprocess_phrase :
-  formatter -> Parsetree.toplevel_phrase -> Parsetree.toplevel_phrase
+  Compiler_diagnostic.Debug.id Log.t -> Parsetree.toplevel_phrase
+  -> Parsetree.toplevel_phrase
 (* Preprocess the given toplevel phrase using regular and ppx
    preprocessors. Return the updated phrase. *)
 
 val typecheck_phrase :
-  formatter -> Env.t -> Parsetree.structure ->
+  Compiler_diagnostic.Debug.id Log.t -> Env.t -> Parsetree.structure ->
   Typedtree.structure * Types.signature * Env.t
 (* Type-check the current toplevel phrase (not a directive)
    in the current typing environment, return an updated typing environment. *)
 
 val record_backtrace : unit -> unit
 
+(*Log creation *)
+
+val directive_log: Toplevel_diagnostic.id Log.t ref
+val errorf: ('a, Format_doc.formatter, unit) format -> 'a
+val tracef: ('a, Format_doc.formatter, unit) format -> 'a
+
+val log_on_device: Log.Device.t -> Toplevel_diagnostic.id Log.t
+val compiler_log: Toplevel_diagnostic.id Log.t -> Compiler_diagnostic.id Log.t
+val debug_log:
+  Toplevel_diagnostic.id Log.t -> Compiler_diagnostic.Debug.id Log.t
 
 (* Printing of values *)
 
@@ -69,16 +80,14 @@ val max_printer_steps: int ref
 
 type 'a printer := 'a Oprint.printer
 
-val print_out_value :
-  (formatter -> Outcometree.out_value -> unit) ref
+val print_out_value : Outcometree.out_value printer
 val print_out_type : Outcometree.out_type printer
 val print_out_class_type :  Outcometree.out_class_type printer
 val print_out_module_type : Outcometree.out_module_type printer
 val print_out_type_extension : Outcometree.out_type_extension printer
 val print_out_sig_item :  Outcometree.out_sig_item printer
 val print_out_signature :  Outcometree.out_sig_item list printer
-val print_out_phrase :
-  (formatter -> Outcometree.out_phrase -> unit) ref
+val print_out_phrase : Outcometree.out_phrase printer
 
 
 exception Undefined_global of string
@@ -105,11 +114,12 @@ module MakeEvalPrinter (_ : EVAL_BASE) : sig
 
   module Printer: Genprintval.S with type t = Obj.t
 
-  val print_value: Env.t -> Printer.t -> formatter -> Types.type_expr -> unit
+  val print_value:
+    Env.t -> Printer.t -> Format_doc.formatter -> Types.type_expr -> unit
 
-  val print_untyped_exception: formatter -> Printer.t -> unit
+  val print_untyped_exception: Printer.t Format_doc.printer
 
-  val print_exception_outcome : formatter -> exn -> unit
+  val print_exception_outcome : exn Format_doc.printer
     (* Print an exception resulting from the evaluation of user code. *)
 
   val outval_of_value:
@@ -120,12 +130,14 @@ end
 
 (* Interface with toplevel directives *)
 
+type 'a directive = 'a -> unit
+
 type directive_fun =
-  | Directive_none of (unit -> unit)
-  | Directive_string of (string -> unit)
-  | Directive_int of (int -> unit)
-  | Directive_ident of (Longident.t -> unit)
-  | Directive_bool of (bool -> unit)
+  | Directive_none of unit directive
+  | Directive_string of string directive
+  | Directive_int of int directive
+  | Directive_ident of Longident.t directive
+  | Directive_bool of bool directive
 
 type directive_info = {
   section: string;
@@ -143,7 +155,8 @@ val get_directive_info : string -> directive_info option
 val all_directive_names : unit -> string list
 
 val try_run_directive :
-  formatter -> string -> Parsetree.directive_argument option -> bool
+   Toplevel_diagnostic.id Log.t -> string ->
+   Parsetree.directive_argument option -> bool
 
 val[@deprecated] directive_table : (string, directive_fun) Hashtbl.t
   (* @deprecated please use [add_directive] instead of inserting
@@ -159,7 +172,9 @@ val parse_toplevel_phrase : (Lexing.lexbuf -> Parsetree.toplevel_phrase) ref
 val parse_use_file : (Lexing.lexbuf -> Parsetree.toplevel_phrase list) ref
 val print_location : formatter -> Location.t -> unit
 val print_error : formatter -> Location.error -> unit
-val print_warning : Location.t -> formatter -> Warnings.t -> unit
+val print_warning : Location.t -> Warnings.t -> unit
+val log_warning :
+  Location.t -> Compiler_diagnostic.id Log.t -> Warnings.t -> unit
 val input_name : string ref
 
 (* Hooks for external line editor *)

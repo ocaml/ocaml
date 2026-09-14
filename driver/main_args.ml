@@ -634,6 +634,38 @@ let mk_error_style f =
     \  If the option is not specified, these setting can alternatively\n\
     \  be set through the OCAML_ERROR_STYLE environment variable."
 
+let mk_log_format f =
+  let symbols = ["stdout-full"; "stdout-light"; "sexp"; "json"] in
+  "-log-format", Arg.Symbol (symbols, f),
+  Printf.sprintf
+    "<format>  Control the way error messages and warnings are printed\n\
+    \    The following formats are supported:\n\
+    \      stdout-light   classic mode\n\
+    \      stdout-full    classic mode with label names\n\
+    \      json           json object\n\
+    \      sexp           s-expression\n\
+    \    The default setting is 'fmt'.\n\
+    \  If the option is not specified, these setting can alternatively\n\
+    \  be set through the OCAML_LOG_FORMAT environment variable."
+
+let mk_log_version f =
+  "-log-version", Arg.String f,
+  Printf.sprintf
+    "<version>  Control the way compiler diagnostics are printed.\n\
+    \    The compiler restricts the schema of the printed diagnostics to the\n\
+    \    required possibly older version. Previous minor versions are fully\n\
+    \    supported. Only the previous major version is partially supported.\n\
+    \  If the option is not specified, these setting can alternatively\n\
+    \  be set through the OCAML_LOG_VERSION environment variable."
+
+let mk_log_file f =
+  "-log-file", Arg.String f,
+  Printf.sprintf
+    "<filename>  Output compiler diagnostics to <filename>.\n
+    \  If the option is not specified, these setting can alternatively\n\
+    \  be set through the OCAML_LOG_FILE environment variable."
+
+
 let mk_where f =
   "-where", Arg.Unit f, " Print location of standard library and exit"
 
@@ -885,6 +917,9 @@ module type Core_options = sig
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
 
+  val _log_format: string -> unit
+  val _log_version: string -> unit
+  val _log_file: string -> unit
 end
 
 module type Compiler_options = sig
@@ -1103,6 +1138,9 @@ struct
     mk_cmi_file F._cmi_file;
     mk_color F._color;
     mk_error_style F._error_style;
+    mk_log_format F._log_format;
+    mk_log_version F._log_version;
+    mk_log_file F._log_file;
     mk_compat_32 F._compat_32;
     mk_config F._config;
     mk_config_var F._config_var;
@@ -1272,6 +1310,9 @@ struct
     mk__ F.anonymous;
     mk_color F._color;
     mk_error_style F._error_style;
+    mk_log_format F._log_format;
+    mk_log_version F._log_version;
+    mk_log_file F._log_file;
 
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
@@ -1317,6 +1358,9 @@ struct
     mk_classic_inlining F._classic_inlining;
     mk_color F._color;
     mk_error_style F._error_style;
+    mk_log_format F._log_format;
+    mk_log_version F._log_version;
+    mk_log_file F._log_file;
     mk_compact F._compact;
     mk_config F._config;
     mk_config_var F._config_var;
@@ -1546,7 +1590,9 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk__ F.anonymous;
     mk_color F._color;
     mk_error_style F._error_style;
-
+    mk_log_format F._log_format;
+    mk_log_version F._log_version;
+    mk_log_file F._log_file;
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
     mk_dparsetree_loc_ghost_invariants F._dparsetree_loc_ghost_invariants;
@@ -1680,6 +1726,7 @@ let options_with_command_line_syntax options r =
 module Default = struct
   open Clflags
   let set r () = r := true
+  let dump_set flag () = Dump_option.set flag true
   let clear r () = r := false
 
   module Common = struct
@@ -1721,14 +1768,14 @@ module Default = struct
     let _I dir = include_dirs := dir :: (!include_dirs)
     let _H dir = hidden_include_dirs := dir :: (!hidden_include_dirs)
     let _color = Misc.set_or_ignore color_reader.parse color
-    let _dlambda = set dump_lambda
-    let _dparsetree = set dump_parsetree
+    let _dlambda = dump_set Lambda
+    let _dparsetree = dump_set Parsetree
     let _dparsetree_loc_ghost_invariants = set parsetree_ghost_loc_invariant
-    let _drawlambda = set dump_rawlambda
-    let _dsource = set dump_source
-    let _dtypedtree = set dump_typedtree
-    let _dshape = set dump_shape
-    let _dmatchcomp = set dump_matchcomp
+    let _drawlambda = dump_set Raw_lambda
+    let _dsource = dump_set Source
+    let _dtypedtree = dump_set Typedtree
+    let _dshape = dump_set Shape
+    let _dmatchcomp = dump_set Match_comp
     let _dunique_ids = set unique_ids
     let _dno_unique_ids = clear unique_ids
     let _dcanonical_ids = set canonical_ids
@@ -1737,6 +1784,9 @@ module Default = struct
     let _dno_locations = clear locations
     let _error_style =
       Misc.set_or_ignore error_style_reader.parse error_style
+    let _log_format = Misc.set_or_ignore log_format_reader.parse log_format
+    let _log_version = Misc.set_or_ignore log_version_reader.parse log_version
+    let _log_file = Misc.set_or_ignore log_file_reader.parse log_file
     let _nopervasives = set nopervasives
     let _ppx s = Compenv.first_ppx := (s :: (!Compenv.first_ppx))
     let _keywords s = Clflags.keyword_edition := (Some s)
@@ -1751,30 +1801,30 @@ module Default = struct
     let _clambda_checks () = clambda_checks := true
     let _classic_inlining () = classic_inlining := true
     let _compact = clear optimize_for_speed
-    let _dalloc = set dump_regalloc
-    let _dclambda = set dump_clambda
-    let _dcmm = set dump_cmm
+    let _dalloc = dump_set Regalloc
+    let _dclambda = dump_set Clambda
+    let _dcmm = dump_set Cmm
     let _dcmm_invariants = set cmm_invariants
-    let _dcombine = set dump_combine
-    let _dcse = set dump_cse
-    let _dflambda = set dump_flambda
+    let _dcombine = dump_set Combine
+    let _dcse = dump_set CSE
+    let _dflambda = dump_set Flambda
     let _dflambda_invariants = set flambda_invariant_checks
     let _dflambda_let stamp = dump_flambda_let := (Some stamp)
     let _dflambda_no_invariants = clear flambda_invariant_checks
     let _dflambda_verbose () =
-      set dump_flambda (); set dump_flambda_verbose ()
-    let _dinterval = set dump_interval
-    let _dinterf = set dump_interf
-    let _dlinear = set dump_linear
-    let _dlive () = dump_live := true
-    let _dprefer = set dump_prefer
-    let _drawclambda = set dump_rawclambda
-    let _drawflambda = set dump_rawflambda
-    let _dreload = set dump_reload
-    let _dscheduling = set dump_scheduling
-    let _dsel = set dump_selection
-    let _dspill = set dump_spill
-    let _dsplit = set dump_split
+      dump_set Flambda (); dump_set Flambda_verbose ()
+    let _dinterval = dump_set Interval
+    let _dinterf = dump_set Interf
+    let _dlinear = dump_set Linear
+    let _dlive () = dump_set Live ()
+    let _dprefer = dump_set Prefer
+    let _drawclambda = dump_set Raw_clambda
+    let _drawflambda = dump_set Raw_flambda
+    let _dreload = dump_set Reload
+    let _dscheduling = dump_set Scheduling
+    let _dsel = dump_set Selection
+    let _dspill = dump_set Spill
+    let _dsplit = dump_set Split
     let _dstartup = set keep_startup_file
     let _dump_pass pass = set_dumped_pass pass true
     let _inline spec =
@@ -1861,11 +1911,11 @@ module Default = struct
     let _cclib s = Compenv.defer (ProcessObjects (Misc.rev_split_words s))
     let _ccopt s = Compenv.first_ccopts := (s :: (!Compenv.first_ccopts))
     let _cmi_file s = cmi_file := (Some s)
-    let _config = Misc.show_config_and_exit
-    let _config_var = Misc.show_config_variable_and_exit
+    let _config = Clflags.show_config_and_exit
+    let _config_var = Conf_diagnostic.show_variable_and_exit
     let _dprofile () = profile_columns := Profile.all_columns
     let _dtimings () = profile_columns := [`Time]
-    let _dump_into_file = set dump_into_file
+    let _dump_into_file () = dump_into_file := true
     let _dump_dir s = dump_dir := Some s
     let _for_pack s = for_package := (Some s)
     let _g = set debug
@@ -1943,7 +1993,7 @@ module Default = struct
   module Topmain = struct
     include Toplevel
     include Core
-    let _dinstr = set dump_instr
+    let _dinstr = dump_set Instr
   end
 
   module Opttopmain = struct
@@ -2018,7 +2068,7 @@ third-party libraries such as Lwt, but with a different API."
     let _compat_32 = set bytecode_compatible_32
     let _custom = set custom_runtime
     let _dcamlprimc = set keep_camlprimc_file
-    let _dinstr = set dump_instr
+    let _dinstr = dump_set Instr
     let _dllib s = Compenv.defer (ProcessDLLs (false, Misc.rev_split_words s))
     let _dllib_suffixed s =
       Compenv.defer (ProcessDLLs (true, Misc.rev_split_words s))

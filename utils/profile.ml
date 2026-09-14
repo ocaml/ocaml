@@ -65,6 +65,7 @@ end
 type hierarchy =
   | E of (string, Measure_diff.t * hierarchy) Hashtbl.t
 [@@unboxed]
+type column = [ `Time | `Alloc | `Top_heap | `Abs_top_heap ]
 
 let create () = E (Hashtbl.create 2)
 let hierarchy = ref (create ())
@@ -187,7 +188,38 @@ let compute_other_category (E table : hierarchy) (total : Measure_diff.t) =
   ) table;
   !r
 
-type row = R of string * (float * display) list * row list
+type row_data = R of string * (float * display) list * row_data list
+
+module Profile_report = struct
+  module D = Diagnostic
+  type _ D.extension += Profile: (string list * row_data list) D.extension
+  let v1 = Compiler_diagnostic.v1
+  include D.New_record(Compiler_diagnostic.V)(struct
+      let name = "profile"
+      let description = "Profiling information for the compilation pipeline"
+      let update = v1
+    end)()
+
+  let name = new_field v1 "name" String
+  let columns = new_field_opt v1 "columns" (List Float)
+  let children = new_field_opt v1 "children" (List raw_type)
+  let () = seal v1
+
+  let typ =
+    let rec pull_r v (R (n,ms,c)) =
+      make v [
+              name^=n;
+              columns^=List.map fst ms;
+              children^=pull_rows v c
+      ]
+    and pull_rows v rows = List.map (pull_r v) rows in
+    let pull v (x,y) = x, pull_rows v y in
+    let default = D.(Pair (List String, List raw_type)) in
+    D.Custom {id = Profile; pull; default }
+end
+let profile =
+  Compiler_diagnostic.(Debug.new_field_opt v1 "profile" Profile_report.typ)
+let () = Compiler_diagnostic.(Debug.seal v1)
 
 let rec rows_of_hierarchy ~nesting make_row name measure_diff hierarchy env =
   let rows =
@@ -300,18 +332,16 @@ let display_rows ppf rows =
   in
   List.iter (loop ~indentation:"") rows
 
-let print ppf columns =
-  match columns with
-  | [] -> ()
-  | _ :: _ ->
-     let initial_measure =
-       match !initial_measure with
-       | Some v -> v
-       | None -> Measure.zero
-     in
-     let total = Measure_diff.of_diff Measure.zero (Measure.create ()) in
-     display_rows ppf
-       (rows_of_hierarchy !hierarchy total initial_measure columns)
+let gather columns =
+  let initial_measure =
+    match !initial_measure with
+    | Some v -> v
+    | None -> Measure.zero
+  in
+  let total = Measure_diff.of_diff Measure.zero (Measure.create ()) in
+  rows_of_hierarchy !hierarchy total initial_measure columns
+
+let print ppf rows = display_rows ppf rows
 
 let column_mapping = [
   "time", `Time;
@@ -319,6 +349,23 @@ let column_mapping = [
   "top-heap", `Top_heap;
   "absolute-top-heap", `Abs_top_heap;
 ]
+
+let report columns log =
+  let name l =
+    List.find_map (fun (x,y) -> if y = l then Some x else None)
+    column_mapping
+  in
+  log.Log.%[profile] <- (List.filter_map name columns, gather columns)
+
+let () =
+  let extension: type a.
+    a Diagnostic.extension -> (Format.formatter -> a -> unit) option =
+    function
+    | Profile_report.Profile -> Some (fun ppf (_,rows) -> print ppf rows)
+    | _ -> None
+  in
+  Diagnostic_backends.add_extension { extension }
+
 
 let column_names = List.map fst column_mapping
 
