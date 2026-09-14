@@ -1173,6 +1173,12 @@ AS_CASE([$ocaml_cc_vendor],
     internal_cflags="$cc_warnings"],
   [common_cflags="-O"])
 
+AS_CASE([$target],
+  [*-apple-darwin*],
+    [AX_CHECK_COMPILE_FLAG([-Werror=unguarded-availability-new],
+      [common_cflags="-Werror=unguarded-availability-new $common_cflags"], [],
+      [$warn_error_flag])])
+
 # Enable the prefetchw instruction on x86 and x86_64.
 AS_CASE([$target],
   [i686*|x86_64*],
@@ -2610,11 +2616,16 @@ AC_CHECK_FUNC([nice], [AC_DEFINE([HAS_NICE], [1])])
 
 ## dup3
 
-AC_CHECK_FUNC([dup3], [AC_DEFINE([HAS_DUP3], [1])])
+AC_CHECK_DECL([dup3], [AC_CHECK_FUNC([dup3], [AC_DEFINE([HAS_DUP3], [1])])], [],
+  [#define _GNU_SOURCE
+  AC_INCLUDES_DEFAULT])
 
 ## pipe2
 
-AC_CHECK_FUNC([pipe2], [AC_DEFINE([HAS_PIPE2], [1])])
+AC_CHECK_DECL([pipe2], [AC_CHECK_FUNC([pipe2], [AC_DEFINE([HAS_PIPE2], [1])])],
+  [],
+  [#define _GNU_SOURCE
+  AC_INCLUDES_DEFAULT])
 
 ## accept4
 
