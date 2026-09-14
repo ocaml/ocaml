@@ -127,6 +127,20 @@ val blit :
   src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int -> unit
 (** Same as {!Bytes.blit_string} which should be preferred. *)
 
+val hash : t -> int
+(** An unseeded hash function for strings, with the same output value as
+    {!Hashtbl.hash}. This function allows this module to be passed as argument
+    to the functor {!Hashtbl.Make}.
+
+    @since 5.0 *)
+
+val seeded_hash : int -> t -> int
+(** A seeded hash function for strings, with the same output value as
+    {!Hashtbl.seeded_hash}. This function allows this module to be passed as
+    argument to the functor {!Hashtbl.MakeSeeded}.
+
+    @since 5.0 *)
+
 (** {1:concat Concatenating}
 
     {b Note.} The {!Stdlib.( ^ )} binary operator concatenates two
@@ -845,20 +859,6 @@ val get_int32_ne : string -> int -> int32
 
     @since 4.13
 *)
-
-val hash : t -> int
-(** An unseeded hash function for strings, with the same output value as
-    {!Hashtbl.hash}. This function allows this module to be passed as argument
-    to the functor {!Hashtbl.Make}.
-
-    @since 5.0 *)
-
-val seeded_hash : int -> t -> int
-(** A seeded hash function for strings, with the same output value as
-    {!Hashtbl.seeded_hash}. This function allows this module to be passed as
-    argument to the functor {!Hashtbl.MakeSeeded}.
-
-    @since 5.0 *)
 
 val get_int32_be : string -> int -> int32
 (** [get_int32_be b i] is [b]'s big-endian 32-bit integer
