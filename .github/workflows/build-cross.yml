@@ -50,7 +50,9 @@ jobs:
           set -x
           ./configure --disable-warn-error --disable-ocamldoc \
               --disable-ocamltest --disable-stdlib-manpages \
-              --prefix="$PREFIX" || failed=$?
+              --prefix="$PREFIX" --with-additional-stublibsdir \
+              --with-relative-libdir --enable-runtime-search \
+              --enable-runtime-search-target=fallback || failed=$?
           if ((failed)) ; then set +x
             echo ; echo "::group::config.log content ($(wc -l config.log) lines)"
             cat config.log ; echo '::endgroup::' ; exit $failed
@@ -91,6 +93,8 @@ jobs:
         run: |
           set -x
           ./configure --prefix="$HOME/cross" --target=x86_64-w64-mingw32 \
+              --with-additional-stublibsdir --with-relative-libdir \
+              --enable-runtime-search --enable-runtime-search-target=fallback \
               TARGET_LIBDIR="$TESTDIR" || failed=$?
           if ((failed)) ; then set +x
             echo ; echo "::group::config.log content ($(wc -l config.log) lines)"
@@ -118,6 +122,21 @@ jobs:
           name: x86_64-w64-mingw32-executable
           path: example.exe
           retention-days: 1
+      - name: Move the cross compiler
+        run: |
+          mv $HOME/cross $HOME/relocated
+          ln -srf "$HOME/relocated/bin/flexlink.opt.exe" "$HOME/.local/bin/flexlink"
+      - name: Show opt.opt configuration after relocation
+        run: |
+          set -x
+          $HOME/relocated/bin/ocamlopt.opt.exe -config
+          cat runtime/build_config.h
+      - name: Cross compile a small program after relocation
+        run: |
+          printf %s "$EXAMPLE_PROGRAM$COMPLIBS_PROG_X86_64" > example.ml
+          set -x
+          cat example.ml
+          $HOME/relocated/bin/ocamlopt.opt.exe -I $HOME/relocated/lib/ocaml/compiler-libs/ ocamlcommon.cmxa ocamloptcomp.cmxa example.ml -o example.exe -verbose
       - name: Test cross sak
         run: |
           printf %s "$STR_UTF16" > utf16.ref
@@ -161,10 +180,12 @@ jobs:
         with:
           submodules: true
           persist-credentials: false
-      - name: Configure, build and install Linux-to-Windows OCaml
+      - name: Configure, build and install Linux-to-ARM-Linux OCaml
         run: |
           set -x
           ./configure --prefix="$HOME/cross" --target=aarch64-linux-gnu \
+              --with-additional-stublibsdir --with-relative-libdir \
+              --enable-runtime-search --enable-runtime-search-target=fallback \
               || failed=$?
           if ((failed)) ; then set +x
             echo ; echo "::group::config.log content ($(wc -l config.log) lines)"
@@ -183,6 +204,24 @@ jobs:
           set -x
           cat example.ml
           $HOME/cross/bin/ocamlopt.opt -I $HOME/cross/lib/ocaml/compiler-libs/ ocamlcommon.cmxa ocamloptcomp.cmxa example.ml -o example -verbose
+      - name: Run the small example program
+        run: |
+          set -x
+          qemu-aarch64 -L /usr/aarch64-linux-gnu example
+      - name: Move the cross compiler
+        run: |
+          mv $HOME/cross $HOME/relocated
+      - name: Show opt.opt configuration
+        run: |
+          set -x
+          $HOME/relocated/bin/ocamlopt.opt -config
+          cat runtime/build_config.h
+      - name: Cross compile a small program
+        run: |
+          printf %s "$EXAMPLE_PROGRAM$COMPLIBS_PROG_AARCH64" > example.ml
+          set -x
+          cat example.ml
+          $HOME/relocated/bin/ocamlopt.opt -I $HOME/relocated/lib/ocaml/compiler-libs/ ocamlcommon.cmxa ocamloptcomp.cmxa example.ml -o example -verbose
       - name: Run the small example program
         run: |
           set -x
@@ -253,6 +292,8 @@ jobs:
           # program should _not_ be run with cleanup on exit (so no
           # `c=1` in `OCAMLRUNPARAM`)
           ./configure --prefix="$HOME/cross" --target=$TARGET \
+              --with-additional-stublibsdir --with-relative-libdir \
+              --enable-runtime-search --enable-runtime-search-target=fallback \
               TARGET_LIBDIR="/dummy/directory" \
               CC="$DIR/clang --target=$TARGET" \
               AR="$DIR/llvm-ar" \
