@@ -401,22 +401,6 @@ let poly1' ~(id : 'a. 'a -> 'a) = id 3, id "three"
 val poly1' : id:('a. 'a -> 'a) -> int * string = <fun>
 |}];;
 
-let poly2' ?(id : 'a. 'a -> 'a) = id 3, id "three"
-[%%expect {|
-Line 1, characters 13-30:
-1 | let poly2' ?(id : 'a. 'a -> 'a) = id 3, id "three"
-                 ^^^^^^^^^^^^^^^^^
-Error: The optional parameter "id" cannot have a polymorphic type.
-|}];;
-
-let poly3' ?(id : 'a. int -> int) = id 3
-[%%expect {|
-Line 1, characters 13-32:
-1 | let poly3' ?(id : 'a. int -> int) = id 3
-                 ^^^^^^^^^^^^^^^^^^^
-Error: The optional parameter "id" cannot have a polymorphic type.
-|}];;
-
 (* This test illustrate a new occurrence of the bug discussed in
    https://github.com/ocaml/ocaml/pull/13984*)
 
@@ -604,3 +588,77 @@ Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 val should_not_be_exhaustive : ('a. 'a list) -> unit = <fun>
 Exception: Match_failure ("", 2, 6).
 |}]
+
+(* Optional polymorphic parameters *)
+
+let polyo ?(id : 'a. 'a -> 'a = fun x -> x) () = id 3, id "three"
+[%%expect {|
+val polyo : ?id:('a. 'a -> 'a) -> unit -> int * string = <fun>
+|}];;
+
+let _ = polyo ()
+let _ = polyo ~id:(fun x -> x) ()
+[%%expect {|
+- : int * string = (3, "three")
+- : int * string = (3, "three")
+|}];;
+
+(* More general types also work *)
+let _ = polyo ~id:Obj.magic ()
+[%%expect {|
+- : int * string = (3, "three")
+|}];;
+
+let _ = polyo ~id:(fun x -> x + 1) ()
+[%%expect {|
+Line 1, characters 18-34:
+1 | let _ = polyo ~id:(fun x -> x + 1) ()
+                      ^^^^^^^^^^^^^^^^
+Error: This argument has type "int -> int" which is less general than
+         "'a. 'a -> 'a"
+       The type "int" is not a type variable.
+|}];;
+
+let polyo' ?(id : 'a. ('a -> 'a) option) () =
+  match id with
+  | None -> 4, "four"
+  | Some id -> id 3, id "three"
+
+[%%expect {|
+val polyo' : ?id:('a. 'a -> 'a) -> unit -> int * string = <fun>
+|}];;
+
+let _ = polyo' ()
+let _ = polyo' ~id:(fun x -> x) ()
+[%%expect {|
+- : int * string = (4, "four")
+- : int * string = (3, "three")
+|}];;
+
+(* Check forwarding of optional params *)
+let forward_polyo' ?(id : 'a. ('a -> 'a) option) () = polyo' ?id ()
+
+let _ = forward_polyo' ()
+let _ = forward_polyo' ~id:(fun x -> x) ()
+[%%expect {|
+val forward_polyo' : ?id:('a. 'a -> 'a) -> unit -> int * string = <fun>
+- : int * string = (4, "four")
+- : int * string = (3, "three")
+|}];;
+
+(* https://discuss.ocaml.org/t/ocaml-5-5-polymorphic-functions-as-function-arguments *)
+
+type 'a observer = (unit -> 'a) -> 'a
+let blind f = f ()
+
+module Observe : sig
+  val run : ?observer:('a. 'a observer) -> (unit -> 'a) -> 'a
+end = struct
+  let run ?(observer : 'a. 'a observer = blind) f = observer f
+end
+[%%expect {|
+type 'a observer = (unit -> 'a) -> 'a
+val blind : (unit -> 'a) -> 'a = <fun>
+module Observe :
+  sig val run : ?observer:('a. 'a observer) -> (unit -> 'a) -> 'a end
+|}];;

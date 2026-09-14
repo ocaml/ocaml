@@ -1042,7 +1042,8 @@ module Aliases = struct
           mark_loops_rec visited ty
       | Tarrow (Optional _, e1, e2, _) ->
           begin match get_desc e1 with
-          | Tpoly (a, []) ->
+          | Tpoly (a, vars) ->
+              List.iter add vars;
               begin match get_desc a with
               | Tconstr (path, [ contents ], _)
                 when Path.same path Predef.path_option ->
@@ -1143,19 +1144,20 @@ let rec tree_of_typexp mode ty =
         in
         let t1 =
           if is_optional l then
-            if tpoly_is_mono ty1 then
-              let mono = tpoly_get_mono ty1 in
-              match printer_get_desc mono with
+            match printer_get_desc ty1 with
+            | Tpoly (body, vars) ->
+              begin match printer_get_desc body with
               | Tconstr(path, [ty], _)
                 when Path.same path Predef.path_option ->
                   (* If we properly aliased the labeled argument, we
                      should not hit this case. But check to prevent
                      loops. *)
-                  if Aliases.is_aliased_proxy (proxy mono)
+                  if Aliases.is_aliased_proxy (proxy body)
                   then Otyp_stuff "<hidden>"
-                  else tree_of_typexp mode ty
+                  else tree_of_poly_typexp mode ty vars
               | _ -> Otyp_stuff "<hidden>"
-            else Otyp_stuff "<hidden>"
+              end
+            | _ -> Otyp_stuff "<hidden>"
           else tree_of_typexp mode ty1 in
         Otyp_arrow (lab, t1, tree_of_typexp mode ty2)
     | Tfunctor (l, id, pack, ty) ->
@@ -1223,24 +1225,8 @@ let rec tree_of_typexp mode ty =
         Otyp_stuff "<Tsubst>"
     | Tlink _ | Texpand _ ->
         fatal_error "Out_type.tree_of_typexp"
-    | Tpoly (ty, []) ->
-        tree_of_typexp mode ty
     | Tpoly (ty, tyl) ->
-        (*let print_names () =
-          List.iter (fun (_, name) -> prerr_string (name ^ " ")) !names;
-          prerr_string "; " in *)
-        if tyl = [] then tree_of_typexp mode ty else begin
-          let tyl = List.map Transient_expr.repr tyl in
-          let old_delayed = !Aliases.delayed in
-          (* Make the names delayed, so that the real type is
-             printed once when used as proxy *)
-          List.iter Aliases.add_delayed tyl;
-          let tl = List.map Variable_names.(name_of_type new_name) tyl in
-          let tr = Otyp_poly (tl, tree_of_typexp mode ty) in
-          (* Forget names when we leave scope *)
-          Variable_names.remove_names tyl;
-          Aliases.delayed := old_delayed; tr
-        end
+        tree_of_poly_typexp mode ty tyl
     | Tunivar _ ->
         Otyp_var (false, Variable_names.(name_of_type new_name) tty)
     | Tpackage pack ->
@@ -1257,6 +1243,22 @@ let rec tree_of_typexp mode ty =
     let alias = Variable_names.(name_of_type (new_var_name ~non_gen ty)) px in
     Otyp_alias {non_gen;  aliased = pr_typ (); alias } end
   else pr_typ ()
+
+and tree_of_poly_typexp mode ty tyl =
+  match tyl with
+  | [] -> tree_of_typexp mode ty
+  | _ ->
+      let tyl = List.map Transient_expr.repr tyl in
+      let old_delayed = !Aliases.delayed in
+      (* Make the names delayed, so that the real type is
+         printed once when used as proxy *)
+      List.iter Aliases.add_delayed tyl;
+      let tl = List.map Variable_names.(name_of_type new_name) tyl in
+      let tr = Otyp_poly (tl, tree_of_typexp mode ty) in
+      (* Forget names when we leave scope *)
+      Variable_names.remove_names tyl;
+      Aliases.delayed := old_delayed;
+      tr
 
 and tree_of_row_field mode (l, f) =
   match row_field_repr f with
