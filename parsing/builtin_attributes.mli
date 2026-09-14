@@ -111,6 +111,10 @@ val mark_warn_on_literal_pattern_used : Parsetree.attributes -> unit
     environment. *)
 val mark_deprecated_mutable_used : Parsetree.attributes -> unit
 
+(** Marks "deprecated_unlabelled" attributes used for the purposes of misplaced
+    attribute warnings.  Call this when translating a value description. *)
+val mark_deprecated_unlabelled_used : Parsetree.attributes -> unit
+
 (** {2 Helpers for alert and warning attributes} *)
 
 val check_alerts: Location.t -> Parsetree.attributes -> string -> unit
@@ -127,10 +131,10 @@ val check_deprecated_mutable_inclusion:
   def:Location.t -> use:Location.t -> Location.t -> Parsetree.attributes ->
   Parsetree.attributes -> string -> unit
 
-val deprecated_unlabelled_of_attrs:
-  Parsetree.attributes -> (string * string) list
-
-val check_deprecated_unlabelled_payloads: Parsetree.attributes -> unit
+(** [Some msg] if the value description carries a [@deprecated_unlabelled]
+    attribute, where [msg] is the extra message given by its payload (the
+    empty string when there is none). *)
+val deprecated_unlabelled_of_attrs: Parsetree.attributes -> string option
 
 val error_of_extension: Parsetree.extension -> Location.error
 

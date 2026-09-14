@@ -185,6 +185,12 @@ let mark_deprecated_mutable_used l =
     then mark_used a.attr_name)
     l
 
+let mark_deprecated_unlabelled_used l =
+  List.iter (fun a ->
+    if attr_equals_builtin a "deprecated_unlabelled"
+    then mark_used a.attr_name)
+    l
+
 let mark_payload_attrs_used payload =
   let iter =
     { Ast_iterator.default_iterator
@@ -275,13 +281,11 @@ let check_deprecated_mutable_inclusion ~def ~use loc attrs1 attrs2 s =
       Location.deprecated ~def ~use loc
         (Printf.sprintf "mutating field %s" (cat s txt))
 
-let deprecated_unlabelled_of_attrs l =
-  List.filter_map
-    (fun attr ->
-       if attr_equals_builtin attr "deprecated_unlabelled" then
-         kind_and_message attr.attr_payload
-       else None)
-    l
+let rec deprecated_unlabelled_of_attrs = function
+  | [] -> None
+  | attr :: _ when attr_equals_builtin attr "deprecated_unlabelled" ->
+    Some (string_of_opt_payload attr.attr_payload)
+  | _ :: tl -> deprecated_unlabelled_of_attrs tl
 
 let rec attrs_of_sig = function
   | {psig_desc = Psig_attribute a} :: tl ->
@@ -307,18 +311,6 @@ let alerts_of_str ~mark str =
 
 let warn_payload loc txt msg =
   Location.prerr_warning loc (Warnings.Attribute_payload (txt, msg))
-
-let check_deprecated_unlabelled_payloads l =
-  List.iter
-    (fun attr ->
-       if attr_equals_builtin attr "deprecated_unlabelled" then begin
-         mark_used attr.attr_name;
-         if kind_and_message attr.attr_payload = None then
-           warn_payload attr.attr_loc attr.attr_name.txt
-             "A label name, optionally followed by a string literal, \
-              is expected"
-       end)
-    l
 
 let warning_attribute ?(ppwarning = true) =
   let process loc name errflag payload =

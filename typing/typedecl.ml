@@ -85,7 +85,6 @@ type error =
   | External_with_non_syntactic_arity
   | Primitive_alias_does_not_refer_to_primitive of value_kind
   | Primitive_type_mismatch of Env.t * Errortrace.unification_error
-  | Deprecated_unlabelled_unknown_label of string * type_expr
 
 open Typedtree
 
@@ -1803,38 +1802,11 @@ let check_unboxable env loc ty =
     all_unboxable_types
     ()
 
-(* Check the [@@deprecated_unlabelled label] attributes of a value
-   description: each of them must name a label that actually occurs in the
-   type of the value. *)
-let check_deprecated_unlabelled env loc attrs ty =
-  Builtin_attributes.check_deprecated_unlabelled_payloads attrs;
-  match Builtin_attributes.deprecated_unlabelled_of_attrs attrs with
-  | [] -> ()
-  | labels ->
-      let rec labels_of_type acc ty =
-        match get_desc (Ctype.expand_head env ty) with
-        | Tarrow (l, _, ty_res, _) -> labels_of_type (l :: acc) ty_res
-        | Tfunctor (l, _, _, ty_res) -> labels_of_type (l :: acc) ty_res
-        | Tpoly (ty, _) -> labels_of_type acc ty
-        | _ -> acc
-      in
-      let present = labels_of_type [] ty in
-      List.iter
-        (fun (label, _) ->
-           if not (List.exists (function
-                     | Labelled s -> s = label
-                     | Nolabel | Optional _ -> false)
-                     present)
-           then
-             Error.log_or_raise loc
-               (Deprecated_unlabelled_unknown_label (label, ty)))
-        labels
-
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =
   let cty = Typetexp.transl_type_scheme env valdecl.pval_type in
   let ty = cty.ctyp_type in
-  check_deprecated_unlabelled env loc valdecl.pval_attributes ty;
+  Builtin_attributes.mark_deprecated_unlabelled_used valdecl.pval_attributes;
   let v =
     { val_type = ty; val_kind = Val_reg; Types.val_loc = loc;
       val_attributes = valdecl.pval_attributes;
@@ -1893,7 +1865,8 @@ let transl_prim_desc env loc primdesc =
       && prim.prim_native_name = ""
       then Error.log_and_raise pprim_type.ptyp_loc Missing_native_external;
       check_unboxable env loc ty;
-      check_deprecated_unlabelled env loc primdesc.pprim_attributes ty;
+      Builtin_attributes.mark_deprecated_unlabelled_used
+        primdesc.pprim_attributes;
       { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
         val_attributes = primdesc.pprim_attributes;
         val_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
@@ -2650,13 +2623,6 @@ let report_error ~loc = function
         Errortrace_report.unification ppf env err
           (msg "Type")
           (msg "is not compatible with type")
-  | Deprecated_unlabelled_unknown_label (label, ty) ->
-      Location.errorf ~loc
-        "@[<v>@[<hv 2>This value has no labelled parameter ~%s:@ %a@]@,\
-         @[<hov>The payload of [@@@@deprecated_unlabelled] must name a \
-         labelled@ parameter of this value;@ optional parameters are not \
-         eligible.@]@]"
-        label Printtyp.type_expr ty
 
 let () =
   Location.register_error_of_exn

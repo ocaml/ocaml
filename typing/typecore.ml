@@ -3402,28 +3402,17 @@ let collect_unknown_apply_args env funct ty_fun0 rev_args sargs =
   in
   loop ty_fun0 rev_args sargs
 
-let deprecated_unlabelled_labels funct =
-  (* In classic mode labels are ignored altogether, and warning 6 is not
-     reported either, so there is nothing to alert about. *)
-  if !Clflags.classic then []
-  else
-    match funct.exp_desc with
-    | Texp_ident (_, _, vd) ->
-        Builtin_attributes.deprecated_unlabelled_of_attrs vd.val_attributes
-    | _ -> []
+(* [@@deprecated_unlabelled] on a value declaration records that this value
+   used to have no labelled parameter: an application that omits all the
+   labels is still accepted, but triggers a deprecation alert instead of
+   warning 6. *)
+let deprecated_unlabelled funct =
+  match funct.exp_desc with
+  | Texp_ident (_, _, vd) ->
+      Builtin_attributes.deprecated_unlabelled_of_attrs vd.val_attributes
+  | _ -> None
 
-let alert_deprecated_unlabelled deprecated_unlabelled loc name =
-  match List.assoc_opt name deprecated_unlabelled with
-  | None -> ()
-  | Some msg ->
-      let txt =
-        Printf.sprintf "omitting the label ~%s in this application" name
-      in
-      let txt = if msg = "" then txt else txt ^ "\n" ^ msg in
-      Location.deprecated loc txt
-
-let collect_apply_args env funct ~deprecated_unlabelled ignore_labels
-      ty_fun ty_fun0 sargs =
+let collect_apply_args env funct ignore_labels ty_fun ty_fun0 sargs =
   let warned = ref false in
   let rec loop visited ty_fun ty_fun0 rev_args sargs =
     if sargs = [] then
@@ -3463,12 +3452,9 @@ let collect_apply_args env funct ~deprecated_unlabelled ignore_labels
             match sargs with
             | [] -> assert false
             | (l', sarg) :: remaining_sargs ->
-                if name = label_name l' || (not optional && l' = Nolabel) then begin
-                  if l' = Nolabel && l <> Nolabel then
-                    alert_deprecated_unlabelled deprecated_unlabelled
-                      sarg.pexp_loc name;
+                if name = label_name l' || (not optional && l' = Nolabel) then
                   (remaining_sargs, Some (sarg, l'), TypeSet.empty, false)
-                end else if
+                else if
                   optional &&
                   not (List.exists (fun (l, _) -> name = label_name l)
                         remaining_sargs) &&
@@ -3497,28 +3483,11 @@ let collect_apply_args env funct ~deprecated_unlabelled ignore_labels
                     (Warnings.Nonoptional_label (Asttypes.string_of_label l));
                 remaining_sargs, Some (sarg, l'), TypeSet.empty, false
             | None ->
-                (* A parameter marked [@@deprecated_unlabelled] used to be
-                   unlabelled: an argument may still be passed for it
-                   positionally. *)
-                let positional =
-                  match l with
-                  | Labelled _
-                    when List.mem_assoc name deprecated_unlabelled ->
-                      extract_label "" sargs
-                  | Nolabel | Labelled _ | Optional _ -> None
-                in
-                begin match positional with
-                | Some (l', sarg, _, remaining_sargs) ->
-                    alert_deprecated_unlabelled deprecated_unlabelled
-                      sarg.pexp_loc name;
-                    remaining_sargs, Some (sarg, l'), TypeSet.empty, false
-                | None ->
-                    if TypeSet.mem ty_fun visited then
-                      sargs, None, visited, true
-                    else
-                      let visited = TypeSet.add ty_fun visited in
-                      sargs, None, visited, false
-                end
+                if TypeSet.mem ty_fun visited then
+                  sargs, None, visited, true
+                else
+                  let visited = TypeSet.add ty_fun visited in
+                  sargs, None, visited, false
         in
         if terminate then
           collect_unknown_apply_args env funct ty_fun0 rev_args remaining_sargs
@@ -6925,7 +6894,6 @@ and type_application env app_loc funct sargs =
       ([Nolabel, Arg exp], ty_ret)
   | _ ->
       let ty = funct.exp_type in
-      let deprecated_unlabelled = deprecated_unlabelled_labels funct in
       let ignore_labels =
         !Clflags.classic ||
         begin
@@ -6935,20 +6903,20 @@ and type_application env app_loc funct sargs =
           List.length labels = List.length sargs &&
           List.for_all (fun (l,_) -> l = Nolabel) sargs &&
           List.exists (fun l -> l <> Nolabel) labels &&
-          ((* Labels documented by [@@deprecated_unlabelled] get a deprecation
-              alert on the argument itself instead of warning 6. *)
-           let omitted =
-             List.filter
-               (fun l ->
-                  l <> Nolabel &&
-                  not (List.mem_assoc (label_name l) deprecated_unlabelled))
-               labels
-           in
-           if omitted <> [] then
-             Location.prerr_warning
-               funct.exp_loc
-               (Warnings.Labels_omitted
-                  (List.map Asttypes.string_of_label omitted));
+          (begin match deprecated_unlabelled funct with
+           | Some msg ->
+               (* This function used to have no labels: alert instead of
+                  reporting warning 6. *)
+               let txt = "omitting the labels in this application" in
+               Location.deprecated funct.exp_loc
+                 (if msg = "" then txt else txt ^ "\n" ^ msg)
+           | None ->
+               Location.prerr_warning
+                 funct.exp_loc
+                 (Warnings.Labels_omitted
+                    (List.map Asttypes.string_of_label
+                       (List.filter ((<>) Nolabel) labels)))
+           end;
            true)
         end
       in
@@ -6957,8 +6925,7 @@ and type_application env app_loc funct sargs =
          with
            [f : a:bar -> ?opt:baz -> int -> unit] *)
       let ty_ret, args =
-        collect_apply_args env funct ~deprecated_unlabelled ignore_labels
-          ty (instance ty) sargs
+        collect_apply_args env funct ignore_labels ty (instance ty) sargs
       in
       (* example: [collect_apply_args] returns
          [ty_ret = unit] and
