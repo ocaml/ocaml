@@ -1,0 +1,218 @@
+[
+  structure_item 
+    Pstr_value Nonrec
+    [
+      <def>
+        pattern 
+          Ppat_any
+        expression 
+          Pexp_hole
+    ]
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_apply
+      expression 
+        Pexp_ident "f" 
+      [
+        <arg>
+        Nolabel
+          expression 
+            Pexp_hole
+        <arg>
+        Nolabel
+          expression 
+            Pexp_constant
+            constant 
+              PConst_int (0,None)
+      ]
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_apply
+      expression 
+        Pexp_hole
+      [
+        <arg>
+        Nolabel
+          expression 
+            Pexp_constant
+            constant 
+              PConst_int (0,None)
+      ]
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_field
+      expression 
+        Pexp_hole
+      "a" 
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_send "m"
+      expression 
+        Pexp_hole
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_constraint
+      expression 
+        Pexp_hole
+      core_type 
+        Ptyp_constr "int" 
+        []
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_tuple
+      [
+        None
+        expression 
+          Pexp_hole
+        None
+        expression 
+          Pexp_hole
+      ]
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_construct "Some" 
+      Some
+        expression 
+          Pexp_hole
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_lazy
+      expression 
+        Pexp_hole
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_apply
+      expression 
+        Pexp_ident "+" 
+      [
+        <arg>
+        Nolabel
+          expression 
+            Pexp_constant
+            constant 
+              PConst_int (1,None)
+        <arg>
+        Nolabel
+          expression 
+            Pexp_hole
+      ]
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_apply
+      expression 
+        Pexp_ident "f" 
+      [
+        <arg>
+        Labelled "_"
+          expression 
+            Pexp_hole
+        <arg>
+        Optional "_"
+          expression 
+            Pexp_hole
+        <arg>
+        Labelled "_"
+          expression 
+            Pexp_hole
+        <arg>
+        Optional "_"
+          expression 
+            Pexp_hole
+      ]
+  structure_item 
+    Pstr_module
+    "M" 
+      module_expr 
+        Pmod_hole
+  structure_item 
+    Pstr_module
+    "N" 
+      module_expr 
+        Pmod_apply
+        module_expr 
+          Pmod_hole
+        module_expr 
+          Pmod_ident "M" 
+  structure_item 
+    Pstr_module
+    "O" 
+      module_expr 
+        Pmod_apply_unit
+        module_expr 
+          Pmod_hole
+  structure_item 
+    Pstr_module
+    "P" 
+      module_expr 
+        Pmod_apply
+        module_expr 
+          Pmod_ident "F" 
+        module_expr 
+          Pmod_hole
+  structure_item 
+    Pstr_module
+    "Q" 
+      module_expr 
+        Pmod_constraint
+        module_expr 
+          Pmod_hole
+        module_type 
+          Pmty_signature
+          []
+  structure_item 
+    Pstr_module
+    "R" 
+      module_expr 
+        Pmod_functor ()
+        module_expr 
+          Pmod_hole
+  structure_item 
+    Pstr_include    module_expr 
+      Pmod_hole
+  structure_item 
+    Pstr_open Fresh
+    module_expr 
+      Pmod_hole
+  structure_item 
+    Pstr_value Nonrec
+    [
+      <def>
+        pattern 
+          Ppat_any
+        expression 
+          Pexp_pack
+          module_expr 
+            Pmod_hole
+          Some
+              package_type "S" 
+              []
+    ]
+  structure_item 
+    Pstr_value Nonrec
+    [
+      <def>
+        pattern 
+          Ppat_any
+        expression 
+          Pexp_struct_item
+          structure_item 
+            Pstr_module
+            "L" 
+              module_expr 
+                Pmod_hole
+          expression 
+            Pexp_construct "()" 
+            None
+    ]
+]
+

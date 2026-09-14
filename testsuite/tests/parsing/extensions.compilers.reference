@@ -321,6 +321,47 @@
               ]
           ]
     ]
+  structure_item (extensions.ml[27,631+0]..[27,631+27])
+    Pstr_extension "foo"
+    [
+      structure_item (extensions.ml[27,631+7]..[27,631+26])
+        Pstr_eval
+        expression (extensions.ml[27,631+7]..[27,631+26])
+          Pexp_apply
+          expression (extensions.ml[27,631+7]..[27,631+8])
+            Pexp_hole
+          [
+            <arg>
+            Labelled "_"
+              expression (extensions.ml[27,631+10]..[27,631+11])
+                Pexp_hole
+            <arg>
+            Labelled "_"
+              expression (extensions.ml[27,631+15]..[27,631+16])
+                Pexp_hole
+            <arg>
+            Optional "_"
+              expression (extensions.ml[27,631+18]..[27,631+19])
+                Pexp_hole
+            <arg>
+            Optional "_"
+              expression (extensions.ml[27,631+23]..[27,631+24])
+                Pexp_hole
+            <arg>
+            Nolabel
+              expression (extensions.ml[27,631+25]..[27,631+26])
+                Pexp_hole
+          ]
+    ]
+  structure_item (extensions.ml[29,660+0]..[29,660+20])
+    Pstr_extension "foo"
+    [
+      structure_item (extensions.ml[29,660+7]..[29,660+19])
+        Pstr_module
+        "M" (extensions.ml[29,660+14]..[29,660+15])
+          module_expr (extensions.ml[29,660+18]..[29,660+19])
+            Pmod_hole
+    ]
 ]
 
 File "extensions.ml", line 9, characters 3-6:

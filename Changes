@@ -16,6 +16,11 @@ Working version
 - #14692: Allow unparenthesized application expressions in record update syntax
   (Stephen Dolan, review by Damien Doligez)
 
+- #15051: the wildcard `_` now parses in all simple expressions as `Pexp_hole`
+  and in all module expressions as `Pmod_hole`. These parsetree nodes must be
+  transformed by ppx rewriters; the compiler itself always rejects them.
+  (David Allsopp and Nailen Matschke, review by Florian Angeletti)
+
 ### Runtime system:
 
 - #14988: Don't copy continuations in Weak.get_copy.

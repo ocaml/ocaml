@@ -440,6 +440,13 @@ and expression_desc =
             - [let* P0 = E00 and* P1 = E01 in E1] *)
   | Pexp_extension of extension  (** [[%id]] *)
   | Pexp_unreachable  (** [.] *)
+  | Pexp_hole
+      (** [_], a "hole".
+
+          Holes are recognized by the parser anywhere a simple
+          expression is allowed, but they are unconditionally
+          rejected by the type-checker: they are intended to be
+          eliminated by a ppx rewriter before type-checking. *)
 
 and case =
     {
@@ -1074,6 +1081,13 @@ and module_expr_desc =
   | Pmod_constraint of module_expr * module_type  (** [(ME : MT)] *)
   | Pmod_unpack of expression  (** [(val E)] *)
   | Pmod_extension of extension  (** [[%id]] *)
+  | Pmod_hole
+      (** [_], a "hole".
+
+          Holes are recognized by the parser anywhere a module
+          expression is allowed, but they are unconditionally
+          rejected by the type-checker: they are intended to be
+          eliminated by a ppx rewriter before type-checking. *)
 
 and structure = structure_item list
 
