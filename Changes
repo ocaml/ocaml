@@ -538,6 +538,9 @@ Working version
 - #14946: Keep the continuation inside the typedtree using a dedicated type.
   (Xavier Van de Woestyne, review by Florian Angeletti)
 
+- #14995: Make failure in enforce_current_level a fatal error
+  (Jacques Garrigue, review by Samuel Vivien)
+
 - #15023: Extract Utf8_lexeme out of Misc into utils/utf8_lexeme.ml(i)
   (Thomas Refis, review by Nicolás Ojeda Bär)
 
