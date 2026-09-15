@@ -146,19 +146,19 @@ val test : ?x:string -> (module M : Show with type t = 'a) -> M.t t = <fun>
 (* Support CPS *)
 
 let f k ?a = k a;;
-[%%expect{|
+[%%expect{||}, (Principal.Rectypes, Rectypes){|
 val f : ('a option -> 'b) -> ?a:'a -> 'b = <fun>
 |}]
 
 (* This cannot be detected as the delayed check does not apply to instances *)
 let g = f (fun a -> ());;
-[%%expect{|
+[%%expect{||}, (Principal.Rectypes, Rectypes){|
 val g : ?a:'_weak1 -> unit = <fun>
 |}]
 
 (* But we can still warn if we add optional arguments *)
 let h ?b = f (fun a -> ());;
-[%%expect{|
+[%%expect{||}, (Principal.Rectypes, Rectypes){|
 Line 1, characters 7-8:
 1 | let h ?b = f (fun a -> ());;
            ^
