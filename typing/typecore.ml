@@ -6071,21 +6071,13 @@ and type_function
          there might be an opportunity to improve this.
       *)
       let only_labels_function_ret_tvar ty =
-        (* [arrow_spine] does expansion and is potentially expensive;
+        (* [arrow_labels] does expansion and is potentially expensive;
            only call this when necessary. *)
-        let label_tys, ret_ty_or_cycle = arrow_spine env ty in
+        let labels, ~is_ret_tvar = arrow_labels env ty in
         let is_spine_only_labels =
-          List.for_all (fun (label, _arg_ty) -> label <> Nolabel) label_tys
+          List.for_all (fun label -> label <> Nolabel) labels
         in
-        if is_spine_only_labels
-        then (
-          match ret_ty_or_cycle with
-          | Ret_cycle -> Some `Not_tvar
-          | Ret_type ty ->
-              if is_Tvar ty
-              then Some (`Tvar ty)
-              else Some `Not_tvar )
-        else None
+        if is_spine_only_labels then Some is_ret_tvar else None
       in
       (* An optional argument [?x] is only erasable if the function's return
          type eventually becomes an unlabelled arrow type ['a -> 'b].
@@ -6098,22 +6090,26 @@ and type_function
          val f : ?x:'b -> 'a as 'a = <fun>
          ]}
       *)
-      let raise_unerasable_optional_argument () =
+      let raise_unerasable_optional_argument ~strict =
         Location.prerr_warning
           pat.pat_loc
-          Warnings.Unerasable_optional_argument
+          (if strict then Warnings.Strict_unerasable_optional_argument
+           else Warnings.Unerasable_optional_argument)
       in
       if is_optional arg_label
       then (
         match only_labels_function_ret_tvar ty_ret with
-        | Some (`Tvar ret_tvar) ->
+        | Some true ->
           (* We don't necessarily know [ty] is a function with only labelled
              args since unification may change this. So we add
              a delayed check. *)
           add_delayed_check (fun () ->
-              if Option.is_some (only_labels_function_ret_tvar ret_tvar)
-              then raise_unerasable_optional_argument ())
-        | Some `Not_tvar -> raise_unerasable_optional_argument ()
+                match only_labels_function_ret_tvar ty_ret with
+                | Some is_tvar ->
+                    raise_unerasable_optional_argument ~strict:is_tvar
+                | None -> ()
+              )
+        | Some false -> raise_unerasable_optional_argument ~strict:false
         | None -> ());
       let fp_kind, fp_param =
         match default_arg with
