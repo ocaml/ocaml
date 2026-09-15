@@ -180,6 +180,7 @@ type extension_constructor_mismatch =
                             * Types.extension_constructor
                             * Types.extension_constructor
                             * constructor_mismatch
+  | Constructor_arity
 
 type private_variant_mismatch =
   | Only_outer_closed (* It's only dangerous in one direction *)
@@ -398,6 +399,8 @@ let report_extension_constructor_mismatch first second decl env ppf err =
         constructor ext1
         constructor ext2
         (report_constructor_mismatch first second decl env) err
+  | Constructor_arity ->
+      pr "They have a different number of type parameters."
 
 
 let report_private_variant_mismatch first second decl env ppf err =
@@ -1084,6 +1087,9 @@ let extension_constructors ~loc env ~mark id ext1 ext2 =
     in
     Env.mark_extension_used usage ext1.ext_uid
   end;
+  if List.length ext1.ext_type_params <> List.length ext2.ext_type_params then
+    Some Constructor_arity
+  else
   let ty1 =
     Btype.newgenty (Tconstr(ext1.ext_type_path, ext1.ext_type_params, ref Mnil))
   in
