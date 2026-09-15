@@ -1178,6 +1178,9 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
 
     const char* data_str = (const char*) event_data;
 
+    // caml_runtime_events_read_poll has already checked this
+    CAMLassert(event_data_len >= 1);
+
     uintnat string_len = event_data_len * sizeof(uint64_t) - 1;
     // because the ring buffer is 64-bits aligned, the whole ocaml value is
     // transferred, including the padding bytes and the last byte containing
