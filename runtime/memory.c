@@ -128,8 +128,10 @@
    On x86, all loads and all stores have acquire/release semantics by
    default anyway, so all of these fences compile away to nothing
    (They're still useful, though: they serve to inhibit an overeager C
-   compiler's optimisations). On ARMv8, actual hardware fences are
-   generated.
+   compiler's optimisations). On weakly-ordered architectures such as ARM
+   and Power, actual hardware fences are generated -- except that on
+   AArch64, when the atomic read-modify-writes below execute as LSE atomics,
+   they omit these fences (see the end of this note).
 
    And finally, you will see additional release fences after atomic
    writes, like this:
@@ -148,15 +150,36 @@
    a prior atomic load, and operations that read from this nonatomic store.)
    `stlr` provides these guarantees.
 
-   When non-atomic stores are compiled as `dmb ishld; str`, however, we need to
-   emit a `dmb ishst` barrier after atomic operations. `dmb ishld` provides
-   ordering with respect to prior reads (covering both nonatomic loads and
-   atomic ones), while `dmb ishst` provides ordering with respect to prior
-   writes. Since we only need the ordering with respect to prior atomic writes,
-   we can place the `dmb ishst` after each atomic write rather than before
-   nonatomic writes. The extra release fence on the C side is here to emit this
-   `dmb ishst` on ARMv8, in order to provide ordering to the weak `str`
-   instructions the OCaml compiler may be configured to emit.
+   When non-atomic stores are compiled as `dmb ishld; str`, those stores are
+   weak: `dmb ishld` orders them after prior reads but not after prior atomic
+   writes, which would otherwise call for a `dmb ishst` after each atomic
+   operation to order the atomic write before the weak `str`.
+
+   On AArch64 this trailing fence is not always needed. When the atomic RMW is
+   compiled to a single LSE atomic (SWPAL / CASAL / LDADDAL), it is a full
+   ordering point (Arm's acquire/release are RCsc, not RCpc): its acquire orders
+   it before every later access -- including a weak `str` -- and its release
+   orders every earlier access before it. Both the acquire fence before and the
+   release fence after the atomic read-modify-writes (caml_atomic_exchange /
+   caml_atomic_cas / caml_atomic_fetch_add) are then redundant.
+
+   The baseline ARMv8.0 expansion of the same RMW is an LL/SC exclusive pair
+   (LDAXR ... STLXR), which is NOT a full ordering point: the STLXR
+   (store-release-exclusive) does not order a program-order-later plain store,
+   so the trailing fence is load-bearing there (this is the case argued in
+   ocaml/ocaml#10972). We therefore skip the fences only when the RMW actually
+   executes as an LSE instruction: either the C compiler is guaranteed to emit
+   one (__ARM_FEATURE_ATOMICS defined), or, on Linux, we detect LSE at run time
+   (HWCAP_ATOMICS) and issue the LSE instruction ourselves with inline asm so
+   the choice does not depend on how the C compiler lowers C11 atomics.  Every
+   other case -- non-LSE hardware, unknown platform, non-AArch64 -- keeps the
+   fenced C11 sequence.  See the dispatch helpers below the note.
+
+   This distinction does not apply to the non-atomic write path (caml_modify) or
+   to caml_atomic_load, which keep their acquire fence, since a store-release or
+   a plain acquire load is not a full ordering point. Both the LSE (redundant)
+   and LL/SC (load-bearing) cases were checked against the Arm AArch64 memory
+   model with herd7: https://github.com/sebpop/ocaml-arm64-barrier-proofs
 */
 
 /* Note [MMPS]: Publication safety in the memory model.
@@ -454,6 +477,77 @@ CAMLprim value caml_atomic_load (value ref)
   return caml_atomic_load_field(ref, Val_long(0));
 }
 
+/* AArch64: a seq_cst read-modify-write is a full ordering point -- making the
+   acquire/release fences Note [MM] places around it redundant -- ONLY when it
+   executes as a single LSE atomic (SWPAL/CASAL/LDADDAL).  The baseline ARMv8.0
+   LL/SC expansion (LDAXR ... STLXR) is NOT a full ordering point: an STLXR does
+   not order a program-order-later plain store, so the fences are load-bearing
+   there (ocaml/ocaml#10972; herd7 proofs at
+   https://github.com/sebpop/ocaml-arm64-barrier-proofs).
+
+   We therefore issue the RMW as an explicit LSE instruction (skipping the
+   fences) whenever we know one is available, and otherwise keep the fenced C11
+   sequence:
+     - __ARM_FEATURE_ATOMICS defined: the C compiler already emits LSE directly,
+       so plain C11 (no fences) is a full ordering point.
+     - else, on Linux: dispatch at run time on HWCAP_ATOMICS.  When the CPU has
+       LSE we emit the LSE instruction ourselves with inline asm (so the choice
+       does not depend on how the C compiler lowers C11 atomics -- outline vs
+       LL/SC); otherwise we keep the fenced C11 sequence.
+     - otherwise: keep the fenced C11 sequence. */
+#if defined(__aarch64__) && !defined(__ARM_FEATURE_ATOMICS) && defined(__linux__)
+#include <sys/auxv.h>
+#ifndef HWCAP_ATOMICS
+#include <asm/hwcap.h>
+#endif
+#ifndef HWCAP_ATOMICS
+#define HWCAP_ATOMICS (1u << 8)
+#endif
+#define CAML_AARCH64_LSE_RUNTIME_DISPATCH
+
+/* Enable the LSE (armv8.1-a) encodings for the inline asm below, even when the
+   translation unit is built for plain ARMv8.0.  This file-scope directive is
+   emitted once, ahead of every LSE instruction, so the individual asm blocks
+   need not repeat it. */
+__asm__(".arch_extension lse");
+
+Caml_inline int caml_aarch64_has_lse(void)
+{
+  static atomic_int cache = -1;
+  int v = atomic_load_explicit(&cache, memory_order_relaxed);
+  if (v < 0) {
+    v = (getauxval(AT_HWCAP) & HWCAP_ATOMICS) != 0;
+    atomic_store_explicit(&cache, v, memory_order_relaxed);
+  }
+  return v;
+}
+
+/* Explicit LSE atomics, used only when caml_aarch64_has_lse().  Each is
+   acquire+release (AL) and hence a full ordering point, so no surrounding fence
+   is needed. */
+Caml_inline value caml_lse_swap(atomic_value *p, value v)
+{
+  value old;
+  __asm__ __volatile__("swpal %2, %0, [%1]"
+                       : "=&r" (old) : "r" (p), "r" (v) : "memory");
+  return old;
+}
+Caml_inline int caml_lse_cas(atomic_value *p, value expected, value newval)
+{
+  value got = expected;
+  __asm__ __volatile__("casal %0, %2, [%1]"
+                       : "+&r" (got) : "r" (p), "r" (newval) : "memory");
+  return got == expected;
+}
+Caml_inline value caml_lse_fetch_add(atomic_value *p, value incr)
+{
+  value old;
+  __asm__ __volatile__("ldaddal %2, %0, [%1]"
+                       : "=&r" (old) : "r" (p), "r" (incr) : "memory");
+  return old;
+}
+#endif
+
 /* stores are implemented as exchanges */
 CAMLprim value caml_atomic_exchange_field (value obj, value vfield, value v)
 {
@@ -463,10 +557,24 @@ CAMLprim value caml_atomic_exchange_field (value obj, value vfield, value v)
     ret = Field(obj, field);
     Field(obj, field) = v;
   } else {
+    atomic_value *p = &Op_atomic_val(obj)[field];
+#if defined(__aarch64__) && defined(__ARM_FEATURE_ATOMICS)
+    /* C11 emits an LSE swpal (full ordering point): no fences (Note [MM]). */
+    ret = atomic_exchange(p, v);
+#elif defined(CAML_AARCH64_LSE_RUNTIME_DISPATCH)
+    if (caml_aarch64_has_lse()) {
+      ret = caml_lse_swap(p, v);           /* full ordering point: no fences */
+    } else {
+      atomic_thread_fence(memory_order_acquire);
+      ret = atomic_exchange(p, v);
+      atomic_thread_fence(memory_order_release);
+    }
+#else
     /* See Note [MM] above */
     atomic_thread_fence(memory_order_acquire);
-    ret = atomic_exchange(&Op_atomic_val(obj)[field], v);
-    atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
+    ret = atomic_exchange(p, v);
+    atomic_thread_fence(memory_order_release);
+#endif
   }
   write_barrier(obj, field, ret, v);
   return ret;
@@ -493,8 +601,21 @@ CAMLprim value caml_atomic_cas_field (
   } else {
     /* need a real CAS */
     atomic_value* p = &Op_atomic_val(obj)[field];
-    int cas_ret = atomic_compare_exchange_strong(p, &oldval, newval);
-    atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
+    int cas_ret;
+#if defined(__aarch64__) && defined(__ARM_FEATURE_ATOMICS)
+    cas_ret = atomic_compare_exchange_strong(p, &oldval, newval);
+#elif defined(CAML_AARCH64_LSE_RUNTIME_DISPATCH)
+    if (caml_aarch64_has_lse()) {
+      cas_ret = caml_lse_cas(p, oldval, newval);  /* full ordering: no fence */
+    } else {
+      cas_ret = atomic_compare_exchange_strong(p, &oldval, newval);
+      atomic_thread_fence(memory_order_release);
+    }
+#else
+    /* See Note [MM] above */
+    cas_ret = atomic_compare_exchange_strong(p, &oldval, newval);
+    atomic_thread_fence(memory_order_release);
+#endif
     if (cas_ret) {
       write_barrier(obj, field, oldval, newval);
       return Val_true;
@@ -520,8 +641,21 @@ CAMLprim value caml_atomic_fetch_add_field (value obj, value vfield, value incr)
     /* no write barrier needed, integer write */
   } else {
     atomic_value *p = &Op_atomic_val(obj)[field];
-    ret = atomic_fetch_add(p, 2 * Long_val(incr));
-    atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
+    value addend = 2 * Long_val(incr);
+#if defined(__aarch64__) && defined(__ARM_FEATURE_ATOMICS)
+    ret = atomic_fetch_add(p, addend);
+#elif defined(CAML_AARCH64_LSE_RUNTIME_DISPATCH)
+    if (caml_aarch64_has_lse()) {
+      ret = caml_lse_fetch_add(p, addend);   /* full ordering: no fence */
+    } else {
+      ret = atomic_fetch_add(p, addend);
+      atomic_thread_fence(memory_order_release);
+    }
+#else
+    /* See Note [MM] above */
+    ret = atomic_fetch_add(p, addend);
+    atomic_thread_fence(memory_order_release);
+#endif
   }
   return ret;
 }
