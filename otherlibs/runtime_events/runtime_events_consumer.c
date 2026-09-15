@@ -1208,7 +1208,14 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
 
     memcpy(Bytes_val(read_buffer), data_str, caml_string_len);
 
-    data = caml_callback2(deserializer, read_buffer, Val_int(caml_string_len));
+    data = caml_callback2_exn(deserializer, read_buffer,
+                              Val_int(caml_string_len));
+
+    if( Is_exception_result(data) ) {
+      data = Extract_exception(data);
+      *holder->exception = data;
+      CAMLreturnT(int, 0);
+    }
 
     params[0] = Val_long(domain_id);
     params[1] = caml_copy_int64(timestamp);
