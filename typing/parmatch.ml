@@ -748,7 +748,7 @@ let close_variant env row =
   if not closed || name != orig_name then begin
     let more' = if static then Btype.newgenty Tnil else Btype.newgenvar () in
     (* this unification cannot fail *)
-    Ctype.unify env more
+    Ctype.unify_exn env more
       (Btype.newgenty
          (Tvariant
             (create_row ~fields:[] ~more:more'
