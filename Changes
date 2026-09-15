@@ -653,6 +653,13 @@ Working version
   `T with module type S = X -> X` as `T with module type S = (X -> X)`
   (Pieter Goetschalckx, review by Gabriel Scherer and Florian Angeletti)
 
+- #15043, #15076: Fix an infinite loop in write_to_ring when an event is larger
+  than half the ring buffer. The guard added in #13335 only rejects events
+  larger than the whole ring, but an event that would straddle the end of the
+  ring is preceded by padding, and termination needs both to fit. These are now
+  reported as a fatal error naming the OCAMLRUNPARAM=e= setting to use instead.
+  (Tim McGilchrist, review by ????)
+
 OCaml 5.5.1
 -----------
 
