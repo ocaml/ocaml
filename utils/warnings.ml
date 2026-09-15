@@ -115,6 +115,8 @@ type t =
   | Generative_application_expects_unit     (* 73 *)
   | Degraded_to_partial_match               (* 74 *)
   | Unnecessarily_partial_tuple_pattern     (* 75 *)
+  | Strict_unerasable_optional_argument     (* 76 *)
+
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
    the numbers of existing warnings.
@@ -198,12 +200,13 @@ let number = function
   | Generative_application_expects_unit -> 73
   | Degraded_to_partial_match -> 74
   | Unnecessarily_partial_tuple_pattern -> 75
+  | Strict_unerasable_optional_argument -> 76
 ;;
 (* DO NOT REMOVE the ;; above: it is used by
    the testsuite/ests/warnings/mnemonics.mll test to determine where
    the  definition of the number function above ends *)
 
-let last_warning_number = 75
+let last_warning_number = 76
 
 type description =
   { number : int;
@@ -552,6 +555,10 @@ let descriptions = [
     description = "A tuple pattern ends in .. but fully matches its expected \
                    type.";
     since = since 5 4 };
+   { number = 76;
+    names = ["strict-unerasable-optional-argument"];
+    description = "Possibly unerasable optional argument.";
+    since = None };
 ]
 
 let name_to_number =
@@ -980,6 +987,9 @@ let message = function
         space_inline_list l
   | Unerasable_optional_argument ->
       msg "this optional argument cannot be erased."
+  | Strict_unerasable_optional_argument ->
+      msg "this optional argument cannot be erased@ for@ some@ choice@ \
+           of@ the@ previous@ arguments."
   | Undeclared_virtual_method m ->
       msg "the virtual method %a is not declared."
         Style.inline_code m

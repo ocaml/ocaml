@@ -6090,10 +6090,11 @@ and type_function
          val f : ?x:'b -> 'a as 'a = <fun>
          ]}
       *)
-      let raise_unerasable_optional_argument () =
+      let raise_unerasable_optional_argument ~strict =
         Location.prerr_warning
           pat.pat_loc
-          Warnings.Unerasable_optional_argument
+          (if strict then Warnings.Strict_unerasable_optional_argument
+           else Warnings.Unerasable_optional_argument)
       in
       if is_optional arg_label
       then (
@@ -6103,9 +6104,12 @@ and type_function
              args since unification may change this. So we add
              a delayed check. *)
           add_delayed_check (fun () ->
-              if only_labels_function_ret_tvar ty_ret = Some false
-              then raise_unerasable_optional_argument ())
-        | Some false -> raise_unerasable_optional_argument ()
+                match only_labels_function_ret_tvar ty_ret with
+                | Some is_tvar ->
+                    raise_unerasable_optional_argument ~strict:is_tvar
+                | None -> ()
+              )
+        | Some false -> raise_unerasable_optional_argument ~strict:false
         | None -> ());
       let fp_kind, fp_param =
         match default_arg with
