@@ -5810,16 +5810,15 @@ and type_newtype
 
     let result, exp_type =
       with_local_level_generalize_structure (fun () -> type_body new_env) in
-    let current = get_current_level () in (* actually = scope *)
-    let ety = Ctype.instance exp_type in
     (* Replace every instance of this type constructor in the resulting
        type. *)
+    let ety = Ctype.instance exp_type in
+    let current = get_current_level () in (* actually = scope *)
     with_type_mark begin fun mark ->
       let rec replace t =
-        if try_mark_node mark t
-        then match get_desc t with
+        if try_mark_node mark t && get_level t = current then
+          match get_desc t with
           | Tconstr (Path.Pident id', _, _) when id == id' ->
-              assert (get_level t = current);
               link_type t ty
           | _ -> Btype.iter_type_expr replace t
       in
