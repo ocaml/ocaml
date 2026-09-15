@@ -67,6 +67,10 @@ Working version
   (Tim McGilchrist, reported by Edwin Török, review by Edwin Török, Antonin
    Décimo and Olivier Nicole)
 
+- #15043, #15076: runtime events library, fix an infinite loop when a user
+  event is larger than half the ring buffer.
+  (Tim McGilchrist, review by Sadiq Jaffer)
+
 OCaml 5.6.0
 -----------
 
