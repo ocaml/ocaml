@@ -61,9 +61,6 @@ contribution.
 
 The current list of maintainers is as follows:
 
-- @abbysmal Abigael
-- @alainfrisch Alain Frisch
-- @Armael Armaël Guéneau
 - @avsm Anil Madhavapeddy
 - @chambart Pierre Chambart
 - @damiendoligez Damien Doligez
@@ -71,12 +68,10 @@ The current list of maintainers is as follows:
 - @garrigue Jacques Garrigue
 - @gasche Gabriel Scherer
 - @goldfirere Richard Eisenberg
-- @jhjourdan Jacques-Henri Jourdan
 - @kayceesrk KC Sivaramakrishnan
 - @let-def Frédéric Bour
 - @lpw25 Leo White
 - @lthls Vincent Laviron
-- @maranget Luc Maranget
 - @MisterDA Antonin Décimo
 - @mshinwell Mark Shinwell
 - @NickBarnes Nick Barnes
