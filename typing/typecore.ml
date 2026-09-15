@@ -5987,8 +5987,11 @@ and type_function
             ({txt = name; loc}, pack_param)
         | _ -> assert false
       in
-      type_moddep_fun ~env ~name ~pack_param ~rest ~arg_label ~first
-        ~in_function ~ty_expected ~pparam_loc ~loc ~body_constraint ~body
+      with_local_level begin fun () ->
+        type_moddep_fun ~env ~name ~pack_param ~rest ~arg_label ~first
+          ~in_function ~ty_expected ~pparam_loc ~loc ~body_constraint ~body
+      end
+      ~post:(fun (exp_type,_,_,_,_) -> Ctype.enforce_current_level env exp_type)
   | { pparam_desc = Pparam_val (arg_label, default_arg, pat); pparam_loc }
       :: rest
     ->
@@ -6208,6 +6211,7 @@ and type_function
         the body is a [Tfunction_cases] whose patterns include a GADT.
      *)
     exp_type, [], body, [], No_gadt
+
 and type_moddep_fun ~env ~name ~pack_param ~rest ~arg_label ~first
     ~in_function ~ty_expected ~pparam_loc ~loc ~body_constraint ~body =
   let type_pack pack =
@@ -6314,8 +6318,6 @@ and type_moddep_fun ~env ~name ~pack_param ~rest ~arg_label ~first
     }
   in
   exp_type, { has_poly = false; param } :: params, body, [], contains_gadt
-
-
 
 and type_label_access env srecord usage lid =
   let record =
