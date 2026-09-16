@@ -824,8 +824,15 @@ CAMLprim value caml_runtime_events_user_write(
       CAMLreturn(Val_unit);
 
     uintnat len_bytes = Int_val(res);
+    /* caml_string_length would include extra padding on Win32.
+     * To reject large lengths strictly, use the value from the documentation.
+     */
+    if (len_bytes > 1024)
+      caml_invalid_argument("Runtime_events.Type: return value from 'encode' "
+                            "exceeds buffer length");
     uintnat len_64bit_word = (len_bytes + sizeof(uint64_t)) / sizeof(uint64_t);
     uintnat offset_index = len_64bit_word * sizeof(uint64_t) - 1;
+    CAMLassert(offset_index < Bosize_val(write_buffer));
     Bytes_val(write_buffer)[offset_index] = offset_index - len_bytes;
     write_to_ring(EV_USER, (ev_message_type){.user=EV_USER_MSG_TYPE_CUSTOM},
       Int_val(event_id), len_64bit_word, (uint64_t *) Bytes_val(write_buffer),

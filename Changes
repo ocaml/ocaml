@@ -166,6 +166,10 @@ Working version
   EV_EXPLICIT_GC_RAMP_UP covering a call to Gc.ramp_up.
   (Tim McGilchrist, review by Sadiq Jaffer and Gabriel Scherer)
 
+- #15078: `Runtime_events.User.write`: guard against overflow from `encoder`
+  return value. Fix padding handling on Win32 for 1024 return value.
+  (Edwin Török, review by )
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
