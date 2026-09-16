@@ -24,6 +24,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 
+/* Defined in prims.c or supplied by the bytecode linker */
 extern code_t caml_start_code;
 extern asize_t caml_code_size;
 

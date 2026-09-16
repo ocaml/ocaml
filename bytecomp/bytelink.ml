@@ -794,7 +794,11 @@ static int caml_code[] = {
        and currpos_fun () = !currpos in
        ignore (link_files output_fun currpos_fun tolink);
        (* The final STOP instruction *)
-       Printf.fprintf outchan "\n0x%x};\n" Opcodes.opSTOP;
+       Printf.fprintf outchan {|
+0x%x};
+asize_t caml_code_size = sizeof(caml_code);
+code_t caml_start_code = caml_code;
+|} Opcodes.opSTOP;
        (* The table of global data *)
        output_string outchan {|
 static char caml_data[] = {
@@ -803,6 +807,8 @@ static char caml_data[] = {
          (Marshal.to_string (Symtable.initial_global_table()) []);
        output_string outchan {|
 };
+char * caml_marshalled_global_data = caml_data;
+asize_t caml_marshalled_global_data_size = sizeof(caml_data);
 |};
        (* The sections *)
        let sections : (string * Obj.t) array =
@@ -818,64 +824,13 @@ static char caml_sections[] = {
          (Marshal.to_string sections []);
        output_string outchan {|
 };
+char * caml_section_table = caml_sections;
+asize_t caml_section_table_size = sizeof(caml_sections);
 
 |};
        emit_runtime_standard_library_default outchan;
        (* The table of primitives *)
        Symtable.output_primitive_table outchan;
-       (* The entry point *)
-       if with_main then begin
-         output_string outchan {|
-int main_os(int argc, char_os **argv)
-{
-  caml_startup_code(caml_code, sizeof(caml_code),
-                    caml_data, sizeof(caml_data),
-                    caml_sections, sizeof(caml_sections),
-                    /* pooling */ 0,
-                    argv);
-  caml_do_exit(0);
-  return 0; /* not reached */
-}
-|}
-       end else begin
-         output_string outchan {|
-void caml_startup(char_os ** argv)
-{
-  caml_startup_code(caml_code, sizeof(caml_code),
-                    caml_data, sizeof(caml_data),
-                    caml_sections, sizeof(caml_sections),
-                    /* pooling */ 0,
-                    argv);
-}
-
-value caml_startup_exn(char_os ** argv)
-{
-  return caml_startup_code_exn(caml_code, sizeof(caml_code),
-                               caml_data, sizeof(caml_data),
-                               caml_sections, sizeof(caml_sections),
-                               /* pooling */ 0,
-                               argv);
-}
-
-void caml_startup_pooled(char_os ** argv)
-{
-  caml_startup_code(caml_code, sizeof(caml_code),
-                    caml_data, sizeof(caml_data),
-                    caml_sections, sizeof(caml_sections),
-                    /* pooling */ 1,
-                    argv);
-}
-
-value caml_startup_pooled_exn(char_os ** argv)
-{
-  return caml_startup_code_exn(caml_code, sizeof(caml_code),
-                               caml_data, sizeof(caml_data),
-                               caml_sections, sizeof(caml_sections),
-                               /* pooling */ 1,
-                               argv);
-}
-|}
-       end;
        output_string outchan {|
 #ifdef __cplusplus
 }
@@ -980,9 +935,18 @@ extern "C" {
 #define CAML_INTERNALS_NO_PRIM_DECLARATIONS
 
 #include <caml/mlvalues.h>
+#include <caml/instruct.h>
 #include <caml/startup.h>
 
 const enum caml_byte_program_mode caml_byte_program_mode = APPENDED;
+
+/* Stub values for caml_startup et al. */
+opcode_t caml_start_code[] = {STOP};
+asize_t caml_code_size = sizeof(caml_start_code);
+char * caml_marshalled_global_data = NULL;
+asize_t caml_marshalled_global_data_size = 0;
+char * caml_section_table = NULL;
+asize_t caml_section_table_size = 0;
 
 |};
          Symtable.output_primitive_table poc;
