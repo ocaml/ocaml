@@ -1,6 +1,6 @@
 (* TEST
  readonly_files = "contexts_1.ml contexts_2.ml contexts_3.ml";
- flags = "-dsource -dlambda -dcanonical-ids";
+ flags = "-dsource -dlambda -dno-locations -dcanonical-ids";
  expect;
 *)
 
@@ -33,15 +33,19 @@ let example_1 () =
 (let
   (example_1/0 =
      (function param/0[int]
-       (let (input/0 = (makemutable 0 (int,*) 1 [0: 1]))
-         (if (field_int 0 input/0)
-           (let (*match*/0 =o (field_mut 1 input/0))
-             (switch* *match*/0
+       (let
+         (input/0 = (makemutable 0 (int,*) 1 [0: 1])
+          *match*/0 =a (field_int 0 input/0))
+         (if *match*/0
+           (let (*match*/1 =o (field_mut 1 input/0))
+             (switch* *match*/1
               case tag 0:
                (if (seq (setfield_ptr 1 input/0 [1: 3]) 0) [1: 3]
-                 (let (*match*/1 =o (field_mut 1 input/0))
-                   (switch* *match*/1
-                    case tag 0: (makeblock 0 (int) (field_imm 0 *match*/1))
+                 (let (*match*/2 =o (field_mut 1 input/0))
+                   (switch* *match*/2
+                    case tag 0:
+                     (let (y/0 =a (field_imm 0 *match*/2))
+                       (makeblock 0 (int) y/0))
                     case tag 1:
                      (raise
                        (makeblock 0 (global Match_failure/0!)
@@ -79,16 +83,24 @@ let example_2 () =
 (let
   (example_2/0 =
      (function param/1[int]
-       (let (input/1 = (makeblock 0 (int,*) 1 (makemutable 0 [0: 1])))
-         (if (field_int 0 input/1)
-           (let (*match*/2 =o (field_mut 0 (field_imm 1 input/1)))
-             (switch* *match*/2
+       (let
+         (input/1 = (makeblock 0 (int,*) 1 (makemutable 0 [0: 1]))
+          *match*/3 =a (field_int 0 input/1))
+         (if *match*/3
+           (let
+             (*match*/4 =a (field_imm 1 input/1)
+              *match*/5 =o (field_mut 0 *match*/4))
+             (switch* *match*/5
               case tag 0:
                (if (seq (setfield_ptr 0 (field_imm 1 input/1) [1: 3]) 0)
                  [1: 3]
-                 (let (*match*/3 =o (field_mut 0 (field_imm 1 input/1)))
-                   (switch* *match*/3
-                    case tag 0: (makeblock 0 (int) (field_imm 0 *match*/3))
+                 (let
+                   (*match*/6 =a (field_imm 1 input/1)
+                    *match*/7 =o (field_mut 0 *match*/6))
+                   (switch* *match*/7
+                    case tag 0:
+                     (let (y/1 =a (field_imm 0 *match*/7))
+                       (makeblock 0 (int) y/1))
                     case tag 1:
                      (raise
                        (makeblock 0 (global Match_failure/0!)
@@ -124,13 +136,20 @@ let example_3 () =
 (let
   (example_3/0 =
      (function param/2[int]
-       (let (input/2 =mut [0: 1 [0: 1]] *match*/4 =o *input/2)
-         (if (field_imm 0 *match*/4)
-           (switch* (field_imm 1 *match*/4)
-            case tag 0:
-             (if (seq (assign input/2 [0: 1 [1: 3]]) 0) [1: 3]
-               (makeblock 0 (int) (field_imm 0 (field_imm 1 *match*/4))))
-            case tag 1: [1: 2])
+       (let
+         (input/2 = (makemutable 0 [0: 1 [0: 1]])
+          *match*/8 =o (field_mut 0 input/2)
+          *match*/9 =a (field_imm 0 *match*/8))
+         (if *match*/9
+           (let (*match*/10 =a (field_imm 1 *match*/8))
+             (switch* *match*/10
+              case tag 0:
+               (if (seq (setfield_ptr 0 input/2 [0: 1 [1: 3]]) 0) [1: 3]
+                 (let
+                   (*match*/11 =a (field_imm 1 *match*/8)
+                    y/2 =a (field_imm 0 *match*/11))
+                   (makeblock 0 (int) y/2)))
+              case tag 1: [1: 2]))
            [1: 1]))))
   (apply (field_mut 1 (global Toploop!)) "example_3" example_3/0))
 val example_3 : unit -> (bool, int) Result.t = <fun>

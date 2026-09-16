@@ -262,16 +262,16 @@ names.
 
 \notop{%
 \item["-g"]
-Add debugging information while compiling and linking. This option is
-required in order to \comp{be able to debug the program with "ocamldebug"
-(see chapter~\ref{c:debugger}), and to} produce stack backtraces when
-the program terminates on an uncaught exception (see
-section~\ref{s:ocamlrun-options}).
+Add debugging information while compiling and linking (default). This
+option is required in order to \comp{be able to debug the program with
+"ocamldebug" (see chapter~\ref{c:debugger}), and to} produce stack
+backtraces when the program terminates on an uncaught exception
+(see section~\ref{s:ocamlrun-options}).
 }%notop
 
 \notop{%
 \item["-no-g"]
-Do not record debugging information (default).
+Do not record debugging information.
 }%notop
 
 \notop{%
