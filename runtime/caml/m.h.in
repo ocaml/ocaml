@@ -43,6 +43,12 @@
    addressing space.
    HAS_ARCH_CODE32 is ignored on 32-bit machines. */
 
+#undef HAS_OUTLINE_ATOMICS
+
+/* Define HAS_OUTLINE_ATOMICS if, on arm64, the C compiler lowers atomic
+   read-modify-writes to libgcc's outline-atomics trampolines (see Note [MM]
+   in runtime/memory.c).  Leave undefined elsewhere. */
+
 #undef SIZEOF_INT
 #undef SIZEOF_LONG
 #undef SIZEOF_PTR
