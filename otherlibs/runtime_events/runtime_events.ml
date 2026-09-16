@@ -332,7 +332,14 @@ module User = struct
            the maximum value length in the documentation of
            [User.register] in runtime_events.mli, and to the size of
            the consumer's read buffer in runtime_events_consumer.c. *)
-        let buf = if Bytes.length buf = 0 then Bytes.create 1024 else buf in
+        let buf =
+          if Bytes.length buf = 0 then
+            (* OCaml pads with sizeof(value), but runtime_events ring entries
+               are aligned to sizeof(uint64_t) always, where the last byte
+               contains information about length. *)
+            Bytes.create (1024 + if Sys.word_size = 32 then 1 else 0)
+          else buf
+        in
         begin match user_write buf event value with
         | () -> Atomic.set cache buf
         | exception exn -> Atomic.set cache buf; raise exn

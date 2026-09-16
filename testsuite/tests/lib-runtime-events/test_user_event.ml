@@ -4,7 +4,7 @@
 open Runtime_events
 
 (* let's register some custom events *)
-type User.tag += Libname | Counters of int
+type User.tag += Libname | Libname2 | Counters of int
 
 let event = User.register "libname.event" Libname Type.unit
 
@@ -28,6 +28,9 @@ let custom_type =
   Type.register ~encode ~decode
 
 let custom = User.register "libname.custom" Libname custom_type
+let custom2 = User.register "libname.custom2" Libname2 custom_type
+
+let custom2_expected = String.init 1024 (fun i -> Char.chr (i mod 0xFF))
 
 let () =
   start ();
@@ -37,6 +40,7 @@ let () =
   User.write counter 17;
   User.write counter2 18;
   User.write custom "hello";
+  User.write custom2 custom2_expected;
   User.write span End
 
 (* consumer *)
@@ -46,6 +50,7 @@ let got_span_begin = ref false
 let got_span_end = ref false
 let counter_value = ref 0
 let custom_value = ref ""
+let custom2_value = ref ""
 
 let event_handler domain_id ts e () =
   match User.tag e with
@@ -66,6 +71,7 @@ let span_handler domain_id ts e v =
 let custom_handler domain_id ts e v =
   match User.tag e with
   | Libname -> custom_value := v
+  | Libname2 -> custom2_value := v
   | _ -> ()
 
 let () =
@@ -84,4 +90,5 @@ let () =
   assert (!counter_value = 18);
   assert (!got_span_begin);
   assert (!got_span_end);
-  assert (!custom_value = "hello")
+  assert (!custom_value = "hello");
+  assert (!custom2_value = custom2_expected)
