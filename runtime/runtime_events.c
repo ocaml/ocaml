@@ -823,7 +823,18 @@ CAMLprim value caml_runtime_events_user_write(
     if ( !ring_is_active() )
       CAMLreturn(Val_unit);
 
-    uintnat len_bytes = Int_val(res);
+    intnat len_bytes = Int_val(res);
+
+    /* RUNTIME_EVENTS_MAX_MSG_LENGTH is the maximum value length documented
+       for [Type.register]. The write buffer is a word larger to hold the
+       trailing padding count. An encode returning more than this wrote past
+       the end of the buffer, and write_to_ring then copied the overrun into
+       the ring. */
+    if (len_bytes < 0 || len_bytes > RUNTIME_EVENTS_MAX_MSG_LENGTH) {
+      caml_invalid_argument(
+        "Runtime_events.User.write: encode returned an invalid length");
+    }
+
     uintnat len_64bit_word = (len_bytes + sizeof(uint64_t)) / sizeof(uint64_t);
     uintnat offset_index = len_64bit_word * sizeof(uint64_t) - 1;
     Bytes_val(write_buffer)[offset_index] = offset_index - len_bytes;
