@@ -459,6 +459,11 @@ Working version
   byte values outside the ASCII range.
   (Abhay Chaudhary, report by baugigi, review by Florian Angeletti)
 
+- #15091: Document the OCAMLRUNPARAM `X` option for named GC tweaks and the
+  bounds on `d`, and align the ocamlrun man page with the manual on `b` and
+  on comma handling.
+  (Tim McGilchrist, review by ????)
+
 ### Compiler user-interface and warnings:
 - #14887: More concise messages for the non-exhaustiveness warning.
   (Luc Maranget, review by Florian Angeletti)
