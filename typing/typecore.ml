@@ -5808,21 +5808,22 @@ and type_newtype
     let scope = create_scope () in
     let (id, new_env) = Env.enter_type ~scope name decl env in
 
-    let result, exp_type = type_body new_env in
+    let result, exp_type =
+      with_local_level_generalize_structure (fun () -> type_body new_env) in
     (* Replace every instance of this type constructor in the resulting
        type. *)
-    let seen = Hashtbl.create 8 in
-    let rec replace t =
-      if Hashtbl.mem seen (get_id t) then ()
-      else begin
-        Hashtbl.add seen (get_id t) ();
-        match get_desc t with
-        | Tconstr (Path.Pident id', _, _) when id == id' -> link_type t ty
-        | _ -> Btype.iter_type_expr replace t
-      end
-    in
-    let ety = Subst.type_expr Subst.identity exp_type in
-    replace ety;
+    let ety = Ctype.instance exp_type in
+    let current = get_current_level () in (* actually = scope *)
+    with_type_mark begin fun mark ->
+      let rec replace t =
+        if try_mark_node mark t && get_level t = current then
+          match get_desc t with
+          | Tconstr (Path.Pident id', _, _) when id == id' ->
+              link_type t ty
+          | _ -> Btype.iter_type_expr replace t
+      in
+      replace ety;
+    end;
     (result, ety)
   end
   ~before_generalize:(fun (_,ety) -> enforce_current_level env ety)
@@ -5986,8 +5987,11 @@ and type_function
             ({txt = name; loc}, pack_param)
         | _ -> assert false
       in
-      type_moddep_fun ~env ~name ~pack_param ~rest ~arg_label ~first
-        ~in_function ~ty_expected ~pparam_loc ~loc ~body_constraint ~body
+      with_local_level begin fun () ->
+        type_moddep_fun ~env ~name ~pack_param ~rest ~arg_label ~first
+          ~in_function ~ty_expected ~pparam_loc ~loc ~body_constraint ~body
+      end
+      ~post:(fun (exp_type,_,_,_,_) -> Ctype.enforce_current_level env exp_type)
   | { pparam_desc = Pparam_val (arg_label, default_arg, pat); pparam_loc }
       :: rest
     ->
@@ -6199,6 +6203,7 @@ and type_function
         the body is a [Tfunction_cases] whose patterns include a GADT.
      *)
     exp_type, [], body, [], No_gadt
+
 and type_moddep_fun ~env ~name ~pack_param ~rest ~arg_label ~first
     ~in_function ~ty_expected ~pparam_loc ~loc ~body_constraint ~body =
   let type_pack pack =
@@ -6305,8 +6310,6 @@ and type_moddep_fun ~env ~name ~pack_param ~rest ~arg_label ~first
     }
   in
   exp_type, { has_poly = false; param } :: params, body, [], contains_gadt
-
-
 
 and type_label_access env srecord usage lid =
   let record =
