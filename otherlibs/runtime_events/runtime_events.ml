@@ -110,6 +110,7 @@ type lifecycle =
 | EV_FORK_CHILD
 | EV_DOMAIN_SPAWN
 | EV_DOMAIN_TERMINATE
+| EV_PROCESS_CREATE
 
 let runtime_counter_name counter =
   match counter with
@@ -230,6 +231,7 @@ let lifecycle_name lifecycle =
   | EV_FORK_CHILD -> "fork_child"
   | EV_DOMAIN_SPAWN -> "domain_spawn"
   | EV_DOMAIN_TERMINATE -> "domain_terminate"
+  | EV_PROCESS_CREATE -> "process_create"
 
 type cursor
 

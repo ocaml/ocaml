@@ -166,6 +166,11 @@ Working version
   EV_EXPLICIT_GC_RAMP_UP covering a call to Gc.ramp_up.
   (Tim McGilchrist, review by Sadiq Jaffer and Gabriel Scherer)
 
+- #15049: Add a runtime events lifecycle event EV_PROCESS_CREATE, emitted on
+  all platforms when a child process is created by Unix.create_process and the
+  functions built on it.
+  (Tim McGilchrist, review by ???)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
