@@ -660,7 +660,7 @@ Working version
 
 - #15039: Various runtime events documentation improvements
   (Tim McGilchrist, reviewed by Sadiq Jaffer and Antonin Décimo)
-  
+
 - #15069: Fix unchaught exception when comparing signatures adding the same
   extension constructor to types with different arities
   (Samuel Vivien, reported by Florian Angeletti, review by Florian Angeletti)
