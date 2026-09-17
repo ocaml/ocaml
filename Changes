@@ -664,6 +664,9 @@ Working version
   callback whose lost_words parameter is uint64_t, the OCaml API is unchanged.
   (Tim McGilchrist, review by Sadiq Jaffer and Miod Vallat)
 
+- #15039: Various runtime events documentation improvements
+  (Tim McGilchrist, reviewed by Sadiq Jaffer and Antonin Décimo)
+
 - #15069: Fix unchaught exception when comparing signatures adding the same
   extension constructor to types with different arities
   (Samuel Vivien, reported by Florian Angeletti, review by Florian Angeletti)

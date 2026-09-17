@@ -1771,6 +1771,6 @@ val ldprintf :
   An example of such a library is {{: https://erratique.ch/software/fmt} Fmt}.
 
   Automatic deriving of pretty-printers from type definitions is also possible,
-  using {{: ppx_deriving.show} https://github.com/ocaml-ppx/ppx_deriving}
+  using {{: https://github.com/ocaml-ppx/ppx_deriving} ppx_deriving.show}
   or similar ppx derivers.
 *)
