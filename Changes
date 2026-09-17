@@ -166,6 +166,13 @@ Working version
   EV_EXPLICIT_GC_RAMP_UP covering a call to Gc.ramp_up.
   (Tim McGilchrist, review by Sadiq Jaffer and Gabriel Scherer)
 
+- #14936: On AArch64, drop the memory-model fences around the atomic
+  read-modify-writes (`Atomic.exchange`, `Atomic.compare_and_set`,
+  `Atomic.fetch_and_add`) when they run as an LSE atomic, which makes the
+  fences redundant (detected at compile time via FEAT_LSE, or at run time for
+  outline-atomics builds).
+  (Sebastian Pop, review by Olivier Nicole and Gabriel Scherer)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and

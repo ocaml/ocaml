@@ -1808,6 +1808,31 @@ AS_IF([test x"$arch" = "xarm64"],
      [ocaml_arm64_store="stlr (store-release, cross-compiling)"])
    AC_MSG_RESULT([$ocaml_arm64_store])])
 
+# On arm64, detect whether the C compiler lowers atomic read-modify-writes to
+# libgcc's outline-atomics trampolines (__aarch64_{swp,cas,ldadd}*), the default
+# on aarch64 Linux.  runtime/memory.c uses this to skip its memory-model fences
+# after a HWCAP_ATOMICS check (see its Note [MM]).  We inspect the generated
+# assembly rather than assume a default, so -mno-outline-atomics leaves the
+# fences in place.
+AS_IF([test x"$arch" = "xarm64"],
+  [AC_MSG_CHECKING([whether atomic read-modify-writes use outline atomics])
+   AC_LANG_CONFTEST([AC_LANG_SOURCE([[
+     #include <stdatomic.h>
+     long ex(_Atomic long *p, long v) { return atomic_exchange(p, v); }
+     int cas(_Atomic long *p, long o, long n)
+     { return atomic_compare_exchange_strong(p, &o, n); }
+     long fa(_Atomic long *p, long v) { return atomic_fetch_add(p, v); }
+   ]])])
+   AS_IF(
+     [$CC $CFLAGS $CPPFLAGS -S -o conftest.s conftest.$ac_ext >/dev/null 2>&1 &&
+      grep -q '__aarch64_swp' conftest.s &&
+      grep -q '__aarch64_cas' conftest.s &&
+      grep -q '__aarch64_ldadd' conftest.s],
+     [AC_DEFINE([HAS_OUTLINE_ATOMICS], [1])
+      AC_MSG_RESULT([yes])],
+     [AC_MSG_RESULT([no])])
+   rm -f conftest.s conftest.$ac_ext])
+
 AS_CASE([$arch],
   [amd64],
     [arch_specific_SOURCES='$(intel_SOURCES)'],
