@@ -286,6 +286,18 @@ external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
  @since 4.01
 *)
 
+external ( let@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
+(** Application let-operator, exactly equal to [( @@ )]. This is useful in its
+    own right because it makes callback-style APIs usable with a more 'direct'
+    style, eg:
+
+    {[
+    let copyfile srcfile dstfile =
+      let@ in_channel = In_channel.with_open_bin srcfile in
+      let@ out_channel = Out_channel.with_open_bin dstfile in
+      Out_channel.output_string out_channel (In_channel.input_all in_channel)
+    ]} *)
+
 (** {1 Integer arithmetic} *)
 
 (** Integers are [Sys.int_size] bits wide.

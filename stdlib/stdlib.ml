@@ -47,6 +47,7 @@ exception Undefined_recursive_module = Undefined_recursive_module
 
 external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
 external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
+external ( let@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
 
 (* Debugging *)
 
