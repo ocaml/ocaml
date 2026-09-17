@@ -1752,7 +1752,7 @@ val ldprintf :
   some rectangle: { l={ x=1.000; y=2.000 }; ur={ x=42.000; y=500.123 } }
 
   # Format.printf "no rectangle: %a@."
-        (Format.pp_option pp_rectangle)
+        (Format.pp_print_option pp_rectangle)
         None
   no rectangle:
   ]}
