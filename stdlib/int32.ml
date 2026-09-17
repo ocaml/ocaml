@@ -68,8 +68,9 @@ let unsigned_to_int =
   | _ ->
       assert false
 
-external format : string -> int32 -> string = "caml_int32_format"
-let to_string n = format "%d" n
+(*external format : string -> int32 -> string = "caml_int32_format"*)
+external to_string: (int32 [@unboxed]) -> string =
+    "caml_int32_to_string" "unboxed_caml_int32_to_string"
 
 external of_string : string -> int32 = "caml_int32_of_string"
 
