@@ -185,8 +185,9 @@ Working version
    temporary regression reported by Jeremy Yallop, fix reviewed by Samuel
    Vivien and Florian Angeletti, other regression reported by Florian Angeletti)
 
-- #14512: Improve check for warning 16 (unerasable-optional-argument)
-  (Alistair O'Brien, review by Florian Angeletti, Gabriel Scherer)
+- #14512, #14671: Improve check for warning 16 (unerasable-optional-argument)
+  (Alistair O'Brien, Jacques Garrigue, review by Florian Angeletti,
+   Gabriel Scherer)
 
 - #12150: class type system improvements: self type constraints, virtual method
   inheritance in mutually recursive definition, immediate object inheritance.
@@ -436,6 +437,10 @@ Working version
   of nonmatching input if a rule is not exhaustive (Martin Jambon,
   review by David Allsopp and Gabriel Scherer)
 
+* #14172: stop reversing the order of -L arguments in ocamlmklib, a quirk
+  introduced by accident in 2012.
+  (Alexandre Douard, review by Daniel Bünzli and Nicolás Ojeda Bär)
+
 ### Manual and documentation:
 
 - #14598: Add `@since` annotations to `Runtime_events`. (Raphaël Proust)
@@ -655,6 +660,10 @@ Working version
 
 - #15039: Various runtime events documentation improvements
   (Tim McGilchrist, reviewed by Sadiq Jaffer and Antonin Décimo)
+  
+- #15069: Fix unchaught exception when comparing signatures adding the same
+  extension constructor to types with different arities
+  (Samuel Vivien, reported by Florian Angeletti, review by Florian Angeletti)
 
 OCaml 5.5.1
 -----------

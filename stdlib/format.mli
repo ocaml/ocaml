@@ -1746,13 +1746,14 @@ val ldprintf :
 
   These printers can now be used with "%a" inside other printers.
 
-  {[ # Format.printf "some rectangle: %a@."
+  {[
+  # Format.printf "some rectangle: %a@."
         (Format.pp_print_option pp_rectangle)
         (Some {ll={x=1.; y=2.}; ur={x=42.; y=500.12345}})
   some rectangle: { l={ x=1.000; y=2.000 }; ur={ x=42.000; y=500.123 } }
 
   # Format.printf "no rectangle: %a@."
-        (Format.pp_option pp_rectangle)
+        (Format.pp_print_option pp_rectangle)
         None
   no rectangle:
   ]}
