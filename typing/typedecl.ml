@@ -24,6 +24,7 @@ open Typetexp
 
 module String = Misc.Stdlib.String
 module List = Misc.Stdlib.List
+module Result = Misc.Stdlib.Result
 
 type native_repr_kind = Unboxed | Untagged
 
@@ -536,8 +537,9 @@ let transl_declaration env sdecl (id, uid) =
       (fun (cty, cty', loc) ->
         let ty = cty.ctyp_type in
         let ty' = cty'.ctyp_type in
-        try Ctype.unify env ty ty' with Ctype.Unify err ->
-          Error.log_and_raise loc (Inconsistent_constraint (env, err)))
+        Result.ok_or_else (Ctype.unify env ty ty')
+          (fun err ->
+            Error.log_and_raise loc (Inconsistent_constraint (env, err))))
       constraints;
   (* Add abstract row *)
     if is_fixed_type sdecl then begin
@@ -1133,12 +1135,10 @@ let check_regularity ~abs_env env loc path decl to_check =
               let (params0, body0, _) = Env.find_type_expansion path' env in
               let (params, body) =
                 Ctype.instance_parameterized_type params0 body0 in
-              begin
-                try List.iter2 (Ctype.unify abs_env) args' params
-                with Ctype.Unify err ->
-                  Error.log_and_raise loc
-                    (Constraint_failed (abs_env, err));
-              end;
+              Result.ok_or_else
+                (List.iter2_result (Ctype.unify abs_env) args' params)
+                (fun err ->
+                  Error.log_and_raise loc (Constraint_failed (abs_env, err)));
               check_regular args
                 (path' :: prev_exp) (Expands_to (ty,body) :: trace)
                 body
@@ -1247,9 +1247,9 @@ let update_type temp_env env id loc =
          but generalize again after unification. *)
       Ctype.with_local_level_generalize begin fun () ->
         let params = List.map (fun _ -> Ctype.newvar ()) decl.type_params in
-        try Ctype.unify env (Ctype.newconstr path params) ty
-        with Ctype.Unify err ->
-          Error.log_and_raise loc (Type_clash (env, err))
+        Result.ok_or_else
+          (Ctype.unify env (Ctype.newconstr path params) ty)
+          (fun err -> Error.log_and_raise loc (Type_clash (env, err)))
       end
 
 let add_types_to_env decls shapes env =
@@ -1451,13 +1451,11 @@ let transl_extension_constructor ~scope env type_path type_params
               res, ret_type
           else (Ctype.newconstr type_path typext_params), None
         in
-        begin
-          try
-            Ctype.unify env cstr_res res
-          with Ctype.Unify err ->
+        Result.ok_or_else
+          (Ctype.unify env cstr_res res)
+          (fun err ->
             Error.log_and_raise lid.loc
-              (Rebind_wrong_type(lid.txt, env, err))
-        end;
+              (Rebind_wrong_type(lid.txt, env, err)));
         (* Remove "_" names from parameters used in the constructor *)
         if not cdescr.cstr_generalized then begin
           let vars = Ctype.free_variables_list args in
@@ -1509,7 +1507,7 @@ let transl_extension_constructor ~scope env type_path type_params
               in
               let decl = Ctype.instance_declaration decl in
               assert (List.length decl.type_params = List.length tl);
-              List.iter2 (Ctype.unify env) decl.type_params tl;
+              List.iter2 (Ctype.unify_exn env) decl.type_params tl;
               let lbls =
                 match decl.type_kind with
                 | Type_record (lbls, Record_extension _) -> lbls
@@ -1613,7 +1611,7 @@ let transl_type_extension extend env loc styext =
       TyVarEnv.reset();
       let ttype_params = make_params env styext.ptyext_params in
       let type_params = List.map (fun (cty, _) -> cty.ctyp_type) ttype_params in
-      List.iter2 (Ctype.unify_var env)
+      List.iter2 (Ctype.unify_var_exn env)
         (Ctype.instance_list type_decl.type_params)
         type_params;
       let constructors =
@@ -1980,18 +1978,20 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
   let arity_ok = arity = sig_decl.type_arity in
   if arity_ok then
     List.iter2 (fun (cty, _) tparam ->
-      try Ctype.unify_var env cty.ctyp_type tparam
-      with Ctype.Unify err ->
-        Error.log_and_raise cty.ctyp_loc
-          (Inconsistent_constraint (env, err))
+      Result.ok_or_else
+        (Ctype.unify_var env cty.ctyp_type tparam)
+        (fun err ->
+          Error.log_and_raise cty.ctyp_loc
+            (Inconsistent_constraint (env, err)))
     ) tparams sig_decl.type_params;
   List.iter (fun (cty, cty', loc) ->
     (* Note: constraints must also be enforced in [sig_env] because
        they may contain parameter variables from [tparams]
        that have now be unified in [sig_env]. *)
-    try Ctype.unify env cty.ctyp_type cty'.ctyp_type
-    with Ctype.Unify err ->
-      Error.log_and_raise loc (Inconsistent_constraint (env, err))
+    Result.ok_or_else
+      (Ctype.unify env cty.ctyp_type cty'.ctyp_type)
+      (fun err ->
+        Error.log_and_raise loc (Inconsistent_constraint (env, err)))
   ) constraints;
   let sig_decl_abstract = Btype.type_kind_is_abstract sig_decl in
   let priv =
