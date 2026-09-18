@@ -68,8 +68,8 @@ let lambda_to_flambda ~log ~prefixname ~backend ~size
            if Clflags.Dump_option.get Flambda_verbose then begin
              let log fmt =
                Log.itemf Dev_log.flambda log fmt in
-             log  "@.PASS: %s@." name;
-             log "Before pass %d, round %d:@ %a@."
+             log  "@.PASS: %s" name;
+             log "Before pass %d, round %d:@ %a"
                !pass_number !round_number Flambda.print_program flam;
              log "\n@?"
            end;
@@ -88,7 +88,7 @@ let lambda_to_flambda ~log ~prefixname ~backend ~size
                        ~module_ident ~size)
            in
            Clflags.dump_item_on_log log Dev_log.raw_flambda
-             "After closure conversion:@ %a@."
+             "After closure conversion:@ %a"
              Flambda.print_program flam;
            check flam;
            let fast_mode flam =
@@ -188,7 +188,7 @@ let lambda_to_flambda ~log ~prefixname ~backend ~size
                      application (the optimizer did not know what function \
                      was being applied)"));
            Clflags.dump_item_on_log log Dev_log.flambda
-             "End of middle end:@ %a@."
+             "End of middle end:@ %a"
              Flambda.print_program flam;
            check flam;
            (* CR-someday mshinwell: add -d... option for this *)
@@ -202,15 +202,15 @@ let flambda_raw_clambda_dump_if log
   if Clflags.Dump_option.get Raw_clambda then
     begin
       let log fmt = Log.itemf Dev_log.raw_clambda log fmt in
-      log "@.clambda (before Un_anf):@.";
+      log "@.clambda (before Un_anf):";
       log "%a" Printclambda.clambda ulambda;
       Symbol.Map.iter (fun sym cst ->
-          log "%a:@ %a@."
+          log "%a:@ %a"
             Symbol.print sym
             Printclambda.structured_constant cst)
         structured_constants
     end;
-  Clflags.dump_item_on_log log Dev_log.cmm "@.cmm:@.";
+  Clflags.dump_item_on_log log Dev_log.cmm "@.cmm:";
   input
 
 let lambda_to_clambda ~backend ~prefixname ~log
