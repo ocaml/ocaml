@@ -280,6 +280,10 @@ Working version
   in the Lambda IR.
   (Florian Angeletti, report by Nathanaëlle Courant, review by Gabriel Scherer)
 
+- #15084: compile `Int64.of_float`, `Int64.to_float` and the Int32 and
+  Nativeint equivalents to a single instruction rather than calling into C
+  (Zane Hambly, review by         )
+
 ### Standard library:
 
 - #14974 : Add `Sys.filepath_exists` and improve documentation
