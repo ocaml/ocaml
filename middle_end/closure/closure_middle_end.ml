@@ -20,16 +20,16 @@ let raw_clambda_dump_if log
   if Clflags.Dump_option.(get Raw_clambda || get Clambda) then
     begin
       let log fmt = Log.itemf Dev_log.clambda log fmt in
-      log "@.clambda:@.";
+      log "@.clambda:";
       log "%a" Printclambda.clambda ulambda;
       List.iter (fun { Clambda. symbol; definition; _ } ->
-          log "%s:@ %a@."
+          log "%s:@ %a"
             symbol
             Printclambda.structured_constant definition)
         structured_constants
     end;
   if Clflags.Dump_option.get Cmm then
-    Log.itemf Dev_log.cmm log "@.cmm:@."
+    Log.itemf Dev_log.cmm log "@.cmm:"
 
 let lambda_to_clambda ~backend ~prefixname:_ ~log
       (lambda : Lambda.program) =
