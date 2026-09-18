@@ -29,7 +29,7 @@ let with_log ~log ~field ~pass_name ~f ~input ~print_input ~print_output =
     None
   | Some result ->
     if dump then begin
-      Log.itemf field log "Before %s:@ %a@.@." pass_name print_input input;
-      Log.itemf field log "After %s:@ %a@.@." pass_name print_output result;
+      Log.itemf field log "Before %s:@ %a@." pass_name print_input input;
+      Log.itemf field log "After %s:@ %a@." pass_name print_output result;
     end;
     Some result
