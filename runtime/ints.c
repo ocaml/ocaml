@@ -142,6 +142,33 @@ CAMLprim value caml_bswap16(value v)
 #define CAML_BUILTIN_CLZ __builtin_clz
 #define CAML_BUILTIN_CTZ __builtin_ctz
 #endif
+#elif defined(_MSC_VER)
+#include <intrin.h>
+
+static inline intnat caml_msvc_clz(uintnat x)
+{
+  unsigned long i;
+#ifdef ARCH_SIXTYFOUR
+  _BitScanReverse64(&i, x);
+#else
+  _BitScanReverse(&i, x);
+#endif
+  return INTNAT_BITS - 1 - i;
+}
+
+static inline intnat caml_msvc_ctz(uintnat x)
+{
+  unsigned long i;
+#ifdef ARCH_SIXTYFOUR
+  _BitScanForward64(&i, x);
+#else
+  _BitScanForward(&i, x);
+#endif
+  return i;
+}
+
+#define CAML_BUILTIN_CLZ caml_msvc_clz
+#define CAML_BUILTIN_CTZ caml_msvc_ctz
 #endif
 
 /* Without a popcount instruction GCC lowers the builtin to a libgcc call,
