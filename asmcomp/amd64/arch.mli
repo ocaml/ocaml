@@ -35,6 +35,7 @@ type specific_operation =
   | Ifloatarithmem of float_operation * addressing_mode
                                        (* Float arith operation with memory *)
   | Ibswap of int                      (* endianness conversion *)
+  | Irol of int                        (* rotate left by a constant *)
   | Isqrtf                             (* Float square root *)
   | Ifloatsqrtf of addressing_mode     (* Float square root from memory *)
   | Isextend32                         (* 32 to 64 bit conversion with sign

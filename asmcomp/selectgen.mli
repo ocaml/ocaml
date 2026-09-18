@@ -29,6 +29,10 @@ val env_find : Backend_var.t -> environment -> Reg.t array
 
 val size_expr : environment -> Cmm.expression -> int
 
+(* [rotation args] is [Some (n, x)] when the arguments of an [or] or [xor]
+   rotate [x] left by [n]. *)
+val rotation : Cmm.expression list -> (int * Cmm.expression) option
+
 module Effect : sig
   type t =
     | None

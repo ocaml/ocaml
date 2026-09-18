@@ -89,6 +89,7 @@ type specific_operation =
   | Isqrtf        (* floating-point square root *)
   | Iroundf of float_rounding (* floating-point round to integer *)
   | Ibswap of int (* endianness conversion *)
+  | Irol of int       (* rotate left by a constant *)
   | Imove32       (* 32-bit integer move *)
   | Isignext of int (* sign extension *)
 
@@ -211,6 +212,8 @@ let print_specific_operation printreg op ppf arg =
   | Ibswap n ->
       fprintf ppf "bswap%i %a" n
         printreg arg.(0)
+  | Irol n ->
+      fprintf ppf "rol %a %i" printreg arg.(0) n
   | Imove32 ->
       fprintf ppf "move32 %a"
         printreg arg.(0)

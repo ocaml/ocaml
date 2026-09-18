@@ -32,6 +32,7 @@ type specific_operation =
   | Imultsubf                           (* multiply and subtract *)
   | Isqrtf                              (* floating-point square root *)
   | Iroundf of float_rounding           (* round to integer *)
+  | Irol of int                         (* rotate left by a constant *)
   | Ialloc_far of                       (* allocation in large functions *)
       { bytes : int; dbginfo : Debuginfo.alloc_dbginfo }
   | Ipoll_far of { return_label : cmm_label option }
@@ -110,6 +111,8 @@ let print_specific_operation printreg op ppf arg =
         | Rtoward_pos -> "ceilf"
         | Rtoward_neg -> "floorf" in
       fprintf ppf "%s %a" name printreg arg.(0)
+  | Irol n ->
+      fprintf ppf "rol %a %i" printreg arg.(0) n
   | Ialloc_far { bytes; _ } ->
       fprintf ppf "alloc_far %d" bytes
   | Ipoll_far _ ->

@@ -195,6 +195,7 @@ module I = struct
   let push x = emit (PUSH x)
   let ret () = emit RET
   let sal x y = emit (SAL (x, y))
+  let rol x y = emit (ROL (x, y))
   let sar x y = emit (SAR (x, y))
   let set cond x = emit (SET (cond, x))
   let shr x y = emit (SHR (x, y))

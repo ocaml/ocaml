@@ -134,6 +134,27 @@ let size_expr (env:environment) exp =
         Misc.fatal_error "Selection.size_expr"
   in size V.Map.empty exp
 
+(* Recognize rotations by a constant *)
+
+let rec same_pure_expr e1 e2 =
+  match e1, e2 with
+  | Cvar v1, Cvar v2 -> V.same v1 v2
+  | Cconst_int (n1, _), Cconst_int (n2, _) -> n1 = n2
+  | Cop(Cload {memory_chunk = c1; mutability = Immutable; _}, [a1], _),
+    Cop(Cload {memory_chunk = c2; mutability = Immutable; _}, [a2], _) ->
+      c1 = c2 && same_pure_expr a1 a2
+  | Cop(Cadda, [a1; b1], _), Cop(Cadda, [a2; b2], _) ->
+      same_pure_expr a1 a2 && same_pure_expr b1 b2
+  | _ -> false
+
+let rotation args =
+  match args with
+  | [Cop(Clsl, [x; Cconst_int (l, _)], _); Cop(Clsr, [y; Cconst_int (r, _)], _)]
+  | [Cop(Clsr, [y; Cconst_int (r, _)], _); Cop(Clsl, [x; Cconst_int (l, _)], _)]
+    when l > 0 && r > 0 && l + r = 64 && same_pure_expr x y ->
+      Some (l, x)
+  | _ -> None
+
 (* Swap the two arguments of an integer comparison *)
 
 let swap_intcomp = function

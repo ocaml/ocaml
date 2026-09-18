@@ -114,6 +114,12 @@ method! select_operation op args dbg =
   | (Cextcall("caml_fma", _, [XFloat; XFloat; XFloat], false),
      [arg1; arg2; arg3]) ->
       (Ispecific Imultaddf, [arg1; arg2; arg3])
+  (* Recognize rotations *)
+  | ((Cor | Cxor), _) ->
+      begin match Selectgen.rotation args with
+      | Some (n, x) -> (Ispecific (Irol n), [x])
+      | None -> super#select_operation op args dbg
+      end
   (* Recognize byte swaps *)
   | (Cextcall("caml_bswap16_direct", _, _, _), _) ->
       (Ispecific (Ibswap 16), args)

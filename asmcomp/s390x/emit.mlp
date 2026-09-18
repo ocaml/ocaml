@@ -607,6 +607,8 @@ let emit_instr env i =
         `	lrvgr	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
     | Lop(Ispecific (Ibswap _)) ->
         Misc.fatal_error "Emit.Ibswap: unsupported width"
+    | Lop(Ispecific (Irol n)) ->
+        `	rllg	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_int n}(%r0)\n`
     | Lop(Ispecific (Imultaddf | Imultsubf as sop)) ->
         assert (i.arg.(2).loc = i.res.(0).loc);
         let instr = name_for_specific sop in

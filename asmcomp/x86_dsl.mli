@@ -188,6 +188,7 @@ module I : sig
   val push: arg -> unit
   val ret: unit -> unit
   val sal: arg -> arg -> unit
+  val rol: arg -> arg -> unit
   val sar: arg -> arg -> unit
   val set: condition -> arg -> unit
   val shr: arg -> arg -> unit
