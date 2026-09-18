@@ -280,6 +280,10 @@ Working version
   in the Lambda IR.
   (Florian Angeletti, report by Nathanaëlle Courant, review by Gabriel Scherer)
 
+- #15083: emit a rotate instruction for constant 64-bit rotations on amd64,
+  arm64, power and s390x rather than two shifts and an or
+  (Zane Hambly, review by         )
+
 ### Standard library:
 
 - #14974 : Add `Sys.filepath_exists` and improve documentation
