@@ -106,6 +106,12 @@ method! select_operation op args dbg =
       (Ispecific Imultaddf, [arg1; arg2; arg3])
   | (Csubf, [Cop(Cmulf, [arg1; arg2], _); arg3]) ->
       (Ispecific Imultsubf, [arg1; arg2; arg3])
+  (* Recognize rotations *)
+  | ((Cor | Cxor), _) ->
+      begin match Selectgen.rotation args with
+      | Some (n, x) -> (Ispecific (Irol n), [x])
+      | None -> super#select_operation op args dbg
+      end
   (* Recognize square root *)
   | (Cextcall("sqrt", _, _, _), [arg]) ->
       (Ispecific Isqrtf, [arg])

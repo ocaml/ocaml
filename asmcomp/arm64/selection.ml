@@ -162,6 +162,12 @@ method! select_operation op args dbg =
       | _ ->
           super#select_operation op args dbg
       end
+  (* Recognize rotations *)
+  | Cor | Cxor ->
+      begin match Selectgen.rotation args with
+      | Some (n, x) -> (Ispecific (Irol n), [x])
+      | None -> super#select_operation op args dbg
+      end
   (* Recognize sign extension *)
   | Casr ->
       begin match args with

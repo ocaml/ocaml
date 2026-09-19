@@ -89,7 +89,7 @@ let pseudoregs_for_operation op arg res =
   (* One-address unary operations: arg.(0) and res.(0) must be the same *)
   | Iintop_imm((Iadd|Isub|Imul|Iand|Ior|Ixor|Ilsl|Ilsr|Iasr), _)
   | Iabsf | Inegf
-  | Ispecific(Ibswap (32|64)) ->
+  | Ispecific(Ibswap (32|64) | Irol _) ->
       (res, res)
   (* For xchg, args must be a register allowing access to high 8 bit register
      (rax, rbx, rcx or rdx). Keep it simple, just force the argument in rax. *)
@@ -246,6 +246,12 @@ method! select_operation op args dbg =
   | Cextcall("caml_int64_direct_bswap", _, _, _)
   | Cextcall("caml_nativeint_direct_bswap", _, _, _) ->
       (Ispecific (Ibswap 64), args)
+  (* Recognize rotations *)
+  | Cor | Cxor ->
+      begin match Selectgen.rotation args with
+      | Some (n, x) -> (Ispecific (Irol n), [x])
+      | None -> super#select_operation op args dbg
+      end
   (* Recognize sign extension *)
   | Casr ->
       begin match args with
