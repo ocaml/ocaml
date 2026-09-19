@@ -169,7 +169,8 @@ val max : int -> int -> int
 
 (** {1:bitcounting Bit counting} *)
 
-val popcount: t -> int
+external popcount : (t [@untagged]) -> (int [@untagged])
+  = "caml_int_popcount" "caml_int_popcount_direct" [@@noalloc]
 (** Population count, also known as Hamming weight.
     [popcount n] is the number of 1 bits in the binary representation of [n].
     Negative [n] are represented in two's complement.
@@ -192,7 +193,8 @@ val signed_bitsize: t -> int
 
     @since 5.5 *)
 
-val leading_zeros: t -> int
+external leading_zeros : (t [@untagged]) -> (int [@untagged])
+  = "caml_int_clz" "caml_int_clz_direct" [@@noalloc]
 (** [leading_zeros n] is the number of leading (most significant) 0 bits in
     the binary representation of [n].
     It is an integer between 0 and {!Sys.int_size} inclusive.
@@ -214,7 +216,8 @@ val leading_sign_bits: t -> int
 
     @since 5.5 *)
 
-val trailing_zeros: t -> int
+external trailing_zeros : (t [@untagged]) -> (int [@untagged])
+  = "caml_int_ctz" "caml_int_ctz_direct" [@@noalloc]
 (** [trailing_zeros n] is the number of trailing (least significant) 0 bits in
     the binary representation of [n].
     It is an integer between 0 and {!Sys.int_size} inclusive.

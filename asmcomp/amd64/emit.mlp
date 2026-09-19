@@ -728,6 +728,17 @@ let emit_instr env fallthrough i =
       I.bswap (res i 0)
   | Lop(Ispecific(Ibswap _)) ->
       assert false
+  | Lop(Ispecific Iclz) ->
+      (* Retagging makes bsr count over Sys.int_size bits and never see 0 *)
+      I.lea (mem64 NONE ~base:(arg64 i 0) 1 (arg64 i 0)) (res i 0);
+      I.bsr (res i 0) (res i 0);
+      I.xor (int 63) (res i 0)
+  | Lop(Ispecific Ictz) ->
+      (* Bit 63 is a copy of bit 62, so setting it only changes the
+         answer for 0, where it gives Sys.int_size *)
+      if arg i 0 <> res i 0 then I.mov (arg i 0) (res i 0);
+      I.bts (int 63) (res i 0);
+      I.bsf (res i 0) (res i 0)
   | Lop(Ispecific Isqrtf) ->
       if arg i 0 <> res i 0 then
         I.xorpd (res i 0) (res i 0); (* avoid partial register stall *)

@@ -539,6 +539,7 @@ module Size = struct
     | Lop (Ispecific (Ishiftarith _)) -> 1
     | Lop (Ispecific (Imuladd | Imulsub)) -> 1
     | Lop (Ispecific (Ibswap 16)) -> 2
+    | Lop (Ispecific (Iclz | Ictz)) -> 3
     | Lop (Ispecific (Ibswap _)) -> 1
     | Lop (Ispecific Imove32) -> 1
     | Lop (Ispecific (Isignext _)) -> 1
@@ -1027,6 +1028,17 @@ let emit_instr env i =
                      | Imulsub -> "msub"
                      | _ -> assert false) in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`
+    | Lop(Ispecific Iclz) ->
+        (* Retagging makes clz count over Sys.int_size bits and never see 0 *)
+        `	lsl	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #1\n`;
+        `	orr	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, #1\n`;
+        `	clz	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
+    | Lop(Ispecific Ictz) ->
+        (* Bit 63 is a copy of bit 62, so setting it only changes the
+           answer for 0, where it gives Sys.int_size *)
+        `	orr	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #0x8000000000000000\n`;
+        `	rbit	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`;
+        `	clz	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
     | Lop(Ispecific(Ibswap size)) ->
         begin match size with
         | 16 ->
