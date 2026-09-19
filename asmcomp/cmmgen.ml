@@ -819,8 +819,17 @@ and transl_ccall env prim args dbg =
   in
   let typ_args, args = transl_args prim.prim_native_repr_args args in
   wrap_result
-    (Cop(Cextcall(Primitive.native_name prim,
-                  typ_res, typ_args, prim.prim_alloc), args, dbg))
+    (match Primitive.native_name prim, args with
+     | ("caml_int64_of_float_unboxed" | "caml_nativeint_of_float_unboxed"),
+       [arg] ->
+         Cop(Cintoffloat, [arg], dbg)
+     | "caml_int32_of_float_unboxed", [arg] ->
+         sign_extend_32 dbg (Cop(Cintoffloat, [arg], dbg))
+     | ("caml_int64_to_float_unboxed" | "caml_nativeint_to_float_unboxed"
+       | "caml_int32_to_float_unboxed"), [arg] ->
+         Cop(Cfloatofint, [arg], dbg)
+     | name, _ ->
+         Cop(Cextcall(name, typ_res, typ_args, prim.prim_alloc), args, dbg))
 
 and transl_prim_1 env p arg dbg =
   match p with
