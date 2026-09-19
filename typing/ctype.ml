@@ -5313,8 +5313,10 @@ let eqtype rename type_pairs subst env t1 t2 =
 
 (* Two modes: with or without renaming of variables *)
 let equal env rename tyl1 tyl2 =
-  if List.length tyl1 <> List.length tyl2 then
-    raise_unexplained_for Equality;
+  (* In practice, `Equality` is not a good error to report to users and thus
+      callers of this function ought to raise their own error when
+      `List.length tyl1 <> List.length tyl2`. *)
+  assert (List.length tyl1 = List.length tyl2);
   if List.for_all2 eq_type tyl1 tyl2 then () else
   let subst = ref [] in
   try eqtype_list_same_length rename (TypePairs.create 11) subst env tyl1 tyl2
