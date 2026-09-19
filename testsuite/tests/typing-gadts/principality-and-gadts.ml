@@ -477,3 +477,51 @@ let foo (type s) x (Refl : (s, u) eq) =
 [%%expect{|
 val foo : 's -> ('s, u) eq -> t = <fun>
 |}]
+
+(* interaction with expansion *)
+
+let f : type a b c. (a,b) eq -> (b,c) eq -> _ =
+ fun ab bc ->
+   let Refl = ab in
+   let g () =
+     let Refl = bc in
+     let h y =
+       ignore (y : b);
+       ignore (y : c);
+       y
+     in
+     h
+   in ignore g;;
+[%%expect{|
+Line 11, characters 5-6:
+11 |      h
+          ^
+Error: The value "h" has type "b -> b" but an expression was expected of type "'a"
+       This instance of "a" is ambiguous:
+       it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
+|}]
+
+let f : type a b c. (a,b) eq -> (b,c) eq -> _ =
+ fun ab bc ->
+   let Refl = ab in
+   let g () =
+     let Refl = bc in
+     let h y =
+       ignore (y : c);
+       ignore (y : b);
+       y
+     in
+     h
+   in ignore g;;
+[%%expect{|
+Line 11, characters 5-6:
+11 |      h
+          ^
+Error: The value "h" has type "c -> c" but an expression was expected of type "'a"
+       This instance of "a" is ambiguous:
+       it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
+|}]
