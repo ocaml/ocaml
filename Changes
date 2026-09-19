@@ -678,6 +678,12 @@ Working version
   extension constructor to types with different arities
   (Samuel Vivien, reported by Florian Angeletti, review by Florian Angeletti)
 
+- #15074, #15077: Fix an out-of-bounds write when a custom event encoder
+  returns a length larger than the write buffer or a negative length.
+  Runtime_events.User.write now raises Invalid_argument for a length outside
+  the documented range.
+  (Tim McGilchrist, reported by edwintorok, review by ????)
+
 OCaml 5.5.1
 -----------
 

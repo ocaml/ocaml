@@ -629,7 +629,8 @@ module Type : sig
       written. The decoder gets a slice of the buffer of specified length, and
       returns the decoded value.
 
-      The maximum value length is 1024 bytes. *)
+      The maximum value length is 1024 bytes. An encoder returning a length
+      above this maximum, or a negative length, raises [Invalid_argument]. *)
 end
 
 module User : sig
@@ -652,7 +653,10 @@ module User : sig
       carrying a [tag] and values of type [ty]. *)
 
   val write : 'value t -> 'value -> unit
-  (** [write t v] emits value [v] for event [t]. *)
+  (** [write t v] emits value [v] for event [t].
+
+      @raise Invalid_argument if the encoder registered for [t] returns a
+      length outside the bounds documented for [Type.register]. *)
 
   val name : _ t -> string
   (** [name t] is the unique identifying name of event [t]. *)
