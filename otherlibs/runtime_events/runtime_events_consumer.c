@@ -1163,7 +1163,7 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
   CAMLlocal4(callback_list, event, callbacks_root, event_type);
   CAMLlocalN(params, 4);
   CAMLlocal2(wrapper_root, read_buffer);
-  CAMLlocal3(data, record, deserializer);
+  CAMLlocal4(data, record, deserializer, res);
 
   struct callbacks_exception_holder* holder = callback_data;
   callbacks_root = *holder->callbacks_val;
@@ -1209,7 +1209,16 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
 
     memcpy(Bytes_val(read_buffer), data_str, caml_string_len);
 
-    data = caml_callback2(deserializer, read_buffer, Val_int(caml_string_len));
+    res = caml_callback2_exn(deserializer, read_buffer,
+                             Val_int(caml_string_len));
+
+    if( Is_exception_result(res) ) {
+      res = Extract_exception(res);
+      *holder->exception = res;
+      CAMLreturnT(int, 0);
+    }
+
+    data = res;
 
     params[0] = Val_long(domain_id);
     params[1] = caml_copy_int64(timestamp);

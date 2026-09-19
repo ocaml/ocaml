@@ -565,6 +565,13 @@ Working version
 
 ### Bug fixes:
 
+- #15072, #15075: Fix `Runtime_events` cursors becoming permanently unusable
+  when a user event decoder raises. The exception escaped `read_poll` without
+  clearing the in-poll flag, so every later poll on that cursor failed with
+  "poll called concurrently or reentrant". The decoder's exception is now
+  propagated through the normal path and the cursor is released.
+  (Abhay Chaudhary, review by Tim McGilchrist)
+
 - #14986: Take effect cases into account in the expansiveness check.
   (Jeremy Yallop, review by Florian Angeletti)
 
