@@ -532,17 +532,23 @@ static void write_to_ring(ev_category category, ev_message_type type,
   /* account for header and timestamp (which are both uint64) */
   uint64_t length_with_header_ts = event_length + 2;
 
-  /* We must fatal error if the event is larger than the ring buffer.
+  /* We must fatal error if the event cannot fit in the ring buffer.
      Otherwise the loop below loops forever. In practice only the
      alloc event can hit this, which is emitted by the instrumented
      runtime. But users can also create arbitrarily sized events.
-     Closes #13335. */
-  if (length_with_header_ts > ring_size_words) {
+     Closes #13335.
+
+     An event is only written whole, so one that would straddle the end of
+     the ring is preceded by padding and written at the start instead. The
+     loop below therefore has to fit the event plus that padding, and the
+     padding can be one word short of the event itself. Half the ring is the
+     largest event that always fits. Closes #15043. */
+  if (2 * length_with_header_ts > ring_size_words) {
     int min_e = 0;
-    while ((1ULL << min_e) < length_with_header_ts) min_e++;
+    while ((1ULL << min_e) < 2 * length_with_header_ts) min_e++;
     caml_fatal_error(
-        "runtime_events: event of %" PRIu64 " words exceeds the ring buffer "
-        "(%d words, from OCAMLRUNPARAM=e=%" CAML_PRIuNAT "). "
+        "runtime_events: event of %" PRIu64 " words does not fit in the ring "
+        "buffer (%d words, from OCAMLRUNPARAM=e=%" CAML_PRIuNAT "). "
         "Use OCAMLRUNPARAM=e=%d or higher.",
         length_with_header_ts, ring_size_words,
         caml_params->runtime_events_log_wsize, min_e);
