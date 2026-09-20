@@ -198,8 +198,7 @@ let copyright = '\xA9';;
 
 A character literal denotes a single byte. Source files are encoded in UTF-8,
 but a character whose UTF-8 encoding occupies more than one byte is therefore
-not a valid character literal; it can be written as a string literal instead,
-since a string may hold any number of bytes.
+not a valid character literal.
 \subsubsection*{sss:stringliterals}{String literals}
 
 \begin{syntax}
