@@ -685,6 +685,10 @@ Working version
   extension constructor to types with different arities
   (Samuel Vivien, reported by Florian Angeletti, review by Florian Angeletti)
 
+- #15045: Atomic loads whose results are unused should not be removed
+  during dead-code elimination.
+  (Xavier Clerc, review by Steven Dolan and KC Sivaramakrishnan)
+
 OCaml 5.5.1
 -----------
 
