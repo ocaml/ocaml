@@ -449,6 +449,11 @@ Working version
   (Jeanne Pottier, review by Florian Angeletti, Gabriel Scherer
   and Daniel Bünzli)
 
+- #15082: Clarify in the manual that a character literal denotes a single
+  byte, so a character whose UTF-8 encoding is longer than one byte is not a
+  valid character literal.
+  (Abhay Chaudhary, report by baugigi)
+
 ### Compiler user-interface and warnings:
 - #14887: More concise messages for the non-exhaustiveness warning.
   (Luc Maranget, review by Florian Angeletti)
