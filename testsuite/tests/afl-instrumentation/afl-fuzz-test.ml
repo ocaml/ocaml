@@ -1,5 +1,6 @@
 (* TEST
  native-compiler;
+ afl-instrument;
  script = "sh ${test_source_directory}/has-afl-fuzz.sh";
  readonly_files = "readline.ml";
  script;

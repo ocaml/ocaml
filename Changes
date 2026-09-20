@@ -553,6 +553,10 @@ Working version
   declarations.
   (Samuel Vivien, review by Stefan Muenzel and Florian Angeletti)
 
+- #15046, #15066: testsuite: skip the AFL fuzz test when the compiler is not
+  built with AFL instrumentation.
+  (Akash Kumar, report and review by Xavier Leroy)
+
 ### Build system:
 
 - #14552: Export `AR` and `ARFLAGS` in Makefile.config.
