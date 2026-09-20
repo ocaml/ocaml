@@ -441,6 +441,10 @@ Working version
   introduced by accident in 2012.
   (Alexandre Douard, review by Daniel Bünzli and Nicolás Ojeda Bär)
 
+- #15022: ocamldebug: requesting a header through the debugger protocol now
+  returns the full header instead of the low 32 bits.
+  (Vincent Laviron, review by Xavier Leroy)
+
 ### Manual and documentation:
 
 - #14598: Add `@since` annotations to `Runtime_events`. (Raphaël Proust)
