@@ -3,6 +3,9 @@ OCaml 5.5.2
 
 ### Bug fixes:
 
+- #15045: Atomic loads whose results are unused should not be removed
+  during dead-code elimination.
+  (Xavier Clerc, review by Steven Dolan and KC Sivaramakrishnan)
 
 OCaml 5.5.1 (4 September 2026)
 ------------------------------
