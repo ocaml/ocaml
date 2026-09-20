@@ -466,6 +466,11 @@ module Error = struct
       invalid_state_description
       length capacity
 
+  let[@inline never] invalid_subarray fname ~pos ~len ~length =
+    Printf.ksprintf invalid_arg
+      "Dynarray.%s: subarray (%d..%d) out of bounds (0..%d)"
+      fname pos (pos + len - 1) (length - 1)
+
   let[@inline never] length_change_during_iteration fname ~expected ~observed =
     Printf.ksprintf invalid_arg
       "Dynarray.%s: a length change from %d to %d occurred during iteration"
@@ -1259,7 +1264,8 @@ let unsafe_stable_sort_sub cmp a init_ofs init_len =
 
 let stable_sort_sub cmp a ~pos ~len =
   if pos < 0 || len < 0 || pos > length a - len
-  then invalid_arg Error.invalid_state_description
+  then invalid_arg (Error.invalid_subarray "stable_sort_sub"
+                      ~pos ~len ~length:(length a))
   else unsafe_stable_sort_sub cmp a pos len
 
 let stable_sort cmp a =

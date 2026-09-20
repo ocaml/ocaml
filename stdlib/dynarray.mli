@@ -438,7 +438,11 @@ val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
     @since 5.3
 *)
 
-(** {1:sorting Sorting}*)
+(** {1:sorting Sorting}
+
+    Sorting functions iterate over their arguments; it is
+    a programming error to change their length during the iteration,
+    see the {{!section:iteration} Iteration} section above. *)
 
 val stable_sort_sub : ('a -> 'a -> int) -> 'a t -> pos:int -> len:int -> unit
 (**[stable_sort_sub cmp a ~pos ~len] sorts the subarray of the array [a]
@@ -447,12 +451,12 @@ val stable_sort_sub : ('a -> 'a -> int) -> 'a t -> pos:int -> len:int -> unit
    function [cmp]. The data outside of this subarray is unaffected. The
    sorting algorithm is stable; it is the same as in {!stable_sort}.
 
-   Changing the length of [a] during the sort is considered to be a programming
-   error and will result in the function failing.
-
    @raise Invalid_argument if [pos] and [len] do not
    designate a valid subarray of [a]; that is, if
-   [pos < 0], or [len < 0], or [pos + len > length a]. *)
+   [pos < 0], or [len < 0], or [pos + len > length a].
+
+   @since 5.6
+*)
 
 val stable_sort : ('a -> 'a -> int) -> 'a t -> unit
 (** Sorts an array in increasing order according to a comparison function.
@@ -462,11 +466,14 @@ val stable_sort : ('a -> 'a -> int) -> 'a t -> unit
    Sort if the array's length is greater than 5, and Insertion Sort
    otherwise.
 
-   Changing the length of the array during the sort is considered to be a
-   programming error and will result in the function failing. *)
+   @since 5.6
+*)
 
 val sort : ('a -> 'a -> int) -> 'a t -> unit
-(** An alias for stable_sort. *)
+(** An alias for stable_sort.
+
+   @since 5.6
+*)
 
 (** {1:conversions Conversions to other data structures}
 
