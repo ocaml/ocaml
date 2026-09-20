@@ -91,6 +91,22 @@ Print version string and exit.
 .B \-vnum
 Print short version number and exit.
 .TP
+.BI \-w " warning-list"
+Enable, disable, or mark as fatal the warnings specified by the argument
+.I warning-list
+using the same syntax as
+.BR ocamlc (1)
+and
+.BR ocamlopt (1).
+The only warning currently supported is
+.BR 'missing-case'.
+.B '-w -missing-case'
+will disable the warning,
+.B '-w +missing-case'
+will turn it on (default), and
+.B '-w @missing-case'
+will make it a fatal error.
+.TP
 .BR \-help " or " \-\-help
 Display a short usage summary and exit.
 

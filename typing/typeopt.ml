@@ -190,6 +190,13 @@ let value_kind env ty =
         Pgenval
   end
 
+let pattern_kind env_modifier pat =
+  match env_modifier with
+  | None -> value_kind pat.pat_env pat.pat_type
+  | Some local_constraints ->
+      let env = Env.restrict_local_equations local_constraints pat.pat_env in
+      value_kind env pat.pat_type
+
 (** The compilation of the expression [lazy e] depends on the form of e:
     in some cases we optimize it into [let x = e in lazy x], evaluating
     [e] right now (if it is equivalent) and avoiding creating a thunk.

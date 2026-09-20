@@ -90,6 +90,11 @@ val iter : ('a -> unit) -> ('a, 'e) result -> unit
 val iter_error : ('e -> unit) -> ('a, 'e) result -> unit
 (** [iter_error f r] is [f e] if [r] is [Error e] and [()] otherwise. *)
 
+val try_value : ('a, 'e) result -> ('e -> ('a, 'e) result) -> ('a, 'e) result
+(** [try_value r f] is [f e] if [r] is [Error e] and [r] otherwise.
+
+    @since 5.6 *)
+
 (** {1:preds Predicates and comparisons} *)
 
 val is_ok : ('a, 'e) result -> bool

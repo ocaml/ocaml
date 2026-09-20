@@ -385,10 +385,11 @@ external link : ?follow:bool -> string -> string -> unit = "caml_unix_link"
 external realpath : string -> string = "caml_unix_realpath"
 
 let realpath p =
-  let cleanup p = (* Remove any \\?\ prefix. *)
-    if String.starts_with ~prefix:{|\\?\|} p
-    then (String.sub p 4 (String.length p - 4))
-    else p
+  let cleanup p = (* cf. `caml_locate_standard_library` in runtime/win32.c *)
+    assert (String.sub p 0 4 = {|\\?\|});
+    if String.starts_with ~prefix:{|\\?\UNC\|} p
+    then "\\" ^ String.sub p 7 (String.length p - 7)
+    else String.sub p 4 (String.length p - 4)
   in
   try cleanup (realpath p) with
   | (Unix_error (EACCES, _, _)) as e ->

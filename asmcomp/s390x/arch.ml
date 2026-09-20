@@ -33,6 +33,8 @@ let command_line_options =
 type specific_operation =
     Imultaddf                           (* multiply and add *)
   | Imultsubf                           (* multiply and subtract *)
+  | Isqrtf                              (* floating-point square root *)
+  | Ibswap of int                       (* endianness conversion *)
 
 (* Addressing modes *)
 
@@ -82,6 +84,10 @@ let print_specific_operation printreg op ppf arg =
   | Imultsubf ->
       fprintf ppf "%a *f %a -f %a"
         printreg arg.(0) printreg arg.(1) printreg arg.(2)
+  | Isqrtf ->
+      fprintf ppf "sqrtf %a" printreg arg.(0)
+  | Ibswap n ->
+      fprintf ppf "bswap_%i %a" n printreg arg.(0)
 
 (* Specific operations that are pure *)
 

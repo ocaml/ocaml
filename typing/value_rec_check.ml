@@ -196,7 +196,10 @@ let classify_expression : Typedtree.expression -> sd =
         Dynamic
 
     | Texp_array _ ->
-        Static
+       begin match Typeopt.array_kind e with
+       | Pgenarray -> Dynamic
+       | Pfloatarray | Paddrarray | Pintarray -> Static
+       end
     | Texp_pack mexp ->
         classify_module_expression env mexp
     | Texp_function _ ->

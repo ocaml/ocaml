@@ -74,16 +74,42 @@ val unsafe_of_int : int -> t
 val to_int : t -> int
 (** [to_int u] is [u] as an integer. *)
 
+val is_ascii : t -> bool
+(** [is_ascii u] is [true] if and only if [u] is in the range U+0000-U+007F.
+
+    @since 5.6 *)
+
+val ascii_to_char : t -> char
+(** [ascii_to_char u] is the ASCII encoding of the ASCII character [u].
+    This converts the characters in the range U+0000-U+007F to the
+    corresponding byte.
+
+    @raise Invalid_argument if [u] does not satisfy {!is_ascii}.
+    @since 5.6 *)
+
+val is_latin1 : t -> bool
+(** [is_latin1 u] is [true] if and only if [u] is in the range U+0000-U+00FF.
+
+    @since 5.6 *)
+
+val latin1_to_char : t -> char
+(** [latin1_to_char u] is the latin1 encoding of the latin1 character [u].
+    This converts the characters in the range U+0000-U+00FF to the
+    corresponding byte.
+
+    @raise Invalid_argument if [u] does not satisfy {!is_latin1}.
+    @since 5.6 *)
+
 val is_char : t -> bool
-(** [is_char u] is [true] if and only if [u] is a latin1 OCaml character. *)
+(** [is_char] is a deprecated name for {!is_latin1}. *)
 
 val of_char : char -> t
-(** [of_char c] is [c] as a Unicode character. *)
+(** [of_char c] is [c] as a Unicode character. This interprets [c] as a
+    latin1 encoded character, mapping the byte to the corresponding
+    character in the range U+0000-U+00FF. *)
 
 val to_char : t -> char
-(** [to_char u] is [u] as an OCaml latin1 character.
-
-    @raise Invalid_argument if [u] does not satisfy {!is_char}. *)
+(** [to_char] is a deprecated name for {!latin1_to_char}. *)
 
 (**/**)
 val unsafe_to_char : t -> char

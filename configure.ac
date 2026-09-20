@@ -15,13 +15,13 @@
 
 # Process this file with autoconf to produce a configure script.
 
-# Require Autoconf 2.71 for repeatability in CI
-AC_PREREQ([2.71])
+# Require Autoconf 2.72 for repeatability in CI
+AC_PREREQ([2.72])
 AC_INIT([OCaml],
         [OCAML__VERSION],
         [caml-list@inria.fr],
         [ocaml],
-        [http://www.ocaml.org])
+        [https://ocaml.org/])
 
 AC_MSG_NOTICE([Configuring OCaml version AC_PACKAGE_VERSION])
 
@@ -1180,24 +1180,24 @@ AS_CASE([$target],
       [internal_cflags="$internal_cflags -mprfchw"], [], [$warn_error_flag])])
 
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
-# Enable 64-bit time_t in time.h
 AS_CASE([$target],
   [i686-w64-mingw32*],
-    [internal_cflags="$internal_cflags -mfpmath=sse -msse2"
-    # This instructs _mingw.h to adopt the switch in Visual Studio 8 (2005) to
-    # make time_t a 64-bit value.
-    internal_cppflags="$internal_cppflags -D__MINGW_USE_VC2005_COMPAT"])
+    [internal_cflags="$internal_cflags -mfpmath=sse -msse2"])
 
-# Use 64-bit file offset if possible
-# See also AC_SYS_LARGEFILE
-# Problem: flags are added to CC rather than CPPFLAGS
+# Default to enabling large file support and year 2038 support on 32-bit.
 AS_CASE([$target],
-  [*-w64-mingw32*|*-pc-windows], [],
-  [common_cppflags="$common_cppflags -D_FILE_OFFSET_BITS=64"])
+  [*-pc-windows], [], # LFS and 64-bit time_t are always enabled.
+  [AC_SYS_YEAR2038_RECOMMENDED
+  AS_CASE([$ac_cv_sys_largefile_opts],
+    ["none needed"|"support not detected"], [],
+    [common_cppflags="$common_cppflags $ac_cv_sys_largefile_opts"])
+  AS_CASE([$ac_cv_sys_year2038_opts],
+    ["none needed"|"support not detected"], [],
+    [common_cppflags="$common_cppflags $ac_cv_sys_year2038_opts"])])
 
 # Require Windows 8 / Server 2012 or later
 AS_CASE([$target],
-  [*-w64-mingw32*|*-pc-windows],
+  [*-pc-cygwin|*-w64-mingw32*|*-pc-windows],
     [internal_cppflags="$internal_cppflags -D_WIN32_WINNT=0x602"])
 
 # Adjust according to target
@@ -1633,6 +1633,7 @@ AS_IF([test x"$supports_shared_libraries" = 'xtrue'],
     [[i[3456]86-*-netbsd*]], [natdynlink=true],
     [x86_64-*-netbsd*], [natdynlink=true],
     [[i[3456]86-*-haiku*]], [natdynlink=true],
+    [x86_64-*-haiku*], [natdynlink=true],
     [arm*-*-linux*], [natdynlink=true],
     [arm*-*-freebsd*], [natdynlink=true],
     [earm*-*-netbsd*], [natdynlink=true],
@@ -1740,7 +1741,7 @@ AS_CASE([$target],
   [x86_64-*-openbsd*],
     [has_native_backend=yes; arch=amd64; system=openbsd],
   [x86_64-*-haiku*],
-    [arch=amd64; system=beos],
+    [has_native_backend=yes; arch=amd64; system=beos],
   [arm64-*-darwin*],
     [has_native_backend=yes; arch=arm64; system=macosx],
   [aarch64-*-darwin*],
@@ -2856,7 +2857,8 @@ AS_IF([$native_compiler],
 AS_IF([test x"$enable_frame_pointers" = "xyes"],
   [AS_CASE([$target],
     [x86_64-*-linux*|x86_64-*-darwin*|x86_64-*-freebsd*|x86_64-*-dragonfly*| \
-     aarch64-*-linux*|aarch64-*-darwin*|aarch64-*-freebsd*|riscv64-*-linux*],
+     aarch64-*-linux*|aarch64-*-darwin*|aarch64-*-freebsd*|riscv64-*-linux*| \
+     powerpc64-*-linux*|powerpc64le-*-linux*],
      [AS_CASE([$ocaml_cc_vendor],
         [clang-*|gcc-*],
          [common_cflags="$common_cflags -g  -fno-omit-frame-pointer"
@@ -2932,7 +2934,8 @@ AS_IF([$build_ocamltest],
   AC_CONFIG_LINKS([
     ocamltest/ocamltest_unix.ml:${ocamltest_unix_mod}
   ])
-  AC_CHECK_PROGS([DIFF], [patdiff diff],
+  AC_CHECK_PROGS([DIFF], [patdiff diff], [false])
+  AS_IF([test x"$DIFF" = "xfalse"],
     [AC_MSG_ERROR([ocamltest requires a diff tool])])
   AS_CASE([$DIFF], [diff], [flags_to_test='--strip-trailing-cr -u'])
   AC_CACHE_CHECK([for extra $DIFF flags],

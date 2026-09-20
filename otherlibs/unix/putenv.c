@@ -36,7 +36,7 @@ CAMLprim value caml_unix_putenv(value name, value val)
 
   if (! (caml_string_is_c_safe(name) && caml_string_is_c_safe(val)))
     caml_unix_error(EINVAL, "putenv", name);
-  s = caml_stat_strconcat(3, name, "=", val);
+  s = caml_stat_strconcat(3, String_val(name), "=", String_val(val));
   p = caml_stat_strdup_to_os(s);
   caml_stat_free(s);
   ret = putenv_os(p);

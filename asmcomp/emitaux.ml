@@ -442,6 +442,22 @@ let cfi_val_offset ~reg ~offset =
     emit_string "\n"
   end
 
+(* Emit a DWARF CFI expression of the form CFA = *(reg + offset), i.e.
+   follow a pointer stored at [reg + offset].  Used by backends (POWER)
+   where the canonical frame address lives behind a back-chain link.
+   The expression is 3 bytes: DW_OP_breg+reg, sleb128(offset), DW_OP_deref;
+   [offset] must fit in a single-byte SLEB128 (-64..63). *)
+let cfi_def_cfa_breg_deref ~reg ~offset =
+  assert (-64 <= offset && offset < 64);
+  if is_cfi_enabled () then begin
+    (* DW_CFA_def_cfa_expression, length=3 *)
+    emit_string "\t.cfi_escape 0x0f, 3, ";
+    emit_int (0x70 + reg);                 (* DW_OP_breg + reg *)
+    emit_string ", ";
+    emit_int offset;
+    emit_string ", 0x06\n"                 (* DW_OP_deref *)
+  end
+
 (* Emit debug information *)
 
 (* This assoc list is expected to be very short *)

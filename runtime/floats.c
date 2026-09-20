@@ -105,7 +105,7 @@ CAMLexport void caml_Store_double_val(value val, double dbl)
  third-party code loaded into process does.
 */
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__HAIKU__)
 #define With_C_locale(stmt) \
   char* saved_locale = setlocale(LC_NUMERIC, NULL); \
   setlocale(LC_NUMERIC, "C"); \

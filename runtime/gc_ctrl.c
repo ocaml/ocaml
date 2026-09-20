@@ -52,6 +52,7 @@ extern _Atomic uintnat caml_custom_minor_ratio; /* see custom.c */
 extern _Atomic uintnat caml_custom_minor_max_bsz; /* see custom.c */
 extern uintnat caml_minor_heap_max_wsz; /* see domain.c */
 extern atomic_uintnat caml_mark_stack_prune_factor; /* see major_gc.c */
+extern atomic_uintnat caml_cache_stacks_per_class; /* see fiber.c */
 
 CAMLprim value caml_gc_quick_stat(value v)
 {
@@ -464,6 +465,7 @@ caml_result caml_gc_ramp_up(value callback, uintnat *out_suspended_words) {
        outer phase. */
 
     CAML_GC_MESSAGE(SLICESIZE, "Entering a GC ramp-up phase.\n");
+    CAML_EV_BEGIN(EV_EXPLICIT_GC_RAMP_UP);
 
     intnat ramp_up_already = (Caml_state->gc_policy & CAML_GC_RAMP_UP);
     if (!ramp_up_already)
@@ -489,6 +491,8 @@ caml_result caml_gc_ramp_up(value callback, uintnat *out_suspended_words) {
 
     if (!ramp_up_already)
       Caml_state->gc_policy = (Caml_state->gc_policy & ~CAML_GC_RAMP_UP);
+
+    CAML_EV_END(EV_EXPLICIT_GC_RAMP_UP);
 
     return res;
 }
@@ -528,6 +532,7 @@ static struct gc_tweak gc_tweaks[] = {
 #define TWEAK(v) { #v, &caml_##v, 0 }
   TWEAK(mark_stack_prune_factor),
   TWEAK(small_heap_limit),
+  TWEAK(cache_stacks_per_class),
 #undef TWEAK
 };
 

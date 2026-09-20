@@ -18,7 +18,9 @@
 
 open! Mach [@@warning "-66"]
 
-let trap_handler_size = 16
+(* Must match [Emit]'s [trap_size]: 16 bytes normally, larger with frame
+   pointers (where [Lpushtrap] allocates a full frame). *)
+let trap_handler_size = if Config.with_frame_pointers then 48 else 16
 
 class stackframe = object
 

@@ -416,6 +416,7 @@ module M = struct
                     (sub.module_type sub mty)
     | Pmod_unpack e -> unpack ~loc ~attrs (sub.expr sub e)
     | Pmod_extension x -> extension ~loc ~attrs (sub.extension sub x)
+    | Pmod_hole -> hole ~loc ~attrs ()
 
   let map_structure_item sub {pstr_loc = loc; pstr_desc = desc} =
     let open Str in
@@ -552,6 +553,7 @@ module E = struct
     | Pexp_unreachable -> unreachable ~loc ~attrs ()
     | Pexp_struct_item (si, e) ->
         struct_item ~loc ~attrs (sub.structure_item sub si) (sub.expr sub e)
+    | Pexp_hole -> hole ~loc ~attrs ()
 
   let map_binding_op sub {pbop_op; pbop_pat; pbop_exp; pbop_loc} =
     let open Exp in

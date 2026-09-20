@@ -137,7 +137,8 @@ case "$1" in
     if [ ! -e "$CACHE_DIRECTORY/parallel-source" ] || \
        [ "$PARALLEL_URL" != "$(cat "$CACHE_DIRECTORY/parallel-source")" ] ; then
       # Download latest version directly from the repo
-      curl -Ls $PARALLEL_URL -o "$CACHE_DIRECTORY/parallel"
+      curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors \
+           $PARALLEL_URL -o "$CACHE_DIRECTORY/parallel"
       echo "$PARALLEL_URL" > "$CACHE_DIRECTORY/parallel-source"
     fi
     cp "$CACHE_DIRECTORY/parallel" /usr/bin
@@ -214,7 +215,8 @@ case "$1" in
       cp "$FULL_BUILD_PREFIX-$PORT/ocaml-compiler-clone.sh" \
            'destdir/share/ocaml/clone'
       cd destdir
-      sh "$FULL_BUILD_PREFIX-$PORT/ocaml-compiler-clone.sh" "$OCAMLROOT/_opam"
+      sh "$FULL_BUILD_PREFIX-$PORT/ocaml-compiler-clone.sh" "$PWD" \
+                                                            "$OCAMLROOT/_opam"
     )
     rm -rf "$OCAMLROOT"
     $MAKE -C "$FULL_BUILD_PREFIX-$PORT" OPAM_PACKAGE_NAME=ocaml-variants \

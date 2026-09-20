@@ -214,6 +214,7 @@ type error =
   | Optional_poly_param of string
   | Cannot_unify_tfunctor_to_tarrow of Errortrace.unification_error
   | Cannot_omit_tfunctor_argument of Ident.Unscoped.t * type_expr
+  | Unexpected_hole
 
 
 let not_principal fmt =
@@ -307,8 +308,10 @@ end = struct
         let id_map = (id, new_id) :: id_map in
         let package = deep_copy_package id_map copy_with_map package in
         Tfunctor (l, new_id, package, copy_with_map id_map type_expr)
-    | Texpand (t, p, tl) ->
-        Texpand (copy t, copy_path id_map p, List.map copy tl)
+    | Texpand (t, abbr) ->
+        Texpand (copy t, {abbr_path = copy_path id_map abbr.abbr_path;
+                          abbr_args = List.map copy abbr.abbr_args;
+                          abbr_level = abbr.abbr_level})
     | Tlink _ | Tsubst _ -> assert false
 
 
@@ -684,11 +687,10 @@ let type_continuation_pat env expected_ty sp =
   | Ppat_var name ->
       let id = Ident.create_local name.txt in
       let desc =
-        { val_type = expected_ty; val_kind = Val_reg;
-          Types.val_loc = loc; val_attributes = [];
-          val_uid = Uid.mk ~current_unit:(Env.get_current_unit ()); }
+        { cont_id = id; cont_loc = loc; cont_type = expected_ty;
+          cont_uid = Uid.mk ~current_unit:(Env.get_current_unit ()); }
       in
-        Some (id, desc)
+        Some desc
   | Ppat_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
   | _ -> Error.log_and_raise loc env Invalid_continuation_pattern
@@ -894,13 +896,13 @@ type type_pat_state =
 
 let continuation_variable = function
   | None -> []
-  | Some (id, (desc:Types.value_description)) ->
-    [{pv_id = id;
-     pv_type = desc.val_type;
-     pv_loc = desc.val_loc;
+  | Some {cont_id; cont_loc; cont_type; cont_uid} ->
+    [{pv_id = cont_id;
+     pv_type = cont_type;
+     pv_loc = cont_loc;
      pv_kind = Continuation_var;
-     pv_attributes = desc.val_attributes;
-     pv_uid= desc.val_uid}]
+     pv_attributes = [];
+     pv_uid= cont_uid}]
 
 let create_type_pat_state ?cont allow_modules =
   let tps_module_variables =
@@ -3550,7 +3552,7 @@ let rec is_nonexpansive exp =
       is_nonexpansive body
   | Texp_apply(e, (_,Omitted ())::el) ->
       is_nonexpansive e && List.for_all is_nonexpansive_arg (List.map snd el)
-  | Texp_match(e, cases, _, _) ->
+  | Texp_match(e, cases, eff_cases, _) ->
      (* Not sure this is necessary, if [e] is nonexpansive then we shouldn't
          care if there are exception patterns. But the previous version enforced
          that there be none, so... *)
@@ -3565,7 +3567,10 @@ let rec is_nonexpansive exp =
         (fun {c_lhs; c_guard; c_rhs} ->
            is_nonexpansive_opt c_guard && is_nonexpansive c_rhs
            && not (contains_exception_pat c_lhs)
-        ) cases
+        ) cases &&
+      List.for_all
+        (fun {c_guard; c_rhs} ->
+           is_nonexpansive_opt c_guard && is_nonexpansive c_rhs) eff_cases
   | Texp_tuple el ->
       List.for_all (fun (_, e) -> is_nonexpansive e) el
   | Texp_construct( _, _, el) ->
@@ -5608,6 +5613,9 @@ and type_expect_
            exp_attributes = sexp.pexp_attributes;
            exp_env = env }
 
+  | Pexp_hole ->
+      Error.log_and_raise loc env Unexpected_hole
+
   | Pexp_struct_item (si, e) ->
       let tv = newvar () in
       let delayed () =
@@ -6063,21 +6071,13 @@ and type_function
          there might be an opportunity to improve this.
       *)
       let only_labels_function_ret_tvar ty =
-        (* [arrow_spine] does expansion and is potentially expensive;
+        (* [arrow_labels] does expansion and is potentially expensive;
            only call this when necessary. *)
-        let label_tys, ret_ty_or_cycle = arrow_spine env ty in
+        let labels, ~is_ret_tvar = arrow_labels env ty in
         let is_spine_only_labels =
-          List.for_all (fun (label, _arg_ty) -> label <> Nolabel) label_tys
+          List.for_all (fun label -> label <> Nolabel) labels
         in
-        if is_spine_only_labels
-        then (
-          match ret_ty_or_cycle with
-          | Ret_cycle -> Some `Not_tvar
-          | Ret_type ty ->
-              if is_Tvar ty
-              then Some (`Tvar ty)
-              else Some `Not_tvar )
-        else None
+        if is_spine_only_labels then Some is_ret_tvar else None
       in
       (* An optional argument [?x] is only erasable if the function's return
          type eventually becomes an unlabelled arrow type ['a -> 'b].
@@ -6098,14 +6098,14 @@ and type_function
       if is_optional arg_label
       then (
         match only_labels_function_ret_tvar ty_ret with
-        | Some (`Tvar ret_tvar) ->
+        | Some true ->
           (* We don't necessarily know [ty] is a function with only labelled
              args since unification may change this. So we add
              a delayed check. *)
           add_delayed_check (fun () ->
-              if Option.is_some (only_labels_function_ret_tvar ret_tvar)
+              if only_labels_function_ret_tvar ty_ret = Some false
               then raise_unerasable_optional_argument ())
-        | Some `Not_tvar -> raise_unerasable_optional_argument ()
+        | Some false -> raise_unerasable_optional_argument ()
         | None -> ());
       let fp_kind, fp_param =
         match default_arg with
@@ -7344,7 +7344,6 @@ and type_cases
     ~type_body:begin
       fun { pc_guard; pc_rhs } pat ~when_env ~ext_env ~cont ~ty_expected
         ~ty_infer ~contains_gadt:_ ->
-        let cont = Option.map (fun (id,_) -> id) cont in
         let guard =
           match pc_guard with
           | None -> None
@@ -8755,6 +8754,9 @@ let report_error ~loc env =
             The module argument %a cannot be omitted in this application.@]"
             print_expanded func_ty
             Style.inline_code (Ident.Unscoped.name id_us)
+  | Unexpected_hole ->
+      Location.errorf ~loc
+        "Uninterpreted expression wildcard %a." Style.inline_code "_"
 
 let report_error ~loc env err =
   Printtyp.wrap_printing_env ~error:true env

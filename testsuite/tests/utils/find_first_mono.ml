@@ -1,7 +1,7 @@
 (* TEST
  include config;
  include testing;
- binary_modules = "config build_path_prefix_map format_doc misc";
+ binary_modules = "config build_path_prefix_map format_doc utf8_lexeme misc";
  bytecode;
 *)
 

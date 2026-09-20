@@ -865,6 +865,11 @@ let append_array a b =
       then grow_and_append a b
     in grow_and_append a b  end
 
+external unsafe_array_of_iarray : 'a iarray -> 'a array = "%opaque"
+
+let append_iarray a b =
+  append_array a (unsafe_array_of_iarray b)
+
 (* append: same [..._if_room] and loop logic as [add_last]. *)
 
 (* It is a programming error to mutate the length of [b] during a call

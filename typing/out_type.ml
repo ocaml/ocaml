@@ -2052,7 +2052,7 @@ let trees_of_type_expansion mode Errortrace.{ty = t; expanded = t'} =
   let manifest =
     match get_abbrev t with
     | None -> None
-    | Some (tconstr, params) ->
+    | Some {abbr_path=tconstr; abbr_args=params} ->
         let should_use_manifest =
           match printer_get_desc t with
           | Tconstr (p, tl, _) ->

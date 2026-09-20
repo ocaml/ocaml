@@ -301,6 +301,7 @@ CAMLextern uintnat caml_get_init_stack_wsize(void);
 void caml_change_max_stack_size (uintnat new_max_wsize);
 void caml_maybe_expand_stack(void);
 CAMLextern void caml_free_stack(struct stack_info* stk);
+CAMLextern void caml_free_stack_cache(struct stack_info** cache);
 
 /* gc_regs_buckets is allocated on-demand by [maybe_expand_stack]. */
 CAMLextern void caml_free_gc_regs_buckets(value *gc_regs_buckets);

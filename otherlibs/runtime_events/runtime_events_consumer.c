@@ -70,7 +70,7 @@ struct caml_runtime_events_cursor {
                 uint64_t *sz);
   int (*lifecycle)(int domain_id, void *callback_data, int64_t timestamp,
                     ev_lifecycle lifecycle, int64_t data);
-  int (*lost_events)(int domain_id, void *callback_data, int lost_words);
+  int (*lost_events)(int domain_id, void *callback_data, uint64_t lost_words);
   /* user events: mapped from type to callback */
   int (*user_unit)(int domain_id, void* callback_data, int64_t timestamp,
                       uintnat event_id, char* event_name);
@@ -347,7 +347,7 @@ void caml_runtime_events_set_lost_events(
                                     struct caml_runtime_events_cursor *cursor,
                                     int (*f)(int domain_id,
                                               void *callback_data,
-                                              int lost_words)) {
+                                              uint64_t lost_words)) {
   cursor->lost_events = f;
 }
 
@@ -506,6 +506,34 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
       if (msg_length > RUNTIME_EVENTS_MAX_MSG_LENGTH
           || ring_masked_pos + msg_length
              > cursor->metadata.ring_size_elements) {
+        /* The header may have been overwritten by the writer wrapping around
+           between the ring_head check above and the read of the header, in
+           which case it is not a header at all. Re-check before reporting
+           corruption, so that an overwrite is reported as lost events.
+
+           The fence keeps the header read above the re-read. An acquire load
+           orders later accesses, not earlier ones, and the control dependency
+           on the header does not order load against load, so without it the
+           re-read could be satisfied first and miss the advance. */
+        atomic_thread_fence(memory_order_acquire);
+
+        ring_head =
+          atomic_load_acquire(&runtime_events_buffer_header->ring_head);
+
+        if (ring_head > cursor->current_positions[domain_num]) {
+          int lost_words = ring_head - cursor->current_positions[domain_num];
+          cursor->current_positions[domain_num] = ring_head;
+
+          if (cursor->lost_events) {
+            if( !(cursor->lost_events(domain_num, callback_data,
+                                      lost_words)) ) {
+              early_exit = 1;
+            }
+          }
+
+          continue;
+        }
+
         atomic_store(&cursor->cursor_in_poll, 0);
         return E_CORRUPT_STREAM;
       }
@@ -522,7 +550,7 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
       if (ring_head > cursor->current_positions[domain_num]) {
         /* It potentially has, retry for the next one after we've notified
              the callbacks about lost messages. */
-        int lost_words = ring_head - cursor->current_positions[domain_num];
+        uint64_t lost_words = ring_head - cursor->current_positions[domain_num];
         cursor->current_positions[domain_num] = ring_head;
 
         if (cursor->lost_events) {
@@ -863,7 +891,8 @@ static int ml_lifecycle(int domain_id, void *callback_data, int64_t timestamp,
   CAMLreturnT(int, 1);
 }
 
-static int ml_lost_events(int domain_id, void *callback_data, int lost_words) {
+static int ml_lost_events(int domain_id, void *callback_data,
+                          uint64_t lost_words) {
   CAMLparam0();
   CAMLlocal3(tmp_callback, callbacks_root, res);
 
@@ -1134,7 +1163,7 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
   CAMLlocal4(callback_list, event, callbacks_root, event_type);
   CAMLlocalN(params, 4);
   CAMLlocal2(wrapper_root, read_buffer);
-  CAMLlocal3(data, record, deserializer);
+  CAMLlocal4(data, record, deserializer, res);
 
   struct callbacks_exception_holder* holder = callback_data;
   callbacks_root = *holder->callbacks_val;
@@ -1180,7 +1209,16 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
 
     memcpy(Bytes_val(read_buffer), data_str, caml_string_len);
 
-    data = caml_callback2(deserializer, read_buffer, Val_int(caml_string_len));
+    res = caml_callback2_exn(deserializer, read_buffer,
+                             Val_int(caml_string_len));
+
+    if( Is_exception_result(res) ) {
+      res = Extract_exception(res);
+      *holder->exception = res;
+      CAMLreturnT(int, 0);
+    }
+
+    data = res;
 
     params[0] = Val_long(domain_id);
     params[1] = caml_copy_int64(timestamp);
@@ -1242,9 +1280,8 @@ CAMLprim value caml_ml_runtime_events_create_cursor(value path_pid_option) {
         caml_failwith("Runtime_events: could not map underlying runtime_events."
         );
       case E_NO_CURRENT_RING:
-        caml_failwith(
-        "Runtime_events: no ring for current process. \
-         Was runtime_events started?");
+        caml_failwith("Runtime_events: no ring for current process. "
+                      "Was runtime_events started?");
       default:
         caml_failwith("Runtime_events: could not obtain cursor");
     }

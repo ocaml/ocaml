@@ -72,7 +72,8 @@ val get_copy : 'a t -> int -> 'a option
    @raise Invalid_argument if [n] is not in the range
    0 to {!Weak.length}[ ar - 1].
 
-   If the element is a custom block it is not copied.
+   If the element is a custom block or a continuation it is not
+   copied.
 
 *)
 

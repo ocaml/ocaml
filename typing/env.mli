@@ -339,6 +339,10 @@ val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> class_type_declaration -> t -> t
 val add_local_constraint: Path.t -> type_declaration -> t -> t
 
+type local_equations
+val freeze_local_equations: t -> local_equations
+val restrict_local_equations: local_equations -> t -> t
+
 (* Insertion of persistent signatures *)
 
 (* [add_persistent_structure id env] is an environment such that
@@ -477,6 +481,11 @@ unscoped equalities; [Path.equiv] must be used instead. See [ctype.ml]
 for an example of careful usage of [Unscoped], by locally shadowing
 [Path] to hide [Path.same].
 "]
+
+(** Equivalence of (mod)type paths modulo path normalization. *)
+val type_path_equiv_modulo : t -> Path.t -> Path.t -> bool
+val modtype_path_equiv_modulo : t -> Path.t -> Path.t -> bool
+
 
 (* Error report *)
 

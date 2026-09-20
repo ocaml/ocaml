@@ -51,6 +51,6 @@ CAMLprim value caml_unix_set_close_on_exec(value fd)
 
 CAMLprim value caml_unix_clear_close_on_exec(value fd)
 {
-  caml_unix_clear_cloexec(Int_val(fd), "set_close_on_exec", Nothing);
+  caml_unix_clear_cloexec(Int_val(fd), "clear_close_on_exec", Nothing);
   return Val_unit;
 }

@@ -276,6 +276,7 @@ module Make(Ord: OrderedType) =
               else bal l v rr
 
     let rec union s1 s2 =
+      if s1 == s2 then s1 else
       match (s1, s2) with
         (Empty, t2) -> t2
       | (t1, Empty) -> t1
@@ -283,15 +284,22 @@ module Make(Ord: OrderedType) =
           if h1 >= h2 then
             if h2 = 1 then add v2 s1 else begin
               let (l2, _, r2) = split v1 s2 in
-              join (union l1 l2) v1 (union r1 r2)
+              let ll = union l1 l2 in
+              let rr = union r1 r2 in
+              if ll == l1 && rr == r1 then s1 else
+              join ll v1 rr
             end
           else
             if h1 = 1 then add v1 s2 else begin
               let (l1, _, r1) = split v2 s1 in
-              join (union l1 l2) v2 (union r1 r2)
+              let ll = union l1 l2 in
+              let rr = union r1 r2 in
+              if ll == l2 && rr == r2 then s2 else
+              join ll v2 rr
             end
 
     let rec inter s1 s2 =
+      if s1 == s2 then s1 else
       match (s1, s2) with
         (Empty, _) -> Empty
       | (_, Empty) -> Empty
@@ -300,7 +308,11 @@ module Make(Ord: OrderedType) =
             (l2, false, r2) ->
               concat (inter l1 l2) (inter r1 r2)
           | (l2, true, r2) ->
-              join (inter l1 l2) v1 (inter r1 r2)
+              let ll = inter l1 l2 in
+              let rr = inter r1 r2 in
+              if ll == l1 && rr == r1 then s1 else
+              if ll == l2 && rr == r2 then s2 else
+              join ll v1 rr
 
     (* Same as split, but compute the left and right subtrees
        only if the pivot element is not in the set.  The right subtree
@@ -335,6 +347,7 @@ module Make(Ord: OrderedType) =
             | Found -> false
 
     let rec diff s1 s2 =
+      if s1 == s2 then Empty else
       match (s1, s2) with
         (Empty, _) -> Empty
       | (t1, Empty) -> t1

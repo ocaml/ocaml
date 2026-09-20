@@ -48,8 +48,9 @@ let is_immediate n =
 (* If you update [inline_ops], you may need to update [is_simple_expr] and/or
    [effects_of], below. *)
 let inline_ops =
-  [ "sqrt"; "caml_bswap16_direct"; "caml_int32_direct_bswap";
-    "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
+  [ "sqrt"; "caml_bswap16_direct"; "caml_fma"; "caml_int32_direct_bswap";
+    "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap";
+    "caml_round"; "caml_trunc"; "ceil"; "floor" ]
 
 let use_direct_addressing _symb =
   (not !Clflags.dlcode) && (not Arch.macosx)
@@ -200,6 +201,23 @@ method! select_operation op args dbg =
   (* Recognize floating-point square root *)
   | Cextcall("sqrt", _, _, _) ->
       (Ispecific Isqrtf, args)
+  (* Only the unboxed [Float.fma] passes floats in registers, hence the
+     argument types. *)
+  | Cextcall("caml_fma", _, [XFloat; XFloat; XFloat], false) ->
+      begin match args with
+      | [arg1; arg2; arg3] -> (Ispecific Imuladdf, [arg3; arg1; arg2])
+      | _ -> super#select_operation op args dbg
+      end
+  (* Only the unboxed rounding externals pass their argument in a
+     register, hence the argument type. *)
+  | Cextcall("caml_round", _, [XFloat], false) ->
+      (Ispecific (Iroundf Rnearest_away), args)
+  | Cextcall("caml_trunc", _, [XFloat], false) ->
+      (Ispecific (Iroundf Rtoward_zero), args)
+  | Cextcall("ceil", _, [XFloat], false) ->
+      (Ispecific (Iroundf Rtoward_pos), args)
+  | Cextcall("floor", _, [XFloat], false) ->
+      (Ispecific (Iroundf Rtoward_neg), args)
   (* Recognize bswap instructions *)
   | Cextcall("caml_bswap16_direct", _, _, _) ->
       (Ispecific(Ibswap 16), args)

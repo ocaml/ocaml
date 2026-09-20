@@ -101,6 +101,7 @@ typedef struct caml_result_private caml_result;
    change in the future. Its public interface is formed of
    - Result_value, Result_exception
    - caml_result_is_exception
+   - caml_result_find_exception
    - caml_get_value_or_raise (in fail.h)
 */
 struct caml_result_private {
@@ -116,6 +117,12 @@ struct caml_result_private {
 Caml_inline int caml_result_is_exception(struct caml_result_private result)
 {
   return result.is_exception;
+}
+
+Caml_inline value *caml_result_find_exception(
+  struct caml_result_private *result)
+{
+  return (result->is_exception ? &result->data : NULL);
 }
 
 #define Result_unit Result_value(Val_unit)

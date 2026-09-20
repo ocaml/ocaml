@@ -77,6 +77,8 @@ type extension_constructor_mismatch =
                             * extension_constructor
                             * extension_constructor
                             * constructor_mismatch
+  | Constructor_arity
+
 type variant_change =
   (Types.constructor_declaration as 'cd, 'cd, constructor_mismatch)
     Diffing_with_keys.change

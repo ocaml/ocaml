@@ -244,8 +244,8 @@ static int handle_process_termination(
   if (WIFEXITED(status)) return WEXITSTATUS(status);
 
   if ( !WIFSIGNALED(status) )
-    error("Process %lld neither terminated normally nor received a" \
-          "signal!?", (long long) pid);
+    error("Process %lld neither terminated normally nor received a signal!?",
+          (long long) pid);
 
   /* From here we know that the process terminated due to a signal */
   signal = WTERMSIG(status);

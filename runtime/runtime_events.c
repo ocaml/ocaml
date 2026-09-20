@@ -88,7 +88,7 @@ typedef enum { EV_RUNTIME, EV_USER } ev_category;
 
 /* These store state for the current ring buffers open for writing */
 static struct runtime_events_metadata_header *current_metadata = NULL;
-static int current_ring_total_size;
+static size_t current_ring_total_size;
 static char_os *runtime_events_path;
 static char_os *current_ring_loc = NULL;
 
@@ -238,7 +238,7 @@ void caml_runtime_events_destroy(void) {
 static void runtime_events_create_from_stw_single(void) {
   /* Don't initialise runtime_events twice */
   if (!atomic_load_acquire(&runtime_events_enabled)) {
-    int ring_headers_length, ring_data_length;
+    size_t ring_headers_length, ring_data_length;
 #ifdef _WIN32
     DWORD pid = GetCurrentProcessId();
 #else
@@ -256,12 +256,23 @@ static void runtime_events_create_from_stw_single(void) {
                   T("%ld.events"), pid);
     }
 
-    current_ring_total_size =
-        RUNTIME_EVENTS_MAX_CUSTOM_EVENTS *
+    /* Computed in 64 bits: max_domains * ring_size_bytes can exceed the range
+       of a 32-bit size_t at large OCAMLRUNPARAM e or d settings, so the result
+       is checked before it is narrowed. */
+    uint64_t ring_total_size =
+        (uint64_t)RUNTIME_EVENTS_MAX_CUSTOM_EVENTS *
           sizeof(struct runtime_events_custom_event) +
-        caml_params->max_domains * (ring_size_words * sizeof(uint64_t) +
+        (uint64_t)caml_params->max_domains *
+          ((uint64_t)ring_size_words * sizeof(uint64_t) +
                         sizeof(struct runtime_events_buffer_header)) +
         sizeof(struct runtime_events_metadata_header);
+
+    if (ring_total_size > SIZE_MAX) {
+      caml_fatal_error("Ring buffer of %" PRIu64 " bytes exceeds the address "
+                       "space, reduce OCAMLRUNPARAM e or d", ring_total_size);
+    }
+
+    current_ring_total_size = (size_t)ring_total_size;
 
 #ifdef _WIN32
     ring_file_handle = CreateFile(
@@ -285,12 +296,13 @@ static void runtime_events_create_from_stw_single(void) {
       }
     }
 
+    /* Shifting a 32-bit size_t by 32 is undefined, so widen first. */
     ring_handle = CreateFileMapping(
       ring_file_handle,
       NULL,
       PAGE_READWRITE,
-      0,
-      current_ring_total_size,
+      (DWORD)((uint64_t)current_ring_total_size >> 32),
+      (DWORD)(current_ring_total_size & 0xFFFFFFFF),
       NULL
     );
 
@@ -578,6 +590,7 @@ static void write_to_ring(ev_category category, ev_message_type type,
   }
 
   /* First we check if a write would take us over the head */
+  int head_advanced = 0;
   while ((ring_tail + length_with_header_ts + padding_required) - ring_head >=
          ring_size_words) {
     /* The write would over-write some old bit of data. Need to advance the
@@ -588,6 +601,17 @@ static void write_to_ring(ev_category category, ev_message_type type,
 
     // advance the ring head
     atomic_store_release(&domain_ring_header->ring_head, ring_head);
+    head_advanced = 1;
+  }
+
+  if (head_advanced) {
+    /* The head advance must become visible before the stores that overwrite
+       the slots it released. atomic_store_release orders accesses before the
+       store, not after it, so without this fence a consumer can observe the
+       overwriting stores while the old ring_head is still visible. It then
+       reads overwritten data and cannot tell, because the head it re-reads
+       says the slot was never released. */
+    atomic_thread_fence(memory_order_release);
   }
 
   if (padding_required > 0) {

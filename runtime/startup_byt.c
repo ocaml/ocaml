@@ -159,15 +159,14 @@ int caml_attempt_open(char_os **name, struct exec_trailer *trail,
 
 void caml_read_section_descriptors(int fd, struct exec_trailer *trail)
 {
-  int toc_size;
-
-  toc_size = trail->num_sections * 8;
-  trail->section = caml_stat_alloc(toc_size);
-  lseek(fd, - (long) (TRAILER_SIZE + toc_size), SEEK_END);
+  size_t toc_size;
+  trail->section = caml_stat_calloc(trail->num_sections, 8);
+  toc_size = (size_t) trail->num_sections * 8;
+  lseek(fd, - (file_offset) (TRAILER_SIZE + toc_size), SEEK_END);
   if (read(fd, (char *) trail->section, toc_size) != toc_size)
     caml_fatal_error("cannot read section table");
   /* Fixup endianness of lengths */
-  for (int i = 0; i < trail->num_sections; i++)
+  for (uint32_t i = 0; i < trail->num_sections; i++)
     fixup_endianness_trailer(&(trail->section[i].len));
 }
 
@@ -178,13 +177,13 @@ void caml_read_section_descriptors(int fd, struct exec_trailer *trail)
 int32_t caml_seek_optional_section(int fd, struct exec_trailer *trail,
                                    const char *name)
 {
-  long ofs;
-
-  ofs = TRAILER_SIZE + trail->num_sections * 8;
-  for (int i = trail->num_sections - 1; i >= 0; i--) {
+  size_t ofs = TRAILER_SIZE + (size_t) trail->num_sections * 8;
+  uint32_t i = trail->num_sections;
+  while (i > 0) {
+    i -= 1;
     ofs += trail->section[i].len;
     if (strncmp(trail->section[i].name, name, 4) == 0) {
-      lseek(fd, -ofs, SEEK_END);
+      lseek(fd, - (file_offset) ofs, SEEK_END);
       return trail->section[i].len;
     }
   }
@@ -552,7 +551,7 @@ CAMLexport void caml_main(char_os **argv)
       break;
     case WRONG_MAGIC:
       error(
-        "the file '%s' has not the right magic number: "\
+        "the file '%s' has not the right magic number: "
         "expected %s, got %s",
         caml_stat_strdup_of_os(exe_name),
         EXEC_MAGIC,

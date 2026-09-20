@@ -713,7 +713,7 @@ module Array2 :
   val init: ('a, 'b) kind ->  'c layout -> int -> int ->
             (int -> int -> 'a) -> ('a, 'b, 'c) t
   (** [Array2.init kind layout dim1 dim2 f] returns a new Bigarray [b]
-     of two dimensions, whose size is [dim2] in the first dimension
+     of two dimensions, whose size is [dim1] in the first dimension
      and [dim2] in the second dimension.  [kind] and [layout]
      determine the array element kind and the array layout
      as described for {!Bigarray.Genarray.create}.

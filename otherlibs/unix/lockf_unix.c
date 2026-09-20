@@ -31,7 +31,7 @@ CAMLprim value caml_unix_lockf(value fd, value cmd, value span)
 
   fildes = Int_val(fd);
   size = Long_val(span);
-  l.l_whence = 1;
+  l.l_whence = SEEK_CUR;
   if (size < 0) {
     l.l_start = size;
     l.l_len = -size;
@@ -84,19 +84,21 @@ CAMLprim value caml_unix_lockf(value fd, value cmd, value span)
   return Val_unit;
 }
 
-#else
-
-#ifdef HAS_LOCKF
+#elif defined(HAS_LOCKF)
 #include <unistd.h>
 
 static const int lock_command_table[] = {
   F_ULOCK, F_LOCK, F_TLOCK, F_TEST, F_LOCK, F_TLOCK
 };
 
-CAMLprim value caml_unix_lockf(value fd, value cmd, value span)
+CAMLprim value caml_unix_lockf(value fd, value vcmd, value span)
 {
-  if (lockf(Int_val(fd), lock_command_table[Int_val(cmd)], Long_val(span))
-      == -1) caml_uerror("lockf", Nothing);
+  int ret;
+  int cmd = lock_command_table[Int_val(vcmd)];
+  if (cmd == F_BLOCK) caml_enter_blocking_section();
+  ret = lockf(Int_val(fd), cmd, Long_val(span));
+  if (cmd == F_BLOCK) caml_leave_blocking_section();
+  if (ret == -1) caml_uerror("lockf", Nothing);
   return Val_unit;
 }
 
@@ -105,5 +107,4 @@ CAMLprim value caml_unix_lockf(value fd, value cmd, value span)
 CAMLprim value caml_unix_lockf(value fd, value cmd, value span)
 { caml_invalid_argument("lockf not implemented"); }
 
-#endif
 #endif

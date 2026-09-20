@@ -78,6 +78,13 @@ let () =
                           | None -> assert false
                           | Some (x, _) -> assert (x = fst a.(i))
     done;
+    let ia = Iarray.of_array a in
+    let q = Q.of_iarray ia in
+    assert (Q.length q = n);
+    for i = 0 to n - 1 do match Q.pop_min q with
+                          | None -> assert false
+                          | Some (x, _) -> assert (x = fst a.(i))
+    done;
     check_is_empty q
   done
 

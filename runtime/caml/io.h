@@ -25,7 +25,7 @@
 #include "mlvalues.h"
 #include "platform.h"
 
-#if defined(_WIN32)
+#if defined(_MSC_VER)
 typedef int64_t file_offset;
 #else
 #include <sys/types.h>

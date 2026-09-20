@@ -1022,6 +1022,7 @@ and simple_expr ctxt f x =
     (* |`Normal -> longident_loc f li *)
     (* | `Prefix _ | `Infix _ -> pp f "( %a )" longident_loc li) *)
     | Pexp_constant c -> constant f c;
+    | Pexp_hole -> pp f "_"
     | Pexp_pack (me, opty) ->
         pp f "(module@;%a" (module_expr ctxt) me;
         Option.iter (pp f " :@ %a" (package_type ctxt)) opty;
@@ -1496,6 +1497,7 @@ and module_expr ctxt f x =
     | Pmod_unpack e ->
         pp f "(val@ %a)" (expression ctxt) e
     | Pmod_extension e -> extension ctxt f e
+    | Pmod_hole -> pp f "_"
 
 and structure ctxt f x = list ~sep:"@\n" (structure_item ctxt) f x
 

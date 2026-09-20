@@ -112,9 +112,12 @@ and raw_type_desc ppf = function
   | Tsubst (t, None) -> fprintf ppf "@[<1>Tsubst@,(%a,None)@]" raw_type t
   | Tsubst (t, Some t') ->
       fprintf ppf "@[<1>Tsubst@,(%a,@ Some%a)@]" raw_type t raw_type t'
-  | Texpand (t, p, args) ->
-      fprintf ppf "@[<1>Texpand(@,%a,@,%a,@,%a)@]" raw_type t path p
-        raw_type_list args
+  | Texpand (t, a) ->
+      let abbrev ppf abbr =
+        fprintf ppf "@[<1>{abbr_path=%a;@,abbr_args=%a;@,abbr_level=%d}]"
+         path abbr.abbr_path raw_type_list abbr.abbr_args abbr.abbr_level
+      in
+      fprintf ppf "@[<1>Texpand(@,%a,@,%a)@]" raw_type t abbrev a
   | Tunivar name -> fprintf ppf "Tunivar %a" print_name name
   | Tpoly (t, tl) ->
       fprintf ppf "@[<hov1>Tpoly(@,%a,@,%a)@]"

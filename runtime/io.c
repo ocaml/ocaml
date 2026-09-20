@@ -28,7 +28,7 @@
 #include <unistd.h>
 #endif
 #ifdef __CYGWIN__
-#include </usr/include/io.h>
+#include <io.h>
 #endif
 #include "caml/alloc.h"
 #include "caml/camlatomic.h"
@@ -52,7 +52,9 @@
 
 #if defined(_WIN32)
 #include <io.h>
+#if defined(_MSC_VER)
 #define lseek _lseeki64
+#endif
 #endif
 
 /* Representation of channel status and direction:
