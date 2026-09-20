@@ -70,7 +70,7 @@ struct caml_runtime_events_cursor {
                 uint64_t *sz);
   int (*lifecycle)(int domain_id, void *callback_data, int64_t timestamp,
                     ev_lifecycle lifecycle, int64_t data);
-  int (*lost_events)(int domain_id, void *callback_data, int lost_words);
+  int (*lost_events)(int domain_id, void *callback_data, uint64_t lost_words);
   /* user events: mapped from type to callback */
   int (*user_unit)(int domain_id, void* callback_data, int64_t timestamp,
                       uintnat event_id, char* event_name);
@@ -347,7 +347,7 @@ void caml_runtime_events_set_lost_events(
                                     struct caml_runtime_events_cursor *cursor,
                                     int (*f)(int domain_id,
                                               void *callback_data,
-                                              int lost_words)) {
+                                              uint64_t lost_words)) {
   cursor->lost_events = f;
 }
 
@@ -550,7 +550,7 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
       if (ring_head > cursor->current_positions[domain_num]) {
         /* It potentially has, retry for the next one after we've notified
              the callbacks about lost messages. */
-        int lost_words = ring_head - cursor->current_positions[domain_num];
+        uint64_t lost_words = ring_head - cursor->current_positions[domain_num];
         cursor->current_positions[domain_num] = ring_head;
 
         if (cursor->lost_events) {
@@ -891,7 +891,8 @@ static int ml_lifecycle(int domain_id, void *callback_data, int64_t timestamp,
   CAMLreturnT(int, 1);
 }
 
-static int ml_lost_events(int domain_id, void *callback_data, int lost_words) {
+static int ml_lost_events(int domain_id, void *callback_data,
+                          uint64_t lost_words) {
   CAMLparam0();
   CAMLlocal3(tmp_callback, callbacks_root, res);
 
@@ -1162,7 +1163,7 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
   CAMLlocal4(callback_list, event, callbacks_root, event_type);
   CAMLlocalN(params, 4);
   CAMLlocal2(wrapper_root, read_buffer);
-  CAMLlocal3(data, record, deserializer);
+  CAMLlocal4(data, record, deserializer, res);
 
   struct callbacks_exception_holder* holder = callback_data;
   callbacks_root = *holder->callbacks_val;
@@ -1208,7 +1209,16 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
 
     memcpy(Bytes_val(read_buffer), data_str, caml_string_len);
 
-    data = caml_callback2(deserializer, read_buffer, Val_int(caml_string_len));
+    res = caml_callback2_exn(deserializer, read_buffer,
+                             Val_int(caml_string_len));
+
+    if( Is_exception_result(res) ) {
+      res = Extract_exception(res);
+      *holder->exception = res;
+      CAMLreturnT(int, 0);
+    }
+
+    data = res;
 
     params[0] = Val_long(domain_id);
     params[1] = caml_copy_int64(timestamp);

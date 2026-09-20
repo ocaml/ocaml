@@ -16,6 +16,11 @@ Working version
 - #14692: Allow unparenthesized application expressions in record update syntax
   (Stephen Dolan, review by Damien Doligez)
 
+- #15051: the wildcard `_` now parses in all simple expressions as `Pexp_hole`
+  and in all module expressions as `Pmod_hole`. These parsetree nodes must be
+  transformed by ppx rewriters; the compiler itself always rejects them.
+  (David Allsopp and Nailen Matschke, review by Florian Angeletti)
+
 ### Runtime system:
 
 - #14988: Don't copy continuations in Weak.get_copy.
@@ -180,8 +185,9 @@ Working version
    temporary regression reported by Jeremy Yallop, fix reviewed by Samuel
    Vivien and Florian Angeletti, other regression reported by Florian Angeletti)
 
-- #14512: Improve check for warning 16 (unerasable-optional-argument)
-  (Alistair O'Brien, review by Florian Angeletti, Gabriel Scherer)
+- #14512, #14671: Improve check for warning 16 (unerasable-optional-argument)
+  (Alistair O'Brien, Jacques Garrigue, review by Florian Angeletti,
+   Gabriel Scherer)
 
 - #12150: class type system improvements: self type constraints, virtual method
   inheritance in mutually recursive definition, immediate object inheritance.
@@ -431,6 +437,10 @@ Working version
   of nonmatching input if a rule is not exhaustive (Martin Jambon,
   review by David Allsopp and Gabriel Scherer)
 
+* #14172: stop reversing the order of -L arguments in ocamlmklib, a quirk
+  introduced by accident in 2012.
+  (Alexandre Douard, review by Daniel Bünzli and Nicolás Ojeda Bär)
+
 ### Manual and documentation:
 
 - #14598: Add `@since` annotations to `Runtime_events`. (Raphaël Proust)
@@ -533,8 +543,19 @@ Working version
 - #14946: Keep the continuation inside the typedtree using a dedicated type.
   (Xavier Van de Woestyne, review by Florian Angeletti)
 
+- #14995: Make failure in enforce_current_level a fatal error
+  (Jacques Garrigue, review by Samuel Vivien)
+
 - #15023: Extract Utf8_lexeme out of Misc into utils/utf8_lexeme.ml(i)
   (Thomas Refis, review by Nicolás Ojeda Bär)
+
+- #15052: Fixed wrong exception raised in a dead code path when comparing type
+  declarations.
+  (Samuel Vivien, review by Stefan Muenzel and Florian Angeletti)
+
+- #15046, #15066: testsuite: skip the AFL fuzz test when the compiler is not
+  built with AFL instrumentation.
+  (Akash Kumar, report and review by Xavier Leroy)
 
 ### Build system:
 
@@ -547,6 +568,13 @@ Working version
    Olivier Nicole)
 
 ### Bug fixes:
+
+- #15072, #15075: Fix `Runtime_events` cursors becoming permanently unusable
+  when a user event decoder raises. The exception escaped `read_poll` without
+  clearing the in-poll flag, so every later poll on that cursor failed with
+  "poll called concurrently or reentrant". The decoder's exception is now
+  propagated through the normal path and the cursor is released.
+  (Abhay Chaudhary, review by Tim McGilchrist)
 
 - #14986: Take effect cases into account in the expansiveness check.
   (Jeremy Yallop, review by Florian Angeletti)
@@ -644,9 +672,26 @@ Working version
   (Tim McGilchrist, reported by mattiasdrp, review by Sadiq Jaffer and
    Zane Hambly)
 
-- #15046, #15066: testsuite: skip the AFL fuzz test when the compiler is not
-  built with AFL instrumentation.
-  (Akash Kumar, report and review by Xavier Leroy)
+* #14978: fix precedence of `with module type` construct in order to parse
+  `T with module type S = X -> X` as `T with module type S = (X -> X)`
+  (Pieter Goetschalckx, review by Gabriel Scherer and Florian Angeletti)
+
+* #15010: Fix truncation of the lost event count in runtime_events_consumer.c
+  The count is a difference of two uint64_t ring positions but was passed to
+  the callback as an int. caml_runtime_events_set_lost_events now takes a
+  callback whose lost_words parameter is uint64_t, the OCaml API is unchanged.
+  (Tim McGilchrist, review by Sadiq Jaffer and Miod Vallat)
+
+- #15039: Various runtime events documentation improvements
+  (Tim McGilchrist, reviewed by Sadiq Jaffer and Antonin Décimo)
+
+- #15069: Fix unchaught exception when comparing signatures adding the same
+  extension constructor to types with different arities
+  (Samuel Vivien, reported by Florian Angeletti, review by Florian Angeletti)
+
+- #15045: Atomic loads whose results are unused should not be removed
+  during dead-code elimination.
+  (Xavier Clerc, review by Steven Dolan and KC Sivaramakrishnan)
 
 OCaml 5.5.1
 -----------

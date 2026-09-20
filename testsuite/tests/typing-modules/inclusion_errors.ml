@@ -2158,3 +2158,31 @@ Error: Signature mismatch:
        The value "vwxy" is required but not provided.
        Hint:     "vwxx" is a close match.
 |}]
+
+type t = ..
+type _ s = ..
+
+module M : sig
+  type t += A
+end = struct
+  type _ s += A
+end
+
+[%%expect{|
+type t = ..
+type _ s = ..
+Lines 6-8, characters 6-3:
+6 | ......struct
+7 |   type _ s += A
+8 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type _ s += A end
+       is not included in
+         sig type t += A end
+       Extension declarations do not match:
+         type _ s += A
+       is not included in
+         type t += A
+       They have a different number of type parameters.
+|}]
