@@ -644,6 +644,10 @@ Working version
   (Tim McGilchrist, reported by mattiasdrp, review by Sadiq Jaffer and
    Zane Hambly)
 
+- #15046, #15066: testsuite: skip the AFL fuzz test when the compiler is not
+  built with AFL instrumentation.
+  (Akash Kumar, report and review by Xavier Leroy)
+
 OCaml 5.5.1
 -----------
 
