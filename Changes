@@ -408,6 +408,11 @@ Working version
 
 ### Tools:
 
+- #13766: add a `-log-format <format> to output compiler diagnostics
+ in structured formats, with both `json` and `s-expression` currently
+ supported.
+ (Florian Angeletti, review by Gabriel Scherer and Olivier Nicole)
+
 - #14318, #14709, ocamldoc: use "Module_name (Library name)" rather than
    "Library name: Module_name" as the title of html pages.
    (Florian Angeletti, report by Antonin Décimo, review by Nicolás Ojeda Bär)
