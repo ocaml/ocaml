@@ -185,10 +185,13 @@ The two single quotes enclose either one US-ASCII character different from
 \entree{"\\t"}{horizontal tabulation (TAB)}
 \entree{"\\b"}{backspace (BS)}
 \entree{"\\"\var{space}}{space (SPC)}
-\entree{"\\"\var{ddd}}{the character with ASCII code \var{ddd} in decimal}
-\entree{"\\x"\var{hh}}{the character with ASCII code \var{hh} in hexadecimal}
-\entree{"\\o"\var{ooo}}{the character with ASCII code \var{ooo} in octal}
+\entree{"\\"\var{ddd}}{the character with code \var{ddd} in decimal}
+\entree{"\\x"\var{hh}}{the character with code \var{hh} in hexadecimal}
+\entree{"\\o"\var{ooo}}{the character with code \var{ooo} in octal}
 \end{tableau}
+
+The numerical escape sequences denote a character by its code, and can be used
+both for characters in the ASCII range and for byte values outside it.
 
 \begin{caml_example}{toplevel}
 let a = 'a'

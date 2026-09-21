@@ -451,7 +451,8 @@ Working version
 
 - #15082: Clarify in the manual that a character literal denotes a single
   US-ASCII character, so a non-ASCII Unicode character is not a valid
-  character literal.
+  character literal, and that the numerical escape sequences also denote
+  byte values outside the ASCII range.
   (Abhay Chaudhary, report by baugigi)
 
 ### Compiler user-interface and warnings:
