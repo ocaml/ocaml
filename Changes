@@ -453,6 +453,12 @@ Working version
   (Jeanne Pottier, review by Florian Angeletti, Gabriel Scherer
   and Daniel Bünzli)
 
+- #15082: Clarify in the manual that a character literal denotes a single
+  US-ASCII character, so a non-ASCII Unicode character is not a valid
+  character literal, and that the numerical escape sequences also denote
+  byte values outside the ASCII range.
+  (Abhay Chaudhary, report by baugigi, review by Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 - #14887: More concise messages for the non-exhaustiveness warning.
   (Luc Maranget, review by Florian Angeletti)
