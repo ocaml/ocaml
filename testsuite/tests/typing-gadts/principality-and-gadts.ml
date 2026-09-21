@@ -478,7 +478,15 @@ let foo (type s) x (Refl : (s, u) eq) =
 val foo : 's -> ('s, u) eq -> t = <fun>
 |}]
 
-(* interaction with expansion *)
+(* interaction with expansion, #13797, fixed by #11648.
+   The correct behaviour is to reject this program (previously accepted)
+   In the scope of {[let Refl = bc in ...]}, we know that
+   [b = c] and [a = b], so the type of [h] is either [b -> b] or [c -> c].
+   But when we leave this scope, the ambivalent type becomes incoherent,
+   because we no longer know [b = c].
+   The error message could still be improved, since [a] appears out of
+   nowhere.
+*)
 
 let f : type a b c. (a,b) eq -> (b,c) eq -> _ =
  fun ab bc ->
