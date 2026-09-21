@@ -450,8 +450,8 @@ Working version
   and Daniel Bünzli)
 
 - #15082: Clarify in the manual that a character literal denotes a single
-  byte, so a character whose UTF-8 encoding is longer than one byte is not a
-  valid character literal.
+  US-ASCII character, so a non-ASCII Unicode character is not a valid
+  character literal.
   (Abhay Chaudhary, report by baugigi)
 
 ### Compiler user-interface and warnings:

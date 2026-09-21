@@ -174,7 +174,7 @@ escape-sequence:
 \end{syntax}
 
 Character literals are delimited by @"'"@ (single quote) characters.
-The two single quotes enclose either one byte different from
+The two single quotes enclose either one US-ASCII character different from
 @"'"@ and @'\'@, or one of the escape sequences below:
 \begin{tableau}{|l|l|}{Sequence}{Character denoted}
 \entree{"\\\\"}{backslash ("\\")}
@@ -196,9 +196,7 @@ let single_quote = '\''
 let copyright = '\xA9';;
 \end{caml_example}
 
-A character literal denotes a single byte. Source files are encoded in UTF-8,
-but a character whose UTF-8 encoding occupies more than one byte is therefore
-not a valid character literal.
+A non-ASCII Unicode character is not a valid character literal.
 \subsubsection*{sss:stringliterals}{String literals}
 
 \begin{syntax}
