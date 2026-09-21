@@ -453,7 +453,7 @@ Working version
   US-ASCII character, so a non-ASCII Unicode character is not a valid
   character literal, and that the numerical escape sequences also denote
   byte values outside the ASCII range.
-  (Abhay Chaudhary, report by baugigi)
+  (Abhay Chaudhary, report by baugigi, review by Florian Angeletti)
 
 ### Compiler user-interface and warnings:
 - #14887: More concise messages for the non-exhaustiveness warning.
