@@ -477,3 +477,59 @@ let foo (type s) x (Refl : (s, u) eq) =
 [%%expect{|
 val foo : 's -> ('s, u) eq -> t = <fun>
 |}]
+
+(* interaction with expansion, #13797, fixed by #11648.
+   The correct behaviour is to reject this program (previously accepted)
+   In the scope of {[let Refl = bc in ...]}, we know that
+   [b = c] and [a = b], so the type of [h] is either [b -> b] or [c -> c].
+   But when we leave this scope, the ambivalent type becomes incoherent,
+   because we no longer know [b = c].
+   The error message could still be improved, since [a] appears out of
+   nowhere.
+*)
+
+let f : type a b c. (a,b) eq -> (b,c) eq -> _ =
+ fun ab bc ->
+   let Refl = ab in
+   let g () =
+     let Refl = bc in
+     let h y =
+       ignore (y : b);
+       ignore (y : c);
+       y
+     in
+     h
+   in ignore g;;
+[%%expect{|
+Line 11, characters 5-6:
+11 |      h
+          ^
+Error: The value "h" has type "b -> b" but an expression was expected of type "'a"
+       This instance of "a" is ambiguous:
+       it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
+|}]
+
+let f : type a b c. (a,b) eq -> (b,c) eq -> _ =
+ fun ab bc ->
+   let Refl = ab in
+   let g () =
+     let Refl = bc in
+     let h y =
+       ignore (y : c);
+       ignore (y : b);
+       y
+     in
+     h
+   in ignore g;;
+[%%expect{|
+Line 11, characters 5-6:
+11 |      h
+          ^
+Error: The value "h" has type "c -> c" but an expression was expected of type "'a"
+       This instance of "a" is ambiguous:
+       it would escape the scope of its equation
+       Hint (manual section 7.2): A type annotation may resolve the ambiguity,
+       either on this expression or the whole function.
+|}]
