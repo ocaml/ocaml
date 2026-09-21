@@ -190,6 +190,7 @@ The two single quotes enclose either one US-ASCII character different from
 \entree{"\\o"\var{ooo}}{the character with code \var{ooo} in octal}
 \end{tableau}
 
+A non-ASCII Unicode character is not a valid character literal.
 The numerical escape sequences denote a character by its code, and can be used
 both for characters in the ASCII range and for byte values outside it.
 
@@ -198,8 +199,6 @@ let a = 'a'
 let single_quote = '\''
 let char_max = '\xFF';;
 \end{caml_example}
-
-A non-ASCII Unicode character is not a valid character literal.
 \subsubsection*{sss:stringliterals}{String literals}
 
 \begin{syntax}
