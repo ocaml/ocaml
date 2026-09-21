@@ -17,12 +17,10 @@ standard output.
 
 \section{s:sdiag_versioning}{Versioning policy and subtyping}
 
-In order to make the compiler diagnostics as easy to use as possible by
-independent tools, The compiler and its tools enforce a strict versioning
-and evolution policy.
-
-This policy is a data-oriented version of semantic versioning for algebraic data
-types:
+In order to make the compiler diagnostics as easy to use as possible
+by independent tools, the compiler and its tools enforce a strict
+versioning and evolution policy. This policy is a data-oriented
+version of semantic versioning for algebraic data types:
 
 \begin{itemize}
 \item minor updates can refine a schema into a subtype of the previous schema
@@ -70,7 +68,7 @@ type error_kind =
   | Warning of
       { contents:string; number:int; name:string }
       [@since 1.0] [@expanded 1.1]
-  | Lint of string [@preview 1.1][@since 2.0]
+  | Lint of string [@preview 1.1 Warning][@since 2.0]
 \end{caml_example*}
 
 Then the versioning policy merely describe the set of valid diagnostic data
