@@ -196,7 +196,7 @@ both for characters in the ASCII range and for byte values outside it.
 \begin{caml_example}{toplevel}
 let a = 'a'
 let single_quote = '\''
-let copyright = '\xA9';;
+let char_max = '\xFF';;
 \end{caml_example}
 
 A non-ASCII Unicode character is not a valid character literal.
