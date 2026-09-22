@@ -2109,8 +2109,8 @@ and type_pat_aux
          penv:Pattern_env.t -> _ -> _ -> k general_pattern
   = fun tps category ~no_existentials ~penv sp expected_ty ->
   assert (penv.in_counterexample = false);
-  let type_pat tps category ?(penv=penv) =
-    type_pat tps category ~no_existentials ~penv
+  let type_pat tps category ?(penv=penv) sp ety =
+    type_pat tps category ~no_existentials ~penv sp ety
   in
   let loc = sp.ppat_loc in
   let solve_expected (x : pattern) : pattern =
@@ -2838,8 +2838,8 @@ let rec check_counter_example_pat
     ~info ~(penv : Pattern_env.t) type_pat_state tp expected_ty k =
   assert (penv.in_counterexample = true);
   assert (not (is_Tpoly expected_ty));
-  let check_rec ?(info=info) ?(penv=penv) =
-    check_counter_example_pat ~info ~penv type_pat_state in
+  let check_rec ?(info=info) ?(penv=penv) tp ety k =
+    check_counter_example_pat ~info ~penv type_pat_state tp ety k in
   let loc = tp.pat_loc in
   let solve_expected (x : pattern) : pattern =
     unify_pat_types_penv x.pat_loc penv x.pat_type
