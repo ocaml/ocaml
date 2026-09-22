@@ -166,6 +166,9 @@ Working version
   EV_EXPLICIT_GC_RAMP_UP covering a call to Gc.ramp_up.
   (Tim McGilchrist, review by Sadiq Jaffer and Gabriel Scherer)
 
+- #15092: do not lose domain allocation stats on termination
+  (Edwin Török, report by Eduardo Souza, review by Stefan Muenzel)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
