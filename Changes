@@ -23,9 +23,6 @@ Working version
 
 ### Runtime system:
 
-- #14988: Don't copy continuations in Weak.get_copy.
-  (Jeremy Yallop, review by Stefan Muenzel)
-
 - #14773 : Activate Haiku native backend
   (Sylvain Kerjean, review by Kate Deplaix and Nicolas Ojeda Bar)
   Enable native-code backend and testsuite on BeOS/Haiku.
@@ -372,6 +369,10 @@ Working version
 - #14848: Add Dynarray.stable_sort_sub, stable_sort and sort
   (Jeanne Pottier, review by Nicolás Ojeda Bär and Olivier Nicole)
 
+- #15064: deprecate Weak.get_copy
+  (Gabriel Scherer, suggestion by Stephen Dolan and Josh Berdine,
+  review by Nicolás Ojeda Bär, Kate Deplaix and Léo Andrès.)
+
 ### Other libraries:
 
 - #14740: Various fixes in libunix. Fix compilation failures if gethostname or
@@ -466,6 +467,7 @@ Working version
   (Abhay Chaudhary, report by baugigi, review by Florian Angeletti)
 
 ### Compiler user-interface and warnings:
+
 - #14887: More concise messages for the non-exhaustiveness warning.
   (Luc Maranget, review by Florian Angeletti)
 
@@ -692,6 +694,9 @@ Working version
   `T with module type S = X -> X` as `T with module type S = (X -> X)`
   (Pieter Goetschalckx, review by Gabriel Scherer and Florian Angeletti)
 
+- #14988: Don't copy continuations in Weak.get_copy.
+  (Jeremy Yallop, review by Stefan Muenzel)
+
 * #15010: Fix truncation of the lost event count in runtime_events_consumer.c
   The count is a difference of two uint64_t ring positions but was passed to
   the callback as an int. caml_runtime_events_set_lost_events now takes a
@@ -709,6 +714,7 @@ Working version
   during dead-code elimination.
   (Xavier Clerc, review by Steven Dolan and KC Sivaramakrishnan)
 
+<<<<<<< HEAD
 - #15093: Windows: fix a bug in the `Unix.select` emulation which could result
   in an out-of-bounds memory access. This is triggered when the watched set
   contains 63 or more sockets along with at least one non-socket descriptor, or
@@ -721,6 +727,8 @@ Working version
   to it could be left in non-blocking mode, and one system handle was also
   leaked for each socket.
   (Romain Beauxis, review by Nicolás Ojeda Bär)
+=======
+>>>>>>> c9dde8d768 (Changes)
 
 OCaml 5.5.1
 -----------
