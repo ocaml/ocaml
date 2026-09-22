@@ -1,6 +1,4 @@
-(* TEST
-   run_can_skip = "true";
- *)
+(* TEST *)
 
 let alloc_workload () =
   Array.init 10000 (fun _ -> String.make 100 'x') |> ignore
@@ -79,5 +77,5 @@ let () =
   let errors = errors + gc_and_check domain_workload in
   if errors > 0 then begin
     Printf.eprintf "FAIL: %d errors\n" errors;
-    exit 125
+    exit 1
   end
