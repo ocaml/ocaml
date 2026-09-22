@@ -17,6 +17,7 @@
 
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
+#include <caml/runtime_events.h>
 #include "caml/unixsupport.h"
 #include <windows.h>
 #include <caml/osdeps.h>
@@ -88,6 +89,9 @@ static DWORD do_create_process_native(wchar_t * exefile, wchar_t * cmdline,
                       TRUE, flags, env, NULL, &si, &pi)) {
     err = GetLastError(); goto ret;
   }
+  /* Report the process id, not the handle: the runtime events producer names
+     its ring file from GetCurrentProcessId. */
+  CAML_EV_LIFECYCLE(EV_PROCESS_CREATE, pi.dwProcessId);
   CloseHandle(pi.hThread);
 
  ret:
