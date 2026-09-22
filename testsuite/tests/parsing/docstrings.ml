@@ -312,7 +312,6 @@ module Manual :
     module type my_module_type  = sig val x : int end[@@ocaml.doc
                                                        " The comment for module type my_module_type. "]
   end ;;
-
 Line 141, characters 12-14:
 141 |     inherit cl
                   ^^
@@ -342,7 +341,6 @@ module M =
       " Empty docstring comments should not generate attributes "]
     type w
   end;;
-
 module M : sig type t = Label type w end
 |}]
 
@@ -360,7 +358,6 @@ end;;
 
 module M = struct type t[@@ocaml.doc " foo "]
                   type s[@@ocaml.doc " bar "] end;;
-
 module M : sig type t type s end
 |}]
 
@@ -377,7 +374,6 @@ end;;
 
 module M = struct type t[@@ocaml.doc " foo "]
                   type s[@@ocaml.doc " bar "] end;;
-
 module M : sig type t type s end
 |}]
 
@@ -397,7 +393,6 @@ module M =
          type t
          type s
          [@@@ocaml.text " bar "] end;;
-
 module M : sig type t type s end
 |}]
 
@@ -419,7 +414,6 @@ module M =
          type t
          type s
          [@@@ocaml.text " bar "] end;;
-
 module M : sig type t type s end
 |}]
 
@@ -439,7 +433,6 @@ end;;
 module M =
   struct type t[@@ocaml.doc " foo2 "]
          type s[@@ocaml.doc " bar1 "] end;;
-
 module M : sig type t type s end
 |}]
 
@@ -467,7 +460,6 @@ module M =
     [@@@ocaml.text " bar1 "]
     [@@@ocaml.text " bar2 "]
   end;;
-
 module M : sig type t type s end
 |}]
 
@@ -497,7 +489,6 @@ module M =
     [@@@ocaml.text " bar1 "]
     [@@@ocaml.text " bar2 "]
   end;;
-
 module M : sig type t type s end
 |}]
 
@@ -505,7 +496,6 @@ module M = struct (** foo *) type t (** bar *) end;;
 [%%expect {|
 
 module M = struct type t[@@ocaml.doc " foo "][@@ocaml.doc " bar "] end;;
-
 module M : sig type t end
 |}]
 
@@ -519,7 +509,6 @@ type t
 module M = struct [@@@ocaml.text " foo "]
                   type t
                   [@@@ocaml.text " bar "] end;;
-
 module M : sig type t end
 |}]
 
@@ -527,7 +516,6 @@ module M = struct (** foo *) end;;
 [%%expect {|
 
 module M = struct [@@@ocaml.text " foo "] end;;
-
 module M : sig end
 |}]
 
@@ -537,7 +525,6 @@ end;;
 [%%expect {|
 
 module M = struct [@@@ocaml.text " foo "] end;;
-
 module M : sig end
 |}]
 
@@ -547,7 +534,6 @@ module M = struct
 [%%expect {|
 
 module M = struct [@@@ocaml.text " foo "] end;;
-
 module M : sig end
 |}]
 
@@ -557,7 +543,6 @@ end;;
 [%%expect {|
 
 module M = struct [@@@ocaml.text " foo "] end;;
-
 module M : sig end
 |}]
 
@@ -568,7 +553,6 @@ end;;
 [%%expect {|
 
 module M = struct [@@@ocaml.text " foo "] end;;
-
 module M : sig end
 |}]
 
@@ -579,7 +563,6 @@ end;;
 [%%expect {|
 
 module M = struct [@@@ocaml.text " foo "] end;;
-
 module M : sig end
 |}]
 
@@ -591,7 +574,6 @@ end;;
 [%%expect {|
 
 module M = struct [@@@ocaml.text " foo "] end;;
-
 module M : sig end
 |}]
 
@@ -606,7 +588,6 @@ end;;
 
 module M = struct [@@@ocaml.text " foo "]
                   [@@@ocaml.text " bar "] end;;
-
 module M : sig end
 |}]
 
@@ -619,7 +600,6 @@ end;;
 
 module M = struct [@@@ocaml.text " foo "]
                   [@@@ocaml.text " bar "] end;;
-
 module M : sig end
 |}]
 
@@ -636,7 +616,6 @@ type 'a with_default
 type 'a with_default =
   ?size:((int)[@ocaml.doc " default [42] "]) ->
     ?resizable:((bool)[@ocaml.doc " default [true] "]) -> 'a;;
-
 type 'a with_default = ?size:int -> ?resizable:bool -> 'a
 |}]
 
@@ -653,7 +632,6 @@ type obj =
     meth1: int -> int [@ocaml.doc " method 1 "] ;meth2: unit -> float
                                                    [@ocaml.doc " method 2 "]
     > ;;
-
 type obj = < meth1 : int -> int; meth2 : unit -> float >
 |}]
 
@@ -665,7 +643,6 @@ type var = [
 
 type var =
   [ `Foo [@ocaml.doc " foo "] | `Bar of (int * string) [@ocaml.doc " bar "]];;
-
 type var = [ `Bar of int * string | `Foo ]
 |}]
 
@@ -689,6 +666,5 @@ module type S  =
     [@@@foo ]
     val after : unit -> unit[@@ocaml.doc " docstring after "]
   end;;
-
 module type S = sig val before : unit -> unit val after : unit -> unit end
 |}]
