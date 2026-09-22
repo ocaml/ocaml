@@ -19794,6 +19794,43 @@ fi
 printf "%s\n" "$ocaml_arm64_store" >&6; }
 fi
 
+# On arm64, detect whether the C compiler lowers atomic read-modify-writes to
+# libgcc's outline-atomics trampolines (__aarch64_{swp,cas,ldadd}*), the default
+# on aarch64 Linux.  runtime/memory.c uses this to skip its memory-model fences
+# after a HWCAP_ATOMICS check (see its Note [MM]).  We inspect the generated
+# assembly rather than assume a default, so -mno-outline-atomics leaves the
+# fences in place.
+if test x"$arch" = "xarm64"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether atomic read-modify-writes use outline atomics" >&5
+printf %s "checking whether atomic read-modify-writes use outline atomics... " >&6; }
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+     #include <stdatomic.h>
+     long ex(_Atomic long *p, long v) { return atomic_exchange(p, v); }
+     int cas(_Atomic long *p, long o, long n)
+     { return atomic_compare_exchange_strong(p, &o, n); }
+     long fa(_Atomic long *p, long v) { return atomic_fetch_add(p, v); }
+
+_ACEOF
+   if $CC $CFLAGS $CPPFLAGS -S -o conftest.s conftest.$ac_ext >/dev/null 2>&1 &&
+      grep -q '__aarch64_swp' conftest.s &&
+      grep -q '__aarch64_cas' conftest.s &&
+      grep -q '__aarch64_ldadd' conftest.s
+then :
+  printf "%s\n" "#define HAS_OUTLINE_ATOMICS 1" >>confdefs.h
+
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+else case e in #(
+  e) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; } ;;
+esac
+fi
+   rm -f conftest.s conftest.$ac_ext
+fi
+
 case $arch in #(
   amd64) :
     arch_specific_SOURCES='$(intel_SOURCES)' ;; #(
