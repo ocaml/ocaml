@@ -369,6 +369,9 @@ Working version
   result is unchanged.
   (Nicolás Ojeda Bär, review by Vincent Laviron and Olivier Nicole)
 
+- #14848: Add Dynarray.stable_sort_sub, stable_sort and sort
+  (Jeanne Pottier, review by Nicolás Ojeda Bär and Olivier Nicole)
+
 ### Other libraries:
 
 - #14740: Various fixes in libunix. Fix compilation failures if gethostname or
