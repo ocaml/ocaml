@@ -334,13 +334,16 @@ let display_rows ppf rows =
   List.iter (loop ~indentation:"") rows
 
 let gather columns =
-  let initial_measure =
-    match !initial_measure with
-    | Some v -> v
-    | None -> Measure.zero
-  in
-  let total = Measure_diff.of_diff Measure.zero (Measure.create ()) in
-  rows_of_hierarchy !hierarchy total initial_measure columns
+  match columns with
+  | [] -> []
+  | _ :: _ ->
+      let initial_measure =
+        match !initial_measure with
+        | Some v -> v
+        | None -> Measure.zero
+      in
+      let total = Measure_diff.of_diff Measure.zero (Measure.create ()) in
+      rows_of_hierarchy !hierarchy total initial_measure columns
 
 let print ppf rows = display_rows ppf rows
 
