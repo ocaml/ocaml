@@ -483,7 +483,8 @@ static void socket_poll (HANDLE hStop, void *_data)
 {
   LPSELECTDATA   lpSelectData;
   LPSELECTQUERY    iterQuery;
-  HANDLE           aEvents[MAXIMUM_SELECT_OBJECTS];
+  /* One event per query, plus hStop */
+  HANDLE           aEvents[MAXIMUM_SELECT_OBJECTS + 1];
   DWORD            nEvents;
   long             maskEvents;
   u_long           iMode;
