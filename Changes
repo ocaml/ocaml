@@ -716,6 +716,12 @@ Working version
   (Romain Beauxis, review by Nicolás Ojeda Bär, Stefan Muenzel and Antonin
   Décimo)
 
+- #14975: Windows: fix a bug in `Unix.select` when the watched set consists of
+  sockets and non-sockets. If the call failed with an error, the sockets passed
+  to it could be left in non-blocking mode, and one system handle was also
+  leaked for each socket.
+  (Romain Beauxis, review by Nicolás Ojeda Bär)
+
 OCaml 5.5.1
 -----------
 
