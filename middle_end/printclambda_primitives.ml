@@ -216,6 +216,12 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
       fprintf ppf "bigarray.array1.%sset%s"
         (access_safety safety) (access_size size)
   | Pbswap16 -> fprintf ppf "bswap16"
+  | Pfloatarray_dot -> fprintf ppf "floatarray.dot"
+  | Pfloatarray_sum -> fprintf ppf "floatarray.sum"
+  | Pfloatarray_scale -> fprintf ppf "floatarray.scale"
+  | Pfloatarray_axpy -> fprintf ppf "floatarray.axpy"
+  | Pfloatarray_add -> fprintf ppf "floatarray.add"
+  | Pfloatarray_mul -> fprintf ppf "floatarray.mul"
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
   | Patomic_load -> fprintf ppf "atomic_load"

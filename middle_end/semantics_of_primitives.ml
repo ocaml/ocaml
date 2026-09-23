@@ -130,6 +130,9 @@ let for_primitive (prim : Clambda_primitives.primitive) =
       Arbitrary_effects, No_coeffects
   | Pbswap16
   | Pbbswap _ -> No_effects, No_coeffects
+  | Pfloatarray_dot | Pfloatarray_sum -> No_effects, Has_coeffects
+  | Pfloatarray_scale | Pfloatarray_axpy | Pfloatarray_add | Pfloatarray_mul ->
+      Arbitrary_effects, Has_coeffects
   | Pint_as_pointer -> No_effects, No_coeffects
   | Popaque | Ppoll -> Arbitrary_effects, Has_coeffects
   | Psequand
@@ -147,6 +150,7 @@ type return_type =
 let return_type_of_primitive (prim:Clambda_primitives.primitive) =
   match prim with
   | Pfloatofint
+  | Pfloatarray_dot | Pfloatarray_sum
   | Pnegfloat
   | Pabsfloat
   | Paddfloat

@@ -553,6 +553,31 @@ let rec transl env e =
          [Uprim(Pcompare_bints b, [arg1; arg2], _);
           Uconst(Uconst_int 0)]) ->
           transl env (Uprim (Pbintcomp (b, comp), [arg1; arg2], dbg))
+      | (Pfloatarray_dot, [a; b; n]) ->
+          let a = transl env a and b = transl env b in
+          let n = untag_int (transl env n) dbg in
+          box_float dbg
+            (match Arch.floatarray_dot_kernel with
+             | Some kernel -> floatarray_dot_chunked kernel a b n dbg
+             | None -> floatarray_dot a b n dbg)
+      | (Pfloatarray_sum, [a; n]) ->
+          box_float dbg
+            (floatarray_sum (transl env a) (untag_int (transl env n) dbg) dbg)
+      | (Pfloatarray_scale, [c; a; n]) ->
+          floatarray_scale (transl_unbox_float dbg env c) (transl env a)
+            (untag_int (transl env n) dbg) dbg
+      | (Pfloatarray_axpy, [c; x; y; n]) ->
+          floatarray_axpy (transl_unbox_float dbg env c) (transl env x)
+            (transl env y) (untag_int (transl env n) dbg) dbg
+      | (Pfloatarray_add, [a; b; dst; n]) ->
+          floatarray_binop Caddf (transl env a) (transl env b) (transl env dst)
+            (untag_int (transl env n) dbg) dbg
+      | (Pfloatarray_mul, [a; b; dst; n]) ->
+          floatarray_binop Cmulf (transl env a) (transl env b) (transl env dst)
+            (untag_int (transl env n) dbg) dbg
+      | ((Pfloatarray_dot | Pfloatarray_sum | Pfloatarray_scale
+         | Pfloatarray_axpy | Pfloatarray_add | Pfloatarray_mul), _) ->
+          fatal_error "Cmmgen.transl:prim, wrong arity"
       | (p, [arg]) ->
           transl_prim_1 env p arg dbg
       | (p, [arg1; arg2]) ->
@@ -919,6 +944,8 @@ and transl_prim_1 env p arg dbg =
     | Pbigarraydim _ | Pstring_load _ | Pbytes_load _ | Pbytes_set _
     | Pbigstring_load _ | Pbigstring_set _
     | Patomic_load | Patomic_fetch_add
+    | Pfloatarray_dot | Pfloatarray_sum | Pfloatarray_scale
+    | Pfloatarray_axpy | Pfloatarray_add | Pfloatarray_mul
     )
     ->
       fatal_errorf "Cmmgen.transl_prim_1: %a"
@@ -1112,6 +1139,8 @@ and transl_prim_2 env p arg1 arg2 dbg =
   | Pnegbint _ | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _)
   | Pbigarraydim _ | Pbytes_set _ | Pbigstring_set _ | Pbbswap _ | Ppoll
   | Patomic_fetch_add | Pmakelazyblock _
+  | Pfloatarray_dot | Pfloatarray_sum | Pfloatarray_scale
+  | Pfloatarray_axpy | Pfloatarray_add | Pfloatarray_mul
     ->
       fatal_errorf "Cmmgen.transl_prim_2: %a"
         Printclambda_primitives.primitive p
@@ -1198,6 +1227,8 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
   | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _) | Pbigarraydim _
   | Pstring_load _ | Pbytes_load _ | Pbigstring_load _ | Pbbswap _ | Ppoll
   | Pmakelazyblock _
+  | Pfloatarray_dot | Pfloatarray_sum | Pfloatarray_scale
+  | Pfloatarray_axpy | Pfloatarray_add | Pfloatarray_mul
     ->
       fatal_errorf "Cmmgen.transl_prim_3: %a"
         Printclambda_primitives.primitive p

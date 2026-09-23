@@ -151,6 +151,12 @@ type primitive =
   | Pctconst of compile_time_constant
   (* byte swap *)
   | Pbswap16
+  | Pfloatarray_dot
+  | Pfloatarray_sum
+  | Pfloatarray_scale
+  | Pfloatarray_axpy
+  | Pfloatarray_add
+  | Pfloatarray_mul
   | Pbbswap of boxed_integer
   (* Integer to external pointer *)
   | Pint_as_pointer

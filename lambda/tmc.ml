@@ -900,6 +900,8 @@ let rec choice ctx t =
     | Pbigstring_set_16 _ | Pbigstring_set_32 _ | Pbigstring_set_64 _
     | Pctconst _
     | Pbswap16
+    | Pfloatarray_dot | Pfloatarray_sum | Pfloatarray_scale
+    | Pfloatarray_axpy | Pfloatarray_add | Pfloatarray_mul
     | Pbbswap _
     | Pint_as_pointer
     | Psequand | Psequor

@@ -366,6 +366,8 @@ let compute_static_size lam =
     | Pbigstring_load_32 _
     | Pbigstring_load_64 _
     | Pbswap16
+    | Pfloatarray_dot | Pfloatarray_sum | Pfloatarray_scale
+    | Pfloatarray_axpy | Pfloatarray_add | Pfloatarray_mul
     | Pbbswap _
     | Pint_as_pointer
     | Patomic_load | Patomic_fetch_add

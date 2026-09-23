@@ -120,6 +120,12 @@ type primitive =
   | Pbigstring_set of (memory_access_size * is_safe)
   (* byte swap *)
   | Pbswap16
+  | Pfloatarray_dot
+  | Pfloatarray_sum
+  | Pfloatarray_scale
+  | Pfloatarray_axpy
+  | Pfloatarray_add
+  | Pfloatarray_mul
   | Pbbswap of boxed_integer
   (* Integer to external pointer *)
   | Pint_as_pointer
