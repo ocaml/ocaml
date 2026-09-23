@@ -62,21 +62,25 @@ val get : 'a t -> int -> 'a option
    0 to {!Weak.length}[ ar - 1].*)
 
 val get_copy : 'a t -> int -> 'a option
-(** [Weak.get_copy ar n] returns None if the [n]th cell of [ar] is
-   empty, [Some x] (where [x] is a (shallow) copy of the value) if
-   it is full.
-   In addition to pitfalls with mutable values, the interesting
-   difference with [get] is that [get_copy] does not prevent
-   the incremental GC from erasing the value in its current cycle
-   ([get] may delay the erasure to the next GC cycle).
-   @raise Invalid_argument if [n] is not in the range
-   0 to {!Weak.length}[ ar - 1].
+[@@ocaml.deprecated
+  "This dangerous function was removed and is now an alias to Weak.get. \
+   Use Weak.get or Weak.check instead."]
+(** In OCaml versions up to 5.5, [Weak.get_copy ar n] would return
+    a shallow copy of the weak key when it is still alive; this had
+    the benefit of not forcing the key itself to remain alive, while
+    being able to inspect its value.
 
-   If the element is a custom block or a continuation it is not
-   copied.
+    If the element is a custom block or a continuation it is not
+    copied.
 
-*)
+    Performing a shallow-copy is error-prone and proved to interact
+    badly with other parts of the language (for example
+    mutable values); the performance benefits were often offset by the
+    cost of the copy. This function is now deprecated since OCaml 5.6,
+    and behaves as an alias to [get ar n].
 
+    Note: you can also use {!check} below if you want to check that
+    a key is still set without accessing it. *)
 
 val check : 'a t -> int -> bool
 (** [Weak.check ar n] returns [true] if the [n]th cell of [ar] is
