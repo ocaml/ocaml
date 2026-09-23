@@ -112,7 +112,7 @@ let size_float = 8
 
 let allow_unaligned_access = true
 
-let floatarray_dot_kernel = None
+let floatarray_dot_kernel = Some "caml_floatarray_dot_kernel"
 
 (* Behavior of division *)
 

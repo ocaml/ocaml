@@ -1319,6 +1319,40 @@ FUNCTION(caml_ml_array_bound_error)
         CFI_ENDPROC
 END_FUNCTION(caml_ml_array_bound_error)
 
+/* Dot product of n doubles at x0 and x1, C calling convention */
+FUNCTION(caml_floatarray_dot_kernel)
+        CFI_STARTPROC
+        movi    v16.2d, #0
+        movi    v17.2d, #0
+        movi    v18.2d, #0
+        movi    v19.2d, #0
+        cmp     x2, #8
+        b.lt    2f
+1:      ldp     q20, q21, [x0], #32
+        ldp     q22, q23, [x1], #32
+        fmla    v16.2d, v20.2d, v22.2d
+        fmla    v17.2d, v21.2d, v23.2d
+        ldp     q20, q21, [x0], #32
+        ldp     q22, q23, [x1], #32
+        fmla    v18.2d, v20.2d, v22.2d
+        fmla    v19.2d, v21.2d, v23.2d
+        sub     x2, x2, #8
+        cmp     x2, #8
+        b.ge    1b
+2:      fadd    v16.2d, v16.2d, v17.2d
+        fadd    v18.2d, v18.2d, v19.2d
+        fadd    v16.2d, v16.2d, v18.2d
+        faddp   d0, v16.2d
+        cbz     x2, 4f
+3:      ldr     d20, [x0], #8
+        ldr     d21, [x1], #8
+        fmadd   d0, d20, d21, d0
+        subs    x2, x2, #1
+        b.ne    3b
+4:      ret
+        CFI_ENDPROC
+END_FUNCTION(caml_floatarray_dot_kernel)
+
          TEXT_SECTION(caml_system__code_end)
         .globl  G(caml_system__code_end)
 G(caml_system__code_end):
