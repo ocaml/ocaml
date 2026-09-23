@@ -30,8 +30,10 @@ Values of a variant or record type declared @"private"@
 can be de-structured normally in pattern-matching or via
 the @expr '.' field@ notation for record accesses.  However, values of
 these types cannot be constructed directly by constructor application
-or record construction.  Moreover, assignment on a mutable field of a
-private record type is not allowed.
+or record construction \emph{outside} of the module.
+Moreover, assignment on a mutable field of a
+private record type is not allowed. In other word, private types are
+externally accessible but not constructible.
 
 The typical use of private types is in the export signature of a
 module, to ensure that construction of values of the private type always
@@ -49,7 +51,24 @@ end = struct
 end
 \end{caml_example*}
 Here, the @"private"@ declaration ensures that in any value of type
-"M.t", the argument to the "B" constructor is always a positive integer.
+"M.t", the argument to the "B" constructor is always a positive integer,
+because users of the "M" module can only use the "b" function to construct
+"B" values.
+
+\begin{caml_example*}{verbatim}[error]
+(* this function compiles because it only uses pattern-matching *)
+let to_string = function
+  | M.A -> "M.A"
+  | M.B _ -> "M.B"
+
+(* this one does not because it tries to construct a new value using
+   a private constructor *)
+let make_b = M.B (-1)
+\end{caml_example*}
+
+Note that if the type is marked as private \emph{in the implementation},
+constructing a value is no longer possible within the implementation. It can
+be useful when types are created externally from a C extension for instance.
 
 With respect to the variance of their parameters, private types are
 handled like abstract types. That is, if a private type has
