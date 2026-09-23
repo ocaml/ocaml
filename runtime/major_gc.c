@@ -2281,19 +2281,27 @@ static void major_collection_slice(intnat howmuch,
        sweep work to have all domains switch to Idle (and then Mark)
        at the same time. (Needed for performance, not for safety.)
      */
-    uintnat wkcnt = work_counter;
-    intnat idle = diffmod (work_counter_min_before_mark, wkcnt);
-    if (idle <= 0){
+    intnat idle = diffmod (work_counter_min_before_mark, work_counter);
+    /* Idle work consumes slice budget, so explicit slices make
+       progress */
+    intnat idle_work = 0;
+    while (idle > 0) {
+      intnat todo = min2 (get_major_slice_work(mode), idle);
+      if (todo <= 0) break;
+      commit_major_slice_work (todo);
+      idle_work += todo;
+      idle = diffmod (work_counter_min_before_mark, work_counter);
+    }
+    if (idle_work > 0) {
+      caml_gc_log("Idle phase: %" CAML_PRIdNAT "%s", idle_work,
+                  idle <= 0 ? " [finished]" : "");
+    }
+    if (idle <= 0) {
       /* Idle phase is finished (or never existed), we should start marking. */
       request_mark_phase();
-    }else{
-      /* Idle phase: do nothing but commit to the work counter. */
-      intnat todo = diffmod (alloc_counter, wkcnt);
-      todo = min2(todo, idle);
-      caml_gc_log("Idle phase: %" CAML_PRIdNAT "%s", todo,
-                  todo == idle ? " [finished]" : "");
-      commit_major_slice_work (todo);
-      if (todo == idle) request_mark_phase ();
+      /* Marking begins at the next minor GC. Request one if we did no
+         sweep work, so non-allocating programs still make progress. */
+      if (sweep_work == 0) caml_request_minor_gc ();
     }
   }
 
