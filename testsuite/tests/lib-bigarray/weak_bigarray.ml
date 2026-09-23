@@ -1,6 +1,7 @@
 (* TEST *)
 
-(** check that custom block are not copied by Weak.get_copy *)
+(** check that custom blocks are not copied by Weak.get
+    (this test formerly checked Weak.get_copy, see #15064) *)
 
 open Bigarray
 open Bigarray.Array1
@@ -14,7 +15,7 @@ let () =
   Weak.set w 0 (Some !a);
 
   let b =
-    match Weak.get_copy w 0 with
+    match Weak.get w 0 with
     | None -> assert false
     | Some b -> b
   in
