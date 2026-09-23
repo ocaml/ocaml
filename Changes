@@ -714,7 +714,6 @@ Working version
   during dead-code elimination.
   (Xavier Clerc, review by Steven Dolan and KC Sivaramakrishnan)
 
-<<<<<<< HEAD
 - #15093: Windows: fix a bug in the `Unix.select` emulation which could result
   in an out-of-bounds memory access. This is triggered when the watched set
   contains 63 or more sockets along with at least one non-socket descriptor, or
@@ -727,8 +726,6 @@ Working version
   to it could be left in non-blocking mode, and one system handle was also
   leaked for each socket.
   (Romain Beauxis, review by Nicolás Ojeda Bär)
-=======
->>>>>>> c9dde8d768 (Changes)
 
 OCaml 5.5.1
 -----------
