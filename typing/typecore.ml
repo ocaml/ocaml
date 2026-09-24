@@ -6784,13 +6784,13 @@ and type_argument_ ?explanation ?recarg env sarg ty_expected' ty_expected =
         match get_desc (expand_head env ty_fun) with
         | Tarrow (l,ty_arg,ty_fun,_) when is_optional l ->
             let ty =
-              (* Alistair: I think this is broken? *)
               let ty_arg =
-                match tpoly_get_mono_opt ty_arg with
-                | Some mono -> mono
-                | None -> ty_arg
+                match get_desc ty_arg with
+                | Tpoly (ty_arg_body, ty_arg_vars) ->
+                  instance_poly ~keep_names:true ty_arg_vars ty_arg_body
+                | _ -> instance ty_arg
               in
-              option_none env (instance ty_arg) sarg.pexp_loc
+              option_none env ty_arg sarg.pexp_loc
             in
             make_args ((l, Arg ty) :: args) ty_fun
         | Tarrow (l,_,ty_res',_) when l = Nolabel || !Clflags.classic ->
