@@ -595,6 +595,8 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
 
         /* reload hd */
         hd = POOL_FREE_HEADER(0);
+
+        work += wh;
       }
 
       /* If the current block was garbage (and is now a free block) or was
@@ -636,6 +638,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
         /* there's still a live block, the pool can't be released to the global
             freelist */
         release_to_global_pool = 0;
+
         work += wh;
       }
       p += wh;
