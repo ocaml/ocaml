@@ -197,12 +197,18 @@ CAMLprim value caml_ml_condition_wait(value wcond, value wmut)
   sync_mutex mut = Mutex_val(wmut);
   sync_retcode retcode;
 
+  #ifdef CAML_INSTR
   CAML_EV_BEGIN(EV_DOMAIN_CONDITION_WAIT);
+  #else
+  #endif
   caml_enter_blocking_section();
   retcode = sync_condvar_wait(cond, mut);
   caml_leave_blocking_section();
   caml_check_error(retcode, "Condition.wait");
+  #ifdef CAML_INSTR
   CAML_EV_END(EV_DOMAIN_CONDITION_WAIT);
+  #else
+  #endif
 
   CAMLreturn(Val_unit);
 }
