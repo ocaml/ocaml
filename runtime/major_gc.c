@@ -939,7 +939,7 @@ static void advance_pacing_ring (pacing_phase p)
 
   /* update pacing ring */
   pacing_ring[p].advance_work = 0;
-  Caml_ac_assign(*c,alloc_counter);
+  Caml_ac_assign(*c, alloc_counter);
 }
 
 /* TODO find the right value for sigma. */
@@ -1312,7 +1312,8 @@ static void translate_back (pacing_phase p, double *w,
    However, unprotected concurrent access means we might overshoot by some
    small amount.
  */
-static void commit_major_slice_work(intnat words_done) {
+static void commit_major_slice_work(intnat words_done)
+{
   caml_domain_state *d = Caml_state;
   caml_alloc_counter diff;
   double w;
@@ -2443,7 +2444,9 @@ static void major_collection_slice(intnat howmuch,
       CAML_GC_MESSAGE(SLICESIZE, "Idle phase: %" CAML_PRIdNAT "%s", todo,
                       todo == idle ? " [finished]" : "");
       commit_major_slice_work (todo);
-      if (todo == idle) request_mark_phase ();
+      if (todo == idle){
+        request_mark_phase ();
+      }
     }
   }
 
