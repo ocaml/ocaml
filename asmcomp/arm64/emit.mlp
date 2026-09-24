@@ -540,6 +540,7 @@ module Size = struct
     | Lop (Ispecific (Imuladd | Imulsub)) -> 1
     | Lop (Ispecific (Ibswap 16)) -> 2
     | Lop (Ispecific (Ibswap _)) -> 1
+    | Lop (Ispecific (Irol _)) -> 1
     | Lop (Ispecific Imove32) -> 1
     | Lop (Ispecific (Isignext _)) -> 1
     | Lop (Idls_get) -> 1
@@ -1039,6 +1040,8 @@ let emit_instr env i =
         | _ ->
             assert false
         end
+    | Lop(Ispecific(Irol n)) ->
+        `	ror	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #{emit_int (64 - n)}\n`
     | Lop(Ispecific(Isignext size)) ->
         `	sbfm	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #0, #{emit_int (size - 1)}\n`
     | Lop(Idls_get) ->

@@ -207,6 +207,7 @@ let print_instr b = function
   | RET ->  i0 b "ret"
   | ROUNDSD (r, arg1, arg2) -> i2 b (string_of_rounding r) arg1 arg2
   | SAL (arg1, arg2) -> i2_s b "sal" arg1 arg2
+  | ROL (arg1, arg2) -> i2_s b "rol" arg1 arg2
   | SAR (arg1, arg2) -> i2_s b "sar" arg1 arg2
   | SET (c, arg) -> i1 b ("set" ^ string_of_condition c) arg
   | SHR (arg1, arg2) -> i2_s b "shr" arg1 arg2

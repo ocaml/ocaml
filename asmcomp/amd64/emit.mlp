@@ -728,6 +728,8 @@ let emit_instr env fallthrough i =
       I.bswap (res i 0)
   | Lop(Ispecific(Ibswap _)) ->
       assert false
+  | Lop(Ispecific(Irol n)) ->
+      I.rol (int n) (res i 0)
   | Lop(Ispecific Isqrtf) ->
       if arg i 0 <> res i 0 then
         I.xorpd (res i 0) (res i 0); (* avoid partial register stall *)

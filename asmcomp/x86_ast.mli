@@ -184,6 +184,7 @@ type instruction =
   | RET
   | ROUNDSD of rounding * arg * arg
   | SAL of arg * arg
+  | ROL of arg * arg
   | SAR of arg * arg
   | SET of condition * arg
   | SHR of arg * arg

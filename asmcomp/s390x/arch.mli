@@ -29,6 +29,7 @@ type specific_operation =
   | Imultsubf                           (* multiply and subtract *)
   | Isqrtf                              (* floating-point square root *)
   | Ibswap of int                       (* endianness conversion *)
+  | Irol of int                         (* rotate left by a constant *)
 
 (* Addressing modes *)
 

@@ -35,6 +35,7 @@ type specific_operation =
   | Imultsubf                           (* multiply and subtract *)
   | Isqrtf                              (* floating-point square root *)
   | Ibswap of int                       (* endianness conversion *)
+  | Irol of int                         (* rotate left by a constant *)
 
 (* Addressing modes *)
 
@@ -88,6 +89,8 @@ let print_specific_operation printreg op ppf arg =
       fprintf ppf "sqrtf %a" printreg arg.(0)
   | Ibswap n ->
       fprintf ppf "bswap_%i %a" n printreg arg.(0)
+  | Irol n ->
+      fprintf ppf "rol %a %i" printreg arg.(0) n
 
 (* Specific operations that are pure *)
 
