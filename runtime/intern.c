@@ -506,8 +506,8 @@ static value intern_alloc_obj(struct caml_intern_state* s, caml_domain_state* d,
       intern_cleanup (s);
       caml_raise_out_of_memory();
     }
-    caml_update_major_allocated_words(
-      d, Whsize_wosize(wosize), 1 /* direct */);
+    Caml_update_major_allocated_words(
+      on_heap, d, Whsize_wosize(wosize), 1 /* direct */);
     Hd_hp(p) = Make_header (wosize, tag, caml_allocation_status());
     caml_memprof_sample_block(Val_hp(p), wosize,
                               Whsize_wosize(wosize),
@@ -787,15 +787,19 @@ static void intern_rec(struct caml_intern_state* s,
         v = intern_alloc_obj(s, d, temp_size, Abstract_tag);
         Custom_ops_val(v) = ops;
         size = ops->deserialize(Data_custom_val(v));
+        /* TODO: ops->deserialize should give use the off-heap size. */
         if (size != expected_size) {
           intern_cleanup_failwith3
             (s, fun_name, "error while deserializing custom block", name);
         }
         Unsafe_store_tag_val(v, Custom_tag);
         intern_record_obj(s, v);
-        if (ops->finalize != NULL && Is_young(v)) {
-          /* Remember that the block has a finalizer. */
-          add_to_custom_table (&d->minor_tables->custom, v, 0, 1);
+        if ((ops->finalize != NULL /* TODO || off-heap size != 0 */)
+            && Is_young(v)){
+          /* Remember the block if it has a finalizer or an off-heap size. */
+          add_to_custom_table (&d->minor_tables->custom, v, 0);
+          /* TODO: should pass the off-heap size returned by
+             ops->deserialize. */
         }
         break;
       }
