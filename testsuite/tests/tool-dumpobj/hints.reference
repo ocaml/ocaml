@@ -1,0 +1,67 @@
+       0  BRANCH 56
+       2  ACC0
+       3  GETFIELD0
+       4  RETURN 1
+       6  ACC0
+       7  GETFIELD1
+       8  PUSHACC1
+       9  GETFIELD0 (immediate)
+      10  MAKEBLOCK2 0 (immutable)
+      12  RETURN 1
+      14  ACC0
+      15  GETFIELD1
+      16  PUSHACC1
+      17  GETFIELD0 (immediate)
+      18  MAKEBLOCK2 0 (immutable)
+      20  RETURN 1
+      22  RESTART
+      23  GRAB 1
+      25  ACC1
+      26  PUSHACC1
+      27  C_CALL2 caml_array_get_addr
+      29  RETURN 2
+      31  RESTART
+      32  GRAB 1
+      34  ACC1
+      35  PUSHACC1
+      36  GETVECTITEM (immediate)
+      37  RETURN 2
+      39  RESTART
+      40  GRAB 1
+      42  ACC1
+      43  PUSHACC1
+      44  C_CALL2 caml_array_get_addr (immediate)
+      46  RETURN 2
+      48  ACC0
+      49  GETFIELD1
+      50  RETURN 1
+      52  ACC0
+      53  GETFIELD0 (immediate)
+      54  RETURN 1
+      56  CLOSURE 0, 52 (value -> int)
+      59  PUSH
+      60  CLOSURE 0, 48 (value -> value)
+      63  PUSH
+      64  CLOSURE 0, 40 (value -> int -> int)
+      67  PUSH
+      68  CLOSURE 0, 32 (value -> int -> int)
+      71  PUSH
+      72  CLOSURE 0, 23 (value -> int -> value)
+      75  PUSH
+      76  CLOSURE 0, 14 (value -> value)
+      79  PUSH
+      80  CLOSURE 0, 6 (value -> value)
+      83  PUSH
+      84  CLOSURE 0, 2 (value -> value)
+      87  PUSHACC0
+      88  PUSHACC2
+      89  PUSHACC4
+      90  PUSHACC6
+      91  PUSHACC 8
+      93  PUSHACC 10
+      95  PUSHACC 12
+      97  PUSHACC 14
+      99  MAKEBLOCK 8, 0 (immutable)
+     102  POP 8
+     104  SETGLOBAL compilation unit `Hints'
+     106  STOP
