@@ -117,7 +117,9 @@ module Loc : sig
 end
 
 
-(** A bare-bones submodules of atomic arrays. *)
+(** A bare-bones submodules of atomic arrays.
+
+    @since 5.6 *)
 module Array : sig
   type !'a t
 
