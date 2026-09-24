@@ -3284,6 +3284,7 @@ let lookup_type_in_sig sg =
     | Lapply _ -> assert false
 
 let type_package env m pack =
+  let outer_scope = Ctype.get_current_level () in
   let modl, scope =
     Typetexp.TyVarEnv.with_local_scope begin fun () ->
       (* type the module and create a scope in a raised level *)
@@ -3294,6 +3295,7 @@ let type_package env m pack =
       end
     end
   in
+  Mtype.lower_nongen outer_scope modl.mod_type;
   let fl', env =
     match pack.pack_constraints with
     | [] -> [], env
