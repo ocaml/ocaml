@@ -19,6 +19,5 @@ Error: Signature mismatch:
        is not included in
          sig module Alias : sig end end
        In module "Alias":
-       Modules do not match: (= Unknown) is not included in sig end
        A static module alias refers to the unbound module "Unknown"
 |}]

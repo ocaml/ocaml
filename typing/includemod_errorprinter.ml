@@ -784,12 +784,13 @@ let interface_mismatch ppf (diff: _ Err.diff) =
     "The implementation %a@ does not match the interface %a:@ "
     Style.inline_code diff.got Style.inline_code diff.expected
 
-let core_module_type_symptom (x:Err.core_module_type_symptom)  =
+let core_module_type_symptom  ~ctx (x:Err.core_module_type_symptom)  =
   match x with
   | Not_an_alias | Not_an_identifier | Abstract_module_type
   | Incompatible_aliases -> None
   | Unbound_module_path path ->
-      Some(Fmt.dprintf "A static module alias refers to the unbound module %a"
+      Some(Fmt.dprintf "%aA static module alias refers to the unbound module %a"
+             Context.pp (List.rev ctx)
              (Style.as_inline_code Printtyp.path) path
           )
 
@@ -837,6 +838,10 @@ let rec module_type ~expansion_token ~eqmode ~env ~before ~ctx diff =
         diff.symptom
   | Functor Params d -> (* We jump directly to the functor param error *)
       functor_params ~expansion_token ~env ~before ~ctx d
+  | Mt_core (Unbound_module_path _) ->
+      (* We display directly the missing static alias *)
+      module_type_symptom ~eqmode ~expansion_token ~env ~before ~ctx
+        diff.symptom
   | _ ->
       let inner = if eqmode then eq_module_types else module_types in
       let next =
@@ -855,7 +860,7 @@ let rec module_type ~expansion_token ~eqmode ~env ~before ~ctx diff =
 
 and module_type_symptom ~eqmode ~expansion_token ~env ~before ~ctx = function
   | Mt_core core ->
-      begin match core_module_type_symptom core with
+      begin match core_module_type_symptom ~ctx core with
       | None -> before
       | Some msg -> Location.msg "%t" msg :: before
       end
@@ -1023,7 +1028,7 @@ let all env = function
   | In_Signature diff ->
       signature ~expansion_token:true ~before:[] ~env ~ctx:[] diff
   | In_Expansion cmts ->
-      match core_module_type_symptom cmts with
+      match core_module_type_symptom ~ctx:[] cmts with
       | None -> assert false
       | Some main -> [Location.msg "%t" main]
 
