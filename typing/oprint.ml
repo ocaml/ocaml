@@ -627,7 +627,7 @@ and print_simple_out_module_type ppf =
        | sg ->
           fprintf ppf "@[<hv 2>sig@ %a@;<1 -2>end@]" print_out_signature sg
      end
-  | Omty_alias id -> fprintf ppf "(module %a)" print_ident id
+  | Omty_alias id -> fprintf ppf "(= %a)" print_ident id
   | Omty_functor _ as non_simple ->
      fprintf ppf "(%a)" print_out_module_type non_simple
 and print_out_signature ppf =
