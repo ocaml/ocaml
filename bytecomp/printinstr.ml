@@ -48,12 +48,12 @@ let instruction ppf = function
       fprintf ppf "\tmakeblock %i, %i" n m
   | Kmakefloatblock(n, _mut) ->
       fprintf ppf "\tmakefloatblock %i" n
-  | Kgetfield n -> fprintf ppf "\tgetfield %i" n
+  | Kgetfield (n, _) -> fprintf ppf "\tgetfield %i" n
   | Ksetfield n -> fprintf ppf "\tsetfield %i" n
   | Kgetfloatfield n -> fprintf ppf "\tgetfloatfield %i" n
   | Ksetfloatfield n -> fprintf ppf "\tsetfloatfield %i" n
   | Kvectlength _ -> fprintf ppf "\tvectlength"
-  | Kgetvectitem -> fprintf ppf "\tgetvectitem"
+  | Kgetvectitem _ -> fprintf ppf "\tgetvectitem"
   | Ksetvectitem -> fprintf ppf "\tsetvectitem"
   | Kgetstringchar -> fprintf ppf "\tgetstringchar"
   | Kgetbyteschar -> fprintf ppf "\tgetbyteschar"

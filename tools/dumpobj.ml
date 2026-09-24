@@ -444,6 +444,8 @@ let print_ccall_hint hint =
        | Pbigarray_fortran_layout -> " Fortran")
   | Hint_unsafe ->
       printf " (unsafe)"
+  | Hint_immediate_result ->
+      printf " (immediate)"
   | Hint_int kind ->
       printf " (%s)"
         (match kind with
@@ -474,6 +476,8 @@ let print_hint hint =
       printf " (immutable)"
   | Hint_physical_comparison ->
       printf " (physical comparison)"
+  | Hint_immediate ->
+      printf " (immediate)"
   | Hint_arraylength kind ->
       printf " (%s)"
         (match kind with

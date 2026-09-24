@@ -73,6 +73,7 @@ type ccall_hint =
         elt_kind : Lambda.bigarray_kind;
         layout : Lambda.bigarray_layout }
   | Hint_primitive of Primitive.description
+  | Hint_immediate_result
 
 type optimization_hint =
   | Hint_immutable_block
@@ -80,6 +81,7 @@ type optimization_hint =
   | Hint_closures of closure_hint list
   | Hint_ccall of ccall_hint
   | Hint_physical_comparison
+  | Hint_immediate
 
 type label = int                     (* Symbolic code labels *)
 
@@ -104,12 +106,12 @@ type instruction =
   | Kconst of structured_constant
   | Kmakeblock of int * int * Asttypes.mutable_flag (* size, tag, mutable *)
   | Kmakefloatblock of int * Asttypes.mutable_flag
-  | Kgetfield of int
+  | Kgetfield of int * Lambda.immediate_or_pointer
   | Ksetfield of int
   | Kgetfloatfield of int
   | Ksetfloatfield of int
   | Kvectlength of Lambda.array_kind
-  | Kgetvectitem
+  | Kgetvectitem of Lambda.immediate_or_pointer
   | Ksetvectitem
   | Kgetstringchar
   | Kgetbyteschar

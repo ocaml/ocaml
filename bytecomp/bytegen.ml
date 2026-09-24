@@ -371,8 +371,8 @@ let comp_primitive stack_info p sz args =
   | Pcompare_ints -> Kccall("caml_int_compare", 2, None)
   | Pcompare_floats -> Kccall("caml_float_compare", 2, None)
   | Pcompare_bints bi -> comp_bint_primitive bi "compare" args
-  | Pfield(n, _ptr, _mut) -> Kgetfield n
-  | Pfield_computed -> Kgetvectitem
+  | Pfield(n, ptr, _mut) -> Kgetfield (n, ptr)
+  | Pfield_computed -> Kgetvectitem Pointer
   | Psetfield(n, _ptr, _init) -> Ksetfield n
   | Psetfield_computed(_ptr, _init) -> Ksetvectitem
   | Psetfloatfield (n, _init) -> Ksetfloatfield n
@@ -440,13 +440,16 @@ let comp_primitive stack_info p sz args =
   | Parraylength kind -> Kvectlength kind
   | Parrayrefs Pgenarray -> Kccall("caml_array_get", 2, None)
   | Parrayrefs Pfloatarray -> Kccall("caml_floatarray_get", 2, None)
-  | Parrayrefs _ -> Kccall("caml_array_get_addr", 2, None)
+  | Parrayrefs Pintarray ->
+      Kccall("caml_array_get_addr", 2, Some Hint_immediate_result)
+  | Parrayrefs Paddrarray -> Kccall("caml_array_get_addr", 2, None)
   | Parraysets Pgenarray -> Kccall("caml_array_set", 3, None)
   | Parraysets Pfloatarray -> Kccall("caml_floatarray_set", 3, None)
   | Parraysets _ -> Kccall("caml_array_set_addr", 3, None)
   | Parrayrefu Pgenarray -> Kccall("caml_array_unsafe_get", 2, None)
   | Parrayrefu Pfloatarray -> Kccall("caml_floatarray_unsafe_get", 2, None)
-  | Parrayrefu _ -> Kgetvectitem
+  | Parrayrefu Pintarray -> Kgetvectitem Immediate
+  | Parrayrefu Paddrarray -> Kgetvectitem Pointer
   | Parraysetu Pgenarray -> Kccall("caml_array_unsafe_set", 3, None)
   | Parraysetu Pfloatarray -> Kccall("caml_floatarray_unsafe_set", 3, None)
   | Parraysetu _ -> Ksetvectitem

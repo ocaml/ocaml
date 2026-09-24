@@ -99,6 +99,8 @@ type ccall_hint =
     (* Bigarray access *)
   | Hint_primitive of Primitive.description
     (* Primitive call *)
+  | Hint_immediate_result
+    (* The value returned by the C function is an immediate *)
 
 type optimization_hint =
   | Hint_immutable_block
@@ -110,6 +112,9 @@ type optimization_hint =
   | Hint_ccall of ccall_hint
     (* C call *)
   | Hint_physical_comparison
+    (* Physical comparison *)
+  | Hint_immediate
+    (* The value produced by the instruction is an immediate *)
 
 (* Abstract machine instructions *)
 
@@ -136,12 +141,12 @@ type instruction =
   | Kconst of structured_constant
   | Kmakeblock of int * int * Asttypes.mutable_flag (* size, tag, mutable *)
   | Kmakefloatblock of int * Asttypes.mutable_flag
-  | Kgetfield of int
+  | Kgetfield of int * Lambda.immediate_or_pointer
   | Ksetfield of int
   | Kgetfloatfield of int
   | Ksetfloatfield of int
   | Kvectlength of Lambda.array_kind
-  | Kgetvectitem
+  | Kgetvectitem of Lambda.immediate_or_pointer
   | Ksetvectitem
   | Kgetstringchar
   | Kgetbyteschar
