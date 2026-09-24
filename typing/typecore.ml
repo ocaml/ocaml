@@ -6115,7 +6115,7 @@ and type_function
                         (fun () -> instance_poly_fixed vars ty)
                     in
                     let default =
-                      type_argument env default ty (instance ty)
+                      type_expect env default (mk_expected ty)
                     in
                     default, vars
                   end
