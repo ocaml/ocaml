@@ -1,4 +1,3 @@
 share_root: [
-  "config.cache" {"ocaml/config.cache"}
   "config.status" {"ocaml/config.status"}
 ]
