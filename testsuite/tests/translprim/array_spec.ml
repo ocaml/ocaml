@@ -1,6 +1,6 @@
 (* TEST
  setup-ocamlc.byte-build-env;
- flags = "-dlambda -dno-unique-ids";
+ flags = "-dlambda -dno-locations -dno-unique-ids";
  ocamlc.byte;
  {
    flat-float-array;

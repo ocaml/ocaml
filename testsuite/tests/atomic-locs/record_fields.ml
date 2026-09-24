@@ -162,7 +162,7 @@ module Inline_record = struct
 end
 [%%expect{|
 (apply (field_mut 1 (global Toploop!)) "Inline_record/379"
-  (let (test = (function param : int (atomic_load param 0)))
+  (let (test = (function param : int (let (r =a param) (atomic_load r 0))))
     (makeblock 0 test)))
 module Inline_record :
   sig type t = A of { mutable x : int [@atomic]; } val test : t -> int end
@@ -187,7 +187,8 @@ end
        (makeblock 248 "Extension_with_inline_record.A" (caml_fresh_oo_id 0))
      test =
        (function param : int
-         (if (== (field_imm 0 param) A) (atomic_load param 1) 0))
+         (let (tag =a (field_imm 0 param))
+           (if (== tag A) (let (r =a param) (atomic_load r 1)) 0)))
      *match* =
        (if (== (apply test (makemutable 0 (*,int) A 42)) 42) 0
          (raise (makeblock 0 (global Assert_failure!) [0: "" 11 11]))))
@@ -258,8 +259,8 @@ Warning 9 [missing-record-field-pattern]: the following labels are not bound
   Either bind these labels explicitly or add "; _" to the pattern.
 (apply (field_mut 1 (global Toploop!)) "Pattern_matching_wildcard/422"
   (let
-    (warning = (function param : int (field_int 0 param))
-     allowed = (function param : int (field_int 0 param)))
+    (warning = (function param : int (let (x =a (field_int 0 param)) x))
+     allowed = (function param : int (let (x =a (field_int 0 param)) x)))
     (makeblock 0 warning allowed)))
 
 module Pattern_matching_wildcard :

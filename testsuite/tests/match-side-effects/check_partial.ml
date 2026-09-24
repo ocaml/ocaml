@@ -1,5 +1,5 @@
 (* TEST
- flags = "-dlambda -dcanonical-ids";
+ flags = "-dlambda -dno-locations -dcanonical-ids";
  expect;
 *)
 
@@ -28,18 +28,21 @@ type _ t = Int : int -> int t | True : bool t | False : bool t
 (let
   (lazy_total/0 =
      (function param/0 : int
-       (let (*match*/0 =o (field_mut 0 (field_imm 0 param/0)))
-         (switch* (field_imm 1 param/0)
+       (let
+         (*match*/0 =a (field_imm 0 param/0)
+          *match*/1 =o (field_mut 0 *match*/0)
+          *match*/2 =a (field_imm 1 param/0))
+         (switch* *match*/2
           case int 0: 0
           case int 1:
            (let
-             (*match*/1 =
-                (let (tag/0 =a (caml_obj_tag *match*/0))
-                  (if (== tag/0 250) (field_mut 0 *match*/0)
+             (*match*/3 =
+                (let (lzarg/0 = *match*/1 tag/0 =a (caml_obj_tag lzarg/0))
+                  (if (== tag/0 250) (field_mut 0 lzarg/0)
                     (if (|| (== tag/0 246) (== tag/0 244))
                       (apply (field_imm 1 (global CamlinternalLazy!))
-                        (opaque *match*/0))
-                      *match*/0))))
+                        (opaque lzarg/0))
+                      lzarg/0))))
              12)))))
   (apply (field_mut 1 (global Toploop!)) "lazy_total" lazy_total/0))
 val lazy_total : unit lazy_t ref * bool t -> int = <fun>
@@ -56,21 +59,23 @@ let lazy_needs_partial : _ * bool t ref -> int = function
      (function param/1 : int
        (catch
          (let
-           (*match*/2 =a (field_imm 0 param/1)
-            *match*/3 =o (field_mut 0 (field_imm 1 param/1)))
-           (switch* *match*/3
+           (*match*/4 =a (field_imm 0 param/1)
+            *match*/5 =a (field_imm 1 param/1)
+            *match*/6 =o (field_mut 0 *match*/5))
+           (switch* *match*/6
             case int 0: 0
             case int 1:
              (let
-               (*match*/4 =
-                  (let (tag/1 =a (caml_obj_tag *match*/2))
-                    (if (== tag/1 250) (field_mut 0 *match*/2)
+               (*match*/7 =
+                  (let (lzarg/1 = *match*/4 tag/1 =a (caml_obj_tag lzarg/1))
+                    (if (== tag/1 250) (field_mut 0 lzarg/1)
                       (if (|| (== tag/1 246) (== tag/1 244))
                         (apply (field_imm 1 (global CamlinternalLazy!))
-                          (opaque *match*/2))
-                        *match*/2)))
-                *match*/5 =o (field_mut 0 (field_imm 1 param/1)))
-               (if (isint *match*/5) (if *match*/5 12 (exit 3)) (exit 3)))))
+                          (opaque lzarg/1))
+                        lzarg/1)))
+                *match*/8 =a (field_imm 1 param/1)
+                *match*/9 =o (field_mut 0 *match*/8))
+               (if (isint *match*/9) (if *match*/9 12 (exit 3)) (exit 3)))))
         with (3)
          (raise (makeblock 0 (global Match_failure/0!) [0: "" 1 49])))))
   (apply (field_mut 1 (global Toploop!)) "lazy_needs_partial"
@@ -89,8 +94,8 @@ let guard_total : bool t ref -> int = function
   (guard_total/0 =
      (function param/2 : int
        (if (opaque 0) 1
-         (let (*match*/6 =o (field_mut 0 param/2))
-           (if (isint *match*/6) (if *match*/6 12 0)
+         (let (*match*/10 =o (field_mut 0 param/2))
+           (if (isint *match*/10) (if *match*/10 12 0)
              (raise (makeblock 0 (global Match_failure/0!) [0: "" 1 38])))))))
   (apply (field_mut 1 (global Toploop!)) "guard_total" guard_total/0))
 val guard_total : bool t ref -> int = <fun>
@@ -106,11 +111,11 @@ let guard_needs_partial : bool t ref -> int = function
 (let
   (guard_needs_partial/0 =
      (function param/3 : int
-       (let (*match*/7 =o (field_mut 0 param/3))
-         (catch (if (isint *match*/7) (if *match*/7 (exit 9) 0) (exit 9))
+       (let (*match*/11 =o (field_mut 0 param/3))
+         (catch (if (isint *match*/11) (if *match*/11 (exit 9) 0) (exit 9))
           with (9)
            (if (opaque 0) 1
-             (if (isint *match*/7) 12
+             (if (isint *match*/11) 12
                (raise (makeblock 0 (global Match_failure/0!) [0: "" 1 46]))))))))
   (apply (field_mut 1 (global Toploop!)) "guard_needs_partial"
     guard_needs_partial/0))
