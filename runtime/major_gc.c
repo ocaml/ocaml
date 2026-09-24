@@ -2330,8 +2330,8 @@ static void stw_try_complete_gc_phase(
     } else if (is_complete_phase_mark_final()) {
       caml_gc_phase = Phase_sweep_ephe;
       global_prepare_for_ephe_sweeping(participant_count);
+      advance_pacing_ring(pp_ephe);
     }
-    advance_pacing_ring(pp_ephe);
   }
 
   if (caml_gc_phase == Phase_sweep_ephe) {
