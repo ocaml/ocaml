@@ -789,7 +789,7 @@ let core_module_type_symptom (x:Err.core_module_type_symptom)  =
   | Not_an_alias | Not_an_identifier | Abstract_module_type
   | Incompatible_aliases -> None
   | Unbound_module_path path ->
-      Some(Fmt.dprintf "Unbound module %a"
+      Some(Fmt.dprintf "A static module alias refers to the unbound module %a"
              (Style.as_inline_code Printtyp.path) path
           )
 
