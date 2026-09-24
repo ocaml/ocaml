@@ -102,6 +102,7 @@ extern void caml_realloc_custom_table (struct caml_custom_table *);
 struct caml_minor_tables* caml_alloc_minor_tables(void);
 void caml_free_minor_tables(struct caml_minor_tables*);
 void caml_empty_minor_heap_setup(caml_domain_state* domain, void *);
+void caml_ev_minor_allocated(uintnat bytes);
 
 #ifdef DEBUG
 extern int caml_debug_is_minor(value val);
