@@ -3862,10 +3862,8 @@ let type_approx_fun_one_param
             unify_pat_types spat.ppat_loc env ty_param ty_external;
             ty_internal
           | Optional _, None ->
-            begin
-              let var = newmono (type_option (newvar ())) in
-              unify_pat_types spat.ppat_loc env ty_param var
-            end;
+            let var = newmono (type_option (newvar ())) in
+            unify_pat_types spat.ppat_loc env ty_param var;
             ty_param
           | Optional _, Some _ ->
             let ty_opt_param = newvar () in
@@ -6100,6 +6098,9 @@ and type_function
             let default =
               match pat.ppat_desc with
               | Ppat_constraint (_, sty) when not has_poly ->
+                  (* Propagating the constraint to [default] is disabled for polymorphic
+                     defaults since we do not permit [Ptyp_poly] is [Pexp_constraint]s.
+                     This could be relaxed in future. *)
                   let gloc = { default.pexp_loc with loc_ghost = true } in
                   Ast_helper.Exp.constraint_ default sty ~loc:gloc
               | _ -> default

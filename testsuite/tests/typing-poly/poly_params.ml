@@ -609,6 +609,32 @@ let _ = polyo ~id:Obj.magic ()
 - : int * string = (3, "three")
 |}];;
 
+let polyochoose ?(choose : 'a. 'a -> 'a -> 'a = fun x _ -> x) () = choose 6 7
+[%%expect {|
+val polyochoose : ?choose:('a. 'a -> 'a -> 'a) -> unit -> int = <fun>
+|}]
+
+(* 'a -> 'b -> 'a and 'a -> 'b -> 'b are more general than 'a -> 'a -> 'a *)
+let _ = polyochoose ~choose:(fun x y -> x) ()
+let _ = polyochoose ~choose:(fun x y -> y) ()
+[%%expect {|
+- : int = 6
+- : int = 7
+|}];;
+
+
+let polyomap ?(bad_map : 'a. ('a -> 'a) -> 'a list -> 'a list = List.map) () = bad_map (fun x -> x + 1) [ 5; 6 ]
+[%%expect {|
+val polyomap :
+  ?bad_map:('a. ('a -> 'a) -> 'a list -> 'a list) -> unit -> int list = <fun>
+|}];;
+
+(* ('a -> 'b) -> 'a list -> 'b list is more general than [bad_map]'s type *)
+let _ = polyomap ~bad_map:List.map ()
+[%%expect {|
+- : int list = [6; 7]
+|}]
+
 let _ = polyo ~id:(fun x -> x + 1) ()
 [%%expect {|
 Line 1, characters 18-34:
@@ -630,8 +656,10 @@ val polyo' : ?id:('a. 'a -> 'a) -> unit -> int * string = <fun>
 
 let _ = polyo' ()
 let _ = polyo' ~id:(fun x -> x) ()
+let _ = polyo' ?id:(Some (fun x -> x)) ()
 [%%expect {|
 - : int * string = (4, "four")
+- : int * string = (3, "three")
 - : int * string = (3, "three")
 |}];;
 
@@ -662,3 +690,13 @@ val blind : (unit -> 'a) -> 'a = <fun>
 module Observe :
   sig val run : ?observer:('a. 'a observer) -> (unit -> 'a) -> 'a end
 |}];;
+
+let polyosingleton ?(r:'a. 'a -> 'a list = List.singleton) () = r 0, r "A"
+let app f () = f ()
+let x = app polyosingleton
+[%%expect {|
+val polyosingleton : ?r:('a. 'a -> 'a list) -> unit -> int list * string list =
+  <fun>
+val app : (unit -> 'a) -> unit -> 'a = <fun>
+val x : unit -> int list * string list = <fun>
+|}]
