@@ -39,6 +39,7 @@ end
        };
     };
  }
+
 module M :
   sig
     exception Exn of { lbl_exn : int; }

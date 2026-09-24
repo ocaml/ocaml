@@ -522,7 +522,6 @@ module Color: sig
   type setting = Auto | Always | Never
 
   val default_setting : setting
-  val is_enabled : unit -> bool
 end
 
 
@@ -544,7 +543,17 @@ module Style : sig
     | BG of color (* background *)
     | Bold
     | Reset
-  type Format.stag += Style of style list
+  type Format.stag +=
+    | Error
+    | Warning
+    | Hint
+    | Loc
+    | Inline_code
+    | Deletion
+    | Insertion
+    | Modification
+    | Preservation
+    | Style of style list
 
   val ansi_of_style_l : style list -> string
   (* ANSI escape sequence for the given style *)
@@ -556,11 +565,15 @@ module Style : sig
   }
 
   type styles = {
-    error: tag_style;
-    warning: tag_style;
-    loc: tag_style;
-    hint: tag_style;
-    inline_code: tag_style;
+    error : tag_style;
+    warning : tag_style;
+    loc : tag_style;
+    hint : tag_style;
+    deletion : tag_style;
+    insertion : tag_style;
+    modification : tag_style;
+    preservation : tag_style;
+    inline_code : tag_style;
   }
 
   val hint: Format_doc.formatter -> unit
@@ -576,7 +589,10 @@ module Style : sig
      according to the value of color setting [opt].
      Only the first call to this function has an effect. *)
 
-  val set_tag_handling : Format.formatter -> unit
+  val enable_color: Color.setting option  -> bool
+ (* Check flags and environment variables to see if we should use color *)
+
+  val set_tag_handling : color:bool -> Format.formatter -> unit
   (* adds functions to support color tags to the given formatter. *)
 end
 
@@ -600,16 +616,6 @@ val print_see_manual : int list Format_doc.printer
 
 val print_manual_hint : int list Format_doc.printer
 (** Manual hint, reserved for hints that are essentially quoting the manual *)
-
-(** {1 Displaying configuration variables} *)
-
-val show_config_and_exit : unit -> unit
-  (** Display the values of all compiler configuration variables from module
-      [Config], then exit the program with code 0. *)
-
-val show_config_variable_and_exit : string -> unit
-  (** Display the value of the given configuration variable,
-      then exit the program with code 0. *)
 
 (** {1 Handling of build maps} *)
 

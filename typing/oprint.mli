@@ -16,10 +16,9 @@
 open Outcometree
 
 type 'a printer = 'a Format_doc.printer ref
-type 'a toplevel_printer = (Format.formatter -> 'a -> unit) ref
 
 val out_ident: out_ident printer
-val out_value : out_value toplevel_printer
+val out_value : out_value printer
 val out_label : out_label printer
 val out_type : out_type printer
 val out_type_args : out_type list printer
@@ -31,6 +30,6 @@ val out_signature :out_sig_item list printer
 val out_functor_parameters :
   (string option * Outcometree.out_module_type) option list printer
 val out_type_extension : out_type_extension printer
-val out_phrase : out_phrase toplevel_printer
+val out_phrase : out_phrase printer
 
 val parenthesized_ident : string -> bool
