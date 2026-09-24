@@ -145,6 +145,10 @@ Working version
   or malicious files having 2^29 TOC entries or more.
   (Xavier Leroy, review by Nicolás Ojeda Bär)
 
+- #14911, #14943: Fix declarations of thread-local symbols with external linkage
+  for C++ interoperability.
+  (Antonin Décimo, report by Kate Deplaix, review by David Allsopp)
+
 * #14997: Default to and recommend large file and year 2038 support on 32-bit
   systems. LFS and 64-bit `time_t` _checks_ can be disabled by passing
   respectively `--disable-largefile` and `--disable-year2038` to configure.
