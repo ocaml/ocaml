@@ -15899,6 +15899,55 @@ fi
 
 done
 
+case $target in #(
+  *-apple-darwin*) :
+    as_CACHEVAR=`printf "%s\n" "ax_cv_check_cflags_$warn_error_flag_-Werror=unguarded-availability-new" | sed "$as_sed_sh"`
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler accepts -Werror=unguarded-availability-new" >&5
+printf %s "checking whether the C compiler accepts -Werror=unguarded-availability-new... " >&6; }
+if eval test \${$as_CACHEVAR+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e)
+  ax_check_save_flags=$CFLAGS
+  CFLAGS="$CFLAGS $warn_error_flag -Werror=unguarded-availability-new"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  eval "$as_CACHEVAR=yes"
+else case e in #(
+  e) eval "$as_CACHEVAR=no" ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+  CFLAGS=$ax_check_save_flags ;;
+esac
+fi
+eval ac_res=\$$as_CACHEVAR
+	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+printf "%s\n" "$ac_res" >&6; }
+if eval test \"x\$"$as_CACHEVAR"\" = x"yes"
+then :
+  common_cflags="-Werror=unguarded-availability-new $common_cflags"
+else case e in #(
+  e) : ;;
+esac
+fi
+ ;; #(
+  *) :
+     ;;
+esac
+
 case $enable_warn_error,true in #(
   yes,*|,true) :
     cc_warnings="$cc_warnings $warn_error_flag" ;; #(
@@ -22835,22 +22884,133 @@ fi
 
 ## dup3
 
-ac_fn_c_check_func "$LINENO" "dup3" "ac_cv_func_dup3"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CC options needed to detect all undeclared functions" >&5
+printf %s "checking for $CC options needed to detect all undeclared functions... " >&6; }
+if test ${ac_cv_c_undeclared_builtin_options+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_save_CFLAGS=$CFLAGS
+   ac_cv_c_undeclared_builtin_options='cannot detect'
+   for ac_arg in '' -fno-builtin; do
+     CFLAGS="$ac_save_CFLAGS $ac_arg"
+     # This test program should *not* compile successfully.
+     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+(void) strchr;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+
+else case e in #(
+  e) # This test program should compile successfully.
+        # No library function is consistently available on
+        # freestanding implementations, so test against a dummy
+        # declaration.  Include always-available headers on the
+        # off chance that they somehow elicit warnings.
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <float.h>
+#include <limits.h>
+#include <stdarg.h>
+#include <stddef.h>
+extern void ac_decl (int, char *);
+
+int
+main (void)
+{
+(void) ac_decl (0, (char *) 0);
+  (void) ac_decl;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  if test x"$ac_arg" = x
+then :
+  ac_cv_c_undeclared_builtin_options='none needed'
+else case e in #(
+  e) ac_cv_c_undeclared_builtin_options=$ac_arg ;;
+esac
+fi
+          break
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+    done
+    CFLAGS=$ac_save_CFLAGS
+   ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_c_undeclared_builtin_options" >&5
+printf "%s\n" "$ac_cv_c_undeclared_builtin_options" >&6; }
+  case $ac_cv_c_undeclared_builtin_options in #(
+  'cannot detect') :
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
+as_fn_error $? "cannot make $CC report undeclared builtins
+See 'config.log' for more details" "$LINENO" 5; } ;; #(
+  'none needed') :
+    ac_c_undeclared_builtin_options='' ;; #(
+  *) :
+    ac_c_undeclared_builtin_options=$ac_cv_c_undeclared_builtin_options ;;
+esac
+
+
+  saved_CFLAGS="$CFLAGS"
+  if test x"$ax_cv_check_cflags__Werror_unguarded_availability_new" = xyes
+then :
+  CFLAGS="$CFLAGS -Werror=unguarded-availability-new"
+fi
+  ac_fn_check_decl "$LINENO" "dup3" "ac_cv_have_decl_dup3" "#define _GNU_SOURCE
+  $ac_includes_default
+" "$ac_c_undeclared_builtin_options" "CFLAGS"
+if test "x$ac_cv_have_decl_dup3" = xyes
+then :
+  ac_fn_c_check_func "$LINENO" "dup3" "ac_cv_func_dup3"
 if test "x$ac_cv_func_dup3" = xyes
 then :
   printf "%s\n" "#define HAS_DUP3 1" >>confdefs.h
 
 fi
 
+fi
+  CFLAGS="$saved_CFLAGS"
+
 
 ## pipe2
 
-ac_fn_c_check_func "$LINENO" "pipe2" "ac_cv_func_pipe2"
+
+  saved_CFLAGS="$CFLAGS"
+  if test x"$ax_cv_check_cflags__Werror_unguarded_availability_new" = xyes
+then :
+  CFLAGS="$CFLAGS -Werror=unguarded-availability-new"
+fi
+  ac_fn_check_decl "$LINENO" "pipe2" "ac_cv_have_decl_pipe2" "#define _GNU_SOURCE
+  $ac_includes_default
+" "$ac_c_undeclared_builtin_options" "CFLAGS"
+if test "x$ac_cv_have_decl_pipe2" = xyes
+then :
+  ac_fn_c_check_func "$LINENO" "pipe2" "ac_cv_func_pipe2"
 if test "x$ac_cv_func_pipe2" = xyes
 then :
   printf "%s\n" "#define HAS_PIPE2 1" >>confdefs.h
 
 fi
+
+fi
+  CFLAGS="$saved_CFLAGS"
 
 
 ## accept4
@@ -23144,89 +23304,6 @@ fi
 
 zstd_status=""
 zstd_libs=""
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CC options needed to detect all undeclared functions" >&5
-printf %s "checking for $CC options needed to detect all undeclared functions... " >&6; }
-if test ${ac_cv_c_undeclared_builtin_options+y}
-then :
-  printf %s "(cached) " >&6
-else case e in #(
-  e) ac_save_CFLAGS=$CFLAGS
-   ac_cv_c_undeclared_builtin_options='cannot detect'
-   for ac_arg in '' -fno-builtin; do
-     CFLAGS="$ac_save_CFLAGS $ac_arg"
-     # This test program should *not* compile successfully.
-     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main (void)
-{
-(void) strchr;
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"
-then :
-
-else case e in #(
-  e) # This test program should compile successfully.
-        # No library function is consistently available on
-        # freestanding implementations, so test against a dummy
-        # declaration.  Include always-available headers on the
-        # off chance that they somehow elicit warnings.
-        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <float.h>
-#include <limits.h>
-#include <stdarg.h>
-#include <stddef.h>
-extern void ac_decl (int, char *);
-
-int
-main (void)
-{
-(void) ac_decl (0, (char *) 0);
-  (void) ac_decl;
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"
-then :
-  if test x"$ac_arg" = x
-then :
-  ac_cv_c_undeclared_builtin_options='none needed'
-else case e in #(
-  e) ac_cv_c_undeclared_builtin_options=$ac_arg ;;
-esac
-fi
-          break
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext ;;
-esac
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-    done
-    CFLAGS=$ac_save_CFLAGS
-   ;;
-esac
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_c_undeclared_builtin_options" >&5
-printf "%s\n" "$ac_cv_c_undeclared_builtin_options" >&6; }
-  case $ac_cv_c_undeclared_builtin_options in #(
-  'cannot detect') :
-    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
-printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
-as_fn_error $? "cannot make $CC report undeclared builtins
-See 'config.log' for more details" "$LINENO" 5; } ;; #(
-  'none needed') :
-    ac_c_undeclared_builtin_options='' ;; #(
-  *) :
-    ac_c_undeclared_builtin_options=$ac_cv_c_undeclared_builtin_options ;;
-esac
 
 if test x"$with_zstd" != "xno"
 then :
