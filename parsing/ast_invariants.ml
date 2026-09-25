@@ -34,6 +34,8 @@ let module_type_substitution_missing_rhs loc =
   err loc "Module type substitution with no right hand side"
 let function_without_value_parameters loc =
   err loc "Function without any value parameters"
+let function_without_cases loc =
+  err loc "Function without any branches"
 let invalid_struct_item loc =
   err loc "This kind of structure item is not allowed in this context."
 
@@ -117,6 +119,8 @@ let iterator =
     | Pexp_new id -> simple_longident id
     | Pexp_record (fields, _) ->
       List.iter (fun (id, _) -> simple_longident id) fields
+    | Pexp_function (_, _, Pfunction_cases ([], loc, _)) ->
+        function_without_cases loc
     | Pexp_function (params, _, Pfunction_body _) ->
         if
           List.for_all
