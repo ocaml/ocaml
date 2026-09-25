@@ -50,7 +50,8 @@ let is_immediate n =
 let inline_ops =
   [ "sqrt"; "caml_bswap16_direct"; "caml_fma"; "caml_int32_direct_bswap";
     "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap";
-    "caml_round"; "caml_trunc"; "ceil"; "floor" ]
+    "caml_round"; "caml_trunc"; "ceil"; "floor";
+    "caml_int_clz_direct"; "caml_int_ctz_direct" ]
 
 let use_direct_addressing _symb =
   (not !Clflags.dlcode) && (not Arch.macosx)
@@ -226,6 +227,10 @@ method! select_operation op args dbg =
   | Cextcall(("caml_int64_direct_bswap"|"caml_nativeint_direct_bswap"),
               _, _, _) ->
       (Ispecific (Ibswap 64), args)
+  | Cextcall("caml_int_clz_direct", _, _, _) ->
+      (Ispecific Iclz, args)
+  | Cextcall("caml_int_ctz_direct", _, _, _) ->
+      (Ispecific Ictz, args)
   (* Other operations are regular *)
   | _ ->
       super#select_operation op args dbg

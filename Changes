@@ -231,6 +231,13 @@ Working version
   riscv and s390x rather than calling into C
   (Zane Hambly, review by Miod Vallat and Xavier Leroy)
 
+- #15018: `Int.popcount`, `Int.leading_zeros` and `Int.trailing_zeros` become
+  C primitives, with `leading_zeros` and `trailing_zeros` emitted as `bsr`
+  and `bsf` on amd64 and `clz` and `rbit` on arm64 rather than calling
+  into C
+  (Zane Hambly, review by Xavier Leroy, Basile Clément, Antonin Décimo,
+   Jeremy Yallop and Nicolás Ojeda Bär)
+
 - #15017: emit the rounding instructions for `Float.round`, `Float.trunc`,
   `ceil` and `floor` on arm64 and power rather than calling into C
   (Zane Hambly, review by Miod Vallat and Nicolás Ojeda Bär)
