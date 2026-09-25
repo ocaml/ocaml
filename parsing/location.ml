@@ -872,8 +872,8 @@ let report_error ppf err =
 let mkerror loc sub footnote txt =
   { kind = Report_error; main = { loc; txt }; sub; footnote=footnote () }
 
-let errorf ?(loc = none) ?(sub = []) ?(footnote=Fun.const None) =
-  Fmt.kdoc_printf (mkerror loc sub footnote)
+let errorf ?(loc = none) ?(sub = []) ?(footnote=Fun.const None) fmt =
+  Fmt.kdoc_printf (mkerror loc sub footnote) fmt
 
 let multiple_errors ?loc ?footnote = function
   | [error] -> error
@@ -1048,5 +1048,5 @@ let () =
       | _ -> None
     )
 
-let raise_errorf ?(loc = none) ?(sub = []) ?(footnote=Fun.const None) =
-  Fmt.kdoc_printf (fun txt -> raise (Error (mkerror loc sub footnote txt)))
+let raise_errorf ?(loc = none) ?(sub = []) ?(footnote=Fun.const None) fmt =
+  Fmt.kdoc_printf (fun txt -> raise (Error (mkerror loc sub footnote txt))) fmt

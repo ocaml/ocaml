@@ -1,0 +1,6 @@
+File "labels_evaluation_order.ml", line 5, characters 9-10:
+5 | let foo ?a =
+             ^
+Warning 76 [syntactic-unerasable-optional-argument]: this optional argument
+  is not followed by a non-labelled argument.
+  It might not be erasable, and its evaluation might be delayed.
