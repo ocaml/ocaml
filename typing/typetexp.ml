@@ -361,7 +361,7 @@ end = struct
           match unify env v ty with
           | Error err when is_in_scope name ->
               Error.log_and_raise loc env (Type_mismatch err)
-          | Error _ | exception _ -> Btype.backtrack snap
+          | Error _ | exception Ctype.Tags _ -> Btype.backtrack snap
           | Ok () ->
             begin match lookup_global_type_variable name with
             | global_var ->
@@ -764,7 +764,7 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
       let ty_list = TyVarEnv.check_poly_univars env styp.ptyp_loc new_univars in
       let ty_list = List.filter (fun v -> Btype.deep_occur v ty) ty_list in
       let ty' = Btype.newgenty (Tpoly(ty, ty_list)) in
-      assert (Result.is_ok (unify_var env (newvar()) ty'));
+      unify_var_exn env (newvar()) ty';
       ctyp (Ttyp_poly (vars, cty)) ty'
   | Ptyp_package ptyp ->
       let pack, (), ptys =

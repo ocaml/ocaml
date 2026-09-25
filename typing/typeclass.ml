@@ -795,19 +795,19 @@ let rec class_field_first_pass self_loc cl_num final sign self_scope acc cf =
            in
            add_method loc val_env label.txt priv Concrete ty sign;
            begin
-             try
                match get_desc ty with
                | Tvar _ ->
                    let ty' = Ctype.newvar () in
-                   Ctype.unify_exn val_env (Ctype.newmono ty') ty;
-                   type_approx val_env sbody ty'
+                   begin match Ctype.unify val_env (Ctype.newmono ty') ty with
+                   | Ok () -> type_approx val_env sbody ty'
+                   | Error err ->
+                      Error.log_and_raise loc val_env
+                        (Field_type_mismatch ("method", label.txt, err))
+                   end
                | Tpoly (ty1, tl) ->
                    let ty1' = Ctype.instance_poly tl ty1 in
                    type_approx val_env sbody ty1'
                | _ -> assert false
-             with Ctype.Unify err ->
-               Error.log_and_raise loc val_env
-                 (Field_type_mismatch ("method", label.txt, err))
            end;
            let sdefinition = make_method self_loc cl_num expr in
            let warning_state = Warnings.backup () in

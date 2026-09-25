@@ -342,7 +342,7 @@ val unify_gadt:
         (Btype.TypePairs.t, Errortrace.unification_error) result
         (* [unify_gadt penv ~pat:ty1 ~expected:ty2] unifies [ty1] and [ty2]
            in [Pattern] mode, possible adding local constraints to the
-           environment in [penv]. Raises [Unify] if not possible.
+           environment in [penv].
            Returns the pairs of types that have been equated.
            Type variables in [ty1] are always assumed to be non-leaking
            (safely reifiable); if [penv.in_counterexample = true]
