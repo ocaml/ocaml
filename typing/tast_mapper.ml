@@ -211,12 +211,15 @@ let primitive_description sub x =
   let prim_attributes = sub.attributes sub x.prim_attributes in
   {x with prim_loc; prim_name; prim_kind; prim_attributes}
 
-let label_decl sub x =
+let rec label_decl sub x =
   let ld_loc = sub.location sub x.ld_loc in
   let ld_name = map_loc sub x.ld_name in
   let ld_type = sub.typ sub x.ld_type in
+  let ld_inline_record =
+    Option.map (List.map (label_decl sub)) x.ld_inline_record
+  in
   let ld_attributes = sub.attributes sub x.ld_attributes in
-  {x with ld_loc; ld_name; ld_type; ld_attributes}
+  {x with ld_loc; ld_name; ld_type; ld_inline_record; ld_attributes}
 
 let constructor_args sub = function
   | Cstr_tuple l -> Cstr_tuple (List.map (sub.typ sub) l)

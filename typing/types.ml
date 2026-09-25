@@ -319,6 +319,7 @@ and label_declaration =
     ld_mutable: mutable_flag;
     ld_atomic: atomic_flag;
     ld_type: type_expr;
+    ld_inlined: type_declaration option;
     ld_loc: Location.t;
     ld_attributes: Parsetree.attributes;
     ld_uid: Uid.t;

@@ -325,6 +325,12 @@ let of_path ~find_shape ~namespace path =
             proj (aux Constructor path) (name, ns)
         | Pcstr_ty name, _, _ -> proj (aux Type path) (name, ns)
         | Pext_ty, _, _ -> aux Extension_constructor path
+        | Pfld_ty name, _, _ ->
+            (* [Pextra_ty (p, Pfld_ty name)] denotes the inline record type
+               nested in field [name] of [p]: project the [Type] item that
+               record type shapes register for nested declarations, whatever
+               namespace the surrounding path is resolved in. *)
+            proj (aux Type path) (name, Type)
       end
   in
   aux namespace path
