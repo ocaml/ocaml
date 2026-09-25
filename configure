@@ -22967,7 +22967,13 @@ See 'config.log' for more details" "$LINENO" 5; } ;; #(
     ac_c_undeclared_builtin_options=$ac_cv_c_undeclared_builtin_options ;;
 esac
 
-ac_fn_check_decl "$LINENO" "dup3" "ac_cv_have_decl_dup3" "#define _GNU_SOURCE
+
+  saved_CFLAGS="$CFLAGS"
+  if test x"$ax_cv_check_cflags__Werror_unguarded_availability_new" = xyes
+then :
+  CFLAGS="$CFLAGS -Werror=unguarded-availability-new"
+fi
+  ac_fn_check_decl "$LINENO" "dup3" "ac_cv_have_decl_dup3" "#define _GNU_SOURCE
   $ac_includes_default
 " "$ac_c_undeclared_builtin_options" "CFLAGS"
 if test "x$ac_cv_have_decl_dup3" = xyes
@@ -22980,10 +22986,18 @@ then :
 fi
 
 fi
+  CFLAGS="$saved_CFLAGS"
+
 
 ## pipe2
 
-ac_fn_check_decl "$LINENO" "pipe2" "ac_cv_have_decl_pipe2" "#define _GNU_SOURCE
+
+  saved_CFLAGS="$CFLAGS"
+  if test x"$ax_cv_check_cflags__Werror_unguarded_availability_new" = xyes
+then :
+  CFLAGS="$CFLAGS -Werror=unguarded-availability-new"
+fi
+  ac_fn_check_decl "$LINENO" "pipe2" "ac_cv_have_decl_pipe2" "#define _GNU_SOURCE
   $ac_includes_default
 " "$ac_c_undeclared_builtin_options" "CFLAGS"
 if test "x$ac_cv_have_decl_pipe2" = xyes
@@ -22996,6 +23010,8 @@ then :
 fi
 
 fi
+  CFLAGS="$saved_CFLAGS"
+
 
 ## accept4
 
