@@ -174,7 +174,8 @@ let enter_type ?abstract_abbrevs rec_flag env sdecl (id, uid) =
   in
   add_type ~check:true id decl env
 
-(* Source positions keep recursive placeholders and final declarations at the same arity. *)
+(* Source positions keep recursive placeholders and final declarations at the
+   same arity. *)
 let nested_param_positions sparams labels =
   let variables = ref String.Set.empty in
   let bound = ref String.Set.empty in

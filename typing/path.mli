@@ -64,7 +64,10 @@ and extra_ty =
       named as [person.address].
 
       {[
-        type person = { name : string; address : {street : string; city : string} }
+        type person = {
+          name : string;
+          address : {street : string; city : string};
+        }
       ]}
   *)
 

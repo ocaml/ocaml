@@ -6339,6 +6339,7 @@ and type_label_access env srecord usage lid =
       lbl_all = [||];
       lbl_repres = Record_regular;
       lbl_private = Public;
+      lbl_inlined = None;
       lbl_loc = lid.loc;
       lbl_attributes = [];
       lbl_uid = Uid.internal_not_actually_unique;

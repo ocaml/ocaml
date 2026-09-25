@@ -626,7 +626,8 @@ and label_declaration =
      pld_inline_record: label_declaration list option;
       (** When [Some fields], the field's type is an inline record definition.
           [pld_type] is set to a dummy type; the actual type is the inline
-          record with the given [fields]. When [None], this is a normal field. *)
+          record with the given [fields]. When [None], this is a normal
+          field. *)
      pld_loc: Location.t;
      pld_attributes: attributes;  (** [l : T [\@id1] [\@id2]] *)
     }

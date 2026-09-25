@@ -3764,7 +3764,8 @@ let rec type_path_equiv_modulo env p1 p2 =
     let same_extra = match extra1, extra2 with
       | (Pcstr_ty s1, Pcstr_ty s2) -> String.equal s1 s2
       | (Pext_ty, Pext_ty) -> true
-      | ((Pcstr_ty _ | Pext_ty), _) -> false
+      | (Pfld_ty s1, Pfld_ty s2) -> String.equal s1 s2
+      | ((Pcstr_ty _ | Pext_ty | Pfld_ty _), _) -> false
     in same_extra && type_path_equiv_modulo env p1 p2
   | Papply _, _ | _, Papply _ -> assert false
   | (Pident _ | Pdot _ | Pextra_ty _), _ -> false
