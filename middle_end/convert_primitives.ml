@@ -148,6 +148,12 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
       Pbigstring_set (Sixty_four, convert_unsafety is_unsafe)
   | Pbigarraydim dim -> Pbigarraydim dim
   | Pbswap16 -> Pbswap16
+  | Pfloatarray_dot -> Pfloatarray_dot
+  | Pfloatarray_sum -> Pfloatarray_sum
+  | Pfloatarray_scale -> Pfloatarray_scale
+  | Pfloatarray_axpy -> Pfloatarray_axpy
+  | Pfloatarray_add -> Pfloatarray_add
+  | Pfloatarray_mul -> Pfloatarray_mul
   | Pint_as_pointer -> Pint_as_pointer
   | Patomic_load -> Patomic_load
   | Patomic_fetch_add -> Patomic_fetch_add

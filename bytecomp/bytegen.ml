@@ -166,6 +166,8 @@ let preserve_tailcall_for_prim = function
   | Pbytes_set_64 _ | Pbigstring_load_16 _ | Pbigstring_load_32 _
   | Pbigstring_load_64 _ | Pbigstring_set_16 _ | Pbigstring_set_32 _
   | Pbigstring_set_64 _ | Pctconst _ | Pbswap16 | Pbbswap _ | Pint_as_pointer
+  | Pfloatarray_dot | Pfloatarray_sum | Pfloatarray_scale
+  | Pfloatarray_axpy | Pfloatarray_add | Pfloatarray_mul
   | Patomic_load | Patomic_fetch_add
   | Pdls_get ->
       false
@@ -522,6 +524,12 @@ let comp_primitive stack_info p sz args =
       Kccall("caml_ba_uint8_set64", 3,
              if unsafe then Some Hint_unsafe else None)
   | Pbswap16 -> Kccall("caml_bswap16", 1, None)
+  | Pfloatarray_dot -> Kccall("caml_floatarray_dot", 3, None)
+  | Pfloatarray_sum -> Kccall("caml_floatarray_sum", 2, None)
+  | Pfloatarray_scale -> Kccall("caml_floatarray_scale", 3, None)
+  | Pfloatarray_axpy -> Kccall("caml_floatarray_axpy", 4, None)
+  | Pfloatarray_add -> Kccall("caml_floatarray_add", 4, None)
+  | Pfloatarray_mul -> Kccall("caml_floatarray_mul", 4, None)
   | Pbbswap(bi) -> comp_bint_primitive bi "bswap" args
   | Pint_as_pointer -> Kccall("caml_int_as_pointer", 1, None)
   | Pbytes_to_string -> Kccall("caml_string_of_bytes", 1, None)

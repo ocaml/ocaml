@@ -370,6 +370,12 @@ let primitives_table =
     "%caml_bigstring_set64", Primitive ((Pbigstring_set_64(false)), 3);
     "%caml_bigstring_set64u", Primitive ((Pbigstring_set_64(true)), 3);
     "%bswap16", Primitive (Pbswap16, 1);
+    "%floatarray_dot", Primitive (Pfloatarray_dot, 3);
+    "%floatarray_sum", Primitive (Pfloatarray_sum, 2);
+    "%floatarray_scale", Primitive (Pfloatarray_scale, 3);
+    "%floatarray_axpy", Primitive (Pfloatarray_axpy, 4);
+    "%floatarray_add", Primitive (Pfloatarray_add, 4);
+    "%floatarray_mul", Primitive (Pfloatarray_mul, 4);
     "%bswap_int32", Primitive ((Pbbswap(Pint32)), 1);
     "%bswap_int64", Primitive ((Pbbswap(Pint64)), 1);
     "%bswap_native", Primitive ((Pbbswap(Pnativeint)), 1);
@@ -973,6 +979,8 @@ let lambda_primitive_needs_event_after = function
   | Parraylength _ | Parrayrefu _ | Parraysetu _ | Pisint | Pisout | Pcheckbound
   | Patomic_load | Patomic_fetch_add
   | Pintofbint _ | Pctconst _ | Pbswap16 | Pint_as_pointer | Popaque | Pdls_get
+  | Pfloatarray_dot | Pfloatarray_sum | Pfloatarray_scale
+  | Pfloatarray_axpy | Pfloatarray_add | Pfloatarray_mul
   | Pmakelazyblock _
       -> false
 

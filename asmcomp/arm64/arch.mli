@@ -95,6 +95,9 @@ val size_float : int
 
 val allow_unaligned_access : bool
 
+(* A C-convention dot product kernel the shared loop calls on chunks *)
+val floatarray_dot_kernel : string option
+
 (* Behavior of division *)
 
 val division_crashes_on_overflow : bool

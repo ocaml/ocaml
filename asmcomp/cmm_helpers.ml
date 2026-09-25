@@ -345,6 +345,131 @@ let create_loop body dbg =
   let body = Csequence (body, call_cont) in
   Ccatch (Recursive, [cont, [], body, dbg], call_cont)
 
+(* Loops over the first [n] elements of float arrays, four at a time with a
+   scalar tail.  [step] receives the group base address of each array and the
+   element number within the group. *)
+
+let floatarray_loop arrays n dbg ~init ~step ~result =
+  let rec binds names args k =
+    match names, args with
+    | name :: names, arg :: args ->
+        bind name arg (fun v -> binds names args (fun vs -> k (v :: vs)))
+    | _ -> k [] in
+  binds (List.mapi (fun k _ -> "arr" ^ string_of_int k) arrays) arrays
+    (fun arrays -> bind "n" n (fun n ->
+  let i = V.create_local "i" in
+  let base arr =
+    Cop(Cadda, [arr; Cop(Clsl, [Cvar_mut i; Cconst_int (3, dbg)], dbg)], dbg) in
+  let seq l =
+    List.fold_right (fun e rest -> Csequence (e, rest)) l (Ctuple []) in
+  let next stride = Cop(Caddi, [Cvar_mut i; Cconst_int (stride, dbg)], dbg) in
+  let loop stride body =
+    let exit = Lambda.next_raise_count () in
+    Ccatch (Nonrecursive, [exit, [], Ctuple [], dbg],
+      create_loop
+        (Cifthenelse (Cop(Ccmpi Cgt, [next stride; n], dbg), dbg,
+           Cexit (exit, []), dbg,
+           binds (List.mapi (fun k _ -> "p" ^ string_of_int k) arrays)
+             (List.map base arrays)
+             (fun ps -> seq (body ps @ [Cassign (i, next stride)])),
+           dbg))
+        dbg) in
+  let body =
+    seq [ loop 4 (fun ps -> List.init 4 (step ps));
+          loop 1 (fun ps -> [step ps 0]) ] in
+  Clet_mut (VP.create i, typ_int, Cconst_int (0, dbg),
+    init (Csequence (body, result)))))
+
+let float_elt p k dbg =
+  Cop(mk_load_mut Double, [Cop(Cadda, [p; Cconst_int (8 * k, dbg)], dbg)], dbg)
+
+let float_elt_set p k v dbg =
+  Cop(Cstore (Double, Assignment),
+      [Cop(Cadda, [p; Cconst_int (8 * k, dbg)], dbg); v], dbg)
+
+(* Reductions keep four partial sums so the adds do not serialise. *)
+let floatarray_reduce arrays n dbg ~term =
+  let s = Array.init 4 (fun k -> V.create_local ("s" ^ string_of_int k)) in
+  floatarray_loop arrays n dbg
+    ~init:(fun e ->
+      Array.fold_right
+        (fun v e ->
+           Clet_mut (VP.create v, typ_float, Cconst_float (0., dbg), e))
+        s e)
+    ~step:(fun ps k ->
+      Cassign (s.(k), Cop(Caddf, [Cvar_mut s.(k); term ps k], dbg)))
+    ~result:(Cop(Caddf, [Cop(Caddf, [Cvar_mut s.(0); Cvar_mut s.(1)], dbg);
+                         Cop(Caddf, [Cvar_mut s.(2); Cvar_mut s.(3)], dbg)], dbg))
+
+let floatarray_dot_chunked kernel a b n dbg =
+  bind "a" a (fun a -> bind "b" b (fun b -> bind "n" n (fun n ->
+    let i = V.create_local "i" and acc = V.create_local "acc" in
+    let at arr =
+      Cop(Cadda, [arr; Cop(Clsl, [Cvar_mut i; Cconst_int (3, dbg)], dbg)], dbg) in
+    let remaining = Cop(Csubi, [n; Cvar_mut i], dbg) in
+    let chunk =
+      bind "rem" remaining (fun rem ->
+        Cifthenelse (Cop(Ccmpi Cgt, [rem; Cconst_int (256, dbg)], dbg), dbg,
+          Cconst_int (256, dbg), dbg, rem, dbg)) in
+    let call len =
+      Cop(Cextcall(kernel, typ_float, [XInt; XInt; XInt], false),
+          [at a; at b; len], dbg) in
+    let exit = Lambda.next_raise_count () in
+    let body =
+      Ccatch (Nonrecursive, [exit, [], Ctuple [], dbg],
+        create_loop
+          (Cifthenelse (Cop(Ccmpi Cge, [Cvar_mut i; n], dbg), dbg,
+             Cexit (exit, []), dbg,
+             bind "len" chunk (fun len ->
+               Csequence (
+                 Cassign (acc, Cop(Caddf, [Cvar_mut acc; call len], dbg)),
+                 Cassign (i, Cop(Caddi, [Cvar_mut i; len], dbg)))), dbg))
+          dbg) in
+    Clet_mut (VP.create i, typ_int, Cconst_int (0, dbg),
+      Clet_mut (VP.create acc, typ_float, Cconst_float (0., dbg),
+        Csequence (body, Cvar_mut acc))))))
+
+let floatarray_dot a b n dbg =
+  floatarray_reduce [a; b] n dbg ~term:(fun ps k ->
+    match ps with
+    | [pa; pb] -> Cop(Cmulf, [float_elt pa k dbg; float_elt pb k dbg], dbg)
+    | _ -> assert false)
+
+let floatarray_sum a n dbg =
+  floatarray_reduce [a] n dbg ~term:(fun ps k ->
+    match ps with [pa] -> float_elt pa k dbg | _ -> assert false)
+
+(* Element-wise operations store into the last array. *)
+let floatarray_map arrays n dbg ~f =
+  floatarray_loop arrays n dbg
+    ~init:(fun e -> e)
+    ~step:(fun ps k ->
+      let dst = List.nth ps (List.length ps - 1) in
+      float_elt_set dst k (f ps k) dbg)
+    ~result:(Ctuple [])
+
+let floatarray_scale c a n dbg =
+  bind "c" c (fun c ->
+    floatarray_map [a] n dbg ~f:(fun ps k ->
+      match ps with
+      | [pa] -> Cop(Cmulf, [c; float_elt pa k dbg], dbg)
+      | _ -> assert false))
+
+let floatarray_axpy c x y n dbg =
+  bind "c" c (fun c ->
+    floatarray_map [x; y] n dbg ~f:(fun ps k ->
+      match ps with
+      | [px; py] ->
+          Cop(Caddf, [Cop(Cmulf, [c; float_elt px k dbg], dbg);
+                      float_elt py k dbg], dbg)
+      | _ -> assert false))
+
+let floatarray_binop op a b dst n dbg =
+  floatarray_map [a; b; dst] n dbg ~f:(fun ps k ->
+    match ps with
+    | [pa; pb; _] -> Cop(op, [float_elt pa k dbg; float_elt pb k dbg], dbg)
+    | _ -> assert false)
+
 (* Turning integer divisions into multiply-high then shift.
    The [division_parameters] function is used in module Emit for
    those target platforms that support this optimization. *)

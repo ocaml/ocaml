@@ -393,6 +393,72 @@ static void wo_memmove (volatile value* const dst,
 
 /* [MM] [TODO]: Not consistent with the memory model. See the discussion in
    https://github.com/ocaml-multicore/ocaml-multicore/pull/822. */
+CAMLprim value caml_floatarray_dot(value a, value b, value n)
+{
+  intnat len = Long_val(n);
+  const double *pa = (const double *) a, *pb = (const double *) b;
+  double s0 = 0., s1 = 0., s2 = 0., s3 = 0.;
+  intnat i = 0;
+  for (; i + 4 <= len; i += 4) {
+    s0 += pa[i] * pb[i];
+    s1 += pa[i + 1] * pb[i + 1];
+    s2 += pa[i + 2] * pb[i + 2];
+    s3 += pa[i + 3] * pb[i + 3];
+  }
+  for (; i < len; i++) s0 += pa[i] * pb[i];
+  return caml_copy_double((s0 + s1) + (s2 + s3));
+}
+
+CAMLprim value caml_floatarray_sum(value a, value n)
+{
+  intnat len = Long_val(n);
+  const double *pa = (const double *) a;
+  double s0 = 0., s1 = 0., s2 = 0., s3 = 0.;
+  intnat i = 0;
+  for (; i + 4 <= len; i += 4) {
+    s0 += pa[i]; s1 += pa[i + 1]; s2 += pa[i + 2]; s3 += pa[i + 3];
+  }
+  for (; i < len; i++) s0 += pa[i];
+  return caml_copy_double((s0 + s1) + (s2 + s3));
+}
+
+CAMLprim value caml_floatarray_scale(value c, value a, value n)
+{
+  intnat len = Long_val(n);
+  double k = Double_val(c);
+  double *pa = (double *) a;
+  for (intnat i = 0; i < len; i++) pa[i] = k * pa[i];
+  return Val_unit;
+}
+
+CAMLprim value caml_floatarray_axpy(value c, value x, value y, value n)
+{
+  intnat len = Long_val(n);
+  double k = Double_val(c);
+  const double *px = (const double *) x;
+  double *py = (double *) y;
+  for (intnat i = 0; i < len; i++) py[i] = k * px[i] + py[i];
+  return Val_unit;
+}
+
+CAMLprim value caml_floatarray_add(value a, value b, value dst, value n)
+{
+  intnat len = Long_val(n);
+  const double *pa = (const double *) a, *pb = (const double *) b;
+  double *pd = (double *) dst;
+  for (intnat i = 0; i < len; i++) pd[i] = pa[i] + pb[i];
+  return Val_unit;
+}
+
+CAMLprim value caml_floatarray_mul(value a, value b, value dst, value n)
+{
+  intnat len = Long_val(n);
+  const double *pa = (const double *) a, *pb = (const double *) b;
+  double *pd = (double *) dst;
+  for (intnat i = 0; i < len; i++) pd[i] = pa[i] * pb[i];
+  return Val_unit;
+}
+
 CAMLprim value caml_floatarray_blit(value a1, value ofs1, value a2, value ofs2,
                                     value n)
 {
