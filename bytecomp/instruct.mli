@@ -115,6 +115,9 @@ type optimization_hint =
     (* Physical comparison *)
   | Hint_immediate
     (* The value produced by the instruction is an immediate *)
+  | Hint_variant
+    (* The argument of the instruction is a value of a variant type: if it
+       is an immediate, it is a constant constructor *)
 
 (* Abstract machine instructions *)
 
@@ -169,7 +172,7 @@ type instruction =
   | Kphyscomp of physical_comparison
   | Koffsetint of int
   | Koffsetref of int
-  | Kisint
+  | Kisint of bool (* the argument is a value of a variant type *)
   | Kisout
   | Kgetmethod
   | Kgetpubmet of int

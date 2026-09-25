@@ -352,7 +352,9 @@ let emit_instr = function
       emit_comp (integer_comparison_of_physical c)
   | Koffsetint n -> out opOFFSETINT; out_int n
   | Koffsetref n -> out opOFFSETREF; out_int n
-  | Kisint -> out opISINT
+  | Kisint variant_only ->
+      if variant_only then record_hint Hint_variant;
+      out opISINT
   | Kisout -> out opULTINT
   | Kgetmethod -> out opGETMETHOD
   | Kgetpubmet tag -> out opGETPUBMET; out_int tag; out_int 0

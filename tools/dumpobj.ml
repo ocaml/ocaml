@@ -478,6 +478,8 @@ let print_hint hint =
       printf " (physical comparison)"
   | Hint_immediate ->
       printf " (immediate)"
+  | Hint_variant ->
+      printf " (variant)"
   | Hint_arraylength kind ->
       printf " (%s)"
         (match kind with

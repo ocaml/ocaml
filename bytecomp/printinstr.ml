@@ -97,7 +97,7 @@ let instruction ppf = function
   | Kphyscomp CPneq -> fprintf ppf "\tphysneq"
   | Koffsetint n -> fprintf ppf "\toffsetint %i" n
   | Koffsetref n -> fprintf ppf "\toffsetref %i" n
-  | Kisint -> fprintf ppf "\tisint"
+  | Kisint _ -> fprintf ppf "\tisint"
   | Kisout -> fprintf ppf "\tisout"
   | Kgetmethod -> fprintf ppf "\tgetmethod"
   | Kgetpubmet n -> fprintf ppf "\tgetpubmet %i" n

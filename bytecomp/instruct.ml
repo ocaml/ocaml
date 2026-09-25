@@ -82,6 +82,7 @@ type optimization_hint =
   | Hint_ccall of ccall_hint
   | Hint_physical_comparison
   | Hint_immediate
+  | Hint_variant
 
 type label = int                     (* Symbolic code labels *)
 
@@ -134,7 +135,7 @@ type instruction =
   | Kphyscomp of physical_comparison
   | Koffsetint of int
   | Koffsetref of int
-  | Kisint
+  | Kisint of bool
   | Kisout
   | Kgetmethod
   | Kgetpubmet of int

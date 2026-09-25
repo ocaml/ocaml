@@ -156,7 +156,7 @@ let preserve_tailcall_for_prim = function
   | Pcompare_ints | Pcompare_floats | Pcompare_bints _
   | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
   | Pmakearray _ | Pduparray _ | Parraylength _ | Parrayrefu _ | Parraysetu _
-  | Parrayrefs _ | Parraysets _ | Pisint | Pisout | Pcheckbound
+  | Parrayrefs _ | Parraysets _ | Pisint _ | Pisout | Pcheckbound
   | Pbintofint _ | Pintofbint _ | Pbintoffloat _ | Pfloatofbint _
   | Pcvtbint _ | Pnegbint _ | Paddbint _ | Psubbint _ | Pmulbint _ | Pdivbint _
   | Pmodbint _ | Pandbint _ | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _
@@ -465,7 +465,7 @@ let comp_primitive stack_info p sz args =
        | Backend_type -> "backend_type"
        | Standard_library_default -> "standard_library_default" in
      Kccall(Printf.sprintf "caml_sys_const_%s" const_name, 1, None)
-  | Pisint -> Kisint
+  | Pisint { variant_only } -> Kisint variant_only
   | Pisout -> Kisout
   | Pcheckbound -> Kccall("caml_check_bound", 2, None)
   | Pbintofint bi -> comp_bint_primitive bi "of_int" args
