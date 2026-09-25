@@ -287,6 +287,9 @@ Working version
   in the Lambda IR.
   (Florian Angeletti, report by Nathanaëlle Courant, review by Gabriel Scherer)
 
+- #15090: Allow unaligned memory accesses on s390x.
+  (Zane Hambly, review by         )
+
 ### Standard library:
 
 - #14974 : Add `Sys.filepath_exists` and improve documentation
