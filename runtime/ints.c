@@ -127,10 +127,11 @@ CAMLprim value caml_bswap16(value v)
                     ((x & 0xFF00) >> 8))));
 }
 
-/* Bit counting over the Sys.int_size bits of an untagged integer, which
-   arrives sign-extended in an intnat.  Shifting the sign copy out, or
-   forcing the top bit on, makes the count come out over Sys.int_size bits
-   and keeps the builtins away from zero. */
+/* Bit counting over the Sys.int_size bits of an integer.  clz takes the
+   tagged value, whose tag bit keeps it away from zero and makes the count
+   come out over Sys.int_size bits.  ctz and popcount take the untagged
+   value, sign-extended in an intnat; forcing the top bit on, or shifting
+   the sign copy out, does the same job for them. */
 
 #define INTNAT_BITS (8 * sizeof(uintnat))
 
@@ -172,8 +173,10 @@ static inline intnat caml_msvc_ctz(uintnat x)
 #endif
 
 /* Without a popcount instruction GCC lowers the builtin to a libgcc call,
-   which a flexlink DLL cannot resolve at load time. */
-#if defined(__POPCNT__) || defined(__aarch64__)
+   which a flexlink DLL cannot resolve at load time, so leave it out where
+   flexlink is used. */
+#if (__has_builtin(__builtin_popcountll) || defined(__GNUC__)) \
+    && !defined(_WIN32) && !defined(__CYGWIN__)
 #ifdef ARCH_SIXTYFOUR
 #define CAML_BUILTIN_POPCOUNT __builtin_popcountll
 #else
@@ -181,9 +184,9 @@ static inline intnat caml_msvc_ctz(uintnat x)
 #endif
 #endif
 
-intnat caml_int_clz_direct(intnat v)
+intnat caml_int_clz_direct(value v)
 {
-  uintnat x = ((uintnat) v << 1) | 1;
+  uintnat x = (uintnat) v;
 #ifdef CAML_BUILTIN_CLZ
   return CAML_BUILTIN_CLZ(x);
 #else
@@ -245,7 +248,7 @@ intnat caml_int_popcount_direct(intnat v)
 
 CAMLprim value caml_int_clz(value v)
 {
-  return Val_long(caml_int_clz_direct(Long_val(v)));
+  return Val_long(caml_int_clz_direct(v));
 }
 
 CAMLprim value caml_int_ctz(value v)

@@ -539,7 +539,8 @@ module Size = struct
     | Lop (Ispecific (Ishiftarith _)) -> 1
     | Lop (Ispecific (Imuladd | Imulsub)) -> 1
     | Lop (Ispecific (Ibswap 16)) -> 2
-    | Lop (Ispecific (Iclz | Ictz)) -> 3
+    | Lop (Ispecific Iclz) -> 1
+    | Lop (Ispecific Ictz) -> 3
     | Lop (Ispecific (Ibswap _)) -> 1
     | Lop (Ispecific Imove32) -> 1
     | Lop (Ispecific (Isignext _)) -> 1
@@ -1029,10 +1030,8 @@ let emit_instr env i =
                      | _ -> assert false) in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`
     | Lop(Ispecific Iclz) ->
-        (* Retagging makes clz count over Sys.int_size bits and never see 0 *)
-        `	lsl	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #1\n`;
-        `	orr	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, #1\n`;
-        `	clz	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
+        (* The tag bit keeps the count over Sys.int_size bits and away from 0 *)
+        `	clz	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
     | Lop(Ispecific Ictz) ->
         (* Bit 63 is a copy of bit 62, so setting it only changes the
            answer for 0, where it gives Sys.int_size *)

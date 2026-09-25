@@ -729,9 +729,8 @@ let emit_instr env fallthrough i =
   | Lop(Ispecific(Ibswap _)) ->
       assert false
   | Lop(Ispecific Iclz) ->
-      (* Retagging makes bsr count over Sys.int_size bits and never see 0 *)
-      I.lea (mem64 NONE ~base:(arg64 i 0) 1 (arg64 i 0)) (res i 0);
-      I.bsr (res i 0) (res i 0);
+      (* The tag bit keeps bsr away from 0 and counts over Sys.int_size bits *)
+      I.bsr (arg i 0) (res i 0);
       I.xor (int 63) (res i 0)
   | Lop(Ispecific Ictz) ->
       (* Bit 63 is a copy of bit 62, so setting it only changes the

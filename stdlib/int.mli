@@ -193,7 +193,7 @@ val signed_bitsize: t -> int
 
     @since 5.5 *)
 
-external leading_zeros : (t [@untagged]) -> (int [@untagged])
+external leading_zeros : t -> (int [@untagged])
   = "caml_int_clz" "caml_int_clz_direct" [@@noalloc]
 (** [leading_zeros n] is the number of leading (most significant) 0 bits in
     the binary representation of [n].

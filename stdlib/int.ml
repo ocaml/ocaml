@@ -41,7 +41,7 @@ let compare : int -> int -> int = Stdlib.compare
 let min x y : t = if x <= y then x else y
 let max x y : t = if x >= y then x else y
 
-external leading_zeros : (int [@untagged]) -> (int [@untagged])
+external leading_zeros : int -> (int [@untagged])
   = "caml_int_clz" "caml_int_clz_direct" [@@noalloc]
 
 let unsigned_bitsize x =
