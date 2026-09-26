@@ -120,8 +120,12 @@ val allow_unsafe_modules : bool -> unit
 
 (** {1 Error reporting} *)
 
+type global = private
+  | Compilation_unit of string
+  | Predefined_exception of string
+
 type linking_error = private
-  | Undefined_global of string
+  | Undefined_global of global
   | Unavailable_primitive of string
   | Uninitialized_global of string
 
