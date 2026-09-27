@@ -60,7 +60,8 @@ static bool gen_sun_path(wchar_t path[MAX_PATH + 1],
     return false;
   }
 
-  rc = swprintf(path, MAX_PATH + 1, L"%s\\ocaml_sp_%08lx_%08lx",
+  /* dirname ends with a backslash */
+  rc = swprintf(path, MAX_PATH + 1, L"%lsocaml_sp_%08lx_%08lx",
                 dirname, GetCurrentProcessId(),
                 atomic_fetch_add(&socketpair_id, 1));
   if (rc < 0) {
@@ -72,7 +73,11 @@ static bool gen_sun_path(wchar_t path[MAX_PATH + 1],
   rc = WideCharToMultiByte(CP_UTF8, 0, path, -1, addr->sun_path,
                            UNIX_PATH_MAX, NULL, NULL);
   if (rc == 0) {
-    caml_win32_maperr(GetLastError());
+    DWORD err = GetLastError();
+    if (err == ERROR_INSUFFICIENT_BUFFER)
+      errno = ENAMETOOLONG;
+    else
+      caml_win32_maperr(err);
     return false;
   }
 
