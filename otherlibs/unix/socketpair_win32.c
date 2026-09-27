@@ -165,12 +165,17 @@ static int socketpair(int domain, int type, int protocol,
     goto fail_sockets;
   }
 
+  /* Check that the process that connected is this self process. */
   rc = WSAIoctl(client, SIO_AF_UNIX_GETPEERPID,
                 NULL, 0U,
                 &peerid, sizeof(peerid), &drc /* Windows bug: always 0 */,
                 NULL, NULL);
-  if (rc == SOCKET_ERROR || peerid != GetCurrentProcessId())
+  if (rc == SOCKET_ERROR)
     goto fail_wsa;
+  if (peerid != GetCurrentProcessId()) {
+    errno = EACCES; /* no clear error code */
+    goto fail_sockets;
+  }
 
   socket_vector[0] = client;
   socket_vector[1] = server;
@@ -200,17 +205,19 @@ CAMLprim value caml_unix_socketpair(value vcloexec, value vdomain, value vtype,
   CAMLlocal1(result);
   SOCKET sv[2];
   int rc;
-  int domain = Int_val(vdomain);
-  int type = Int_val(vtype);
+  int domain = caml_unix_socket_domain_table[Int_val(vdomain)];
+  int type = caml_unix_socket_type_table[Int_val(vtype)];
   int protocol = Int_val(vprotocol);
   BOOL inherit = ! caml_unix_cloexec_p(vcloexec);
 
+  /* Only PF_UNIX sockets can be bound to a path. */
+  if (domain != PF_UNIX) {
+    caml_win32_maperr(WSAEAFNOSUPPORT);
+    caml_uerror("socketpair", Nothing);
+  }
+
   caml_enter_blocking_section();
-  rc = socketpair(caml_unix_socket_domain_table[domain],
-                  caml_unix_socket_type_table[type],
-                  protocol,
-                  sv,
-                  inherit);
+  rc = socketpair(domain, type, protocol, sv, inherit);
   caml_leave_blocking_section();
 
   if (rc == SOCKET_ERROR)

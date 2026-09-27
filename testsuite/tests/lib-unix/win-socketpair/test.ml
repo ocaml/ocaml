@@ -38,6 +38,14 @@ let () =
   Unix.close fd1;
   print_endline "Ok"
 
+(* Only PF_UNIX is supported by the emulation. *)
+
+let () =
+  match Unix.socketpair Unix.PF_INET Unix.SOCK_STREAM 0 with
+  | _ -> print_endline "PF_INET: unexpected success"
+  | exception Unix.Unix_error (Unix.EAFNOSUPPORT, "socketpair", _) ->
+      print_endline "Ok"
+
 (* Check that a file left over with the name of the next socket (e.g.,
    by a killed process with the same pid) is neither fatal nor
    deleted. The names are generated from the pid and a counter. *)
