@@ -461,6 +461,10 @@ Working version
 
 ### Manual and documentation:
 
+- #9127, #15110: ocamldoc: restore uniform styling for the closing brace of
+  record types.
+  (report by San Vũ Ngọc)
+
 - #14598: Add `@since` annotations to `Runtime_events`. (Raphaël Proust)
 
 - #14902, #14944: Add documentation on ocamllex `-w` argument in the man page.

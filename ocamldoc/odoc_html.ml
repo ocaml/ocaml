@@ -1697,6 +1697,14 @@ class html =
       self#html_of_info b e.ex_info
 
     method html_of_record ~father ~close_env gen_name  b l =
+      (* Top-level records close a [pre] before the field table, whereas
+         inline records do not. See #9127. *)
+      let close_record =
+        if String.ends_with ~suffix:"</pre>" close_env then
+          "<pre><code>}</code></pre>\n"
+        else
+          "<code>}</code>\n"
+      in
       bs b "{";
       bs b close_env;
       bs b "<table class=\"typetable\">\n" ;
@@ -1726,7 +1734,8 @@ class html =
         bs b "\n</tr>"
       in
       print_concat b "\n" print_one l;
-      bs b "</table>\n<code>}</code>\n"
+      bs b "</table>\n";
+      bs b close_record
 
 
     (** Print html code for a type. *)
