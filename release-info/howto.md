@@ -171,7 +171,7 @@ git branch $BRANCH
 #   altering.
 # Update ocaml-variants.opam with new version.
 tools/autogen
-# Add a "Working version" section" to Changes
+# Add a "Working version" section to Changes
 # Add common subsections in Changes, see Changelog.
 git commit -m "first commit after branching $BRANCH" -a
 git push
