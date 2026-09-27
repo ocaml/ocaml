@@ -461,6 +461,10 @@ Working version
 
 ### Manual and documentation:
 
+- #13371, #15108: Document when Format output functions are applied to queued
+  material.
+  (John Riley, report by Daniel Bünzli)
+
 - #14598: Add `@since` annotations to `Runtime_events`. (Raphaël Proust)
 
 - #14902, #14944: Add documentation on ocamllex `-w` argument in the man page.

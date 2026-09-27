@@ -917,6 +917,15 @@ val set_formatter_out_functions : formatter_out_functions -> unit
   Reasonable defaults for functions [out_spaces], [out_newline], and [out_width]
   are respectively [out_funs.out_string (String.make n ' ') 0 n],
   [out_funs.out_string "\n" 0 1] and {!utf_8_scalar_width}.
+
+  Queued formatting items use the output callbacks that are installed when
+  the queue is processed, not those installed when the items are enqueued.
+  Consequently, temporarily installing output functions around a printer call
+  does not reliably scope them to that printer's output: queued material may
+  be output only after the previous functions have been restored. To make such
+  a change reliable, call [pp_print_flush ppf ()] before restoring the previous
+  functions. Note that {!pp_print_flush} closes all open boxes and resets the
+  formatter state.
   @since 4.01
 *)
 
@@ -925,7 +934,8 @@ val pp_get_formatter_out_functions :
 val get_formatter_out_functions : unit -> formatter_out_functions
 (** Return the current output functions of the pretty-printer,
   including line splitting and indentation functions. Useful to record the
-  current setting and restore it afterwards.
+  current setting for later restoration. See
+  {!pp_set_formatter_out_functions} for restrictions on transient changes.
   @since 4.01
 *)
 
