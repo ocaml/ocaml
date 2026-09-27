@@ -2366,14 +2366,14 @@ let report_error ~loc = function
   | Repeated_parameter ->
       Location.errorf ~loc "A type parameter occurs several times"
   | Duplicate_constructor s ->
-      Location.errorf ~loc "Two constructors are named %a" Style.inline_code s
+      Location.errorf ~loc "Duplicate constructor name %a" Style.inline_code s
   | Too_many_constructors ->
       Location.errorf ~loc
       "Too many non-constant constructors@ \
        -- maximum is %i non-constant constructors@]"
       (Config.max_tag + 1)
   | Duplicate_label s ->
-      Location.errorf "Two labels are named %a" Style.inline_code s
+      Location.errorf "Duplicate label name %a" Style.inline_code s
   | Recursive_abbrev (s, env, reaching_path) ->
       let reaching_path = Reaching_path.simplify reaching_path in
       Printtyp.wrap_printing_env ~error:true env @@ fun () ->

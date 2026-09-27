@@ -478,6 +478,10 @@ Working version
 - #14887: More concise messages for the non-exhaustiveness warning.
   (Luc Maranget, review by Florian Angeletti)
 
+- #14958, #15111: Improve error messages for duplicate constructor and record
+  label names.
+  (John Riley, report by Michał Kosior)
+
 - #14051: Improved error messages for first-class modules with a missing
   constrained type.
   (Florian Angeletti, review by Gabriel Scherer)
