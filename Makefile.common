@@ -436,7 +436,7 @@ INSTALL_DESPATCH_clone_BEGIN = rm -f clone-* create-symlinks
 
 INSTALL_DESPATCH_clone_END = $(INSTALL_DESPATCH_opam_END)
 
-FLEXDLL_SUBMODULE_PRESENT := $(wildcard $(ROOTDIR)/flexdll/Makefile)
+FLEXDLL_PRESENT := $(wildcard $(ROOTDIR)/flexdll/Makefile)
 
 IN_COREBOOT_CYCLE ?= false
 

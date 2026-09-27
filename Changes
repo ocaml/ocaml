@@ -595,6 +595,12 @@ Working version
   (Austin Thierault, review by Antonin Décimo, Edwin Török, David Allsopp and
    Olivier Nicole)
 
+- #15058: Replace the flexdll submodule by a copy of the FlexDLL sources, with
+  their history, merged as a subtree with the tools/sync-flexdll script.
+  FlexDLL is now bootstrapped by default on Windows; pass --without-flexdll to
+  configure to use an installed flexlink instead.
+  (Nicolás Ojeda Bär, suggested by David Allsopp)
+
 ### Bug fixes:
 
 - #15072, #15075: Fix `Runtime_events` cursors becoming permanently unusable

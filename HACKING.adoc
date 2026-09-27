@@ -203,7 +203,7 @@ has excellent documentation.
   link:configure.ac[]::          autoconf input file
   link:debugger/[]::             source-level replay debugger
   link:driver/[]::               driver code for the compilers
-  link:flexdll/[]::              git submodule -- see xref:README.win32.adoc[]
+  link:flexdll/[]::              FlexDLL -- see xref:README.win32.adoc[]
   link:lex/[]::                  lexer generator
   link:man/[]::                  man pages
   link:manual/[]::               system to generate the manual
@@ -404,6 +404,26 @@ link:boot/[] directory. These bytecode images are used once the
 bytecode runtime (which is written in C) has been built to compile the
 standard library and then to build a fresh compiler. Details can be
 found in xref:BOOTSTRAP.adoc[].
+
+=== FlexDLL
+
+The sources of FlexDLL, used to bootstrap `flexlink` on Windows, are imported
+from https://github.com/ocaml/flexdll in the link:flexdll/[] directory,
+together with their history. To bring in new commits from upstream, run
+
+[source,sh]
+----
+tools/sync-flexdll [<ref>]
+----
+
+where `<ref>` is a branch, tag or commit of the upstream repository (default:
+`master`). The script merges the upstream commits unchanged with a subtree merge
+(`git merge -Xsubtree=flexdll`), which keeps any changes made to
+link:flexdll/[] in this repository; see the script for details. Since the
+upstream commits have their files at the root, `git log -- flexdll` only shows
+the changes made in this repository and the merges; the upstream history is
+reachable from the second parent of these merges (for instance,
+`git log <merge>^2`).
 
 === Speeding up builds
 

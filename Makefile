@@ -681,7 +681,7 @@ $(BYTE_BINDIR)/flexlink$(EXE): \
 partialclean::
 	rm -f $(BYTE_BINDIR)/flexlink $(BYTE_BINDIR)/flexlink.exe
 
-ifneq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
+ifneq "$(FLEXDLL_PRESENT)" ""
 clean::
 	$(MAKE) -C flexdll clean
 endif
@@ -913,18 +913,10 @@ else
 
 flexdll flexlink flexlink.opt:
 	@echo It is no longer necessary to bootstrap FlexDLL with a separate
-	@echo make invocation. Simply place the sources for FlexDLL in a
-	@echo sub-directory.
-	@echo This can either be done by downloading a source tarball from
-	@echo \  https://github.com/ocaml/flexdll/releases
-	@if [ -d .git ]; then \
-	  echo or by checking out the flexdll submodule with; \
-	  echo \  git submodule update --init; \
-	else \
-	  echo or by cloning the git repository; \
-	  echo \  git clone https://github.com/ocaml/flexdll.git; \
-	fi
-	@echo "Then pass --with-flexdll=<dir> to configure and build as normal."
+	@echo make invocation. FlexDLL is bootstrapped by default on Windows
+	@echo from the sources in the flexdll directory, unless configure is
+	@echo passed --without-flexdll. Other sources can be used by passing
+	@echo "--with-flexdll=<dir> to configure."
 	@false
 
 endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
@@ -2792,7 +2784,7 @@ depend: $(DEP_FILES) | beforedepend
 
 .PHONY: distclean
 distclean: clean
-ifneq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
+ifneq "$(FLEXDLL_PRESENT)" ""
 	$(MAKE) -C flexdll distclean MSVC_DETECT=0
 endif
 ifneq "$(wildcard manual)" ""

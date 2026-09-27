@@ -66,15 +66,12 @@ Unless you are also compiling the Cygwin port of OCaml, you do not need the
 `gcc-core` or `flexdll` packages.
 
 [[bmflex]]
-In addition to Cygwin, FlexDLL must also be installed, which is available from
-https://github.com/ocaml/flexdll. A binary distribution is available;
-instructions on how to build FlexDLL from sources, including how to bootstrap
-FlexDLL and OCaml are given <<seflexdll,later in this document>>.  Unless you
-bootstrap FlexDLL, you will need to ensure that the directory to which you
-install FlexDLL is included in your `PATH` environment variable. Note: binary
-distributions of FlexDLL are compatible only with Visual Studio 2013 and
-earlier; for the MSVC port of OCaml, you will need to compile the C objects from
-source, or configure ocaml with the `--with-flexdll` option.
+In addition to Cygwin, OCaml requires FlexDLL. Its sources are included in the
+`flexdll/` directory and, by default, FlexDLL is built together with OCaml (see
+<<seflexdll,later in this document>>). If you instead configure OCaml with
+`--without-flexdll`, FlexDLL must be installed separately (it is available from
+https://github.com/ocaml/flexdll) and you will need to ensure that the directory
+to which you install FlexDLL is included in your `PATH` environment variable.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...) of all three
 ports runs without any additional tools.
@@ -265,31 +262,14 @@ bash or by adding Cygwin's bin directory (e.g. `C:\cygwin64\bin`) to your
 == FlexDLL
 Although the core of FlexDLL is necessarily written in C, the `flexlink` program
 is, naturally, written in OCaml.  This creates a circular dependency if you wish
-to build entirely from sources.  Since OCaml 4.03 and FlexDLL 0.35, it is now
+to build entirely from sources.  Since OCaml 4.03 and FlexDLL 0.35, it is
 possible to bootstrap the two programs simultaneously.  The process is identical
-for both ports.  If you choose to compile this way, it is not necessary to
-install FlexDLL separately.
+for all ports.
 
-You must extract the FlexDLL sources for Version 0.35 or later in the directory
-`flexdll/` at the top-level directory of the OCaml distribution.  This can be
-done in one of three ways:
-
- * Extracting the sources from a tarball from
-   https://github.com/ocaml/flexdll/releases
- * Cloning the git repository by running:
-+
-[source,sh]
-----
-git clone https://github.com/ocaml/flexdll.git
-----
-
- * If you are compiling from a git clone of the OCaml repository, instead of
-   using a sources tarball, you can run:
-+
-[source,sh]
-----
-git submodule update --init
-----
+The sources of FlexDLL are included in the `flexdll/` directory at the top-level
+directory of the OCaml distribution, and are used by default, so it is not
+necessary to install FlexDLL separately. Other FlexDLL sources (version 0.35 or
+later) can be used instead by passing `--with-flexdll=<dir>` to `configure`.
 
 OCaml is then compiled normally for the port you require.
 
@@ -302,10 +282,9 @@ make install
  * `make install` will install FlexDLL by placing `flexlink.exe`
    (and the default manifest file for the Microsoft port) in `bin/` and the
    FlexDLL object files in `lib/`.
- * If you have populated `flexdll/`, the build will always use it, ignoring
-   any externally installed FlexDLL. You can override this behaviour by either
-   erasing the contents of `flexdll/` or passing the `--without-flexdll` option
-   to `configure`.
+ * By default, the build bootstraps FlexDLL, ignoring any externally installed
+   FlexDLL. You can override this behaviour by passing the `--without-flexdll`
+   option to `configure`.
 
 == Unicode support
 
