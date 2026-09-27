@@ -461,6 +461,9 @@ Working version
 
 ### Manual and documentation:
 
+- #12582, #15107: Clarify the effect of record updates on mutable fields.
+  (John Riley, report by Benoit Montagu)
+
 - #14598: Add `@since` annotations to `Runtime_events`. (Raphaël Proust)
 
 - #14902, #14944: Add documentation on ocamllex `-w` argument in the man page.

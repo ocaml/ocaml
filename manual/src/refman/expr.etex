@@ -851,7 +851,9 @@ builds a fresh record with fields @field_1 \ldots field_n@ equal to
 @expr_1 \ldots expr_n@, and all other fields having the same value as
 in the record @expr@.  In other terms, it returns a shallow copy of
 the record @expr@, except for the fields @field_1 \ldots field_n@,
-which are initialized to @expr_1 \ldots expr_n@. As previously,
+which are initialized to @expr_1 \ldots expr_n@. Because the result is a
+fresh record, mutating a mutable field in the original record does not affect
+the corresponding field in the result, and conversely. As previously,
 single identifier @field_k@ stands for @field_k '=' field_k@,
 a qualified identifier @module-path '.' field_k@ stands for
 @module-path '.' field_k '=' field_k@ and it is
