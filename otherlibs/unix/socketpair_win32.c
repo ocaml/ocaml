@@ -83,8 +83,7 @@ static int socketpair(int domain, int type, int protocol,
     server = INVALID_SOCKET,
     client = INVALID_SOCKET;
 
-  fd_set writefds, exceptfds;
-  u_long non_block, peerid = 0UL;
+  u_long peerid = 0UL;
 
   /* Whether the socket file at [path] was created by us, and should be
      removed on failure. */
@@ -122,12 +121,10 @@ static int socketpair(int domain, int type, int protocol,
   if (client == INVALID_SOCKET)
     goto fail_wsa;
 
-  non_block = 1UL;
-  if (ioctlsocket(client, FIONBIO, &non_block) == SOCKET_ERROR)
-    goto fail_wsa;
-
+  /* The connection is queued in the listener's backlog, so connect()
+     doesn't block waiting for accept(). */
   rc = connect(client, (struct sockaddr *) &addr, socklen);
-  if (rc != SOCKET_ERROR || WSAGetLastError() != WSAEWOULDBLOCK)
+  if (rc == SOCKET_ERROR)
     goto fail_wsa;
 
   server = accept(listener, NULL, NULL);
@@ -137,25 +134,6 @@ static int socketpair(int domain, int type, int protocol,
   rc = closesocket(listener);
   listener = INVALID_SOCKET;
   if (rc == SOCKET_ERROR)
-    goto fail_wsa;
-
-  FD_ZERO(&writefds);
-  FD_SET(client, &writefds);
-  FD_ZERO(&exceptfds);
-  FD_SET(client, &exceptfds);
-
-  rc = select(0 /* ignored */,
-              NULL, &writefds, &exceptfds,
-              NULL /* blocking */);
-  if (rc == SOCKET_ERROR
-      || FD_ISSET(client, &exceptfds)
-      || !FD_ISSET(client, &writefds)) {
-    /* We're not interested in the socket error status */
-    goto fail_wsa;
-  }
-
-  non_block = 0UL;
-  if (ioctlsocket(client, FIONBIO, &non_block) == SOCKET_ERROR)
     goto fail_wsa;
 
   /* Socket file no longer needed */
