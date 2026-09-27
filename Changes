@@ -461,6 +461,9 @@ Working version
 
 ### Manual and documentation:
 
+- #8978, #15105: Document the source location format used in compiler errors.
+  (John Riley, report by Daniel Bünzli)
+
 - #14598: Add `@since` annotations to `Runtime_events`. (Raphaël Proust)
 
 - #14902, #14944: Add documentation on ocamllex `-w` argument in the man page.

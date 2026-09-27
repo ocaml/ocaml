@@ -189,6 +189,13 @@ files by hand.
 This section describes and explains the most frequently encountered
 error messages.
 
+Locations in error messages use one-based line numbers. The numbers after
+"characters" are zero-based byte offsets within their respective lines;
+they are not Unicode scalar value positions or display columns. The start
+offset is inclusive and the end offset is exclusive. For locations spanning
+multiple lines, the two offsets are relative to the start and end lines,
+respectively.
+
 \begin{options}
 
 \item[Cannot find file \var{filename}]
