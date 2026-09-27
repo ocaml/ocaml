@@ -143,8 +143,12 @@ static int socketpair(int domain, int type, int protocol,
     goto fail_sockets;
   }
 
-  /* Check that the process that connected is this self process. */
-  rc = WSAIoctl(client, SIO_AF_UNIX_GETPEERPID,
+  /* Check that the process that connected is this self process. The
+     peer of the client is always the process owning the listener, that
+     is, this process; the peer of the accepted socket is the process
+     that connected to the listener, which may be another process that
+     raced to connect to the socket file. */
+  rc = WSAIoctl(server, SIO_AF_UNIX_GETPEERPID,
                 NULL, 0U,
                 &peerid, sizeof(peerid), &drc /* Windows bug: always 0 */,
                 NULL, NULL);
