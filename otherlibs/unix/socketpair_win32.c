@@ -18,6 +18,7 @@
 #include <caml/misc.h>
 #include <caml/signals.h>
 #include "caml/unixsupport.h"
+#include "misc_internals.h"
 #include <errno.h>
 #include <stdbool.h>
 
@@ -36,16 +37,25 @@ extern const int caml_unix_socket_type_table[]; /* from socket.c */
 
 #define SOCKETPAIR_BIND_ATTEMPTS 8
 
+/* from win32.c */
+extern DWORD (WINAPI *caml_get_temp_path)(DWORD, LPWSTR);
+extern INIT_ONCE caml_get_temp_path_init_once;
+BOOL WINAPI caml_get_temp_path_init(PINIT_ONCE, PVOID, PVOID *);
+
 /* Generate a unique path without creating a file first.
    This avoids a TOCTOU race between file creation and socket binding. */
 static bool gen_sun_path(wchar_t path[MAX_PATH + 1],
                          struct sockaddr_un *addr)
 {
   static atomic_ulong socketpair_id = 0;
+  DWORD (WINAPI *get_temp_path)(DWORD, LPWSTR);
   wchar_t dirname[MAX_PATH + 1];
   int rc;
 
-  if (GetTempPath(MAX_PATH + 1, dirname) == 0) {
+  InitOnceExecuteOnce(&caml_get_temp_path_init_once, caml_get_temp_path_init,
+                      NULL, (PVOID *) &caml_get_temp_path);
+
+  if(!caml_get_temp_path(countof(dirname), dirname)) {
     caml_win32_maperr(GetLastError());
     return false;
   }
