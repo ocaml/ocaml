@@ -461,6 +461,10 @@ Working version
 
 ### Manual and documentation:
 
+- #14404, #15106: Clarify that [-config] and [-config-var] report static
+  configuration values.
+  (John Riley, report by probablytom)
+
 - #14598: Add `@since` annotations to `Runtime_events`. (Raphaël Proust)
 
 - #14902, #14944: Add documentation on ocamllex `-w` argument in the man page.
