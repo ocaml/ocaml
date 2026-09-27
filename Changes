@@ -461,6 +461,10 @@ Working version
 
 ### Manual and documentation:
 
+- #12981, #15102: Correct the list of C object files and libraries accepted
+  by the native-code compiler.
+  (John Riley, report by mobileink)
+
 - #14598: Add `@since` annotations to `Runtime_events`. (Raphaël Proust)
 
 - #14902, #14944: Add documentation on ocamllex `-w` argument in the man page.

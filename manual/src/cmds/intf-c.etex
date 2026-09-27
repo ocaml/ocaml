@@ -242,8 +242,9 @@ execute the "ocamlopt" command with:
 \begin{itemize}
 \item the names of the desired OCaml native object files (".cmx" and
 ".cmxa" files);
-\item the names of the C object files and libraries (".o", ".a",
-".so" or ".dll" files) that implement the required primitives.
+\item the names of the C object files and libraries (".o" and ".a"
+files, or ".obj" and ".lib" files under Windows) that implement the
+required primitives.
 \end{itemize}
 
 Starting with Objective Caml 3.00, it is possible to record the
