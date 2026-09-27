@@ -44,6 +44,14 @@ starting with @"#"@ (the sharp sign). These directives control the
 behavior of the toplevel; they are listed below in
 section~\ref{s:toplevel-directives}.
 
+The syntax above applies to interactive input. Initialization files,
+script files, files read by the "#use" directive, and strings passed with
+the "-e" option are parsed as use files. In a use file, definitions and
+directives do not need to end in @";;"@. A double semicolon is nevertheless
+accepted and can be needed before a directive when the @"#"@ could otherwise
+be parsed as part of the preceding expression, for example as an object
+method call (section~\ref{s:objects}).
+
 \begin{unix}
 The toplevel system is started by the command "ocaml", as follows:
 \begin{alltt}
