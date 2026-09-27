@@ -44,25 +44,16 @@ BOOL WINAPI caml_get_temp_path_init(PINIT_ONCE, PVOID, PVOID *);
 
 /* Generate a unique path without creating a file first.
    This avoids a TOCTOU race between file creation and socket binding. */
-static bool gen_sun_path(wchar_t path[MAX_PATH + 1],
-                         struct sockaddr_un *addr)
+static bool gen_sun_path(const wchar_t temp_path[MAX_PATH + 1],
+                         wchar_t path[MAX_PATH + 1] /* out */,
+                         struct sockaddr_un *addr /* out */)
 {
   static atomic_ulong socketpair_id = 0;
-  DWORD (WINAPI *get_temp_path)(DWORD, LPWSTR);
-  wchar_t dirname[MAX_PATH + 1];
   int rc;
-
-  InitOnceExecuteOnce(&caml_get_temp_path_init_once, caml_get_temp_path_init,
-                      NULL, (PVOID *) &caml_get_temp_path);
-
-  if(!caml_get_temp_path(countof(dirname), dirname)) {
-    caml_win32_maperr(GetLastError());
-    return false;
-  }
 
   /* dirname ends with a backslash */
   rc = swprintf(path, MAX_PATH + 1, L"%lsocaml_sp_%08lx_%08lx",
-                dirname, GetCurrentProcessId(),
+                temp_path, GetCurrentProcessId(),
                 atomic_fetch_add(&socketpair_id, 1));
   if (rc < 0) {
     errno = ENAMETOOLONG;
@@ -88,7 +79,7 @@ static int socketpair(int domain, int type, int protocol,
                       SOCKET socket_vector[2],
                       BOOL inherit)
 {
-  wchar_t path[MAX_PATH + 1];
+  wchar_t temp_path[MAX_PATH + 1], path[MAX_PATH + 1];
   struct sockaddr_un addr;
   socklen_t socklen;
 
@@ -106,6 +97,11 @@ static int socketpair(int domain, int type, int protocol,
   DWORD drc;
   int rc;
 
+  if(!caml_get_temp_path(countof(temp_path), temp_path)) {
+    caml_win32_maperr(GetLastError());
+    return SOCKET_ERROR;
+  }
+
   addr.sun_family = PF_UNIX;
   socklen = sizeof(addr);
 
@@ -114,7 +110,7 @@ static int socketpair(int domain, int type, int protocol,
     goto fail_wsa;
 
   for (int attempts = SOCKETPAIR_BIND_ATTEMPTS; ; attempts--) {
-    if (!gen_sun_path(path, &addr))
+    if (!gen_sun_path(temp_path, path, &addr))
       goto fail_sockets;
 
     /* bind() will atomically create the socket file, or fail if a file
@@ -212,6 +208,9 @@ CAMLprim value caml_unix_socketpair(value vcloexec, value vdomain, value vtype,
     caml_win32_maperr(WSAEAFNOSUPPORT);
     caml_uerror("socketpair", Nothing);
   }
+
+  InitOnceExecuteOnce(&caml_get_temp_path_init_once, caml_get_temp_path_init,
+                      NULL, (PVOID *) &caml_get_temp_path);
 
   caml_enter_blocking_section();
   rc = socketpair(domain, type, protocol, sv, inherit);
