@@ -19,6 +19,7 @@
 #include <caml/signals.h>
 #include "caml/unixsupport.h"
 #include <errno.h>
+#include <stdbool.h>
 
 #ifdef HAS_SOCKETS
 
@@ -33,12 +34,46 @@ extern const int caml_unix_socket_type_table[]; /* from socket.c */
 
 #else
 
+#define SOCKETPAIR_BIND_ATTEMPTS 8
+
+/* Generate a unique path without creating a file first.
+   This avoids a TOCTOU race between file creation and socket binding. */
+static bool gen_sun_path(wchar_t path[MAX_PATH + 1],
+                         struct sockaddr_un *addr)
+{
+  static atomic_ulong socketpair_id = 0;
+  wchar_t dirname[MAX_PATH + 1];
+  int rc;
+
+  if (GetTempPath(MAX_PATH + 1, dirname) == 0) {
+    caml_win32_maperr(GetLastError());
+    return false;
+  }
+
+  rc = swprintf(path, MAX_PATH + 1, L"%s\\ocaml_sp_%08lx_%08lx",
+                dirname, GetCurrentProcessId(),
+                atomic_fetch_add(&socketpair_id, 1));
+  if (rc < 0) {
+    errno = ENAMETOOLONG;
+    return false;
+  }
+
+  /* sun_path needs to be set in UTF-8 */
+  rc = WideCharToMultiByte(CP_UTF8, 0, path, -1, addr->sun_path,
+                           UNIX_PATH_MAX, NULL, NULL);
+  if (rc == 0) {
+    caml_win32_maperr(GetLastError());
+    return false;
+  }
+
+  return true;
+}
+
 static int socketpair(int domain, int type, int protocol,
                       SOCKET socket_vector[2],
                       BOOL inherit)
 {
-  static atomic_ulong socketpair_id = 0;
-  wchar_t dirname[MAX_PATH + 1], path[MAX_PATH + 1];
+  wchar_t path[MAX_PATH + 1];
   struct sockaddr_un addr;
   socklen_t socklen;
 
@@ -51,43 +86,33 @@ static int socketpair(int domain, int type, int protocol,
   fd_set writefds, exceptfds;
   u_long non_block, peerid = 0UL;
 
+  /* Whether the socket file at [path] was created by us, and should be
+     removed on failure. */
+  bool bound = false;
   DWORD drc;
   int rc;
 
-  if (GetTempPath(MAX_PATH + 1, dirname) == 0) {
-    caml_win32_maperr(GetLastError());
-    goto fail;
-  }
-
-  /* Generate a unique path without creating a file first. This avoids
-     a TOCTOU race between file creation and socket binding. */
-  rc = swprintf(path, MAX_PATH + 1, L"%s\\ocaml_sp_%08lx_%08lx",
-                dirname, GetCurrentProcessId(),
-                atomic_fetch_add(&socketpair_id, 1));
-  if (rc < 0) {
-    errno = ENAMETOOLONG;
-    goto fail;
-  }
-
   addr.sun_family = PF_UNIX;
   socklen = sizeof(addr);
-
-  /* sun_path needs to be set in UTF-8 */
-  rc = WideCharToMultiByte(CP_UTF8, 0, path, -1, addr.sun_path,
-                           UNIX_PATH_MAX, NULL, NULL);
-  if (rc == 0) {
-    caml_win32_maperr(GetLastError());
-    goto fail;
-  }
 
   listener = caml_win32_socket(domain, type, protocol, NULL, inherit);
   if (listener == INVALID_SOCKET)
     goto fail_wsa;
 
-  /* bind() will atomically create the socket file */
-  rc = bind(listener, (struct sockaddr *) &addr, socklen);
-  if (rc == SOCKET_ERROR)
-    goto fail_wsa;
+  for (int attempts = SOCKETPAIR_BIND_ATTEMPTS; ; attempts--) {
+    if (!gen_sun_path(path, &addr))
+      goto fail_sockets;
+
+    /* bind() will atomically create the socket file, or fail if a file
+       with the same name exists. In the latter case, the file isn't
+       ours: don't delete it, try another name. */
+    rc = bind(listener, (struct sockaddr *) &addr, socklen);
+    if (rc != SOCKET_ERROR)
+      break;
+    if (WSAGetLastError() != WSAEADDRINUSE || attempts <= 1)
+      goto fail_wsa;
+  }
+  bound = true;
 
   rc = listen(listener, 1);
   if (rc == SOCKET_ERROR)
@@ -133,6 +158,8 @@ static int socketpair(int domain, int type, int protocol,
   if (ioctlsocket(client, FIONBIO, &non_block) == SOCKET_ERROR)
     goto fail_wsa;
 
+  /* Socket file no longer needed */
+  bound = false;
   if (DeleteFile(path) == 0) {
     caml_win32_maperr(GetLastError());
     goto fail_sockets;
@@ -151,7 +178,6 @@ static int socketpair(int domain, int type, int protocol,
 
 fail_wsa:
   caml_win32_maperr(WSAGetLastError());
-  DeleteFile(path);
 
 fail_sockets:
   if(listener != INVALID_SOCKET)
@@ -161,7 +187,9 @@ fail_sockets:
   if(server != INVALID_SOCKET)
     closesocket(server);
 
-fail:
+  if (bound)
+    DeleteFile(path);
+
   return SOCKET_ERROR;
 }
 
