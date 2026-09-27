@@ -28,7 +28,19 @@
 (** {1 Exceptions} *)
 
 external raise : exn -> 'a = "%raise"
-(** Raise the given exception value *)
+(** Raise the given exception value.
+
+    If [e] is a variable bound by the exception pattern of an enclosing
+    exception handler, [raise e] is compiled as a re-raise. A re-raise
+    continues the exception's existing backtrace rather than starting a new
+    one. The compiler recognizes only a direct use of that variable:
+    [raise Exit] and [raise (Failure msg)] are treated as fresh raises, even
+    if the raised value is equal to the caught exception.
+
+    To preserve a backtrace when raising outside the handler or after code
+    that may raise another exception, capture it with
+    {!Printexc.get_raw_backtrace} and use {!Printexc.raise_with_backtrace}.
+*)
 
 external raise_notrace : exn -> 'a = "%raise_notrace"
 (** A faster version [raise] which does not record the backtrace.
