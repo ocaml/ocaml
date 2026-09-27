@@ -62,7 +62,8 @@ static bool gen_sun_path(const wchar_t temp_path[MAX_PATH + 1],
 
   /* sun_path needs to be set in UTF-8 */
   rc = WideCharToMultiByte(CP_UTF8, 0, path, -1, addr->sun_path,
-                           UNIX_PATH_MAX, NULL, NULL);
+                           sizeof addr->sun_path,
+                           NULL, NULL);
   if (rc == 0) {
     DWORD err = GetLastError();
     if (err == ERROR_INSUFFICIENT_BUFFER)
