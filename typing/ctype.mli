@@ -352,7 +352,7 @@ val unify_var: Env.t -> type_expr -> type_expr ->
         (* Same as [unify], but allow free univars when first type
            is a variable. *)
 val unify_var_exn: Env.t -> type_expr -> type_expr -> unit
-        (** Same as [unify_var], but with an exception *)
+        (** Same as [unify_var], but raises [Unify] if unification fails. *)
 
 type filtered_arrow =
   { ty_param : type_expr;

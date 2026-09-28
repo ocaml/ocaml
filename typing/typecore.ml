@@ -761,7 +761,7 @@ let unify_pat_types_return_equated_pairs ~refine loc penv ~pat ~expected =
   match
     if refine || penv.Pattern_env.in_counterexample
     then unify_gadt penv ~pat ~expected
-    else (Result.map (fun () -> nothing_equated) (unify !!penv pat expected))
+    else unify !!penv pat expected |> Result.map (fun () -> nothing_equated)
   with
   | Ok type_pairs -> type_pairs
   | Error err ->
@@ -3322,6 +3322,8 @@ let collect_unknown_apply_args env funct ty_fun0 rev_args sargs =
                   then
                     Location.prerr_warning sarg.pexp_loc
                       Warnings.Ignored_extra_argument;
+                  (* Safety: [ty_fun] is a [newvar],
+                     thus unification cannot fail. *)
                   Result.get_ok
                     (unify env ty_fun
                       (newty (Tarrow(lbl,ty_param,ty_res,commu_var ()))));
@@ -5727,13 +5729,12 @@ and type_coerce
       | _ ->
           let ty, b = enlarge_type env (generic_instance ty') in
           force ();
-          begin match Ctype.unify env arg_type ty with
-          | Ok () -> ()
-          | Error err ->
-            let expanded = full_expand ~may_forget_scope:true env ty' in
-            Error.log_and_raise loc_arg env
-              (Coercion_failure ({ ty = ty'; expanded }, err, b))
-          end
+          Result.ok_or_else
+            (Ctype.unify env arg_type ty)
+            (fun err ->
+              let expanded = full_expand ~may_forget_scope:true env ty' in
+              Error.log_and_raise loc_arg env
+                (Coercion_failure ({ ty = ty'; expanded }, err, b)))
       end;
       (arg, ty', Texp_coerce (None, cty'))
   | Some sty ->

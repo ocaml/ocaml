@@ -3984,7 +3984,7 @@ let unify_gadt (penv : Pattern_env.t) ~pat:ty1 ~expected:ty2 =
           assume_injective = true;
           unify_eq_set = TypePairs.create 11; }
     in
-    Result.map (fun () -> equated_types) (unify uenv ty1 ty2)
+    unify uenv ty1 ty2 |> Result.map (fun () -> equated_types)
   in
   let no_leak = penv.in_counterexample || closed_type_expr ty2 in
   if no_leak then with_univar_pairs [] do_unify_gadt else

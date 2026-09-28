@@ -562,11 +562,10 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
       in
       List.iter2
         (fun (sty, cty) ty' ->
-           match unify_param env ty' cty.ctyp_type with
-           | Ok () -> ()
-           | Error err ->
-             let err = Errortrace.swap_unification_error err in
-             Error.log_and_raise sty.ptyp_loc env (Type_mismatch err)
+           Result.ok_or_else (unify_param env ty' cty.ctyp_type)
+             (fun err ->
+               let err = Errortrace.swap_unification_error err in
+               Error.log_and_raise sty.ptyp_loc env (Type_mismatch err))
         )
         (List.combine stl args) params;
       let constr =
@@ -588,11 +587,10 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
       let (params, body) = instance_parameterized_type decl.type_params body in
       List.iter2
         (fun (sty, cty) ty' ->
-           match unify_var env ty' cty.ctyp_type with
-           | Ok () -> ()
-           | Error err ->
-             let err = Errortrace.swap_unification_error err in
-             Error.log_and_raise sty.ptyp_loc env (Type_mismatch err)
+           Result.ok_or_else (unify_var env ty' cty.ctyp_type)
+             (fun err ->
+               let err = Errortrace.swap_unification_error err in
+               Error.log_and_raise sty.ptyp_loc env (Type_mismatch err))
         )
         (List.combine stl args) params;
       let ty_args = List.map (fun ctyp -> ctyp.ctyp_type) args in
@@ -612,12 +610,10 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
           check_tyvar_name env alias.loc alias.txt;
           let t = TyVarEnv.lookup_local ~row_context alias.txt in
           let ty = transl_type env ~policy ~aliased:true ~row_context st in
-          begin match unify_var env t ty.ctyp_type with
-          | Ok () -> ()
-          | Error err ->
-            let err = Errortrace.swap_unification_error err in
-            Error.log_and_raise alias.loc env (Alias_type_mismatch err)
-          end;
+          Result.ok_or_else (unify_var env t ty.ctyp_type)
+            (fun err ->
+              let err = Errortrace.swap_unification_error err in
+              Error.log_and_raise alias.loc env (Alias_type_mismatch err));
           ty
         with Not_found ->
           let t, ty =
@@ -626,12 +622,10 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
               (* Use the whole location, which is used by [Type_mismatch]. *)
               TyVarEnv.remember_used ~check:alias.loc alias.txt t styp.ptyp_loc;
               let ty = transl_type env ~policy ~row_context st in
-              begin match unify_var env t ty.ctyp_type with
-              | Ok () -> ()
-              | Error err ->
-                let err = Errortrace.swap_unification_error err in
-                Error.log_and_raise alias.loc env (Alias_type_mismatch err)
-              end;
+              Result.ok_or_else (unify_var env t ty.ctyp_type)
+                (fun err ->
+                  let err = Errortrace.swap_unification_error err in
+                  Error.log_and_raise alias.loc env (Alias_type_mismatch err));
               (t, ty)
             end
           in
@@ -663,8 +657,9 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
             Error.log_and_raise styp.ptyp_loc env (Variant_tags (l, l'));
           let ty = mkfield l f and ty' = mkfield l f' in
           if is_equal env false [ty] [ty'] then () else
-          if Result.is_error (unify env ty ty') then
-            Error.log_and_raise loc env (Constructor_mismatch (ty, ty'))
+          Result.ok_or_else (unify env ty ty')
+            (fun _ ->
+              Error.log_and_raise loc env (Constructor_mismatch (ty, ty')))
         with Not_found ->
           hfields := HMap.add h (l, f) !hfields
       in
@@ -828,8 +823,8 @@ and transl_fields env ~policy ~row_context o fields =
     try
       let ty' = HMap.find l !hfields in
       if is_equal env false [ty] [ty'] then () else
-        if Result.is_error (unify env ty ty') then
-          Error.log_and_raise loc env (Method_mismatch (l, ty, ty'))
+        Result.ok_or_else (unify env ty ty')
+          (fun _ -> Error.log_and_raise loc env (Method_mismatch (l, ty, ty')))
     with Not_found ->
       hfields := HMap.add l ty !hfields in
   let add_field {pof_desc; pof_loc; pof_attributes;} =

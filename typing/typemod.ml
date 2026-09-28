@@ -22,6 +22,7 @@ open Types
 open Format_doc
 
 module Style = Misc.Style
+module Result = Misc.Stdlib.Result
 
 let () = Includemod_errorprinter.register ()
 
@@ -3340,9 +3341,10 @@ let type_package env m pack =
   in
   List.iter
     (fun (n, ty) ->
-      if Result.is_error (Ctype.unify env ty (Ctype.newvar ())) then
-        let lid = Longident.unflatten n |> Option.get in
-        Error.log_and_raise modl.mod_loc env (Scoping_pack (lid, ty)))
+      Result.ok_or_else (Ctype.unify env ty (Ctype.newvar ()))
+        (fun _ ->
+          let lid = Longident.unflatten n |> Option.get in
+          Error.log_and_raise modl.mod_loc env (Scoping_pack (lid, ty))))
     fl';
   let modl = wrap_constraint_package env true modl mty Tmodtype_implicit in
   modl, {pack with pack_constraints = fl'}
