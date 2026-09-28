@@ -50,7 +50,7 @@ let size_addr = 8
 let size_int = size_addr
 let size_float = 8
 
-let allow_unaligned_access = false
+let allow_unaligned_access = true
 
 (* Behavior of division *)
 
