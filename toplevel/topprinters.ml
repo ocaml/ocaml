@@ -123,16 +123,17 @@ let match_generic_printer_type env ty =
           let ty_expected =
             List.fold_right type_arrow
               printer_args_ty (printer_type_new ty_target) in
-          let unify_res =
+          let open Result.Syntax in
+          let+ () =
             Ctype.unify env
               ty_expected
               (Ctype.instance ty)
           in
-          unify_res, args
+          args
         end
       with
-      | Error _, _ -> None
-      | Ok (), args ->
+      | Error _ -> None
+      | Ok args ->
           if Ctype.all_distinct_vars env args
           then
             Some (Generic { ty_path; arity = List.length params; })
