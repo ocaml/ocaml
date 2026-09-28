@@ -738,6 +738,10 @@ Working version
   variables may not be unified with out-of-scope types.
   (Chris Casinghino and Leo White, review by Jacques Garrigue)
 
+- #15113, OSEC-2026-21: `Str.string_partial_match`: make sure captured groups
+  are valid.
+  (Xavier Leroy, review by Nicolás Ojeda Bär and Edwin Török)
+
 OCaml 5.5.1
 -----------
 
