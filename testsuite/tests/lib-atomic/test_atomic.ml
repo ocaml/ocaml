@@ -26,6 +26,12 @@ let () = assert ((Atomic.incr r; Atomic.get r) = 5)
 
 let () = assert ((Atomic.decr r; Atomic.get r) = 4)
 
+let () = assert (Atomic.compare_and_exchange r ~expected:4 ~set:5 = 4)
+let () = assert (Atomic.get r = 5)
+
+let () = assert (Atomic.compare_and_exchange r ~expected:42 ~set:3 = 5)
+let () = assert (Atomic.get r = 5)
+
 let () =
   let r = Atomic.make 0 in
   let cur = Atomic.get r in
