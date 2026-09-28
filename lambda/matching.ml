@@ -2047,18 +2047,20 @@ let get_expr_args_constr ~scopes head { arg; mut; _ } rem =
     | _ -> fatal_error "Matching.get_expr_args_constr"
   in
   let loc = head_loc ~scopes head in
-  let make_field_accesses binding_kind first_pos last_pos argl =
-    let rec make_args pos =
-      if pos > last_pos then
-        argl
-      else
-        {
-          arg = Lprim (Pfield (pos, Pointer, Immutable), [ arg ], loc);
-          mut = compose_mut mut Immutable;
-          binding_kind;
-        } :: make_args (pos + 1)
+  let make_field_accesses binding_kind first_pos argl =
+    let env = field_env head in
+    let rec make_args pos arg_types =
+      match arg_types with
+      | [] -> argl
+      | ty :: arg_types ->
+          let ptr = Typeopt.maybe_pointer_type env ty in
+          {
+            arg = Lprim (Pfield (pos, ptr, Immutable), [ arg ], loc);
+            mut = compose_mut mut Immutable;
+            binding_kind;
+          } :: make_args (pos + 1) arg_types
     in
-    make_args first_pos
+    make_args first_pos cstr.cstr_args
   in
   if cstr.cstr_inlined <> None then
     { arg; binding_kind = Alias; mut } :: rem
@@ -2066,9 +2068,9 @@ let get_expr_args_constr ~scopes head { arg; mut; _ } rem =
     match cstr.cstr_tag with
     | Cstr_constant _
     | Cstr_block _ ->
-        make_field_accesses Alias 0 (cstr.cstr_arity - 1) rem
+        make_field_accesses Alias 0 rem
     | Cstr_unboxed -> { arg; binding_kind = Alias; mut } :: rem
-    | Cstr_extension _ -> make_field_accesses Alias 1 cstr.cstr_arity rem
+    | Cstr_extension _ -> make_field_accesses Alias 1 rem
 
 let divide_constructor ~scopes ctx pm =
   divide
@@ -2293,17 +2295,29 @@ let get_pat_args_tuple arity p rem =
 let get_expr_args_tuple ~scopes head { arg; mut; _ } rem =
   let loc = head_loc ~scopes head in
   let arity = Patterns.Head.arity head in
-  let rec make_args pos =
-    if pos >= arity then
-      rem
-    else
-      {
-        arg = Lprim (Pfield (pos, Pointer, Immutable), [ arg ], loc);
-        binding_kind = Alias;
-        mut = compose_mut mut Immutable;
-      } :: make_args (pos + 1)
+  let field_kinds =
+    let env = field_env head in
+    match Types.get_desc (Ctype.expand_head env head.pat_type) with
+    | Ttuple l ->
+        assert (List.length l = arity);
+        List.map (fun (_, ty) -> Typeopt.maybe_pointer_type env ty) l
+    | _ ->
+        (* The type of the pattern can be a tuple type only thanks to a
+           GADT equation that we have removed from the environment, as in
+           [((x, y) : a)] when [a = int * string]. *)
+        List.init arity (fun _ -> Pointer)
   in
-  make_args 0
+  let rec make_args pos field_kinds =
+    match field_kinds with
+    | [] -> rem
+    | ptr :: field_kinds ->
+        {
+          arg = Lprim (Pfield (pos, ptr, Immutable), [ arg ], loc);
+          binding_kind = Alias;
+          mut = compose_mut mut Immutable;
+        } :: make_args (pos + 1) field_kinds
+  in
+  make_args 0 field_kinds
 
 let divide_tuple ~scopes head ctx pm =
   let arity = Patterns.Head.arity head in
