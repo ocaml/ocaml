@@ -738,6 +738,11 @@ Working version
   variables may not be unified with out-of-scope types.
   (Chris Casinghino and Leo White, review by Jacques Garrigue)
 
+- #15112, OSEC-2026-22: `Unix.map_file`: protect against overflow
+  when computing the data size.
+  (Xavier Leroy and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär
+  and Edwin Török)
+
 OCaml 5.5.1
 -----------
 
