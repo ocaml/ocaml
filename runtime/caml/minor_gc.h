@@ -108,6 +108,10 @@ extern int caml_debug_is_minor(value val);
 extern int caml_debug_is_major(value val);
 #endif
 
+/* Initialise young_{ptr,trigger} from young_{start,end}
+   on an empty minor heap. */
+void caml_reset_young_pointers(caml_domain_state *domain);
+
 #define Ref_table_add(ref_table, x) do {                                \
     struct caml_ref_table* ref = (ref_table);                           \
     if (ref->ptr >= ref->limit) {                                       \

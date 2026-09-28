@@ -605,13 +605,7 @@ static int allocate_minor_heap_arena(asize_t wsize) {
   domain_state->young_start = (value*)domain_self->minor_heap_reservation_start;
   domain_state->young_end =
       (value*)(domain_self->minor_heap_reservation_start + Bsize_wsize(wsize));
-  domain_state->young_ptr = domain_state->young_end;
-  /* Trigger a GC poll when half of the minor heap arena is filled. At
-     that point, a major slice is scheduled. */
-  domain_state->young_trigger = domain_state->young_start
-         + (domain_state->young_end - domain_state->young_start) / 2;
-  caml_memprof_set_trigger(domain_state);
-  caml_reset_young_limit(domain_state);
+  caml_reset_young_pointers(domain_state);
 
   check_minor_heap();
   return 0;
