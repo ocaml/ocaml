@@ -764,6 +764,12 @@ Working version
   are valid.
   (Xavier Leroy, review by Nicolás Ojeda Bär and Edwin Török)
 
+- #15114: Fix the compilation of pattern matching on records whose field types
+  mention a locally abstract type: a field could be read as an immediate in
+  all the rows of the match because of a GADT equation that only holds in one
+  of them. In native code, the value was then not registered as a GC root.
+  (Jérôme Vouillon, review by Florian Angeletti)
+
 - #15115, OSEC-2026-23: Fix multiple issues in demarshaling
   (`Marshal.from_{channel,string,bytes}`)
   (Xavier Leroy, review by Nicolás Ojeda Bär)

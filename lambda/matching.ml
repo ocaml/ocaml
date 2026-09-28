@@ -2000,6 +2000,16 @@ let drop_expr_arg _head _arg rem = rem
    new  ``pattern_matching'' records.
 *)
 
+(* The typing environment of a pattern can contain GADT equations
+   introduced by the pattern itself or by other patterns of the same
+   row. These equations do not necessarily hold for the other rows of the
+   matrix, which share the same field accesses (or even for the current
+   row, when the fields are read before the corresponding constructor has
+   been tested). Hence, we remove all the local equations from the
+   environment before using it to determine whether a field is an
+   immediate. *)
+let field_env head = Env.remove_local_equations head.pat_env
+
 (* Matching against a constant *)
 
 let get_key_constant caller = function
@@ -2326,12 +2336,13 @@ let get_expr_args_record ~scopes head { arg; mut; _ } rem =
     | _ ->
         assert false
   in
+  let env = field_env head in
   let rec make_args pos =
     if pos >= Array.length all_labels then
       rem
     else
       let lbl = all_labels.(pos) in
-      let ptr = Typeopt.maybe_pointer_type head.pat_env lbl.lbl_arg in
+      let ptr = Typeopt.maybe_pointer_type env lbl.lbl_arg in
       let access =
         match lbl.lbl_repres with
         | Record_regular
