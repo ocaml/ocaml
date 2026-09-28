@@ -23,6 +23,11 @@ Working version
 
 ### Runtime system:
 
+- #15068: Record runtime events emitted while the program shuts down, and
+  report the minor heap allocation outstanding at exit. EV_DOMAIN_TERMINATE is
+  no longer emitted for the initial domain.
+  (Tim McGilchrist, review by ???)
+
 - #14773 : Activate Haiku native backend
   (Sylvain Kerjean, review by Kate Deplaix and Nicolas Ojeda Bar)
   Enable native-code backend and testsuite on BeOS/Haiku.
