@@ -2063,11 +2063,9 @@ AS_CASE([$target],
   ]
 )
 
-# The instrumented runtime is built by default
-# if the proper clock source is found.
-# If asked via --enable-instrumented-runtime, configuration fails if the proper
-# clock source is missing.
-AS_IF([test "x$enable_instrumented_runtime" != "xno" ],
+# The instrumented runtime can only be built if the proper clock source is
+# found.
+AS_IF([test "x$enable_instrumented_runtime" = "xyes" ],
   [
     AS_CASE([$target],
     [sparc-sun-solaris*],
@@ -2075,38 +2073,27 @@ AS_IF([test "x$enable_instrumented_runtime" != "xno" ],
     [*-pc-windows],
       [instrumented_runtime=true],
     [*-apple-darwin*], [
-      AS_CASE([$enable_instrumented_runtime,$has_monotonic_clock],
-        [*,true],
-          [instrumented_runtime=true],
-        [yes,false],
-          [AC_MSG_ERROR(m4_normalize([Instrumented runtime support requested
-            but no proper monotonic clock source was found.]))],
-        [auto,false],
-          [instrumented_runtime=false]
+      AS_IF([$has_monotonic_clock],
+        [instrumented_runtime=true],
+        [AC_MSG_ERROR(m4_normalize([Instrumented runtime support requested
+          but no proper monotonic clock source was found.]))]
     )],
     [AC_SEARCH_LIBS([clock_gettime], [rt],
       [has_clock_gettime=true],
       [has_clock_gettime=false])
-      AS_CASE(
-        [$enable_instrumented_runtime,$has_clock_gettime,$has_monotonic_clock],
-        [auto,false,*], [instrumented_runtime=false],
-        [auto,*,false], [instrumented_runtime=false],
-        [*,true,true],
-          [
-            instrumented_runtime=true
-            AS_IF([test "x$ac_cv_search_clock_gettime" = "xnone required"],
-              [instrumented_runtime_libs=""],
-              [instrumented_runtime_libs=$ac_cv_search_clock_gettime]
-            )
-          ],
-        [yes,false,*],
-          [AC_MSG_ERROR(m4_normalize([Instrumented runtime support requested
-            but clock_gettime is missing.]))],
-        [yes,*,false],
-          [AC_MSG_ERROR(m4_normalize([Instrumented runtime support requested
-            but no proper monotonic clock source was found.]))]
-      )]
-    )]
+      AS_IF([$has_clock_gettime],
+        [AS_IF([$has_monotonic_clock],
+           [instrumented_runtime=true
+           AS_IF([test "x$ac_cv_search_clock_gettime" = "xnone required"],
+             [instrumented_runtime_libs=""],
+             [instrumented_runtime_libs=$ac_cv_search_clock_gettime])],
+           [AC_MSG_ERROR(m4_normalize([Instrumented runtime support requested
+             but no proper monotonic clock source was found.]))]
+           )],
+        [AC_MSG_ERROR(m4_normalize([Instrumented runtime support requested
+          but clock_gettime is missing.]))]
+      )])
+    ]
 )
 
 # ThreadSanitizer support is currently only available for Linux/FreeBSD/macOS
