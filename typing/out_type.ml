@@ -414,10 +414,10 @@ let rec tree_of_path ?(disambiguation=true) namespace p =
       let t2 = tree_of_path (Some Module) p2 in
       Oide_apply (t1, t2)
   | Pextra_ty (p, extra) -> begin
-      (* inline record types are syntactically prevented from escaping their
-         binding scope, and are never shown to users. *)
+      (* Constructor inline record types cannot escape their binding scope.
+         Field inline record types use their dotted source name. *)
       match extra with
-        Pcstr_ty s ->
+        Pcstr_ty s | Pfld_ty s ->
           Oide_dot (tree_of_path (Some Type) p, s)
       | Pext_ty ->
           tree_of_path None p
@@ -521,7 +521,7 @@ let penalty s =
 let rec path_size = function
     Pident id ->
       penalty (Ident.name id), -Ident.scope id
-  | Pdot (p, _) | Pextra_ty (p, Pcstr_ty _) ->
+  | Pdot (p, _) | Pextra_ty (p, (Pcstr_ty _ | Pfld_ty _)) ->
       let (l, b) = path_size p in (1+l, b)
   | Papply (p1, p2) ->
       let (l, b) = path_size p1 in
@@ -573,7 +573,7 @@ let wrap_printing_env ~error env f =
 let rec lid_of_path = function
     Path.Pident id ->
       Longident.Lident (Ident.name id)
-  | Path.Pdot (p1, s) | Path.Pextra_ty (p1, Pcstr_ty s)  ->
+  | Path.Pdot (p1, s) | Path.Pextra_ty (p1, (Pcstr_ty s | Pfld_ty s))  ->
       Longident.Ldot (Location.mknoloc (lid_of_path p1), Location.mknoloc s)
   | Path.Papply (p1, p2) ->
       Longident.Lapply
@@ -1387,16 +1387,32 @@ let syntactic_variance
   if mem Inj vi then Injective else NoInjectivity in
   (v, i)
 
+let rec prepare_label l =
+  prepare_type l.ld_type;
+  match l.ld_inlined with
+  | Some { type_kind = Type_record (inner_lbls, _); _ } ->
+      List.iter prepare_label inner_lbls
+  | Some _ | None -> ()
+
 let prepare_type_constructor_arguments = function
   | Cstr_tuple l -> List.iter prepare_type l
-  | Cstr_record l -> List.iter (fun l -> prepare_type l.ld_type) l
+  | Cstr_record l -> List.iter prepare_label l
 
-let tree_of_label l =
+let rec tree_of_label l =
+  let typ = match l.ld_inlined with
+    | Some decl -> begin
+        match decl.type_kind with
+        | Type_record (inner_lbls, _) ->
+            Otyp_record (List.map tree_of_label inner_lbls)
+        | _ -> tree_of_typexp Type l.ld_type
+      end
+    | None -> tree_of_typexp Type l.ld_type
+  in
   {
     olab_name = Ident.name l.ld_id;
     olab_mut = l.ld_mutable;
     olab_atomic = l.ld_atomic;
-    olab_type = tree_of_typexp Type l.ld_type;
+    olab_type = typ;
   }
 
 let tree_of_constructor_arguments = function
@@ -1477,7 +1493,7 @@ let prepare_decl id decl =
            Option.iter prepare_type c.cd_res)
         cstrs
   | Type_record(l, _rep) ->
-      List.iter (fun l -> prepare_type l.ld_type) l
+      List.iter prepare_label l
   | Type_open -> ()
   | Type_external _ -> ()
   end;

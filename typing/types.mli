@@ -632,6 +632,10 @@ and label_declaration =
     ld_mutable: mutable_flag;
     ld_atomic: atomic_flag;
     ld_type: type_expr;
+    ld_inlined: type_declaration option;
+    (** When [Some decl], this field's type is an inline record.
+        [decl] is the anonymous type declaration for the inline record.
+        Similar to [cstr_inlined] for inline records in constructors. *)
     ld_loc: Location.t;
     ld_attributes: Parsetree.attributes;
     ld_uid: Uid.t;

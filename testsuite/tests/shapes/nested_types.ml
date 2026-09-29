@@ -20,7 +20,7 @@ end
 [%%expect{|
 {
  "M"[module] ->
-   {<.37>
+   {<.41>
     "Exn"[extension constructor] -> {<.1>
                                      "lbl_exn"[label] -> <.0>;
                                      };

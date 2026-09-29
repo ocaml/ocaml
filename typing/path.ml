@@ -21,6 +21,7 @@ type t =
 and extra_ty =
   | Pcstr_ty of string
   | Pext_ty
+  | Pfld_ty of string
 
 let rec same_aux ident_cmp p1 p2 =
   let same_aux p1 p2 = same_aux ident_cmp p1 p2 in
@@ -35,7 +36,8 @@ let rec same_aux ident_cmp p1 p2 =
       let same_extra = match t1, t2 with
         | (Pcstr_ty s1, Pcstr_ty s2) -> s1 = s2
         | (Pext_ty, Pext_ty) -> true
-        | ((Pcstr_ty _ | Pext_ty), _) -> false
+        | (Pfld_ty s1, Pfld_ty s2) -> s1 = s2
+        | ((Pcstr_ty _ | Pext_ty | Pfld_ty _), _) -> false
       in same_extra && same_aux p1 p2
   | (_, _) -> false
 
@@ -65,14 +67,16 @@ let rec compare p1 p2 =
   | (Pextra_ty _, Papply _)
     -> 1
 and compare_extra t1 t2 =
+  let rank = function
+    | Pcstr_ty _ -> 0
+    | Pext_ty -> 1
+    | Pfld_ty _ -> 2
+  in
   match (t1, t2) with
-    Pcstr_ty s1, Pcstr_ty s2 -> String.compare s1 s2
-  | (Pext_ty, Pext_ty)
-    -> 0
-  | (Pcstr_ty _, Pext_ty)
-    -> -1
-  | (Pext_ty, Pcstr_ty _)
-    -> 1
+  | (Pcstr_ty s1, Pcstr_ty s2) | (Pfld_ty s1, Pfld_ty s2) ->
+      String.compare s1 s2
+  | (Pext_ty, Pext_ty) -> 0
+  | _ -> Int.compare (rank t1) (rank t2)
 
 let rec find_free_opt ids = function
     Pident id -> List.find_opt (Ident.same id) ids
@@ -142,7 +146,7 @@ let maybe_escape s =
 
 let rec name ?(paren=kfalse) = function
     Pident id -> maybe_escape (Ident.name id)
-  | Pdot(p, s) | Pextra_ty (p, Pcstr_ty s) ->
+  | Pdot(p, s) | Pextra_ty (p, (Pcstr_ty s | Pfld_ty s)) ->
       let s = maybe_escape s in
       name ~paren p ^ if paren s then ".( " ^ s ^ " )" else "." ^ s
   | Papply(p1, p2) -> name ~paren p1 ^ "(" ^ name ~paren p2 ^ ")"
@@ -150,7 +154,7 @@ let rec name ?(paren=kfalse) = function
 
 let rec print ppf = function
   | Pident id -> Ident.print_with_scope ppf id
-  | Pdot(p, s) | Pextra_ty (p, Pcstr_ty s) ->
+  | Pdot(p, s) | Pextra_ty (p, (Pcstr_ty s | Pfld_ty s)) ->
       Format_doc.fprintf ppf "%a.%s" print p s
   | Papply(p1, p2) -> Format_doc.fprintf ppf "%a(%a)" print p1 print p2
   | Pextra_ty (p, Pext_ty) -> print ppf p
@@ -163,7 +167,8 @@ let rec head = function
 let flatten =
   let rec flatten acc = function
     | Pident id -> `Ok (id, acc)
-    | Pdot (p, s) | Pextra_ty (p, Pcstr_ty s) -> flatten (s :: acc) p
+    | Pdot (p, s) | Pextra_ty (p, (Pcstr_ty s | Pfld_ty s)) ->
+        flatten (s :: acc) p
     | Papply _ -> `Contains_apply
     | Pextra_ty (p, Pext_ty) -> flatten acc p
   in
@@ -183,13 +188,14 @@ let heads p =
 
 let rec last = function
   | Pident id -> Ident.name id
-  | Pdot(_, s) | Pextra_ty (_, Pcstr_ty s) -> s
+  | Pdot(_, s) | Pextra_ty (_, (Pcstr_ty s | Pfld_ty s)) -> s
   | Papply(_, p) | Pextra_ty (p, Pext_ty) -> last p
 
 let is_constructor_typath p =
   match p with
   | Pident _ | Pdot _ | Papply _ -> false
-  | Pextra_ty _ -> true
+  | Pextra_ty (_, (Pcstr_ty _ | Pext_ty)) -> true
+  | Pextra_ty (_, Pfld_ty _) -> false
 
 module T = struct
   type nonrec t = t

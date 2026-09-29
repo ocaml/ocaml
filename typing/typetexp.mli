@@ -53,6 +53,15 @@ val type_open:
 
 val valid_tyvar_name : string -> bool
 
+val lookup_type:
+  ?use:bool -> Env.t -> Longident.t Location.loc ->
+  Path.t * type_declaration
+(** Resolve a type name or a nested record type projection. *)
+
+val approx_type_application:
+  Env.t -> Longident.t Location.loc -> type_expr list -> type_expr option
+(** Resolve a type application for recursive definition approximation. *)
+
 val transl_simple_type:
         Env.t -> ?univars:TyVarEnv.poly_univars -> closed:bool
         -> Parsetree.core_type -> Typedtree.core_type

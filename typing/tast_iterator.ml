@@ -184,12 +184,14 @@ let primitive_description sub x =
     Option.iter (sub.typ sub) typ;
     iter_loc_lid sub lid
 
-let label_decl sub ({ld_loc; ld_name; ld_type; ld_attributes; _} as ld) =
+let rec label_decl sub
+    ({ld_loc; ld_name; ld_type; ld_inline_record; ld_attributes; _} as ld) =
   sub.item_declaration sub (Label ld);
   sub.location sub ld_loc;
   sub.attributes sub ld_attributes;
   iter_loc sub ld_name;
-  sub.typ sub ld_type
+  sub.typ sub ld_type;
+  Option.iter (List.iter (label_decl sub)) ld_inline_record
 
 let constructor_args sub = function
   | Cstr_tuple l -> List.iter (sub.typ sub) l

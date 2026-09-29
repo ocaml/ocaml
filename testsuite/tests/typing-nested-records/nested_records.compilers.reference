@@ -1,0 +1,55 @@
+type person = {
+  name : string;
+  address : { street : string; city : string; };
+}
+val p : person =
+  {name = "Alice"; address = {street = "123 Main St"; city = "Springfield"}}
+val street : string = "123 Main St"
+val city : string = "Springfield"
+val get_city : person -> string = <fun>
+val updated : person =
+  {name = "Alice"; address = {street = "456 Elm St"; city = "Shelbyville"}}
+type nested3 = { a : { b : { c : int; }; }; }
+val x : nested3 = {a = {b = {c = 42}}}
+val v : int = 42
+val get_c : nested3 -> int = <fun>
+type mutable_nested = { data : { mutable count : int; label : string; }; }
+val m : mutable_nested = {data = {count = 0; label = "test"}}
+- : unit = ()
+type config = {
+  server : { host : string; port : int; };
+  database : { host : string; port : int; };
+}
+val cfg : config =
+  {server = {host = "localhost"; port = 8080};
+   database = {host = "db.local"; port = 5432}}
+val server_host : string = "localhost"
+val db_host : string = "db.local"
+val get_hosts : config -> string * string = <fun>
+val get_server : config -> config.server = <fun>
+Line 1, characters 19-23:
+1 | let standalone = { host = "test"; port = 99 };;
+                       ^^^^
+Error: Unbound record field host
+type 'a box = { inner : { value : 'a; }; }
+val b : int box = {inner = {value = 1}}
+val bv : int = 1
+type ('a, 'b) either_record = {
+  left : { payload : 'a; };
+  right : { payload : 'b; };
+}
+val e : (int, string) either_record =
+  {left = {payload = 42}; right = {payload = "hi"}}
+val el : int = 42
+val er : string = "hi"
+type 'a deep = { a : { b : { c : 'a; }; }; }
+val dx : float deep = {a = {b = {c = 3.14}}}
+val dv : float = 3.14
+val unwrap_deep : 'a deep -> 'a = <fun>
+val p2 : person =
+  {name = "Bob"; address = {street = "123 Main St"; city = "Springfield"}}
+val p3 : person =
+  {name = "Alice"; address = {street = "Elm St"; city = "LA"}}
+val p4 : person =
+  {name = "Alice"; address = {street = "Oak St"; city = "Springfield"}}
+

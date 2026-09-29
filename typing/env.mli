@@ -227,6 +227,12 @@ val lookup_value:
 val lookup_type:
   ?use:bool -> loc:Location.t -> Longident.t -> t ->
   Path.t * type_declaration
+
+(** Resolve nested record fields from a base type path. *)
+val lookup_type_projection:
+  ?use:bool -> loc:Location.t -> path:Path.t -> Longident.t Location.loc ->
+  string Location.loc list -> t -> Path.t * type_declaration
+
 val lookup_module:
   ?use:bool -> loc:Location.t -> Longident.t -> t ->
   Path.t * module_declaration

@@ -55,6 +55,21 @@ and extra_ty =
       it has the path
         [Pextra_ty (Pident `Error`, Pext_ty)].
   *)
+  | Pfld_ty of string
+  (** [Pextra_ty (p, Pfld_ty f)] is the inline record type declared
+      by field [f] of record type [p].
+
+      For example, the type of [address] below has path
+      [Pextra_ty (Pident `person`, Pfld_ty "address")] and can be
+      named as [person.address].
+
+      {[
+        type person = {
+          name : string;
+          address : {street : string; city : string};
+        }
+      ]}
+  *)
 
 val same: t -> t -> bool
 val equiv: (Ident.Unscoped.t * Ident.Unscoped.t) list -> t -> t -> bool

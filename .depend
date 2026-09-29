@@ -2039,7 +2039,9 @@ typing/typedecl_variance.cmo : \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/typedecl_properties.cmi \
+    typing/path.cmi \
     parsing/parsetree.cmi \
+    utils/misc.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
     typing/env.cmi \
@@ -2051,7 +2053,9 @@ typing/typedecl_variance.cmx : \
     typing/types.cmx \
     typing/typedtree.cmx \
     typing/typedecl_properties.cmx \
+    typing/path.cmx \
     parsing/parsetree.cmi \
+    utils/misc.cmx \
     parsing/location.cmx \
     typing/ident.cmx \
     typing/env.cmx \
@@ -2281,6 +2285,7 @@ typing/types.cmi : \
     parsing/asttypes.cmi
 typing/typetexp.cmo : \
     utils/warnings.cmi \
+    utils/utf8_lexeme.cmi \
     typing/typing_recovery_state.cmi \
     typing/typing_recovery.cmi \
     typing/types.cmi \
@@ -2310,6 +2315,7 @@ typing/typetexp.cmo : \
     typing/typetexp.cmi
 typing/typetexp.cmx : \
     utils/warnings.cmx \
+    utils/utf8_lexeme.cmx \
     typing/typing_recovery_state.cmx \
     typing/typing_recovery.cmx \
     typing/types.cmx \
