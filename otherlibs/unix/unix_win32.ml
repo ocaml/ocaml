@@ -437,6 +437,7 @@ external map_internal:
      = "caml_unix_map_file_bytecode" "caml_unix_map_file"
 
 let map_file fd ?(pos=0L) kind layout shared dims =
+  if pos < 0L then invalid_arg "Unix.map_file: negative position";
   map_internal fd kind layout shared dims pos
 
 (* File permissions and ownership *)
