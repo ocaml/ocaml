@@ -10,6 +10,11 @@ OCaml 5.5.2
 - #15067, #15071: Fix detection of functions available in the future on macOS.
   (Antonin Décimo, review by Nicolás Ojeda Bär and Damien Doligez)
 
+- #15112, OSEC-2026-22: `Unix.map_file`: protect against overflow
+  when computing the data size.
+  (Xavier Leroy and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär
+  and Edwin Török)
+
 OCaml 5.5.1 (4 September 2026)
 ------------------------------
 
