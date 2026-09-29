@@ -2036,7 +2036,13 @@ void caml_reset_young_limit(caml_domain_state * dom_st)
               (uintnat)dom_st->young_trigger);
   /* An interrupt might have been queued in the meanwhile; this
      achieves the proper synchronisation. */
-  atomic_exchange(&dom_st->young_limit, (uintnat)trigger);
+  if (atomic_exchange(&dom_st->young_limit, (uintnat)trigger)
+      == CAML_UINTNAT_MAX) {
+    /* In case of a recently-recorded signal or forced systhread switching,
+       we need to remember that we must run signal handlers or systhread's
+       yield. */
+    caml_set_action_pending(dom_st);
+  }
 
   /* For non-delayable asynchronous actions, we immediately interrupt
      the domain again. */
@@ -2047,14 +2053,6 @@ void caml_reset_young_limit(caml_domain_state * dom_st)
       || dom_st->major_slice_epoch < atomic_load (&caml_major_slice_epoch)) {
     interrupt_domain_local(dom_st);
   }
-  /* We might be here due to a recently-recorded signal or forced
-     systhread switching, so we need to remember that we must run
-     signal handlers or systhread's yield. In addition, in the case of
-     long-running C code (that may regularly poll with
-     caml_process_pending_actions), we want to force a query of all
-     callbacks at every minor collection or major slice (similarly to
-     the OCaml behaviour). */
-  caml_set_action_pending(dom_st);
 }
 
 void caml_update_young_limit_after_c_call(caml_domain_state * dom_st)
