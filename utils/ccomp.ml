@@ -194,22 +194,38 @@ let call_linker mode output_name files extra =
             l_prefix (Load_path.get_path_list ()))
           (quote_files ~response_files:true (remove_Wl files))
           extra
-      else
-        Printf.sprintf "%s -o %s %s %s %s %s %s"
-          (match !Clflags.c_compiler, mode with
-          | Some cc, _ -> cc
-          | None, Exe -> Config.mkexe
-          | None, Dll -> Config.mkdll
-          | None, MainDll -> Config.mkmaindll
-          | None, Partial -> assert false
-          )
-          (Filename.quote output_name)
-          ""  (*(Clflags.std_include_flag "-I")*)
-          (quote_prefixed ~response_files:true "-L"
-             (Load_path.get_path_list ()))
-          (String.concat " " (List.rev !Clflags.all_ccopts))
-          (quote_files ~response_files:true files)
-          extra
+      else match !Clflags.linking_o, mode with
+        | None, _ | Some _, (Dll | MainDll | Partial) ->
+            Printf.sprintf "%s -o %s %s %s %s %s %s"
+              (match !Clflags.c_compiler, mode with
+              | Some cc, _ -> cc
+              | None, Exe -> Config.mkexe
+              | None, Dll -> Config.mkdll
+              | None, MainDll -> Config.mkmaindll
+              | None, Partial -> assert false
+              )
+              (Filename.quote output_name)
+              ""  (*(Clflags.std_include_flag "-I")*)
+              (quote_prefixed ~response_files:true "-L"
+                 (Load_path.get_path_list ()))
+              (String.concat " " (List.rev !Clflags.all_ccopts))
+              (quote_files ~response_files:true files)
+              extra
+        | Some (_name, o), Exe ->
+            let oc = open_out o in
+            output_string oc
+              (Printf.sprintf
+                "CC: %s\nO: %s\nDASHL: %s\nCCOPTS: %s\nFILES: %s\nEXTRA: %s\n"
+                (match !Clflags.c_compiler with | Some cc -> cc | None -> Config.mkexe)
+                (Filename.quote output_name)
+                (quote_prefixed ~response_files:true "-L"
+                   (Load_path.get_path_list ()))
+                (String.concat " " (List.rev !Clflags.all_ccopts))
+                (quote_files ~response_files:true files)
+                extra
+              );
+            flush oc;
+            "true"
     in
     command cmd
   )
