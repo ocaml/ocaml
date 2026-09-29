@@ -446,6 +446,21 @@ let emit_named_text_section func_name =
     end
   else D.text ()
 
+(* With only one domain running, nobody else can see the atomic half way
+   through an update, and these sequences have no poll point for another
+   thread to sneak in at, so the fast path can skip the lock. [ndomains] is
+   the address of caml_num_domains_running. *)
+let split_on_domains ndomains ~single ~multi =
+  let lbl_multi = new_label() in
+  let lbl_done = new_label() in
+  I.cmp (int 1) (mem64 QWORD 0 ndomains);
+  I.jne (label lbl_multi);
+  single ();
+  I.jmp (label lbl_done);
+  def_label lbl_multi;
+  multi ();
+  def_label lbl_done
+
 (* Output the assembly code for an instruction *)
 
 (* Emit an instruction *)
@@ -752,60 +767,53 @@ let emit_instr env fallthrough i =
   | Lop (Idls_get) ->
       I.mov (domain_field Domainstate.Domain_dls_root) (res i 0)
   | Lop (Iatomic_fetch_add) ->
-      (* res.(0) already holds the increment (selection ties res.(0) to
-         arg.(1)). On the multi-domain path lock xadd swaps in the old value,
-         on the single-domain path a plain xadd does the same. arg.(2) holds
-         &caml_num_domains_running (materialised by an Iconst_symbol in
-         selection), so reading the domain count works in dlcode too without a
-         hand-rolled GOTPCREL scratch. *)
-      let lbl_multi = new_label() in
-      let lbl_done = new_label() in
-      I.cmp (int 1) (mem64 QWORD 0 (arg64 i 2));
-      I.jne (label lbl_multi);
-      (* Single-domain fast path: xadd without the lock prefix *)
-      I.xadd (res i 0) (mem64 QWORD 0 (arg64 i 0));
-      I.jmp (label lbl_done);
-      def_label lbl_multi;
-      I.lock_xadd (res i 0) (mem64 QWORD 0 (arg64 i 0));
-      def_label lbl_done
+      (* arg.(0)  address of the atomic
+         res.(0)  increment going in, old value coming out (tied to arg.(1))
+         arg.(2)  address of caml_num_domains_running
+
+         With one domain it's a plain xadd, otherwise lock xadd. *)
+      split_on_domains (arg64 i 2)
+        ~single:(fun () -> I.xadd (res i 0) (mem64 QWORD 0 (arg64 i 0)))
+        ~multi:(fun () -> I.lock_xadd (res i 0) (mem64 QWORD 0 (arg64 i 0)))
   | Lop (Iatomic_exchange) ->
-      (* res.(0) arrives holding the new value and leaves holding the old one.
-         xchg against memory carries an implicit lock, so the single-domain
-         path spells it out as a load and a store through res.(1). *)
-      let lbl_multi = new_label() in
-      let lbl_done = new_label() in
-      I.cmp (int 1) (mem64 QWORD 0 (arg64 i 2));
-      I.jne (label lbl_multi);
-      I.mov (mem64 QWORD 0 (arg64 i 0)) (res i 1);
-      I.mov (res i 0) (mem64 QWORD 0 (arg64 i 0));
-      I.mov (res i 1) (res i 0);
-      I.jmp (label lbl_done);
-      def_label lbl_multi;
-      I.xchg (res i 0) (mem64 QWORD 0 (arg64 i 0));
-      def_label lbl_done
+      (* arg.(0)  address of the atomic
+         res.(0)  new value going in, old value coming out (tied to arg.(1))
+         arg.(2)  address of caml_num_domains_running
+         res.(1)  scratch, single-domain path only
+
+         With one domain we can get away with a plain load and store. xchg on
+         memory always locks, even without the prefix, so it's only used when
+         other domains are running. *)
+      split_on_domains (arg64 i 2)
+        ~single:(fun () ->
+          I.mov (mem64 QWORD 0 (arg64 i 0)) (res i 1);
+          I.mov (res i 0) (mem64 QWORD 0 (arg64 i 0));
+          I.mov (res i 1) (res i 0))
+        ~multi:(fun () -> I.xchg (res i 0) (mem64 QWORD 0 (arg64 i 0)))
   | Lop (Iatomic_compare_exchange) ->
-      (* rax holds the expected value on entry and cmpxchg overwrites it with
-         whatever it found, which is exactly the result, so the locked path
-         needs nothing after it. A lone domain does the compare and the store
-         by hand through res.(1): an unlocked cmpxchg would still serialise on
-         the same port, the same reason fetch-and-add does not use an unlocked
-         xadd here. That path has to copy the value it loaded into rax itself,
-         since rax is still holding the expected value. *)
-      let lbl_multi = new_label() in
-      let lbl_stored = new_label() in
-      let lbl_done = new_label() in
-      I.cmp (int 1) (mem64 QWORD 0 (arg64 i 3));
-      I.jne (label lbl_multi);
-      I.mov (mem64 QWORD 0 (arg64 i 0)) (res i 1);
-      I.cmp (res i 1) (arg i 1);
-      I.jne (label lbl_stored);
-      I.mov (arg i 2) (mem64 QWORD 0 (arg64 i 0));
-      def_label lbl_stored;
-      I.mov (res i 1) (res i 0);
-      I.jmp (label lbl_done);
-      def_label lbl_multi;
-      I.lock_cmpxchg (arg i 2) (mem64 QWORD 0 (arg64 i 0));
-      def_label lbl_done
+      (* arg.(0)  address of the atomic
+         arg.(1)  expected value, pinned to rax
+         arg.(2)  new value
+         arg.(3)  address of caml_num_domains_running
+         res.(0)  the value we found, also rax
+         res.(1)  scratch, single-domain path only
+
+         With one domain, load into res.(1), store the new value if it
+         matches, then hand the loaded value back in res.(0). Otherwise lock
+         cmpxchg does it all. If the values match it leaves rax alone, and if
+         not it loads what it found into rax, so either way rax is the
+         answer. *)
+      split_on_domains (arg64 i 3)
+        ~single:(fun () ->
+          let lbl_stored = new_label() in
+          I.mov (mem64 QWORD 0 (arg64 i 0)) (res i 1);
+          I.cmp (res i 1) (arg i 1);
+          I.jne (label lbl_stored);
+          I.mov (arg i 2) (mem64 QWORD 0 (arg64 i 0));
+          def_label lbl_stored;
+          I.mov (res i 1) (res i 0))
+        ~multi:(fun () ->
+          I.lock_cmpxchg (arg i 2) (mem64 QWORD 0 (arg64 i 0)))
   | Lop (Ireturn_addr) ->
       let offset = frame_size env - 8 in
       I.mov (mem64 QWORD offset RSP) (res i 0)

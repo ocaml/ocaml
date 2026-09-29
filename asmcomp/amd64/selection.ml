@@ -130,17 +130,12 @@ let pseudoregs_for_operation op arg res =
      no separate mov is needed in emit. arg.(2) is &caml_num_domains_running. *)
   | Iatomic_fetch_add ->
       ([| arg.(0); res.(0); arg.(2) |], res)
-  (* Same trick for exchange, res.(0) carries the new value into the swap and
-     comes back holding the old one. xchg on memory is always locked, so the
-     single-domain path needs a scratch to do it with plain moves instead. *)
+  (* See the exchange code in emit.mlp for the registers. *)
   | Iatomic_exchange ->
       let treg = Reg.create Int in
       ([| arg.(0); res.(0); arg.(2) |], [| res.(0); treg |])
-  (* cmpxchg compares against rax and overwrites it with the value it found,
-     so the expected value goes in rax and the result comes back there too.
-     res.(1) is a scratch for the single-domain path, which loads and stores
-     by hand rather than paying for a cmpxchg it does not need.
-     arg.(3) is &caml_num_domains_running. *)
+  (* cmpxchg compares against rax and returns its result there. See the
+     compare-and-exchange code in emit.mlp for the registers. *)
   | Iatomic_compare_exchange ->
       let treg = Reg.create Int in
       ([| arg.(0); rax; arg.(2); arg.(3) |], [| rax; treg |])

@@ -547,16 +547,28 @@ let emit_instr env i =
       let ofs = Domainstate.(idx_of_field Domain_dls_root) * 8 in
       `	ld	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg reg_domain_state_ptr})\n`
   | Lop (Iatomic_exchange) ->
-      (* amoswap.d.aqrl carries both orderings, same as amoadd below. *)
+      (* arg.(0)  address of the atomic
+         arg.(1)  new value
+         res.(0)  old value
+
+         A single amoswap. The aqrl suffix gives it acquire and release
+         ordering, so no fence is needed, same as amoadd below. *)
       `	amoswap.d.aqrl	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, ({emit_reg i.arg.(0)})\n`
   | Lop (Iatomic_compare_exchange) ->
-      (* The canonical sequence from the ISA manual, section 14.3. res.(0) has
-         to hold the loaded value all the way out now that it is the result,
-         so the sc status goes to reg_tmp instead of borrowing res.(0). t1 is
-         above num_available_registers so it is never allocated, and nothing
+      (* The canonical sequence from the ISA manual, section 14.3.
+
+         arg.(0)  address of the atomic
+         arg.(1)  expected value
+         arg.(2)  new value
+         res.(0)  the value we found, straight from lr
+         reg_tmp  sc status, t1, which is never allocated
+
+         lr.d.aqrl loads the current value and reserves the address. If it
+         doesn't match we skip the store, otherwise sc.d.rl stores the new
+         value, going round again if the reservation was lost. Nothing
          between the lr and the sc loads, stores or branches backwards, which
-         keeps the loop inside the constrained-LR/SC limits.
-         aqrl on the lr and rl on the sc is the seq_cst mapping. The manual
+         keeps the loop within the constrained LR/SC rules. aqrl on the lr
+         and rl on the sc is the sequentially consistent mapping. The manual
          warns against rl on an lr without aq, and aq on an sc without rl. *)
       let lbl = new_label() in
       let lbl_done = new_label() in
