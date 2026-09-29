@@ -44,6 +44,7 @@
 /* Default speed setting for the major GC. */
 _Atomic uintnat caml_percent_free = Percent_free_def;
 _Atomic uintnat caml_small_heap_limit = Small_heap_limit_def;
+uintnat caml_max_percent_free = Max_percent_free_def;
 
 /* The mark stack will be pruned if it grows bigger than
    1/caml_mark_stack_prune_factor of the domain's major heap size */
@@ -755,7 +756,7 @@ void caml_orphan_finalisers (caml_domain_state* domain_state)
       /* Force a major GC cycle to simplify constraints for orphaning
          finalisers. See note attached to the declaration of
          [num_domains_orphaning_finalisers] variable in major_gc.c */
-      caml_finish_major_cycle(0);
+      caml_finish_major_cycle(Compaction_none);
     }
     CAMLassert(caml_gc_phase == Phase_sweep_main ||
                caml_gc_phase == Phase_sweep_and_mark_main);
@@ -1991,8 +1992,58 @@ static void cycle_major_heap_from_stw_single(
   caml_code_fragment_cleanup_from_stw_single();
 }
 
+/* Decide, at the end of a major cycle, whether to compact. */
+
+static bool should_compact_from_stw_single(int compaction_mode)
+{
+  if (compaction_mode == Compaction_none) {
+    return false;
+  } else if (compaction_mode == Compaction_forced) {
+    caml_gc_message (0x200, "Forced compaction.\n");
+    return true;
+  }
+  CAMLassert (compaction_mode == Compaction_auto);
+
+  /* runtime 4 algorithm, as close as possible.
+   * TODO: revisit this in future. */
+  if (caml_max_percent_free >= 1000 * 1000) {
+    caml_gc_message (0x200,
+                     "Max percent free %"ARCH_INTNAT_PRINTF_FORMAT"u%%:"
+                     "compaction off.\n", caml_max_percent_free);
+    return false;
+  }
+  if (caml_major_cycles_completed < 3) {
+    caml_gc_message (0x200,
+                     "Only %"ARCH_INTNAT_PRINTF_FORMAT"u major cycles: "
+                     "compaction off.\n", caml_major_cycles_completed);
+    return false;
+  }
+
+  struct gc_stats s;
+  caml_compute_gc_stats(&s);
+
+  uintnat heap_words = s.heap_stats.pool_words + s.heap_stats.large_words;
+
+  if (Bsize_wsize(heap_words) <= 2 * caml_shared_heap_grow_bsize())
+    return false;
+
+  uintnat live_words = s.heap_stats.pool_live_words + s.heap_stats.large_words;
+  uintnat free_words = heap_words - live_words;
+  double current_overhead = 100.0 * free_words / live_words;
+
+  bool compacting = current_overhead >= caml_max_percent_free;
+  caml_gc_message (0x200, "Current overhead: %"
+                   ARCH_INTNAT_PRINTF_FORMAT "u%% %s %"
+                   ARCH_INTNAT_PRINTF_FORMAT "u%%: %scompacting.\n",
+                   (uintnat) current_overhead,
+                   compacting ? ">=" : "<",
+                   caml_max_percent_free,
+                   compacting ? "" : "not ");
+  return compacting;
+}
+
 struct cycle_callback_params {
-  int force_compaction;
+  int compaction_mode;
 };
 
 static atomic_bool can_cycle_all_domains;
@@ -2045,8 +2096,11 @@ static void stw_try_cycle_all_domains(
                         (domain, (void*)0, participating_count, participating);
 
   CAML_EV_BEGIN(EV_MAJOR_GC_STW);
+  static bool compacting = false;
   Caml_global_barrier_if_final(participating_count) {
     cycle_major_heap_from_stw_single(domain, (uintnat) participating_count);
+    /* Do compaction decision for all domains here */
+    compacting = should_compact_from_stw_single(params.compaction_mode);
   }
 
   /* If the heap is to be verified, do it before the domains continue
@@ -2062,14 +2116,12 @@ static void stw_try_cycle_all_domains(
 
   caml_cycle_heap(domain->shared_heap);
 
-  /* Compact here if requested (or, in some future version, if the heap overhead
-      is too high). */
-  if (params.force_compaction) {
+  if (compacting) {
     caml_compact_heap(domain, participating_count, participating);
   }
 
-  /* Update GC stats (as these could have significantly changed if there was a
-      compaction) */
+  /* Update GC stats (these could have significantly changed e.g. due
+   * to compaction). */
   caml_collect_gc_stats_sample_stw(domain);
 
   /* Collect domain-local stats to emit to runtime events */
@@ -2216,7 +2268,7 @@ static void major_collection_slice(intnat howmuch,
                                    int participant_count,
                                    caml_domain_state** barrier_participants,
                                    collection_slice_mode mode,
-                                   int force_compaction)
+                                   int compaction_mode)
 {
   caml_domain_state* domain_state = Caml_state;
   intnat sweep_work = 0, mark_work = 0;
@@ -2455,7 +2507,7 @@ mark_again:
     saved_major_cycle = caml_major_cycles_completed;
 
     struct cycle_callback_params params;
-    params.force_compaction = force_compaction;
+    params.compaction_mode = compaction_mode;
 
     while (saved_major_cycle == caml_major_cycles_completed
            && is_complete_last_phase())
@@ -2474,7 +2526,7 @@ mark_again:
 
 void caml_opportunistic_major_collection_slice(intnat howmuch)
 {
-  major_collection_slice(howmuch, 0, 0, Slice_opportunistic, 0);
+  major_collection_slice(howmuch, 0, 0, Slice_opportunistic, Compaction_none);
 }
 
 void caml_major_collection_slice(intnat howmuch)
@@ -2488,7 +2540,7 @@ void caml_major_collection_slice(intnat howmuch)
         0,
         0,
         Slice_interruptible,
-        0
+        Compaction_auto
         );
     if (caml_incoming_interrupts_queued()) {
       caml_gc_log("Major slice interrupted, rescheduling major slice");
@@ -2497,7 +2549,7 @@ void caml_major_collection_slice(intnat howmuch)
   } else {
     /* TODO: could make forced API slices interruptible, but would need to do
        accounting or pass up interrupt */
-    major_collection_slice(howmuch, 0, 0, Slice_uninterruptible, 0);
+    major_collection_slice(howmuch, 0, 0, Slice_uninterruptible, Compaction_auto);
   }
   /* Record that this domain has completed a major slice for this minor cycle.
    */
@@ -2510,7 +2562,7 @@ void caml_major_collection_slice(intnat howmuch)
 
 struct finish_major_cycle_params {
   uintnat saved_major_cycles;
-  int force_compaction;
+  int compaction_mode;
 };
 
 static void stw_finish_major_cycle (caml_domain_state* domain, void* arg,
@@ -2539,18 +2591,18 @@ static void stw_finish_major_cycle (caml_domain_state* domain, void* arg,
   CAML_EV_BEGIN(EV_MAJOR_FINISH_CYCLE);
   while (params.saved_major_cycles == caml_major_cycles_completed) {
     major_collection_slice(10000000, participating_count, participating,
-                           Slice_uninterruptible, params.force_compaction);
+                           Slice_uninterruptible, params.compaction_mode);
   }
   CAML_EV_END(EV_MAJOR_FINISH_CYCLE);
 }
 
-void caml_finish_major_cycle (int force_compaction)
+void caml_finish_major_cycle (int compaction_mode)
 {
   uintnat saved_major_cycles = caml_major_cycles_completed;
 
   while( saved_major_cycles == caml_major_cycles_completed ) {
     struct finish_major_cycle_params params;
-    params.force_compaction = force_compaction;
+    params.compaction_mode = compaction_mode;
     params.saved_major_cycles = caml_major_cycles_completed;
 
     caml_try_run_on_all_domains(&stw_finish_major_cycle, (void*)&params, 0);

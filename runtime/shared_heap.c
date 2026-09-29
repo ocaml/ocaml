@@ -223,6 +223,13 @@ void caml_free_shared_heap(struct caml_heap_state* heap) {
 }
 
 
+/* If we were to grow the shared heap, how much would we grow it?
+   In stock OCaml 5, the heap grows one pool at a time. */
+uintnat caml_shared_heap_grow_bsize(void)
+{
+  return Bsize_wsize(POOL_WSIZE);
+}
+
 /* Allocating and deallocating pools from the global freelist. */
 
 static pool* pool_acquire(struct caml_heap_state* local) {

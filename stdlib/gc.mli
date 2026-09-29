@@ -176,9 +176,7 @@ type control =
        compaction is triggered at the end of each major GC cycle
        (this setting is intended for testing purposes only).
        If [max_overhead >= 1000000], compaction is never triggered.
-
-       This field is currently not available in OCaml 5: the field value is
-       always [0]. *)
+       Default: 500. *)
 
     stack_limit : int;
     (** The maximum size of the fiber stacks (in words).

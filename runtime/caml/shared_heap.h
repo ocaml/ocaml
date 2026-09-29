@@ -45,6 +45,9 @@ void caml_free_shared_heap(struct caml_heap_state* heap);
 value* caml_shared_try_alloc(struct caml_heap_state*,
                              mlsize_t, tag_t, reserved_t);
 
+/* If we were to grow the shared heap, how much would we grow it? */
+uintnat caml_shared_heap_grow_bsize(void);
+
 /* Copy the domain-local heap stats into a heap stats sample. */
 void caml_collect_heap_stats_sample(
   struct caml_heap_state* local,
