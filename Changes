@@ -393,6 +393,9 @@ Working version
 
 ### Other libraries:
 
+- #13450: Fixes and improvements for Windows socketpair on AF_UNIX emulation.
+  (Antonin Décimo, review by Nicolás Ojeda Bär)
+
 - #14740: Various fixes in libunix. Fix compilation failures if gethostname or
   IPv6 are not available. Add blocking sections to the wrappers of realpath and
   lockf. Fix missing root registration.
