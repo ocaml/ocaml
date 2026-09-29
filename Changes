@@ -25,6 +25,10 @@ OCaml 4.14 maintenance version
 - #15133, OSEC 2026-24: Multiple issues in command quoting on Windows
   (Xavier Leroy and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär)
 
+- #15113, OSEC-2026-21: `Str.string_partial_match`: make sure captured groups
+  are valid.
+  (Xavier Leroy, review by Nicolás Ojeda Bär and Edwin Török)
+
 OCaml 4.14.4 (15 June 2026)
 ------------------------------
 
