@@ -22,6 +22,15 @@
     doesn't change during the execution of the compiler.
 *)
 
+(* Load path errors *)
+type error =
+  | Ambiguous_artifacts of {
+      dir:string;
+      normalized: string;
+      similar: string list
+    }
+exception Error of error
+
 val add_dir : hidden:bool -> string -> unit
 (** Add a directory to the end of the load path (i.e. at lowest priority.) *)
 
