@@ -36,8 +36,7 @@ let prefix ppf x =
     | Delete _ -> Diffing.Deletion
   in
   let style k ppf inner =
-    let sty = Diffing.style k in
-    Format_doc.pp_open_stag ppf (Misc.Style.Style sty);
+    Format_doc.pp_open_stag ppf (Diffing.style k);
     Format_doc.kfprintf (fun ppf -> Format_doc.pp_close_stag ppf () ) ppf inner
   in
   match x with

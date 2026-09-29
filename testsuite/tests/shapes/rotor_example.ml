@@ -14,6 +14,7 @@ end
 {
  "Stringable"[module type] -> <.2>;
  }
+
 module type Stringable = sig type t val to_string : t -> string end
 |}]
 
@@ -30,6 +31,7 @@ end
                   "to_string"[value] -> <.6>;
                   });
  }
+
 module Pair :
   (X : Stringable) (Y : Stringable) ->
     sig type t = X.t * Y.t val to_string : X.t * Y.t -> string end
@@ -46,6 +48,7 @@ end
                    "to_string"[value] -> <.11>;
                    };
  }
+
 module Int : sig type t = int val to_string : int -> string end
 |}]
 
@@ -60,6 +63,7 @@ end
                       "to_string"[value] -> <.15>;
                       };
  }
+
 module String : sig type t = string val to_string : 'a -> 'a end
 |}]
 
@@ -71,6 +75,7 @@ module P = Pair(Int)(Pair(String)(Int))
                  "to_string"[value] -> <.6>;
                  };
  }
+
 module P :
   sig
     type t = Int.t * Pair(String)(Int).t
@@ -81,5 +86,6 @@ module P :
 P.to_string (0, ("!=", 1))
 [%%expect{|
 {}
+
 - : string = "0 != 1"
 |}]

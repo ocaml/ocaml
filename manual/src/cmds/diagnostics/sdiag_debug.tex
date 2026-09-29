@@ -1,0 +1,29 @@
+\begin{camlexample}{verbatim}
+\begin{caml}
+\begin{camlinput}
+type debug = {
+  profile: (string array * profile array) option [@optional];
+  cmm_invariant: string option [@optional];
+  linear: string array option [@optional];
+  mach: string array option [@optional];
+  unbox_specialised_args: string array option [@optional];
+  unbox_closures: string array option [@optional];
+  unbox_free_vars_of_closures: string array option [@optional];
+  remove_free_vars_equal_to_args: string array option [@optional];
+  cmm: string array option [@optional];
+  raw_clambda: string array option [@optional];
+  clambda: string array option [@optional];
+  rawflambda: string array option [@optional];
+  flambda: string array option [@optional];
+  rawlambda: string option [@optional];
+  lambda: string option [@optional];
+  instr: string option [@optional];
+  shape: string option [@optional];
+  typedtree: string option [@optional];
+  source: string option [@optional];
+  parsetree: string option [@optional];
+} [@@since 0.1]
+[@@version 0.1]
+\end{camlinput}
+\end{caml}
+\end{camlexample}

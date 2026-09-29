@@ -1952,8 +1952,7 @@ let string_of_structure x =
 let top_phrase f x =
   pp_print_newline f ();
   toplevel_phrase f x;
-  pp f ";;";
-  pp_print_newline f ()
+  pp f ";;"
 
 let core_type = core_type reset_ctxt
 let pattern = pattern reset_ctxt

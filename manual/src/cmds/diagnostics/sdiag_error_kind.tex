@@ -1,0 +1,13 @@
+\begin{camlexample}{verbatim}
+\begin{caml}
+\begin{camlinput}
+type error_kind =
+  | Report_warning_as_error of string
+  | Report_warning of string
+  | Report_alert_as_error of string
+  | Report_alert of string
+  | Report_error
+[@@since 0.1] [@@version 0.1]
+\end{camlinput}
+\end{caml}
+\end{camlexample}

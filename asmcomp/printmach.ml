@@ -167,7 +167,7 @@ let operation op arg ppf res =
         fprintf ppf " returning to L%d" return_label
 
 let rec instr ppf i =
-  if !Clflags.dump_live then begin
+  if Clflags.Dump_option.get Live then begin
     fprintf ppf "@[<1>{%a" regsetaddr i.live;
     if Array.length i.arg > 0 then fprintf ppf "@ +@ %a" regs i.arg;
     fprintf ppf "}@]@,";

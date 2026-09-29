@@ -12,6 +12,7 @@ end
 {
  "Make"[module type] -> <.1>;
  }
+
 module type Make = (I : sig end) -> sig end
 |}]
 
@@ -24,6 +25,7 @@ end = struct end
 {
  "Make"[module] -> Abs<.3>(I, {});
  }
+
 module Make : (I : sig end) -> sig end
 |}]
 
@@ -36,5 +38,6 @@ end
 {
  "Make"[module type] -> <.5>;
  }
+
 module type Make = (I : sig end) -> sig end
 |}]
