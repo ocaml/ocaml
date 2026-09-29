@@ -1,0 +1,11 @@
+opam-version: "2.0"
+version: "0.44"
+authors: "Alain Frisch"
+maintainer: "David Allsopp <david@tarides.com>"
+bug-reports: "https://github.com/ocaml/flexdll/issues"
+dev-repo: "git+https://github.com/ocaml/flexdll.git"
+homepage: "https://github.com/ocaml/flexdll#readme"
+license: "Zlib"
+synopsis: "FlexDLL Sources"
+description: "Source package for FlexDLL. Installs the required files for
+bootstrapping FlexDLL as part of an OCaml build."

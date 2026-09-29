@@ -1,5 +1,0 @@
-[submodule "flexdll"]
-	path = flexdll
-	url = https://github.com/ocaml/flexdll.git
-	shallow = true
-	branch = master

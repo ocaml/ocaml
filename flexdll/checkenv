@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# Analyse the environment for Microsoft C Compilers
+
+# Care needed because spaces in directory names are a given
+#   (if only Unix were routinely configured that way...)
+# IFS chosen to be a character illegal in Windows filenames and unlikely in Unix
+SAVE_IFS=$IFS
+
+test ()
+{
+  IFS=*
+  for f in $1; do find "$f" -maxdepth 1 -iname $2 -print -quit; done 2>/dev/null | grep "." -q
+  if [ $? -eq 1 ] ; then
+    echo "Cannot find $3">&2
+    exit 1
+  fi
+  IFS=$SAVE_IFS
+}
+
+# Check for Windows.h in INCLUDE
+test "${INCLUDE//;/*}" windows.h "Windows SDK Headers (Windows.h, etc.)"
+
+# Check for stdlib.h in INCLUDE
+test "${INCLUDE//;/*}" stdlib.h "Microsoft CRT Headers (stdlib.h, etc.)"
+
+# Check for msvcrt.lib in LIB
+test "${LIB//;/*}" msvcrt.lib "Microsoft CRT Libraries (msvcrt.lib, etc.)"
+
+# Check for kernel32.lib in LIB
+test "${LIB//;/*}" kernel32.lib "Windows SDK Libraries (kernel32.lib, etc.)"
+
+# Check for cl.exe in PATH
+test "${PATH//:/*}" cl.exe "Microsoft C Compiler (cl.exe)"
+
+# Check for rc.exe in PATH
+test "${PATH//:/*}" rc.exe "Microsoft Resource Compiler (rc.exe)"
+
+# Check for link.exe in PATH (largely academic - should hit coreutils link if nothing else)
+test "${PATH//:/*}" link.exe "Microsoft Linker (link.exe)"
+
+PROB=
+# Check that link is the Microsoft Linker
+if [ "`link --version | head -1 | fgrep "Microsoft (R) Incremental Linker"`" == "" ] ; then
+  echo "Warning - link does not appear to be the Microsoft Linker, you may need to adjust your PATH"
+  PROB="Probably "
+fi
+
+echo Microsoft C Compiler environment appears to be sound
+if [ -z "`cl /? 2>&1 | head -1 | fgrep x86`" ] ; then
+  CHAINS=msvc64
+else
+  CHAINS=msvc
+fi
+echo ${PROB}OK to build using MSVC_DETECT=0 CHAINS=$CHAINS
