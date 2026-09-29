@@ -84,18 +84,30 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   /* Determine array size in bytes (or size of array without the major
      dimension if that dimension wasn't specified) */
   array_size = caml_ba_element_size[flags & CAML_BA_KIND_MASK];
-  for (i = 0; i < num_dims; i++)
-    if (dim[i] != -1) array_size *= dim[i];
+  for (intnat i = 0; i < num_dims; i++)
+    if (dim[i] != -1) {
+      if (caml_umul_overflow(array_size, dim[i], &array_size)) {
+        caml_leave_blocking_section();
+        caml_failwith("Unix.map_file: array too big to fit in memory");
+      }
+    }
   /* Check if the first/last dimension is unknown */
   if (dim[major_dim] == -1) {
     /* Determine first/last dimension from file size */
     if (file_size < startpos)
       caml_failwith("Unix.map_file: file position exceeds file size");
-    data_size = file_size - startpos;
-    dim[major_dim] = (uintnat) (data_size / array_size);
-    array_size = dim[major_dim] * array_size;
-    if (array_size != data_size)
-      caml_failwith("Unix.map_file: file size doesn't match array dimensions");
+    if (array_size == 0) {
+      dim[major_dim] = 0;
+    } else {
+      data_size = file_size - startpos;
+      dim[major_dim] = (uintnat) (data_size / array_size);
+      if (caml_umul_overflow(array_size, dim[major_dim], &array_size)
+          || array_size != data_size) {
+        caml_leave_blocking_section();
+        caml_failwith("Unix.map_file: file size doesn't match "
+                      "array dimensions");
+      }
+    }
   }
   /* Restore original file position */
   caml_set_file_pointer(fd, currpos, FILE_BEGIN);
@@ -108,11 +120,15 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
     mode = FILE_MAP_COPY;
   }
   li.QuadPart = startpos + array_size;
+  if (li.QuadPart < 0 || li.QuadPart < startpos) {
+    caml_leave_blocking_section();
+    caml_failwith("Unix.map_file: array too big to fit in the file");
+  }
   fmap = CreateFileMapping(fd, NULL, perm, li.HighPart, li.LowPart, NULL);
   if (fmap == NULL) uerror("map_file", Nothing);
   /* Determine offset so that the mapping starts at the given file pos */
   GetSystemInfo(&sysinfo);
-  delta = (uintnat) (startpos % sysinfo.dwAllocationGranularity);
+  delta = (uintnat) startpos % sysinfo.dwAllocationGranularity;
   /* Map the mapping in memory */
   li.QuadPart = startpos - delta;
   addr =
