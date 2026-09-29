@@ -12885,6 +12885,52 @@ esac
 
 internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
 
+case $target in #(
+  *-apple-darwin*) :
+    as_CACHEVAR=`$as_echo "ax_cv_check_cflags_$warn_error_flag_-Werror=unguarded-availability-new" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the C compiler accepts -Werror=unguarded-availability-new" >&5
+$as_echo_n "checking whether the C compiler accepts -Werror=unguarded-availability-new... " >&6; }
+if eval \${$as_CACHEVAR+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+  ax_check_save_flags=$CFLAGS
+  if test x"$GCC" = xyes ; then
+    add_gnu_werror="-Werror"
+  fi
+  CFLAGS="$CFLAGS $warn_error_flag -Werror=unguarded-availability-new $add_gnu_werror"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  eval "$as_CACHEVAR=yes"
+else
+  eval "$as_CACHEVAR=no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  CFLAGS=$ax_check_save_flags
+fi
+eval ac_res=\$$as_CACHEVAR
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_CACHEVAR"\" = x"yes"; then :
+  common_cflags="-Werror=unguarded-availability-new $common_cflags"
+else
+  :
+fi
+ ;; #(
+  *) :
+     ;;
+esac
+
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
 case $host in #(
   i686-*-mingw32) :
@@ -16550,20 +16596,46 @@ fi
 
 ## dup3
 
-ac_fn_c_check_func "$LINENO" "dup3" "ac_cv_func_dup3"
+
+  saved_CFLAGS="$CFLAGS"
+  if test x"$ax_cv_check_cflags__Werror_unguarded_availability_new" = xyes; then :
+  CFLAGS="$CFLAGS -Werror=unguarded-availability-new"
+fi
+  ac_fn_c_check_decl "$LINENO" "dup3" "ac_cv_have_decl_dup3" "#define _GNU_SOURCE
+  $ac_includes_default
+"
+if test "x$ac_cv_have_decl_dup3" = xyes; then :
+  ac_fn_c_check_func "$LINENO" "dup3" "ac_cv_func_dup3"
 if test "x$ac_cv_func_dup3" = xyes; then :
   $as_echo "#define HAS_DUP3 1" >>confdefs.h
 
 fi
 
+fi
+
+  CFLAGS="$saved_CFLAGS"
+
 
 ## pipe2
 
-ac_fn_c_check_func "$LINENO" "pipe2" "ac_cv_func_pipe2"
+
+  saved_CFLAGS="$CFLAGS"
+  if test x"$ax_cv_check_cflags__Werror_unguarded_availability_new" = xyes; then :
+  CFLAGS="$CFLAGS -Werror=unguarded-availability-new"
+fi
+  ac_fn_c_check_decl "$LINENO" "pipe2" "ac_cv_have_decl_pipe2" "#define _GNU_SOURCE
+  $ac_includes_default
+"
+if test "x$ac_cv_have_decl_pipe2" = xyes; then :
+  ac_fn_c_check_func "$LINENO" "pipe2" "ac_cv_func_pipe2"
 if test "x$ac_cv_func_pipe2" = xyes; then :
   $as_echo "#define HAS_PIPE2 1" >>confdefs.h
 
 fi
+
+fi
+
+  CFLAGS="$saved_CFLAGS"
 
 
 ## accept4

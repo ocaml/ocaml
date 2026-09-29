@@ -22,6 +22,9 @@ OCaml 4.14 maintenance version
   (Gabriel Scherer, report by Alperer Keleş,
    review by Vincent Laviron and Florian Angeletti)
 
+- #15067, #15071: Fix detection of functions available in the future on macOS.
+  (Antonin Décimo, review by Nicolás Ojeda Bär and Damien Doligez)
+
 - #15133, OSEC 2026-24: Multiple issues in command quoting on Windows
   (Xavier Leroy and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär)
 

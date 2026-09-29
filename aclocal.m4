@@ -30,6 +30,7 @@ m4_include([build-aux/lt~obsolete.m4])
 # Macros from the autoconf macro archive
 m4_include([build-aux/ax_func_which_gethostbyname_r.m4])
 m4_include([build-aux/ax_pthread.m4])
+m4_include([build-aux/ax_check_compile_flag.m4])
 
 # OCaml version
 m4_include([build-aux/ocaml_version.m4])
@@ -484,4 +485,16 @@ int main (void) {
         [AC_MSG_RESULT([cross-compiling; assume not])],
       [AC_MSG_RESULT([cross-compiling; assume yes])
       AC_DEFINE([HAS_WORKING_FMA])])])
+])
+
+# Ensures that AC_CHECK_DECL and AC_CHECK_DECLS will, on macOS, report
+# "no" for functions that are declared as existing in future macOS
+# versions only.
+# Workaround for a bug fixed in Autoconf 2.73.
+AC_DEFUN([OCAML_CHECK_DECL_MACOS], [
+  saved_CFLAGS="$CFLAGS"
+  AS_IF([test x"$ax_cv_check_cflags__Werror_unguarded_availability_new" = xyes],
+    [CFLAGS="$CFLAGS -Werror=unguarded-availability-new"])
+  AC_CHECK_DECL([$1], [$2], [$3], [$4])
+  CFLAGS="$saved_CFLAGS"
 ])

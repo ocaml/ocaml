@@ -689,6 +689,12 @@ AS_CASE([$host],
 
 internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
 
+AS_CASE([$target],
+  [*-apple-darwin*],
+    [AX_CHECK_COMPILE_FLAG([-Werror=unguarded-availability-new],
+      [common_cflags="-Werror=unguarded-availability-new $common_cflags"], [],
+      [$warn_error_flag])])
+
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
 AS_CASE([$host],
   [i686-*-mingw32],
@@ -1752,11 +1758,17 @@ AC_CHECK_FUNC([nice], [AC_DEFINE([HAS_NICE])])
 
 ## dup3
 
-AC_CHECK_FUNC([dup3], [AC_DEFINE([HAS_DUP3])])
+OCAML_CHECK_DECL_MACOS([dup3],
+  [AC_CHECK_FUNC([dup3], [AC_DEFINE([HAS_DUP3], [1])])], [],
+  [#define _GNU_SOURCE
+  AC_INCLUDES_DEFAULT])
 
 ## pipe2
 
-AC_CHECK_FUNC([pipe2], [AC_DEFINE([HAS_PIPE2])])
+OCAML_CHECK_DECL_MACOS([pipe2],
+  [AC_CHECK_FUNC([pipe2], [AC_DEFINE([HAS_PIPE2], [1])])], [],
+  [#define _GNU_SOURCE
+  AC_INCLUDES_DEFAULT])
 
 ## accept4
 
