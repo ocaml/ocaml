@@ -1151,6 +1151,12 @@ AS_CASE([$ocaml_cc_vendor],
     internal_cflags="$cc_warnings"],
   [common_cflags="-O"])
 
+AS_CASE([$target],
+  [*-apple-darwin*],
+    [AX_CHECK_COMPILE_FLAG([-Werror=unguarded-availability-new],
+      [common_cflags="-Werror=unguarded-availability-new $common_cflags"], [],
+      [$warn_error_flag])])
+
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
 # Enable 64-bit time_t in time.h
 AS_CASE([$target],
@@ -2551,11 +2557,17 @@ AC_CHECK_FUNC([nice], [AC_DEFINE([HAS_NICE], [1])])
 
 ## dup3
 
-AC_CHECK_FUNC([dup3], [AC_DEFINE([HAS_DUP3], [1])])
+OCAML_CHECK_DECL_MACOS([dup3],
+  [AC_CHECK_FUNC([dup3], [AC_DEFINE([HAS_DUP3], [1])])], [],
+  [#define _GNU_SOURCE
+  AC_INCLUDES_DEFAULT])
 
 ## pipe2
 
-AC_CHECK_FUNC([pipe2], [AC_DEFINE([HAS_PIPE2], [1])])
+OCAML_CHECK_DECL_MACOS([pipe2],
+  [AC_CHECK_FUNC([pipe2], [AC_DEFINE([HAS_PIPE2], [1])])], [],
+  [#define _GNU_SOURCE
+  AC_INCLUDES_DEFAULT])
 
 ## accept4
 

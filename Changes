@@ -7,6 +7,9 @@ OCaml 5.5.2
   during dead-code elimination.
   (Xavier Clerc, review by Steven Dolan and KC Sivaramakrishnan)
 
+- #15067, #15071: Fix detection of functions available in the future on macOS.
+  (Antonin Décimo, review by Nicolás Ojeda Bär and Damien Doligez)
+
 OCaml 5.5.1 (4 September 2026)
 ------------------------------
 
