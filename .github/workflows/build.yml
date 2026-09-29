@@ -215,8 +215,6 @@ jobs:
               {name: 'linux-arm64', os: 'ubuntu-24.04-arm',
                config_arg: '--with-target-sh=exe --enable-runtime-search-target=fallback',
                'test-in-prefix': true},
-              {name: 'macos-x86_64', os: 'macos-15-intel',
-               'test-in-prefix': true},
               {name: 'macos-arm64', os: 'macos-latest',
                config_arg: '--with-relative-libdir --enable-runtime-search',
                'test-in-prefix': true}];

@@ -1,0 +1,5 @@
+break @ Debuggee 6
+run
+set print_length 3
+print arr
+quit

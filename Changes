@@ -23,9 +23,6 @@ Working version
 
 ### Runtime system:
 
-- #14988: Don't copy continuations in Weak.get_copy.
-  (Jeremy Yallop, review by Stefan Muenzel)
-
 - #14773 : Activate Haiku native backend
   (Sylvain Kerjean, review by Kate Deplaix and Nicolas Ojeda Bar)
   Enable native-code backend and testsuite on BeOS/Haiku.
@@ -166,6 +163,9 @@ Working version
   EV_EXPLICIT_GC_RAMP_UP covering a call to Gc.ramp_up.
   (Tim McGilchrist, review by Sadiq Jaffer and Gabriel Scherer)
 
+- #15092: do not lose domain allocation stats on termination
+  (Edwin Török, report by Eduardo Souza, review by Stefan Muenzel)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
@@ -219,7 +219,7 @@ Working version
 
 - #15002: s390x: emit `sqdbr` for square root and `lrvgr` for byte swap
   rather than calling into C
-  (Zane Hambly, review by         )
+  (Zane Hambly, review by Miod Vallat)
 
 - #15005: riscv: emit `fsqrt.d` for square root rather than calling into C
   (Zane Hambly, review by Miod Vallat and Xavier Leroy)
@@ -230,6 +230,13 @@ Working version
 - #15008: emit the fused multiply-add for `Float.fma` on arm64, power,
   riscv and s390x rather than calling into C
   (Zane Hambly, review by Miod Vallat and Xavier Leroy)
+
+- #15018: `Int.popcount`, `Int.leading_zeros` and `Int.trailing_zeros` become
+  C primitives, with `leading_zeros` and `trailing_zeros` emitted as `bsr`
+  and `bsf` on amd64 and `clz` and `rbit` on arm64 rather than calling
+  into C
+  (Zane Hambly, review by Xavier Leroy, Basile Clément, Antonin Décimo,
+   Jeremy Yallop and Nicolás Ojeda Bär)
 
 - #15017: emit the rounding instructions for `Float.round`, `Float.trunc`,
   `ceil` and `floor` on arm64 and power rather than calling into C
@@ -287,6 +294,9 @@ Working version
   native code agree on out-of-range arguments
   (Zane Hambly, review by Stefan Muenzel, Xavier Leroy and
    Nicolás Ojeda Bär)
+
+- #15090: Allow unaligned memory accesses on s390x.
+  (Zane Hambly, review by Xavier Leroy)
 
 ### Standard library:
 
@@ -374,6 +384,13 @@ Working version
   result is unchanged.
   (Nicolás Ojeda Bär, review by Vincent Laviron and Olivier Nicole)
 
+- #14848: Add Dynarray.stable_sort_sub, stable_sort and sort
+  (Jeanne Pottier, review by Nicolás Ojeda Bär and Olivier Nicole)
+
+- #15064: deprecate Weak.get_copy
+  (Gabriel Scherer, suggestion by Stephen Dolan and Josh Berdine,
+  review by Nicolás Ojeda Bär, Kate Deplaix and Léo Andrès.)
+
 ### Other libraries:
 
 - #14740: Various fixes in libunix. Fix compilation failures if gethostname or
@@ -449,6 +466,10 @@ Working version
   introduced by accident in 2012.
   (Alexandre Douard, review by Daniel Bünzli and Nicolás Ojeda Bär)
 
+- #15022: ocamldebug: requesting a header through the debugger protocol now
+  returns the full header instead of the low 32 bits.
+  (Vincent Laviron, review by Xavier Leroy)
+
 ### Manual and documentation:
 
 - #14598: Add `@since` annotations to `Runtime_events`. (Raphaël Proust)
@@ -457,7 +478,14 @@ Working version
   (Jeanne Pottier, review by Florian Angeletti, Gabriel Scherer
   and Daniel Bünzli)
 
+- #15082: Clarify in the manual that a character literal denotes a single
+  US-ASCII character, so a non-ASCII Unicode character is not a valid
+  character literal, and that the numerical escape sequences also denote
+  byte values outside the ASCII range.
+  (Abhay Chaudhary, report by baugigi, review by Florian Angeletti)
+
 ### Compiler user-interface and warnings:
+
 - #14887: More concise messages for the non-exhaustiveness warning.
   (Luc Maranget, review by Florian Angeletti)
 
@@ -551,8 +579,19 @@ Working version
 - #14946: Keep the continuation inside the typedtree using a dedicated type.
   (Xavier Van de Woestyne, review by Florian Angeletti)
 
+- #14995: Make failure in enforce_current_level a fatal error
+  (Jacques Garrigue, review by Samuel Vivien)
+
 - #15023: Extract Utf8_lexeme out of Misc into utils/utf8_lexeme.ml(i)
   (Thomas Refis, review by Nicolás Ojeda Bär)
+
+- #15052: Fixed wrong exception raised in a dead code path when comparing type
+  declarations.
+  (Samuel Vivien, review by Stefan Muenzel and Florian Angeletti)
+
+- #15046, #15066: testsuite: skip the AFL fuzz test when the compiler is not
+  built with AFL instrumentation.
+  (Akash Kumar, report and review by Xavier Leroy)
 
 ### Build system:
 
@@ -564,7 +603,17 @@ Working version
   (Austin Thierault, review by Antonin Décimo, Edwin Török, David Allsopp and
    Olivier Nicole)
 
+- #15067, #15071: Fix detection of functions available in the future on macOS.
+  (Antonin Décimo, review by Nicolás Ojeda Bär and Damien Doligez)
+
 ### Bug fixes:
+
+- #15072, #15075: Fix `Runtime_events` cursors becoming permanently unusable
+  when a user event decoder raises. The exception escaped `read_poll` without
+  clearing the in-poll flag, so every later poll on that cursor failed with
+  "poll called concurrently or reentrant". The decoder's exception is now
+  propagated through the normal path and the cursor is released.
+  (Abhay Chaudhary, review by Tim McGilchrist)
 
 - #14986: Take effect cases into account in the expansiveness check.
   (Jeremy Yallop, review by Florian Angeletti)
@@ -666,6 +715,9 @@ Working version
   `T with module type S = X -> X` as `T with module type S = (X -> X)`
   (Pieter Goetschalckx, review by Gabriel Scherer and Florian Angeletti)
 
+- #14988: Don't copy continuations in Weak.get_copy.
+  (Jeremy Yallop, review by Stefan Muenzel)
+
 * #15010: Fix truncation of the lost event count in runtime_events_consumer.c
   The count is a difference of two uint64_t ring positions but was passed to
   the callback as an int. caml_runtime_events_set_lost_events now takes a
@@ -678,6 +730,40 @@ Working version
 - #15069: Fix unchaught exception when comparing signatures adding the same
   extension constructor to types with different arities
   (Samuel Vivien, reported by Florian Angeletti, review by Florian Angeletti)
+
+- #15045: Atomic loads whose results are unused should not be removed
+  during dead-code elimination.
+  (Xavier Clerc, review by Steven Dolan and KC Sivaramakrishnan)
+
+- #15093: Windows: fix a bug in the `Unix.select` emulation which could result
+  in an out-of-bounds memory access. This is triggered when the watched set
+  contains 63 or more sockets along with at least one non-socket descriptor, or
+  more than 64 sockets in a single list.
+  (Romain Beauxis, review by Nicolás Ojeda Bär, Stefan Muenzel and Antonin
+  Décimo)
+
+- #14975: Windows: fix a bug in `Unix.select` when the watched set consists of
+  sockets and non-sockets. If the call failed with an error, the sockets passed
+  to it could be left in non-blocking mode, and one system handle was also
+  leaked for each socket.
+  (Romain Beauxis, review by Nicolás Ojeda Bär)
+
+- #12195: Lower levels in checked module packages so that remaining weak
+  variables may not be unified with out-of-scope types.
+  (Chris Casinghino and Leo White, review by Jacques Garrigue)
+
+- #15112, OSEC-2026-22: `Unix.map_file`: protect against overflow
+  when computing the data size.
+  (Xavier Leroy and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär
+  and Edwin Török)
+
+- #15113, OSEC-2026-21: `Str.string_partial_match`: make sure captured groups
+  are valid.
+  (Xavier Leroy, review by Nicolás Ojeda Bär and Edwin Török)
+
+- #15115, OSEC-2026-23: Fix multiple issues in demarshaling
+  (`Marshal.from_{channel,string,bytes}`)
+  (Xavier Leroy, review by Nicolás Ojeda Bär)
 
 OCaml 5.5.1
 -----------

@@ -1069,6 +1069,11 @@ let update_level_for tr_exn env level ty =
     update_level env level ty
   with Escape e -> raise_for tr_exn (Escape e)
 
+(* Lower the level of a type to the current level *)
+let enforce_current_level env ty =
+  try update_level env !current_level ty
+  with Escape _ -> fatal_error "Ctype.enforce_current_level"
+
 (* Lower level of type variables inside contravariant branches.
 
    Note: this implies that only variables in *strictly positive*
@@ -4024,9 +4029,6 @@ let unify_pairs env ty1 ty2 pairs =
 let unify env ty1 ty2 =
   unify_pairs env ty1 ty2 []
 
-(* Lower the level of a type to the current level *)
-let enforce_current_level env ty = unify_var env (newvar ()) ty
-
 
 (**** Special cases of unification ****)
 
@@ -5313,8 +5315,10 @@ let eqtype rename type_pairs subst env t1 t2 =
 
 (* Two modes: with or without renaming of variables *)
 let equal env rename tyl1 tyl2 =
-  if List.length tyl1 <> List.length tyl2 then
-    raise_unexplained_for Equality;
+  (* In practice, `Equality` is not a good error to report to users and thus
+      callers of this function ought to raise their own error when
+      `List.length tyl1 <> List.length tyl2`. *)
+  assert (List.length tyl1 = List.length tyl2);
   if List.for_all2 eq_type tyl1 tyl2 then () else
   let subst = ref [] in
   try eqtype_list_same_length rename (TypePairs.create 11) subst env tyl1 tyl2

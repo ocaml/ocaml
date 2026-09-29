@@ -160,7 +160,7 @@ val lower_contravariant: Env.t -> type_expr -> unit
 val lower_variables_only: Env.t -> int -> type_expr -> unit
         (* Lower all variables to the given level *)
 val enforce_current_level: Env.t -> type_expr -> unit
-        (* Lower whole type to !current_level *)
+        (* Lower whole type to !current_level; failure is fatal *)
 val generalize_class_signature_spine: class_signature -> unit
        (* Special function to generalize methods during inference *)
 val limited_generalize: type_expr -> inside:type_expr -> unit
@@ -475,7 +475,8 @@ val match_class_types:
 val equal: Env.t -> bool -> type_expr list -> type_expr list -> unit
         (* [equal env [x1...xn] tau [y1...yn] sigma]
            checks whether the parameterized types
-           [/\x1.../\xn.tau] and [/\y1.../\yn.sigma] are equivalent. *)
+           [/\x1.../\xn.tau] and [/\y1.../\yn.sigma] are equivalent.
+           The caller must ensure that both lists have the same length. *)
 val eq_package_path : Env.t -> Path.t -> Path.t -> bool
 val is_equal : Env.t -> bool -> type_expr list -> type_expr list -> bool
 val equal_private :
