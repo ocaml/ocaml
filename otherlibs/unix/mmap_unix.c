@@ -159,7 +159,7 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
     file_offset min_file_size = startpos + array_size;
     if (min_file_size < 0 || min_file_size < startpos) {
       caml_leave_blocking_section();
-      caml_failwith("Unix.map_file: array too to fit in the file");
+      caml_failwith("Unix.map_file: array too big to fit in the file");
     }
     if (file_size < min_file_size) {
       if (caml_grow_file(fd, min_file_size) == -1) { /* PR#5543 */
