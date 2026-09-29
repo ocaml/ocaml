@@ -768,6 +768,10 @@ Working version
   (`Marshal.from_{channel,string,bytes}`)
   (Xavier Leroy, review by Nicolás Ojeda Bär)
 
+- #15118: Fix printing of module type names in the toplevel and -dsource when
+  the name is a reserved identifier.
+  (Nicolás Ojeda Bär, review by Florian Angeletti)
+
 OCaml 5.5.1
 -----------
 

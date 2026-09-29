@@ -676,9 +676,10 @@ and print_out_sig_item ppf =
   | Osig_typext (ext, _es) ->
       print_out_extension_constructor ppf ext
   | Osig_modtype (name, Omty_abstract) ->
-      fprintf ppf "@[<2>module type %s@]" name
+      fprintf ppf "@[<2>module type %a@]" print_lident name
   | Osig_modtype (name, mty) ->
-      fprintf ppf "@[<2>module type %s =@ %a@]" name !out_module_type mty
+      fprintf ppf "@[<2>module type %a =@ %a@]" print_lident name
+        !out_module_type mty
   | Osig_module (name, Omty_alias id, _) ->
       fprintf ppf "@[<2>module %s =@ %a@]" name print_ident id
   | Osig_module (name, mty, rs) ->

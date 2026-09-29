@@ -243,6 +243,9 @@ let ident_of_value_name ppf i =
 let ident_of_name ppf i =
   Format_doc.compat (Doc.ident_of_name ~kind:Other) ppf i
 
+let ident_of_type_name ppf i =
+  Format_doc.compat (Doc.ident_of_name ~kind:Type) ppf i
+
 let constr ppf l = Format_doc.compat Doc.constr ppf l
 
 let ident_of_name_loc ppf s = ident_of_name ppf s.txt
@@ -1442,8 +1445,8 @@ and signature_item ctxt f x : unit =
       let md = match md with
         | None -> assert false (* ast invariant *)
         | Some mt -> mt in
-      pp f "@[<hov2>module@ type@ %s@ :=@ %a@]%a"
-        s.txt (module_type ctxt) md
+      pp f "@[<hov2>module@ type@ %a@ :=@ %a@]%a"
+        ident_of_type_name s.txt (module_type ctxt) md
         (item_attributes ctxt) attrs
   | Psig_class_type (l) -> class_type_declaration_list ctxt f l
   | Psig_recmodule decls ->
