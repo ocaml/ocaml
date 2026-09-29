@@ -515,7 +515,8 @@ module Functor_suberror = struct
         let g = With_shorthand.definition g in
         let e = With_shorthand.definition e in
         Fmt.dprintf
-          "Module types do not match:@ @[%t@]@;<1 -2>does not include@ \
+          "The type of the module@ \
+           @[%t@]@;<1 -2>is not a supertype of the expected module type@ \
            @[%t@]%t"
           g e (more ())
 
@@ -571,8 +572,9 @@ module Functor_suberror = struct
       let g = With_shorthand.definition_of_argument g in
       let e = With_shorthand.definition e in
       Fmt.dprintf
-        "Modules do not match:@ @[%t@]@;<1 -2>\
-         is not included in@ @[%t@]%t"
+        "Modules do not match:
+         The type of the module:@ @[%t@]@;<1 -2>\
+         is not a subtype of the expected module type@ @[%t@]%t"
         g e (more ())
 
     (** Specialized to avoid introducing shorthand names
@@ -585,8 +587,9 @@ module Functor_suberror = struct
         | Types.Named(_, mty) -> dmodtype mty
       in
       Fmt.dprintf
-        "Modules do not match:@ @[%t@]@;<1 -2>\
-         is not included in@ @[%t@]%t"
+        "Modules do not match:
+         The type of the module@ @[%t@]@;<1 -2>\
+         is not a subtype of the expected module type@ @[%t@]%t"
         (dmodtype mty) e (more ())
 
 
@@ -733,7 +736,7 @@ let core env id x =
 
 let missing_field ppf item =
   let id, loc, kind =  Includemod.item_ident_name item in
-  Fmt.fprintf ppf "The %s %a is required but not provided%a"
+  Fmt.fprintf ppf "The %s %a is required but not provided.%a"
     (Includemod.kind_of_field_desc kind)
     (Style.as_inline_code Printtyp.ident) id
     (show_loc "Expected declaration") loc
@@ -760,8 +763,9 @@ let suggest_renaming_field ppf (suggested_name, item) =
 
 let module_types {Err.got=mty1; expected=mty2} =
   Fmt.dprintf
-    "@[<hv 2>Modules do not match:@ \
-     %a@;<1 -2>is not included in@ %a@]"
+    "@[<hv 2>Modules do not match:
+     The type of the module@ \
+     %a@;<1 -2>is not a subtype of the expected module type@ %a@]"
     !Oprint.out_module_type (Out_type.tree_of_modtype mty1)
     !Oprint.out_module_type (Out_type.tree_of_modtype mty2)
 
@@ -880,8 +884,9 @@ and compare_functor_params ~expansion_token ~env ~before ~ctx {got;expected;_} =
   let expected = Functor_suberror.expected d in
   let main =
     Fmt.dprintf
-      "@[<hv 2>Modules do not match:@ \
-       @[%t@ -> ...@]@;<1 -2>is not included in@ \
+      "@[<hv 2>Functor arguments do not match:
+       The type of the functor parameter@ \
+       @[%t@ -> ...@]@;<1 -2>is not a subtype of the expected module type@ \
        @[%t@ -> ...@]@]"
       actual expected
   in
@@ -936,14 +941,14 @@ and module_type_decl ~expansion_token ~env ~before ~ctx id diff =
   match diff.symptom with
   | Not_less_than mts ->
       let before =
-        Location.msg "The first module type is not included in the second"
+        Location.msg "The first module type is not a subtype of the second"
         :: before
       in
       module_type ~expansion_token ~eqmode:true ~before ~env
         ~ctx:(Context.Modtype id :: ctx) mts
   | Not_greater_than mts ->
       let before =
-        Location.msg "The second module type is not included in the first"
+        Location.msg "The second module type is not a subtype of the first"
         :: before in
       module_type ~expansion_token ~eqmode:true ~before ~env
         ~ctx:(Context.Modtype id :: ctx) mts
