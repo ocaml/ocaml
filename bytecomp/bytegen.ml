@@ -157,7 +157,7 @@ let preserve_tailcall_for_prim = function
   | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
   | Pmakearray _ | Pduparray _ | Parraylength _ | Parrayrefu _ | Parraysetu _
   | Parrayrefs _ | Parraysets _ | Pisint | Pisout | Pcheckbound
-  | Pbintofint _ | Pintofbint _
+  | Pbintofint _ | Pintofbint _ | Pbintoffloat _ | Pfloatofbint _
   | Pcvtbint _ | Pnegbint _ | Paddbint _ | Psubbint _ | Pmulbint _ | Pdivbint _
   | Pmodbint _ | Pandbint _ | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _
   | Pasrbint _ | Pbintcomp _ | Pbigarrayref _ | Pbigarrayset _ | Pbigarraydim _
@@ -467,6 +467,8 @@ let comp_primitive stack_info p sz args =
   | Pcheckbound -> Kccall("caml_check_bound", 2, None)
   | Pbintofint bi -> comp_bint_primitive bi "of_int" args
   | Pintofbint bi -> comp_bint_primitive bi "to_int" args
+  | Pbintoffloat bi -> comp_bint_primitive bi "of_float" args
+  | Pfloatofbint bi -> comp_bint_primitive bi "to_float" args
   | Pcvtbint(src, dst) ->
       begin match (src, dst) with
       | (Pint32, Pnativeint) -> Kccall("caml_nativeint_of_int32", 1, None)
