@@ -1060,21 +1060,21 @@ module ArrayLabels : sig
   (** [scale c a] multiplies every element of [a] by [c] in place.
       @since 5.6 *)
 
-  val axpy : float -> t -> t -> unit
-  (** [axpy c x y] replaces every element [y.(i)] by [c *. x.(i) +. y.(i)].
+  val axpy : float -> x:t -> y:t -> unit
+  (** [axpy c ~x ~y] replaces every element [y.(i)] by [c *. x.(i) +. y.(i)].
       The multiplication and addition may be fused into a single rounding,
       as with {!Float.fma}.
       @raise Invalid_argument if [x] and [y] have different lengths.
       @since 5.6 *)
 
-  val add : t -> t -> t -> unit
-  (** [add a b dst] stores [a.(i) +. b.(i)] in [dst.(i)] for every index.
+  val add : t -> t -> dst:t -> unit
+  (** [add a b ~dst] stores [a.(i) +. b.(i)] in [dst.(i)] for every index.
       [dst] may be [a] or [b].
       @raise Invalid_argument if the three arrays have different lengths.
       @since 5.6 *)
 
-  val mul : t -> t -> t -> unit
-  (** [mul a b dst] stores [a.(i) *. b.(i)] in [dst.(i)] for every index.
+  val mul : t -> t -> dst:t -> unit
+  (** [mul a b ~dst] stores [a.(i) *. b.(i)] in [dst.(i)] for every index.
       [dst] may be [a] or [b].
       @raise Invalid_argument if the three arrays have different lengths.
       @since 5.6 *)

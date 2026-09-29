@@ -398,14 +398,16 @@ let floatarray_reduce arrays n dbg ~term =
         s e)
     ~step:(fun ps k ->
       Cassign (s.(k), Cop(Caddf, [Cvar_mut s.(k); term ps k], dbg)))
-    ~result:(Cop(Caddf, [Cop(Caddf, [Cvar_mut s.(0); Cvar_mut s.(1)], dbg);
-                         Cop(Caddf, [Cvar_mut s.(2); Cvar_mut s.(3)], dbg)], dbg))
+    ~result:(
+      let pair j = Cop(Caddf, [Cvar_mut s.(j); Cvar_mut s.(j + 1)], dbg) in
+      Cop(Caddf, [pair 0; pair 2], dbg))
 
 let floatarray_dot_chunked kernel a b n dbg =
   bind "a" a (fun a -> bind "b" b (fun b -> bind "n" n (fun n ->
     let i = V.create_local "i" and acc = V.create_local "acc" in
     let at arr =
-      Cop(Cadda, [arr; Cop(Clsl, [Cvar_mut i; Cconst_int (3, dbg)], dbg)], dbg) in
+      let off = Cop(Clsl, [Cvar_mut i; Cconst_int (3, dbg)], dbg) in
+      Cop(Cadda, [arr; off], dbg) in
     let remaining = Cop(Csubi, [n; Cvar_mut i], dbg) in
     let chunk =
       bind "rem" remaining (fun rem ->
