@@ -252,7 +252,6 @@ let primitives_table =
     "%nativeint_asr", Primitive ((Pasrbint Pnativeint), 2);
     "%int32_of_int", Primitive ((Pbintofint Pint32), 1);
     "%int32_to_int", Primitive ((Pintofbint Pint32), 1);
-    "%int32_of_float", Primitive ((Pbintoffloat Pint32), 1);
     "%int32_to_float", Primitive ((Pfloatofbint Pint32), 1);
     "%int32_neg", Primitive ((Pnegbint Pint32), 1);
     "%int32_add", Primitive ((Paddbint Pint32), 2);

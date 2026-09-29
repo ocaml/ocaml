@@ -1,8 +1,10 @@
 (* TEST *)
 
-(* Conversions between floats and boxed integers, in range only. *)
+(* Conversions between floats and boxed integers. *)
 
 let opaque = Sys.opaque_identity
+
+external int32_of_float_c : float -> int32 = "caml_int32_of_float"
 
 let check_int name got want =
   if got <> want then
@@ -28,6 +30,11 @@ let () =
   check_int "i32 -1.5"   (i32 (-1.5))  (-1L);
   check_int "i32 max"    (i32 2147483647.)    2147483647L;
   check_int "i32 min"    (i32 (-2147483648.)) (-2147483648L);
+  let c32 x = Int64.of_int32 (int32_of_float_c (opaque x)) in
+  check_int "i32 3e9"    (i32 3e9)       (c32 3e9);
+  check_int "i32 -3e9"   (i32 (-3e9))    (c32 (-3e9));
+  check_int "i32 nan"    (i32 nan)       (c32 nan);
+  check_int "i32 inf"    (i32 infinity)  (c32 infinity);
 
   let nat x = Int64.of_nativeint (Nativeint.of_float (opaque x)) in
   check_int "nat -1.5"   (nat (-1.5))  (-1L);

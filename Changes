@@ -280,9 +280,11 @@ Working version
   in the Lambda IR.
   (Florian Angeletti, report by Nathanaëlle Courant, review by Gabriel Scherer)
 
-- #15084: add the `%int64_of_float` and `%int64_to_float` primitives and the
-  Int32 and Nativeint equivalents, so that `Int64.of_float`, `Int64.to_float`
-  and friends compile to a single instruction rather than calling into C
+- #15084: add the `%int64_of_float` and `%int64_to_float` primitives, their
+  Nativeint equivalents and `%int32_to_float`, so that `Int64.of_float`,
+  `Int64.to_float` and friends compile to a single instruction rather than
+  calling into C. `Int32.of_float` keeps its C call, so that bytecode and
+  native code agree on out-of-range arguments
   (Zane Hambly, review by Stefan Muenzel, Xavier Leroy and
    Nicolás Ojeda Bär)
 
