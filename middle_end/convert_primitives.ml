@@ -102,6 +102,8 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Pmulbint bi -> Pmulbint bi
   | Pbintofint bi -> Pbintofint bi
   | Pintofbint bi -> Pintofbint bi
+  | Pbintoffloat bi -> Pbintoffloat bi
+  | Pfloatofbint bi -> Pfloatofbint bi
   | Pandbint bi -> Pandbint bi
   | Porbint bi -> Porbint bi
   | Pxorbint bi -> Pxorbint bi

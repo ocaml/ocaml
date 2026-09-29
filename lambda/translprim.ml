@@ -234,6 +234,8 @@ let primitives_table =
     "%lazy_force", Lazy_force;
     "%nativeint_of_int", Primitive ((Pbintofint Pnativeint), 1);
     "%nativeint_to_int", Primitive ((Pintofbint Pnativeint), 1);
+    "%nativeint_of_float", Primitive ((Pbintoffloat Pnativeint), 1);
+    "%nativeint_to_float", Primitive ((Pfloatofbint Pnativeint), 1);
     "%nativeint_neg", Primitive ((Pnegbint Pnativeint), 1);
     "%nativeint_add", Primitive ((Paddbint Pnativeint), 2);
     "%nativeint_sub", Primitive ((Psubbint Pnativeint), 2);
@@ -250,6 +252,7 @@ let primitives_table =
     "%nativeint_asr", Primitive ((Pasrbint Pnativeint), 2);
     "%int32_of_int", Primitive ((Pbintofint Pint32), 1);
     "%int32_to_int", Primitive ((Pintofbint Pint32), 1);
+    "%int32_to_float", Primitive ((Pfloatofbint Pint32), 1);
     "%int32_neg", Primitive ((Pnegbint Pint32), 1);
     "%int32_add", Primitive ((Paddbint Pint32), 2);
     "%int32_sub", Primitive ((Psubbint Pint32), 2);
@@ -264,6 +267,8 @@ let primitives_table =
     "%int32_asr", Primitive ((Pasrbint Pint32), 2);
     "%int64_of_int", Primitive ((Pbintofint Pint64), 1);
     "%int64_to_int", Primitive ((Pintofbint Pint64), 1);
+    "%int64_of_float", Primitive ((Pbintoffloat Pint64), 1);
+    "%int64_to_float", Primitive ((Pfloatofbint Pint64), 1);
     "%int64_neg", Primitive ((Pnegbint Pint64), 1);
     "%int64_add", Primitive ((Paddbint Pint64), 2);
     "%int64_sub", Primitive ((Psubbint Pint64), 2);
@@ -955,6 +960,7 @@ let lambda_primitive_needs_event_after = function
   | Pbytessets | Pmakearray (Pgenarray, _) | Pduparray _
   | Parrayrefu (Pgenarray | Pfloatarray) | Parraysetu (Pgenarray | Pfloatarray)
   | Parrayrefs _ | Parraysets _ | Pbintofint _ | Pcvtbint _ | Pnegbint _
+  | Pbintoffloat _ | Pfloatofbint _
   | Paddbint _ | Psubbint _ | Pmulbint _ | Pdivbint _ | Pmodbint _ | Pandbint _
   | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp _
   | Pcompare_bints _

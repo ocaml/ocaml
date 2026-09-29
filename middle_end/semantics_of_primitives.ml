@@ -78,6 +78,8 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Pisout
   | Pbintofint _
   | Pintofbint _
+  | Pbintoffloat _
+  | Pfloatofbint _
   | Pcvtbint _
   | Pnegbint _
   | Paddbint _
@@ -151,6 +153,7 @@ let return_type_of_primitive (prim:Clambda_primitives.primitive) =
   match prim with
   | Pfloatofint
   | Pfloatarray_dot | Pfloatarray_sum
+  | Pfloatofbint _
   | Pnegfloat
   | Pabsfloat
   | Paddfloat

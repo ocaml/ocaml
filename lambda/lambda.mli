@@ -118,6 +118,8 @@ type primitive =
   (* Operations on boxed integers (Nativeint.t, Int32.t, Int64.t) *)
   | Pbintofint of boxed_integer
   | Pintofbint of boxed_integer
+  | Pbintoffloat of boxed_integer
+  | Pfloatofbint of boxed_integer
   | Pcvtbint of boxed_integer (*source*) * boxed_integer (*destination*)
   | Pnegbint of boxed_integer
   | Paddbint of boxed_integer

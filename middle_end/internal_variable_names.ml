@@ -90,6 +90,7 @@ let pbigstring_set_32 = "Pbigstring_set_32"
 let pbigstring_set_64 = "Pbigstring_set_64"
 let pbintcomp = "Pbintcomp"
 let pbintofint = "Pbintofint"
+let pbintoffloat = "Pbintoffloat"
 let pbswap16 = "Pbswap16"
 let pfloatarray_dot = "Pfloatarray_dot"
 let pfloatarray_sum = "Pfloatarray_sum"
@@ -122,6 +123,7 @@ let pfield = "Pfield"
 let pfield_computed = "Pfield_computed"
 let pfloatcomp = "Pfloatcomp"
 let pfloatfield = "Pfloatfield"
+let pfloatofbint = "Pfloatofbint"
 let pfloatofint = "Pfloatofint"
 let pgetglobal = "Pgetglobal"
 let pignore = "Pignore"
@@ -213,6 +215,7 @@ let pbigstring_set_32_arg = "Pbigstring_set_32_arg"
 let pbigstring_set_64_arg = "Pbigstring_set_64_arg"
 let pbintcomp_arg = "Pbintcomp_arg"
 let pbintofint_arg = "Pbintofint_arg"
+let pbintoffloat_arg = "Pbintoffloat_arg"
 let pbswap16_arg = "Pbswap16_arg"
 let pfloatarray_dot_arg = "Pfloatarray_dot_arg"
 let pfloatarray_sum_arg = "Pfloatarray_sum_arg"
@@ -239,6 +242,7 @@ let pfield_arg = "Pfield_arg"
 let pfield_computed_arg = "Pfield_computed_arg"
 let pfloatcomp_arg = "Pfloatcomp_arg"
 let pfloatfield_arg = "Pfloatfield_arg"
+let pfloatofbint_arg = "Pfloatofbint_arg"
 let pfloatofint_arg = "Pfloatofint_arg"
 let pgetglobal_arg = "Pgetglobal_arg"
 let pignore_arg = "Pignore_arg"
@@ -408,6 +412,8 @@ let of_primitive : Lambda.primitive -> string = function
   | Pcheckbound -> pcheckbound
   | Pbintofint _ -> pbintofint
   | Pintofbint _ -> pintofbint
+  | Pbintoffloat _ -> pbintoffloat
+  | Pfloatofbint _ -> pfloatofbint
   | Pcvtbint _ -> pcvtbint
   | Pnegbint _ -> pnegbint
   | Paddbint _ -> paddbint
@@ -528,6 +534,8 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Pcheckbound -> pcheckbound_arg
   | Pbintofint _ -> pbintofint_arg
   | Pintofbint _ -> pintofbint_arg
+  | Pbintoffloat _ -> pbintoffloat_arg
+  | Pfloatofbint _ -> pfloatofbint_arg
   | Pcvtbint _ -> pcvtbint_arg
   | Pnegbint _ -> pnegbint_arg
   | Paddbint _ -> paddbint_arg

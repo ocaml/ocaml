@@ -109,7 +109,10 @@ type instruction =
   | ADDSD of arg * arg
   | AND of arg * arg
   | ANDPD of arg * arg
+  | BSF of arg * arg
+  | BSR of arg * arg
   | BSWAP of arg
+  | BTS of arg * arg
   | CALL of arg
   | CDQ
   | CMOV of condition * arg * arg

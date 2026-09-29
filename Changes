@@ -231,6 +231,13 @@ Working version
   riscv and s390x rather than calling into C
   (Zane Hambly, review by Miod Vallat and Xavier Leroy)
 
+- #15018: `Int.popcount`, `Int.leading_zeros` and `Int.trailing_zeros` become
+  C primitives, with `leading_zeros` and `trailing_zeros` emitted as `bsr`
+  and `bsf` on amd64 and `clz` and `rbit` on arm64 rather than calling
+  into C
+  (Zane Hambly, review by Xavier Leroy, Basile Clément, Antonin Décimo,
+   Jeremy Yallop and Nicolás Ojeda Bär)
+
 - #15017: emit the rounding instructions for `Float.round`, `Float.trunc`,
   `ceil` and `floor` on arm64 and power rather than calling into C
   (Zane Hambly, review by Miod Vallat and Nicolás Ojeda Bär)
@@ -279,6 +286,17 @@ Working version
 - #14898, #15035: do not trust GADT equations introduced by refutable arguments
   in the Lambda IR.
   (Florian Angeletti, report by Nathanaëlle Courant, review by Gabriel Scherer)
+
+- #15084: add the `%int64_of_float` and `%int64_to_float` primitives, their
+  Nativeint equivalents and `%int32_to_float`, so that `Int64.of_float`,
+  `Int64.to_float` and friends compile to a single instruction rather than
+  calling into C. `Int32.of_float` keeps its C call, so that bytecode and
+  native code agree on out-of-range arguments
+  (Zane Hambly, review by Stefan Muenzel, Xavier Leroy and
+   Nicolás Ojeda Bär)
+
+- #15090: Allow unaligned memory accesses on s390x.
+  (Zane Hambly, review by Xavier Leroy)
 
 ### Standard library:
 
@@ -589,6 +607,9 @@ Working version
   (Austin Thierault, review by Antonin Décimo, Edwin Török, David Allsopp and
    Olivier Nicole)
 
+- #15067, #15071: Fix detection of functions available in the future on macOS.
+  (Antonin Décimo, review by Nicolás Ojeda Bär and Damien Doligez)
+
 ### Bug fixes:
 
 - #15072, #15075: Fix `Runtime_events` cursors becoming permanently unusable
@@ -730,6 +751,23 @@ Working version
   to it could be left in non-blocking mode, and one system handle was also
   leaked for each socket.
   (Romain Beauxis, review by Nicolás Ojeda Bär)
+
+- #12195: Lower levels in checked module packages so that remaining weak
+  variables may not be unified with out-of-scope types.
+  (Chris Casinghino and Leo White, review by Jacques Garrigue)
+
+- #15112, OSEC-2026-22: `Unix.map_file`: protect against overflow
+  when computing the data size.
+  (Xavier Leroy and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär
+  and Edwin Török)
+
+- #15113, OSEC-2026-21: `Str.string_partial_match`: make sure captured groups
+  are valid.
+  (Xavier Leroy, review by Nicolás Ojeda Bär and Edwin Török)
+
+- #15115, OSEC-2026-23: Fix multiple issues in demarshaling
+  (`Marshal.from_{channel,string,bytes}`)
+  (Xavier Leroy, review by Nicolás Ojeda Bär)
 
 OCaml 5.5.1
 -----------
