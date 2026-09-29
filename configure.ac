@@ -1251,7 +1251,7 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
     [flexmsg=''
     AS_CASE([$target],
       [*-*-cygwin|*-w64-mingw32*|*-pc-windows],
-      [dnl When bootstrapping from the git submodule (flexdll directory), just
+      [dnl When bootstrapping from the in-tree sources (flexdll directory), just
        dnl use that, however if another directory has been specified with
        dnl --with-flexdll=<path> then copy the contents of <path> to
        dnl flexdll-sources. This allows us to guarantee that flexdll is always

@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*                      Nicolas Ojeda Bar, LexiFi                         *
+#*                                                                        *
+#*   Copyright 2026 LexiFi.                                               *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# Merge commits from the upstream FlexDLL repository into the flexdll/
+# directory, preserving their history (subtree merge).
+#
+# Usage: tools/sync-flexdll [<ref>]
+#
+# <ref> is a branch, tag or full commit SHA of the FlexDLL repository (default:
+# master). The repository can be overridden with the FLEXDLL_REPO environment
+# variable.
+#
+# The upstream commits are merged as they are, with git merge -Xsubtree=flexdll,
+# which also takes care of any local changes made to flexdll/ in the meantime.
+# If the merge has conflicts, resolve them and conclude with git commit, as with
+# any other merge.
+
+set -euo pipefail
+
+FLEXDLL_REPO="${FLEXDLL_REPO:-https://github.com/ocaml/flexdll.git}"
+
+if [[ $# -gt 1 ]]; then
+  echo "usage: $0 [<ref>]" >&2
+  exit 1
+fi
+
+ref="${1:-master}"
+
+echo "Fetching $ref from $FLEXDLL_REPO"
+git fetch --quiet --no-tags "$FLEXDLL_REPO" "$ref"
+upstream="$(git rev-parse --verify 'FETCH_HEAD^{commit}')"
+describe="$(git log -1 --format='%h ("%s")' "$upstream")"
+
+if git merge-base --is-ancestor "$upstream" HEAD; then
+  echo "flexdll is already up to date with $describe"
+else
+  git merge --no-ff --no-log -Xsubtree=flexdll \
+    -m "Update flexdll to $describe" "$upstream"
+fi

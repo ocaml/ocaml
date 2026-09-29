@@ -1,0 +1,4 @@
+* text=auto
+
+msvs-detect text eol=lf
+checkenv text eol=lf

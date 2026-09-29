@@ -262,9 +262,9 @@ Notes:
   non-cross compiler, not the cross one. To call the cross compiler, you will
   just use its full path or add temporarily its installation directory to your
   `$PATH`.
-* The cross compiler to Windows needs `flexdll` to link the binaries. A simple
-  way to get it is to use the `flexdll` submodule (`git submodule update --init`
-  if needed) and let the `crossopt` target bootstrap `flexdll`.
+* The cross compiler to Windows needs `flexdll` to link the binaries. By
+  default, the `crossopt` target bootstraps it from the sources in the
+  `flexdll/` directory.
 
 === Using the cross compiler
 

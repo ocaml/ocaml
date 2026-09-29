@@ -102,8 +102,6 @@ jobs:
 
       - name: Fetch OCaml
         uses: actions/checkout@v6
-        with:
-          submodules: true
 
       - name: Restore Cygwin cache
         uses: actions/cache/restore@v5

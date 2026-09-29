@@ -85,7 +85,6 @@ jobs:
       - name: Checkout OCaml
         uses: actions/checkout@v6
         with:
-          submodules: true
           persist-credentials: false
       - name: Configure, build and install Linux-to-Windows OCaml
         run: |
@@ -159,7 +158,6 @@ jobs:
       - name: Checkout OCaml
         uses: actions/checkout@v6
         with:
-          submodules: true
           persist-credentials: false
       - name: Configure, build and install Linux-to-Windows OCaml
         run: |

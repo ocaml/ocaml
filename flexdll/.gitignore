@@ -1,0 +1,17 @@
+*.swp
+*.obj
+*.o
+*.cmx
+*.cmo
+*.cmi
+*.dll
+*.tar.gz
+*.zip
+flexlink.exe
+flexlink.opt
+test/dump.exe
+version.res
+version.ml
+Makefile.winsdk
+COMPILER-*
+Compat.ml

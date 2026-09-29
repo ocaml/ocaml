@@ -1,0 +1,147 @@
+(************************************************************************)
+(*   FlexDLL                                                            *)
+(*   Alain Frisch                                                       *)
+(*                                                                      *)
+(*   Copyright 2007 Institut National de Recherche en Informatique et   *)
+(*   en Automatique.                                                    *)
+(************************************************************************)
+
+(* Compatibility shims. Each line is prefixed with the compiler at which the
+   line ceases to be necessary. A function introduced in OCaml 4.01, therefore,
+   is prefixed with "401:" *)
+
+405:module Arg = struct
+405:  include Arg
+405:
+405:  let trim_cr s =
+405:    let len = String.length s in
+405:    if len > 0 && String.get s (len - 1) = '\r' then
+405:      String.sub s 0 (len - 1)
+405:    else
+405:      s
+405:
+405:  let read_aux trim sep file =
+405:    let ic = open_in_bin file in
+405:    let buf = Buffer.create 200 in
+405:    let words = ref [] in
+405:    let stash () =
+405:      let word = Buffer.contents buf in
+405:      let word = if trim then trim_cr word else word in
+405:      words := word :: !words;
+405:      Buffer.clear buf
+405:    in
+405:    begin
+405:      try while true do
+405:          let c = input_char ic in
+405:          if c = sep then stash () else Buffer.add_char buf c
+405:        done
+405:      with End_of_file -> ()
+405:    end;
+405:    if Buffer.length buf > 0 then stash ();
+405:    close_in ic;
+405:    Array.of_list (List.rev !words)
+405:
+405:  let read_arg = read_aux true '\n'
+405:
+405:  let read_arg0 = read_aux false '\x00'
+405:
+405:end
+
+403:module Uchar = struct
+403:  let unsafe_of_int c = c
+403:
+403:  let to_int c = c
+403:end
+
+406:module Buffer = struct
+406:  include Buffer
+406:
+402:  let to_bytes = contents
+402:
+406:  let add_utf_16le_uchar b u = match Uchar.to_int u with
+406:  | u when u < 0 -> assert false
+406:  | u when u <= 0xFFFF ->
+406:      add_char b (Char.unsafe_chr (u land 0xFF));
+406:      add_char b (Char.unsafe_chr (u lsr 8))
+406:  | u when u <= 0x10FFFF ->
+406:      let u' = u - 0x10000 in
+406:      let hi = 0xD800 lor (u' lsr 10) in
+406:      let lo = 0xDC00 lor (u' land 0x3FF) in
+406:      add_char b (Char.unsafe_chr (hi land 0xFF));
+406:      add_char b (Char.unsafe_chr (hi lsr 8));
+406:      add_char b (Char.unsafe_chr (lo land 0xFF));
+406:      add_char b (Char.unsafe_chr (lo lsr 8))
+406:  | _ -> assert false
+406:end
+
+402:module Bytes = struct
+402:  include String
+402:
+402:  let blit_string = blit
+402:  let sub_string = sub
+402:  let of_string x = x
+402:  let to_string x = x
+402:  let cat = (^)
+402:end
+
+403:module Char = struct
+403:  include Char
+403:
+403:  let lowercase_ascii c =
+403:    if (c >= 'A' && c <= 'Z')
+403:    then unsafe_chr(code c + 32)
+403:    else c
+403:
+403:  let uppercase_ascii c =
+403:    if (c >= 'a' && c <= 'z')
+403:    then unsafe_chr(code c - 32)
+403:    else c
+403:end
+
+408:module Option = struct
+408:  let some v = Some v
+408:  let value o ~default = match o with Some v -> v | None -> default
+408:  let fold ~none ~some = function Some v -> some v | None -> none
+408:end
+
+407:module Stdlib = Pervasives
+
+404:module String = struct
+404:  include String
+402:
+402:  let init n f =
+402:    let s = create n in
+402:    for i = 0 to n - 1 do
+402:      unsafe_set s i (f i)
+402:    done;
+402:    s
+403:
+403:  let lowercase_ascii s =
+403:    init (length s) (fun i -> Char.lowercase_ascii (unsafe_get s i))
+403:  let uppercase_ascii s =
+403:    init (length s) (fun i -> Char.uppercase_ascii (unsafe_get s i))
+404:
+404:  let split_on_char sep s =
+404:    let r = ref [] in
+404:    let j = ref (length s) in
+404:    for i = length s - 1 downto 0 do
+404:      if unsafe_get s i = sep then begin
+404:        r := sub s (i + 1) (!j - i - 1) :: !r;
+404:        j := i
+404:      end
+404:    done;
+404:    sub s 0 !j :: !r
+404:end
+
+401:module Sys = struct
+401:  include Sys
+401:
+401:  let win32 = (Sys.os_type = "Win32")
+401:  let cygwin = (Sys.os_type = "Cygwin")
+401:  let unix = (Sys.os_type = "Unix")
+401:end
+
+402:type bytes = string
+402:let output_bytes = output_string
+
+401:let ( |> ) x f = f x

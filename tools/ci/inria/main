@@ -166,7 +166,6 @@ cleanup=false
 check_make_alldepend=false
 jobs=''
 bootstrap=false
-init_submodule_flexdll=false
 
 memory_model_tests="tests/memory-model/forbidden.ml \
 tests/memory-model/publish.ml"
@@ -185,11 +184,15 @@ case "${OCAML_ARCH}" in
     cleanup=true
     check_make_alldepend=true
     export OCAMLTEST_SKIP_TESTS="$memory_model_tests"
+    # Use the flexdll package from Cygwin rather than bootstrapping
+    confoptions="$confoptions --without-flexdll"
   ;;
   cygwin64)
     cleanup=true
     check_make_alldepend=true
     export OCAMLTEST_SKIP_TESTS="$memory_model_tests"
+    # Use the flexdll package from Cygwin rather than bootstrapping
+    confoptions="$confoptions --without-flexdll"
   ;;
   mingw)
     build='--build=i686-pc-cygwin'
@@ -197,7 +200,6 @@ case "${OCAML_ARCH}" in
     instdir='C:/ocamlmgw'
     cleanup=true
     check_make_alldepend=true
-    init_submodule_flexdll=true
   ;;
   mingw64)
     build='--build=x86_64-pc-cygwin'
@@ -205,21 +207,18 @@ case "${OCAML_ARCH}" in
     instdir='C:/ocamlmgw64'
     cleanup=true
     check_make_alldepend=true
-    init_submodule_flexdll=true
   ;;
   msvc)
     build='--build=i686-pc-cygwin'
     host='--host=i686-pc-windows'
     instdir='C:/ocamlms'
     cleanup=true
-    init_submodule_flexdll=true
   ;;
   msvc64)
     build='--build=x86_64-pc-cygwin'
     host='--host=x86_64-pc-windows'
     instdir='C:/ocamlms64'
     cleanup=true
-    init_submodule_flexdll=true
   ;;
   *) arch_error;;
 esac
@@ -244,14 +243,6 @@ fi
 
 pwd
 cd "$jenkinsdir"
-
-if $init_submodule_flexdll; then
-  git submodule update --init flexdll
-elif [ -f flexdll/Makefile ]; then
-  if grep -Fq flexdll .gitmodules; then
-    git submodule deinit --force flexdll
-  fi
-fi
 
 #########################################################################
 # parse optional command-line arguments (has to be done after the "cd")
