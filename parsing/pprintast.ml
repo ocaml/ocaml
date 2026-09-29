@@ -1442,8 +1442,8 @@ and signature_item ctxt f x : unit =
       let md = match md with
         | None -> assert false (* ast invariant *)
         | Some mt -> mt in
-      pp f "@[<hov2>module@ type@ %s@ :=@ %a@]%a"
-        s.txt (module_type ctxt) md
+      pp f "@[<hov2>module@ type@ %a@ :=@ %a@]%a"
+        ident_of_name s.txt (module_type ctxt) md
         (item_attributes ctxt) attrs
   | Psig_class_type (l) -> class_type_declaration_list ctxt f l
   | Psig_recmodule decls ->
