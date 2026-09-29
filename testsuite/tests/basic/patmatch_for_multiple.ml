@@ -1,5 +1,8 @@
 (* TEST
- flags = "-drawlambda -dlambda -dcanonical-ids";
+ flags = "-no-g -drawlambda -dlambda -dno-locations -dcanonical-ids";
+   (* no-g: Debug events change code generation. The -no-g output
+      is closer to the native output, which is the one we care about
+      performance-wise. *)
  expect;
 *)
 

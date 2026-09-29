@@ -1,4 +1,10 @@
-(* TEST *)
+(* TEST
+   {
+     flags="-no-g"; (* in bytecode, -g disable local function optimizations *)
+     bytecode;
+   }
+   { native; }
+*)
 
 let f x =
   let r = ref 0 in

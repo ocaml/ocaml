@@ -116,7 +116,6 @@ let load_explicit_ocamlinit ppf f =
 (* Execute a script.  If [name] is "", read the script from stdin. *)
 
 let run_script ppf name args =
-  Clflags.debug := true;
   override_sys_argv args;
   let filename = filename_of_input name in
   Compmisc.init_path ~dir:(Filename.dirname filename) ();
@@ -384,7 +383,6 @@ let process_phrases ppf snap phrs =
 
 let loop ppf =
   Misc.Style.setup !Clflags.color;
-  Clflags.debug := true;
   Location.formatter_for_warnings := ppf;
   if not !Clflags.noversion then
     fprintf ppf "OCaml version %s%s%s@.Enter %a for help.@.@."

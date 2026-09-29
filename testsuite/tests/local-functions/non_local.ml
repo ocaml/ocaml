@@ -22,4 +22,7 @@ let local_in_function x =
   List.map (fun x -> f (succ x)) [0]
 
 (* TEST
+   { flags="-no-g"; (* in bytecode, -g disables local function optimization *)
+     bytecode; }
+   { native; }
 *)
