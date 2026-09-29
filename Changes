@@ -750,6 +750,10 @@ Working version
   are valid.
   (Xavier Leroy, review by Nicolás Ojeda Bär and Edwin Török)
 
+- #15115, OSEC-2026-23: Fix multiple issues in demarshaling
+  (`Marshal.from_{channel,string,bytes}`)
+  (Xavier Leroy, review by Nicolás Ojeda Bär)
+
 OCaml 5.5.1
 -----------
 
