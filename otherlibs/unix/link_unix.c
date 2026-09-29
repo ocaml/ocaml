@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdbool.h>
 
 CAMLprim value caml_unix_link(value follow, value path1, value path2)
 {
@@ -32,19 +33,22 @@ CAMLprim value caml_unix_link(value follow, value path1, value path2)
   char * p1;
   char * p2;
   int ret;
+  bool follow_is_none = Is_none(follow);
   caml_unix_check_path(path1, "link");
   caml_unix_check_path(path2, "link");
   p1 = caml_stat_strdup(String_val(path1));
   p2 = caml_stat_strdup(String_val(path2));
+# ifdef AT_SYMLINK_FOLLOW
+  int flags =
+    Is_some(follow) && Bool_val(Some_val(follow))
+    ? AT_SYMLINK_FOLLOW
+    : 0;
+# endif
   caml_enter_blocking_section();
-  if (Is_none(follow))
+  if (follow_is_none)
     ret = link(p1, p2);
   else {
 # ifdef AT_SYMLINK_FOLLOW
-    int flags =
-      Is_some(follow) && Bool_val(Some_val(follow))
-      ? AT_SYMLINK_FOLLOW
-      : 0;
     ret = linkat(AT_FDCWD, p1, AT_FDCWD, p2, flags);
 # else
     ret = -1; errno = ENOSYS;

@@ -322,8 +322,10 @@ BasicCompiler () {
 CreateSwitch () {
   # This can be switched to use the Ubuntu package when Ubuntu 26.04 is deployed
   # (opam 2.1.5 in Ubuntu 24.04 is too old)
-  curl -Lo opam \
+  OPAM_SHA256='30da8eb20c8f4cfd3818db867d85f26df1ca5ca27cb25910c0235c5a02e12d3b'
+  curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors -o opam \
  'https://github.com/ocaml/opam/releases/download/2.4.1/opam-2.4.1-x86_64-linux'
+  echo "$OPAM_SHA256  opam" | sha256sum --check --status
   chmod +x opam
   ./opam init --cli=2.4 --bare --disable-sandboxing --yes --auto-setup
   # This is intentionally done before the switch is created - if the install

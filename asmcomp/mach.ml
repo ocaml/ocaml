@@ -159,7 +159,8 @@ let operation_is_pure = function
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
   | Iatomic_fetch_add | Iatomic_exchange | Iatomic_compare_exchange
   | Ipoll _ | Idls_get
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) | Iopaque -> false
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) | Iopaque
+  | Iload { is_atomic = true; _ } -> false
   | Ispecific sop -> Arch.operation_is_pure sop
   | _ -> true
 

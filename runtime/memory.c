@@ -174,8 +174,8 @@
       atomic_store_release(p, v);
 
    where `p` is the field's adress. The release store ensures that
-   initialising writes into `p` to other domains. To see why, consider
-   the OCaml program:
+   initialising writes into `p` are visible to other domains. To see
+   why, consider the OCaml program:
 
       let r : int ref ref = ref (ref 0)
 
@@ -238,10 +238,10 @@
    on v, and either this program prints 0 or it prints 42.
 
    The reasoning makes use of address dependencies, which are not part
-   of the C11 memory model. However, in practice they do create
-   happens-before ordering in practice. This is the case, for example,
-   in the Linux Kernel Memory Model (LKMM). In the C11 model, two things
-   are missing:
+   of the C11 memory model. However, in practice, relaxed loads do
+   create happens-before ordering in practice. This is the case, for
+   example, in the Linux Kernel Memory Model (LKMM). In the C11 model,
+   two things are missing:
 
    - C11 considers that only an acquire load that reads from a release
      store can establish a hb relation. The LKMM relaxes this by
@@ -788,6 +788,16 @@ CAMLexport caml_stat_block caml_stat_calloc_noexc(asize_t num, asize_t sz)
       memset(result, 0, total);
     return result;
   }
+}
+
+/* [sz] is a number of bytes */
+CAMLexport caml_stat_block caml_stat_calloc(asize_t num, asize_t sz)
+{
+  void *result = caml_stat_calloc_noexc(num, sz);
+  /* calloc() may return NULL if size is 0 or number of elements is 0 */
+  if ((result == NULL) && (sz != 0) && (num != 0))
+    caml_raise_out_of_memory();
+  return result;
 }
 
 CAMLexport caml_stat_string caml_stat_strdup_noexc(const char *s)

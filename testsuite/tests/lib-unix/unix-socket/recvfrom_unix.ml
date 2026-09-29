@@ -3,6 +3,7 @@
  modules = "recvfrom.ml";
  hasunix;
  not windows;
+ not beos_haiku;
  {
    bytecode;
  }{

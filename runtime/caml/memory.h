@@ -96,6 +96,15 @@ CAMLextern caml_stat_block caml_stat_alloc(asize_t);
 CAMLmalloc(caml_stat_free, 1, 1)
 CAMLextern caml_stat_block caml_stat_alloc_noexc(asize_t);
 
+/* [caml_stat_calloc(num, size)] allocates a block of memory for an array
+   of [num] elements, each of them [size] bytes long, and initializes all its
+   bits to zero, effectively allocating a zero-initialized memory block of
+   [num * size] bytes. It throws an OCaml exception in case
+   the request fails, and so requires the runtime lock to be held.
+*/
+CAMLcalloc(caml_stat_free, 1, 1, 2)
+CAMLextern caml_stat_block caml_stat_calloc(asize_t, asize_t);
+
 /* [caml_stat_calloc_noexc(num, size)] allocates a block of memory for an array
    of [num] elements, each of them [size] bytes long, and initializes all its
    bits to zero, effectively allocating a zero-initialized memory block of

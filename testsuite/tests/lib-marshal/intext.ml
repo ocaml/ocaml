@@ -26,6 +26,10 @@ let bigint = Int64.to_int 0x123456789ABCDEF0L
 let rec fib n =
   if n < 2 then 1 else fib(n-1) + fib(n-2)
 
+let lazy_u = lazy (fib 20)
+let lazy_e1 = Lazy.force (lazy (fib 10))
+let lazy_e2 = Lazy.force (lazy 3.14)
+
 let test_out ?(flags = []) filename =
   let oc = open_out_bin filename in
   Marshal.to_channel oc 1 flags;
@@ -72,6 +76,10 @@ let test_out ?(flags = []) filename =
     (Nativeint.shift_left (Nativeint.of_string "-123456789") 32) flags;
   let i = Int64.of_string "123456789123456" in
     Marshal.to_channel oc (i,i) flags;
+  Marshal.to_channel oc lazy_u (Marshal.Closures :: flags);
+  Marshal.to_channel oc lazy_e1 flags;
+  Marshal.to_channel oc lazy_e2 flags;
+  Marshal.to_channel oc [||] flags;
   close_out oc
 
 
@@ -155,6 +163,10 @@ let test_in filename =
   test 37 (i = Int64.of_string "123456789123456");
   test 38 (j = Int64.of_string "123456789123456");
   test 39 (i == j);
+  test 40 (Lazy.force (input_value ic) = fib 20);
+  test 41 (Lazy.force (input_value ic) = fib 10);
+  test 42 (Lazy.force (input_value ic) = 3.14);
+  test 43 (Array.length (input_value ic) = 0);
   close_in ic
 
 let test_string () =
@@ -548,6 +560,28 @@ let test_infix () =
   test 606 (even' 142 = true);
   test 607 (even' 142 = even 142)
 
+(* Test for infix pointers, with functions of arity >= 2 *)
+let test_infix2 () =
+  let t = true and
+      f = false in
+  let rec odd n z =
+    if n = z
+    then f
+    else even (n-1) z
+  and even n z =
+    if n = z
+    then t
+    else odd (n-1) z
+  in
+  let s = Marshal.to_string (odd, even) [Marshal.Closures] in
+  let (odd', even': (int -> int -> bool) * (int -> int -> bool))
+      = Marshal.from_string s 0 in
+  test 650 (odd' 41 0 = odd 41 0);
+  test 651 (odd' 142 0 = odd 142 0);
+  test 652 (odd' 142 3 = odd 142 3);
+  test 653 (even' 41 0 = even 41 0);
+  test 654 (even' 142 0 = even 142 0);
+  test 655 (even' 142 3 = even 142 3)
 
 let test_mutual_rec_regression () =
   (* this regression was reported by Cedric Pasteur in PR#5772 *)
@@ -629,6 +663,7 @@ let main() =
     test_deep();
     test_objects();
     test_infix ();
+    test_infix2 ();
     test_mutual_rec_regression ();
     test_end_of_file_regression ();
     test_buggy_serialisers ();

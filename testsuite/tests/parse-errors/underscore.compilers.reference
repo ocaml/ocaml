@@ -1,0 +1,127 @@
+- : int = 1
+val h : int -> 'a -> 'a = <fun>
+val g : _:'a -> 'a = <fun>
+- : int = 3
+val o : ?_:int -> unit -> int = <fun>
+- : int = 5
+module type S = sig end
+module F : S -> sig end
+Line 5, characters 8-9:
+5 | let x = _;;
+            ^
+Error: Uninterpreted expression wildcard _.
+Line 2, characters 1-2:
+2 | (_, 0);;
+     ^
+Error: Uninterpreted expression wildcard _.
+type r = { a : int; }
+Line 2, characters 6-7:
+2 | { a = _ };;
+          ^
+Error: Uninterpreted expression wildcard _.
+Line 2, characters 4-5:
+2 | 1 + _;;
+        ^
+Error: Uninterpreted expression wildcard _.
+Line 2, characters 3-4:
+2 | if _ then 0 else 1;;
+       ^
+Error: Uninterpreted expression wildcard _.
+Line 2, characters 1-2:
+2 | (_ : int);;
+     ^
+Error: Uninterpreted expression wildcard _.
+Line 2, characters 10-11:
+2 | fun () -> _;;
+              ^
+Error: Uninterpreted expression wildcard _.
+Line 2, characters 0-1:
+2 | _.a;;
+    ^
+Error: Uninterpreted expression wildcard _.
+Line 5, characters 0-1:
+5 | _ 0;;
+    ^
+Error: Uninterpreted expression wildcard _.
+val f : 'a -> 'a = <fun>
+Line 2, characters 2-3:
+2 | f _;;
+      ^
+Error: Uninterpreted expression wildcard _.
+Line 2, characters 5-6:
+2 | Some _;;
+         ^
+Error: Uninterpreted expression wildcard _.
+Line 2, characters 5-6:
+2 | lazy _;;
+         ^
+Error: Uninterpreted expression wildcard _.
+Line 2, characters 5-6:
+2 | f ~x:_;;
+         ^
+Error: Uninterpreted expression wildcard _.
+Line 2, characters 3-4:
+2 | g ~_;;
+       ^
+Error: Uninterpreted expression wildcard _.
+Line 2, characters 5-6:
+2 | g ~_:_;;
+         ^
+Error: Uninterpreted expression wildcard _.
+Line 2, characters 3-4:
+2 | o ?_;;
+       ^
+Error: Uninterpreted expression wildcard _.
+Line 2, characters 5-6:
+2 | o ?_:_;;
+         ^
+Error: Uninterpreted expression wildcard _.
+Line 4, characters 11-12:
+4 | module M = _;;
+               ^
+Error: Uninterpreted module wildcard _.
+Line 2, characters 13-14:
+2 | module N = F(_);;
+                 ^
+Error: Uninterpreted module wildcard _.
+Line 2, characters 12-13:
+2 | module O = (_ : S);;
+                ^
+Error: Uninterpreted module wildcard _.
+Line 2, characters 25-26:
+2 | module P = functor () -> _;;
+                             ^
+Error: Uninterpreted module wildcard _.
+Line 2, characters 8-9:
+2 | include _;;
+            ^
+Error: Uninterpreted module wildcard _.
+Line 2, characters 5-6:
+2 | open _;;
+         ^
+Error: Uninterpreted module wildcard _.
+Line 2, characters 31-32:
+2 | module type Q = module type of _;;
+                                   ^
+Error: Uninterpreted module wildcard _.
+Line 2, characters 16-17:
+2 | let p = (module _ : S);;
+                    ^
+Error: Uninterpreted module wildcard _.
+Line 2, characters 23-24:
+2 | let q = let module L = _ in ();;
+                           ^
+Error: Uninterpreted module wildcard _.
+Line 4, characters 9-10:
+4 | let x = ~_;;
+             ^
+Error: Syntax error
+Line 2, characters 6-7:
+2 | f ~ _ : 3;;
+          ^
+Error: Syntax error
+Line 2, characters 13-14:
+2 | module R = F _;;
+                 ^
+Error: Syntax error
+

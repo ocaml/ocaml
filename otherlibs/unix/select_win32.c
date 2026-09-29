@@ -125,21 +125,11 @@ typedef enum _SELECTTYPE {
   SELECT_TYPE_SOCKET        /* Classic select */
 } SELECTTYPE;
 
-/* Data structure for results */
-typedef struct _SELECTRESULT {
-  LIST       lst;
-  SELECTMODE EMode;
-  int        lpOrigIdx;
-} SELECTRESULT;
-
-typedef SELECTRESULT *LPSELECTRESULT;
-
 /* Data structure for query */
 typedef struct _SELECTQUERY {
   LIST         lst;
   SELECTMODE   EMode;
   HANDLE       hFileDescr;
-  int          lpOrigIdx;
   unsigned int uFlagsFd; /* Copy of filedescr->flags_fd */
 } SELECTQUERY;
 
@@ -148,11 +138,13 @@ typedef SELECTQUERY *LPSELECTQUERY;
 typedef struct _SELECTDATA {
   LIST             lst;
   SELECTTYPE       EType;
-  /* Sockets may generate a result for all three lists from one single
-     query object
-   */
-  SELECTRESULT     aResults[MAXIMUM_SELECT_OBJECTS * 3];
-  DWORD            nResultsCount;
+  /* Sockets may generate results for all three lists from one query. */
+  SELECTHANDLESET  readResults;
+  HANDLE           aReadResults[MAXIMUM_SELECT_OBJECTS];
+  SELECTHANDLESET  writeResults;
+  HANDLE           aWriteResults[MAXIMUM_SELECT_OBJECTS];
+  SELECTHANDLESET  exceptResults;
+  HANDLE           aExceptResults[MAXIMUM_SELECT_OBJECTS];
   /* Data following are dedicated to APC like call, they
      will be initialized if required.
      */
@@ -190,7 +182,12 @@ static LPSELECTDATA select_data_new (LPSELECTDATA lpSelectData,
   caml_win32_list_init((LPLIST)res);
   caml_win32_list_next_set((LPLIST)res, (LPLIST)lpSelectData);
   res->EType         = EType;
-  res->nResultsCount = 0;
+  handle_set_init(&res->readResults, res->aReadResults,
+                  MAXIMUM_SELECT_OBJECTS);
+  handle_set_init(&res->writeResults, res->aWriteResults,
+                  MAXIMUM_SELECT_OBJECTS);
+  handle_set_init(&res->exceptResults, res->aExceptResults,
+                  MAXIMUM_SELECT_OBJECTS);
 
 
   /* Data following are dedicated to APC like call, they
@@ -218,38 +215,36 @@ static void select_data_free (LPSELECTDATA lpSelectData)
     lpSelectData->lpWorker = NULL;
   };
 
-  /* Make sure results/queries cannot be accessed */
-  lpSelectData->nResultsCount = 0;
+  /* Make sure queries cannot be accessed */
   lpSelectData->nQueriesCount = 0;
 
   caml_stat_free(lpSelectData);
 }
 
-/* Add a result to select data, return zero if something goes wrong. */
-static DWORD select_data_result_add (LPSELECTDATA lpSelectData,
-                                     SELECTMODE EMode, int lpOrigIdx)
+/* Add a result to select data. */
+static void select_data_result_add (LPSELECTDATA lpSelectData,
+                                    SELECTMODE EMode, HANDLE hFileDescr)
 {
-  DWORD res;
-  DWORD i;
-
-  res = 0;
-  if (lpSelectData->nResultsCount < MAXIMUM_SELECT_OBJECTS * 3)
+  switch (EMode)
   {
-    i = lpSelectData->nResultsCount;
-    lpSelectData->aResults[i].EMode  = EMode;
-    lpSelectData->aResults[i].lpOrigIdx = lpOrigIdx;
-    lpSelectData->nResultsCount++;
-    res = 1;
+    case SELECT_MODE_READ:
+      handle_set_add(&lpSelectData->readResults, hFileDescr);
+      break;
+    case SELECT_MODE_WRITE:
+      handle_set_add(&lpSelectData->writeResults, hFileDescr);
+      break;
+    case SELECT_MODE_EXCEPT:
+      handle_set_add(&lpSelectData->exceptResults, hFileDescr);
+      break;
+    case SELECT_MODE_NONE:
+      CAMLunreachable();
   }
-
-  return res;
 }
 
 /* Add a query to select data, return zero if something goes wrong */
 static DWORD select_data_query_add (LPSELECTDATA lpSelectData,
                                     SELECTMODE EMode,
                                     HANDLE hFileDescr,
-                                    int lpOrigIdx,
                                     unsigned int uFlagsFd)
 {
   DWORD res;
@@ -261,7 +256,6 @@ static DWORD select_data_query_add (LPSELECTDATA lpSelectData,
     i = lpSelectData->nQueriesCount;
     lpSelectData->aQueries[i].EMode      = EMode;
     lpSelectData->aQueries[i].hFileDescr = hFileDescr;
-    lpSelectData->aQueries[i].lpOrigIdx  = lpOrigIdx;
     lpSelectData->aQueries[i].uFlagsFd   = uFlagsFd;
     lpSelectData->nQueriesCount++;
     res = 1;
@@ -349,7 +343,8 @@ static void read_console_poll(HANDLE hStop, void *_data)
       record.Event.KeyEvent.bKeyDown &&
       record.Event.KeyEvent.uChar.AsciiChar != 0)
     {
-      select_data_result_add(lpSelectData, lpQuery->EMode, lpQuery->lpOrigIdx);
+      select_data_result_add(lpSelectData, lpQuery->EMode,
+                             lpQuery->hFileDescr);
       lpSelectData->EState = SELECT_STATE_SIGNALED;
       break;
     }
@@ -370,14 +365,13 @@ static void read_console_poll(HANDLE hStop, void *_data)
 static LPSELECTDATA read_console_poll_add (LPSELECTDATA lpSelectData,
                                            SELECTMODE EMode,
                                            HANDLE hFileDescr,
-                                           int lpOrigIdx,
                                            unsigned int uFlagsFd)
 {
   LPSELECTDATA res;
 
   res = select_data_new(lpSelectData, SELECT_TYPE_CONSOLE_READ);
   res->funcWorker = read_console_poll;
-  select_data_query_add(res, SELECT_MODE_READ, hFileDescr, lpOrigIdx, uFlagsFd);
+  select_data_query_add(res, SELECT_MODE_READ, hFileDescr, uFlagsFd);
 
   return res;
 }
@@ -426,7 +420,7 @@ static void read_pipe_poll (HANDLE hStop, void *_data)
       {
         lpSelectData->EState = SELECT_STATE_SIGNALED;
         select_data_result_add(lpSelectData, iterQuery->EMode,
-                               iterQuery->lpOrigIdx);
+                               iterQuery->hFileDescr);
       };
     };
 
@@ -460,7 +454,6 @@ static void read_pipe_poll (HANDLE hStop, void *_data)
 static LPSELECTDATA read_pipe_poll_add (LPSELECTDATA lpSelectData,
                                         SELECTMODE EMode,
                                         HANDLE hFileDescr,
-                                        int lpOrigIdx,
                                         unsigned int uFlagsFd)
 {
   LPSELECTDATA res;
@@ -476,7 +469,7 @@ static LPSELECTDATA read_pipe_poll_add (LPSELECTDATA lpSelectData,
 
   /* Add a new pipe to poll */
   res->funcWorker = read_pipe_poll;
-  select_data_query_add(res, EMode, hFileDescr, lpOrigIdx, uFlagsFd);
+  select_data_query_add(res, EMode, hFileDescr, uFlagsFd);
 
   return hd;
 }
@@ -490,12 +483,14 @@ static void socket_poll (HANDLE hStop, void *_data)
 {
   LPSELECTDATA   lpSelectData;
   LPSELECTQUERY    iterQuery;
-  HANDLE           aEvents[MAXIMUM_SELECT_OBJECTS];
+  /* One event per query, plus hStop */
+  HANDLE           aEvents[MAXIMUM_SELECT_OBJECTS + 1];
   DWORD            nEvents;
   long             maskEvents;
   u_long           iMode;
   SELECTMODE       mode;
   WSANETWORKEVENTS events;
+  BOOL             bCollectResults;
 
   lpSelectData = (LPSELECTDATA)_data;
 
@@ -504,6 +499,7 @@ static void socket_poll (HANDLE hStop, void *_data)
   {
     iterQuery = &(lpSelectData->aQueries[nEvents]);
     aEvents[nEvents] = CreateEvent(NULL, TRUE, FALSE, NULL);
+    check_error(lpSelectData, aEvents[nEvents] == NULL);
     maskEvents = 0;
     mode = iterQuery->EMode;
     if ((mode & SELECT_MODE_READ) != 0)
@@ -543,63 +539,66 @@ static void socket_poll (HANDLE hStop, void *_data)
           INFINITE) == WAIT_FAILED);
   };
 
-  if (lpSelectData->nError == 0)
+  /* Results are only meaningful if nothing failed so far, but the events and
+     the WSAEventSelect associations must be released in every case. */
+  bCollectResults = (lpSelectData->nError == 0);
+
+  for (DWORD i = 0; i < lpSelectData->nQueriesCount; i++)
   {
-    for (DWORD i = 0; i < lpSelectData->nQueriesCount; i++)
+    iterQuery = &(lpSelectData->aQueries[i]);
+    if (bCollectResults && WaitForSingleObject(aEvents[i], 0) == WAIT_OBJECT_0)
     {
-      iterQuery = &(lpSelectData->aQueries[i]);
-      if (WaitForSingleObject(aEvents[i], 0) == WAIT_OBJECT_0)
+      DEBUG_PRINT("Socket %d has pending events", (i - 1));
+      /* Find out what kind of events were raised
+       */
+      if (WSAEnumNetworkEvents((SOCKET)(iterQuery->hFileDescr),
+                               aEvents[i], &events) == 0)
       {
-        DEBUG_PRINT("Socket %d has pending events", (i - 1));
-        if (iterQuery != NULL)
+        if ((iterQuery->EMode & SELECT_MODE_READ) != 0
+            && (events.lNetworkEvents & (FD_READ | FD_ACCEPT | FD_CLOSE)) != 0)
         {
-          /* Find out what kind of events were raised
-           */
-          if (WSAEnumNetworkEvents((SOCKET)(iterQuery->hFileDescr),
-                                   aEvents[i], &events) == 0)
-          {
-            if ((iterQuery->EMode & SELECT_MODE_READ) != 0
-                && (events.lNetworkEvents & (FD_READ | FD_ACCEPT | FD_CLOSE))
-                   != 0)
-            {
-              select_data_result_add(lpSelectData, SELECT_MODE_READ,
-                                     iterQuery->lpOrigIdx);
-            }
-            if ((iterQuery->EMode & SELECT_MODE_WRITE) != 0
-                && (events.lNetworkEvents & (FD_WRITE | FD_CONNECT | FD_CLOSE))
-                   != 0)
-            {
-              select_data_result_add(lpSelectData, SELECT_MODE_WRITE,
-                                     iterQuery->lpOrigIdx);
-            }
-            if ((iterQuery->EMode & SELECT_MODE_EXCEPT) != 0
-                && (events.lNetworkEvents & FD_OOB) != 0)
-            {
-              select_data_result_add(lpSelectData, SELECT_MODE_EXCEPT,
-                                     iterQuery->lpOrigIdx);
-            }
-          }
+          select_data_result_add(lpSelectData, SELECT_MODE_READ,
+                                 iterQuery->hFileDescr);
+        }
+        if ((iterQuery->EMode & SELECT_MODE_WRITE) != 0
+            && (events.lNetworkEvents & (FD_WRITE | FD_CONNECT | FD_CLOSE))
+               != 0)
+        {
+          select_data_result_add(lpSelectData, SELECT_MODE_WRITE,
+                                 iterQuery->hFileDescr);
+        }
+        if ((iterQuery->EMode & SELECT_MODE_EXCEPT) != 0
+            && (events.lNetworkEvents & FD_OOB) != 0)
+        {
+          select_data_result_add(lpSelectData, SELECT_MODE_EXCEPT,
+                                 iterQuery->hFileDescr);
         }
       }
-      /* WSAEventSelect() automatically sets socket to nonblocking mode.
-         Restore the blocking one. */
-      if (iterQuery->uFlagsFd & FLAGS_FD_IS_BLOCKING)
-      {
-        DEBUG_PRINT("Restore a blocking socket");
-        iMode = 0;
-        check_error(lpSelectData,
-          WSAEventSelect((SOCKET)(iterQuery->hFileDescr), aEvents[i], 0) != 0 ||
-          ioctlsocket((SOCKET)(iterQuery->hFileDescr), FIONBIO, &iMode) != 0);
-      }
-      else
-      {
-        check_error(lpSelectData,
-          WSAEventSelect((SOCKET)(iterQuery->hFileDescr), aEvents[i], 0) != 0);
-      };
-
-      CloseHandle(aEvents[i]);
-      aEvents[i] = INVALID_HANDLE_VALUE;
     }
+
+    if (aEvents[i] == NULL)
+    {
+      continue;
+    }
+
+    /* WSAEventSelect() automatically sets socket to nonblocking mode.
+       Restore the blocking one. */
+    if (iterQuery->uFlagsFd & FLAGS_FD_IS_BLOCKING)
+    {
+      DEBUG_PRINT("Restore a blocking socket");
+      iMode = 0;
+      check_error(lpSelectData,
+        WSAEventSelect((SOCKET)(iterQuery->hFileDescr), aEvents[i], 0) != 0 ||
+        ioctlsocket((SOCKET)(iterQuery->hFileDescr), FIONBIO, &iMode) != 0);
+    }
+    else
+    {
+      check_error(lpSelectData,
+        WSAEventSelect((SOCKET)(iterQuery->hFileDescr), aEvents[i], 0) != 0);
+    };
+
+    CloseHandle(aEvents[i]);
+    aEvents[i] = INVALID_HANDLE_VALUE;
   }
 }
 
@@ -607,7 +606,6 @@ static void socket_poll (HANDLE hStop, void *_data)
 static LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData,
                                      SELECTMODE EMode,
                                      HANDLE hFileDescr,
-                                     int lpOrigIdx,
                                      unsigned int uFlagsFd)
 {
   LPSELECTDATA res;
@@ -685,7 +683,6 @@ static LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData,
     }
     aQueries->EMode = EMode;
     aQueries->hFileDescr = hFileDescr;
-    aQueries->lpOrigIdx = lpOrigIdx;
     aQueries->uFlagsFd = uFlagsFd;
     DEBUG_PRINT("Socket %x added", hFileDescr);
   }
@@ -706,7 +703,6 @@ static LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData,
 static LPSELECTDATA static_poll_add (LPSELECTDATA lpSelectData,
                                      SELECTMODE EMode,
                                      HANDLE hFileDescr,
-                                     int lpOrigIdx,
                                      unsigned int uFlagsFd)
 {
   LPSELECTDATA res;
@@ -717,8 +713,8 @@ static LPSELECTDATA static_poll_add (LPSELECTDATA lpSelectData,
   res = select_data_job_search(&hd, SELECT_TYPE_STATIC);
 
   /* Add a new query/result */
-  select_data_query_add(res, EMode, hFileDescr, lpOrigIdx, uFlagsFd);
-  select_data_result_add(res, EMode, lpOrigIdx);
+  select_data_query_add(res, EMode, hFileDescr, uFlagsFd);
+  select_data_result_add(res, EMode, hFileDescr);
 
   return hd;
 }
@@ -774,7 +770,7 @@ static SELECTHANDLETYPE get_handle_type(value fd)
 /* Choose what to do with given data */
 static LPSELECTDATA select_data_dispatch (LPSELECTDATA lpSelectData,
                                           SELECTMODE EMode,
-                                          value fd, int lpOrigIdx)
+                                          value fd)
 {
   LPSELECTDATA    res;
   HANDLE          hFileDescr;
@@ -806,7 +802,7 @@ static LPSELECTDATA select_data_dispatch (LPSELECTDATA lpSelectData,
       /* Disk is always ready in read/write operation */
       if (EMode == SELECT_MODE_READ || EMode == SELECT_MODE_WRITE)
       {
-        res = static_poll_add(res, EMode, hFileDescr, lpOrigIdx, uFlagsFd);
+        res = static_poll_add(res, EMode, hFileDescr, uFlagsFd);
       };
       break;
 
@@ -815,12 +811,11 @@ static LPSELECTDATA select_data_dispatch (LPSELECTDATA lpSelectData,
       /* Console is always ready in write operation, need to check for read. */
       if (EMode == SELECT_MODE_READ)
       {
-        res = read_console_poll_add(res, EMode, hFileDescr, lpOrigIdx,
-                                    uFlagsFd);
+        res = read_console_poll_add(res, EMode, hFileDescr, uFlagsFd);
       }
       else if (EMode == SELECT_MODE_WRITE)
       {
-        res = static_poll_add(res, EMode, hFileDescr, lpOrigIdx, uFlagsFd);
+        res = static_poll_add(res, EMode, hFileDescr, uFlagsFd);
       };
       break;
 
@@ -830,13 +825,13 @@ static LPSELECTDATA select_data_dispatch (LPSELECTDATA lpSelectData,
       if (EMode == SELECT_MODE_READ)
       {
         DEBUG_PRINT("Need to check availability of data on pipe");
-        res = read_pipe_poll_add(res, EMode, hFileDescr, lpOrigIdx, uFlagsFd);
+        res = read_pipe_poll_add(res, EMode, hFileDescr, uFlagsFd);
       }
       else if (EMode == SELECT_MODE_WRITE)
       {
         DEBUG_PRINT("No need to check availability of data on pipe, "
                     "write operation always possible");
-        res = static_poll_add(res, EMode, hFileDescr, lpOrigIdx, uFlagsFd);
+        res = static_poll_add(res, EMode, hFileDescr, uFlagsFd);
       };
       break;
 
@@ -850,14 +845,14 @@ static LPSELECTDATA select_data_dispatch (LPSELECTDATA lpSelectData,
           DEBUG_PRINT("Socket is not connected");
           if (EMode == SELECT_MODE_WRITE || EMode == SELECT_MODE_READ)
           {
-            res = static_poll_add(res, EMode, hFileDescr, lpOrigIdx, uFlagsFd);
+            res = static_poll_add(res, EMode, hFileDescr, uFlagsFd);
             alreadyAdded = TRUE;
           }
         }
       }
       if (!alreadyAdded)
       {
-        res = socket_poll_add(res, EMode, hFileDescr, lpOrigIdx, uFlagsFd);
+        res = socket_poll_add(res, EMode, hFileDescr, uFlagsFd);
       }
       break;
 
@@ -886,38 +881,58 @@ static DWORD caml_list_length (value lst)
   CAMLreturnT(DWORD, res);
 }
 
-static value find_handle(LPSELECTRESULT iterResult, value readfds,
-                         value writefds, value exceptfds)
+static LPSELECTHANDLESET select_data_results(LPSELECTDATA lpSelectData,
+                                             SELECTMODE EMode)
 {
-  CAMLparam3(readfds, writefds, exceptfds);
-  CAMLlocal2(result, list);
-
-  switch( iterResult->EMode )
+  switch (EMode)
   {
     case SELECT_MODE_READ:
-      list = readfds;
-      break;
+      return &lpSelectData->readResults;
     case SELECT_MODE_WRITE:
-      list = writefds;
-      break;
+      return &lpSelectData->writeResults;
     case SELECT_MODE_EXCEPT:
-      list = exceptfds;
-      break;
+      return &lpSelectData->exceptResults;
     case SELECT_MODE_NONE:
       CAMLunreachable();
-  };
+  }
+  return NULL; /* Avoid warning C4715 with MSVC. */
+}
 
-  for(int i=0; list != Val_unit && i < iterResult->lpOrigIdx; ++i )
+static BOOL select_data_result_mem(LPSELECTDATA lpSelectData,
+                                   SELECTMODE EMode, HANDLE hFileDescr)
+{
+  for (; lpSelectData != NULL;
+       lpSelectData = LIST_NEXT(LPSELECTDATA, lpSelectData))
   {
-    list = Field(list, 1);
+    if (handle_set_mem(select_data_results(lpSelectData, EMode), hFileDescr))
+      return TRUE;
+  }
+  return FALSE;
+}
+
+/* Filter an original descriptor list using the results.  Iterating over the
+   original list both returns the exact OCaml values supplied by the caller
+   and preserves duplicate descriptors, as the fd_set implementation does. */
+static value select_data_to_fdlist(value fdlist, LPSELECTDATA lpSelectData,
+                                   SELECTMODE EMode)
+{
+  CAMLparam1(fdlist);
+  CAMLlocal2(res, fd);
+
+  res = Val_emptylist;
+  for (; fdlist != Val_emptylist; fdlist = Field(fdlist, 1))
+  {
+    fd = Field(fdlist, 0);
+    if (select_data_result_mem(lpSelectData, EMode, Handle_val(fd)))
+    {
+      value newres = caml_alloc_small(2, Tag_cons);
+      Field(newres, 0) = fd;
+      Field(newres, 1) = res;
+      res = newres;
+    }
   }
 
-  if (list == Val_unit)
-    caml_failwith ("select.c: original file handle not found");
-
-  result = Field(list, 0);
-
-  CAMLreturn( result );
+  CAMLreturn(res);
 }
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -976,12 +991,6 @@ CAMLprim value caml_unix_select(value readfds, value writefds, value exceptfds,
   /* Data for all handles */
   LPSELECTDATA lpSelectData;
   LPSELECTDATA iterSelectData;
-
-  /* Iterator for results */
-  LPSELECTRESULT iterResult;
-
-  /* Iterator */
-  DWORD i;
 
   /* Error status */
   DWORD err;
@@ -1056,7 +1065,6 @@ CAMLprim value caml_unix_select(value readfds, value writefds, value exceptfds,
       lpEventsDone   = NULL;
       lpSelectData   = NULL;
       iterSelectData = NULL;
-      iterResult     = NULL;
       hasStaticData  = 0;
       readfds_len    = caml_list_length(readfds);
       writefds_len   = caml_list_length(writefds);
@@ -1081,7 +1089,6 @@ CAMLprim value caml_unix_select(value readfds, value writefds, value exceptfds,
          to watch */
       DEBUG_PRINT("Dispatch read fd");
       handle_set_init(&hds, hdsData, hdsMax);
-      i=0;
       for (l = readfds; l != Val_emptylist; l = Field(l, 1))
         {
           fd = Field(l, 0);
@@ -1089,7 +1096,7 @@ CAMLprim value caml_unix_select(value readfds, value writefds, value exceptfds,
             {
               handle_set_add(&hds, Handle_val(fd));
               lpSelectData = select_data_dispatch(lpSelectData,
-                                                  SELECT_MODE_READ, fd, i++);
+                                                  SELECT_MODE_READ, fd);
             }
           else
             {
@@ -1101,7 +1108,6 @@ CAMLprim value caml_unix_select(value readfds, value writefds, value exceptfds,
 
       DEBUG_PRINT("Dispatch write fd");
       handle_set_init(&hds, hdsData, hdsMax);
-      i=0;
       for (l = writefds; l != Val_emptylist; l = Field(l, 1))
         {
           fd = Field(l, 0);
@@ -1109,7 +1115,7 @@ CAMLprim value caml_unix_select(value readfds, value writefds, value exceptfds,
             {
               handle_set_add(&hds, Handle_val(fd));
               lpSelectData = select_data_dispatch(lpSelectData,
-                                                  SELECT_MODE_WRITE, fd, i++);
+                                                  SELECT_MODE_WRITE, fd);
             }
           else
             {
@@ -1121,7 +1127,6 @@ CAMLprim value caml_unix_select(value readfds, value writefds, value exceptfds,
 
       DEBUG_PRINT("Dispatch exceptional fd");
       handle_set_init(&hds, hdsData, hdsMax);
-      i=0;
       for (l = exceptfds; l != Val_emptylist; l = Field(l, 1))
         {
           fd = Field(l, 0);
@@ -1129,7 +1134,7 @@ CAMLprim value caml_unix_select(value readfds, value writefds, value exceptfds,
             {
               handle_set_add(&hds, Handle_val(fd));
               lpSelectData = select_data_dispatch(lpSelectData,
-                                                  SELECT_MODE_EXCEPT, fd, i++);
+                                                  SELECT_MODE_EXCEPT, fd);
             }
           else
             {
@@ -1237,44 +1242,26 @@ CAMLprim value caml_unix_select(value readfds, value writefds, value exceptfds,
       /* Build results */
       if (err == 0)
         {
-          DEBUG_PRINT("Building result");
-          read_list = Val_emptylist;
-          write_list = Val_emptylist;
-          except_list = Val_emptylist;
-
           iterSelectData = lpSelectData;
           while (iterSelectData != NULL)
             {
-              for (i = 0; i < iterSelectData->nResultsCount; i++)
-                {
-                  iterResult = &(iterSelectData->aResults[i]);
-                  l = caml_alloc_small(2, Tag_cons);
-                  Field(l, 0) = find_handle(iterResult, readfds, writefds,
-                                            exceptfds);
-                  switch (iterResult->EMode)
-                    {
-                    case SELECT_MODE_READ:
-                      Field(l, 1) =  read_list;
-                      read_list = l;
-                      break;
-                    case SELECT_MODE_WRITE:
-                      Field(l, 1) = write_list;
-                      write_list = l;
-                      break;
-                    case SELECT_MODE_EXCEPT:
-                      Field(l, 1) = except_list;
-                      except_list = l;
-                      break;
-                    case SELECT_MODE_NONE:
-                      CAMLunreachable();
-                    }
-                }
               /* We try to only process the first error, bypass other errors */
               if (err == 0 && iterSelectData->EState == SELECT_STATE_ERROR)
                 {
                   err = iterSelectData->nError;
                 }
               iterSelectData = LIST_NEXT(LPSELECTDATA, iterSelectData);
+            }
+
+          if (err == 0)
+            {
+              DEBUG_PRINT("Building result");
+              read_list = select_data_to_fdlist(readfds, lpSelectData,
+                                                SELECT_MODE_READ);
+              write_list = select_data_to_fdlist(writefds, lpSelectData,
+                                                 SELECT_MODE_WRITE);
+              except_list = select_data_to_fdlist(exceptfds, lpSelectData,
+                                                  SELECT_MODE_EXCEPT);
             }
         }
 

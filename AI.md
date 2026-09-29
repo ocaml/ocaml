@@ -29,3 +29,30 @@ a direct counterpart, with entirely human-produced content.
    of code that contributors do not understand; plagiarised works; hallucinated
    security reports; or experiments involving humans without their advance
    consent.
+
+## Guidelines relevant to AI-assisted bug reports
+
+Our advice is to avoid adding LLM-generated contents or explanations to
+your initial bug report: a bug report should be to the point and
+contain only human-verified information. Adding LLM-generated contents
+runs counter to those objectives, even if the generated contents
+looks useful to you.
+
+Indeed, judging the quality of a LLM-generated content about an
+unknown code base requires a lot of effort. Simultaneously, estimating
+the faithfulness of LLM-generated contents without knowing your prior
+understanding of the code base, nor your prompt, nor the model context
+also requires a lot of effort. Such efforts are in most cases better
+spent investigating the bug itself.
+
+Moreover, mixing human and LLM-generated contents in the same report
+without a clear separation should be imperatively avoided. Indeed,
+the absence of a clear delineation between the two contents makes it
+very hard to ascertain the reliability of any part of the mixed
+contents.
+
+We also advise some caution when shrinking reproduction case with
+LLMs. If you have any doubts about the LLM-shrinked reproduction case,
+please report both the original reproduction case and the shrinked
+one. In extreme cases, we have witnessed LLMs convincing people to
+reduce their bug report to a hallucination.

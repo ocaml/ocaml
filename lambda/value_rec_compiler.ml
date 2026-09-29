@@ -340,6 +340,8 @@ let compute_static_size lam =
     | Pisout
     | Pbintofint _
     | Pintofbint _
+    | Pbintoffloat _
+    | Pfloatofbint _
     | Pcvtbint _
     | Pnegbint _
     | Paddbint _

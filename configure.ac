@@ -21,7 +21,7 @@ AC_INIT([OCaml],
         [OCAML__VERSION],
         [caml-list@inria.fr],
         [ocaml],
-        [http://www.ocaml.org])
+        [https://ocaml.org/])
 
 AC_MSG_NOTICE([Configuring OCaml version AC_PACKAGE_VERSION])
 
@@ -1173,6 +1173,12 @@ AS_CASE([$ocaml_cc_vendor],
     internal_cflags="$cc_warnings"],
   [common_cflags="-O"])
 
+AS_CASE([$target],
+  [*-apple-darwin*],
+    [AX_CHECK_COMPILE_FLAG([-Werror=unguarded-availability-new],
+      [common_cflags="-Werror=unguarded-availability-new $common_cflags"], [],
+      [$warn_error_flag])])
+
 # Enable the prefetchw instruction on x86 and x86_64.
 AS_CASE([$target],
   [i686*|x86_64*],
@@ -1197,7 +1203,7 @@ AS_CASE([$target],
 
 # Require Windows 8 / Server 2012 or later
 AS_CASE([$target],
-  [*-w64-mingw32*|*-pc-windows],
+  [*-pc-cygwin|*-w64-mingw32*|*-pc-windows],
     [internal_cppflags="$internal_cppflags -D_WIN32_WINNT=0x602"])
 
 # Adjust according to target
@@ -1633,6 +1639,7 @@ AS_IF([test x"$supports_shared_libraries" = 'xtrue'],
     [[i[3456]86-*-netbsd*]], [natdynlink=true],
     [x86_64-*-netbsd*], [natdynlink=true],
     [[i[3456]86-*-haiku*]], [natdynlink=true],
+    [x86_64-*-haiku*], [natdynlink=true],
     [arm*-*-linux*], [natdynlink=true],
     [arm*-*-freebsd*], [natdynlink=true],
     [earm*-*-netbsd*], [natdynlink=true],
@@ -1740,7 +1747,7 @@ AS_CASE([$target],
   [x86_64-*-openbsd*],
     [has_native_backend=yes; arch=amd64; system=openbsd],
   [x86_64-*-haiku*],
-    [arch=amd64; system=beos],
+    [has_native_backend=yes; arch=amd64; system=beos],
   [arm64-*-darwin*],
     [has_native_backend=yes; arch=arm64; system=macosx],
   [aarch64-*-darwin*],
@@ -2609,11 +2616,17 @@ AC_CHECK_FUNC([nice], [AC_DEFINE([HAS_NICE], [1])])
 
 ## dup3
 
-AC_CHECK_FUNC([dup3], [AC_DEFINE([HAS_DUP3], [1])])
+OCAML_CHECK_DECL_MACOS([dup3],
+  [AC_CHECK_FUNC([dup3], [AC_DEFINE([HAS_DUP3], [1])])], [],
+  [#define _GNU_SOURCE
+  AC_INCLUDES_DEFAULT])
 
 ## pipe2
 
-AC_CHECK_FUNC([pipe2], [AC_DEFINE([HAS_PIPE2], [1])])
+OCAML_CHECK_DECL_MACOS([pipe2],
+  [AC_CHECK_FUNC([pipe2], [AC_DEFINE([HAS_PIPE2], [1])])], [],
+  [#define _GNU_SOURCE
+  AC_INCLUDES_DEFAULT])
 
 ## accept4
 
@@ -2933,7 +2946,8 @@ AS_IF([$build_ocamltest],
   AC_CONFIG_LINKS([
     ocamltest/ocamltest_unix.ml:${ocamltest_unix_mod}
   ])
-  AC_CHECK_PROGS([DIFF], [patdiff diff],
+  AC_CHECK_PROGS([DIFF], [patdiff diff], [false])
+  AS_IF([test x"$DIFF" = "xfalse"],
     [AC_MSG_ERROR([ocamltest requires a diff tool])])
   AS_CASE([$DIFF], [diff], [flags_to_test='--strip-trailing-cr -u'])
   AC_CACHE_CHECK([for extra $DIFF flags],

@@ -28,7 +28,7 @@
 #include <unistd.h>
 #endif
 #ifdef __CYGWIN__
-#include </usr/include/io.h>
+#include <io.h>
 #endif
 #include "caml/alloc.h"
 #include "caml/camlatomic.h"

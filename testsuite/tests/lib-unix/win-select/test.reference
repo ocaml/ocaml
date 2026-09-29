@@ -1,1 +1,4 @@
 SUCCESS: Pipe handle is still tracked.
+SUCCESS: Socket uses the right per-list result.
+SUCCESS: Socket is not confused with another descriptor.
+SUCCESS: Descriptor after a duplicate is mapped correctly.

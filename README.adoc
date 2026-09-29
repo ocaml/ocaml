@@ -63,11 +63,11 @@ compiler currently runs on the following platforms:
 |====
 |                |  Tier 1 (actively maintained)   | Tier 2 (maintained when possible)
 
-| x86 64 bits    | Linux, macOS, Windows, FreeBSD  |  NetBSD, OpenBSD, DragonFly, OmniOS (Solaris)
-| ARM 64 bits    | Linux, macOS                    |  FreeBSD, OpenBSD, NetBSD
-| Power 64 bits  | Linux (little-endian, ABIv2)    |  Linux (big-endian, ABIv2)
-| RISC-V 64 bits | Linux                           |
-| IBM Z (s390x)  | Linux                           |
+| x86 64 bits    | Linux, Windows, FreeBSD      |  macOS, NetBSD, OpenBSD, DragonFly, OmniOS (Solaris)
+| ARM 64 bits    | Linux, macOS                 |  FreeBSD, OpenBSD, NetBSD
+| Power 64 bits  | Linux (little-endian, ABIv2) |  Linux (big-endian, ABIv2)
+| RISC-V 64 bits | Linux                        |
+| IBM Z (s390x)  | Linux                        |
 |====
 
 Other operating systems for the processors above have not been tested, but
@@ -142,7 +142,10 @@ https://github.com/ocaml/ocaml/issues
 
 To be effective, bug reports should include a complete program (preferably
 small) that exhibits the unexpected behavior, and the configuration you are
-using (machine type, etc).
+using (machine type, etc), it is also preferable to avoid adding
+LLM-generated contents or explanation to your bug report, see
+link:AI.md#guidelines-relevant-to-ai-assisted-bug-reports[AI.md] for a more
+in-depth explanation.
 
 == Contributing
 

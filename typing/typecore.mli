@@ -255,6 +255,7 @@ type error =
   | Optional_poly_param of string
   | Cannot_unify_tfunctor_to_tarrow of Errortrace.unification_error
   | Cannot_omit_tfunctor_argument of Ident.Unscoped.t * type_expr
+  | Unexpected_hole
 
 module Error : sig
   type exn += private In_context of Location.t * Env.t * error

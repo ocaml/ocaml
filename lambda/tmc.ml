@@ -877,6 +877,7 @@ let rec choice ctx t =
     (* operations returning boxed values could be considered
        constructions someday *)
     | Pbintofint _ | Pintofbint _
+    | Pbintoffloat _ | Pfloatofbint _
     | Pcvtbint _
     | Pnegbint _
     | Paddbint _ | Psubbint _ | Pmulbint _ | Pdivbint _ | Pmodbint _

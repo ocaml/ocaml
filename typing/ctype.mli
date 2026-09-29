@@ -160,7 +160,7 @@ val lower_contravariant: Env.t -> type_expr -> unit
 val lower_variables_only: Env.t -> int -> type_expr -> unit
         (* Lower all variables to the given level *)
 val enforce_current_level: Env.t -> type_expr -> unit
-        (* Lower whole type to !current_level *)
+        (* Lower whole type to !current_level; failure is fatal *)
 val generalize_class_signature_spine: class_signature -> unit
        (* Special function to generalize methods during inference *)
 val limited_generalize: type_expr -> inside:type_expr -> unit
@@ -387,8 +387,8 @@ val filter_method: Env.t -> string -> type_expr -> type_expr
         (* A special case of unification (with {m : 'a; 'b}).  Raises
            [Filter_method_failed] instead of [Unify]. *)
 
-(** [arrow_labels env ty] expands [ty] as an array type in [env] and
-    returns its argument labels.
+(** [arrow_labels env ty] expands [ty] as an arrow type in [env] and
+    returns its argument labels. The input type is kept unchanged.
 
     [is_ret_tvar] is [true] if the final return type is a type variable,
     indicating that the list of labels isn't necessarily exhaustive. *)
@@ -411,6 +411,8 @@ type arrow_ret =
 
 (** [arrow_spine env ty] expands [ty] as a arrow type in [env] and returns
     its arrow spine.
+    It may change the type through expansions, so if scopes matter you
+    should backtrack after using it.
 
     If [ty] is [l1:ty1 -> ... -> ln:tyn -> rty], it returns
     [([(l1, ty1); ...; (ln, tyn)], Ret_type rty)].
@@ -473,7 +475,8 @@ val match_class_types:
 val equal: Env.t -> bool -> type_expr list -> type_expr list -> unit
         (* [equal env [x1...xn] tau [y1...yn] sigma]
            checks whether the parameterized types
-           [/\x1.../\xn.tau] and [/\y1.../\yn.sigma] are equivalent. *)
+           [/\x1.../\xn.tau] and [/\y1.../\yn.sigma] are equivalent.
+           The caller must ensure that both lists have the same length. *)
 val eq_package_path : Env.t -> Path.t -> Path.t -> bool
 val is_equal : Env.t -> bool -> type_expr list -> type_expr list -> bool
 val equal_private :
