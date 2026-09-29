@@ -91,6 +91,8 @@ type specific_operation =
   | Ibswap of int (* endianness conversion *)
   | Imove32       (* 32-bit integer move *)
   | Isignext of int (* sign extension *)
+  | Iclz          (* count leading zeros *)
+  | Ictz          (* count trailing zeros *)
 
 and arith_operation =
     Ishiftadd
@@ -199,6 +201,12 @@ let print_specific_operation printreg op ppf arg =
         printreg arg.(2)
   | Isqrtf ->
       fprintf ppf "sqrtf %a"
+        printreg arg.(0)
+  | Iclz ->
+      fprintf ppf "clz %a"
+        printreg arg.(0)
+  | Ictz ->
+      fprintf ppf "ctz %a"
         printreg arg.(0)
   | Iroundf r ->
       let name = match r with

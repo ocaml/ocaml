@@ -21,6 +21,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include "caml/alloc.h"
 #include "caml/callback.h"
 #include "caml/codefrag.h"
@@ -42,10 +43,12 @@
 struct intern_item {
   volatile value * dest;
   intnat arg;
-  enum {
+  enum intern_operation {
     OReadItems, /* read arg items and store them in dest[0], dest[1], ... */
+    OReadItemsOrCodePointers, /* likewise, but code pointers are allowed */
     OFreshOID,  /* generate a fresh OID and store it in *dest */
-    OShift      /* offset *dest by arg */
+    OShift,     /* offset *dest by arg */
+    OCheckClosure /* check that dest is a well-formed closure */
   } op;
 };
 
@@ -265,6 +268,50 @@ Caml_inline void readblock(struct caml_intern_state* s,
   s->intern_src += len;
 }
 
+/* Well-formedness checks on a closure */
+
+static bool well_formed_closure(value v)
+{
+  asize_t sz, envofs, i;
+  value cinfo;
+#define CHECK(b) if (! (b)) return false
+  sz = Wosize_val(v);
+  CHECK(sz >= 2);
+  // Check the first closure
+  cinfo = Closinfo_val(v);
+  CHECK(Is_long(cinfo));
+  envofs = Start_env_closinfo(cinfo);
+  CHECK(envofs >= 2 && envofs <= sz);
+  // Check the infix closures that can follow
+  i = 0;
+  while (1) {
+    // Skip to the next closure
+    int arity = Arity_closinfo(cinfo);
+    if (arity == 0 || arity == 1)
+      i += 3; // bytecode closure or native closure with arity 1
+    else
+      i += 4; // native closure with arity != 1: one extra entry points
+    if (i >= envofs) break;
+    if (i + 1 >= sz) return false;
+    // Check infix header and closure info
+    header_t h = (header_t) Field(v, i - 1);
+    CHECK(Tag_hd(h) == Infix_tag && Wosize_hd(h) == i);
+    cinfo = Field(v, i + 1);
+    CHECK(Is_long(cinfo));
+    CHECK(Start_env_closinfo(cinfo) + i == envofs);
+  }
+  i -= 1;
+  CHECK(i == envofs);
+  // Check that the environment part of the closure contains no code pointers
+  for (; i < sz; i++) {
+    value vi = Field(v, i);
+    if (Is_block(vi))
+      CHECK(caml_find_code_fragment_by_pc((char *) vi) == NULL);
+  }
+  return true;
+#undef CHECK
+}
+
 static void intern_init(struct caml_intern_state* s, const void * src,
                         uintnat len, void * input)
 {
@@ -298,6 +345,7 @@ static void intern_cleanup(struct caml_intern_state* s)
     caml_stat_free(s->intern_obj_table);
     s->intern_obj_table = NULL;
     s->intern_num_objects = 0;
+    s->obj_counter = 0;
   }
   s->intern_dest = NULL;
   s->intern_dest_end = NULL;
@@ -427,20 +475,20 @@ static struct intern_item * intern_resize_stack(struct caml_intern_state* s,
 }
 
 /* Convenience macros for requesting operation on the stack */
-#define PushItem(s)                                                     \
-  do {                                                                  \
-    sp++;                                                               \
-    if (sp >= s->intern_stack_limit) sp = intern_resize_stack(s, sp);   \
+
+#define PushOperation(s,sp,_op,_dest,_arg)                                  \
+  do {                                                                      \
+    sp++;                                                                   \
+    if (sp >= s->intern_stack_limit) sp = intern_resize_stack(s, sp);       \
+    sp->op = _op;                                                           \
+    sp->dest = _dest;                                                       \
+    sp->arg = _arg;                                                         \
   } while(0)
 
-#define ReadItems(s,_dest,_n)                                           \
-  do {                                                                  \
-    if (_n > 0) {                                                       \
-      PushItem(s);                                                      \
-      sp->op = OReadItems;                                              \
-      sp->dest = _dest;                                                 \
-      sp->arg = _n;                                                     \
-    }                                                                   \
+#define ReadItems(s,sp,_dest,_n)                                            \
+  do {                                                                      \
+    CAMLassert((_n) > 0);                                                   \
+    PushOperation(s, sp, OReadItems, _dest, _n);                            \
   } while(0)
 
 static void intern_alloc_storage(struct caml_intern_state* s, mlsize_t whsize,
@@ -449,6 +497,7 @@ static void intern_alloc_storage(struct caml_intern_state* s, mlsize_t whsize,
   mlsize_t wosize;
   value v;
 
+  s->obj_counter = 0;
   if (whsize == 0) {
     CAMLassert (s->intern_obj_table == NULL);
     return;
@@ -465,7 +514,6 @@ static void intern_alloc_storage(struct caml_intern_state* s, mlsize_t whsize,
     CAMLassert (s->intern_dest == NULL);
   }
   s->intern_num_objects = num_objects;
-  s->obj_counter = 0;
   if (num_objects > 0) {
     s->intern_obj_table =
       (value *) caml_stat_calloc_noexc(num_objects, sizeof(value));
@@ -476,8 +524,6 @@ static void intern_alloc_storage(struct caml_intern_state* s, mlsize_t whsize,
   } else {
     CAMLassert(s->intern_obj_table == NULL);
   }
-
-  return;
 }
 
 static value intern_alloc_obj(struct caml_intern_state* s, caml_domain_state* d,
@@ -530,19 +576,21 @@ static void intern_rec(struct caml_intern_state* s,
   struct custom_operations * ops;
   char * codeptr;
   struct intern_item * sp;
+  enum intern_operation iop;
   caml_domain_state * d = Caml_state;
 
   sp = s->intern_stack;
 
   /* Initially let's try to read the first object from the stream */
-  ReadItems(s, dest, 1);
+  ReadItems(s, sp, dest, 1);
 
   /* The un-marshaler loop, the recursion is unrolled */
   while(sp != s->intern_stack) {
 
   /* Interpret next item on the stack */
+  iop = sp->op;
   dest = sp->dest;
-  switch (sp->op) {
+  switch (iop) {
   case OFreshOID:
     /* Refresh the object ID */
     /* but do not do it for predefined exception slots */
@@ -567,7 +615,16 @@ static void intern_rec(struct caml_intern_state* s,
     /* Pop item and iterate */
     sp--;
     break;
+  case OCheckClosure:
+    /* Check that the closure is well-formed */
+    if (! well_formed_closure((value) dest)) {
+      intern_cleanup_failwith2(s, fun_name, "ill-formed function closure");
+    }
+    /* Pop item and iterate */
+    sp--;
+    break;
   case OReadItems:
+  case OReadItemsOrCodePointers:
     /* Pop item */
     sp->dest++;
     if (--(sp->arg) == 0) sp--;
@@ -579,27 +636,40 @@ static void intern_rec(struct caml_intern_state* s,
       tag = code & 0xF;
       size = (code >> 4) & 0x7;
     read_block:
-      if (size == 0) {
+      if (CAMLunlikely(size == 0)) {
+        if (CAMLunlikely(tag >= Forcing_tag))
+          intern_cleanup_failwith2(s, fun_name, "bad atom tag");
         v = Atom(tag);
       } else {
         v = intern_alloc_obj (s, d, size, tag);
         intern_record_obj(s, v);
-        /* For objects, we need to freshen the oid */
-        if (tag == Object_tag) {
+        switch(tag) {
+        default:   // below Forcing_tag + Forcing_tag, Lazy_tag, Forward_tag
+          /* Read the contents of the block */
+          ReadItems(s, sp, &Field(v, 0), size);
+          break;
+        case Closure_tag:
+          /* For closures, we need to validate the closure after reading it */
+          PushOperation(s, sp, OCheckClosure, (value*) v, 0);
+          /* Code pointers are allowed in a closure block */
+          PushOperation(s, sp, OReadItemsOrCodePointers, &Field(v, 0), size);
+          break;
+        case Object_tag:
+          /* For objects, we need to freshen the oid */
           if (CAMLunlikely(size < 2))
             intern_cleanup_failwith2(s, fun_name, "bad object block");
           /* Request to read rest of the elements of the block */
-          ReadItems(s, &Field(v, 2), size - 2);
+          if (size > 2) ReadItems(s, sp, &Field(v, 2), size - 2);
           /* Request freshing OID */
-          PushItem(s);
-          sp->op = OFreshOID;
-          sp->dest = (value*) v;
-          sp->arg = 1;
+          PushOperation(s, sp, OFreshOID, (value*) v, 0);
           /* Finally read first two block elements: method table and old OID */
-          ReadItems(s, &Field(v, 0), 2);
-        } else
-          /* If it's not an object then read the contents of the block */
-          ReadItems(s, &Field(v, 0), size);
+          ReadItems(s, sp, &Field(v, 0), 2);
+          break;
+        case Infix_tag: case Cont_tag: case Abstract_tag: case String_tag:
+        case Double_tag: case Double_array_tag: case Custom_tag:
+          intern_cleanup_failwith2(s, fun_name, "bad block tag");
+          break;
+        }
       }
     } else {
       /* Small integer */
@@ -716,6 +786,8 @@ static void intern_rec(struct caml_intern_state* s,
         goto read_double_array;
 #endif
       case CODE_CODEPOINTER:
+        if (iop != OReadItemsOrCodePointers)
+          intern_cleanup_failwith2(s, fun_name, "code pointer outside closure");
         ofs = read32u(s);
         readblock(s, digest, 16);
         codeptr = intern_resolve_code_pointer(digest, ofs);
@@ -736,11 +808,8 @@ static void intern_rec(struct caml_intern_state* s,
       case CODE_INFIXPOINTER:
         ofs = read32u(s);
         /* Read a value to *dest, then offset *dest by ofs */
-        PushItem(s);
-        sp->dest = dest;
-        sp->op = OShift;
-        sp->arg = ofs;
-        ReadItems(s, dest, 1);
+        PushOperation(s, sp, OShift, dest, ofs);
+        ReadItems(s, sp, dest, 1);
         continue;  /* with next iteration of main loop, skipping *dest = v */
       case OLD_CODE_CUSTOM:
         intern_cleanup_failwith2(s, fun_name, "custom blocks serialized with "
@@ -783,6 +852,9 @@ static void intern_rec(struct caml_intern_state* s,
           s->intern_src += 8;
         }
 #endif
+        if (expected_size > Bsize_wsize(Max_wosize - 1)) {
+          intern_cleanup_failwith2(s, fun_name, "custom block size too large");
+        }
         temp_size = 1 + (expected_size + sizeof(value) - 1) / sizeof(value);
         v = intern_alloc_obj(s, d, temp_size, Abstract_tag);
         Custom_ops_val(v) = ops;

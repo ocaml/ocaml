@@ -2395,6 +2395,7 @@ void caml_domain_terminate(bool last)
   caml_free_minor_tables(domain_state->minor_tables);
   domain_state->minor_tables = NULL;
 
+  caml_orphan_alloc_stats(domain_state);
   /* At this point, the stats of the domain must be empty.
      - heap stats were orphaned by [caml_orphan_shared_heap]
      - alloc stats were orphaned by [caml_orphan_alloc_stats]

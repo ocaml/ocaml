@@ -49,10 +49,7 @@ let get e o =
   raise_if_invalid_offset e o "Weak.get";
   get e o
 
-external get_copy : 'a t -> int -> 'a option = "caml_weak_get_copy"
-let get_copy e o =
-  raise_if_invalid_offset e o "Weak.get_copy";
-  get_copy e o
+let get_copy = get
 
 external check : 'a t -> int -> bool = "caml_weak_check"
 let check e o =

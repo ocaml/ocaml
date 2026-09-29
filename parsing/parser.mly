@@ -928,6 +928,7 @@ The precedences must be listed from low to high.
 %left     BAR                           /* pattern (p|p|p) */
 %nonassoc below_COMMA
 %left     COMMA                         /* expr/labeled_tuple (e,e,e) */
+%nonassoc below_MINUSGREATER
 %right    MINUSGREATER                  /* function_type (t -> t -> t) */
 %right    OR BARBAR                     /* expr (e || e || e) */
 %right    AMPERSAND AMPERAMPER          /* expr (e && e && e) */
@@ -954,6 +955,7 @@ The precedences must be listed from low to high.
           NEW PREFIXOP STRING TRUE UIDENT
           LBRACKETPERCENT QUOTED_STRING_EXPR
           METAOCAML_BRACKET_OPEN METAOCAML_ESCAPE
+          UNDERSCORE
 
 /* Entry points */
 
@@ -1468,6 +1470,9 @@ module_expr:
     | (* An extension. *)
       ex = extension
         { Pmod_extension ex }
+    | (* A hole. *)
+      UNDERSCORE
+        { Pmod_hole }
     )
     { $1 }
 ;
@@ -2484,10 +2489,6 @@ fun_expr:
     { mk_indexop_expr user_indexing_operators ~loc:$sloc $1 }
   | fun_expr attribute
       { Exp.attr $1 $2 }
-/* BEGIN AVOID */
-  | UNDERSCORE
-     { not_expecting $loc($1) "wildcard \"_\"" }
-/* END AVOID */
 ;
 %inline expr:
   | or_function(fun_expr) { $1 }
@@ -2693,6 +2694,8 @@ simple_expr:
   | mod_longident DOT
     LPAREN MODULE ext_attributes module_expr COLON error
       { unclosed "(" $loc($3) ")" $loc($8) }
+  | UNDERSCORE
+      { Pexp_hole }
 ;
 labeled_simple_expr:
     simple_expr %prec below_HASH
@@ -2702,12 +2705,16 @@ labeled_simple_expr:
   | TILDE label = LIDENT
       { let loc = $loc(label) in
         (Labelled label, mkexpvar ~loc label) }
+  | TILDE UNDERSCORE
+      { (Labelled "_", mkexp ~loc:$loc($2) Pexp_hole) }
   | TILDE LPAREN label = LIDENT ty = type_constraint RPAREN
       { (Labelled label, mkexp_constraint ~loc:($startpos($2), $endpos)
                            (mkexpvar ~loc:$loc(label) label) ty) }
   | QUESTION label = LIDENT
       { let loc = $loc(label) in
         (Optional label, mkexpvar ~loc label) }
+  | QUESTION UNDERSCORE
+      { (Optional "_", mkexp ~loc:$loc($2) Pexp_hole) }
   | OPTLABEL simple_expr %prec below_HASH
       { (Optional $1, $2) }
 ;
@@ -3649,8 +3656,10 @@ with_constraint:
   | MODULE mkrhs(mod_longident) COLONEQUAL mkrhs(mod_ext_longident)
       { Pwith_modsubst ($2, $4) }
   | MODULE TYPE l=mkrhs(mty_longident) EQUAL rhs=module_type
+    %prec below_MINUSGREATER
       { Pwith_modtype (l, rhs) }
   | MODULE TYPE l=mkrhs(mty_longident) COLONEQUAL rhs=module_type
+    %prec below_MINUSGREATER
       { Pwith_modtypesubst (l, rhs) }
 ;
 with_type_binder:

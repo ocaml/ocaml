@@ -156,7 +156,8 @@ let operation_is_pure = function
   | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Iatomic_fetch_add | Ialloc _
   | Ipoll _ | Idls_get
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) | Iopaque -> false
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) | Iopaque
+  | Iload { is_atomic = true; _ } -> false
   | Ispecific sop -> Arch.operation_is_pure sop
   | _ -> true
 

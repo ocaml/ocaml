@@ -214,6 +214,7 @@ type error =
   | Optional_poly_param of string
   | Cannot_unify_tfunctor_to_tarrow of Errortrace.unification_error
   | Cannot_omit_tfunctor_argument of Ident.Unscoped.t * type_expr
+  | Unexpected_hole
 
 
 let not_principal fmt =
@@ -3551,7 +3552,7 @@ let rec is_nonexpansive exp =
       is_nonexpansive body
   | Texp_apply(e, (_,Omitted ())::el) ->
       is_nonexpansive e && List.for_all is_nonexpansive_arg (List.map snd el)
-  | Texp_match(e, cases, _, _) ->
+  | Texp_match(e, cases, eff_cases, _) ->
      (* Not sure this is necessary, if [e] is nonexpansive then we shouldn't
          care if there are exception patterns. But the previous version enforced
          that there be none, so... *)
@@ -3566,7 +3567,10 @@ let rec is_nonexpansive exp =
         (fun {c_lhs; c_guard; c_rhs} ->
            is_nonexpansive_opt c_guard && is_nonexpansive c_rhs
            && not (contains_exception_pat c_lhs)
-        ) cases
+        ) cases &&
+      List.for_all
+        (fun {c_guard; c_rhs} ->
+           is_nonexpansive_opt c_guard && is_nonexpansive c_rhs) eff_cases
   | Texp_tuple el ->
       List.for_all (fun (_, e) -> is_nonexpansive e) el
   | Texp_construct( _, _, el) ->
@@ -5609,6 +5613,9 @@ and type_expect_
            exp_attributes = sexp.pexp_attributes;
            exp_env = env }
 
+  | Pexp_hole ->
+      Error.log_and_raise loc env Unexpected_hole
+
   | Pexp_struct_item (si, e) ->
       let tv = newvar () in
       let delayed () =
@@ -6064,21 +6071,13 @@ and type_function
          there might be an opportunity to improve this.
       *)
       let only_labels_function_ret_tvar ty =
-        (* [arrow_spine] does expansion and is potentially expensive;
+        (* [arrow_labels] does expansion and is potentially expensive;
            only call this when necessary. *)
-        let label_tys, ret_ty_or_cycle = arrow_spine env ty in
+        let labels, ~is_ret_tvar = arrow_labels env ty in
         let is_spine_only_labels =
-          List.for_all (fun (label, _arg_ty) -> label <> Nolabel) label_tys
+          List.for_all (fun label -> label <> Nolabel) labels
         in
-        if is_spine_only_labels
-        then (
-          match ret_ty_or_cycle with
-          | Ret_cycle -> Some `Not_tvar
-          | Ret_type ty ->
-              if is_Tvar ty
-              then Some (`Tvar ty)
-              else Some `Not_tvar )
-        else None
+        if is_spine_only_labels then Some is_ret_tvar else None
       in
       (* An optional argument [?x] is only erasable if the function's return
          type eventually becomes an unlabelled arrow type ['a -> 'b].
@@ -6099,14 +6098,14 @@ and type_function
       if is_optional arg_label
       then (
         match only_labels_function_ret_tvar ty_ret with
-        | Some (`Tvar ret_tvar) ->
+        | Some true ->
           (* We don't necessarily know [ty] is a function with only labelled
              args since unification may change this. So we add
              a delayed check. *)
           add_delayed_check (fun () ->
-              if Option.is_some (only_labels_function_ret_tvar ret_tvar)
+              if only_labels_function_ret_tvar ty_ret = Some false
               then raise_unerasable_optional_argument ())
-        | Some `Not_tvar -> raise_unerasable_optional_argument ()
+        | Some false -> raise_unerasable_optional_argument ()
         | None -> ());
       let fp_kind, fp_param =
         match default_arg with
@@ -8755,6 +8754,9 @@ let report_error ~loc env =
             The module argument %a cannot be omitted in this application.@]"
             print_expanded func_ty
             Style.inline_code (Ident.Unscoped.name id_us)
+  | Unexpected_hole ->
+      Location.errorf ~loc
+        "Uninterpreted expression wildcard %a." Style.inline_code "_"
 
 let report_error ~loc env err =
   Printtyp.wrap_printing_env ~error:true env

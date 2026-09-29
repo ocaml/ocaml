@@ -113,7 +113,7 @@ is as follows:
   \item The cursor is polled via \texttt{Runtime_events.read_poll} using the callbacks
   created in the previous step. For each matching event in the ring buffers, the
   provided callback functions are called. In addition to the emitted events,
-  callbacks are given the emitter domain's ID and the emission timestamp.
+  callbacks are given the emitter domain's index and the emission timestamp.
 \end{enumerate}
 
 \section{s:runtime-tracing-usage}{Usage}
@@ -328,15 +328,15 @@ Percentile 	 Latency (ms)
 
 \subsection{s:runtime-tracing-custom-events-overview}{Overview}
 
-The runtime events system supports defining custom events. Identified by a
-globally unique name, they are emitted with payloads of built-in (\texttt{unit},
-\texttt{int}, \texttt{span}) and user-defined types. To understand the
-manipulation of custom events, it is useful to know how they are transported and
-stored: their representation consists of a name string (in fact, an index into
-an array of all custom names) and an arbitrary byte sequence. Custom event
-types can be \emph{registered} by providing encoding and decoding functions to
-and from a byte sequence, via the function
-\texttt{Runtime_events.Type.register}.
+The runtime events system supports defining custom events, also known as
+\emph{user events}. Identified by a globally unique name, they are emitted
+with payloads of built-in (\texttt{unit}, \texttt{int}, \texttt{span}) and
+user-defined types. To understand the manipulation of custom events, it is
+useful to know how they are transported and stored: their representation
+consists of a name string (in fact, an index into an array of all custom
+names) and an arbitrary byte sequence. Custom event types can be
+\emph{registered} by providing encoding and decoding functions to and from a
+byte sequence, via the function \texttt{Runtime_events.Type.register}.
 
 Defining a new custom event (whether its payload is of a built-in type or a
 custom type) is done via another registration function,
@@ -439,14 +439,14 @@ let count_value =
     Runtime_events.User.register "count.value" CustomInt
         Runtime_events.Type.int
 
-let span_event_handler domain_id ts event value =
+let span_event_handler domain_index ts event value =
     (* we're only interested in our CustomSpan event *)
     match Runtime_events.User.tag event, value with
     | CustomSpan, Runtime_events.Type.Begin -> Printf.printf "> count begin\n"
     | CustomSpan, End -> Printf.printf "< count end\n"
     | _ -> ()
 
-let int_event_handler domain_id ts event value =
+let int_event_handler domain_index ts event value =
     (* we're only interested in our CustomInt event *)
     match Runtime_events.User.tag event with
     | CustomInt -> Printf.printf "| count %d\n" value
