@@ -752,6 +752,29 @@ let automated_test() =
   test_partial_match r n "zorglub"
     [||];
 
+  start_test "Partial match for /\\([0-9]\\)[a-z]*!/";
+  let r = Str.regexp "\\([0-9]\\)[a-z]*!" in
+  let n = 1 in
+  test_partial_match r n ""
+    [|""; "~"|];
+  test_partial_match r n "0"
+    [|"0"; "0"|];
+  test_partial_match r n "0abc"
+    [|"0abc"; "0"|];
+  test_partial_match r n "0123"
+    [||];
+
+  start_test "Partial match for /\\(\\(a\\)b\\)+/";
+  let r = Str.regexp "\\(\\(a\\)b\\)+" in
+  let valid_group n s =
+    try ignore (Str.matched_group n s); true
+    with Not_found -> true | _ -> false in
+  (* Non-regression for OSEC-2026-21.  The exact values of the
+     captured groups are not well defined, but must be valid. *)
+  test true
+    (let s = "ab" in
+     Str.string_partial_match r s 0 && valid_group 1 s && valid_group 2 s);
+
   (** Replacement *)
   start_test "Global replacement";
   test (Str.global_replace (Str.regexp "[aeiou]") ".."

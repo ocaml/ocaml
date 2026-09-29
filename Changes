@@ -15,6 +15,10 @@ OCaml 5.5.2
   (Xavier Leroy and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär
   and Edwin Török)
 
+- #15113, OSEC-2026-21: `Str.string_partial_match`: make sure captured groups
+  are valid.
+  (Xavier Leroy, review by Nicolás Ojeda Bär and Edwin Török)
+
 OCaml 5.5.1 (4 September 2026)
 ------------------------------
 
