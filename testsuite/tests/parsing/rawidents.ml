@@ -264,7 +264,7 @@ let f (o : < \#if: int  ;\#let: int   > ) = o#\#if ^ "s";;
 Line 1, characters 35-41:
 1 | let f (o: <\#if:int; \#let:int>) = o#\#if ^ "s"
                                        ^^^^^^
-Error: The method call "o#if" has type "int"
+Error: The method call "o#\#if" has type "int"
        but an expression was expected of type "string"
 |}]
 
@@ -312,15 +312,16 @@ let f: (\#if:int * \#let:int) ->  (\#let:int * \#if:int)  = fun (~\#if,~\#let:\#
   (~\#let:\#and, ~\#if)
 [%%expect {|
 
-let f : (if:int * let:int) -> (let:int * if:int) =
-  fun ((~if, ~let:\#and) as x) -> let (~if, ..) = x in (~let:\#and, ~if);;
+let f : (\#if:int * \#let:int) -> (\#let:int * \#if:int) =
+  fun ((~\#if, ~\#let:\#and) as x) ->
+    let (~\#if, ..) = x in (~\#let:\#and, ~\#if);;
 val f : (\#if:int * \#let:int) -> \#let:int * \#if:int = <fun>
 |}]
 
 let f (let*) \#if = let* \#if in ()
 [%%expect {|
 
-let f ( let* ) \#if = let* if
+let f ( let* ) \#if = let* \#if
                        in ();;
 val f : ('a -> ('b -> unit) -> 'c) -> 'a -> 'c = <fun>
 |}]
