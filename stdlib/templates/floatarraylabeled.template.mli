@@ -129,6 +129,8 @@ val dot : t -> t -> float
 (** [dot a b] is the sum of the products of the corresponding elements of
     [a] and [b]. The products are added in an unspecified order, so the
     result may differ from a left-to-right sum by rounding.
+    The multiplications and additions may be fused into a single rounding,
+    as with {!Float.fma}.
     @raise Invalid_argument if [a] and [b] have different lengths.
     @since 5.6 *)
 
