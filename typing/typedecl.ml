@@ -249,8 +249,8 @@ let transl_labels env univars closed lbls =
   assert (lbls <> []);
   let all_labels = ref String.Map.empty in
   List.iter
-  (fun {pld_name = {txt=name; loc}} ->
-    all_labels := String.Map.add_to_list name loc !all_labels
+    (fun {pld_name = {txt=name; loc}} ->
+      all_labels := String.Map.add_to_list name loc !all_labels
     )
     lbls;
   String.Map.iter
@@ -2380,8 +2380,8 @@ let report_error ~loc = function
   | Repeated_parameter ->
       Location.errorf ~loc "A type parameter occurs several times"
   | Duplicate_constructor (s, locs) ->
-    begin match locs with
-      | [_; _] -> Location.errorf ~loc
+    begin match List.length locs with
+      | 2 -> Location.errorf ~loc
         "Two constructors are named %a" Style.inline_code s
       | _ -> Location.errorf ~loc
         "Multiple constructors are named %a" Style.inline_code s
@@ -2392,8 +2392,8 @@ let report_error ~loc = function
        -- maximum is %i non-constant constructors@]"
       (Config.max_tag + 1)
   | Duplicate_label (s, locs) ->
-    begin match locs with
-      | [_; _] -> Location.errorf ~loc
+    begin match List.length locs with
+      | 2 -> Location.errorf ~loc
         "Two labels are named %a" Style.inline_code s
       | _ -> Location.errorf ~loc
         "Multiple labels are named %a" Style.inline_code s
