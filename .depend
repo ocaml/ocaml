@@ -4635,6 +4635,7 @@ lambda/matching.cmo : \
     typing/env.cmi \
     lambda/debuginfo.cmi \
     typing/data_types.cmi \
+    typing/ctype.cmi \
     utils/clflags.cmi \
     parsing/asttypes.cmi \
     lambda/matching.cmi
@@ -4659,6 +4660,7 @@ lambda/matching.cmx : \
     typing/env.cmx \
     lambda/debuginfo.cmx \
     typing/data_types.cmx \
+    typing/ctype.cmx \
     utils/clflags.cmx \
     parsing/asttypes.cmx \
     lambda/matching.cmi
