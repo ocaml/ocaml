@@ -760,7 +760,7 @@ struct callbacks_exception_holder {
      only stop the read loop and cannot return E_CORRUPT_STREAM themselves.
      The exception field in this struct is only for carrying exceptions
      raised by callbacks we call. */
-  int corrupt_stream;
+  bool corrupt_stream;
 };
 
 static int ml_runtime_begin(int domain_id, void *callback_data,
