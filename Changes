@@ -489,6 +489,10 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #14958, #15120: Improve error messages for Duplicate_constructor and
+  Duplicate_label.
+  (Michał Kosior, review by Florian Angeletti)
+
 - #14887: More concise messages for the non-exhaustiveness warning.
   (Luc Maranget, review by Florian Angeletti)
 
