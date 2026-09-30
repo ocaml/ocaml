@@ -254,7 +254,7 @@ let f o = o#\#if; o#\#let
 [%%expect {|
 
 let f o = o#\#if; o#\#let;;
-val f : < if : 'a; \#let : 'b; .. > -> 'b = <fun>
+val f : < \#if : 'a; \#let : 'b; .. > -> 'b = <fun>
 |}]
 
 let f (o: <\#if:int; \#let:int>) = o#\#if ^ "s"
@@ -303,7 +303,7 @@ module type T  = sig type \#if end;;
 module type T = sig type \#if end
 
 type u = (module T with type \#if = int);;
-type u = (module T with type if = int)
+type u = (module T with type \#if = int)
 |}]
 
 
@@ -314,7 +314,7 @@ let f: (\#if:int * \#let:int) ->  (\#let:int * \#if:int)  = fun (~\#if,~\#let:\#
 
 let f : (if:int * let:int) -> (let:int * if:int) =
   fun ((~if, ~let:\#and) as x) -> let (~if, ..) = x in (~let:\#and, ~if);;
-val f : (if:int * let:int) -> let:int * if:int = <fun>
+val f : (\#if:int * \#let:int) -> \#let:int * \#if:int = <fun>
 |}]
 
 let f (let*) \#if = let* \#if in ()

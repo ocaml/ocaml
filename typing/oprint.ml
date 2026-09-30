@@ -125,7 +125,7 @@ let escape_string s =
 let print_label_type ppf =
   function
   | Some s ->
-    pp_print_string ppf s;
+    print_lident ppf s;
     pp_print_string ppf ":";
   | None -> ()
 
@@ -133,7 +133,7 @@ let print_label ppf =
   function
   | Some s ->
     pp_print_string ppf "~";
-    pp_print_string ppf s;
+    print_lident ppf s;
     pp_print_string ppf ":";
   | None -> ()
 
@@ -396,7 +396,7 @@ and print_package ppf pack =
   List.iter
     (fun (s, t) ->
       let sep = if !first then (first := false; "with") else "and" in
-      fprintf ppf " %s type %s = %a" sep s print_out_type t
+      fprintf ppf " %s type %a = %a" sep print_lident s print_out_type t
     )
     pack.opack_constraints
 and print_record_decl ppf lbls =
@@ -415,8 +415,8 @@ and print_object_fields row ppf =
       if row <> Orow_closed then fprintf ppf ";@ ";
       print_object_fields row ppf []
   | (s, t) :: l ->
-      fprintf ppf "%s : %a;@ %a"
-        s print_out_type t (print_object_fields row) l
+      fprintf ppf "%a : %a;@ %a"
+        print_lident s print_out_type t (print_object_fields row) l
 and print_row_field ppf (l, opt_amp, tyl) =
   let pr_of ppf =
     if opt_amp then fprintf ppf " of@ &@ "
