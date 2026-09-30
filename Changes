@@ -398,6 +398,9 @@ Working version
   (Nicolás Ojeda Bär, report by Adrián Montesinos González, review by Gabriel
   Scherer)
 
+- #XXXXX: Add support for `O_NOFOLLOW` to the `Unix` library, only implemented
+  on posix systems (Romain Beauxis, review by <a kind soul>)
+
 - #14984: Cache one write buffer for each domain in
   `Runtime_events.User.write`, instead of a list for each thread. A write of
   a custom event does not allocate in the usual single-threaded case.

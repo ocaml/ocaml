@@ -249,6 +249,7 @@ type open_flag =
   | O_SHARE_DELETE
   | O_CLOEXEC
   | O_KEEPEXEC
+  | O_NOFOLLOW
 
 type file_perm = int
 
