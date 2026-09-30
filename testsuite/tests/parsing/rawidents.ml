@@ -250,6 +250,25 @@ class \#mod :
   object ('a) val mutable \#mod : int -> int -> int method \#mod : 'a end
 |}]
 
+let f o = o#\#if; o#\#let
+[%%expect {|
+
+let f o = o#\#if; o#\#let;;
+val f : < if : 'a; \#let : 'b; .. > -> 'b = <fun>
+|}]
+
+let f (o: <\#if:int; \#let:int>) = o#\#if ^ "s"
+[%%expect {|
+
+let f (o : < \#if: int  ;\#let: int   > ) = o#\#if ^ "s";;
+Line 1, characters 35-41:
+1 | let f (o: <\#if:int; \#let:int>) = o#\#if ^ "s"
+                                       ^^^^^^
+Error: The method call "o#if" has type "int"
+       but an expression was expected of type "string"
+|}]
+
+
 module type \#module = sig end
 module type \#sig
 module M = struct module type \#struct = sig end end
@@ -274,4 +293,34 @@ module type S = sig module type \#functor end
 
 module type T  = S with module type \#functor = M.\#struct;;
 module type T = sig module type \#functor = M.\#struct end
+|}]
+
+module type T = sig type \#if end
+type u = (module T with type \#if = int)
+[%%expect {|
+
+module type T  = sig type \#if end;;
+module type T = sig type \#if end
+
+type u = (module T with type \#if = int);;
+type u = (module T with type if = int)
+|}]
+
+
+let f: (\#if:int * \#let:int) ->  (\#let:int * \#if:int)  = fun (~\#if,~\#let:\#and as x) ->
+  let ~\#if, .. =  x in
+  (~\#let:\#and, ~\#if)
+[%%expect {|
+
+let f : (if:int * let:int) -> (let:int * if:int) =
+  fun ((~if, ~let:\#and) as x) -> let (~if, ..) = x in (~let:\#and, ~if);;
+val f : (if:int * let:int) -> let:int * if:int = <fun>
+|}]
+
+let f (let*) \#if = let* \#if in ()
+[%%expect {|
+
+let f ( let* ) \#if = let* if
+                       in ();;
+val f : ('a -> ('b -> unit) -> 'c) -> 'a -> 'c = <fun>
 |}]
