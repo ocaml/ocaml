@@ -148,12 +148,25 @@ module Stdlib = struct
 
     let iteri2 f l1 l2 = iteri2 0 f l1 l2
 
-    let rec rev_iter f l =
+    let rec rev_iter_result f l =
       match l with
-      | [] -> ()
+      | [] -> Ok ()
       | x :: xs ->
-          rev_iter f xs;
-          f x
+          Result.bind (rev_iter_result f xs)
+            (fun () -> f x)
+
+    let rec iter_result f l =
+      match l with
+        [] -> Ok ()
+      | a::l ->
+        Result.bind (f a) (fun () -> iter_result f l)
+
+    let rec iter2_result f l1 l2 =
+      match (l1, l2) with
+        ([], []) -> Ok ()
+      | (a1::l1, a2::l2) ->
+        Result.bind (f a1 a2) (fun () -> iter2_result f l1 l2)
+      | (_, _) -> raise (Invalid_argument "iter2_result")
 
     let some_if_all_elements_are_some l =
       let rec aux acc l =
@@ -280,6 +293,14 @@ module Stdlib = struct
 
     let print ppf t =
       Format.pp_print_string ppf t
+  end
+
+  module Result = struct
+    include Result
+    let ok_or_else res f =
+      match res with
+      | Ok v -> v
+      | Error err -> f err
   end
 
   external compare : 'a -> 'a -> int = "%compare"
