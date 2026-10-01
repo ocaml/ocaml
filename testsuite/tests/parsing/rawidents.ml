@@ -295,15 +295,15 @@ module type T  = S with module type \#functor = M.\#struct;;
 module type T = sig module type \#functor = M.\#struct end
 |}]
 
-module type T = sig type \#if end
-type u = (module T with type \#if = int)
+module type T = sig type \#if module N: sig type \#and end end
+type u = (module T with type \#if = int and type N.\#and = float)
 [%%expect {|
 
-module type T  = sig type \#if end;;
-module type T = sig type \#if end
+module type T  = sig type \#if module N : sig type \#and end end;;
+module type T = sig type \#if module N : sig type \#and end end
 
-type u = (module T with type \#if = int);;
-type u = (module T with type \#if = int)
+type u = (module T with type \#if = int and type N.\#and = float);;
+type u = (module T with type \#if = int and type N.\#and = float)
 |}]
 
 

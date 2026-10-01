@@ -35,6 +35,9 @@ let rec print_ident ppf =
   | Oide_apply (id1, id2) ->
       fprintf ppf "%a(%a)" print_ident id1 print_ident id2
 
+let print_flattened_ident =
+  pp_print_list ~pp_sep:(fun ppf () -> pp_print_string ppf ".") print_lident
+
 let out_ident = ref print_ident
 
 let parenthesized_ident name =
@@ -396,7 +399,8 @@ and print_package ppf pack =
   List.iter
     (fun (s, t) ->
       let sep = if !first then (first := false; "with") else "and" in
-      fprintf ppf " %s type %a = %a" sep print_lident s print_out_type t
+      fprintf ppf " %s type %a = %a" sep
+        print_flattened_ident s print_out_type t
     )
     pack.opack_constraints
 and print_record_decl ppf lbls =
