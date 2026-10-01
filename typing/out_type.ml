@@ -1327,7 +1327,7 @@ and tree_of_package mode {pack_path; pack_constraints} =
   { opack_path = tree_of_path (Some Module_type) pack_path;
     opack_constraints =
       List.map
-        (fun (li, ty) -> (String.concat "." li, tree_of_typexp mode ty))
+        (fun (li, ty) -> (li, tree_of_typexp mode ty))
         pack_constraints }
 
 let typexp mode ppf ty =

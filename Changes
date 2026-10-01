@@ -787,6 +787,9 @@ Working version
   the name is a reserved identifier.
   (Nicolás Ojeda Bär, review by Florian Angeletti)
 
+- #15118: Fix printing of raw identifiers in exotic corner cases.
+  (Florian Angeletti, review by Nicolás Ojeda Bär)
+
 OCaml 5.5.1
 -----------
 
