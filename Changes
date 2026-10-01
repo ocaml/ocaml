@@ -175,6 +175,9 @@ Working version
   of #9259 by Arseniy Alekseyev.
   (Gabriel Scherer, review by Damien Doligez)
 
+- #15117: The instrumented runtime is no longer installed by default.
+  (Davd Allsopp, review by Florian Angeletti, Nick Barnes and Sadiq Jaffer)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
