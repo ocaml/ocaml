@@ -171,6 +171,11 @@ Working version
 - #15092: do not lose domain allocation stats on termination
   (Edwin Török, report by Eduardo Souza, review by Stefan Muenzel)
 
+- #15119, OSEC-2026-25: Harden decoding of runtime events messages from
+  ring buffers.
+  (Sadiq Jaffer, report by Hannes Mehnert, review by Olivier Nicole and
+  Edwin Török)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
