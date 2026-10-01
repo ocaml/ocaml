@@ -111,10 +111,10 @@ The following environment variables are also consulted:
   (If "OCAMLRUNPARAM" is not set, "CAMLRUNPARAM" will be used instead.)
   This variable must be a sequence of parameter specifications separated
   by commas.
-  For convenience, commas at the beginning of the variable are ignored,
+  For convenience, commas at the beginning and end of the variable are ignored,
   and multiple runs of commas are interpreted as a single one.
-  A parameter specification is an option letter followed by an "="
-  sign, a decimal number (or an hexadecimal number prefixed by "0x"),
+  A parameter specification is an option letter, optionally followed by an
+  "=" sign, a decimal number (or an hexadecimal number prefixed by "0x"),
   and an optional multiplier.  The options are documented below;
   the options "l, m, M, n, o, s, v" correspond to fields of the "control"
   record documented in
@@ -140,7 +140,8 @@ The following environment variables are also consulted:
         runtime if there is more than one domain alive at exit.
   \item[d] ("max_domains") Maximum number of domains that can be active
         concurrently. Defaults to 128 on 64-bit platforms and 16 on 32-bit
-        platforms.
+        platforms. Values outside the range 1 to 4096 are rejected at
+        startup.
   \item[e] ("runtime_events_log_wsize") Size of the per-domain runtime events ring
         buffers in log powers of two words. Defaults to 16, giving 64k word or
         512kb buffers on 64-bit systems.
@@ -204,6 +205,11 @@ The following environment variables are also consulted:
     the completion of a major GC cycle
   \item[W] Print runtime warnings to stderr (such as Channel opened on file
     dies without being closed, unflushed data, etc.)
+  \item["X"\var{name}"="\var{value}] Set the named GC tweak \var{name}
+    to \var{value}. Tweaks adjust internal parameters of the garbage
+    collector. Which ones exist is subject to change between releases.
+    "Xhelp" prints the tweaks known to this runtime, with their initial
+    values, to standard error.
   \end{options}
 
   The multiplier is "k", "M", or "G", for multiplication by $2^{10}$,
