@@ -249,3 +249,29 @@ class \#mod =
 class \#mod :
   object ('a) val mutable \#mod : int -> int -> int method \#mod : 'a end
 |}]
+
+module type \#module = sig end
+module type \#sig
+module M = struct module type \#struct = sig end end
+module type S = sig
+  module type \#functor
+  module type \#open := \#module
+end
+module type T = S with module type \#functor = M.\#struct
+[%%expect {|
+
+module type \#module  = sig  end;;
+module type \#module = sig end
+
+module type \#sig;;
+module type \#sig
+
+module M = struct module type \#struct  = sig  end end;;
+module M : sig module type \#struct = sig end end
+
+module type S  = sig module type \#functor module type \#open := \#module end;;
+module type S = sig module type \#functor end
+
+module type T  = S with module type \#functor = M.\#struct;;
+module type T = sig module type \#functor = M.\#struct end
+|}]

@@ -92,9 +92,9 @@ and reaching_type_step =
 
 type error =
     Repeated_parameter
-  | Duplicate_constructor of string
+  | Duplicate_constructor of string * Location.t list
   | Too_many_constructors
-  | Duplicate_label of string
+  | Duplicate_label of string * Location.t list
   | Recursive_abbrev of string * Env.t * reaching_type_path
   | Cycle_in_def of string * Env.t * reaching_type_path
   | Definition_mismatch of type_expr * Env.t * Includecore.type_mismatch option

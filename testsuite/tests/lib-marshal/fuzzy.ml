@@ -35,30 +35,22 @@ let data () = [|
   Obj.repr (-1);
   Obj.repr 20000;
   Obj.repr 0x12345678;
-  Obj.repr bigint;
   Obj.repr "foo";
   Obj.repr longstring;
   Obj.repr 3.141592654;
   Obj.repr A;
   Obj.repr (B 1);
-  Obj.repr (C 2.718);
-  Obj.repr (D "hello");
-  Obj.repr (E 'l');
-  Obj.repr (F(B 1));
   Obj.repr (G(A, G(B 2, G(C 3.14, G(D "", E 'e')))));
-  Obj.repr (H(1, A));
-  Obj.repr (I(B 2, 1e-6));
   (let x = D "sharing" in
   let y = G(x, x) in
   let z = G(y, G(x, y)) in
   Obj.repr z);
-  Obj.repr [|1;2;3;4;5;6;7;8|];
+  Obj.repr [||];
+  Obj.repr [|1;2;3|];
   Obj.repr [|3.14; 2.718|];
   Obj.repr (closures());
   Obj.repr 0l;
-  Obj.repr 123456l;
   Obj.repr 0L;
-  (let i = Int64.of_string "123456789123456" in Obj.repr (i,i));
   Obj.repr (Failure "fail");
   Obj.repr Bigarray.(Array1.init int16_unsigned c_layout 5 (fun x -> 8*x))
 |]
@@ -69,26 +61,29 @@ let generate filename =
   Out_channel.with_open_bin filename
     (fun oc -> Marshal.(to_channel oc (data()) [Closures]))
 
+(* Keep [x] alive *)
+
+let use_ignore x = ignore (Sys.opaque_identity x) [@@inline never]
+
 (* Try to unmarshal possibly malicious data.  Clean failure is success. *)
 
 let test ic =
   In_channel.set_binary_mode ic true;
-  begin try
-    ignore (Marshal.from_channel ic)
-  with Failure _ | Invalid_argument _ | Out_of_memory -> ()
-  end;
-  Gc.full_major()
+  try
+    let v : Obj.t = Marshal.from_channel ic in
+    Gc.full_major(); use_ignore v
+  with Failure _ | Invalid_argument _ | Out_of_memory ->
+    Gc.full_major()
 
 (* Same, but use Marshal.from_string instead *)
 
 let test_string ic =
   In_channel.set_binary_mode ic true;
   let s = In_channel.input_all ic in
-  begin try
-    ignore (Marshal.from_string s 0)
-  with Failure _ | Invalid_argument _ | Out_of_memory -> ()
-  end;
-  Gc.full_major()
+  try
+    let v : Obj.t = Marshal.from_string s 0 in
+    Gc.full_major(); use_ignore v
+  with Failure _ | Invalid_argument _ | Out_of_memory -> Gc.full_major()
 
 (* Internal fuzzing.  Rather naive. *)
 
@@ -116,10 +111,11 @@ let fuzz niter =
     | _ (*3*) -> flip_one_bit b; flip_one_bit b
     end;
     begin try
-      ignore (Marshal.from_bytes b 0)
-    with Failure _ | Invalid_argument _ | Out_of_memory -> ()
-    end;
-    Gc.full_major()
+      let v : Obj.t = Marshal.from_bytes b 0 in
+      Gc.full_major(); use_ignore v
+    with Failure _ | Invalid_argument _ | Out_of_memory ->
+      Gc.full_major()
+    end
   done
 
 let fuzz1 () =
@@ -129,10 +125,11 @@ let fuzz1 () =
     for x = 0 to 255 do
       Bytes.set_uint8 b i x;
       begin try
-        ignore (Marshal.from_bytes b 0)
-      with Failure _ | Invalid_argument _ | Out_of_memory -> ()
-      end;
-      Gc.full_major()
+        let v : Obj.t = Marshal.from_bytes b 0 in
+        Gc.full_major(); use_ignore v
+      with Failure _ | Invalid_argument _ | Out_of_memory ->
+        Gc.full_major()
+      end
     done;
     Bytes.set_uint8 b i (String.get_uint8 d i)
   done

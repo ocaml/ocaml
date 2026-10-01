@@ -585,6 +585,7 @@ let rec transl env e =
          | Parrayrefu _ | Parraysetu _ | Parrayrefs _ | Parraysets _
          | Pcheckbound
          | Pbintofint _ | Pintofbint _ | Pcvtbint (_, _) | Pnegbint _
+         | Pbintoffloat _ | Pfloatofbint _
          | Paddbint _ | Psubbint _ | Pmulbint _ | Pdivbint _ | Pmodbint _
          | Pandbint _ | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _
          | Pasrbint _ | Pbintcomp (_, _) | Pstring_load _ | Pbytes_load _
@@ -876,6 +877,10 @@ and transl_prim_1 env p arg dbg =
       box_int dbg bi (untag_int (transl env arg) dbg)
   | Pintofbint bi ->
       tag_int (transl_unbox_int dbg env bi arg) dbg
+  | Pbintoffloat bi ->
+      box_int dbg bi (Cop(Cintoffloat, [transl_unbox_float dbg env arg], dbg))
+  | Pfloatofbint bi ->
+      box_float dbg (Cop(Cfloatofint, [transl_unbox_int dbg env bi arg], dbg))
   | Pcvtbint(bi1, bi2) ->
       box_int dbg bi2 (transl_unbox_int dbg env bi1 arg)
   | Pnegbint bi ->
@@ -1109,6 +1114,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
   | Pduprecord (_, _) | Pccall _ | Praise _ | Poffsetint _ | Poffsetref _
   | Pmakearray (_, _) | Pduparray (_, _) | Parraylength _ | Parraysetu _
   | Parraysets _ | Pbintofint _ | Pintofbint _ | Pcvtbint (_, _)
+  | Pbintoffloat _ | Pfloatofbint _
   | Pnegbint _ | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _)
   | Pbigarraydim _ | Pbytes_set _ | Pbigstring_set _ | Pbbswap _ | Ppoll
   | Patomic_fetch_add | Pmakelazyblock _
@@ -1193,6 +1199,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
   | Pduparray (_, _) | Parraylength _ | Parrayrefu _ | Parrayrefs _
   | Pcheckbound
   | Pbintofint _ | Pintofbint _ | Pcvtbint (_, _) | Pnegbint _ | Paddbint _
+  | Pbintoffloat _ | Pfloatofbint _
   | Psubbint _ | Pmulbint _ | Pdivbint _ | Pmodbint _ | Pandbint _ | Porbint _
   | Pxorbint _ | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp (_, _)
   | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _) | Pbigarraydim _

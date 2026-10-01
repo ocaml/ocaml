@@ -287,6 +287,17 @@ Working version
   in the Lambda IR.
   (Florian Angeletti, report by Nathanaëlle Courant, review by Gabriel Scherer)
 
+- #15084: add the `%int64_of_float` and `%int64_to_float` primitives, their
+  Nativeint equivalents and `%int32_to_float`, so that `Int64.of_float`,
+  `Int64.to_float` and friends compile to a single instruction rather than
+  calling into C. `Int32.of_float` keeps its C call, so that bytecode and
+  native code agree on out-of-range arguments
+  (Zane Hambly, review by Stefan Muenzel, Xavier Leroy and
+   Nicolás Ojeda Bär)
+
+- #15090: Allow unaligned memory accesses on s390x.
+  (Zane Hambly, review by Xavier Leroy)
+
 ### Standard library:
 
 - #14974 : Add `Sys.filepath_exists` and improve documentation
@@ -381,6 +392,9 @@ Working version
   review by Nicolás Ojeda Bär, Kate Deplaix and Léo Andrès.)
 
 ### Other libraries:
+
+- #13450: Fixes and improvements for Windows socketpair on AF_UNIX emulation.
+  (Antonin Décimo, review by Nicolás Ojeda Bär)
 
 - #14740: Various fixes in libunix. Fix compilation failures if gethostname or
   IPv6 are not available. Add blocking sections to the wrappers of realpath and
@@ -478,6 +492,10 @@ Working version
   (Abhay Chaudhary, report by baugigi, review by Florian Angeletti)
 
 ### Compiler user-interface and warnings:
+
+- #14958, #15120: Improve error messages for Duplicate_constructor and
+  Duplicate_label.
+  (Michał Kosior, review by Florian Angeletti)
 
 - #14887: More concise messages for the non-exhaustiveness warning.
   (Luc Maranget, review by Florian Angeletti)
@@ -595,6 +613,9 @@ Working version
 - #14676: Security fix: prevent shell injection in Github Actions workflows
   (Austin Thierault, review by Antonin Décimo, Edwin Török, David Allsopp and
    Olivier Nicole)
+
+- #15067, #15071: Fix detection of functions available in the future on macOS.
+  (Antonin Décimo, review by Nicolás Ojeda Bär and Damien Doligez)
 
 ### Bug fixes:
 
@@ -741,6 +762,29 @@ Working version
 - #12195: Lower levels in checked module packages so that remaining weak
   variables may not be unified with out-of-scope types.
   (Chris Casinghino and Leo White, review by Jacques Garrigue)
+
+- #15112, OSEC-2026-22: `Unix.map_file`: protect against overflow
+  when computing the data size.
+  (Xavier Leroy and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär
+  and Edwin Török)
+
+- #15113, OSEC-2026-21: `Str.string_partial_match`: make sure captured groups
+  are valid.
+  (Xavier Leroy, review by Nicolás Ojeda Bär and Edwin Török)
+
+- #15114: Fix the compilation of pattern matching on records whose field types
+  mention a locally abstract type: a field could be read as an immediate in
+  all the rows of the match because of a GADT equation that only holds in one
+  of them. In native code, the value was then not registered as a GC root.
+  (Jérôme Vouillon, review by Florian Angeletti)
+
+- #15115, OSEC-2026-23: Fix multiple issues in demarshaling
+  (`Marshal.from_{channel,string,bytes}`)
+  (Xavier Leroy, review by Nicolás Ojeda Bär)
+
+- #15118: Fix printing of module type names in the toplevel and -dsource when
+  the name is a reserved identifier.
+  (Nicolás Ojeda Bär, review by Florian Angeletti)
 
 OCaml 5.5.1
 -----------
