@@ -171,6 +171,10 @@ Working version
 - #15092: do not lose domain allocation stats on termination
   (Edwin Török, report by Eduardo Souza, review by Stefan Muenzel)
 
+- #15033: optimize Weak.blit on 5.x, following the 4.x example
+  of #9259 by Arseniy Alekseyev.
+  (Gabriel Scherer, review by Damien Doligez)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
