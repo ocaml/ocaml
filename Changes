@@ -765,6 +765,10 @@ Working version
   during dead-code elimination.
   (Xavier Clerc, review by Steven Dolan and KC Sivaramakrishnan)
 
+- #15048: Preserve the destination file when ocamllex fails before code
+  generation, including on a fatal missing-case warning.
+  (cuishuang, review by Nicolás Ojeda Bär)
+
 - #15093: Windows: fix a bug in the `Unix.select` emulation which could result
   in an out-of-bounds memory access. This is triggered when the watched set
   contains 63 or more sockets along with at least one non-socket descriptor, or
