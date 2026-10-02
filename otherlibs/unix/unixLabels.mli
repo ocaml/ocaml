@@ -362,6 +362,11 @@ type open_flag = Unix.open_flag =
                                    information. *)
   | O_KEEPEXEC                  (** Clear the close-on-exec flag.
                                     This is currently the default. *)
+  | O_NOFOLLOW                  (** Fail if the last component of the path
+                                    is a symbolic link. Not supported on
+                                    Windows: {!openfile} raises
+                                    [Unix_error (EINVAL, _, _)].
+                                    @since 5.6 *)
 (** The flags to {!openfile}. *)
 
 
