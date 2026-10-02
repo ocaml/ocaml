@@ -450,19 +450,7 @@ If your host is 64 bits, you can try with './configure CC="gcc -m64"' \
 
 AS_CASE([$target],
   [*-pc-windows],
-    [AS_IF([test -z "$CC"], [CC=cl])
-    ccomp_type=msvc
-    S=asm
-    SO=dll
-    outputexe=-Fe
-    outputobj=-Fo
-    syslib='$(1).lib'],
-  [ccomp_type=cc
-  S=s
-  SO=so
-  outputexe='-o '
-  outputobj='-o '
-  syslib='-l$(1)'])
+    [AS_IF([test -z "$CC"], [CC=cl])])
 
 AC_CHECK_PROG([csc],[csc],[csc])
 AS_IF([test -n "$csc"],
@@ -872,11 +860,33 @@ OCAML_ASM_SIZE_TYPE_DIRECTIVES
 ## Find vendor of the C compiler
 OCAML_CC_VENDOR
 
-DEP_CC_PREFIX=''
 AS_CASE([$target],
-  [sparc-sun-solaris*],
-    [DEP_CC="false"],
   [*-pc-windows],
+    [OCAML_CC_CCOMP_TYPE
+    AS_CASE(["$ocaml_cv_cc_ccomp_type"],
+      [msvc], [ccomp_type=msvc],
+      [cc],
+        [ccomp_type=cc
+        AC_MSG_ERROR([unsupported cc-like compiler driver for $target])],
+      [AC_MSG_ERROR([unknown ccomp_type $ocaml_cv_cc_ccomp_type])])
+    SO=dll],
+  [ccomp_type=cc])
+
+AS_IF([test "$ccomp_type" = 'msvc'],
+  [S=asm
+  outputexe=-Fe
+  outputobj=-Fo
+  syslib='$(1).lib'],
+  [S=s
+  outputexe='-o '
+  outputobj='-o '
+  syslib='-l$(1)'])
+
+DEP_CC_PREFIX=''
+AS_CASE([$target,$ccomp_type],
+  [sparc-sun-solaris*,*],
+    [DEP_CC="false"],
+  [*-pc-windows,msvc],
     [AS_CASE([$ocaml_cc_vendor],
       [msvc-*-clang-*],
       [DEP_CC="$CC"
@@ -903,14 +913,14 @@ AS_CASE([$enable_dependency_generation],
       [compute_deps=true])],
     [compute_deps=false])])
 
-AS_CASE([$target],
+AS_CASE([$target,$ccomp_type],
   # In config/Makefile.mingw*, we had:
   # TARGET=i686-w64-mingw32 and x86_64-w64-mingw32
   # TOOLPREF=$(TARGET)-
   # AR=$(TOOLPREF)ar
   # However autoconf and libtool seem to use ar
   # So we let them do, at the moment
-  [*-pc-windows],
+  [*-pc-windows,msvc],
     [
       mkexe_via_cc_extra_cmd=' && $(call MERGEMANIFESTEXE,$(1))'
       libext=lib
@@ -937,14 +947,14 @@ OCAML_TARGET_IS_EXECUTABLE
 # We thus figure out how to invoke the C preprocessor directly but
 # let the CPP variable untouched, except for the MSVC port where we set it
 # manually to make sure the backward compatibility is preserved
-AS_CASE([$ocaml_cc_vendor],
-  [xlc-*],
+AS_CASE([$ccomp_type,$ocaml_cc_vendor],
+  [*,xlc-*],
     [CPP="$CC -E -qnoppline" # suppress incompatible XLC line directives
     ocamltest_CPP="$CPP"],
-  [sunc-*],
+  [*,sunc-*],
     [CPP="$CC -E -Qn" # suppress generation of Sun PRO ident string
     ocamltest_CPP="$CPP"],
-  [msvc-*],
+  [msvc,msvc-*],
     [CPP="$CC -nologo -EP -TC"
     ocamltest_CPP="$CPP 2> nul"],
   [CPP="$CC -E -P"
@@ -1059,17 +1069,17 @@ AS_IF([test "x$interpval" = "xyes"],
 
 ## Determine which flags to use for the C compiler
 
-AS_CASE([$ocaml_cc_vendor],
-  [xlc-*],
+AS_CASE([$ccomp_type,$ocaml_cc_vendor],
+  [*,xlc-*],
     [warn_error_flag=''
     cc_extra_warnings=''
     cxx_extra_warnings=''
     cc_warnings='-qflag=i:i'], # all warnings enabled
-  [sunc-*],
+  [*,sunc-*],
     [cc_extra_warnings=''
      cxx_extra_warnings=''
      cc_warnings=''],
-  [msvc-*],
+  [msvc,msvc-*],
     [AS_CASE([$ocaml_cc_vendor],
       [msvc-*-clang-*],
         [cc_warnings='-W4 -Wno-unused-parameter -Wno-sign-compare -Wundef'
@@ -1129,32 +1139,32 @@ AS_CASE([$target],
 # Concerning optimization level, -O3 is somewhat risky, so take -O2.
 # Concerning language version, recent enough versions of GCC and Clang
 # default to gnu11 (C11 + GNU extensions) or gnu17, which is fine.
-AS_CASE([$ocaml_cc_vendor],
-  [clang-*],
+AS_CASE([$ccomp_type,$ocaml_cc_vendor],
+  [*,clang-*],
     [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
     internal_cflags="$cc_warnings -fno-common"],
-  [*gcc-[[0123]]-*|*gcc-4-[[0-8]]],
+  [*,*gcc-[[0123]]-*|*,*gcc-4-[[0-8]]],
     # No C11 support
     [AC_MSG_ERROR(m4_normalize([This version of GCC is too old.
       Please use GCC version 4.9 or above.]), 69)],
-  [gcc-*],
+  [*,gcc-*],
     [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
     internal_cflags="$cc_warnings -fno-common -fexcess-precision=standard \
 -Wvla"],
-  [mingw-*-*-gcc-*],
+  [*,mingw-*-*-gcc-*],
     [internal_cflags="-Wno-unused $cc_warnings \
 -fexcess-precision=standard"
     # TODO: see whether the code can be fixed to avoid -Wno-unused
     common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
     internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
     internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE=$windows_unicode"],
-  [mingw-*],
+  [*,mingw-*],
     [AC_MSG_ERROR([Unsupported C compiler for a MinGW-w64 build])],
-  [msvc-0*|msvc-1[[0-8]]*|msvc-19[[012]]*|msvc-193[[0-7]]],
+  [msvc,msvc-0*|msvc,msvc-1[[0-8]]*|msvc,msvc-19[[012]]*|msvc,msvc-193[[0-7]]],
     # No C11 atomics support
     [AC_MSG_ERROR(m4_normalize([This version of MSVC is too old.
     Please use Visual Studio version 17.8 or above.]), 69)],
-  [msvc-*],
+  [msvc,msvc-*],
     [common_cflags='-nologo -O2 -Gy- -MD'
     common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
     internal_cflags="$cc_warnings"
@@ -1163,11 +1173,11 @@ AS_CASE([$ocaml_cc_vendor],
       [internal_cflags="$internal_cflags -volatileMetadata-"], [],
       [$warn_error_flag])
     internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE=$windows_unicode"],
-  [xlc-*],
+  [*,xlc-*],
     [common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
     internal_cflags="$cc_warnings"],
-  [sunc-*], # Optimization should be >= O4 to inline functions
-            # and prevent unresolved externals
+  [*,sunc-*], # Optimization should be >= O4 to inline functions
+              # and prevent unresolved externals
     [common_cflags="-O4 -xc99=all"
     common_cppflags="-D_XPG6"
     internal_cflags="$cc_warnings"],
@@ -1237,13 +1247,15 @@ AS_CASE([$target],
     flexdll_cc_var='MIN64CC'
     flexlink_flags='-stack 33554432'],
   [i686-pc-windows],
-    [flexdll_chain='msvc'
-    flexdll_cc_var='MSVCC'
-    flexlink_flags='-merge-manifest -stack 16777216'],
+    [AS_IF([test "$ccomp_type" = 'msvc'],
+      [flexdll_chain='msvc'
+      flexdll_cc_var='MSVCC'
+      flexlink_flags='-merge-manifest -stack 16777216'])],
   [x86_64-pc-windows],
-    [flexdll_chain='msvc64'
-    flexdll_cc_var='MSVCC64'
-    flexlink_flags='-merge-manifest -stack 33554432'],
+    [AS_IF([test "$ccomp_type" = 'msvc'],
+      [flexdll_chain='msvc64'
+      flexdll_cc_var='MSVCC64'
+      flexlink_flags='-merge-manifest -stack 33554432'])],
   [flexdll_chain=''])
 
 AS_IF([test -n "$MANIFEST_TOOL"],
@@ -1283,7 +1295,8 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
         [AC_MSG_RESULT([$flexdll_source_dir$flexmsg])
         bootstrapping_flexdll=true
         flexdll_dir=\"+flexdll\"
-        AS_CASE([$target], [*-pc-windows], [AC_CHECK_PROGS(RC, [rc])])
+        AS_CASE([$target,$ccomp_type],
+          [*-pc-windows,msvc], [AC_CHECK_PROGS(RC, [rc])])
         AS_IF([$cross_compiler],
           [AC_CHECK_TARGET_TOOLS(RC, [windres])],
           [AC_CHECK_TOOLS(RC, [windres])])])],
@@ -1339,13 +1352,13 @@ AS_CASE([$flexdll_source_dir,$supports_shared_libraries,$flexlink,$target],
 
 mkexe_cmd_exp="$CC"
 
-AS_CASE([$ocaml_cc_vendor,$target],
-  [*,x86_64-*-darwin*],
+AS_CASE([$target,$ocaml_cc_vendor],
+  [x86_64-*-darwin*,*],
     [oc_ldflags='-Wl,-no_compact_unwind';
     AC_DEFINE([HAS_ARCH_CODE32], [1])],
-  [*,aarch64-*-darwin*|*,arm64-*-darwin*],
+  [aarch64-*-darwin*,*|arm64-*-darwin*,*],
     AC_DEFINE([HAS_ARCH_CODE32], [1]),
-  [*,*-*-cygwin],
+  [*-*-cygwin,*],
     [common_cppflags="$common_cppflags -U_WIN32"
     AS_IF([$supports_shared_libraries],
       [mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
@@ -1355,7 +1368,7 @@ AS_CASE([$ocaml_cc_vendor,$target],
       oc_ldflags='-Wl,--stack,16777216']
     )
     ostype="Cygwin"],
-  [*,*-w64-mingw32*],
+  [*-w64-mingw32*,*],
     [AS_CASE([$target],
       [i686-*-*], [oc_dll_ldflags="-static-libgcc"])
     ostype="Win32"
@@ -1366,31 +1379,32 @@ AS_CASE([$ocaml_cc_vendor,$target],
     oc_exe_ldflags='-municode'
     mkexe_extra_flags="$mkexe_ldflags_prefix$oc_exe_ldflags"
     SO="dll"],
-  [*,*-pc-windows],
-    [toolchain=msvc
-    ostype="Win32"
+  [*-pc-windows,*],
+    [ostype="Win32"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
     mkexe_cmd="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
     mkexe_ldflags_prefix='-link '
-    mkexe_via_cc_ldflags_prefix='/link '
-    oc_exe_ldflags='/ENTRY:wmainCRTStartup'
-    mkexe_extra_flags="$mkexe_ldflags_prefix$oc_exe_ldflags"
-    mkexedebugflag=''],
-  [*,x86_64-*-linux*],
+    AS_IF([test "$ccomp_type" = 'msvc'],
+      [toolchain=msvc
+      mkexe_via_cc_ldflags_prefix='/link '
+      oc_exe_ldflags='/ENTRY:wmainCRTStartup'
+      mkexedebugflag=''])
+    mkexe_extra_flags="$mkexe_ldflags_prefix$oc_exe_ldflags"],
+  [x86_64-*-linux*,*],
     AC_DEFINE([HAS_ARCH_CODE32], [1]),
-  [xlc-*,powerpc-ibm-aix*],
+  [powerpc-ibm-aix*,xlc-*],
     [oc_ldflags='-brtl -bexpfull'
     AC_DEFINE([HAS_ARCH_CODE32], [1])],
-  [gcc-*,powerpc-*-linux*],
+  [powerpc-*-linux*,gcc-*],
     [oc_ldflags="-mbss-plt"],
-  [*,*-*-none|*,*-*-elf*],
+  [*-*-none,*|*-*-elf*,*],
     [ostype="None"])
 
 # How to build sak
 
 AS_IF([test x"$build" = x"$target" -o x"$target_runnable" = xtrue],
-  [AS_CASE([$target],
-    [*-pc-windows],
+  [AS_CASE([$ccomp_type],
+    [msvc],
       [SAK_BUILD=m4_normalize([
         "\$(CC) \$(OC_CFLAGS) \$(CFLAGS) \$(OC_CPPFLAGS) \$(CPPFLAGS) \$(2)
         /link /out:\$(1) $oc_exe_ldflags \$(OC_LDFLAGS) \$(LDFLAGS)"])],
@@ -1571,10 +1585,10 @@ AS_IF([test x"$enable_shared" != "xno"],
     [[*-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*]],
       [sharedlib_cflags="-fPIC"
-       AS_CASE([$ocaml_cc_vendor,$target],
-         [gcc-*,powerpc-*-linux*],
+       AS_CASE([$target,$ocaml_cc_vendor],
+         [powerpc-*-linux*,gcc-*],
            [mkdll_flags='-shared -mbss-plt'],
-         [[*,i[3456]86-*]],
+         [[i[3456]86-*,*]],
            # Disable DT_TEXTREL warnings on Linux and BSD i386
            # See https://github.com/ocaml/ocaml/issues/9800
            [mkdll_flags='-shared -Wl,-z,notext'],
@@ -1652,8 +1666,8 @@ AS_IF([test x"$supports_shared_libraries" = 'xtrue'],
     [x86_64-*-gnu*], [natdynlink=true])])
 
 # Try to work around the Skylake/Kaby Lake processor bug.
-AS_CASE(["$ocaml_cc_vendor,$target"],
-  [*gcc*,x86_64-*|*gcc*,i686-*],
+AS_CASE(["$target,$ocaml_cc_vendor"],
+  [x86_64-*,*gcc*|i686-*,*gcc*],
     [AX_CHECK_COMPILE_FLAG([-fno-tree-vrp],
       [internal_cflags="$internal_cflags -fno-tree-vrp"], [],
       [$warn_error_flag])])
@@ -1877,8 +1891,8 @@ AS_IF([test -z "$PARTIALLD"],
   # output filename. Don't assume that all C compilers understand GNU -ofoo
   # form, so ensure that the definition includes a space at the end (which is
   # achieved using the $(EMPTY) expansion trick in Makefile.config.in).
-  AS_CASE(["$ocaml_cc_vendor"],
-    [msvc-*],
+  AS_CASE(["$ccomp_type,$ocaml_cc_vendor"],
+    [msvc,*],
       # For the Microsoft C compiler there must be no space at the end of the
       # string.
       [PACKLD="link -lib -nologo $machine -out:"],
@@ -1933,20 +1947,20 @@ AS_IF([test -n "$target_alias"],
 as_is_cc=true
 default_as=''
 
-AS_CASE([$as_target,$ocaml_cc_vendor],
-  [*-*-linux*,gcc-*],
+AS_CASE([$as_target,$ccomp_type,$ocaml_cc_vendor],
+  [*-*-linux*,*,gcc-*],
     [AS_CASE([$as_cpu],
       [x86_64|arm*|aarch64*|i[[3-6]]86],
         [default_as="${toolpref}as"
         as_is_cc=false])],
-  [*-*-cygwin,gcc-*],
+  [*-*-cygwin,*,gcc-*],
     [default_as="${toolpref}as"
     as_is_cc=false],
-  [i686-pc-windows,*],
+  [i686-pc-windows,msvc,*],
     [default_as="ml -nologo -coff -Cp -c -Fo"
     default_aspp="$default_as"
     as_is_cc=false],
-  [x86_64-pc-windows,*],
+  [x86_64-pc-windows,msvc,*],
     [default_as="ml64 -nologo -Cp -c -Fo"
     default_aspp="$default_as"
     as_is_cc=false])
@@ -2294,21 +2308,21 @@ AS_IF([$tsan],
 
 sockets=true
 
-AS_CASE([$target],
-  [*-w64-mingw32*],
+AS_CASE([$target,$ccomp_type],
+  [*-w64-mingw32*,*],
     [cclibs="$cclibs -lws2_32"
     AC_SEARCH_LIBS([socket], [ws2_32])
     AC_CHECK_FUNC([socketpair], [AC_DEFINE([HAS_SOCKETPAIR], [1])])],
-  [*-pc-windows],
+  [*-pc-windows,msvc],
     [cclibs="$cclibs ws2_32.lib"
     dnl AC_SEARCH_LIBS doesn't work with MSVC; manually update LIBS
     AS_ECHO(["checking for library containing socket... (cached) ws2_32.lib"])
     LIBS="ws2_32.lib $LIBS"
     AC_CHECK_FUNC([socketpair], [AC_DEFINE([HAS_SOCKETPAIR], [1])])],
-  [*-*-haiku],
+  [*-*-haiku,*],
     [cclibs="$cclibs -lnetwork"
     AC_SEARCH_LIBS([socket], [network])],
-  [*-*-solaris*],
+  [*-*-solaris*,*],
     [cclibs="$cclibs -lsocket -lnsl"
     AC_SEARCH_LIBS([socket], [socket])
     AC_SEARCH_LIBS([inet_ntop], [nsl])],
@@ -2542,10 +2556,10 @@ AC_CHECK_HEADER([sys/mman.h],
 AC_CHECK_FUNC([pwrite], [AC_DEFINE([HAS_PWRITE], [1])])
 
 ## -fdebug-prefix-map support by the C compiler
-AS_CASE([$ocaml_cc_vendor,$target],
-  [*,*-pc-windows], [cc_has_debug_prefix_map=false],
-  [xlc*,powerpc-ibm-aix*], [cc_has_debug_prefix_map=false],
-  [sunc*,sparc-sun-*], [cc_has_debug_prefix_map=false],
+AS_CASE([$target,$ccomp_type,$ocaml_cc_vendor],
+  [*-pc-windows,msvc,*], [cc_has_debug_prefix_map=false],
+  [powerpc-ibm-aix*,*,xlc*], [cc_has_debug_prefix_map=false],
+  [sparc-sun-*,*,sunc*], [cc_has_debug_prefix_map=false],
   [AX_CHECK_COMPILE_FLAG([-fdebug-prefix-map=old=new],
     [cc_has_debug_prefix_map=true], [cc_has_debug_prefix_map=false],
     [$warn_error_flag])])
@@ -3093,10 +3107,10 @@ native_cflags="$common_cflags $sharedlib_cflags $native_cflags\
 bytecode_cppflags="$common_cppflags $COMPILER_BYTECODE_CPPFLAGS"
 native_cppflags="$common_cppflags $COMPILER_NATIVE_CPPFLAGS"
 
-AS_CASE([$target],
-  [*-w64-mingw32*],
+AS_CASE([$target,$ccomp_type],
+  [*-w64-mingw32*,*],
     [cclibs="$cclibs -lole32 -luuid -lversion -lshlwapi -lsynchronization"],
-  [*-pc-windows],
+  [*-pc-windows,msvc],
     [# For whatever reason, flexlink includes -ladvapi32 and -lshell32 for
     # mingw-w64, but doesn't include advapi32.lib and shell32.lib for MSVC
     cclibs="$cclibs ole32.lib uuid.lib advapi32.lib shell32.lib version.lib \
