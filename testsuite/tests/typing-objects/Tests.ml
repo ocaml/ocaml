@@ -1469,3 +1469,39 @@ Error: Some type variables are unbound in this type: class d : ['a] c
        The method "m" has type "(< f : 'b; x : 'a > as 'b) -> unit" where "'a"
        is unbound
 |}]
+
+(* #4569 : constraints with conjunctive types *)
+
+(* Simple example fixed by `rigid_variants` *)
+class ['a] c (a : 'a) =
+object (s)
+method s = s
+method d : int = match a with `A b -> b#num
+end
+[%%expect {|
+class ['a] c :
+  'a ->
+  object ('b)
+    constraint 'a = [< `A of < num : int; .. > ]
+    method d : int
+    method s : 'b
+  end
+|}]
+
+(* More complex example that failed until OCaml 4.13 *)
+class ['a] c (a : 'a) =
+object (s)
+method s = s
+method d : int = match a with `A b -> b#num
+method e : int = match a with `A b -> b#num
+end
+[%%expect {|
+class ['a] c :
+  'a ->
+  object ('b)
+    constraint 'a = [< `A of < num : int; .. > ]
+    method d : int
+    method e : int
+    method s : 'b
+  end
+|}]
