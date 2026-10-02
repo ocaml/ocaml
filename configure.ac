@@ -1339,13 +1339,13 @@ AS_CASE([$flexdll_source_dir,$supports_shared_libraries,$flexlink,$target],
 
 mkexe_cmd_exp="$CC"
 
-AS_CASE([$ocaml_cc_vendor,$target],
-  [*,x86_64-*-darwin*],
+AS_CASE([$target,$ocaml_cc_vendor],
+  [x86_64-*-darwin*,*],
     [oc_ldflags='-Wl,-no_compact_unwind';
     AC_DEFINE([HAS_ARCH_CODE32], [1])],
-  [*,aarch64-*-darwin*|*,arm64-*-darwin*],
+  [aarch64-*-darwin*,*|arm64-*-darwin*,*],
     AC_DEFINE([HAS_ARCH_CODE32], [1]),
-  [*,*-*-cygwin],
+  [*-*-cygwin,*],
     [common_cppflags="$common_cppflags -U_WIN32"
     AS_IF([$supports_shared_libraries],
       [mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
@@ -1355,7 +1355,7 @@ AS_CASE([$ocaml_cc_vendor,$target],
       oc_ldflags='-Wl,--stack,16777216']
     )
     ostype="Cygwin"],
-  [*,*-w64-mingw32*],
+  [*-w64-mingw32*,*],
     [AS_CASE([$target],
       [i686-*-*], [oc_dll_ldflags="-static-libgcc"])
     ostype="Win32"
@@ -1366,7 +1366,7 @@ AS_CASE([$ocaml_cc_vendor,$target],
     oc_exe_ldflags='-municode'
     mkexe_extra_flags="$mkexe_ldflags_prefix$oc_exe_ldflags"
     SO="dll"],
-  [*,*-pc-windows],
+  [*-pc-windows,*],
     [toolchain=msvc
     ostype="Win32"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
@@ -1376,14 +1376,14 @@ AS_CASE([$ocaml_cc_vendor,$target],
     oc_exe_ldflags='/ENTRY:wmainCRTStartup'
     mkexe_extra_flags="$mkexe_ldflags_prefix$oc_exe_ldflags"
     mkexedebugflag=''],
-  [*,x86_64-*-linux*],
+  [x86_64-*-linux*,*],
     AC_DEFINE([HAS_ARCH_CODE32], [1]),
-  [xlc-*,powerpc-ibm-aix*],
+  [powerpc-ibm-aix*,xlc-*],
     [oc_ldflags='-brtl -bexpfull'
     AC_DEFINE([HAS_ARCH_CODE32], [1])],
-  [gcc-*,powerpc-*-linux*],
+  [powerpc-*-linux*,gcc-*],
     [oc_ldflags="-mbss-plt"],
-  [*,*-*-none|*,*-*-elf*],
+  [*-*-none,*|*-*-elf*,*],
     [ostype="None"])
 
 # How to build sak
@@ -1571,10 +1571,10 @@ AS_IF([test x"$enable_shared" != "xno"],
     [[*-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*]],
       [sharedlib_cflags="-fPIC"
-       AS_CASE([$ocaml_cc_vendor,$target],
-         [gcc-*,powerpc-*-linux*],
+       AS_CASE([$target,$ocaml_cc_vendor],
+         [powerpc-*-linux*,gcc-*],
            [mkdll_flags='-shared -mbss-plt'],
-         [[*,i[3456]86-*]],
+         [[i[3456]86-*,*]],
            # Disable DT_TEXTREL warnings on Linux and BSD i386
            # See https://github.com/ocaml/ocaml/issues/9800
            [mkdll_flags='-shared -Wl,-z,notext'],
@@ -1652,8 +1652,8 @@ AS_IF([test x"$supports_shared_libraries" = 'xtrue'],
     [x86_64-*-gnu*], [natdynlink=true])])
 
 # Try to work around the Skylake/Kaby Lake processor bug.
-AS_CASE(["$ocaml_cc_vendor,$target"],
-  [*gcc*,x86_64-*|*gcc*,i686-*],
+AS_CASE(["$target,$ocaml_cc_vendor"],
+  [x86_64-*,*gcc*|i686-*,*gcc*],
     [AX_CHECK_COMPILE_FLAG([-fno-tree-vrp],
       [internal_cflags="$internal_cflags -fno-tree-vrp"], [],
       [$warn_error_flag])])
@@ -2542,10 +2542,10 @@ AC_CHECK_HEADER([sys/mman.h],
 AC_CHECK_FUNC([pwrite], [AC_DEFINE([HAS_PWRITE], [1])])
 
 ## -fdebug-prefix-map support by the C compiler
-AS_CASE([$ocaml_cc_vendor,$target],
-  [*,*-pc-windows], [cc_has_debug_prefix_map=false],
-  [xlc*,powerpc-ibm-aix*], [cc_has_debug_prefix_map=false],
-  [sunc*,sparc-sun-*], [cc_has_debug_prefix_map=false],
+AS_CASE([$target,$ocaml_cc_vendor],
+  [*-pc-windows,*], [cc_has_debug_prefix_map=false],
+  [powerpc-ibm-aix*,xlc*], [cc_has_debug_prefix_map=false],
+  [sparc-sun-*,sunc*], [cc_has_debug_prefix_map=false],
   [AX_CHECK_COMPILE_FLAG([-fdebug-prefix-map=old=new],
     [cc_has_debug_prefix_map=true], [cc_has_debug_prefix_map=false],
     [$warn_error_flag])])
