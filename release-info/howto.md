@@ -25,7 +25,7 @@ rm -f /tmp/env-$USER.sh
 cat >/tmp/env-$USER.sh <<EOF
 # Update the data below
 export MAJOR=5
-export MINOR=2
+export MINOR=6
 export BUGFIX=0
 export PLUSEXT=
 

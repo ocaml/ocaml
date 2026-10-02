@@ -21,7 +21,7 @@ accident if this prospective calendar ever matches the real release calendar.
 
 |    Release            | Expected (early)    | Expected (late)      | Actual      |
 |-----------------------|---------------------|----------------------|-------------|
-| Feature freeze        | 15th September 2026 |  1st October 2026    |             |
+| Feature freeze        | 15th September 2026 |  1st October 2026    | 2nd October |
 | Release               | 15th December       |  1st February        |             |
 
 
