@@ -835,6 +835,10 @@ OCaml 5.6.0
 - #15118: Fix printing of raw identifiers in exotic corner cases.
   (Florian Angeletti, review by Nicolás Ojeda Bär)
 
+- #15127: Fix a memory leak when compacting the heap of a domain
+  if the size class had no live blocks.
+  (Ezequiel Lewin, review by Florian Angeletti)
+
 OCaml 5.5.1
 -----------
 
