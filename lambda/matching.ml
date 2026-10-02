@@ -2228,7 +2228,9 @@ let inline_lazy_force_switch arg loc =
       idarg,
       arg,
       Lifthenelse
-        ( Lprim (Pisint, [ varg ], loc),
+        ( (* A forced lazy value can be represented by the value itself,
+             which can be any immediate *)
+          Lprim (Pisint { variant_only = false }, [ varg ], loc),
           varg,
           Lswitch
             ( Lprim (Pccall prim_obj_tag, [ varg ], loc),
@@ -3219,7 +3221,8 @@ let transl_match_on_option arg loc ~if_some ~if_none =
      slightly worse, but it lets the native compiler generate
      better code -- see #10681. *)
   if !Clflags.native_code then
-    Lifthenelse(Lprim (Pisint, [ arg ], loc), if_none, if_some)
+    Lifthenelse(Lprim (Pisint { variant_only = true }, [ arg ], loc),
+                if_none, if_some)
   else
     Lifthenelse(arg, if_some, if_none)
 
@@ -3353,7 +3356,7 @@ let combine_regular_constructor loc arg cstr partial ctx def
                    (The type of tokens has more than 120 constructors.)
                    *)
                 Lifthenelse
-                  ( Lprim (Pisint, [ arg ], loc),
+                  ( Lprim (Pisint { variant_only = true }, [ arg ], loc),
                     call_switcher loc fail_opt arg
                       ~low:0 ~high:(n - 1) consts,
                     act )
@@ -3413,7 +3416,8 @@ let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats)
   else
     num_constr := max_int;
   let test_int_or_block arg if_int if_block =
-    Lifthenelse (Lprim (Pisint, [ arg ], loc), if_int, if_block)
+    Lifthenelse
+      (Lprim (Pisint { variant_only = true }, [ arg ], loc), if_int, if_block)
   in
   let sig_complete = List.length tag_lambda_list = !num_constr
   and one_action = same_actions tag_lambda_list in

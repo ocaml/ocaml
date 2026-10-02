@@ -459,14 +459,16 @@ let f x y =
      (function x/3[int] y/0[int] : int
        (catch
          (catch
-           (catch (if (isint y/0) (if (!= y/0 19896) (exit 45) 0) (exit 45))
+           (catch
+             (if (isint_variant y/0) (if (!= y/0 19896) (exit 45) 0)
+               (exit 45))
             with (45)
              (if (!= x/3 19674)
                (if (>= x/3 19675) (exit 44) (if (>= y/0 19898) (exit 42) 1))
-               (if (isint y/0) (if (!= y/0 19897) (exit 44) (exit 42))
-                 (exit 44))))
+               (if (isint_variant y/0)
+                 (if (!= y/0 19897) (exit 44) (exit 42)) (exit 44))))
           with (44)
-           (if (isint y/0) (if (!= y/0 19898) (exit 42) 2) (exit 42)))
+           (if (isint_variant y/0) (if (!= y/0 19898) (exit 42) 2) (exit 42)))
         with (42) 3)))
   (apply (field_mut 1 (global Toploop!)) "f" f/4))
 val f : [< `X1 | `X2 | `X3 ] -> [< `Y1 | `Y2 | `Y3 ] -> int = <fun>
@@ -499,7 +501,7 @@ let check_results r1 r2 =
                           case tag 0: (exit 52)
                           case tag 1:
                            (let (*match*/18 =a (field_imm 0 *match*/17))
-                             (if (isint *match*/18)
+                             (if (isint_variant *match*/18)
                                (if (!= *match*/18 66) (exit 53) r/2)
                                (exit 53)))))
                        (switch* (field_imm 1 *match*/16)

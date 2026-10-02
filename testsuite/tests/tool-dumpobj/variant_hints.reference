@@ -1,0 +1,34 @@
+       0  BRANCH 31
+       2  ACC0
+       3  ISINT
+       4  RETURN 1
+       6  ACC0
+       7  ISINT (variant)
+       8  BRANCHIFNOT 13
+      10  CONST0
+      11  RETURN 1
+      13  ACC0
+      14  GETFIELD1
+      15  RETURN 1
+      17  ACC0
+      18  ISINT (variant)
+      19  BRANCHIFNOT 27
+      21  ACC0
+      22  BRANCHIFNOT 25
+      24  CONST1
+      25  RETURN 1
+      27  ACC0
+      28  GETFIELD0 (immediate)
+      29  RETURN 1
+      31  CLOSURE 0, 17 (value -> int)
+      34  PUSH
+      35  CLOSURE 0, 6 (value -> int)
+      38  PUSH
+      39  CLOSURE 0, 2 (value -> int)
+      42  PUSHACC0
+      43  PUSHACC2
+      44  PUSHACC4
+      45  MAKEBLOCK3 0 (immutable)
+      47  POP 3
+      49  SETGLOBAL compilation unit `Variant_hints'
+      51  STOP

@@ -264,7 +264,8 @@ Working version
 
 - #13438: keep some optimization hints from lambda in bytecode modules
   and executables (to be used by Js_of_ocaml / Wasm_of_ocaml)
-  (Jérôme Vouillon)
+  (Jérôme Vouillon, review by Olivier Nicole, Vincent Laviron, and
+   David Allsopp)
 
 - #13588: propagate physical comparison operators to lambda
   (to be used by Js_of_ocaml / Wasm_of_ocaml)
@@ -309,6 +310,12 @@ Working version
 
 - #15090: Allow unaligned memory accesses on s390x.
   (Zane Hambly, review by Xavier Leroy)
+
+- #15122: more optimization hints in bytecode modules and executables:
+  reads of values known to be immediates, and tests of whether a value
+  of a variant type is an immediate (to be used by Js_of_ocaml /
+  Wasm_of_ocaml)
+  (Jérôme Vouillon, review by Nicolás Ojeda Bär)
 
 ### Standard library:
 
