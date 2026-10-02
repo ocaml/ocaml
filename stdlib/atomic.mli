@@ -50,15 +50,19 @@ val get : 'a t -> 'a
 (** Set a new value for the atomic reference. *)
 val set : 'a t -> 'a -> unit
 
+(* exposed as 'external' so the primitive reaches the call site, where the
+   type is usually known. On an immediate the compiler can then skip the
+   write barrier and emit the bare instruction. *)
+
 (** Set a new value for the atomic reference, and return the current value. *)
-val exchange : 'a t -> 'a -> 'a
+external exchange : 'a t -> 'a -> 'a = "%atomic_exchange"
 
 (** [compare_and_set r seen v] sets the new value of [r] to [v] only
     if its current value is physically equal to [seen] -- the
     comparison and the set occur atomically. Returns [true] if the
     comparison succeeded (so the set happened) and [false]
     otherwise. *)
-val compare_and_set : 'a t -> 'a -> 'a -> bool
+external compare_and_set : 'a t -> 'a -> 'a -> bool = "%atomic_cas"
 
 (** [fetch_and_add r n] atomically increments the value of [r] by [n],
     and returns the current value (before the increment). *)

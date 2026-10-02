@@ -165,6 +165,8 @@ let operation d = function
   | Ccheckbound -> "checkbound" ^ location d
   | Copaque -> "opaque"
   | Catomic_fetch_add -> "atomic_fetch_add"
+  | Catomic_exchange -> "atomic_exchange"
+  | Catomic_compare_exchange -> "atomic_compare_exchange"
   | Cdls_get -> "dls_get"
   | Cpoll -> "poll"
 
