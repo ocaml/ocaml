@@ -592,6 +592,10 @@ Working version
   certain large types, as seen in #14897.
   (Stefan Muenzel, review by Gabriel Scherer and Vincent Laviron)
 
+- #14190: simplify the implementation of path compression in `Types.repr`
+  (Gabriel Scherer, review by Stefan Muenzel, Jacques Garrigue
+   and Florian Angeletti)
+
 - #14932: Fix `-dtypedtree` printing of `Twith_modtypesubst`.
   (Corentin De Souza, review by Nicolás Ojeda Bär)
 
