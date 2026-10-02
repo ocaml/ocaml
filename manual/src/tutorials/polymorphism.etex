@@ -412,11 +412,11 @@ shape (Nested(Nested(List [ [ [1;2]; [3] ]; [ []; [4]; [5;6;7]]; [[]] ])));;
 
 \section{s:higher-rank-poly}{Higher-rank polymorphic functions}
 
-Explicit polymorphic annotations are however not sufficient to cover all
-the cases where the inferred type of a function is less general than
-expected. A similar problem arises when using polymorphic functions as arguments
-of higher-order functions. For instance, we may want to compute the average
-depth or length of two nested lists:
+Explicit polymorphic annotations are also useful when passing polymorphic
+functions as arguments to higher-order functions. Without them, the inferred
+type of the higher-order function may be less general than expected. For
+instance, we may want to compute the average depth or length of two nested
+lists:
 \begin{caml_example}{toplevel}
   let average_depth x y = (depth x + depth y) / 2;;
   let average_len x y = (len x + len y) / 2;;
@@ -438,36 +438,37 @@ As previously with polymorphic recursion, the problem stems from the fact that
 type variables are introduced only at the start of the "let" definitions. When
 we compute both "f x" and "f y", the type of "x" and "y" are unified together.
 To avoid this unification, we need to indicate to the type checker
-that f is polymorphic in its first argument. In some sense, we would want
-"average" to have type
-\begin{verbatim}
-val average: ('a. 'a nested -> int) -> 'a nested -> 'b nested -> int
-\end{verbatim}
-Note that this syntax is not valid within OCaml: "average" has an universally
-quantified type "'a" inside the type of one of its argument whereas for
-polymorphic recursion the universally quantified type was introduced before
-the rest of the type. This position of the universally quantified type means
-that "average" is a second-rank polymorphic function. This kind of higher-rank
-functions is not directly supported by OCaml: type inference for second-rank
-polymorphic function and beyond is undecidable; therefore using this kind of
-higher-rank functions requires to handle manually these universally quantified
-types.
+that "f" is polymorphic in its first argument. Since OCaml 5.5, this can be
+done by annotating the type of "average" explicitly:
+\begin{caml_example}{toplevel}
+let average : ('a. 'a nested -> int) -> 'a nested -> 'b nested -> int =
+  fun f x y -> (f x + f y) / 2;;
+average len (List [2]) (List [[]]);;
+\end{caml_example}
+Here "average" has a universally quantified type "'a" inside the type of one
+of its arguments, whereas for polymorphic recursion the universally quantified
+type was introduced before the rest of the type. This position of the
+universally quantified type means that "average" is a second-rank polymorphic
+function. The needed polymorphism cannot be inferred from this definition:
+type inference for second-rank polymorphic functions and beyond is undecidable.
+It must therefore be given explicitly, either by annotating the polymorphic
+parameter or the complete function type, as above.
 
-In OCaml, there are two ways to introduce this kind of explicit universally
-quantified types: universally quantified record fields,
+Universally quantified record fields and object methods provide two other ways
+to express such explicit universally quantified types. With a record field:
 \begin{caml_example}{toplevel}
   type 'a nested_reduction = { f:'elt. 'elt nested -> 'a };;
   let boxed_len = { f = len };;
 \end{caml_example}
-and universally quantified object methods:
+With an object method:
 \begin{caml_example}{toplevel}
   let obj_len = object method f:'a. 'a nested -> 'b = len end;;
 \end{caml_example}
-To solve our problem, we can therefore use either the record solution:
+Using these encodings, the example can instead be written with a record:
 \begin{caml_example}{toplevel}
   let average nsm x y = (nsm.f x + nsm.f y) / 2 ;;
 \end{caml_example}
-or the object one:
+or with an object:
 \begin{caml_example}{toplevel}
   let average (obj:<f:'a. 'a nested -> _ > ) x y = (obj#f x + obj#f y) / 2 ;;
 \end{caml_example}
