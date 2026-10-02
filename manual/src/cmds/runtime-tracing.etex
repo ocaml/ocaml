@@ -65,7 +65,7 @@ the OCaml runtime system. These are further split into two sets: 1) event
 sources that are always available and 2) event sources that are only available
 in the instrumented runtime. Event sources in the instrumented runtime are
 primarily of interest to developers of the OCaml runtime and garbage collector
-and, at present, only consist of major heap allocation size counter events.
+and only consist of major heap allocation size counter events.
 
 The full set of events emitted by event sources and their documentation can be
 found in
@@ -253,6 +253,11 @@ And for dune:
  (flags "-runtime-variant=i")
  (libraries unix runtime_events))
 \end{verbatim}
+
+Note that as of OCaml 5.6, the instrumented runtime is not built and installed
+by default, but can be obtained by configuring OCaml with
+\texttt{--enable-instrumented-runtime}. The instrumented runtime is likely to be
+removed completely in OCaml 5.7.
 
 \subsection{s:runtime-tracing-tooling}{With tooling}
 

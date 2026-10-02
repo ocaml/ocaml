@@ -20717,11 +20717,9 @@ rm -f conftest.err conftest.i conftest.$ac_ext
  ;;
 esac
 
-# The instrumented runtime is built by default
-# if the proper clock source is found.
-# If asked via --enable-instrumented-runtime, configuration fails if the proper
-# clock source is missing.
-if test "x$enable_instrumented_runtime" != "xno"
+# The instrumented runtime can only be built if the proper clock source is
+# found.
+if test "x$enable_instrumented_runtime" = "xyes"
 then :
 
     case $target in #(
@@ -20731,17 +20729,14 @@ then :
     instrumented_runtime=true ;; #(
   *-apple-darwin*) :
 
-      case $enable_instrumented_runtime,$has_monotonic_clock in #(
-  *,true) :
-    instrumented_runtime=true ;; #(
-  yes,false) :
-    as_fn_error $? "Instrumented runtime support requested but no proper monotonic clock source was found." "$LINENO" 5 ;; #(
-  auto,false) :
-    instrumented_runtime=false
-     ;; #(
-  *) :
+      if $has_monotonic_clock
+then :
+  instrumented_runtime=true
+else case e in #(
+  e) as_fn_error $? "Instrumented runtime support requested but no proper monotonic clock source was found." "$LINENO" 5
      ;;
-esac ;; #(
+esac
+fi ;; #(
   *) :
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing clock_gettime" >&5
 printf %s "checking for library containing clock_gettime... " >&6; }
@@ -20813,33 +20808,30 @@ else case e in #(
 esac
 fi
 
-      case $enable_instrumented_runtime,$has_clock_gettime,$has_monotonic_clock in #(
-  auto,false,*) :
-    instrumented_runtime=false ;; #(
-  auto,*,false) :
-    instrumented_runtime=false ;; #(
-  *,true,true) :
-
-            instrumented_runtime=true
-            if test "x$ac_cv_search_clock_gettime" = "xnone required"
+      if $has_clock_gettime
+then :
+  if $has_monotonic_clock
+then :
+  instrumented_runtime=true
+           if test "x$ac_cv_search_clock_gettime" = "xnone required"
 then :
   instrumented_runtime_libs=""
 else case e in #(
-  e) instrumented_runtime_libs=$ac_cv_search_clock_gettime
-             ;;
+  e) instrumented_runtime_libs=$ac_cv_search_clock_gettime ;;
 esac
 fi
-           ;; #(
-  yes,false,*) :
-    as_fn_error $? "Instrumented runtime support requested but clock_gettime is missing." "$LINENO" 5 ;; #(
-  yes,*,false) :
-    as_fn_error $? "Instrumented runtime support requested but no proper monotonic clock source was found." "$LINENO" 5
-       ;; #(
-  *) :
-     ;;
+else case e in #(
+  e) as_fn_error $? "Instrumented runtime support requested but no proper monotonic clock source was found." "$LINENO" 5
+            ;;
 esac
-     ;;
+fi
+else case e in #(
+  e) as_fn_error $? "Instrumented runtime support requested but clock_gettime is missing." "$LINENO" 5
+       ;;
 esac
+fi ;;
+esac
+
 
 fi
 

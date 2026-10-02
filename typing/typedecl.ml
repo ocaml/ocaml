@@ -40,9 +40,9 @@ and reaching_type_step =
 
 type error =
     Repeated_parameter
-  | Duplicate_constructor of string
+  | Duplicate_constructor of string * Location.t list
   | Too_many_constructors
-  | Duplicate_label of string
+  | Duplicate_label of string * Location.t list
   | Recursive_abbrev of string * Env.t * reaching_type_path
   | Cycle_in_def of string * Env.t * reaching_type_path
   | Definition_mismatch of type_expr * Env.t * Includecore.type_mismatch option
@@ -247,13 +247,20 @@ let make_params env params =
 
 let transl_labels env univars closed lbls =
   assert (lbls <> []);
-  let all_labels = ref String.Set.empty in
+  let all_labels = ref String.Map.empty in
   List.iter
     (fun {pld_name = {txt=name; loc}} ->
-       if String.Set.mem name !all_labels then
-         Error.log_and_raise loc (Duplicate_label name);
-       all_labels := String.Set.add name !all_labels)
+      all_labels := String.Map.add_to_list name loc !all_labels
+    )
     lbls;
+  String.Map.iter
+    (fun name locs ->
+      begin match locs with
+        | [] | [_] -> ()
+        | hd :: _rest -> Error.log_and_raise hd (Duplicate_label(name, locs))
+      end
+    )
+    !all_labels;
   let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;
           pld_attributes=attrs} =
     Builtin_attributes.warning_scope attrs
@@ -443,14 +450,21 @@ let transl_declaration env sdecl (id, uid) =
           | (_,_,loc)::_ ->
               Location.prerr_warning loc Warnings.Constraint_on_gadt
         end;
-        let all_constrs = ref String.Set.empty in
+        let all_constrs = ref String.Map.empty in
         List.iter
-          (fun {pcd_name = {txt = name}} ->
-             if String.Set.mem name !all_constrs then
-               Error.log_and_raise sdecl.ptype_loc
-                 (Duplicate_constructor name);
-            all_constrs := String.Set.add name !all_constrs)
+          (fun {pcd_name = {txt = name; loc}} ->
+            all_constrs := String.Map.add_to_list name loc !all_constrs
+          )
           scstrs;
+        String.Map.iter
+          (fun name locs ->
+            begin match locs with
+              | [] | [_] -> ()
+              | _ -> Error.log_and_raise sdecl.ptype_loc
+                  (Duplicate_constructor(name, locs))
+            end
+          )
+          !all_constrs;
         if List.length
             (List.filter (fun cd -> cd.pcd_args <> Pcstr_tuple []) scstrs)
            > (Config.max_tag + 1) then
@@ -2365,15 +2379,25 @@ let variance_error ~loc ~v1 ~v2 =
 let report_error ~loc = function
   | Repeated_parameter ->
       Location.errorf ~loc "A type parameter occurs several times"
-  | Duplicate_constructor s ->
-      Location.errorf ~loc "Two constructors are named %a" Style.inline_code s
+  | Duplicate_constructor (s, locs) ->
+    begin match List.length locs with
+      | 2 -> Location.errorf ~loc
+        "Two constructors are named %a" Style.inline_code s
+      | _ -> Location.errorf ~loc
+        "Multiple constructors are named %a" Style.inline_code s
+    end
   | Too_many_constructors ->
       Location.errorf ~loc
       "Too many non-constant constructors@ \
        -- maximum is %i non-constant constructors@]"
       (Config.max_tag + 1)
-  | Duplicate_label s ->
-      Location.errorf "Two labels are named %a" Style.inline_code s
+  | Duplicate_label (s, locs) ->
+    begin match List.length locs with
+      | 2 -> Location.errorf ~loc
+        "Two labels are named %a" Style.inline_code s
+      | _ -> Location.errorf ~loc
+        "Multiple labels are named %a" Style.inline_code s
+    end
   | Recursive_abbrev (s, env, reaching_path) ->
       let reaching_path = Reaching_path.simplify reaching_path in
       Printtyp.wrap_printing_env ~error:true env @@ fun () ->
