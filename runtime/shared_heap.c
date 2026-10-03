@@ -1302,7 +1302,8 @@ void caml_compact_heap(caml_domain_state* domain_state,
 
     if (!total_live_blocks) {
       /* No live (i.e unmarked) blocks in partially filled pools, nothing to do
-         for this size class. Free allocated resources and move to the next size class.*/
+         for this size class. Free allocated resources and move to the next
+         size class.*/
       caml_stat_free(pool_stats);
       continue;
     }
