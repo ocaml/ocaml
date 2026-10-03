@@ -880,8 +880,6 @@ lib_runtime_events
 lib_dynlink
 otherlibs
 otherlibraries
-instrumented_runtime_libs
-instrumented_runtime
 codegen_invariants
 debug_runtime
 cmxs
@@ -1741,8 +1739,6 @@ Optional Features:
   --enable-debugger       alias for --enable-ocamldebug
   --disable-dependency-generation
                           do not compute dependency information for C sources
-  --enable-instrumented-runtime
-                          build the instrumented runtime [default=auto]
 
   --disable-systhreads    disable the Win32/POSIX threads library
   --enable-tsan           enable ThreadSanitizer support [default=no]
@@ -3459,8 +3455,6 @@ ostype="Unix"
 SO="so"
 toolchain="cc"
 reserved_header_bits=0
-instrumented_runtime=false
-instrumented_runtime_libs=""
 bootstrapping_flexdll=false
 flexdll_dir=
 lib_dynlink=false
@@ -3556,8 +3550,6 @@ LINEAR_MAGIC_NUMBER=Caml1999L038
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
-
-
 
 
 
@@ -4193,10 +4185,10 @@ fi
 # Check whether --enable-instrumented-runtime was given.
 if test ${enable_instrumented_runtime+y}
 then :
-  enableval=$enable_instrumented_runtime;
-else case e in #(
-  e) enable_instrumented_runtime=auto ;;
-esac
+  enableval=$enable_instrumented_runtime; if test "x$enableval" != 'xno'
+then :
+  as_fn_error $? "The instrumented runtime was removed in OCaml 5.7." "$LINENO" 5
+fi
 fi
 
 
@@ -20661,7 +20653,7 @@ fi
 
 case $target in #(
   *-pc-windows) :
-    has_monotonic_clock=true ;; #(
+     ;; #(
   *-apple-darwin*) :
 
 
@@ -20671,14 +20663,8 @@ do :
 if test "x$ac_cv_func_clock_gettime_nsec_np" = xyes
 then :
   printf "%s\n" "#define HAVE_CLOCK_GETTIME_NSEC_NP 1" >>confdefs.h
+ printf "%s\n" "#define HAS_CLOCK_GETTIME_NSEC_NP 1" >>confdefs.h
 
-        has_monotonic_clock=true
-        printf "%s\n" "#define HAS_CLOCK_GETTIME_NSEC_NP 1" >>confdefs.h
-
-
-else case e in #(
-  e) has_monotonic_clock=false ;;
-esac
 fi
 
 done ;; #(
@@ -20703,137 +20689,13 @@ main (void)
 _ACEOF
 if ac_fn_c_try_cpp "$LINENO"
 then :
+  printf "%s\n" "#define HAS_POSIX_MONOTONIC_CLOCK 1" >>confdefs.h
 
-      has_monotonic_clock=true
-      printf "%s\n" "#define HAS_POSIX_MONOTONIC_CLOCK 1" >>confdefs.h
-
-
-else case e in #(
-  e) has_monotonic_clock=false ;;
-esac
 fi
 rm -f conftest.err conftest.i conftest.$ac_ext
 
  ;;
 esac
-
-# The instrumented runtime can only be built if the proper clock source is
-# found.
-if test "x$enable_instrumented_runtime" = "xyes"
-then :
-
-    case $target in #(
-  sparc-sun-solaris*) :
-    instrumented_runtime=false ;; #(
-  *-pc-windows) :
-    instrumented_runtime=true ;; #(
-  *-apple-darwin*) :
-
-      if $has_monotonic_clock
-then :
-  instrumented_runtime=true
-else case e in #(
-  e) as_fn_error $? "Instrumented runtime support requested but no proper monotonic clock source was found." "$LINENO" 5
-     ;;
-esac
-fi ;; #(
-  *) :
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing clock_gettime" >&5
-printf %s "checking for library containing clock_gettime... " >&6; }
-if test ${ac_cv_search_clock_gettime+y}
-then :
-  printf %s "(cached) " >&6
-else case e in #(
-  e) ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.
-   The 'extern "C"' is for builds by C++ compilers;
-   although this is not generally supported in C code supporting it here
-   has little cost and some practical benefit (sr 110532).  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char clock_gettime (void);
-int
-main (void)
-{
-return clock_gettime ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' rt
-do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_search_clock_gettime=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext
-  if test ${ac_cv_search_clock_gettime+y}
-then :
-  break
-fi
-done
-if test ${ac_cv_search_clock_gettime+y}
-then :
-
-else case e in #(
-  e) ac_cv_search_clock_gettime=no ;;
-esac
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS ;;
-esac
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_clock_gettime" >&5
-printf "%s\n" "$ac_cv_search_clock_gettime" >&6; }
-ac_res=$ac_cv_search_clock_gettime
-if test "$ac_res" != no
-then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  has_clock_gettime=true
-else case e in #(
-  e) has_clock_gettime=false ;;
-esac
-fi
-
-      if $has_clock_gettime
-then :
-  if $has_monotonic_clock
-then :
-  instrumented_runtime=true
-           if test "x$ac_cv_search_clock_gettime" = "xnone required"
-then :
-  instrumented_runtime_libs=""
-else case e in #(
-  e) instrumented_runtime_libs=$ac_cv_search_clock_gettime ;;
-esac
-fi
-else case e in #(
-  e) as_fn_error $? "Instrumented runtime support requested but no proper monotonic clock source was found." "$LINENO" 5
-            ;;
-esac
-fi
-else case e in #(
-  e) as_fn_error $? "Instrumented runtime support requested but clock_gettime is missing." "$LINENO" 5
-       ;;
-esac
-fi ;;
-esac
-
-
-fi
 
 # ThreadSanitizer support is currently only available for Linux/FreeBSD/macOS
 # on amd64, Linux/macOS on arm64 and Linux on POWER and riscv64.

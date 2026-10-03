@@ -44,7 +44,6 @@ build "minimal build" \
         -conf --disable-native-toplevel \
         -conf --disable-shared \
         -conf --disable-debug-runtime \
-        -conf --disable-instrumented-runtime \
         -conf --disable-systhreads \
         -conf --disable-str-lib \
         -conf --disable-unix-lib \

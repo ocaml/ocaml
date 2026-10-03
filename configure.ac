@@ -88,8 +88,6 @@ ostype="Unix"
 SO="so"
 toolchain="cc"
 reserved_header_bits=0
-instrumented_runtime=false
-instrumented_runtime_libs=""
 bootstrapping_flexdll=false
 flexdll_dir=
 lib_dynlink=false
@@ -227,8 +225,6 @@ AC_SUBST([natdynlink_archive])
 AC_SUBST([cmxs])
 AC_SUBST([debug_runtime])
 AC_SUBST([codegen_invariants])
-AC_SUBST([instrumented_runtime])
-AC_SUBST([instrumented_runtime_libs])
 AC_SUBST([otherlibraries])
 AC_SUBST([otherlibs])
 AC_SUBST([lib_dynlink])
@@ -536,11 +532,10 @@ AC_ARG_ENABLE([dependency-generation],
 AC_ARG_VAR([DLLIBS],
   [which libraries to use (in addition to -ldl) to load dynamic libs])
 
-AC_ARG_ENABLE([instrumented-runtime],
-  [AS_HELP_STRING([--enable-instrumented-runtime],
-    [build the instrumented runtime @<:@default=auto@:>@])],
-  [],
-  [enable_instrumented_runtime=auto])
+AC_ARG_ENABLE([instrumented-runtime], [],
+  [AS_IF([test "x$enableval" != 'xno'],
+    [AC_MSG_ERROR([The instrumented runtime was removed in OCaml 5.7.])])],
+  [])
 
 AC_ARG_ENABLE([vmthreads], [],
   [AS_IF([test "x$enableval" != 'xno'],
@@ -2039,14 +2034,10 @@ AC_CHECK_FUNC([issetugid], [AC_DEFINE([HAS_ISSETUGID], [1])])
 
 AS_CASE([$target],
   [*-pc-windows],
-    [has_monotonic_clock=true],
+    [],
   [*-apple-darwin*], [
     AC_CHECK_FUNCS([clock_gettime_nsec_np],
-      [
-        has_monotonic_clock=true
-        AC_DEFINE([HAS_CLOCK_GETTIME_NSEC_NP], [1])
-      ],
-      [has_monotonic_clock=false])],
+      [AC_DEFINE([HAS_CLOCK_GETTIME_NSEC_NP], [1])])],
   [AC_PREPROC_IFELSE([AC_LANG_PROGRAM([[
     #include <unistd.h>
     #include <time.h>
@@ -2055,45 +2046,8 @@ AS_CASE([$target],
       #error "no monotonic clock source"
     #endif
     ]])],
-    [
-      has_monotonic_clock=true
-      AC_DEFINE([HAS_POSIX_MONOTONIC_CLOCK], [1])
-    ],
-    [has_monotonic_clock=false])
+    [AC_DEFINE([HAS_POSIX_MONOTONIC_CLOCK], [1])])
   ]
-)
-
-# The instrumented runtime can only be built if the proper clock source is
-# found.
-AS_IF([test "x$enable_instrumented_runtime" = "xyes" ],
-  [
-    AS_CASE([$target],
-    [sparc-sun-solaris*],
-      [instrumented_runtime=false],
-    [*-pc-windows],
-      [instrumented_runtime=true],
-    [*-apple-darwin*], [
-      AS_IF([$has_monotonic_clock],
-        [instrumented_runtime=true],
-        [AC_MSG_ERROR(m4_normalize([Instrumented runtime support requested
-          but no proper monotonic clock source was found.]))]
-    )],
-    [AC_SEARCH_LIBS([clock_gettime], [rt],
-      [has_clock_gettime=true],
-      [has_clock_gettime=false])
-      AS_IF([$has_clock_gettime],
-        [AS_IF([$has_monotonic_clock],
-           [instrumented_runtime=true
-           AS_IF([test "x$ac_cv_search_clock_gettime" = "xnone required"],
-             [instrumented_runtime_libs=""],
-             [instrumented_runtime_libs=$ac_cv_search_clock_gettime])],
-           [AC_MSG_ERROR(m4_normalize([Instrumented runtime support requested
-             but no proper monotonic clock source was found.]))]
-           )],
-        [AC_MSG_ERROR(m4_normalize([Instrumented runtime support requested
-          but clock_gettime is missing.]))]
-      )])
-    ]
 )
 
 # ThreadSanitizer support is currently only available for Linux/FreeBSD/macOS

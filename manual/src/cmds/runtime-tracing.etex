@@ -61,11 +61,11 @@ transports these events.
 
 \subsection{s:runtime-tracing-event-sources}{Event sources}
 Event sources are event-emitting points. There are a number of such sources in
-the OCaml runtime system. These are further split into two sets: 1) event
-sources that are always available and 2) event sources that are only available
-in the instrumented runtime. Event sources in the instrumented runtime are
-primarily of interest to developers of the OCaml runtime and garbage collector
-and only consist of major heap allocation size counter events.
+the OCaml runtime system. Prior to OCaml 5.7, an optional ``instrumented''
+variant of the runtime additionally emitted major heap allocation size counter
+events, primarily of interest to developers of the OCaml runtime and garbage
+collector. The instrumented runtime has been removed and these events are no
+longer emitted (see section~\ref{s:runtime-tracing-instrumented-runtime}).
 
 The full set of events emitted by event sources and their documentation can be
 found in
@@ -234,30 +234,17 @@ event tracing system. The following environment variables are available:
 The size of the runtime events ring buffers can be configured via OCAMLRUNPARAM,
 see section \ref{s:ocamlrun-options} for more information.
 
-\subsubsection{s:runtime-tracing-instrumented-runtime}{Building with the instrumented runtime}
+\subsubsection{s:runtime-tracing-instrumented-runtime}{The instrumented runtime}
 
-Some events are only emitted by the instrumented runtime. To receive them, the
-OCaml program needs to be compiled and linked against the instrumented runtime.
-For our example program from earlier, this is achieved as follows:
-
-\begin{verbatim}
-ocamlopt -runtime-variant i -I +runtime_events -I +unix unix.cmxa runtime_events.cmxa example.ml -o example
-\end{verbatim}
-
-And for dune:
-
-\begin{verbatim}
-(executable
- (name example)
- (modules example)
- (flags "-runtime-variant=i")
- (libraries unix runtime_events))
-\end{verbatim}
-
-Note that as of OCaml 5.6, the instrumented runtime is not built and installed
-by default, but can be obtained by configuring OCaml with
-\texttt{--enable-instrumented-runtime}. The instrumented runtime is likely to be
-removed completely in OCaml 5.7.
+Up to OCaml 5.6, OCaml could be configured with
+\texttt{--enable-instrumented-runtime} (which was the default prior to OCaml
+5.6) to build an additional ``instrumented'' variant of the runtime. Programs linked against it
+using \texttt{-runtime-variant i} emitted major heap allocation size counter
+events, which were delivered to the \texttt{alloc} callback of
+\texttt{Runtime_events.Callbacks.create}. The instrumented runtime was removed
+in OCaml 5.7: the configure option is now rejected, \texttt{-runtime-variant i}
+is no longer available and the \texttt{alloc} callback, which is retained for
+compatibility, is never called.
 
 \subsection{s:runtime-tracing-tooling}{With tooling}
 

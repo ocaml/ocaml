@@ -204,8 +204,6 @@ MKMAINDLL=@mkmaindll@
 MKEXEDEBUGFLAG=@mkexedebugflag@
 
 RUNTIMED=@debug_runtime@
-INSTRUMENTED_RUNTIME=@instrumented_runtime@
-INSTRUMENTED_RUNTIME_LIBS=@instrumented_runtime_libs@
 WITH_DEBUGGER=@with_debugger@
 ASM_CFI_SUPPORTED=@asm_cfi_supported@
 WITH_FRAME_POINTERS=@frame_pointers@
@@ -231,6 +229,10 @@ BYTECODE_RUNTIME_ID=@bytecode_runtime_id@
 NATIVE_RUNTIME_ID=@native_runtime_id@
 
 # Deprecated variables
+
+## Variables deprecated since OCaml 5.7
+
+INSTRUMENTED_RUNTIME=false
 
 ## Variables deprecated since OCaml 5.6
 

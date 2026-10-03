@@ -498,8 +498,6 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
   CAMLassert (wosize > 0);
   CAMLassert (tag != Infix_tag);
 
-  CAML_EV_ALLOC(wosize);
-
   if (whsize <= SIZECLASS_MAX) {
     struct heap_stats* s;
     sizeclass sz = sizeclass_whsize[whsize];

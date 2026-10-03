@@ -604,6 +604,8 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
           }
           break;
         case EV_ALLOC:
+          /* No longer emitted by the runtime (the instrumented runtime was
+             removed in OCaml 5.7), but still decoded for compatibility. */
           if (cursor->alloc) {
             if (msg_length < 3) {
               atomic_store(&cursor->cursor_in_poll, 0);

@@ -371,8 +371,6 @@ CAMLprim value caml_runtime_variant (value unit)
   CAMLassert (unit == Val_unit);
 #if defined (DEBUG)
   return caml_copy_string ("d");
-#elif defined (CAML_INSTR)
-  return caml_copy_string ("i");
 #else
   return caml_copy_string ("");
 #endif

@@ -694,7 +694,7 @@ ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 # The recipe for runtime/ocamlruns$(EXE) also produces runtime/primitives
 boot/ocamlrun$(EXE): runtime/ocamlruns$(EXE)
 
-$(foreach runtime, ocamlrun$(EXE) ocamlrund$(EXE) ocamlruni$(EXE) \
+$(foreach runtime, ocamlrun$(EXE) ocamlrund$(EXE) \
                    libcamlrun_shared$(EXT_DLL) libasmrun_shared$(EXT_DLL), \
   $(eval runtime/$(runtime): | $(BYTE_BINDIR)/flexlink$(EXE)))
 
@@ -1300,12 +1300,6 @@ runtime_BYTECODE_STATIC_LIBRARIES += runtime/libcamlrund.$(A)
 runtime_NATIVE_STATIC_LIBRARIES += runtime/libasmrund.$(A)
 endif
 
-ifeq "$(INSTRUMENTED_RUNTIME)" "true"
-runtime_PROGRAMS += ocamlruni
-runtime_BYTECODE_STATIC_LIBRARIES += runtime/libcamlruni.$(A)
-runtime_NATIVE_STATIC_LIBRARIES += runtime/libasmruni.$(A)
-endif
-
 ifeq "$(UNIX_OR_WIN32)" "unix"
 ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
 runtime_BYTECODE_STATIC_LIBRARIES += runtime/libcamlrun_pic.$(A)
@@ -1328,9 +1322,6 @@ libcamlrun_non_shared_OBJECTS = \
 libcamlrund_OBJECTS = $(runtime_BYTECODE_C_SOURCES:.c=.bd.$(O)) \
   runtime/instrtrace.bd.$(O)
 
-libcamlruni_OBJECTS = \
-  $(runtime_BYTECODE_C_SOURCES:.c=.bi.$(O))
-
 libcamlrunpic_OBJECTS = \
   $(runtime_BYTECODE_C_SOURCES:.c=.bpic.$(O))
 
@@ -1339,9 +1330,6 @@ libasmrun_OBJECTS = \
 
 libasmrund_OBJECTS = \
   $(runtime_NATIVE_C_SOURCES:.c=.nd.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.d.$(O))
-
-libasmruni_OBJECTS = \
-  $(runtime_NATIVE_C_SOURCES:.c=.ni.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.i.$(O))
 
 libasmrunpic_OBJECTS = $(runtime_NATIVE_C_SOURCES:.c=.npic.$(O)) \
   $(runtime_ASM_OBJECTS:.$(O)=_libasmrunpic.$(O))
@@ -1353,7 +1341,6 @@ libcomprmarsh_OBJECTS = runtime/zstd.npic.$(O)
 runtime_CPPFLAGS = -DCAMLDLLIMPORT= -DIN_CAML_RUNTIME
 ocamlrun_CPPFLAGS = $(runtime_CPPFLAGS)
 ocamlrund_CPPFLAGS = $(runtime_CPPFLAGS) -DDEBUG
-ocamlruni_CPPFLAGS = $(runtime_CPPFLAGS) -DCAML_INSTR
 
 ## Runtime targets
 
@@ -1494,12 +1481,6 @@ runtime/ocamlrund$(EXE): runtime/prims.$(O) runtime/libcamlrund.$(A)
 runtime/libcamlrund.$(A): $(libcamlrund_OBJECTS)
 	$(V_MKLIB)$(call MKLIB,$@, $^)
 
-runtime/ocamlruni$(EXE): runtime/prims.$(O) runtime/libcamlruni.$(A)
-	$(V_MKEXE)$(MKEXE) -o $@ $^ $(INSTRUMENTED_RUNTIME_LIBS) $(BYTECCLIBS)
-
-runtime/libcamlruni.$(A): $(libcamlruni_OBJECTS)
-	$(V_MKLIB)$(call MKLIB,$@, $^)
-
 runtime/libcamlrun_pic.$(A): $(libcamlrunpic_OBJECTS)
 	$(V_MKLIB)$(call MKLIB,$@, $^)
 
@@ -1510,9 +1491,6 @@ runtime/libasmrun.$(A): $(libasmrun_OBJECTS)
 	$(V_MKLIB)$(call MKLIB,$@, $^)
 
 runtime/libasmrund.$(A): $(libasmrund_OBJECTS)
-	$(V_MKLIB)$(call MKLIB,$@, $^)
-
-runtime/libasmruni.$(A): $(libasmruni_OBJECTS)
 	$(V_MKLIB)$(call MKLIB,$@, $^)
 
 runtime/libasmrun_pic.$(A): $(libasmrunpic_OBJECTS)
@@ -1536,11 +1514,6 @@ runtime/%.bd.$(O): OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS) $(ocamlrund_CPPFLAGS)
 $(DEPDIR)/runtime/%.bd.$(D): \
   OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS) $(ocamlrund_CPPFLAGS)
 
-runtime/%.bi.$(O): OC_CFLAGS = $(OC_BYTECODE_CFLAGS)
-runtime/%.bi.$(O): OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
-$(DEPDIR)/runtime/%.bi.$(D): \
-  OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
-
 runtime/%.bpic.$(O): OC_CFLAGS = $(OC_BYTECODE_CFLAGS) $(SHAREDLIB_CFLAGS)
 runtime/%.bpic.$(O): OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS) $(ocamlrun_CPPFLAGS)
 $(DEPDIR)/runtime/%.bpic.$(D): \
@@ -1555,11 +1528,6 @@ runtime/%.nd.$(O): OC_CFLAGS = $(OC_NATIVE_CFLAGS)
 runtime/%.nd.$(O): OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS) $(ocamlrund_CPPFLAGS)
 $(DEPDIR)/runtime/%.nd.$(D): \
   OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS) $(ocamlrund_CPPFLAGS)
-
-runtime/%.ni.$(O): OC_CFLAGS = $(OC_NATIVE_CFLAGS)
-runtime/%.ni.$(O): OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
-$(DEPDIR)/runtime/%.ni.$(D): \
-  OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
 
 runtime/%.npic.$(O): OC_CFLAGS = $(OC_NATIVE_CFLAGS) $(SHAREDLIB_CFLAGS)
 runtime/%.npic.$(O): OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS) $(ocamlrun_CPPFLAGS)
@@ -1626,9 +1594,9 @@ COMPILE_C_FILE = \
 $(DEPDIR)/%:
 	$(MKDIR) $@
 
-runtime_OBJECT_TYPES = % %.b %.bd %.bi %.bpic
+runtime_OBJECT_TYPES = % %.b %.bd %.bpic
 ifeq "$(NATIVE_COMPILER)" "true"
-runtime_OBJECT_TYPES += %.n %.nd %.ni %.np %.npic
+runtime_OBJECT_TYPES += %.n %.nd %.np %.npic
 endif
 
 $(foreach runtime_OBJECT_TYPE, $(runtime_OBJECT_TYPES), \
@@ -1659,9 +1627,6 @@ runtime/%.o: runtime/%.S
 runtime/%.d.o: runtime/%.S
 	$(V_ASM)$(ASPP) $(OC_ASPPFLAGS) $(ocamlrund_CPPFLAGS) -o $@ $< || $(ASPP_ERROR)
 
-runtime/%.i.o: runtime/%.S
-	$(V_ASM)$(ASPP) $(OC_ASPPFLAGS) $(ocamlruni_CPPFLAGS) -o $@ $< || $(ASPP_ERROR)
-
 runtime/%_libasmrunpic.o: runtime/%.S
 	$(V_ASM)$(ASPP) $(OC_ASPPFLAGS) $(SHAREDLIB_CFLAGS) -o $@ $<
 
@@ -1673,9 +1638,6 @@ runtime/amd64nt.obj: runtime/amd64nt.asm runtime/domain_state.inc
 
 runtime/amd64nt.d.obj: runtime/amd64nt.asm runtime/domain_state.inc
 	$(V_ASM)$(ASM)$@ $(ocamlrund_CPPFLAGS) $<
-
-runtime/amd64nt.i.obj: runtime/amd64nt.asm runtime/domain_state.inc
-	$(V_ASM)$(ASM)$@ $(ocamlruni_CPPFLAGS) $<
 
 runtime/%_libasmrunpic.obj: runtime/%.asm
 	$(V_ASM)$(ASM)$@ $<
@@ -1695,9 +1657,9 @@ stdlib/libcamlrun.$(A): runtime-all
 	$(call LINK_IN, stdlib, ../runtime/libcamlrun.$(A))
 clean::
 	rm -f $(addprefix runtime/, *.o *.obj *.a *.lib *.so *.dll)
-	rm -f $(addprefix runtime/, ocamlrun ocamlrund ocamlruni ocamlruns sak)
+	rm -f $(addprefix runtime/, ocamlrun ocamlrund ocamlruns sak)
 	rm -f $(addprefix runtime/, \
-	  ocamlrun.exe ocamlrund.exe ocamlruni.exe ocamlruns.exe sak.exe)
+	  ocamlrun.exe ocamlrund.exe ocamlruns.exe sak.exe)
 # jumptbl.h and opnames.h stopped being generated in #14488, but the two headers
 # continue to be removed as otherwise when switching between branches based
 # before this change the (stale) headers trip the C/C++ compatibility tests.

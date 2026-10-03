@@ -82,7 +82,6 @@ git clean -q -f -d -x
 ./configure \
    --disable-shared \
    --disable-debug-runtime \
-   --disable-instrumented-runtime \
    --disable-ocamldoc \
    --disable-stdlib-manpages
 

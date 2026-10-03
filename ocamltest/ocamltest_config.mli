@@ -143,9 +143,6 @@ val function_sections : bool
 (** Whether the compiler was configured to generate
     each function in a separate section *)
 
-val instrumented_runtime : bool
-(** Whether the instrumented runtime is available *)
-
 val frame_pointers : bool
 (** Whether frame-pointers have been enabled at configure time *)
 

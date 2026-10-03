@@ -128,12 +128,10 @@ USE_RUNTIME ?=
 
 ifneq ($(USE_RUNTIME),)
 # Check USE_RUNTIME value
-ifeq ($(findstring $(USE_RUNTIME),d i),)
-$(error If set, USE_RUNTIME must be equal to "d" (debug runtime) \
-        or "i" (instrumented runtime))
+ifneq ($(USE_RUNTIME),d)
+$(error If set, USE_RUNTIME must be equal to "d" (debug runtime))
 endif
-# When using the debug or instrumented runtime,
-# set the runtime's verbosity to 0 by default
+# When using the debug runtime, set the runtime's verbosity to 0 by default
 export OCAMLRUNPARAM?=v=0
 endif
 
@@ -159,8 +157,8 @@ default:
 	@echo "be changed by adding KEEP=1 to the make command line or by setting the"
 	@echo "KEEP_TEST_DIR_ON_SUCCESS environment variable to a non-empty value."
 	@echo
-	@echo "Set the environment variable USE_RUNTIME to \"d\" or \"i\" to run"
-	@echo "the tests with the debug or the instrumented runtime."
+	@echo "Set the environment variable USE_RUNTIME to \"d\" to run the tests"
+	@echo "with the debug runtime."
 
 .PHONY: all
 all:

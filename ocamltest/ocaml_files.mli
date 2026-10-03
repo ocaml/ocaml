@@ -18,7 +18,6 @@
 type runtime_variant =
   | Normal
   | Debug
-  | Instrumented
 
 val runtime_variant : unit -> runtime_variant
 
