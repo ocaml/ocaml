@@ -1424,7 +1424,10 @@ let transl_type_decl env rec_flag sdecl_list =
   (* Compute the final environment with variance and immediacy *)
   let final_env = add_types_to_env decls shapes env in
   (* Check re-exportation *)
-  List.iter2 (check_abbrev final_env) sdecl_list decls;
+  List.iter2 (fun name_sdecl (id, slot) ->
+      Builtin_attributes.warning_scope name_sdecl.ptype_attributes (fun () ->
+      check_abbrev final_env name_sdecl (id, slot))
+    ) sdecl_list decls;
   (* Keep original declaration *)
   let final_decls =
     List.map2
