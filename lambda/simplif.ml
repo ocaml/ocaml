@@ -744,7 +744,7 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~return ~body ~attr ~loc =
        the pattern-matching compiler for options.
     *)
     | Llet(Strict, k, id,
-           (Lifthenelse(Lprim (Pisint, [Lvar optparam], _), _, _) as def),
+           (Lifthenelse(Lprim (Pisint _, [Lvar optparam], _), _, _) as def),
            rest) when
         Ident.name optparam = "*opt*" && List.mem_assoc optparam params
           && not (List.mem_assoc optparam map)

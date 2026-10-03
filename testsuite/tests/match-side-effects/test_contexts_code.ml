@@ -125,7 +125,7 @@ let example_3 () =
   (example_3/0 =
      (function param/2[int]
        (let (input/2 =mut [0: 1 [0: 1]] *match*/4 =o *input/2)
-         (if (field_imm 0 *match*/4)
+         (if (field_int 0 *match*/4)
            (switch* (field_imm 1 *match*/4)
             case tag 0:
              (if (seq (assign input/2 [0: 1 [1: 3]]) 0) [1: 3]

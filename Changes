@@ -1,5 +1,32 @@
 Working version
---------------
+---------------
+
+(Changes that can break existing programs are marked with a "*")
+
+### Language features:
+
+### Runtime system:
+
+### Code generation and optimizations:
+
+### Standard library:
+
+### Other libraries:
+
+### Tools:
+
+### Manual and documentation:
+
+### Compiler user-interface and warnings:
+
+### Internal/compiler-libs changes:
+
+### Build system:
+
+### Bug fixes:
+
+OCaml 5.6.0
+-----------
 
 (Changes that can break existing programs are marked with a "*")
 
@@ -20,6 +47,11 @@ Working version
   and in all module expressions as `Pmod_hole`. These parsetree nodes must be
   transformed by ppx rewriters; the compiler itself always rejects them.
   (David Allsopp and Nailen Matschke, review by Florian Angeletti)
+
+- #14985: Enable the use of polymorphic types in optional function parameters
+    let run ?(observer : 'a. (unit -> 'a) -> 'a = fun k -> k ()) = ...
+    let run' ?(observer : 'a. ((unit -> 'a) -> 'a) option) = ...
+  (Alistair O'Brien, review by Florian Angeletti)
 
 ### Runtime system:
 
@@ -166,6 +198,13 @@ Working version
 - #15092: do not lose domain allocation stats on termination
   (Edwin Török, report by Eduardo Souza, review by Stefan Muenzel)
 
+- #15033: optimize Weak.blit on 5.x, following the 4.x example
+  of #9259 by Arseniy Alekseyev.
+  (Gabriel Scherer, review by Damien Doligez)
+
+- #15117: The instrumented runtime is no longer installed by default.
+  (Davd Allsopp, review by Florian Angeletti, Nick Barnes and Sadiq Jaffer)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
@@ -252,7 +291,8 @@ Working version
 
 - #13438: keep some optimization hints from lambda in bytecode modules
   and executables (to be used by Js_of_ocaml / Wasm_of_ocaml)
-  (Jérôme Vouillon)
+  (Jérôme Vouillon, review by Olivier Nicole, Vincent Laviron, and
+   David Allsopp)
 
 - #13588: propagate physical comparison operators to lambda
   (to be used by Js_of_ocaml / Wasm_of_ocaml)
@@ -297,6 +337,12 @@ Working version
 
 - #15090: Allow unaligned memory accesses on s390x.
   (Zane Hambly, review by Xavier Leroy)
+
+- #15122: more optimization hints in bytecode modules and executables:
+  reads of values known to be immediates, and tests of whether a value
+  of a variant type is an immediate (to be used by Js_of_ocaml /
+  Wasm_of_ocaml)
+  (Jérôme Vouillon, review by Nicolás Ojeda Bär)
 
 ### Standard library:
 
@@ -397,6 +443,9 @@ Working version
 
 ### Other libraries:
 
+- #13450: Fixes and improvements for Windows socketpair on AF_UNIX emulation.
+  (Antonin Décimo, review by Nicolás Ojeda Bär)
+
 - #14740: Various fixes in libunix. Fix compilation failures if gethostname or
   IPv6 are not available. Add blocking sections to the wrappers of realpath and
   lockf. Fix missing root registration.
@@ -490,6 +539,10 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #14958, #15120: Improve error messages for Duplicate_constructor and
+  Duplicate_label.
+  (Michał Kosior, review by Florian Angeletti)
+
 - #14887: More concise messages for the non-exhaustiveness warning.
   (Luc Maranget, review by Florian Angeletti)
 
@@ -576,6 +629,10 @@ Working version
 - #14900: Speed up deep_occur_rec, improving typechecking performance of
   certain large types, as seen in #14897.
   (Stefan Muenzel, review by Gabriel Scherer and Vincent Laviron)
+
+- #14190: simplify the implementation of path compression in `Types.repr`
+  (Gabriel Scherer, review by Stefan Muenzel, Jacques Garrigue
+   and Florian Angeletti)
 
 - #14932: Fix `-dtypedtree` printing of `Twith_modtypesubst`.
   (Corentin De Souza, review by Nicolás Ojeda Bär)
@@ -765,9 +822,22 @@ Working version
   are valid.
   (Xavier Leroy, review by Nicolás Ojeda Bär and Edwin Török)
 
+- #15114: Fix the compilation of pattern matching on records whose field types
+  mention a locally abstract type: a field could be read as an immediate in
+  all the rows of the match because of a GADT equation that only holds in one
+  of them. In native code, the value was then not registered as a GC root.
+  (Jérôme Vouillon, review by Florian Angeletti)
+
 - #15115, OSEC-2026-23: Fix multiple issues in demarshaling
   (`Marshal.from_{channel,string,bytes}`)
   (Xavier Leroy, review by Nicolás Ojeda Bär)
+
+- #15118: Fix printing of module type names in the toplevel and -dsource when
+  the name is a reserved identifier.
+  (Nicolás Ojeda Bär, review by Florian Angeletti)
+
+- #15118: Fix printing of raw identifiers in exotic corner cases.
+  (Florian Angeletti, review by Nicolás Ojeda Bär)
 
 OCaml 5.5.1
 -----------

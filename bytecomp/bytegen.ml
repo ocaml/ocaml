@@ -156,7 +156,7 @@ let preserve_tailcall_for_prim = function
   | Pcompare_ints | Pcompare_floats | Pcompare_bints _
   | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
   | Pmakearray _ | Pduparray _ | Parraylength _ | Parrayrefu _ | Parraysetu _
-  | Parrayrefs _ | Parraysets _ | Pisint | Pisout | Pcheckbound
+  | Parrayrefs _ | Parraysets _ | Pisint _ | Pisout | Pcheckbound
   | Pbintofint _ | Pintofbint _ | Pbintoffloat _ | Pfloatofbint _
   | Pcvtbint _ | Pnegbint _ | Paddbint _ | Psubbint _ | Pmulbint _ | Pdivbint _
   | Pmodbint _ | Pandbint _ | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _
@@ -373,8 +373,8 @@ let comp_primitive stack_info p sz args =
   | Pcompare_ints -> Kccall("caml_int_compare", 2, None)
   | Pcompare_floats -> Kccall("caml_float_compare", 2, None)
   | Pcompare_bints bi -> comp_bint_primitive bi "compare" args
-  | Pfield(n, _ptr, _mut) -> Kgetfield n
-  | Pfield_computed -> Kgetvectitem
+  | Pfield(n, ptr, _mut) -> Kgetfield (n, ptr)
+  | Pfield_computed -> Kgetvectitem Pointer
   | Psetfield(n, _ptr, _init) -> Ksetfield n
   | Psetfield_computed(_ptr, _init) -> Ksetvectitem
   | Psetfloatfield (n, _init) -> Ksetfloatfield n
@@ -442,13 +442,16 @@ let comp_primitive stack_info p sz args =
   | Parraylength kind -> Kvectlength kind
   | Parrayrefs Pgenarray -> Kccall("caml_array_get", 2, None)
   | Parrayrefs Pfloatarray -> Kccall("caml_floatarray_get", 2, None)
-  | Parrayrefs _ -> Kccall("caml_array_get_addr", 2, None)
+  | Parrayrefs Pintarray ->
+      Kccall("caml_array_get_addr", 2, Some Hint_immediate_result)
+  | Parrayrefs Paddrarray -> Kccall("caml_array_get_addr", 2, None)
   | Parraysets Pgenarray -> Kccall("caml_array_set", 3, None)
   | Parraysets Pfloatarray -> Kccall("caml_floatarray_set", 3, None)
   | Parraysets _ -> Kccall("caml_array_set_addr", 3, None)
   | Parrayrefu Pgenarray -> Kccall("caml_array_unsafe_get", 2, None)
   | Parrayrefu Pfloatarray -> Kccall("caml_floatarray_unsafe_get", 2, None)
-  | Parrayrefu _ -> Kgetvectitem
+  | Parrayrefu Pintarray -> Kgetvectitem Immediate
+  | Parrayrefu Paddrarray -> Kgetvectitem Pointer
   | Parraysetu Pgenarray -> Kccall("caml_array_unsafe_set", 3, None)
   | Parraysetu Pfloatarray -> Kccall("caml_floatarray_unsafe_set", 3, None)
   | Parraysetu _ -> Ksetvectitem
@@ -464,7 +467,7 @@ let comp_primitive stack_info p sz args =
        | Backend_type -> "backend_type"
        | Standard_library_default -> "standard_library_default" in
      Kccall(Printf.sprintf "caml_sys_const_%s" const_name, 1, None)
-  | Pisint -> Kisint
+  | Pisint { variant_only } -> Kisint variant_only
   | Pisout -> Kisout
   | Pcheckbound -> Kccall("caml_check_bound", 2, None)
   | Pbintofint bi -> comp_bint_primitive bi "of_int" args

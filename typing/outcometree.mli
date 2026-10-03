@@ -105,7 +105,7 @@ and out_constructor = {
 
 and out_package = {
   opack_path: out_ident;
-  opack_constraints: (string * out_type) list;
+  opack_constraints: (string list * out_type) list;
 }
 
 and out_variant =

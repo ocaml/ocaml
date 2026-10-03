@@ -200,6 +200,11 @@ let record_event ev =
 let hints = ref ([] : (int * optimization_hint) list)
 let record_hint hint = hints := (!out_position, hint) :: !hints
 
+let record_immediate_hint (ptr : Lambda.immediate_or_pointer) =
+  match ptr with
+  | Immediate -> record_hint Hint_immediate
+  | Pointer -> ()
+
 (* Initialization *)
 
 let clear() =
@@ -289,7 +294,8 @@ let emit_instr = function
         if t = 0 then out opATOM0 else (out opATOM; out_int t)
       else if n < 4 then (out(opMAKEBLOCK1 + n - 1); out_int t)
       else (out opMAKEBLOCK; out_int n; out_int t)
-  | Kgetfield n ->
+  | Kgetfield (n, ptr) ->
+      record_immediate_hint ptr;
       if n < 4 then out(opGETFIELD0 + n) else (out opGETFIELD; out_int n)
   | Ksetfield n ->
       if n < 4 then out(opSETFIELD0 + n) else (out opSETFIELD; out_int n)
@@ -303,7 +309,9 @@ let emit_instr = function
   | Kvectlength kind ->
       record_hint (Hint_arraylength kind);
       out opVECTLENGTH
-  | Kgetvectitem -> out opGETVECTITEM
+  | Kgetvectitem ptr ->
+      record_immediate_hint ptr;
+      out opGETVECTITEM
   | Ksetvectitem -> out opSETVECTITEM
   | Kgetstringchar -> out opGETSTRINGCHAR
   | Kgetbyteschar -> out opGETBYTESCHAR
@@ -344,7 +352,9 @@ let emit_instr = function
       emit_comp (integer_comparison_of_physical c)
   | Koffsetint n -> out opOFFSETINT; out_int n
   | Koffsetref n -> out opOFFSETREF; out_int n
-  | Kisint -> out opISINT
+  | Kisint variant_only ->
+      if variant_only then record_hint Hint_variant;
+      out opISINT
   | Kisout -> out opULTINT
   | Kgetmethod -> out opGETMETHOD
   | Kgetpubmet tag -> out opGETPUBMET; out_int tag; out_int 0
@@ -422,7 +432,8 @@ let rec emit = function
       then out(opPUSHOFFSETCLOSURE0 + ofs / 3)
       else (out opPUSHOFFSETCLOSURE; out_int ofs);
       emit c
-  | Kpush :: Kgetglobal id :: Kgetfield n :: c ->
+  | Kpush :: Kgetglobal id :: Kgetfield (n, ptr) :: c ->
+      record_immediate_hint ptr;
       out opPUSHGETGLOBALFIELD; slot_for_getglobal id; out_int n; emit c
   | Kpush :: Kgetglobal id :: c ->
       out opPUSHGETGLOBAL; slot_for_getglobal id; emit c
@@ -447,7 +458,8 @@ let rec emit = function
     (Kacc _ | Kenvacc _ | Koffsetclosure _ | Kgetglobal _ | Kconst _ as instr)::
     c ->
       emit (Kpush :: instr :: remerge_events ev c)
-  | Kgetglobal id :: Kgetfield n :: c ->
+  | Kgetglobal id :: Kgetfield (n, ptr) :: c ->
+      record_immediate_hint ptr;
       out opGETGLOBALFIELD; slot_for_getglobal id; out_int n; emit c
   (* Default case *)
   | instr :: c ->
