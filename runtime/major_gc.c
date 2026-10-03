@@ -2101,11 +2101,6 @@ static void stw_try_cycle_all_domains(
      they should not run while global roots are being marked.*/
   caml_global_barrier(participating_count);
 
-  /* Someone should flush the allocation stats we gathered during the cycle */
-  if( participating[0] == domain ) {
-    CAML_EV_ALLOC_FLUSH();
-  }
-
   CAML_EV_END(EV_MAJOR_GC_STW);
   CAML_EV_END(EV_MAJOR_GC_CYCLE_DOMAINS);
 }

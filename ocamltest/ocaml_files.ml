@@ -20,19 +20,16 @@ open Ocamltest_stdlib
 type runtime_variant =
   | Normal
   | Debug
-  | Instrumented
 
 let runtime_variant() =
   let use_runtime = Sys.safe_getenv "USE_RUNTIME" in
   if use_runtime="d" then Debug
-  else if use_runtime="i" then Instrumented
   else Normal
 
 let ocamlrun =
   let runtime = match runtime_variant () with
     | Normal -> "ocamlrun"
-    | Debug -> "ocamlrund"
-    | Instrumented -> "ocamlruni" in
+    | Debug -> "ocamlrund" in
   let ocamlrunfile = Filename.mkexe runtime in
   Filename.make_path [Ocaml_directories.srcdir; "runtime"; ocamlrunfile]
 

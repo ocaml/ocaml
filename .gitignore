@@ -247,7 +247,6 @@ META
 /runtime/caml/version.h
 /runtime/ocamlrun
 /runtime/ocamlrund
-/runtime/ocamlruni
 /runtime/ld.conf
 /runtime/.gdb_history
 /runtime/build_config.h

@@ -1224,13 +1224,6 @@ let debugger = Actions.make
      "debugger available"
      "debugger not available")
 
-let instrumented_runtime = make
-  ~name:"instrumented-runtime"
-  ~description:"Passes if the instrumented runtime is available"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.instrumented_runtime)
-    "instrumented runtime available"
-    "instrumented runtime not available")
-
 let csharp_compiler = Actions.make
   ~name:"csharp-compiler"
   ~description:"Passes if the C# compiler is available"
@@ -1451,7 +1444,6 @@ let _ =
     native_compiler;
     native_dynlink;
     debugger;
-    instrumented_runtime;
     csharp_compiler;
     windows_unicode;
     afl_instrument;

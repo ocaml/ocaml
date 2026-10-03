@@ -236,7 +236,7 @@ jobs:
                    config_arg: '--disable-native-toplevel --disable-shared',
                    'test-in-prefix': true},
                   {name: 'minimal', os: 'ubuntu-latest',
-                   config_arg: '--disable-native-toplevel --disable-native-compiler --disable-shared --disable-debug-runtime --disable-instrumented-runtime --disable-systhreads --disable-str-lib --disable-unix-lib --disable-ocamldoc'},
+                   config_arg: '--disable-native-toplevel --disable-native-compiler --disable-shared --disable-debug-runtime --disable-systhreads --disable-str-lib --disable-unix-lib --disable-ocamldoc'},
                   {name: 'unsuffixed', os: 'ubuntu-latest',
                    config_arg: '--disable-suffixing',
                    'test-in-prefix': true}]);

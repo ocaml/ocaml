@@ -300,7 +300,6 @@ BasicCompiler () {
   trap ReportBuildStatus ERR
 
   call-configure --disable-debug-runtime \
-                 --disable-instrumented-runtime \
                  --enable-ocamltest \
 
   # Need a runtime

@@ -690,11 +690,12 @@ module Callbacks : sig
       are called when the ring undergoes a change in lifecycle and a consumer
       may need to respond. The int option is the PID carried by those lifecycle
       events that have one, and [None] for those that do not. [alloc] callbacks
-      are currently only called on the instrumented runtime, which is deprecated
-      as of OCaml 5.6. [lost_events] callbacks are called if the consumer code
-      detects some unconsumed events have been overwritten, and are given the
-      number of ring buffer words that were skipped. Events vary in size, so
-      this is not a count of lost events. *)
+      are never called: the allocation events were only emitted by the
+      instrumented runtime, which was removed in OCaml 5.7, and the parameter
+      is retained for compatibility only. [lost_events] callbacks are called if
+      the consumer code detects some unconsumed events have been overwritten,
+      and are given the number of ring buffer words that were skipped. Events
+      vary in size, so this is not a count of lost events. *)
 
   val add_user_event : 'a Type.t ->
                         (int -> Timestamp.t -> 'a User.t -> 'a -> unit) ->
