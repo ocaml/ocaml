@@ -92,6 +92,12 @@ let pbintcomp = "Pbintcomp"
 let pbintofint = "Pbintofint"
 let pbintoffloat = "Pbintoffloat"
 let pbswap16 = "Pbswap16"
+let pfloatarray_dot = "Pfloatarray_dot"
+let pfloatarray_sum = "Pfloatarray_sum"
+let pfloatarray_scale = "Pfloatarray_scale"
+let pfloatarray_axpy = "Pfloatarray_axpy"
+let pfloatarray_add = "Pfloatarray_add"
+let pfloatarray_mul = "Pfloatarray_mul"
 let pbytes_of_string = "Pbytes_of_string"
 let pbytes_load_16 = "Pbytes_load_16"
 let pbytes_load_32 = "Pbytes_load_32"
@@ -211,6 +217,12 @@ let pbintcomp_arg = "Pbintcomp_arg"
 let pbintofint_arg = "Pbintofint_arg"
 let pbintoffloat_arg = "Pbintoffloat_arg"
 let pbswap16_arg = "Pbswap16_arg"
+let pfloatarray_dot_arg = "Pfloatarray_dot_arg"
+let pfloatarray_sum_arg = "Pfloatarray_sum_arg"
+let pfloatarray_scale_arg = "Pfloatarray_scale_arg"
+let pfloatarray_axpy_arg = "Pfloatarray_axpy_arg"
+let pfloatarray_add_arg = "Pfloatarray_add_arg"
+let pfloatarray_mul_arg = "Pfloatarray_mul_arg"
 let pbytes_of_string_arg = "Pbytes_of_string_arg"
 let pbytes_to_string_arg = "Pbytes_to_string_arg"
 let pbyteslength_arg = "Pbyteslength_arg"
@@ -435,6 +447,12 @@ let of_primitive : Lambda.primitive -> string = function
   | Pbigstring_set_32 _ -> pbigstring_set_32
   | Pbigstring_set_64 _ -> pbigstring_set_64
   | Pbswap16 -> pbswap16
+  | Pfloatarray_dot -> pfloatarray_dot
+  | Pfloatarray_sum -> pfloatarray_sum
+  | Pfloatarray_scale -> pfloatarray_scale
+  | Pfloatarray_axpy -> pfloatarray_axpy
+  | Pfloatarray_add -> pfloatarray_add
+  | Pfloatarray_mul -> pfloatarray_mul
   | Pbbswap _ -> pbbswap
   | Pint_as_pointer -> pint_as_pointer
   | Popaque -> popaque
@@ -551,6 +569,12 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Pbigstring_set_32 _ -> pbigstring_set_32_arg
   | Pbigstring_set_64 _ -> pbigstring_set_64_arg
   | Pbswap16 -> pbswap16_arg
+  | Pfloatarray_dot -> pfloatarray_dot_arg
+  | Pfloatarray_sum -> pfloatarray_sum_arg
+  | Pfloatarray_scale -> pfloatarray_scale_arg
+  | Pfloatarray_axpy -> pfloatarray_axpy_arg
+  | Pfloatarray_add -> pfloatarray_add_arg
+  | Pfloatarray_mul -> pfloatarray_mul_arg
   | Pbbswap _ -> pbbswap_arg
   | Pint_as_pointer -> pint_as_pointer_arg
   | Popaque -> popaque_arg
