@@ -2976,6 +2976,11 @@ let call_switcher loc fail arg ?low ?high int_lambda_list =
   let edges, (cases, actions) = as_interval fail ?low ?high int_lambda_list in
   Switcher.zyva loc edges arg cases actions
 
+let bind_and_call_switcher loc fail var_name arg ?low ?high int_lambda_list =
+  let var = Ident.create_local var_name in
+  Llet( Alias, Pgenval, var, arg,
+        call_switcher loc fail (Lvar var) ?low ?high int_lambda_list )
+
 let rec list_as_pat = function
   | [] -> fatal_error "Matching.list_as_pat"
   | [ pat ] -> pat
@@ -3438,13 +3443,9 @@ let call_switcher_variant_constant loc fail arg int_lambda_list =
   call_switcher loc fail arg int_lambda_list
 
 let call_switcher_variant_constr loc fail arg int_lambda_list =
-  let v = Ident.create_local "variant" in
-  Llet
-    ( Alias,
-      Pgenval,
-      v,
-      Lprim (Pfield (0, Pointer, Immutable), [ arg ], loc),
-      call_switcher loc fail (Lvar v) int_lambda_list )
+  bind_and_call_switcher loc fail
+    "variant" (Lprim (Pfield (0, Pointer, Immutable), [ arg ], loc))
+    int_lambda_list
 
 let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats)
     =
@@ -3515,11 +3516,9 @@ let combine_array loc arg kind partial ctx def (len_lambda_list, total1, _pats)
     =
   let fail, local_jumps = mk_failaction_neg partial ctx def in
   let lambda1 =
-    let newvar = Ident.create_local "len" in
-    let switch =
-      call_switcher loc fail (Lvar newvar) ~low:0 len_lambda_list
-    in
-    bind Alias newvar (Lprim (Parraylength kind, [ arg ], loc)) switch
+    bind_and_call_switcher loc fail
+      "len" (Lprim (Parraylength kind, [ arg ], loc))
+      ~low:0 len_lambda_list
   in
   (lambda1, Jumps.union local_jumps total1)
 
