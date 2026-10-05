@@ -19,30 +19,19 @@
    when the load factor becomes too high. *)
 
 type ('a, 'b) t =
-  { mutable size: int;                        (* number of entries *)
-    mutable data: ('a, 'b) bucketlist array;  (* the buckets *)
-    seed: int;                        (* for randomization *)
-    mutable initial_size: int;                (* initial array size *)
+  { mutable size: int;                  (* number of entries *)
+    mutable buckets: 'a bucketlist array;  (* the buckets *)
+    keys: 'a Dynarray.t;
+    data: 'b Dynarray.t;
+    seed: int;                          (* for randomization *)
+    initial_size: int;          (* initial array size *)
   }
 
-and ('a, 'b) bucketlist =
+and 'a bucketlist =
     Empty
-  | Cons of { mutable key: 'a;
-              mutable data: 'b;
-              mutable next: ('a, 'b) bucketlist }
-
-(* The sign of initial_size encodes the fact that a traversal is
-   ongoing or not.
-
-   This disables the efficient in place implementation of resizing.
-*)
-
-let ongoing_traversal h =
-  Obj.size (Obj.repr h) < 4 (* compatibility with old hash tables *)
-  || h.initial_size < 0
-
-let flip_ongoing_traversal h =
-  h.initial_size <- - h.initial_size
+  | Cons of { mutable id: int;          (* unique identifier *)
+              mutable key: 'a;
+              mutable next: 'a bucketlist }
 
 (* To pick random seeds if requested *)
 
@@ -86,55 +75,53 @@ let create ?(random = Atomic.get randomized) initial_size =
   let seed =
     if random then Random.State.bits (Domain.DLS.get prng_key) else 0
   in
-  { initial_size = s; size = 0; seed = seed; data = Array.make s Empty }
+  { initial_size = s; size = 0; seed = seed; buckets = Array.make s Empty;
+    data = Dynarray.create (); keys = Dynarray.create () }
 
 let clear h =
   if h.size > 0 then begin
     h.size <- 0;
-    Array.fill h.data 0 (Array.length h.data) Empty
+    Array.fill h.buckets 0 (Array.length h.buckets) Empty;
+    Dynarray.clear h.data; Dynarray.clear h.keys
   end
 
 let reset h =
-  let len = Array.length h.data in
-  if Obj.size (Obj.repr h) < 4 (* compatibility with old hash tables *)
-    || len = abs h.initial_size then
+  if Obj.size (Obj.repr h) < 4 (* compatibility with old hash tables *) then
     clear h
   else begin
     h.size <- 0;
-    h.data <- Array.make (abs h.initial_size) Empty
+    h.buckets <- Array.make h.initial_size Empty;
+    Dynarray.reset h.data; Dynarray.reset h.keys
   end
 
 let copy_bucketlist = function
   | Empty -> Empty
-  | Cons {key; data; next} ->
+  | Cons {id; key; next} ->
       let rec loop prec = function
         | Empty -> ()
-        | Cons {key; data; next} ->
-            let r = Cons {key; data; next} in
+        | Cons {id; key; next} ->
+            let r = Cons {id; key; next} in
             begin match prec with
             | Empty -> assert false
             | Cons prec ->  prec.next <- r
             end;
             loop r next
       in
-      let r = Cons {key; data; next} in
+      let r = Cons {id; key; next} in
       loop r next;
       r
 
-let copy h = { h with data = Array.map copy_bucketlist h.data }
+let copy h = { h with buckets = Array.map copy_bucketlist h.buckets;
+                data = Dynarray.copy h.data; keys = Dynarray.copy h.keys }
 
 let length h = h.size
 
-let insert_all_buckets indexfun inplace odata ndata =
+let insert_all_buckets indexfun odata ndata =
   let nsize = Array.length ndata in
   let ndata_tail = Array.make nsize Empty in
   let rec insert_bucket = function
     | Empty -> ()
-    | Cons {key; data; next} as cell ->
-        let cell =
-          if inplace then cell
-          else Cons {key; data; next = Empty}
-        in
+    | Cons {key; next; _} as cell ->
         let nidx = indexfun key in
         begin match ndata_tail.(nidx) with
         | Empty -> ndata.(nidx) <- cell;
@@ -146,95 +133,83 @@ let insert_all_buckets indexfun inplace odata ndata =
   for i = 0 to Array.length odata - 1 do
     insert_bucket odata.(i)
   done;
-  if inplace then
-    for i = 0 to nsize - 1 do
+  for i = 0 to nsize - 1 do
       match ndata_tail.(i) with
       | Empty -> ()
       | Cons tail -> tail.next <- Empty
     done
 
 let resize indexfun h =
-  let odata = h.data in
+  let odata = h.buckets in
   let osize = Array.length odata in
   let nsize = osize * 2 in
   if nsize < Sys.max_array_length then begin
     let ndata = Array.make nsize Empty in
-    let inplace = not (ongoing_traversal h) in
-    h.data <- ndata;          (* so that indexfun sees the new bucket count *)
-    insert_all_buckets (indexfun h) inplace odata ndata
+    h.buckets <- ndata;          (* so that indexfun sees the new bucket count *)
+    insert_all_buckets (indexfun h) odata ndata
   end
 
 let iter f h =
-  let rec do_bucket = function
-    | Empty ->
-        ()
-    | Cons{key; data; next} ->
-        f key data; do_bucket next in
-  let old_trav = ongoing_traversal h in
-  if not old_trav then flip_ongoing_traversal h;
-  try
-    let d = h.data in
-    for i = 0 to Array.length d - 1 do
-      do_bucket d.(i)
-    done;
-    if not old_trav then flip_ongoing_traversal h;
-  with exn when not old_trav ->
-    flip_ongoing_traversal h;
-    raise exn
+  for i = 0 to h.size - 1 do
+    f (Dynarray.get h.keys i) (Dynarray.get h.data i)
+  done
 
-let rec filter_map_inplace_bucket f h i prec = function
-  | Empty ->
-      begin match prec with
-      | Empty -> h.data.(i) <- Empty
-      | Cons c -> c.next <- Empty
-      end
-  | (Cons ({key; data; next} as c)) as slot ->
-      begin match f key data with
-      | None ->
-          h.size <- h.size - 1;
-          filter_map_inplace_bucket f h i prec next
-      | Some data ->
-          begin match prec with
-          | Empty -> h.data.(i) <- slot
-          | Cons c -> c.next <- slot
-          end;
-          c.data <- data;
-          filter_map_inplace_bucket f h i slot next
-      end
+let replace_bucket_id ~key_index h ~key ~prev_id ~new_id =
+  let rec find_bucket = function
+  | Empty -> ()
+  | Cons c ->
+    if c.id = prev_id then c.id <- new_id
+    else find_bucket c.next
+  in find_bucket h.buckets.(key_index h key)
 
-let filter_map_inplace f h =
-  let d = h.data in
-  let old_trav = ongoing_traversal h in
-  if not old_trav then flip_ongoing_traversal h;
-  try
-    for i = 0 to Array.length d - 1 do
-      filter_map_inplace_bucket f h i Empty h.data.(i)
-    done;
-    if not old_trav then flip_ongoing_traversal h
-  with exn when not old_trav ->
-    flip_ongoing_traversal h;
-    raise exn
+(* removes the bucket containing id *)
+let remove_bucket ~key_index h ~key ~id =
+  let i = key_index h key in
+  let rec find_bucket prec = function
+  | Empty -> ()
+  | (Cons {id = prev; next; _}) as slot ->
+    if prev = id then
+      match prec with
+      | Empty -> h.buckets.(i) <- Empty
+      | Cons c -> c.next <- next
+    else find_bucket slot next
+  in find_bucket Empty h.buckets.(i)
+
+(* function that iterates on ids *)
+let rec filter_map_inplace_id ~key_index f h ~read ~write =
+  if read = h.size then begin
+    h.size <- write;
+    if write <> read then
+      for i = read - 1 to write do
+        remove_bucket ~key_index h ~key:(Dynarray.get h.keys i) ~id:i;
+        Dynarray.remove_last h.keys;
+        Dynarray.remove_last h.data
+      done
+  end
+  else
+    match f (Dynarray.get h.keys read) (Dynarray.get h.data read) with
+    | None ->
+      remove_bucket ~key_index h ~key:(Dynarray.get h.keys write) ~id:write;
+      filter_map_inplace_id ~key_index f h ~read:(read + 1) ~write
+    | Some data ->
+      if write <> read then begin
+        Dynarray.set h.keys write (Dynarray.get h.keys read);
+        replace_bucket_id ~key_index h ~key:(Dynarray.get h.keys read)
+        ~prev_id:read ~new_id:write
+      end;
+      Dynarray.set h.data write data;
+      filter_map_inplace_id ~key_index f h ~read:(read + 1) ~write:(write + 1)
+
+let filter_map_inplace f ~key_index h =
+  filter_map_inplace_id ~key_index f h ~read:0 ~write:0
 
 let fold f h init =
-  let rec do_bucket b accu =
-    match b with
-      Empty ->
-        accu
-    | Cons{key; data; next} ->
-        do_bucket next (f key data accu) in
-  let old_trav = ongoing_traversal h in
-  if not old_trav then flip_ongoing_traversal h;
-  try
-    let d = h.data in
-    let accu = ref init in
-    for i = 0 to Array.length d - 1 do
-      accu := do_bucket d.(i) !accu
-    done;
-    if not old_trav then flip_ongoing_traversal h;
-    !accu
-  with exn when not old_trav ->
-    flip_ongoing_traversal h;
-    raise exn
+  let rec fold_aux i accu =
+    if i = h.size then accu else
+      fold_aux (i + 1)
+        (f (Dynarray.get h.keys i) (Dynarray.get h.data i) accu) in
+  let accu = ref init in
+  accu := fold_aux 0 !accu; !accu
 
 type statistics = {
   num_bindings: int;
@@ -245,38 +220,30 @@ type statistics = {
 
 let rec bucket_length accu = function
   | Empty -> accu
-  | Cons{next} -> bucket_length (accu + 1) next
+  | Cons {next} -> bucket_length (accu + 1) next
 
 let stats h =
   let mbl =
-    Array.fold_left (fun m b -> Int.max m (bucket_length 0 b)) 0 h.data in
+    Array.fold_left (fun m b -> Int.max m (bucket_length 0 b)) 0 h.buckets in
   let histo = Array.make (mbl + 1) 0 in
   Array.iter
     (fun b ->
       let l = bucket_length 0 b in
       histo.(l) <- histo.(l) + 1)
-    h.data;
+    h.buckets;
   { num_bindings = h.size;
-    num_buckets = Array.length h.data;
+    num_buckets = Array.length h.buckets;
     max_bucket_length = mbl;
     bucket_histogram = histo }
 
 (** {1 Iterators} *)
 
 let to_seq tbl =
-  (* capture current array, so that even if the table is resized we
-     keep iterating on the same array *)
-  let tbl_data = tbl.data in
-  (* state: index * next bucket to traverse *)
-  let rec aux i buck () = match buck with
-    | Empty ->
-        if i = Array.length tbl_data
-        then Seq.Nil
-        else aux(i+1) tbl_data.(i) ()
-    | Cons {key; data; next} ->
-        Seq.Cons ((key, data), aux i next)
-  in
-  aux 0 Empty
+  let rec aux i () =
+    if i = Dynarray.length tbl.data then Seq.Nil
+    else Seq.Cons (((Dynarray.get tbl.keys i), (Dynarray.get tbl.data i)),
+                    aux (i+1))
+  in aux 0
 
 let to_seq_keys m = Seq.map fst (to_seq m)
 
@@ -369,114 +336,128 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
     let copy = copy
 
     let key_index h key =
-      (H.seeded_hash h.seed key) land (Array.length h.data - 1)
+      (H.seeded_hash h.seed key) land (Array.length h.buckets - 1)
 
     let add h key data =
       let i = key_index h key in
-      let bucket = Cons{key; data; next=h.data.(i)} in
-      h.data.(i) <- bucket;
+      let bucket = Cons {id = h.size; key; next = h.buckets.(i)} in
+      h.buckets.(i) <- bucket;
       h.size <- h.size + 1;
-      if h.size > Array.length h.data lsl 1 then resize key_index h
+      Dynarray.add_last h.data data;
+      Dynarray.add_last h.keys key;
+      if h.size > Dynarray.length h.data lsl 1 then resize key_index h
 
     let rec remove_bucket h i key prec bucket =
       match bucket with
       | Empty ->
-          bucket
-      | Cons {key=k; next; _} ->
+          None
+      | Cons {id; key = k; next} ->
           if H.equal k key
-          then begin
+          then let data = Dynarray.get h.data id in begin
             h.size <- h.size - 1;
+            if id = h.size then begin
+              Dynarray.remove_last h.data;
+              Dynarray.remove_last h.keys
+            end
+            else begin
+              Dynarray.set h.data id (Dynarray.pop_last h.data);
+              let last_key = Dynarray.pop_last h.keys in
+              Dynarray.set h.keys id last_key;
+              replace_bucket_id ~key_index h ~key:last_key
+                ~prev_id:h.size ~new_id:id
+            end;
             begin match prec with
-            | Empty -> h.data.(i) <- next
+            | Empty -> h.buckets.(i) <- next
             | Cons c -> c.next <- next
             end;
-            bucket
+            Some data
           end
           else remove_bucket h i key bucket next
 
     let find_and_remove h key =
-      let i = key_index h key in
-      let bucket = remove_bucket h i key Empty h.data.(i) in
-      match bucket with
-      | Empty -> None
-      | Cons {data; _} -> Some data
+      let i = key_index h key in remove_bucket h i key Empty h.buckets.(i)
 
     let remove h key =
       let i = key_index h key in
-      ignore (remove_bucket h i key Empty h.data.(i))
+      ignore (remove_bucket h i key Empty h.buckets.(i))
 
-    let rec find_rec key = function
+    let rec find_rec h key = function
       | Empty ->
           raise Not_found
-      | Cons{key=k; data; next} ->
-          if H.equal key k then data else find_rec key next
+      | Cons {id; key = k; next} ->
+          if H.equal key k then Dynarray.get h.data id
+          else find_rec h key next
 
     let find h key =
-      match h.data.(key_index h key) with
+      match h.buckets.(key_index h key) with
       | Empty -> raise Not_found
-      | Cons{key=k1; data=d1; next=next1} ->
-          if H.equal key k1 then d1 else
-          match next1 with
+      | Cons {id = id1; key = key1; next = next1} ->
+        if H.equal key key1 then Dynarray.get h.data id1
+        else match next1 with
+        | Empty -> raise Not_found
+        | Cons {id = id2; key = key2; next = next2} ->
+          if H.equal key key2 then Dynarray.get h.data id2
+          else match next2 with
           | Empty -> raise Not_found
-          | Cons{key=k2; data=d2; next=next2} ->
-              if H.equal key k2 then d2 else
-              match next2 with
-              | Empty -> raise Not_found
-              | Cons{key=k3; data=d3; next=next3} ->
-                  if H.equal key k3 then d3 else find_rec key next3
+          | Cons {id = id3; key = key3; next = next3} ->
+            if H.equal key key3 then Dynarray.get h.data id3
+            else find_rec h key next3
 
-    let rec find_rec_opt key = function
-      | Empty ->
-          None
-      | Cons{key=k; data; next} ->
-          if H.equal key k then Some data else find_rec_opt key next
+    let rec find_rec_opt h key = function
+    | Empty -> None
+    | Cons {id; key = k; next} ->
+      if H.equal key k then Some (Dynarray.get h.data id)
+      else find_rec_opt h key next
 
     let find_opt h key =
-      match h.data.(key_index h key) with
+      match h.buckets.(key_index h key) with
       | Empty -> None
-      | Cons{key=k1; data=d1; next=next1} ->
-          if H.equal key k1 then Some d1 else
-          match next1 with
+      | Cons {id = id1; key = key1; next = next1} ->
+          if H.equal key key1 then Some (Dynarray.get h.data id1)
+          else match next1 with
           | Empty -> None
-          | Cons{key=k2; data=d2; next=next2} ->
-              if H.equal key k2 then Some d2 else
-              match next2 with
+          | Cons {id = id2; key = key2; next = next2} ->
+              if H.equal key key2 then Some (Dynarray.get h.data id2)
+              else match next2 with
               | Empty -> None
-              | Cons{key=k3; data=d3; next=next3} ->
-                  if H.equal key k3 then Some d3 else find_rec_opt key next3
+              | Cons {id = id3; key = key3; next = next3} ->
+                  if H.equal key key3 then Some (Dynarray.get h.data id3)
+                  else find_rec_opt h key next3
 
     let find_all h key =
       let[@tail_mod_cons] rec find_in_bucket = function
       | Empty ->
           []
-      | Cons{key=k; data=d; next} ->
-          if H.equal k key
-          then d :: find_in_bucket next
+      | Cons {id; key = k; next} ->
+          if H.equal k key then Dynarray.get h.data id :: find_in_bucket next
           else find_in_bucket next in
-      find_in_bucket h.data.(key_index h key)
+      find_in_bucket h.buckets.(key_index h key)
 
-    let rec retrieve_bucket key bucket =
+    let rec retrieve_bucket h key bucket =
       match bucket with
       | Empty ->
           bucket
-      | Cons {key=k; next} ->
-          if H.equal k key
-          then bucket
-          else retrieve_bucket key next
+      | Cons {key = k; next; _} ->
+          if H.equal k key then bucket
+          else retrieve_bucket h key next
 
     let replace_bucket h key i l data = function
       | Empty ->
-        h.data.(i) <- Cons{key; data; next=l};
+        h.buckets.(i) <- Cons {id = h.size; key; next = l};
         h.size <- h.size + 1;
-        if h.size > Array.length h.data lsl 1 then resize key_index h
-      | Cons slot -> slot.key <- key; slot.data <- data
+        Dynarray.add_last h.data data;
+        Dynarray.add_last h.keys key;
+        if h.size > Array.length h.buckets lsl 1 then resize key_index h
+      | Cons (_ as slot) ->
+        Dynarray.set h.keys slot.id key;
+        Dynarray.set h.data slot.id data
 
     let find_and_replace h key data =
       let i = key_index h key in
-      let l = h.data.(i) in
-      let bucket = retrieve_bucket key l in
+      let l = h.buckets.(i) in
+      let bucket = retrieve_bucket h key l in
       let old_data = match bucket with
-        | Cons {data; _} -> Some data
+        | Cons {id; _} -> Some (Dynarray.get h.data id)
         | Empty -> None
       in
       replace_bucket h key i l data bucket;
@@ -484,20 +465,20 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
 
     let replace h key data =
       let i = key_index h key in
-      let l = h.data.(i) in
-      let bucket = retrieve_bucket key l in
+      let l = h.buckets.(i) in
+      let bucket = retrieve_bucket h key l in
       replace_bucket h key i l data bucket
 
     (* Iterators *)
 
-    let rec mem_in_bucket key = function
+    let rec mem_in_bucket h key = function
       | Empty ->
           false
-      | Cons{key=k; next} ->
-          H.equal k key || mem_in_bucket key next
+      | Cons {key = k; next; _} ->
+          H.equal k key || mem_in_bucket h key next
 
     let mem h key =
-      mem_in_bucket key h.data.(key_index h key)
+      mem_in_bucket h key h.buckets.(key_index h key)
 
     let add_seq tbl i =
       Seq.iter (fun (k,v) -> add tbl k v) i
@@ -511,7 +492,7 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
       tbl
 
     let iter = iter
-    let filter_map_inplace = filter_map_inplace
+    let filter_map_inplace = filter_map_inplace ~key_index
     let fold = fold
     let length = length
     let stats = stats
@@ -547,135 +528,151 @@ let seeded_hash seed x = seeded_hash_param 10 100 seed x
 
 let key_index h key =
   if Obj.size (Obj.repr h) >= 4
-  then (seeded_hash_param 10 100 h.seed key) land (Array.length h.data - 1)
+  then (seeded_hash_param 10 100 h.seed key) land (Array.length h.buckets - 1)
   else invalid_arg "Hashtbl: unsupported hash table format"
 
 let add h key data =
   let i = key_index h key in
-  let bucket = Cons{key; data; next=h.data.(i)} in
-  h.data.(i) <- bucket;
+  let bucket = Cons {id = h.size; key; next=h.buckets.(i)} in
+  h.buckets.(i) <- bucket;
   h.size <- h.size + 1;
-  if h.size > Array.length h.data lsl 1 then resize key_index h
+  Dynarray.add_last h.data data;
+  Dynarray.add_last h.keys key;
+  if h.size > Array.length h.buckets lsl 1 then resize key_index h
 
 let rec remove_bucket h i key prec bucket =
   match bucket with
   | Empty ->
-      bucket
-  | Cons {key=k; next; _} ->
+      None
+  | Cons {id; key = k; next} ->
       if compare k key = 0
-      then begin
+      then let data = Dynarray.get h.data id in begin
         h.size <- h.size - 1;
+        if id = h.size then begin
+              Dynarray.remove_last h.data;
+              Dynarray.remove_last h.keys
+        end
+            else begin
+              Dynarray.set h.data id (Dynarray.pop_last h.data);
+              let last_key = Dynarray.pop_last h.keys in
+              Dynarray.set h.keys id last_key;
+              replace_bucket_id ~key_index h ~key:last_key
+                ~prev_id:h.size ~new_id:id
+            end;
         begin match prec with
-        | Empty -> h.data.(i) <- next
+        | Empty -> h.buckets.(i) <- next
         | Cons c -> c.next <- next
         end;
-        bucket
+        Some data
       end
       else remove_bucket h i key bucket next
 
 let find_and_remove h key =
-  let i = key_index h key in
-  let bucket = remove_bucket h i key Empty h.data.(i) in
-  match bucket with
-  | Empty -> None
-  | Cons {data; _} -> Some data
+  let i = key_index h key in remove_bucket h i key Empty h.buckets.(i)
 
 let remove h key =
   let i = key_index h key in
-  ignore (remove_bucket h i key Empty h.data.(i))
+  ignore (remove_bucket h i key Empty h.buckets.(i))
 
-let rec find_rec key = function
+let filter_map_inplace = filter_map_inplace ~key_index
+
+let rec find_rec h key = function
   | Empty ->
       raise Not_found
-  | Cons{key=k; data; next} ->
-      if compare key k = 0 then data else find_rec key next
+  | Cons {id; key = k; next} ->
+      if compare key k = 0 then Dynarray.get h.data id
+      else find_rec h key next
 
 let find h key =
-  match h.data.(key_index h key) with
+  match h.buckets.(key_index h key) with
   | Empty -> raise Not_found
-  | Cons{key=k1; data=d1; next=next1} ->
-      if compare key k1 = 0 then d1 else
-      match next1 with
+  | Cons {id = id1; key = key1; next = next1} ->
+      if compare key key1 = 0 then Dynarray.get h.data id1
+      else match next1 with
       | Empty -> raise Not_found
-      | Cons{key=k2; data=d2; next=next2} ->
-          if compare key k2 = 0 then d2 else
-          match next2 with
+      | Cons {id = id2; key = key2; next = next2} ->
+          if compare key key2 = 0 then Dynarray.get h.data id2
+          else match next2 with
           | Empty -> raise Not_found
-          | Cons{key=k3; data=d3; next=next3} ->
-              if compare key k3 = 0 then d3 else find_rec key next3
+          | Cons {id = id3; key = key3; next = next3} ->
+              if compare key key3 = 0 then Dynarray.get h.data id3
+              else find_rec h key next3
 
-let rec find_rec_opt key = function
-  | Empty ->
-      None
-  | Cons{key=k; data; next} ->
-      if compare key k = 0 then Some data else find_rec_opt key next
+let rec find_rec_opt h key = function
+| Empty -> None
+| Cons {id; key = k; next} ->
+  if compare key k = 0 then Some (Dynarray.get h.data id)
+  else find_rec_opt h key next
 
 let find_opt h key =
-  match h.data.(key_index h key) with
+  match h.buckets.(key_index h key) with
   | Empty -> None
-  | Cons{key=k1; data=d1; next=next1} ->
-      if compare key k1 = 0 then Some d1 else
-      match next1 with
+  | Cons {id = id1; key = key1; next = next1} ->
+      if compare key key1 = 0 then Some (Dynarray.get h.data id1)
+      else match next1 with
       | Empty -> None
-      | Cons{key=k2; data=d2; next=next2} ->
-          if compare key k2 = 0 then Some d2 else
-          match next2 with
+      | Cons {id = id2; key = key2; next = next2} ->
+          if compare key key2 = 0 then Some (Dynarray.get h.data id2)
+          else match next2 with
           | Empty -> None
-          | Cons{key=k3; data=d3; next=next3} ->
-              if compare key k3 = 0 then Some d3 else find_rec_opt key next3
+          | Cons {id = id3; key = key3; next = next3} ->
+              if compare key key3 = 0 then Some (Dynarray.get h.data id3)
+              else find_rec_opt h key next3
 
 let find_all h key =
   let[@tail_mod_cons] rec find_in_bucket = function
   | Empty ->
       []
-  | Cons{key=k; data; next} ->
-      if compare k key = 0
-      then data :: find_in_bucket next
+  | Cons {id; key = k; next} ->
+      if compare k key = 0 then Dynarray.get h.data id :: find_in_bucket next
       else find_in_bucket next in
-  find_in_bucket h.data.(key_index h key)
+  find_in_bucket h.buckets.(key_index h key)
 
-let rec retrieve_bucket key bucket =
+let rec retrieve_bucket h key bucket =
   match bucket with
   | Empty ->
       bucket
-  | Cons {key=k; next} ->
-      if compare k key = 0
-      then bucket
-      else retrieve_bucket key next
+  | Cons {key = k; next; _} ->
+      if compare k key = 0 then bucket
+      else retrieve_bucket h key next
 
 let replace_bucket h key i l data bucket =
   match bucket with
   | Empty ->
-    h.data.(i) <- Cons{key; data; next=l};
+    h.buckets.(i) <- Cons {id = h.size; key; next=l};
     h.size <- h.size + 1;
-    if h.size > Array.length h.data lsl 1 then resize key_index h
-  | Cons (_ as slot) -> slot.key <- key; slot.data <- data
+    Dynarray.add_last h.data data;
+    Dynarray.add_last h.keys key;
+    if h.size > Array.length h.buckets lsl 1 then resize key_index h
+  | Cons (_ as slot) ->
+    Dynarray.set h.keys slot.id key;
+    Dynarray.set h.data slot.id data
 
 let find_and_replace h key data =
   let i = key_index h key in
-  let l = h.data.(i) in
-  let bucket = retrieve_bucket key l in
+  let l = h.buckets.(i) in
+  let bucket = retrieve_bucket h key l in
   let old_data = match bucket with
-    | Cons {data; _} -> Some data
     | Empty -> None
+    | Cons {id; _} -> Some (Dynarray.get h.data id)
   in
   replace_bucket h key i l data bucket;
   old_data
 
 let replace h key data =
   let i = key_index h key in
-  let l = h.data.(i) in
-  let bucket = retrieve_bucket key l in
+  let l = h.buckets.(i) in
+  let bucket = retrieve_bucket h key l in
   replace_bucket h key i l data bucket
 
-let rec mem_in_bucket key = function
+let rec mem_in_bucket h key = function
   | Empty ->
       false
-  | Cons{key=k; next} ->
-      compare k key = 0 || mem_in_bucket key next
+  | Cons {key = k; next; _} ->
+      compare k key = 0 || mem_in_bucket h key next
 
 let mem h key =
-  mem_in_bucket key h.data.(key_index h key)
+  mem_in_bucket h key h.buckets.(key_index h key)
 
 let add_seq tbl i =
   Seq.iter (fun (k,v) -> add tbl k v) i
@@ -689,16 +686,18 @@ let of_seq i =
   tbl
 
 let rebuild ?(random = Atomic.get randomized) h =
-  let s = power_2_above 16 (Array.length h.data) in
+  let s = power_2_above 16 (Array.length h.buckets) in
   let seed =
     if random then Random.State.bits (Domain.DLS.get prng_key)
     else if Obj.size (Obj.repr h) >= 4 then h.seed
     else 0 in
   let h' = {
     size = h.size;
-    data = Array.make s Empty;
+    buckets = Array.make s Empty;
+    data = Dynarray.copy h.data;
+    keys = Dynarray.copy h.keys;
     seed = seed;
     initial_size = if Obj.size (Obj.repr h) >= 4 then h.initial_size else s
   } in
-  insert_all_buckets (key_index h') false h.data h'.data;
+  insert_all_buckets (key_index h') h.buckets h'.buckets;
   h'
