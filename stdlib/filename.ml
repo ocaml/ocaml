@@ -212,17 +212,29 @@ Quoting commands for execution by cmd.exe is difficult.
     String.iter
       (fun c ->
         match c with
-        | '(' | ')' | '!' | '^' | '%' | '\"' | '<' | '>' | '&' | '|' ->
+        | '\n' | '\r' ->
+            failwith ("Filename.quote_command: cannot escape newline in " ^ s)
+        | '(' | ')' | '!' | '^' | '%' | ':' | '\"' | '<' | '>' | '&' | '|' ->
             Buffer.add_char b '^'; Buffer.add_char b c
         | _ ->
             Buffer.add_char b c)
       s;
     Buffer.contents b
   let quote_cmd_filename f =
-    if String.contains f '\"' || String.contains f '%' then
+    (* In cmd.exe, forward slashes in the program path (argument 0) are
+       interpreted as introducing a flag. *)
+    let f =
+      if String.contains f '/' then
+        String.map (function '/' -> '\\' | c -> c) f
+      else f
+    in
+    if String.exists (function
+              | '\n' | '\r' | '\"' | '%' -> true
+              | _ -> false) f then
       failwith ("Filename.quote_command: bad file name " ^ f)
     else if String.exists (function
-              | ' ' | '(' | ')' | '!' | '^' | '&' -> true
+              | ' ' | '\t' | '(' | ')' | '^' | '<' | '>' | '&' | '|' | '!'
+                  -> true
               | _ -> false) f then
       String.concat "" ["\""; f; "\""]
     else
