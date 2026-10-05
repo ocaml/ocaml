@@ -689,6 +689,8 @@ static void orph_ephe_list_verify_status (int status)
 }
 #endif
 
+static void commit_major_slice_work(intnat);
+
 void caml_orphan_ephemerons (caml_domain_state* domain_state)
 {
   CAMLassert (caml_gc_phase != Phase_sweep_main);
@@ -712,7 +714,9 @@ void caml_orphan_ephemerons (caml_domain_state* domain_state)
          case they stay orphaned until the next GC cycle. This mirrors
          the logic in [major_collection_slice] for [Phase_sweep_ephe]. */
       while (ephe_info->todo) {
-        ephe_sweep(domain_state, 100000);
+        intnat budget = 100000;
+        intnat leftover = ephe_sweep(domain_state, budget);
+        commit_major_slice_work(budget - leftover);
       }
       (void)caml_atomic_counter_decr(&num_domains_to_ephe_sweep);
     }
@@ -1069,8 +1073,6 @@ void caml_reset_major_pacing(bool add_overhead)
   work_counter_min_before_mark =
     w + max2 (virtual_sweep_work, caml_small_heap_limit);
 }
-
-static void commit_major_slice_work(intnat);
 
 /* The [log_events] parameter is used to disable writing to the ring
    to prevent spamming the ring with numerous events generated during
