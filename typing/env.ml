@@ -2384,6 +2384,8 @@ type local_equations = Types.type_declaration Path.Map.t
 let freeze_local_equations env = env.local_constraints
 let restrict_local_equations local_constraints env =
   { env with local_constraints }
+let remove_local_equations env =
+  { env with local_constraints = Path.Map.empty }
 
 (* Non-lazy version of scrape_alias *)
 let scrape_alias t mty =

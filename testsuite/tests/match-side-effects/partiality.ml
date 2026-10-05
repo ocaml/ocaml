@@ -185,7 +185,7 @@ type _ t = Int : int -> int t | Bool : bool -> bool t
 (let
   (test/0 =
      (function param/0 : int
-       (if param/0 (field_imm 0 (field_imm 0 param/0)) 0)))
+       (if param/0 (field_int 0 (field_imm 0 param/0)) 0)))
   (apply (field_mut 1 (global Toploop!)) "test" test/0))
 val test : int t option -> int = <fun>
 |}]
@@ -207,7 +207,7 @@ type _ t = Int : int -> int t | Bool : bool -> bool t
   (test/1 =
      (function param/1 : int
        (let (*match*/8 =o (field_mut 0 param/1))
-         (if *match*/8 (field_imm 0 (field_imm 0 *match*/8)) 0))))
+         (if *match*/8 (field_int 0 (field_imm 0 *match*/8)) 0))))
   (apply (field_mut 1 (global Toploop!)) "test" test/1))
 val test : int t option ref -> int = <fun>
 |}]
@@ -238,8 +238,8 @@ type _ t = Int : int -> int t | Bool : bool -> bool t
            (let
              (*match*/10 =a (field_imm 0 *match*/9)
               *match*/11 =o (field_mut 0 (field_imm 0 *match*/10)))
-             (if *match*/11 (field_imm 0 (field_imm 1 *match*/10))
-               (~ (field_imm 0 (field_imm 1 *match*/10)))))
+             (if *match*/11 (field_int 0 (field_imm 1 *match*/10))
+               (~ (field_int 0 (field_imm 1 *match*/10)))))
            3))))
   (apply (field_mut 1 (global Toploop!)) "test" test/2))
 val test : 'a -> int = <fun>
@@ -325,8 +325,8 @@ type _ t = Bool : bool t | Int : int t | Char : char t
   (test/3 =
      (function param/2 : int
        (catch
-         (if (>= (field_imm 0 param/2) 2) (exit 24)
-           (if (>= (field_imm 1 param/2) 2) (exit 24) 0))
+         (if (>= (field_int 0 param/2) 2) (exit 24)
+           (if (>= (field_int 1 param/2) 2) (exit 24) 0))
         with (24) 0)))
   (apply (field_mut 1 (global Toploop!)) "test" test/3))
 val test : 'a t * 'a t -> unit = <fun>
@@ -353,7 +353,7 @@ type t = A | B | C of nothing
   (f/3 =
      (function param/3 : int
        (catch
-         (if (field_imm 0 param/3)
+         (if (field_int 0 param/3)
            (switch* (field_imm 1 param/3)
             case int 0: 3
             case int 1: (exit 27))
@@ -409,7 +409,7 @@ external compare_string : string -> string -> int = "%compare"
          (switch* t1/0
           case tag 0:
            (switch t2/0
-            case tag 0: (compare_ints (field_imm 0 t1/0) (field_imm 0 t2/0))
+            case tag 0: (compare_ints (field_int 0 t1/0) (field_int 0 t2/0))
             default: -1)
           case tag 1:
            (catch
@@ -459,14 +459,16 @@ let f x y =
      (function x/3[int] y/0[int] : int
        (catch
          (catch
-           (catch (if (isint y/0) (if (!= y/0 19896) (exit 45) 0) (exit 45))
+           (catch
+             (if (isint_variant y/0) (if (!= y/0 19896) (exit 45) 0)
+               (exit 45))
             with (45)
              (if (!= x/3 19674)
                (if (>= x/3 19675) (exit 44) (if (>= y/0 19898) (exit 42) 1))
-               (if (isint y/0) (if (!= y/0 19897) (exit 44) (exit 42))
-                 (exit 44))))
+               (if (isint_variant y/0)
+                 (if (!= y/0 19897) (exit 44) (exit 42)) (exit 44))))
           with (44)
-           (if (isint y/0) (if (!= y/0 19898) (exit 42) 2) (exit 42)))
+           (if (isint_variant y/0) (if (!= y/0 19898) (exit 42) 2) (exit 42)))
         with (42) 3)))
   (apply (field_mut 1 (global Toploop!)) "f" f/4))
 val f : [< `X1 | `X2 | `X3 ] -> [< `Y1 | `Y2 | `Y3 ] -> int = <fun>
@@ -499,7 +501,7 @@ let check_results r1 r2 =
                           case tag 0: (exit 52)
                           case tag 1:
                            (let (*match*/18 =a (field_imm 0 *match*/17))
-                             (if (isint *match*/18)
+                             (if (isint_variant *match*/18)
                                (if (!= *match*/18 66) (exit 53) r/2)
                                (exit 53)))))
                        (switch* (field_imm 1 *match*/16)
