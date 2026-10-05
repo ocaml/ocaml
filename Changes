@@ -816,6 +816,10 @@ OCaml 5.6.0
 - #15133, OSEC 2026-24: Multiple issues in command quoting on Windows
   (Xavier Leroy and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär)
 
+- #15127: Fix a memory leak when compacting the heap of a domain
+  if the size class had no live blocks.
+  (Ezequiel Lewin, review by Florian Angeletti)
+
 OCaml 5.5.1
 -----------
 
