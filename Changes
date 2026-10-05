@@ -617,7 +617,7 @@ Working version
 
 - #14842, #14983: Discard invalid type abbreviations when leaving the scope
   of a modular explicit, and clean up Typecore.type_newtype
-  (Jacques Garrigue and Stefan Muenzel, review by ???)
+  (Jacques Garrigue, review by Stefan Muenzel)
 
 - #14881, #14882: fix printing of external types that are subject to module
   constraints.
