@@ -808,6 +808,9 @@ OCaml 5.6.0
 - #15118: Fix printing of raw identifiers in exotic corner cases.
   (Florian Angeletti, review by Nicolás Ojeda Bär)
 
+- #15133, OSEC 2026-24: Multiple issues in command quoting on Windows
+  (Xavier Leroy and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär)
+
 OCaml 5.5.1
 -----------
 
