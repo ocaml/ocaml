@@ -23,6 +23,9 @@ OCaml 5.5.2
   (`Marshal.from_{channel,string,bytes}`)
   (Xavier Leroy, review by Nicolás Ojeda Bär)
 
+- #15133, OSEC 2026-24: Multiple issues in command quoting on Windows
+  (Xavier Leroy and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär)
+
 OCaml 5.5.1 (4 September 2026)
 ------------------------------
 

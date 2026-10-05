@@ -82,5 +82,7 @@ argv[6] = {||}
 -------- Rejected (unquotable) characters
 stdout %: OK
 stdout ": OK
+stdout LF: OK
 program %: OK
 program ": OK
+program LF: OK
