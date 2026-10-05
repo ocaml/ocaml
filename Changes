@@ -26,6 +26,11 @@ OCaml 5.5.2
 - #15133, OSEC 2026-24: Multiple issues in command quoting on Windows
   (Xavier Leroy and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär)
 
+- #15119, OSEC-2026-25: Harden decoding of runtime events messages from
+  ring buffers.
+  (Sadiq Jaffer, report by Hannes Mehnert, review by Olivier Nicole and
+  Edwin Török)
+
 OCaml 5.5.1 (4 September 2026)
 ------------------------------
 
