@@ -147,6 +147,13 @@ val test : ?x:string -> (module M : Show with type t = 'a) -> M.t t = <fun>
 
 let f k ?a = k a;;
 [%%expect{||}, (Principal.Rectypes, Rectypes){|
+Line 1, characters 9-10:
+1 | let f k ?a = k a;;
+             ^
+Warning 76 [syntactic-unerasable-optional-argument]: this optional argument
+  is not followed by a non-labelled argument.
+  It might not be erasable, and its evaluation might be delayed.
+
 val f : ('a option -> 'b) -> ?a:'a -> 'b = <fun>
 |}]
 
