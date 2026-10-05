@@ -442,6 +442,10 @@ OCaml 5.6.0
   (Gabriel Scherer, suggestion by Stephen Dolan and Josh Berdine,
   review by Nicolás Ojeda Bär, Kate Deplaix and Léo Andrès.)
 
+- #15094: add `Float.Array.dot`, `sum`, `scale`, `axpy`, `add` and `mul`,
+  compiled to unrolled loops, with a NEON kernel for `dot` on arm64.
+  (Zane Hambly, review by         )
+
 ### Other libraries:
 
 - #13450: Fixes and improvements for Windows socketpair on AF_UNIX emulation.
