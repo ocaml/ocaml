@@ -204,7 +204,7 @@ OCaml 5.6.0
 
 - #15117: The instrumented runtime is no longer installed by default.
   (David Allsopp, review by Florian Angeletti, Nick Barnes and Sadiq Jaffer)]
-  
+
 - #15119, OSEC-2026-25: Harden decoding of runtime events messages from
   ring buffers.
   (Sadiq Jaffer, report by Hannes Mehnert, review by Olivier Nicole and
