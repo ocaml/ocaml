@@ -609,6 +609,16 @@ if_file_exists = ( test ! -f $(1) || $(2) && rm -f $(1) )
 MERGEMANIFESTEXE = $(call if_file_exists, $(1).manifest, \
   $(MANIFEST_TOOL) -nologo -outputresource:$(1) -manifest $(1).manifest)
 
+# Per-module compilation flags
+
+# $(call MODULE_COMPFLAGS,dir/foo.ext) gives the extra flags to use to compile
+# the files of the module dir/foo (e.g. dir/foo.cmx), given by the optional
+# variable dir/foo_COMPFLAGS (the test on its origin avoids a warning from
+# --warn-undefined-variables when it is not defined).
+MODULE_COMPFLAGS = \
+  $(if $(filter undefined,$(origin $(basename $(1))_COMPFLAGS)),, \
+    $($(basename $(1))_COMPFLAGS))
+
 # Macros and rules to compile OCaml programs and libraries
 
 # The following variable is used to accumulate a list of all the CMX
@@ -775,8 +785,14 @@ endef # OCAML_PROGRAM
 
 # Macros for OCaml libraries, similar to those for OCaml programs
 
+# The libraries needing special link flags can define the foo_COMMON_LINKFLAGS,
+# foo_BYTECODE_LINKFLAGS and foo_NATIVE_LINKFLAGS variables, before or after
+# the call to the macros.
 define _OCAML_LIBRARY_BASE
 $(eval $(call _OCAML_COMMON_BASE,$(1)))
+$(basename $(notdir $(1)))_COMMON_LINKFLAGS ?=
+$(basename $(notdir $(1)))_BYTECODE_LINKFLAGS ?=
+$(basename $(notdir $(1)))_NATIVE_LINKFLAGS ?=
 endef # _OCAML_LIBRARY_BASE
 
 LINK_BYTECODE_LIBRARY =\
@@ -803,7 +819,9 @@ $(basename $(notdir $(1)))_BCOBJS = \
 $(1).cma: \
   $$$$($(basename $(notdir $(1)))_BYTE_CMI_FILES) \
   $$$$($(basename $(notdir $(1)))_BCOBJS)
-	$$(V_LINKC)$$(LINK_BYTECODE_LIBRARY) -a -o $$@ \
+	$$(V_LINKC)$$(LINK_BYTECODE_LIBRARY) \
+	  $$($(basename $(notdir $(1)))_COMMON_LINKFLAGS) \
+	  $$($(basename $(notdir $(1)))_BYTECODE_LINKFLAGS) -a -o $$@ \
 	  $$($(basename $(notdir $(1)))_BCOBJS)
 endef # _OCAML_BYTECODE_LIBRARY
 
@@ -832,7 +850,9 @@ $(basename $(notdir $(1)))_NCOBJS = \
 $(1).cmxa: \
   $$$$($(basename $(notdir $(1)))_NATIVE_CMI_FILES) \
   $$$$($(basename $(notdir $(1)))_NCOBJS)
-	$$(V_LINKOPT)$$(LINK_NATIVE_LIBRARY) -a -o $$@ \
+	$$(V_LINKOPT)$$(LINK_NATIVE_LIBRARY) \
+	  $$($(basename $(notdir $(1)))_COMMON_LINKFLAGS) \
+	  $$($(basename $(notdir $(1)))_NATIVE_LINKFLAGS) -a -o $$@ \
 	  $$($(basename $(notdir $(1)))_NCOBJS)
 endef # _OCAML_NATIVE_LIBRARY
 
