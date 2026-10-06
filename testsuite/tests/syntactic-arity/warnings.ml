@@ -46,8 +46,8 @@ let f ((module M) : (module S)) (type a) = ((fun z -> z) : a M.u);;
 Line 1, characters 32-65:
 1 | let f ((module M) : (module S)) (type a) = ((fun z -> z) : a M.u);;
                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "'a M.u" = "M.t -> M.t"
-       but an expression was expected of type "'b"
+Error: This expression has type "M.t -> M.t"
+       but an expression was expected of type "'a"
        The type constructor "M.t" would escape its scope
 |}];;
 
@@ -66,8 +66,8 @@ let f ((module M) : (module S)) x (type a) = ((fun z -> z) : a M.u);;
 Line 1, characters 34-67:
 1 | let f ((module M) : (module S)) x (type a) = ((fun z -> z) : a M.u);;
                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "'a M.u" = "M.t -> M.t"
-       but an expression was expected of type "'b"
+Error: This expression has type "M.t -> M.t"
+       but an expression was expected of type "'a"
        The type constructor "M.t" would escape its scope
 |}];;
 
