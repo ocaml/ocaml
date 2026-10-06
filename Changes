@@ -21,6 +21,10 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #13004: avoid a possible duplicate type expansion when checking for
+   recursive occurrence of a type.
+  (Florian Angeletti, review by Gabriel Scherer and Stefan Muenzel)
+
 ### Build system:
 
 ### Bug fixes:
