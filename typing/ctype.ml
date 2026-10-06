@@ -2282,7 +2282,7 @@ let rec occur_rec env visited allow_recursive parents ty0 ty =
         if allow_recursive && is_contractive env p then () else
         if TypeSet.mem ty parents then raise Occur
         else
-          let parents = TypeSet.add ty parents in
+        let parents = TypeSet.add ty parents in
         begin try
           iter_type_expr (occur_rec env visited allow_recursive parents ty0) ty
         with Occur -> try
