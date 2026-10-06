@@ -1962,15 +1962,18 @@ static void maybe_track_block(memprof_domain_t domain,
   set_action_pending_as_needed(domain);
 }
 
-/* Sets the trigger for the next sample in a domain's minor
- * heap. Could race with sampling and profile-stopping code, so do not
- * call from another domain unless the world is stopped (at the time
- * of writing, this is only actually called from this domain). Must be
- * called after each minor sample and after each minor collection. In
- * practice, this is called at each minor sample, at each minor
- * collection, and when sampling is suspended and unsuspended. Extra
- * calls do not change the statistical properties of the sampling
- * because of the memorylessness of the geometric distribution. */
+/* Sets the trigger for the next sample in a domain's minor heap.
+ *
+ * Could race with sampling and profile-stopping code, so do not call
+ * from another domain. Could also race with the GC or compactor
+ * moving values around, as some memprof state is on the runtime heap.
+ *
+ * Must be called after each minor sample and after each minor
+ * collection. In practice, this is called at each minor sample, at
+ * each minor collection, and when sampling is suspended and
+ * unsuspended. Extra calls do not change the statistical properties
+ * of the sampling because of the memorylessness of the geometric
+ * distribution. */
 
 void caml_memprof_set_trigger(caml_domain_state *state)
 {
