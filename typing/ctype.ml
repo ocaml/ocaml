@@ -2270,10 +2270,10 @@ let is_contractive env p =
 exception Occur
 
 (** [occur_rec ...allow_recursive ... ty0 ty] checks if the node of [ty0] is
-    reachable from the node [ty] follwing a path which is not guarded by allowed
-    recursive constructs. More precisely, recursion under polymorphic variant
-    and object types is always allowed and if [allow_recursive=true] recursion
-    under contractive constructor is also allowed. *)
+    reachable from the node [ty] following a path which is not guarded by
+    allowed recursive constructs. More precisely, recursion under polymorphic
+    variant and object types is always allowed and if [allow_recursive=true]
+    recursion under contractive constructor is also allowed. *)
 let rec occur_rec env visited allow_recursive parents ty0 ty =
   if not_marked_node visited ty then begin
     if eq_type ty ty0 then raise Occur;
@@ -2286,12 +2286,12 @@ let rec occur_rec env visited allow_recursive parents ty0 ty =
         begin try
           iter_type_expr (occur_rec env visited allow_recursive parents ty0) ty
         with Occur -> try
-        (* If [ty0] occurs illegaly in the children nodes of [ty], we retry
+        (* If [ty0] occurs illegally in the children nodes of [ty], we retry
            after expanding [ty]. Indeed, after expansion, the reachable graph
            might be smaller. However, we don't try this expansion if the node
-           [ty] itself appears as it own parent since in this case the expansion
-           will not change the reachable graph: only the expansion of the first
-           occurence of [ty] may change the reachable graph. *)
+           [ty] itself appears as its own parent since in this case the
+           expansion will not change the reachable graph: only the expansion of
+           the first occurence of [ty] may change the reachable graph. *)
           let ty' = try_expand_safe env ty in
           occur_rec env visited allow_recursive parents ty0 ty'
         with Cannot_expand ->
