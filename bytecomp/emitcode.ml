@@ -346,9 +346,11 @@ let emit_instr = function
   | Kxorint -> out opXORINT  | Klslint -> out opLSLINT
   | Klsrint -> out opLSRINT  | Kasrint -> out opASRINT
   | Kintcomp c ->
+      (match c with
+       | Ceq | Cne -> record_hint Hint_int_equality_test
+       | Clt | Cle | Cgt | Cge -> ());
       emit_comp c
   | Kphyscomp c ->
-      record_hint (Hint_physical_comparison);
       emit_comp (integer_comparison_of_physical c)
   | Koffsetint n -> out opOFFSETINT; out_int n
   | Koffsetref n -> out opOFFSETREF; out_int n

@@ -474,8 +474,8 @@ let print_hint hint =
   match hint with
   | Hint_immutable_block ->
       printf " (immutable)"
-  | Hint_physical_comparison ->
-      printf " (physical comparison)"
+  | Hint_int_equality_test ->
+      printf " (int equality test)"
   | Hint_immediate ->
       printf " (immediate)"
   | Hint_variant ->
