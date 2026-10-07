@@ -913,10 +913,10 @@ let build_substs update_env ?(freshen_bound_variables = false) s =
         Lifused (id, subst s l e)
   and subst_list s l li = List.map (subst s l) li
   and subst_decl s l decl = { decl with def = subst_lfun s l decl.def }
-  and subst_lfun s l lf =
-    let params, l' = bind_many lf.params l in
-    lfunction' ~kind:lf.kind ~params ~return:lf.return
-      ~body:(subst s l' lf.body) ~attr:lf.attr ~loc:lf.loc
+  and subst_lfun s l { kind; params; return; body; attr; loc;
+                       free_variables = _ } =
+    let params, l' = bind_many params l in
+    lfunction' ~kind ~params ~return ~body:(subst s l' body) ~attr ~loc
   and subst_case s l (key, case) = (key, subst s l case)
   and subst_strcase s l (key, case) = (key, subst s l case)
   and subst_opt s l = function
