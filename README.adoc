@@ -14,13 +14,17 @@ performance degradations on our issue tracker.
 ====
 
 |=====
-| Branch `trunk` | Branch `5.5` | Branch `5.4` | Branch `5.3` | Branch `4.14`
+| Branch `trunk` | Branch `5.6` | Branch `5.5` | Branch `5.4` | Branch `4.14`
 
 | image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=trunk["GitHub CI Build Status (trunk branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
   image:https://github.com/ocaml/ocaml/workflows/Hygiene/badge.svg?branch=trunk["GitHub CI Hygiene Status (trunk branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3AHygiene"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=trunk&svg=true["AppVeyor Build Status (trunk branch)",
+     link="https://ci.appveyor.com/project/avsm/ocaml"]
+| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=5.6["GitHub CI Build Status (5.6 branch)",
+     link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=5.6&svg=true["AppVeyor Build Status (5.6 branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
 | image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=5.5["GitHub CI Build Status (5.5 branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
@@ -29,10 +33,6 @@ performance degradations on our issue tracker.
 | image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=5.4["GitHub CI Build Status (5.4 branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=5.4&svg=true["AppVeyor Build Status (5.4 branch)",
-     link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=5.3["GitHub CI Build Status (5.3 branch)",
-     link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=5.3&svg=true["AppVeyor Build Status (5.3 branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
 | image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=4.14["GitHub CI Build Status (4.14 branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]

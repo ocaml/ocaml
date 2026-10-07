@@ -24,7 +24,7 @@ type expr = Lit of int | Many of expr list
     (depth/0
        (function param/0 : int
          (switch* param/0
-          case tag 0: (let (*match*/0 =a (field_imm 0 param/0)) 0)
+          case tag 0: (let (*match*/0 =a (field_int 0 param/0)) 0)
           case tag 1:
            (let (l/0 =a (field_imm 0 param/0))
              (apply (field_imm 29 (global Stdlib__List!))

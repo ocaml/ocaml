@@ -901,7 +901,14 @@ val create_process :
     the redirection and causes the new process to have the same standard
     output as the current process.  The executable file [prog] is searched in
     the path.  The new process has the same environment as the current
-    process. *)
+    process.
+
+    @raise Failure on Windows if the program [prog] is a [.bat] or [.cmd]
+    script and either [prog] or [args] contain characters that cannot be
+    securely passed to a script, such as [" | & , ; < = > ^ % "].
+    If you really need to pass these characters to a script, consider
+    using {!Unix.system} instead.
+ *)
 
 val create_process_env :
   prog:string -> args:string array -> env:string array -> stdin:file_descr ->

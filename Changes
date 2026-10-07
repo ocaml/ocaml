@@ -1,5 +1,32 @@
 Working version
---------------
+---------------
+
+(Changes that can break existing programs are marked with a "*")
+
+### Language features:
+
+### Runtime system:
+
+### Code generation and optimizations:
+
+### Standard library:
+
+### Other libraries:
+
+### Tools:
+
+### Manual and documentation:
+
+### Compiler user-interface and warnings:
+
+### Internal/compiler-libs changes:
+
+### Build system:
+
+### Bug fixes:
+
+OCaml 5.6.0
+-----------
 
 (Changes that can break existing programs are marked with a "*")
 
@@ -20,6 +47,11 @@ Working version
   and in all module expressions as `Pmod_hole`. These parsetree nodes must be
   transformed by ppx rewriters; the compiler itself always rejects them.
   (David Allsopp and Nailen Matschke, review by Florian Angeletti)
+
+- #14985: Enable the use of polymorphic types in optional function parameters
+    let run ?(observer : 'a. (unit -> 'a) -> 'a = fun k -> k ()) = ...
+    let run' ?(observer : 'a. ((unit -> 'a) -> 'a) option) = ...
+  (Alistair O'Brien, review by Florian Angeletti)
 
 ### Runtime system:
 
@@ -166,6 +198,18 @@ Working version
 - #15092: do not lose domain allocation stats on termination
   (Edwin Török, report by Eduardo Souza, review by Stefan Muenzel)
 
+- #15033: optimize Weak.blit on 5.x, following the 4.x example
+  of #9259 by Arseniy Alekseyev.
+  (Gabriel Scherer, review by Damien Doligez)
+
+- #15117: The instrumented runtime is no longer installed by default.
+  (David Allsopp, review by Florian Angeletti, Nick Barnes and Sadiq Jaffer)]
+
+- #15119, OSEC-2026-25: Harden decoding of runtime events messages from
+  ring buffers.
+  (Sadiq Jaffer, report by Hannes Mehnert, review by Olivier Nicole and
+  Edwin Török)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
@@ -252,7 +296,8 @@ Working version
 
 - #13438: keep some optimization hints from lambda in bytecode modules
   and executables (to be used by Js_of_ocaml / Wasm_of_ocaml)
-  (Jérôme Vouillon)
+  (Jérôme Vouillon, review by Olivier Nicole, Vincent Laviron, and
+   David Allsopp)
 
 - #13588: propagate physical comparison operators to lambda
   (to be used by Js_of_ocaml / Wasm_of_ocaml)
@@ -286,6 +331,27 @@ Working version
 - #14898, #15035: do not trust GADT equations introduced by refutable arguments
   in the Lambda IR.
   (Florian Angeletti, report by Nathanaëlle Courant, review by Gabriel Scherer)
+
+- #15084: add the `%int64_of_float` and `%int64_to_float` primitives, their
+  Nativeint equivalents and `%int32_to_float`, so that `Int64.of_float`,
+  `Int64.to_float` and friends compile to a single instruction rather than
+  calling into C. `Int32.of_float` keeps its C call, so that bytecode and
+  native code agree on out-of-range arguments
+  (Zane Hambly, review by Stefan Muenzel, Xavier Leroy and
+   Nicolás Ojeda Bär)
+
+- #15090: Allow unaligned memory accesses on s390x.
+  (Zane Hambly, review by Xavier Leroy)
+
+- #15122: more optimization hints in bytecode modules and executables:
+  reads of values known to be immediates, and tests of whether a value
+  of a variant type is an immediate (to be used by Js_of_ocaml /
+  Wasm_of_ocaml)
+  (Jérôme Vouillon, review by Nicolás Ojeda Bär)
+
+- #15135: replace the bytecode hint on physical comparisons by a hint on
+  integer equality tests, so that a missing hint is always safe
+  (Jérôme Vouillon, review by Stefan Muenzel)
 
 ### Standard library:
 
@@ -381,6 +447,9 @@ Working version
   review by Nicolás Ojeda Bär, Kate Deplaix and Léo Andrès.)
 
 ### Other libraries:
+
+- #13450: Fixes and improvements for Windows socketpair on AF_UNIX emulation.
+  (Antonin Décimo, review by Nicolás Ojeda Bär)
 
 - #14740: Various fixes in libunix. Fix compilation failures if gethostname or
   IPv6 are not available. Add blocking sections to the wrappers of realpath and
@@ -479,6 +548,10 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #14958, #15120: Improve error messages for Duplicate_constructor and
+  Duplicate_label.
+  (Michał Kosior, review by Florian Angeletti)
+
 - #14887: More concise messages for the non-exhaustiveness warning.
   (Luc Maranget, review by Florian Angeletti)
 
@@ -566,6 +639,10 @@ Working version
   certain large types, as seen in #14897.
   (Stefan Muenzel, review by Gabriel Scherer and Vincent Laviron)
 
+- #14190: simplify the implementation of path compression in `Types.repr`
+  (Gabriel Scherer, review by Stefan Muenzel, Jacques Garrigue
+   and Florian Angeletti)
+
 - #14932: Fix `-dtypedtree` printing of `Twith_modtypesubst`.
   (Corentin De Souza, review by Nicolás Ojeda Bär)
 
@@ -595,6 +672,9 @@ Working version
 - #14676: Security fix: prevent shell injection in Github Actions workflows
   (Austin Thierault, review by Antonin Décimo, Edwin Török, David Allsopp and
    Olivier Nicole)
+
+- #15067, #15071: Fix detection of functions available in the future on macOS.
+  (Antonin Décimo, review by Nicolás Ojeda Bär and Damien Doligez)
 
 ### Bug fixes:
 
@@ -667,6 +747,10 @@ Working version
   (Pierre Chambart, report by Nathanaëlle Courant and
    Vincent Laviron review by Vincent Laviron)
 
+- #14842, #14983: Discard invalid type abbreviations when leaving the scope
+  of a modular explicit, and clean up Typecore.type_newtype
+  (Jacques Garrigue, review by Stefan Muenzel)
+
 - #14881, #14882: fix printing of external types that are subject to module
   constraints.
   (Stefan Muenzel, review by Florian Angeletti)
@@ -725,6 +809,10 @@ Working version
   during dead-code elimination.
   (Xavier Clerc, review by Steven Dolan and KC Sivaramakrishnan)
 
+- #15048: Preserve the destination file when ocamllex fails before code
+  generation, including on a fatal missing-case warning.
+  (cuishuang, review by Nicolás Ojeda Bär)
+
 - #15093: Windows: fix a bug in the `Unix.select` emulation which could result
   in an out-of-bounds memory access. This is triggered when the watched set
   contains 63 or more sockets along with at least one non-socket descriptor, or
@@ -741,6 +829,43 @@ Working version
 - #12195: Lower levels in checked module packages so that remaining weak
   variables may not be unified with out-of-scope types.
   (Chris Casinghino and Leo White, review by Jacques Garrigue)
+
+- #15112, OSEC-2026-22: `Unix.map_file`: protect against overflow
+  when computing the data size.
+  (Xavier Leroy and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär
+  and Edwin Török)
+
+- #15113, OSEC-2026-21: `Str.string_partial_match`: make sure captured groups
+  are valid.
+  (Xavier Leroy, review by Nicolás Ojeda Bär and Edwin Török)
+
+- #15114: Fix the compilation of pattern matching on records whose field types
+  mention a locally abstract type: a field could be read as an immediate in
+  all the rows of the match because of a GADT equation that only holds in one
+  of them. In native code, the value was then not registered as a GC root.
+  (Jérôme Vouillon, review by Florian Angeletti)
+
+- #15115, OSEC-2026-23: Fix multiple issues in demarshaling
+  (`Marshal.from_{channel,string,bytes}`)
+  (Xavier Leroy, review by Nicolás Ojeda Bär)
+
+- #15118: Fix printing of module type names in the toplevel and -dsource when
+  the name is a reserved identifier.
+  (Nicolás Ojeda Bär, review by Florian Angeletti)
+
+- #15118: Fix printing of raw identifiers in exotic corner cases.
+  (Florian Angeletti, review by Nicolás Ojeda Bär)
+
+- #15125, #15134: support source files larger than max_string_length
+  (16MB on native 32-bit systems) which would fail since OCaml 5.2.
+  (Gabriel Scherer, review by Vincent Laviron, report by Stéphane Glondu)
+
+- #15133, OSEC 2026-24: Multiple issues in command quoting on Windows
+  (Xavier Leroy and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär)
+
+- #15127: Fix a memory leak when compacting the heap of a domain
+  if the size class had no live blocks.
+  (Ezequiel Lewin, review by Florian Angeletti)
 
 OCaml 5.5.1
 -----------

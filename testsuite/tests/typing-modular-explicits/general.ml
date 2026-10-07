@@ -1521,6 +1521,8 @@ Line 1, characters 62-64:
   This extra argument is not expected.
 |}]
 
+(* Bug #14842a *)
+
 module type S = sig type t type e val v : e -> t end
 let helper (type a) (module M : S with type t = a) _ : a = assert false
 let outer (type a) (type b) (module M : S with type e = a and type t = b) e =
@@ -1532,6 +1534,35 @@ val outer : (module M : S with type e = 'a and type t = 'b) -> M.e -> M.t =
   <fun>
 |}]
 
+(* Bug #14842b *)
+
+module F (Api : sig
+  module type Key = sig type t end
+  type 'a key = 'a
+  val use : (module Key with type t = 'a) -> 'a -> 'a key -> unit
+end) = struct
+  let f
+    (type node)
+    (module Node : Api.Key with type t = node)
+    x
+    (_ : Node.t list)
+    y =
+    Api.use (module Node) y x
+end
+[%%expect{|
+module F :
+  (Api : sig
+           module type Key = sig type t end
+           type 'a key = 'a
+           val use : (module Key with type t = 'a) -> 'a -> 'a key -> unit
+         end)
+    ->
+    sig
+      val f :
+        (module Node : Api.Key with type t = 'node) ->
+        'node -> Node.t list -> 'node -> unit
+    end
+|}]
 
 (* Bug #14891: nondep package type *)
 

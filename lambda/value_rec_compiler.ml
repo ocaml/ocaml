@@ -336,10 +336,12 @@ let compute_static_size lam =
     | Parraylength _
     | Parrayrefu _
     | Parrayrefs _
-    | Pisint
+    | Pisint _
     | Pisout
     | Pbintofint _
     | Pintofbint _
+    | Pbintoffloat _
+    | Pfloatofbint _
     | Pcvtbint _
     | Pnegbint _
     | Paddbint _
