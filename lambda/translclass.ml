@@ -736,9 +736,9 @@ let rec transl_class_rebind ~scopes obj_init cl vf =
       end;
       let cl_loc = of_location ~scopes cl.cl_loc in
       let path_lam = transl_class_path cl_loc cl.cl_env path in
-      (path, path_lam, obj_init)
+      (path, path_lam, obj_init, true)
   | Tcl_fun (_, pat, _, cl, partial) ->
-      let path, path_lam, obj_init =
+      let path, path_lam, obj_init, _is_alias =
         transl_class_rebind ~scopes obj_init cl vf in
       let build params rem =
         let param = name_pattern "param" pat in
@@ -751,20 +751,22 @@ let rec transl_class_rebind ~scopes obj_init cl vf =
                             None (Lvar param) [pat, rem] partial)
       in
       (path, path_lam,
-       match obj_init with
+       begin match obj_init with
          Lfunction {kind = Curried; params; body} -> build params body
-       | rem                                      -> build [] rem)
+       | rem                                      -> build [] rem
+       end,
+       false)
   | Tcl_apply (cl, oexprs) ->
-      let path, path_lam, obj_init =
+      let path, path_lam, obj_init, _is_alias =
         transl_class_rebind ~scopes obj_init cl vf in
-      (path, path_lam, transl_apply ~scopes obj_init oexprs Loc_unknown)
+      (path, path_lam, transl_apply ~scopes obj_init oexprs Loc_unknown, false)
   | Tcl_let (rec_flag, defs, _vals, cl) ->
-      let path, path_lam, obj_init =
+      let path, path_lam, obj_init, _is_alias =
         transl_class_rebind ~scopes obj_init cl vf in
-      (path, path_lam, Translcore.transl_let ~scopes rec_flag defs obj_init)
+      (path, path_lam, Translcore.transl_let ~scopes rec_flag defs obj_init, false)
   | Tcl_structure _ -> raise Exit
   | Tcl_constraint (cl', _, _, _, _) ->
-      let path, path_lam, obj_init =
+      let path, path_lam, obj_init, is_alias =
         transl_class_rebind ~scopes obj_init cl' vf in
       let rec check_constraint = function
           Cty_constr(path', _, _) when Path.same path path' -> ()
@@ -772,21 +774,21 @@ let rec transl_class_rebind ~scopes obj_init cl vf =
         | _ -> raise Exit
       in
       check_constraint cl.cl_type;
-      (path, path_lam, obj_init)
+      (path, path_lam, obj_init, is_alias)
   | Tcl_open (_, cl) ->
       transl_class_rebind ~scopes obj_init cl vf
 
 let rec transl_class_rebind_0 ~scopes (self:Ident.t) obj_init cl vf =
   match cl.cl_desc with
     Tcl_let (rec_flag, defs, _vals, cl) ->
-      let path, path_lam, obj_init =
+      let path, path_lam, obj_init, _is_alias =
         transl_class_rebind_0 ~scopes self obj_init cl vf
       in
-      (path, path_lam, Translcore.transl_let ~scopes rec_flag defs obj_init)
+      (path, path_lam, Translcore.transl_let ~scopes rec_flag defs obj_init, false)
   | _ ->
-      let path, path_lam, obj_init =
+      let path, path_lam, obj_init, is_alias =
         transl_class_rebind ~scopes obj_init cl vf in
-      (path, path_lam, lfunction [self, Pgenval] obj_init)
+      (path, path_lam, lfunction [self, Pgenval] obj_init, is_alias)
 
 let transl_class_rebind ~scopes cl vf =
   try
@@ -802,10 +804,9 @@ let transl_class_rebind ~scopes cl vf =
         ap_specialised=Default_specialise;
       }
     in
-    let _, path_lam, obj_init' =
+    let _, path_lam, obj_init', is_alias =
       transl_class_rebind_0 ~scopes self obj_init0 cl vf in
-    let id = (obj_init' = lfunction [self, Pgenval] obj_init0) in
-    if id then path_lam else
+    if is_alias then path_lam else
 
     let cla = Ident.create_local "class"
     and new_init = Ident.create_local "new_init"
