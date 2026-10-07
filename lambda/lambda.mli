@@ -457,6 +457,13 @@ val is_evaluated : lambda -> bool
 
 val free_variables: lambda -> Ident.Set.t
 
+val free_variables_groups: into:Ident.Set.t Ident.Tbl.t -> lambda -> Ident.Set.t
+(** [free_variables_groups ~into lam] is [free_variables lam], and additionally
+    stores in [into] the free variables of every function group in [lam], keyed
+    by the identifier binding the group (the first identifier of a [Lletrec]).
+    The closure pass uses that to memoise the per-group sets instead of
+    recomputing them at every level of a nested-abstraction chain. *)
+
 val transl_module_path: scoped_location -> Env.t -> Path.t -> lambda
 val transl_value_path: scoped_location -> Env.t -> Path.t -> lambda
 val transl_extension_path: scoped_location -> Env.t -> Path.t -> lambda

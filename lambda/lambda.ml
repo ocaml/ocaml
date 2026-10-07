@@ -608,89 +608,108 @@ let is_evaluated = function
   | Lconst _ | Lvar _ | Lfunction _ -> true
   | _ -> false
 
-let rec free_variables = function
-  | Lvar id
-  | Lmutvar id -> Ident.Set.singleton id
-  | Lconst _ -> Ident.Set.empty
-  | Lapply{ap_func = fn; ap_args = args} ->
-      free_variables_list (free_variables fn) args
-  | Lfunction{body; params} ->
-      Ident.Set.diff (free_variables body)
-        (Ident.Set.of_list (List.map fst params))
-  | Llet(_, _k, id, arg, body)
-  | Lmutlet(_k, id, arg, body) ->
-      Ident.Set.union
-        (free_variables arg)
-        (Ident.Set.remove id (free_variables body))
-  | Lletrec(decl, body) ->
-      let set =
-        free_variables_list (free_variables body)
-          (List.map (fun { def } -> Lfunction def) decl)
-      in
-      Ident.Set.diff set
-        (Ident.Set.of_list (List.map (fun { id } -> id) decl))
-  | Lprim(_p, args, _loc) ->
-      free_variables_list Ident.Set.empty args
-  | Lswitch(arg, sw,_) ->
-      let set =
+(* [groups], when given, collects the free variables of every function group in
+   the term into it, keyed by the identifier binding the group (the first one
+   for a [Lletrec]).  The closure pass uses that to memoise each group's set
+   instead of recomputing it at every level of a nested-abstraction chain. *)
+let free_variables_aux groups lam =
+  let rec free_variables = function
+    | Lvar id
+    | Lmutvar id -> Ident.Set.singleton id
+    | Lconst _ -> Ident.Set.empty
+    | Lapply{ap_func = fn; ap_args = args} ->
+        free_variables_list (free_variables fn) args
+    | Lfunction{body; params} ->
+        Ident.Set.diff (free_variables body)
+          (Ident.Set.of_list (List.map fst params))
+    | Llet(_, _k, id, arg, body)
+    | Lmutlet(_k, id, arg, body) ->
+        let arg_fv = free_variables arg in
+        (match arg, groups with
+         | Lfunction _, Some groups ->
+             Ident.Tbl.replace groups id (Ident.Set.remove id arg_fv)
+         | _ -> ());
+        Ident.Set.union arg_fv
+          (Ident.Set.remove id (free_variables body))
+    | Lletrec(decl, body) ->
+        let defs_fv =
+          free_variables_list Ident.Set.empty
+            (List.map (fun { def } -> Lfunction def) decl)
+        in
+        let ids = Ident.Set.of_list (List.map (fun { id } -> id) decl) in
+        (match decl, groups with
+         | { id; _ } :: _, Some groups ->
+             Ident.Tbl.replace groups id (Ident.Set.diff defs_fv ids)
+         | _ -> ());
+        Ident.Set.diff (Ident.Set.union (free_variables body) defs_fv) ids
+    | Lprim(_p, args, _loc) ->
+        free_variables_list Ident.Set.empty args
+    | Lswitch(arg, sw,_) ->
+        let set =
+          free_variables_list
+            (free_variables_list (free_variables arg)
+               (List.map snd sw.sw_consts))
+            (List.map snd sw.sw_blocks)
+        in
+        begin match sw.sw_failaction with
+        | None -> set
+        | Some failaction -> Ident.Set.union set (free_variables failaction)
+        end
+    | Lstringswitch (arg,cases,default,_) ->
+        let set =
+          free_variables_list (free_variables arg)
+            (List.map snd cases)
+        in
+        begin match default with
+        | None -> set
+        | Some default -> Ident.Set.union set (free_variables default)
+        end
+    | Lstaticraise (_,args) ->
+        free_variables_list Ident.Set.empty args
+    | Lstaticcatch(body, (_, params), handler) ->
+        Ident.Set.union
+          (Ident.Set.diff
+             (free_variables handler)
+             (Ident.Set.of_list (List.map fst params)))
+          (free_variables body)
+    | Ltrywith(body, param, handler) ->
+        Ident.Set.union
+          (Ident.Set.remove
+             param
+             (free_variables handler))
+          (free_variables body)
+    | Lifthenelse(e1, e2, e3) ->
+        Ident.Set.union
+          (Ident.Set.union (free_variables e1) (free_variables e2))
+          (free_variables e3)
+    | Lsequence(e1, e2) ->
+        Ident.Set.union (free_variables e1) (free_variables e2)
+    | Lwhile(e1, e2) ->
+        Ident.Set.union (free_variables e1) (free_variables e2)
+    | Lfor(v, lo, hi, _dir, body) ->
+        let set = Ident.Set.union (free_variables lo) (free_variables hi) in
+        Ident.Set.union set (Ident.Set.remove v (free_variables body))
+    | Lassign(id, e) ->
+        Ident.Set.add id (free_variables e)
+    | Lsend (_k, met, obj, args, _) ->
         free_variables_list
-          (free_variables_list (free_variables arg)
-             (List.map snd sw.sw_consts))
-          (List.map snd sw.sw_blocks)
-      in
-      begin match sw.sw_failaction with
-      | None -> set
-      | Some failaction -> Ident.Set.union set (free_variables failaction)
-      end
-  | Lstringswitch (arg,cases,default,_) ->
-      let set =
-        free_variables_list (free_variables arg)
-          (List.map snd cases)
-      in
-      begin match default with
-      | None -> set
-      | Some default -> Ident.Set.union set (free_variables default)
-      end
-  | Lstaticraise (_,args) ->
-      free_variables_list Ident.Set.empty args
-  | Lstaticcatch(body, (_, params), handler) ->
-      Ident.Set.union
-        (Ident.Set.diff
-           (free_variables handler)
-           (Ident.Set.of_list (List.map fst params)))
-        (free_variables body)
-  | Ltrywith(body, param, handler) ->
-      Ident.Set.union
-        (Ident.Set.remove
-           param
-           (free_variables handler))
-        (free_variables body)
-  | Lifthenelse(e1, e2, e3) ->
-      Ident.Set.union
-        (Ident.Set.union (free_variables e1) (free_variables e2))
-        (free_variables e3)
-  | Lsequence(e1, e2) ->
-      Ident.Set.union (free_variables e1) (free_variables e2)
-  | Lwhile(e1, e2) ->
-      Ident.Set.union (free_variables e1) (free_variables e2)
-  | Lfor(v, lo, hi, _dir, body) ->
-      let set = Ident.Set.union (free_variables lo) (free_variables hi) in
-      Ident.Set.union set (Ident.Set.remove v (free_variables body))
-  | Lassign(id, e) ->
-      Ident.Set.add id (free_variables e)
-  | Lsend (_k, met, obj, args, _) ->
-      free_variables_list
-        (Ident.Set.union (free_variables met) (free_variables obj))
-        args
-  | Levent (lam, _evt) ->
-      free_variables lam
-  | Lifused (_v, e) ->
-      (* Shouldn't v be considered a free variable ? *)
-      free_variables e
+          (Ident.Set.union (free_variables met) (free_variables obj))
+          args
+    | Levent (lam, _evt) ->
+        free_variables lam
+    | Lifused (_v, e) ->
+        (* Shouldn't v be considered a free variable ? *)
+        free_variables e
 
-and free_variables_list set exprs =
-  List.fold_left (fun set expr -> Ident.Set.union (free_variables expr) set)
-    set exprs
+  and free_variables_list set exprs =
+    List.fold_left (fun set expr -> Ident.Set.union (free_variables expr) set)
+      set exprs
+  in
+  free_variables lam
+
+let free_variables lam = free_variables_aux None lam
+
+let free_variables_groups ~into lam = free_variables_aux (Some into) lam
 
 (* Check if an action has a "when" guard *)
 let raise_count = ref 0
