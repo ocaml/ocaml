@@ -13,6 +13,10 @@ Working version
 
 ### Other libraries:
 
+- #15121: Add support for `O_NOFOLLOW` to the `Unix` library, only implemented
+  on POSIX systems.
+  (Romain Beauxis, review by Stefan Muenzel and Antonin Décimo)
+
 ### Tools:
 
 - #14448: ocamllex now prints a `missing-case` warning and shows an example
