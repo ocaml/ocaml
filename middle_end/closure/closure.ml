@@ -694,6 +694,7 @@ type env = {
   cenv : closure_env;
   fenv : value_approximation V.Map.t;
   mutable_vars : V.Set.t;
+  fv_memo : Ident.Set.t Ident.Tbl.t;
 }
 
 (* Perform an inline expansion:
@@ -891,7 +892,39 @@ let close_approx_var { fenv; cenv } id =
 let close_var env id =
   let (ulam, _app) = close_approx_var env id in ulam
 
-let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
+(* Free variables of each function group, recorded into [fv_memo] while some
+   enclosing group's free variables are being computed and read back here in
+   preference to re-walking the body of every group at every level of a
+   nested-abstraction chain, which is quadratic in nesting depth (#7826).
+   [fv_memo] is part of the environment threaded through this pass, so it dies
+   with the conversion that fills it.  A miss falls back to the previous
+   behaviour, so unrecorded shapes stay correct.
+
+   [key] is the identifier binding the group, taken from the definitions as
+   they appear in the input Lambda (before [Simplif.split_default_wrapper]
+   rewrites them; the wrapper keeps the original identifier). *)
+let group_free_variables_of fv_memo key defs =
+  match Ident.Tbl.find_opt fv_memo key with
+  | Some fv -> fv
+  | None -> free_variables_groups ~into:fv_memo (Lletrec (defs, lambda_unit))
+
+(* [split_default_wrapper] renames the parameters of the functions it splits
+   and rewrites their bodies, so a free-variable set recorded for a group
+   nested inside such a body mentions identifiers that no longer exist in the
+   term the closure pass is about to walk.  Detect the rewrite by the group's
+   identifiers, which the wrapper preserves.
+
+   Any other rewrite of the term between a recording and the read that consumes
+   it would need the same treatment: the memo is keyed by identifiers, and a
+   copy that keeps a key while changing the body beneath it makes that entry
+   stale.  [close]'s other transformations act on ulambda, after closure
+   conversion, and cannot reach these sets. *)
+let same_group defs defs' =
+  List.length defs = List.length defs'
+  && List.for_all2 (fun { id; _ } { id = id'; _ } -> Ident.same id id')
+       defs defs'
+
+let rec close ({ backend; fenv; cenv ; mutable_vars; fv_memo } as env) lam =
   let module B = (val backend : Backend_intf.S) in
   match lam with
   | Lvar id ->
@@ -961,7 +994,8 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
         in
         let funct_var = V.create_local "funct" in
         let fenv = V.Map.add funct_var fapprox fenv in
-        let (new_fun, approx) = close { backend; fenv; cenv; mutable_vars }
+        let (new_fun, approx) =
+          close { backend; fenv; cenv; mutable_vars; fv_memo }
           (lfunction
              ~kind:Curried
              ~return:Pgenval
@@ -1022,12 +1056,14 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
       begin match alam with
         Value_const _
            when str = Alias || is_pure ulam ->
-         close { backend; fenv = (V.Map.add id alam fenv); cenv; mutable_vars }
+         close { backend; fenv = (V.Map.add id alam fenv); cenv; mutable_vars;
+                 fv_memo }
            body
       | _ ->
          let (ubody, abody) =
            close
-             { backend; fenv = (V.Map.add id alam fenv); cenv; mutable_vars }
+             { backend; fenv = (V.Map.add id alam fenv); cenv; mutable_vars;
+               fv_memo }
              body
          in
          (Ulet(Immutable, kind, VP.create id, ulam, ubody), abody)
@@ -1045,7 +1081,7 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
           (fun (id, _pos, approx) fenv -> V.Map.add id approx fenv)
           infos fenv in
       let (ubody, approx) =
-        close { backend; fenv = fenv_body; cenv; mutable_vars } body in
+        close { backend; fenv = fenv_body; cenv; mutable_vars; fv_memo } body in
       let sb =
         List.fold_right
           (fun (id, pos, _approx) sb ->
@@ -1220,7 +1256,10 @@ and close_named env id = function
 
 (* Build a shared closure for a set of mutually recursive functions *)
 
-and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
+and close_functions { backend; fenv; cenv; mutable_vars; fv_memo } fun_defs =
+  let group_key =
+    match fun_defs with { id; _ } :: _ -> Some id | [] -> None in
+  let original_defs = fun_defs in
   let fun_defs =
     (* Split functions with optional arguments and default values into
        a wrapper function (likely to be inlined) and an inner function
@@ -1244,6 +1283,9 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
          )
          fun_defs
   in
+  (* The split may have renamed the parameters of the functions below, so any
+     recorded free-variable set for a group nested in their bodies is stale. *)
+  if not (same_group original_defs fun_defs) then Ident.Tbl.clear fv_memo;
   let inline_attribute = match fun_defs with
     | [{ def = {attr = { inline; }}}] -> inline
     | _ -> Default_inline (* recursive functions can't be inlined *)
@@ -1254,7 +1296,10 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
     !function_nesting_depth < excessive_function_nesting_depth in
   (* Determine the free variables of the functions *)
   let fv =
-    V.Set.elements (free_variables (Lletrec(fun_defs, lambda_unit))) in
+    V.Set.elements
+      (match group_key with
+       | Some key -> group_free_variables_of fv_memo key fun_defs
+       | None -> free_variables (Lletrec(fun_defs, lambda_unit))) in
   (* Build the function descriptors for the functions.
      Initially all functions are assumed not to need their environment
      parameter. *)
@@ -1318,7 +1363,8 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
       }
     in
     let (ubody, approx) =
-      close { backend; fenv = fenv_rec; cenv = cenv_body; mutable_vars } body
+      close { backend; fenv = fenv_rec; cenv = cenv_body; mutable_vars;
+                fv_memo } body
     in
     if !useless_env && occurs_var env_param ubody then raise NotClosed;
     let fun_params =
@@ -1392,7 +1438,8 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
   let (clos, infos) = List.split clos_info_list in
   let fv = if !useless_env then [] else fv in
   (Uclosure(clos,
-            List.map (close_var { backend; fenv; cenv; mutable_vars }) fv),
+            List.map
+              (close_var { backend; fenv; cenv; mutable_vars; fv_memo }) fv),
    infos)
 
 (* Same, for one non-recursive function *)
@@ -1526,7 +1573,8 @@ let intro ~backend ~size lam =
   Compilenv.set_global_approx(Value_tuple !global_approx);
   let (ulam, _approx) =
     close { backend; fenv = V.Map.empty;
-            cenv = Not_in_closure; mutable_vars = V.Set.empty } lam
+            cenv = Not_in_closure; mutable_vars = V.Set.empty;
+            fv_memo = Ident.Tbl.create 128 } lam
   in
   let opaque =
     !Clflags.opaque
