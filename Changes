@@ -33,6 +33,10 @@ Working version
 
 ### Bug fixes:
 
+- #7826, #15139: Cache free variable computations to avoid quadratic
+  blowups in pathological cases
+  (Vincent Laviron, report by Pierre-Marie Pédrot, review by Stefan Muenzel)
+
 OCaml 5.6.0
 -----------
 
