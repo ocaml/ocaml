@@ -15,6 +15,10 @@ Working version
 
 ### Tools:
 
+- #14448: ocamllex now prints a `missing-case` warning and shows an example
+  of nonmatching input if a rule is not exhaustive (Martin Jambon,
+  review by David Allsopp and Gabriel Scherer)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:
@@ -515,10 +519,6 @@ OCaml 5.6.0
   initialized, which could lead to incorrect line directives being generated.
   (Nicolás Ojeda Bär, report by Igor Pikovets, review by Gabriel Scherer and
   Xavier Leroy)
-
-- #14448: ocamllex now prints a `missing-case` warning and shows an example
-  of nonmatching input if a rule is not exhaustive (Martin Jambon,
-  review by David Allsopp and Gabriel Scherer)
 
 * #14172: stop reversing the order of -L arguments in ocamlmklib, a quirk
   introduced by accident in 2012.
