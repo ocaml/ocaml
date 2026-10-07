@@ -29,6 +29,12 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #15140: Emitcode: call `Sys.getcwd` once per emission rather than multiple
+  times per debug event. This saves a lot of system time on macOS during
+  bytecode compilation jobs with -g.
+  (Michael Bacarella, review by Florian Angeletti, Nicolás Ojeda Bär,
+   Damien Doligez and Stefan Muenzel)
+
 ### Build system:
 
 ### Bug fixes:
