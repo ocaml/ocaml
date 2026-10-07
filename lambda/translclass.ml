@@ -763,7 +763,10 @@ let rec transl_class_rebind ~scopes obj_init cl vf =
   | Tcl_let (rec_flag, defs, _vals, cl) ->
       let path, path_lam, obj_init, _is_alias =
         transl_class_rebind ~scopes obj_init cl vf in
-      (path, path_lam, Translcore.transl_let ~scopes rec_flag defs obj_init, false)
+      (path,
+       path_lam,
+       Translcore.transl_let ~scopes rec_flag defs obj_init,
+       false)
   | Tcl_structure _ -> raise Exit
   | Tcl_constraint (cl', _, _, _, _) ->
       let path, path_lam, obj_init, is_alias =
@@ -784,7 +787,10 @@ let rec transl_class_rebind_0 ~scopes (self:Ident.t) obj_init cl vf =
       let path, path_lam, obj_init, _is_alias =
         transl_class_rebind_0 ~scopes self obj_init cl vf
       in
-      (path, path_lam, Translcore.transl_let ~scopes rec_flag defs obj_init, false)
+      (path,
+       path_lam,
+       Translcore.transl_let ~scopes rec_flag defs obj_init,
+       false)
   | _ ->
       let path, path_lam, obj_init, is_alias =
         transl_class_rebind ~scopes obj_init cl vf in

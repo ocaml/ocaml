@@ -944,7 +944,8 @@ let duplicate_function =
      ~freshen_bound_variables:true
      Ident.Map.empty).subst_lfunction
 
-let map_lfunction f { kind; params; return; body; attr; loc; free_variables = _ } =
+let map_lfunction f { kind; params; return; body; attr; loc;
+                      free_variables = _ } =
   let body = f body in
   lfunction' ~kind ~params ~return ~body ~attr ~loc
 
