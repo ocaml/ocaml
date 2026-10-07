@@ -9,6 +9,13 @@ Working version
 
 ### Code generation and optimizations:
 
+- #7826, #15138: The closure pass of the non-flambda native compiler no
+  longer recomputes the free variables of a function group at every level of a
+  nested-abstraction chain, which made compilation quadratic in the nesting
+  depth of functions.  A chain of functions that each take optional arguments
+  is still quadratic: splitting one rewrites its body and discards the memo
+  (Yihang Liu, report by Pierre-Marie Pédrot)
+
 ### Standard library:
 
 ### Other libraries:
