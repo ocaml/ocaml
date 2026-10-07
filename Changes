@@ -13,6 +13,10 @@ Working version
 
 ### Other libraries:
 
+- #15121: Add support for `O_NOFOLLOW` to the `Unix` library, only implemented
+  on POSIX systems.
+  (Romain Beauxis, review by Stefan Muenzel and Antonin Décimo)
+
 ### Tools:
 
 ### Manual and documentation:
@@ -466,10 +470,6 @@ OCaml 5.6.0
   `Unix` module (eg `Unix.opendir`).
   (Nicolás Ojeda Bär, report by Adrián Montesinos González, review by Gabriel
   Scherer)
-
-- #15121: Add support for `O_NOFOLLOW` to the `Unix` library, only implemented
-  on POSIX systems.
-  (Romain Beauxis, review by Stefan Muenzel and Antonin Décimo)
 
 - #14984: Cache one write buffer for each domain in
   `Runtime_events.User.write`, instead of a list for each thread. A write of
