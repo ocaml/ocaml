@@ -23,15 +23,10 @@ type t2 = t = A
 
 (* Warning 30 *)
 
-type[@warning "-30"] a = X and b = X;;
+type[@warning "-30"] a = X and[@warning "-30"] b = X;;
 
 
 [%%expect {|
-Line 1, characters 35-36:
-1 | type[@warning "-30"] a = X and b = X;;
-                                       ^
-Warning 30 [duplicate-definitions]: the constructor "X" is defined in both types "a" and "b".
-
 type a = X
 and b = X
 |}];;
@@ -39,24 +34,14 @@ and b = X
 type a = X and b = X [@@warning "-30"];;
 
 [%%expect {|
-Line 1, characters 19-20:
-1 | type a = X and b = X [@@warning "-30"];;
-                       ^
-Warning 30 [duplicate-definitions]: the constructor "X" is defined in both types "a" and "b".
-
 type a = X
 and b = X
 |}];;
 
 
-type[@warning "-30"] a = { k: unit } and b = { k: unit };;
+type[@warning "-30"] a = { k: unit } and[@warning "-30"] b = { k: unit };;
 
 [%%expect {|
-Line 1, characters 47-54:
-1 | type[@warning "-30"] a = { k: unit } and b = { k: unit };;
-                                                   ^^^^^^^
-Warning 30 [duplicate-definitions]: the label "k" is defined in both types "a" and "b".
-
 type a = { k : unit; }
 and b = { k : unit; }
 |}];;
@@ -64,11 +49,6 @@ and b = { k : unit; }
 type a = { k: unit } and b = { k: unit } [@@warning "-30"];;
 
 [%%expect {|
-Line 1, characters 31-38:
-1 | type a = { k: unit } and b = { k: unit } [@@warning "-30"];;
-                                   ^^^^^^^
-Warning 30 [duplicate-definitions]: the label "k" is defined in both types "a" and "b".
-
 type a = { k : unit; }
 and b = { k : unit; }
 |}];;
@@ -91,11 +71,6 @@ module type T = sig
 end;;
 
 [%%expect {|
-Line 3, characters 4-39:
-3 |     module[@warning "-60"] Bar := X.Foo
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 60 [unused-module]: unused module "Bar".
-
 module type T = sig module G : (X : A.S) -> sig end end
 |}];;
 
@@ -107,11 +82,6 @@ module type T = sig
 end;;
 
 [%%expect {|
-Line 3, characters 4-41:
-3 |     module Bar := X.Foo [@@warning "-60"]
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 60 [unused-module]: unused module "Bar".
-
 module type T = sig module G : (X : A.S) -> sig end end
 |}];;
 
@@ -138,27 +108,12 @@ type foo = Foo : 'b * 'b -> foo
 type[@warning "-65"] t = ();;
 
 [%%expect{|
-Line 1, characters 0-27:
-1 | type[@warning "-65"] t = ();;
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 65 [redefining-unit]: This type declaration is defining
-  a new "()" constructor which shadows the existing one.
-  Hint: Did you mean "type t = unit"?
-
 type t = ()
 |}]
-
 
 type t = ()[@@warning "-65"];;
 
 [%%expect{|
-Line 1, characters 0-28:
-1 | type t = ()[@@warning "-65"];;
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 65 [redefining-unit]: This type declaration is defining
-  a new "()" constructor which shadows the existing one.
-  Hint: Did you mean "type t = unit"?
-
 type t = ()
 |}]
 
