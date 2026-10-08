@@ -1189,7 +1189,10 @@ let check_abbrev_regularity ~abs_env env id_loc_list to_check tdecl =
 let check_duplicates sdecl_list =
   let labels = Hashtbl.create 7 and constrs = Hashtbl.create 7 in
   List.iter
-    (fun sdecl -> match sdecl.ptype_kind with
+    (fun sdecl ->
+    Builtin_attributes.warning_scope ~ppwarning:false
+      sdecl.ptype_attributes (fun () ->
+       match sdecl.ptype_kind with
       Ptype_variant cl ->
         List.iter
           (fun pcd ->
@@ -1214,7 +1217,7 @@ let check_duplicates sdecl_list =
           fl
     | Ptype_abstract -> ()
     | Ptype_open -> ()
-    | Ptype_external _ -> ())
+    | Ptype_external _ -> ()))
     sdecl_list
 
 (* Force recursion to go through id for private types*)
@@ -1238,6 +1241,8 @@ let name_recursion_decls sdecls decls =
 (* Warn on definitions of type "type foo = ()" which redefine a different unit
    type and are likely a mistake. *)
 let check_redefined_unit (td: Parsetree.type_declaration) =
+  Builtin_attributes.warning_scope ~ppwarning:false
+    td.ptype_attributes (fun () ->
   let open Parsetree in
   let is_unit_constructor cd = cd.pcd_name.txt = "()" in
   match td with
@@ -1247,7 +1252,7 @@ let check_redefined_unit (td: Parsetree.type_declaration) =
     when is_unit_constructor cd ->
       Location.prerr_warning td.ptype_loc (Warnings.Redefining_unit name)
   | _ ->
-      ()
+      ())
 
 (* Update a temporary definition to share recursion *)
 let update_type temp_env env id loc =
@@ -1425,9 +1430,9 @@ let transl_type_decl env rec_flag sdecl_list =
   let final_env = add_types_to_env decls shapes env in
   (* Check re-exportation *)
   List.iter2 (fun name_sdecl (id, slot) ->
-      Builtin_attributes.warning_scope ~ppwarning:false name_sdecl.ptype_attributes (fun () ->
-      check_abbrev final_env name_sdecl (id, slot))
-    ) sdecl_list decls;
+      Builtin_attributes.warning_scope ~ppwarning:false
+        name_sdecl.ptype_attributes (fun () ->
+      check_abbrev final_env name_sdecl (id, slot))) sdecl_list decls;
   (* Keep original declaration *)
   let final_decls =
     List.map2
