@@ -2600,7 +2600,7 @@ $(ocamltex): VPATH += $(addprefix otherlibs/,str unix)
 
 ocamltex_COMMON_LINKFLAGS += -linkall
 
-tools/ocamltex.cmo: OC_COMMON_COMPFLAGS += -no-alias-deps
+ocamltex_COMPFLAGS = -no-alias-deps
 
 ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "false"
 # ocamltex needs a custom runtime when building statically owing to the C stubs
