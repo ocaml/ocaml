@@ -1159,7 +1159,8 @@ and approx_sig env ssg =
             | _ -> Mp_present
           in
           let _, newenv =
-            Env.enter_module_declaration ~scope pms.pms_name.txt pres md env
+            Builtin_attributes.warning_scope pms.pms_attributes (fun () ->
+              Env.enter_module_declaration ~scope pms.pms_name.txt pres md env)
           in
           approx_sig newenv srem
       | Psig_recmodule sdecls ->
@@ -1830,7 +1831,8 @@ and transl_signature env sg =
           | _ -> Mp_present
         in
         let id, newenv =
-          Env.enter_module_declaration ~scope pms.pms_name.txt pres md env
+          Builtin_attributes.warning_scope pms.pms_attributes (fun () ->
+          Env.enter_module_declaration ~scope pms.pms_name.txt pres md env)
         in
         let info =
           `Substituted_away (Subst.add_module id path Subst.identity)
