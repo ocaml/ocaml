@@ -82,11 +82,13 @@ extern "C++" {
 #include <atomic>
 typedef std::atomic<uintnat> atomic_uintnat;
 typedef std::atomic<intnat> atomic_intnat;
+typedef std::atomic<double> atomic_double;
 }
 #else
 #include <stdatomic.h>
 typedef _Atomic uintnat atomic_uintnat;
 typedef _Atomic intnat atomic_intnat;
+typedef _Atomic double atomic_double;
 #endif
 
 #ifndef NULL
