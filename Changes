@@ -538,6 +538,10 @@ OCaml 5.6.0
 
 ### Manual and documentation:
 
+- #7375, #15104: Document when [raise] preserves an existing exception
+  backtrace.
+  (John Riley, report by John Whitington)
+
 - #14598: Add `@since` annotations to `Runtime_events`. (Raphaël Proust)
 
 - #14902, #14944: Add documentation on ocamllex `-w` argument in the man page.
