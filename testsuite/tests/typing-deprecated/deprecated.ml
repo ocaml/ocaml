@@ -638,11 +638,6 @@ Line 3, characters 21-36:
                          ^^^^^^^^^^^^^^^
 Warning 22 [preprocessor]: Pp warning 2!
 
-Line 4, characters 21-36:
-4 |   [@@ocaml.ppwarning "Pp warning 3!"]
-                         ^^^^^^^^^^^^^^^
-Warning 22 [preprocessor]: Pp warning 3!
-
 type t = unit
 |}]
 
