@@ -68,9 +68,8 @@ command recognizes the following options:
 .B \-ml
 Output code that does not use OCaml's built-in automata
 interpreter. Instead, the automaton is encoded by OCaml functions.
-This option is mainly useful for debugging
-.BR ocamllex (1),
-using it for production lexers is not recommended.
+This option improves performance when using the native compiler, but
+decreases it when using the bytecode compiler.
 .TP
 .BI \-o " output\-file"
 Specify the name of the output file produced by

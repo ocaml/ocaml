@@ -348,7 +348,9 @@ and lfunction =
     return: value_kind;
     body: lambda;
     attr: function_attribute; (* specified with [@inline] attribute *)
-    loc: scoped_location; }
+    loc: scoped_location;
+    free_variables : Ident.Set.t Lazy.t; (* does not include parameters *)
+  }
 
 and lambda_apply =
   { ap_func : lambda;
@@ -404,9 +406,96 @@ let max_arity () =
   (* 126 = 127 (the maximal number of parameters supported in C--)
            - 1 (the hidden parameter containing the environment) *)
 
+let rec free_variables = function
+  | Lvar id
+  | Lmutvar id -> Ident.Set.singleton id
+  | Lconst _ -> Ident.Set.empty
+  | Lapply{ap_func = fn; ap_args = args} ->
+      free_variables_list (free_variables fn) args
+  | Lfunction{free_variables} ->
+      Lazy.force free_variables
+  | Llet(_, _k, id, arg, body)
+  | Lmutlet(_k, id, arg, body) ->
+      Ident.Set.union
+        (free_variables arg)
+        (Ident.Set.remove id (free_variables body))
+  | Lletrec(decl, body) ->
+      let set =
+        free_variables_list (free_variables body)
+          (List.map (fun { def } -> Lfunction def) decl)
+      in
+      Ident.Set.diff set
+        (Ident.Set.of_list (List.map (fun { id } -> id) decl))
+  | Lprim(_p, args, _loc) ->
+      free_variables_list Ident.Set.empty args
+  | Lswitch(arg, sw,_) ->
+      let set =
+        free_variables_list
+          (free_variables_list (free_variables arg)
+             (List.map snd sw.sw_consts))
+          (List.map snd sw.sw_blocks)
+      in
+      begin match sw.sw_failaction with
+      | None -> set
+      | Some failaction -> Ident.Set.union set (free_variables failaction)
+      end
+  | Lstringswitch (arg,cases,default,_) ->
+      let set =
+        free_variables_list (free_variables arg)
+          (List.map snd cases)
+      in
+      begin match default with
+      | None -> set
+      | Some default -> Ident.Set.union set (free_variables default)
+      end
+  | Lstaticraise (_,args) ->
+      free_variables_list Ident.Set.empty args
+  | Lstaticcatch(body, (_, params), handler) ->
+      Ident.Set.union
+        (Ident.Set.diff
+           (free_variables handler)
+           (Ident.Set.of_list (List.map fst params)))
+        (free_variables body)
+  | Ltrywith(body, param, handler) ->
+      Ident.Set.union
+        (Ident.Set.remove
+           param
+           (free_variables handler))
+        (free_variables body)
+  | Lifthenelse(e1, e2, e3) ->
+      Ident.Set.union
+        (Ident.Set.union (free_variables e1) (free_variables e2))
+        (free_variables e3)
+  | Lsequence(e1, e2) ->
+      Ident.Set.union (free_variables e1) (free_variables e2)
+  | Lwhile(e1, e2) ->
+      Ident.Set.union (free_variables e1) (free_variables e2)
+  | Lfor(v, lo, hi, _dir, body) ->
+      let set = Ident.Set.union (free_variables lo) (free_variables hi) in
+      Ident.Set.union set (Ident.Set.remove v (free_variables body))
+  | Lassign(id, e) ->
+      Ident.Set.add id (free_variables e)
+  | Lsend (_k, met, obj, args, _) ->
+      free_variables_list
+        (Ident.Set.union (free_variables met) (free_variables obj))
+        args
+  | Levent (lam, _evt) ->
+      free_variables lam
+  | Lifused (_v, e) ->
+      (* Shouldn't v be considered a free variable ? *)
+      free_variables e
+
+and free_variables_list set exprs =
+  List.fold_left (fun set expr -> Ident.Set.union (free_variables expr) set)
+    set exprs
+
 let lfunction' ~kind ~params ~return ~body ~attr ~loc =
   assert (List.length params <= max_arity ());
-  { kind; params; return; body; attr; loc }
+  let free_variables =
+    lazy (Ident.Set.diff (free_variables body)
+            (Ident.Set.of_list (List.map fst params)))
+  in
+  { kind; params; return; body; attr; loc; free_variables }
 
 let lfunction ~kind ~params ~return ~body ~attr ~loc =
   Lfunction (lfunction' ~kind ~params ~return ~body ~attr ~loc)
@@ -607,90 +696,6 @@ let iter_head_constructor f l =
 let is_evaluated = function
   | Lconst _ | Lvar _ | Lfunction _ -> true
   | _ -> false
-
-let rec free_variables = function
-  | Lvar id
-  | Lmutvar id -> Ident.Set.singleton id
-  | Lconst _ -> Ident.Set.empty
-  | Lapply{ap_func = fn; ap_args = args} ->
-      free_variables_list (free_variables fn) args
-  | Lfunction{body; params} ->
-      Ident.Set.diff (free_variables body)
-        (Ident.Set.of_list (List.map fst params))
-  | Llet(_, _k, id, arg, body)
-  | Lmutlet(_k, id, arg, body) ->
-      Ident.Set.union
-        (free_variables arg)
-        (Ident.Set.remove id (free_variables body))
-  | Lletrec(decl, body) ->
-      let set =
-        free_variables_list (free_variables body)
-          (List.map (fun { def } -> Lfunction def) decl)
-      in
-      Ident.Set.diff set
-        (Ident.Set.of_list (List.map (fun { id } -> id) decl))
-  | Lprim(_p, args, _loc) ->
-      free_variables_list Ident.Set.empty args
-  | Lswitch(arg, sw,_) ->
-      let set =
-        free_variables_list
-          (free_variables_list (free_variables arg)
-             (List.map snd sw.sw_consts))
-          (List.map snd sw.sw_blocks)
-      in
-      begin match sw.sw_failaction with
-      | None -> set
-      | Some failaction -> Ident.Set.union set (free_variables failaction)
-      end
-  | Lstringswitch (arg,cases,default,_) ->
-      let set =
-        free_variables_list (free_variables arg)
-          (List.map snd cases)
-      in
-      begin match default with
-      | None -> set
-      | Some default -> Ident.Set.union set (free_variables default)
-      end
-  | Lstaticraise (_,args) ->
-      free_variables_list Ident.Set.empty args
-  | Lstaticcatch(body, (_, params), handler) ->
-      Ident.Set.union
-        (Ident.Set.diff
-           (free_variables handler)
-           (Ident.Set.of_list (List.map fst params)))
-        (free_variables body)
-  | Ltrywith(body, param, handler) ->
-      Ident.Set.union
-        (Ident.Set.remove
-           param
-           (free_variables handler))
-        (free_variables body)
-  | Lifthenelse(e1, e2, e3) ->
-      Ident.Set.union
-        (Ident.Set.union (free_variables e1) (free_variables e2))
-        (free_variables e3)
-  | Lsequence(e1, e2) ->
-      Ident.Set.union (free_variables e1) (free_variables e2)
-  | Lwhile(e1, e2) ->
-      Ident.Set.union (free_variables e1) (free_variables e2)
-  | Lfor(v, lo, hi, _dir, body) ->
-      let set = Ident.Set.union (free_variables lo) (free_variables hi) in
-      Ident.Set.union set (Ident.Set.remove v (free_variables body))
-  | Lassign(id, e) ->
-      Ident.Set.add id (free_variables e)
-  | Lsend (_k, met, obj, args, _) ->
-      free_variables_list
-        (Ident.Set.union (free_variables met) (free_variables obj))
-        args
-  | Levent (lam, _evt) ->
-      free_variables lam
-  | Lifused (_v, e) ->
-      (* Shouldn't v be considered a free variable ? *)
-      free_variables e
-
-and free_variables_list set exprs =
-  List.fold_left (fun set expr -> Ident.Set.union (free_variables expr) set)
-    set exprs
 
 (* Check if an action has a "when" guard *)
 let raise_count = ref 0
@@ -908,9 +913,10 @@ let build_substs update_env ?(freshen_bound_variables = false) s =
         Lifused (id, subst s l e)
   and subst_list s l li = List.map (subst s l) li
   and subst_decl s l decl = { decl with def = subst_lfun s l decl.def }
-  and subst_lfun s l lf =
-    let params, l' = bind_many lf.params l in
-    { lf with params; body = subst s l' lf.body }
+  and subst_lfun s l { kind; params; return; body; attr; loc;
+                       free_variables = _ } =
+    let params, l' = bind_many params l in
+    lfunction' ~kind ~params ~return ~body:(subst s l' body) ~attr ~loc
   and subst_case s l (key, case) = (key, subst s l case)
   and subst_strcase s l (key, case) = (key, subst s l case)
   and subst_opt s l = function
@@ -938,9 +944,10 @@ let duplicate_function =
      ~freshen_bound_variables:true
      Ident.Map.empty).subst_lfunction
 
-let map_lfunction f { kind; params; return; body; attr; loc } =
+let map_lfunction f { kind; params; return; body; attr; loc;
+                      free_variables = _ } =
   let body = f body in
-  { kind; params; return; body; attr; loc }
+  lfunction' ~kind ~params ~return ~body ~attr ~loc
 
 let shallow_map f = function
   | Lvar _
