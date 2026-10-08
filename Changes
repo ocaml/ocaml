@@ -19,6 +19,10 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #12301, #15131: Fix attributes not applying in some type and module
+  declaration nodes.
+  (Michał Kosior, report by Richard Eisenberg, review by Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 ### Build system:
