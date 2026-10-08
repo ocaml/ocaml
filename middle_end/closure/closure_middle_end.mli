@@ -16,6 +16,6 @@
 val lambda_to_clambda
    : backend:(module Backend_intf.S)
   -> prefixname:string
-  -> ppf_dump:Format.formatter
+  -> log:Dev_log.t
   -> Lambda.program
   -> Clambda.with_constants

@@ -72,16 +72,17 @@ module Printer = Genprintval.Make(Debugcom.Remote_value)(EvalPath)
 
 let max_printer_depth = ref 20
 let max_printer_steps = ref 300
+let out_value = Format_doc.compat !Oprint.out_value
 
 let print_exception ppf obj =
   let t = Printer.outval_of_untyped_exception obj in
-  !Oprint.out_value ppf t
+  out_value ppf t
 
 let print_value max_depth env obj (ppf : Format.formatter) ty =
   let t =
     Printer.outval_of_value !max_printer_steps max_depth
       check_depth env obj ty in
-  !Oprint.out_value ppf t
+  out_value ppf t
 
 let print_named_value max_depth exp env obj ppf ty =
   let print_value_name ppf = function

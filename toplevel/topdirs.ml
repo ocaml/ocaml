@@ -15,17 +15,10 @@
 
 (* Toplevel directives *)
 
-open Format
 open Misc
 open Types
 open Data_types
 open Toploop
-
-let error_fmt () =
-  if !Sys.interactive then
-    Format.std_formatter
-  else
-    Format.err_formatter
 
 let action_on_suberror b =
   if not b && not !Sys.interactive then
@@ -61,8 +54,9 @@ let order_of_sections =
 (* Do not forget to keep the directives synchronized with the manual in
    manual/src/cmds/top.etex *)
 
-(* To quit *)
+let with_log f x = f !Topcommon.directive_log x
 
+(* To quit *)
 let dir_quit () = raise (Compenv.Exit_with_status 0)
 
 let _ = add_directive "quit" (Directive_none dir_quit)
@@ -129,88 +123,90 @@ let _ = add_directive "cd" (Directive_string dir_cd)
       doc = "Change the current working directory.";
     }
 
+module Dir = struct
 
-let with_error_fmt f x = f (error_fmt ()) x
+  let load log name =
+    action_on_suberror (Topeval.load_file false log name)
 
-let dir_load ppf name =
-  action_on_suberror (Topeval.load_file false ppf name)
+  let _ = add_directive "load" (Directive_string (with_log load))
+      {
+        section = section_run;
+        doc = "Load in memory a bytecode object, produced by ocamlc.";
+      }
 
-let _ = add_directive "load" (Directive_string (with_error_fmt dir_load))
-    {
-      section = section_run;
-      doc = "Load in memory a bytecode object, produced by ocamlc.";
-    }
+  let load_rec log name =
+    action_on_suberror (Topeval.load_file true log name)
 
-let dir_load_rec ppf name =
-  action_on_suberror (Topeval.load_file true ppf name)
+  let _ = add_directive "load_rec"
+      (Directive_string (with_log load_rec))
+      {
+        section = section_run;
+        doc = "As #load, but loads dependencies recursively.";
+      }
 
-let _ = add_directive "load_rec"
-    (Directive_string (with_error_fmt dir_load_rec))
-    {
-      section = section_run;
-      doc = "As #load, but loads dependencies recursively.";
-    }
+  let load_file log s = Topeval.load_file false log s
 
-let load_file = Topeval.load_file false
+  (* Load commands from a file *)
 
-(* Load commands from a file *)
+  let use log name =
+    action_on_suberror (Eval.use_input log (Toploop.File name))
+  let use_output log name = action_on_suberror (Eval.use_output log name)
+  let mod_use log name =
+    action_on_suberror (Eval.mod_use_input log (Toploop.File name))
 
-let dir_use ppf name =
-  action_on_suberror (Toploop.use_input ppf (Toploop.File name))
-let dir_use_output ppf name = action_on_suberror (Toploop.use_output ppf name)
-let dir_mod_use ppf name =
-  action_on_suberror (Toploop.mod_use_input ppf (Toploop.File name))
+  let _ = add_directive "use" (Directive_string (with_log use))
+      {
+        section = section_run;
+        doc = "Read, compile and execute source phrases from the given file.";
+      }
 
-let _ = add_directive "use" (Directive_string (with_error_fmt dir_use))
-    {
-      section = section_run;
-      doc = "Read, compile and execute source phrases from the given file.";
-    }
+  let _ = add_directive "use_output"
+      (Directive_string (with_log use_output))
+      {
+        section = section_run;
+        doc = "Execute a command and read, compile and execute source phrases \
+               from its output.";
+      }
 
-let _ = add_directive "use_output"
-    (Directive_string (with_error_fmt dir_use_output))
-    {
-      section = section_run;
-      doc = "Execute a command and read, compile and execute source phrases \
-             from its output.";
-    }
+  let _ = add_directive "mod_use" (Directive_string (with_log mod_use))
+      {
+        section = section_run;
+        doc = "Usage is identical to #use but #mod_use \
+               wraps the contents in a module.";
+      }
 
-let _ = add_directive "mod_use" (Directive_string (with_error_fmt dir_mod_use))
-    {
-      section = section_run;
-      doc = "Usage is identical to #use but #mod_use \
-             wraps the contents in a module.";
-    }
+  (* Install, remove a printer *)
 
-(* Install, remove a printer *)
+  let install_printer log lid =
+    match Topprinters.install eval_value_path !toplevel_env lid with
+    | Error error -> Topprinters.log_error log error
+    | Ok () -> ()
 
-let dir_install_printer ppf lid =
-  match Topprinters.install eval_value_path !toplevel_env lid with
-  | Error error -> Topprinters.report_error ppf error
-  | Ok () -> ()
+  let remove_printer log lid =
+    match Topprinters.remove !toplevel_env lid with
+    | Error error -> Topprinters.log_error log error
+    | Ok () -> ()
 
-let dir_remove_printer ppf lid =
-  match Topprinters.remove !toplevel_env lid with
-  | Error error -> Topprinters.report_error ppf error
-  | Ok () -> ()
+  let _ = add_directive "install_printer"
+      (Directive_ident (with_log install_printer))
+      {
+        section = section_print;
+        doc = "Registers a printer for values of a certain type.";
+      }
 
-let _ = add_directive "install_printer"
-    (Directive_ident (with_error_fmt dir_install_printer))
-    {
-      section = section_print;
-      doc = "Registers a printer for values of a certain type.";
-    }
+  let _ = add_directive "remove_printer"
+      (Directive_ident (with_log remove_printer))
+      {
+        section = section_print;
+        doc = "Remove the named function from the table of toplevel printers.";
+      }
+end
 
-let _ = add_directive "remove_printer"
-    (Directive_ident (with_error_fmt dir_remove_printer))
-    {
-      section = section_print;
-      doc = "Remove the named function from the table of toplevel printers.";
-    }
-
-let parse_warnings ppf iserr s =
+let parse_warnings iserr log s =
   try Option.iter Location.(prerr_alert none) @@ Warnings.parse_options iserr s
-  with Arg.Bad err -> fprintf ppf "%s.@." err; action_on_suberror true
+  with Arg.Bad err ->
+    Log.itemd Toplog.errors log "%s." err;
+    action_on_suberror true
 
 (* Typing information *)
 
@@ -234,7 +230,7 @@ let trim_signature = function
            sg)
   | mty -> mty
 
-let show_prim to_sig ppf lid =
+let show_prim to_sig log lid =
   let env = !toplevel_env in
   let loc = Location.none in
   try
@@ -243,16 +239,16 @@ let show_prim to_sig ppf lid =
       | Longident.Lident s -> s
       | Longident.Ldot (_,{ txt = s; _ }) -> s
       | Longident.Lapply _ ->
-          fprintf ppf "Invalid path %a@." Printtyp.longident lid;
+          Topcommon.errorf "Invalid path %a"
+            (Style.as_inline_code Printtyp.Doc.longident) lid;
           raise Exit
     in
     let id = Ident.create_persistent s in
     let sg = to_sig env loc id lid in
     Printtyp.wrap_printing_env ~error:false env
-      (fun () -> fprintf ppf "@[%a@]@." Printtyp.signature sg)
+      (fun () -> Log.d Toplog.output log "@[%a@]" Printtyp.Doc.signature sg)
   with
-  | Not_found ->
-      fprintf ppf "@[Unknown element.@]@."
+  | Not_found -> Topcommon.errorf "@[Unknown element.@]"
   | Exit -> ()
 
 let all_show_funs = ref []
@@ -261,7 +257,7 @@ let reg_show_prim name to_sig doc =
   all_show_funs := to_sig :: !all_show_funs;
   add_directive
     name
-    (Directive_ident (show_prim to_sig std_formatter))
+    (Directive_ident (with_log @@ show_prim to_sig))
     {
       section = section_env;
       doc;
@@ -494,7 +490,7 @@ let show env loc id lid =
   if sg = [] then raise Not_found else sg
 
 let () =
-  add_directive "show" (Directive_ident (show_prim show std_formatter))
+  add_directive "show" (Directive_ident (with_log @@ show_prim show))
     {
       section = section_env;
       doc = "Print the signatures of components \
@@ -556,14 +552,14 @@ let _ = add_directive "ppx"
     }
 
 let _ = add_directive "warnings"
-    (Directive_string (with_error_fmt(fun ppf s -> parse_warnings ppf false s)))
+    (Directive_string (with_log @@ parse_warnings false))
     {
       section = section_options;
       doc = "Enable or disable warnings according to the argument.";
     }
 
 let _ = add_directive "warn_error"
-    (Directive_string (with_error_fmt(fun ppf s -> parse_warnings ppf true s)))
+    (Directive_string (with_log  @@ parse_warnings true))
     {
       section = section_options;
       doc = "Treat as errors the warnings enabled by the argument.";
@@ -616,26 +612,44 @@ let print_directive ppf (name, directive, doc) =
     | Directive_bool _ -> " <bool>"
     | Directive_ident _ -> " <ident>" in
   match doc with
-  | None -> fprintf ppf "#%s%s@." name param
+  | None -> Format_doc.fprintf ppf "#%s%s@," name param
   | Some doc ->
-      fprintf ppf "@[<hov 2>#%s%s@\n%a@]@."
+      Format_doc.fprintf ppf "@[<hov 2>#%s%s@\n%a@]@,"
         name param
-        Format.pp_print_text doc
+        Format_doc.pp_print_text doc
 
 let print_section ppf (section, directives) =
   if directives <> [] then begin
-    fprintf ppf "%30s%s@." "" section;
+    Format_doc.fprintf ppf "%30s%s@," "" section;
     List.iter (print_directive ppf) directives;
-    fprintf ppf "@.";
+    Format_doc.fprintf ppf "@,%!";
   end
 
 let print_directives ppf () =
   List.iter (print_section ppf) (directive_sections ())
 
+let log_directives () =
+  Log.d Toplog.output !Topcommon.directive_log "@[<v>%a@]" print_directives ()
+
 let _ = add_directive "help"
-    (Directive_none (print_directives std_formatter))
+    (Directive_none log_directives)
     {
       section = section_general;
       doc = "Prints a list of all available directives, with \
           corresponding argument type if appropriate.";
     }
+
+(** External API *)
+
+let with_log f ppf x =
+  let dev = Log.Device.make (ref ppf) in
+  let log = Topcommon.log_on_device dev in
+  Fun.protect (fun () -> f log x)
+    ~finally:(fun () -> Log.flush log)
+
+let load_file = with_log Dir.load_file
+let dir_load = with_log Dir.load
+let dir_use = with_log Dir.use
+let dir_use_output = with_log Dir.use_output
+let dir_install_printer = with_log Dir.install_printer
+let dir_remove_printer = with_log Dir.remove_printer

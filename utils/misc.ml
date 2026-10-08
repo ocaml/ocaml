@@ -597,8 +597,6 @@ module Color = struct
   type setting = Auto | Always | Never
 
   let default_setting = Auto
-  let enabled = ref true
-  let is_enabled () = !enabled
 
 end
 
@@ -646,7 +644,17 @@ module Style = struct
     "\x1b[" ^ s ^ "m"
 
 
-  type Format.stag += Style of style list
+  type Format.stag +=
+    | Error
+    | Warning
+    | Hint
+    | Loc
+    | Inline_code
+    | Deletion
+    | Insertion
+    | Modification
+    | Preservation
+    | Style of style list
 
   type tag_style ={
     ansi: style list;
@@ -659,6 +667,10 @@ module Style = struct
     warning: tag_style;
     loc: tag_style;
     hint: tag_style;
+    deletion: tag_style;
+    insertion: tag_style;
+    modification: tag_style;
+    preservation: tag_style;
     inline_code: tag_style;
   }
 
@@ -669,7 +681,11 @@ module Style = struct
       error = no_markup [Bold; FG Red];
       loc = no_markup [Bold];
       hint = no_markup [Bold; FG Blue];
-      inline_code= no_markup [Bold]
+      preservation = no_markup [FG Green];
+      deletion = no_markup [FG Red; Bold];
+      insertion = no_markup [FG Red; Bold];
+      modification = no_markup [FG Magenta; Bold];
+      inline_code= no_markup [Bold];
     }
 
   let cur_styles = ref default_styles
@@ -679,70 +695,83 @@ module Style = struct
   (* map a tag to a style, if the tag is known.
      @raise Not_found otherwise *)
   let style_of_tag s = match s with
-    | Format.String_tag "error" ->  (!cur_styles).error
-    | Format.String_tag "warning" ->(!cur_styles).warning
-    | Format.String_tag "loc" -> (!cur_styles).loc
-    | Format.String_tag "hint" -> (!cur_styles).hint
-    | Format.String_tag "inline_code" -> (!cur_styles).inline_code
+    | Format.String_tag "error" | Error ->  (!cur_styles).error
+    | Format.String_tag "warning" | Warning ->(!cur_styles).warning
+    | Format.String_tag "loc" | Loc -> (!cur_styles).loc
+    | Format.String_tag "hint" | Hint -> (!cur_styles).hint
+    | Format.String_tag "inline_code" | Inline_code -> (!cur_styles).inline_code
     | Format.String_tag "ralign" -> no_markup []
+    | Deletion -> (!cur_styles).deletion
+    | Insertion -> (!cur_styles).insertion
+    | Preservation -> (!cur_styles).preservation
+    | Modification -> !(cur_styles).modification
     | Style s -> no_markup s
     | _ -> raise Not_found
 
 
   let as_inline_code printer ppf x =
     let open Format_doc in
-    pp_open_stag ppf (Format.String_tag "inline_code");
+    pp_open_stag ppf Inline_code;
     printer ppf x;
     pp_close_stag ppf ()
 
   let inline_code ppf s = as_inline_code Format_doc.pp_print_string ppf s
-  let hint ppf = Format_doc.fprintf ppf "@{<hint>Hint@}"
+
+  let hint ppf =
+    let open Format_doc in
+    pp_open_stag ppf Hint;
+    pp_print_string ppf "Hint";
+    pp_close_stag ppf ()
 
   (* either prints the tag of [s] or delegates to [or_else] *)
-  let mark_open_tag ~or_else s =
+  let mark_open_tag ~color ~or_else s =
     try
       let style = style_of_tag s in
-      if !Color.enabled then ansi_of_style_l style.ansi else style.text_open
+      if color then ansi_of_style_l style.ansi else style.text_open
     with Not_found -> or_else s
 
-  let mark_close_tag ~or_else s =
+  let mark_close_tag ~color ~or_else s =
     try
       let style = style_of_tag s in
-      if !Color.enabled then ansi_of_style_l [Reset] else style.text_close
+      if color then ansi_of_style_l [Reset] else style.text_close
     with Not_found -> or_else s
 
   (* add tag handling to formatter [ppf] *)
-  let set_tag_handling ppf =
+  let set_tag_handling ~color ppf =
     let open Format in
     let functions = pp_get_formatter_stag_functions ppf () in
     let functions' = {functions with
-      mark_open_stag=(mark_open_tag ~or_else:functions.mark_open_stag);
-      mark_close_stag=(mark_close_tag ~or_else:functions.mark_close_stag);
+      mark_open_stag=(mark_open_tag ~color ~or_else:functions.mark_open_stag);
+      mark_close_stag=
+        (mark_close_tag ~color ~or_else:functions.mark_close_stag);
     } in
     pp_set_mark_tags ppf true; (* enable tags *)
     pp_set_formatter_stag_functions ppf functions';
     ()
 
-  let setup =
-    let first = ref true in (* initialize only once *)
-    let formatter_l =
-      [Format.std_formatter; Format.err_formatter; Format.str_formatter]
-    in
-    let enable_color = function
+  let enable_color o =
+   let choose = function
       | Color.Auto -> Color.should_enable_color ()
       | Color.Always -> true
       | Color.Never -> false
-    in
+   in
+   match o with
+   | None -> choose Color.default_setting
+   | Some s -> choose s
+
+
+  let setup_on formatter_l =
+    let first = ref true in (* initialize only once *)
     fun o ->
       if !first then (
         first := false;
         Format.set_mark_tags true;
-        List.iter set_tag_handling formatter_l;
-        Color.enabled := (match o with
-          | Some s -> enable_color s
-          | None -> enable_color Color.default_setting)
-      );
-      ()
+        let color = enable_color o in
+        List.iter (set_tag_handling ~color) formatter_l
+      )
+
+   let setup = setup_on Format.[std_formatter; err_formatter; str_formatter]
+
 end
 
 let edit_distance a b cutoff =
@@ -833,7 +862,8 @@ let did_you_mean ?(pp=Style.inline_code) choices =
   | choices ->
     let rest, last = split_last choices in
     Some (doc_printf
-            "@[@{<hint>Hint@}: @{<ralign>Did you mean @}%a%s%a?@]"
+            "@[%t: @{<ralign>Did you mean @}%a%s%a?@]"
+            Style.hint
             (pp_print_list ~pp_sep:comma pp) rest
             (if rest = [] then "" else " or ")
             pp last
@@ -886,24 +916,6 @@ let delete_eol_spaces src =
   let stop = loop 0 0 in
   Bytes.sub_string dst 0 stop
 
-(* showing configuration and configuration variables *)
-let show_config_and_exit () =
-  Config.print_config stdout;
-  exit 0
-
-let show_config_variable_and_exit x =
-  match Config.config_var x with
-  | Some v ->
-      (* we intentionally don't print a newline to avoid Windows \r
-         issues: bash only strips the trailing \n when using a command
-         substitution $(ocamlc -config-var foo), so a trailing \r would
-         remain if printing a newline under Windows and scripts would
-         have to use $(ocamlc -config-var foo | tr -d '\r')
-         for portability. Ugh. *)
-      print_string v;
-      exit 0
-  | None ->
-      exit 2
 
 let get_build_path_prefix_map =
   let init = ref false in

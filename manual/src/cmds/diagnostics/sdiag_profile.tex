@@ -1,0 +1,12 @@
+\begin{camlexample}{verbatim}
+\begin{caml}
+\begin{camlinput}
+type profile = {
+  children: profile array option [@optional];
+  columns: float array option [@optional];
+  name: string;
+} [@@since 0.1]
+[@@version 0.1]
+\end{camlinput}
+\end{caml}
+\end{camlexample}

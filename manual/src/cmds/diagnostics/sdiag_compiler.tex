@@ -1,0 +1,15 @@
+\begin{camlexample}{verbatim}
+\begin{caml}
+\begin{camlinput}
+type compiler = {
+  metadata: metadata
+    (**This field describes the scheme version used to generate the diagnostic instance, and if this instance is valid according to this scheme.*);
+  alerts: error_report array option [@optional];
+  warnings: error_report array option [@optional];
+  error: error_report option [@optional];
+  debug: debug option [@optional];
+} [@@since 0.1]
+[@@version 0.1]
+\end{camlinput}
+\end{caml}
+\end{camlexample}

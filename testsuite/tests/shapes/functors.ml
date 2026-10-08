@@ -11,6 +11,7 @@ end
 {
  "S"[module type] -> <.2>;
  }
+
 module type S = sig type t val x : t end
 |}]
 
@@ -19,6 +20,7 @@ module Falias (X : S) = X
 {
  "Falias"[module] -> Abs<.4>(X, X<.3>);
  }
+
 module Falias : (X : S) -> sig type t = X.t val x : t end
 |}]
 
@@ -34,6 +36,7 @@ end
            "x"[value] -> X<.5> . "x"[value];
            });
  }
+
 module Finclude : (X : S) -> sig type t = X.t val x : t end
 |}]
 
@@ -48,6 +51,7 @@ end
                                   "x"[value] -> <.9>;
                                   });
  }
+
 module Fredef : (X : S) -> sig type t = X.t val x : X.t end
 |}]
 
@@ -67,6 +71,7 @@ end
         "x"[value] -> <.13>;
         });
  }
+
 module Fignore : S -> sig type t = Fresh val x : t end
 |}]
 
@@ -84,6 +89,7 @@ end
     "x"[value] -> <.17>;
     };
  }
+
 module Arg : S
 |}]
 
@@ -95,6 +101,7 @@ include Falias(Arg)
                };
  "x"[value] -> <.17>;
  }
+
 type t = Arg.t
 val x : t = <abstr>
 |}]
@@ -107,6 +114,7 @@ include Finclude(Arg)
                };
  "x"[value] -> <.17>;
  }
+
 type t = Arg.t
 val x : t = <abstr>
 |}]
@@ -117,6 +125,7 @@ include Fredef(Arg)
  "t"[type] -> <.8>;
  "x"[value] -> <.9>;
  }
+
 type t = Arg.t
 val x : Arg.t = <abstr>
 |}]
@@ -129,6 +138,7 @@ include Fignore(Arg)
                };
  "x"[value] -> <.13>;
  }
+
 type t = Fignore(Arg).t = Fresh
 val x : t = Fresh
 |}]
@@ -139,6 +149,7 @@ include Falias(struct type t = int let x = 0 end)
  "t"[type] -> <.19>;
  "x"[value] -> <.20>;
  }
+
 type t = int
 val x : t = 0
 |}]
@@ -149,6 +160,7 @@ include Finclude(struct type t = int let x = 0 end)
  "t"[type] -> <.21>;
  "x"[value] -> <.22>;
  }
+
 type t = int
 val x : t = 0
 |}]
@@ -159,6 +171,7 @@ include Fredef(struct type t = int let x = 0 end)
  "t"[type] -> <.8>;
  "x"[value] -> <.9>;
  }
+
 type t = int
 val x : int = 0
 |}]
@@ -171,6 +184,7 @@ include Fignore(struct type t = int let x = 0 end)
                };
  "x"[value] -> <.13>;
  }
+
 type t = Fresh
 val x : t = Fresh
 |}]
@@ -191,6 +205,7 @@ end
         "x"[value] -> <.29>;
         });
  }
+
 module Fgen : () -> sig type t = Fresher val x : t end
 |}]
 
@@ -202,6 +217,7 @@ include Fgen ()
                };
  "x"[value] -> <.29>;
  }
+
 type t = Fresher
 val x : t = Fresher
 |}]
@@ -217,6 +233,7 @@ end
 {
  "Small"[module type] -> <.32>;
  }
+
 module type Small = sig type t end
 |}]
 
@@ -228,6 +245,7 @@ end
 {
  "Big"[module type] -> <.35>;
  }
+
 module type Big = sig type t type u end
 |}]
 
@@ -236,6 +254,7 @@ module type B2S = functor (X : Big) -> Small with type t = X.t
 {
  "B2S"[module type] -> <.38>;
  }
+
 module type B2S = (X : Big) -> sig type t = X.t end
 |}]
 
@@ -247,6 +266,7 @@ module Big_to_small1 : B2S = functor (X : Big) -> X
                 "t"[type] -> X<.39> . "t"[type];
                 });
  }
+
 module Big_to_small1 : B2S
 |}]
 
@@ -257,5 +277,6 @@ module Big_to_small2 : B2S = functor (X : Big) -> struct include X end
                                          "t"[type] -> X<.41> . "t"[type];
                                          });
  }
+
 module Big_to_small2 : B2S
 |}]

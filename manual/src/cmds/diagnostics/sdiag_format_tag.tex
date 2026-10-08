@@ -1,0 +1,19 @@
+\begin{camlexample}{verbatim}
+\begin{caml}
+\begin{camlinput}
+type format_tag =
+  | Preservation
+  | Modification
+  | Insertion
+  | Deletion
+  | Hint
+  | Inline_code
+  | Loc
+  | Warning
+  | Error
+  | String_tag of string
+  | Unknown_format_tag of string
+[@@since 0.1] [@@version 0.1]
+\end{camlinput}
+\end{caml}
+\end{camlexample}
