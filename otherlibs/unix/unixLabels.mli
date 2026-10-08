@@ -338,6 +338,11 @@ val stdout : file_descr
 val stderr : file_descr
 (** File descriptor for standard error. *)
 
+(** On Windows, {!stdin}, {!stdout} and {!stderr} are set on
+    startup and do not reflect subsequent redirections.
+    [Unix.descr_of_in_channel Stdlib.std<channel>] can be used to obtain
+    the latest value. *)
+
 type open_flag = Unix.open_flag =
     O_RDONLY                    (** Open for reading *)
   | O_WRONLY                    (** Open for writing *)
