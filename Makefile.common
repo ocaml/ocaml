@@ -612,12 +612,12 @@ MERGEMANIFESTEXE = $(call if_file_exists, $(1).manifest, \
 # Per-module compilation flags
 
 # $(call MODULE_COMPFLAGS,dir/foo.ext) gives the extra flags to use to compile
-# the files of the module dir/foo (e.g. dir/foo.cmx), given by the optional
-# variable dir/foo_COMPFLAGS (the test on its origin avoids a warning from
+# the files of the module foo (e.g. dir/foo.cmx), given by the optional
+# variable foo_COMPFLAGS (the test on its origin avoids a warning from
 # --warn-undefined-variables when it is not defined).
 MODULE_COMPFLAGS = \
-  $(if $(filter undefined,$(origin $(basename $(1))_COMPFLAGS)),, \
-    $($(basename $(1))_COMPFLAGS))
+  $(if $(filter undefined,$(origin $(basename $(notdir $(1)))_COMPFLAGS)),, \
+    $($(basename $(notdir $(1)))_COMPFLAGS))
 
 # Macros and rules to compile OCaml programs and libraries
 

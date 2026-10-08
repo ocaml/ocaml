@@ -2138,7 +2138,7 @@ ocamltest/ocamltest$(EXE) ocamltest/ocamltest.opt$(EXE): \
 
 # For flambda mode, it is necessary for Ocamltest_unix to be compiled with
 # -opaque to prevent errors compiling the other modules of ocamltest.
-ocamltest/ocamltest_unix_COMPFLAGS = -opaque
+ocamltest_unix_COMPFLAGS = -opaque
 ifeq "$(build_ocamltest)" "true"
 ocamltest: ocamltest/ocamltest$(EXE) \
   testsuite/lib/lib.cmo testsuite/lib/testing.cma testsuite/tools/expect$(EXE) \
