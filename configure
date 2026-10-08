@@ -4042,20 +4042,9 @@ case $target in #(
     if test -z "$CC"
 then :
   CC=cl
-fi
-    ccomp_type=msvc
-    S=asm
-    SO=dll
-    outputexe=-Fe
-    outputobj=-Fo
-    syslib='$(1).lib' ;; #(
+fi ;; #(
   *) :
-    ccomp_type=cc
-  S=s
-  SO=so
-  outputexe='-o '
-  outputobj='-o '
-  syslib='-l$(1)' ;;
+     ;;
 esac
 
 # Extract the first word of "csc", so it can be a program name with args.
@@ -15311,6 +15300,55 @@ rm -f conftest.err conftest.i conftest.$ac_ext
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ocaml_cc_vendor" >&5
 printf "%s\n" "$ocaml_cc_vendor" >&6; }
 
+
+case $target in #(
+  *-pc-windows) :
+
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether $CC uses the MSVC or cc command line interface" >&5
+printf %s "checking whether $CC uses the MSVC or cc command line interface... " >&6; }
+if test ${ocaml_cv_cc_ccomp_type+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) if $CC -nologo '-?' >&5 2>&1
+then :
+  ocaml_cv_cc_ccomp_type=msvc
+else case e in #(
+  e) ocaml_cv_cc_ccomp_type=cc ;;
+esac
+fi ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ocaml_cv_cc_ccomp_type" >&5
+printf "%s\n" "$ocaml_cv_cc_ccomp_type" >&6; }
+
+    case "$ocaml_cv_cc_ccomp_type" in #(
+  msvc) :
+    ccomp_type=msvc ;; #(
+  cc) :
+    as_fn_error $? "unsupported cc-like compiler driver for $target" "$LINENO" 5 ;; #(
+  *) :
+    as_fn_error $? "unknown ccomp_type $ocaml_cv_cc_ccomp_type" "$LINENO" 5 ;;
+esac
+    SO=dll ;; #(
+  *) :
+    ccomp_type=cc ;;
+esac
+
+if test "$ccomp_type" = 'msvc'
+then :
+  S=asm
+  outputexe=-Fe
+  outputobj=-Fo
+  syslib='$(1).lib'
+else case e in #(
+  e) S=s
+  outputexe='-o '
+  outputobj='-o '
+  syslib='-l$(1)' ;;
+esac
+fi
 
 DEP_CC_PREFIX=''
 case $target in #(

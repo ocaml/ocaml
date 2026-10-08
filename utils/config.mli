@@ -62,7 +62,8 @@ val standard_library: string
     and OCAMLLIB into account. *)
 
 val ccomp_type: string
-(** The "kind" of the C compiler, assembler and linker used: one of
+(** The command line interface convention of the C compiler driver,
+    assembler, and linker used. One of:
     "cc" (for Unix-style C compilers)
     "msvc" (for Microsoft Visual C++ and MASM) *)
 
