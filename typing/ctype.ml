@@ -2280,18 +2280,21 @@ let rec occur_rec env visited allow_recursive parents ty0 ty =
     begin match get_desc ty with
       Tconstr(p, _tl, _abbrev) ->
         if allow_recursive && is_contractive env p then () else
-        if TypeSet.mem ty parents then raise Occur
+        if TypeSet.mem ty parents then
+          (* We have found a recursive occurence of [ty] when looking for [ty0].
+             This should only happen if [ty] is in in fact an abbrevation
+             for an allowed recursive construct in the current mode
+             (e.g: ['a t = < x:'a t > as 'a]). We raise [Occur] to try to expand
+             this first occurence of [ty]. *)
+          raise Occur
         else
         let parents = TypeSet.add ty parents in
         begin try
           iter_type_expr (occur_rec env visited allow_recursive parents ty0) ty
         with Occur -> try
-        (* If [ty0] occurs illegally in the children nodes of [ty], we retry
-           after expanding [ty]. Indeed, after expansion, the reachable graph
-           might be smaller. However, we don't try this expansion if the node
-           [ty] itself appears as its own parent since in this case the
-           expansion will not change the reachable graph: only the expansion of
-           the first occurence of [ty] may change the reachable graph. *)
+          (* [ty0] occurs illegally in the children nodes of [ty], we retry
+             after expanding [ty] since the reachable graph might be smaller
+             after expansion. *)
           let ty' = try_expand_safe env ty in
           occur_rec env visited allow_recursive parents ty0 ty'
         with Cannot_expand ->
