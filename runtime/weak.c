@@ -378,7 +378,7 @@ static value ephe_blit_keys (value es, mlsize_t offset_s,
   CAMLparam2(es,ed);
   /* We only need to clean the destination when it has data,
      as the keys themselves are going to be replaced. */
-  bool ed_has_data = caml_ephe_check_data(ed);
+  bool ed_has_data = Ephe_data(ed) != caml_ephe_none;
 
   if (length == 0) CAMLreturn(Val_unit);
 
