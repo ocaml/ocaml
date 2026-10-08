@@ -544,6 +544,10 @@ OCaml 5.6.0
   (Jeanne Pottier, review by Florian Angeletti, Gabriel Scherer
   and Daniel Bünzli)
 
+- #15013, #15101: Update the higher-rank polymorphism tutorial to document
+  polymorphic function parameters.
+  (John Riley, report by Merlin04)
+
 - #15082: Clarify in the manual that a character literal denotes a single
   US-ASCII character, so a non-ASCII Unicode character is not a valid
   character literal, and that the numerical escape sequences also denote
