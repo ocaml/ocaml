@@ -342,6 +342,7 @@ val add_local_constraint: Path.t -> type_declaration -> t -> t
 type local_equations
 val freeze_local_equations: t -> local_equations
 val restrict_local_equations: local_equations -> t -> t
+val remove_local_equations: t -> t
 
 (* Insertion of persistent signatures *)
 

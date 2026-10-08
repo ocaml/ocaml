@@ -399,7 +399,7 @@ let of_primitive : Lambda.primitive -> string = function
   | Parrayrefs _ -> parrayrefs
   | Parraysets _ -> parraysets
   | Pctconst _ -> pctconst
-  | Pisint -> pisint
+  | Pisint _ -> pisint
   | Pisout -> pisout
   | Pcheckbound -> pcheckbound
   | Pbintofint _ -> pbintofint
@@ -517,7 +517,7 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Parrayrefs _ -> parrayrefs_arg
   | Parraysets _ -> parraysets_arg
   | Pctconst _ -> pctconst_arg
-  | Pisint -> pisint_arg
+  | Pisint _ -> pisint_arg
   | Pisout -> pisout_arg
   | Pcheckbound -> pcheckbound_arg
   | Pbintofint _ -> pbintofint_arg

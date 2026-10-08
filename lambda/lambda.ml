@@ -103,7 +103,7 @@ type primitive =
   | Parrayrefs of array_kind
   | Parraysets of array_kind
   (* Test if the argument is a block or an immediate integer *)
-  | Pisint
+  | Pisint of { variant_only : bool }
   (* Test if the (integer) argument is outside an interval *)
   | Pisout
   | Pcheckbound

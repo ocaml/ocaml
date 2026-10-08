@@ -1315,32 +1315,29 @@ value caml_win32_xdg_defaults(void)
   CAMLreturn(result);
 }
 
-static INIT_ONCE get_temp_path_init_once = INIT_ONCE_STATIC_INIT;
-static BOOL CALLBACK get_temp_path_init_function(PINIT_ONCE InitOnce,
-                                                 PVOID Parameter,
-                                                 PVOID *lpContext)
+DWORD (WINAPI *caml_get_temp_path)(DWORD, LPWSTR);
+INIT_ONCE caml_get_temp_path_init_once = INIT_ONCE_STATIC_INIT;
+BOOL WINAPI caml_get_temp_path_init(PINIT_ONCE init_once,
+                                    PVOID parameter,
+                                    PVOID *context)
 {
-  FARPROC pGetTempPath2W =
-    GetProcAddress(GetModuleHandle(L"KERNEL32.DLL"), "GetTempPath2W");
-  if (pGetTempPath2W)
-    *lpContext = pGetTempPath2W;
-  else
-    *lpContext = GetTempPath;
+  FARPROC get_temp_path2 =
+    GetProcAddress(GetModuleHandle(L"kernel32.dll"), "GetTempPath2W");
+  *context = get_temp_path2 ? (PVOID) get_temp_path2 : (PVOID) GetTempPathW;
   return TRUE;
 }
 
 value caml_win32_get_temp_path(void)
 {
   CAMLparam0();
-  wchar_t buf[MAX_PATH+1];
-  DWORD (WINAPI *get_temp_path)(DWORD, LPWSTR);
+  wchar_t dirname[MAX_PATH + 1];
 
-  InitOnceExecuteOnce(&get_temp_path_init_once, get_temp_path_init_function,
-                      NULL, (LPVOID *) &get_temp_path);
+  InitOnceExecuteOnce(&caml_get_temp_path_init_once, caml_get_temp_path_init,
+                      NULL, (PVOID *) &caml_get_temp_path);
 
-  if (!get_temp_path(MAX_PATH+1, buf))
+  if (!caml_get_temp_path(countof(dirname), dirname))
     caml_win32_sys_error(GetLastError());
-  CAMLreturn(caml_copy_string_of_utf16(buf));
+  CAMLreturn(caml_copy_string_of_utf16(dirname));
 }
 
 CAMLextern char_os* caml_locate_standard_library (const wchar_t *exe_name,
