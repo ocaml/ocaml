@@ -54,6 +54,7 @@
 #include "caml/fail.h"
 #include "caml/gc_ctrl.h"
 #include "caml/major_gc.h"
+#include "caml/minor_gc.h"
 #include "caml/io.h"
 #include "caml/mlvalues.h"
 #include "caml/osdeps.h"
@@ -137,6 +138,12 @@ CAMLexport void caml_do_exit(int retcode)
   caml_domain_state* domain_state = Caml_state;
   struct gc_stats s;
 
+  /* Report minor heap allocations. With [cleanup_on_exit] the collection in
+     [caml_domain_terminate] reports them instead. */
+  if (!caml_params->cleanup_on_exit)
+    caml_ev_minor_allocated((uintnat)domain_state->young_end
+                            - (uintnat)domain_state->young_ptr);
+
   if ((atomic_load_relaxed(&caml_verb_gc) & CAML_GC_MSG_STATS) != 0) {
     caml_compute_gc_stats(&s);
     {
@@ -180,14 +187,17 @@ CAMLexport void caml_do_exit(int retcode)
     }
   }
 
-/* Tear down runtime_events before we leave */
-CAML_RUNTIME_EVENTS_DESTROY();
-
 #ifndef NATIVE_CODE
   caml_debugger(PROGRAM_EXIT, Val_unit);
 #endif
   if (caml_params->cleanup_on_exit)
     caml_shutdown();
+  /* Fallback teardown. The ring is normally taken down by
+     [caml_domain_terminate], which runs later. This covers the paths where
+     that does not happen: [cleanup_on_exit] unset, or [caml_shutdown]
+     returning early with other domains still active. It is a no-op once the
+     ring is down. */
+  CAML_RUNTIME_EVENTS_DESTROY();
 #ifdef _WIN32
   caml_restore_win32_terminal();
 #endif

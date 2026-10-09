@@ -2295,7 +2295,7 @@ void caml_domain_terminate(bool last)
 
     /* No need to check for interrupts if we are the last domain running. */
     if (last) {
-      CAML_EV_LIFECYCLE(EV_DOMAIN_TERMINATE, getpid());
+      CAMLassert(domain_self->interruptor.unique_id == 0);
       break;
     }
 
@@ -2349,6 +2349,13 @@ void caml_domain_terminate(bool last)
       CAML_EV_LIFECYCLE(EV_DOMAIN_TERMINATE, getpid());
     }
     caml_plat_unlock(&all_domains_lock);
+  }
+
+  if (last) {
+    /* Tear down here rather than in [caml_do_exit]: the collections above
+       have finished emitting, and this domain is still a stop-the-world
+       participant, which [caml_runtime_events_destroy] requires. */
+    CAML_RUNTIME_EVENTS_DESTROY();
   }
 
   if (!last) caml_assert_shared_heap_is_empty(domain_state->shared_heap);
