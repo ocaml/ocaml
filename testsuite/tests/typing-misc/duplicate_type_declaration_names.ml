@@ -8,15 +8,10 @@ type constructor_duplicate_two =
 ;;
 
 [%% expect {|
-Lines 1-3, characters 0-5:
-1 | type constructor_duplicate_two =
-2 |   | X
-3 |   | X
-Error: Two constructors are named "X"
 Line 2, characters 4-5:
 2 |   | X
         ^
-  First definition was here
+Error: Two constructors are named "X"
 Line 3, characters 4-5:
 3 |   | X
         ^
@@ -31,16 +26,10 @@ type constructor_duplicate_multiple =
 ;;
 
 [%% expect {|
-Lines 1-4, characters 0-5:
-1 | type constructor_duplicate_multiple =
-2 |   | X
-3 |   | X
-4 |   | X
-Error: Multiple constructors are named "X"
 Line 2, characters 4-5:
 2 |   | X
         ^
-  First definition was here
+Error: Multiple constructors are named "X"
 Line 3, characters 4-5:
 3 |   | X
         ^
@@ -57,14 +46,10 @@ type label_duplicate_two = {
 };;
 
 [%% expect {|
-Line 3, characters 2-3:
-3 |   x: unit;
-      ^
-Error: Two labels are named "x"
 Line 2, characters 2-3:
 2 |   x: unit;
       ^
-  First definition was here
+Error: Two labels are named "x"
 Line 3, characters 2-3:
 3 |   x: unit;
       ^
@@ -79,14 +64,10 @@ type label_duplicate_multiple = {
 };;
 
 [%% expect {|
-Line 4, characters 2-3:
-4 |   x: unit;
-      ^
-Error: Multiple labels are named "x"
 Line 2, characters 2-3:
 2 |   x: unit;
       ^
-  First definition was here
+Error: Multiple labels are named "x"
 Line 3, characters 2-3:
 3 |   x: unit;
       ^

@@ -257,7 +257,8 @@ let transl_labels env univars closed lbls =
     (fun name locs ->
       begin match locs with
         | [] | [_] -> ()
-        | hd :: _rest -> Error.log_and_raise hd (Duplicate_label(name, locs))
+        | hd :: _rest ->
+          Error.log_and_raise hd (Duplicate_label(name, List.rev locs))
       end
     )
     !all_labels;
@@ -461,7 +462,7 @@ let transl_declaration env sdecl (id, uid) =
             begin match locs with
               | [] | [_] -> ()
               | _ -> Error.log_and_raise sdecl.ptype_loc
-                  (Duplicate_constructor(name, locs))
+                  (Duplicate_constructor(name, List.rev locs))
             end
           )
           !all_constrs;
@@ -2376,24 +2377,20 @@ let variance_error ~loc ~v1 ~v2 =
           n (Misc.ordinal_suffix n)
           (variance v2) (variance v1)
 
-let rec report_duplicates = function
-  | [] -> assert false;
-  | [loc] ->
-    [Location.msg ~loc:loc "First definition was here"]
-  | loc :: tl ->
-    (report_duplicates tl) @ [(Location.msg ~loc:loc
-    "Duplicate definition here")]
-
-
 let report_error ~loc = function
   | Repeated_parameter ->
       Location.errorf ~loc "A type parameter occurs several times"
   | Duplicate_constructor (s, locs) ->
     begin match List.length locs with
       | 0 | 1 -> assert false;
-      | 2 -> Location.errorf ~sub:(report_duplicates locs) ~loc
+      | 2 -> Location.errorf
+        ~sub:([Location.msg ~loc:(List.nth locs 1) "Duplicate definition here"])
+        ~loc:(List.hd locs)
         "Two constructors are named %a" Style.inline_code s
-      | _ -> Location.errorf ~sub:(report_duplicates locs) ~loc
+      | _ -> Location.errorf
+        ~sub:(List.map (fun loc ->
+          Location.msg ~loc:loc "Duplicate definition here") (List.tl locs))
+        ~loc:(List.hd locs)
         "Multiple constructors are named %a" Style.inline_code s
     end
   | Too_many_constructors ->
@@ -2404,9 +2401,14 @@ let report_error ~loc = function
   | Duplicate_label (s, locs) ->
     begin match List.length locs with
       | 0 | 1 -> assert false;
-      | 2 -> Location.errorf ~sub:(report_duplicates locs) ~loc
+      | 2 -> Location.errorf
+        ~sub:([Location.msg ~loc:(List.nth locs 1) "Duplicate definition here"])
+        ~loc:(List.hd locs)
         "Two labels are named %a" Style.inline_code s
-      | _ -> Location.errorf ~sub:(report_duplicates locs) ~loc
+      | _ -> Location.errorf
+        ~sub:(List.map (fun loc ->
+          Location.msg ~loc:loc "Duplicate definition here") (List.tl locs))
+        ~loc:(List.hd locs)
         "Multiple labels are named %a" Style.inline_code s
     end
   | Recursive_abbrev (s, env, reaching_path) ->
