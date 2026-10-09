@@ -40,9 +40,9 @@ and reaching_type_step =
 
 type error =
     Repeated_parameter
-  | Duplicate_constructor of string * Location.t list
+  | Duplicate_constructor of string * Location.t * Location.t list
   | Too_many_constructors
-  | Duplicate_label of string * Location.t list
+  | Duplicate_label of string * Location.t * Location.t list
   | Recursive_abbrev of string * Env.t * reaching_type_path
   | Cycle_in_def of string * Env.t * reaching_type_path
   | Definition_mismatch of type_expr * Env.t * Includecore.type_mismatch option
@@ -255,10 +255,10 @@ let transl_labels env univars closed lbls =
     lbls;
   String.Map.iter
     (fun name locs ->
-      begin match locs with
+      begin match List.rev locs with
         | [] | [_] -> ()
-        | hd :: _rest ->
-          Error.log_and_raise hd (Duplicate_label(name, List.rev locs))
+        | first :: rest ->
+          Error.log_and_raise first (Duplicate_label(name, first, rest))
       end
     )
     !all_labels;
@@ -459,10 +459,10 @@ let transl_declaration env sdecl (id, uid) =
           scstrs;
         String.Map.iter
           (fun name locs ->
-            begin match locs with
+            begin match List.rev locs with
               | [] | [_] -> ()
-              | _ -> Error.log_and_raise sdecl.ptype_loc
-                  (Duplicate_constructor(name, List.rev locs))
+              | first :: rest -> Error.log_and_raise first
+                (Duplicate_constructor(name, first, rest))
             end
           )
           !all_constrs;
@@ -2377,45 +2377,33 @@ let variance_error ~loc ~v1 ~v2 =
           n (Misc.ordinal_suffix n)
           (variance v2) (variance v1)
 
-let duplicated_definition_map = List.map (fun loc ->
-  Location.msg ~loc:loc "Duplicate definition here")
+let report_duplicate_definitions ~msg ~loc rest =
+  let duplicate_definition loc =
+    Location.msg ~loc "Duplicate definition here" in
+  let sub = List.map duplicate_definition rest in
+  Location.errorf ~sub ~loc "%a" pp_doc msg
+
 
 let report_error ~loc = function
   | Repeated_parameter ->
       Location.errorf ~loc "A type parameter occurs several times"
-  | Duplicate_constructor (s, locs) ->
-    begin match locs with
-      | [] | [_] -> assert false;
-      | loc :: rest -> begin match List.length rest with
-        | 1 -> Location.errorf
-          ~sub:(duplicated_definition_map rest)
-          ~loc:(loc)
-          "Two constructors are named %a" Style.inline_code s
-        | _ -> Location.errorf
-          ~sub:(duplicated_definition_map rest)
-          ~loc:(loc)
-          "Multiple constructors are named %a" Style.inline_code s
-      end
-    end
+  | Duplicate_constructor (s, first, rest) ->
+    let msg = match List.length rest with
+      | 1 -> doc_printf "Two constructors are named %a" Style.inline_code s
+      | _ -> doc_printf "Multiple constructors are named %a" Style.inline_code s
+    in
+    report_duplicate_definitions ~msg ~loc:first rest
   | Too_many_constructors ->
       Location.errorf ~loc
       "Too many non-constant constructors@ \
        -- maximum is %i non-constant constructors@]"
       (Config.max_tag + 1)
-  | Duplicate_label (s, locs) ->
-    begin match locs with
-      | [] | [_] -> assert false;
-      | loc :: rest -> begin match List.length rest with
-        | 1 -> Location.errorf
-          ~sub:(duplicated_definition_map rest)
-          ~loc:(loc)
-          "Two labels are named %a" Style.inline_code s
-        | _ -> Location.errorf
-          ~sub:(duplicated_definition_map rest)
-          ~loc:(loc)
-          "Multiple labels are named %a" Style.inline_code s
-      end
-    end
+  | Duplicate_label (s, first, rest) ->
+    let msg = match List.length rest with
+      | 1 -> doc_printf "Two labels are named %a" Style.inline_code s
+      | _ -> doc_printf "Multiple labels are named %a" Style.inline_code s
+    in
+    report_duplicate_definitions ~msg ~loc:first rest
   | Recursive_abbrev (s, env, reaching_path) ->
       let reaching_path = Reaching_path.simplify reaching_path in
       Printtyp.wrap_printing_env ~error:true env @@ fun () ->
