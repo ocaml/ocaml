@@ -866,7 +866,7 @@ let rec choice ctx t =
     | Prunstack | Pperform | Presume | Preperform | Pdls_get
 
     (* we don't handle atomic primitives *)
-    | Patomic_load | Patomic_fetch_add
+    | Patomic_load | Patomic_fetch_add | Patomic_exchange | Patomic_cas
 
     (* we don't handle array indices as destinations yet *)
     | (Pmakearray _ | Pduparray _)
