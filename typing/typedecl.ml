@@ -2381,7 +2381,8 @@ let rec report_duplicates = function
   | [loc] ->
     [Location.msg ~loc:loc "First definition was here"]
   | loc :: tl ->
-    (report_duplicates tl) @ [(Location.msg ~loc:loc "Duplicate definition here")]
+    (report_duplicates tl) @ [(Location.msg ~loc:loc "Duplicate definition
+    here")]
 
 
 let report_error ~loc = function
