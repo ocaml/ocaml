@@ -2376,14 +2376,22 @@ let variance_error ~loc ~v1 ~v2 =
           n (Misc.ordinal_suffix n)
           (variance v2) (variance v1)
 
+let rec report_duplicates = function
+  | [] -> assert false;
+  | [loc] ->
+    [Location.msg ~loc:loc "First definition was here"]
+  | loc :: tl ->
+    (report_duplicates tl) @ [(Location.msg ~loc:loc "Duplicate definition here")]
+
+
 let report_error ~loc = function
   | Repeated_parameter ->
       Location.errorf ~loc "A type parameter occurs several times"
   | Duplicate_constructor (s, locs) ->
     begin match List.length locs with
-      | 2 -> Location.errorf ~loc
+      | 2 -> Location.errorf ~sub:(report_duplicates locs) ~loc
         "Two constructors are named %a" Style.inline_code s
-      | _ -> Location.errorf ~loc
+      | _ -> Location.errorf ~sub:(report_duplicates locs) ~loc
         "Multiple constructors are named %a" Style.inline_code s
     end
   | Too_many_constructors ->
@@ -2393,9 +2401,9 @@ let report_error ~loc = function
       (Config.max_tag + 1)
   | Duplicate_label (s, locs) ->
     begin match List.length locs with
-      | 2 -> Location.errorf ~loc
+      | 2 -> Location.errorf ~sub:(report_duplicates locs) ~loc
         "Two labels are named %a" Style.inline_code s
-      | _ -> Location.errorf ~loc
+      | _ -> Location.errorf ~sub:(report_duplicates locs) ~loc
         "Multiple labels are named %a" Style.inline_code s
     end
   | Recursive_abbrev (s, env, reaching_path) ->
