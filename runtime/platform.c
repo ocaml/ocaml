@@ -49,7 +49,7 @@ void caml_plat_fatal_error(const char * action, int err)
 /* Mutexes */
 
 #ifdef DEBUG
-CAMLexport CAMLthread_local int caml_lockdepth = 0;
+CAMLexport _Thread_local int caml_lockdepth = 0;
 #endif
 
 void caml_plat_assert_all_locks_unlocked(void)
