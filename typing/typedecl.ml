@@ -2389,6 +2389,7 @@ let report_error ~loc = function
       Location.errorf ~loc "A type parameter occurs several times"
   | Duplicate_constructor (s, locs) ->
     begin match List.length locs with
+      | 0 | 1 -> assert false;
       | 2 -> Location.errorf ~sub:(report_duplicates locs) ~loc
         "Two constructors are named %a" Style.inline_code s
       | _ -> Location.errorf ~sub:(report_duplicates locs) ~loc
@@ -2401,6 +2402,7 @@ let report_error ~loc = function
       (Config.max_tag + 1)
   | Duplicate_label (s, locs) ->
     begin match List.length locs with
+      | 0 | 1 -> assert false;
       | 2 -> Location.errorf ~sub:(report_duplicates locs) ~loc
         "Two labels are named %a" Style.inline_code s
       | _ -> Location.errorf ~sub:(report_duplicates locs) ~loc
