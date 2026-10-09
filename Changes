@@ -27,6 +27,11 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #15144: Further improvement on typing error messages for Duplicate_constructor
+  and Duplicate_label, by adding locations in submessages
+  (Michał Kosior, review by Florian Angeletti)
+
+
 ### Internal/compiler-libs changes:
 
 ### Build system:
