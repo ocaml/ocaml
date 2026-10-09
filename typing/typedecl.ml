@@ -2377,21 +2377,25 @@ let variance_error ~loc ~v1 ~v2 =
           n (Misc.ordinal_suffix n)
           (variance v2) (variance v1)
 
+let duplicated_definition_map = List.map (fun loc ->
+  Location.msg ~loc:loc "Duplicate definition here")
+
 let report_error ~loc = function
   | Repeated_parameter ->
       Location.errorf ~loc "A type parameter occurs several times"
   | Duplicate_constructor (s, locs) ->
-    begin match List.length locs with
-      | 0 | 1 -> assert false;
-      | 2 -> Location.errorf
-        ~sub:([Location.msg ~loc:(List.nth locs 1) "Duplicate definition here"])
-        ~loc:(List.hd locs)
-        "Two constructors are named %a" Style.inline_code s
-      | _ -> Location.errorf
-        ~sub:(List.map (fun loc ->
-          Location.msg ~loc:loc "Duplicate definition here") (List.tl locs))
-        ~loc:(List.hd locs)
-        "Multiple constructors are named %a" Style.inline_code s
+    begin match locs with
+      | [] | [_] -> assert false;
+      | loc :: rest -> begin match List.length rest with
+        | 1 -> Location.errorf
+          ~sub:(duplicated_definition_map rest)
+          ~loc:(loc)
+          "Two constructors are named %a" Style.inline_code s
+        | _ -> Location.errorf
+          ~sub:(duplicated_definition_map rest)
+          ~loc:(loc)
+          "Multiple constructors are named %a" Style.inline_code s
+      end
     end
   | Too_many_constructors ->
       Location.errorf ~loc
@@ -2399,17 +2403,18 @@ let report_error ~loc = function
        -- maximum is %i non-constant constructors@]"
       (Config.max_tag + 1)
   | Duplicate_label (s, locs) ->
-    begin match List.length locs with
-      | 0 | 1 -> assert false;
-      | 2 -> Location.errorf
-        ~sub:([Location.msg ~loc:(List.nth locs 1) "Duplicate definition here"])
-        ~loc:(List.hd locs)
-        "Two labels are named %a" Style.inline_code s
-      | _ -> Location.errorf
-        ~sub:(List.map (fun loc ->
-          Location.msg ~loc:loc "Duplicate definition here") (List.tl locs))
-        ~loc:(List.hd locs)
-        "Multiple labels are named %a" Style.inline_code s
+    begin match locs with
+      | [] | [_] -> assert false;
+      | loc :: rest -> begin match List.length rest with
+        | 1 -> Location.errorf
+          ~sub:(duplicated_definition_map rest)
+          ~loc:(loc)
+          "Two labels are named %a" Style.inline_code s
+        | _ -> Location.errorf
+          ~sub:(duplicated_definition_map rest)
+          ~loc:(loc)
+          "Multiple labels are named %a" Style.inline_code s
+      end
     end
   | Recursive_abbrev (s, env, reaching_path) ->
       let reaching_path = Reaching_path.simplify reaching_path in
