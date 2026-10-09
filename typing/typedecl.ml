@@ -1342,7 +1342,8 @@ let transl_type_decl env rec_flag sdecl_list =
       in
       let transl_declaration name_sdecl (id, slot) =
         current_slot := slot;
-        warning_scope_decl name_sdecl
+        Builtin_attributes.warning_scope
+          name_sdecl.ptype_attributes
           (fun () -> transl_declaration temp_env name_sdecl id)
       in
       let tdecls =
