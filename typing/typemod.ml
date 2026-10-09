@@ -1159,8 +1159,7 @@ and approx_sig env ssg =
             | _ -> Mp_present
           in
           let _, newenv =
-            Builtin_attributes.warning_scope pms.pms_attributes (fun () ->
-              Env.enter_module_declaration ~scope pms.pms_name.txt pres md env)
+            Env.enter_module_declaration ~scope pms.pms_name.txt pres md env
           in
           approx_sig newenv srem
       | Psig_recmodule sdecls ->
