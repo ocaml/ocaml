@@ -121,6 +121,9 @@ let get_unboxed_from_attributes sdecl =
 
 (* Enter all declared types in the environment as abstract types *)
 
+let warning_scope_decl sdecl f =
+  Builtin_attributes.warning_scope ~ppwarning:false sdecl.ptype_attributes f
+
 let add_type ~check ?shape id decl env =
   Builtin_attributes.warning_scope ~ppwarning:false decl.type_attributes
     (fun () -> Env.add_type ~check ?shape id decl env)
@@ -1190,8 +1193,7 @@ let check_duplicates sdecl_list =
   let labels = Hashtbl.create 7 and constrs = Hashtbl.create 7 in
   List.iter
     (fun sdecl ->
-    Builtin_attributes.warning_scope ~ppwarning:false
-      sdecl.ptype_attributes (fun () ->
+    warning_scope_decl sdecl (fun () ->
        match sdecl.ptype_kind with
       Ptype_variant cl ->
         List.iter
@@ -1340,8 +1342,7 @@ let transl_type_decl env rec_flag sdecl_list =
       in
       let transl_declaration name_sdecl (id, slot) =
         current_slot := slot;
-        Builtin_attributes.warning_scope
-          name_sdecl.ptype_attributes
+        warning_scope_decl name_sdecl
           (fun () -> transl_declaration temp_env name_sdecl id)
       in
       let tdecls =
@@ -1430,8 +1431,7 @@ let transl_type_decl env rec_flag sdecl_list =
   let final_env = add_types_to_env decls shapes env in
   (* Check re-exportation *)
   List.iter2 (fun name_sdecl (id, slot) ->
-      Builtin_attributes.warning_scope ~ppwarning:false
-        name_sdecl.ptype_attributes (fun () ->
+      warning_scope_decl name_sdecl (fun () ->
       check_abbrev final_env name_sdecl (id, slot))) sdecl_list decls;
   (* Keep original declaration *)
   let final_decls =
