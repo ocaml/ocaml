@@ -940,3 +940,92 @@ module rec X1 : sig end
 and X2 : sig end
 module X3 : sig module Inner = X1 end
 |}]
+
+
+(* #13979: [@remove_aliases] must keep the aliases inside a module that
+   the signature passes to a functor, since the application may rely on
+   them to be well-formed. *)
+module M = struct
+  module X = struct type t end
+  module F (Y : sig module Z = X end) = struct type t end
+  module Y = struct module Z = X end
+  type t = F(Y).t
+end
+module type T = module type of M [@remove_aliases]
+[%%expect {|
+module M :
+  sig
+    module X : sig type t end
+    module F : (Y : sig module Z = X end) -> sig type t end
+    module Y : sig module Z = X end
+    type t = F(Y).t
+  end
+module type T =
+  sig
+    module X : sig type t end
+    module F : (Y : sig module Z = X end) -> sig type t end
+    module Y : sig module Z = X end
+    type t = F(Y).t
+  end
+|}]
+
+(* The same through an alias of the argument, and through a submodule. *)
+module M = struct
+  module X = struct type t end
+  module F (Y : sig module W : sig module Z = X end end) = struct type t end
+  module Y = struct module W = struct module Z = X end end
+  module Y' = Y
+  type t = F(Y').t
+  type u = F(Y).t
+end
+module type T = module type of M [@remove_aliases]
+[%%expect {|
+module M :
+  sig
+    module X : sig type t end
+    module F :
+      (Y : sig module W : sig module Z = X end end) -> sig type t end
+    module Y : sig module W : sig module Z = X end end
+    module Y' = Y
+    type t = F(Y').t
+    type u = F(Y).t
+  end
+module type T =
+  sig
+    module X : sig type t end
+    module F :
+      (Y : sig module W : sig module Z = X end end) -> sig type t end
+    module Y : sig module W : sig module Z = X end end
+    module Y' = Y
+    type t = F(Y').t
+    type u = F(Y).t
+  end
+|}]
+
+(* Aliases elsewhere are still removed. *)
+module M = struct
+  module X = struct type t end
+  module F (Y : sig module Z = X end) = struct type t end
+  module Y = struct module Z = X end
+  module V = struct module Z = X end
+  type t = F(Y).t
+end
+module type T = module type of M [@remove_aliases]
+[%%expect {|
+module M :
+  sig
+    module X : sig type t end
+    module F : (Y : sig module Z = X end) -> sig type t end
+    module Y : sig module Z = X end
+    module V : sig module Z = X end
+    type t = F(Y).t
+  end
+module type T =
+  sig
+    module X : sig type t end
+    module F : (Y : sig module Z = X end) -> sig type t end
+    module Y : sig module Z = X end
+    module V : sig module Z : sig type t = X.t end end
+    type t = F(Y).t
+  end
+|}]

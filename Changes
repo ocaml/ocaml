@@ -33,6 +33,11 @@ Working version
 
 ### Bug fixes:
 
+- #13979: `module type of M [@remove_aliases]` no longer turns the aliases
+  inside a module that the signature applies a functor to into strengthened
+  signatures, which made the functor application ill-formed.
+  (Uday Kishore Resu, report by Clément Blaudeau)
+
 - #7826, #15139: Cache free variable computations to avoid quadratic
   blowups in pathological cases
   (Vincent Laviron, report by Pierre-Marie Pédrot, review by Stefan Muenzel)
