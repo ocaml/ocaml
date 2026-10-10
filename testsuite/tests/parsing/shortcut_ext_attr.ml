@@ -119,6 +119,10 @@ module type S = sig
 
 end
 
+(* Functor types (#14809): the extension wraps the whole type *)
+type t =
+  (module%foo[@foo] M : S) -> M.t
+
 (* TEST
  flags = "-dparsetree -dparsetree-loc-ghost-invariants";
  ocamlc_byte_exit_status = "2";

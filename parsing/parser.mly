@@ -3781,18 +3781,19 @@ function_type:
     { let ty, ltys = $3 in
       mktyp ~loc:$sloc (Ptyp_tuple ((Some label, ty) :: ltys))
     }
-  | mktyp(
-      label = arg_label_no_opt
-      LPAREN
-        MODULE attrs = ext_attributes id = mkrhs(UIDENT) COLON
-        ptyp = package_type_
-      RPAREN
-      MINUSGREATER
-      codomain = function_type
-        { let ptyp = {ptyp with ppt_attrs = snd attrs @ ptyp.ppt_attrs } in
-          Ptyp_functor(label, id, ptyp, codomain) }
-    )
-    { $1 }
+  | label = arg_label_no_opt
+    LPAREN
+      MODULE ext_attrs = ext_attributes id = mkrhs(UIDENT) COLON
+      ptyp = package_type_
+    RPAREN
+    MINUSGREATER
+    codomain = function_type
+      { (* As for [(module%ext P)], the extension node wraps the whole
+           type, here the functor type. *)
+        let ext, attrs = ext_attrs in
+        let ptyp = {ptyp with ppt_attrs = attrs @ ptyp.ppt_attrs } in
+        mktyp_attrs ~loc:$sloc
+          (Ptyp_functor(label, id, ptyp, codomain)) (ext, []) }
 ;
 %inline arg_label:
   | label = optlabel

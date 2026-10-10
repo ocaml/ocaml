@@ -1009,6 +1009,33 @@
                 ]
             ]
         ]
+  structure_item (shortcut_ext_attr.ml[123,2411+0]..[124,2420+33])
+    Pstr_type Rec
+    [
+      type_declaration "t" (shortcut_ext_attr.ml[123,2411+5]..[123,2411+6]) (shortcut_ext_attr.ml[123,2411+0]..[124,2420+33])
+        ptype_params =
+          []
+        ptype_constraints =
+          []
+        ptype_kind =
+          Ptype_abstract
+        ptype_private = Public
+        ptype_manifest =
+          Some
+            core_type (shortcut_ext_attr.ml[124,2420+2]..[124,2420+33])
+              Ptyp_extension "foo"
+              core_type (shortcut_ext_attr.ml[124,2420+2]..[124,2420+33]) ghost
+                Ptyp_functor
+                Nolabel
+                "M"
+                  package_type "S" (shortcut_ext_attr.ml[124,2420+24]..[124,2420+25])
+                  []
+                    attribute "foo"
+                      []
+                core_type (shortcut_ext_attr.ml[124,2420+30]..[124,2420+33])
+                  Ptyp_constr "M.t" (shortcut_ext_attr.ml[124,2420+30]..[124,2420+33])
+                  []
+    ]
 ]
 
 File "shortcut_ext_attr.ml", line 10, characters 6-9:

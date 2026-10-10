@@ -33,6 +33,11 @@ Working version
 
 ### Bug fixes:
 
+- #14809: keep the extension node of a functor type such as
+  `(module%ext M : S) -> t`, which the parser used to drop; it now wraps the
+  whole type, as it does for `(module%ext S)`.
+  (Uday Kishore Resu, report by Chet Murthy)
+
 - #7826, #15139: Cache free variable computations to avoid quadratic
   blowups in pathological cases
   (Vincent Laviron, report by Pierre-Marie Pédrot, review by Stefan Muenzel)
