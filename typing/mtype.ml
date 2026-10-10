@@ -418,6 +418,15 @@ let rec get_arg_paths = function
         (Path.Set.union (get_prefixes p2)
            (Path.Set.union (get_arg_paths p1) (get_arg_paths p2)))
 
+(* The arguments of the functor applications in a path, without their
+   prefixes. *)
+let rec get_applied_args = function
+  | Pident _ -> Path.Set.empty
+  | Pdot (p, _) | Pextra_ty (p, _) -> get_applied_args p
+  | Papply (p1, p2) ->
+      Path.Set.add p2
+        (Path.Set.union (get_applied_args p1) (get_applied_args p2))
+
 let rec rollback_path subst p =
   try Pident (Path.Map.find p subst)
   with Not_found ->
@@ -431,45 +440,80 @@ let rec rollback_path subst p =
         if Path.same p1 p1' then p
         else rollback_path subst (Pextra_ty (p1', extra))
 
-let rec collect_ids subst bindings p =
+(* [collect_ids subst bindings p] returns the identifiers of the modules
+   that [p] refers to, following aliases. With [~members], it also
+   returns, recursively, those of the submodules of these modules, which
+   [members] maps to their parent. *)
+let rec collect_ids ?members subst bindings p =
     begin match rollback_path subst p with
       Pident id ->
         let ids =
-          try collect_ids subst bindings (Ident.find_same id bindings)
+          try collect_ids ?members subst bindings (Ident.find_same id bindings)
           with Not_found -> Ident.Set.empty
+        in
+        let ids =
+          match members with
+          | None -> ids
+          | Some members ->
+              let subs =
+                try Ident.find_same id members with Not_found -> []
+              in
+              List.fold_left
+                (fun ids id' ->
+                   Ident.Set.union ids
+                     (collect_ids ~members subst bindings (Pident id')))
+                ids subs
         in
         Ident.Set.add id ids
     | _ -> Ident.Set.empty
     end
 
+(* The modules whose aliases must be kept when removing the aliases of
+   [mty]: those that [mty] passes to functors in its paths, and their
+   submodules. A functor application [F(Y)] may only be well-formed
+   because [Y], or a submodule of [Y], is an alias (see #13979). *)
 let collect_arg_paths mty =
   let open Btype in
   let paths = ref Path.Set.empty
+  and args = ref Path.Set.empty
   and subst = ref Path.Map.empty
-  and bindings = ref Ident.empty in
+  and bindings = ref Ident.empty
+  and members = ref Ident.empty in
   (* let rt = Ident.create "Root" in
      and prefix = ref (Path.Pident rt) in *)
   with_type_mark begin fun mark ->
   let super = type_iterators mark in
-  let it_path p = paths := Path.Set.union (get_arg_paths p) !paths
+  let it_path p =
+    paths := Path.Set.union (get_arg_paths p) !paths;
+    args := Path.Set.union (get_applied_args p) !args
   and it_signature_item it si =
     super.it_signature_item it si;
     match si with
     | Sig_module (id, _, {md_type=Mty_alias p}, _, _) ->
         bindings := Ident.add id p !bindings
     | Sig_module (id, _, {md_type=Mty_signature sg}, _, _) ->
-        List.iter
-          (function Sig_module (id', _, _, _, _) ->
-              subst :=
-                Path.Map.add (Pdot (Pident id, Ident.name id')) id' !subst
-            | _ -> ())
-          sg
+        let subs =
+          List.filter_map
+            (function Sig_module (id', _, _, _, _) ->
+                subst :=
+                  Path.Map.add (Pdot (Pident id, Ident.name id')) id' !subst;
+                Some id'
+              | _ -> None)
+            sg
+        in
+        members := Ident.add id subs !members
     | _ -> ()
   in
   let it = {super with it_path; it_signature_item} in
   it.it_module_type it mty;
-  Path.Set.fold (fun p -> Ident.Set.union (collect_ids !subst !bindings p))
-    !paths Ident.Set.empty
+  let ids =
+    Path.Set.fold (fun p -> Ident.Set.union (collect_ids !subst !bindings p))
+      !paths Ident.Set.empty
+  in
+  Path.Set.fold
+    (fun p ->
+       Ident.Set.union (collect_ids ~members:!members !subst !bindings p))
+    !args ids
   end
 
 type remove_alias_args =
