@@ -56,6 +56,11 @@ Working version
   blowups in pathological cases
   (Vincent Laviron, report by Pierre-Marie Pédrot, review by Stefan Muenzel)
 
+- #15151: fix the positions of the debugging events and of the optimization
+  hints of the code that the bytecode packager generates for the pack
+  itself. They were placed in the code of the first packed units.
+  (Jérôme Vouillon, review by Vincent Laviron)
+
 - #15158, #15155: Allow projection from closures with bottom approximation in
   flambda
   (Pierre Chambart, report by Michael Bacarella, review by Vincent Laviron)
