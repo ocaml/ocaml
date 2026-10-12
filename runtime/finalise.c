@@ -223,10 +223,17 @@ void caml_final_do_young_roots
     Call_action (act, fdata, f->first.table[i].val);
   }
 
+  /* After the minor GC barrier, [caml_final_update_last_minor] reads the
+     header of each young value. This is safe only for our own minor heap,
+     because the other domains can reuse their minor heaps at that time.
+     Thus, promote the values in other minor heaps here. */
+  value young_start = (value)d->young_start;
+  value young_end = (value)d->young_end;
   CAMLassert (f->last.old <= f->last.young);
   for (uintnat i = f->last.old; i < f->last.young; i++) {
+    value v = f->last.table[i].val;
     Call_action (act, fdata, f->last.table[i].fun);
-    if (do_last_val)
+    if (do_last_val || v < young_start || young_end <= v)
       Call_action (act, fdata, f->last.table[i].val);
   }
 }
