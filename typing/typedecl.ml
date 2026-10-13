@@ -2377,33 +2377,33 @@ let variance_error ~loc ~v1 ~v2 =
           n (Misc.ordinal_suffix n)
           (variance v2) (variance v1)
 
-let report_duplicate_definitions ~msg ~loc rest =
+let report_duplicate_definitions ~main ~loc other_defs =
   let duplicate_definition loc =
     Location.msg ~loc "Duplicate definition here" in
-  let sub = List.map duplicate_definition rest in
-  Location.errorf ~sub ~loc "%a" pp_doc msg
+  let sub = List.map duplicate_definition other_defs in
+  Location.errorf ~sub ~loc "%a" pp_doc main
 
 
 let report_error ~loc = function
   | Repeated_parameter ->
       Location.errorf ~loc "A type parameter occurs several times"
-  | Duplicate_constructor (s, first, rest) ->
-    let msg = match List.length rest with
+  | Duplicate_constructor (s, first_def, other_defs) ->
+    let main = match List.length other_defs with
       | 1 -> doc_printf "Two constructors are named %a" Style.inline_code s
       | _ -> doc_printf "Multiple constructors are named %a" Style.inline_code s
     in
-    report_duplicate_definitions ~msg ~loc:first rest
+    report_duplicate_definitions ~main ~loc:first_def other_defs
   | Too_many_constructors ->
       Location.errorf ~loc
       "Too many non-constant constructors@ \
        -- maximum is %i non-constant constructors@]"
       (Config.max_tag + 1)
-  | Duplicate_label (s, first, rest) ->
-    let msg = match List.length rest with
+  | Duplicate_label (s, first_def, other_defs) ->
+    let main = match List.length other_defs with
       | 1 -> doc_printf "Two labels are named %a" Style.inline_code s
       | _ -> doc_printf "Multiple labels are named %a" Style.inline_code s
     in
-    report_duplicate_definitions ~msg ~loc:first rest
+    report_duplicate_definitions ~main ~loc:first_def other_defs
   | Recursive_abbrev (s, env, reaching_path) ->
       let reaching_path = Reaching_path.simplify reaching_path in
       Printtyp.wrap_printing_env ~error:true env @@ fun () ->
