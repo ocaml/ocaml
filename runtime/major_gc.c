@@ -2549,7 +2549,8 @@ void caml_major_collection_slice(intnat howmuch)
   } else {
     /* TODO: could make forced API slices interruptible, but would need to do
        accounting or pass up interrupt */
-    major_collection_slice(howmuch, 0, 0, Slice_uninterruptible, Compaction_auto);
+    major_collection_slice(howmuch, 0, 0, Slice_uninterruptible,
+                            Compaction_auto);
   }
   /* Record that this domain has completed a major slice for this minor cycle.
    */
