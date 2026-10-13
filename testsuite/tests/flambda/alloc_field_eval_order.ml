@@ -76,4 +76,3 @@ let () =
   ignore (f ());
   ignore (g ());
   ()
-
