@@ -78,6 +78,32 @@ m4_syscmd([cat > VERSION << END_OF_VERSION_FILE
 END_OF_VERSION_FILE
 ])
 
+# Update tools/opam/ocaml-system.opam. For a development version, the available
+# constraint is:
+#   sys-ocaml-version > "X.Y.Z+dev" & sys-ocaml-version < "X.Y.Z+devA" & ( ... )
+# where X.Y.Z is the version without the extra portion, and which matches the
+# X.Y.Z+devn-yyyy-mm-dd format used for development versions. The build step is
+# also updated to pass "" instead of version.
+# For a release version, the constraint is:
+#   sys-ocaml-version >= "X.Y.Z~" & sys-ocaml-version <= "X.Y.Z" & ( ... )
+# which matches pre-releases of this version as well the release itself but not
+# variants. The build step is also updated to pass version.
+
+m4_define([OCAML__VERSION_XYZ],
+  [OCAML__VERSION_SHORT.OCAML__VERSION_PATCHLEVEL])
+
+m4_define([OCAML__VERSION_AVAILABLE],
+  m4_if(OCAML__DEVELOPMENT_VERSION,[false],
+    [\1 >= "]OCAML__VERSION_XYZ[~" \& \1 <= "]OCAML__VERSION_XYZ["],
+    [\1 > "]OCAML__VERSION_XYZ[+dev" \& \1 < "]OCAML__VERSION_XYZ[+devA"]))
+
+m4_syscmd([sed -e '/^available:/s/\(sys-ocaml-version\).*& (/'\
+']OCAML__VERSION_AVAILABLE[ \& (/' \
+-e '/^build:/s/ [^ ]* name/ ]dnl
+m4_if(OCAML__DEVELOPMENT_VERSION,[false],[version],[""])[ name/' \
+    tools/opam/ocaml-system.opam > tools/opam/ocaml-system.opam.new
+mv -f tools/opam/ocaml-system.opam.new tools/opam/ocaml-system.opam])
+
 # Other variants of the version needed here and there in the compiler
 
 m4_define([OCAML__VERSION_NUMBER],

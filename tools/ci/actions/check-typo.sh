@@ -20,6 +20,8 @@
 
 set -e
 
+echo "Re-run this script with ${0@Q} ${*@Q}"
+
 # Set to 1 to require all commits individually to pass check-typo
 CHECK_ALL_COMMITS=0
 
