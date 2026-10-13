@@ -833,13 +833,13 @@ let make_alloc_generic set_fn dbg tag wordsize args =
   else begin
     let id = V.create_local "*alloc*" in
     let rec fill_fields idx = function
-      [] -> Cvar id
-    | e1::el -> Csequence(set_fn (Cvar id) (Cconst_int (idx, dbg)) e1 dbg,
-                          fill_fields (idx + 2) el) in
+      [] -> Ctuple []
+    | e1::el -> Csequence(fill_fields (idx + 2) el,
+                          set_fn (Cvar id) (Cconst_int (idx, dbg)) e1 dbg) in
     Clet(VP.create id,
          Cop(Cextcall("caml_alloc_shr_check_gc", typ_val, [], true),
                  [Cconst_int (wordsize, dbg); Cconst_int (tag, dbg)], dbg),
-         fill_fields 1 args)
+         Csequence (fill_fields 1 args, Cvar id))
   end
 
 let make_alloc dbg tag args =
