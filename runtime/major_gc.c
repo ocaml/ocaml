@@ -2008,13 +2008,13 @@ static bool should_compact_from_stw_single(int compaction_mode)
    * TODO: revisit this in future. */
   if (caml_max_percent_free >= 1000 * 1000) {
     caml_gc_message (0x200,
-                     "Max percent free %"ARCH_INTNAT_PRINTF_FORMAT"u%%:"
+                     "Max percent free %" CAML_PRIuNAT "%%:"
                      "compaction off.\n", caml_max_percent_free);
     return false;
   }
   if (caml_major_cycles_completed < 3) {
     caml_gc_message (0x200,
-                     "Only %"ARCH_INTNAT_PRINTF_FORMAT"u major cycles: "
+                     "Only %" CAML_PRIuNAT " major cycles: "
                      "compaction off.\n", caml_major_cycles_completed);
     return false;
   }
@@ -2033,8 +2033,8 @@ static bool should_compact_from_stw_single(int compaction_mode)
 
   bool compacting = current_overhead >= caml_max_percent_free;
   caml_gc_message (0x200, "Current overhead: %"
-                   ARCH_INTNAT_PRINTF_FORMAT "u%% %s %"
-                   ARCH_INTNAT_PRINTF_FORMAT "u%%: %scompacting.\n",
+                   CAML_PRIuNAT "%% %s %"
+                   CAML_PRIuNAT "%%: %scompacting.\n",
                    (uintnat) current_overhead,
                    compacting ? ">=" : "<",
                    caml_max_percent_free,
