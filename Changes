@@ -36,7 +36,7 @@ Working version
 - #15152, #15153: Fix a race between the minor GC and `Gc.finalise_last`
   on a young value of another domain. The race caused crashes, heap
   corruption or early finaliser calls.
-  (Bikal Gurung, report by Bikal Gurung)
+  (Bikal Gurung, report by Bikal Gurung, review by Damien Doligez)
 
 - #7826, #15139: Cache free variable computations to avoid quadratic
   blowups in pathological cases
