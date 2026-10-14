@@ -258,6 +258,11 @@ and special_comment = parse
         special_comment lexbuf
       }
 
+  | eof
+      {
+        failwith "Unterminated comment"
+      }
+
 and special_comment_part2 = parse
   | "*)"
       {
@@ -303,6 +308,11 @@ and special_comment_part2 = parse
         if c = '\010' then incr line_number;
         incr Odoc_comments_global.nb_chars;
         special_comment_part2 lexbuf
+      }
+
+  | eof
+      {
+        failwith "Unterminated comment"
       }
 
 and elements = parse

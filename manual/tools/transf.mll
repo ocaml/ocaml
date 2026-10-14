@@ -75,6 +75,7 @@ and syntax = parse
   | _ {
       print_char (lexeme_char lexbuf 0);
       syntax lexbuf }
+  | eof { () }
 
 and inquote = parse
     ['A'-'Z' 'a'-'z' '0'-'9'] {
@@ -90,6 +91,7 @@ and inquote = parse
   | _ {
       print_char_repr (lexeme_char lexbuf 0);
       inquote lexbuf }
+  | eof { () }
 
 and indoublequote = parse
     ['A'-'Z' 'a'-'z' '0'-'9'] {
@@ -105,6 +107,7 @@ and indoublequote = parse
   | _ {
       print_char_repr (lexeme_char lexbuf 0);
       indoublequote lexbuf }
+  | eof { () }
 
 and verbatim = parse
     "\n\\end{verbatim}"|"\\end{camlexample}" as s {
@@ -113,3 +116,4 @@ and verbatim = parse
   | _ {
       print_char (lexeme_char lexbuf 0);
       verbatim lexbuf }
+  | eof { () }

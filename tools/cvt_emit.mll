@@ -65,6 +65,10 @@ and command = parse
           add_semicolon();
           print_string (String.sub s 1 (String.length s - 2));
           command lexbuf }
+  | "{" { prerr_string "Unterminated {...} at character ";
+          prerr_int !lexeme_beginning;
+          prerr_newline();
+          exit 2 }
   | ( [^ '`' '{' '\\'] |
       '\\' ['\\' '"' 'n' 't' 'b' 'r' '`' '{' ] |
       '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] |
@@ -85,6 +89,11 @@ and command = parse
             print_string "\""
           end;
           command lexbuf }
+  | '\\'
+        { prerr_string "Invalid \\ escape in `...` at character ";
+          prerr_int !lexeme_beginning;
+          prerr_newline();
+          exit 2 }
 
 and string = parse
   | '"' { print_char '"';
@@ -92,6 +101,11 @@ and string = parse
   | '\\' _ | [^ '\\' '"' ]+
         { print_string (Lexing.lexeme lexbuf);
           string lexbuf }
+  | '\\'
+        { prerr_string "Invalid \\ escape in \"...\" at character ";
+          prerr_int !lexeme_beginning;
+          prerr_newline();
+          exit 2 }
   | eof { prerr_string "Unterminated \"...\" at character ";
           prerr_int !lexeme_beginning;
           prerr_newline();
