@@ -233,7 +233,7 @@ void caml_final_do_young_roots
   for (uintnat i = f->last.old; i < f->last.young; i++) {
     value v = f->last.table[i].val;
     Call_action (act, fdata, f->last.table[i].fun);
-    if (do_last_val || v < young_start || young_end <= v)
+    if (do_last_val || v <= young_start || young_end < v)
       Call_action (act, fdata, f->last.table[i].val);
   }
 }
