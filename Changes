@@ -44,7 +44,8 @@ Working version
   (Vincent Laviron, report by Pierre-Marie Pédrot, review by Stefan Muenzel)
 
 - #15158, #15155: Allow projection from closures with bottom approximation in
-  flambda (Pierre Chambar, report by Michael Bacarella)
+  flambda
+  (Pierre Chambart, report by Michael Bacarella, review by Vincent Laviron)
 
 OCaml 5.6.0
 -----------
