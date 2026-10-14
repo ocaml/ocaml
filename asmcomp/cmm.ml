@@ -155,7 +155,7 @@ and operation =
       { memory_chunk: memory_chunk
       ; mutability: Asttypes.mutable_flag
       ; is_atomic: bool }
-  | Calloc
+  | Calloc of { size_in_bytes_including_header : int }
   | Cstore of memory_chunk * Lambda.initialization_or_assignment
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
   | Cand | Cor | Cxor | Clsl | Clsr | Casr
