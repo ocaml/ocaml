@@ -1,4 +1,6 @@
-(* TEST *)
+(* TEST
+   native;
+*)
 
 (* Cmm_helpers.make_checkbound:
      | [Cop(Clsr, [a1; Cconst_int (n, _)], _); Cconst_int (m, _)]
