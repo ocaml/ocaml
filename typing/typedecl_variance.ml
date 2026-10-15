@@ -123,6 +123,8 @@ let make p n i =
 
 let injective = Variance.(set Inj null)
 
+let do_print = Sys.getenv_opt "OCAMLDEBUG" <> None
+
 let compute_variance_type env ~check (required, loc) decl tyl =
   (* Requirements *)
   let check_injectivity = Btype.type_kind_is_abstract decl in
@@ -202,11 +204,9 @@ let compute_variance_type env ~check (required, loc) decl tyl =
           if p then if n then full else covariant else conjugate covariant in
         compute_variance env tvl2 v ty)
       params required;
-    let visited = ref TypeSet.empty in
-    let rec check ty =
-      if TypeSet.mem ty !visited then () else
-      let visited' = TypeSet.add ty !visited in
-      visited := visited';
+    let rec check mark ty =
+      if do_print then Format.eprintf "check %a@." Rawprinttyp.type_expr ty;
+      if not (try_mark_node mark ty) then mark else
       let v1 = get_variance ty tvl in
       let snap = Btype.snapshot () in
       let v2 =
@@ -236,10 +236,14 @@ let compute_variance_type env ~check (required, loc) decl tyl =
                                     , (c1,n1,false)
                                     , (c2,n2,false))))
         | None ->
-            Btype.iter_type_expr check ty
+            Btype.fold_type_expr check mark ty
       end
+      else mark
     in
-    List.iter (fun (_,ty) -> check ty) tyl;
+    with_type_mark (fun mark ->
+        List.fold_left (fun mark (_,ty) -> check mark ty) mark tyl
+        |> (ignore : Types.type_mark -> unit)
+      )
   end;
   List.map2
     (fun ty (p, n, _i) ->
