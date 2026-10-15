@@ -1369,7 +1369,7 @@ class c : object method private test : unit end
 Line 10, characters 9-16:
 10 | let () = (new c)#test
               ^^^^^^^
-Error: This expression has type "c" = "d"
+Error: This expression has type "c" = "<  >"
        It has no method "test"
 |}];;
 
@@ -1502,6 +1502,21 @@ Lines 1-3, characters 12-5:
 1 | ............object(self:<m:unit>)
 2 |     inherit c
 3 |   end
-Error: This expression has type "c" but an expression was expected of type "c"
+Error: This expression has type "< m : unit >"
+       but an expression was expected of type "c"
+       The second object type has no method "m"
+|}]
+
+
+let o : c = object(self:<m:unit>)
+    inherit c
+  end
+[%%expect {|
+Lines 1-3, characters 12-5:
+1 | ............object(self:<m:unit>)
+2 |     inherit c
+3 |   end
+Error: This expression has type "< m : unit >"
+       but an expression was expected of type "c"
        The second object type has no method "m"
 |}]
