@@ -205,9 +205,16 @@ let compute_variance_type env ~check (required, loc) decl tyl =
         compute_variance env tvl2 v ty)
       params required;
     let tvl2 = TypeMap.bindings !tvl2 in
-    let tvl2 = List.map (fun (ty, v) -> Ctype.expand_head_nolink env ty, v) tvl2 in
+    let tvl2 = List.map (fun (ty, v) -> Ctype.expand_head env ty, v) tvl2 in
+    let count = ref 0 in
+    let rcount = ref 0 in
     let rec check mark ty =
+      if !count > !rcount && do_print then begin
+        rcount := !count + 10_000;
+        Format.eprintf "count %d@." !count;
+      end;
       if not (try_mark_node mark ty) then mark else
+      let ty = Ctype.expand_head env ty in
       let v1 = get_variance ty tvl in
       let c1, n1 = get_upper v1 in
       if not c1 && not n1 then begin
@@ -217,6 +224,7 @@ let compute_variance_type env ~check (required, loc) decl tyl =
       let v2 =
         List.fold_left
           (fun v (t,vt) ->
+             incr count;
              if Ctype.is_equal env false [ty] [t]
              then begin
                union vt v
