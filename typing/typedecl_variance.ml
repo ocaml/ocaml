@@ -206,6 +206,21 @@ let compute_variance_type env ~check (required, loc) decl tyl =
       params required;
     let tvl2 = TypeMap.bindings !tvl2 in
     let tvl2 = List.map (fun (ty, v) -> Ctype.expand_head env ty, v) tvl2 in
+    let rec consolidate = function
+      | (ty1, v1) :: rest ->
+          let rest =
+            List.filter
+              (fun (ty2, v2) ->
+                 not (Variance.eq v1 v2 &&
+                      Ctype.is_equal env false [ty1] [ty2]))
+              rest
+          in
+          (ty1, v1) :: consolidate rest
+      | [] -> []
+    in
+    let tvl2' = consolidate tvl2 in
+    if do_print then Format.eprintf "consolidated %d -> %d@." (List.length tvl2) (List.length tvl2');
+    let tvl2 = tvl2' in
     let count = ref 0 in
     let rcount = ref 0 in
     let rec check mark ty =
