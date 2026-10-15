@@ -74,12 +74,13 @@ let () =
   let xs = Seq.(take 7 (cycle !?[1;2;3])) in
   assert (!!xs = [1;2;3;1;2;3;1])
 
-(* [cycle] doesn't repeat or cache computations *)
+(* [cycle] doesn't repeat computations *)
 let () =
   let forces = ref 0 in
-  let xs () = incr forces; Seq.return 1 () in
-  let length = Seq.(length (take 3 (cycle xs))) in
-  assert (length = !forces)
+  let counts = (fun _ -> incr forces; !forces) in
+  let xs = Seq.(take 4 (cycle (init 3 counts))) in
+  assert (!!xs = [1;2;3;1]);
+  assert (!forces = 3)
 
 (* [iterate] *)
 let () =
