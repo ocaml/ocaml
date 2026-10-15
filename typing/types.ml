@@ -221,7 +221,7 @@ module Variance = struct
     let v' = inter v (union (single Inj) (single May_weak)) in
     swap Pos Neg v (swap May_pos May_neg v v')
   let compose v1 v2 =
-    if mem Inv v1 && mem Inj v2 then full else
+    if mem May_pos v1 && mem May_neg v1 && mem Inj v2 then full else
     let mp =
       mem May_pos v1 && mem May_pos v2 || mem May_neg v1 && mem May_neg v2
     and mn =
