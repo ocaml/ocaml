@@ -1469,3 +1469,38 @@ Error: Some type variables are unbound in this type: class d : ['a] c
        The method "m" has type "(< f : 'b; x : 'a > as 'b) -> unit" where "'a"
        is unbound
 |}]
+
+(** Test privateness mutation and class names *)
+class c = object
+  method private m = ()
+end
+[%%expect {|
+class c : object method private m : unit end
+|}]
+
+let o : c = object
+    inherit c
+    method m = ()
+  end
+[%%expect {|
+Lines 1-4, characters 12-5:
+1 | ............object
+2 |     inherit c
+3 |     method m = ()
+4 |   end
+Error: This expression has type "c" but an expression was expected of type "c"
+       The second object type has no method "m"
+|}]
+
+
+let o : c = object(self:<m:unit>)
+    inherit c
+  end
+[%%expect {|
+Lines 1-3, characters 12-5:
+1 | ............object(self:<m:unit>)
+2 |     inherit c
+3 |   end
+Error: This expression has type "c" but an expression was expected of type "c"
+       The second object type has no method "m"
+|}]
