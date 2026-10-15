@@ -4354,7 +4354,9 @@ let add_method env label priv virt ty sign =
             | Public ->
                 begin match field_kind_repr k with
                 | Fpublic -> ()
-                | Fprivate -> link_kind ~inside:k field_public
+                | Fprivate ->
+                    remove_object_name sign.csig_self;
+                    link_kind ~inside:k field_public
                 | Fabsent -> raise (Add_method_failed Unexpected_method)
                 end;
                 Mpublic

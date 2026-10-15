@@ -1488,7 +1488,8 @@ Lines 1-4, characters 12-5:
 2 |     inherit c
 3 |     method m = ()
 4 |   end
-Error: This expression has type "c" but an expression was expected of type "c"
+Error: This expression has type "< m : unit >"
+       but an expression was expected of type "c"
        The second object type has no method "m"
 |}]
 
