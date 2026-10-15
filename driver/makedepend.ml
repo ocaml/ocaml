@@ -34,6 +34,7 @@ let nocwd = ref false
 let one_line = ref false
 let allow_approximation = ref false
 let debug = ref false
+let strict = ref false
 
 (* [(dir, contents)] where [contents] is returned by [Sys.readdir dir]. *)
 let load_path = ref ([] : (string * string array) list)
@@ -401,7 +402,8 @@ let process_file_as process_fun def source_file =
       ));
   Location.input_name := source_file;
   try
-    if Sys.file_exists source_file then process_fun source_file else def
+    if !strict || Sys.file_exists source_file then process_fun source_file
+    else def
   with x -> report_err x; def
 
 let process_file source_file ~ml_file ~mli_file ~def =
@@ -549,7 +551,14 @@ let process_dep_arg = function
   | Src (file, None) -> file_dependencies file
   | Src (file, (Some file_kind)) -> file_dependencies_as file_kind file
 
-let process_dep_args dep_args = List.iter process_dep_arg dep_args
+(* In [-strict] mode, stop at the first error: since dependencies are only
+   printed once all inputs have been processed, nothing is printed. *)
+let process_dep_args dep_args =
+  List.iter (fun arg ->
+      process_dep_arg arg;
+      if !strict && Error_occurred.get () then
+        raise (Compenv.Exit_with_status 2)
+    ) dep_args
 
 (* Entry point *)
 
@@ -627,6 +636,8 @@ let run_main argv =
         " (Windows) Preserve any backslash \\ in file paths";
       "-sort", Arg.Set sort_files,
         " Sort files according to their dependencies";
+      "-strict", Arg.Set strict,
+        " Fail if an input file does not exist; stop at the first error";
       "-version", Arg.Unit print_version,
         " Print version and exit";
       "-vnum", Arg.Unit print_version_num,
