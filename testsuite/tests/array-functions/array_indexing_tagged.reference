@@ -1,0 +1,4 @@
+char unsafe_get: ok
+int8_signed unsafe_get: ok
+int8_unsigned unsafe_get: ok
+char unsafe_set: ok
