@@ -858,6 +858,10 @@ OCaml 5.6.0
   event is larger than half the ring buffer.
   (Tim McGilchrist, review by Sadiq Jaffer)
 
+- #15158, #15155: Allow projection from closures with bottom approximation in
+  flambda
+  (Pierre Chambart, report by Michael Bacarella, review by Vincent Laviron)
+
 OCaml 5.5.1
 -----------
 
