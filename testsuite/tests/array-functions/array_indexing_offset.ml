@@ -2,16 +2,9 @@
    native;
 *)
 
-(* Cmm_helpers.array_indexing, case
-     | Cop(Caddi, [c; Cconst_int (n, _)], _) ->
-         Cop(add, [Cop(add, [ptr; lsl_const c (log2size - 1) dbg], dbg);
-                   Cconst_int((n-1) lsl (log2size - 1), dbg)], dbg)
-   The constant [(n-1) lsl (log2size - 1)] is computed with the compiler's
-   63-bit [int] and wraps when [n] is large, although the index [c + n] is
-   small. The address is then off by 2^63.
-
-   Here the index is [i - 2^60] with [i = 2^60 + 1]: the tagged constant is
-   n = -2^61, and (n-1) lsl 2 = -2^63 - 4 does not fit in an [int]. *)
+(* [Cmm_helpers.array_indexing] simplfies constant unsafe array indices,
+but used to not check properly for overflow in the computation of the
+resulting index. *)
 
 let k = 0x1000_0000_0000_0000 (* 2^60 *)
 
