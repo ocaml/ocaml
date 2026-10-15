@@ -58,6 +58,13 @@ let access_array base numelt size =
                   dbg)],
           dbg)
 
+let alloc exprs =
+  let size_in_bytes_including_header =
+    (* Supports only word-sized expressions *)
+    List.length exprs * Arch.size_addr
+  in
+  Cop (Calloc { size_in_bytes_including_header }, exprs, debuginfo ())
+
 %}
 
 %token ABSF
@@ -221,7 +228,7 @@ expr:
   | LPAREN EXTCALL STRING exprlist machtype RPAREN
                {Cop(Cextcall($3, $5, [], false),
                     List.rev $4, debuginfo ())}
-  | LPAREN ALLOC exprlist RPAREN { Cop(Calloc, List.rev $3, debuginfo ()) }
+  | LPAREN ALLOC exprlist RPAREN { alloc (List.rev $3) }
   | LPAREN SUBF expr RPAREN { Cop(Cnegf, [$3], debuginfo ()) }
   | LPAREN SUBF expr expr RPAREN { Cop(Csubf, [$3; $4], debuginfo ()) }
   | LPAREN unaryop expr RPAREN { Cop($2, [$3], debuginfo ()) }

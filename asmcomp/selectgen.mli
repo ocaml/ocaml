@@ -27,8 +27,6 @@ val env_add
 
 val env_find : Backend_var.t -> environment -> Reg.t array
 
-val size_expr : environment -> Cmm.expression -> int
-
 module Effect : sig
   type t =
     | None
@@ -59,6 +57,10 @@ module Effect_and_coeffect : sig
   val join_list_map : 'a list -> ('a -> t) -> t
 end
 
+type size_of_store =
+  | Size_of_arg
+  | Custom_size of { size_in_bytes : int }
+
 class virtual selector_generic : object
   (* The following methods must or can be overridden by the processor
      description *)
@@ -86,7 +88,7 @@ class virtual selector_generic : object
     (* Can be overridden to deal with special test instructions *)
   method select_store :
     bool -> Arch.addressing_mode -> Cmm.expression ->
-                                         Mach.operation * Cmm.expression
+                                         (Mach.operation * size_of_store) * Cmm.expression
     (* Can be overridden to deal with special store constant instructions *)
   method regs_for : Cmm.machtype -> Reg.t array
     (* Return an array of fresh registers of the given type.
@@ -110,7 +112,7 @@ class virtual selector_generic : object
   method emit_extcall_args :
     environment -> Cmm.exttype list -> Cmm.expression list -> Reg.t array * int
     (* Can be overridden to deal with stack-based calling conventions *)
-  method emit_stores :
+  method emit_stores_for_alloc :
     environment -> Cmm.expression list -> Reg.t array -> unit
     (* Fill a freshly allocated block.  Can be overridden for architectures
        that do not provide Arch.offset_addressing. *)

@@ -48,6 +48,8 @@ let mk_load_atomic memory_chunk =
 
 (* Block headers. Meaning of the tag field: see stdlib/obj.ml *)
 
+let size_header = Arch.size_int
+
 let floatarray_tag dbg = Cconst_int (Obj.double_array_tag, dbg)
 
 let block_header tag sz =
@@ -578,12 +580,17 @@ let test_bool dbg cmm =
 
 (* Float *)
 
-let box_float dbg c = Cop(Calloc, [alloc_float_header dbg; c], dbg)
+let box_float dbg c =
+  let size_in_bytes_including_header =
+    size_header + size_float
+  in
+  Cop(Calloc { size_in_bytes_including_header },
+      [alloc_float_header dbg; c], dbg)
 
 let unbox_float dbg =
   map_tail
     (function
-      | Cop(Calloc, [Cconst_natint (hdr, _); c], _)
+      | Cop(Calloc _, [Cconst_natint (hdr, _); c], _)
         when Nativeint.equal hdr float_header ->
           c
       | Cconst_symbol (s, _dbg) as cmm ->
@@ -606,7 +613,11 @@ let float16_of_float dbg c =
 (* Complex *)
 
 let box_complex dbg c_re c_im =
-  Cop(Calloc, [alloc_floatarray_header 2 dbg; c_re; c_im], dbg)
+  let size_in_bytes_including_header =
+    size_header + 2 * size_float
+  in
+  Cop(Calloc { size_in_bytes_including_header },
+      [alloc_floatarray_header 2 dbg; c_re; c_im], dbg)
 
 let complex_re c dbg =
   Cop(mk_load_immut Double, [c], dbg)
@@ -829,7 +840,11 @@ let call_cached_method obj tag cache pos args dbg =
 
 let make_alloc_generic set_fn dbg tag wordsize args =
   if wordsize <= Config.max_young_wosize then
-    Cop(Calloc, Cconst_natint(block_header tag wordsize, dbg) :: args, dbg)
+    let size_in_bytes_including_header =
+      size_header + wordsize * size_addr
+    in
+    Cop(Calloc { size_in_bytes_including_header },
+        Cconst_natint(block_header tag wordsize, dbg) :: args, dbg)
   else begin
     let id = V.create_local "*alloc*" in
     let rec fill_fields idx = function
@@ -1048,9 +1063,19 @@ let box_int_gen dbg (bi : Primitive.boxed_integer) arg =
       else sign_extend_32 dbg arg
     else arg
   in
-  Cop(Calloc, [alloc_header_boxed_int bi dbg;
-               Cconst_symbol(operations_boxed_int bi, dbg);
-               arg'], dbg)
+  let size_in_bytes_including_header =
+    let size_payload =
+      match bi with
+      | Pnativeint -> size_int
+      | Pint64 -> 8
+      | Pint32 -> 8 (* See above *)
+    in
+    size_header + size_addr + size_payload
+  in
+  Cop(Calloc { size_in_bytes_including_header },
+      [alloc_header_boxed_int bi dbg;
+       Cconst_symbol(operations_boxed_int bi, dbg);
+       arg'], dbg)
 
 let alloc_matches_boxed_int bi ~hdr ~ops =
   match (bi : Primitive.boxed_integer), hdr, ops with
@@ -1076,20 +1101,20 @@ let unbox_int dbg bi =
   in
   map_tail
     (function
-      | Cop(Calloc,
+      | Cop(Calloc _,
             [hdr; ops;
              Cop(Clsl, [contents; Cconst_int (32, _)], _dbg')], _dbg)
         when bi = Primitive.Pint32 && big_endian
              && alloc_matches_boxed_int bi ~hdr ~ops ->
           (* Force sign-extension of low 32 bits *)
           sign_extend_32 dbg contents
-      | Cop(Calloc,
+      | Cop(Calloc _,
             [hdr; ops; contents], _dbg)
         when bi = Primitive.Pint32 && not big_endian
              && alloc_matches_boxed_int bi ~hdr ~ops ->
           (* Force sign-extension of low 32 bits *)
           sign_extend_32 dbg contents
-      | Cop(Calloc, [hdr; ops; contents], _dbg)
+      | Cop(Calloc _, [hdr; ops; contents], _dbg)
         when alloc_matches_boxed_int bi ~hdr ~ops ->
           contents
       | Cconst_symbol (s, _dbg) as cmm ->
@@ -2095,8 +2120,11 @@ let rec intermediate_curry_functions arity num =
      {fun_name = name2;
       fun_args = [VP.create arg, typ_val; VP.create clos, typ_val];
       fun_body =
-         if arity - num > 2 && arity <= max_arity_optimized then
-           Cop(Calloc,
+         if arity - num > 2 && arity <= max_arity_optimized then begin
+           let size_in_bytes_including_header =
+             size_header + 5 * size_addr
+           in
+           Cop(Calloc { size_in_bytes_including_header },
                [alloc_closure_header 5 (dbg ());
                 Cconst_symbol(name1 ^ "_" ^ Int.to_string (num+1), dbg ());
                 alloc_closure_info ~arity:(arity - num - 1)
@@ -2105,13 +2133,16 @@ let rec intermediate_curry_functions arity num =
                   dbg ());
                 Cvar arg; Cvar clos],
                dbg ())
-         else
-           Cop(Calloc,
+         end else begin
+           let size_in_bytes_including_header =
+             size_header + 4 * size_addr
+           in
+           Cop(Calloc { size_in_bytes_including_header },
                 [alloc_closure_header 4 (dbg ());
                  Cconst_symbol(name1 ^ "_" ^ Int.to_string (num+1), dbg ());
                  alloc_closure_info ~arity:1 ~startenv:2 (dbg ());
                  Cvar arg; Cvar clos],
-                dbg ());
+                dbg ()) end;
       fun_codegen_options = [];
       fun_poll = Default_poll;
       fun_dbg;

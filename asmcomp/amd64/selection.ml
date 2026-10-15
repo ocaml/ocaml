@@ -196,9 +196,13 @@ method select_addressing _chunk exp =
 method! select_store is_assign addr exp =
   match exp with
     Cconst_int (n, _dbg) when is_immediate n ->
-      (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
+      ((Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)),
+        Custom_size { size_in_bytes = Arch.size_int }),
+       Ctuple [])
   | (Cconst_natint (n, _dbg)) when is_immediate_natint n ->
-      (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
+      ((Ispecific(Istore_int(n, addr, is_assign)),
+        Custom_size { size_in_bytes = Arch.size_int }),
+       Ctuple [])
   | _ ->
       super#select_store is_assign addr exp
 
