@@ -204,18 +204,26 @@ let compute_variance_type env ~check (required, loc) decl tyl =
           if p then if n then full else covariant else conjugate covariant in
         compute_variance env tvl2 v ty)
       params required;
+    let tvl2 = TypeMap.bindings !tvl2 in
+    let tvl2 = List.map (fun (ty, v) -> Ctype.expand_head_nolink env ty, v) tvl2 in
     let rec check mark ty =
-      if do_print then Format.eprintf "check %a@." Rawprinttyp.type_expr ty;
       if not (try_mark_node mark ty) then mark else
       let v1 = get_variance ty tvl in
-      let snap = Btype.snapshot () in
+      let c1, n1 = get_upper v1 in
+      if not c1 && not n1 then begin
+        if do_print then Format.eprintf "skip\n%!";
+        mark
+      end else
       let v2 =
-        TypeMap.fold
-          (fun t vt v ->
-             if Ctype.is_equal env false [ty] [t] then union vt v else v)
-          !tvl2 null in
-      Btype.backtrack snap;
-      let (c1,n1) = get_upper v1 and (c2,n2,i2) = get_lower v2 in
+        List.fold_left
+          (fun v (t,vt) ->
+             if Ctype.is_equal env false [ty] [t]
+             then begin
+               union vt v
+             end
+             else v)
+          null tvl2 in
+      let c2,n2,i2 = get_lower v2 in
       if c1 && not c2 || n1 && not n2 then begin
         match List.find_opt (eq_type ty) fvl with
         | Some variable ->
