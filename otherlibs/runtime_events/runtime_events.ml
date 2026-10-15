@@ -328,12 +328,13 @@ module User = struct
     | Type.Custom _ ->
         let cache = Domain.DLS.get write_buffer in
         let buf = Atomic.exchange cache Bytes.empty in
-        (* 1024 is the maximum value length in the documentation of
-           [User.register] in runtime_events.mli, and the size of the
-           consumer's read buffer in runtime_events_consumer.c. The extra
-           word holds the trailing byte recording how much padding was
-           added to reach a whole number of words. *)
-        let buf = if Bytes.length buf = 0 then Bytes.create 1032 else buf in
+        let buf =
+          (* RUNTIME_EVENTS_MAX_CUSTOM_VALUE_BYTES plus one 64-bit element for
+             the trailing byte recording how much padding was added to reach
+             a whole number of elements. *)
+          let write_buffer_size = 1024 + 8 in
+          if Bytes.length buf = 0 then Bytes.create write_buffer_size else buf
+        in
         begin match user_write buf event value with
         | () -> Atomic.set cache buf
         | exception exn -> Atomic.set cache buf; raise exn

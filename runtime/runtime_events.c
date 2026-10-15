@@ -25,6 +25,7 @@
 #include "caml/platform.h"
 #include "caml/startup_aux.h"
 
+#include <assert.h>
 #include <fcntl.h>
 #include <stdatomic.h>
 #include <stdio.h>
@@ -44,6 +45,15 @@
 #endif
 
 #define RUNTIME_EVENTS_VERSION 1
+
+/* A maximum-length custom event value must fit in a single ring message,
+   once padded to a whole number of 64-bit elements and given its header and
+   timestamp. */
+static_assert((RUNTIME_EVENTS_MAX_CUSTOM_VALUE_BYTES + sizeof(uint64_t))
+                  / sizeof(uint64_t) + 2
+              <= RUNTIME_EVENTS_MAX_MSG_LENGTH,
+              "a custom event value of RUNTIME_EVENTS_MAX_CUSTOM_VALUE_BYTES "
+              "must fit in a ring message of RUNTIME_EVENTS_MAX_MSG_LENGTH");
 
 /*
 This file contains the implementation for runtime_events's producer. The
@@ -816,6 +826,11 @@ CAMLprim value caml_runtime_events_user_write(
     value record = Field(event_type, 0);
     value serializer = Field(record, 0);
 
+    /* The encoder may fill the buffer to RUNTIME_EVENTS_MAX_CUSTOM_VALUE_BYTES
+       maximum, and the padding count is written one element beyond it. */
+    CAMLassert(caml_string_length(write_buffer)
+               >= RUNTIME_EVENTS_MAX_CUSTOM_VALUE_BYTES + sizeof(uint64_t));
+
     res = caml_callback2(serializer, write_buffer, event_content);
 
     /* Need to check whether the ring is active again as the ring might
@@ -825,12 +840,11 @@ CAMLprim value caml_runtime_events_user_write(
 
     intnat len_bytes = Int_val(res);
 
-    /* RUNTIME_EVENTS_MAX_MSG_LENGTH is the maximum value length documented
-       for [Type.register]. The write buffer is a word larger to hold the
-       trailing padding count. An encode returning more than this wrote past
-       the end of the buffer, and write_to_ring then copied the overrun into
-       the ring. */
-    if (len_bytes < 0 || len_bytes > RUNTIME_EVENTS_MAX_MSG_LENGTH) {
+    /* [encode] returns the number of bytes it wrote. The write buffer is
+       RUNTIME_EVENTS_MAX_CUSTOM_VALUE_BYTES plus one element to hold the
+       trailing padding count, so a longer value overflows the consumer
+       read buffer. */
+    if (len_bytes < 0 || len_bytes > RUNTIME_EVENTS_MAX_CUSTOM_VALUE_BYTES) {
       caml_invalid_argument(
         "Runtime_events.User.write: encode returned an invalid length");
     }

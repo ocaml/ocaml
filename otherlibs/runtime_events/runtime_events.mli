@@ -629,8 +629,10 @@ module Type : sig
       written. The decoder gets a slice of the buffer of specified length, and
       returns the decoded value.
 
-      The maximum value length is 1024 bytes. An encoder returning a length
-      above this maximum, or a negative length, raises [Invalid_argument]. *)
+      The maximum value length is 1024 bytes.
+
+      @raise Invalid_argument when the event is written, if [encode] returns
+      a negative length or one above the maximum. *)
 end
 
 module User : sig
