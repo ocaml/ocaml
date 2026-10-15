@@ -192,6 +192,11 @@ Under Unix, this option does nothing.
 .B \-sort
 Sort files according to their dependencies.
 .TP
+.B \-strict
+Fail if an input file does not exist. By default, input files that do
+not exist are silently ignored. In this mode, processing stops at the
+first error, and no dependencies are printed.
+.TP
 .B \-version
 Print version string and exit.
 .TP
