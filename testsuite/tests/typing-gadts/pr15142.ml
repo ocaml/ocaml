@@ -32,7 +32,7 @@ Lines 8-12, characters 6-3:
 12 | end
 Error: Signature mismatch:
        Modules do not match:
-         sig type !'a s = 'a q X.t val inj : 'a -> 'a val prj : 'a -> 'a end
+         sig type 'a s = 'a q X.t val inj : 'a -> 'a val prj : 'a -> 'a end
        is not included in
          sig
            type +-'a s
@@ -40,7 +40,7 @@ Error: Signature mismatch:
            val prj : 'a s -> 'a q X.t
          end
        Type declarations do not match:
-         type !'a s = 'a q X.t
+         type 'a s = 'a q X.t
        is not included in
          type +-'a s
        Their variances do not agree.
