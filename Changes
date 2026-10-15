@@ -52,6 +52,9 @@ Working version
   flambda
   (Pierre Chambart, report by Michael Bacarella, review by Vincent Laviron)
 
+- #15160, #?????: Fix overflows in native code array indexing
+  (Stefan Muenzel, review by ????)
+
 OCaml 5.6.0
 -----------
 

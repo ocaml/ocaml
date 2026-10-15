@@ -1,4 +1,6 @@
-(* TEST *)
+(* TEST
+   native;
+*)
 
 (* Cmm_helpers.array_indexing, case
      | Cop(Caddi, [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], _) ->
