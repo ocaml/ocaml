@@ -2,16 +2,10 @@
    native;
 *)
 
-(* Cmm_helpers.array_indexing, case
-     | Cop(Caddi, [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], _) ->
-         Cop(add, [ptr; lsl_const c log2size dbg], dbg')
-   For 1-byte elements (log2size = 0) this computes [ptr + c], but the index
-   is [untag (tag c)], which is [c] with bit 63 replaced by bit 62. When the
-   two bits differ (e.g. [c] comes from [Int64.to_int]) the address is off
-   by 2^63.
-
-   [Int64.to_int (Int64.add Int64.min_int 5L)] is 5, but its unboxed value
-   has bit 63 set. *)
+(* [Cmm_helpers.array_indexing] simplifies tagging/untagging of the indexing
+expression. Since tagging/untagging rewrites the highest bit, this operation
+is not neutral when the element size is 1 (meaning that no additional shift
+for element size is needed that would get rid of this bit). *)
 
 open Bigarray
 
