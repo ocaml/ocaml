@@ -3317,7 +3317,11 @@ let compare_package env unify lv1 pack1 lv2 pack2 =
 (** Method privacy unification *)
 let unify_kind ?obj1 k1 ?obj2 k2 =
   match field_kind_repr k1, field_kind_repr k2 with
-    (Fprivate, (Fprivate | Fpublic)) ->
+  | Fprivate, Fprivate ->
+      Option.iter remove_object_name obj1;
+      Option.iter remove_object_name obj2;
+      link_kind ~inside:k1 k2
+  | Fprivate, Fpublic ->
       Option.iter remove_object_name obj1;
       link_kind ~inside:k1 k2
   | (Fpublic, Fprivate)              ->
