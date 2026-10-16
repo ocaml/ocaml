@@ -123,8 +123,6 @@ let make p n i =
 
 let injective = Variance.(set Inj null)
 
-let do_print = Sys.getenv_opt "OCAMLDEBUG" <> None
-
 let compute_variance_type env ~check (required, loc) decl tyl =
   (* Requirements *)
   let check_injectivity = Btype.type_kind_is_abstract decl in
@@ -204,8 +202,12 @@ let compute_variance_type env ~check (required, loc) decl tyl =
           if p then if n then full else covariant else conjugate covariant in
         compute_variance env tvl2 v ty)
       params required;
+    let snap = Btype.snapshot () in
     let tvl2 = TypeMap.bindings !tvl2 in
-    let tvl2 = List.map (fun (ty, v) -> Ctype.expand_head env ty, v) tvl2 in
+    (* [is_equal] will expand every time, so better do it once. *)
+    let tvl2 = List.map (fun (ty, v) -> Ctype.expand_head_nolink env ty, v) tvl2 in
+    (* No need to check against equal types, reduce runtime by doing
+       quadratic work on a smaller list *)
     let rec consolidate = function
       | (ty1, v1) :: rest ->
           let rest =
@@ -218,33 +220,17 @@ let compute_variance_type env ~check (required, loc) decl tyl =
           (ty1, v1) :: consolidate rest
       | [] -> []
     in
-    let tvl2' = consolidate tvl2 in
-    if do_print then Format.eprintf "consolidated %d -> %d@." (List.length tvl2) (List.length tvl2');
-    let tvl2 = tvl2' in
-    let count = ref 0 in
-    let rcount = ref 0 in
+    let tvl2 = consolidate tvl2 in
     let rec check mark ty =
-      if !count > !rcount && do_print then begin
-        rcount := !count + 10_000;
-        Format.eprintf "count %d@." !count;
-      end;
       if not (try_mark_node mark ty) then mark else
-      let ty = Ctype.expand_head env ty in
       let v1 = get_variance ty tvl in
       let c1, n1 = get_upper v1 in
-      if not c1 && not n1 then begin
-        if do_print then Format.eprintf "skip\n%!";
-        mark
-      end else
+      if not c1 && not n1 then mark else
       let v2 =
         List.fold_left
           (fun v (t,vt) ->
-             incr count;
              if Ctype.is_equal env false [ty] [t]
-             then begin
-               union vt v
-             end
-             else v)
+             then union v vt else v)
           null tvl2 in
       let c2,n2,i2 = get_lower v2 in
       if c1 && not c2 || n1 && not n2 then begin
@@ -261,6 +247,7 @@ let compute_variance_type env ~check (required, loc) decl tyl =
             let variance_error =
               Variance_variable_error { error; context; variable }
             in
+            Btype.backtrack snap;
             raise
               (Error (loc
                      , Bad_variance ( variance_error
@@ -274,7 +261,8 @@ let compute_variance_type env ~check (required, loc) decl tyl =
     with_type_mark (fun mark ->
         List.fold_left (fun mark (_,ty) -> check mark ty) mark tyl
         |> (ignore : Types.type_mark -> unit)
-      )
+      );
+    Btype.backtrack snap
   end;
   List.map2
     (fun ty (p, n, _i) ->
