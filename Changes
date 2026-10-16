@@ -9,6 +9,9 @@ Working version
 
 ### Code generation and optimizations:
 
+- #14925: Inline the full-application case of caml_apply
+  (Stefan Muenzel, extensive benchmarking by Michael Bacarella, review by ???)
+
 ### Standard library:
 
 ### Other libraries:

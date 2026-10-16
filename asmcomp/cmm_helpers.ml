@@ -27,6 +27,23 @@ let bind name arg fn =
     Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _ -> fn arg
   | _ -> let id = V.create_local name in Clet(VP.create id, arg, fn (Cvar id))
 
+let bind_list name args fn =
+  let lets, vars =
+    List.map
+      (function
+        | Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _ as arg ->
+            (fun x -> x), arg
+        | arg ->
+            let id = V.create_local name in
+            (fun next -> Clet(VP.create id, arg, next)), Cvar id)
+      args
+    |> List.split
+  in
+  List.fold_right
+    (fun f acc -> f acc)
+    lets (fn vars)
+
+
 let bind_load name arg fn =
   match arg with
   | Cop(Cload _, [Cvar _], _) -> fn arg
@@ -865,7 +882,7 @@ let make_checkbound dbg = function
 (* Record application and currying functions *)
 
 let apply_function_sym n =
-  Compilenv.need_apply_fun n; "caml_apply" ^ Int.to_string n
+  Compilenv.need_apply_fun n; "caml_apply" ^ Int.to_string n ^ "_indirect"
 let curry_function_sym n =
   Compilenv.need_curry_fun n;
   if n >= 0
@@ -1781,10 +1798,27 @@ let generic_apply mut clos args dbg =
           dbg))
   | _ ->
       let arity = List.length args in
-      let cargs =
-        Cconst_symbol(apply_function_sym arity, dbg) :: args @ [clos]
-      in
-      Cop(Capply typ_val, cargs, dbg)
+      bind "fun" clos (fun clos ->
+          bind_list "args" args (fun args ->
+              let all_args = args @ [clos] in
+              bind "cfun"
+                (Cifthenelse(
+                    Cop(Ccmpi Ceq
+                       , [Cop(Casr,
+                              [get_field_gen Asttypes.Mutable clos 1 (dbg);
+                               Cconst_int(pos_arity_in_closinfo, dbg)], dbg);
+                          Cconst_int(arity, dbg)], dbg),
+                    dbg,
+                    get_field_codepointer Asttypes.Mutable clos 2 (dbg),
+                    dbg,
+                    Cconst_symbol(apply_function_sym arity, dbg),
+                    dbg
+                  ))
+                (fun cfun ->
+                   Cop(Capply typ_val, cfun :: all_args, dbg)
+                )
+            )
+        )
 
 let send kind met obj args dbg =
   let call_met obj args clos =
@@ -1870,14 +1904,12 @@ let placeholder_dbg () = Debuginfo.none
 let placeholder_fun_dbg ~human_name:_ = Debuginfo.none
 
 (* Generate an application function:
-     (defun caml_applyN (a1 ... aN clos)
-       (if (= clos.arity N)
-         (app clos.direct a1 ... aN clos)
-         (let (clos1 (app clos.code a1 clos)
-               clos2 (app clos1.code a2 clos)
-               ...
-               closN-1 (app closN-2.code aN-1 closN-2))
-           (app closN-1.code aN closN-1))))
+     (defun caml_applyN_indirect (a1 ... aN clos)
+       (let (clos1 (app clos.code a1 clos)
+             clos2 (app clos1.code a2 clos)
+             ...
+             closN-1 (app closN-2.code aN-1 closN-2))
+         (app closN-1.code aN closN-1))))
 *)
 
 let apply_function_body arity =
@@ -1901,27 +1933,24 @@ let apply_function_body arity =
            app_fun newclos (n+1))
     end in
   let args = Array.to_list arg in
-  let all_args = args @ [clos] in
-  (args, clos,
-   if arity = 1 then app_fun clos 0 else
-   Cifthenelse(
-   Cop(Ccmpi Ceq, [Cop(Casr,
-                       [get_field_gen Asttypes.Mutable (Cvar clos) 1 (dbg());
-                        Cconst_int(pos_arity_in_closinfo, dbg())], dbg());
-                   Cconst_int(arity, dbg())], dbg()),
-   dbg (),
-   Cop(Capply typ_val,
-       get_field_codepointer Asttypes.Mutable (Cvar clos) 2 (dbg ())
-       :: List.map (fun s -> Cvar s) all_args,
-       dbg ()),
-   dbg (),
-   app_fun clos 0,
-   dbg ()))
+  (args, clos, app_fun clos 0)
+
+let apply_function_body_direct arity =
+  let dbg = placeholder_dbg () in
+  let arg = Array.make arity (V.create_local "arg") in
+  for i = 1 to arity - 1 do arg.(i) <- V.create_local "arg" done;
+  let clos = V.create_local "clos" in
+  let args = Array.to_list arg in
+  let body =
+    generic_apply
+      Asttypes.Mutable (Cvar clos) (List.map (fun a -> Cvar a) args) dbg
+  in
+  args, clos, body
 
 let send_function arity =
   let dbg = placeholder_dbg in
   let cconst_int i = Cconst_int (i, dbg ()) in
-  let (args, clos', body) = apply_function_body (1+arity) in
+  let (args, clos', body) = apply_function_body_direct (1+arity) in
   let cache = V.create_local "cache"
   and obj = List.hd args
   and tag = V.create_local "tag" in
@@ -1969,10 +1998,17 @@ let send_function arity =
     fun_dbg;
    }
 
-let apply_function arity =
-  let (args, clos, body) = apply_function_body arity in
+let apply_function ~direct arity =
+  let (args, clos, body) =
+    if direct
+    then apply_function_body_direct arity
+    else apply_function_body arity
+  in
   let all_args = args @ [clos] in
   let fun_name = "caml_apply" ^ Int.to_string arity in
+  let fun_name =
+    if direct then fun_name else fun_name ^ "_indirect"
+  in
   let fun_dbg = placeholder_fun_dbg ~human_name:fun_name in
   Cfunction
    {fun_name;
@@ -2185,8 +2221,21 @@ let generic_functions shared units =
          List.fold_right Int.Set.add ui.ui_curry_fun curry)
       (Int.Set.empty,Int.Set.empty,Int.Set.empty)
       units in
+  let apply =
+    Int.Set.fold
+      (fun n accu -> if n <> 0 then Int.Set.add (n + 1) accu else accu)
+      send apply
+  in
   let apply = if shared then apply else Int.Set.union apply default_apply in
-  let accu = Int.Set.fold (fun n accu -> apply_function n :: accu) apply [] in
+  let accu =
+    Int.Set.fold (fun n accu -> apply_function ~direct:false n :: accu)
+      apply []
+  in
+  let apply_direct = if shared then Int.Set.empty else default_apply in
+  let accu =
+    Int.Set.fold (fun n accu -> apply_function ~direct:true n :: accu)
+      apply_direct accu
+  in
   let accu = Int.Set.fold (fun n accu -> send_function n :: accu) send accu in
   Int.Set.fold (fun n accu -> curry_function n @ accu) curry accu
 
