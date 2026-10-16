@@ -205,19 +205,21 @@ let compute_variance_type env ~check (required, loc) decl tyl =
     let snap = Btype.snapshot () in
     let tvl2 = TypeMap.bindings !tvl2 in
     (* [is_equal] will expand every time, so better do it once. *)
-    let tvl2 = List.map (fun (ty, v) -> Ctype.expand_head_nolink env ty, v) tvl2 in
+    let tvl2 =
+      List.map (fun (ty, v) -> Ctype.expand_head_nolink env ty, v) tvl2 in
     (* No need to check against equal types, reduce runtime by doing
        quadratic work on a smaller list *)
     let rec consolidate = function
       | (ty1, v1) :: rest ->
-          let rest =
-            List.filter
-              (fun (ty2, v2) ->
-                 not (Variance.eq v1 v2 &&
-                      Ctype.is_equal env false [ty1] [ty2]))
-              rest
+          let rest, v1' =
+            List.fold_left
+              (fun (rest, v1') ((ty2, v2) as elt) ->
+                 if Ctype.is_equal env false [ty1] [ty2]
+                 then (rest, union v1' v2)
+                 else (elt :: rest, v1'))
+              ([], v1) rest
           in
-          (ty1, v1) :: consolidate rest
+          (ty1, v1') :: consolidate rest
       | [] -> []
     in
     let tvl2 = consolidate tvl2 in
