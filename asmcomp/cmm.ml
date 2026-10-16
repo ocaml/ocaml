@@ -170,6 +170,8 @@ and operation =
   | Ccheckbound
   | Copaque
   | Catomic_fetch_add
+  | Catomic_exchange
+  | Catomic_compare_exchange
   | Cdls_get
   | Cpoll
 
