@@ -3314,6 +3314,22 @@ let compare_package env unify lv1 pack1 lv2 pack2 =
       (!package_subtype env pack1 pack2)
       (fun () -> !package_subtype env pack2 pack1)
 
+(** Method privacy unification *)
+let unify_kind ?obj1 k1 ?obj2 k2 =
+  match field_kind_repr k1, field_kind_repr k2 with
+  | Fprivate, Fprivate ->
+      Option.iter remove_object_name obj1;
+      Option.iter remove_object_name obj2;
+      link_kind ~inside:k1 k2
+  | Fprivate, Fpublic ->
+      Option.iter remove_object_name obj1;
+      link_kind ~inside:k1 k2
+  | (Fpublic, Fprivate)              ->
+      Option.iter remove_object_name obj2;
+      link_kind ~inside:k2 k1
+  | (Fpublic, Fpublic)               -> ()
+  | _                                -> assert false
+
 (* force unification in Reither when one side has a non-conjunctive type *)
 (* Code smell: this could also be put in unification_environment.
    Only modified by expand_head_rigid, but the corresponding unification
@@ -3599,7 +3615,7 @@ and unify3 uenv t1' t2' =
           mcomp_for Unify (get_env uenv) t1' t2';
           record_equation uenv t1' t2'
       | (Tobject (fi1, nm1), Tobject (fi2, _)) ->
-          unify_fields uenv fi1 fi2;
+          unify_fields uenv ~obj1:t1' ~obj2:t2' fi1 fi2;
           (* Type [t2'] may have been instantiated by [unify_fields] *)
           (* XXX One should do some kind of unification... *)
           begin match get_desc t2' with
@@ -3707,7 +3723,7 @@ and make_rowvar level use1 rest1 use2 rest2  =
   if use1 then rest1 else
   if use2 then rest2 else newty2 ~level (Tvar name)
 
-and unify_fields uenv ty1 ty2 =          (* Optimization *)
+and unify_fields uenv ?obj1 ty1 ?obj2 ty2 = (* Optimization *)
   let (fields1, rest1) = flatten_fields ty1
   and (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
@@ -3720,7 +3736,7 @@ and unify_fields uenv ty1 ty2 =          (* Optimization *)
     unify uenv rest1 (build_fields l2 miss2 va);
     List.iter
       (fun (name, k1, t1, k2, t2) ->
-        unify_kind k1 k2;
+        unify_kind ?obj1 k1 ?obj2 k2;
         try
           if !trace_gadt_instances && not (in_subst_mode uenv) then begin
             (* in_subst_mode: see PR#11771 *)
@@ -3737,13 +3753,6 @@ and unify_fields uenv ty1 ty2 =          (* Optimization *)
     Transient_expr.set_desc tr1 d1;
     Transient_expr.set_desc tr2 d2;
     raise exn
-
-and unify_kind k1 k2 =
-  match field_kind_repr k1, field_kind_repr k2 with
-    (Fprivate, (Fprivate | Fpublic)) -> link_kind ~inside:k1 k2
-  | (Fpublic, Fprivate)              -> link_kind ~inside:k2 k1
-  | (Fpublic, Fpublic)               -> ()
-  | _                                -> assert false
 
 and unify_row uenv row1 row2 =
   let Row {fields = row1_fields; more = rm1;
@@ -4206,7 +4215,7 @@ type filter_method_failure =
 exception Filter_method_failed of filter_method_failure
 
 (* Used by [filter_method]. *)
-let rec filter_method_field env name ty =
+let rec filter_method_field ?obj env name ty =
   let method_type ~level =
       let ty1 = newvar2 level and ty2 = newvar2 level in
       let ty' = newty2 ~level (Tfield (name, field_public, ty1, ty2)) in
@@ -4231,10 +4240,10 @@ let rec filter_method_field env name ty =
       ty1
   | Tfield(n, kind, ty1, ty2) ->
       if n = name then begin
-        unify_kind kind field_public;
+        unify_kind ?obj1:obj kind field_public;
         ty1
       end else
-        filter_method_field env name ty2
+        filter_method_field ?obj env name ty2
   | _ ->
       raise (Filter_method_failed Not_a_method)
 
@@ -4266,13 +4275,13 @@ let filter_method env name ty =
       link_type ty ty';
       ty_meth
   | Tobject(f, _) ->
-      filter_method_field env name f
+      filter_method_field ~obj:ty env name f
   | _ ->
       raise (Filter_method_failed (Not_an_object ty))
 
 exception Filter_method_row_failed
 
-let rec filter_method_row env name priv ty =
+let rec filter_method_row ?obj env name priv ty =
   let ty = expand_head_unif env ty in
   match get_desc ty with
   | Tvar _ ->
@@ -4290,11 +4299,11 @@ let rec filter_method_row env name priv ty =
   | Tfield(n, kind, ty1, ty2) ->
       if n = name then begin
         if priv = Public then
-          unify_kind kind field_public;
+          unify_kind ?obj1:obj kind field_public;
         kind, ty1, ty2
       end else begin
         let level = get_level ty in
-        let kind', field, row = filter_method_row env name priv ty2 in
+        let kind', field, row = filter_method_row ?obj env name priv ty2 in
         let row = newty2 ~level (Tfield (n, kind, ty1, row)) in
         kind', field, row
       end
@@ -4354,7 +4363,9 @@ let add_method env label priv virt ty sign =
             | Public ->
                 begin match field_kind_repr k with
                 | Fpublic -> ()
-                | Fprivate -> link_kind ~inside:k field_public
+                | Fprivate ->
+                    remove_object_name sign.csig_self;
+                    link_kind ~inside:k field_public
                 | Fabsent -> raise (Add_method_failed Unexpected_method)
                 end;
                 Mpublic
@@ -4371,8 +4382,9 @@ let add_method env label priv virt ty sign =
             raise (Add_method_failed (Type_mismatch trace))
       end
     | exception Not_found -> begin
+        let row = sign.csig_self_row in
         let priv, ty', row =
-          match filter_method_row env label priv sign.csig_self_row with
+          match filter_method_row ~obj:sign.csig_self env label priv row with
           | kind, ty', row ->
               let priv =
                 match priv with
@@ -4540,7 +4552,7 @@ let reveal_private_methods env sign =
          | Mprivate kind ->
              assert (field_kind_repr kind = Fabsent);
              let kind, ty', row =
-               filter_method_row env lab Private row
+               filter_method_row ~obj:sign.csig_self env lab Private row
              in
              unify env ty ty';
              let meths = Meths.add lab (Mprivate kind, virt, ty) meths in
