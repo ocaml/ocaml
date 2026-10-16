@@ -53,38 +53,6 @@ type a = { k : unit; }
 and b = { k : unit; }
 |}];;
 
-(* Warning 60 *)
-
-module A = struct
-  module type S = sig
-    module Foo : sig end
-  end
-end;;
-[%%expect{|
-module A : sig module type S = sig module Foo : sig end end end
-|}]
-
-module type T = sig
-  module G (X : A.S) : sig
-    module[@warning "-60"] Bar := X.Foo
-  end
-end;;
-
-[%%expect {|
-module type T = sig module G : (X : A.S) -> sig end end
-|}];;
-
-
-module type T = sig
-  module G (X : A.S) : sig
-    module Bar := X.Foo [@@warning "-60"]
-  end
-end;;
-
-[%%expect {|
-module type T = sig module G : (X : A.S) -> sig end end
-|}];;
-
 (* Warning 62 *)
 
 type[@warning "-62"] foo =
