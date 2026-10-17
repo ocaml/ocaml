@@ -429,7 +429,7 @@ Line 2, characters 0-27:
 2 | type _ u = M : 'a -> 'a t u (* KO *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the GADT constructor
-         "M : < b : 'a; c : 'b > -> 'a u"
+         "M : < b : 'a; c : 'b > -> < b : 'a; c : 'b > t u"
        the type variable "'b" cannot be deduced from the type parameters.
 |}]
 
