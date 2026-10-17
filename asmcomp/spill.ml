@@ -160,8 +160,11 @@ let set_reload_at_exit t k s =
 
 let rec reload (t : reload_data) i before =
   t.current_date <- succ t.current_date;
-  record_use t i.arg;
-  record_use t i.res;
+  (* Bookkeeping for the pressure-based spilling heuristic *)
+  if not !Clflags.use_linscan then begin
+    record_use t i.arg;
+    record_use t i.res;
+  end;
   match i.desc with
     Iend ->
       (i, before)
