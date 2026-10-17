@@ -614,15 +614,6 @@ let associate_fields fields1 fields2 =
   in
   associate [] [] [] (fields1, fields2)
 
-(*
-
-  let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
-  match miss1, miss2 with
-  | ((n, _, _)::_, _) -> raise_for Equality (Obj (Missing_field (Second, n)))
-  | (_, (n, _, _)::_) -> raise_for Equality (Obj (Missing_field (First, n)))
-  | [], [] ->
-   *)
-
 (**** Check whether an object is open ****)
 
 (* +++ The abbreviation should eventually be expanded *)
@@ -5198,13 +5189,8 @@ and eqtype_package rename type_pairs subst env lvl1 pack1 lvl2 pack2 =
   | Error fme -> raise_for Equality (First_class_module fme)
 
 and eqtype_fields rename type_pairs subst env ty1 ty2 =
-  let rec get_row t =
-    match get_desc t with
-      Tfield(_,_,_,t) -> get_row t
-    | _ -> t
-  in
-  let row1 = get_row ty1
-  and row2 = get_row ty2 in
+  let row1 = object_row ty1
+  and row2 = object_row ty2 in
   (* First check if same row => already equal *)
   let same_row =
     (* [not rename]: see comment at top of [eqtype] *)
@@ -5214,7 +5200,7 @@ and eqtype_fields rename type_pairs subst env ty1 ty2 =
   if same_row then () else
   match associate_and_flatten_fields_for_equality env ty1 ty2 with
   | Error oerror -> raise_for Equality (Obj oerror)
-  | Ok (pairs, rest1, rest2 ) ->
+  | Ok (pairs, rest1, rest2) ->
   eqtype rename type_pairs subst env rest1 rest2;
   List.iter
     (fun (name, k1, t1, k2, t2) ->
