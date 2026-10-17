@@ -17,7 +17,6 @@
 open Asttypes
 open Types
 
-module TypeSet = Btype.TypeSet
 module TypeMap = Btype.TypeMap
 
 type surface_variance = bool * bool * bool
@@ -150,26 +149,27 @@ let compute_variance_type env ~check (required, loc) decl tyl =
     List.iter
       (fun ty ->
         if Btype.is_Tvar ty || mem Inj (get_variance ty tvl) then () else
-        let visited = ref TypeSet.empty in
-        let rec check ty =
-          if TypeSet.mem ty !visited then () else begin
-            visited := TypeSet.add ty !visited;
-            if mem Inj (get_variance ty tvl) then () else
+        let rec check mark ty =
+          if not (try_mark_node mark ty) then mark else begin
+            if mem Inj (get_variance ty tvl) then mark else
             match get_desc ty with
             | Tvar _ -> raise Exit
             | Tconstr _ ->
-                let old = !visited in
+                let mark_snap = snapshot_mark mark in
                 begin try
-                  Btype.iter_type_expr check ty
+                  Btype.fold_type_expr check mark ty
                 with Exit ->
-                  visited := old;
+                  backtrack_mark mark mark_snap;
                   let ty' = Ctype.expand_head_opt env ty in
-                  if eq_type ty ty' then raise Exit else check ty'
+                  if eq_type ty ty' then raise Exit else check mark ty'
                 end
-            | _ -> Btype.iter_type_expr check ty
+            | _ -> Btype.fold_type_expr check mark ty
           end
         in
-        try check ty; compute_variance env tvl injective ty
+        try
+          with_type_mark (fun mark -> check mark ty)
+          |> (ignore : Types.type_mark -> unit);
+          compute_variance env tvl injective ty
         with Exit -> ())
       params;
   begin match check with

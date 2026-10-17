@@ -621,7 +621,7 @@ let () = assert (Ident.highest_scope land marks_mask = 0)
 
 type type_mark =
   | Mark of {mark: int; mutable marked: type_expr list}
-  | Hash of {visited: unit TransientTypeHash.t}
+  | Hash of {mutable visited: unit TransientTypeHash.t}
 let type_marks =
   (* All the bits in marks_mask *)
   List.init (Sys.int_size - 27) (fun x -> 1 lsl (x + 27))
@@ -644,6 +644,31 @@ let with_type_mark f =
   | [] ->
       (* When marks are exhausted, fall back to using a hash table *)
       f (Hash {visited = TransientTypeHash.create 1})
+
+type type_mark_snapshot =
+  | Snap_mark of type_expr list
+  | Snap_hash of unit TransientTypeHash.t
+
+let snapshot_mark = function
+  | Mark {marked} -> Snap_mark marked
+  | Hash {visited} -> Snap_hash (TransientTypeHash.copy visited)
+
+let backtrack_mark mark snap =
+  match mark, snap with
+  | Mark _, Snap_hash _ -> assert false
+  | Hash _, Snap_mark _ -> assert false
+  | Mark mark, Snap_mark marked' ->
+      let rec loop = function
+        | marked when marked == marked' -> ()
+        | [] -> Misc.fatal_error "Types.backtrack_mark"
+        | ty :: rem ->
+            ty.scope <- ty.scope land ((-1) lxor mark.mark);
+            loop rem
+      in
+      loop mark.marked;
+      mark.marked <- marked'
+  | Hash hash, Snap_hash visited' ->
+      hash.visited <- visited'
 
 (* getters for type_expr *)
 
