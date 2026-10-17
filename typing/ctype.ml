@@ -2277,19 +2277,21 @@ let rec occur_rec env visited allow_recursive ty0 ty =
     ignore (try_mark_node visited ty);
     let occur_rec ty = occur_rec env visited allow_recursive ty0 ty in
     begin match get_desc ty with
-     | Tconstr(p, _tl, _abbrev) when allow_recursive && is_contractive env p ->
+    | Tconstr(p, _tl, _abbrev) when allow_recursive && is_contractive env p ->
         ()
-     | Tconstr (_p, tl, _abbrev) ->
-         (* If [ty0] does not occur in the arguments [tl], then it
-            does not occur at all. If it does, it may still vanish
-            from the expansion, so we need to expand and retry. *)
+    | Tconstr (_p, tl, _abbrev) ->
+        (* If [ty0] does not occur in the arguments [tl], then it
+           does not occur at all. If it does, it may still vanish
+           from the expansion, so we need to expand and retry. *)
+        let snap = snapshot_mark visited in
         begin try
           List.iter occur_rec tl
         with Occur -> try
-          let ty' = try_expand_safe env ty in
-          occur_rec ty'
-        with Cannot_expand ->
-          raise Occur
+            backtrack_mark visited snap;
+            let ty' = try_expand_safe env ty in
+            occur_rec ty'
+          with Cannot_expand ->
+            raise Occur
         end
     | Tobject _ | Tvariant _ ->
         ()
