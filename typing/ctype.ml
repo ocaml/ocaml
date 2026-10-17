@@ -5211,8 +5211,8 @@ and eqtype_fields rename type_pairs subst env ty1 ty2 =
   | Error oerror -> raise_for Equality (Obj oerror)
   | Ok (pairs, rest1, rest2 ) ->
   eqtype rename type_pairs subst env rest1 rest2;
-  String.Map.iter
-    (fun name (k1, t1, k2, t2) ->
+  List.iter
+    (fun (name, k1, t1, k2, t2) ->
        eqtype_kind name k1 k2;
        try
          eqtype rename type_pairs subst env t1 t2;
@@ -5234,19 +5234,21 @@ and associate_and_flatten_fields_for_equality env ty1 ty2 =
     let rec desc2 ty2' =
       match get_desc ty2' with
       | Tfield _ as desc -> ty2', desc
-      | _ ->
-          let ty2' = expand_head_rigid env ty2' in
+      | desc ->
           (* Try expansion, needed when called from Includecore.type_manifest *)
-          match get_desc ty2' with
-          | Tobject (ty2', _) -> desc2 ty2'
-          | _ as desc -> ty2', desc
+          let ty2'' = expand_head_rigid env ty2' in
+          if ty2'' == ty2' then ty2', desc
+          else match get_desc ty2'' with
+            | Tobject (ty2'', _) -> desc2 ty2''
+            | desc -> ty2'', desc
     in
     match desc2 ty2' with
       _, Tfield(s, k, ty2_current, ty2_next) ->
         begin match String.Map.find_opt s acc1 with
           None -> Result.Error (Missing_field (First, s))
         | Some (k', ty1_current) ->
-            let acc_assoc = String.Map.add s (k', ty1_current, k, ty2_current) acc_assoc in
+            let acc_assoc =
+              (s, k', ty1_current, k, ty2_current) :: acc_assoc in
             build2 (String.Map.remove s acc1) acc_assoc ty2_next
         end
     | ty2', _ ->
@@ -5254,7 +5256,7 @@ and associate_and_flatten_fields_for_equality env ty1 ty2 =
         then Result.Ok (acc_assoc, ty1_rest, ty2')
         else Result.Error (Missing_field (Second, fst (String.Map.choose acc1)))
   in
-  build2 acc String.Map.empty ty2
+  build2 acc [] ty2
 
 
 and eqtype_kind name k1 k2 =
