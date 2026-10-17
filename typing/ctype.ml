@@ -24,6 +24,8 @@ open Errortrace
 
 open Local_store
 
+module String = Misc.Stdlib.String
+
 module Path = struct
   include Path
 
@@ -2269,33 +2271,35 @@ let is_contractive env p =
 
 exception Occur
 
-let rec occur_rec env visited allow_recursive parents ty0 ty =
+let rec occur_rec env visited allow_recursive ty0 ty =
   if not_marked_node visited ty then begin
     if eq_type ty ty0 then raise Occur;
+    ignore (try_mark_node visited ty);
+    let occur_rec ty = occur_rec env visited allow_recursive ty0 ty in
     begin match get_desc ty with
-      Tconstr(p, _tl, _abbrev) ->
-        if allow_recursive && is_contractive env p then () else
+    | Tconstr(p, _tl, _abbrev) when allow_recursive && is_contractive env p ->
+        ()
+    | Tconstr (_p, tl, _abbrev) ->
+        (* If [ty0] does not occur in the arguments [tl], then it
+           does not occur at all. If it does, it may still vanish
+           from the expansion, so we need to expand and retry. *)
+        let snap = snapshot_mark visited in
         begin try
-          if TypeSet.mem ty parents then raise Occur;
-          let parents = TypeSet.add ty parents in
-          iter_type_expr (occur_rec env visited allow_recursive parents ty0) ty
+          List.iter occur_rec tl
         with Occur -> try
-          let ty' = try_expand_safe env ty in
-          (* This call used to be inlined, but there seems no reason for it.
-            Message was referring to change in rev. 1.58 of the CVS repo. *)
-          occur_rec env visited allow_recursive parents ty0 ty'
-        with Cannot_expand ->
-          raise Occur
+            backtrack_mark visited snap;
+            let ty' = try_expand_safe env ty in
+            occur_rec ty'
+          with Cannot_expand ->
+            raise Occur
         end
     | Tobject _ | Tvariant _ ->
         ()
+    | _ when allow_recursive ->
+        ()
     | _ ->
-        if allow_recursive ||  TypeSet.mem ty parents then () else begin
-          let parents = TypeSet.add ty parents in
-          iter_type_expr (occur_rec env visited allow_recursive parents ty0) ty
-        end
+        iter_type_expr occur_rec ty
     end;
-    ignore (try_mark_node visited ty)
   end
 
 let type_changed = ref false (* trace possible changes to the studied type *)
@@ -2311,7 +2315,7 @@ let occur uenv ty0 ty =
       type_changed := false;
       if not (eq_type ty0 ty) then
         with_type_mark (fun mark ->
-          occur_rec env mark allow_recursive TypeSet.empty ty0 ty);
+          occur_rec env mark allow_recursive ty0 ty);
       !type_changed
     do () (* prerr_endline "changed" *) done;
     merge type_changed old
@@ -5066,7 +5070,73 @@ let eqtype_subst type_pairs subst t1 t2 =
     TypePairs.add type_pairs (t1, t2)
   end
 
-let rec eqtype rename type_pairs subst env t1 t2 =
+let rec eqtype_inner rename type_pairs subst env t1' t2' =
+  TypePairs.add type_pairs (t1', t2');
+  match (get_desc t1', get_desc t2') with
+    (Tvar _, Tvar _) when rename ->
+      eqtype_subst type_pairs subst t1' t2'
+  | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) ->
+      eq_labels Equality ~in_pattern_mode:false l1 l2;
+      eqtype rename type_pairs subst env t1 t2;
+      eqtype rename type_pairs subst env u1 u2
+  | (Tfunctor (l1, id1, pack1, t1), Tfunctor (l2, id2, pack2, t2)) ->
+      eq_labels Equality ~in_pattern_mode:false l1 l2;
+      eqtype_package rename type_pairs subst env
+        (get_level t1') pack1 (get_level t2') pack2;
+      let mty1 = modtype_of_package env Location.none pack1 in
+      let mty2 = modtype_of_package env Location.none pack2 in
+      enter_functor_with_mtys_for Equality env id1 mty1 t1' id2 mty2 t2'
+        (fun new_env -> eqtype rename type_pairs subst new_env t1 t2)
+  | (Tfunctor (l1, id1, pack1, u1), Tarrow (l2, t2, u2, _)) ->
+      eq_labels Equality ~in_pattern_mode:false l1 l2;
+      let t1 = newmono_package pack1 in
+      eqtype rename type_pairs subst env t1 t2;
+      let mty = modtype_of_package env Location.none pack1 in
+      let env' = Env.add_module (Ident.of_unscoped id1)
+          Mp_present mty env in
+      identifier_escape_for Equality env' [id1] u1;
+      eqtype rename type_pairs subst env u1 u2
+  | (Tarrow (l1, t1, u1, _), Tfunctor (l2, id2, pack2, u2)) ->
+      eq_labels Equality ~in_pattern_mode:false l1 l2;
+      let t2 = newmono_package pack2 in
+      eqtype rename type_pairs subst env t1 t2;
+      let mty = modtype_of_package env Location.none pack2 in
+      let env' = Env.add_module (Ident.of_unscoped id2)
+          Mp_present mty env in
+      identifier_escape_for Equality env' [id2] u2;
+      eqtype rename type_pairs subst env u1 u2
+  | (Ttuple tl1, Ttuple tl2) ->
+      eqtype_labeled_list rename type_pairs subst env tl1 tl2
+  | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
+    when quick_eq_type_path ~normalize:true env p1 p2 ->
+      eqtype_list_same_length rename type_pairs subst env tl1 tl2
+  | (Tpackage pack1, Tpackage pack2) ->
+      eqtype_package rename type_pairs subst env
+        (get_level t1') pack1 (get_level t2') pack2
+  | (Tnil,  Tconstr _ ) ->
+      raise_for Equality (Obj (Abstract_row Second))
+  | (Tconstr _,  Tnil ) ->
+      raise_for Equality (Obj (Abstract_row First))
+  | (Tvariant row1, Tvariant row2) ->
+      eqtype_row rename type_pairs subst env row1 row2
+  | (Tobject (fi1, _nm1), Tobject (fi2, _nm2)) ->
+      eqtype_fields rename type_pairs subst env fi1 fi2
+  | (Tfield _, Tfield _) ->       (* Actually unused *)
+      eqtype_fields rename type_pairs subst env
+        t1' t2'
+  | (Tnil, Tnil) ->
+      ()
+  | (Tpoly (t1, []), Tpoly (t2, [])) ->
+      eqtype rename type_pairs subst env t1 t2
+  | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
+      enter_poly_for Equality env t1 tl1 t2 tl2
+        (eqtype rename type_pairs subst env)
+  | (Tunivar _, Tunivar _) ->
+      unify_univar_for Equality t1' t2' !univar_pairs
+  | (_, _) ->
+      raise_unexplained_for Equality
+
+and eqtype rename type_pairs subst env t1 t2 =
   let check_phys_eq t1 t2 =
     not rename && eq_type t1 t2
   in
@@ -5086,77 +5156,16 @@ let rec eqtype rename type_pairs subst env t1 t2 =
     | (Tconstr (p1, [], _), Tconstr (p2, [], _))
       when quick_eq_type_path ~normalize:false env p1 p2 ->
         ()
-    | _ ->
+    | (Tconstr _, _) | (_, Tconstr _) ->
         let t1' = expand_head_rigid env t1 in
         let t2' = expand_head_rigid env t2 in
         (* Expansion may have changed the representative of the types... *)
         if check_phys_eq t1' t2' then () else
-        if not (TypePairs.mem type_pairs (t1', t2')) then begin
-          TypePairs.add type_pairs (t1', t2');
-          match (get_desc t1', get_desc t2') with
-            (Tvar _, Tvar _) when rename ->
-              eqtype_subst type_pairs subst t1' t2'
-          | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) ->
-              eq_labels Equality ~in_pattern_mode:false l1 l2;
-              eqtype rename type_pairs subst env t1 t2;
-              eqtype rename type_pairs subst env u1 u2
-          | (Tfunctor (l1, id1, pack1, t1), Tfunctor (l2, id2, pack2, t2)) ->
-              eq_labels Equality ~in_pattern_mode:false l1 l2;
-              eqtype_package rename type_pairs subst env
-                (get_level t1') pack1 (get_level t2') pack2;
-              let mty1 = modtype_of_package env Location.none pack1 in
-              let mty2 = modtype_of_package env Location.none pack2 in
-              enter_functor_with_mtys_for Equality env id1 mty1 t1' id2 mty2 t2'
-                  (fun new_env -> eqtype rename type_pairs subst new_env t1 t2)
-          | (Tfunctor (l1, id1, pack1, u1), Tarrow (l2, t2, u2, _)) ->
-              eq_labels Equality ~in_pattern_mode:false l1 l2;
-              let t1 = newmono_package pack1 in
-              eqtype rename type_pairs subst env t1 t2;
-              let mty = modtype_of_package env Location.none pack1 in
-              let env' = Env.add_module (Ident.of_unscoped id1)
-                                        Mp_present mty env in
-              identifier_escape_for Equality env' [id1] u1;
-              eqtype rename type_pairs subst env u1 u2
-          | (Tarrow (l1, t1, u1, _), Tfunctor (l2, id2, pack2, u2)) ->
-              eq_labels Equality ~in_pattern_mode:false l1 l2;
-              let t2 = newmono_package pack2 in
-              eqtype rename type_pairs subst env t1 t2;
-              let mty = modtype_of_package env Location.none pack2 in
-              let env' = Env.add_module (Ident.of_unscoped id2)
-                                        Mp_present mty env in
-              identifier_escape_for Equality env' [id2] u2;
-              eqtype rename type_pairs subst env u1 u2
-          | (Ttuple tl1, Ttuple tl2) ->
-              eqtype_labeled_list rename type_pairs subst env tl1 tl2
-          | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
-                when quick_eq_type_path ~normalize:true env p1 p2 ->
-              eqtype_list_same_length rename type_pairs subst env tl1 tl2
-          | (Tpackage pack1, Tpackage pack2) ->
-              eqtype_package rename type_pairs subst env
-                (get_level t1') pack1 (get_level t2') pack2
-          | (Tnil,  Tconstr _ ) ->
-              raise_for Equality (Obj (Abstract_row Second))
-          | (Tconstr _,  Tnil ) ->
-              raise_for Equality (Obj (Abstract_row First))
-          | (Tvariant row1, Tvariant row2) ->
-              eqtype_row rename type_pairs subst env row1 row2
-          | (Tobject (fi1, _nm1), Tobject (fi2, _nm2)) ->
-              eqtype_fields rename type_pairs subst env fi1 fi2
-          | (Tfield _, Tfield _) ->       (* Actually unused *)
-              eqtype_fields rename type_pairs subst env
-                t1' t2'
-          | (Tnil, Tnil) ->
-              ()
-          | (Tpoly (t1, []), Tpoly (t2, [])) ->
-              eqtype rename type_pairs subst env t1 t2
-          | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
-              enter_poly_for Equality env t1 tl1 t2 tl2
-                (eqtype rename type_pairs subst env)
-          | (Tunivar _, Tunivar _) ->
-              unify_univar_for Equality t1' t2' !univar_pairs
-          | (_, _) ->
-              raise_unexplained_for Equality
-        end
+        if not (TypePairs.mem type_pairs (t1', t2'))
+        then eqtype_inner rename type_pairs subst env t1' t2'
+    | _ ->
+        if not (TypePairs.mem type_pairs (t1, t2))
+        then eqtype_inner rename type_pairs subst env t1 t2
   with Equality_trace trace ->
     raise_trace_for Equality (Diff {got = t1; expected = t2} :: trace)
 
@@ -5182,34 +5191,66 @@ and eqtype_package rename type_pairs subst env lvl1 pack1 lvl2 pack2 =
   | Error fme -> raise_for Equality (First_class_module fme)
 
 and eqtype_fields rename type_pairs subst env ty1 ty2 =
-  let (fields1, rest1) = flatten_fields ty1 in
-  let (fields2, rest2) = flatten_fields ty2 in
+  let row1 = object_row ty1
+  and row2 = object_row ty2 in
   (* First check if same row => already equal *)
   let same_row =
     (* [not rename]: see comment at top of [eqtype] *)
-    (not rename && eq_type rest1 rest2) ||
-    TypePairs.mem type_pairs (rest1,rest2)
+    (not rename && eq_type row1 row2) ||
+    TypePairs.mem type_pairs (row1,row2)
   in
   if same_row then () else
-  (* Try expansion, needed when called from Includecore.type_manifest *)
-  match get_desc (expand_head_rigid env rest2) with
-    Tobject(ty2,_) -> eqtype_fields rename type_pairs subst env ty1 ty2
-  | _ ->
-  let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
-  match miss1, miss2 with
-  | ((n, _, _)::_, _) -> raise_for Equality (Obj (Missing_field (Second, n)))
-  | (_, (n, _, _)::_) -> raise_for Equality (Obj (Missing_field (First, n)))
-  | [], [] ->
-      eqtype rename type_pairs subst env rest1 rest2;
-      List.iter
-        (function (name, k1, t1, k2, t2) ->
-           eqtype_kind name k1 k2;
-           try
-             eqtype rename type_pairs subst env t1 t2;
-           with Equality_trace trace ->
-             raise_trace_for Equality
-               (incompatible_fields ~name ~got:t1 ~expected:t2 :: trace))
-        pairs
+  match associate_and_flatten_fields_for_equality env ty1 ty2 with
+  | Error oerror -> raise_for Equality (Obj oerror)
+  | Ok (pairs, rest1, rest2) ->
+  eqtype rename type_pairs subst env rest1 rest2;
+  List.iter
+    (fun (name, k1, t1, k2, t2) ->
+       eqtype_kind name k1 k2;
+       try
+         eqtype rename type_pairs subst env t1 t2;
+       with Equality_trace trace ->
+         raise_trace_for Equality
+           (incompatible_fields ~name ~got:t1 ~expected:t2 :: trace))
+    pairs
+
+and associate_and_flatten_fields_for_equality env ty1 ty2 =
+  let rec build1 acc ty1' =
+    match get_desc ty1' with
+      Tfield(s, k, ty1_current, ty1_next) ->
+        build1 (String.Map.add s (k, ty1_current) acc) ty1_next
+    | _ ->
+        acc, ty1'
+  in
+  let acc, ty1_rest = build1 String.Map.empty ty1 in
+  let rec build2 acc1 acc_assoc ty2' =
+    let rec desc2 ty2' =
+      match get_desc ty2' with
+      | Tfield _ as desc -> ty2', desc
+      | desc ->
+          (* Try expansion, needed when called from Includecore.type_manifest *)
+          let ty2'' = expand_head_rigid env ty2' in
+          if ty2'' == ty2' then ty2', desc
+          else match get_desc ty2'' with
+            | Tobject (ty2'', _) -> desc2 ty2''
+            | desc -> ty2'', desc
+    in
+    match desc2 ty2' with
+      _, Tfield(s, k, ty2_current, ty2_next) ->
+        begin match String.Map.find_opt s acc1 with
+          None -> Result.Error (Missing_field (First, s))
+        | Some (k', ty1_current) ->
+            let acc_assoc =
+              (s, k', ty1_current, k, ty2_current) :: acc_assoc in
+            build2 (String.Map.remove s acc1) acc_assoc ty2_next
+        end
+    | ty2', _ ->
+        if String.Map.is_empty acc1
+        then Result.Ok (acc_assoc, ty1_rest, ty2')
+        else Result.Error (Missing_field (Second, fst (String.Map.choose acc1)))
+  in
+  build2 acc [] ty2
+
 
 and eqtype_kind name k1 k2 =
   let k1 = field_kind_repr k1 in
