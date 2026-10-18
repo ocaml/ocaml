@@ -9,6 +9,14 @@ Working version
 
 ### Code generation and optimizations:
 
+- #14980: Emit direct assembly for `Atomic.exchange` and
+  `Atomic.compare_and_set`
+  when the stored value is statically known to be immediate, in which case
+  no write barrier is needed. `Atomic.exchange` and `Atomic.compare_and_set`
+  become externals so the primitive reaches the call site, where the type is
+  usually concrete.
+  (Zane Hambly, review by Stefan Muenzel)
+
 ### Standard library:
 
 ### Other libraries:
@@ -287,14 +295,6 @@ OCaml 5.6.0
 - #14575: Emit direct assembly for `Atomic.fetch_and_add`
   rather than going through C
   (Zane Hambly, review by Olivier Nicole and KC Sivaramakrishnan)
-
-- #14980: Emit direct assembly for `Atomic.exchange` and
-  `Atomic.compare_and_set`
-  when the stored value is statically known to be immediate, in which case
-  no write barrier is needed. `Atomic.exchange` and `Atomic.compare_and_set`
-  become externals so the primitive reaches the call site, where the type is
-  usually concrete.
-  (Zane Hambly, review by         )
 
 - #15002: s390x: emit `sqdbr` for square root and `lrvgr` for byte swap
   rather than calling into C
