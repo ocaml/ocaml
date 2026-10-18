@@ -185,13 +185,18 @@ and slot_for_c_prim name =
 
 let events = ref ([] : debug_event list)
 let debug_dirs = ref String.Set.empty
+let cwd = ref (lazy (fatal_error "Emitcode.record_event: init not called"))
 
 let record_event ev =
+  let cwd = Lazy.force !cwd in
   let path = ev.ev_loc.Location.loc_start.Lexing.pos_fname in
-  let abspath = Location.absolute_path path in
+  let relative = Filename.is_relative path in
+  let abspath =
+    Location.absolute_path (if relative then Filename.concat cwd path else path)
+  in
   debug_dirs := String.Set.add (Filename.dirname abspath) !debug_dirs;
-  if Filename.is_relative path then begin
-    let cwd = Location.rewrite_absolute_path (Sys.getcwd ()) in
+  if relative then begin
+    let cwd = Location.rewrite_absolute_path cwd in
     debug_dirs := String.Set.add cwd !debug_dirs;
   end;
   ev.ev_pos <- !out_position;
@@ -212,12 +217,14 @@ let clear() =
   label_table := [||];
   reloc_info := [];
   debug_dirs := String.Set.empty;
+  cwd := lazy (fatal_error "Emitcode.record_event: init not called");
   events := [];
   hints := [];
   out_buffer := create_bigarray 0
 
 let init () =
   clear ();
+  cwd := Lazy.from_fun Sys.getcwd;
   label_table := Array.make 16 (Label_undefined []);
   out_buffer := create_bigarray 1024
 
@@ -346,9 +353,11 @@ let emit_instr = function
   | Kxorint -> out opXORINT  | Klslint -> out opLSLINT
   | Klsrint -> out opLSRINT  | Kasrint -> out opASRINT
   | Kintcomp c ->
+      (match c with
+       | Ceq | Cne -> record_hint Hint_int_equality_test
+       | Clt | Cle | Cgt | Cge -> ());
       emit_comp c
   | Kphyscomp c ->
-      record_hint (Hint_physical_comparison);
       emit_comp (integer_comparison_of_physical c)
   | Koffsetint n -> out opOFFSETINT; out_int n
   | Koffsetref n -> out opOFFSETREF; out_int n

@@ -176,6 +176,10 @@ type primitive =
   (* Atomic operations *)
   | Patomic_load
   | Patomic_fetch_add
+  (* Native atomic exchange / compare-and-set, emitted only when the stored
+     value is statically immediate, so no write barrier is required. *)
+  | Patomic_exchange
+  | Patomic_cas
   (* Inhibition of optimisation *)
   | Popaque
   (* Fetching domain-local state *)
@@ -355,7 +359,9 @@ and lfunction = private
     return: value_kind;
     body: lambda;
     attr: function_attribute; (* specified with [@inline] attribute *)
-    loc : scoped_location; }
+    loc : scoped_location;
+    free_variables : Ident.Set.t Lazy.t; (* does not include parameters *)
+  }
 
 and lambda_apply =
   { ap_func : lambda;

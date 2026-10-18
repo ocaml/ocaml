@@ -273,6 +273,7 @@ type open_flag =
   | O_SHARE_DELETE
   | O_CLOEXEC
   | O_KEEPEXEC
+  | O_NOFOLLOW
 
 type file_perm = int
 
@@ -997,8 +998,52 @@ external create_process_stub :
     file_descr -> file_descr -> file_descr -> int
   = "caml_unix_create_process" "caml_unix_create_process_native"
 
-let make_cmdline args =
-  String.concat " " (List.map maybe_quote (Array.to_list args))
+(* Some arguments cannot be safely passed to .bat/.cmd scripts.
+   Those that can be safely passed use different quoting conventions
+   than those of [maybe_quote], which are for passing arguments to
+   .exe binaries. *)
+
+let check_safe_for_script s =
+  if String.exists
+      (function '\n' | '\r' | '"' | '%' | '&' | ','
+              | ';'  | '<'  | '=' | '>' | '^' | '|'
+                  -> true
+              | _ -> false)
+      s
+  then failwith ("Unix.create_process: unquotable argument to script: " ^ s)
+
+let double_quote s =
+  "\"" ^ s ^ "\""
+
+let maybe_quote_for_script s =
+  if s = "" || String.exists (function ' ' | '\t' -> true | _ -> false) s
+  then double_quote s
+  else s
+
+(* Windows ignores trailing spaces and dots in filenames.
+   This complicates the detection of the file extension. *)
+
+let filename_extension s =
+  let n = ref (String.length s) in
+  while !n > 0 && (s.[!n-1] = '.' || s.[!n-1] = ' ') do decr n done;
+  Filename.extension (String.sub s 0 !n)
+
+let make_cmdline prog args =
+  let ext = String.lowercase_ascii (filename_extension prog) in
+  if ext = ".bat" || ext = ".cmd" then begin
+    (* args.(0) is replaced by the script name. *)
+    (* Forward slashes in the script name can be confused for cmd.exe flags. *)
+    let arg0 = String.map (function '/' -> '\\' | c -> c) prog
+    and arg1n = match Array.to_list args with [] -> [] | _ :: t -> t in
+    check_safe_for_script arg0;
+    List.iter check_safe_for_script arg1n;
+    (* Always quote the script name to avoid possible mis-parsing of
+       "prog.bat arg1.bat" as a script called with zero arguments. *)
+    double_quote
+      (String.concat " "
+         (double_quote arg0 :: List.map maybe_quote_for_script arg1n))
+  end else
+    String.concat " " (List.map maybe_quote (Array.to_list args))
 
 let make_process_env env =
   Array.iter
@@ -1007,10 +1052,10 @@ let make_process_env env =
   String.concat "\000" (Array.to_list env) ^ "\000"
 
 let create_process prog args fd1 fd2 fd3 =
-  create_process_stub prog (make_cmdline args) None fd1 fd2 fd3
+  create_process_stub prog (make_cmdline prog args) None fd1 fd2 fd3
 
 let create_process_env prog args env fd1 fd2 fd3 =
-  create_process_stub prog (make_cmdline args)
+  create_process_stub prog (make_cmdline prog args)
                       (Some(make_process_env env))
                       fd1 fd2 fd3
 
@@ -1107,13 +1152,13 @@ let open_process_cmdline_full prog cmdline env =
   (inchan, outchan, errchan)
 
 let open_process_args_in prog args =
-  open_process_cmdline_in prog (make_cmdline args)
+  open_process_cmdline_in prog (make_cmdline prog args)
 let open_process_args_out prog args =
-  open_process_cmdline_out prog (make_cmdline args)
+  open_process_cmdline_out prog (make_cmdline prog args)
 let open_process_args prog args =
-  open_process_cmdline prog (make_cmdline args)
+  open_process_cmdline prog (make_cmdline prog args)
 let open_process_args_full prog args =
-  open_process_cmdline_full prog (make_cmdline args)
+  open_process_cmdline_full prog (make_cmdline prog args)
 
 let open_process_shell fn cmd =
   let shell =

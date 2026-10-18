@@ -24,7 +24,7 @@ let version = Sys.ocaml_version
    from values in ../build-aux/ocaml_version.m4 - do not edit these lines
    directly. *)
 let is_official_release = false
-let release_number = 22
+let release_number = 23
 
 external standard_library_default : unit -> string = "%standard_library_default"
 

@@ -13,17 +13,44 @@ Working version
 
 ### Other libraries:
 
+- #15121: Add support for `O_NOFOLLOW` to the `Unix` library, only implemented
+  on POSIX systems.
+  (Romain Beauxis, review by Stefan Muenzel and Antonin Décimo)
+
 ### Tools:
+
+- #14448: ocamllex now prints a `missing-case` warning and shows an example
+  of nonmatching input if a rule is not exhaustive (Martin Jambon,
+  review by David Allsopp and Gabriel Scherer)
 
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:
 
+- #15144: Further improvement on typing error messages for Duplicate_constructor
+  and Duplicate_label, by adding locations in submessages
+  (Michał Kosior, review by Florian Angeletti)
+
+
 ### Internal/compiler-libs changes:
+
+- #15140: Emitcode: call `Sys.getcwd` once per emission rather than multiple
+  times per debug event. This saves a lot of system time on macOS during
+  bytecode compilation jobs with -g.
+  (Michael Bacarella, review by Florian Angeletti, Nicolás Ojeda Bär,
+   Damien Doligez and Stefan Muenzel)
 
 ### Build system:
 
 ### Bug fixes:
+
+- #7826, #15139: Cache free variable computations to avoid quadratic
+  blowups in pathological cases
+  (Vincent Laviron, report by Pierre-Marie Pédrot, review by Stefan Muenzel)
+
+- #15158, #15155: Allow projection from closures with bottom approximation in
+  flambda
+  (Pierre Chambart, report by Michael Bacarella, review by Vincent Laviron)
 
 OCaml 5.6.0
 -----------
@@ -203,7 +230,12 @@ OCaml 5.6.0
   (Gabriel Scherer, review by Damien Doligez)
 
 - #15117: The instrumented runtime is no longer installed by default.
-  (Davd Allsopp, review by Florian Angeletti, Nick Barnes and Sadiq Jaffer)
+  (David Allsopp, review by Florian Angeletti, Nick Barnes and Sadiq Jaffer)]
+
+- #15119, OSEC-2026-25: Harden decoding of runtime events messages from
+  ring buffers.
+  (Sadiq Jaffer, report by Hannes Mehnert, review by Olivier Nicole and
+  Edwin Török)
 
 ### Type system:
 
@@ -255,6 +287,14 @@ OCaml 5.6.0
 - #14575: Emit direct assembly for `Atomic.fetch_and_add`
   rather than going through C
   (Zane Hambly, review by Olivier Nicole and KC Sivaramakrishnan)
+
+- #14980: Emit direct assembly for `Atomic.exchange` and
+  `Atomic.compare_and_set`
+  when the stored value is statically known to be immediate, in which case
+  no write barrier is needed. `Atomic.exchange` and `Atomic.compare_and_set`
+  become externals so the primitive reaches the call site, where the type is
+  usually concrete.
+  (Zane Hambly, review by         )
 
 - #15002: s390x: emit `sqdbr` for square root and `lrvgr` for byte swap
   rather than calling into C
@@ -343,6 +383,10 @@ OCaml 5.6.0
   of a variant type is an immediate (to be used by Js_of_ocaml /
   Wasm_of_ocaml)
   (Jérôme Vouillon, review by Nicolás Ojeda Bär)
+
+- #15135: replace the bytecode hint on physical comparisons by a hint on
+  integer equality tests, so that a missing hint is always safe
+  (Jérôme Vouillon, review by Stefan Muenzel)
 
 ### Standard library:
 
@@ -441,6 +485,10 @@ OCaml 5.6.0
   compiled to unrolled loops, with a NEON kernel for `dot` on arm64.
   (Zane Hambly, review by         )
 
+- #15173: Fix Seq.ints_in_range overflowing and failing to terminate when
+  the last endpoint is max_int.
+  (Antonio Nuno Monteiro, review by Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 - #13450: Fixes and improvements for Windows socketpair on AF_UNIX emulation.
@@ -511,10 +559,6 @@ OCaml 5.6.0
   (Nicolás Ojeda Bär, report by Igor Pikovets, review by Gabriel Scherer and
   Xavier Leroy)
 
-- #14448: ocamllex now prints a `missing-case` warning and shows an example
-  of nonmatching input if a rule is not exhaustive (Martin Jambon,
-  review by David Allsopp and Gabriel Scherer)
-
 * #14172: stop reversing the order of -L arguments in ocamlmklib, a quirk
   introduced by accident in 2012.
   (Alexandre Douard, review by Daniel Bünzli and Nicolás Ojeda Bär)
@@ -569,8 +613,8 @@ OCaml 5.6.0
 
 ### Internal/compiler-libs changes:
 
-- #14241, #14824, #14945: Introduction of a typing recovery mechanism to
-  collect more than one typing error, facilitating integration with editors
+- #14241, #14824, #14945, #14963: Introduction of a typing recovery mechanism
+  to collect more than one typing error, facilitating integration with editors
   that need to report more than one error.
   (Xavier Van de Woestyne, Ulysse Gerard, Thomas Refis and Frédéric
   Bour, review by Florian Angeletti and Thomas Refis)
@@ -738,6 +782,10 @@ OCaml 5.6.0
   (Pierre Chambart, report by Nathanaëlle Courant and
    Vincent Laviron review by Vincent Laviron)
 
+- #14842, #14983: Discard invalid type abbreviations when leaving the scope
+  of a modular explicit, and clean up Typecore.type_newtype
+  (Jacques Garrigue, review by Stefan Muenzel)
+
 - #14881, #14882: fix printing of external types that are subject to module
   constraints.
   (Stefan Muenzel, review by Florian Angeletti)
@@ -796,6 +844,10 @@ OCaml 5.6.0
   during dead-code elimination.
   (Xavier Clerc, review by Steven Dolan and KC Sivaramakrishnan)
 
+- #15048: Preserve the destination file when ocamllex fails before code
+  generation, including on a fatal missing-case warning.
+  (cuishuang, review by Nicolás Ojeda Bär)
+
 - #15093: Windows: fix a bug in the `Unix.select` emulation which could result
   in an out-of-bounds memory access. This is triggered when the watched set
   contains 63 or more sockets along with at least one non-socket descriptor, or
@@ -838,6 +890,17 @@ OCaml 5.6.0
 
 - #15118: Fix printing of raw identifiers in exotic corner cases.
   (Florian Angeletti, review by Nicolás Ojeda Bär)
+
+- #15125, #15134: support source files larger than max_string_length
+  (16MB on native 32-bit systems) which would fail since OCaml 5.2.
+  (Gabriel Scherer, review by Vincent Laviron, report by Stéphane Glondu)
+
+- #15133, OSEC 2026-24: Multiple issues in command quoting on Windows
+  (Xavier Leroy and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär)
+
+- #15127: Fix a memory leak when compacting the heap of a domain
+  if the size class had no live blocks.
+  (Ezequiel Lewin, review by Florian Angeletti)
 
 OCaml 5.5.1
 -----------

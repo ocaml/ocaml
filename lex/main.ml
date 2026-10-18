@@ -71,6 +71,8 @@ let _ =
 
 let exit_code_for_known_error = 3
 
+exception Fatal_warning
+
 let main () =
 
   let source_name = match !source_name with
@@ -85,8 +87,6 @@ let main () =
         source_name ^ ".ml" in
 
   let ic = open_in_bin source_name in
-  let oc = open_out dest_name in
-  let tr = Common.open_tracker dest_name oc in
   let lexbuf = Lexing.from_channel ic in
   lexbuf.Lexing.lex_curr_p <-
     {Lexing.pos_fname = source_name; Lexing.pos_lnum = 1;
@@ -100,25 +100,34 @@ let main () =
      | Error ->
          match Exhaustiveness.check ~fatal:true transitions entries with
          | Ok () -> ()
-         | Error () -> exit exit_code_for_known_error);
-    if !ml_automata then begin
-      Outputbis.output_lexdef
-        ic oc tr
-        def.header def.refill_handler entries transitions def.trailer
-    end else begin
-       let tables = Compact.compact_tables transitions in
-       Output.output_lexdef ic oc tr
-         def.header def.refill_handler tables entries def.trailer
+         | Error () -> raise Fatal_warning);
+    let output =
+      if !ml_automata then
+        fun oc tr ->
+          Outputbis.output_lexdef ic oc tr
+            def.header def.refill_handler entries transitions def.trailer
+      else
+        let tables = Compact.compact_tables transitions in
+        fun oc tr ->
+          Output.output_lexdef ic oc tr
+            def.header def.refill_handler tables entries def.trailer
+    in
+    let oc = open_out dest_name in
+    begin try
+      let tr = Common.open_tracker dest_name oc in
+      Fun.protect
+        ~finally:(fun () -> Common.close_tracker tr)
+        (fun () -> output oc tr; close_out oc)
+    with exn ->
+      let bt = Printexc.get_raw_backtrace () in
+      close_out_noerr oc;
+      Sys.remove dest_name;
+      Printexc.raise_with_backtrace exn bt
     end;
-    close_in ic;
-    close_out oc;
-    Common.close_tracker tr;
+    close_in ic
   with exn ->
     let bt = Printexc.get_raw_backtrace () in
-    close_in ic;
-    close_out oc;
-    Common.close_tracker tr;
-    Sys.remove dest_name;
+    close_in_noerr ic;
     begin match exn with
     | Cset.Bad ->
         let p = Lexing.lexeme_start_p lexbuf in
@@ -144,6 +153,7 @@ let main () =
         fprintf stderr
           "File \"%s\":\ntransition table overflow, automaton is too big\n"
           source_name
+    | Fatal_warning -> ()
     | _ ->
         Printexc.raise_with_backtrace exn bt
     end;

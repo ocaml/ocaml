@@ -22,23 +22,27 @@
 #include "caml/unixsupport.h"
 #include <fcntl.h>
 
-static const int open_access_flags[15] = {
+static const int open_access_flags[16] = {
   GENERIC_READ, GENERIC_WRITE, GENERIC_READ|GENERIC_WRITE,
-  0, FILE_APPEND_DATA, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+  0, FILE_APPEND_DATA, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-static const int open_create_flags[15] = {
-  0, 0, 0, 0, 0, O_CREAT, O_TRUNC, O_EXCL, 0, 0, 0, 0, 0, 0, 0
+static const int open_create_flags[16] = {
+  0, 0, 0, 0, 0, O_CREAT, O_TRUNC, O_EXCL, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-static const int open_share_flags[15] = {
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, FILE_SHARE_DELETE, 0, 0
+static const int open_share_flags[16] = {
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, FILE_SHARE_DELETE, 0, 0, 0
 };
 
 enum { CLOEXEC = 1, KEEPEXEC = 2 };
 
-static const int open_cloexec_flags[15] = {
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, CLOEXEC, KEEPEXEC
+static const int open_cloexec_flags[16] = {
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, CLOEXEC, KEEPEXEC, 0
+};
+
+static const int open_unsupported_flags[16] = {
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
 };
 
 CAMLprim value caml_unix_open(value path, value flags, value perm)
@@ -50,6 +54,8 @@ CAMLprim value caml_unix_open(value path, value flags, value perm)
   wchar_t * wpath;
 
   caml_unix_check_path(path, "open");
+  if (caml_convert_flag_list(flags, open_unsupported_flags))
+    caml_unix_error(EINVAL, "open", path);
   fileaccess = caml_convert_flag_list(flags, open_access_flags);
   sharemode = FILE_SHARE_READ | FILE_SHARE_WRITE
               | caml_convert_flag_list(flags, open_share_flags);

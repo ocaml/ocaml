@@ -111,8 +111,8 @@ type optimization_hint =
     (* Closure allocations *)
   | Hint_ccall of ccall_hint
     (* C call *)
-  | Hint_physical_comparison
-    (* Physical comparison *)
+  | Hint_int_equality_test
+    (* Integer equality or inequality: both arguments are immediates *)
   | Hint_immediate
     (* The value produced by the instruction is an immediate *)
   | Hint_variant

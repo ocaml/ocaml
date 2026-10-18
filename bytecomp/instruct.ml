@@ -80,7 +80,7 @@ type optimization_hint =
   | Hint_arraylength of Lambda.array_kind
   | Hint_closures of closure_hint list
   | Hint_ccall of ccall_hint
-  | Hint_physical_comparison
+  | Hint_int_equality_test
   | Hint_immediate
   | Hint_variant
 
