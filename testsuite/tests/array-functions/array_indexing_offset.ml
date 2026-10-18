@@ -2,7 +2,7 @@
    native;
 *)
 
-(* [Cmm_helpers.array_indexing] simplfies constant unsafe array indices,
+(* [Cmm_helpers.array_indexing] simplifies constant unsafe array indices,
 but used to not check properly for overflow in the computation of the
 resulting index. *)
 
@@ -15,6 +15,10 @@ let[@inline never] get_int (a : int array) i = Array.unsafe_get a (i - k)
 let[@inline never] get_float (a : float array) i = Array.unsafe_get a (i - k)
 
 let[@inline never] set_int (a : int array) i v = Array.unsafe_set a (i - k) v
+
+let[@inline never] get_int32
+    (b : (int32, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Array1.t) i =
+  Bigarray.Array1.unsafe_get b (i - k)
 
 let[@inline never] get_float64
     (b : (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Array1.t) i =
@@ -29,5 +33,7 @@ let () =
   check "float array unsafe_get" (get_float floats i = 2.0);
   set_int ints i 42;
   check "int array unsafe_set" (ints.(1) = 42);
+  let ba32 = Bigarray.(Array1.of_array int32 c_layout [| 1l; 2l; 3l |]) in
+  check "int32 bigarray unsafe_get" (get_int32 ba32 i = 2l);
   let ba = Bigarray.(Array1.of_array float64 c_layout [| 1.0; 2.0; 3.0 |]) in
   check "float64 bigarray unsafe_get" (get_float64 ba i = 2.0)
