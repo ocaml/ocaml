@@ -419,6 +419,10 @@ OCaml 5.6.0
   (Gabriel Scherer, suggestion by Stephen Dolan and Josh Berdine,
   review by Nicolás Ojeda Bär, Kate Deplaix and Léo Andrès.)
 
+- #15173: Fix Seq.ints_in_range overflowing and failing to terminate when
+  the last endpoint is max_int.
+  (Antonio Nuno Monteiro, review by Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 - #13450: Fixes and improvements for Windows socketpair on AF_UNIX emulation.
