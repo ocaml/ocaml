@@ -73,7 +73,7 @@ let oper_result_type = function
       | Single | Double -> typ_float
       | _ -> typ_int
       end
-  | Calloc -> typ_val
+  | Calloc _ -> typ_val
   | Cstore (_c, _) -> typ_void
   | Cdls_get -> typ_val
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi |
@@ -97,42 +97,6 @@ let size_component = function
   | Val | Addr -> Arch.size_addr
   | Int -> Arch.size_int
   | Float -> Arch.size_float
-
-let size_machtype mty =
-  let size = ref 0 in
-  for i = 0 to Array.length mty - 1 do
-    size := !size + size_component mty.(i)
-  done;
-  !size
-
-let size_expr (env:environment) exp =
-  let rec size localenv = function
-      Cconst_int _ | Cconst_natint _ -> Arch.size_int
-    | Cconst_symbol _ ->
-        Arch.size_addr
-    | Cconst_float _ -> Arch.size_float
-    | Cvar id | Cvar_mut id ->
-        begin try
-          V.Map.find id localenv
-        with Not_found ->
-        try
-          let regs = env_find id env in
-          size_machtype (Array.map (fun r -> r.typ) regs)
-        with Not_found ->
-          Misc.fatal_error("Selection.size_expr: unbound var " ^
-                           V.unique_name id)
-        end
-    | Ctuple el ->
-        List.fold_right (fun e sz -> size localenv e + sz) el 0
-    | Cop(op, _, _) ->
-        size_machtype(oper_result_type op)
-    | Clet(id, arg, body) ->
-        size (V.Map.add (VP.var id) (size localenv arg) localenv) body
-    | Csequence(_e1, e2) ->
-        size localenv e2
-    | _ ->
-        Misc.fatal_error "Selection.size_expr"
-  in size V.Map.empty exp
 
 (* Swap the two arguments of an integer comparison *)
 
@@ -303,6 +267,10 @@ end = struct
     | x::xs -> List.fold_left (fun acc x -> join acc (f x)) (f x) xs
 end
 
+type size_of_store =
+  | Size_of_arg
+  | Custom_size of { size_in_bytes : int }
+
 (* The default instruction selection class *)
 
 class virtual selector_generic = object (self)
@@ -327,7 +295,7 @@ method is_simple_expr = function
   | Cop(op, args, _) ->
       begin match op with
         (* The following may have side effects *)
-      | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _ | Copaque
+      | Capply _ | Cextcall _ | Calloc _ | Cstore _ | Craise _ | Copaque
       | Catomic_fetch_add | Cpoll -> false
         (* The remaining operations are simple if their args are *)
       | Cload _ | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor
@@ -371,7 +339,7 @@ method effects_of exp =
       match op with
       | Capply _ | Cextcall _ | Copaque | Catomic_fetch_add
       | Cpoll -> EC.arbitrary
-      | Calloc -> EC.none
+      | Calloc _ -> EC.none
       | Cstore _ -> EC.effect_only Effect.Arbitrary
       | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
       | Cload {mutability = Asttypes.Immutable} -> EC.none
@@ -407,7 +375,7 @@ method virtual select_addressing :
 (* Default instruction selection for stores (of words) *)
 
 method select_store is_assign addr arg =
-  (Istore(Word_val, addr, is_assign), arg)
+  ((Istore(Word_val, addr, is_assign), Size_of_arg), arg)
 
 (* Default instruction selection for operators *)
 
@@ -431,7 +399,7 @@ method select_operation op args _dbg =
         | Lambda.Assignment -> true
       in
       if chunk = Word_int || chunk = Word_val then begin
-        let (op, newarg2) = self#select_store is_assign addr arg2 in
+        let ((op, _size), newarg2) = self#select_store is_assign addr arg2 in
         (op, [newarg2; eloc])
       end else begin
         (Istore(chunk, addr, is_assign), [arg2; eloc])
@@ -440,7 +408,8 @@ method select_operation op args _dbg =
   | (Catomic_fetch_add, _) -> Iatomic_fetch_add, args
   | (Cdls_get, _) -> Idls_get, args
   | (Cpoll, _) -> (Ipoll { return_label = None }), args
-  | (Calloc, _) -> (Ialloc {bytes = 0; dbginfo = []}), args
+  | (Calloc { size_in_bytes_including_header }, _) ->
+    (Ialloc { bytes = size_in_bytes_including_header; dbginfo = []}), args
   | (Caddi, _) -> self#select_arith_comm Iadd args
   | (Csubi, _) -> self#select_arith Isub args
   | (Cmuli, _) -> self#select_arith_comm Imul args
@@ -699,16 +668,15 @@ method emit_expr (env:environment) exp =
                   loc_arg (Proc.loc_external_results (Reg.typv rd)) in
               self#insert_move_results env loc_res rd stack_ofs;
               Some rd
-          | Ialloc { bytes = _; } ->
+          | Ialloc { bytes; dbginfo = _ } ->
               let rd = self#regs_for typ_val in
-              let bytes = size_expr env (Ctuple new_args) in
               assert (bytes mod Arch.size_addr = 0);
               let alloc_words = bytes / Arch.size_addr in
               let op =
                 Ialloc { bytes; dbginfo = [{alloc_words; alloc_dbg = dbg}] }
               in
               self#insert_debug env (Iop op) dbg [||] rd;
-              self#emit_stores env new_args rd;
+              self#emit_stores_for_alloc env new_args rd;
               Some rd
           | op ->
               let r1 = self#emit_tuple env new_args in
@@ -963,17 +931,17 @@ method insert_move_extcall_arg env _ty_arg src dst =
      for example a "32-bit move" instruction for int32 arguments. *)
   self#insert_moves env src dst
 
-method emit_stores env data regs_addr =
+method emit_stores_for_alloc env data regs_addr =
   let a =
     ref (Arch.offset_addressing Arch.identity_addressing (-Arch.size_int)) in
   List.iter
     (fun e ->
-      let (op, arg) = self#select_store false !a e in
+      let (op_and_size, arg) = self#select_store false !a e in
       match self#emit_expr env arg with
         None -> assert false
       | Some regs ->
-          match op with
-            Istore(_, _, _) ->
+          match op_and_size with
+            Istore(_, _, _), Size_of_arg ->
               for i = 0 to Array.length regs - 1 do
                 let r = regs.(i) in
                 let kind = if r.typ = Float then Double else Word_val in
@@ -982,9 +950,13 @@ method emit_stores env data regs_addr =
                             (Array.append [|r|] regs_addr) [||];
                 a := Arch.offset_addressing !a (size_component r.typ)
               done
-          | _ ->
+          | op, Custom_size { size_in_bytes } ->
               self#insert env (Iop op) (Array.append regs regs_addr) [||];
-              a := Arch.offset_addressing !a (size_expr env e))
+              a := Arch.offset_addressing !a size_in_bytes
+          | op, Size_of_arg ->
+              self#insert env (Iop op) (Array.append regs regs_addr) [||];
+              let size = Array.fold_left (fun sz r -> sz + size_component r.typ) 0 regs in
+              a := Arch.offset_addressing !a size)
     data
 
 (* Same, but in tail position *)

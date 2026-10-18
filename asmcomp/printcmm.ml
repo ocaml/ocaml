@@ -127,7 +127,9 @@ let operation d = function
         @ (if is_atomic then ["atomic"] else [])
       in
       Printf.sprintf "%s %s" (String.concat "_" op) (chunk memory_chunk)
-  | Calloc -> "alloc" ^ location d
+  | Calloc { size_in_bytes_including_header } ->
+    let size = string_of_int size_in_bytes_including_header in
+    "alloc(" ^ size ^ " bytes)" ^ location d
   | Cstore (c, init) ->
     let init =
       match init with

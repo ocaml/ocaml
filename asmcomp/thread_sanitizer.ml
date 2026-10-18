@@ -145,7 +145,7 @@ let wrap_entry_exit expr =
       in
       List.fold_left (fun acc (id, arg) -> Clet (id, arg, acc)) tail args
     | ( Cop
-          ( ( Calloc | Caddi | Csubi | Cmuli | Cdivi | Cmodi | Cand | Cmulhi
+          ( ( Calloc _ | Caddi | Csubi | Cmuli | Cdivi | Cmodi | Cand | Cmulhi
             | Cor | Cxor | Clsl | Clsr | Casr | Caddv | Cadda | Cnegf | Cabsf
             | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat
             | Ccheckbound | Copaque | Cdls_get | Cpoll | Capply _ | Cextcall _
@@ -288,7 +288,7 @@ let instrument body =
       invalid_arg
         "instrument: wrong number of arguments for operation Catomic_fetch_add"
     | Cop
-        ( (( Capply _ | Caddi | Calloc | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
+        ( (( Capply _ | Caddi | Calloc _ | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
            | Cand | Cor | Cxor | Clsl | Clsr | Casr | Caddv | Cadda | Cnegf
            | Cabsf | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat
            | Ccheckbound | Copaque | Cdls_get | Cpoll | Cextcall _ | Ccmpi _
