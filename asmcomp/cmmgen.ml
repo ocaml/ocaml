@@ -586,17 +586,21 @@ let rec transl env e =
           box_float dbg
             (floatarray_sum (transl env a) (untag_int (transl env n) dbg) dbg)
       | (Pfloatarray_scale, [c; a; n]) ->
-          floatarray_scale (transl_unbox_float dbg env c) (transl env a)
-            (untag_int (transl env n) dbg) dbg
+          return_unit dbg
+            (floatarray_scale (transl_unbox_float dbg env c) (transl env a)
+               (untag_int (transl env n) dbg) dbg)
       | (Pfloatarray_axpy, [c; x; y; n]) ->
-          floatarray_axpy (transl_unbox_float dbg env c) (transl env x)
-            (transl env y) (untag_int (transl env n) dbg) dbg
+          return_unit dbg
+            (floatarray_axpy (transl_unbox_float dbg env c) (transl env x)
+               (transl env y) (untag_int (transl env n) dbg) dbg)
       | (Pfloatarray_add, [a; b; dst; n]) ->
-          floatarray_binop Caddf (transl env a) (transl env b) (transl env dst)
-            (untag_int (transl env n) dbg) dbg
+          return_unit dbg
+            (floatarray_binop Caddf (transl env a) (transl env b)
+               (transl env dst) (untag_int (transl env n) dbg) dbg)
       | (Pfloatarray_mul, [a; b; dst; n]) ->
-          floatarray_binop Cmulf (transl env a) (transl env b) (transl env dst)
-            (untag_int (transl env n) dbg) dbg
+          return_unit dbg
+            (floatarray_binop Cmulf (transl env a) (transl env b)
+               (transl env dst) (untag_int (transl env n) dbg) dbg)
       | ((Pfloatarray_dot | Pfloatarray_sum | Pfloatarray_scale
          | Pfloatarray_axpy | Pfloatarray_add | Pfloatarray_mul), _) ->
           fatal_error "Cmmgen.transl:prim, wrong arity"

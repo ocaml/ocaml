@@ -14,6 +14,8 @@ let close name got want =
   if Float.abs (got -. want) > 1e-9 *. (1. +. Float.abs want) then
     failwith (Printf.sprintf "%s: got %h, expected %h" name got want)
 
+let unit name u = if opaque u <> () then failwith (name ^ ": not unit")
+
 let a = A.init 37 (fun i -> float_of_int (i mod 13) -. 6.)
 let b = A.init 37 (fun i -> float_of_int (i mod 7) *. 0.5)
 
@@ -41,17 +43,17 @@ let () =
     check "dot" (A.dot x y) !dot;
     check "sum" (A.sum x) !sum;
     let s = A.copy x in
-    A.scale 3. s;
+    unit "scale" (A.scale 3. s);
     for i = 0 to n - 1 do check "scale" (A.get s i) (3. *. A.get x i) done;
     let z = A.copy y in
-    A.axpy 2. x z;
+    unit "axpy" (A.axpy 2. x z);
     for i = 0 to n - 1 do
       close "axpy" (A.get z i) (2. *. A.get x i +. A.get y i)
     done;
     let d = A.create n in
-    A.add x y d;
+    unit "add" (A.add x y d);
     for i = 0 to n - 1 do check "add" (A.get d i) (A.get x i +. A.get y i) done;
-    A.mul x y d;
+    unit "mul" (A.mul x y d);
     for i = 0 to n - 1 do check "mul" (A.get d i) (A.get x i *. A.get y i) done;
     A.add x y d;
     A.add x y x;
