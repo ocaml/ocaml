@@ -42,7 +42,6 @@ type privacy_mismatch =
   | Private_record_type
   | Private_extensible_variant
   | Private_row_type
-  | Private_external_type
 
 type type_kind =
   | Kind_abstract
