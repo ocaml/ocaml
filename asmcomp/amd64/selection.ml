@@ -81,38 +81,42 @@ let rax = phys_reg 0
 let rcx = phys_reg 5
 let rdx = phys_reg 4
 
+(* [rsrc, rdst, rtmp]. rtmp are zero-initialized temporaries. *)
 let pseudoregs_for_operation op arg res =
   match op with
   (* Two-address binary operations: arg.(0) and res.(0) must be the same *)
     Iintop(Iadd|Isub|Imul|Iand|Ior|Ixor) | Iaddf|Isubf|Imulf|Idivf ->
-      ([|res.(0); arg.(1)|], res)
+      ([|res.(0); arg.(1)|], res, [||])
   (* One-address unary operations: arg.(0) and res.(0) must be the same *)
   | Iintop_imm((Iadd|Isub|Imul|Iand|Ior|Ixor|Ilsl|Ilsr|Iasr), _)
   | Iabsf | Inegf
   | Ispecific(Ibswap (32|64)) ->
-      (res, res)
+      (res, res, [||])
   (* For xchg, args must be a register allowing access to high 8 bit register
      (rax, rbx, rcx or rdx). Keep it simple, just force the argument in rax. *)
   | Ispecific(Ibswap 16) ->
-      ([| rax |], [| rax |])
+      ([| rax |], [| rax |], [||])
   (* For imulq, first arg must be in rax, rax is clobbered, and result is in
      rdx. *)
   | Iintop(Imulh) ->
-      ([| rax; arg.(1) |], [| rdx |])
+      ([| rax; arg.(1) |], [| rdx |], [||])
   | Ispecific(Ifloatarithmem(_,_)) ->
       let arg' = Array.copy arg in
       arg'.(0) <- res.(0);
-      (arg', res)
+      (arg', res, [||])
   (* For shifts with variable shift count, second arg must be in rcx *)
   | Iintop(Ilsl|Ilsr|Iasr) ->
-      ([|res.(0); rcx|], res)
+      ([|res.(0); rcx|], res, [||])
   (* For div and mod, first arg must be in rax, rdx is clobbered,
      and result is in rax or rdx respectively.
      Keep it simple, just force second argument in rcx. *)
   | Iintop(Idiv) ->
-      ([| rax; rcx |], [| rax |])
+      ([| rax; rcx |], [| rax |], [||])
   | Iintop(Imod) ->
-      ([| rax; rcx |], [| rdx |])
+      ([| rax; rcx |], [| rdx |], [||])
+  | Iintop (Icomp _) | Iintop_imm (Icomp _, _) ->
+      let treg = Reg.create Int in
+      (arg, [| treg |], [| treg |])
   | Icompf cond ->
       (* We need to temporarily store the result of the comparison in a
          float register, but we don't want to clobber any of the inputs
@@ -124,21 +128,21 @@ let pseudoregs_for_operation op arg res =
       let treg = Reg.create Float in
       let _,is_swapped = float_cond_and_need_swap cond in
       (if is_swapped then [| arg.(0); treg |] else [| treg; arg.(1) |])
-    , [| res.(0); treg |]
+    , [| res.(0); treg |], [||]
   (* Atomic fetch-and-add: res.(0) holds the increment then receives the old
      value. Tying res.(0) to arg.(1) puts the increment in res.(0) directly, so
      no separate mov is needed in emit. arg.(2) is &caml_num_domains_running. *)
   | Iatomic_fetch_add ->
-      ([| arg.(0); res.(0); arg.(2) |], res)
+      ([| arg.(0); res.(0); arg.(2) |], res, [||])
   (* See the exchange code in emit.mlp for the registers. *)
   | Iatomic_exchange ->
       let treg = Reg.create Int in
-      ([| arg.(0); res.(0); arg.(2) |], [| res.(0); treg |])
+      ([| arg.(0); res.(0); arg.(2) |], [| res.(0); treg |], [||])
   (* cmpxchg compares against rax and returns its result there. See the
      compare-and-exchange code in emit.mlp for the registers. *)
   | Iatomic_compare_exchange ->
       let treg = Reg.create Int in
-      ([| arg.(0); rax; arg.(2); arg.(3) |], [| rax; treg |])
+      ([| arg.(0); rax; arg.(2); arg.(3) |], [| rax; treg |], [||])
   (* Other instructions are regular *)
   | _ -> raise Use_default
 
@@ -314,9 +318,17 @@ method select_floatarith commutative regular_op mem_op args =
 
 method! insert_op_debug env op dbg rs rd =
   try
-    let (rsrc, rdst) = pseudoregs_for_operation op rs rd in
+    let (rsrc, rdst, rtmp) = pseudoregs_for_operation op rs rd in
     self#insert_moves env rs rsrc;
-    self#insert_debug env (Iop op) dbg rsrc rdst;
+    Array.iter (fun r ->
+        let zero =
+          match r.Reg.typ with
+          | Float -> Iconst_float 0L
+          | Int | Val | Addr -> Iconst_int 0n
+        in
+        self#insert env (Iop zero) [||] [| r |])
+      rtmp;
+    self#insert_debug env (Iop op) dbg (Array.append rsrc rtmp) rdst;
     self#insert_moves env rdst rd;
     rd
   with Use_default ->
