@@ -1000,13 +1000,16 @@ type decl_path =
 
 let rec extract_concrete_typedecl_via_alias env ty1 path1 decl1 =
   let exception Found_error of (decl_path * Types.type_declaration) in
-  match decl1.type_kind, decl1.type_manifest with
-  | Type_open, _
-  | Type_external _, _
-  | Type_record _, _
-  | Type_variant _, _ -> Some (Via_alias, decl1)
-  | Type_abstract _, None -> None
-  | Type_abstract _, Some ty2 ->
+ match decl1.type_kind, decl1.type_manifest, decl1.type_private with
+  | Type_open, _, _
+  | Type_external _, _, _
+  | Type_record _, _, _
+  | Type_variant _, _, _ -> Some (Via_alias, decl1)
+  | Type_abstract _, None, _ -> None
+  | Type_abstract _, Some _, Private ->
+      (* Do not expand private type aliases *)
+      None
+  | Type_abstract _, Some ty2, _ ->
       match Btype.get_constr_desc ty2 with
       | Tconstr (path2, params2, _) ->
           begin try
@@ -1020,11 +1023,6 @@ let rec extract_concrete_typedecl_via_alias env ty1 path1 decl1 =
                   with
                   | None -> deep_via
                   | Some err -> Not_via_alias err
-                in
-                let deep_decl =
-                  match decl1.type_private with
-                  | Private -> { deep_decl with type_private = Private }
-                  | _ -> deep_decl
                 in
                 let found_error err kind =
                   raise

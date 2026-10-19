@@ -30,7 +30,7 @@ Error: Signature mismatch:
          type u = private t
        is not included in
          type u = T
-       Private variant constructor(s) would be revealed.
+       The first is abstract, but the second is a variant.
 |}]
 
 type t = private T
@@ -70,7 +70,7 @@ Error: Signature mismatch:
          type u = private t
        is not included in
          type u = T
-       Private variant constructor(s) would be revealed.
+       The first is abstract, but the second is a variant.
 |}]
 
 type t = T
@@ -90,7 +90,7 @@ Error: Signature mismatch:
          type u = t'
        is not included in
          type u = T
-       Private variant constructor(s) would be revealed.
+       The first is abstract, but the second is a variant.
 |}]
 
 
