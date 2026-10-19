@@ -245,6 +245,9 @@ OCaml 5.6.0
   (Sadiq Jaffer, report by Hannes Mehnert, review by Olivier Nicole and
   Edwin Török)
 
+- #15177, OSEC-2026-26: Maintain custom events cache integrity.
+  (Sadiq Jaffer, report by Hannes Mehnert, review by Edwin Török)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
