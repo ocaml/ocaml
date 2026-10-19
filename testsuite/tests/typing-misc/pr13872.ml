@@ -11,11 +11,7 @@ type b=y=T
 type x = T
 type a = x = T
 type y = x
-Line 4, characters 0-10:
-4 | type b=y=T
-    ^^^^^^^^^^
-Error: This variant or record definition does not match that of type "y"
-       The original is abstract, but this is a variant.
+type b = y = T
 |}]
 
 type x' = private T
@@ -47,7 +43,7 @@ Line 2, characters 0-14:
 2 | type b = y = T
     ^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type "y"
-       The original is abstract, but this is a variant.
+       Private variant constructor(s) would be revealed.
 |}]
 
 type x_p = private x
@@ -86,7 +82,12 @@ Line 3, characters 0-52:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type
          "('a, 'b) t_rev"
-       The original is abstract, but this is a variant.
+       The representation of "t" cannot be used in the definition of this type, because
+         "('a, 'b) q" is not an alias of "('b, 'a) t".  Their parameters differ:
+         The type "'a" is not equal to the type "'b"
+       When re-exporting a type representation, each type equation leading to
+       the original representation must be an alias defining a type
+       with the same parameters, in the same order, with the same constraints.
 |}]
 
 type ('a, 'b) t = A of 'a | B of 'b
@@ -117,7 +118,11 @@ Line 4, characters 0-49:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type
          "('a, 'b) q'"
-       The original is abstract, but this is a variant.
+       The representation of "t_eq" cannot be used in the definition of this type, because
+         "('a, 'b) q" is not an alias of "'a t_eq".  They have different arities.
+       When re-exporting a type representation, each type equation leading to
+       the original representation must be an alias defining a type
+       with the same parameters, in the same order, with the same constraints.
 |}]
 
 (* Reverse the reverse, so this could work if we can be more sophisticated
@@ -155,7 +160,12 @@ Line 4, characters 0-62:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type
          "('a3, 'b3) t_rev_rev"
-       The original is abstract, but this is a variant.
+       The representation of "t_rev" cannot be used in the definition of this type, because
+         "('a2, 'b2) q" is not an alias of "('b2, 'a2) t_rev".
+         Their parameters differ: The type "'a2" is not equal to the type "'b2"
+       When re-exporting a type representation, each type equation leading to
+       the original representation must be an alias defining a type
+       with the same parameters, in the same order, with the same constraints.
 |}]
 
 (* Add one more indirection *)
@@ -176,7 +186,12 @@ Line 5, characters 0-49:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type
          "('a, 'b) q'"
-       The original is abstract, but this is a variant.
+       The representation of "t_rev" cannot be used in the definition of this type, because
+         "('a, 'b) t_rev_rev" is not an alias of "('b, 'a) t_rev".
+         Their parameters differ: The type "'a" is not equal to the type "'b"
+       When re-exporting a type representation, each type equation leading to
+       the original representation must be an alias defining a type
+       with the same parameters, in the same order, with the same constraints.
 |}]
 
 type ('a, 'b) t = A of 'a | B of 'b
@@ -186,12 +201,7 @@ type ('a, 'b) q = ('a, 'b) t_same = A of 'a | B of 'b
 [%%expect{|
 type ('a, 'b) t = A of 'a | B of 'b
 type ('a, 'b) t_same = ('a, 'b) t
-Line 3, characters 0-53:
-3 | type ('a, 'b) q = ('a, 'b) t_same = A of 'a | B of 'b
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type
-         "('a, 'b) t_same"
-       The original is abstract, but this is a variant.
+type ('a, 'b) q = ('a, 'b) t_same = A of 'a | B of 'b
 |}]
 
 (* Extra constraints are rejected *)
@@ -208,7 +218,13 @@ Line 3, characters 0-53:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type
          "(int, 'b) t_same"
-       The original is abstract, but this is a variant.
+       The representation of "t" cannot be used in the definition of this type, because
+         "(int, 'b) q" is not an alias of "(int, 'b) t".
+         "(int, 'b) t" is not an unmodified instantiation of "('a, 'b) t"
+         Their parameters differ: The type "'a" is not equal to the type "int"
+       When re-exporting a type representation, each type equation leading to
+       the original representation must be an alias defining a type
+       with the same parameters, in the same order, with the same constraints.
 |}]
 
 (* They are even rejected if they don't change the representation *)
@@ -225,7 +241,13 @@ Line 3, characters 0-61:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type
          "('a, 'b, int) t_same"
-       The original is abstract, but this is a variant.
+       The representation of "t" cannot be used in the definition of this type, because
+         "('a, 'b, int) q" is not an alias of "('a, 'b, int) t".
+         "('a, 'b, int) t" is not an unmodified instantiation of "('a, 'b, 'c) t"
+         Their parameters differ: The type "'c" is not equal to the type "int"
+       When re-exporting a type representation, each type equation leading to
+       the original representation must be an alias defining a type
+       with the same parameters, in the same order, with the same constraints.
 |}]
 
 (* Of course, this works for records *)
@@ -242,5 +264,11 @@ Line 3, characters 0-62:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type
          "('a, 'b, int) t_same"
-       The original is abstract, but this is a record.
+       The representation of "t" cannot be used in the definition of this type, because
+         "('a, 'b, int) q" is not an alias of "('a, 'b, int) t".
+         "('a, 'b, int) t" is not an unmodified instantiation of "('a, 'b, 'c) t"
+         Their parameters differ: The type "'c" is not equal to the type "int"
+       When re-exporting a type representation, each type equation leading to
+       the original representation must be an alias defining a type
+       with the same parameters, in the same order, with the same constraints.
 |}]

@@ -7,6 +7,12 @@ Working version
 
 ### Runtime system:
 
+### Type system:
+- #13872, #14736, #14746: Expand type abbreviations when checking that a type is
+  a re-export of a previous one (e.g `type t = u = A | B`)
+  (Stefan Muenzel, request by ygrek and Jacques Garrigue,
+   review by Florian Angeletti and Jacques Garrigue)
+
 ### Code generation and optimizations:
 
 ### Standard library:
