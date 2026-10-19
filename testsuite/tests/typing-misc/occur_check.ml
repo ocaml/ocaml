@@ -104,5 +104,13 @@ let f (x : 'a) = (x : ('a * 'a) t * ('a * 'a) t);;
 
 [%%expect{|
 type 'a t = 'a
+Line 2, characters 18-19:
+2 | let f (x : 'a) = (x : ('a * 'a) t * ('a * 'a) t);;
+                      ^
+Error: The value "x" has type "'a" but an expression was expected of type
+         "('a * 'a) * ('a * 'a) t"
+       The type variable "'a" occurs inside "('a * 'a) * ('a * 'a) t"
+|}, Rectypes{|
+type 'a t = 'a
 val f : (('a * 'a) * ('a * 'a) as 'a) -> ('a * 'a) t * ('a * 'a) t = <fun>
 |}]

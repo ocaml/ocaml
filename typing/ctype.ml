@@ -2281,10 +2281,12 @@ let rec occur_rec env visited allow_recursive ty0 ty =
          (* If [ty0] does not occur in the arguments [tl], then it
             does not occur at all. If it does, it may still vanish
             from the expansion, so we need to expand and retry. *)
+        let snap = snapshot_mark visited in
         begin try
           List.iter occur_rec tl
         with Occur -> try
           let ty' = try_expand_safe env ty in
+          backtrack_mark visited snap;
           occur_rec ty'
         with Cannot_expand ->
           raise Occur
