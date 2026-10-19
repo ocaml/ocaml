@@ -94,3 +94,15 @@ Hint: This function application is partial, maybe some arguments are missing.
 |}, Rectypes{|
 val strange : (unit -> 'a Seq.node as 'a) -> 'a Seq.t list = <fun>
 |}];;
+
+(* 'a occurs in the arguments of [t], but when expanded,
+   we get a type that we've already seen ['a * 'a], so
+   we will allow this type if we don't properly reset seen types
+   after the expansion. *)
+type 'a t = 'a
+let f (x : 'a) = (x : ('a * 'a) t * ('a * 'a) t);;
+
+[%%expect{|
+type 'a t = 'a
+val f : (('a * 'a) * ('a * 'a) as 'a) -> ('a * 'a) t * ('a * 'a) t = <fun>
+|}]
