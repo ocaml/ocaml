@@ -31,6 +31,9 @@ OCaml 5.5.2
   (Sadiq Jaffer, report by Hannes Mehnert, review by Olivier Nicole and
   Edwin Török)
 
+- #15177, OSEC-2026-26: Maintain custom events cache integrity.
+  (Sadiq Jaffer, report by Hannes Mehnert, review by Edwin Török)
+
 OCaml 5.5.1 (4 September 2026)
 ------------------------------
 
