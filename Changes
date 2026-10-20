@@ -53,7 +53,7 @@ Working version
 ### Bug fixes:
 
 - #15156: Fix evaluation order of values used as field of an allocation with
-  flambda (Guillaume Bury, report by Mark Shinwell)
+  flambda (Guillaume Bury, report by Mark Shinwell, review by Vincent Laviron)
 
 - #7826, #15139: Cache free variable computations to avoid quadratic
   blowups in pathological cases
