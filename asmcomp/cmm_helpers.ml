@@ -843,7 +843,7 @@ let make_alloc_generic set_fn dbg tag wordsize args =
     Clet(VP.create id,
          Cop(Cextcall("caml_alloc_shr_check_gc", typ_val, [], true),
                  [Cconst_int (wordsize, dbg); Cconst_int (tag, dbg)], dbg),
-         Csequence (fill_fields (Ctuple []) 1 args, Cvar id))
+         fill_fields (Cvar id) 1 args)
   end
 
 let make_alloc dbg tag args =
