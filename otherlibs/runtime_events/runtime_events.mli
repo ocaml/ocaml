@@ -632,7 +632,9 @@ module Type : sig
       The maximum value length is 1024 bytes.
 
       @raise Invalid_argument when the event is written, if [encode] returns
-      a negative length or one above the maximum. *)
+      a negative length or one above the maximum.
+
+      @before 5.6 {!Invalid_argument} was not raised *)
 end
 
 module User : sig
@@ -658,7 +660,9 @@ module User : sig
   (** [write t v] emits value [v] for event [t].
 
       @raise Invalid_argument if the encoder registered for [t] returns a
-      length outside the bounds documented for [Type.register]. *)
+      length outside the bounds documented for [Type.register].
+
+      @before 5.6 {!Invalid_argument} was not raised *)
 
   val name : _ t -> string
   (** [name t] is the unique identifying name of event [t]. *)
