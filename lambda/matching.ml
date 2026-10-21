@@ -1197,14 +1197,22 @@ let erase_cases f cases =
 let erase_pm pm =
   { pm with cases = erase_cases General.erase pm.cases }
 
+let pretty_case ppf (ps, l) =
+  Format.fprintf ppf "@[%t%t@]"
+    (fun ppf -> match ps with
+     | [] -> Format.pp_print_string ppf "empty row"
+     | _ -> pretty_line ppf ps
+    )
+    (fun ppf ->
+       if is_guarded l then
+         Format.fprintf ppf "@;<1 2>(guarded)"
+    )
+
 let pretty_cases ppf cases =
+  if cases = [] then Format.fprintf ppf "empty matrix" else
   Format.fprintf ppf "@[<v 2>  %a@]"
     (Format.pp_print_list ~pp_sep:Format.pp_print_cut
-       (fun ppf (ps, _l) ->
-          Format.fprintf ppf "@[";
-          List.iter (fun p -> Format.fprintf ppf "%a@ " pretty_pat p) ps;
-          Format.fprintf ppf "@]";
-       ))
+       pretty_case)
     cases
 
 let pretty_pm_ ~print_default ppf pm =
@@ -3709,8 +3717,7 @@ let rec compile_match ~scopes repr partial ctx
         else
           (event_branch repr action, Jumps.empty Total)
       in
-      debugf "empty matrix%t"
-        (fun ppf -> if is_guarded action then Format.fprintf ppf " (guarded)");
+      debugf "%a" pretty_case ([], action);
       res
   | nonempty_cases ->
       compile_match_nonempty ~scopes repr partial ctx
