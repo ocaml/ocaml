@@ -1275,7 +1275,8 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
     deserializer = Field(record, 1);
 
     if (Field(wrapper_root, 1) == Val_none) {
-      read_buffer = caml_alloc_string(RUNTIME_EVENTS_MAX_MSG_LENGTH);
+      read_buffer =
+        caml_alloc_string(RUNTIME_EVENTS_MAX_CUSTOM_VALUE_BYTES);
       Store_field(wrapper_root, 1, read_buffer);
     } else {
       read_buffer = Field(wrapper_root, 1);

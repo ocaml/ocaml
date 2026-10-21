@@ -60,6 +60,13 @@ Working version
   flambda
   (Pierre Chambart, report by Michael Bacarella, review by Vincent Laviron)
 
+- #15074, #15077: Fix an out-of-bounds write when a custom event encoder
+  returns a length larger than the write buffer or a negative length.
+  Runtime_events.User.write now raises Invalid_argument for a length outside
+  the documented range.
+  (Tim McGilchrist, reported by Edwin Török, review by Edwin Török, Antonin
+   Décimo and Olivier Nicole)
+
 OCaml 5.6.0
 -----------
 
