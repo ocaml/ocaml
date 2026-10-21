@@ -1,4 +1,5 @@
 (* TEST
+ modules = "pid_stubs.c";
  include runtime_events;
  include unix;
  set OCAML_RUNTIME_EVENTS_PRESERVE = "1";
@@ -9,6 +10,8 @@
    native;
  }
 *)
+
+  external pid_of_process : int -> int = "caml_test_pid_of_process"
 
   let runtime_begin _ _ _ = ()
   let runtime_end _ _ _ = ()
@@ -90,12 +93,14 @@
           [| Sys.executable_name; "child" |]
           Unix.stdin Unix.stdout Unix.stderr
       in
+      (* Unix.waitpid closes the handle on Windows, so translate it first *)
+      let child = pid_of_process child_pid in
       (* now wait for our child to finish *)
       Unix.waitpid [] child_pid |> ignore;
       (* child has finished. We now have a valid ring *)
       let ring_file =
-          Filename.concat parent_cwd (string_of_int child_pid ^ ".events")
-      and path_pid = Some (parent_cwd, child_pid);
+          Filename.concat parent_cwd (string_of_int child ^ ".events")
+      and path_pid = Some (parent_cwd, child);
          in
       let finally () = Unix.unlink ring_file in
       Fun.protect ~finally @@ fun () ->

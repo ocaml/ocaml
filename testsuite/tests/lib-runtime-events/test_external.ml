@@ -1,4 +1,5 @@
 (* TEST
+ modules = "pid_stubs.c";
  include runtime_events;
  include unix;
  hasunix;
@@ -21,10 +22,14 @@ let runtime_end domain_id ts phase =
     got_minor := true
   | _ -> ()
 
+external current_pid : unit -> int = "caml_test_current_pid"
+
 (* The child is this same program re-executed with the parent's pid, rather
    than a fork, so that the test runs on Windows too. It cannot use
-   Unix.getppid, which raises Invalid_argument there. The child inherits the
-   working directory, so it finds the ring beside itself. *)
+   Unix.getppid, which raises Invalid_argument there, and the pid has to come
+   from current_pid rather than Unix.getpid, which is a process handle on
+   Windows. The child inherits the working directory, so it finds the ring
+   beside itself. *)
 let () =
   let parent_cwd = Sys.getcwd () in
   if Array.length Sys.argv > 2 && Sys.argv.(1) = "child" then begin
@@ -46,7 +51,7 @@ let () =
     Runtime_events.start ();
     let child_pid =
       Unix.create_process Sys.executable_name
-        [| Sys.executable_name; "child"; string_of_int (Unix.getpid ()) |]
+        [| Sys.executable_name; "child"; string_of_int (current_pid ()) |]
         Unix.stdin Unix.stdout Unix.stderr
     in
     (* we are in the parent, generate some events *)

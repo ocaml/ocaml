@@ -1,4 +1,5 @@
 (* TEST
+ modules = "pid_stubs.c";
  include runtime_events;
  include unix;
  set OCAML_RUNTIME_EVENTS_PRESERVE = "1";
@@ -10,6 +11,8 @@
  }
 *)
 open Runtime_events
+
+external pid_of_process : int -> int = "caml_test_pid_of_process"
 
 type User.tag += Ev of int
 
@@ -46,8 +49,10 @@ let () =
     Unix.create_process Sys.executable_name
       [| Sys.executable_name; "child" |] Unix.stdin Unix.stdout Unix.stderr
   in
+  (* Unix.waitpid closes the handle on Windows, so translate it first *)
+  let child = pid_of_process child_pid in
   Unix.waitpid [] child_pid |> ignore;
-  let cursor = create_cursor (Some (parent_cwd, child_pid)) in
+  let cursor = create_cursor (Some (parent_cwd, child)) in
   let callback_counter _ _ ev v =
     match User.tag ev with
     | Ev i -> Printf.printf "known event ev %d => %d\n" i v
