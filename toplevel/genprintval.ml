@@ -112,7 +112,7 @@ module User_printer = struct
       | Succ fn ->
           let print_val fn_arg =
             let print_arg ppf o =
-              !Oprint.out_value ppf (fn_arg (depth+1) o) in
+              Format_doc.compat !Oprint.out_value ppf (fn_arg (depth+1) o) in
             build (fn print_arg) depth in
           Succ print_val in
     printers := (function_path, Generic (ty_path, build fn)) :: !printers

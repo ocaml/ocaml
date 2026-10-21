@@ -1,0 +1,21 @@
+\begin{camlexample}{verbatim}
+\begin{caml}
+\begin{camlinput}
+type structured_text =
+  | Tbox of structured_text array
+  | Tag of format_tag * structured_text array
+  | Box of box_type * int * structured_text array
+  | With_size of int * string
+  | Deprecated of string
+  | If_newline
+  | Newline
+  | Flush of bool
+  | Break of (string * int * string) * (string * int * string)
+  | Simple_break of int * int
+  | Set_tab
+  | Tab_break of int * int
+  | Text of string
+[@@since 0.1] [@@version 0.1]
+\end{camlinput}
+\end{caml}
+\end{camlexample}

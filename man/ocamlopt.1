@@ -420,6 +420,18 @@ Use linear scan register allocation.  Compiling with this allocator is faster
 than with the usual graph coloring allocator, sometimes quite drastically so for
 long functions and modules. On the other hand, the generated code can be a bit
 slower.
+.BI \-log\-format " format"
+Use the format
+.IR format
+for diagnostics (warnings, error messages, REPL evaluation).
+.TP
+.BI \-log\-version " major.minor"
+Emit diagnostics with a format compatible with the version
+.IR major.minor "."
+.TP
+.BI \-log\-file " filename"
+Emit diagnostics to the file
+.IR filename "."
 .TP
 .B \-match\-context\-rows
 Set number of rows of context used during pattern matching

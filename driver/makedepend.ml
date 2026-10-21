@@ -235,8 +235,10 @@ let print_raw_dependencies source_file deps =
 
 (* Process one file *)
 
+let log = Location.log_on_device Log.Device.err
+
 let print_exception exn =
-  Location.report_exception stderr exn
+  Location.log_exception log exn
 
 let report_err exn =
   Error_occurred.set ();
@@ -389,7 +391,7 @@ let mli_file_dependencies source_file =
   prepend_to_list files (source_file, MLI, extracted_deps, !Depend.pp_deps)
 
 let process_file_as process_fun def source_file =
-  Compenv.readenv stderr (Before_compile source_file);
+  Compenv.readenv log (Before_compile source_file);
   load_path := [];
   let cwd = if !nocwd then [] else [Filename.current_dir_name] in
   List.iter add_to_load_path (
@@ -567,7 +569,7 @@ let run_main argv =
   let add_dep_arg f s = prepend_to_list dep_args_rev (f s) in
   Clflags.classic := false;
   try
-    Compenv.readenv stderr Before_args;
+    Compenv.readenv log Before_args;
     Clflags.reset_arguments (); (* reset arguments from ocamlc/ocamlopt *)
     Clflags.add_arguments __LOC__ [
       "-absname", Arg.Set Clflags.absname,
@@ -642,7 +644,7 @@ let run_main argv =
     Compenv.parse_arguments (ref argv)
       (add_dep_arg (fun f -> Src (f, None))) program;
     process_dep_args (List.rev !dep_args_rev);
-    Compenv.readenv stderr Before_link;
+    Compenv.readenv log Before_link;
     if !sort_files then sort_files_by_dependencies !files
     else List.iter print_file_dependencies (List.sort compare !files);
     (if Error_occurred.get () then 2 else 0)
@@ -650,8 +652,8 @@ let run_main argv =
   | Compenv.Exit_with_status n ->
       n
   | exn ->
-      Location.report_exception stderr exn;
-      2
+    Location.log_exception log exn;
+    2
 
 
 let main () =

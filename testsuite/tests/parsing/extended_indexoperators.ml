@@ -65,7 +65,7 @@ let _ = 1 #? x.%(0);;
 [%%expect {|
 
 let (#?) x y = (x, y);;
-val ( #? ) : 'a -> 'b -> 'a * 'b = <fun>
+1val ( #? ) : 'a -> 'b -> 'a * 'b = <fun>
 
 let (.%()) x y = x.(y);;
 val ( .%() ) : 'a array -> int -> 'a = <fun>

@@ -7,7 +7,7 @@ DIRS = infoman texstuff textman
 
 FILES = allfiles.tex biblio.tex foreword.tex version.tex cmds/warnings-help.etex ifocamldoc.tex
 
-TEXINPUTS = ".:..:../refman:../refman/extensions:../library:../cmds:../tutorials:../../styles:"
+TEXINPUTS = ".:..:../refman:../refman/extensions:../library:../cmds:../cmds/diagnostics:../tutorials:../../styles:"
 RELEASE = $$HOME/release/$${RELEASENAME}
 HEVEA = hevea
 HACHA = hacha
@@ -69,7 +69,7 @@ index: | texstuff
 html: etex-files html_files
 	cd htmlman \
 	  && $(HEVEA) $(HTML_FLAGS) \
-	    -I .. -I ../cmds -I ../library -I ../refman \
+	    -I .. -I ../cmds -I ../cmds/diagnostics -I ../library -I ../refman \
 	    -I ../refman/extensions -I ../tutorials \
 	    -I ../../styles -I ../texstuff \
 	    manual.hva -e macros.tex ../manual.tex \
@@ -79,7 +79,7 @@ info: files latex_files | infoman
 	cd infoman \
 	  && rm -f ocaml.info* \
 	  && $(HEVEA) $(INFO_FLAGS) -o ocaml.info.body \
-	    -I .. -I ../cmds -I ../library -I ../refman \
+	    -I .. -I ../cmds -I ../cmds/diagnostics  -I ../library -I ../refman \
 	    -I ../refman/extensions -I ../tutorials \
 	    -I ../../styles -I ../texstuff \
 	    ../manual.inf -e macros.tex ../manual.tex
@@ -91,7 +91,7 @@ info: files latex_files | infoman
 text: files latex_files | textman
 	cd textman \
 	  && $(HEVEA) $(TEXT_FLAGS) \
-	    -I .. -I ../cmds -I ../library -I ../refman \
+	    -I .. -I ../cmds  -I ../cmds/diagnostics -I ../library -I ../refman \
 	    -I ../refman/extensions -I ../tutorials \
 	    -I ../../styles -I ../texstuff \
 	    ../manual.inf -e macros.tex ../manual.tex

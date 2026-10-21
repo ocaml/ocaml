@@ -17,7 +17,7 @@
    original compilation units as sub-modules. *)
 
 val package_files
-   : ppf_dump:Format.formatter
+   : log:Dev_log.t
   -> Env.t
   -> string list
   -> string

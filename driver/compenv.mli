@@ -43,7 +43,7 @@ type filename = string
 type readenv_position =
   Before_args | Before_compile of filename | Before_link
 
-val readenv : Format.formatter -> readenv_position -> unit
+val readenv : Compiler_diagnostic.id Log.t -> readenv_position -> unit
 
 (* Deferred actions of the compiler, while parsing arguments *)
 
@@ -63,12 +63,12 @@ val impl : string -> unit
 val intf : string -> unit
 
 type action_context = {
-  log : Format.formatter;
+  log : Compiler_diagnostic.id Log.t as 'log;
   compile_implementation:
-    start_from:Clflags.Compiler_pass.t ->
+    log:'log -> start_from:Clflags.Compiler_pass.t ->
     source_file:string -> output_prefix:string -> unit;
   compile_interface:
-    source_file:string -> output_prefix:string -> unit;
+    log:'log -> source_file:string -> output_prefix:string -> unit;
   ocaml_mod_ext: string; (* ".cmo" or ".cmx" *)
   ocaml_lib_ext: string; (* ".cma" or ".cmxa" *)
 }
