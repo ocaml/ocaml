@@ -3710,6 +3710,8 @@ let arg_to_var arg cls =
 let rec compile_match ~scopes repr partial ctx
     (m : (args, initial_clause) pattern_matching) : lambda * Jumps.t =
   match m.cases with
+  | [] ->
+      compile_match_empty_matrix ~scopes partial ctx m.default
   | ([], action) :: rem ->
       let res =
         if is_guarded action then
@@ -3722,18 +3724,15 @@ let rec compile_match ~scopes repr partial ctx
       in
       debugf "%a" pretty_case ([], action);
       res
-  | nonempty_cases ->
-      compile_match_nonempty ~scopes repr partial ctx
-        { m with cases = map_on_rows Non_empty_row.of_initial nonempty_cases }
+  | nonempty_rows ->
+      compile_match_nonempty_rows ~scopes repr partial ctx
+        { m with cases = map_on_rows Non_empty_row.of_initial nonempty_rows }
 
-and compile_match_nonempty ~scopes repr partial ctx
+and compile_match_nonempty_rows ~scopes repr partial ctx
     (m : (args, Typedtree.pattern Non_empty_row.t clause) pattern_matching) =
   match m with
   | { cases = []; args = [] } ->
-      begin match comp_exit partial ctx m.default with
-      | None -> fatal_error "Matching: impossible empty matrix in a Total match"
-      | Some exit -> exit
-      end
+      compile_match_empty_matrix ~scopes partial ctx m.default
   | { args = { arg; binding_kind; _ } as first :: rest } ->
       let v = arg_to_var arg m.cases in
       bind_match_arg binding_kind v arg (
@@ -3745,6 +3744,11 @@ and compile_match_nonempty ~scopes repr partial ctx
         combine_handlers ~scopes repr partial ctx first_match rem
       )
   | _ -> assert false
+
+and compile_match_empty_matrix ~scopes:_ partial ctx def =
+  match comp_exit partial ctx def with
+  | None -> fatal_error "Matching: impossible empty matrix in a Total match"
+  | Some exit -> exit
 
 and compile_match_simplified ~scopes repr partial ctx
     (m : (split_args, Simple.clause) pattern_matching) =
@@ -4112,7 +4116,7 @@ let compile_matching ~scopes loc ~failer repr arg pat_act_list partial =
     toplevel_handler ~scopes loc ~failer partial args rows
   in
   handler (fun partial pm ->
-    compile_match_nonempty ~scopes repr partial (Context.start 1) pm
+    compile_match_nonempty_rows ~scopes repr partial (Context.start 1) pm
   )
 
 let for_function ~scopes loc repr param pat_act_list partial =
@@ -4379,9 +4383,9 @@ let flatten_precompiled size args pmh =
 
 let compile_flattened ~scopes repr partial ctx pmh =
   match pmh with
-  | FPm pm -> compile_match_nonempty ~scopes repr partial ctx pm
+  | FPm pm -> compile_match_nonempty_rows ~scopes repr partial ctx pm
   | FPmOr { body = b; handlers = hs } ->
-      let lam, total = compile_match_nonempty ~scopes repr partial ctx b in
+      let lam, total = compile_match_nonempty_rows ~scopes repr partial ctx b in
       compile_orhandlers (compile_match ~scopes repr partial) lam total ctx hs
 
 let do_for_multiple_match ~scopes loc idl pat_act_list partial =
