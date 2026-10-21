@@ -71,6 +71,10 @@ Working version
   event is larger than half the ring buffer.
   (Tim McGilchrist, review by Sadiq Jaffer)
 
+- #15171: fix a compile-time failure in the pattern-matching compiler
+  coming from incorrect compilation of some useless guarded or-patterns
+  (Gabriel Scherer, report by Stefan Muenzel)
+
 OCaml 5.6.0
 -----------
 

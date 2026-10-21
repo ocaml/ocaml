@@ -3747,7 +3747,21 @@ and compile_match_nonempty_rows ~scopes repr partial ctx
 
 and compile_match_empty_matrix ~scopes:_ partial ctx def =
   match comp_exit partial ctx def with
-  | None -> fatal_error "Matching: impossible empty matrix in a Total match"
+  | None ->
+    (* #15171: This case was found to happen in the wild in some dead
+       code, with clauses of the (simplified) Form:
+       {[
+         | _ -> ...
+         | p when foo -> ...
+        ]}
+
+       This matrix is known to be Total, but the (useless / dead-code)
+       last clause is guarded. If it is not optimized away, during
+       compilation there will be a list of empty rows whose last
+       one is guarded. On guarded empty rows, [compile_match] calls itself
+       recursively on the rest of the matrix, which is empty in that case.
+    *)
+    comp_final_exit def
   | Some exit -> exit
 
 and compile_match_simplified ~scopes repr partial ctx
