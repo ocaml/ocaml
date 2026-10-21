@@ -1,15 +1,17 @@
 (* TEST
+ modules = "pid_stubs.c";
  include runtime_events;
  include unix;
  set OCAML_RUNTIME_EVENTS_PRESERVE = "1";
  hasunix;
- not target-windows;
  {
    bytecode;
  }{
    native;
  }
 *)
+
+  external get_process_id : int -> int = "caml_test_get_process_id"
 
   let runtime_begin _ _ _ = ()
   let runtime_end _ _ _ = ()
@@ -77,17 +79,22 @@
 
   (* this tests the preservation of ring buffers after termination *)
 
+  (* Re-exec instead of fork so this runs on Windows. *)
   let () =
-    (* start runtime_events now to avoid a race *)
-    let parent_cwd = Sys.getcwd () in
-    let child_pid = Unix.fork () in
-    if child_pid == 0 then begin
+    if Array.length Sys.argv > 1 && Sys.argv.(1) = "child" then begin
       (* we are in the child, so start Runtime_events *)
       Runtime_events.start ();
       (* this creates a ring buffer. Now exit. *)
     end else begin
+      let parent_cwd = Sys.getcwd () in
+      let child =
+        Unix.create_process Sys.executable_name
+          [| Sys.executable_name; "child" |]
+          Unix.stdin Unix.stdout Unix.stderr
+      in
+      let child_pid = get_process_id child in
       (* now wait for our child to finish *)
-      Unix.wait () |> ignore;
+      Unix.waitpid [] child |> ignore;
       (* child has finished. We now have a valid ring *)
       let ring_file =
           Filename.concat parent_cwd (string_of_int child_pid ^ ".events")
