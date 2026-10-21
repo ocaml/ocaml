@@ -3,7 +3,6 @@
  include unix;
  set OCAML_RUNTIME_EVENTS_PRESERVE = "1";
  hasunix;
- not target-windows;
  {
    bytecode;
  }{
@@ -13,17 +12,22 @@
 
   (* this tests the preservation of ring buffers after termination *)
 
+  (* The child is this same program re-executed with an argument, rather than
+     a fork, so that the test runs on Windows too. *)
   let () =
-    (* start runtime_events now to avoid a race *)
-    let parent_cwd = Sys.getcwd () in
-    let child_pid = Unix.fork () in
-    if child_pid == 0 then begin
+    if Array.length Sys.argv > 1 && Sys.argv.(1) = "child" then begin
       (* we are in the child, so start Runtime_events *)
       Runtime_events.start ();
       (* this creates a ring buffer. Now exit. *)
     end else begin
+      let parent_cwd = Sys.getcwd () in
+      let child_pid =
+        Unix.create_process Sys.executable_name
+          [| Sys.executable_name; "child" |]
+          Unix.stdin Unix.stdout Unix.stderr
+      in
       (* now wait for our child to finish *)
-      Unix.wait () |> ignore;
+      Unix.waitpid [] child_pid |> ignore;
       (* child has finished. Is the file there? *)
       let cursor =
           Runtime_events.create_cursor (Some (parent_cwd, child_pid)) in
