@@ -3,7 +3,15 @@
  setup-ocamlc.byte-build-env;
  ocamlc.byte;
  run;
- check-program-output;
+ {
+   reference = "${test_source_directory}/block_hints.flat-float-array.reference";
+   flat-float-array;
+   check-program-output;
+ }{
+   reference = "${test_source_directory}/block_hints.no-flat-float-array.reference";
+   no-flat-float-array;
+   check-program-output;
+ }
 *)
 
 (* Hints on block allocations and array lengths *)
