@@ -1225,18 +1225,19 @@ let rec pretty_precompiled_ ~print_default ppf = function
         (pretty_precompiled_ ~print_default) x.inside
   | PmOr x ->
       let pretty_handlers ppf handlers =
-        List.iter (fun { exit = i; pm; _ } ->
+        Format.pp_print_list ~pp_sep:Format.pp_print_cut
+          (fun ppf { exit = i; pm; _ } ->
           Format.fprintf ppf
-            "++ Handler %d ++@,\
+            "- handler %d:@,\
              %a"
             i
             (pretty_pm_ ~print_default) pm
-        ) handlers
+        ) ppf handlers
       in
       Format.fprintf ppf "PM Or:@,\
-                          %a@,\
-                          %a@,\
-                          %a"
+                          body:@,%a@,\
+                          or_matrix:@,%a@,\
+                          handlers:@,@[<v 2>  %a@]"
         (pretty_pm_ ~print_default) (erase_pm x.body)
         pretty_matrix x.or_matrix
         pretty_handlers x.handlers
