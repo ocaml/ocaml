@@ -3551,6 +3551,9 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
   let rec do_rec r total_r = function
     | [] -> (r, total_r)
     | { provenance = mat; exit = i; vars; pm } :: rem -> (
+        debugf "COMPILE_orhandlers %d:@,@[<v 2>%a@]@,"
+          i
+          pretty_cases pm.cases;
         let ctx = Context.select_columns mat ctx in
         match compile_fun ctx pm with
         | exception Unused ->
