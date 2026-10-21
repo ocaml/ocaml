@@ -218,6 +218,10 @@ will result in an ``unbound value "quit"'' error.
     Similar to "#use" but also wrap the code into a top-level module of the
     same name as capitalized file name without extensions, following
     semantics of the compiler.
+
+  \item["#reload;;"]
+    Reruns the most recent invocation of "#use"/"#load"-style directives,
+    without manually re-entering the file name.
   \end{options}
 
 For directives that take file names as arguments, if the given file
