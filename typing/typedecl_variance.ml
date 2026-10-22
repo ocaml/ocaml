@@ -219,44 +219,45 @@ let compute_variance_type env ~check (required, loc) decl tyl =
       in
       iter [] (TypeMap.bindings !tvl2)
     in
-    let visited = ref TypeSet.empty in
-    let rec check ty =
-      if TypeSet.mem ty !visited then () else
-      let visited' = TypeSet.add ty !visited in
-      visited := visited';
-      let v1 = get_variance ty tvl in
-      let snap = Btype.snapshot () in
-      let v2 =
-        List.fold_left
-          (fun v (t, vt) ->
-             if Ctype.is_equal env false [ty] [t] then union vt v else v)
-           null tvl2 in
-      Btype.backtrack snap;
-      let (c1,n1) = get_upper v1 and (c2,n2,i2) = get_lower v2 in
-      if c1 && not c2 || n1 && not n2 then begin
-        match List.find_opt (eq_type ty) fvl with
-        | Some variable ->
-            let error =
-              if not i2 then
-                No_variable
-              else if c2 || n2 then
-                Variance_not_reflected
-              else
-                Variance_not_deducible
-            in
-            let variance_error =
-              Variance_variable_error { error; context; variable }
-            in
-            raise
-              (Error (loc
-                     , Bad_variance ( variance_error
-                                    , (c1,n1,false)
-                                    , (c2,n2,false))))
-        | None ->
-            Btype.iter_type_expr check ty
+    let rec check mark ty =
+      if try_mark_node mark ty
+      then begin
+        let v1 = get_variance ty tvl in
+        let (c1,n1) = get_upper v1 in
+        if not c1 && not n1 then () else
+        let v2 =
+          List.fold_left
+            (fun v (t, vt) ->
+               if Ctype.is_equal env false [ty] [t] then union vt v else v)
+            null tvl2 in
+        let (c2,n2,i2) = get_lower v2 in
+        if c1 && not c2 || n1 && not n2 then begin
+          match List.find_opt (eq_type ty) fvl with
+          | Some variable ->
+              let error =
+                if not i2 then
+                  No_variable
+                else if c2 || n2 then
+                  Variance_not_reflected
+                else
+                  Variance_not_deducible
+              in
+              let variance_error =
+                Variance_variable_error { error; context; variable }
+              in
+              raise
+                (Error (loc
+                       , Bad_variance ( variance_error
+                                      , (c1,n1,false)
+                                      , (c2,n2,false))))
+          | None ->
+              Btype.iter_type_expr (check mark) ty
+        end
       end
     in
-    List.iter (fun (_,ty) -> check ty) tyl;
+    with_type_mark (fun mark ->
+        List.iter (fun (_,ty) -> check mark ty) tyl;
+      )
   end;
   List.map2
     (fun ty (p, n, _i) ->
