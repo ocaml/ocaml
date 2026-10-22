@@ -2854,7 +2854,7 @@ let as_interval_canfail fail ~low ~high l =
     | (i, act_i) :: rem ->
         let index = do_store "INIT" act_i in
         if index = 0 then
-          fail_rec low i rem
+          fail_rec low rem
         else if low < i then
           (low, i - 1, 0) :: nofail_rec i i index rem
         else
@@ -2875,12 +2875,12 @@ let as_interval_canfail fail ~low ~high l =
           if act_index = cur_act then
             nofail_rec cur_low i cur_act rem
           else if act_index = 0 then
-            (cur_low, i - 1, cur_act) :: fail_rec i i rem
+            (cur_low, i - 1, cur_act) :: fail_rec i rem
           else
             (cur_low, i - 1, cur_act) :: nofail_rec i i act_index rem
         else if act_index = 0 then
           (cur_low, cur_high, cur_act)
-          :: fail_rec (cur_high + 1) (cur_high + 1) all
+          :: fail_rec (cur_high + 1) all
         else
           (cur_low, cur_high, cur_act)
           :: (cur_high + 1, i - 1, 0)
@@ -2888,13 +2888,13 @@ let as_interval_canfail fail ~low ~high l =
 
   (* cover [cur_low; high] with the provided mapping, assuming that:
      - the keys are all within [cur_low; high]
-     - [cur_low; cur_high] goes to [fail] *)
-  and fail_rec cur_low cur_high = function
-    | [] -> [ (cur_low, cur_high, 0) ]
+     - [cur_low] goes to [fail] *)
+  and fail_rec cur_low = function
+    | [] -> [ (cur_low, high, 0) ]
     | (i, act_i) :: rem ->
         let index = do_store "YES" act_i in
         if index = 0 then
-          fail_rec cur_low i rem
+          fail_rec cur_low rem
         else
           (cur_low, i - 1, 0) :: nofail_rec i i index rem
   in
