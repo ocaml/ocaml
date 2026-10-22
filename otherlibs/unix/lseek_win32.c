@@ -55,9 +55,6 @@ CAMLprim value caml_unix_lseek_64(value fd, value ofs, value cmd)
   HANDLE h = Handle_val(fd);
   BOOL success;
 
-  /* [ofs] is an Int64, which is stored as a custom block, so it has to be
-     read with Int64_val rather than Long_val. It is extracted before the
-     runtime lock is dropped, or the block might be moved. */
   i.QuadPart = Int64_val(ofs);
 
   caml_enter_blocking_section();
