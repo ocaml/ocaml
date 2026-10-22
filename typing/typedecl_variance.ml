@@ -194,14 +194,31 @@ let compute_variance_type env ~check (required, loc) decl tyl =
       List.filter (fun v -> not (List.exists (eq_type v) params)) fvl in
     (* If there are no extra variables there is nothing to do *)
     if fvl = [] then () else
-    let tvl2 = ref TypeMap.empty in
-    List.iter2
-      (fun ty (p,n,_) ->
-        if Btype.is_Tvar ty then () else
-        let v =
-          if p then if n then full else covariant else conjugate covariant in
-        compute_variance env tvl2 v ty)
-      params required;
+    let tvl2 =
+      let tvl2 = ref TypeMap.empty in
+      List.iter2
+        (fun ty (p,n,_) ->
+           if Btype.is_Tvar ty then () else
+             let v =
+               if p then if n then full else covariant else conjugate covariant
+             in
+             compute_variance env tvl2 v ty)
+        params required;
+      let rec consolidate_equal candidate v unequal = function
+        | [] -> ((candidate, v), unequal)
+        | ((x, vx) as x') :: l ->
+            if Ctype.is_equal env false [candidate] [x]
+            then consolidate_equal candidate (union vx v) unequal l
+            else consolidate_equal candidate v (x' :: unequal) l
+      in
+      let rec iter acc = function
+        | [] -> acc
+        | (candidate, v) :: l ->
+            let (consolidated, unequal) = consolidate_equal candidate v [] l in
+            iter (consolidated :: acc) unequal
+      in
+      iter [] (TypeMap.bindings !tvl2)
+    in
     let visited = ref TypeSet.empty in
     let rec check ty =
       if TypeSet.mem ty !visited then () else
@@ -210,10 +227,10 @@ let compute_variance_type env ~check (required, loc) decl tyl =
       let v1 = get_variance ty tvl in
       let snap = Btype.snapshot () in
       let v2 =
-        TypeMap.fold
-          (fun t vt v ->
+        List.fold_left
+          (fun v (t, vt) ->
              if Ctype.is_equal env false [ty] [t] then union vt v else v)
-          !tvl2 null in
+           null tvl2 in
       Btype.backtrack snap;
       let (c1,n1) = get_upper v1 and (c2,n2,i2) = get_lower v2 in
       if c1 && not c2 || n1 && not n2 then begin
