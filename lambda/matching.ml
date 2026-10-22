@@ -938,7 +938,7 @@ end = struct
   let partial { partial = p; _ } = p
 
   let pp ppf ({ env; partial } : t) =
-    Format.fprintf ppf "@[<v 2>JUMPS:%t@]"
+    Format.fprintf ppf "@[<v 2>%t@]"
       (fun ppf ->
          if env = [] then
            Format.fprintf ppf " empty (%a)"
@@ -955,7 +955,7 @@ end = struct
          end)
 
   let pp_section ppf jumps =
-    Format.fprintf ppf "@,%a" pp jumps
+    Format.fprintf ppf "@,JUMPS:@,%a" pp jumps
 
   let extract i jumps =
     let rec extract i = function
@@ -3124,7 +3124,7 @@ let mk_failaction_pos arg_partial seen ctx defs =
              %a@]@,\
            @[<v 2>FAIL PATTERNS:@,\
              %a@]@,\
-           @[<v 2>POSITIVE JUMPS (%a):%a@]\
+           @[<v 2>POSITIVE JUMPS (%a):@,%a@]\
            @]"
       pp_arg_partiality arg_partial
       Default_environment.pp defs
@@ -3551,7 +3551,7 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
   let rec do_rec r total_r = function
     | [] -> (r, total_r)
     | { provenance = mat; exit = i; vars; pm } :: rem -> (
-        debugf "COMPILE_orhandlers %d:@,@[<v 2>%a@]@,"
+        debugf "@,COMPILE_orhandlers %d:@,@[<v 2>%a@]@,"
           i
           pretty_cases pm.cases;
         let ctx = Context.select_columns mat ctx in
