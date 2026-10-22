@@ -262,10 +262,13 @@ let untag_int i dbg =
     Cconst_int (n, _) -> Cconst_int(n asr 1, dbg)
   | Cop(Cor, [Cop(Casr, [c; Cconst_int (n, _)], _); Cconst_int (1, _)], _)
     when n > 0 && n < size_int * 8 ->
-      Cop(Casr, [c; Cconst_int (n+1, dbg)], dbg)
+      Cop(Casr, [c; Cconst_int (min (n+1) (size_int * 8 - 1), dbg)], dbg)
   | Cop(Cor, [Cop(Clsr, [c; Cconst_int (n, _)], _); Cconst_int (1, _)], _)
-    when n > 0 && n < size_int * 8 ->
+    when n > 0 && n < size_int * 8 - 1 ->
       Cop(Clsr, [c; Cconst_int (n+1, dbg)], dbg)
+  | Cop(Cor, [Cop(Clsr, [c; Cconst_int (n, _)], _); Cconst_int (1, _)], _)
+    when n = size_int * 8 - 1 ->
+      Csequence (c, Cconst_int (0, dbg))
   | c -> asr_int c (Cconst_int (1, dbg)) dbg
 
 let mk_if_then_else dbg cond ifso_dbg ifso ifnot_dbg ifnot =

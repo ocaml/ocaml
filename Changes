@@ -52,6 +52,11 @@ Working version
 
 ### Bug fixes:
 
+- #15157: Fix the native compilation of `x lsr n` and `x asr n` for
+  `n = Sys.int_size` when the result is immediately untagged, as in
+  `Int64.of_int (x asr 63)` or `float_of_int (x lsr 63)`.
+  (Zane Hambly, report by Michael Bacarella)
+
 - #7826, #15139: Cache free variable computations to avoid quadratic
   blowups in pathological cases
   (Vincent Laviron, report by Pierre-Marie Pédrot, review by Stefan Muenzel)
