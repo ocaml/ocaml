@@ -917,6 +917,11 @@ OCaml 5.6.0
   if the size class had no live blocks.
   (Ezequiel Lewin, review by Florian Angeletti)
 
+- #15186: Fix Windows Unix.LargeFile.lseek which seeked to a wrong offset
+  (regression since 5.1.0).
+  (Tim McGilchrist, review by Nicolas Ojeda Bar)
+
+
 OCaml 5.5.1
 -----------
 
