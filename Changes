@@ -34,6 +34,10 @@ OCaml 5.5.2
 - #15177, OSEC-2026-26: Maintain custom events cache integrity.
   (Sadiq Jaffer, report by Hannes Mehnert, review by Edwin Török)
 
+- #15043, #15076: runtime events library, fix an infinite loop when a user
+  event is larger than half the ring buffer.
+  (Tim McGilchrist, review by Sadiq Jaffer)
+
 OCaml 5.5.1 (4 September 2026)
 ------------------------------
 
