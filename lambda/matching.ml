@@ -2822,6 +2822,23 @@ let get_edges ~low ~high l =
   | [] -> (low, high)
   | (x, _) :: _ -> (x, last high l)
 
+(** [as_interval_canfail fail ~low ~high] takes a sorted list of
+    (integer key, action) pairs, for example
+      0 -> act0
+      1 -> act1
+      2 -> act1
+      4 -> act1
+      5 -> act1
+   and returns a sorted list of contiguous intervals partitioning
+   [low; high], for example
+     [low; -1] -> fail
+     [0] -> act0
+     [1; 2] -> act1
+     [3] -> fail
+     [4; 5] -> act1
+     [6; high] -> fail
+   with missing keys mapped to the [fail] action.
+*)
 let as_interval_canfail fail ~low ~high l =
   let store = StoreExp.mk_store () in
   let do_store _tag act =
@@ -2831,7 +2848,22 @@ let as_interval_canfail fail ~low ~high l =
     *)
     i
   in
-  let rec nofail_rec cur_low cur_high cur_act = function
+  (* cover [low; high] with the provided mapping *)
+  let rec init_rec = function
+    | [] -> [ (low, high, 0) ]
+    | (i, act_i) :: rem ->
+        let index = do_store "INIT" act_i in
+        if index = 0 then
+          fail_rec low i rem
+        else if low < i then
+          (low, i - 1, 0) :: nofail_rec i i index rem
+        else
+          nofail_rec i i index rem
+
+  (* cover [cur_low; high] with the provided mapping, assuming that:
+     - the keys are all within [cur_low; high]
+     - [cur_low; cur_high] goes to [cur_act] *)
+  and nofail_rec cur_low cur_high cur_act = function
     | [] ->
         if cur_high = high then
           [ (cur_low, cur_high, cur_act) ]
@@ -2853,6 +2885,10 @@ let as_interval_canfail fail ~low ~high l =
           (cur_low, cur_high, cur_act)
           :: (cur_high + 1, i - 1, 0)
           :: nofail_rec i i act_index rem
+
+  (* cover [cur_low; high] with the provided mapping, assuming that:
+     - the keys are all within [cur_low; high]
+     - [cur_low; cur_high] goes to [fail] *)
   and fail_rec cur_low cur_high = function
     | [] -> [ (cur_low, cur_high, 0) ]
     | (i, act_i) :: rem ->
@@ -2862,23 +2898,26 @@ let as_interval_canfail fail ~low ~high l =
         else
           (cur_low, i - 1, 0) :: nofail_rec i i index rem
   in
-  let init_rec = function
-    | [] -> [ (low, high, 0) ]
-    | (i, act_i) :: rem ->
-        let index = do_store "INIT" act_i in
-        if index = 0 then
-          fail_rec low i rem
-        else if low < i then
-          (low, i - 1, 0) :: nofail_rec i i index rem
-        else
-          nofail_rec i i index rem
-  in
-  assert (do_store "FAIL" fail = 0);
-
-  (* fail has action index 0 *)
+  let fail_index = do_store "FAIL" fail in
+  assert (fail_index = 0);
   let r = init_rec l in
   (Array.of_list r, store)
 
+(** [as_interval_nofail] takes a sorted list of
+    (integer key, action) pairs, for example:
+     -1 -> act0
+     1 -> act0
+     2 -> act1
+     4 -> act1
+     5 -> act1
+   and returns a sorted list of contiguous intervals, for example
+     [-1; 1] -> act0
+     [2] -> act1
+     [3] -> act0
+     [4; 5] -> act1
+   with the first action (here [act0]) used for missing keys in the
+   convex hull of the input keys.
+*)
 let as_interval_nofail l =
   let store = StoreExp.mk_store () in
   let rec some_hole = function
