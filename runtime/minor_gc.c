@@ -642,7 +642,9 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
   #endif
 
   CAML_EV_BEGIN(EV_MINOR_FINALIZERS_OLDIFY);
-  /* promote the finalizers unconditionally as we want to avoid barriers */
+  /* promote the finalizers unconditionally as we want to avoid barriers,
+     except the "last" values in our own minor heap
+     (see [caml_final_do_young_roots]) */
   caml_final_do_young_roots (&oldify_one, oldify_scanning_flags, &st,
                              domain, 0);
   CAML_EV_END(EV_MINOR_FINALIZERS_OLDIFY);
