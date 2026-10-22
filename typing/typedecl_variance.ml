@@ -194,6 +194,7 @@ let compute_variance_type env ~check (required, loc) decl tyl =
       List.filter (fun v -> not (List.exists (eq_type v) params)) fvl in
     (* If there are no extra variables there is nothing to do *)
     if fvl = [] then () else
+    let snap = Btype.snapshot () in
     let tvl2 =
       let tvl2 = ref TypeMap.empty in
       List.iter2
@@ -255,8 +256,11 @@ let compute_variance_type env ~check (required, loc) decl tyl =
         end
       end
     in
-    with_type_mark (fun mark ->
-        List.iter (fun (_,ty) -> check mark ty) tyl;
+    Misc.try_finally ~always:(fun () -> Btype.backtrack snap)
+      (fun () ->
+         with_type_mark (fun mark ->
+             List.iter (fun (_,ty) -> check mark ty) tyl;
+           )
       )
   end;
   List.map2
