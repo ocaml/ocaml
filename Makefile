@@ -1015,17 +1015,16 @@ ocaml_SOURCES = toplevel/topstart.mli toplevel/topstart.ml
 
 ocaml_CMO_FILES = toplevel/topstart.cmo
 
-.INTERMEDIATE: ocaml.tmp
-ocaml.tmp: OC_BYTECODE_LINKFLAGS += -I toplevel/byte -linkall -g
-ocaml.tmp: $(ocaml_CMA_FILES) $(ocaml_CMO_FILES)
-	$(V_LINKC)$(LINK_BYTECODE_PROGRAM) -o $@ $^
-
 $(eval $(call PROGRAM_SYNONYM,ocaml))
-ocaml$(EXE): $(expunge) ocaml.tmp
-	- $(V_GEN)$(OCAMLRUN) $^ $@ $(PERVASIVES)
+
+ocaml$(EXE): $(expunge) $(ocaml_CMA_FILES) $(ocaml_CMO_FILES)
+	$(V_LINKC)$(LINK_BYTECODE_PROGRAM) -I toplevel/byte -linkall -g \
+	-o $@.tmp $(ocaml_CMA_FILES) $(ocaml_CMO_FILES)
+	- $(V_GEN)$(OCAMLRUN) $(expunge) $@.tmp $@ $(PERVASIVES)
+	rm -f $@.tmp
 
 partialclean::
-	rm -f ocaml ocaml.exe
+	rm -f ocaml ocaml.exe ocaml.tmp ocaml.exe.tmp
 
 # Use TOPFLAGS to pass additional flags to the bytecode or native toplevel
 # when running make runtop or make natruntop
