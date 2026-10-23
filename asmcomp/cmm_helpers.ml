@@ -734,10 +734,13 @@ let array_indexing ?typ log2size ptr ofs dbg =
     | Some Int -> Caddi
     | _ -> assert false in
   match ofs with
-  | Cconst_int (n, _) when Misc.no_overflow_lsl (n asr 1) log2size ->
+  | Cconst_int (n, _) ->
       let i = n asr 1 in
       if i = 0 then ptr
-      else Cop(add, [ptr; Cconst_int(i lsl log2size, dbg)], dbg)
+      else
+        (* [i lsl log2size] can only overflow if the array size is
+           larger than the maximum array size *)
+        Cop(add, [ptr; Cconst_int(i lsl log2size, dbg)], dbg)
   | Cop
       ( (Caddi | Cor),
         [Cop (Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)],
@@ -755,7 +758,7 @@ let array_indexing ?typ log2size ptr ofs dbg =
         [Cop(add, [ptr; untag_int c dbg], dbg); Cconst_int (n asr 1, dbg)],
         dbg')
   | Cop(Caddi, [c; Cconst_int (n, _)], _)
-      when n <> min_int && Misc.no_overflow_lsl (n - 1) (log2size - 1)
+    when Misc.no_overflow_sub n 1 && Misc.no_overflow_lsl (n - 1) (log2size - 1)
       ->
       Cop(add, [Cop(add, [ptr; lsl_const c (log2size - 1) dbg], dbg);
                     Cconst_int((n-1) lsl (log2size - 1), dbg)], dbg)
