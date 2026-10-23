@@ -132,6 +132,8 @@ let add_no_overflow n x c dbg =
   let d = n + x in
   if d = 0 then c else Cop(Caddi, [c; Cconst_int (d, dbg)], dbg)
 
+let is_defined_shift n = 0 <= n && n < size_int * 8
+
 let rec add_const c n dbg =
   if n = 0 then c
   else match c with
@@ -184,7 +186,7 @@ let rec sub_int c1 c2 dbg =
 let rec lsl_int c1 c2 dbg =
   match (c1, c2) with
   | (Cop(Clsl, [c; Cconst_int (n1, _)], _), Cconst_int (n2, _))
-    when n1 > 0 && n2 > 0 && n1 + n2 < size_int * 8 ->
+    when n1 > 0 && n2 > 0 && is_defined_shift (n1 + n2) ->
       Cop(Clsl, [c; Cconst_int (n1 + n2, dbg)], dbg)
   | (Cop(Caddi, [c1; Cconst_int (n1, _)], _), Cconst_int (n2, _))
     when Misc.no_overflow_lsl n1 n2 ->
@@ -261,10 +263,10 @@ let untag_int i dbg =
   match i with
     Cconst_int (n, _) -> Cconst_int(n asr 1, dbg)
   | Cop(Cor, [Cop(Casr, [c; Cconst_int (n, _)], _); Cconst_int (1, _)], _)
-    when n > 0 && n < size_int * 8 ->
+    when n > 0 && is_defined_shift (n+1) ->
       Cop(Casr, [c; Cconst_int (n+1, dbg)], dbg)
   | Cop(Cor, [Cop(Clsr, [c; Cconst_int (n, _)], _); Cconst_int (1, _)], _)
-    when n > 0 && n < size_int * 8 ->
+    when n > 0 && is_defined_shift (n+1) ->
       Cop(Clsr, [c; Cconst_int (n+1, dbg)], dbg)
   | c -> asr_int c (Cconst_int (1, dbg)) dbg
 
@@ -732,7 +734,7 @@ let array_indexing ?typ log2size ptr ofs dbg =
     | Some Int -> Caddi
     | _ -> assert false in
   match ofs with
-  | Cconst_int (n, _) ->
+  | Cconst_int (n, _) when Misc.no_overflow_lsl (n asr 1) log2size ->
       let i = n asr 1 in
       if i = 0 then ptr
       else Cop(add, [ptr; Cconst_int(i lsl log2size, dbg)], dbg)
@@ -740,7 +742,7 @@ let array_indexing ?typ log2size ptr ofs dbg =
       ( (Caddi | Cor),
         [Cop (Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)],
         dbg' ) ->
-    (* [c] is not necessarily sign-extended to [arch_bits - 1] bits. When
+    (* [c] is not necessarily sign-extended to [size_int * 8 - 1] bits. When
        [log2size > 0], the left shift discards the top bit, so [c] can be used
        directly. When [log2size = 0], [c] must be sign-extended; [untag_int]
        takes care of this (and omits the extension when it can prove it
@@ -753,7 +755,7 @@ let array_indexing ?typ log2size ptr ofs dbg =
         [Cop(add, [ptr; untag_int c dbg], dbg); Cconst_int (n asr 1, dbg)],
         dbg')
   | Cop(Caddi, [c; Cconst_int (n, _)], _)
-      when Misc.no_overflow_lsl (n - 1) (log2size - 1)
+      when n <> min_int && Misc.no_overflow_lsl (n - 1) (log2size - 1)
       ->
       Cop(add, [Cop(add, [ptr; lsl_const c (log2size - 1) dbg], dbg);
                     Cconst_int((n-1) lsl (log2size - 1), dbg)], dbg)
