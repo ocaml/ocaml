@@ -5,9 +5,9 @@ open Gc
 let min_heap_sz = 524288 (* 512k *)
 let space_overhead = 70
 let stack_limit = 4194304 (* 4M *)
-let custom_major_ratio = 40
 let custom_minor_ratio = 99
 let custom_minor_max_size = 4096
+let ephe_space_overhead = 20
 
 let _ =
   let g1 = Gc.get() in
@@ -21,9 +21,10 @@ let _ =
            stack_limit = stack_limit;
            allocation_policy = g1.allocation_policy;
            window_size = g1.window_size;
-           custom_major_ratio = custom_major_ratio;
+           custom_major_ratio = g1.custom_major_ratio;
            custom_minor_ratio = custom_minor_ratio;
            custom_minor_max_size = custom_minor_max_size;
+           ephe_space_overhead = ephe_space_overhead;
          };
   let g2 = Gc.get() in
   assert (g2.minor_heap_size = min_heap_sz);
@@ -33,6 +34,6 @@ let _ =
   assert (g2.stack_limit = stack_limit);
   assert (g2.allocation_policy = g1.allocation_policy);
   assert (g2.window_size = g1.window_size);
-  assert (g2.custom_major_ratio = custom_major_ratio);
+  assert (g2.custom_major_ratio = g1.custom_major_ratio);
   assert (g2.custom_minor_ratio = custom_minor_ratio);
   assert (g2.custom_minor_max_size = custom_minor_max_size)

@@ -264,6 +264,9 @@ OCaml 5.6.0
 - #15177, OSEC-2026-26: Maintain custom events cache integrity.
   (Sadiq Jaffer, report by Hannes Mehnert, review by Edwin Török)
 
+* #14796: Complete overhaul of the GC pacing code
+  (Damien Doligez, review by ...)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
