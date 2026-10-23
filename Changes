@@ -16,7 +16,11 @@ OCaml 4.14 maintenance version
 
 - #15233, OSEC-2026-04: ensure that ephemeron marking follows Infix pointers.
   (Gabriel Scherer, review by Florian Angeletti,
-   report by Igor Santos-Grueiro)
+
+- #15185, #15187: fix a pattern-matching miscompilation on certain
+  combinations of immediate ranges and redundant patterns
+  (Gabriel Scherer, report by Alperer Keleş,
+   review by Vincent Laviron and Florian Angeletti)
 
 OCaml 4.14.4 (15 June 2026)
 ------------------------------
