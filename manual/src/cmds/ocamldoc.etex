@@ -774,7 +774,7 @@ inline-text: {{inline-text-element}}
 @||@&@ '{ol' list '}' @ & build an enumerated list. \\
 @||@&@ '{{:' string '}' inline-text '}' @ & put a link to the given address
 (given as @string@) on the given @text@. \\
-@||@&@ '[' string ']' @ & set the given @string@ in source code style. \\
+@||@&@ '[' string ']' @ & set the given @string@ in source code style. Newlines (and whitespace following a newline) are collapsed into a single space. \\
 @||@&@ '{[' string ']}' @ & set the given @string@ in preformatted
 				source code style.\\
 @||@&@ '{v' string 'v}' @ & set the given @string@ in verbatim style. \\
