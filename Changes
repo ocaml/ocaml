@@ -7,6 +7,9 @@ Working version
 
 ### Runtime system:
 
+- #?????: Enable runtime events teest on Windows.
+  (Tim McGilchrist, review by ?????)
+
 ### Code generation and optimizations:
 
 - #14980: Emit direct assembly for `Atomic.exchange` and
