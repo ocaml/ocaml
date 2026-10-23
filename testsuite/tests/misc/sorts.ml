@@ -1,4 +1,6 @@
-(* TEST *)
+(* TEST
+   skip; (* this is not a test, it is a benchmark *)
+*)
 
 (* Test bench for sorting algorithms. *)
 
