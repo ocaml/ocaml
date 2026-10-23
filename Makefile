@@ -1064,11 +1064,6 @@ natruntop:
 # The dynlink library
 
 dynlink_SOURCES = $(addprefix otherlibs/dynlink/,\
-  dynlink_config.mli dynlink_config.ml \
-  dynlink_types.mli dynlink_types.ml \
-  dynlink_platform_intf.mli dynlink_platform_intf.ml \
-  dynlink_common.mli dynlink_common.ml \
-  byte/dynlink_symtable.mli byte/dynlink_symtable.ml \
   byte/dynlink.mli byte/dynlink.ml \
   native/dynlink.mli native/dynlink.ml)
 
@@ -1077,6 +1072,45 @@ dynlink_LIBRARIES =
 otherlibs/dynlink/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 otherlibs/dynlink/%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
 
+otherlibs/dynlink/byte/dynlink.ml: \
+  otherlibs/dynlink/dynlink_common.ml.in \
+  Makefile.build_config Makefile.config \
+  file_formats/cmo_format.mli \
+  otherlibs/dynlink/byte/dynlink_symtable.ml.in \
+  otherlibs/dynlink/byte/dynlink.ml.in
+	$(V_GEN){ \
+	  echo 'module DC = struct'; \
+	  cat otherlibs/dynlink/dynlink_common.ml.in; \
+	  echo 'end'; \
+	  echo 'module Config = struct let ext_dll = "$(EXT_DLL)" end'; \
+	  echo 'let cmo_magic_number = $(CMO_MAGIC_TOKEN)'; \
+	  echo 'let cma_magic_number = $(CMA_MAGIC_TOKEN)'; \
+	  echo 'let bytecode_runtime_id = $(BYTECODE_RUNTIME_TOKEN)'; \
+	  echo 'let target = $(TARGET_TOKEN)'; \
+	  echo '[@@@ocaml.warning "-37-69"]'; \
+	  echo '#1 "file_formats/cmo_format.mli"'; \
+	  cat file_formats/cmo_format.mli; \
+	  echo '[@@@ocaml.warning "+37+69"]'; \
+	  echo 'module Symtable = struct'; \
+	  cat otherlibs/dynlink/byte/dynlink_symtable.ml.in; \
+	  echo 'end'; \
+	  cat otherlibs/dynlink/byte/dynlink.ml.in; \
+	} > $@
+
+otherlibs/dynlink/native/dynlink.ml: \
+  otherlibs/dynlink/dynlink_common.ml.in \
+  Makefile.build_config \
+  file_formats/cmxs_format.mli \
+  otherlibs/dynlink/native/dynlink.ml.in
+	$(V_GEN){ \
+	  echo 'module DC = struct'; \
+	  cat otherlibs/dynlink/dynlink_common.ml.in; \
+	  echo 'end'; \
+	  echo 'let cmxs_magic_number = $(CMXS_MAGIC_TOKEN)'; \
+	  echo '#1 "file_formats/cmxs_format.mli"'; \
+	  cat file_formats/cmxs_format.mli; \
+	  cat otherlibs/dynlink/native/dynlink.ml.in; \
+	} > $@
 
 otherlibs/dynlink/%/dynlink.cmi: \
   otherlibs/dynlink/dynlink.cmi otherlibs/dynlink/dynlink.mli
@@ -1108,7 +1142,7 @@ DYNLINK_DEPEND_DUMMY_FILES = \
   otherlibs/dynlink/byte/dynlink.mli \
   otherlibs/dynlink/native/dynlink.mli
 
-beforedepend::
+beforedepend:: $(addprefix otherlibs/dynlink/,byte/dynlink.ml native/dynlink.ml)
 	@touch $(DYNLINK_DEPEND_DUMMY_FILES)
 
 otherlibs/dynlink.depend: beforedepend
@@ -2243,9 +2277,8 @@ clean::
 	rm -f otherlibs/dynlink/*.a otherlibs/dynlink/*.lib \
 	  otherlibs/dynlink/*.o otherlibs/dynlink/*.obj \
 	  otherlibs/dynlink/*.so otherlibs/dynlink/*.dll \
-	  otherlibs/dynlink/byte/dynlink.mli \
-	  otherlibs/dynlink/native/dynlink.mli \
-
+	  otherlibs/dynlink/byte/dynlink.mli otherlibs/dynlink/byte/dynlink.ml \
+	  otherlibs/dynlink/native/dynlink.mli otherlibs/dynlink/native/dynlink.ml
 	$(MAKE) -C otherlibs clean
 
 # The replay debugger
@@ -2405,9 +2438,9 @@ sync_dynlink_LIBRARIES =
 .PHONY: sync_dynlink
 sync_dynlink: tools/sync_dynlink.opt$(EXE)
 	    ./tools/sync_dynlink.opt$(EXE) \
-        otherlibs/dynlink/byte/dynlink_symtable.ml \
+        otherlibs/dynlink/byte/dynlink_symtable.ml.in \
       > synced_dynlink.tmp
-	    diff -u synced_dynlink.tmp otherlibs/dynlink/byte/dynlink_symtable.ml
+	    diff -u synced_dynlink.tmp otherlibs/dynlink/byte/dynlink_symtable.ml.in
 	    rm synced_dynlink.tmp
 # Tools
 
@@ -2800,10 +2833,7 @@ ifneq "$(wildcard manual)" ""
 endif
 	rm -f ocamldoc/META
 	rm -f $(addprefix ocamltest/,ocamltest_config.ml ocamltest_unix.ml)
-	rm -f otherlibs/dynlink/META otherlibs/dynlink/dynlink_config.ml \
-	  otherlibs/dynlink/dynlink_cmo_format.mli \
-	  otherlibs/dynlink/dynlink_cmxs_format.mli \
-	  otherlibs/dynlink/dynlink_platform_intf.mli
+	rm -f otherlibs/dynlink/META
 	$(MAKE) -C otherlibs distclean
 	rm -f $(runtime_CONFIGURED_HEADERS) runtime/ld.conf
 	rm -rf runtime/api-testing
