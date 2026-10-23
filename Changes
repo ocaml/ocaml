@@ -71,6 +71,10 @@ Working version
   event is larger than half the ring buffer.
   (Tim McGilchrist, review by Sadiq Jaffer)
 
+- #15181: Allocate the exact size of runtime events ring file path.
+  Fixes an error on Windows with allocating long paths to this file.
+  (Tim McGilchrist, review by Antonin Décimo)
+
 OCaml 5.6.0
 -----------
 

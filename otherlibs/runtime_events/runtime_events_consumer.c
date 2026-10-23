@@ -44,8 +44,6 @@
 #include <unistd.h>
 #endif
 
-#define RING_FILE_NAME_MAX_LEN 512
-
 struct caml_runtime_events_cursor {
   int cursor_open;                  /* has this cursor been opened? */
   atomic_uintnat cursor_in_poll;    /* cursor is inside a read_poll() */
@@ -103,21 +101,31 @@ static int format_runtime_ring_file(
     }
   } else {
     /* Attaching to a process by directory and PID */
-    int err;
-    ring_file = caml_stat_alloc_noexc(RING_FILE_NAME_MAX_LEN);
+    int len, err;
+    if (input_path) {
+      len = snprintf_os(NULL, 0, T("%s/%d.events"), input_path, input_pid);
+    } else {
+      len = snprintf_os(NULL, 0, T("%d.events"), input_pid);
+    }
+    if (len < 0) {
+      ret = E_PATH_FAILURE;
+      goto fail_measure;
+    }
+
+    ring_file = caml_stat_alloc_noexc((len + 1) * sizeof(char_os));
     if (ring_file == NULL) {
       ret = E_ALLOC_FAIL;
       goto fail_alloc_file;
     }
 
     if (input_path) {
-      err = snprintf_os(ring_file, RING_FILE_NAME_MAX_LEN,
+      err = snprintf_os(ring_file, len + 1,
                         T("%s/%d.events"), input_path, input_pid);
     } else {
-      err = snprintf_os(ring_file, RING_FILE_NAME_MAX_LEN,
+      err = snprintf_os(ring_file, len + 1,
                         T("%d.events"), input_pid);
     }
-    if (err < 0) {
+    if (err != len) {
       ret = E_PATH_FAILURE;
       goto fail_snprintf;
     }
@@ -128,6 +136,7 @@ static int format_runtime_ring_file(
 
  fail_snprintf:
   caml_stat_free(ring_file);
+ fail_measure:
  fail_alloc_file:
  fail_current_file:
   return ret;

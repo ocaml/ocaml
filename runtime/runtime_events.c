@@ -256,14 +256,30 @@ static void runtime_events_create_from_stw_single(void) {
     long int pid = getpid();
 #endif
 
-    current_ring_loc = caml_stat_alloc(RUNTIME_EVENTS_MAX_MSG_LENGTH);
+    int path_len, err;
 
     if (runtime_events_path) {
-      snprintf_os(current_ring_loc, RUNTIME_EVENTS_MAX_MSG_LENGTH,
-                  T("%s/%ld.events"), runtime_events_path, pid);
+      path_len = snprintf_os(NULL, 0, T("%s/%ld.events"),
+                             runtime_events_path, pid);
     } else {
-      snprintf_os(current_ring_loc, RUNTIME_EVENTS_MAX_MSG_LENGTH,
-                  T("%ld.events"), pid);
+      path_len = snprintf_os(NULL, 0, T("%ld.events"), pid);
+    }
+    if (path_len < 0) {
+      caml_fatal_error("runtime_events: cannot format the ring buffer path");
+    }
+
+    /* The length is in char_os, which is wider than a byte on Windows. */
+    current_ring_loc = caml_stat_alloc((path_len + 1) * sizeof(char_os));
+
+    if (runtime_events_path) {
+      err = snprintf_os(current_ring_loc, path_len + 1,
+                        T("%s/%ld.events"), runtime_events_path, pid);
+    } else {
+      err = snprintf_os(current_ring_loc, path_len + 1,
+                        T("%ld.events"), pid);
+    }
+    if (err != path_len) {
+      caml_fatal_error("runtime_events: cannot format the ring buffer path");
     }
 
     /* Computed in 64 bits: max_domains * ring_size_bytes can exceed the range
