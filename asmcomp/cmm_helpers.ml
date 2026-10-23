@@ -738,8 +738,8 @@ let array_indexing ?typ log2size ptr ofs dbg =
       else Cop(add, [ptr; Cconst_int(i lsl log2size, dbg)], dbg)
   | Cop(Caddi,
         [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], dbg')
-    when log2size > 0 (* the shift must remove the 1-bit sign-extension,
-                         see also ignore_high_bit_int *)
+    when log2size > 0 (* This shift may be part of a sign-extension,
+                         which must not be removed. *)
     ->
       Cop(add, [ptr; lsl_const c log2size dbg], dbg')
   | Cop(Caddi, [c; Cconst_int (n, _)], dbg') when log2size = 0 ->
