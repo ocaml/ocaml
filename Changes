@@ -19,6 +19,8 @@ Working version
 
 ### Standard library:
 
+* #14030: Add Printexc.reraise (Raphaël Proust)
+
 ### Other libraries:
 
 - #15121: Add support for `O_NOFOLLOW` to the `Unix` library, only implemented

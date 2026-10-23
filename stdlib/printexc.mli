@@ -415,6 +415,22 @@ val exn_slot_name: exn -> string
     @since 4.02
 *)
 
+(** {1 Reraising} *)
+
+external reraise: exn -> 'a = "%reraise"
+(** [reraise exc] re-raise the exception [exc] adding a location to its
+    backtrace. This is similar to what happens when an exception traverses a
+    non-total handler. E.g.,
+    {[ try f () with Not_found -> () ]}
+    is equivalent to
+    {[ try f () with Not_found -> () | exc -> Printexc.reraise exc ]}
+
+    This function is intended to be used when building your own abstractions on
+    top of exceptions, where the OCaml compiler requires functions to be total.
+
+    @since SINCE
+*)
+
 (**/**)
 
 (**  {1 Obj printer}
