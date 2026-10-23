@@ -154,9 +154,9 @@ nothing.
 Sort files according to their dependencies.
 
 \item["-strict"]
-Fail if an input file does not exist. By default, input files that do
-not exist are silently ignored. In this mode, processing stops at the
-first error, and no dependencies are printed.
+Stop processing at the first error (e.g. a syntax error), without
+printing any dependencies. In this mode, a missing input file is an
+error; otherwise, missing input files are silently ignored.
 
 \item["-version"]
 Print version string and exit.

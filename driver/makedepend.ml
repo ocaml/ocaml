@@ -637,7 +637,7 @@ let run_main argv =
       "-sort", Arg.Set sort_files,
         " Sort files according to their dependencies";
       "-strict", Arg.Set strict,
-        " Fail if an input file does not exist; stop at the first error";
+        " Stop at the first error; a missing input file is an error";
       "-version", Arg.Unit print_version,
         " Print version and exit";
       "-vnum", Arg.Unit print_version_num,
