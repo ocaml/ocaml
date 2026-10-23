@@ -909,6 +909,11 @@ OCaml 5.5.1
   let other threads run.
   (Nicolás Ojeda Bär, report by Daniel Larraz, review by Antonin Décimo)
 
+- #15185, #15187: fix a pattern-matching miscompilation on certain
+  combinations of immediate ranges and redundant patterns
+  (Gabriel Scherer, report by Alperer Keleş,
+   review by Vincent Laviron and Florian Angeletti)
+
 OCaml 5.5.0 (19 June 2026)
 -------------------------
 
