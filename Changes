@@ -74,7 +74,7 @@ Working version
 - #15160, #15161: Fix overflows in native code array indexing, and check
   for overflow when generating bounds checks for array accesses that
   are constants.
-  (Stefan Muenzel, review by Zane Hambly and Vincent Laviron)
+  (Stefan Muenzel and Xavier Clerc, review by Zane Hambly and Vincent Laviron)
 
 OCaml 5.6.0
 -----------
