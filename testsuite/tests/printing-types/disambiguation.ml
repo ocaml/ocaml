@@ -9,7 +9,7 @@ Error: Type declarations do not match:
          type !'a x = private [> `x ] constraint 'a = [> `x ]
        is not included in
          type 'a x
-       Their parameters differ
+       Their parameters differ:
        The type "[> `x ] x" = "[> `x ]" is not equal to the type "'a"
 |}, Principal{|
 Line 1:
@@ -17,7 +17,7 @@ Error: Type declarations do not match:
          type !'a x = private 'a constraint 'a = [> `x ]
        is not included in
          type 'a x
-       Their parameters differ
+       Their parameters differ:
        The type "[> `x ]" is not equal to the type "'a"
 |}];;
 
