@@ -162,6 +162,22 @@ val mk_compare_floats : Debuginfo.t -> expression -> expression -> expression
     Used to be represented as Cloop. *)
 val create_loop : expression -> Debuginfo.t -> expression
 
+(* Bulk operations over the first [n] elements of float arrays.  The
+   reductions add in an unspecified order. *)
+val floatarray_dot :
+  expression -> expression -> expression -> Debuginfo.t -> expression
+val floatarray_sum : expression -> expression -> Debuginfo.t -> expression
+val floatarray_dot_chunked :
+  string -> expression -> expression -> expression -> Debuginfo.t -> expression
+val floatarray_scale :
+  expression -> expression -> expression -> Debuginfo.t -> expression
+val floatarray_axpy :
+  expression -> expression -> expression -> expression -> Debuginfo.t
+  -> expression
+val floatarray_binop :
+  operation -> expression -> expression -> expression -> expression
+  -> Debuginfo.t -> expression
+
 (** Exception raising *)
 val raise_symbol : Debuginfo.t -> string -> expression
 

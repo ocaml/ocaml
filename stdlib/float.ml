@@ -190,6 +190,37 @@ module Array = struct
   external unsafe_blit: t -> int -> t -> int -> int -> unit =
     "caml_floatarray_blit" [@@noalloc]
 
+  external unsafe_dot : t -> t -> int -> float = "%floatarray_dot"
+  external unsafe_sum : t -> int -> float = "%floatarray_sum"
+  external unsafe_scale : float -> t -> int -> unit = "%floatarray_scale"
+  external unsafe_axpy : float -> t -> t -> int -> unit = "%floatarray_axpy"
+  external unsafe_add : t -> t -> t -> int -> unit = "%floatarray_add"
+  external unsafe_mul : t -> t -> t -> int -> unit = "%floatarray_mul"
+
+  let[@inline never] mismatch name = invalid_arg ("Float.Array." ^ name)
+
+  let dot a b =
+    let n = length a in
+    if n = length b then unsafe_dot a b n else mismatch "dot"
+
+  let sum a = unsafe_sum a (length a)
+
+  let scale c a = unsafe_scale c a (length a)
+
+  let axpy c x y =
+    let n = length x in
+    if n = length y then unsafe_axpy c x y n else mismatch "axpy"
+
+  let add a b dst =
+    let n = length a in
+    if n = length b && n = length dst then unsafe_add a b dst n
+    else mismatch "add"
+
+  let mul a b dst =
+    let n = length a in
+    if n = length b && n = length dst then unsafe_mul a b dst n
+    else mismatch "mul"
+
   external unsafe_sub : t -> int -> int -> t = "caml_floatarray_sub"
   external append_prim : t -> t -> t = "caml_floatarray_append"
   external concat : t list -> t = "caml_floatarray_concat"
