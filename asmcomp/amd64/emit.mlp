@@ -468,6 +468,7 @@ let emit_instr env fallthrough i =
   let arg8 i n = emit_subreg env reg_low_8_name BYTE i.arg.(n) in
   let arg16 i n = emit_subreg env reg_low_16_name WORD i.arg.(n) in
   let arg32 i n = emit_subreg env reg_low_32_name DWORD i.arg.(n) in
+  let res8 i n = emit_subreg env reg_low_8_name BYTE i.res.(n) in
   let res16 i n = emit_subreg env reg_low_16_name WORD i.res.(n) in
   let res32 i n = emit_subreg env reg_low_32_name DWORD i.res.(n) in
   let arg = arg env in
@@ -672,12 +673,10 @@ let emit_instr env fallthrough i =
       end
   | Lop(Iintop(Icomp cmp)) ->
       I.cmp (arg i 1) (arg i 0);
-      I.set (cond cmp) al;
-      I.movzx al (res i 0)
+      I.set (cond cmp) (res8 i 0)
   | Lop(Iintop_imm(Icomp cmp, n)) ->
       I.cmp (int n) (arg i 0);
-      I.set (cond cmp) al;
-      I.movzx al (res i 0)
+      I.set (cond cmp) (res8 i 0)
   | Lop(Iintop (Icheckbound)) ->
       let lbl = bound_error_label env i.dbg in
       I.cmp (arg i 1) (arg i 0);
