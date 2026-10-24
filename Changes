@@ -48,6 +48,10 @@ Working version
   (Michael Bacarella, review by Florian Angeletti, Nicolás Ojeda Bär,
    Damien Doligez and Stefan Muenzel)
 
+- #14156: Introduce a new type for type proxies that are used in printing
+  types.
+  (Stefan Muenzel, review by Samuel Vivien)
+
 ### Build system:
 
 ### Bug fixes:
