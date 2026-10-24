@@ -453,9 +453,10 @@ let sort_files_by_dependencies files =
       if Hashtbl.mem h (modname, MLI) then add_dep modname MLI
   ) files;
 
-(* Print and remove all files with no remaining dependency. Iterate
+(* Collect and remove all files with no remaining dependency. Iterate
    until all files have been removed (worklist is empty) or
    no file was removed during a turn (cycle). *)
+  let sorted = ref [] in
   let printed = ref true in
   while !printed && !worklist <> [] do
     let files = !worklist in
@@ -470,7 +471,7 @@ let sort_files_by_dependencies files =
       ) set;
       if !deps = [] then begin
         printed := true;
-        Printf.printf "%s " file;
+        prepend_to_list sorted file;
         Hashtbl.remove h key;
       end else
         prepend_to_list worklist key
@@ -491,9 +492,10 @@ let sort_files_by_dependencies files =
         Format.eprintf "%s.%s " modname (if kind=ML then "ml" else "mli")
       ) !deps;
       Format.eprintf "@]@.";
-      Printf.printf "%s " file) sorted_deps;
+      prepend_to_list sorted file) sorted_deps;
     Error_occurred.set ()
   end;
+  List.iter (Printf.printf "%s ") (List.rev !sorted);
   Printf.printf "\n%!";
   ()
 
