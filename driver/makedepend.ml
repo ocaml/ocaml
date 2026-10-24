@@ -574,6 +574,9 @@ let print_version_num () =
 let run_main argv =
   let dep_args_rev : dep_arg list ref = ref [] in
   let add_dep_arg f s = prepend_to_list dep_args_rev (f s) in
+  let synonym_args_rev = ref [] in
+  let add_synonym_arg synonyms s =
+    prepend_to_list synonym_args_rev (synonyms, s) in
   Clflags.classic := false;
   try
     Compenv.readenv stderr Before_args;
@@ -608,9 +611,9 @@ let run_main argv =
        (see ocamlc)";
       "-map", Arg.String (add_dep_arg (fun f -> Map f)),
         "<f>  Read <f> and propagate delayed dependencies to following files";
-      "-ml-synonym", Arg.String(add_to_synonym_list ml_synonyms),
+      "-ml-synonym", Arg.String(add_synonym_arg ml_synonyms),
         "<e>  Consider <e> as a synonym of the .ml extension";
-      "-mli-synonym", Arg.String(add_to_synonym_list mli_synonyms),
+      "-mli-synonym", Arg.String(add_synonym_arg mli_synonyms),
         "<e>  Consider <e> as a synonym of the .mli extension";
       "-modules", Arg.Set raw_dependencies,
         " Print module dependencies in raw form (not suitable for make)";
@@ -652,6 +655,10 @@ let run_main argv =
     let program = Filename.basename Sys.argv.(0) in
     Compenv.parse_arguments (ref argv)
       (add_dep_arg (fun f -> Src (f, None))) program;
+    (* Validate synonyms only once all arguments, including [-strict], have
+       been parsed. *)
+    List.iter (fun (synonyms, suffix) -> add_to_synonym_list synonyms suffix)
+      (List.rev !synonym_args_rev);
     process_dep_args (List.rev !dep_args_rev);
     Compenv.readenv stderr Before_link;
     if !sort_files then sort_files_by_dependencies !files
