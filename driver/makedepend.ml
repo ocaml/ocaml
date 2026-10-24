@@ -47,10 +47,13 @@ module Error_occurred : sig
   val get : unit -> bool
 end = struct
   (* Once set to [true], [error_occurred] should never be set to
-     [false]. *)
+     [false]. In [-strict] mode, [error_occurred] is not used: stop at the
+     first error instead. *)
   let error_occurred = ref false
   let get () = !error_occurred
-  let set () = error_occurred := true
+  let set () =
+    if !strict then raise (Compenv.Exit_with_status 2)
+    else error_occurred := true
 end
 
 let prepend_to_list l e = l := e :: !l
@@ -239,9 +242,11 @@ let print_raw_dependencies source_file deps =
 let print_exception exn =
   Location.report_exception stderr exn
 
-let report_err exn =
-  Error_occurred.set ();
-  print_exception exn
+let report_err = function
+  | Compenv.Exit_with_status _ as exn -> raise exn
+  | exn ->
+      print_exception exn;
+      Error_occurred.set ()
 
 let tool_name = "ocamldep"
 
@@ -553,14 +558,7 @@ let process_dep_arg = function
   | Src (file, None) -> file_dependencies file
   | Src (file, (Some file_kind)) -> file_dependencies_as file_kind file
 
-(* In [-strict] mode, stop at the first error: since dependencies are only
-   printed once all inputs have been processed, nothing is printed. *)
-let process_dep_args dep_args =
-  List.iter (fun arg ->
-      process_dep_arg arg;
-      if !strict && Error_occurred.get () then
-        raise (Compenv.Exit_with_status 2)
-    ) dep_args
+let process_dep_args dep_args = List.iter process_dep_arg dep_args
 
 (* Entry point *)
 
@@ -665,7 +663,8 @@ let run_main argv =
     Compenv.readenv stderr Before_link;
     if !sort_files then sort_files_by_dependencies !files
     else List.iter print_file_dependencies (List.sort compare !files);
-    (if Error_occurred.get () then 2 else 0)
+    (* In [-strict] mode, any error has already raised [Exit_with_status]. *)
+    (if not !strict && Error_occurred.get () then 2 else 0)
   with
   | Compenv.Exit_with_status n ->
       n

@@ -48,6 +48,15 @@
    ocamlc.byte;
    compiler_reference = "${test_source_directory}/sort_cycle.reference";
    check-ocamlc.byte-output;
+ }{
+   (* Dependency cycle with -sort -strict: error, and no files are
+      printed. *)
+   commandline = "-depend -sort -strict test.ml cycle_a.ml cycle_b.ml";
+   compiler_output = "${test_build_directory}/strict_sort_cycle.output";
+   ocamlc_byte_exit_status = "2";
+   ocamlc.byte;
+   compiler_reference = "${test_source_directory}/strict_sort_cycle.reference";
+   check-ocamlc.byte-output;
  }
 *)
 
