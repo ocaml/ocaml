@@ -660,7 +660,10 @@ module Proxy : sig
   val type_expr : t -> type_expr
   val transient_expr_REMOVE : t -> transient_expr
 
+  val desc : t -> type_desc
+
   module Set : Stdlib.Set.S with type elt = t
+  module Map : Stdlib.Map.S with type key = t
 
 end = struct
   module T = struct
@@ -671,11 +674,14 @@ end = struct
   include T
 
   module Set = Stdlib.Set.Make(T)
+  module Map = Stdlib.Map.Make(T)
 
   let make ty = Transient_expr.repr (proxy ty)
 
   let type_expr = Transient_expr.type_expr
   let transient_expr_REMOVE px = px
+
+  let desc t = t.desc
 
 end
 
@@ -842,14 +848,13 @@ module Variable_names : sig
   val new_name : unit -> string
   val new_var_name : non_gen:bool -> type_expr -> unit -> string
 
-  val name_of_type : (unit -> string) -> transient_expr -> string
-  val name_of_type_proxy_TEMPORARY : (unit -> string) -> transient_expr -> string
+  val name_of_type : (unit -> string) -> Proxy.t -> string
   val check_name_of_type : non_gen:bool -> Proxy.t -> unit
 
 
   val reserve: type_expr -> unit
 
-  val remove_names : transient_expr list -> unit
+  val remove_names : Proxy.t list -> unit
 
   val with_local_names : (unit -> 'a) -> 'a
 
@@ -861,9 +866,9 @@ end = struct
      which maps from types to types.  The lookup process is
      "type -> apply substitution -> find name".  The substitution is presumed to
      be one-shot. *)
-  let names = ref (TransientTypeMap.empty : string TransientTypeMap.t)
+  let names = ref (Proxy.Map.empty : string Proxy.Map.t)
   let names_set = ref String.Set.empty
-  let name_subst = ref (TransientTypeMap.empty : (transient_expr TransientTypeMap.t))
+  let name_subst = ref (Proxy.Map.empty : (Proxy.t Proxy.Map.t))
   let name_counter = ref 0
   let named_vars = ref String.Set.empty
   let visited_for_named_vars = ref Proxy.Set.empty
@@ -873,9 +878,9 @@ end = struct
   let named_weak_vars = ref String.Set.empty
 
   let reset_names () =
-    names := TransientTypeMap.empty;
+    names := Proxy.Map.empty;
     names_set := String.Set.empty;
-    name_subst := TransientTypeMap.empty;
+    name_subst := Proxy.Map.empty;
     name_counter := 0;
     named_vars := String.Set.empty;
     visited_for_named_vars := Proxy.Set.empty
@@ -904,18 +909,18 @@ end = struct
           printer_iter_type_expr add_named_vars ty
     end
 
-  let substitute ty =
-    match TransientTypeMap.find ty !name_subst with
-    | ty' -> ty'
-    | exception Not_found -> ty
+  let substitute (px : Proxy.t) : Proxy.t =
+    match Proxy.Map.find px !name_subst with
+    | px' -> px'
+    | exception Not_found -> px
 
   let add_subst subst =
     name_subst :=
       List.fold_left
         (fun m (t1,t2) ->
-           let t1 = Transient_expr.type_expr (Proxy.transient_expr_REMOVE (Proxy.make t1)) in
-           let t2 = Proxy.transient_expr_REMOVE (Proxy.make t2) in
-           TypeMap.add t1 t2 m)
+           let t1 = Proxy.make t1 in
+           let t2 = Proxy.make t2 in
+           Proxy.Map.add t1 t2 m)
         !name_subst
         subst
 
@@ -943,14 +948,14 @@ end = struct
     if non_gen then new_weak_name ty ()
     else new_name ()
 
-  let name_of_type name_generator t =
+  let name_of_type name_generator (px : Proxy.t) =
     (* We've already been through repr at this stage, so t is our representative
        of the union-find class. *)
-    let t = substitute t in
-    try TransientTypeMap.find t !names with Not_found ->
-      try TransientTypeMap.find t !weak_var_map with Not_found ->
+    let px = substitute px in
+    try Proxy.Map.find px !names with Not_found ->
+      try TransientTypeMap.find (Proxy.transient_expr_REMOVE px) !weak_var_map with Not_found ->
       let name =
-        match t.desc with
+        match Proxy.desc px with
           Tvar (Some name) | Tunivar (Some name) ->
             (* Some part of the type we've already printed has assigned another
              * unification variable to that name. We want to keep the name, so
@@ -969,24 +974,21 @@ end = struct
       in
       (* Exception for type declarations *)
       if name <> "_" then begin
-        names := TransientTypeMap.add t name !names;
+        names := Proxy.Map.add px name !names;
         names_set := String.Set.add name !names_set
       end;
       name
 
-  let name_of_type_proxy_TEMPORARY name_generator t =
-    name_of_type name_generator (Proxy.transient_expr_REMOVE (proxy (Transient_expr.type_expr t)))
-
   let check_name_of_type ~non_gen (px : Proxy.t) =
     let name_gen = new_var_name ~non_gen (Proxy.type_expr px) in
-    ignore(name_of_type name_gen (Proxy.transient_expr_REMOVE px))
+    ignore(name_of_type name_gen px)
 
-  let remove_name t =
-    let t = substitute t in
-    match TransientTypeMap.find t !names with
+  let remove_name (px : Proxy.t) =
+    let px = substitute px in
+    match Proxy.Map.find px !names with
     | name ->
         names_set := String.Set.remove name !names_set;
-        names := TransientTypeMap.remove t !names
+        names := Proxy.Map.remove px !names
     | exception Not_found -> ()
 
   let remove_names tyl =
@@ -996,9 +998,9 @@ end = struct
     let old_names = !names in
     let old_names_set = !names_set in
     let old_subst = !name_subst in
-    names      := TransientTypeMap.empty;
+    names      := Proxy.Map.empty;
     names_set  := String.Set.empty;
-    name_subst := TransientTypeMap.empty;
+    name_subst := Proxy.Map.empty;
     try_finally
       ~always:(fun () ->
         names      := old_names;
@@ -1215,7 +1217,7 @@ let rec tree_of_typexp mode ty =
   if Aliases.is_printed_proxy px && not (Aliases.is_delayed px) then
    let non_gen = is_non_gen mode (Proxy.type_expr px) in
    let name = Variable_names.(name_of_type (new_var_name ~non_gen ty))
-                (Proxy.transient_expr_REMOVE px) in
+                px in
    Otyp_var (non_gen, name) else
 
   let pr_typ () =
@@ -1224,7 +1226,7 @@ let rec tree_of_typexp mode ty =
     | Tvar _ ->
         let non_gen = is_non_gen mode ty in
         let name_gen = Variable_names.new_var_name ~non_gen ty in
-        Otyp_var (non_gen, Variable_names.name_of_type_proxy_TEMPORARY name_gen tty)
+        Otyp_var (non_gen, Variable_names.name_of_type name_gen (Proxy.make ty))
     | Tarrow(l, ty1, ty2, _) ->
         let lab =
           if !print_labels || is_optional l then l else Nolabel
@@ -1315,7 +1317,7 @@ let rec tree_of_typexp mode ty =
     | Tpoly (ty, tyl) ->
         tree_of_poly_typexp mode ty tyl
     | Tunivar _ ->
-        Otyp_var (false, Variable_names.(name_of_type_proxy_TEMPORARY new_name) tty)
+        Otyp_var (false, Variable_names.(name_of_type new_name) px)
     | Tpackage pack ->
         let pack = tree_of_package mode pack in
         Otyp_module pack
@@ -1327,7 +1329,7 @@ let rec tree_of_typexp mode ty =
     Aliases.add_printed_proxy ~non_gen px;
     (* add_printed_proxy chose a name, thus the name generator
        doesn't matter.*)
-    let alias = Variable_names.(name_of_type (new_var_name ~non_gen ty)) (Proxy.transient_expr_REMOVE px) in
+    let alias = Variable_names.(name_of_type (new_var_name ~non_gen ty)) px in
     Otyp_alias {non_gen;  aliased = pr_typ (); alias } end
   else pr_typ ()
 
@@ -1336,15 +1338,14 @@ and tree_of_poly_typexp mode ty tyl =
   | [] -> tree_of_typexp mode ty
   | _ ->
       let pxl = List.map Proxy.make tyl in
-      let tyl = List.map Transient_expr.repr tyl in
       Aliases.with_temporary_delay (fun () ->
           (* Make the names delayed, so that the real type is
-                 printed once when used as proxy *)
+             printed once when used as proxy *)
           List.iter Aliases.add_delayed pxl;
-          let tl = List.map Variable_names.(name_of_type_proxy_TEMPORARY new_name) tyl in
+          let tl = List.map Variable_names.(name_of_type new_name) pxl in
           let tr = Otyp_poly (tl, tree_of_typexp mode ty) in
           (* Forget names when we leave scope *)
-          Variable_names.remove_names tyl;
+          Variable_names.remove_names pxl;
           tr
         )
 
@@ -1823,7 +1824,7 @@ let prepare_method _lab (priv, _virt, ty) =
 let tree_of_method mode (lab, priv, virt, ty) =
   let (ty, tyl) = method_type priv ty in
   let tty = tree_of_typexp mode ty in
-  Variable_names.remove_names (List.map Transient_expr.repr tyl);
+  Variable_names.remove_names (List.map proxy tyl);
   let priv = priv <> Mpublic in
   let virt = virt = Virtual in
   Ocsg_method (lab, priv, virt, tty)
@@ -1863,7 +1864,7 @@ let rec tree_of_class_type mode params =
       let self_ty =
         if Aliases.is_aliased_proxy px then
           Some
-            (Otyp_var (false, Variable_names.(name_of_type new_name) (Proxy.transient_expr_REMOVE px)))
+            (Otyp_var (false, Variable_names.(name_of_type new_name) px))
         else None
       in
       let csil = [] in
