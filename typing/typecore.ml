@@ -4038,7 +4038,9 @@ let check_statement exp =
               | Some (_, loc, _) -> loc
               | None -> exp_loc
             in
-            Location.prerr_warning loc Warnings.Non_unit_statement
+            let msg =
+              Format_doc.doc_printf "%a" Printtyp.Doc.type_expr exp.exp_type in
+            Location.prerr_warning loc (Warnings.Non_unit_statement msg)
       in
       loop exp
 
