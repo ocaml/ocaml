@@ -964,7 +964,7 @@ let char_for_decimal_code c0 c1 c2 =
     100 * decimal_value_of_char c0 +
      10 * decimal_value_of_char c1 +
           decimal_value_of_char c2 in
-  if c < 0 || c > 255 then
+  if c > 255 then
     bad_input
       (Printf.sprintf
          "bad character decimal encoding \\%c%c%c" c0 c1 c2) else
@@ -980,7 +980,7 @@ let char_for_octal_code c0 c1 c2 =
     64 * octal_value_of_char c0 +
      8 * octal_value_of_char c1 +
          octal_value_of_char c2 in
-  if c < 0 || c > 255 then
+  if c > 255 then
     bad_input
       (Printf.sprintf
          "bad character octal encoding \\o%c%c%c" c0 c1 c2) else
@@ -1007,7 +1007,7 @@ let char_for_hexadecimal_code c1 c2 =
   let c =
     16 * hexadecimal_value_of_char c1 +
          hexadecimal_value_of_char c2 in
-  if c < 0 || c > 255 then
+  if c > 255 then
     bad_input
       (Printf.sprintf "bad character hexadecimal encoding \\%c%c" c1 c2) else
   char_of_int c
