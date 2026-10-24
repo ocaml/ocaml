@@ -48,6 +48,10 @@ Working version
   (Michael Bacarella, review by Florian Angeletti, Nicolás Ojeda Bär,
    Damien Doligez and Stefan Muenzel)
 
+- #15170: Do not track register usage timestamps in Spill when -linscan
+  is set. This avoids large compile-time overheads on some extreme code.
+  (Pierre-Marie Pédrot, review by Vincent Laviron)
+
 ### Build system:
 
 ### Bug fixes:
