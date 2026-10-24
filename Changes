@@ -31,6 +31,11 @@ Working version
   of nonmatching input if a rule is not exhaustive (Martin Jambon,
   review by David Allsopp and Gabriel Scherer)
 
+- #15167: ocamldep: add a -strict flag to exit with a non-zero code whenever an
+  error occurs (input file does not exist, parse error, etc). No output is
+  generated in that case.
+  (Nicolás Ojeda Bär, review by Florian Angeletti)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:

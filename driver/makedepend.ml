@@ -34,6 +34,7 @@ let nocwd = ref false
 let one_line = ref false
 let allow_approximation = ref false
 let debug = ref false
+let strict = ref false
 
 (* [(dir, contents)] where [contents] is returned by [Sys.readdir dir]. *)
 let load_path = ref ([] : (string * string array) list)
@@ -46,10 +47,13 @@ module Error_occurred : sig
   val get : unit -> bool
 end = struct
   (* Once set to [true], [error_occurred] should never be set to
-     [false]. *)
+     [false]. In [-strict] mode, [error_occurred] is not used: stop at the
+     first error instead. *)
   let error_occurred = ref false
   let get () = !error_occurred
-  let set () = error_occurred := true
+  let set () =
+    if !strict then raise (Compenv.Exit_with_status 2)
+    else error_occurred := true
 end
 
 let prepend_to_list l e = l := e :: !l
@@ -238,9 +242,11 @@ let print_raw_dependencies source_file deps =
 let print_exception exn =
   Location.report_exception stderr exn
 
-let report_err exn =
-  Error_occurred.set ();
-  print_exception exn
+let report_err = function
+  | Compenv.Exit_with_status _ as exn -> raise exn
+  | exn ->
+      print_exception exn;
+      Error_occurred.set ()
 
 let tool_name = "ocamldep"
 
@@ -401,7 +407,8 @@ let process_file_as process_fun def source_file =
       ));
   Location.input_name := source_file;
   try
-    if Sys.file_exists source_file then process_fun source_file else def
+    if !strict || Sys.file_exists source_file then process_fun source_file
+    else def
   with x -> report_err x; def
 
 let process_file source_file ~ml_file ~mli_file ~def =
@@ -451,9 +458,10 @@ let sort_files_by_dependencies files =
       if Hashtbl.mem h (modname, MLI) then add_dep modname MLI
   ) files;
 
-(* Print and remove all files with no remaining dependency. Iterate
+(* Collect and remove all files with no remaining dependency. Iterate
    until all files have been removed (worklist is empty) or
    no file was removed during a turn (cycle). *)
+  let sorted = ref [] in
   let printed = ref true in
   while !printed && !worklist <> [] do
     let files = !worklist in
@@ -468,7 +476,7 @@ let sort_files_by_dependencies files =
       ) set;
       if !deps = [] then begin
         printed := true;
-        Printf.printf "%s " file;
+        prepend_to_list sorted file;
         Hashtbl.remove h key;
       end else
         prepend_to_list worklist key
@@ -489,9 +497,10 @@ let sort_files_by_dependencies files =
         Format.eprintf "%s.%s " modname (if kind=ML then "ml" else "mli")
       ) !deps;
       Format.eprintf "@]@.";
-      Printf.printf "%s " file) sorted_deps;
+      prepend_to_list sorted file) sorted_deps;
     Error_occurred.set ()
   end;
+  List.iter (Printf.printf "%s ") (List.rev !sorted);
   Printf.printf "\n%!";
   ()
 
@@ -565,6 +574,9 @@ let print_version_num () =
 let run_main argv =
   let dep_args_rev : dep_arg list ref = ref [] in
   let add_dep_arg f s = prepend_to_list dep_args_rev (f s) in
+  let synonym_args_rev = ref [] in
+  let add_synonym_arg synonyms s =
+    prepend_to_list synonym_args_rev (synonyms, s) in
   Clflags.classic := false;
   try
     Compenv.readenv stderr Before_args;
@@ -599,9 +611,9 @@ let run_main argv =
        (see ocamlc)";
       "-map", Arg.String (add_dep_arg (fun f -> Map f)),
         "<f>  Read <f> and propagate delayed dependencies to following files";
-      "-ml-synonym", Arg.String(add_to_synonym_list ml_synonyms),
+      "-ml-synonym", Arg.String(add_synonym_arg ml_synonyms),
         "<e>  Consider <e> as a synonym of the .ml extension";
-      "-mli-synonym", Arg.String(add_to_synonym_list mli_synonyms),
+      "-mli-synonym", Arg.String(add_synonym_arg mli_synonyms),
         "<e>  Consider <e> as a synonym of the .mli extension";
       "-modules", Arg.Set raw_dependencies,
         " Print module dependencies in raw form (not suitable for make)";
@@ -627,6 +639,8 @@ let run_main argv =
         " (Windows) Preserve any backslash \\ in file paths";
       "-sort", Arg.Set sort_files,
         " Sort files according to their dependencies";
+      "-strict", Arg.Set strict,
+        " Stop at the first error; a missing input file is an error";
       "-version", Arg.Unit print_version,
         " Print version and exit";
       "-vnum", Arg.Unit print_version_num,
@@ -641,11 +655,16 @@ let run_main argv =
     let program = Filename.basename Sys.argv.(0) in
     Compenv.parse_arguments (ref argv)
       (add_dep_arg (fun f -> Src (f, None))) program;
+    (* Validate synonyms only once all arguments, including [-strict], have
+       been parsed. *)
+    List.iter (fun (synonyms, suffix) -> add_to_synonym_list synonyms suffix)
+      (List.rev !synonym_args_rev);
     process_dep_args (List.rev !dep_args_rev);
     Compenv.readenv stderr Before_link;
     if !sort_files then sort_files_by_dependencies !files
     else List.iter print_file_dependencies (List.sort compare !files);
-    (if Error_occurred.get () then 2 else 0)
+    (* In [-strict] mode, any error has already raised [Exit_with_status]. *)
+    (if not !strict && Error_occurred.get () then 2 else 0)
   with
   | Compenv.Exit_with_status n ->
       n

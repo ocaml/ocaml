@@ -153,6 +153,11 @@ nothing.
 \item["-sort"]
 Sort files according to their dependencies.
 
+\item["-strict"]
+Stop processing at the first error (e.g. a syntax error), without
+printing any dependencies. In this mode, a missing input file is an
+error; otherwise, missing input files are silently ignored.
+
 \item["-version"]
 Print version string and exit.
 
