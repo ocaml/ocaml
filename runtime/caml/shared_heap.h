@@ -51,8 +51,13 @@ void caml_collect_heap_stats_sample(
   struct caml_heap_state* local,
   struct heap_stats *sample);
 
-/* Add the global orphaned heap stats into an accumulator. */
+/* Add the global orphaned heap stats into an accumulator.
+   Heaps get orphaned when domains terminate. */
 void caml_accum_orphan_heap_stats(struct heap_stats *acc);
+
+/* Add the global freelist heap stats into an accumulator.
+   Does not include orphaned heaps. */
+void caml_accum_freelist_free_heap_stats(struct heap_stats *acc);
 
 uintnat caml_heap_size(struct caml_heap_state*);
 uintnat caml_top_heap_words(struct caml_heap_state*);

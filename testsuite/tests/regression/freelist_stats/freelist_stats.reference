@@ -1,2 +1,1 @@
-FAIL: freed pools are still counted in heap_words
 done
