@@ -51,7 +51,7 @@ void caml_collect_heap_stats_sample(
   struct heap_stats *sample);
 
 /* Add the global orphaned heap stats into an accumulator. */
-void caml_accum_orphan_heap_stats(struct heap_stats *acc);
+void caml_accum_orphan_and_free_heap_stats(struct heap_stats *acc);
 
 uintnat caml_heap_size(struct caml_heap_state*);
 uintnat caml_top_heap_words(struct caml_heap_state*);
