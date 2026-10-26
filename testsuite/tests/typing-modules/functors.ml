@@ -2035,7 +2035,7 @@ Error: The functor application "Set.Make(Set)(A)" is ill-typed.
        do not match these parameters:
          (Ord : Set.OrderedType) -> ...
        1. Modules do not match:
-            Set : (module Set)
+            Set : (= Set)
           is not included in
             Set.OrderedType
           Modules do not match:
