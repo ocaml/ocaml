@@ -5,7 +5,7 @@
 (* We expect this to work. *)
 type t = A [@@shape [imm 0]]
 [%%expect {|
-type t = A
+type t = A [@@shape [imm 0]]
 |}] (* expected result *)
 
 (* We expect this to fail, the shape annotation is too restrictive. *)
@@ -34,7 +34,7 @@ module type ImmOrFun = sig
   type t [@@shape [int; \#function]]
 end
 [%%expect {|
-module type ImmOrFun = sig type t end
+module type ImmOrFun = sig type t [@@shape [int; function]] end
 |}]
 
 (* We expect this to work:
@@ -63,7 +63,7 @@ Error: Signature mismatch:
        Type declarations do not match:
          type t = int list
        is not included in
-         type t
+         type t [@@shape [int; function]]
        The shape of the type provided,
          {imm = [0]; blocks = [0 size [2]];},
        is not included in the expected shape,
@@ -85,7 +85,7 @@ module Valid :
   (T : ImmOrFun) ->
     sig
       type t = T.t
-      type u = t
+      type u = t [@@shape [int; function; array]]
       type other = ImmOrFun of T.t [@unboxed] | String of string [@unboxed]
     end
 |}] (* expected result *)
@@ -112,7 +112,7 @@ Error: Modules do not match: sig type t = string end is not included in
      Type declarations do not match:
        type t = string
      is not included in
-       type t
+       type t [@@shape [int; function]]
      The shape of the type provided,
        {imm = []; blocks = [string];},
      is not included in the expected shape,
@@ -127,7 +127,7 @@ type t = T of ValidApplication.t [@unboxed] | Function of (int -> int) [@unboxed
 module ValidApplication :
   sig
     type t = int
-    type u = t
+    type u = t [@@shape [int; function; array]]
     type other = ImmOrFun of int [@unboxed] | String of string [@unboxed]
   end
 type t =

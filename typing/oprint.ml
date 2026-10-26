@@ -762,6 +762,14 @@ and print_out_type_decl kwd ppf td =
   let print_unboxed ppf =
     if td.otype_unboxed then fprintf ppf " [%@%@unboxed]" else ()
   in
+  let print_shapes ppf =
+    let shapes = td.otype_shape_names in
+    if shapes <> [] then
+      let pp_sep ppf () = fprintf ppf "; " in
+      fprintf ppf " [%@%@shape [%a]]"
+        (Format_doc.pp_print_list ~pp_sep Builtin_attributes.print_shape_name)
+        shapes
+  in
   let print_out_tkind ppf = function
   | Otyp_abstract -> ()
   | Otyp_record lbls ->
@@ -785,12 +793,13 @@ and print_out_type_decl kwd ppf td =
         print_private td.otype_private
         !out_type ty
   in
-  fprintf ppf "@[<2>@[<hv 2>%t%a@]%t%t%t@]"
+  fprintf ppf "@[<2>@[<hv 2>%t%a@]%t%t%t%t@]"
     print_name_params
     print_out_tkind ty
     print_constraints
     print_immediate
     print_unboxed
+    print_shapes
 
 and print_out_constr ppf constr =
   let {

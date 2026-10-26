@@ -192,3 +192,4 @@ val has_remove_aliases: Parsetree.attributes -> bool
 val has_atomic: Parsetree.attributes -> bool
 
 val find_shapes: Parsetree.attributes -> Asttypes.shape_name list option
+val print_shape_name: Format_doc.formatter -> Asttypes.shape_name -> unit
