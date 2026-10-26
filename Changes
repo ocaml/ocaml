@@ -73,8 +73,10 @@ Working version
 
 - #15160, #15161: Fix overflows in native code array indexing, and check
   for overflow when generating bounds checks for array accesses that
-  are constants.
-  (Stefan Muenzel and Xavier Clerc, review by Zane Hambly and Vincent Laviron)
+  are constants. Fix native code compilation of `x lsr n` and `x asr n` when
+  the result is immediately untagged.
+  (Stefan Muenzel and Xavier Clerc, report by Michael Bacarella, shift tests by
+   Zane Hambly, review by Zane Hambly and Vincent Laviron)
 
 OCaml 5.6.0
 -----------
