@@ -1,0 +1,10 @@
+Allocate small strings using pools
+Allocating 100000 strings * 10 char each
+GC major cycle complete: we should now have several partial pools
+Allocate large string directly
+Allocating 1 strings * 50000 char each
+Allocate small strings using pools
+Allocating 100000 strings * 10 char each
+GC major cycle complete: we should now have several partial pools
+Allocate large string directly
+Allocating 1 strings * 50000 char each
