@@ -168,21 +168,29 @@ and method_privacy =
 (* Variance forms a product lattice of the following partial orders:
      0 <= may_pos <= pos
      0 <= may_weak <= may_neg <= neg
-     0 <= inj
-   may_pos/may_neg mean possible positive/negative occurrences;
-     thus, may_pos + may_neg = invariant
+     0 <= may_inj <= inj
+   may_pos/may_neg mean possible positive/negative occurrences.
+   Allowing both means possible invariance; this is weaker than Inv, which
+   additionally guarantees both positive and negative occurrences.
    Additionally, the following implications are valid
      pos => inj
      neg => inj
+     inj => may_inj
+   may_inj permits an injective implementation without guaranteeing one.
+   This matters under abstraction: module inclusion can expose injectivity
+   that was not guaranteed when a functor result's variance was computed.
+   Unlike an abstract bivariant parameter, a manifest phantom alias cannot
+   acquire injectivity by instantiation and need not carry may_inj.
    Examples:
-     type 'a t        : may_pos + may_neg
-     type +'a t       : may_pos
-     type -'a t       : may_neg
-     type +-'a t      : null (no occurrence of 'a assured)
+     type 'a t        : may_pos + may_neg + may_inj
+     type +'a t       : may_pos + may_inj
+     type -'a t       : may_neg + may_inj
+     type +-'a t      : may_inj (no occurrence of 'a assured)
      type !'a t       : may_pos + may_neg + inj
      type +!'a t      : may_pos + inj
      type -!'a t      : may_neg + inj
      type +-!'a t     : inj
+     type 'a t = unit : null
      type 'a t = 'a   : pos
      type 'a t = 'a -> unit : neg
      type 'a t = ('a -> unit) -> unit : pos + may_weak
@@ -194,15 +202,18 @@ and method_privacy =
 
 module Variance = struct
   type t = int
-  type f = May_pos | May_neg | May_weak | Inj | Pos | Neg | Inv
+  type f = May_pos | May_neg | May_weak | Inj | May_inj | Pos | Neg | Inv
+  (* Keep guarantees closed under their possibilities. In particular, forgetting
+     lower bounds with [inter v unknown] must preserve possible injectivity. *)
   let single = function
     | May_pos -> 1
     | May_neg -> 2 + 4
     | May_weak -> 4
-    | Inj -> 8
-    | Pos -> 16 + 8 + 1
-    | Neg -> 32 + 8 + 4 + 2
-    | Inv -> 63
+    | Inj -> 8 + 64
+    | May_inj -> 64
+    | Pos -> 16 + 8 + 1 + 64
+    | Neg -> 32 + 8 + 4 + 2 + 64
+    | Inv -> 127
   let union v1 v2 = v1 lor v2
   let inter v1 v2 = v1 land v2
   let subset v1 v2 = (v1 land v2 = v1)
@@ -211,7 +222,9 @@ module Variance = struct
   let set_if b x v = if b then set x v else v
   let mem x = subset (single x)
   let null = 0
-  let unknown = 7
+  (* Abstract type constructors can be implemented by an injective type even
+     when their signature does not guarantee injectivity. *)
+  let unknown = 7 + 64
   let full = single Inv
   let covariant = single Pos
   let contravariant = single Neg
@@ -219,10 +232,15 @@ module Variance = struct
     set_if (mem f2 v) f1 (set_if (mem f1 v) f2 v')
   let conjugate v =
     let v' = inter v (union (single Inj) (single May_weak)) in
-    swap Pos Neg v (swap May_pos May_neg v v')
+    set_if (mem May_inj v) May_inj
+      (swap Pos Neg v (swap May_pos May_neg v v'))
+  let may_be_injective v = mem Inj v || mem May_inj v
   let compose v1 v2 =
+    (* Inv includes definite Pos and Neg, not just both upper possibilities. *)
     if mem Inv v1 && mem Inj v2 then full else
-    let invariant = mem May_pos v1 && mem May_neg v1 && mem Inj v2 in
+    let invariant =
+      mem May_pos v1 && mem May_neg v1 && may_be_injective v2
+    in
     let mp =
       invariant ||
       mem May_pos v1 && mem May_pos v2 || mem May_neg v1 && mem May_neg v2
@@ -231,12 +249,15 @@ module Variance = struct
       mem May_pos v1 && mem May_neg v2 || mem May_neg v1 && mem May_pos v2
     and mw = mem May_weak v1 && v2 <> null || v1 <> null && mem May_weak v2
     and inj = mem Inj v1 && mem Inj v2
+    and may_inj = may_be_injective v1 && may_be_injective v2
     and pos = mem Pos v1 && mem Pos v2 || mem Neg v1 && mem Neg v2
     and neg = mem Pos v1 && mem Neg v2 || mem Neg v1 && mem Pos v2 in
     List.fold_left (fun v (b,f) -> set_if b f v) null
-      [mp, May_pos; mn, May_neg; mw, May_weak; inj, Inj; pos, Pos; neg, Neg]
+      [mp, May_pos; mn, May_neg; mw, May_weak; inj, Inj;
+       may_inj, May_inj; pos, Pos; neg, Neg]
   let strengthen v =
-    if mem May_neg v then v else v land (full - single May_weak)
+    if mem May_neg v then v
+    else v land (full - single May_weak)
   let get_upper v = (mem May_pos v, mem May_neg v)
   let get_lower v = (mem Pos v, mem Neg v, mem Inj v)
   let unknown_signature ~injective ~arity =

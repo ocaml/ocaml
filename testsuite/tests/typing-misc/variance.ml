@@ -267,3 +267,124 @@ Error: Signature mismatch:
        Their variances do not agree.
 Unexecuted phrases: 1 phrases did not execute due to an error
 |}]
+
+(* #15165: an abstract bivariant argument can be implemented injectively. *)
+type 'a nominal_q = Q
+module Abstract_parameter
+    (X : sig type 'a t end)
+    (Q : sig type +-'a q end) :
+sig
+  type +-'a s
+  val inj : 'a Q.q X.t -> 'a s
+  val prj : 'a s -> 'a Q.q X.t
+end = struct
+  type 'a s = 'a Q.q X.t
+  let inj x = x
+  let prj x = x
+end
+[%%expect{|
+type +-!'a nominal_q = Q
+Lines 9-13, characters 6-3:
+ 9 | ......struct
+10 |   type 'a s = 'a Q.q X.t
+11 |   let inj x = x
+12 |   let prj x = x
+13 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type 'a s = 'a Q.q X.t val inj : 'a -> 'a val prj : 'a -> 'a end
+       is not included in
+         sig
+           type +-'a s
+           val inj : 'a Q.q X.t -> 'a s
+           val prj : 'a s -> 'a Q.q X.t
+         end
+       Type declarations do not match:
+         type 'a s = 'a Q.q X.t
+       is not included in
+         type +-'a s
+       Their variances do not agree.
+|}]
+
+(* A known phantom alias must remain distinguishable from an abstract type. *)
+type 'a phantom_q = unit
+module Phantom_outer (X : sig type 'a t end) : sig
+  type +-'a s
+  val inj : 'a phantom_q X.t -> 'a s
+  val prj : 'a s -> 'a phantom_q X.t
+end = struct
+  type 'a s = 'a phantom_q X.t
+  let inj x = x
+  let prj x = x
+end
+[%%expect{|
+type +-'a phantom_q = unit
+module Phantom_outer :
+  (X : sig type 'a t end) ->
+    sig
+      type +-'a s
+      val inj : 'a phantom_q X.t -> 'a s
+      val prj : 'a s -> 'a phantom_q X.t
+    end
+|}]
+
+(* A destructive equation that reveals a phantom alias removes the
+   possibility of injectivity from the abstract parameter. *)
+module Phantom_constraint
+    (X : sig type 'a t end)
+    (Q : (sig type +-'a q end with type 'a q = unit)) : sig
+  type +-'a s
+  val inj : 'a Q.q X.t -> 'a s
+  val prj : 'a s -> 'a Q.q X.t
+end = struct
+  type 'a s = 'a Q.q X.t
+  let inj x = x
+  let prj x = x
+end
+[%%expect{|
+module Phantom_constraint :
+  (X : sig type 'a t end) (Q : sig type +-'a q = unit end) ->
+    sig
+      type +-'a s
+      val inj : 'a Q.q X.t -> 'a s
+      val prj : 'a s -> 'a Q.q X.t
+    end
+|}]
+
+(* Original #15165 reproducer: keep the arbitrary conversion from being
+   derivable through an abstract outer type constructor. *)
+type 'a q = Q
+type (_, _) eq = Refl : ('a, 'a) eq
+module Original_reproducer (X : sig type 'a t end) : sig
+  type +-'a s
+  val inj : 'a q X.t -> 'a s
+  val prj : 'a s -> 'a q X.t
+end = struct
+  type 'a s = 'a q X.t
+  let inj x = x
+  let prj x = x
+end
+[%%expect{|
+type +-!'a q = Q
+type (!_, !_) eq = Refl : ('a, 'a) eq
+Lines 7-11, characters 6-3:
+ 7 | ......struct
+ 8 |   type 'a s = 'a q X.t
+ 9 |   let inj x = x
+10 |   let prj x = x
+11 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type 'a s = 'a q X.t val inj : 'a -> 'a val prj : 'a -> 'a end
+       is not included in
+         sig
+           type +-'a s
+           val inj : 'a q X.t -> 'a s
+           val prj : 'a s -> 'a q X.t
+         end
+       Type declarations do not match:
+         type 'a s = 'a q X.t
+       is not included in
+         type +-'a s
+       Their variances do not agree.
+|}]

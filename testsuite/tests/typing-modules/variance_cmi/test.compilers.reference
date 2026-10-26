@@ -1,0 +1,15 @@
+File "client_bad.ml", lines 5-9, characters 6-3:
+5 | ......struct
+6 |   type 'a s = 'a Q.q X.t
+7 |   let inj x = x
+8 |   let prj x = x
+9 | end
+Error: Signature mismatch:
+       ...
+       Type declarations do not match:
+         type 'a s = 'a Q.q X.t
+       is not included in
+         type +-'a s
+       Their variances do not agree.
+       File "client_bad.ml", line 2, characters 2-13: Expected declaration
+       File "client_bad.ml", line 6, characters 2-24: Actual declaration

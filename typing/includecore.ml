@@ -1066,8 +1066,13 @@ let type_declarations ?(equality = false) ~loc env ~mark name
         let open Variance in
         let imp a b = not a || b in
         let (co1,cn1) = get_upper v1 and (co2,cn2) = get_upper v2 in
+        let possible_inj v = mem May_inj v || mem Inj v in
         (if abstr' then (imp co1 co2 && imp cn1 cn2)
          else if opn || constrained ty then (co1 = co2 && cn1 = cn2)
+         else true) &&
+        (if abstr' then imp (possible_inj v1) (possible_inj v2)
+         else if opn || constrained ty then
+           possible_inj v1 = possible_inj v2
          else true) &&
         let (p1,n1,j1) = get_lower v1 and (p2,n2,j2) = get_lower v2 in
         (* Only check the lower bound for abstract types.

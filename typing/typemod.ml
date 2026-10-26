@@ -321,7 +321,8 @@ let check_type_decl env sg loc id row_id newdecl decl =
 
 let make_variance p n i =
   let open Variance in
-  set_if p May_pos (set_if n May_neg (set_if i Inj null))
+  let variance = set_if p May_pos (set_if n May_neg (set_if i Inj null)) in
+  if i then variance else set May_inj variance
 
 let rec iter_path_apply p ~f =
   match p with
