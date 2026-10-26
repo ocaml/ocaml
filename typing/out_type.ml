@@ -1570,6 +1570,9 @@ let tree_of_type_decl id decl =
       otype_type = ty;
       otype_private = priv;
       otype_immediate = Type_immediacy.of_attributes decl.type_attributes;
+      otype_shape_names =
+        Builtin_attributes.find_shapes decl.type_attributes
+        |> Option.value ~default:[] ;
       otype_unboxed = unboxed;
       otype_constraints = constraints }
 

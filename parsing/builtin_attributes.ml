@@ -571,3 +571,40 @@ let find_shapes attrs : Asttypes.shape_name list option =
   | [] -> None
   | (_ :: _) as shape_specs ->
       Some (List.fold_left List.rev_append [] shape_specs)
+
+let rec print_shape_name ppf =
+  let fp fmt = Format_doc.fprintf ppf fmt in
+  function
+  | Any -> fp "any"
+  | Imm n -> fp "imm %d" n
+  | Constructor { tag; size = None } ->
+    fp "constructor ~tag:%d" tag
+  | Constructor { tag; size = Some n } ->
+    fp "constructor ~tag:%d ~size:%d" tag n
+  | Int -> fp "int"
+  | Float -> fp "float"
+  | String -> fp "string"
+  | Tuple { size = None } ->
+    fp "tuple"
+  | Tuple { size = Some n } ->
+    fp "tuple ~size:%d" n
+  | Array -> fp "array"
+  | Floatarray -> fp "floatarray"
+  | Function -> fp "function"
+  | Object -> fp "object"
+  | Lazy shapes ->
+    let pp_sep ppf () = Format_doc.fprintf ppf "; " in
+    fp "lazy [%a]" (Format_doc.pp_print_list ~pp_sep print_shape_name) shapes
+  | Continuation -> fp "continuation"
+  | Extensible_variant -> fp "extensible_variant"
+  | Polymorphic_variant { has_consts; has_nonconsts } ->
+    fp "polymorhic_variant ~has_consts:%B ~has_nonconsts:%B"
+      has_consts has_nonconsts
+  | Abstract { size = None } ->
+    fp "abstract"
+  | Abstract { size = Some n } ->
+    fp "abstract ~size:%d" n
+  | Custom { size = None } ->
+    fp "custom"
+  | Custom { size = Some n } ->
+    fp "custom ~size:%d" n
