@@ -72,6 +72,9 @@ static_assert(sizeof(large_alloc) % sizeof(value) == 0, "");
 static struct {
   caml_plat_mutex lock;
   pool* free;
+  /* this only contains the stats for the freelist,
+     and not the stats of terminated domains */
+  struct heap_stats free_stats;
 
   /* these only contain swept memory of terminated domains*/
   struct heap_stats stats;
@@ -81,6 +84,7 @@ static struct {
 } pool_freelist = {
   CAML_PLAT_MUTEX_INITIALIZER,
   NULL,
+  { 0, },
   { 0, },
   { NULL, },
   { NULL, },
@@ -254,6 +258,8 @@ static pool* pool_acquire(struct caml_heap_state* local) {
       r->owner = NULL;
       pool_freelist.free = r;
     }
+  } else {
+    heap_stats_remove_pool(&pool_freelist.free_stats, pool_freelist.free->sz);
   }
   r = pool_freelist.free;
   if (r)
@@ -275,6 +281,7 @@ static void pool_release(struct caml_heap_state* local,
   caml_plat_lock_blocking(&pool_freelist.lock);
   pool->next = pool_freelist.free;
   pool_freelist.free = pool;
+  heap_stats_add_pool(&pool_freelist.free_stats, sz);
   caml_plat_unlock(&pool_freelist.lock);
 }
 
@@ -865,6 +872,12 @@ void caml_accum_orphan_heap_stats(struct heap_stats* acc)
   caml_plat_unlock(&pool_freelist.lock);
 }
 
+void caml_accum_freelist_free_heap_stats(struct heap_stats* acc)
+{
+  caml_plat_lock_blocking(&pool_freelist.lock);
+  caml_accum_heap_stats(acc, &pool_freelist.free_stats);
+  caml_plat_unlock(&pool_freelist.lock);
+}
 
 /* Atoms */
 static const header_t atoms[256] = {
@@ -1517,7 +1530,7 @@ void caml_compact_heap(caml_domain_state* domain_state,
 
     while( cur_pool ) {
       next_pool = cur_pool->next;
-      /* No stats to update so just unmap */
+      heap_stats_remove_pool(&pool_freelist.free_stats, cur_pool->sz);
       caml_mem_unmap(cur_pool, Bsize_wsize(POOL_WSIZE));
       cur_pool = next_pool;
     }
