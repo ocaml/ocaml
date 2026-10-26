@@ -76,6 +76,13 @@ Working version
   event is larger than half the ring buffer.
   (Tim McGilchrist, review by Sadiq Jaffer)
 
+- #15160, #15161: Fix overflows in native code array indexing, and check
+  for overflow when generating bounds checks for array accesses that
+  are constants. Fix native code compilation of `x lsr n` and `x asr n` when
+  the result is immediately untagged.
+  (Stefan Muenzel and Xavier Clerc, report by Michael Bacarella, shift tests by
+   Zane Hambly, review by Zane Hambly and Vincent Laviron)
+
 OCaml 5.6.0
 -----------
 
