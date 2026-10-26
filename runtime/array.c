@@ -391,6 +391,75 @@ static void wo_memmove (volatile value* const dst,
   }
 }
 
+CAMLprim value caml_floatarray_dot(value a, value b, value n)
+{
+  intnat len = Long_val(n);
+  double s0 = 0., s1 = 0., s2 = 0., s3 = 0.;
+  intnat i = 0;
+  for (; i + 4 <= len; i += 4) {
+    s0 += Double_flat_field(a, i) * Double_flat_field(b, i);
+    s1 += Double_flat_field(a, i + 1) * Double_flat_field(b, i + 1);
+    s2 += Double_flat_field(a, i + 2) * Double_flat_field(b, i + 2);
+    s3 += Double_flat_field(a, i + 3) * Double_flat_field(b, i + 3);
+  }
+  for (; i < len; i++)
+    s0 += Double_flat_field(a, i) * Double_flat_field(b, i);
+  return caml_copy_double((s0 + s1) + (s2 + s3));
+}
+
+CAMLprim value caml_floatarray_sum(value a, value n)
+{
+  intnat len = Long_val(n);
+  double s0 = 0., s1 = 0., s2 = 0., s3 = 0.;
+  intnat i = 0;
+  for (; i + 4 <= len; i += 4) {
+    s0 += Double_flat_field(a, i);
+    s1 += Double_flat_field(a, i + 1);
+    s2 += Double_flat_field(a, i + 2);
+    s3 += Double_flat_field(a, i + 3);
+  }
+  for (; i < len; i++) s0 += Double_flat_field(a, i);
+  return caml_copy_double((s0 + s1) + (s2 + s3));
+}
+
+CAMLprim value caml_floatarray_scale(value c, value a, value n)
+{
+  intnat len = Long_val(n);
+  double k = Double_val(c);
+  for (intnat i = 0; i < len; i++)
+    Store_double_flat_field(a, i, k * Double_flat_field(a, i));
+  return Val_unit;
+}
+
+CAMLprim value caml_floatarray_axpy(value c, value x, value y, value n)
+{
+  intnat len = Long_val(n);
+  double k = Double_val(c);
+  for (intnat i = 0; i < len; i++)
+    Store_double_flat_field(y, i,
+                            k * Double_flat_field(x, i)
+                            + Double_flat_field(y, i));
+  return Val_unit;
+}
+
+CAMLprim value caml_floatarray_add(value a, value b, value dst, value n)
+{
+  intnat len = Long_val(n);
+  for (intnat i = 0; i < len; i++)
+    Store_double_flat_field(dst, i,
+                            Double_flat_field(a, i) + Double_flat_field(b, i));
+  return Val_unit;
+}
+
+CAMLprim value caml_floatarray_mul(value a, value b, value dst, value n)
+{
+  intnat len = Long_val(n);
+  for (intnat i = 0; i < len; i++)
+    Store_double_flat_field(dst, i,
+                            Double_flat_field(a, i) * Double_flat_field(b, i));
+  return Val_unit;
+}
+
 /* [MM] [TODO]: Not consistent with the memory model. See the discussion in
    https://github.com/ocaml-multicore/ocaml-multicore/pull/822. */
 CAMLprim value caml_floatarray_blit(value a1, value ofs1, value a2, value ofs2,
