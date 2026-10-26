@@ -23,9 +23,10 @@ pattern:
   | 'lazy' pattern
   | 'exception' pattern
   | module-path '.(' pattern ')'
-  | module-path '.[' pattern ']'
-  | module-path '.[|' pattern '|]'
-  | module-path '.{' pattern '}'
+  | module-path '.[' pattern { ';' pattern } [ ';' ] ']'
+  | module-path '.[|' pattern { ';' pattern } [ ';' ] '|]'
+  | module-path '.{' field [':' typexpr] ['=' pattern]%
+    { ';' field [':' typexpr] ['=' pattern] } [';' '_' ] [ ';' ] '}'
 \end{syntax}
 See also the following language extensions:
 \hyperref[s:first-class-modules]{first-class modules},
