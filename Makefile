@@ -427,15 +427,13 @@ utils/config_%.mli: utils/config.mli
 
 beforedepend:: utils/config_main.mli utils/config_boot.mli
 
-$(addprefix compilerlibs/ocamlcommon., cma cmxa): \
-  OC_COMMON_LINKFLAGS += -linkall
+ocamlcommon_COMMON_LINKFLAGS = -linkall
 
 COMPRESSED_MARSHALING_FLAGS=-cclib -lcomprmarsh \
            $(patsubst %, -ccopt %, $(filter-out -l%,$(ZSTD_LIBS))) \
            $(patsubst %, -cclib %, $(filter -l%,$(ZSTD_LIBS))) \
 
-compilerlibs/ocamlcommon.cmxa: \
-  OC_NATIVE_LINKFLAGS += $(COMPRESSED_MARSHALING_FLAGS)
+ocamlcommon_NATIVE_LINKFLAGS = $(COMPRESSED_MARSHALING_FLAGS)
 
 compilerlibs/ocamlcommon.cmxa: stdlib/libcomprmarsh.$(A)
 
@@ -469,6 +467,8 @@ partialclean::
 	rm -f compilerlibs/ocamloptcomp.cmxa \
 	      compilerlibs/ocamloptcomp.a compilerlibs/ocamloptcomp.lib
 
+
+ocamltoplevel_COMMON_LINKFLAGS = -linkall
 
 compilerlibs/ocamltoplevel.cma: VPATH += toplevel/byte
 partialclean::
@@ -1016,9 +1016,8 @@ ocaml_SOURCES = toplevel/topstart.mli toplevel/topstart.ml
 ocaml_CMO_FILES = toplevel/topstart.cmo
 
 .INTERMEDIATE: ocaml.tmp
-ocaml.tmp: OC_BYTECODE_LINKFLAGS += -I toplevel/byte -linkall -g
 ocaml.tmp: $(ocaml_CMA_FILES) $(ocaml_CMO_FILES)
-	$(V_LINKC)$(LINK_BYTECODE_PROGRAM) -o $@ $^
+	$(V_LINKC)$(LINK_BYTECODE_PROGRAM) -I toplevel/byte -linkall -g -o $@ $^
 
 $(eval $(call PROGRAM_SYNONYM,ocaml))
 ocaml$(EXE): $(expunge) ocaml.tmp
@@ -2051,8 +2050,7 @@ testsuite/lib/%: VPATH += testsuite/lib
 testing_SOURCES = testsuite/lib/testing.mli testsuite/lib/testing.ml
 testing_LIBRARIES =
 
-$(addprefix testsuite/lib/testing., cma cmxa): \
-  OC_COMMON_LINKFLAGS += -linkall
+testing_COMMON_LINKFLAGS = -linkall
 
 testsuite/tools/%: VPATH += testsuite/tools
 
@@ -2140,8 +2138,7 @@ ocamltest/ocamltest$(EXE) ocamltest/ocamltest.opt$(EXE): \
 
 # For flambda mode, it is necessary for Ocamltest_unix to be compiled with
 # -opaque to prevent errors compiling the other modules of ocamltest.
-ocamltest/ocamltest_unix.%: \
-  OC_COMMON_COMPFLAGS += -opaque
+ocamltest_unix_COMPFLAGS = -opaque
 ifeq "$(build_ocamltest)" "true"
 ocamltest: ocamltest/ocamltest$(EXE) \
   testsuite/lib/lib.cmo testsuite/lib/testing.cma testsuite/tools/expect$(EXE) \
@@ -2599,10 +2596,11 @@ ocamltex_SOURCES = tools/ocamltex.mli tools/ocamltex.ml
 # Note: the following definitions apply to all the prerequisites
 # of ocamltex.
 $(ocamltex): CAMLC = $(OCAMLRUN) $(ROOTDIR)/ocamlc$(EXE) $(STDLIBFLAGS)
-$(ocamltex): OC_COMMON_LINKFLAGS += -linkall
 $(ocamltex): VPATH += $(addprefix otherlibs/,str unix)
 
-tools/ocamltex.cmo: OC_COMMON_COMPFLAGS += -no-alias-deps
+ocamltex_COMMON_LINKFLAGS += -linkall
+
+ocamltex_COMPFLAGS = -no-alias-deps
 
 ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "false"
 # ocamltex needs a custom runtime when building statically owing to the C stubs
@@ -2660,8 +2658,8 @@ ocamlnat_SOURCES = $(ocaml_SOURCES)
 ocamlnat_NATIVE_LINKFLAGS = -linkall -I toplevel/native
 
 COMPILE_NATIVE_MODULE = \
-  $(CAMLOPT) $(OC_COMMON_COMPFLAGS) -I $(@D) $(INCLUDES) \
-  $(OC_NATIVE_COMPFLAGS)
+  $(CAMLOPT) $(OC_COMMON_COMPFLAGS) $(call MODULE_COMPFLAGS,$@) \
+  -I $(@D) $(INCLUDES) $(OC_NATIVE_COMPFLAGS)
 
 
 toplevel/topdirs.cmx toplevel/toploop.cmx $(ocamlnat_CMX_FILES): \
@@ -2699,10 +2697,12 @@ endif
 # Default rules
 
 %.cmo: %.ml
-	$(V_OCAMLC)$(CAMLC) $(OC_COMMON_COMPFLAGS) -I $(@D) $(INCLUDES) -c $<
+	$(V_OCAMLC)$(CAMLC) $(OC_COMMON_COMPFLAGS) $(call MODULE_COMPFLAGS,$@) \
+	  -I $(@D) $(INCLUDES) -c $<
 
 %.cmi: %.mli
-	$(V_OCAMLC)$(CAMLC) $(OC_COMMON_COMPFLAGS) -I $(@D) $(INCLUDES) -c $<
+	$(V_OCAMLC)$(CAMLC) $(OC_COMMON_COMPFLAGS) $(call MODULE_COMPFLAGS,$@) \
+	  -I $(@D) $(INCLUDES) -c $<
 
 %.cmx: %.ml
 	$(V_OCAMLOPT)$(COMPILE_NATIVE_MODULE) -c $<

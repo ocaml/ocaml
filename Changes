@@ -50,6 +50,12 @@ Working version
 
 ### Build system:
 
+- #15137: Fix a bug in which some compiler and linker flags (-linkall, -opaque)
+  could end up applying to unexpected files, depending on the order in which
+  targets are built. In particular, ocamltoplevel.cma and ocamltoplevel.cmxa are
+  now both explicitly linked with -linkall.
+  (Nicolás Ojeda Bär, review by Miod Vallat)
+
 ### Bug fixes:
 
 - #15185, #15187: fix a pattern-matching miscompilation on certain
