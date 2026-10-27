@@ -14,19 +14,19 @@ pattern:
   | "`"tag-name pattern
   | "#"typeconstr
   | pattern {{ ',' pattern }}
-  | '{' field [':' typexpr] ['=' pattern]%
-    { ';' field [':' typexpr] ['=' pattern] } [';' '_' ] [ ';' ] '}'
-  | '[' pattern { ';' pattern } [ ';' ] ']'
+  | delimited-pattern
   | pattern '::' pattern
-  | '[|' pattern { ';' pattern } [ ';' ] '|]'
   | char-literal '..' char-literal
   | 'lazy' pattern
   | 'exception' pattern
   | module-path '.(' pattern ')'
-  | module-path '.[' pattern { ';' pattern } [ ';' ] ']'
-  | module-path '.[|' pattern { ';' pattern } [ ';' ] '|]'
-  | module-path '.{' field [':' typexpr] ['=' pattern]%
+  | module-path '.' delimited-pattern
+;
+delimited-pattern:
+    '{' field [':' typexpr] ['=' pattern]%
     { ';' field [':' typexpr] ['=' pattern] } [';' '_' ] [ ';' ] '}'
+  | '[' pattern { ';' pattern } [ ';' ] ']'
+  | '[|' pattern { ';' pattern } [ ';' ] '|]'
 \end{syntax}
 See also the following language extensions:
 \hyperref[s:first-class-modules]{first-class modules},
@@ -362,9 +362,8 @@ construction locally opens the module referred to by the module path
 
 When the body of a local open pattern is delimited by
 @'[' ']'@,  @'[|' '|]'@,  or @'{' '}'@, the parentheses can be omitted.
-For example, @module-path'.['pattern']'@ is equivalent to
-@module-path'.(['pattern'])'@, and @module-path'.[|' pattern '|]'@ is
-equivalent to @module-path'.([|' pattern '|])'@.
+That is, @module-path'.'delimited-pattern@ is equivalent to
+@module-path'.('delimited-pattern')'@.
 
 \begin{caml_example}{toplevel}
 let bytes_allocated Gc.{minor_words; major_words; promoted_words; _} =
