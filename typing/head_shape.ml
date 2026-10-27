@@ -460,8 +460,7 @@ let check_typedecl_conflicts ~loc genv cstrs =
 let check_typedecl_constraint ~loc decl shape =
   match of_attributes loc decl.type_attributes with
   | Some expected_shape ->
-      let actual_shape = Lazy.force shape in
-      if not (Shape.subset actual_shape expected_shape) then
+      if not (Shape.subset shape expected_shape) then
         Location.raise_errorf ~loc
           "@[%a@]"
           Format_doc.pp_print_text
@@ -470,7 +469,6 @@ let check_typedecl_constraint ~loc decl shape =
   | None -> ()
 
 let check_typedecl_separated ~loc shape =
-  let shape = Lazy.force shape in
   if not shape.separated then
     Location.raise_errorf ~loc
       "@[%a@]"
@@ -479,11 +477,10 @@ let check_typedecl_separated ~loc shape =
        it may contain both float and non-float values."
 
 (* We check three soundness properties on head shapes:
+   - The new type must be separated.
    - If unboxed constructors are used, they must not introduce
      representation conflicts (two distinct source terms that
      have the same representation).
-   - If unboxed constructors are used, they must not introduce
-     non-separated types.
    - If a shape annotation is present, the actual shape of the type
      must be a subset of the annotated shape.
 
@@ -496,11 +493,11 @@ let check_typedecl genv (path, decl) =
     try Env.find_type_descrs path genv
     with Not_found -> assert false
   in
-  let shape = lazy (of_type_path genv path) in
+  let shape = of_type_path genv path in
+  check_typedecl_separated ~loc shape;
   begin match find_constructors_with_unboxed descr with
   | None -> ()
   | Some cstrs ->
       check_typedecl_conflicts ~loc genv cstrs;
-      check_typedecl_separated ~loc shape;
   end;
   check_typedecl_constraint ~loc decl shape;
