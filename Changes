@@ -52,6 +52,12 @@ Working version
 
 ### Bug fixes:
 
+- #15196, #15203: In native code, evaluate the argument of perform before
+  allocating its continuation. A GC during the evaluation of the argument
+  could promote the continuation, after which the fiber stack stored into it
+  was no longer scanned by the minor GC.
+  (Tim McGilchrist, report by Ethan Chou, review by ?????)
+
 - #15185, #15187: fix a pattern-matching miscompilation on certain
   combinations of immediate ranges and redundant patterns
   (Gabriel Scherer, report by Alperer Keleş,
