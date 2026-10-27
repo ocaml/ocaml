@@ -265,6 +265,9 @@ jobs:
         with:
           submodules: true
           path: 🐫реализация
+          # Persisting credentials for submodules fails with a non-ASCII path
+          # They are not needed, anyway
+          persist-credentials: false
 
       - name: Restore Cygwin cache
         uses: actions/cache/restore@v5
