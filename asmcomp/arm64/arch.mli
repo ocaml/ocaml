@@ -58,6 +58,7 @@ type specific_operation =
   | Ishiftarith of arith_operation * int
   | Ishiftcheckbound of { shift : int; }
   | Ishiftcheckbound_far of { shift : int; }
+  | Icompare_ints (* three-way signed integer comparison *)
   | Imuladd       (* multiply and add *)
   | Imulsub       (* multiply and subtract *)
   | Inegmulf      (* floating-point negate and multiply *)

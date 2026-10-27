@@ -136,6 +136,12 @@ method! select_operation op args dbg =
   (* Integer subtraction *)
   | Csubi ->
       begin match args with
+      (* Three-way signed comparison.  [mk_compare_ints] lowers comparison to
+         [(a1 > a2) - (a1 < a2)] after binding both operands to variables. *)
+      | [Cop(Ccmpi Cgt, [Cvar a1; Cvar a2], _);
+         Cop(Ccmpi Clt, [Cvar b1; Cvar b2], _)]
+        when Backend_var.same a1 b1 && Backend_var.same a2 b2 ->
+          (Ispecific Icompare_ints, [Cvar a1; Cvar a2])
       (* Shift-sub *)
       | [arg1; Cop(Clsl, [arg2; Cconst_int (n, _)], _)] when n > 0 && n < 64 ->
           (Ispecific(Ishiftarith(Ishiftsub, n)), [arg1; arg2])

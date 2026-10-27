@@ -1,0 +1,14 @@
+#!/bin/sh
+
+set -eu
+
+exec > "${output}" 2>&1
+
+"${program}"
+
+asm="${test_build_directory}/arm64_compare_ints.s"
+awk '
+  /compare_ints_[0-9]+:$/ { body = 1 }
+  body && /^[[:space:]]+(cmp|cset|cneg)[[:space:]]/ { print $1 }
+  body && /^[[:space:]]+ret([[:space:]]|$)/ { exit }
+' "$asm"
