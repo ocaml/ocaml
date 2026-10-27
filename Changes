@@ -12,6 +12,9 @@ Working version
   functions built on it.
   (Tim McGilchrist, review by Sadiq Jaffer)
 
+- #15199: Fix Gc.heap_words and Gc.top_heap_words to include pool_freelist
+  (Edwin Török, review by Nicolás Ojeda Bär)
+
 ### Code generation and optimizations:
 
 - #14980: Emit direct assembly for `Atomic.exchange` and
