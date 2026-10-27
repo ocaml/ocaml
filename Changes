@@ -36,6 +36,9 @@ Working version
 - #14571: Faster minor GC.
   (Nick Barnes, review by Damien Doligez).
 
+- #15199: Fix Gc.heap_words and Gc.top_heap_words to include pool_freelist
+  (Edwin Török, test and review by Nicolás Ojeda Bär)
+
 ### Code generation and optimizations:
 
 - #14980: Emit direct assembly for `Atomic.exchange` and
