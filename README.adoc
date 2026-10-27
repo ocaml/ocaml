@@ -20,8 +20,6 @@ performance degradations on our issue tracker.
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
   image:https://github.com/ocaml/ocaml/workflows/Hygiene/badge.svg?branch=trunk["GitHub CI Hygiene Status (trunk branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3AHygiene"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=trunk&svg=true["AppVeyor Build Status (trunk branch)",
-     link="https://ci.appveyor.com/project/avsm/ocaml"]
 | image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=5.6["GitHub CI Build Status (5.6 branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=5.6&svg=true["AppVeyor Build Status (5.6 branch)",

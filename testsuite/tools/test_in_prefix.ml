@@ -172,8 +172,7 @@ let () =
       Harness.pp_path ~prefix ~bindir_suffix ~libdir_suffix ~test_root in
   (* Force colour display in CI *)
   let style =
-    if Sys.getenv_opt "GITHUB_ACTIONS" <> None
-    || Sys.getenv_opt "APPVEYOR_BUILD_ID" <> None then
+    if Sys.getenv_opt "GITHUB_ACTIONS" <> None then
       Some Misc.Color.Always
     else
       None
