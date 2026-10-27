@@ -115,16 +115,6 @@ method! reload_operation op arg res =
       if !Clflags.pic_code || !Clflags.dlcode || Arch.win64
       then super#reload_operation op arg res
       else (arg, res)
-  | Iatomic_fetch_add ->
-      let res = self#makeregs res in
-      [| self#makereg arg.(0); res.(0); self#makereg arg.(2) |], res
-  | Iatomic_exchange ->
-      let res = self#makeregs res in
-      [| self#makereg arg.(0); res.(0); self#makereg arg.(2) |], res
-  | Iatomic_compare_exchange ->
-      let res = self#makeregs res in
-      ([| self#makereg arg.(0); res.(0);
-          self#makereg arg.(2); self#makereg arg.(3) |], res)
   | _ -> (* Other operations: all args and results in registers *)
       super#reload_operation op arg res
 
