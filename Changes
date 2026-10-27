@@ -19,6 +19,12 @@ Working version
 
 ### Standard library:
 
+- #15168: `Scanf.unescaped`, `%S` and `%C` now accept all the escape sequences
+  of OCaml string and character literals: octal escapes `\o101`, escaped spaces
+  `\ `, Unicode escapes `\u{XXXX}` (in strings only), and tabs in the
+  indentation following an escaped newline.
+  (Nicolás Ojeda Bär, report by Chet Murthy, review by Florian Angeletti)
+
 ### Other libraries:
 
 - #15121: Add support for `O_NOFOLLOW` to the `Unix` library, only implemented
