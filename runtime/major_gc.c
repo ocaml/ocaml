@@ -1919,6 +1919,10 @@ static void cycle_major_heap_from_stw_single(
   caml_domain_state* domain,
   uintnat num_domains_in_stw)
 {
+  if (caml_params->verify_heap) {
+    caml_verify_freelist_from_stw_single();
+  }
+
   /* Cycle major heap */
   /* FIXME: delete caml_cycle_heap_from_stw_single
      and have per-domain copies of the data? */

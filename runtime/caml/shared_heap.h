@@ -121,6 +121,7 @@ void caml_cycle_heap(struct caml_heap_state*);
 
 /* Heap invariant verification (for debugging) */
 void caml_verify_heap_from_stw(caml_domain_state *domain);
+void caml_verify_freelist_from_stw_single(void);
 
 /* Forces finalisation of all heap-allocated values,
    disregarding both local and global roots.

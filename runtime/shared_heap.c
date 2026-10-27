@@ -76,7 +76,7 @@ static struct {
      and not the stats of terminated domains */
   struct heap_stats free_stats;
 
-  /* these only contain swept memory of terminated domains*/
+  /* these only contain swept memory of terminated domains and the freelist */
   struct heap_stats stats;
   _Atomic(pool*) global_avail_pools[NUM_SIZECLASSES];
   _Atomic(pool*) global_full_pools[NUM_SIZECLASSES];
@@ -1652,6 +1652,66 @@ static void verify_swept (struct caml_heap_state* local) {
   CAMLassert(local->stats.large_words == large_stats.allocated);
   CAMLassert(local->stats.large_blocks == large_stats.live_blocks);
 }
+
+void caml_verify_freelist_from_stw_single(void)
+{
+  struct heap_stats pool_stats = {0,};
+  struct heap_stats pool_free_stats = {0,};
+  struct mem_stats large_stats = {0,};
+
+  caml_gc_log("Verifying pool freelist stats");
+  for (pool *p = pool_freelist.free; p; p = p->next) {
+    pool_free_stats.pool_words += POOL_WSIZE;
+    pool_free_stats.pool_frag_words += POOL_SLAB_WOFFSET(p->sz);
+  }
+  for (sizeclass i = 0; i < NUM_SIZECLASSES; i++) {
+    for (pool *p = pool_freelist.global_avail_pools[i]; p; p = p->next) {
+      calc_pool_stats(p, p->sz, &pool_stats);
+    }
+    for (pool *p = pool_freelist.global_full_pools[i]; p; p = p->next) {
+      calc_pool_stats(p, p->sz, &pool_stats);
+    }
+  }
+  caml_gc_log("Freelist pooled memory: %" CAML_PRIiNAT " pool_words, "
+              "%" CAML_PRIiNAT " live_words, %" CAML_PRIiNAT " frag_words",
+              pool_stats.pool_words, pool_stats.pool_live_words,
+              pool_stats.pool_frag_words);
+
+  for (large_alloc *a = pool_freelist.global_large; a; a = a->next) {
+    header_t hd = Hd_hp((char*)a + LARGE_ALLOC_HEADER_SZ);
+    large_stats.allocated += Wsize_bsize(LARGE_ALLOC_HEADER_SZ) + Whsize_hd(hd);
+    large_stats.overhead += Wsize_bsize(LARGE_ALLOC_HEADER_SZ);
+    large_stats.live_blocks++;
+  }
+
+  caml_gc_log("Freelist large memory: %" CAML_PRIuNAT " allocated, "
+              "%" CAML_PRIuNAT " free, %" CAML_PRIuNAT " fragmentation",
+              large_stats.allocated, large_stats.free, large_stats.overhead);
+
+  /* Check stats are being computed correctly */
+  #ifdef DEBUG
+  {
+    const struct heap_stats *actual = &pool_freelist.free_stats;
+    CAMLassert(actual->pool_words == pool_free_stats.pool_words);
+    CAMLassert(actual->pool_live_words == pool_free_stats.pool_live_words);
+    CAMLassert(actual->pool_live_blocks == pool_free_stats.pool_live_blocks);
+    CAMLassert(actual->pool_frag_words == pool_free_stats.pool_frag_words);
+  }
+
+  {
+    const struct heap_stats *actual = &pool_freelist.stats;
+    CAMLassert(actual->pool_words == pool_stats.pool_words);
+    CAMLassert(actual->pool_live_words == pool_stats.pool_live_words);
+    CAMLassert(actual->pool_live_blocks == pool_stats.pool_live_blocks);
+    CAMLassert(actual->pool_frag_words == pool_stats.pool_frag_words);
+    CAMLassert(actual->large_words == large_stats.allocated);
+    CAMLassert(actual->large_blocks == large_stats.live_blocks);
+  }
+  #endif
+
+  caml_gc_log("Verified pool freelist stats");
+}
+
 
 void caml_cycle_heap_from_stw_single (void) {
   struct global_heap_state oldg = caml_global_heap_state;
