@@ -85,6 +85,10 @@ Working version
   Fixes an error on Windows with allocating long paths to this file.
   (Tim McGilchrist, review by Antonin Décimo)
 
+- #15205, #15207: Fix register allocation for native atomic operations on
+  amd64 reloading.
+  (Stefan Muenzel, report by Alperen Keleş, review by ????)
+
 OCaml 5.6.0
 -----------
 
