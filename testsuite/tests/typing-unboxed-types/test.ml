@@ -275,7 +275,11 @@ val f : int t12 array -> int t12 = <fun>
 (* Check for another possible loop *)
 type t13 = A : _ t12 -> t13 [@@ocaml.unboxed];;
 [%%expect{|
-type t13 = A : 'a t12 -> t13 [@@unboxed]
+Line 1, characters 0-45:
+1 | type t13 = A : _ t12 -> t13 [@@ocaml.unboxed];;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}];;
 
 

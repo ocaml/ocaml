@@ -91,9 +91,12 @@ Error: This type declaration is non-separated, it may contain both float and
 |}]
 
 type any3' = Any : 'a id3 -> any3' [@@unboxed]
-(* This is unexpected and unsound. *)
 [%%expect {|
-type any3' = Any : 'a id3 -> any3' [@@unboxed]
+Line 1, characters 0-46:
+1 | type any3' = Any : 'a id3 -> any3' [@@unboxed]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}]
 
 
