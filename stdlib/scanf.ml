@@ -1069,10 +1069,10 @@ let scan_backslash_uchar width ib =
   let rec scan_digits n cp =
     match Scanning.next_char ib with
     | '0' .. '9' | 'A' .. 'F' | 'a' .. 'f' as c ->
-      if n >= 6 then
-        bad_input "too many digits, expected 1 to 6 hexadecimal digits";
       scan_digits (n + 1) (16 * cp + hexadecimal_value_of_char c)
     | '}' when n > 0 ->
+      if n > 6 then
+        bad_input "too many digits, expected 1 to 6 hexadecimal digits";
       if not (Uchar.is_valid cp) then
         bad_input
           (Printf.sprintf "%X is not a Unicode scalar value" cp);
