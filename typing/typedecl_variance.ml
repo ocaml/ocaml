@@ -202,19 +202,12 @@ let compute_variance_type env ~check (required, loc) decl tyl =
           if p then if n then full else covariant else conjugate covariant in
         compute_variance env tvl2 v ty)
       params required;
-    let visited = ref TypeSet.empty in
-    let rec check ty =
+    let rec check visited variance_in_parameters ty =
       if TypeSet.mem ty !visited then () else
       let visited' = TypeSet.add ty !visited in
       visited := visited';
       let v1 = get_variance ty tvl in
-      let snap = Btype.snapshot () in
-      let v2 =
-        TypeMap.fold
-          (fun t vt v ->
-             if Ctype.is_equal env false [ty] [t] then union vt v else v)
-          !tvl2 null in
-      Btype.backtrack snap;
+      let v2 = variance_in_parameters ty in
       let (c1,n1) = get_upper v1 and (c2,n2,i2) = get_lower v2 in
       if c1 && not c2 || n1 && not n2 then begin
         match List.find_opt (eq_type ty) fvl with
@@ -236,10 +229,42 @@ let compute_variance_type env ~check (required, loc) decl tyl =
                                     , (c1,n1,false)
                                     , (c2,n2,false))))
         | None ->
-            Btype.iter_type_expr check ty
+            Btype.iter_type_expr (check visited variance_in_parameters) ty
       end
     in
-    List.iter (fun (_,ty) -> check ty) tyl;
+    let check_gradual (_,ty) =
+           (* For each free type variable in the body of the type declaration,
+         we must check that there exists a parent subexpression of the variable
+         which is "reflected" in a matching position in the parameters.
+         However, there is two interpretation of the reflected part:
+         - the subpexpression appears physically in the parameters
+         - a [Ctype.equal] subexpression appears in the parameters
+         The second option is more expansive to test, and is only needed
+         to cover cases like {[
+         type 'a p
+         type 'a t = 'b p constraint 'a = 'b p
+         ]}
+         where
+         - the free variable ['b] does not appear in matching position by itself
+           (because ['b] has variance [May_pos + May_neg])
+         - the parent subexpression ['b p] has matching variance [Pos + Neg]
+           on the two sides but the two subexpressions are not physically equal.
+         Consequently, we do a first pass with the first criterion and we only
+         refine the check with the second criterion on litigious cases.
+      *)
+      let phys_search ty = try TypeMap.find ty !tvl2 with Not_found -> null in
+      let equiv_search ty =
+        let snap = Btype.snapshot () in
+        let v = TypeMap.fold (fun t vt v ->
+            if Ctype.is_equal env false [ty] [t] then union vt v else v
+          ) !tvl2 null
+        in
+        Btype.backtrack snap; v
+      in
+      try check (ref TypeSet.empty) phys_search ty with
+      | Error(_, Bad_variance _) -> check (ref TypeSet.empty) equiv_search ty
+    in
+    List.iter check_gradual tyl;
   end;
   List.map2
     (fun ty (p, n, _i) ->
