@@ -655,8 +655,8 @@ let run_main argv =
     let program = Filename.basename Sys.argv.(0) in
     Compenv.parse_arguments (ref argv)
       (add_dep_arg (fun f -> Src (f, None))) program;
-    (* Validate synonyms only once all arguments, including [-strict], have
-       been parsed. *)
+    (* Validate synonyms only once all arguments have been parsed. In [-strict]
+       mode, an invalid synonym makes us exit here. *)
     List.iter (fun (synonyms, suffix) -> add_to_synonym_list synonyms suffix)
       (List.rev !synonym_args_rev);
     process_dep_args (List.rev !dep_args_rev);
