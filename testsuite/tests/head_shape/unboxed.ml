@@ -103,3 +103,23 @@ type t33 = int id3 id3
 shape of t33: {imm = Any; blocks = [];}
 type t33 = int id3 id3
 |}]
+
+(* test polymorphic record fields *)
+type empty_list = { empty : 'a . 'a list } [@@unboxed]
+type test = Foo of empty_list [@unboxed]
+[%%expect{|
+shape of empty_list: {imm = [0]; blocks = [0 size [2]];}
+type empty_list = { empty : 'a. 'a list; } [@@unboxed]
+shape of test: {imm = [0]; blocks = [0 size [2]];}
+type test = Foo of empty_list [@unboxed]
+|}]
+
+(* test instantiation of constrained types *)
+type 'a fst = Fst of 'b [@unboxed] constraint 'a = 'b * 'c
+type t = Foo of (int * bool) fst [@unboxed]
+[%%expect{|
+shape of _ fst: {imm = Any; blocks = Any;}
+type 'a fst = Fst of 'b [@unboxed] constraint 'a = 'b * 'c
+shape of t: {imm = Any; blocks = [];}
+type t = Foo of (int * bool) fst [@unboxed]
+|}]
