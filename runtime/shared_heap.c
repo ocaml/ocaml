@@ -222,6 +222,20 @@ void caml_free_shared_heap(struct caml_heap_state* heap) {
   caml_stat_free(heap);
 }
 
+static inline void heap_stats_add_pool(struct heap_stats stats[1], sizeclass sz)
+{
+  stats->pool_words += POOL_WSIZE;
+  if (stats->pool_words > stats->pool_max_words)
+    stats->pool_max_words = stats->pool_words;
+  stats->pool_frag_words += POOL_SLAB_WOFFSET(sz);
+}
+
+static inline void heap_stats_remove_pool(struct heap_stats stats[1],
+                                          sizeclass sz)
+{
+  stats->pool_words -= POOL_WSIZE;
+  stats->pool_frag_words -= POOL_SLAB_WOFFSET(sz);
+}
 
 /* Allocating and deallocating pools from the global freelist. */
 
@@ -257,8 +271,7 @@ static void pool_release(struct caml_heap_state* local,
 {
   pool->owner = NULL;
   CAMLassert(pool->sz == sz);
-  local->stats.pool_words -= POOL_WSIZE;
-  local->stats.pool_frag_words -= POOL_HEADER_WSIZE + padding_sizeclass[sz];
+  heap_stats_remove_pool(&local->stats, sz);
   caml_plat_lock_blocking(&pool_freelist.lock);
   pool->next = pool_freelist.free;
   pool_freelist.free = pool;
@@ -271,8 +284,7 @@ static void pool_free(struct caml_heap_state* local,
                          sizeclass sz)
 {
     CAMLassert(pool->sz == sz);
-    local->stats.pool_words -= POOL_WSIZE;
-    local->stats.pool_frag_words -= POOL_HEADER_WSIZE + padding_sizeclass[sz];
+    heap_stats_remove_pool(&local->stats, sz);
     caml_mem_unmap(pool, Bsize_wsize(POOL_WSIZE));
 }
 
@@ -423,10 +435,7 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
   r = pool_acquire(local);
   if (!r) return 0; /* if we can't allocate, give up */
 
-  local->stats.pool_words += POOL_WSIZE;
-  if (local->stats.pool_words > local->stats.pool_max_words)
-    local->stats.pool_max_words = local->stats.pool_words;
-  local->stats.pool_frag_words += POOL_HEADER_WSIZE + padding_sizeclass[sz];
+  heap_stats_add_pool(&local->stats, sz);
 
   /* Having allocated a new pool, set it up for size sz */
   local->avail_pools[sz] = r;
