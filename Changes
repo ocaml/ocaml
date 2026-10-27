@@ -85,9 +85,6 @@ Working version
   Fixes an error on Windows with allocating long paths to this file.
   (Tim McGilchrist, review by Antonin Décimo)
 
-- #15205, #15207: Register allocation on reload should obey equality
-  constraints on registers for that same instruction.
-  (Stefan Muenzel, report by Alperen Keleş, review by ????)
 
 OCaml 5.6.0
 -----------
@@ -938,6 +935,10 @@ OCaml 5.6.0
 - #15186: Fix Windows Unix.LargeFile.lseek which seeked to a wrong offset
   (regression since 5.1.0).
   (Tim McGilchrist, review by Nicolas Ojeda Bar)
+
+- #15205, #15207: Register allocation on reload should obey equality
+  constraints on registers for that same instruction.
+  (Stefan Muenzel, report by Alperen Keleş, review by ????)
 
 
 OCaml 5.5.1
