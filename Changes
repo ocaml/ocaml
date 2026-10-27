@@ -939,6 +939,12 @@ OCaml 5.5.1
   (Gabriel Scherer, report by Alperer Keleş,
    review by Vincent Laviron and Florian Angeletti)
 
+- #15204: fix a pattern-matching miscompilation where a scrutinee of
+  polymorphic variant type (or variant type with more than 32
+  constructors) is mutated during matching
+  (Jeremy Yallop, review by Gabriel Scherer)
+
+
 OCaml 5.5.0 (19 June 2026)
 -------------------------
 
