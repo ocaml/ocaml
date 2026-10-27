@@ -275,6 +275,13 @@ struct runtime_events_metadata_header {
 };
 
 #define RUNTIME_EVENTS_MAX_CUSTOM_EVENTS (1 << 13)
+
+/* Maximum length of an encoded custom event value, as documented for
+   Runtime_events.Type.register (bytes). */
+#define RUNTIME_EVENTS_MAX_CUSTOM_VALUE_BYTES (1 << 10)
+
+/* Maximum length of a ring message, including its header and timestamp
+   (64-bit elements). */
 #define RUNTIME_EVENTS_MAX_MSG_LENGTH (1 << 10)
 
 /* Number of tens of single-size buckets */

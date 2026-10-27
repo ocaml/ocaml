@@ -425,6 +425,36 @@ let emit_instr env i =
           | Double -> "stdy" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
 
+    | Lop(Iatomic_exchange) ->
+        (* arg.(0)  address of the atomic
+           arg.(1)  new value
+           res.(0)  old value
+
+           lg loads the current value into res.(0), then csg stores the new
+           value if memory still matches it. If it doesn't, csg loads the
+           current value into res.(0) and sets condition code 1, and brc 4
+           goes round again, so the retry needs no reload. csg serialises
+           either side of the access (PoP 7-159), so there's no fence, same
+           as laag below. *)
+        let lbl = new_label() in
+        `	lg	{emit_reg i.res.(0)}, 0({emit_reg i.arg.(0)})\n`;
+        `{emit_label lbl}:\n`;
+        `	csg	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, 0({emit_reg i.arg.(0)})\n`;
+        `	brc	4, {emit_label lbl}\n`
+    | Lop(Iatomic_compare_exchange) ->
+        (* arg.(0)  address of the atomic
+           arg.(1)  expected value
+           arg.(2)  new value
+           res.(0)  the value we found. Interference keeps it apart from the
+                    arguments, since it's written before csg reads them.
+
+           lgr copies the expected value into res.(0), because csg overwrites
+           its first operand. If memory matches, csg stores the new value and
+           res.(0) keeps the expected value, which is also what it found. If
+           not, csg loads the current value into res.(0). Either way res.(0)
+           is the answer. *)
+        `	lgr	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}\n`;
+        `	csg	{emit_reg i.res.(0)}, {emit_reg i.arg.(2)}, 0({emit_reg i.arg.(0)})\n`
     | Lop(Iatomic_fetch_add) ->
         `	laag	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, 0({emit_reg i.arg.(0)})\n`
 
