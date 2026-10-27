@@ -563,6 +563,8 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Ispecific _) -> 1
     | Lop(Idls_get) -> 1
     | Lop(Iatomic_fetch_add) -> 7
+    | Lop(Iatomic_exchange) -> 6
+    | Lop(Iatomic_compare_exchange) -> 8
     | Lop(Ireturn_addr) -> if f.fun_frame_required then 1 + if_large 1 else 1
     | Lreloadretaddr -> 2 + if_large 1
     | Lreturn -> 2 + fp_save + if_large (1 + fp_save)
@@ -987,6 +989,50 @@ let emit_instr env i =
     | Lop (Idls_get) ->
         let offset = Domainstate.(idx_of_field Domain_dls_root) * 8 in
         `	ld	{emit_reg i.res.(0)}, {emit_int offset}(30)\n`
+    | Lop (Iatomic_exchange) ->
+        (* arg.(0)  address of the atomic
+           arg.(1)  new value
+           res.(0)  old value
+
+           sync first, then ldarx loads the old value and takes a
+           reservation, and stdcx. stores the new one, going round again if
+           the reservation was lost. isync and lwsync afterwards, lwsync
+           being the release fence, as for fetch-and-add (#10995). *)
+        let lbl = new_label() in
+        `	sync\n`;
+        `{emit_label lbl}:\n`;
+        `	ldarx	{emit_reg i.res.(0)}, 0, {emit_reg i.arg.(0)}\n`;
+        `	stdcx.	{emit_reg i.arg.(1)}, 0, {emit_reg i.arg.(0)}\n`;
+        `	bne-	{emit_label lbl}\n`;
+        `	isync\n`;
+        `	lwsync\n`
+    | Lop (Iatomic_compare_exchange) ->
+        (* The compare-and-swap sequence from the Programming Environments
+           Manual D.3.
+
+           arg.(0)  address of the atomic
+           arg.(1)  expected value
+           arg.(2)  new value
+           res.(0)  the value we found, straight from ldarx
+
+           sync first, then ldarx loads the current value and takes a
+           reservation. If it doesn't match we skip the store and leave the
+           reservation behind, as the manual's example does. If it matches,
+           stdcx. stores the new value, going round again if the reservation
+           was lost. isync and lwsync afterwards, as for fetch-and-add
+           (#10995). *)
+        let lbl = new_label() in
+        let lbl_done = new_label() in
+        `	sync\n`;
+        `{emit_label lbl}:\n`;
+        `	ldarx	{emit_reg i.res.(0)}, 0, {emit_reg i.arg.(0)}\n`;
+        `	cmpd	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}\n`;
+        `	bne-	{emit_label lbl_done}\n`;
+        `	stdcx.	{emit_reg i.arg.(2)}, 0, {emit_reg i.arg.(0)}\n`;
+        `	bne-	{emit_label lbl}\n`;
+        `{emit_label lbl_done}:\n`;
+        `	isync\n`;
+        `	lwsync\n`
     | Lop (Iatomic_fetch_add) ->
         (* trailing lwsync is the release fence, #10995 *)
         let lbl = new_label() in

@@ -149,10 +149,10 @@ let get t =
 let set t v =
   t.contents <- v
 
-let exchange t v =
-  Loc.exchange [%atomic.loc t.contents] v
-let compare_and_set t old new_ =
-  Loc.compare_and_set [%atomic.loc t.contents] old new_
+(* see the note in atomic.mli: these stay externals so the primitive lands at
+   the call site, where the value type is usually concrete *)
+external exchange : 'a t -> 'a -> 'a = "%atomic_exchange"
+external compare_and_set : 'a t -> 'a -> 'a -> bool = "%atomic_cas"
 let fetch_and_add t incr =
   Loc.fetch_and_add [%atomic.loc t.contents] incr
 let incr t =
