@@ -915,12 +915,13 @@ and transl_prim_1 env p arg dbg =
       tag_int (bswap16 (ignore_high_bit_int (untag_int
         (transl env arg) dbg)) dbg) dbg
   | Pperform ->
-      let cont =
-        make_alloc dbg Obj.cont_tag [int_const dbg 0]
-      in
-      Cop(Capply typ_val,
-       [Cconst_symbol ("caml_perform", dbg); transl env arg; cont],
-       dbg)
+      bind "eff" (transl env arg) (fun eff ->
+        let cont =
+          make_alloc dbg Obj.cont_tag [int_const dbg 0]
+        in
+        Cop(Capply typ_val,
+         [Cconst_symbol ("caml_perform", dbg); eff; cont],
+         dbg))
   | Pdls_get ->
       Cop(Cdls_get, [transl env arg], dbg)
   | Ppoll ->
