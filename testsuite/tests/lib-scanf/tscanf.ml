@@ -1566,14 +1566,52 @@ let test62 () =
   sscanf_opt "Hello world" "%s %r" (fun ib -> Scanf.bscanf_opt ib "%d" Fun.id) (fun s n -> s, n) = None
 ;;
 
+(* Escape sequences accepted by the OCaml lexer (#14930). *)
+let test63 () =
+  let fails f = match f () with _ -> false | exception Scan_failure _ -> true in
+  unescaped "\\o101" = "\o101" &&
+  unescaped "\\o000\\o377" = "\o000\o377" &&
+  unescaped "a\\ b" = "a\ b" &&
+  unescaped "\\u{41}" = "\u{41}" &&
+  unescaped "\\u{e9}\\u{20AC}" = "\u{e9}\u{20AC}" &&
+  unescaped "\\u{1F600}" = "\u{1F600}" &&
+  unescaped "\\u{00041}x" = "\u{00041}x" &&
+  unescaped "\\u{10FFFF}" = "\u{10FFFF}" &&
+  unescaped "a\\\n \t b" = "ab" &&
+  sscanf "'\\o101'" "%C" id = '\o101' &&
+  sscanf "'\\ '" "%C" id = '\ ' &&
+  sscanf "\"\\u{41}\\o102\" 1" "%S %d" (fun s n -> s, n) = ("AB", 1) &&
+  fails (fun () -> unescaped "\\o400") &&
+  fails (fun () -> unescaped "\\o18") &&
+  fails (fun () -> unescaped "\\o12") &&
+  fails (fun () -> unescaped "\\u41") &&
+  fails (fun () -> unescaped "\\u{}") &&
+  fails (fun () -> unescaped "\\u{1234567}") &&
+  fails (fun () -> unescaped "\\u{D800}") &&
+  fails (fun () -> unescaped "\\u{110000}") &&
+  fails (fun () -> unescaped "\\u{41") &&
+  fails (fun () -> sscanf "'\\u{41}'" "%C" id)
+;;
+
+test (test63 ())
+;;
+
 (* Field widths are respected by escape sequences in %S (#15245). *)
 let test64 () =
   let fails f = match f () with _ -> false | exception Scan_failure _ -> true in
   sscanf {|"\123"|} "%6S" id = "\123" &&
+  sscanf {|"\o101"|} "%7S" id = "\o101" &&
   sscanf {|"\x41"|} "%6S" id = "\x41" &&
+  sscanf {|"\u{41}"|} "%8S" id = "\u{41}" &&
   fails (fun () -> sscanf {|"\123abc"|} "%3S" id) &&
   fails (fun () -> sscanf {|"\123"|} "%5S" id) &&
+  fails (fun () -> sscanf {|"\o101"|} "%5S" id) &&
   fails (fun () -> sscanf {|"\x41"|} "%4S" id) &&
+  fails (fun () -> sscanf {|"\u{41}"|} "%7S" id) &&
+  fails (fun () -> sscanf {|"\u{41}"|} "%6S" id) &&
+  fails (fun () ->
+    sscanf ({|"\u{|} ^ String.make 100 '0' ^ {|41}"|}) "%5S" id) &&
+  fails (fun () -> sscanf {|"\u{41}"|} "%5S" id) &&
   fails (fun () ->
     sscanf ({|"\123|} ^ String.make 100 'a' ^ {|"|}) "%3S" id)
 ;;

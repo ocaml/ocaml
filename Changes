@@ -333,6 +333,12 @@ OCaml 5.6.0
 
 ### Standard library:
 
+- #15168: `Scanf.unescaped`, `%S` and `%C` now accept all the escape sequences
+  of OCaml string and character literals: octal escapes `\o101`, escaped spaces
+  `\ `, Unicode escapes `\u{XXXX}` (in strings only), and tabs in the
+  indentation following an escaped newline.
+  (Nicolás Ojeda Bär, report by Chet Murthy, review by Florian Angeletti)
+
 - #14974 : Add `Sys.filepath_exists` and improve documentation
   for `Sys.file_exists`
   (Khalid Belkassmi E.H., review by Kate Deplaix, Nicolás Ojeda Bär,

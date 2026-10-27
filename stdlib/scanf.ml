@@ -70,6 +70,10 @@ module type SCANNING = sig
      one character and returns [lim - 1], indicating the new limit for the
      length of the current token. *)
 
+  val store_uchar : int -> scanbuf -> Uchar.t -> int
+  (* [Scanning.store_uchar lim ib u] is like [Scanning.store_char] but adds
+     the UTF-8 encoding of [u] to the token buffer. *)
+
   val skip_char : int -> scanbuf -> int
   (* [Scanning.skip_char lim ib] ignores the current character. *)
 
@@ -242,6 +246,10 @@ module Scanning : SCANNING = struct
 
   let store_char width ib c =
     Buffer.add_char ib.ic_token_buffer c;
+    ignore_char width ib
+
+  let store_uchar width ib u =
+    Buffer.add_utf_8_uchar ib.ic_token_buffer u;
     ignore_char width ib
 
 
@@ -958,10 +966,26 @@ let char_for_decimal_code c0 c1 c2 =
     100 * decimal_value_of_char c0 +
      10 * decimal_value_of_char c1 +
           decimal_value_of_char c2 in
-  if c < 0 || c > 255 then
+  if c > 255 then
     bad_input
       (Printf.sprintf
          "bad character decimal encoding \\%c%c%c" c0 c1 c2) else
+  char_of_int c
+
+
+(* The integer value corresponding to the facial value of a valid
+   octal digit character. *)
+let octal_value_of_char c = int_of_char c - int_of_char '0'
+
+let char_for_octal_code c0 c1 c2 =
+  let c =
+    64 * octal_value_of_char c0 +
+     8 * octal_value_of_char c1 +
+         octal_value_of_char c2 in
+  if c > 255 then
+    bad_input
+      (Printf.sprintf
+         "bad character octal encoding \\o%c%c%c" c0 c1 c2) else
   char_of_int c
 
 
@@ -985,7 +1009,7 @@ let char_for_hexadecimal_code c1 c2 =
   let c =
     16 * hexadecimal_value_of_char c1 +
          hexadecimal_value_of_char c2 in
-  if c < 0 || c > 255 then
+  if c > 255 then
     bad_input
       (Printf.sprintf "bad character hexadecimal encoding \\%c%c" c1 c2) else
   char_of_int c
@@ -1008,7 +1032,7 @@ let check_escape_width ~width n =
 
 let scan_backslash_char width ib =
   match check_next_char_for_char width ib with
-  | '\\' | '\'' | '\"' | 'n' | 't' | 'b' | 'r' as c ->
+  | '\\' | '\'' | '\"' | 'n' | 't' | 'b' | 'r' | ' ' as c ->
     Scanning.store_char width ib (char_for_backslash c)
   | '0' .. '9' as c ->
     check_escape_width ~width 3;
@@ -1021,6 +1045,17 @@ let scan_backslash_char width ib =
     let c1 = get_digit () in
     let c2 = get_digit () in
     Scanning.store_char (width - 2) ib (char_for_decimal_code c0 c1 c2)
+  | 'o' ->
+    check_escape_width ~width 4;
+    let get_digit () =
+      let c = Scanning.next_char ib in
+      match c with
+      | '0' .. '7' as c -> c
+      | c -> bad_input_escape c in
+    let c0 = get_digit () in
+    let c1 = get_digit () in
+    let c2 = get_digit () in
+    Scanning.store_char (width - 3) ib (char_for_octal_code c0 c1 c2)
   | 'x' ->
     check_escape_width ~width 3;
     let get_digit () =
@@ -1033,6 +1068,28 @@ let scan_backslash_char width ib =
     Scanning.store_char (width - 2) ib (char_for_hexadecimal_code c1 c2)
   | c ->
     bad_input_escape c
+
+
+(* Called when encountering '\\u' in a string: scans a Unicode escape
+   [\u{X}] where [X] is 1 to 6 hexadecimal digits denoting a Unicode scalar
+   value, and stores its UTF-8 encoding. *)
+let scan_backslash_uchar width ib =
+  let rec scan_digits n cp =
+    match Scanning.next_char ib with
+    | '0' .. '9' | 'A' .. 'F' | 'a' .. 'f' as c ->
+      if n >= 6 then
+        bad_input "too many digits, expected 1 to 6 hexadecimal digits";
+      scan_digits (n + 1) (16 * cp + hexadecimal_value_of_char c)
+    | '}' when n > 0 ->
+      check_escape_width ~width (n + 3);
+      if not (Uchar.is_valid cp) then
+        bad_input
+          (Printf.sprintf "%X is not a Unicode scalar value" cp);
+      Scanning.store_uchar (width - n - 2) ib (Uchar.unsafe_of_int cp)
+    | c -> bad_input_escape c in
+  match Scanning.next_char ib with
+  | '{' -> scan_digits 0 0
+  | c -> bad_input_escape c
 
 
 (* Scan a character (an OCaml token). *)
@@ -1077,6 +1134,7 @@ let scan_caml_string width ib =
     match check_next_char_for_string width ib with
     | '\r' -> skip_newline (Scanning.ignore_char width ib)
     | '\n' -> skip_spaces (Scanning.ignore_char width ib)
+    | 'u' -> find_stop (scan_backslash_uchar width ib)
     | _ -> find_stop (scan_backslash_char width ib)
 
   and skip_newline width =
@@ -1086,7 +1144,7 @@ let scan_caml_string width ib =
 
   and skip_spaces width =
     match check_next_char_for_string width ib with
-    | ' ' -> skip_spaces (Scanning.ignore_char width ib)
+    | ' ' | '\t' -> skip_spaces (Scanning.ignore_char width ib)
     | _ -> find_stop width in
 
   find_start width
