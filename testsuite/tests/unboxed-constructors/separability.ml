@@ -106,3 +106,13 @@ type t = Unf : 'a unknown_function -> t [@unboxed]
 type 'a unknown_function [@@shape [function]]
 type t = Unf : 'a unknown_function -> t [@unboxed]
 |}]
+
+(* The combination of unboxability and constrained types can create
+   non-obvious non-separable types. The declaration below is
+   non-separated and must be rejected. *)
+type 'a fst = Fst of 'b [@unboxed] constraint 'a = 'b * 'c
+type any = Any : ('a * bool) fst -> any [@unboxed]
+[%%expect {|
+type 'a fst = Fst of 'b [@unboxed] constraint 'a = 'b * 'c
+type any = Any : ('a * bool) fst -> any [@unboxed]
+|}]
