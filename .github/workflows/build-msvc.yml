@@ -255,6 +255,7 @@ jobs:
 
     defaults:
       run:
+        shell: bash -eo pipefail -o igncr {0}
         # Build in a non-ASCII directory, as well as installing to one
         working-directory: 🐫реализация
 
