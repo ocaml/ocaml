@@ -2300,7 +2300,8 @@ static void major_collection_slice(intnat howmuch,
       /* Idle phase is finished (or never existed), we should start marking. */
       request_mark_phase();
       /* Marking begins at the next minor GC. Request one if we did no
-         sweep work, so non-allocating programs still make progress. */
+         sweep work in this slice, so non-allocating programs still
+         make progress. */
       if (sweep_work == 0) caml_request_minor_gc ();
     }
   }
