@@ -52,6 +52,11 @@ Working version
 
 ### Bug fixes:
 
+- #15204: fix a pattern-matching miscompilation where a scrutinee of
+  polymorphic variant type (or variant type with more than 32
+  constructors) is mutated during matching
+  (Jeremy Yallop)
+
 - #15185, #15187: fix a pattern-matching miscompilation on certain
   combinations of immediate ranges and redundant patterns
   (Gabriel Scherer, report by Alperer Keleş,
