@@ -3884,7 +3884,8 @@ and compile_match_simplified ~scopes repr partial ctx
    decisions for a given argument switch. *)
 and compute_arg_partial partial mut =
   match partial.tempo, mut with
-  | Following, Mutable -> Arg { partial with global = Partial }
+  | Following, Mutable ->
+      Arg { partial with current = Partial; global = Partial }
   | First, _ | _, Immutable -> Arg partial
 
 and mut_of_binding_kind =
