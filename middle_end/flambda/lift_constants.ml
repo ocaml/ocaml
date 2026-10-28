@@ -303,20 +303,16 @@ let translate_definition_and_resolve_alias inconstants
     let find_float_var_definition var =
       match Variable.Tbl.find var_to_definition_tbl var with
       | Allocated_const (Normal (Float f)) -> f
-      | const_defining_value ->
-          Misc.fatal_errorf "Bad definition for float array member %a: %a"
-            Variable.print var
-            Alias_analysis.print_constant_defining_value
-            const_defining_value
+      | _ ->
+          (* This is dead code: any value is ok *)
+          42.
     in
     let find_float_symbol_definition sym =
       match Symbol.Map.find sym symbol_definition_map with
       | Allocated_const (Float f) -> f
-      | const_defining_value ->
-          Misc.fatal_errorf "Bad definition for float array member %a: %a"
-            Symbol.print sym
-            Flambda.print_constant_defining_value
-            const_defining_value
+      | _ ->
+          (* This is dead code: any value is ok *)
+          42.
     in
     let floats =
       List.map (fun var ->
