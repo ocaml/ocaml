@@ -1,0 +1,19 @@
+# Security Policy
+
+## Reporting a Vulnerability
+
+If you have found a potential security issue, please
+[report it](https://ocaml.org/security#reporting-security-issues) to the OCaml Security Response Team.
+
+If you can, please provide the [recommended information about the vulnerability](https://github.com/ocaml/security-advisories?tab=readme-ov-file#what-is-needed-in-a-report-about-a-security-issue) to help the [security disclosure process](https://github.com/ocaml/security-advisories?tab=readme-ov-file#reporting-vulnerabilities).
+
+## Supported Versions
+
+| Release                | [Version](https://ocaml.org/tools/compiler-release-cycle) | Supported          |
+| ---------------------- | ------- | ------------------ |
+| Latest minor version   | 5.x.y   | :white_check_mark: |
+| Previous minor version | < 5.x   | :x:                |
+| Long Term Support      | 4.14.z  | :white_check_mark: (until [at least 2027](https://ocaml.org/releases/4.14.4)) |
+|                        | < 4.14  | :x: |
+
+(Note that the opam repository may support a wider range for packages)
