@@ -19510,6 +19510,8 @@ then :
     natdynlink=true ;; #(
   powerpc*-*-linux*) :
     natdynlink=true ;; #(
+  powerpc*-*-freebsd*) :
+    natdynlink=true ;; #(
   x86_64-*-solaris*) :
     natdynlink=true ;; #(
   i686-*-kfreebsd*) :
@@ -19730,6 +19732,10 @@ case $target in #(
     has_native_backend=yes; arch=power; model=ppc64; system=linux ;; #(
   powerpc64*-*-linux*) :
     arch=power; model=ppc64; system=linux ;; #(
+  powerpc64le*-*-freebsd*) :
+    has_native_backend=yes; arch=power; model=ppc64le; system=freebsd ;; #(
+  powerpc64*-*-freebsd*) :
+    has_native_backend=yes; arch=power; model=ppc64; system=freebsd ;; #(
   s390x*-*-linux*) :
     has_native_backend=yes; arch=s390x; model=z10; system=linux ;; #(
   # expected to match "gnueabihf" as well as "musleabihf"
