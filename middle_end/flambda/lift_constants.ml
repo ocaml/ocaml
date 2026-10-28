@@ -303,14 +303,31 @@ let translate_definition_and_resolve_alias inconstants
     let find_float_var_definition var =
       match Variable.Tbl.find var_to_definition_tbl var with
       | Allocated_const (Normal (Float f)) -> f
-      | _ ->
+      | Allocated_const _
+      | Block _
+      | Set_of_closures _
+      | Project_closure _
+      | Move_within_set_of_closures _
+      | Const _ ->
           (* This is dead code: any value is ok *)
           42.
+      | (Project_var _
+      | Field _
+      | Symbol_field _
+      | Symbol _
+      | Variable _) as const_defining_value ->
+          Misc.fatal_errorf "Bad definition for float array member %a: %a"
+            Variable.print var
+            Alias_analysis.print_constant_defining_value
+            const_defining_value
     in
     let find_float_symbol_definition sym =
       match Symbol.Map.find sym symbol_definition_map with
       | Allocated_const (Float f) -> f
-      | _ ->
+      | Allocated_const _
+      | Set_of_closures _
+      | Block _
+      | Project_closure _ ->
           (* This is dead code: any value is ok *)
           42.
     in
