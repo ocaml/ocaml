@@ -36,12 +36,7 @@ expr:
   | constr expr
   | "`"tag-name expr
   | expr '::' expr
-  | '[' expr { ';' expr } [';'] ']'
-  | '[|' expr { ';' expr } [';'] '|]'
-  | '{' field [':' typexpr] ['=' expr]%
-    { ';' field [':' typexpr] ['=' expr] } [';'] '}'
-  | '{' expr 'with' field [':' typexpr] ['=' expr]%
-    { ';' field [':' typexpr] ['=' expr] } [';'] '}'
+  | delimited-expr
   | expr {{ argument }}
   | prefix-symbol expr
   | '-' expr
@@ -73,6 +68,14 @@ expr:
 %BEGIN LATEX
 \end{syntax} \begin{syntax}
 %END LATEX
+delimited-expr:
+    '[' expr { ';' expr } [';'] ']'
+  | '[|' expr { ';' expr } [';'] '|]'
+  | '{' field [':' typexpr] ['=' expr]%
+    { ';' field [':' typexpr] ['=' expr] } [';'] '}'
+  | '{' expr 'with' field [':' typexpr] ['=' expr]%
+    { ';' field [':' typexpr] ['=' expr] } [';'] '}'
+;
 argument:
     expr
   | '~' label-name
