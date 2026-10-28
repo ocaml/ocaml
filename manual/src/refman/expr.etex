@@ -62,7 +62,7 @@ expr:
   | '(' expr ':' typexpr ':>' typexpr ')'
   | 'assert' expr
   | 'lazy' expr
-  | local-open-shorthand
+  | local-open-expr
   | object-expr
 ;
 %BEGIN LATEX
@@ -103,7 +103,7 @@ parameter:
   | '?' label-name ':' pattern
   | '?' label-name ':' '(' pattern [':' typexpr] ['=' expr] ')'
 ;
-local-open-shorthand:
+local-open-expr:
   | module-path '.(' expr ')'
 %  | module-path '.()' % technically supported, but niche and possibly confusing
   | module-path '.[]'
