@@ -22,11 +22,13 @@ Error: This type declaration is non-separated, it may contain both float and
        non-float values.
 |}]
 
-(* This is unexpected, we need such GADTs to be rejected
-   as they also break separability. *)
 type t = Any : 'a -> t [@unboxed]
 [%%expect {|
-type t = Any : 'a -> t [@unboxed]
+Line 1, characters 0-33:
+1 | type t = Any : 'a -> t [@unboxed]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}]
 
 type 'a id1 = 'a
@@ -40,9 +42,12 @@ type 'a id3 = Id of 'a [@unboxed]
 
 (* The following definitions must also be rejected. *)
 type any1 = Any : 'a id1 -> any1 [@unboxed]
-(* This is unexpected and unsound. *)
 [%%expect {|
-type any1 = Any : 'a id1 -> any1 [@unboxed]
+Line 1, characters 0-43:
+1 | type any1 = Any : 'a id1 -> any1 [@unboxed]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}]
 
 type any1' = Any : 'a id1 -> any1' [@@unboxed]
@@ -57,9 +62,12 @@ Error: This type cannot be unboxed because
 |}]
 
 type any2 = Any : 'a id2 -> any2 [@unboxed]
-(* This is unexpected and unsound. *)
 [%%expect {|
-type any2 = Any : 'a id2 -> any2 [@unboxed]
+Line 1, characters 0-43:
+1 | type any2 = Any : 'a id2 -> any2 [@unboxed]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}]
 
 type any2' = Any : 'a id2 -> any2' [@@unboxed]
@@ -74,9 +82,12 @@ Error: This type cannot be unboxed because
 |}]
 
 type any3 = Any : 'a id3 -> any3 [@unboxed]
-(* This is unexpected and unsound. *)
 [%%expect {|
-type any3 = Any : 'a id3 -> any3 [@unboxed]
+Line 1, characters 0-43:
+1 | type any3 = Any : 'a id3 -> any3 [@unboxed]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}]
 
 type any3' = Any : 'a id3 -> any3' [@@unboxed]
@@ -91,15 +102,17 @@ type any3' = Any : 'a id3 -> any3' [@@unboxed]
    as the identities above. *)
 type 'a unknown
 type t = Unk : 'a unknown -> t [@unboxed]
-(* This is unexpected and unsound. *)
 [%%expect {|
 type 'a unknown
-type t = Unk : 'a unknown -> t [@unboxed]
+Line 2, characters 0-41:
+2 | type t = Unk : 'a unknown -> t [@unboxed]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}]
 
 
-(* Using a more precise abstract type, that rules out the identity,
-   is correct. *)
+(* Using a more precise abstract type makes this definition separated. *)
 type 'a unknown_function [@@shape [\#function]]
 type t = Unf : 'a unknown_function -> t [@unboxed]
 [%%expect {|
@@ -114,5 +127,9 @@ type 'a fst = Fst of 'b [@unboxed] constraint 'a = 'b * 'c
 type any = Any : ('a * bool) fst -> any [@unboxed]
 [%%expect {|
 type 'a fst = Fst of 'b [@unboxed] constraint 'a = 'b * 'c
-type any = Any : ('a * bool) fst -> any [@unboxed]
+Line 2, characters 0-50:
+2 | type any = Any : ('a * bool) fst -> any [@unboxed]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}]
