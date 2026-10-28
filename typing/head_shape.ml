@@ -64,14 +64,72 @@ let of_attributes loc attrs =
         ) Shape.empty shapes
       )
 
+(* During head-shape computation we keep track of universal and
+   existential variables encountered during the way. Universal
+   variables are the parameters of the initial parametrized type
+   (when checking a declaration), and for example variables of
+   polymorphic record fields encountered along the way. Existential
+   variables are introduced by GADT constructors.
+
+   Tracking existential variables is necessary to detect non-separable
+   definitions such as:
+   {[
+     type 'a id = Id of 'a [@unboxed]
+     type wrong = Any : 'ex id -> wrong [@unboxed]
+   ]}
+   The values at type [wrong] are exactly the values at type ['ex],
+   whcih can be instantiated with both [float] and [int].
+
+   Tracking universal variables is not strictly necessary, but we thought
+   that it would be a better design to avoid dangling variables.
+*)
+type mode = Forall | Exists
+type env = { global : Env.t; local : (type_expr * mode) list }
+
+let add_forall_vars vars env =
+  let vars = List.map (fun var -> (var, Forall)) vars in
+  { env with local = vars @ env.local }
+
+let add_exists_vars vars env =
+  let vars = List.map (fun var -> (var, Exists)) vars in
+  { env with local = vars @ env.local }
+
+(* Existential variables can sometimes be refined by unification into
+   non-variables expressions. Consider for example:
+   {[
+     type 'a pair = Pair : ('b * 'c) -> ('b * 'c) pair [@unboxed]
+     type any_pair : Any : 'ex pair -> any_pair [@unboxed]
+   ]}
+   When checking this declaration we start with an existential [ex],
+   which gets refined into [('b * 'c)] when checking the [Pair]
+   constructor. When we see a constructed type such as [('b * 'c)] in
+   our environment, we add its free variables (here ['b], ['c]) as new
+   existentials -- the user can choose their instantiation
+   arbitrarily, by choosing appropriate values of ['ex].
+*)
+let normalize_binding env = function
+  | (_var, Forall) as binding -> [binding]
+  | (var, Exists) ->
+      Ctype.free_variables ~env var
+      |> List.map (fun var -> (var, Exists))
+
+let var_is_existential env tyvar =
+  env.local
+  |> List.concat_map (normalize_binding env.global)
+  |> List.find_map (fun (var, mode) ->
+    if Types.eq_type var tyvar then Some mode
+    else None)
+  |> function
+  | None -> false
+  | Some Forall -> false
+  | Some Exists -> true
+
 let rec of_type_expr env ty fuel =
   match Types.get_desc ty with
   | Tvar _ | Tunivar _ ->
-      (* FIXME: variables that are universally quantified
-         (including type parameters) should get [any], but GADT
-         variables that are existentially quantified should get
-         [poison] instead -- they are not separated. *)
-      Shape.any
+      if var_is_existential env ty
+      then Shape.poison
+      else Shape.any
   | Tconstr (p, args, _abbrev) ->
       (* Both [of_predef_abstract_type] and [of_typedescr] may loop over
          infinite types or recursive expansions; decrease fuel now. *)
@@ -81,7 +139,7 @@ let rec of_type_expr env ty fuel =
       | Some (#Predef.abstract_type_constr as tconstr) ->
           of_predef_abstract_type env tconstr args fuel
       | None | Some #Predef.data_type_constr ->
-      match Env.find_type_descrs p env, Env.find_type p env with
+      match Env.find_type_descrs p env.global, Env.find_type p env.global with
       | descr, decl ->
           of_typedescr env p decl descr ~args fuel
       | exception Not_found ->
@@ -121,19 +179,32 @@ let rec of_type_expr env ty fuel =
         end
       in
       Shape.polymorphic_variant ~has_consts ~has_nonconsts
-  | Tpoly (ty, _vars) ->
+  | Tpoly (ty, vars) ->
+      let env = add_forall_vars vars env in
       of_type_expr env ty fuel
   | Tlink _ | Texpand _ | Tsubst _ | Tfield _ | Tnil ->
       (* cannot be returned by [get_desc] *)
       assert false
 
-and of_unknown_type env p args =
-  (* FIXME: if one of the parameters contains a non-separated variable,
-     then this unknown type should be considered non-separated as well.
-     (It may be a projection into this parameter.)
-     This corresponds to the DeepSep case of the separability analysis. *)
-  ignore (env, p, args);
-  Shape.any
+and of_unknown_type env _p args =
+  (* The shape of [foo t] when [t] is abstract must be [poison] not
+     only if [foo] is an existential variable, but also if it
+     _contains_ an existential variables, due to the ability of
+     decomposing argument types with constraints. Consider for
+     example:
+     {[
+       type wrong = Any : ('ex * int) unk -> wrong [@unboxed]
+     ]}
+     It looks like the argument ['ex * int] of [unk] will always
+     have the shape of a pair, but in fact [unk] may be defined as
+     {[
+       type 'a unk = 'b constraint 'a = 'b * 'c
+     ]}
+  *)
+  let free_vars = Ctype.free_variables_list ~env:env.global args in
+  if List.exists (var_is_existential env) free_vars
+  then Shape.poison
+  else Shape.any
 
 and of_predef_abstract_type env tconstr args fuel =
   match tconstr with
@@ -168,22 +239,24 @@ and of_typedescr env p ty_decl ty_descr ~args fuel =
   let with_unify_res instance f =
     let snap = Btype.snapshot () in
     Fun.protect ~finally:(fun () -> Btype.backtrack snap) @@ fun () ->
-    Ctype.unify env instance (Ctype.newconstr p args);
+    Ctype.unify env.global instance (Ctype.newconstr p args);
     f ()
   in
   let of_type_manifest ty =
-    let ty = Ctype.apply env ty_decl.type_params ty args in
+    let ty = Ctype.apply env.global ty_decl.type_params ty args in
     of_type_expr env ty fuel
   in
   let of_unboxed_label lbl =
-    let (_universals, ty_arg, ty_res) =
+    let (universals, ty_arg, ty_res) =
       Ctype.instance_label ~fixed:false lbl in
+    let env = add_forall_vars universals env in
     with_unify_res ty_res @@ fun () ->
     of_type_expr env ty_arg fuel
   in
   let of_unboxed_cstr cstr =
-    let cstr_args, cstr_res, _existentials =
+    let cstr_args, cstr_res, existentials =
       Ctype.instance_constructor Keep_existentials_flexible cstr in
+    let env = add_exists_vars existentials env in
     with_unify_res cstr_res @@ fun () ->
     (* an unboxed variant must have exactly one argument *)
     begin match cstr_args with
@@ -268,9 +341,23 @@ let initial_fuel =
      {!Typedecl_unboxed.get_unboxed_type_representation} *)
   100
 
-let of_type_path env path =
-  let decl = Env.find_type path env in
+let instance_decl genv decl =
   let params = Ctype.instance_list decl.type_params in
+  let env =
+    let param_vars =
+      (* in presence of constraints such as
+           type 'a t = ... constraint 'a = 'b * 'c
+         the [type_params] may be non-variable types,
+         here ['b * 'c]. *)
+      Ctype.free_variables_list ~env:genv params in
+    { global = genv; local = [] }
+    |> add_forall_vars param_vars
+  in
+  env, params
+
+let of_type_path genv path =
+  let decl = Env.find_type path genv in
+  let env, params = instance_decl genv decl in
   let ty = Ctype.newconstr path params in
   of_type_expr env ty initial_fuel
 
@@ -278,10 +365,10 @@ let of_type_path env path =
    for any possible value of the type parameters; this is what is
    required to check that the definition is valid, and it can be
    cached and reused for pattern-matching compilation. *)
-let of_unboxed_cstr_description env descr =
+let of_unboxed_cstr_description genv descr =
   try Misc.Cached.force descr (fun (decl, ty_arg) ->
-    let params = Ctype.instance_list decl.type_params in
-    let ty_arg = Ctype.apply env decl.type_params ty_arg params in
+    let env, params = instance_decl genv decl in
+    let ty_arg = Ctype.apply genv decl.type_params ty_arg params in
     of_type_expr env ty_arg initial_fuel)
   with Misc.Cached.Forcing_race ->
     (* There could be a forcing race in the case of a cycle:
@@ -297,11 +384,11 @@ let of_unboxed_cstr_description env descr =
     *)
     Shape.any
 
-let of_regular_cstr_description env descr =
+let of_regular_cstr_description genv descr =
   match descr.cstr_tag with
   | Cstr_constant n -> Shape.imm [Imm n]
   | Cstr_block tag -> Shape.block ~size:descr.cstr_arity [Tag tag]
-  | Cstr_unboxed descr -> of_unboxed_cstr_description env descr
+  | Cstr_unboxed descr -> of_unboxed_cstr_description genv descr
   | Cstr_extension _ ->
       (* cannot occur in regular variants *)
       assert false
@@ -403,17 +490,17 @@ let check_typedecl_separated ~loc shape =
    The implementation tries to be zero-cost: it computes nothing at
    all unless unboxed constructors or shape annotations are used.
 *)
-let check_typedecl env (path, decl) =
+let check_typedecl genv (path, decl) =
   let loc = decl.type_loc in
   let descr =
-    try Env.find_type_descrs path env
+    try Env.find_type_descrs path genv
     with Not_found -> assert false
   in
-  let shape = lazy (of_type_path env path) in
+  let shape = lazy (of_type_path genv path) in
   begin match find_constructors_with_unboxed descr with
   | None -> ()
   | Some cstrs ->
-      check_typedecl_conflicts ~loc env cstrs;
+      check_typedecl_conflicts ~loc genv cstrs;
       check_typedecl_separated ~loc shape;
   end;
   check_typedecl_constraint ~loc decl shape;
