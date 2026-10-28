@@ -106,7 +106,7 @@ parameter:
 local-open-shorthand:
   | module-path '.(' expr ')'
   | module-path '.' delimited-expr
-  | module-path '.{<' expr '>}'
+  | module-path '.' delimited-object-expr
 ;
 object-expr:
   | 'new' class-path
@@ -114,6 +114,9 @@ object-expr:
   | expr '#' method-name
   | inst-var-name
   | inst-var-name '<-' expr
+  | delimited-object-expr
+;
+delimited-object-expr:
   | '{<' [ inst-var-name ['=' expr] { ';' inst-var-name ['=' expr] } [';'] ] '>}'
 \end{syntax}
 See also the following language extensions:
