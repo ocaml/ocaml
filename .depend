@@ -3960,6 +3960,7 @@ asmcomp/selection.cmo : \
     asmcomp/mach.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
+    middle_end/backend_var.cmi \
     asmcomp/arch.cmi \
     asmcomp/selection.cmi
 asmcomp/selection.cmx : \
@@ -3968,6 +3969,7 @@ asmcomp/selection.cmx : \
     asmcomp/mach.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
+    middle_end/backend_var.cmx \
     asmcomp/arch.cmx \
     asmcomp/selection.cmi
 asmcomp/stackframe.cmo : \
