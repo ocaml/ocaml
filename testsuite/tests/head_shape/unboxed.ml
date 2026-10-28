@@ -123,3 +123,17 @@ type 'a fst = Fst of 'b [@unboxed] constraint 'a = 'b * 'c
 shape of t: {imm = Any; blocks = [];}
 type t = Foo of (int * bool) fst [@unboxed]
 |}]
+
+(* instantiation of constructors can refine an existential variable *)
+type _ dyn =
+| Int : int -> int dyn [@unboxed]
+| String : string -> string dyn [@unboxed]
+type any_dyn = Any : 'ex dyn -> any_dyn [@unboxed]
+[%%expect {|
+shape of _ dyn: {imm = Any; blocks = [string];}
+type _ dyn =
+    Int : int -> int dyn [@unboxed]
+  | String : string -> string dyn [@unboxed]
+shape of any_dyn: {imm = Any; blocks = [string];}
+type any_dyn = Any : 'ex dyn -> any_dyn [@unboxed]
+|}]
