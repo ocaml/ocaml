@@ -22,6 +22,10 @@ Working version
   (Pierre Chambart, report by Ethan Chou,
    review by Vincent Laviron)
 
+- #15210: On ARM64, shorten three-way integer comparisons from five
+  instructions to three.
+  (Juneyoung Lee)
+
 ### Standard library:
 
 - #15168: `Scanf.unescaped`, `%S` and `%C` now accept all the escape sequences

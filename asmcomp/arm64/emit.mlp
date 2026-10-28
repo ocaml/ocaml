@@ -526,6 +526,7 @@ module Size = struct
     | Lop (Ispecific (Icheckbound_imm_far _)) -> 3
     | Lop (Ispecific (Ishiftcheckbound _)) -> 2
     | Lop (Ispecific (Ishiftcheckbound_far _)) -> 3
+    | Lop (Ispecific Icompare_ints) -> 3
     | Lop (Iintop Imod) -> 2
     | Lop (Iintop Imulh) -> 1
     | Lop (Iintop_imm ((Iadd|Isub), n)) -> addsub_size n
@@ -1017,6 +1018,10 @@ let emit_instr env i =
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}, {emit_reg i.arg.(0)}\n`
     | Lop(Iopaque) ->
         assert (i.arg.(0).loc = i.res.(0).loc)
+    | Lop(Ispecific Icompare_ints) ->
+        `\tcmp\t{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
+        `\tcset\t{emit_reg i.res.(0)}, ne\n`;
+        `\tcneg\t{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, lt\n`
     | Lop(Ispecific(Ishiftarith(op, shift))) ->
         let instr = (match op with
                        Ishiftadd    -> "add"

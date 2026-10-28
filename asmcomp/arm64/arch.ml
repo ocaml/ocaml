@@ -79,6 +79,7 @@ type specific_operation =
   | Ishiftarith of arith_operation * int
   | Ishiftcheckbound of { shift : int; }
   | Ishiftcheckbound_far of { shift : int; }
+  | Icompare_ints (* three-way signed integer comparison *)
   | Imuladd       (* multiply and add *)
   | Imulsub       (* multiply and subtract *)
   | Inegmulf      (* floating-point negate and multiply *)
@@ -165,6 +166,8 @@ let print_specific_operation printreg op ppf arg =
   | Ishiftcheckbound_far { shift; } ->
       fprintf ppf
         "(far) check %a >> %i > %a" printreg arg.(0) shift printreg arg.(1)
+  | Icompare_ints ->
+      fprintf ppf "compare_ints %a %a" printreg arg.(0) printreg arg.(1)
   | Imuladd ->
       fprintf ppf "(%a * %a) + %a"
         printreg arg.(0)
