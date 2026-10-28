@@ -160,8 +160,8 @@ CAMLprim value caml_int64_float_of_bits(value vi)
 macros for the type "value", that will be described later.  The "CAMLprim" macro
 expands to the required compiler directives to ensure that the
 function is exported and accessible from OCaml.)
-The hard work is performed by the function "caml_int64_float_of_bits_unboxed", which is
-declared as:
+The hard work is performed by the function "caml_int64_float_of_bits_unboxed",
+which is declared as:
 \begin{verbatim}
 double caml_int64_float_of_bits_unboxed(int64_t i)
 {
@@ -335,7 +335,8 @@ Using this mechanism, users of the library "mylib.cma" do not need to
 know that it references C code, nor whether this C code must be
 statically linked (using "-custom") or dynamically linked.
 
-\subsection{ss:c-static-vs-dynamic}{Choosing between static linking and dynamic linking}
+\subsection{ss:c-static-vs-dynamic}
+{Choosing between static linking and dynamic linking}
 
 After having described two different ways of linking C code with OCaml
 code, we now review the pros and cons of each, to help developers of
@@ -469,12 +470,18 @@ floating-point numbers.}
 In earlier versions of OCaml, it was possible to use
 word-aligned pointers to addresses outside the heap as OCaml values,
 just by casting the pointer to type "value".  This usage is no longer
-supported since OCaml 5.0.
+supported since OCaml 5.0. There are now three canonical ways of
+manipulating such out-of-heap values.
 
-A correct way to manipulate pointers to out-of-heap blocks from
-OCaml is to store those pointers in OCaml blocks with tag
-"Abstract_tag" or "Custom_tag", then use the blocks as the OCaml
-values.
+{\bf Copying to the OCaml heap:} The first correct way is to copy out-of-heap
+objects to the OCaml heap.
+To do so safely, one must allocate a fresh block on the OCaml heap
+and tag this block using "Abstract_tag" or "Custom_tag", thereby
+indicating to the OCaml runtime that the bytes should
+not be interpreted in a standard way. "Abstract_tag" makes the block
+entirely opaque to the runtime, while blocks tagged with "Custom_tag"
+can provide additional operations that can be used by the runtime to,
+for instance, compare, hash, or serialize the block.
 
 Here is an example of encapsulation of out-of-heap pointers of C type
 "ty *" inside "Abstract_tag" blocks.  Section~\ref{s:c-intf-example}
@@ -483,17 +490,32 @@ gives a more complete example using "Custom_tag" blocks.
 /* Create an OCaml value encapsulating the pointer p */
 static value val_of_typtr(ty * p)
 {
-  value v = caml_alloc(1, Abstract_tag);
+  CAMLparam0();
+  CAMLlocal1(v);
+  v = caml_alloc(1, Abstract_tag);
+  // Data_abstract_val provides a pointer to the data area of the block
   *((ty **) Data_abstract_val(v)) = p;
-  return v;
+  CAMLreturn(v);
 }
 
 /* Extract the pointer encapsulated in the given OCaml value */
 static ty * typtr_of_val(value v)
 {
-  return *((ty **) Data_abstract_val(v));
+  CAMLparam1(v);
+  CAMLreturnT(ty *, *((ty **) Data_abstract_val(v)));
 }
 \end{verbatim}
+Note: the "CAML*" macros are used to register and unregister local values as
+GC roots, preventing their collection during the execution of the function.
+Usage of these macros is further explained in Section~\ref{s:c-gc-harmony}.
+In addition, you may find conversion functions such as "typtr_of_val" defined
+in existing codebases without using "CAML*" macros. That is because two above
+functions do not strictly require the use of these macros,
+as they do not trigger the GC.
+However, it is good practice to use them anyway, since understanding
+when the GC is triggered can be subtle.
+
+{\bf Treating pointers as ``native'' integers: }
 Alternatively, out-of-heap pointers can be treated as ``native''
 integers, that is, boxed 32-bit integers on a 32-bit platform and
 boxed 64-bit integers on a 64-bit platform.
@@ -501,30 +523,40 @@ boxed 64-bit integers on a 64-bit platform.
 /* Create an OCaml value encapsulating the pointer p */
 static value val_of_typtr(ty * p)
 {
-  return caml_copy_nativeint((intnat) p);
+  CAMLparam0();
+  CAMLreturn(caml_copy_nativeint((intnat) p));
 }
 
 /* Extract the pointer encapsulated in the given OCaml value */
 static ty * typtr_of_val(value v)
 {
-  return (ty *) Nativeint_val(v);
+  CAMLparam1(v);
+  CAMLreturnT(ty *, (ty *) Nativeint_val(v))
 }
 \end{verbatim}
-For pointers that are at least 2-aligned (the low bit is guaranteed to
-be zero), we have yet another valid representation as an OCaml tagged
-integer.
+
+{\bf Treating pointers as tagged integers: }
+For pointers that are \emph{at least 2-aligned} (the low bit is guaranteed to
+be zero), we can modify the low bit so that the OCaml runtime considers it
+an integer.
 \begin{verbatim}
 /* Create an OCaml value encapsulating the pointer p */
 static value val_of_typtr(ty * p)
 {
+  CAMLparam0();
   assert (((uintptr_t) p & 1) == 0);  /* check correct alignment */
-  return (value) p | 1;
+  /* update the low bit from 0 (indicating a pointer to the OCaml heap)
+     to 1 (indicating an integer) */
+  CAMLreturn((value) p | 1);
 }
 
 /* Extract the pointer encapsulated in the given OCaml value */
 static ty * typtr_of_val(value v)
 {
-  return (ty *) (v & ~1);
+  CAMLparam1(v);
+  /* update the low bit from 1 to 0,
+     recovering the original pointer */
+  CAMLreturnT(ty *, (ty *) (v & ~1));
 }
 \end{verbatim}
 
@@ -826,11 +858,11 @@ length \var{n} bytes. The sequence initially contains uninitialized bytes.
 (or string) value of length \var{n} bytes.  The value is initialized from the
 \var{n} bytes starting at address \var{p}.
 \item
-"caml_copy_string("\var{s}")" returns a string or byte sequence value
-containing a copy of the null-terminated C string \var{s} (a "char *").
+"caml_copy_string("\var{s}")" allocates and returns a string or byte sequence
+value containing a copy of the null-terminated C string \var{s} (a "char *").
 \item
-"caml_copy_double("\var{d}")" returns a floating-point value initialized
-with the "double" \var{d}.
+"caml_copy_double("\var{d}")" allocates and returns a floating-point value
+initialized with the "double" \var{d}.
 \item
 "caml_copy_int32("\var{i}")", "caml_copy_int64("\var{i}")" and
 "caml_copy_nativeint("\var{i}")" return a value of OCaml type "int32",
@@ -848,7 +880,8 @@ an array of floating-point numbers.)
 \item
 "caml_copy_string_array("\var{p}")" allocates an array of strings or byte
 sequences, copied from the pointer to a string array \var{p}
-(a "char **").  \var{p} must be NULL-terminated.
+(a "char **"). \var{p} must be a NULL-terminated array of pointers,
+each of which must point to a null-terminated C string.
 \item "caml_alloc_float_array("\var{n}")" allocates an array of floating point
   numbers of size \var{n}. The array initially contains uninitialized values.
 \item "caml_alloc_unboxed("\var{v}")" returns the value (of any unboxed
@@ -954,8 +987,11 @@ safety bugs, so it is strongly recommended to follow the rules below in most
 cases. The implementation of the root registration mechanism is efficient and
 will not typically result in any performance penalty.
 
-All the macros described in this section are declared in the
-"<caml/memory.h>" header file.
+The "<caml/memory.h>" header file exposes a collection of macros that are used
+to register values with the garbage collector when entering a function,
+and unregister when the function terminates. Strictly adhering to the
+following rules ensures correct behaviour.
+
 
 \begin{gcrule}
 A function that has parameters or local variables of type "value" must
