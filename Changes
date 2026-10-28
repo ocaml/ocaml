@@ -891,6 +891,12 @@ OCaml 5.6.0
   (Nicolás Ojeda Bär, report by KC Sivaramakrishnan, review by KC
   Sivaramakrishnan and Antonin Décimo)
 
+- #15202, #15208: Proper handling of integer sized constants in flambda
+  alias analysis
+  (Pierre Chambart, report by Ethan Chou,
+   review by Vincent Laviron)
+
+
 OCaml 5.5.1
 -----------
 
