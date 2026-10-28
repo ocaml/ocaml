@@ -195,6 +195,7 @@ let resolve_variable
   | Variable aliased_variable ->
     variable_field_definition var_to_symbol_tbl var_to_definition_tbl
       aliased_variable
+  | Const c -> Const c
 
 let translate_set_of_closures
     (inconstants : Inconstant_idents.result)
@@ -271,6 +272,8 @@ let find_original_set_of_closure
           end
         | _ -> assert false
       end
+    | Const (Int _ | Char _) ->
+      assert false
     | Symbol s ->
       match Symbol.Map.find s project_closure_map with
       | exception Not_found ->
@@ -320,7 +323,10 @@ let translate_definition_and_resolve_alias inconstants
           match Variable.Map.find var aliases with
           | exception Not_found -> find_float_var_definition var
           | Variable var -> find_float_var_definition var
-          | Symbol sym -> find_float_symbol_definition sym)
+          | Symbol sym -> find_float_symbol_definition sym
+          | Const (Char _ | Int _) ->
+              (* This is dead code: any value is ok *)
+              42.)
         vars
     in
     let const : Allocated_const.t =
@@ -354,6 +360,8 @@ let translate_definition_and_resolve_alias inconstants
       match Variable.Map.find var aliases with
       | exception Not_found ->
         Variable.Tbl.find var_to_definition_tbl var
+      | Const c ->
+        Const c
       | Variable var ->
         Variable.Tbl.find var_to_definition_tbl var
       | Symbol sym ->
@@ -458,6 +466,8 @@ let translate_definition_and_resolve_alias inconstants
       Alias_analysis.print_constant_defining_value definition
   | Project_closure { set_of_closures; closure_id } ->
     begin match Variable.Map.find set_of_closures aliases with
+    | Const (Int _ | Char _) ->
+      assert false
     | Symbol s ->
       Some (Flambda.Project_closure (s, closure_id))
     (* If a closure projection is a constant, the set of closures must
