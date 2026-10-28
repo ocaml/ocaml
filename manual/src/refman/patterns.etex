@@ -19,17 +19,20 @@ pattern:
   | char-literal '..' char-literal
   | 'lazy' pattern
   | 'exception' pattern
-  | module-path '.(' pattern ')'
-%  | module-path '.()' % technically supported, but niche and possibly confusing
-  | module-path '.[]'
-  | module-path '.[||]'
-  | module-path '.' delimited-pattern
+  | local-open-pattern
 ;
 delimited-pattern:
     '{' field [':' typexpr] ['=' pattern]%
     { ';' field [':' typexpr] ['=' pattern] } [';' '_' ] [ ';' ] '}'
   | '[' pattern { ';' pattern } [ ';' ] ']'
   | '[|' pattern { ';' pattern } [ ';' ] '|]'
+;
+local-open-pattern:
+  | module-path '.(' pattern ')'
+%  | module-path '.()' % technically supported, but niche and possibly confusing
+  | module-path '.[]'
+  | module-path '.[||]'
+  | module-path '.' delimited-pattern
 \end{syntax}
 See also the following language extensions:
 \hyperref[s:first-class-modules]{first-class modules},
