@@ -105,9 +105,7 @@ parameter:
 ;
 local-open-shorthand:
   | module-path '.(' expr ')'
-  | module-path '.[' expr ']'
-  | module-path '.[|' expr '|]'
-  | module-path '.{' expr '}'
+  | module-path '.' delimited-expr
   | module-path '.{<' expr '>}'
 ;
 object-expr:
@@ -1309,9 +1307,8 @@ let map_3d_matrix' f =
 When the body of a local open expression is delimited by
 @'[' ']'@,  @'[|' '|]'@,  or @'{' '}'@, the parentheses can be omitted.
 For expression, parentheses can also be omitted for @'{<' '>}'@.
-For example, @module-path'.['expr']'@ is equivalent to
-@module-path'.(['expr'])'@, and @module-path'.[|' expr '|]'@ is
-equivalent to @module-path'.([|' expr '|])'@.
+That is, @module-path'.'delimited-expr@ is equivalent to
+@module-path'.('delimited-expr')'@.
 
 \begin{caml_example}{toplevel}
 let vector = Random.[|int 255; int 255; int 255; int 255|];;
