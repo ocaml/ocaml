@@ -105,6 +105,9 @@ parameter:
 ;
 local-open-shorthand:
   | module-path '.(' expr ')'
+%  | module-path '.()' % technically supported, but niche and possibly confusing
+  | module-path '.[]'
+  | module-path '.[||]'
   | module-path '.' delimited-expr
   | module-path '.' delimited-object-expr
 ;

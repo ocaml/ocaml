@@ -20,6 +20,9 @@ pattern:
   | 'lazy' pattern
   | 'exception' pattern
   | module-path '.(' pattern ')'
+%  | module-path '.()' % technically supported, but niche and possibly confusing
+  | module-path '.[]'
+  | module-path '.[||]'
   | module-path '.' delimited-pattern
 ;
 delimited-pattern:
