@@ -17,6 +17,11 @@ Working version
   usually concrete.
   (Zane Hambly, review by Stefan Muenzel)
 
+- #15202, #15208: Proper handling of integer sized constants in flambda
+  alias analysis
+  (Pierre Chambart, report by Ethan Chou,
+   review by Vincent Laviron)
+
 - #15210: On ARM64, shorten three-way integer comparisons from five
   instructions to three.
   (Juneyoung Lee)
