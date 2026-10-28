@@ -1308,8 +1308,7 @@ let map_3d_matrix' f =
 \end{caml_example}
 
 When the body of a local open expression is delimited by
-@'[' ']'@,  @'[|' '|]'@,  or @'{' '}'@, the parentheses can be omitted.
-For expression, parentheses can also be omitted for @'{<' '>}'@.
+@'[' ']'@,  @'[|' '|]'@, @'{' '}'@, or @'{<' '>}'@, the parentheses can be omitted.
 That is, @module-path'.'delimited-expr@ is equivalent to
 @module-path'.('delimited-expr')'@.
 
