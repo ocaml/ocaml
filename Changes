@@ -954,6 +954,10 @@ OCaml 5.5.1
   constructors) is mutated during matching
   (Jeremy Yallop, review by Gabriel Scherer)
 
+- #15212, #15213: Stops assuming that static float array fields are floats
+  (Pierre Chambart, report by Alperen Keleş,
+   review by Vincent Laviron)
+
 OCaml 5.5.0 (19 June 2026)
 -------------------------
 
