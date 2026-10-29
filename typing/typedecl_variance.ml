@@ -123,6 +123,97 @@ let make p n i =
 
 let injective = Variance.(set Inj null)
 
+(* Check variance of parameters *)
+let check_variance_params loc env params required body_variances body context =
+  let open Variance in
+  let bad_variance r f req = raise (Error(loc,Bad_variance(r,f,req))) in
+  let pos = ref 0 in
+  List.iter2
+    (fun ty (c, n, i as v) ->
+       incr pos;
+       let var = get_variance ty body_variances in
+       let (co,cn) = get_upper var and ij = mem Inj var in
+       if Btype.is_Tvar ty && (co && not c || cn && not n) || not ij && i
+       then bad_variance (Variance_not_satisfied !pos) (co,cn,ij) v
+    )
+    params required;
+  (* Check propagation from constrained parameters *)
+  let fvl = Ctype.free_variables_list params in
+  let fvl =
+    List.filter (fun v -> not (List.exists (eq_type v) params)) fvl in
+  (* If there are no extra variables there is nothing to do *)
+  if fvl = [] then () else
+    let tvl2 = ref TypeMap.empty in
+    List.iter2
+      (fun ty (p,n,_) ->
+         if Btype.is_Tvar ty then () else
+           let v =
+             if p then if n then full else covariant else conjugate covariant in
+           compute_variance env tvl2 v ty)
+      params required;
+    (* For each free type variable in the body of the type declaration,
+       we must check that there exists a parent subexpression of the variable
+       which occurs in a matching position in the parameters.
+    *)
+    let rec check visited variance_in_parameters ty =
+      if TypeSet.mem ty !visited then () else
+        let visited' = TypeSet.add ty !visited in
+        visited := visited';
+        let v1 = get_variance ty body_variances in
+        let v2 = variance_in_parameters !tvl2 ty in
+        let (c1,n1) = get_upper v1 and (c2,n2,i2) = get_lower v2 in
+        if c1 && not c2 || n1 && not n2 then begin
+          match List.find_opt (eq_type ty) fvl with
+          | Some variable ->
+              let error =
+                if not i2 then
+                  No_variable
+                else if c2 || n2 then
+                  Variance_not_reflected
+                else
+                  Variance_not_deducible
+              in
+              let variance_error =
+                Variance_variable_error { error; context; variable }
+              in
+              bad_variance variance_error (c1,n1,false) (c2,n2,false)
+          | None ->
+              Btype.iter_type_expr (check visited variance_in_parameters) ty
+        end
+    in
+    (* When checking for matching occurences in parameters and bodies,
+       we can consider that a subexpression occurs in the parameters if we find
+       either
+       - an [eq_type] equal subpexpression
+       - a [Ctype.equal] equivalent subexpression
+       The second option is far more expensive, and is only needed to cover
+       cases like {[
+         type 'a p
+         type 'a t = 'b p constraint 'a = 'b p
+       ]}
+       where
+         - the type variable ['b] does not appear in a matching position
+           (because ['b] has variance [May_pos + May_neg])
+         - the equivalent parent subexpressions ['b p] have matching
+           variance [Pos + Neg] on the two sides but are not equal.
+       Consequently, we do a first pass with the first criterion and we only
+       refine the check with the second criterion on litigious cases.
+    *)
+    let check_gradual (_,ty) =
+      let eq_search tvl ty = try TypeMap.find ty tvl with Not_found -> null in
+      let equiv_search tvl ty =
+        let snap = Btype.snapshot () in
+        let v = TypeMap.fold (fun t vt v ->
+            if Ctype.is_equal env false [ty] [t] then union vt v else v
+          ) tvl null
+        in
+        Btype.backtrack snap; v
+      in
+      try check (ref TypeSet.empty) eq_search ty with
+      | Error(_, Bad_variance _) -> check (ref TypeSet.empty) equiv_search ty
+    in
+    List.iter check_gradual body
+
 let compute_variance_type env ~check (required, loc) decl tyl =
   (* Requirements *)
   let check_injectivity = Btype.type_kind_is_abstract decl in
@@ -172,100 +263,7 @@ let compute_variance_type env ~check (required, loc) decl tyl =
         try check ty; compute_variance env tvl injective ty
         with Exit -> ())
       params;
-  begin match check with
-  | None -> ()
-  | Some context ->
-    (* Check variance of parameters *)
-    let pos = ref 0 in
-    List.iter2
-      (fun ty (c, n, i) ->
-        incr pos;
-        let var = get_variance ty tvl in
-        let (co,cn) = get_upper var and ij = mem Inj var in
-        if Btype.is_Tvar ty && (co && not c || cn && not n) || not ij && i
-        then raise (Error(loc, Bad_variance
-                                (Variance_not_satisfied !pos,
-                                                        (co,cn,ij),
-                                                        (c,n,i)))))
-      params required;
-    (* Check propagation from constrained parameters *)
-    let fvl = Ctype.free_variables_list params in
-    let fvl =
-      List.filter (fun v -> not (List.exists (eq_type v) params)) fvl in
-    (* If there are no extra variables there is nothing to do *)
-    if fvl = [] then () else
-    let tvl2 = ref TypeMap.empty in
-    List.iter2
-      (fun ty (p,n,_) ->
-        if Btype.is_Tvar ty then () else
-        let v =
-          if p then if n then full else covariant else conjugate covariant in
-        compute_variance env tvl2 v ty)
-      params required;
-    let rec check visited variance_in_parameters ty =
-      if TypeSet.mem ty !visited then () else
-      let visited' = TypeSet.add ty !visited in
-      visited := visited';
-      let v1 = get_variance ty tvl in
-      let v2 = variance_in_parameters ty in
-      let (c1,n1) = get_upper v1 and (c2,n2,i2) = get_lower v2 in
-      if c1 && not c2 || n1 && not n2 then begin
-        match List.find_opt (eq_type ty) fvl with
-        | Some variable ->
-            let error =
-              if not i2 then
-                No_variable
-              else if c2 || n2 then
-                Variance_not_reflected
-              else
-                Variance_not_deducible
-            in
-            let variance_error =
-              Variance_variable_error { error; context; variable }
-            in
-            raise
-              (Error (loc
-                     , Bad_variance ( variance_error
-                                    , (c1,n1,false)
-                                    , (c2,n2,false))))
-        | None ->
-            Btype.iter_type_expr (check visited variance_in_parameters) ty
-      end
-    in
-    let check_gradual (_,ty) =
-           (* For each free type variable in the body of the type declaration,
-         we must check that there exists a parent subexpression of the variable
-         which is "reflected" in a matching position in the parameters.
-         However, there is two interpretation of the reflected part:
-         - the subpexpression appears physically in the parameters
-         - a [Ctype.equal] subexpression appears in the parameters
-         The second option is more expansive to test, and is only needed
-         to cover cases like {[
-         type 'a p
-         type 'a t = 'b p constraint 'a = 'b p
-         ]}
-         where
-         - the free variable ['b] does not appear in matching position by itself
-           (because ['b] has variance [May_pos + May_neg])
-         - the parent subexpression ['b p] has matching variance [Pos + Neg]
-           on the two sides but the two subexpressions are not physically equal.
-         Consequently, we do a first pass with the first criterion and we only
-         refine the check with the second criterion on litigious cases.
-      *)
-      let phys_search ty = try TypeMap.find ty !tvl2 with Not_found -> null in
-      let equiv_search ty =
-        let snap = Btype.snapshot () in
-        let v = TypeMap.fold (fun t vt v ->
-            if Ctype.is_equal env false [ty] [t] then union vt v else v
-          ) !tvl2 null
-        in
-        Btype.backtrack snap; v
-      in
-      try check (ref TypeSet.empty) phys_search ty with
-      | Error(_, Bad_variance _) -> check (ref TypeSet.empty) equiv_search ty
-    in
-    List.iter check_gradual tyl;
-  end;
+  Option.iter (check_variance_params loc env params required tvl tyl) check;
   List.map2
     (fun ty (p, n, _i) ->
       let v = get_variance ty tvl in
