@@ -15,8 +15,6 @@ type 'a t = 'b constraint 'a = (module M : T) -> 'b M.t
 Line 3, characters 0-39:
 3 | type any = Any: 'a t -> any [@@unboxed]
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This type cannot be unboxed because
-       it might contain both float and non-float values,
-       depending on the instantiation of an unnamed existential variable.
-       You should annotate it with "[@@ocaml.boxed]".
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}]

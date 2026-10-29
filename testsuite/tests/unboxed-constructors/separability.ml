@@ -55,10 +55,8 @@ type any1' = Any : 'a id1 -> any1' [@@unboxed]
 Line 1, characters 0-46:
 1 | type any1' = Any : 'a id1 -> any1' [@@unboxed]
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This type cannot be unboxed because
-       it might contain both float and non-float values,
-       depending on the instantiation of the existential variable "'a".
-       You should annotate it with "[@@ocaml.boxed]".
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}]
 
 type any2 = Any : 'a id2 -> any2 [@unboxed]
@@ -75,10 +73,8 @@ type any2' = Any : 'a id2 -> any2' [@@unboxed]
 Line 1, characters 0-46:
 1 | type any2' = Any : 'a id2 -> any2' [@@unboxed]
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This type cannot be unboxed because
-       it might contain both float and non-float values,
-       depending on the instantiation of the existential variable "'a".
-       You should annotate it with "[@@ocaml.boxed]".
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}]
 
 type any3 = Any : 'a id3 -> any3 [@unboxed]
