@@ -5,6 +5,10 @@ Working version
 
 ### Language features:
 
+- #13886: Implicit source positions
+  (Richard Eisenberg, Vivian Ding, Jose R. (@Enoumy) and Olivier Nicole, review
+  by )
+
 ### Runtime system:
 
 ### Code generation and optimizations:
