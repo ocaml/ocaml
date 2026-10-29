@@ -156,10 +156,8 @@ let check_variance_params loc env params required body_variances body context =
        we must check that there exists a parent subexpression of the variable
        which occurs in a matching position in the parameters.
     *)
-    let rec check visited variance_in_parameters ty =
-      if TypeSet.mem ty !visited then () else
-        let visited' = TypeSet.add ty !visited in
-        visited := visited';
+    let rec check mark variance_in_parameters ty =
+      if not (try_mark_node mark ty) then () else
         let v1 = get_variance ty body_variances in
         let v2 = variance_in_parameters !param_variances ty in
         let (c1,n1) = get_upper v1 and (c2,n2,i2) = get_lower v2 in
@@ -179,7 +177,7 @@ let check_variance_params loc env params required body_variances body context =
               in
               bad_variance variance_error (c1,n1,false) (c2,n2,false)
           | None ->
-              Btype.iter_type_expr (check visited variance_in_parameters) ty
+              Btype.iter_type_expr (check mark variance_in_parameters) ty
         end
     in
     (* When checking for matching occurences in parameters and bodies,
@@ -210,8 +208,9 @@ let check_variance_params loc env params required body_variances body context =
         in
         Btype.backtrack snap; v
       in
-      try check (ref TypeSet.empty) eq_search ty with
-      | Error(_, Bad_variance _) -> check (ref TypeSet.empty) equiv_search ty
+      try with_type_mark (fun mark -> check mark eq_search ty) with
+      | Error(_, Bad_variance _) ->
+          with_type_mark (fun mark -> check mark equiv_search ty)
     in
     List.iter check_gradual body
 
