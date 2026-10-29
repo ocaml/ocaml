@@ -11,10 +11,8 @@ type 'a abs
 Line 2, characters 0-46:
 2 | type t16 = A : 'a abs -> t16 [@@ocaml.unboxed];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This type cannot be unboxed because
-       it might contain both float and non-float values,
-       depending on the instantiation of the existential variable "'a".
-       You should annotate it with "[@@ocaml.boxed]".
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}];;
 
 (* should fail (the existential _ still occurs in an abstract type) *)
@@ -23,10 +21,8 @@ type t18 = A : _ list abs -> t18 [@@ocaml.unboxed];;
 Line 1, characters 0-50:
 1 | type t18 = A : _ list abs -> t18 [@@ocaml.unboxed];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This type cannot be unboxed because
-       it might contain both float and non-float values,
-       depending on the instantiation of an unnamed existential variable.
-       You should annotate it with "[@@ocaml.boxed]".
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}];;
 
 (* regression test for PR#7511 (wrong determination of unboxability for GADTs)
@@ -38,10 +34,8 @@ type 'a s = S : 'a -> 'a s [@@unboxed]
 Line 2, characters 0-34:
 2 | type t = T : 'a s -> t [@@unboxed];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This type cannot be unboxed because
-       it might contain both float and non-float values,
-       depending on the instantiation of the existential variable "'a".
-       You should annotate it with "[@@ocaml.boxed]".
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}];;
 
 (* regression test for GPR#1133 (follow-up to PR#7511) *)
@@ -52,10 +46,8 @@ type 'a s = S : 'a -> 'a option s [@@unboxed]
 Line 2, characters 0-34:
 2 | type t = T : 'a s -> t [@@unboxed];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This type cannot be unboxed because
-       it might contain both float and non-float values,
-       depending on the instantiation of the existential variable "'a".
-       You should annotate it with "[@@ocaml.boxed]".
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}];;
 
 (* Another test for GPR#1133: abstract types *)
@@ -77,10 +69,8 @@ type t = T : (unit -> _) M.r -> t [@@unboxed];;
 Line 1, characters 0-45:
 1 | type t = T : (unit -> _) M.r -> t [@@unboxed];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This type cannot be unboxed because
-       it might contain both float and non-float values,
-       depending on the instantiation of an unnamed existential variable.
-       You should annotate it with "[@@ocaml.boxed]".
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}];;
 
 (* accept *)
@@ -95,10 +85,8 @@ type t = T : 'a s -> t [@@unboxed];;
 Line 1, characters 0-34:
 1 | type t = T : 'a s -> t [@@unboxed];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This type cannot be unboxed because
-       it might contain both float and non-float values,
-       depending on the instantiation of the existential variable "'a".
-       You should annotate it with "[@@ocaml.boxed]".
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}];;
 
 (* accept *)
@@ -127,10 +115,8 @@ type t = T : (unit -> _) N.r -> t [@@unboxed];;
 Line 1, characters 0-45:
 1 | type t = T : (unit -> _) N.r -> t [@@unboxed];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This type cannot be unboxed because
-       it might contain both float and non-float values,
-       depending on the instantiation of an unnamed existential variable.
-       You should annotate it with "[@@ocaml.boxed]".
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}];;
 
 (* accept *)
@@ -157,10 +143,8 @@ type 'a s = S : 'a -> 'a s [@@unboxed]
 Line 2, characters 0-34:
 2 | type t = T : 'a s -> t [@@unboxed];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This type cannot be unboxed because
-       it might contain both float and non-float values,
-       depending on the instantiation of the existential variable "'a".
-       You should annotate it with "[@@ocaml.boxed]".
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}];;
 
 (* regression test for GPR#1133 (follow-up to PR#7511) *)
@@ -171,10 +155,8 @@ type 'a s = S : 'a -> 'a option s [@@unboxed]
 Line 2, characters 0-34:
 2 | type t = T : 'a s -> t [@@unboxed];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This type cannot be unboxed because
-       it might contain both float and non-float values,
-       depending on the instantiation of the existential variable "'a".
-       You should annotate it with "[@@ocaml.boxed]".
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}];;
 
 (* Another test for GPR#1133: abstract types *)
@@ -196,10 +178,8 @@ type t = T : (unit -> _) M.r -> t [@@unboxed];;
 Line 1, characters 0-45:
 1 | type t = T : (unit -> _) M.r -> t [@@unboxed];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This type cannot be unboxed because
-       it might contain both float and non-float values,
-       depending on the instantiation of an unnamed existential variable.
-       You should annotate it with "[@@ocaml.boxed]".
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}];;
 
 type 'a s = S : (unit -> 'a) M.r -> 'a option s [@@unboxed];;
@@ -213,10 +193,8 @@ type t = T : 'a s -> t [@@unboxed];;
 Line 1, characters 0-34:
 1 | type t = T : 'a s -> t [@@unboxed];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This type cannot be unboxed because
-       it might contain both float and non-float values,
-       depending on the instantiation of the existential variable "'a".
-       You should annotate it with "[@@ocaml.boxed]".
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}];;
 
 (* accept *)
@@ -259,13 +237,7 @@ type (_, _) almost_eq = Almost_refl : 'a -> ('a, 'a) almost_eq [@@unboxed]
 
 type valid1 = Any : ('a, int) almost_eq -> valid1 [@@unboxed];;
 [%%expect{|
-Line 1, characters 0-61:
-1 | type valid1 = Any : ('a, int) almost_eq -> valid1 [@@unboxed];;
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This type cannot be unboxed because
-       it might contain both float and non-float values,
-       depending on the instantiation of the existential variable "'a".
-       You should annotate it with "[@@ocaml.boxed]".
+type valid1 = Any : ('a, int) almost_eq -> valid1 [@@unboxed]
 |}];;
 type valid2 = Any : (int, 'a) almost_eq -> valid2 [@@unboxed];;
 [%%expect{|
@@ -278,10 +250,8 @@ type danger = Any : ('a, 'a) almost_eq -> danger [@@unboxed];;
 Line 1, characters 0-60:
 1 | type danger = Any : ('a, 'a) almost_eq -> danger [@@unboxed];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This type cannot be unboxed because
-       it might contain both float and non-float values,
-       depending on the instantiation of the existential variable "'a".
-       You should annotate it with "[@@ocaml.boxed]".
+Error: This type declaration is non-separated, it may contain both float and
+       non-float values.
 |}];;
 
 
