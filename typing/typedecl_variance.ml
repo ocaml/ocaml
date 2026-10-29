@@ -127,6 +127,7 @@ let injective = Variance.(set Inj null)
 let check_variance_params loc env params required body_variances body context =
   let open Variance in
   let bad_variance r f req = raise (Error(loc,Bad_variance(r,f,req))) in
+  (* Non-constrained parameters: compare required variance with body variance *)
   let pos = ref 0 in
   List.iter2
     (fun ty (c, n, i as v) ->
@@ -143,13 +144,13 @@ let check_variance_params loc env params required body_variances body context =
     List.filter (fun v -> not (List.exists (eq_type v) params)) fvl in
   (* If there are no extra variables there is nothing to do *)
   if fvl = [] then () else
-    let tvl2 = ref TypeMap.empty in
+    let param_variances = ref TypeMap.empty in
     List.iter2
       (fun ty (p,n,_) ->
          if Btype.is_Tvar ty then () else
            let v =
              if p then if n then full else covariant else conjugate covariant in
-           compute_variance env tvl2 v ty)
+           compute_variance env param_variances v ty)
       params required;
     (* For each free type variable in the body of the type declaration,
        we must check that there exists a parent subexpression of the variable
@@ -160,7 +161,7 @@ let check_variance_params loc env params required body_variances body context =
         let visited' = TypeSet.add ty !visited in
         visited := visited';
         let v1 = get_variance ty body_variances in
-        let v2 = variance_in_parameters !tvl2 ty in
+        let v2 = variance_in_parameters !param_variances ty in
         let (c1,n1) = get_upper v1 and (c2,n2,i2) = get_lower v2 in
         if c1 && not c2 || n1 && not n2 then begin
           match List.find_opt (eq_type ty) fvl with
