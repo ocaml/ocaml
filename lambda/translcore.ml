@@ -183,8 +183,8 @@ let is_omitted = function
   | Arg _ -> false
   | Omitted () -> true
 
-let loc_POS_prim =
-  Primitive.simple ~name:"%loc_POS" ~arity:0 ~alloc:false
+let textloc_prim =
+  Primitive.simple ~name:"%loc_TEXTLOC" ~arity:0 ~alloc:false
 
 let rec transl_exp ~scopes e =
   transl_exp1 ~scopes ~in_new_scope:false e
@@ -571,7 +571,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
   | Texp_src_loc ->
       Translprim.transl_primitive
         (of_location ~scopes e.exp_loc)
-        loc_POS_prim
+        textloc_prim
         e.exp_env
         e.exp_type
         None

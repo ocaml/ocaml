@@ -9,7 +9,7 @@ val f : ?call_loc:[%call_loc] -> unit -> textloc = <fun>
 
 let _ = f ();;
 [%%expect{|
-- : textloc = <location: "", line 1, bytes 8-12>
+- : textloc = <location: File "", line 1, characters 8-12>
 |}]
 
 let j = (f : unit -> textloc);;
@@ -27,7 +27,8 @@ val g :
 let _ = g () ;;
 [%%expect{|
 - : textloc * textloc =
-(<location: "", line 1, bytes 8-12>, <location: "", line 1, bytes 8-12>)
+(<location: File "", line 1, characters 8-12>,
+ <location: File "", line 1, characters 8-12>)
 |}]
 
 let h ?(a = [%call_loc]) ?(b = [%call_loc]) ()
@@ -38,7 +39,7 @@ val h : ?a:[%call_loc] -> ?b:[%call_loc] -> unit -> textloc * textloc = <fun>
 |}]
 
 (* Partial application *)
-let x = h ~b:Textloc.dummy;;
+let x = h ~b:Textloc.Compact.none;;
 [%%expect{|
 val x : ?a:[%call_loc] -> unit -> textloc * textloc = <fun>
 |}]
@@ -46,7 +47,7 @@ val x : ?a:[%call_loc] -> unit -> textloc * textloc = <fun>
 let y = x ();;
 [%%expect{|
 val y : textloc * textloc =
-  (<location: "", line 1, bytes 8-12>, <location: "", line 0, bytes -1--1>)
+  (<location: File "", line 1, characters 8-12>, <location: File "-">)
 |}]
 
 let k = (f : unit -> textloc);;
@@ -56,12 +57,12 @@ val k : unit -> textloc = <fun>
 
 let _ = j ();;
 [%%expect{|
-- : textloc = <location: "", line 1, bytes 9-10>
+- : textloc = <location: File "", line 1, characters 9-10>
 |}]
 
 let _ = k ();;
 [%%expect{|
-- : textloc = <location: "", line 1, bytes 9-10>
+- : textloc = <location: File "", line 1, characters 9-10>
 |}]
 
 let m ?(call_loc = [%call_loc]) = ()

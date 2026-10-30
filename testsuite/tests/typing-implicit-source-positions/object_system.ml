@@ -14,7 +14,7 @@ val object_with_a_method_with_a_positional_parameter :
 let position = object_with_a_method_with_a_positional_parameter#m ();;
 
 [%%expect{|
-val position : textloc = <location: "", line 1, bytes 15-68>
+val position : textloc = <location: File "", line 1, characters 15-68>
 |}]
 
 class class_with_a_method_with_a_positional_parameter = object
@@ -35,13 +35,13 @@ val o : class_with_a_method_with_a_positional_parameter = <obj>
 let position = o#m ();;
 
 [%%expect{|
-val position : textloc = <location: "", line 1, bytes 15-21>
+val position : textloc = <location: File "", line 1, characters 15-21>
 |}]
 
 let position = (new class_with_a_method_with_a_positional_parameter)#m ();;
 
 [%%expect{|
-val position : textloc = <location: "", line 1, bytes 15-73>
+val position : textloc = <location: File "", line 1, characters 15-73>
 |}]
 
 
@@ -59,7 +59,7 @@ let position = o#call_loc
 
 [%%expect{|
 val o : class_with_positional_parameter = <obj>
-val position : textloc = <location: "", line 1, bytes 8-46>
+val position : textloc = <location: File "", line 1, characters 8-46>
 |}]
 
 
@@ -86,8 +86,9 @@ let from_method_param, from_class_param = c#m()
 
 [%%expect{|
 val c : c = <obj>
-val from_method_param : textloc = <location: "", line 2, bytes 42-47>
-val from_class_param : textloc = <location: "", line 1, bytes 8-18>
+val from_method_param : textloc =
+  <location: File "", line 2, characters 42-47>
+val from_class_param : textloc = <location: File "", line 1, characters 8-18>
 |}]
 
 class parent ?(call_loc = [%call_loc]) () = object
@@ -103,7 +104,7 @@ let position = o#pos
 class parent :
   ?call_loc:[%call_loc] -> unit -> object method pos : textloc end
 val o : parent = <obj>
-val position : textloc = <location: "", line 6, bytes 10-19>
+val position : textloc = <location: File "", line 6, characters 10-19>
 |}]
 
 let o ?(call_loc = [%call_loc]) () = object
@@ -113,7 +114,7 @@ let position = (o ())#pos
 
 [%%expect{|
 val o : ?call_loc:[%call_loc] -> unit -> parent = <fun>
-val position : textloc = <location: "", line 4, bytes 15-21>
+val position : textloc = <location: File "", line 4, characters 15-21>
 |}]
 
 (* Applying an call_loc argument without a label. *)
@@ -130,7 +131,7 @@ Warning 6 [labels-omitted]: label "?call_loc" was omitted in the application of
   this function.
 
 val o : ?call_loc:[%call_loc] -> unit -> parent = <fun>
-val position : textloc = <location: "", line 4, bytes 15-21>
+val position : textloc = <location: File "", line 4, characters 15-21>
 |}]
 
 
@@ -163,11 +164,11 @@ class c :
   ?b:[%call_loc] -> unit -> object method a : textloc method b : textloc end
 |}]
 
-let pos_a : textloc = Textloc.dummy;;
+let pos_a : textloc = Textloc.Compact.none;;
 let partially_applied_class = new c ~a:pos_a
 
 [%%expect{|
-val pos_a : textloc = <location: "", line 0, bytes -1--1>
+val pos_a : textloc = <location: File "-">
 val partially_applied_class : ?b:[%call_loc] -> unit -> c = <fun>
 |}]
 
@@ -180,8 +181,8 @@ val fully_applied_class : c = <obj>
 let a, b = fully_applied_class#a, fully_applied_class#b
 
 [%%expect{|
-val a : textloc = <location: "", line 0, bytes -1--1>
-val b : textloc = <location: "", line 1, bytes 26-52>
+val a : textloc = <location: File "-">
+val b : textloc = <location: File "", line 1, characters 26-52>
 |}]
 
 class c :
@@ -200,6 +201,6 @@ class c :
 let x, y = (new c ~y:pos_a ())#xy
 
 [%%expect{|
-val x : textloc = <location: "", line 1, bytes 11-30>
-val y : textloc = <location: "", line 0, bytes -1--1>
+val x : textloc = <location: File "", line 1, characters 11-30>
+val y : textloc = <location: File "-">
 |}]

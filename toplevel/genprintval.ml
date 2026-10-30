@@ -352,11 +352,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                   when Path.same path Predef.path_textloc ->
                 let loc = (O.base_obj obj : Textloc.t) in
                 Oval_stuff
-                    (Format.sprintf "<location: %S, line %d, bytes %d-%d>"
-                      (Textloc.filename loc)
-                      (Textloc.line_num loc)
-                      (Textloc.line_pos loc)
-                      (Textloc.end_pos loc))
+                    (Format.asprintf "<location: %a>" Textloc.pp_ocaml loc)
 
               | _ ->
                 match Env.find_type path env with

@@ -20,7 +20,7 @@ let g ?(call_loc = [%call_loc]) () = ()
 val g : ?call_loc:[%call_loc] -> unit -> unit = <fun>
 |}]
 
-let apply (f : t) = f ~call_loc:Textloc.dummy () ;;
+let apply (f : t) = f ~call_loc:Textloc.Compact.none () ;;
 [%%expect {|
 val apply : t -> unit = <fun>
 |}]
@@ -35,7 +35,7 @@ let _ = apply g ;;
 - : unit = ()
 |}]
 
-let _ = g ~call_loc:Textloc.dummy () ;;
+let _ = g ~call_loc:Textloc.Compact.none () ;;
 [%%expect{|
 - : unit = ()
 |}]

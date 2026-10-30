@@ -105,6 +105,7 @@ STDLIB_MODULE_BASENAMES = \
   moreLabels \
   stdLabels \
   effect \
+  camlinternalTextloc \
   textloc
 
 STDLIB_PREFIXED_MODULES = \

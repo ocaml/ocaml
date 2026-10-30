@@ -51,5 +51,5 @@ let _ =
 [%%expect{|
 val ( >>| ) : ?call_loc:[%call_loc] -> 'a -> (textloc * 'a -> 'b) -> 'b =
   <fun>
-- : textloc = <location: "", line 3, bytes 2-37>
+- : textloc = <location: File "", line 3, characters 2-37>
 |}]

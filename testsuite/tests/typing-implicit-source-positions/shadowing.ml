@@ -15,7 +15,7 @@ let f ?(call_loc = [%call_loc]) () = ();;
 val f : ?call_loc:[%call_loc] -> unit -> unit = <fun>
 |}]
 
-let _ = f ~call_loc:Textloc.dummy () ;;
+let _ = f ~call_loc:Textloc.Compact.none () ;;
 [%%expect{|
 - : unit = ()
 |}]
@@ -38,7 +38,7 @@ class c ?(call_loc = [%call_loc]) () = object end
 class c : ?call_loc:[%call_loc] -> unit -> object  end
 |}]
 
-let _ = new c ~call_loc:Textloc.dummy ();;
+let _ = new c ~call_loc:Textloc.Compact.none ();;
 
 [%%expect{|
 - : c = <obj>
@@ -53,7 +53,7 @@ end
 val o : < m : ?call_loc:[%call_loc] -> unit -> unit > = <obj>
 |}]
 
-let _ = o#m ~call_loc:Textloc.dummy ()
+let _ = o#m ~call_loc:Textloc.Compact.none ()
 
 [%%expect{|
 - : unit = ()

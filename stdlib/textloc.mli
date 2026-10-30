@@ -17,22 +17,23 @@
 (** [Textloc.t] is the type of source code locations given to implicit location
     arguments. *)
 
-(** Represents a range of positions in a text file. *)
-type t = textloc
+module type S = sig
+  include CamlinternalTextloc.S
 
-(** [dummy] is an invalid location usually used as a placeholder, or for
-    testing or error signaling purposes. *)
-val dummy : t
+  (** {2:fmt Formatting} *)
 
-val filename : t -> string
+  val pp_ocaml : Format.formatter -> t -> unit
+  (** [pp_ocaml] formats text locations like the OCaml compiler. *)
 
-(** One-based line number. *)
-val line_num : t -> int
+  val pp_gnu : Format.formatter -> t -> unit
+  (** [pp_gnu] formats text locations according to the
+      {{:https://www.gnu.org/prep/standards/standards.html#Errors}GNU
+      convention}. *)
+end
 
-(** Zero-based byte offset of the start position, from the first byte of the
-    line identified by [line_num]. *)
-val line_pos : t -> int
+include S
 
-(** Zero-based byte offset of the end position, from the first byte of the
-    line identified by [line_num]. *)
-val end_pos : t -> int
+module Compact : S with type t = textloc
+
+val of_compact : Compact.t -> t
+val compact : t -> Compact.t

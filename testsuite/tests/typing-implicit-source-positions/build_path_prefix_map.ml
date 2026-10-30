@@ -17,4 +17,4 @@
 *)
 
 let f = fun ?(call_loc = [%call_loc]) () -> call_loc
-let _ = print_endline (Textloc.filename (f ()));;
+let _ = print_endline (Textloc.file (f ()));;

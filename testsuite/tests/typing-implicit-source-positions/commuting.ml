@@ -10,14 +10,15 @@ val f : ?a:[%call_loc] -> ?b:[%call_loc] -> unit -> textloc * textloc = <fun>
 let pos_a, _ = f ();;
 let _, pos_b = f ();;
 [%%expect{|
-val pos_a : textloc = <location: "", line 1, bytes 15-19>
-val pos_b : textloc = <location: "", line 2, bytes 15-19>
+val pos_a : textloc = <location: File "", line 1, characters 15-19>
+val pos_b : textloc = <location: File "", line 2, characters 15-19>
 |}]
 
 let _ = f ~b:pos_b ~a:pos_a () ;;
 [%%expect{|
 - : textloc * textloc =
-(<location: "", line 1, bytes 15-19>, <location: "", line 2, bytes 15-19>)
+(<location: File "", line 1, characters 15-19>,
+ <location: File "", line 2, characters 15-19>)
 |}]
 
 (* Partial application *)
@@ -28,7 +29,8 @@ let z = y () ;;
 val x : ?a:[%call_loc] -> unit -> textloc * textloc = <fun>
 val y : unit -> textloc * textloc = <fun>
 val z : textloc * textloc =
-  (<location: "", line 1, bytes 15-19>, <location: "", line 2, bytes 15-19>)
+  (<location: File "", line 1, characters 15-19>,
+   <location: File "", line 2, characters 15-19>)
 |}]
 
 let g = fun ?(a = [%call_loc]) ?(c = 0) ?(b = [%call_loc]) () -> a, b, c
@@ -41,7 +43,8 @@ val g :
 let _ = g ~b:pos_b ~a:pos_a () ;;
 [%%expect{|
 - : textloc * textloc * int =
-(<location: "", line 1, bytes 15-19>, <location: "", line 2, bytes 15-19>, 0)
+(<location: File "", line 1, characters 15-19>,
+ <location: File "", line 2, characters 15-19>, 0)
 |}]
 
 let h = fun ?(a = [%call_loc]) ~(b:int) () -> a, b
@@ -51,7 +54,7 @@ val h : ?a:[%call_loc] -> b:int -> unit -> textloc * int = <fun>
 
 let _ = h ~b:0 ~a:pos_a ();;
 [%%expect{|
-- : textloc * int = (<location: "", line 1, bytes 15-19>, 0)
+- : textloc * int = (<location: File "", line 1, characters 15-19>, 0)
 |}]
 
 let k = fun ~(a:int) ?(a = [%call_loc])() -> a
@@ -59,18 +62,18 @@ let k = fun ~(a:int) ?(a = [%call_loc])() -> a
 val k : a:int -> ?a:[%call_loc] -> unit -> textloc = <fun>
 |}]
 
-let _ = k ~a:Textloc.dummy ~a:0 ();;
+let _ = k ~a:Textloc.Compact.none ~a:0 ();;
 [%%expect{|
-Line 1, characters 13-26:
-1 | let _ = k ~a:Textloc.dummy ~a:0 ();;
-                 ^^^^^^^^^^^^^
-Error: The value "Textloc.dummy" has type "Textloc.t" = "textloc"
+Line 1, characters 13-33:
+1 | let _ = k ~a:Textloc.Compact.none ~a:0 ();;
+                 ^^^^^^^^^^^^^^^^^^^^
+Error: The value "Textloc.Compact.none" has type "Textloc.Compact.t" = "textloc"
        but an expression was expected of type "int"
 |}]
 
-let _ = k ~a:0 ~a:Textloc.dummy ();;
+let _ = k ~a:0 ~a:Textloc.Compact.none ();;
 [%%expect{|
-- : Textloc.t = <location: "", line 0, bytes -1--1>
+- : Textloc.Compact.t = <location: File "-">
 |}]
 
 (* Labels on source positions can't commute in definitions *)
@@ -104,8 +107,8 @@ let a, b = (y ())#x ;;
 [%%expect{|
 val x : ?a:[%call_loc] -> unit -> c = <fun>
 val y : unit -> c = <fun>
-val a : textloc = <location: "", line 1, bytes 15-19>
-val b : textloc = <location: "", line 2, bytes 15-19>
+val a : textloc = <location: File "", line 1, characters 15-19>
+val b : textloc = <location: File "", line 2, characters 15-19>
 |}]
 
 (* Labels on source positions can't commute in class definitions *)

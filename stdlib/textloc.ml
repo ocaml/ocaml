@@ -14,32 +14,50 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* If you change this internal representation, make sure to also change the
-   code inserting values of type [t] in [Translcore]. *)
-type repr =
-  { filename : string; line : int; start_offset : int; end_offset : int }
+module type S = sig
+  include CamlinternalTextloc.S
 
-type t = textloc
+  (** {2:fmt Formatting} *)
 
-let of_repr (r : repr) : t = Obj.magic r
+  val pp_ocaml : Format.formatter -> t -> unit
+  (** [pp_ocaml] formats text locations like the OCaml compiler. *)
 
-let to_repr (t : t) : repr = Obj.magic t
+  val pp_gnu : Format.formatter -> t -> unit
+  (** [pp_gnu] formats text locations according to the
+      {{:https://www.gnu.org/prep/standards/standards.html#Errors}GNU
+      convention}. *)
+end
 
-let dummy =
-  of_repr { filename = ""; line = 0; start_offset = -1; end_offset = -1 }
 
-let filename { filename; _ } = filename
+(* For now, both representations are the same. *)
 
-let filename t = filename (to_repr t)
+module Compact : S with type t = textloc = struct
+  include CamlinternalTextloc
 
-let line_num { line; _ } = line
+  let is_none view = view.first_byte < 0
 
-let line_num t = line_num (to_repr t)
+  let pf = Format.fprintf
+  let pp_ocaml ppf l =
+    let l = view l in
+    match is_none l with
+    | true -> pf ppf "File \"%s\"" l.file
+    | false ->
+        let pp_lines ppf l = match fst l.first_line = fst l.last_line with
+        | true -> pf ppf "line %d" (fst l.first_line)
+        | false -> pf ppf "lines %d-%d" (fst l.first_line) (fst l.last_line)
+        in
+        (* "characters" represent positions (insertion points) not columns *)
+        let pos_s = l.first_byte - snd l.first_line in
+        let pos_e = l.last_byte - snd l.last_line + 1 in
+        if pos_s = 0 && pos_e = 0
+        then pf ppf "File \"%s\", %a" l.file pp_lines l
+        else pf ppf "File \"%s\", %a, characters %d-%d"
+            l.file pp_lines l pos_s pos_e
 
-let line_pos { start_offset; _ } = start_offset
+  let pp_gnu _fmt _l = assert false
+end
 
-let line_pos t = line_pos (to_repr t)
+include Compact
 
-let end_pos { end_offset; _ } = end_offset
-
-let end_pos t = end_pos (to_repr t)
+let of_compact l = l
+let compact l = l
