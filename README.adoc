@@ -147,6 +147,11 @@ LLM-generated contents or explanation to your bug report, see
 link:AI.md#guidelines-relevant-to-ai-assisted-bug-reports[AI.md] for a more
 in-depth explanation.
 
+=== Reporting security issues
+
+Please don't report security issues on the public bug tracker.
+See link:SECURITY.md[] on how to report security issues.
+
 == Contributing
 
 For information on contributing to OCaml, see xref:HACKING.adoc[] and

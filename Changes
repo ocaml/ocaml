@@ -53,6 +53,9 @@ Working version
 
 ### Manual and documentation:
 
+- #15216: document the security issue reporting process with a SECURITY.md file
+  (Edwin Török, suggested by Xavier Leroy, review by )
+
 ### Compiler user-interface and warnings:
 
 - #15144: Further improvement on typing error messages for Duplicate_constructor
