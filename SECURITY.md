@@ -9,7 +9,7 @@ If you can, please provide the [recommended information about the vulnerability]
 
 ## Supported Versions
 
-| Release                | [Version](https://ocaml.org/tools/compiler-release-cycle) | Supported          |
+| Release                | [Version](release-info/introduction.md) | Supported          |
 | ---------------------- | ------- | ------------------ |
 | Latest minor version   | 5.x.y   | :white_check_mark: |
 | Previous minor version | < 5.x   | :x:                |
