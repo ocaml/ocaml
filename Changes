@@ -59,6 +59,8 @@ Working version
   and Duplicate_label, by adding locations in submessages
   (Michał Kosior, review by Florian Angeletti)
 
+- #15169: Fix attributes not applying in some type declaration nodes.
+  (Michał Kosior, review by )
 
 ### Internal/compiler-libs changes:
 
