@@ -51,7 +51,7 @@ void caml_collect_heap_stats_sample(
   struct heap_stats *sample);
 
 /* Add the global orphaned heap stats into an accumulator. */
-void caml_accum_orphan_heap_stats(struct heap_stats *acc);
+void caml_accum_orphan_and_free_heap_stats(struct heap_stats *acc);
 
 uintnat caml_heap_size(struct caml_heap_state*);
 uintnat caml_top_heap_words(struct caml_heap_state*);
@@ -121,6 +121,7 @@ void caml_cycle_heap(struct caml_heap_state*);
 
 /* Heap invariant verification (for debugging) */
 void caml_verify_heap_from_stw(caml_domain_state *domain);
+void caml_verify_freelist_from_stw_single(void);
 
 /* Forces finalisation of all heap-allocated values,
    disregarding both local and global roots.

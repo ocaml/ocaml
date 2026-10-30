@@ -156,7 +156,7 @@ void caml_compute_gc_stats(struct gc_stats* buf)
   int my_id = Caml_state->id;
   memset(buf, 0, sizeof(*buf));
 
-  caml_accum_orphan_heap_stats(&buf->heap_stats);
+  caml_accum_orphan_and_free_heap_stats(&buf->heap_stats);
   caml_accum_orphan_alloc_stats(&buf->alloc_stats);
 
   /* The instantaneous maximum heap size cannot be computed

@@ -7,6 +7,9 @@ Working version
 
 ### Runtime system:
 
+- #15199: Fix Gc.heap_words and Gc.top_heap_words to include pool_freelist
+  (Edwin Török, review by )
+
 ### Code generation and optimizations:
 
 - #14980: Emit direct assembly for `Atomic.exchange` and
