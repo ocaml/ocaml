@@ -9,7 +9,7 @@ Working version
 
 ### Code generation and optimizations:
 
-- #14980: Emit direct assembly for `Atomic.exchange` and
+- #14980, #15192: Emit direct assembly for `Atomic.exchange` and
   `Atomic.compare_and_set`
   when the stored value is statically known to be immediate, in which case
   no write barrier is needed. `Atomic.exchange` and `Atomic.compare_and_set`
