@@ -15,6 +15,7 @@ expr:
 pattern:
       ...
     | ['~'label-name':'] pattern {{ ',' ['~'label-name':'] pattern }}
+    | ['~'label-name':'] pattern { ',' ['~'label-name':'] pattern } ',' '..'
 ;
 \end{syntax}
 
