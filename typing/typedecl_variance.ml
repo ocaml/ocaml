@@ -153,8 +153,28 @@ let check_variance_params loc env params required body_variances body context =
            compute_variance env param_variances v ty)
       params required;
     (* For each free type variable in the body of the type declaration,
-       we must check that there exists a parent subexpression of the variable
+       we must check that there exists a type expression enclosing the variable
        which occurs in a matching position in the parameters.
+       In simple cases, this enclosing type expression is the variable itself,
+       for instance in
+       {[
+           type +'a t = A of 'b
+             constraint 'a = 'b list
+       ]}
+       ['b] is guaranteed to appear positively in both the parameter and the
+       body.
+
+       However, it might happen that there is no such guaranteed occurrence of
+       the variable itself in the parameters. For instance, in
+       {[
+         type +'a abs
+         type +'a t = A of 'b abs
+           constraint 'a = 'b abs
+        ]}
+        because ['b] only appears as an argument of the abstract type [abs] it
+        is not guaranteed to occur in the parameter type. However, the enclosing
+        type expression ['b abs] does occur in a guaranteed positive position on
+        both sides and thus the variance annotation is valid.
     *)
     let rec check mark variance_in_parameters ty =
       if not (try_mark_node mark ty) then () else
@@ -181,22 +201,20 @@ let check_variance_params loc env params required body_variances body context =
         end
     in
     (* When checking for matching occurences in parameters and bodies,
-       we can consider that a subexpression occurs in the parameters if we find
-       either
-       - an [eq_type] equal subpexpression
-       - a [Ctype.equal] equivalent subexpression
-       The second option is far more expensive, and is only needed to cover
-       cases like {[
-         type 'a p
-         type 'a t = 'b p constraint 'a = 'b p
-       ]}
-       where
-         - the type variable ['b] does not appear in a matching position
-           (because ['b] has variance [May_pos + May_neg])
-         - the equivalent parent subexpressions ['b p] have matching
-           variance [Pos + Neg] on the two sides but are not equal.
-       Consequently, we do a first pass with the first criterion and we only
-       refine the check with the second criterion on litigious cases.
+       we can consider that a body type expression occurs in the parameters
+       if we find either
+       - the same type expression node in the parameters
+       - a [Ctype.equal] equivalent type expression in the parameters
+
+       For the first option, we can use the parameters variance [TypeMap.t] to
+       query for occurrence of a type node on the parameter side.
+       For the second option, we need to do a linear traversal of this map to
+       search for any type expression equivalent to the queried expression.
+
+       The second option is thus far more expensive, and is only needed to cover
+       complex cases. Consequently, we do a first pass with the first criterion
+       and we only refine the check with the second criterion on litigious
+       cases.
     *)
     let check_gradual (_,ty) =
       let eq_search tvl ty = try TypeMap.find ty tvl with Not_found -> null in
