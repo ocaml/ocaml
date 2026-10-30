@@ -13,7 +13,7 @@ If you can, please provide the [recommended information about the vulnerability]
 | ---------------------- | ------- | ------------------ |
 | Latest minor version   | 5.x.y   | :white_check_mark: |
 | Previous minor version | < 5.x   | :x:                |
-| Long Term Support      | 4.14.z  | :white_check_mark: (until [at least 2027](https://ocaml.org/releases/4.14.4)) |
+| Long Term Support      | 4.14.z  | :white_check_mark: (until [at least 2027](release-info/introduction.md#Exceptional-LTS-versions)) |
 |                        | < 4.14  | :x: |
 
 (Note that the opam repository may support a wider range for packages)
