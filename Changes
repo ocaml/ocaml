@@ -59,6 +59,9 @@ Working version
   and Duplicate_label, by adding locations in submessages
   (Michał Kosior, review by Florian Angeletti)
 
+- #15???: Extend warning 10, non-unit-statement, to show the actual type of the
+  statement.
+  (Stefan Muenzel, review by ????)
 
 ### Internal/compiler-libs changes:
 
