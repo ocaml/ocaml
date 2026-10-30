@@ -985,19 +985,23 @@ void caml_set_pacing_params (caml_gc_pacing_params p)
   pp = p;
   pp_beta = pp.percent_free / 100.0;
   pp_beta2 = pp.ephe_percent_free / 100.0;
-  pp_gamma = pp_beta2 / pp_beta * (pp_sigma + 1);
+
   double s = 1 + (2 * pp_sigma + 1) / pp_beta;
+  double m = s / pp_sigma;
+  pp_gamma = pp_beta2 / pp_beta * (pp_sigma + 1) * m / (m+1);
+
   pp_c[pp_sweep] = s;
-  pp_c[pp_mark] = s / pp_sigma;
+  pp_c[pp_mark] = m;
   pp_c[pp_ephe] = 2 * s / pp_gamma;
+
   double s1 = (2 * pp_sigma + 1) / pp_beta;
   pp_c1[pp_sweep] = s1;
   pp_c1[pp_mark] = s1 / pp_sigma;
   pp_c1[pp_ephe] = 2 * s1 / pp_gamma;
-  double s2 = pp_sigma + 1;
-  pp_c2[pp_sweep] = s2;
-  pp_c2[pp_mark] = s2 / pp_sigma;
-  pp_c2[pp_ephe] = 2 * s2 / pp_gamma;
+
+  pp_c2[pp_sweep] = 0;
+  pp_c2[pp_mark] = 0;
+  pp_c2[pp_ephe] = 0;
   caml_plat_unlock (&pp_lock);
   caml_gc_log("set GC pacing params: %"CAML_PRIuNAT" percent_free; %"
               CAML_PRIuNAT" ephe_percent_free; %g beta; %g beta''; %g gamma; "
