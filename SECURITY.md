@@ -17,3 +17,7 @@ If you can, please provide the [recommended information about the vulnerability]
 |                        | < 4.14  | :x: |
 
 (Note that the opam repository may support a wider range for packages)
+
+## Published security advisories
+
+You can find a list of published security advisories at [OSV.dev](https://osv.dev/list?q=github.com%2Focaml%2Focaml&ecosystem=).
