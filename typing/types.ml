@@ -626,6 +626,12 @@ let type_marks =
   (* All the bits in marks_mask *)
   List.init (Sys.int_size - 27) (fun x -> 1 lsl (x + 27))
 let available_marks = Local_store.s_ref type_marks
+
+let unmark ~marked ~mark =
+  List.iter
+    (fun ty -> ty.scope <- ty.scope land ((-1) lxor mark))
+    marked
+
 let with_type_mark f =
   match !available_marks with
   | mark :: rem as old ->
@@ -634,11 +640,7 @@ let with_type_mark f =
       Misc.try_finally (fun () -> f mk) ~always: begin fun () ->
         available_marks := old;
         match mk with
-        | Mark {marked} ->
-            (* unmark marked type nodes *)
-            List.iter
-              (fun ty -> ty.scope <- ty.scope land ((-1) lxor mark))
-              marked
+        | Mark {marked} -> unmark ~marked ~mark
         | Hash _ -> ()
       end
   | [] ->
@@ -646,25 +648,32 @@ let with_type_mark f =
       f (Hash {visited = TransientTypeHash.create 1})
 
 type type_mark_snapshot =
-  | Snap_mark of type_expr list
+  | Snap_none
+  | Snap_mark of type_expr
   | Snap_hash of unit TransientTypeHash.t
 let snapshot_mark = function
-  | Mark {marked} -> Snap_mark marked
+  | Mark {marked = []} -> Snap_none
+  | Mark {marked = mark :: _} -> Snap_mark mark
+  | Hash {visited} when TransientTypeHash.length visited = 0 -> Snap_none
   | Hash {visited} -> Snap_hash (TransientTypeHash.copy visited)
 let backtrack_mark mark snap =
   match mark, snap with
   | Mark _, Snap_hash _ -> assert false
   | Hash _, Snap_mark _ -> assert false
+  | Hash hash, Snap_none ->
+      TransientTypeHash.clear hash.visited
   | Mark mark, Snap_mark marked' ->
       let rec loop = function
-        | marked when marked == marked' -> ()
+        | marked :: _ as position when marked == marked' -> position
         | [] -> Misc.fatal_error "Types.backtrack_mark"
         | ty :: rem ->
             ty.scope <- ty.scope land ((-1) lxor mark.mark);
             loop rem
       in
-      loop mark.marked;
-      mark.marked <- marked'
+      mark.marked <- loop mark.marked
+  | Mark mark, Snap_none ->
+      unmark ~marked:mark.marked ~mark:mark.mark;
+      mark.marked <- []
   | Hash hash, Snap_hash visited' ->
       hash.visited <- visited'
 
