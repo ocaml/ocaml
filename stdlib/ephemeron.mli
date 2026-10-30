@@ -54,6 +54,24 @@
         - it is reachable from alive value by usual pointers
         - it is the data of an alive ephemeron with all its full keys alive
 
+    This is the liveness established by the major GC. The minor GC is
+    more conservative: it promotes the young data of an ephemeron to the
+    major heap, with everything it references, even when a key is dead.
+    The ephemeron is then emptied, but the promoted values are only
+    reclaimed by a later major collection. Dead young keys, by contrast,
+    are usually collected by the minor GC, unless the data references
+    them. OCaml 4 did not promote the data of an ephemeron whose keys were
+    dead in the minor heap.
+
+    Consequently, storing as data a large value that is only reachable
+    through the ephemeron, under a key that becomes unreachable before
+    the next minor collection (for instance in a memoization table indexed
+    by short-lived values), costs a promotion of that value and some work
+    for the major GC, although the value is never used again. When the
+    data needs to live only as long as one of the keys, it can be cheaper
+    to store it in that key (for instance in a mutable field), or in a
+    closure that also holds the key.
+
     Notes:
     - All the types defined in this module cannot be marshaled
     using {!Stdlib.output_value} or the functions of the
