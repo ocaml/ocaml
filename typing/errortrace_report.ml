@@ -295,27 +295,39 @@ let explain_incompatible_fields name (diff: Types.type_expr Errortrace.diff) =
 
 
 let explain_label_mismatch ~missing_label_msg  {Errortrace.got;expected} =
-  let quoted_label ppf l = Style.inline_code ppf (Asttypes.string_of_label l) in
+  let quoted_label ppf l = Style.inline_code ppf (Types.string_of_label l) in
+  let call_loc ppf () = Style.inline_code ppf "[%call_loc]" in
   match got, expected with
-  | Asttypes.Nolabel, Asttypes.(Labelled _ | Optional _ )  ->
+  | Types.Nolabel, Types.(Labelled _ | Optional _ | Position _)  ->
       doc_printf "@,@[A label@ %a@ was expected@]"
         quoted_label expected
-  | Asttypes.(Labelled _|Optional _), Asttypes.Nolabel  ->
+  | Types.(Labelled _|Optional _|Position _), Types.Nolabel  ->
       doc_printf missing_label_msg
         quoted_label got
- | Asttypes.Labelled g, Asttypes.Optional e when g = e ->
+ | Types.Labelled g, Types.Optional e when g = e ->
       doc_printf
         "@,@[The label@ %a@ was expected to be optional@]"
         quoted_label got
-  | Asttypes.Optional g, Asttypes.Labelled e when g = e ->
+  | Types.Optional g, Types.Labelled e when g = e ->
       doc_printf
         "@,@[The label@ %a@ was expected to not be optional@]"
         quoted_label got
-  | Asttypes.(Labelled _ | Optional _), Asttypes.(Labelled _ | Optional _) ->
+  | Types.Labelled g, Types.Position e when g = e ->
+      doc_printf
+        "@,@[The label@ %a@ was expected to be of type %a@ (source position)@]"
+        quoted_label got
+        call_loc ()
+  | Types.Position g, Types.Labelled e when g = e ->
+      doc_printf
+        "@,@[The label@ %a@ was not expected to be of type %a@]"
+        quoted_label got
+        call_loc ()
+  | Types.(Labelled _ | Optional _ | Position _),
+    Types.(Labelled _ | Optional _ | Position _) ->
       doc_printf "@,@[Labels %a@ and@ %a do not match@]"
         quoted_label got
         quoted_label expected
-  | Asttypes.Nolabel, Asttypes.Nolabel ->
+  | Types.Nolabel, Types.Nolabel ->
       (* Two empty labels cannot be mismatched*)
       assert false
 
@@ -455,8 +467,8 @@ let explanation (type variety) intro prev env
     Some(explain_label_mismatch ~missing_label_msg diff)
   | Errortrace.Tuple_label_mismatch diff ->
     let ast_label = function
-      | None -> Asttypes.Nolabel
-      | Some x -> Asttypes.Labelled x
+      | None -> Types.Nolabel
+      | Some x -> Types.Labelled x
     in
     let diff = Errortrace.map_diff ast_label diff in
     let missing_label_msg =

@@ -1124,6 +1124,12 @@ let alias_nongen_row mode px ty =
           Aliases.add_proxy px
     | _ -> ()
 
+let outcome_label : Types.arg_label -> Outcometree.arg_label = function
+  | Nolabel -> Nolabel
+  | Labelled l -> Labelled l
+  | Optional l -> Optional l
+  | Position l -> Position l
+
 let rec tree_of_typexp mode ty =
   let px = proxy ty in
   if Aliases.is_printed_proxy px && not (Aliases.is_delayed px) then
@@ -1140,7 +1146,8 @@ let rec tree_of_typexp mode ty =
         Otyp_var (non_gen, Variable_names.name_of_type name_gen tty)
     | Tarrow(l, ty1, ty2, _) ->
         let lab =
-          if !print_labels || is_optional l then l else Nolabel
+          if !print_labels || is_omittable l then outcome_label l
+          else Nolabel
         in
         let t1 =
           if is_optional l then
@@ -1162,7 +1169,7 @@ let rec tree_of_typexp mode ty =
         Otyp_arrow (lab, t1, tree_of_typexp mode ty2)
     | Tfunctor (l, id, pack, ty) ->
         let lab =
-          if !print_labels || is_optional l then l else Nolabel
+          if !print_labels || is_optional l then l else Types.Nolabel
         in
         let fenv env =
           (* We compute an approximation of the signature. *)
@@ -1172,6 +1179,7 @@ let rec tree_of_typexp mode ty =
         let ty =
           wrap_env ~keep_short_paths:true fenv (tree_of_typexp mode) ty
         in
+        let lab = outcome_label lab in
         Otyp_functor (lab, Oide_ident { printed_name = Ident.Unscoped.name id },
                       tree_of_package mode pack, ty)
     | Ttuple tyl ->
@@ -1810,7 +1818,8 @@ let rec tree_of_class_type mode params =
       Octy_signature (self_ty, List.rev csil)
   | Cty_arrow (l, ty, cty) ->
       let lab =
-        if !print_labels || is_optional l then l else Nolabel
+        if !print_labels || is_omittable l then outcome_label l
+        else Nolabel
       in
       let tr =
        if is_optional l then
