@@ -960,6 +960,11 @@ OCaml 5.6.0
   (regression since 5.1.0).
   (Tim McGilchrist, review by Nicolas Ojeda Bar)
 
+- #15188: When checking the variance of a type, consolidate the subterms
+  of the parameters of the type constructor before the check, saving
+  significant time when checking large object types.
+  (Stefan Muenzel, review by ????)
+
 
 OCaml 5.5.1
 -----------

@@ -2040,6 +2040,7 @@ typing/typedecl_variance.cmo : \
     typing/typedtree.cmi \
     typing/typedecl_properties.cmi \
     parsing/parsetree.cmi \
+    utils/misc.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
     typing/env.cmi \
@@ -2052,6 +2053,7 @@ typing/typedecl_variance.cmx : \
     typing/typedtree.cmx \
     typing/typedecl_properties.cmx \
     parsing/parsetree.cmi \
+    utils/misc.cmx \
     parsing/location.cmx \
     typing/ident.cmx \
     typing/env.cmx \
