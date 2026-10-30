@@ -75,7 +75,18 @@ method reload_operation op arg res =
       assert (arg.(0).stamp = res.(0).stamp);
       (arg, res)
   | _ ->
-      (self#makeregs arg, self#makeregs res)
+      (* In case the registers are constrained to be equal,
+         make sure to preserve this property *)
+      let reg_to_newreg = ref Map.empty in
+      let refresh reg =
+        match Map.find_opt reg !reg_to_newreg with
+        | None ->
+            let newreg = self#makereg reg in
+            reg_to_newreg := Map.add reg newreg !reg_to_newreg;
+            newreg
+        | Some newreg -> newreg
+      in
+      (Array.map refresh arg, Array.map refresh res)
 
 method reload_test _tst args =
   self#makeregs args
