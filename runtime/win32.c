@@ -785,7 +785,7 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
 {
   /* First handle corner-case not handled by MoveFileEx:
      - dir to existing file - should fail */
-  DWORD new_attribs;
+  DWORD new_attribs = INVALID_FILE_ATTRIBUTES, err;
   DWORD old_attribs = GetFileAttributes(oldpath);
   if ((old_attribs != INVALID_FILE_ATTRIBUTES) &&
       (old_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0) {
@@ -807,6 +807,31 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
                  MOVEFILE_COPY_ALLOWED)) {
     return 0;
   }
+  /* Remember the error now: the calls below may overwrite it. */
+  err = GetLastError();
+  /* Another cornercase not handled by MoveFileEx:
+     - file to existing read-only file - should succeed
+     The attributes of newpath are only examined after a first attempt has
+     failed, so that the common case remains a single call to MoveFileEx. */
+  if (err == ERROR_ACCESS_DENIED &&
+      (old_attribs != INVALID_FILE_ATTRIBUTES) &&
+      (old_attribs & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+    new_attribs = GetFileAttributes(newpath);
+    if ((new_attribs != INVALID_FILE_ATTRIBUTES) &&
+        (new_attribs & FILE_ATTRIBUTE_DIRECTORY) == 0 &&
+        (new_attribs & FILE_ATTRIBUTE_READONLY) != 0 &&
+        SetFileAttributes(newpath, new_attribs & ~FILE_ATTRIBUTE_READONLY)) {
+      if (MoveFileEx(oldpath, newpath,
+                     MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
+                     MOVEFILE_COPY_ALLOWED)) {
+        return 0;
+      }
+      /* Report the second failure, and restore the read-only attribute so
+         that a failed rename has no visible effect (best effort). */
+      err = GetLastError();
+      SetFileAttributes(newpath, new_attribs);
+    }
+  }
   /* Another cornercase not handled by MoveFileEx:
      - dir to empty dir - positive - should succeed */
   if ((old_attribs != INVALID_FILE_ATTRIBUTES) &&
@@ -822,9 +847,10 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
                    MOVEFILE_COPY_ALLOWED)) {
       return 0;
     }
+    err = GetLastError();
   }
 
-  errno = caml_posixerr_of_win32err(GetLastError());
+  errno = caml_posixerr_of_win32err(err);
   if (errno == 0) errno = EINVAL;
   return -1;
 }

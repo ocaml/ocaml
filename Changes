@@ -72,6 +72,11 @@ Working version
 
 ### Bug fixes:
 
+- #14602: on Windows, Sys.rename and Unix.rename now succeed when the
+  destination is an existing read-only file, as on POSIX systems.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer, Antonin Décimo,
+   David Allsopp and Miod Vallat)
+
 - #15204: fix a pattern-matching miscompilation where a scrutinee of
   polymorphic variant type (or variant type with more than 32
   constructors) is mutated during matching
