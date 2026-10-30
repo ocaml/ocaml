@@ -168,26 +168,7 @@ let rec reload (t : reload_data) i before =
   | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) ->
       (add_reloads t.spill_env (Reg.inter_set_array before i.arg) i,
        Reg.Set.empty)
-  | Iop(Icall_ind | Icall_imm _ | Iextcall { alloc = true; }) ->
-      (* All regs live across must be spilled *)
-      let (new_next, finally) = reload t i.next i.live in
-      (add_reloads t.spill_env (Reg.inter_set_array before i.arg)
-                   (instr_cons_debug i.desc i.arg i.res i.dbg new_next),
-       finally)
-  | Iop op ->
-      let new_before =
-        (* Quick check to see if the register pressure is below the maximum *)
-        if !Clflags.use_linscan ||
-           (Reg.Set.cardinal i.live + Array.length i.res <=
-            Proc.safe_register_pressure op)
-        then before
-        else add_superpressure_regs t op i.live i.res before in
-      let after =
-        Reg.diff_set_array (Reg.diff_set_array new_before i.arg) i.res in
-      let (new_next, finally) = reload t i.next after in
-      (add_reloads t.spill_env (Reg.inter_set_array new_before i.arg)
-                   (instr_cons_debug i.desc i.arg i.res i.dbg new_next),
-       finally)
+  | Iop op -> reload_op ~first:true t i op before Fun.id
   | Iifthenelse(test, ifso, ifnot) ->
       let at_fork = Reg.diff_set_array before i.arg in
       let date_fork = t.current_date in
@@ -281,6 +262,49 @@ let rec reload (t : reload_data) i before =
       (add_reloads
          t.spill_env (Reg.inter_set_array before i.arg) i, Reg.Set.empty)
 
+and reload_op ~first (t : reload_data) i op before k =
+  if not first then begin
+    t.current_date <- succ t.current_date;
+    if not !Clflags.use_linscan then begin
+      record_use t i.arg;
+      record_use t i.res;
+    end
+  end;
+  let reload_maybe_op t i before k =
+    match i.desc with
+    | Iop(Itailcall_ind) | Iop(Itailcall_imm _) ->
+      k (reload t i before)
+    | Iop op ->
+      reload_op ~first:false t i op before k
+    | _ ->
+        k (reload t i before)
+  in
+  match op with
+  | Icall_ind | Icall_imm _ | Iextcall { alloc = true; } ->
+      (* All regs live across must be spilled *)
+      let cont (new_next, finally) =
+        k (add_reloads t.spill_env (Reg.inter_set_array before i.arg)
+                   (instr_cons_debug i.desc i.arg i.res i.dbg new_next),
+           finally)
+      in
+      reload_maybe_op t i.next i.live cont
+  | _ ->
+      let new_before =
+        (* Quick check to see if the register pressure is below the maximum *)
+        if !Clflags.use_linscan ||
+           (Reg.Set.cardinal i.live + Array.length i.res <=
+            Proc.safe_register_pressure op)
+        then before
+        else add_superpressure_regs t op i.live i.res before in
+      let after =
+        Reg.diff_set_array (Reg.diff_set_array new_before i.arg) i.res in
+      let cont (new_next, finally) =
+        k (add_reloads t.spill_env (Reg.inter_set_array new_before i.arg)
+                     (instr_cons_debug i.desc i.arg i.res i.dbg new_next),
+           finally)
+      in
+      reload_maybe_op t i.next after cont
+
 (* Second pass: add spill instructions based on what we've decided to reload.
    That is, any register that may be reloaded in the future must be spilled
    just after its definition. *)
@@ -315,21 +339,8 @@ let rec spill (t : spill_data) i finally =
       (i, finally)
   | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) ->
       (i, Reg.Set.empty)
-  | Iop Ireload ->
-      let (new_next, after) = spill t i.next finally in
-      let before1 = Reg.diff_set_array after i.res in
-      (instr_cons i.desc i.arg i.res new_next,
-       Reg.add_set_array before1 i.res)
   | Iop op ->
-      let (new_next, after) = spill t i.next finally in
-      let before1 = Reg.diff_set_array after i.res in
-      let before =
-        if operation_can_raise op
-        then Reg.Set.union before1 t.spill_at_raise
-        else before1 in
-      (instr_cons_debug i.desc i.arg i.res i.dbg
-         (add_spills t.spill_env (Reg.inter_set_array after i.res) new_next),
-       before)
+      spill_op t i op finally Fun.id
   | Iifthenelse(test, ifso, ifnot) ->
       let (new_next, at_join) = spill t i.next finally in
       let (new_ifso, before_ifso) = spill t ifso at_join in
@@ -409,6 +420,29 @@ let rec spill (t : spill_data) i finally =
        before_body)
   | Iraise _ ->
       (i, t.spill_at_raise)
+and spill_op t i op finally k =
+  let cont (new_next, after) =
+    match op with
+    | Ireload ->
+      let before1 = Reg.diff_set_array after i.res in
+      k (instr_cons i.desc i.arg i.res new_next,
+         Reg.add_set_array before1 i.res)
+    | _ ->
+      let before1 = Reg.diff_set_array after i.res in
+      let before =
+        if operation_can_raise op
+        then Reg.Set.union before1 t.spill_at_raise
+        else before1 in
+      k (instr_cons_debug i.desc i.arg i.res i.dbg
+           (add_spills t.spill_env (Reg.inter_set_array after i.res) new_next),
+         before)
+  in
+  let next = i.next in
+  match next.desc with
+  | Iop(Itailcall_ind) | Iop(Itailcall_imm _) ->
+    cont (spill t next finally)
+  | Iop op -> spill_op t next op finally cont
+  | _ -> cont (spill t next finally)
 
 (* Entry point *)
 

@@ -196,12 +196,12 @@ let instr_body handler_safe i =
     | Safe -> ube
     | Unsafe -> Int.Set.add k ube
   in
-  let rec instr ube i =
+  let[@tail_mod_cons] rec instr ube i =
     match i.desc with
     | Iifthenelse (test, i0, i1) ->
       { i with
         desc = Iifthenelse (test, instr ube i0, instr ube i1);
-        next = instr ube i.next;
+        next = (instr[@tailcall]) ube i.next;
       }
     | Iswitch (index, cases) ->
       { i with
@@ -227,12 +227,12 @@ let instr_body handler_safe i =
       }
     | Iexit k ->
       if Int.Set.mem k ube
-      then add_poll i
+      then (add_poll[@tailcall false]) i
       else i
     | Itrywith (body, hdl) ->
       { i with
         desc = Itrywith (instr ube body, instr ube hdl);
-        next = instr ube i.next;
+        next = (instr[@tailcall]) ube i.next;
       }
     | Iend | Ireturn | Iraise _ -> i
     | Iop _ ->
