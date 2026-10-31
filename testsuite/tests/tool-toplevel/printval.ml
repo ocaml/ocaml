@@ -58,3 +58,34 @@ T 'x'
 type _ t += T : 'a -> ('a * bool) t
 - : (char * bool) t = T 'x'
 |}]
+
+
+(* printing of unboxed constructors *)
+type t =
+  | Int of int [@unboxed]
+  | Str of string [@unboxed]
+  | Pair of t * t
+  | Proxy of t
+;;
+[%%expect {|
+type t =
+    Int of int [@unboxed]
+  | Str of string [@unboxed]
+  | Pair of t * t
+  | Proxy of t
+|}];;
+
+Int 42;;
+[%%expect {|
+- : t = Int 42
+|}];;
+
+Str "foo";;
+[%%expect {|
+- : t = Str "foo"
+|}];;
+
+Pair (Int 42, Proxy (Str "foo"));;
+[%%expect {|
+- : t = Pair (Int 42, Proxy (Str "foo"))
+|}]

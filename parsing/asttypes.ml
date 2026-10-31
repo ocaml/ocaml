@@ -73,3 +73,22 @@ let string_of_label = function
     Nolabel -> ""
   | Labelled s -> s
   | Optional s -> "?"^s
+
+type shape_name =
+  | Any
+  | Imm of int
+  | Constructor of { tag : int; size : int option }
+  | Int
+  | Float
+  | String
+  | Tuple of { size : int option }
+  | Array
+  | Floatarray
+  | Function
+  | Object
+  | Lazy of shape_name list
+  | Continuation
+  | Extensible_variant
+  | Polymorphic_variant of { has_consts : bool; has_nonconsts : bool }
+  | Abstract of { size : int option }
+  | Custom of { size : int option }

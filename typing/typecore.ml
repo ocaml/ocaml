@@ -7146,7 +7146,7 @@ and type_construct env ~sexp lid sarg ty_expected_explained =
     | Cstr_extension _ ->
         Error.log_and_raise sexp.pexp_loc env
           (Private_constructor (constr, ty_res))
-    | Cstr_constant _ | Cstr_block _ | Cstr_unboxed ->
+    | Cstr_constant _ | Cstr_block _ | Cstr_unboxed _ ->
         Error.log_and_raise sexp.pexp_loc env (Private_type ty_res)
     end;
   (* NOTE: shouldn't we call "re" on this final expression? -- AF *)

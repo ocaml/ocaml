@@ -80,6 +80,10 @@ let typecheck_intf { Parse_result.ast; info } =
   Typecore.force_delayed_checks ();
   Builtin_attributes.warn_unused ();
   Warnings.check_fatal ();
+  if !Clflags.dump_headshape then
+    Print_head_shape.print_in_signature
+      ~shape_of_type_path:Head_shape.of_type_path
+      info.ppf_dump tsg;
   alerts, tsg
 
 let emit_signature info alerts tsg =
@@ -118,6 +122,11 @@ let typecheck_impl { Parse_result.ast = parsetree; info = i } =
     Printtyped.implementation_with_coercion
   |> print_if i.ppf_dump Clflags.dump_shape
     (fun fmt {Typedtree.shape; _} -> Shape.print fmt shape)
+  |> print_if i.ppf_dump Clflags.dump_headshape
+    (fun fmt {Typedtree.structure; _} ->
+       Print_head_shape.print_in_structure
+         ~shape_of_type_path:Head_shape.of_type_path
+         fmt structure)
 
 let implementation info ~backend =
   Profile.record_call (Unit_info.input_source_file info.target) @@ fun () ->

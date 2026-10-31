@@ -353,13 +353,8 @@ type t = A | B | C of nothing
   (f/3 =
      (function param/3 : int
        (catch
-         (if (field_int 0 param/3)
-           (switch* (field_imm 1 param/3)
-            case int 0: 3
-            case int 1: (exit 27))
-           (switch* (field_imm 1 param/3)
-            case int 0: 4
-            case int 1: (exit 27)))
+         (if (field_int 0 param/3) (if (field_imm 1 param/3) (exit 27) 3)
+           (if (field_imm 1 param/3) (exit 27) 4))
         with (27) 5)))
   (apply (field_mut 1 (global Toploop!)) "f" f/3))
 val f : bool * t -> int = <fun>
