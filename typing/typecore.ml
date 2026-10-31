@@ -191,6 +191,7 @@ type error =
   | Not_an_extension_constructor
   | Invalid_atomic_loc_payload
   | Label_not_atomic of Longident.t
+  | Polymorphic_atomic_loc of Longident.t
   | Atomic_in_pattern of Longident.t
   | Literal_overflow of string
   | Unknown_literal of string * char
@@ -5653,6 +5654,8 @@ and type_expect_
           Env.mark_label_used Env.Projection label.lbl_uid;
           if label.lbl_atomic = Nonatomic then
             Error.log_and_raise loc env (Label_not_atomic lid.txt);
+          if is_poly_Tpoly label.lbl_arg then
+            Error.log_and_raise loc env (Polymorphic_atomic_loc lid.txt);
           rue {
             exp_desc = Texp_atomic_loc (record, lid, label);
             exp_loc = loc; exp_extra = [];
@@ -8759,6 +8762,11 @@ let report_error ~loc env =
         Style.inline_code "[%atomic.loc]"
   | Label_not_atomic lid ->
       Location.errorf ~loc "The record field %a is not atomic"
+        quoted_longident lid
+  | Polymorphic_atomic_loc lid ->
+      Location.errorf ~loc
+        "Use of %a with polymorphic record fields@ (here %a) is forbidden."
+        Style.inline_code "[%atomic.loc]"
         quoted_longident lid
   | Atomic_in_pattern lid ->
       Location.errorf ~loc

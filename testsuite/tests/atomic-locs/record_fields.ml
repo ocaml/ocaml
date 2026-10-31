@@ -269,3 +269,27 @@ module Pattern_matching_wildcard :
     val allowed : t -> int
   end
 |}]
+
+
+(* Reading a polymorphic atomic field is safe because the read instantiates it,
+   but taking its location would permit a monomorphic write. *)
+
+type poly_record = { mutable poly_field : 'a. 'a option [@atomic] }
+
+let poly_read (r : poly_record) = (r.poly_field : int option)
+[%%expect{|
+0
+type poly_record = { mutable poly_field : 'a. 'a option [@atomic]; }
+(let (poly_read = (function r (atomic_load r 0)))
+  (apply (field_mut 1 (global Toploop!)) "poly_read" poly_read))
+val poly_read : poly_record -> int option = <fun>
+|}];;
+
+let poly_atomic_loc (r : poly_record) = [%atomic.loc r.poly_field]
+[%%expect{|
+Line 1, characters 40-66:
+1 | let poly_atomic_loc (r : poly_record) = [%atomic.loc r.poly_field]
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Use of "[%atomic.loc]" with polymorphic record fields
+       (here "poly_field") is forbidden.
+|}];;
