@@ -50,7 +50,7 @@ Working version
 ### Manual and documentation:
 
 - #15216: document the security issue reporting process with a SECURITY.md file
-  (Edwin Török, suggested by Xavier Leroy, review by )
+  (Edwin Török, suggested by Xavier Leroy, review by Xavier Leroy)
 
 ### Compiler user-interface and warnings:
 
