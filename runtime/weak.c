@@ -377,7 +377,10 @@ static value ephe_blit_keys (value es, mlsize_t offset_s,
 {
   CAMLparam2(es,ed);
   /* We only need to clean the destination when it has data,
-     as the keys themselves are going to be replaced. */
+     as the keys themselves are going to be replaced.
+     Note: we test the data field directly rather than calling
+     [caml_ephe_check_data], which would clean the whole ephemeron
+     (making blit O(number of keys of [ed]) during [Phase_sweep_ephe]). */
   bool ed_has_data = Ephe_data(ed) != caml_ephe_none;
 
   if (length == 0) CAMLreturn(Val_unit);
