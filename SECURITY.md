@@ -9,11 +9,11 @@ If you can, please provide the [recommended information about the vulnerability]
 
 ## Supported Versions
 
-| Release                | [Version](release-info/introduction.md) | Supported          |
-| ---------------------- | ------- | ------------------ |
-| Latest minor version   | 5.x.y   | :white_check_mark: |
+| Release                   | [Version](release-info/introduction.md) | Supported          |
+| ------------------------- | ------- | ------------------ |
+| Latest minor version      | 5.x.y   | :white_check_mark: |
 | Previous OCaml 5 versions | < 5.x   | :x:                |
-| Long Term Support      | 4.14.z  | :white_check_mark: (until [at least 2027](release-info/introduction.md#Exceptional-LTS-versions)) |
+| Long Term Support         | 4.14.z  | :white_check_mark: (until [at least 2027](release-info/introduction.md#Exceptional-LTS-versions)) |
 | Previous OCaml 4 versions | < 4.14  | :x: |
 
 (Note that the opam repository may support a wider range for packages)
