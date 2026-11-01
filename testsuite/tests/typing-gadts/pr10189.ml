@@ -197,7 +197,7 @@ Error: Signature mismatch:
          type 'b t = 'b M.t = A constraint 'b = < x : 'a. 'a -> 'a >
        is not included in
          type 'b t = A constraint 'b = < x : 'a. 'a -> x >
-       Their parameters differ
+       Their parameters differ:
        The type "< x : 'a. 'a -> 'a >" is not equal to the type
          "< x : 'a. 'a -> x >"
        Type "'a" is not equal to type "x" = "M.x"

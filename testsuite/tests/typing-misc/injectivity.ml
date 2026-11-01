@@ -207,7 +207,7 @@ Error: Signature mismatch:
          type !'a t = 'a t/3 constraint 'a = < b : 'b >
        is not included in
          type !'a t constraint 'a = < b : 'b; c : 'c >
-       Their parameters differ
+       Their parameters differ:
        The type "< b : 'a >" is not equal to the type "< b : 'b; c : 'c >"
        The first object type has no method "c"
 |}]
