@@ -299,9 +299,13 @@ module Shape = struct
       (if has_nonconsts then block [Tag 0] else empty)
 
   let abstract ?size () =
+    (* temporary hack: ignore size for Abstract, Custom blocks *)
+    let size = ignore size; None in
     block ?size [Tag Obj.abstract_tag]
 
   let custom ?size () =
+    (* temporary hack: ignore size for Abstract, Custom blocks *)
+    let size = ignore size; None in
     block ?size [Tag Obj.custom_tag]
 end
 
