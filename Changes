@@ -70,6 +70,9 @@ Working version
 
 ### Build system:
 
+- #15201: Fix make stall on macOS GNU Make 3.81
+  (Tim McGilchrist, review by Miod Vallat and ?????)
+
 ### Bug fixes:
 
 - #14602: on Windows, Sys.rename and Unix.rename now succeed when the
