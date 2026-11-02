@@ -42,19 +42,19 @@ type my_floatarray = floatarray
 
 type my_int32 = int32
 [%%expect{|
-shape of my_int32: {imm = []; blocks = [custom size [1]];}
+shape of my_int32: {imm = Any; blocks = [custom];}
 type my_int32 = int32
 |}]
 
 type my_int64 = int64
 [%%expect{|
-shape of my_int64: {imm = []; blocks = [custom size [1]];}
+shape of my_int64: {imm = Any; blocks = [custom];}
 type my_int64 = int64
 |}]
 
 type my_nativeint = nativeint
 [%%expect{|
-shape of my_nativeint: {imm = []; blocks = [custom size [1]];}
+shape of my_nativeint: {imm = Any; blocks = [custom];}
 type my_nativeint = nativeint
 |}]
 
