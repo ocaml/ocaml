@@ -55,7 +55,7 @@ CAMLprim value caml_unix_lseek_64(value fd, value ofs, value cmd)
   HANDLE h = Handle_val(fd);
   BOOL success;
 
-  i.QuadPart = Long_val(ofs);
+  i.QuadPart = Int64_val(ofs);
 
   caml_enter_blocking_section();
   success = SetFilePointerEx(h, i, &i, seek_command_table[Int_val(cmd)]);

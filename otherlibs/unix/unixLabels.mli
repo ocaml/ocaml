@@ -366,7 +366,7 @@ type open_flag = Unix.open_flag =
                                     is a symbolic link. Not supported on
                                     Windows: {!openfile} raises
                                     [Unix_error (EINVAL, _, _)].
-                                    @since 5.6 *)
+                                    @since 5.7 *)
 (** The flags to {!openfile}. *)
 
 

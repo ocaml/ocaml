@@ -1,0 +1,64 @@
+       0  BRANCH 54
+       2  ACC0
+       3  VECTLENGTH (generic)
+       4  RETURN 1
+       6  ACC0
+       7  VECTLENGTH (addr)
+       8  RETURN 1
+      10  ACC0
+      11  VECTLENGTH (float)
+      12  RETURN 1
+      14  ACC0
+      15  VECTLENGTH (int)
+      16  RETURN 1
+      18  RESTART
+      19  GRAB 1
+      21  ACC1
+      22  PUSHACC1
+      23  MAKEFLOATBLOCK 2
+      25  RETURN 2
+      27  RESTART
+      28  GRAB 1
+      30  ACC1
+      31  PUSHACC1
+      32  MAKEFLOATBLOCK 2 (immutable)
+      34  RETURN 2
+      36  RESTART
+      37  GRAB 1
+      39  ACC1
+      40  PUSHACC1
+      41  MAKEBLOCK2 0
+      43  RETURN 2
+      45  RESTART
+      46  GRAB 1
+      48  ACC1
+      49  PUSHACC1
+      50  MAKEBLOCK2 0 (immutable)
+      52  RETURN 2
+      54  CLOSURE 0, 46 (int -> value -> value)
+      57  PUSH
+      58  CLOSURE 0, 37 (int -> value -> value)
+      61  PUSH
+      62  CLOSURE 0, 28 (float -> float -> value)
+      65  PUSH
+      66  CLOSURE 0, 19 (float -> float -> value)
+      69  PUSH
+      70  CLOSURE 0, 14 (value -> int)
+      73  PUSH
+      74  CLOSURE 0, 10 (value -> int)
+      77  PUSH
+      78  CLOSURE 0, 6 (value -> int)
+      81  PUSH
+      82  CLOSURE 0, 2 (value -> int)
+      85  PUSHACC0
+      86  PUSHACC2
+      87  PUSHACC4
+      88  PUSHACC6
+      89  PUSHACC 8
+      91  PUSHACC 10
+      93  PUSHACC 12
+      95  PUSHACC 14
+      97  MAKEBLOCK 8, 0 (immutable)
+     100  POP 8
+     102  SETGLOBAL compilation unit `Block_hints'
+     104  STOP

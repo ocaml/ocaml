@@ -9,7 +9,30 @@ Working version
 
 ### Code generation and optimizations:
 
+- #14980: Emit direct assembly for `Atomic.exchange` and
+  `Atomic.compare_and_set`
+  when the stored value is statically known to be immediate, in which case
+  no write barrier is needed. `Atomic.exchange` and `Atomic.compare_and_set`
+  become externals so the primitive reaches the call site, where the type is
+  usually concrete.
+  (Zane Hambly, review by Stefan Muenzel)
+
+- #15202, #15208: Proper handling of integer sized constants in flambda
+  alias analysis
+  (Pierre Chambart, report by Ethan Chou,
+   review by Vincent Laviron)
+
+- #15212, #15213: Stops assuming that static float array fields are floats
+  (Pierre Chambart, report by Alperen Keleş,
+   review by Vincent Laviron)
+
 ### Standard library:
+
+- #15168: `Scanf.unescaped`, `%S` and `%C` now accept all the escape sequences
+  of OCaml string and character literals: octal escapes `\o101`, escaped spaces
+  `\ `, Unicode escapes `\u{XXXX}` (in strings only), and tabs in the
+  indentation following an escaped newline.
+  (Nicolás Ojeda Bär, report by Chet Murthy, review by Florian Angeletti)
 
 ### Other libraries:
 
@@ -22,6 +45,11 @@ Working version
 - #14448: ocamllex now prints a `missing-case` warning and shows an example
   of nonmatching input if a rule is not exhaustive (Martin Jambon,
   review by David Allsopp and Gabriel Scherer)
+
+- #15167: ocamldep: add a -strict flag to exit with a non-zero code whenever an
+  error occurs (input file does not exist, parse error, etc). No output is
+  generated in that case.
+  (Nicolás Ojeda Bär, review by Florian Angeletti)
 
 ### Manual and documentation:
 
@@ -44,6 +72,21 @@ Working version
 
 ### Bug fixes:
 
+- #14602: on Windows, Sys.rename and Unix.rename now succeed when the
+  destination is an existing read-only file, as on POSIX systems.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer, Antonin Décimo,
+   David Allsopp and Miod Vallat)
+
+- #15204: fix a pattern-matching miscompilation where a scrutinee of
+  polymorphic variant type (or variant type with more than 32
+  constructors) is mutated during matching
+  (Jeremy Yallop, review by Gabriel Scherer)
+
+- #15185, #15187: fix a pattern-matching miscompilation on certain
+  combinations of immediate ranges and redundant patterns
+  (Gabriel Scherer, report by Alperer Keleş,
+   review by Vincent Laviron and Florian Angeletti)
+
 - #7826, #15139: Cache free variable computations to avoid quadratic
   blowups in pathological cases
   (Vincent Laviron, report by Pierre-Marie Pédrot, review by Stefan Muenzel)
@@ -51,6 +94,21 @@ Working version
 - #15158, #15155: Allow projection from closures with bottom approximation in
   flambda
   (Pierre Chambart, report by Michael Bacarella, review by Vincent Laviron)
+
+- #15074, #15077: Fix an out-of-bounds write when a custom event encoder
+  returns a length larger than the write buffer or a negative length.
+  Runtime_events.User.write now raises Invalid_argument for a length outside
+  the documented range.
+  (Tim McGilchrist, reported by Edwin Török, review by Edwin Török, Antonin
+   Décimo and Olivier Nicole)
+
+- #15043, #15076: runtime events library, fix an infinite loop when a user
+  event is larger than half the ring buffer.
+  (Tim McGilchrist, review by Sadiq Jaffer)
+
+- #15181: Allocate the exact size of runtime events ring file path.
+  Fixes an error on Windows with allocating long paths to this file.
+  (Tim McGilchrist, review by Antonin Décimo)
 
 OCaml 5.6.0
 -----------
@@ -230,12 +288,15 @@ OCaml 5.6.0
   (Gabriel Scherer, review by Damien Doligez)
 
 - #15117: The instrumented runtime is no longer installed by default.
-  (David Allsopp, review by Florian Angeletti, Nick Barnes and Sadiq Jaffer)]
+  (David Allsopp, review by Florian Angeletti, Nick Barnes and Sadiq Jaffer)
 
 - #15119, OSEC-2026-25: Harden decoding of runtime events messages from
   ring buffers.
   (Sadiq Jaffer, report by Hannes Mehnert, review by Olivier Nicole and
   Edwin Török)
+
+- #15177, OSEC-2026-26: Maintain custom events cache integrity.
+  (Sadiq Jaffer, report by Hannes Mehnert, review by Edwin Török)
 
 ### Type system:
 
@@ -287,14 +348,6 @@ OCaml 5.6.0
 - #14575: Emit direct assembly for `Atomic.fetch_and_add`
   rather than going through C
   (Zane Hambly, review by Olivier Nicole and KC Sivaramakrishnan)
-
-- #14980: Emit direct assembly for `Atomic.exchange` and
-  `Atomic.compare_and_set`
-  when the stored value is statically known to be immediate, in which case
-  no write barrier is needed. `Atomic.exchange` and `Atomic.compare_and_set`
-  become externals so the primitive reaches the call site, where the type is
-  usually concrete.
-  (Zane Hambly, review by         )
 
 - #15002: s390x: emit `sqdbr` for square root and `lrvgr` for byte swap
   rather than calling into C
@@ -580,6 +633,14 @@ OCaml 5.6.0
   character literal, and that the numerical escape sequences also denote
   byte values outside the ASCII range.
   (Abhay Chaudhary, report by baugigi, review by Florian Angeletti)
+
+- #15091: Document the OCAMLRUNPARAM `X` option for named GC tweaks and the
+  bounds on `d`, and align the ocamlrun man page with the manual on `b` and
+  on comma handling.
+  (Tim McGilchrist, review by Stefan Muenzel)
+
+- #15200: manual: fix syntax for local opens
+  (Simmo Saan, review by Florian Angeletti)
 
 ### Compiler user-interface and warnings:
 
@@ -901,6 +962,11 @@ OCaml 5.6.0
 - #15127: Fix a memory leak when compacting the heap of a domain
   if the size class had no live blocks.
   (Ezequiel Lewin, review by Florian Angeletti)
+
+- #15186: Fix Windows Unix.LargeFile.lseek which seeked to a wrong offset
+  (regression since 5.1.0).
+  (Tim McGilchrist, review by Nicolas Ojeda Bar)
+
 
 OCaml 5.5.1
 -----------
