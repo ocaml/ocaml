@@ -53,26 +53,26 @@ PR_BRANCH="$3"
 PR_HEAD="$4"
 
 # The target here is to get the merge-base of $UPSTREAM_HEAD and $PR_HEAD. Let's
-# call that $MERGE_BASE. With a fully cloned git repository, the first entry of
-#   git log ${MERGE_BASE}~1..${UPSTREAM_HEAD} --reverse --first-parent
-# should be $MERGE_BASE again.
-# For a shallow clone, containing grafted commits, either git merge-base returns
-# an error (so $MERGE_BASE = '') or it can git merge-base can return the wrong
-# answer. However, what it returns, we can fetch more commits from
-# $UPSTREAM_BRANCH until we have enough commits to "see" ${MERGE_BASE} in the
-# log.
+# call that $MERGE_BASE. For a shallow clone, containing grafted commits, either
+# git merge-base returns an error (so $MERGE_BASE = '') or it can return the
+# wrong answer, because the true merge-base may be hidden behind a commit whose
+# parents have not been fetched. The answer can be trusted once no commit
+# reachable from either head but not from $MERGE_BASE is a shallow boundary.
+# Note that $MERGE_BASE need not be on the first-parent history of
+# $UPSTREAM_HEAD (e.g. a PR based on another PR's branch, since merged).
 
-# Determine if a commit $1 exists in the UPSTREAM log.
+# Determine if $1 is definitely the merge-base of $UPSTREAM_HEAD and $PR_HEAD.
 have_root ()
 {
   if [[ -z $1 ]]; then
-    return 1;
-  else
-    log_entry=$(git log "$1~1..$UPSTREAM_HEAD" --format=%H \
-                        --first-parent --reverse | head -1)
-    if [[ $log_entry != $1 ]]; then
-      return 1;
-    fi
+    return 1
+  fi
+  local shallow
+  shallow="$(git rev-parse --git-path shallow)"
+  if [[ -s $shallow ]] \
+     && git rev-list "$UPSTREAM_HEAD" "$PR_HEAD" "^$1" \
+          | grep -qxFf "$shallow"; then
+    return 1
   fi
 }
 
@@ -97,8 +97,16 @@ if ! have_root "$MERGE_BASE"; then
   MSG='Deepening'
 
   while ! have_root "$MERGE_BASE"; do
-    echo " - $MSG by $DEEPEN commits from $FETCH_REF"
-    git fetch origin --deepen=$DEEPEN "$FETCH_REF" &> /dev/null
+    if [[ $(git rev-parse --is-shallow-repository) = 'false' ]]; then
+      echo "Error: $UPSTREAM_HEAD and $PR_HEAD have no common ancestor" >&2
+      exit 1
+    elif ((DEEPEN > 3200)); then
+      echo " - Fetching the complete history of $FETCH_REF"
+      git fetch origin --unshallow "$FETCH_REF" &> /dev/null
+    else
+      echo " - $MSG by $DEEPEN commits from $FETCH_REF"
+      git fetch origin --deepen=$DEEPEN "$FETCH_REF" &> /dev/null
+    fi
     MERGE_BASE=$(git merge-base "$UPSTREAM_HEAD" "$PR_HEAD" 2>/dev/null || true)
     MSG='Further deepening'
     ((DEEPEN*=2))
