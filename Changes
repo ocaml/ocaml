@@ -5,6 +5,14 @@ Working version
 
 ### Language features:
 
+- unboxed constructors: individual constructors can be unboxed
+  with an [@unboxed] annotation, as long as their value representation
+  does not conflict with other values at this type:
+    type rope = Leaf of string [@unboxed]
+              | Branch of { llen: int; l:rope; r:rope }
+  (Nicolas Chataing and Gabriel Scherer, RFC by Jeremy Yallop,
+   review by Jerome Vouillon and ...)
+
 ### Runtime system:
 
 ### Code generation and optimizations:
