@@ -213,7 +213,11 @@ and of_predef_abstract_type env tconstr args fuel =
   | `Float -> Shape.float
   | `Floatarray -> Shape.floatarray
   | `Nativeint | `Int32 | `Int64 ->
-      Shape.custom ~size:1 ()
+      (* 'nativeint' and 'int32' are unboxed in js_of_ocaml, so we
+         consider that all integer-like numeric types also have shape
+         'immediate' for portability. ('int64' as well,
+         for consistency) *)
+      Shape.union Shape.any_immediate (Shape.custom ~size:1 ())
   | `String | `Bytes ->
       Shape.string
   | `Continuation ->
