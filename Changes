@@ -940,6 +940,10 @@ OCaml 5.5.1
   let other threads run.
   (Nicolás Ojeda Bär, report by Daniel Larraz, review by Antonin Décimo)
 
+-#15163, #15219: faster variance check for type definitions with large
+ constrained parameter types.
+ (Florian Angeletti, report by Kate Deplaix, review by Gabriel Scherer)
+
 - #15185, #15187: fix a pattern-matching miscompilation on certain
   combinations of immediate ranges and redundant patterns
   (Gabriel Scherer, report by Alperer Keleş,
@@ -949,7 +953,6 @@ OCaml 5.5.1
   polymorphic variant type (or variant type with more than 32
   constructors) is mutated during matching
   (Jeremy Yallop, review by Gabriel Scherer)
-
 
 OCaml 5.5.0 (19 June 2026)
 -------------------------
