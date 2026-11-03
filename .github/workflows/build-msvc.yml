@@ -144,6 +144,26 @@ jobs:
           winget install opam --accept-source-agreements
           Add-Content -Path $env:GITHUB_PATH -Value "$env:LOCALAPPDATA\Microsoft\WinGet\Links"
 
+      # The runner image includes several tools which ship mingw-w64 runtime
+      # DLLs (e.g. C:\mingw64\bin). Remove them from PATH so that executables
+      # which wrongly depend on libwinpthread-1.dll fail to run.
+      - name: Remove libwinpthread-1.dll from PATH
+        shell: pwsh
+        run: |
+          $env:PATH = ($env:PATH -split ';' | Where-Object {
+            $_ -and (
+              -not (Test-Path -LiteralPath (Join-Path $_ 'libwinpthread-1.dll')) -or
+              (Write-Host " - Removed $_")
+            )
+          }) -join ';'
+          "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+          if (Get-Command libwinpthread-1.dll -ErrorAction SilentlyContinue) {
+            Get-Command libwinpthread-1.dll -All
+            Write-Host '::error::Failed to remove libwinpthread-1.dll from PATH'
+            exit 1
+          }
+
       - name: Compute a key to cache configure results
         id: autoconf-cache-key
         env:
