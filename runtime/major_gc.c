@@ -549,6 +549,9 @@ static void mark_ephe_aux (struct mark_stack *stk, intnat *work,
             goto ephemeron_again;
           }
         }
+        else if (Tag_val (key) == Infix_tag){
+          key -= Infix_offset_val (key);
+        }
         if (Is_white_val (key)){
           alive_data = 0;
         }

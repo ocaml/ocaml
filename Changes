@@ -14,6 +14,9 @@ OCaml 4.14 maintenance version
   (Xavier Leroy, report by Akshay Singh, review by Nicolás Ojeda Bär
   and Antonin Décimo)
 
+- ensure that ephemeron marking follows Infix pointers.
+  (Gabriel Scherer, review by Florian Angeletti,
+   report by Igor Santos-Grueiro)
 
 OCaml 4.14.4 (15 June 2026)
 ------------------------------
