@@ -972,6 +972,10 @@ OCaml 5.6.0
   (regression since 5.1.0).
   (Tim McGilchrist, review by Nicolas Ojeda Bar)
 
+- #15225: Fix a bug where Unix.select would report writability only once after
+  becoming writable. This occurred when the list of file descriptors contained a
+  mixture of sockets and non-sockets.
+  (Nicolás Ojeda Bär, report by Kento Okura, review by Antonin Décimo)
 
 OCaml 5.5.1
 -----------
