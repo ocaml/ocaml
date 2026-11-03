@@ -643,7 +643,8 @@ let _ = add_directive "help"
 
 let with_log f ppf x =
   let dev = Log.Device.make (ref ppf) in
-  let log = Topcommon.log_on_device dev in
+  let log = !Topcommon.directive_log in
+  Log.redirect log Toplog.errors dev;
   Fun.protect (fun () -> f log x)
     ~finally:(fun () -> Log.flush log)
 
