@@ -26,6 +26,10 @@ Working version
   (Pierre Chambart, report by Alperen Keleş,
    review by Vincent Laviron)
 
+- #15231: Read only the condition register field a comparison needs on
+  POWER when its result is kept as a bool.
+  (Tim McGilchrist and Zane Hambly, review by         )
+
 ### Standard library:
 
 - #15168: `Scanf.unescaped`, `%S` and `%C` now accept all the escape sequences
