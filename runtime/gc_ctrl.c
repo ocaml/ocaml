@@ -486,9 +486,8 @@ caml_result caml_gc_ramp_up(value callback,
     caml_alloc_counter suspended_words_outer = get_ramp_up_suspended_words();
     CAMLassert (ramp_up_already
                 || (suspended_words_outer.on_heap == 0
-                    && suspended_words_outer.off_heap == 0
-                    && suspended_words_outer.ephe == 0));
-    caml_alloc_counter zero = {0, 0, 0};
+                    && suspended_words_outer.off_heap == 0));
+    caml_alloc_counter zero = {0, 0};
     set_ramp_up_suspended_words(zero);
 
     caml_result res = caml_callback_res(callback, Val_unit);
@@ -501,9 +500,8 @@ caml_result caml_gc_ramp_up(value callback,
 
     CAML_GC_MESSAGE(SLICESIZE,
       "Leaving a GC ramp-up phase; suspended words: %" CAML_PRIuNAT "/%"
-      CAML_PRIuNAT "/%" CAML_PRIuNAT "\n",
-      suspended_words_inner.on_heap, suspended_words_inner.off_heap,
-      suspended_words_inner.ephe);
+      CAML_PRIuNAT "\n",
+      suspended_words_inner.on_heap, suspended_words_inner.off_heap);
 
     if (!ramp_up_already)
       Caml_state->gc_policy = (Caml_state->gc_policy & ~CAML_GC_RAMP_UP);
@@ -529,7 +527,7 @@ CAMLprim value caml_ml_gc_ramp_up(value callback) {
     caml_gc_ramp_down(deferred_work);
   }
   v = caml_get_value_or_raise(res);
-  c = caml_alloc(3, Abstract_tag);
+  c = caml_alloc(2, Abstract_tag);
   *(caml_alloc_counter *)(Op_val(c)) = deferred_work;
   CAMLreturn (caml_alloc_2(0, v, c));
 }
@@ -537,9 +535,8 @@ CAMLprim value caml_ml_gc_ramp_up(value callback) {
 CAMLprim value caml_ml_gc_ramp_down(value work) {
   caml_alloc_counter * resumed_words = (caml_alloc_counter *)Op_val(work);
   CAML_GC_MESSAGE(SLICESIZE,
-    "GC ramp-down; resumed words: %"
-    CAML_PRIuNAT "/%" CAML_PRIuNAT "/%" CAML_PRIuNAT "\n",
-    resumed_words->on_heap, resumed_words->off_heap, resumed_words->ephe);
+    "GC ramp-down; resumed words: %" CAML_PRIuNAT "/%" CAML_PRIuNAT "\n",
+    resumed_words->on_heap, resumed_words->off_heap);
   caml_gc_ramp_down(*resumed_words);
   return Val_unit;
 }

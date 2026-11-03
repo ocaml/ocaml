@@ -887,7 +887,6 @@ static void adopt_orphaned_work (void)
 typedef struct {
   atomic_uintnat on_heap;
   atomic_uintnat off_heap;
-  atomic_uintnat ephe;
 } atomic_alloc_counter;
 static atomic_alloc_counter alloc_counter;
 static atomic_alloc_counter work_counter;
@@ -939,7 +938,6 @@ static void advance_pacing_ring (pacing_phase p)
   caml_alloc_counter *c = &pacing_ring[p].alloc_at_phase_start;
   if (c->on_heap > work_counter.on_heap) work_counter.on_heap = c->on_heap;
   if (c->off_heap > work_counter.off_heap) work_counter.off_heap = c->off_heap;
-  if (c->ephe > work_counter.ephe) work_counter.ephe = c->ephe;
 
   /* update pacing ring */
   pacing_ring[p].advance_work = 0;
@@ -958,13 +956,12 @@ static caml_plat_mutex pp_lock = CAML_PLAT_MUTEX_INITIALIZER;
   /* Variables derived from the settings.
      See https://github.com/damiendoligez/gc-pacing with the following key:
      ' -> 1
-     '' -> 2
      s -> pp_c[pp_sweep]
      m -> pp_c[pp_mark]
      w -> pp_c[pp_ephe]
   */
   static double pp_beta, pp_beta2, pp_gamma;
-  static double pp_c[PP_NUM_PHASES], pp_c1[PP_NUM_PHASES], pp_c2[PP_NUM_PHASES];
+  static double pp_c[PP_NUM_PHASES], pp_c1[PP_NUM_PHASES];
 
 /* end mutex */
 atomic_uintnat caml_small_heap_limit = Small_heap_limit_def;
@@ -999,17 +996,13 @@ void caml_set_pacing_params (caml_gc_pacing_params p)
   pp_c1[pp_mark] = s1 / pp_sigma;
   pp_c1[pp_ephe] = 2 * s1 / pp_gamma;
 
-  pp_c2[pp_sweep] = 0;
-  pp_c2[pp_mark] = 0;
-  pp_c2[pp_ephe] = 0;
   caml_plat_unlock (&pp_lock);
   caml_gc_log("set GC pacing params: %"CAML_PRIuNAT" percent_free; %"
               CAML_PRIuNAT" ephe_percent_free; %g beta; %g beta''; %g gamma; "
-              "%g s; %g m; %g w; %g s'; %g m'; %g w'; %g s''; %g m''; %g w''",
+              "%g s; %g m; %g w; %g s'; %g m'; %g w'",
               pp.percent_free, pp.ephe_percent_free, pp_beta, pp_beta2,
               pp_gamma, pp_c[pp_sweep], pp_c[pp_mark], pp_c[pp_ephe],
-              pp_c1[pp_sweep], pp_c1[pp_mark], pp_c1[pp_ephe],
-              pp_c2[pp_sweep], pp_c2[pp_mark], pp_c2[pp_ephe]);
+              pp_c1[pp_sweep], pp_c1[pp_mark], pp_c1[pp_ephe]);
 }
 
 /***********************************************************************/
@@ -1111,9 +1104,6 @@ update_major_slice_work(intnat howmuch,
   atomic_fetch_add (&alloc_counter.off_heap,
     my_alloc_count.off_heap - my_alloc_suspended_count.off_heap
                             + my_alloc_resumed_count.off_heap);
-  atomic_fetch_add (&alloc_counter.ephe,
-    my_alloc_count.ephe - my_alloc_suspended_count.ephe
-                        + my_alloc_resumed_count.ephe);
 
   /* Update the domain's statistics and suspended-count difference. */
   d->stat_major_words += d->allocated_words->on_heap;
@@ -1122,23 +1112,20 @@ update_major_slice_work(intnat howmuch,
               my_alloc_suspended_count);
 
   CAML_GC_MESSAGE(SLICESIZE, "allocated_words = %" CAML_PRIuNAT "/%"
-                  CAML_PRIuNAT "/%" CAML_PRIuNAT "\n",
-                  my_alloc_count.on_heap, my_alloc_count.off_heap,
-                  my_alloc_count.ephe);
+                  CAML_PRIuNAT "\n",
+                  my_alloc_count.on_heap, my_alloc_count.off_heap);
   CAML_GC_MESSAGE(SLICESIZE, "allocated_words_direct = %"
-                  CAML_PRIuNAT "/%" CAML_PRIuNAT "/%" CAML_PRIuNAT "\n",
-                  my_alloc_direct_count.on_heap, my_alloc_direct_count.off_heap,
-                  my_alloc_direct_count.ephe);
+                  CAML_PRIuNAT "/%" CAML_PRIuNAT "\n",
+                  my_alloc_direct_count.on_heap,
+                  my_alloc_direct_count.off_heap);
   CAML_GC_MESSAGE(SLICESIZE, "allocated_words_suspended = %"
-                  CAML_PRIuNAT "/%" CAML_PRIuNAT "/%" CAML_PRIuNAT "\n",
+                  CAML_PRIuNAT "/%" CAML_PRIuNAT "\n",
                   my_alloc_suspended_count.on_heap,
-                  my_alloc_suspended_count.off_heap,
-                  my_alloc_suspended_count.ephe);
+                  my_alloc_suspended_count.off_heap);
   CAML_GC_MESSAGE(SLICESIZE, "allocated_words_resumed = %"
-                  CAML_PRIuNAT "/%" CAML_PRIuNAT "/%" CAML_PRIuNAT "\n",
+                  CAML_PRIuNAT "/%" CAML_PRIuNAT "\n",
                   my_alloc_resumed_count.on_heap,
-                  my_alloc_resumed_count.off_heap,
-                  my_alloc_resumed_count.ephe);
+                  my_alloc_resumed_count.off_heap);
 
   /* Update counters with work done in advance and work done between slices
      before computing the work to do for this slice. */
@@ -1156,70 +1143,48 @@ update_major_slice_work(intnat howmuch,
   }
 
   caml_gc_log("Updated major work: [%c] "
-              " %" CAML_PRIuNAT "/%" CAML_PRIuNAT "/%" CAML_PRIuNAT
-                " allocated, "
-              " %" CAML_PRIuNAT "/%" CAML_PRIuNAT "/%" CAML_PRIuNAT
-                " allocated (direct), "
-              " %" CAML_PRIuNAT "/%" CAML_PRIuNAT "/%" CAML_PRIuNAT
-                " allocated (suspended), "
-              " %" CAML_PRIuNAT "/%" CAML_PRIuNAT "/%" CAML_PRIuNAT
-                " allocated (resumed), "
-              " %" CAML_PRIuNAT "/%" CAML_PRIuNAT "/%" CAML_PRIuNAT
-                " alloc counter, "
-              " %" CAML_PRIuNAT "/%" CAML_PRIuNAT "/%" CAML_PRIuNAT
-                " work counter, "
-              " %" CAML_PRIuNAT "/%" CAML_PRIuNAT "/%" CAML_PRIuNAT
-                " slice target, "
+              " %" CAML_PRIuNAT "/%" CAML_PRIuNAT " allocated, "
+              " %" CAML_PRIuNAT "/%" CAML_PRIuNAT " allocated (direct), "
+              " %" CAML_PRIuNAT "/%" CAML_PRIuNAT " allocated (suspended), "
+              " %" CAML_PRIuNAT "/%" CAML_PRIuNAT " allocated (resumed), "
+              " %" CAML_PRIuNAT "/%" CAML_PRIuNAT " alloc counter, "
+              " %" CAML_PRIuNAT "/%" CAML_PRIuNAT " work counter, "
+              " %" CAML_PRIuNAT "/%" CAML_PRIuNAT " slice target, "
               " %" CAML_PRIdNAT " slice budget",
               caml_gc_phase_char(),
               my_alloc_count.on_heap, my_alloc_count.off_heap,
-              my_alloc_count.ephe,
               my_alloc_direct_count.on_heap, my_alloc_direct_count.off_heap,
-              my_alloc_direct_count.ephe,
               my_alloc_suspended_count.on_heap,
               my_alloc_suspended_count.off_heap,
-              my_alloc_suspended_count.ephe,
               my_alloc_resumed_count.on_heap, my_alloc_resumed_count.off_heap,
-              my_alloc_resumed_count.ephe,
-              alloc_counter.on_heap, alloc_counter.off_heap, alloc_counter.ephe,
-              work_counter.on_heap, work_counter.off_heap, work_counter.ephe,
+              alloc_counter.on_heap, alloc_counter.off_heap,
+              work_counter.on_heap, work_counter.off_heap,
               d->slice_target->on_heap, d->slice_target->off_heap,
-              d->slice_target->ephe,
               d->slice_budget
               );
 
   if (log_events) {
     CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_ON_HEAP, my_alloc_count.on_heap);
     CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_OFF_HEAP, my_alloc_count.off_heap);
-    CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_EPHE, my_alloc_count.ephe);
     CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_DIRECT_ON_HEAP,
                     my_alloc_direct_count.on_heap);
     CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_DIRECT_OFF_HEAP,
                     my_alloc_direct_count.off_heap);
-    CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_DIRECT_EPHE,
-                    my_alloc_direct_count.ephe);
     CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_SUSPENDED_ON_HEAP,
                     my_alloc_suspended_count.on_heap);
     CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_SUSPENDED_OFF_HEAP,
                     my_alloc_suspended_count.off_heap);
-    CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_SUSPENDED_EPHE,
-                    my_alloc_suspended_count.ephe);
     CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_RESUMED_ON_HEAP,
                     my_alloc_resumed_count.on_heap);
     CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_RESUMED_OFF_HEAP,
                     my_alloc_resumed_count.off_heap);
-    CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_RESUMED_EPHE,
-                    my_alloc_resumed_count.ephe);
     CAML_EV_COUNTER(EV_C_MAJOR_ALLOC_ON_HEAP, alloc_counter.on_heap);
     CAML_EV_COUNTER(EV_C_MAJOR_ALLOC_OFF_HEAP, alloc_counter.off_heap);
-    CAML_EV_COUNTER(EV_C_MAJOR_ALLOC_EPHE, alloc_counter.ephe);
     CAML_EV_COUNTER(EV_C_MAJOR_WORK_ON_HEAP, work_counter.on_heap);
     CAML_EV_COUNTER(EV_C_MAJOR_WORK_OFF_HEAP, work_counter.off_heap);
-    CAML_EV_COUNTER(EV_C_MAJOR_WORK_EPHE, work_counter.ephe);
     CAML_EV_COUNTER(EV_C_MAJOR_SLICE_TARGET_ON_HEAP, d->slice_target->on_heap);
     CAML_EV_COUNTER(EV_C_MAJOR_SLICE_TARGET_OFF_HEAP,
                     d->slice_target->off_heap);
-    CAML_EV_COUNTER(EV_C_MAJOR_SLICE_TARGET_EPHE, d->slice_target->ephe);
     CAML_EV_COUNTER(EV_C_MAJOR_SLICE_BUDGET, d->slice_budget);
   }
 }
@@ -1232,10 +1197,9 @@ typedef enum {
   Slice_opportunistic
 } collection_slice_mode;
 
-static inline double translate (pacing_phase ph, intnat on, intnat off,
-                                intnat ephe)
+static inline double translate (pacing_phase ph, intnat on, intnat off)
 {
-  return pp_c[ph] * on + pp_c1[ph] * off + pp_c2[ph] * ephe;
+  return pp_c[ph] * on + pp_c1[ph] * off;
 }
 
 static intnat get_major_slice_work(collection_slice_mode mode){
@@ -1253,13 +1217,11 @@ static intnat get_major_slice_work(collection_slice_mode mode){
     max2(0, diffmod (d->slice_target->on_heap, work_counter.on_heap));
   intnat d_off =
     max2(0, diffmod (d->slice_target->off_heap, work_counter.off_heap));
-  intnat d_ephe =
-    max2(0, diffmod (d->slice_target->ephe, work_counter.ephe));
 
   /* It is very important to be rounding up here, otherwise the slice
      will stop just short of spending the bugdet and then loop for
      a long time on the remainder. */
-  intnat budget = (intnat) ceil(translate(ph, d_on, d_off, d_ephe));
+  intnat budget = (intnat) ceil(translate(ph, d_on, d_off));
 
   /* The slice budget is the max of the alloc-driven budget and
      the explicit budget (d->slice_budget), and we return only one chunk
@@ -1270,9 +1232,9 @@ static intnat get_major_slice_work(collection_slice_mode mode){
   CAML_GC_MESSAGE(SLICESIZE,
                   "compute slice budget: %"CAML_PRIdNAT" alloc-driven; %"
                   CAML_PRIdNAT" explicit; %"CAML_PRIdNAT" chunk;"
-                  " %"CAML_PRIdNAT" on-heap; %"CAML_PRIdNAT" off-heap; %"
-                  CAML_PRIdNAT" ephemeron; %d phase",
-                  budget, d->slice_budget, chunk_budget, d_on, d_off, d_ephe,
+                  " %"CAML_PRIdNAT" on-heap; %"CAML_PRIdNAT" off-heap;"
+                  " %d phase",
+                  budget, d->slice_budget, chunk_budget, d_on, d_off,
                   (int) ph);
 
   return chunk_budget;
@@ -1292,17 +1254,14 @@ static void translate_back (pacing_phase p, double *w,
 {
   intnat d_on = diffs->on_heap;
   intnat d_off = diffs->off_heap;
-  intnat d_ephe = diffs->ephe;
   if (d_on < 0) d_on = 0;
   if (d_off < 0) d_off = 0;
-  if (d_ephe < 0) d_ephe = 0;
-  double diff_work = translate (p, d_on, d_off, d_ephe);
+  double diff_work = translate (p, d_on, d_off);
   CAMLassert (diff_work >= 0);
   if (diff_work > *w){
     double p = *w / diff_work;
     diffs->on_heap = (uintnat) (diffs->on_heap * p);
     diffs->off_heap = (uintnat) (diffs->off_heap * p);
-    diffs->ephe = (uintnat) (diffs->ephe * p);
     *w = 0;
   }else{
     *w -= diff_work;
@@ -1349,11 +1308,10 @@ static void commit_major_slice_work(intnat words_done)
             (&pacing_ring[ph].advance_work, &adv, w)){
         (void)atomic_fetch_add (&work_counter.on_heap, diff.on_heap);
         (void)atomic_fetch_add (&work_counter.off_heap, diff.off_heap);
-        (void)atomic_fetch_add (&work_counter.ephe, diff.ephe);
         CAML_GC_MESSAGE(SLICESIZE,
                         "Commit major slice work: %"CAML_PRIuNAT" on; %"
-                        CAML_PRIuNAT" off; %"CAML_PRIuNAT" ephe",
-                        diff.on_heap, diff.off_heap, diff.ephe);
+                        CAML_PRIuNAT" off",
+                        diff.on_heap, diff.off_heap);
         break;
       }
     }
@@ -1361,14 +1319,12 @@ static void commit_major_slice_work(intnat words_done)
 
   diff.on_heap = d->slice_budget;
   diff.off_heap = 0;
-  diff.ephe = 0;
   w = (double) words_done;
   translate_back (ph, &w, &diff);
   d->slice_budget -= diff.on_heap;
 
   if (diffmod (d->slice_target->on_heap, work_counter.on_heap) <= 0
-      && diffmod (d->slice_target->off_heap, work_counter.off_heap) <= 0
-      && diffmod (d->slice_target->ephe, work_counter.ephe) <= 0){
+      && diffmod (d->slice_target->off_heap, work_counter.off_heap) <= 0){
     /* We've done enough work by ourselves, no need to interrupt the other
        domains. */
     d->requested_global_major_slice = 0;
@@ -1991,10 +1947,9 @@ void caml_mark_roots_stw (int participant_count,
   /* Synchronise and change the phase */
   Caml_global_barrier_if_final(participant_count) {
     caml_gc_phase = Phase_sweep_and_mark_main;
-    caml_gc_log("work_counter: %" CAML_PRIuNAT "/%" CAML_PRIuNAT "/%"
+    caml_gc_log("work_counter: %" CAML_PRIuNAT "/%"
                 CAML_PRIuNAT " at root marking",
-                work_counter.on_heap, work_counter.off_heap,
-                work_counter.ephe);
+                work_counter.on_heap, work_counter.off_heap);
     atomic_store_relaxed(&global_roots_status, WAITING);
 
     caml_alloc_counter c;
@@ -2131,10 +2086,9 @@ static void cycle_major_heap_from_stw_single(
   caml_gc_phase = Phase_sweep_main;
   advance_pacing_ring (pp_sweep);
   caml_gc_log ("alloc_counter at start of sweep: %"
-               CAML_PRIuNAT "/%" CAML_PRIuNAT "/%" CAML_PRIuNAT,
+               CAML_PRIuNAT "/%" CAML_PRIuNAT,
                pacing_ring[pp_sweep].alloc_at_phase_start.on_heap,
-               pacing_ring[pp_sweep].alloc_at_phase_start.off_heap,
-               pacing_ring[pp_sweep].alloc_at_phase_start.ephe);
+               pacing_ring[pp_sweep].alloc_at_phase_start.off_heap);
 
   work_counter_min_before_mark =
     work_counter.on_heap + work_counter.off_heap + caml_small_heap_limit;
@@ -2862,16 +2816,12 @@ void caml_teardown_major_gc(void) {
   */
   CAMLassert (d->allocated_words->on_heap == 0);
   CAMLassert (d->allocated_words->off_heap == 0);
-  CAMLassert (d->allocated_words->ephe == 0);
   CAMLassert (d->allocated_words_direct->on_heap == 0);
   CAMLassert (d->allocated_words_direct->off_heap == 0);
-  CAMLassert (d->allocated_words_direct->ephe == 0);
   CAMLassert (d->allocated_words_suspended->on_heap == 0);
   CAMLassert (d->allocated_words_suspended->off_heap == 0);
-  CAMLassert (d->allocated_words_suspended->ephe == 0);
   CAMLassert (d->allocated_words_resumed->on_heap == 0);
   CAMLassert (d->allocated_words_resumed->off_heap == 0);
-  CAMLassert (d->allocated_words_resumed->ephe == 0);
 
   caml_stat_free(d->allocated_words);
   caml_stat_free(d->allocated_words_direct);
