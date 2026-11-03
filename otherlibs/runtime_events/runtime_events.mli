@@ -553,12 +553,13 @@ Event indicating that the Runtime_events ring buffer has been resumed.
 | EV_FORK_PARENT
 (**
 Event indicating that a fork has occurred and the current domain is the parent.
-Includes the PID of the child as an argument.
+Includes the PID of the child as an argument. Emitted by [Unix.fork].
 @since 5.0
 *)
 | EV_FORK_CHILD
 (**
 Event indicating that a fork has occurred and the current domain is the child.
+Emitted by [Unix.fork].
 @since 5.0
 *)
 | EV_DOMAIN_SPAWN
@@ -572,6 +573,14 @@ process as an argument.
 Event indicating that a domain has terminated. Includes the PID of the process
 as an argument.
 @since 5.0
+*)
+| EV_PROCESS_CREATE
+(**
+Event indicating that a child process has been created. Includes the PID of the
+new process as an argument. Emitted when the Unix library creates a process, by
+[Unix.create_process], [Unix.create_process_env], [Unix.system] and the
+[Unix.open_process] functions.
+@since 5.6
 *)
 
 val lifecycle_name : lifecycle -> string
