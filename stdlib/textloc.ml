@@ -37,6 +37,7 @@ module Compact : S with type t = textloc = struct
   let is_none view = view.first_byte < 0
 
   let pf = Format.fprintf
+
   let pp_ocaml ppf l =
     let l = view l in
     match is_none l with
@@ -54,7 +55,21 @@ module Compact : S with type t = textloc = struct
         else pf ppf "File \"%s\", %a, characters %d-%d"
             l.file pp_lines l pos_s pos_e
 
-  let pp_gnu _fmt _l = assert false
+  let pp_gnu ppf l =
+    let l = view l in
+    match is_none l with
+    | true -> pf ppf "%s:" l.file
+    | false ->
+        let pp_lines ppf l =
+          let col_s = l.first_byte - snd l.first_line + 1 in
+          let col_e = l.last_byte - snd l.last_line + 1 in
+          match fst l.first_line = fst l.last_line with
+          | true ->  pf ppf "%d.%d-%d" (fst l.first_line) col_s col_e
+          | false ->
+              pf ppf "%d.%d-%d.%d"
+                (fst l.first_line) col_s (fst l.last_line) col_e
+        in
+        pf ppf "%s:%a" l.file pp_lines l
 end
 
 include Compact
