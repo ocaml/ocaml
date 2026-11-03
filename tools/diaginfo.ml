@@ -77,21 +77,22 @@ module Options = struct
         | None -> failf "Invalid version format: %s" v
 
   let history = ref false
-let args =
-  Arg.align
-  [ "-schema-format", Arg.Symbol (format_list, parse_format),
-    "print the schema in <name> format";
-    "-schema", Arg.String parse_name, " print the schema <name>";
-    "-list", Arg.Unit list, " print all known schema";
-    "-history", Arg.Set history, " print log format history";
-    "-version", Arg.String (fun x -> version := Some x),
-    "<version> schema version";
-    "-o", Arg.String parse_file_template,
-    "<template> template name for output files";
-    "-template", Arg.String parse_template, "<template> output %a-template";
-    "-with-deps", Arg.Bool ( (:=) with_deps),
-    "<bool> include dependencies in the printed schema"
-  ]
+
+  let args =
+    Arg.align [
+      "-schema-format", Arg.Symbol (format_list, parse_format),
+      "print the schema in <name> format";
+      "-schema", Arg.String parse_name, " print the schema <name>";
+      "-list", Arg.Unit list, " print all known schema";
+      "-history", Arg.Set history, " print log format history";
+      "-version", Arg.String (fun x -> version := Some x),
+      "<version> schema version";
+      "-o", Arg.String parse_file_template,
+      "<template> template name for output files";
+      "-template", Arg.String parse_template, "<template> output %a-template";
+      "-with-deps", Arg.Bool ( (:=) with_deps),
+      "<bool> include dependencies in the printed schema"
+    ]
 
 end
 
