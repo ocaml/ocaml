@@ -1,3 +1,19 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                            Daniel C. Buenzli                           *)
+(*               Olivier Nicole, projet Cambium, Inria Paris              *)
+(*                                                                        *)
+(*   Copyright 2026 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
 (** This module encodes and decodes locations that are compact. It is intended
     to be used as a backend for the standard {!Textloc.Compact} module, and by
     the compiler to generate locations in the code (typically, for implicit

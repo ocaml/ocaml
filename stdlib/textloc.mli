@@ -2,7 +2,7 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                            Daniel C. Buenzli                           *)
 (*               Olivier Nicole, projet Cambium, Inria Paris              *)
 (*                                                                        *)
 (*   Copyright 2026 Institut National de Recherche en Informatique et     *)
