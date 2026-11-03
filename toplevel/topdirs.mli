@@ -20,6 +20,8 @@ val dir_directory : string -> unit
 val dir_remove_directory : string -> unit
 val dir_cd : string -> unit
 
+(** Programmatic interface to {!Topdirs}, with errors printed on
+    the {!Toplog.errors} field of the provided {!Toplog.t}. *)
 module Dir: sig
   val load : Toplog.t -> string -> unit
   val use : Toplog.t -> string -> unit
@@ -27,6 +29,9 @@ module Dir: sig
   val install_printer : Toplog.t -> Longident.t -> unit
   val remove_printer : Toplog.t -> Longident.t -> unit
 end
+
+(** Compatibility function with directive errors redirected on the provided
+    {!Format.formatter}. *)
 val dir_load : Format.formatter -> string -> unit
 val dir_use : Format.formatter -> string -> unit
 val dir_use_output : Format.formatter -> string -> unit
