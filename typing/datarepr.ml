@@ -21,6 +21,12 @@ open Types
 open Data_types
 open Btype
 
+(* TODO: register an error printer for this type. *)
+type error =
+  | Multiple_args_unboxed_constructor of Ident.t
+
+exception Error of Location.t * error
+
 (* Simplified version of Ctype.free_vars *)
 let free_vars ?(param=false) ty =
   let ret = ref TypeSet.empty in
@@ -100,11 +106,33 @@ let constructor_args ~current_unit priv cd_args cd_res path rep =
 
 let constructor_descrs ~current_unit ty_path decl cstrs rep =
   let ty_res = newgenconstr ty_path decl.type_params in
-  let num_consts = ref 0 and num_nonconsts = ref 0 in
-  List.iter
-    (fun {cd_args; _} ->
-      if cd_args = Cstr_tuple [] then incr num_consts else incr num_nonconsts)
-    cstrs;
+  let variant_unboxed = Builtin_attributes.has_unboxed decl.type_attributes in
+  let constructor_descrs =
+    (* We want to collect the description of each constructor, and
+       store this in [type_data]. But then each constructor
+       description also refers to [type_data]. We break the cycle /
+       tie the knot through a mutable reference: [type_data] points to
+       a mutable list of constructors that is currently
+       un-initialized, and will be initialized at the end of this
+       function. *)
+    ref [] in
+  let cstr_type_data =
+    let num_consts = ref 0 and num_nonconsts = ref 0 and num_unboxed = ref 0 in
+    List.iter
+      (fun {cd_args; cd_attributes; _} ->
+        if cd_args = Cstr_tuple []
+        then incr num_consts
+        else if variant_unboxed || Builtin_attributes.has_unboxed cd_attributes
+        then incr num_unboxed
+        else incr num_nonconsts)
+      cstrs;
+    Some {
+      num_consts = !num_consts;
+      num_nonconsts = !num_nonconsts;
+      num_unboxed = !num_unboxed;
+      repr_data = Misc.Cached.create constructor_descrs;
+    }
+  in
   let rec describe_constructors idx_const idx_nonconst = function
       [] -> []
     | {cd_id; cd_args; cd_res; cd_loc; cd_attributes; cd_uid} :: rem ->
@@ -113,17 +141,23 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
           | Some ty_res' -> ty_res'
           | None -> ty_res
         in
+        (* A constructor is unboxed if the whole declaration has the
+           [@@unboxed] attr, or if it has the [@unboxed] attr *)
+        let cstr_is_unboxed = variant_unboxed ||
+                              Builtin_attributes.has_unboxed cd_attributes
+        in
         let (tag, descr_rem) =
-          match cd_args, rep with
-          | _, Variant_unboxed ->
-            assert (rem = []);
-            (Cstr_unboxed, [])
-          | Cstr_tuple [], Variant_regular ->
-             (Cstr_constant idx_const,
-              describe_constructors (idx_const+1) idx_nonconst rem)
-          | _, Variant_regular  ->
-             (Cstr_block idx_nonconst,
-              describe_constructors idx_const (idx_nonconst+1) rem) in
+          match cstr_is_unboxed, cd_args with
+          | true, Cstr_tuple [ty]
+          | true, Cstr_record [{ld_type=ty; _}] ->
+              (Cstr_unboxed (Misc.Cached.create (decl, ty)),
+               describe_constructors idx_const idx_nonconst rem)
+          | true, _ ->
+              raise (Error (cd_loc, Multiple_args_unboxed_constructor cd_id))
+          | false, Cstr_tuple [] -> (Cstr_constant idx_const,
+                   describe_constructors (idx_const+1) idx_nonconst rem)
+          | false, _ -> (Cstr_block idx_nonconst,
+                   describe_constructors idx_const (idx_nonconst+1) rem) in
         let cstr_name = Ident.name cd_id in
         let existentials, cstr_args, cstr_inlined =
           let representation =
@@ -141,8 +175,7 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
             cstr_args;
             cstr_arity = List.length cstr_args;
             cstr_tag = tag;
-            cstr_consts = !num_consts;
-            cstr_nonconsts = !num_nonconsts;
+            cstr_type_data;
             cstr_private = decl.type_private;
             cstr_generalized = cd_res <> None;
             cstr_loc = cd_loc;
@@ -151,7 +184,59 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
             cstr_uid = cd_uid;
           } in
         (cd_id, cstr) :: descr_rem in
-  describe_constructors 0 0 cstrs
+  let constructors = describe_constructors 0 0 cstrs in
+  constructor_descrs := List.map snd constructors;
+  constructors
+
+let repr_data_of_regular_constructors ~get_shape constructors =
+  let num_imms = ref 0 in
+  let min_imm = ref max_int in
+  let max_imm = ref min_int in
+  let any_imm = ref false in
+  let num_tags = ref 0 in
+  let min_tag = ref 255 in
+  let max_tag = ref 0 in
+  let any_tag = ref false in
+  let open Head_shape_types in
+  let notify_imm (Imm i) =
+    incr num_imms;
+    min_imm := min i !min_imm;
+    max_imm := max i !max_imm;
+  in
+  let notify_tag (Tag t) =
+    incr num_tags;
+    min_tag := min t !min_tag;
+    max_tag := max t !max_tag;
+  in
+  List.iter (fun cstr ->
+    match cstr.cstr_tag with
+    | Cstr_constant imm ->
+        notify_imm (Imm imm)
+    | Cstr_block tag ->
+        notify_tag (Tag tag)
+    | Cstr_extension _ ->
+        assert false
+    | Cstr_unboxed descr ->
+        let shape = get_shape descr in
+        let open Head_shape_types in
+        begin match shape.imms with
+        | Any -> any_imm := true
+        | Those imms -> ImmSet.iter notify_imm imms
+        end;
+        begin match shape.blocks with
+        | Any -> any_tag := true
+        | Those tag_map ->
+            TagMap.iter (fun tag _sizes -> notify_tag tag) tag_map
+        end;
+  ) constructors;
+  {
+    imm_stats =
+      if !any_imm then Any
+      else Spread { num = !num_imms; min = !min_imm; max = !max_imm };
+    tag_stats =
+      if !any_tag then Any
+      else Spread { num = !num_tags; min = !min_tag; max = !max_tag };
+  }
 
 let extension_descr ~current_unit path_ext ext =
   let ty_res =
@@ -169,8 +254,7 @@ let extension_descr ~current_unit path_ext ext =
       cstr_args;
       cstr_arity = List.length cstr_args;
       cstr_tag = Cstr_extension(path_ext, cstr_args = []);
-      cstr_consts = -1;
-      cstr_nonconsts = -1;
+      cstr_type_data = None;
       cstr_private = ext.ext_private;
       cstr_generalized = ext.ext_ret_type <> None;
       cstr_loc = ext.ext_loc;
@@ -215,23 +299,6 @@ let label_descrs ty_res lbls repres priv =
         all_labels.(num) <- lbl;
         (l.ld_id, lbl) :: describe_labels (num+1) rest in
   describe_labels 0 lbls
-
-exception Constr_not_found
-
-let rec find_constr tag num_const num_nonconst = function
-    [] ->
-      raise Constr_not_found
-  | {cd_args = Cstr_tuple []; _} as c  :: rem ->
-      if tag = Cstr_constant num_const
-      then c
-      else find_constr tag (num_const + 1) num_nonconst rem
-  | c :: rem ->
-      if tag = Cstr_block num_nonconst || tag = Cstr_unboxed
-      then c
-      else find_constr tag num_const (num_nonconst + 1) rem
-
-let find_constr_by_tag tag cstrlist =
-  find_constr tag 0 0 cstrlist
 
 let constructors_of_type ~current_unit ty_path decl =
   match decl.type_kind with

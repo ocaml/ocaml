@@ -158,7 +158,7 @@ let classify_expression : Typedtree.expression -> sd =
     | Texp_struct_item (_, e) ->
         classify_expression env e
 
-    | Texp_construct (_, {cstr_tag = Cstr_unboxed}, [e]) ->
+    | Texp_construct (_, {cstr_tag = Cstr_unboxed _}, [e]) ->
         classify_expression env e
     | Texp_construct _ ->
         Static
@@ -676,7 +676,7 @@ let rec expression : Typedtree.expression -> term_judg =
         | _ -> empty
       in
       let m' = match desc.cstr_tag with
-        | Cstr_unboxed ->
+        | Cstr_unboxed _ ->
           Return
         | Cstr_constant _ | Cstr_block _ | Cstr_extension _ ->
           Guard

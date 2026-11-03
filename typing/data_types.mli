@@ -26,8 +26,8 @@ type constructor_description =
     cstr_args: type_expr list;          (* Type of the arguments *)
     cstr_arity: int;                    (* Number of arguments *)
     cstr_tag: constructor_tag;          (* Tag for heap blocks *)
-    cstr_consts: int;                   (* Number of constant constructors *)
-    cstr_nonconsts: int;                (* Number of non-const constructors *)
+    cstr_type_data: type_data option;   (* Type-global data, shared between all constructors.
+                                           [None] for extensible types. *)
     cstr_generalized: bool;             (* Constrained return type? *)
     cstr_private: private_flag;         (* Read-only constructor? *)
     cstr_loc: Location.t;
@@ -39,9 +39,42 @@ type constructor_description =
 and constructor_tag =
     Cstr_constant of int                (* Constant constructor (an int) *)
   | Cstr_block of int                   (* Regular constructor (a block) *)
-  | Cstr_unboxed                        (* Constructor of an unboxed type *)
+  | Cstr_unboxed of                     (* Constructor of an unboxed type *)
+      Head_shape_types.unboxed_cstr_description
   | Cstr_extension of Path.t * bool     (* Extension constructor
                                            true if a constant false if a block*)
+
+and type_data = {
+                                (* All the constructors at this type. *)
+  num_consts: int;              (* Number of constant constructors *)
+  num_nonconsts: int;           (* Number of non-const constructors *)
+  num_unboxed: int;             (* Number of unboxed constructors *)
+  repr_data:                    (* Type-global representation information. *)
+    (constructor_description list ref, repr_data) Misc.Cached.t;
+    (* (It is computed on-demand from the list of constructors,
+        as it depends on the environment and
+        mutually-recursive type definitions). *)
+}
+
+and repr_data = {
+  imm_stats: spread_data;
+  tag_stats: spread_data;
+}
+
+and spread_data =
+  | Any
+  | Spread of 
+    (* [num] can be smaller than [max - min + 1] in presence of
+       constructor unboxing, as valid block tags are not necessarily
+       dense/consecutive: for example the shape of an array is a block
+       with tags [0; double_array_tag]: we have
+         {num = 2; min = 0; max = double_array_tag}.
+    *)
+    {
+      num: int; (* number of distinct values (immediates, tags) *)
+      min: int; (* minimal value (immediate, tag) *)
+      max: int; (* maximal value (immediate, tag) *)
+    }
 
 (* Constructors are the same: they return (structurally)-equal values
    when applied to equal arguments. *)

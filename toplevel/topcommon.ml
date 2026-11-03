@@ -215,6 +215,10 @@ let typecheck_phrase ppf oldenv sstr =
   Typecore.force_delayed_checks ();
   let shape = Shape_reduce.local_reduce Env.empty shape in
   if !Clflags.dump_shape then Shape.print ppf shape;
+  if !Clflags.dump_headshape then
+    Print_head_shape.print_in_structure
+      ~shape_of_type_path:Head_shape.of_type_path
+      ppf str;
   (str, sg', newenv)
 
 (* Phrase buffer that stores the last toplevel phrase (see

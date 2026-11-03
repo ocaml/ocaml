@@ -101,6 +101,7 @@ and out_constructor = {
   ocstr_name: string;
   ocstr_args: out_type list;
   ocstr_return_type: out_type option;
+  ocstr_unboxed: bool;
 }
 
 and out_package = {
@@ -146,6 +147,7 @@ and out_type_decl =
     otype_type: out_type;
     otype_private: Asttypes.private_flag;
     otype_immediate: Type_immediacy.t;
+    otype_shape_names: Asttypes.shape_name list;
     otype_unboxed: bool;
     otype_constraints: (out_type * out_type) list }
 and out_extension_constructor =

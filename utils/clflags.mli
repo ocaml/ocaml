@@ -170,6 +170,7 @@ val dump_reload : bool ref
 val dump_scheduling : bool ref
 val dump_linear : bool ref
 val dump_interval : bool ref
+val dump_headshape : bool ref
 val keep_startup_file : bool ref
 val dump_combine : bool ref
 val native_code : bool ref
@@ -280,6 +281,7 @@ module Dump_option : sig
     | Parsetree
     | Typedtree
     | Shape
+    | Head_shape
     | Match_comp
     | Raw_lambda
     | Lambda
