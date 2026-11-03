@@ -2297,29 +2297,17 @@ let get_pat_args_tuple arity p rem =
 let get_expr_args_tuple ~scopes head { arg; mut; _ } rem =
   let loc = head_loc ~scopes head in
   let arity = Patterns.Head.arity head in
-  let field_kinds =
-    let env = field_env head in
-    match Types.get_desc (Ctype.expand_head env head.pat_type) with
-    | Ttuple l ->
-        assert (List.length l = arity);
-        List.map (fun (_, ty) -> Typeopt.maybe_pointer_type env ty) l
-    | _ ->
-        (* The type of the pattern can be a tuple type only thanks to a
-           GADT equation that we have removed from the environment, as in
-           [((x, y) : a)] when [a = int * string]. *)
-        List.init arity (fun _ -> Pointer)
+  let rec make_args pos =
+    if pos >= arity then
+      rem
+    else
+      {
+        arg = Lprim (Pfield (pos, Pointer, Immutable), [ arg ], loc);
+        binding_kind = Alias;
+        mut = compose_mut mut Immutable;
+      } :: make_args (pos + 1)
   in
-  let rec make_args pos field_kinds =
-    match field_kinds with
-    | [] -> rem
-    | ptr :: field_kinds ->
-        {
-          arg = Lprim (Pfield (pos, ptr, Immutable), [ arg ], loc);
-          binding_kind = Alias;
-          mut = compose_mut mut Immutable;
-        } :: make_args (pos + 1) field_kinds
-  in
-  make_args 0 field_kinds
+  make_args 0
 
 let divide_tuple ~scopes head ctx pm =
   let arity = Patterns.Head.arity head in
