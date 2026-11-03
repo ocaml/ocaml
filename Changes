@@ -14,7 +14,7 @@ OCaml 4.14 maintenance version
   (Xavier Leroy, report by Akshay Singh, review by Nicolás Ojeda Bär
   and Antonin Décimo)
 
-- ensure that ephemeron marking follows Infix pointers.
+- #15233, OSEC-2026-04: ensure that ephemeron marking follows Infix pointers.
   (Gabriel Scherer, review by Florian Angeletti,
    report by Igor Santos-Grueiro)
 
