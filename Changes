@@ -643,7 +643,7 @@ OCaml 5.6.0
   on comma handling.
   (Tim McGilchrist, review by Stefan Muenzel)
 
-- #15200: manual: fix syntax for local opens
+- #15200, #15224: manual: fix syntax for local opens and labeled tuple patterns
   (Simmo Saan, review by Florian Angeletti)
 
 ### Compiler user-interface and warnings:
