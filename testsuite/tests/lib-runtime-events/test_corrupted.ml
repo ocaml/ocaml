@@ -4,7 +4,6 @@
  set OCAML_RUNTIME_EVENTS_PRESERVE = "1";
  hasunix;
  not target-windows;
- exit_status = "126";
  {
    bytecode;
  }{
