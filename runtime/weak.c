@@ -403,14 +403,20 @@ static value ephe_blit_keys (value es, mlsize_t offset_s,
 CAMLprim value caml_ephe_blit_key (value es, value ofs,
                                    value ed, value ofd, value len)
 {
+  /* Check for negative inputs and overflow of the offset computations:
+     this function validates its arguments by itself, for direct callers
+     of the primitive. */
+  if (Long_val (ofs) < 0 || Long_val (ofd) < 0 || Long_val (len) < 0){
+    caml_invalid_argument ("Weak.blit");
+  }
   mlsize_t offset_s = Long_val (ofs) + CAML_EPHE_FIRST_KEY;
   mlsize_t offset_d = Long_val (ofd) + CAML_EPHE_FIRST_KEY;
   mlsize_t length = Long_val (len);
 
-  if (offset_s < CAML_EPHE_FIRST_KEY || offset_s + length > Wosize_val (es)){
+  if (length > Wosize_val (es) || offset_s > Wosize_val (es) - length){
     caml_invalid_argument ("Weak.blit");
   }
-  if (offset_d < CAML_EPHE_FIRST_KEY || offset_d + length > Wosize_val (ed)){
+  if (length > Wosize_val (ed) || offset_d > Wosize_val (ed) - length){
     caml_invalid_argument ("Weak.blit");
   }
   return ephe_blit_keys (es, offset_s, ed, offset_d, length);
