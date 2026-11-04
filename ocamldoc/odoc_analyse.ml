@@ -87,7 +87,7 @@ let process_implementation_file sourcefile =
   | Syntaxerr.Error _ as exn ->
       begin match Location.error_of_exn exn with
       | Some (`Ok err) ->
-          fprintf Format.err_formatter "@[%a@]@."
+          fprintf Format.err_formatter "@[%a@]"
             Location.print_report err
       | _ ->
           assert false
