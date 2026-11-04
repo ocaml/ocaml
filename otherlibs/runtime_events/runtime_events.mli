@@ -735,7 +735,7 @@ val start : unit -> unit
 
 val path : unit -> string option
 (** If runtime events are being collected, [path ()] returns [Some p] where [p]
-  is a path to the runtime events file. Otherwise, it returns None.
+  is an absolute path to the runtime events file. Otherwise, it returns None.
 
   @since 5.3 *)
 

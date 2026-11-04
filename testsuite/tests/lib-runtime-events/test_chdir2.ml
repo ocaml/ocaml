@@ -2,7 +2,6 @@
  hasunix;
  include runtime_events;
  include unix;
- exit_status = "2";
  {
    bytecode;
  }{

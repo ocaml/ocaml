@@ -1,3 +1,2 @@
 chdir: false, file exists after child exits: false
-ERROR: Ring file still exists
-chdir: true, file exists after child exits: true
+chdir: true, file exists after child exits: false

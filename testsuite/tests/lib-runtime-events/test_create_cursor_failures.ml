@@ -30,7 +30,8 @@ let start_and_pause () =
 
 (* Windows workaround to get the correct PID *)
 let find_events_pid cursor =
-  Scanf.sscanf (Option.get (Runtime_events.path())) "%d.events" Fun.id
+  let path = Runtime_events.path () |> Option.get |> Filename.basename in
+  Scanf.sscanf path "%d.events" Fun.id
 
 (* force failure of [create_cursor None] *)
 let make_unreadable () =
