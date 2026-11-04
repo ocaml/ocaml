@@ -139,6 +139,26 @@ module type S =
 
         @since 4.03 *)
 
+    val inter: (key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
+    (** [inter f m1 m2] computes a map whose keys are a subset of the keys
+        that are bound in both [m1] and [m2]. For each such key, [f] is called
+        to determine whether the key should be bound in the resulting map and
+        what it should be bound to.
+        This is a special case of [merge]: [inter f m1 m2] is equivalent to
+        [merge f' m1 m2], where
+        - [f' _key None None = None]
+        - [f' _key (Some _v) None = None]
+        - [f' _key None (Some _v) = None]
+        - [f' key (Some v1) (Some v2) = f key v1 v2]
+
+        @since 5.7 *)
+
+    val diff: 'a t -> 'a t -> 'a t
+    (** [diff m1 m2] computes the map whose keys are the subset of keys of
+        [m1] that are not bound in [m2].
+
+        @since 5.7 *)
+
     val cardinal: 'a t -> int
     (** Return the number of bindings of a map.
         @since 3.12 *)
