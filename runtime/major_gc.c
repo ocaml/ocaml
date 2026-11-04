@@ -1448,8 +1448,7 @@ static intnat mark_stack_push_block(struct mark_stack* stk, value block)
        start scanning at the first word of the environment part. */
     offset = Start_env_closinfo(Closinfo_val(block));
 
-    CAMLassert(offset <= Wosize_val(block)
-      && offset >= Start_env_closinfo(Closinfo_val(block)));
+    CAMLassert(offset <= Wosize_val(block));
   }
 
   CAMLassert(Has_status_val(block, caml_global_heap_state.MARKED));
