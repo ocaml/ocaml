@@ -1012,9 +1012,14 @@ let default_report_printer () : report_printer =
 
 let report_printer = ref default_report_printer
 
-let print_report ppf report =
+let print_report_core ppf report =
   let printer = !report_printer () in
   pp_report printer ppf report
+
+let print_report ppf report =
+  print_report_core ppf report;
+  Format.pp_print_newline ppf ()
+
 
 let log_report log report = log.Log.%[Error_diagnostic.key] <- report
 
@@ -1084,7 +1089,7 @@ let report_warning loc w = !warning_reporter loc w
 
 let error_extension: type a. a Diagnostic.extension -> a printer option =
   function
-  | Error_diagnostic.Error -> Some print_report
+  | Error_diagnostic.Error -> Some print_report_core
   | Error_diagnostic.Msg -> None
   | _ -> None
 
