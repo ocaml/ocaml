@@ -102,6 +102,7 @@
 
       let corners =
         [0L; size * 3/4 |> Int64.of_int; size * 2 |> Int64.of_int;
+         65L; 73L;
          Int64.max_int; Int64.min_int; Int64.(shift_right_logical max_int 1)
         ]
       in

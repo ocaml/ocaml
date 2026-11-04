@@ -26,6 +26,7 @@
 #include "caml/platform.h"
 
 #include <fcntl.h>
+#include <stdalign.h>
 #include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -411,13 +412,16 @@ void caml_runtime_events_free_cursor(struct caml_runtime_events_cursor *cursor){
 }
 
 static char* get_map_offset(struct caml_runtime_events_cursor *cursor,
-                            uint64_t offset, int domain_num, uint64_t len)
+                            uint64_t offset, int domain_num, uint64_t len,
+                            uint64_t align)
 {
   uint64_t limit = cursor->ring_file_size_bytes;
   if (offset >= limit)
     return NULL;
   offset += domain_num * len;
   if (offset >= limit || len > limit - offset)
+    return NULL;
+  if (offset % align)
     return NULL;
   return (char*)cursor->map + offset;
 }
@@ -474,12 +478,15 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
         (struct runtime_events_buffer_header *)(
           get_map_offset(cursor, cursor->metadata.headers_offset,
                          domain_num,
-                         cursor->metadata.ring_header_size_bytes)
+                         cursor->metadata.ring_header_size_bytes,
+                         alignof(struct runtime_events_buffer_header)
+                         )
         );
 
     uint64_t *ring_ptr =
       (uint64_t*)get_map_offset(cursor, cursor->metadata.data_offset,
-                                domain_num, cursor->metadata.ring_size_bytes);
+                                domain_num, cursor->metadata.ring_size_bytes,
+                                alignof(uint64_t));
     if (!runtime_events_buffer_header || !ring_ptr) {
         atomic_store(&cursor->cursor_in_poll, 0);
         return E_CORRUPT_STREAM;
