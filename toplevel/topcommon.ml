@@ -451,12 +451,13 @@ let dev_log log = Log.detach (compiler_log log) Compiler_diagnostic.dev
 let loading_hint_printer ppf cu =
   let open Format_doc in
   let global = Symtable.Global.Glob_compunit (Cmo_format.Compunit cu) in
+  fprintf ppf "@[";
   Symtable.report_error_doc ppf (Symtable.Undefined_global global);
   let find_with_ext ext =
     try Some (Load_path.find_normalized (cu ^ ext)) with Not_found -> None
   in
   fprintf ppf
-    "Hint: @[\
+    "@ Hint: \
      This means that the interface of a module is loaded, \
      but its implementation is not.@,";
   (* Filenames don't have to correspond to module names,
