@@ -242,8 +242,14 @@ let build_global_target ~ppf_dump oc target_name state components coercion =
     Bytegen.compile_implementation target_name lam in
   let size, pack_relocs, pack_events, pack_debug_dirs, pack_hints =
     Emitcode.to_packed_file oc instrs in
-  let events = List.rev_append pack_events state.events in
-  let hints = List.rev_append pack_hints state.hints in
+  let events =
+    List.rev_append_map
+      (fun ev -> { ev with ev_pos = state.offset + ev.ev_pos })
+      pack_events state.events
+  in
+  let hints =
+    List.rev_append_map (relocate_hint state.offset) pack_hints state.hints
+  in
   let debug_dirs = String.Set.union pack_debug_dirs state.debug_dirs in
   let relocs =
     List.rev_append_map
