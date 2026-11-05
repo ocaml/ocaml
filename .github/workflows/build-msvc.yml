@@ -257,6 +257,7 @@ jobs:
           opam pin add --no-action --kind=path ocaml-variants .
           opam pin add --no-action flexdll flexdll
           opam install --yes flexdll
+          opam switch set-invariant --no-action arch-${{ matrix.arch == 'i686' && 'x86_32' || matrix.arch }} system-msvc
           opam install --yes --assume-built ocaml-variants
           opam exec -- ocamlc -v
 
