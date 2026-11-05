@@ -232,6 +232,7 @@ jobs:
           awk -f tools/ci/actions/canonicalize-dumpbin.awk runtime/amd64.dump runtime/amd64.dump > runtime/amd64.canonical
           git diff --no-index -- runtime/amd64*.canonical
           wc -l runtime/amd64*.dump runtime/amd64*.canonical
+          rm -f runtime/amd64*.dump runtime/amd64*.canonical
         # ^ The final wc is there to make sure that the canonical files are
         # reasonable cleaned-up versions of the raw dumpbins and not simply
         # empty
@@ -296,8 +297,16 @@ jobs:
           opam switch set-invariant --no-action arch-${{ matrix.arch == 'i686' && 'x86_32' || matrix.arch }} system-${{ matrix.cc == 'mingw-w64' && 'mingw' || 'msvc' }}
           opam install --yes --assume-built ocaml-variants
           opam exec -- ocamlc -v
+          rm -f ocaml-variants-fixup.sh
+          git checkout -- ocaml-variants.install
 
       - name: Test in prefix
         run: |
           eval $(tools/msvs-promote-path)
           make -f Makefile.test -C testsuite/in_prefix test-in-prefix
+
+      - name: Other checks
+        if: matrix.arch != 'i686'
+        run: |
+          eval $(tools/msvs-promote-path)
+          MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh other-checks
