@@ -42,8 +42,8 @@ jobs:
             // # Also test i686 MSVC
             let include = [
               {os: 'windows-latest', cc: 'cl', arch: 'i686', opam: 'false', prefix: '$PROGRAMFILES/Бактріан🐫', libdir: 'relative'},
-              {os: 'windows-latest', cc: 'cl', arch: 'x86_64', opam: 'true', prefix: 'C:\\\\Бактріан🐫'},
-              {os: 'windows-latest', cc: 'cl', arch: 'i686', opam: 'true', prefix: 'C:\\\\Бактріан🐫'}];
+              {os: 'windows-latest', cc: 'cl', arch: 'x86_64', opam: 'true', prefix: 'C:\\\\Бактріан🐫', libdir: 'absolute'},
+              {os: 'windows-latest', cc: 'cl', arch: 'i686', opam: 'true', prefix: 'C:\\\\Бактріан🐫', libdir: 'absolute'}];
             let libdir = ['absolute'];
             // # If this is a pull request, see if the PR has the
             // # 'CI: Full matrix' label. This is done using an API request,
