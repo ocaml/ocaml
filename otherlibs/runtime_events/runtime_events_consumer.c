@@ -400,14 +400,30 @@ void caml_runtime_events_set_user_custom(
   cursor->user_custom = f;
 }
 
+static int close_cursor(struct caml_runtime_events_cursor *cursor) {
+  if (!cursor->cursor_open)
+    return E_CURSOR_NOT_OPEN;
+
+  uintnat in_poll = 0;
+  if (cursor->cursor_in_poll
+    || !atomic_compare_exchange_strong(&cursor->cursor_in_poll, &in_poll, 1) ) {
+    return E_CURSOR_POLL_BUSY;
+  }
+  cursor->cursor_open = 0;
+  cursor_unmap_ring_file(cursor);
+  /* Leave in_poll set to stop any consumer from crashing on the unmapped ring.
+     The cursor itself will get freed by the finalizer when called from OCaml */
+  return E_SUCCESS;
+}
+
 /* frees a cursor obtained from caml_runtime_events_reader_create */
 void caml_runtime_events_free_cursor(struct caml_runtime_events_cursor *cursor){
-  if (cursor->cursor_open) {
-    cursor->cursor_open = 0;
-    cursor_unmap_ring_file(cursor);
-    caml_stat_free(cursor->current_positions);
-    caml_stat_free(cursor);
-  }
+  int ret = close_cursor(cursor);
+  CAMLassert(E_SUCCESS == ret || E_CURSOR_NOT_OPEN == ret);
+  if (ret != E_SUCCESS && ret != E_CURSOR_NOT_OPEN)
+    return;
+  caml_stat_free(cursor->current_positions);
+  caml_stat_free(cursor);
 }
 
 static char* get_map_offset(struct caml_runtime_events_cursor *cursor,
@@ -1400,8 +1416,12 @@ CAMLprim value caml_ml_runtime_events_free_cursor(value wrapper) {
   struct caml_runtime_events_cursor *cursor = Cursor_val(wrapped_cursor);
 
   if (cursor != NULL) {
-    caml_runtime_events_free_cursor(cursor);
-    Cursor_val(wrapped_cursor) = NULL;
+    int ret = close_cursor(cursor);
+    if (ret != E_SUCCESS)
+      caml_failwith("Runtime_events: free_cursor called concurrently with "
+                    "read_poll, reentrant, or double close");
+    /* let the finalizer free the cursor, to avoid use-after-free
+       from any potentially concurrent calls */
   }
 
   CAMLreturn(Val_unit);
