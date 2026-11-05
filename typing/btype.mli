@@ -38,6 +38,7 @@ module TypeMap : sig
   val singleton: type_expr -> 'a -> 'a t
   val fold: (type_expr -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   val update : type_expr -> ('a option -> 'a option) -> 'a t -> 'a t
+  val bindings: 'a t -> (type_expr * 'a) list
 end
 module TypeHash : sig
   include Hashtbl.S with type key = transient_expr

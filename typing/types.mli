@@ -275,6 +275,10 @@ val try_mark_node: type_mark -> type_expr -> bool
 
            Return false if it was already marked *)
 
+type type_mark_snapshot
+val snapshot_mark: type_mark -> type_mark_snapshot
+val backtrack_mark: type_mark -> type_mark_snapshot -> unit
+
 (** Handle kept abbreviations *)
 val get_abbrev: type_expr -> abbrev option
 val iter_abbrev: (abbrev -> unit) -> type_expr -> unit
