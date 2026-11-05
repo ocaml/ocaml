@@ -60,7 +60,7 @@ CAMLnoret void caml_debug_abort(const char_os * file_os, int line) {
 #endif
 
 #if defined(DEBUG)
-static CAMLthread_local int noalloc_level = 0;
+static _Thread_local int noalloc_level = 0;
 int caml_noalloc_begin(void)
 {
   return noalloc_level++;
