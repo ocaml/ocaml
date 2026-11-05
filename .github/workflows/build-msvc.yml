@@ -284,13 +284,12 @@ jobs:
 
       - name: Create opam switch
         if: matrix.opam == 'true'
-        env:
-          OPAMSWITCH: ${{ matrix.prefix }}
         run: |
           make OPAM_PACKAGE_NAME=ocaml-variants INSTALL_MODE=opam install
+          export OPAMSWITCH="${{ matrix.prefix }}"
           opam init --cli=2.4 --bare --yes --disable-sandboxing --auto-setup --cygwin-local-install
           # These commands intentionally run using opam's "default" CLI
-          opam switch create '${{ env.OPAMSWITCH }}' --empty
+          opam switch create "${{ matrix.prefix }}" --empty
           opam pin add --no-action --kind=path ocaml-variants .
           opam pin add --no-action flexdll flexdll
           opam install --yes flexdll
