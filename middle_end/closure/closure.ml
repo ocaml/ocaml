@@ -694,6 +694,16 @@ type env = {
   cenv : closure_env;
   fenv : value_approximation V.Map.t;
   mutable_vars : V.Set.t;
+  (* Members of the [let rec] groups enclosing the term being closed, mapped to
+     the variable holding their group's closure block and their offset in it.
+     Both halves are produced by this pass -- the offset by [close_functions]'
+     layout of the block, the variable by [close]'s [Lletrec] case -- so they
+     cannot be read off the term being translated; the pass's environment is
+     where they have to be carried.  The offsets are the ones [cenv_entries]
+     holds as [Function pos]: both index the same block, and the two differ
+     only in the variable denoting it, [env_param] pointing into the block at
+     [env_pos] where a group's own block variable points at its start. *)
+  letrec_members : (V.t * int) V.Map.t;
 }
 
 (* Perform an inline expansion:
@@ -869,15 +879,15 @@ let excessive_function_nesting_depth = 5
 
 exception NotClosed
 
-let close_approx_var { fenv; cenv } id =
+let close_approx_var { fenv; cenv; letrec_members } id =
   let approx = try V.Map.find id fenv with Not_found -> Value_unknown in
   match approx with
     Value_const c -> make_const c
   | approx ->
-      match cenv with
-      | Not_in_closure -> Uvar id, approx
-      | In_closure { entries; env_param; env_pos } ->
-        let subst =
+      let ulam =
+        match cenv with
+        | Not_in_closure -> Uvar id
+        | In_closure { entries; env_param; env_pos } ->
           match V.Map.find id entries with
           | Free_variable fv_pos ->
             Uprim(P.Pfield(fv_pos - env_pos, Pointer, Immutable),
@@ -885,13 +895,23 @@ let close_approx_var { fenv; cenv } id =
           | Function fun_pos ->
             Uoffset(Uvar env_param, fun_pos - env_pos)
           | exception Not_found -> Uvar id
-        in
-        (subst, approx)
+      in
+      (* [id] may be bound by an enclosing [Lletrec]; its closure then sits in
+         that group's closure block, which is in scope here.  [close]'s
+         [Lletrec] case used to rewrite every occurrence of such an [id] in the
+         whole translated body afterwards, which is quadratic in the nesting
+         depth of function groups. *)
+      (match ulam with
+       | Uvar v ->
+         (match V.Map.find_opt v letrec_members with
+          | Some (clos, pos) -> (Uoffset(Uvar clos, pos), approx)
+          | None -> (ulam, approx))
+       | _ -> (ulam, approx))
 
 let close_var env id =
   let (ulam, _app) = close_approx_var env id in ulam
 
-let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
+let rec close ({ backend; fenv; cenv ; mutable_vars; letrec_members } as env) lam =
   let module B = (val backend : Backend_intf.S) in
   match lam with
   | Lvar id ->
@@ -961,7 +981,8 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
         in
         let funct_var = V.create_local "funct" in
         let fenv = V.Map.add funct_var fapprox fenv in
-        let (new_fun, approx) = close { backend; fenv; cenv; mutable_vars }
+        let (new_fun, approx) =
+          close { backend; fenv; cenv; mutable_vars; letrec_members }
           (lfunction
              ~kind:Curried
              ~return:Pgenval
@@ -1022,12 +1043,15 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
       begin match alam with
         Value_const _
            when str = Alias || is_pure ulam ->
-         close { backend; fenv = (V.Map.add id alam fenv); cenv; mutable_vars }
+         close
+           { backend; fenv = (V.Map.add id alam fenv); cenv; mutable_vars;
+             letrec_members }
            body
       | _ ->
          let (ubody, abody) =
            close
-             { backend; fenv = (V.Map.add id alam fenv); cenv; mutable_vars }
+             { backend; fenv = (V.Map.add id alam fenv); cenv; mutable_vars;
+               letrec_members }
              body
          in
          (Ulet(Immutable, kind, VP.create id, ulam, ubody), abody)
@@ -1044,16 +1068,20 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
         List.fold_right
           (fun (id, _pos, approx) fenv -> V.Map.add id approx fenv)
           infos fenv in
-      let (ubody, approx) =
-        close { backend; fenv = fenv_body; cenv; mutable_vars } body in
-      let sb =
+      (* The group's identifiers are read out of [clos_ident]'s block while the
+         body is translated, rather than by rewriting the translated body
+         afterwards (which re-traversed the whole tail once per enclosing
+         group).  Entries for enclosing groups stay visible: they are in scope
+         here, and a nested group's tail may still refer to them. *)
+      let letrec_members =
         List.fold_right
-          (fun (id, pos, _approx) sb ->
-             V.Map.add id (Uoffset(Uvar clos_ident, pos)) sb)
-          infos V.Map.empty in
-      (Ulet(Immutable, Pgenval, VP.create clos_ident, clos,
-            substitute Debuginfo.none (backend, !Clflags.float_const_prop) sb
-              None ubody),
+          (fun (id, pos, _approx) letrec_members ->
+             V.Map.add id (clos_ident, pos) letrec_members)
+          infos letrec_members in
+      let (ubody, approx) =
+        close { backend; fenv = fenv_body; cenv; mutable_vars; letrec_members }
+          body in
+      (Ulet(Immutable, Pgenval, VP.create clos_ident, clos, ubody),
        approx)
   (* Compile-time constants *)
   | Lprim(Pctconst c, [arg], loc) ->
@@ -1220,7 +1248,7 @@ and close_named env id = function
 
 (* Build a shared closure for a set of mutually recursive functions *)
 
-and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
+and close_functions { backend; fenv; cenv; mutable_vars; letrec_members } fun_defs =
   let fun_defs =
     (* Split functions with optional arguments and default values into
        a wrapper function (likely to be inlined) and an inner function
@@ -1318,7 +1346,9 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
       }
     in
     let (ubody, approx) =
-      close { backend; fenv = fenv_rec; cenv = cenv_body; mutable_vars } body
+      close { backend; fenv = fenv_rec; cenv = cenv_body; mutable_vars;
+              letrec_members }
+        body
     in
     if !useless_env && occurs_var env_param ubody then raise NotClosed;
     let fun_params =
@@ -1392,7 +1422,8 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
   let (clos, infos) = List.split clos_info_list in
   let fv = if !useless_env then [] else fv in
   (Uclosure(clos,
-            List.map (close_var { backend; fenv; cenv; mutable_vars }) fv),
+            List.map
+              (close_var { backend; fenv; cenv; mutable_vars; letrec_members }) fv),
    infos)
 
 (* Same, for one non-recursive function *)
@@ -1526,7 +1557,8 @@ let intro ~backend ~size lam =
   Compilenv.set_global_approx(Value_tuple !global_approx);
   let (ulam, _approx) =
     close { backend; fenv = V.Map.empty;
-            cenv = Not_in_closure; mutable_vars = V.Set.empty } lam
+            cenv = Not_in_closure; mutable_vars = V.Set.empty;
+            letrec_members = V.Map.empty } lam
   in
   let opaque =
     !Clflags.opaque
