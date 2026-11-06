@@ -1079,15 +1079,25 @@ let run_test_program_in_toplevel (toplevel : Ocaml_toplevels.toplevel) log env =
           if ocaml_script_as_argument then testfile else "";
           Environments.safe_lookup Builtin_variables.arguments env
         ] in
+        let environment =
+          (* The toplevel is the test program here: it receives
+             OCAMLRUNPARAM like the run action. *)
+          match
+            Environments.lookup_nonempty Builtin_variables.ocamlrunparam env
+          with
+          | None -> default_ocaml_env
+          | Some value ->
+            Array.append default_ocaml_env [| "OCAMLRUNPARAM=" ^ value |]
+        in
         let exit_status =
           if ocaml_script_as_argument
           then Actions_helpers.run_cmd
-            ~environment:default_ocaml_env
+            ~environment
             ~stdout_variable:compiler_output_variable
             ~stderr_variable:compiler_output_variable
             log env commandline
           else Actions_helpers.run_cmd
-            ~environment:default_ocaml_env
+            ~environment
             ~stdin_variable:Builtin_variables.test_file
             ~stdout_variable:compiler_output_variable
             ~stderr_variable:compiler_output_variable
