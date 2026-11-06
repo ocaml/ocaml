@@ -20,7 +20,15 @@ value caml_test_use_private_console(value unit)
   SetStdHandle(STD_OUTPUT_HANDLE, out);
   SetStdHandle(STD_ERROR_HANDLE, err);
   if (!ok) return Val_false;
-  ShowWindow(GetConsoleWindow(), SW_HIDE);
+  /* Hide the new console's window. ShowWindow is in user32, which is not
+     linked by default with every toolchain, so look it up at run time. */
+  {
+    typedef BOOL (WINAPI *show_window_t)(HWND, int);
+    HMODULE user32 = LoadLibraryA("user32.dll");
+    show_window_t show_window = user32 == NULL ? NULL :
+      (show_window_t)(void (*)(void))GetProcAddress(user32, "ShowWindow");
+    if (show_window != NULL) show_window(GetConsoleWindow(), SW_HIDE);
+  }
   /* "Ignore Ctrl-C" is inherited from the parent process (e.g. when
      running under sshd); clear it so that Ctrl-C is delivered. */
   SetConsoleCtrlHandler(NULL, FALSE);
