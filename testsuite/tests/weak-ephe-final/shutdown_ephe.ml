@@ -1,7 +1,12 @@
 (* TEST
+ libunix;
  ocamlrunparam += ",c=1";
  native;
 *)
+
+(* [libunix] (POSIX only) because the linker crashes under
+   OCAMLRUNPARAM=c=1 on MSVC. Remove it once ocamltest passes
+   OCAMLRUNPARAM to the test program only. *)
 
 (* Last-domain termination with ephemeron data reachable only through
    ephemerons: orphaning force-alives the data, and the resulting
