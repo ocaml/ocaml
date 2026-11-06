@@ -20,7 +20,7 @@ OCaml 4.14.5 (6 November 2026)
   (Xavier Leroy, report by Akshay Singh, review by Nicolás Ojeda Bär
   and Antonin Décimo)
 
-- #15233, OSEC-2026-04: ensure that ephemeron marking follows Infix pointers.
+- #15233, OSEC-2026-30: ensure that ephemeron marking follows Infix pointers.
   (Gabriel Scherer, review by Florian Angeletti,
 
 - #15185, #15187: fix a pattern-matching miscompilation on certain
