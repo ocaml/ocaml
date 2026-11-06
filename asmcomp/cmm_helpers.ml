@@ -862,7 +862,7 @@ let make_float_alloc dbg tag args =
 
 let make_checkbound dbg = function
   | [Cop(Clsr, [a1; Cconst_int (n, _)], _); Cconst_int (m, _)]
-    when (m lsl n) > n ->
+    when (m lsl n) > n && Misc.no_overflow_lsl m n ->
       Cop(Ccheckbound, [a1; Cconst_int(m lsl n + 1 lsl n - 1, dbg)], dbg)
   | args ->
       Cop(Ccheckbound, args, dbg)
