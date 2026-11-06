@@ -56,6 +56,7 @@ val run :
   can_skip:bool ->
   prog:Variables.t ->
   args:(Variables.t option) ->
+  ?environment:string array ->
   Actions.code
 
 val run_program : Actions.code
