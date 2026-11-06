@@ -17,15 +17,8 @@
 module type S = sig
   include CamlinternalTextloc.S
 
-  (** {2:fmt Formatting} *)
-
   val pp_ocaml : Format.formatter -> t -> unit
-  (** [pp_ocaml] formats text locations like the OCaml compiler. *)
-
   val pp_gnu : Format.formatter -> t -> unit
-  (** [pp_gnu] formats text locations according to the
-      {{:https://www.gnu.org/prep/standards/standards.html#Errors}GNU
-      convention}. *)
 end
 
 
@@ -34,42 +27,39 @@ end
 module Compact : S with type t = textloc = struct
   include CamlinternalTextloc
 
-  let is_none view = view.first_byte < 0
-
   let pf = Format.fprintf
 
   let pp_ocaml ppf l =
-    let l = view l in
     match is_none l with
-    | true -> pf ppf "File \"%s\"" l.file
+    | true -> pf ppf "File \"%s\"" (file l)
     | false ->
-        let pp_lines ppf l = match fst l.first_line = fst l.last_line with
-        | true -> pf ppf "line %d" (fst l.first_line)
-        | false -> pf ppf "lines %d-%d" (fst l.first_line) (fst l.last_line)
+        let pp_lines ppf l = match line_range l with
+        | Single_line line -> pf ppf "line %d" (fst line)
+        | Range (first_line, last_line) ->
+            pf ppf "lines %d-%d" (fst first_line) (fst last_line)
         in
         (* "characters" represent positions (insertion points) not columns *)
-        let pos_s = l.first_byte - snd l.first_line in
-        let pos_e = l.last_byte - snd l.last_line + 1 in
+        let pos_s = (first_byte l) - snd (first_line l) in
+        let pos_e = (last_byte l) - snd (last_line l) + 1 in
         if pos_s = 0 && pos_e = 0
-        then pf ppf "File \"%s\", %a" l.file pp_lines l
+        then pf ppf "File \"%s\", %a" (file l) pp_lines l
         else pf ppf "File \"%s\", %a, characters %d-%d"
-            l.file pp_lines l pos_s pos_e
+            (file l) pp_lines l pos_s pos_e
 
   let pp_gnu ppf l =
-    let l = view l in
     match is_none l with
-    | true -> pf ppf "%s:" l.file
+    | true -> pf ppf "%s:" (file l)
     | false ->
         let pp_lines ppf l =
-          let col_s = l.first_byte - snd l.first_line + 1 in
-          let col_e = l.last_byte - snd l.last_line + 1 in
-          match fst l.first_line = fst l.last_line with
-          | true ->  pf ppf "%d.%d-%d" (fst l.first_line) col_s col_e
-          | false ->
+          let col_s = (first_byte l) - snd (first_line l) + 1 in
+          let col_e = (last_byte l) - snd (last_line l) + 1 in
+          match line_range l with
+          | Single_line line ->  pf ppf "%d.%d-%d" (fst line) col_s col_e
+          | Range (first_line, last_line) ->
               pf ppf "%d.%d-%d.%d"
-                (fst l.first_line) col_s (fst l.last_line) col_e
+                (fst first_line) col_s (fst last_line) col_e
         in
-        pf ppf "%s:%a" l.file pp_lines l
+        pf ppf "%s:%a" (file l) pp_lines l
 end
 
 include Compact

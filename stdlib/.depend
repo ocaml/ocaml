@@ -179,10 +179,14 @@ camlinternalOO.cmx : \
 camlinternalOO.cmi : \
     stdlib__Obj.cmi
 camlinternalTextloc.cmo : \
+    stdlib__String.cmi \
     stdlib__Lexing.cmi \
+    stdlib__Int.cmi \
     camlinternalTextloc.cmi
 camlinternalTextloc.cmx : \
+    stdlib__String.cmx \
     stdlib__Lexing.cmx \
+    stdlib__Int.cmx \
     camlinternalTextloc.cmi
 camlinternalTextloc.cmi : \
     stdlib__Lexing.cmi
