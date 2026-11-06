@@ -734,12 +734,14 @@ let array_indexing ?typ log2size ptr ofs dbg =
     | Some Int -> Caddi
     | _ -> assert false in
   match ofs with
-  | Cconst_int (n, _) ->
+  | Cconst_int (n, _) when Misc.no_overflow_lsl (n asr 1) logsize ->
       let i = n asr 1 in
       if i = 0 then ptr
       else
-        (* [i lsl log2size] can only overflow if the array size is
-           larger than the maximum array size *)
+      (* [i lsl log2size] can only overflow if the array size is
+         larger than the maximum array size. This could happen, for
+         example, with bigarray on 32bit architecture, if we add
+         support for 32bit native code. *)
         Cop(add, [ptr; Cconst_int(i lsl log2size, dbg)], dbg)
   | Cop
       ( (Caddi | Cor),
