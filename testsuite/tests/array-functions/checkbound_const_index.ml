@@ -1,14 +1,10 @@
-(* TEST *)
+(* TEST
+   native;
+*)
 
-(* Cmm_helpers.make_checkbound:
-     | [Cop(Clsr, [a1; Cconst_int (n, _)], _); Cconst_int (m, _)]
-       when (m lsl n) > n ->
-         Cop(Ccheckbound, [a1; Cconst_int(m lsl n + 1 lsl n - 1, dbg)], dbg)
-   [m lsl n] is computed with the compiler's 63-bit [int]; the guard does not
-   detect every overflow. For a constant array index i = 2^54 + 1 (always out
-   of bounds, since Max_wosize < 2^54) the tagged index is m = 2^55 + 3, and
-   m lsl 9 wraps to 1536, so the bound check becomes [checkbound hdr 2047],
-   which passes for any array of two or more elements. *)
+(* There is a simplification in [Cmm_helpers.make_checkbound] that combines
+an lsr in the bound with the index. This combination using could possibly
+overflow if it is not checked *)
 
 let[@inline never] get_int (a : int array) = a.(0x40_0000_0000_0001)
 

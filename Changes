@@ -119,7 +119,8 @@ Working version
   (Tim McGilchrist, review by Antonin Décimo)
 
 - #15157, #15160, #15161, #15244: Fix overflows in native code array indexing
-  and right shifts.
+  and right shifts and check for overflow when generating bounds checks for
+  array accesses that are constants.
   (Stefan Muenzel, review by Zane Hambly and Vincent Laviron, reports by
    Stefan Muenzel, KC Sivaramakrishnan, and Michael Bacarella)
 
