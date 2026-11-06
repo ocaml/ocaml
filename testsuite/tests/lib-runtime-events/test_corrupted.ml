@@ -100,13 +100,17 @@
       assert (n > 0);
       let original = Bytes.to_string buf in
 
+      let corners =
+        [0L; size * 3/4 |> Int64.of_int; size * 2 |> Int64.of_int;
+         Int64.max_int; Int64.min_int; Int64.(shift_right_logical max_int 1)
+        ]
+      in
+
       (* now overwrite various fields, corrupting the ring,
          and check that we don't crash (raising exceptions is fine).
        *)
       for offset = 7 downto 0 do
-        [0L; size * 3/4 |> Int64.of_int; size * 2 |> Int64.of_int;
-         Int64.max_int; Int64.min_int; Int64.(shift_right_logical max_int 1)
-        ] |> List.iter @@ fun value ->
+        corners |> List.iter @@ fun value ->
         write_metadata_header (8 * offset) value;
         parse_corrupted path_pid;
         (* restore original, we only corrupt and test one offset at a time,
