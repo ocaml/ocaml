@@ -118,6 +118,11 @@ Working version
   Fixes an error on Windows with allocating long paths to this file.
   (Tim McGilchrist, review by Antonin Décimo)
 
+- #15157, #15160, #15161, #15244: Fix overflows in native code array indexing
+  and right shifts.
+  (Stefan Muenzel, review by Zane Hambly and Vincent Laviron, reports by
+   Stefan Muenzel, KC Sivaramakrishnan, and Michael Bacarella)
+
 OCaml 5.6.0
 -----------
 
