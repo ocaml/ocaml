@@ -41,6 +41,9 @@ OCaml 4.14 maintenance version
   (`Marshal.from_{channel,string,bytes}`)
   (Xavier Leroy, review by Nicolás Ojeda Bär)
 
+OCaml 4.14.4 (15 June 2026)
+------------------------------
+
 ### Build system:
 
 - #12372, #14572: Pass option -no-execute-only to the linker for OpenBSD >= 7.3
