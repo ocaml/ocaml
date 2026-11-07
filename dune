@@ -43,7 +43,9 @@
  (modules
    ;; UTILS
    config build_path_prefix_map misc identifiable numbers arg_helper
+   diagnostic_history diagnostic diagnostic_validation log compiler_diagnostic
    clflags profile terminfo ccomp format_doc utf8_lexeme warnings consistbl
+   diagnostic_backends
    strongly_connected_components targetint load_path
    int_replace_polymorphic_compare binutils local_store lazy_backtrack diffing
    diffing_with_keys unit_info compression linkdeps stable_matching
@@ -94,7 +96,7 @@
     bytegen bytelibrarian bytelink bytepackager emitcode printinstr
 
     ;; driver/
-    errors compile maindriver
+    compile maindriver
  ))
 
 (library
@@ -169,7 +171,7 @@
    linear_format
 
    ;; driver/
-   optcompile opterrors optmaindriver
+   optcompile optmaindriver
  )
 )
 

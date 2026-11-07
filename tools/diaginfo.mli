@@ -2,9 +2,9 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*             Florian Angeletti, projet Cambium, Inria Paris             *)
 (*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*   Copyright 2023 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
@@ -13,6 +13,14 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Error report *)
 
-val report_error: Format.formatter -> exn -> unit
+(** [ocamldiaginfo] provides a way to print metadata information about all
+    diagnostics printed by the compiler and REPL
+
+  - [ocamldiaginfo -history] prints the full history of diagnostics across all
+  versions
+  - [ocamldiaginfo -schema <name>] prints the schema of a diagnostic, by default
+  in an annotated ADT format or as a json schema with the [-schema-format json]
+  flag
+  - [ocamldiaginfo -list] prints all known schema
+*)

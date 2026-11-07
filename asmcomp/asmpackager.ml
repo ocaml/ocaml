@@ -83,7 +83,7 @@ let check_units members =
 
 (* Make the .o file for the package *)
 
-let make_package_object ~ppf_dump members target coercion ~backend =
+let make_package_object ~log members target coercion ~backend =
   let pack_name =
     Printf.sprintf "pack(%s)" (Unit_info.Artifact.modname target) in
   Profile.record_call pack_name (fun () ->
@@ -139,7 +139,7 @@ let make_package_object ~ppf_dump members target coercion ~backend =
     Asmgen.compile_implementation ~backend
       ~prefixname
       ~middle_end
-      ~ppf_dump
+      ~log
       program;
     let objfiles =
       List.map
@@ -248,19 +248,19 @@ let build_package_cmx members cmxfile =
 
 (* Make the .cmx and the .o for the package *)
 
-let package_object_files ~ppf_dump files target targetcmx coercion ~backend =
+let package_object_files ~log files target targetcmx coercion ~backend =
   let pack_path =
     match !Clflags.for_package with
     | None -> Unit_info.Artifact.modname target
     | Some p -> p ^ "." ^ Unit_info.Artifact.modname target in
   let members = map_left_right (read_member_info pack_path) files in
   check_units members;
-  make_package_object ~ppf_dump members target coercion ~backend;
+  make_package_object ~log members target coercion ~backend;
   build_package_cmx members targetcmx
 
 (* The entry point *)
 
-let package_files ~ppf_dump initial_env files targetcmx ~backend =
+let package_files ~log initial_env files targetcmx ~backend =
   let files =
     List.map
       (fun f ->
@@ -277,7 +277,7 @@ let package_files ~ppf_dump initial_env files targetcmx ~backend =
     (Unit_info.Artifact.modname cmi);
   Misc.try_finally (fun () ->
       let coercion = Typemod.package_units initial_env files cmi in
-      package_object_files ~ppf_dump files obj targetcmx coercion ~backend
+      package_object_files ~log files obj targetcmx coercion ~backend
     )
     ~exceptionally:(fun () ->
         remove_file targetcmx; remove_file (Unit_info.Artifact.filename obj)
