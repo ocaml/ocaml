@@ -1503,7 +1503,9 @@ type sockaddr = Unix.sockaddr =
    address in the Unix domain; [name] is a file name in the file
    system. [ADDR_INET(addr,port)] is a socket address in the Internet
    domain; [addr] is the Internet address of the machine, and
-   [port] is the port number. *)
+   [port] is the port number. Functions taking a [sockaddr] argument
+   raise [Invalid_argument] if [port] is outside the range [0]
+   to [65535]. *)
 
 val socket :
   ?cloexec: (* thwart tools/sync_stdlib_docs *) bool ->
