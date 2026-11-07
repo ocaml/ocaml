@@ -264,8 +264,8 @@ OCaml 5.6.0
 - #15177, OSEC-2026-26: Maintain custom events cache integrity.
   (Sadiq Jaffer, report by Hannes Mehnert, review by Edwin Török)
 
-- #?????: Bound the custom event payload by the buffer's own constant
-  (Tim McGilchrist, review by ????)
+- #15229 Bound the custom event payload by the buffer's own constant
+  (Tim McGilchrist, review by Sadiq Jaffer)
 
 ### Type system:
 
