@@ -573,21 +573,17 @@ FUNCTION caml_c_call
       Must use C_CALL_TMP (callee-saved r28) because SWITCH_OCAML_TO_C
       clobbers TMP. */
         mr      C_CALL_TMP, SP
+#endif
    /* Switch from OCaml to C */
         SWITCH_OCAML_TO_C
-   /* Create a frame whose back chain points to OCaml stack.
-      This allows frame pointer walking to cross from C to OCaml,
-      similar to ARM64's ENTER_FUNCTION. */
-        stdu    C_CALL_TMP, -RESERVED_STACK(SP)
-#ifdef ASM_CFI_SUPPORTED
-   /* After stdu, SP moved away from c_stack_link. The back chain at SP+0
-      contains OCaml_SP (from C_CALL_TMP). Update CFI to read CFA from there. */
-        .cfi_escape DW_CFA_def_cfa_expression, 3, \
-           DW_OP_breg + DW_REG_sp, 0, DW_OP_deref
-#endif
-#else
-   /* Switch from OCaml to C (no extra frame needed without frame pointers) */
-        SWITCH_OCAML_TO_C
+#ifdef WITH_FRAME_POINTERS
+   /* SP is now the c_stack_link, whose first 32 bytes are a linkage area
+      (Reserved_space_c_stack_link in fiber.h).  Make its back chain point to
+      the OCaml frame so that the frame walker can cross from C to OCaml.
+      Recording it there rather than in a frame pushed below the c_stack_link
+      keeps the C stack unwindable for the TSan raise path, which bounds its
+      walk at the c_stack_link (see caml_tsan_exit_on_raise_c in tsan.c). */
+        std     C_CALL_TMP, 0(SP)
 #endif
    /* Make the exception handler and alloc ptr available to the C code */
         std     ALLOC_PTR, Caml_state(young_ptr)
@@ -598,16 +594,6 @@ FUNCTION caml_c_call
         mr      C_CALL_TOC, 2   /* save current TOC in a callee-save register */
         bctrl
         mr      2, C_CALL_TOC   /* restore current TOC */
-#ifdef WITH_FRAME_POINTERS
-    /* Pop the frame we created */
-        addi    SP, SP, RESERVED_STACK
-#ifdef ASM_CFI_SUPPORTED
-   /* After popping, SP points to c_stack_link again. Restore CFI to read
-      CFA from Cstack_sp (offset 40), matching SWITCH_OCAML_TO_C output. */
-        .cfi_escape DW_CFA_def_cfa_expression, 3, \
-           DW_OP_breg + DW_REG_sp, Cstack_sp_offset, DW_OP_deref
-#endif
-#endif
     /* Restore return address (in register C_CALL_RET_ADDR, preserved by C) */
         mtlr    C_CALL_RET_ADDR
     /* Reload new allocation pointer and exception pointer */
@@ -634,48 +620,106 @@ ENDFUNCTION caml_c_call
 FUNCTION caml_c_call_stack_args
         CFI_STARTPROC
         CFI_SIGNAL_FRAME
+        TSAN_SAVE_CALLER_REGS
+        TSAN_ENTER_FUNCTION
+        TSAN_RESTORE_CALLER_REGS
    /* Extra arguments to be passed on stack:
       STACK_ARG_BYTES at offsets 32 to 32 + STACK_ARG_BYTES from SP.
       C_CALL_TOC (r26, callee-saved) holds the OCaml SP from which the
-      arguments are copied below. */
+      arguments are copied. */
         mr      C_CALL_TOC, SP
 #ifdef WITH_FRAME_POINTERS
-   /* Power does not need caml_c_call_copy_stack_args (used by the register-FP
-      arches, see ocaml/ocaml#13635): stack reallocation locates OCaml frame
-      pointers via c_stack_link->sp and the in-memory back chain (see
-      caml_try_realloc_stack in fiber.c), so it never walks the C-stack region
-      where these arguments are pushed. */
    /* SP is a parameter frame whose back chain points to the actual function
       frame.  Skip the parameter frame so the frame walker does not see it
       twice. */
         ld      C_CALL_TMP, 0(SP)       /* actual function frame */
 #endif
-   /* Save return address in a callee-save register */
+   /* Save return address in a callee-save register, and in this frame's LR
+      save area.  caml_raise_exception reads it back from there, through
+      Stack_sp, to start the backtrace when a C call raises. */
         mflr    C_CALL_RET_ADDR
-#ifdef WITH_FRAME_POINTERS
-   /* Saved into the OCaml caller's frame after the copy loop instead, where
-      it cannot be clobbered by the last argument slot. */
-#else
         std     C_CALL_RET_ADDR, LR_SAVE(SP)
-#endif
    /* Switch from OCaml to C */
         SWITCH_OCAML_TO_C
+#ifdef WITH_FRAME_POINTERS
+   /* SP is now the c_stack_link, whose first 32 bytes are a linkage area
+      (Reserved_space_c_stack_link in fiber.h).  Make its back chain point to
+      the OCaml frame so that the frame walker can cross from C to OCaml. */
+        std     C_CALL_TMP, 0(SP)
+#endif
    /* Make the exception handler and alloc ptr available to the C code */
         std     ALLOC_PTR, Caml_state(young_ptr)
         std     TRAP_PTR, Caml_state(exn_handler)
-   /* Reserve STACK_ARG_BYTES bytes on the C stack */
-        subfc   SP, STACK_ARG_BYTES, SP
-#ifdef WITH_FRAME_POINTERS
-   /* Set up back chain pointing to actual OCaml function frame
-      (not param frame).
-      This allows frame pointer walking to cross from C to OCaml correctly. */
-        std     C_CALL_TMP, 0(SP)
+   /* Push the arguments and perform the call in a separate function, so that
+      nothing is pushed between the c_stack_link and this frame.  The TSan
+      raise path bounds its walk of the C stack at the c_stack_link (see
+      caml_tsan_exit_on_raise_c in tsan.c), and a frame below that bound
+      cannot be unwound out of, as its caller is on the OCaml stack. */
+        Far_call(caml_c_call_copy_stack_args)
+   /* Reload new allocation pointer and exception pointer */
+        ld      ALLOC_PTR, Caml_state(young_ptr)
+        ld      TRAP_PTR, Caml_state(exn_handler)
+   /* Restore return address (in register C_CALL_RET_ADDR, preserved by C) */
+        mtlr    C_CALL_RET_ADDR
+#if defined(WITH_THREAD_SANITIZER)
+        TSAN_SETUP_C_CALL 16
+   /* Save return value registers. Since the called function could be anything,
+      it may have returned its result (if any) either in r3 or f1. */
+        std     3,  (RESERVED_STACK + 0)(SP)
+        stfd    1,  (RESERVED_STACK + 8)(SP)
+        Far_call(caml_tsan_func_exit_asm)
+        lfd     1,  (RESERVED_STACK + 8)(SP)
+        ld      3,  (RESERVED_STACK + 0)(SP)
+        TSAN_CLEANUP_AFTER_C_CALL 16
+#endif
+   /* Switch from C to OCaml */
+        SWITCH_C_TO_OCAML
+   /* Return to caller */
+        RET_FROM_C_CALL
+        CFI_ENDPROC
+ENDFUNCTION caml_c_call_stack_args
+
+/* Copy the stack arguments and call the C function.  Entered with
+     C_CALL_TOC       OCaml SP holding the arguments at offsets 32...
+     STACK_ARG_BYTES  size in bytes of that argument area
+     C_CALL_FUN       address of the C function
+   all of which are callee-saved and so survive the call below. */
+
+FUNCTION caml_c_call_copy_stack_args
+        CFI_STARTPROC
+        ENTER_FUNCTION
+#if defined(WITH_THREAD_SANITIZER)
+   /* Push a TSan shadow stack entry for this function.  The raise path walks
+      the C stack and pops an entry per frame, so a frame that never pushed
+      one would unbalance the shadow stack.  This is TSAN_ENTER_FUNCTION
+      without the stack switch, as we are already on the C stack. */
+        TSAN_SAVE_CALLER_REGS
+        TSAN_SETUP_C_CALL 0
+   /* Unlike the other TSAN_SETUP_C_CALL sites, the CFA rule in force here is
+      the register-based default (r1 + 0) rather than an SP-independent
+      .cfi_escape, so the stack pointer move has to be described. */
+        CFI_ADJUST(RESERVED_STACK + 0)
+        mr      3, 0            /* arg1: return address in caller */
+        Far_call(caml_tsan_func_entry_asm)
+        TSAN_CLEANUP_AFTER_C_CALL 0
+        CFI_ADJUST(-(RESERVED_STACK + 0))
+        TSAN_RESTORE_CALLER_REGS
+#endif
+   /* Reserve 32 + STACK_ARG_BYTES: the arguments are written at offsets 32 to
+      32 + STACK_ARG_BYTES, so reserving only STACK_ARG_BYTES would place the
+      last 32 bytes of them in the caller's linkage area, over the back chain
+      and return address stored below.  STACK_ARG_BYTES is a multiple of 16
+      (see loc_external_arguments in proc.ml), so SP stays aligned.
+      Reserve with stdux, keeping the back chain, so that the CFA can be
+      recovered despite the adjustment being dynamic. */
+        addi    TMP, STACK_ARG_BYTES, 32
+        neg     TMP, TMP
+        stdux   SP, SP, TMP
 #ifdef ASM_CFI_SUPPORTED
-   /* After subfc + std, SP moved away from c_stack_link. The back chain at SP+0
-      contains OCaml_SP (from C_CALL_TMP). Update CFI to read CFA from there. */
+        CFI_REMEMBER_STATE
+   /* CFA = *(SP), the back chain just stored. */
         .cfi_escape DW_CFA_def_cfa_expression, 3, \
            DW_OP_breg + DW_REG_sp, 0, DW_OP_deref
-#endif
 #endif
    /* Copy from OCaml SP (in C_CALL_TOC) + [32...32+STACK_ARG_BYTES)
            to C SP + [32...32+STACK_ARG_BYTES) */
@@ -686,41 +730,45 @@ FUNCTION caml_c_call_stack_args
         cmpdi   TMP, 32
         bge     1b
 #ifdef WITH_FRAME_POINTERS
-   /* Save return address in OCaml caller's frame for frame pointer walking.
-      Must be AFTER the copy loop because main_SP + 16
-      (= param_SP + stack_ofs + 16)
+   /* Also save the return address in the OCaml caller's frame, which is where
+      the frame walker reads it.  Must be AFTER the copy loop because
+      main_SP + 16 (= param_SP + stack_ofs + 16)
       can overlap with the last argument slot in the parameter frame. */
         std     C_CALL_RET_ADDR, LR_SAVE(C_CALL_TMP)
 #endif
-    /* Call C function (address in C_CALL_FUN) */
+   /* Call C function (address in C_CALL_FUN) */
         mtctr   C_CALL_FUN
         mr      12, C_CALL_FUN
         mr      C_CALL_TOC, 2   /* save current TOC in a callee-save register */
         bctrl
         mr      2, C_CALL_TOC   /* restore current TOC */
-    /* Pop the extra stack space used */
-        add     SP, SP, STACK_ARG_BYTES
-#ifdef WITH_FRAME_POINTERS
+   /* Pop the argument area through the back chain */
+        ld      SP, 0(SP)
 #ifdef ASM_CFI_SUPPORTED
-   /* Undo the CFA override above (SP is back at the c_stack_link, so restore
-      the CFA = *(SP + Cstack_sp_offset) rule set by SWITCH_OCAML_TO_C).
-      Only needed with frame pointers.  Without them that rule was never
-      changed. */
-        .cfi_escape DW_CFA_def_cfa_expression, 3, \
-           DW_OP_breg + DW_REG_sp, Cstack_sp_offset, DW_OP_deref
+        CFI_RESTORE_STATE
 #endif
+   /* Restore the return address before the call below, which saves and
+      restores it in turn. */
+        LEAVE_FUNCTION
+#if defined(WITH_THREAD_SANITIZER)
+   /* Pop the entry pushed on function entry. */
+        TSAN_SETUP_C_CALL 16
+   /* As above: CFI_RESTORE_STATE put the register-based CFA rule back, so this
+      adjustment must be described too. */
+        CFI_ADJUST(RESERVED_STACK + 16)
+   /* Save return value registers. Since the called function could be anything,
+      it may have returned its result (if any) either in r3 or f1. */
+        std     3,  (RESERVED_STACK + 0)(SP)
+        stfd    1,  (RESERVED_STACK + 8)(SP)
+        Far_call(caml_tsan_func_exit_asm)
+        lfd     1,  (RESERVED_STACK + 8)(SP)
+        ld      3,  (RESERVED_STACK + 0)(SP)
+        TSAN_CLEANUP_AFTER_C_CALL 16
+        CFI_ADJUST(-(RESERVED_STACK + 16))
 #endif
-    /* Restore return address (in register C_CALL_RET_ADDR, preserved by C) */
-        mtlr    C_CALL_RET_ADDR
-    /* Reload new allocation pointer and exception pointer */
-        ld      ALLOC_PTR, Caml_state(young_ptr)
-        ld      TRAP_PTR, Caml_state(exn_handler)
-    /* Switch from C to OCaml */
-        SWITCH_C_TO_OCAML
-    /* Return to caller */
-        RET_FROM_C_CALL
+        blr
         CFI_ENDPROC
-ENDFUNCTION caml_c_call_stack_args
+ENDFUNCTION caml_c_call_copy_stack_args
 
 /* Raise an exception from OCaml */
 
@@ -1002,6 +1050,14 @@ FUNCTION caml_start_program
     /* Pop the struct c_stack_link */
         ld      0, Cstack_prev(SP)
         std     0, Caml_state(c_stack)
+#ifdef WITH_FRAME_POINTERS
+    /* The c_stack_link's linkage area is this frame's own, so caml_c_call
+       overwrote our back chain with an OCaml SP to let frame-pointer walking
+       cross from C to OCaml.  The OCaml code has returned, so re-establish it,
+       leaving the chain to our C caller intact for external unwinders. */
+        addi    0, SP, STACKSIZE
+        std     0, 0(SP)
+#endif
     /* Restore callee-save registers */
         addi    TMP, SP, CALLBACK_LINK_SIZE + RESERVED_STACK - 8
         ldu     14, 8(TMP)
@@ -1360,16 +1416,11 @@ FUNCTION caml_runstack
   /* r3: fiber
      r4: fun
      r5: arg */
-    /* Save return address and TOC */
+    /* Save return address */
         ENTER_FUNCTION
     /*  save old stack pointer and exception handler */
         ld      8, Caml_state(current_stack) /* r8 := old stack */
-    /* Stack_sp records caml_runstack's entry frame, where ENTER_FUNCTION
-       saved LR.  LEAVE_FUNCTION recovers it from Stack_sp + 16.  The TOC is
-       saved just above that, so that it survives a reallocation of this
-       stack: caml_try_realloc_stack copies only [sp, Stack_high). */
         std     SP, Stack_sp(8)
-        std     2, TOC_SAVE_PARENT(SP)
 #ifdef WITH_FRAME_POINTERS
     /* Keep the entry frame for use as fiber_bottom's back chain, then give
        caml_runstack a frame of its own so the back chain can be walked. */
@@ -1437,9 +1488,15 @@ FUNCTION caml_runstack
         std     TMP, Caml_state(current_stack)
         ld      TRAP_PTR, Stack_exception(TMP)
         std     TRAP_PTR, Caml_state(exn_handler)
-    /* restore saved TOC (Stack_sp is caml_runstack's entry frame) */
         ld      27, Stack_sp(TMP)    /* saved across C calls */
-        ld      2, TOC_SAVE_PARENT(27)
+    /* Recompute the TOC, needed by the call below.  It cannot be recovered
+       relative to Stack_sp: that records where the parent resumes, which is
+       the effect handler's frame if an effect was handled on this stack, not
+       caml_runstack's entry frame. */
+        bcl     20, 31, 2f
+2:      mflr    12
+        addis   2, 12, .TOC.- 2b@ha
+        addi    2, 2,  .TOC.- 2b@l
     /* free old stack by switching directly to c_stack;
        this is a no-alloc call */
         ld      SP, Caml_state(c_stack)
