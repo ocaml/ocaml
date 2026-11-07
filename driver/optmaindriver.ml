@@ -38,6 +38,7 @@ module Options = Main_args.Make_optcomp_options (Main_args.Default.Optmain)
 let main argv ppf =
   native_code := true;
   let program = "ocamlopt" in
+  let _ : Warnings.alert option = Warnings.parse_options true "+8" in
   match
     Compenv.readenv ppf Before_args;
     Clflags.add_arguments __LOC__ (Arch.command_line_options @ Options.list);

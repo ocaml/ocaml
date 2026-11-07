@@ -1,5 +1,5 @@
 (* TEST
- flags += "-w +4+8+9+11+12+52+56+57";
+ flags += "-w +4+8+9+11+12+52+56+57 -warn-error -8";
  include testing;
 *)
 

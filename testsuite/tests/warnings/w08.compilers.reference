@@ -1,0 +1,18 @@
+File "w08.ml", line 4, characters 6-14:
+4 | let f (Some x) = x
+          ^^^^^^^^
+Error (warning 8 [partial-match]): this pattern-matching is not exhaustive.
+  Here is an example of a case that is not matched: None
+
+File "w08.ml", lines 6-7, characters 8-13:
+6 | ........function
+7 |   | None -> 1
+Error (warning 8 [partial-match]): this pattern-matching is not exhaustive.
+  Here is an example of a case that is not matched: Some _
+
+File "w08.ml", lines 11-13, characters 8-10:
+11 | ........function
+12 |   | A -> 1
+13 |   | B -> 2
+Error (warning 8 [partial-match]): this pattern-matching is not exhaustive.
+  Here is an example of a case that is not matched: C
