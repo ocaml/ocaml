@@ -33,6 +33,8 @@ module type S =
       (key -> 'a option -> 'b option -> 'c option) ->
       'a t -> 'b t -> 'c t
     val union: (key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
+    val inter: (key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
+    val diff: 'a t -> 'a t -> 'a t
     val cardinal: 'a t -> int
     val bindings: 'a t -> (key * 'a) list
     val min_binding: 'a t -> (key * 'a)
@@ -434,6 +436,29 @@ module Make(Ord: OrderedType) = struct
             match d1 with
             | None -> join l v2 d2 r
             | Some d1 -> concat_or_join l v2 (f v2 d1 d2) r
+
+    let rec inter f s1 s2 =
+      match (s1, s2) with
+      | (Empty, _) | (_, Empty) -> Empty
+      | (Node{l=l1; v=v1; d=d1; r=r1}, _) ->
+          let (l2, d2, r2) = split v1 s2 in
+          let l = inter f l1 l2 in
+          match d2 with
+          | None -> concat l (inter f r1 r2)
+          | Some d2 ->
+              let d = f v1 d1 d2 in
+              concat_or_join l v1 d (inter f r1 r2)
+
+    let rec diff s1 s2 =
+      match (s1, s2) with
+      | (Empty, _) -> Empty
+      | (_, Empty) -> s1
+      | (Node {l=l1; v=v1; d=d1; r=r1}, _) ->
+          let (l2, d2, r2) = split v1 s2 in
+          let l = diff l1 l2 in
+          match d2 with
+          | None -> join l v1 d1 (diff r1 r2)
+          | Some _ -> concat l (diff r1 r2)
 
     let rec filter p = function
         Empty -> Empty

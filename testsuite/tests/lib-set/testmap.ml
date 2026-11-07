@@ -53,6 +53,21 @@ let test x v s1 s2 =
      let s = M.merge f s1 s2 in
      fun i -> img i s = f i (img i s1) (img i s2));
 
+  check "inter"
+    (let f _ v1 v2 = Some (v1 -. v2) in
+     let s = M.inter f s1 s2 in
+     fun i ->
+       match img i s1, img i s2 with
+       | Some v1, Some v2 -> img i s = f i v1 v2
+       | _ -> img i s = None);
+
+  check "diff"
+    (let s = M.diff s1 s2 in
+     fun i ->
+       match img i s1, img i s2 with
+       | _, Some _ -> img i s = None
+       | x, None -> img i s = x);
+
   checkbool "bindings"
     (let rec extract = function
        | [] -> []
