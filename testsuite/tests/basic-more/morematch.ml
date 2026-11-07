@@ -1160,4 +1160,5 @@ let () =
 
 (* TEST
  include testing;
+ flags = "-warn-error -8";
 *)
