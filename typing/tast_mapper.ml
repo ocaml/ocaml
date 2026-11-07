@@ -515,6 +515,7 @@ let expr sub x =
         Texp_extension_constructor (map_loc_lid sub lid, path)
     | Texp_struct_item (si, e) ->
         Texp_struct_item (sub.structure_item sub si, sub.expr sub e)
+    | Texp_src_loc -> Texp_src_loc
   in
   let exp_attributes = sub.attributes sub x.exp_attributes in
   {x with exp_loc; exp_extra; exp_desc; exp_env; exp_attributes}
@@ -784,7 +785,8 @@ let typ sub x =
   let ctyp_desc =
     match x.ctyp_desc with
     | Ttyp_any
-    | Ttyp_var _ as d -> d
+    | Ttyp_var _
+    | Ttyp_call_loc as d -> d
     | Ttyp_arrow (label, ct1, ct2) ->
         Ttyp_arrow (label, sub.typ sub ct1, sub.typ sub ct2)
     | Ttyp_tuple list ->

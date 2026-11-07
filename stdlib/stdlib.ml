@@ -643,6 +643,7 @@ module StdLabels      = StdLabels
 module String         = String
 module StringLabels   = StringLabels
 module Sys            = Sys
+module Textloc        = Textloc
 module Type           = Type
 module Uchar          = Uchar
 module Unit           = Unit

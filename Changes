@@ -5,6 +5,10 @@ Working version
 
 ### Language features:
 
+- #13886: Implicit source positions
+  (Richard Eisenberg, Vivian Ding, Jose R. (@Enoumy) and Olivier Nicole, review
+  by )
+
 ### Runtime system:
 
 - #15049: Add a runtime events lifecycle event EV_PROCESS_CREATE, emitted on

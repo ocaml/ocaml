@@ -75,6 +75,7 @@ type loc_kind =
   | Loc_LOC
   | Loc_POS
   | Loc_FUNCTION
+  | Loc_TEXTLOC
 
 type atomic_kind =
   | Ref   (* operation on an atomic reference (takes only a pointer) *)
@@ -150,6 +151,7 @@ let primitives_table =
     "%loc_POS", Loc Loc_POS;
     "%loc_MODULE", Loc Loc_MODULE;
     "%loc_FUNCTION", Loc Loc_FUNCTION;
+    "%loc_TEXTLOC", Loc Loc_TEXTLOC;
     "%field0", Primitive (Pfield(0, Pointer, Mutable), 1);
     "%field1", Primitive (Pfield(1, Pointer, Mutable), 1);
     "%setfield0", Primitive ((Psetfield(0, Pointer, Assignment)), 2);
@@ -670,6 +672,13 @@ let comparison_primitive comparison comparison_kind =
   | Compare, Compare_int32s -> Pcompare_bints Pint32
   | Compare, Compare_int64s -> Pcompare_bints Pint64
 
+module Lambda_textloc = CamlinternalTextloc.Lift_repr (struct
+  type repr = Lambda.structured_constant
+  let int i = Const_int i
+  let string s = Const_immstring s
+  let block elems = Const_block (0, elems)
+end)
+
 let lambda_of_loc kind sloc =
   let loc = to_location sloc in
   let loc_start = loc.Location.loc_start in
@@ -703,6 +712,14 @@ let lambda_of_loc kind sloc =
   | Loc_FUNCTION ->
     let scope_name = Debuginfo.Scoped_location.string_of_scoped_location sloc in
     Lconst (Const_immstring scope_name)
+  | Loc_TEXTLOC ->
+      let textloc =
+        if Location.is_none loc then CamlinternalTextloc.none
+        else
+          CamlinternalTextloc.of_lexing_range
+            loc.Location.loc_start loc.Location.loc_end
+      in
+      Lconst (Lambda_textloc.to_repr textloc)
 
 let atomic_arity op (kind : atomic_kind) =
   let arity_of_op =

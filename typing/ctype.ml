@@ -2943,14 +2943,17 @@ let is_instantiable env p =
 
 (* Two labels are considered compatible under certain conditions.
   - they are the same
-  - in classic mode, only optional labels are relevant
+  - in classic mode, only optional and position labels are relevant
   - in pattern mode, we act as if we were in classic mode. If not, interactions
     with GADTs from files compiled in classic mode would be unsound.
 *)
 let compatible_labels ~in_pattern_mode l1 l2 =
   l1 = l2
   || (!Clflags.classic || in_pattern_mode)
-      && not (is_optional l1 || is_optional l2)
+     && (match l1, l2 with
+         | (Nolabel | Labelled _), (Nolabel | Labelled _) -> true
+         | (Optional _ | Position _), _
+         | _, (Optional _ | Position _) -> false)
 
 let eq_labels error_mode ~in_pattern_mode l1 l2 =
   if not (compatible_labels ~in_pattern_mode l1 l2) then
@@ -4127,7 +4130,8 @@ let filter_arrow env ~in_apply t l ~param_hole =
     match get_desc t with
     | Tvar _ -> Ok (arrow_unify_var ~param_hole l t)
     | Tarrow(l', ty_param, ty_ret, _) ->
-        if l = l' || !Clflags.classic && l = Nolabel && not (is_optional l')
+        if l = l' || !Clflags.classic && l = Nolabel
+           && compatible_labels ~in_pattern_mode:true l l'
         then Ok { ty_param; ty_ret }
         else Error (Label_mismatch
                       { got = l; expected = l'; expected_type = t })

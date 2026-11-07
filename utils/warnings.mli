@@ -122,6 +122,7 @@ type t =
   | Generative_application_expects_unit     (* 73 *)
   | Degraded_to_partial_match               (* 74 *)
   | Unnecessarily_partial_tuple_pattern     (* 75 *)
+  | Unerasable_position_argument            (* 76 *)
 
 type alert = {kind:string; message:string; def:loc; use:loc}
 

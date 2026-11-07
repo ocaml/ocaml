@@ -45,6 +45,7 @@ type abstract_type_constr = [
   | `Iarray
   | `Atomic_loc
   | `Todo_info
+  | `Textloc
 ]
 type data_type_constr = [
   | `Bool
@@ -82,6 +83,7 @@ let all_type_constrs : type_constr list = [
   `Iarray;
   `Atomic_loc;
   `Todo_info;
+  `Textloc;
 ]
 
 let ident_int = ident_create "int"
@@ -106,6 +108,7 @@ and ident_floatarray = ident_create "floatarray"
 and ident_iarray = ident_create "iarray"
 and ident_atomic_loc = ident_create "atomic_loc"
 and ident_todo_info = ident_create "todo_info"
+and ident_textloc = ident_create "textloc"
 
 let ident_of_type_constr : type_constr -> Ident.t = function
   | `Int -> ident_int
@@ -130,6 +133,7 @@ let ident_of_type_constr : type_constr -> Ident.t = function
   | `Iarray -> ident_iarray
   | `Atomic_loc -> ident_atomic_loc
   | `Todo_info -> ident_todo_info
+  | `Textloc -> ident_textloc
 
 (* names used for Type_external *)
 let name_of_type_constr = function
@@ -155,6 +159,7 @@ let name_of_type_constr = function
   | `Iarray -> "iarray"
   | `Atomic_loc -> "atomic_loc"
   | `Todo_info -> "todo_info"
+  | `Textloc -> "textloc"
 
 let path_int = Pident ident_int
 and path_char = Pident ident_char
@@ -178,6 +183,7 @@ and path_floatarray = Pident ident_floatarray
 and path_iarray = Pident ident_iarray
 and path_atomic_loc = Pident ident_atomic_loc
 and path_todo_info = Pident ident_todo_info
+and path_textloc = Pident ident_textloc
 
 let path_of_type_constr typ =
   Pident (ident_of_type_constr typ)
@@ -205,6 +211,7 @@ and type_floatarray = tconstr path_floatarray []
 and type_iarray t = tconstr path_iarray [t]
 and type_atomic_loc t = tconstr path_atomic_loc [t]
 and type_todo_info = tconstr path_todo_info []
+and type_textloc = tconstr path_textloc []
 
 let find_type_constr =
   let all_predef_paths =
@@ -331,7 +338,7 @@ let decl_of_type_constr tconstr =
   | `Float
   | `Floatarray
   | `Nativeint | `Int32 | `Int64
-  | `Extension_constructor | `Todo_info
+  | `Extension_constructor | `Todo_info | `Textloc
     -> decl0 ()
   | `Bool ->
       let kind = variant [cstr ident_false [];

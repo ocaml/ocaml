@@ -348,6 +348,12 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 when Path.same path Predef.path_lazy_t ->
                 tree_of_lazy depth obj ty_arg
 
+              | Tconstr (path, [], _)
+                  when Path.same path Predef.path_textloc ->
+                let loc = (O.base_obj obj : Textloc.t) in
+                Oval_stuff
+                    (Format.asprintf "<location: %a>" Textloc.pp_ocaml loc)
+
               | _ ->
                 match Env.find_type path env with
                 | exception Not_found
