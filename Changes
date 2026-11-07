@@ -31,6 +31,10 @@ Working version
   (Pierre Chambart, report by Alperen Keleş,
    review by Vincent Laviron)
 
+- #15230: Move values directly between integer and float registers for
+  int<->float conversions on POWER, instead of going through the stack.
+  (Tim McGilchrist and Zane Hambly, review by         )
+
 ### Standard library:
 
 - #15168: `Scanf.unescaped`, `%S` and `%C` now accept all the escape sequences
