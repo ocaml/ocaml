@@ -15,6 +15,6 @@
 
 (* Parsing of modifier (response) files created by hooks and scripts *)
 
-val modifier_of_string : string -> Environments.modifier
+val modifier_of_string : Environments.t -> string -> Environments.modifier
 
-val modifiers_of_file : string -> Environments.modifiers
+val modifiers_of_file : Environments.t -> string -> Environments.modifiers
