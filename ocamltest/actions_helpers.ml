@@ -201,6 +201,7 @@ let run
     ~(can_skip : bool)
     ~prog:(prog_variable : Variables.t)
     ~args:(args_variable : Variables.t option)
+    ?(environment = [||])
     (log : out_channel)
     (env : Environments.t)
   =
@@ -231,7 +232,7 @@ let run
     let expected_exit_status =
       exit_status_of_variable env Builtin_variables.exit_status
     in
-    let exit_status = run_cmd log env commandline in
+    let exit_status = run_cmd ~environment log env commandline in
     if exit_status=expected_exit_status
     then (Test_result.pass, env)
     else begin
@@ -249,12 +250,19 @@ let run_program
     let run_can_skip =
     Environments.lookup_as_bool Builtin_variables.run_can_skip env in
     run_can_skip = Some true in
+  (* [ocamlrunparam] becomes OCAMLRUNPARAM for the test program only. *)
+  let environment =
+    match Environments.lookup_nonempty Builtin_variables.ocamlrunparam env with
+    | None -> [||]
+    | Some value -> [| "OCAMLRUNPARAM=" ^ value |]
+  in
   run
     ~log_message:"Running program"
     ~redirect_output:true
     ~can_skip
     ~prog:Builtin_variables.program
     ~args:(Some Builtin_variables.arguments)
+    ~environment
     log
     env
 
@@ -307,7 +315,16 @@ let run_hook hook_name log input_env =
   let hookenv = Environments.add
     Builtin_variables.ocamltest_response response_file input_env in
   let systemenv =
-    Environments.to_system_env hookenv in
+    (* Hook scripts (which may run the test program themselves) receive
+       OCAMLRUNPARAM like the run action does. *)
+    let environment =
+      match
+        Environments.lookup_nonempty Builtin_variables.ocamlrunparam hookenv
+      with
+      | None -> [||]
+      | Some value -> [| "OCAMLRUNPARAM=" ^ value |]
+    in
+    Environments.append_to_system_env environment hookenv in
   let timeout =
     Option.value ~default:0
       (Environments.lookup_as_int Builtin_variables.timeout input_env) in
