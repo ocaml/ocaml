@@ -2194,7 +2194,9 @@ let try_expand_safe_opt env ty =
   let snap = Btype.snapshot () in
   try try_expand_once_opt env ty
   with Escape _ ->
-    Btype.backtrack snap; raise Cannot_expand
+    Btype.backtrack snap;
+    cleanup_abbrev_memo ();
+    raise Cannot_expand
 
 let expand_head_opt env ty =
   try try_expand_head try_expand_safe_opt env ty with Cannot_expand -> ty
