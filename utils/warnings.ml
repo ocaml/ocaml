@@ -48,7 +48,7 @@ type t =
   | Method_override of string list          (*  7 *)
   | Partial_match of Format_doc.t           (*  8 *)
   | Missing_record_field_pattern of string  (*  9 *)
-  | Non_unit_statement                      (* 10 *)
+  | Non_unit_statement of Format_doc.t      (* 10 *)
   | Redundant_case                          (* 11 *)
   | Redundant_subpat                        (* 12 *)
   | Instance_variable_override of string list (* 13 *)
@@ -133,7 +133,7 @@ let number = function
   | Method_override _ -> 7
   | Partial_match _ -> 8
   | Missing_record_field_pattern _ -> 9
-  | Non_unit_statement -> 10
+  | Non_unit_statement _ -> 10
   | Redundant_case -> 11
   | Redundant_subpat -> 12
   | Instance_variable_override _ -> 13
@@ -949,8 +949,10 @@ let message = function
            @[Either bind these labels explicitly or add %a to the pattern.@]"
         Style.inline_code s
         Style.inline_code "; _"
-  | Non_unit_statement ->
-      msg "this expression should have type unit."
+  | Non_unit_statement ty ->
+      msg "this expression should have type %a,@ but it has type %a."
+        Style.inline_code "unit"
+        (Style.as_inline_code Format_doc.pp_doc) ty
   | Redundant_case -> msg "this match case is unused."
   | Redundant_subpat -> msg "this sub-pattern is unused."
   | Instance_variable_override [lab] ->
