@@ -1,0 +1,4 @@
+int array get: ok
+int array set: ok
+float array get: ok
+generic array get: ok

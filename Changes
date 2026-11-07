@@ -118,6 +118,14 @@ Working version
   Fixes an error on Windows with allocating long paths to this file.
   (Tim McGilchrist, review by Antonin Décimo)
 
+- #15157, #15160, #15161, #15244: Fix overflows in native code array indexing,
+  and check for overflow when generating bounds checks for array accesses that
+  are constants. Fix native code compilation of `x lsr n` and `x asr n` when
+  the result is immediately untagged.
+  (Stefan Muenzel and Xavier Clerc, review by Zane Hambly and Vincent Laviron,
+   test by Zane Hambly, reports by Stefan Muenzel, KC Sivaramakrishnan, and
+   Michael Bacarella)
+
 OCaml 5.6.0
 -----------
 
