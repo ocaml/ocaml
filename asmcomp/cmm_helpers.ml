@@ -734,7 +734,7 @@ let array_indexing ?typ log2size ptr ofs dbg =
     | Some Int -> Caddi
     | _ -> assert false in
   match ofs with
-  | Cconst_int (n, _) when Misc.no_overflow_lsl (n asr 1) logsize ->
+  | Cconst_int (n, _) when Misc.no_overflow_lsl (n asr 1) log2size ->
       let i = n asr 1 in
       if i = 0 then ptr
       else
