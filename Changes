@@ -118,11 +118,6 @@ Working version
   Fixes an error on Windows with allocating long paths to this file.
   (Tim McGilchrist, review by Antonin Décimo)
 
-- #15267: Fix a regression on Windows where Ctrl-Break terminated the program
-  instead of being delivered as Sys.sigint, so neither a Sys.sigint handler
-  nor Sys.catch_break could intercept it (regression since 5.0.0).
-  (Mark Elvers)
-
 OCaml 5.6.0
 -----------
 
@@ -985,6 +980,11 @@ OCaml 5.6.0
   becoming writable. This occurred when the list of file descriptors contained a
   mixture of sockets and non-sockets.
   (Nicolás Ojeda Bär, report by Kento Okura, review by Antonin Décimo)
+
+- #15267: Fix a regression on Windows where Ctrl-Break terminated the program
+  instead of being delivered as Sys.sigint, so neither a Sys.sigint handler
+  nor Sys.catch_break could intercept it (regression since 5.0.0).
+  (Mark Elvers, review by Nicolás Ojeda Bär)
 
 OCaml 5.5.1
 -----------
