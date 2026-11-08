@@ -182,22 +182,20 @@ let iter f h =
     flip_ongoing_traversal h;
     raise exn
 
+(* Removed cells are unlinked, and [h.size] updated, before [f] is called
+   on the next cell, so that the table is consistent if [f] raises. *)
 let rec filter_map_inplace_bucket f h i prec = function
-  | Empty ->
-      begin match prec with
-      | Empty -> h.data.(i) <- Empty
-      | Cons c -> c.next <- Empty
-      end
+  | Empty -> ()
   | (Cons ({key; data; next} as c)) as slot ->
       begin match f key data with
       | None ->
+          begin match prec with
+          | Empty -> h.data.(i) <- next
+          | Cons p -> p.next <- next
+          end;
           h.size <- h.size - 1;
           filter_map_inplace_bucket f h i prec next
       | Some data ->
-          begin match prec with
-          | Empty -> h.data.(i) <- slot
-          | Cons c -> c.next <- slot
-          end;
           c.data <- data;
           filter_map_inplace_bucket f h i slot next
       end
