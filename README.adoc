@@ -61,7 +61,7 @@ compiler currently runs on the following platforms:
 |====
 |                |  Tier 1 (actively maintained)   | Tier 2 (maintained when possible)
 
-| x86 64 bits    | Linux, Windows, FreeBSD      |  macOS, NetBSD, OpenBSD, DragonFly, OmniOS (Solaris)
+| x86 64 bits    | Linux, Windows, FreeBSD      |  macOS, NetBSD, OpenBSD, DragonFly, Illumos, Haiku
 | ARM 64 bits    | Linux, macOS                 |  FreeBSD, OpenBSD, NetBSD
 | Power 64 bits  | Linux (little-endian, ABIv2) |  Linux (big-endian, ABIv2)
 | RISC-V 64 bits | Linux                        |
