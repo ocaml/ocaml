@@ -320,9 +320,11 @@ tail_call:
 
   mlsize_t sz = Wosize_hd (hd);
   value field0 = Field(v, 0); /* will be overwritten by try_promote */
-  if (tag == Forward_tag) {
+  if (tag == Forward_tag && sz == 1) {
+    /* Only one-word Forward blocks are candidates for short-circuiting.
+       Obj.new_block or intern.c can make Forward blocks of other sizes;
+       those are copied as ordinary blocks below. */
     CAMLassert (infix_offset == 0);
-    CAMLassert (sz == 1);
     value f = field0;
     tag_t ft = 0;
     if (Is_block (f)) {
@@ -363,8 +365,9 @@ tail_call:
         for (mlsize_t i = 1; i < sz; i++) {
           Field(result, i) = Field(v, i);
         }
-      } else { /* Scannable, and neither Cont_tag nor Forward_tag */
-        CAMLassert(tag < Infix_tag);
+      } else { /* Scannable and not Cont_tag: an ordinary block,
+                   or a Forward_tag block of size != 1. */
+        CAMLassert(tag < Infix_tag || tag == Forward_tag);
         if (sz == 1) {
           p = Op_val(result);
           v = field0;
