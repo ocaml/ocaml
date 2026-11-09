@@ -237,7 +237,8 @@ Re-Test-In-Prefix () {
 }
 
 Checks () {
-  if fgrep 'SUPPORTS_SHARED_LIBRARIES=true' Makefile.config &>/dev/null ; then
+  if fgrep 'SUPPORTS_SHARED_LIBRARIES=true' Makefile.config &>/dev/null \
+     && grep -Fx 'FLEXDLL_CHAIN=' Makefile.config &>/dev/null; then
     echo Check the code examples in the manual
     $MAKE manual-pregen
   fi

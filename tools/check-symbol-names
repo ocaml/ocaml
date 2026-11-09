@@ -18,7 +18,10 @@ set -o pipefail
 
 [ -z "$*" ] && { echo "Usage: $0 libfoo.a" 1>&2; exit 2; }
 
-nm -A -P "$@" | LC_ALL=C awk '
+nm=$(sed -ne '/^NM *=/s/.*= *//p' "$(dirname "$0")"/../Makefile.build_config \
+       | tr -d '\r')
+
+${nm:-nm} -A -P "$@" | LC_ALL=C awk '
 # ignore caml_foo, camlFoo_bar, _caml_foo, _camlFoo_bar
 $2 ~ /^(\.refptr\.)?(_?__emutls_v\.)?(_?caml[_A-Z])/ { next }
 # ignore re_foo
