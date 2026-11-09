@@ -80,6 +80,11 @@ Working version
 
 ### Bug fixes:
 
+- #15251, #15272: on macOS and other systems providing vsnprintf_l, a float
+  conversion with an absurd width or precision now raises Out_of_memory
+  instead of building a string of bogus length.
+  (Prakhand Patel, report by KC Sivaramakrishnan, review by REVIEWER)
+
 - #14602: on Windows, Sys.rename and Unix.rename now succeed when the
   destination is an existing read-only file, as on POSIX systems.
   (Nicolás Ojeda Bär, review by Gabriel Scherer, Antonin Décimo,
