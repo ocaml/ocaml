@@ -148,6 +148,9 @@ OCaml 5.6.0
 
 ### Runtime system:
 
+- #15062: The last Idle GC slice must trigger the switch to Mark phase.
+  (Nick Barnes, review by Damien Doligez)
+
 - #14773 : Activate Haiku native backend
   (Sylvain Kerjean, review by Kate Deplaix and Nicolas Ojeda Bar)
   Enable native-code backend and testsuite on BeOS/Haiku.
