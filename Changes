@@ -39,8 +39,8 @@ Working version
   indentation following an escaped newline.
   (Nicolás Ojeda Bär, report by Chet Murthy, review by Florian Angeletti)
 
-- #15258: Fix integer overflow in bounds checks for blit operations by
-  rewriting addition to subtraction.
+- #15274: Fix integer overflow in bounds check for `Dynarray.blit` operations
+  which could accept an invalid source region. Rewrote addition to subtraction.
   (Durwasa Chakraborty, report by KC Sivaramakrishnan)
 
 ### Other libraries:
