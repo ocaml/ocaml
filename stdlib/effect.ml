@@ -60,6 +60,9 @@ module Deep = struct
   let discontinue k e =
     resume (take_cont_noexc k) (fun e -> raise e) e
 
+  let discontinue_with_effect k e = 
+    resume (take_cont_noexc k) (fun e -> perform e) e (cont_last_fiber k)
+
   let discontinue_with_backtrace k e bt =
     resume (take_cont_noexc k) (fun e -> Printexc.raise_with_backtrace e bt) e
 

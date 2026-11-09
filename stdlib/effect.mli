@@ -58,6 +58,13 @@ module Deep : sig
       @raise Continuation_already_resumed if the continuation has already been
       resumed. *)
 
+  val discontinue_with_effect: ('a, 'b) continuation -> 'a t -> 'b
+ (** [discontinue_with_effect k e] resumes the continuation [k] by performing the
+      effect [e] in [k].
+
+      @raise Continuation_already_resumed if the continuation has already been
+      resumed. *)
+
   val discontinue_with_backtrace:
     ('a, 'b) continuation -> exn -> Printexc.raw_backtrace -> 'b
   (** [discontinue_with_backtrace k e bt] resumes the continuation [k] by
