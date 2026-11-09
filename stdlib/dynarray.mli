@@ -45,15 +45,18 @@
 (** {b Unsynchronized accesses} *)
 
 [@@@alert unsynchronized_access
-    "Unsynchronized accesses to dynamic arrays are a programming error."
+    "Unsynchronized mutations to dynamic arrays are a programming error."
 ]
 
 (**
-   Concurrent accesses to dynamic arrays must be synchronized
-   (for instance with a {!Mutex.t}). Unsynchronized accesses to
-   a dynamic array are a programming error that may lead to an invalid
-   dynamic array state, on which some operations would fail with an
-   [Invalid_argument] exception.
+   Concurrent accesses to dynamic arrays, where one or more such access may
+   change the number of elements in the array, must be synchronized (for
+   instance with a {!Mutex.t}). Failing to synchronise such mutations is a
+   programming error that may lead to an invalid dynamic array state, on which
+   some operations would fail with an [Invalid_argument] exception.
+
+   Concurrent reads to elements or dynarray state, or concurrent [set]s to
+   disjoint elements of a dynarray, are safe.
 *)
 
 (** {1:dynarrays Dynamic arrays} *)
