@@ -12,6 +12,7 @@
 let empty_tuple = [%tuple];;
 let empty_record = [%record];;
 let empty_apply = [%no_args f];;
+let empty_function = [%empty_function];;
 let f = function [%record_with_functor_fields] -> ();;
 [%%empty_let];;
 [%%empty_type];;

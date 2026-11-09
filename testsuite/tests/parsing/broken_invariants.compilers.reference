@@ -10,6 +10,10 @@ Line 1, characters 20-27:
 1 | let empty_apply = [%no_args f];;
                         ^^^^^^^
 Error: broken invariant in parsetree: Function application with no argument.
+Line 1, characters 23-37:
+1 | let empty_function = [%empty_function];;
+                           ^^^^^^^^^^^^^^
+Error: broken invariant in parsetree: Function without any branches
 Line 1, characters 19-45:
 1 | let f = function [%record_with_functor_fields] -> ();;
                        ^^^^^^^^^^^^^^^^^^^^^^^^^^
