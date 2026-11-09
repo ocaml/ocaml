@@ -35,9 +35,6 @@
 #include "caml/mlvalues.h"
 #include "caml/reverse.h"
 
-code_t caml_start_code;
-asize_t caml_code_size;
-
 /* Read the main bytecode block from a file */
 
 void caml_init_code_fragments(void) {
