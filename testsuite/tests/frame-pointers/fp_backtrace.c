@@ -1,6 +1,7 @@
 #include <execinfo.h>
 #include <regex.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,11 +19,44 @@
 #define RE_TRIM_FUNC  "(caml.*)_[[:digit:]]+"
 #define CAML_ENTRY    "caml_program"
 
+/*
+ * Stack frame layout differs by architecture:
+ *
+ * x86_64 / ARM64:
+ *   offset 0: previous frame pointer
+ *   offset 8: return address
+ *   The return address for frame fi is at fi->retaddr.
+ *
+ * Power64 (ELFv2 ABI):
+ *   offset 0: back chain (previous SP)
+ *   offset 8: CR save area / TOC save area
+ *   offset 16: LR save area (return address)
+ *   IMPORTANT: On Power, the callee saves LR into the CALLER's frame at
+ *   offset 16 before allocating its own frame. So the return address for
+ *   frame fi is at fi->prev + 16, not fi + 16.
+ */
+#if defined(__powerpc64__)
+typedef struct frame_info
+{
+  struct frame_info*  prev;     /* back chain at offset 0 */
+} frame_info;
+
+/* On Power, return address is saved by callee into caller's frame at offset 16 */
+static inline void* get_retaddr(const struct frame_info* fi) {
+  if (!fi->prev || (uintptr_t)fi->prev < 0x1000) return NULL;
+  return *((void**)((char*)fi->prev + 16));
+}
+#else
 typedef struct frame_info
 {
   struct frame_info*  prev;     /* base pointer / frame pointer */
   void*               retaddr;  /* instruction pointer / program counter */
 } frame_info;
+
+static inline void* get_retaddr(const struct frame_info* fi) {
+  return fi->retaddr;
+}
+#endif
 
 /*
  * A backtrace symbol looks like this on Linux:
@@ -36,7 +70,11 @@ typedef struct frame_info
  */
 static const char* backtrace_symbol(const struct frame_info* fi)
 {
-  char** symbols = backtrace_symbols(&fi->retaddr, 1);
+  void* retaddr = get_retaddr(fi);
+  if (!retaddr)
+    return NULL;
+
+  char** symbols = backtrace_symbols(&retaddr, 1);
   if (!symbols) {
     perror("backtrace_symbols");
     return NULL;
@@ -133,6 +171,11 @@ void fp_backtrace(CAMLunused value argv0)
     frame--;
 #endif
     next = frame->prev;
+
+    /* Stop if back chain is NULL or points to very low memory (invalid) */
+    if (!next || (uintptr_t)next < 0x1000) {
+      break;
+    }
 
     /* Detect the simplest kind of infinite loop */
 #if defined(__riscv)

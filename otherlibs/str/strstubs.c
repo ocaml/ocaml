@@ -134,7 +134,8 @@ static value re_alloc_groups(value re, const unsigned char * starttxt,
   res = caml_alloc(n * 2, 0);
   for (int i = 0; i < n; i++) {
     group = &(groups[i]);
-    if (group->start == NULL || group->end == NULL) {
+    if (group->start == NULL || group->end == NULL
+        || group->start > group->end) {
       Field(res, i * 2) = Val_int(-1);
       Field(res, i * 2 + 1) = Val_int(-1);
     } else {

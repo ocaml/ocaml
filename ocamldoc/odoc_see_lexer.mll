@@ -67,7 +67,14 @@ and url = parse
         let s = Lexing.lexeme lexbuf in
         See_url (String.sub s 0 ((String.length s) -1))
       }
-
+  | '>'
+      {
+        failwith "Empty URL"
+      }
+  | _ | eof
+      {
+        failwith "Unterminated URL"
+      }
 
 and doc = parse
   | ([^'"'] | '\n' | "\\'")* "\""
@@ -75,12 +82,20 @@ and doc = parse
         let s = Lexing.lexeme lexbuf in
         See_doc (String.sub s 0 ((String.length s) -1))
       }
+  | _ | eof
+      {
+        failwith "Unterminated document name"
+      }
 
 and file = parse
   | ([^'\''] | '\n' | "\\\"")* "'"
       {
         let s = Lexing.lexeme lexbuf in
         See_file (String.sub s 0 ((String.length s) -1))
+      }
+  | _ | eof
+      {
+        failwith "Unterminated file name"
       }
 
 

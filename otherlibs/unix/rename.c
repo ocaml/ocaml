@@ -22,6 +22,7 @@
 
 CAMLprim value caml_unix_rename(value oldname, value newname)
 {
+  CAMLparam2(oldname, newname);
   char_os * p_old;
   char_os * p_new;
   int ret;
@@ -36,5 +37,5 @@ CAMLprim value caml_unix_rename(value oldname, value newname)
   caml_stat_free(p_old);
   if (ret == -1)
     caml_uerror("rename", oldname);
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }

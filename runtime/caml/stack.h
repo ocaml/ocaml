@@ -45,11 +45,26 @@
 #ifdef TARGET_power
 /* Size of the gc_regs structure, in words.
    See power.S and power/proc.ml for the indices */
-#define Wosize_gc_regs (23 /* int regs */ + 14 /* caller-save float regs */)
+#ifdef WITH_FRAME_POINTERS
+#define Wosize_gc_regs \
+  (22 /* int regs, r23 is ALLOC_PTR */ + 14 /* caller-save float regs */)
+#else
+#define Wosize_gc_regs \
+  (23 /* int regs, r23 is ALLOC_PTR, r31 allocatable */ \
+   + 14 /* caller-save float regs */)
+#endif
 #define Saved_return_address_raw(sp) *((intnat *)((sp) + 16))
 #define First_frame(sp) (sp)
+/* Stack header layout: RESERVED_STACK (32) + TRAP_SIZE + gc_regs (16).
+   TRAP_SIZE matches the value used in power.S and emit.mlp:
+   48 with frame pointers, 16 otherwise. */
+#ifdef WITH_FRAME_POINTERS
+#define Saved_gc_regs(sp) (*(value **)((sp) + 32 + 48 + 8))
+#define Stack_header_size (32 + 48 + 16)
+#else
 #define Saved_gc_regs(sp) (*(value **)((sp) + 32 + 16 + 8))
 #define Stack_header_size (32 + 16 + 16)
+#endif
 #define CODE_POINTER_MARK_BIT 0
 #endif
 

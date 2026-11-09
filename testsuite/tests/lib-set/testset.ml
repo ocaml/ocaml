@@ -218,14 +218,20 @@ let test x s1 s2 =
 
 let relt() = Random.int 10
 
-let rset() =
-  let s = ref S.empty in
+let rset from =
+  let s = ref from in
   for i = 1 to Random.int 10 do s := S.add (relt()) !s done;
   !s
 
 let _ =
   Random.init 42;
-  for i = 1 to 10000 do test (relt()) (rset()) (rset()) done
+  for i = 1 to 9000 do test (relt ()) (rset S.empty) (rset S.empty) done;
+  for i = 1 to 1000 do
+    let set = rset S.empty in
+    (* Create sets with shared structure, otherwise the use of physical equality
+       is never tested. *)
+    test (relt ()) (rset set) (rset set)
+  done
 
 let () =
   (* #6645: check that adding an element to set that already contains

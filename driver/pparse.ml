@@ -166,15 +166,24 @@ let parse (type a) (kind : a ast_kind) lexbuf : a =
   | Signature -> Parse.interface lexbuf
 
 let set_input_lexbuf ic =
-  let source =
-    (* We read the whole source file at once. This guarantees that all
-       input is in the lexing buffer and can be reused by error printers
-       to quote source code at specific locations -- see #12238 and the
-       Location.lines_around* functions. *)
-    In_channel.input_all ic
+  let lexbuf =
+    if Stdlib.in_channel_length ic < Sys.max_string_length then begin
+      let source =
+        (* We read the whole source file at once. This guarantees that all
+           input is in the lexing buffer and can be reused by error printers
+           to quote source code at specific locations -- see #12238 and the
+           Location.lines_around* functions. *)
+        In_channel.input_all ic
+      in
+      Some (Lexing.from_string source)
+    end else begin
+      (* A fallback when the file is too large, which may happen in
+         practice on 32bit systems with source files above 16MB
+         (#15125). *)
+      None
+    end
   in
-  let lexbuf = Lexing.from_string source in
-  Location.input_lexbuf := Some lexbuf;
+  Location.input_lexbuf := lexbuf;
   lexbuf
 
 let check_loc_ghost (type a) (kind : a ast_kind) (ast : a) ~inputfile =
@@ -194,16 +203,16 @@ let file_aux ~tool_name ~sourcefile inputfile (type a) parse_fun invariant_fun
   let ast =
     let ast_magic = magic_of_kind kind in
     let (ic, is_ast_file) = open_and_check_magic inputfile ast_magic in
-    let close_ic () = close_in ic in
+    Fun.protect ~finally:(fun () -> close_in ic) @@ fun () ->
     if is_ast_file then begin
       let ast =
-        Fun.protect ~finally:close_ic @@ fun () ->
         Location.input_name := (input_value ic : string);
         begin match
           In_channel.with_open_bin !Location.input_name set_input_lexbuf
         with
-        | (_ : Lexing.lexbuf) -> ()
-        | exception Sys_error _ -> ()
+        | Some (_ : Lexing.lexbuf) -> ()
+        | None | exception Sys_error _ ->
+            ()
         end;
         if !Clflags.unsafe then
           Location.prerr_warning (Location.in_file !Location.input_name)
@@ -214,10 +223,11 @@ let file_aux ~tool_name ~sourcefile inputfile (type a) parse_fun invariant_fun
       (* if all_ppx <> [], invariant_fun will be called by apply_rewriters *)
       ast
     end else begin
+      seek_in ic 0;
       let lexbuf =
-        Fun.protect ~finally:close_ic @@ fun () ->
-        seek_in ic 0;
-        set_input_lexbuf ic
+        match set_input_lexbuf ic with
+        | Some lexbuf -> lexbuf
+        | None -> Lexing.from_channel ic
       in
       Location.init lexbuf sourcefile;
       Profile.record_call "parser" (fun () -> parse_fun lexbuf)

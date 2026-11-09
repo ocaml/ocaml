@@ -85,6 +85,15 @@ unknown
   AC_MSG_RESULT([$ocaml_cc_vendor])
 ])
 
+AC_DEFUN([OCAML_CC_CCOMP_TYPE], [
+  AC_REQUIRE([AC_PROG_CC])
+  AC_CACHE_CHECK([whether $CC uses the MSVC or cc command line interface],
+    [ocaml_cv_cc_ccomp_type],
+    [AS_IF([$CC -nologo '-?' >&AS_MESSAGE_LOG_FD 2>&1],
+      [ocaml_cv_cc_ccomp_type=msvc],
+      [ocaml_cv_cc_ccomp_type=cc])])
+])
+
 AC_DEFUN([OCAML_SIGNAL_HANDLERS_SEMANTICS], [
   AC_MSG_NOTICE([checking semantics of signal handlers])
   AC_CHECK_FUNC([sigaction], [has_sigaction=true], [has_sigaction=false])
@@ -685,3 +694,15 @@ AC_DEFUN([OCAML_CXX_COMPILE_STDCXX_11], [
       [ocaml_cv_prog_cxx=""])])
   AC_MSG_RESULT([${ocaml_cv_prog_cxx:-none found}])
   ocamltest_CXX="$ocaml_cv_prog_cxx"])
+
+# Ensures that AC_CHECK_DECL and AC_CHECK_DECLS will, on macOS, report
+# "no" for functions that are declared as existing in future macOS
+# versions only.
+# Workaround for a bug fixed in Autoconf 2.73.
+AC_DEFUN([OCAML_CHECK_DECL_MACOS], [
+  saved_CFLAGS="$CFLAGS"
+  AS_IF([test x"$ax_cv_check_cflags__Werror_unguarded_availability_new" = xyes],
+    [CFLAGS="$CFLAGS -Werror=unguarded-availability-new"])
+  AC_CHECK_DECL([$1], [$2], [$3], [$4])
+  CFLAGS="$saved_CFLAGS"
+])

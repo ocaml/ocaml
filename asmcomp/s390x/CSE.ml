@@ -28,7 +28,7 @@ inherit cse_generic as super
 
 method! class_of_operation op =
   match op with
-  | Ispecific(Imultaddf | Imultsubf) -> Op_pure
+  | Ispecific(Imultaddf | Imultsubf | Isqrtf | Ibswap _) -> Op_pure
   | _ -> super#class_of_operation op
 
 method! is_cheap_operation op =

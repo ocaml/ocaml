@@ -46,7 +46,6 @@ type error =
   | Opened_object of Path.t option
   | Not_an_object of type_expr
   | Repeated_tuple_label of string
-  | Polymorphic_optional_param of string
   | Functor_optional_param of string
 
 
@@ -519,11 +518,12 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
     let arg_ty =
       match l with
       | Nolabel | Labelled _ -> arg_ty
-      | Optional l -> begin
-          if not (Btype.tpoly_is_mono arg_ty) then
-            Error.log_and_raise st1.ptyp_loc env (Polymorphic_optional_param l);
-          newmono
-            (newconstr Predef.path_option [Btype.tpoly_get_mono arg_ty])
+      | Optional _ -> begin
+          (* Optional parameter types store [option] inside [Tpoly],
+             leaving any quantifiers directly beneath [Tarrow]. *)
+          let ty, vars = Btype.tpoly_get_poly arg_ty in
+          newty
+            (Tpoly (newconstr Predef.path_option [ty], vars))
         end
     in
     let ty = newty (Tarrow(l, arg_ty, ret_cty.ctyp_type, commu_ok)) in
@@ -1122,9 +1122,6 @@ let report_error_doc loc env = function
         pp_type ty
   | Repeated_tuple_label l ->
       Location.errorf ~loc "@[This tuple type has two labels named %a@]"
-        Style.inline_code l
-  | Polymorphic_optional_param l ->
-      Location.errorf ~loc "@[Optional parameter %a cannot be polymorphic@]"
         Style.inline_code l
   | Functor_optional_param l ->
       Location.errorf ~loc

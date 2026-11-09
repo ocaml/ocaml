@@ -25,6 +25,7 @@
 #include "caml/platform.h"
 #include "caml/startup_aux.h"
 
+#include <assert.h>
 #include <fcntl.h>
 #include <stdatomic.h>
 #include <stdio.h>
@@ -44,6 +45,15 @@
 #endif
 
 #define RUNTIME_EVENTS_VERSION 1
+
+/* A maximum-length custom event value must fit in a single ring message,
+   once padded to a whole number of 64-bit elements and given its header and
+   timestamp. */
+static_assert((RUNTIME_EVENTS_MAX_CUSTOM_VALUE_BYTES + sizeof(uint64_t))
+                  / sizeof(uint64_t) + 2
+              <= RUNTIME_EVENTS_MAX_MSG_LENGTH,
+              "a custom event value of RUNTIME_EVENTS_MAX_CUSTOM_VALUE_BYTES "
+              "must fit in a ring message of RUNTIME_EVENTS_MAX_MSG_LENGTH");
 
 /*
 This file contains the implementation for runtime_events's producer. The
@@ -88,7 +98,7 @@ typedef enum { EV_RUNTIME, EV_USER } ev_category;
 
 /* These store state for the current ring buffers open for writing */
 static struct runtime_events_metadata_header *current_metadata = NULL;
-static int current_ring_total_size;
+static size_t current_ring_total_size;
 static char_os *runtime_events_path;
 static char_os *current_ring_loc = NULL;
 
@@ -238,7 +248,7 @@ void caml_runtime_events_destroy(void) {
 static void runtime_events_create_from_stw_single(void) {
   /* Don't initialise runtime_events twice */
   if (!atomic_load_acquire(&runtime_events_enabled)) {
-    int ring_headers_length, ring_data_length;
+    size_t ring_headers_length, ring_data_length;
 #ifdef _WIN32
     DWORD pid = GetCurrentProcessId();
 #else
@@ -246,22 +256,49 @@ static void runtime_events_create_from_stw_single(void) {
     long int pid = getpid();
 #endif
 
-    current_ring_loc = caml_stat_alloc(RUNTIME_EVENTS_MAX_MSG_LENGTH);
+    int path_len, err;
 
     if (runtime_events_path) {
-      snprintf_os(current_ring_loc, RUNTIME_EVENTS_MAX_MSG_LENGTH,
-                  T("%s/%ld.events"), runtime_events_path, pid);
+      path_len = snprintf_os(NULL, 0, T("%s/%ld.events"),
+                             runtime_events_path, pid);
     } else {
-      snprintf_os(current_ring_loc, RUNTIME_EVENTS_MAX_MSG_LENGTH,
-                  T("%ld.events"), pid);
+      path_len = snprintf_os(NULL, 0, T("%ld.events"), pid);
+    }
+    if (path_len < 0) {
+      caml_fatal_error("runtime_events: cannot format the ring buffer path");
     }
 
-    current_ring_total_size =
-        RUNTIME_EVENTS_MAX_CUSTOM_EVENTS *
+    /* The length is in char_os, which is wider than a byte on Windows. */
+    current_ring_loc = caml_stat_alloc((path_len + 1) * sizeof(char_os));
+
+    if (runtime_events_path) {
+      err = snprintf_os(current_ring_loc, path_len + 1,
+                        T("%s/%ld.events"), runtime_events_path, pid);
+    } else {
+      err = snprintf_os(current_ring_loc, path_len + 1,
+                        T("%ld.events"), pid);
+    }
+    if (err != path_len) {
+      caml_fatal_error("runtime_events: cannot format the ring buffer path");
+    }
+
+    /* Computed in 64 bits: max_domains * ring_size_bytes can exceed the range
+       of a 32-bit size_t at large OCAMLRUNPARAM e or d settings, so the result
+       is checked before it is narrowed. */
+    uint64_t ring_total_size =
+        (uint64_t)RUNTIME_EVENTS_MAX_CUSTOM_EVENTS *
           sizeof(struct runtime_events_custom_event) +
-        caml_params->max_domains * (ring_size_words * sizeof(uint64_t) +
+        (uint64_t)caml_params->max_domains *
+          ((uint64_t)ring_size_words * sizeof(uint64_t) +
                         sizeof(struct runtime_events_buffer_header)) +
         sizeof(struct runtime_events_metadata_header);
+
+    if (ring_total_size > SIZE_MAX) {
+      caml_fatal_error("Ring buffer of %" PRIu64 " bytes exceeds the address "
+                       "space, reduce OCAMLRUNPARAM e or d", ring_total_size);
+    }
+
+    current_ring_total_size = (size_t)ring_total_size;
 
 #ifdef _WIN32
     ring_file_handle = CreateFile(
@@ -285,12 +322,13 @@ static void runtime_events_create_from_stw_single(void) {
       }
     }
 
+    /* Shifting a 32-bit size_t by 32 is undefined, so widen first. */
     ring_handle = CreateFileMapping(
       ring_file_handle,
       NULL,
       PAGE_READWRITE,
-      0,
-      current_ring_total_size,
+      (DWORD)((uint64_t)current_ring_total_size >> 32),
+      (DWORD)(current_ring_total_size & 0xFFFFFFFF),
       NULL
     );
 
@@ -520,17 +558,23 @@ static void write_to_ring(ev_category category, ev_message_type type,
   /* account for header and timestamp (which are both uint64) */
   uint64_t length_with_header_ts = event_length + 2;
 
-  /* We must fatal error if the event is larger than the ring buffer.
+  /* We must fatal error if the event cannot fit in the ring buffer.
      Otherwise the loop below loops forever. In practice only the
      alloc event can hit this, which is emitted by the instrumented
      runtime. But users can also create arbitrarily sized events.
-     Closes #13335. */
-  if (length_with_header_ts > ring_size_words) {
+     Closes #13335.
+
+     An event is only written whole, so one that would straddle the end of
+     the ring is preceded by padding and written at the start instead. The
+     loop below therefore has to fit the event plus that padding, and the
+     padding can be one word short of the event itself. Half the ring is the
+     largest event that always fits. Closes #15043. */
+  if (2 * length_with_header_ts > ring_size_words) {
     int min_e = 0;
-    while ((1ULL << min_e) < length_with_header_ts) min_e++;
+    while ((1ULL << min_e) < 2 * length_with_header_ts) min_e++;
     caml_fatal_error(
-        "runtime_events: event of %" PRIu64 " words exceeds the ring buffer "
-        "(%d words, from OCAMLRUNPARAM=e=%" CAML_PRIuNAT "). "
+        "runtime_events: event of %" PRIu64 " words does not fit in the ring "
+        "buffer (%d words, from OCAMLRUNPARAM=e=%" CAML_PRIuNAT "). "
         "Use OCAMLRUNPARAM=e=%d or higher.",
         length_with_header_ts, ring_size_words,
         caml_params->runtime_events_log_wsize, min_e);
@@ -578,6 +622,7 @@ static void write_to_ring(ev_category category, ev_message_type type,
   }
 
   /* First we check if a write would take us over the head */
+  int head_advanced = 0;
   while ((ring_tail + length_with_header_ts + padding_required) - ring_head >=
          ring_size_words) {
     /* The write would over-write some old bit of data. Need to advance the
@@ -588,6 +633,17 @@ static void write_to_ring(ev_category category, ev_message_type type,
 
     // advance the ring head
     atomic_store_release(&domain_ring_header->ring_head, ring_head);
+    head_advanced = 1;
+  }
+
+  if (head_advanced) {
+    /* The head advance must become visible before the stores that overwrite
+       the slots it released. atomic_store_release orders accesses before the
+       store, not after it, so without this fence a consumer can observe the
+       overwriting stores while the old ring_head is still visible. It then
+       reads overwritten data and cannot tell, because the head it re-reads
+       says the slot was never released. */
+    atomic_thread_fence(memory_order_release);
   }
 
   if (padding_required > 0) {
@@ -792,6 +848,11 @@ CAMLprim value caml_runtime_events_user_write(
     value record = Field(event_type, 0);
     value serializer = Field(record, 0);
 
+    /* The encoder may fill the buffer to RUNTIME_EVENTS_MAX_CUSTOM_VALUE_BYTES
+       maximum, and the padding count is written one element beyond it. */
+    CAMLassert(caml_string_length(write_buffer)
+               >= RUNTIME_EVENTS_MAX_CUSTOM_VALUE_BYTES + sizeof(uint64_t));
+
     res = caml_callback2(serializer, write_buffer, event_content);
 
     /* Need to check whether the ring is active again as the ring might
@@ -799,7 +860,17 @@ CAMLprim value caml_runtime_events_user_write(
     if ( !ring_is_active() )
       CAMLreturn(Val_unit);
 
-    uintnat len_bytes = Int_val(res);
+    intnat len_bytes = Int_val(res);
+
+    /* [encode] returns the number of bytes it wrote. The write buffer is
+       RUNTIME_EVENTS_MAX_CUSTOM_VALUE_BYTES plus one element to hold the
+       trailing padding count, so a longer value overflows the consumer
+       read buffer. */
+    if (len_bytes < 0 || len_bytes > RUNTIME_EVENTS_MAX_CUSTOM_VALUE_BYTES) {
+      caml_invalid_argument(
+        "Runtime_events.User.write: encode returned an invalid length");
+    }
+
     uintnat len_64bit_word = (len_bytes + sizeof(uint64_t)) / sizeof(uint64_t);
     uintnat offset_index = len_64bit_word * sizeof(uint64_t) - 1;
     Bytes_val(write_buffer)[offset_index] = offset_index - len_bytes;

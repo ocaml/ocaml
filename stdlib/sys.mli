@@ -43,7 +43,24 @@ val runtime_executable : string
 *)
 
 external file_exists : string -> bool = "caml_sys_file_exists"
-(** Test if a file with the given name exists. *)
+(** [file_exists p] tests if the file path [p] exists.
+
+    However, system errors such as insufficient permissions to search
+    directories are returned as [false], in which case the file path may
+    actually exist. It also masks serious error conditions in the system and
+    returns them as [false]. Unless you rely on that behavior, use
+    {!Sys.filepath_exists} instead.
+*)
+
+external filepath_exists : string -> bool = "caml_sys_filepath_exists"
+(** [filepath_exists p] tests if the file path [p] exists.
+
+    If [false] is returned, the path [p] does not exist on the file system. All
+    other errors, including insufficient permissions to search directories, are
+    reported by a [Sys_error] exception.
+
+    @since 5.6
+*)
 
 external is_directory : string -> bool = "caml_sys_is_directory"
 (** Returns [true] if the given name refers to a directory,

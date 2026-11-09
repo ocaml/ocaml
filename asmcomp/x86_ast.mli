@@ -109,11 +109,16 @@ type instruction =
   | ADDSD of arg * arg
   | AND of arg * arg
   | ANDPD of arg * arg
+  | BSF of arg * arg
+  | BSR of arg * arg
   | BSWAP of arg
+  | BTS of arg * arg
   | CALL of arg
   | CDQ
   | CMOV of condition * arg * arg
   | CMP of arg * arg
+  | CMPXCHG of arg * arg
+  | LOCK_CMPXCHG of arg * arg
   | CMPSD of float_condition * arg * arg
   | COMISD of arg * arg
   | CQO

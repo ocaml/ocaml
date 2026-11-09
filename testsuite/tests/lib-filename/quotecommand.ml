@@ -159,7 +159,11 @@ let _ =
     (fun () -> Filename.quote_command "true" ~stdout:"a%b" []);
   check_raises {|stdout "|}
     (fun () -> Filename.quote_command "true" ~stdout:{|a"b|} []);
+  check_raises "stdout LF"
+    (fun () -> Filename.quote_command "true" ~stdout:"a\nb" []);
   check_raises "program %"
     (fun () -> Filename.quote_command "a%b" []);
   check_raises {|program "|}
-    (fun () -> Filename.quote_command {|a"b|} [])
+    (fun () -> Filename.quote_command {|a"b|} []);
+  check_raises "program LF"
+    (fun () -> Filename.quote_command "a\nb" [])

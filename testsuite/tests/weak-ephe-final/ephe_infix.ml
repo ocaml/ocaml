@@ -8,7 +8,7 @@ let infix n = let rec f () = n and g () = f () in g
 let () =
   let w = Weak.create 1 in
   Weak.set w 0 (Some (infix 12));
-  match Weak.get_copy w 0 with Some h -> ignore (h ()) | _ -> ()
+  match Weak.get w 0 with Some h -> ignore (h ()) | _ -> ()
 
 (* Issue #7810 *)
 let ephe x =

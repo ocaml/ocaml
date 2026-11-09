@@ -135,6 +135,7 @@ type error =
   | With_cannot_remove_packed_modtype of Path.t * module_type
   | Cannot_alias of Path.t
   | Val_in_structure
+  | Unexpected_hole
 
 exception Error_forward of Location.error
 exception Errors of Location.t * Typing_recovery.Error_set.t

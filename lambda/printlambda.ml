@@ -277,11 +277,14 @@ let primitive ppf = function
        | Backend_type -> "backend_type"
        | Standard_library_default -> "standard_library_default" in
      fprintf ppf "sys.constant_%s" const_name
-  | Pisint -> fprintf ppf "isint"
+  | Pisint { variant_only = false } -> fprintf ppf "isint"
+  | Pisint { variant_only = true } -> fprintf ppf "isint_variant"
   | Pisout -> fprintf ppf "isout"
   | Pcheckbound -> fprintf ppf "checkbound"
   | Pbintofint bi -> print_boxed_integer "of_int" ppf bi
   | Pintofbint bi -> print_boxed_integer "to_int" ppf bi
+  | Pbintoffloat bi -> print_boxed_integer "of_float" ppf bi
+  | Pfloatofbint bi -> print_boxed_integer "to_float" ppf bi
   | Pcvtbint (bi1, bi2) -> print_boxed_integer_conversion ppf bi1 bi2
   | Pnegbint bi -> print_boxed_integer "neg" ppf bi
   | Paddbint bi -> print_boxed_integer "add" ppf bi
@@ -362,6 +365,8 @@ let primitive ppf = function
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
   | Patomic_load -> fprintf ppf "atomic_load"
   | Patomic_fetch_add -> fprintf ppf "atomic_fetch_add"
+  | Patomic_exchange -> fprintf ppf "atomic_exchange"
+  | Patomic_cas -> fprintf ppf "atomic_cas"
   | Popaque -> fprintf ppf "opaque"
   | Pdls_get -> fprintf ppf "dls_get"
   | Ppoll -> fprintf ppf "poll"
@@ -430,11 +435,13 @@ let name_of_primitive = function
   | Parrayrefs _ -> "Parrayrefs"
   | Parraysets _ -> "Parraysets"
   | Pctconst _ -> "Pctconst"
-  | Pisint -> "Pisint"
+  | Pisint _ -> "Pisint"
   | Pisout -> "Pisout"
   | Pcheckbound -> "Pcheckbound"
   | Pbintofint _ -> "Pbintofint"
   | Pintofbint _ -> "Pintofbint"
+  | Pbintoffloat _ -> "Pbintoffloat"
+  | Pfloatofbint _ -> "Pfloatofbint"
   | Pcvtbint _ -> "Pcvtbint"
   | Pnegbint _ -> "Pnegbint"
   | Paddbint _ -> "Paddbint"
@@ -472,6 +479,8 @@ let name_of_primitive = function
   | Pint_as_pointer -> "Pint_as_pointer"
   | Patomic_load -> "Patomic_load"
   | Patomic_fetch_add -> "Patomic_fetch_add"
+  | Patomic_exchange -> "Patomic_exchange"
+  | Patomic_cas -> "Patomic_cas"
   | Popaque -> "Popaque"
   | Prunstack -> "Prunstack"
   | Presume -> "Presume"

@@ -64,6 +64,7 @@ utils_SOURCES = $(addprefix utils/, \
   config.mli config.ml \
   build_path_prefix_map.mli build_path_prefix_map.ml \
   format_doc.mli format_doc.ml \
+  utf8_lexeme.mli utf8_lexeme.ml \
   misc.mli misc.ml \
   identifiable.mli identifiable.ml \
   numbers.mli numbers.ml \
@@ -1695,6 +1696,7 @@ stdlib/libcamlrun.$(A): runtime-all
 clean::
 	rm -f $(addprefix runtime/, *.o *.obj *.a *.lib *.so *.dll)
 	rm -f $(addprefix runtime/, ocamlrun ocamlrund ocamlruni ocamlruns sak)
+	rm -f sak.obj
 	rm -f $(addprefix runtime/, \
 	  ocamlrun.exe ocamlrund.exe ocamlruni.exe ocamlruns.exe sak.exe)
 # jumptbl.h and opnames.h stopped being generated in #14488, but the two headers
@@ -2260,6 +2262,12 @@ ocamldebug_LIBRARIES = compilerlibs/ocamlcommon \
 otherlibs/unix/unix.cma: otherlibraries
 otherlibs/str/str.cma: otherlibraries
 
+# Root-directory targets depend on these .cmi/.cmx via .depend. The empty
+# recipes keep the generic %.cmi/%.cmx rules from racing with the otherlibs
+# sub-make, which records a different source path and digest in the artefacts.
+otherlibs/unix/unix.cmi otherlibs/str/str.cmi: otherlibraries ;
+otherlibs/unix/unix.cmx otherlibs/str/str.cmx: otherlibrariesopt ;
+
 debugger/%: VPATH += otherlibs/unix otherlibs/dynlink
 
 ocamldebug_COMPILER_SOURCES = $(addprefix toplevel/, \
@@ -2464,6 +2472,7 @@ ocamlprof_SOURCES = \
   config.mli config.ml \
   build_path_prefix_map.mli build_path_prefix_map.ml \
   format_doc.mli format_doc.ml \
+  utf8_lexeme.mli utf8_lexeme.ml \
   misc.mli misc.ml \
   identifiable.mli identifiable.ml \
   numbers.mli numbers.ml \
@@ -2491,6 +2500,7 @@ ocamlcp_ocamloptp_SOURCES = \
   config.mli config.ml \
   build_path_prefix_map.mli build_path_prefix_map.ml \
   format_doc.mli format_doc.ml \
+  utf8_lexeme.mli utf8_lexeme.ml \
   misc.mli misc.ml \
   warnings.mli warnings.ml \
   identifiable.mli identifiable.ml \
@@ -2519,6 +2529,7 @@ ocamlmklib_SOURCES = \
   config.ml \
   build_path_prefix_map.ml \
   format_doc.ml \
+  utf8_lexeme.ml \
   misc.ml \
   ocamlmklib.mli ocamlmklib.ml
 
@@ -2529,6 +2540,7 @@ ocamlmktop_SOURCES = \
   config.mli config.ml \
   build_path_prefix_map.mli build_path_prefix_map.ml \
   format_doc.mli format_doc.ml \
+  utf8_lexeme.mli utf8_lexeme.ml \
   misc.mli misc.ml \
   identifiable.mli identifiable.ml \
   numbers.mli numbers.ml \

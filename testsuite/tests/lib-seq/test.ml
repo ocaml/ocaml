@@ -352,5 +352,15 @@ let () =
   assert ((List.of_seq (Seq.ints_in_range ~first:6 ~last:6 ))= [6]);
 ;;
 
+(* ints_in_range at max_int *)
+let () =
+  (* Bound traversal so an overflowing range fails instead of looping. *)
+  let range first =
+    Seq.ints_in_range ~first ~last:max_int |> Seq.take 3 |> List.of_seq
+  in
+  assert (range max_int = [max_int]);
+  assert (range (max_int - 1) = [max_int - 1; max_int]);
+;;
+
 
 let () = print_endline "OK";;

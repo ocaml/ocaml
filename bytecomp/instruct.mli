@@ -99,6 +99,8 @@ type ccall_hint =
     (* Bigarray access *)
   | Hint_primitive of Primitive.description
     (* Primitive call *)
+  | Hint_immediate_result
+    (* The value returned by the C function is an immediate *)
 
 type optimization_hint =
   | Hint_immutable_block
@@ -109,7 +111,13 @@ type optimization_hint =
     (* Closure allocations *)
   | Hint_ccall of ccall_hint
     (* C call *)
-  | Hint_physical_comparison
+  | Hint_int_equality_test
+    (* Integer equality or inequality: both arguments are immediates *)
+  | Hint_immediate
+    (* The value produced by the instruction is an immediate *)
+  | Hint_variant
+    (* The argument of the instruction is a value of a variant type: if it
+       is an immediate, it is a constant constructor *)
 
 (* Abstract machine instructions *)
 
@@ -136,12 +144,12 @@ type instruction =
   | Kconst of structured_constant
   | Kmakeblock of int * int * Asttypes.mutable_flag (* size, tag, mutable *)
   | Kmakefloatblock of int * Asttypes.mutable_flag
-  | Kgetfield of int
+  | Kgetfield of int * Lambda.immediate_or_pointer
   | Ksetfield of int
   | Kgetfloatfield of int
   | Ksetfloatfield of int
   | Kvectlength of Lambda.array_kind
-  | Kgetvectitem
+  | Kgetvectitem of Lambda.immediate_or_pointer
   | Ksetvectitem
   | Kgetstringchar
   | Kgetbyteschar
@@ -164,7 +172,7 @@ type instruction =
   | Kphyscomp of physical_comparison
   | Koffsetint of int
   | Koffsetref of int
-  | Kisint
+  | Kisint of bool (* the argument is a value of a variant type *)
   | Kisout
   | Kgetmethod
   | Kgetpubmet of int

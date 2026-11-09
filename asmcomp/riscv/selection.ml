@@ -20,9 +20,13 @@ open Cmm
 open Arch
 open Mach
 
+(* If you update [inline_ops], you may need to update [is_simple_expr] and/or
+   [effects_of], below. *)
+let inline_ops = [ "sqrt"; "caml_fma" ]
+
 (* Instruction selection *)
 
-class selector = object
+class selector = object (self)
 
 inherit Selectgen.selector_generic as super
 
@@ -35,6 +39,18 @@ method! is_immediate op n =
   (* sub immediate is turned into add immediate opposite *)
   | Isub -> is_immediate (-n)
   | _ -> super#is_immediate op n
+
+method! is_simple_expr = function
+  (* inlined floating-point ops are simple if their arguments are *)
+  | Cop(Cextcall (fn, _, _, _), args, _) when List.mem fn inline_ops ->
+      List.for_all self#is_simple_expr args
+  | e -> super#is_simple_expr e
+
+method! effects_of e =
+  match e with
+  | Cop(Cextcall (fn, _, _, _), args, _) when List.mem fn inline_ops ->
+      Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
+  | e -> super#effects_of e
 
 method select_addressing _ = function
   | Cop(Cadda, [arg; Cconst_int (n, _)], _) when is_immediate n ->
@@ -57,6 +73,14 @@ method! select_operation op args dbg =
       (Ispecific (Imultsubf true), [arg1; arg2; arg3])
   | (Cnegf, [Cop(Caddf, [Cop(Cmulf, [arg1; arg2], _); arg3], _)]) ->
       (Ispecific (Imultaddf true), [arg1; arg2; arg3])
+  (* Recognize square root *)
+  | (Cextcall("sqrt", _, _, _), [arg]) ->
+      (Ispecific Isqrtf, [arg])
+  (* Only the unboxed [Float.fma] passes floats in registers, hence the
+     argument types. *)
+  | (Cextcall("caml_fma", _, [XFloat; XFloat; XFloat], false),
+     [arg1; arg2; arg3]) ->
+      (Ispecific (Imultaddf false), [arg1; arg2; arg3])
   | (Cstore (Word_int | Word_val as memory_chunk, Assignment), [arg1; arg2]) ->
       (* Use trivial addressing mode for non-initializing stores *)
       (Istore (memory_chunk, Iindexed 0, true), [arg2; arg1])

@@ -37,9 +37,11 @@ CAMLprim value caml_unix_realpath (value p)
 
   caml_unix_check_path (p, "realpath");
   wp = caml_stat_strdup_to_utf16 (String_val (p));
+  caml_enter_blocking_section();
   h = CreateFile (wp, 0,
                   FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
                   OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+  caml_leave_blocking_section();
   caml_stat_free (wp);
 
   if (h == INVALID_HANDLE_VALUE)
@@ -48,7 +50,9 @@ CAMLprim value caml_unix_realpath (value p)
     caml_uerror ("realpath", p);
   }
 
+  caml_enter_blocking_section();
   wr_len = GetFinalPathNameByHandle (h, NULL, 0, VOLUME_NAME_DOS);
+  caml_leave_blocking_section();
   if (wr_len == 0)
   {
     caml_win32_maperr (GetLastError ());
@@ -57,7 +61,9 @@ CAMLprim value caml_unix_realpath (value p)
   }
 
   wr = caml_stat_alloc ((wr_len + 1) * sizeof (wchar_t));
+  caml_enter_blocking_section();
   wr_len = GetFinalPathNameByHandle (h, wr, wr_len, VOLUME_NAME_DOS);
+  caml_leave_blocking_section();
 
   if (wr_len == 0)
   {

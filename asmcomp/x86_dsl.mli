@@ -110,10 +110,15 @@ module I : sig
   val addsd: arg -> arg -> unit
   val and_: arg -> arg -> unit
   val andpd: arg -> arg -> unit
+  val bsf: arg -> arg -> unit
+  val bsr: arg -> arg -> unit
   val bswap: arg -> unit
+  val bts: arg -> arg -> unit
   val call: arg -> unit
   val cdq: unit -> unit
   val cmp: arg -> arg -> unit
+  val cmpxchg: arg -> arg -> unit
+  val lock_cmpxchg: arg -> arg -> unit
   val cmpsd : float_condition -> arg -> arg -> unit
   val comisd: arg -> arg -> unit
   val cqo: unit -> unit

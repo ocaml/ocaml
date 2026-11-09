@@ -36,21 +36,22 @@
 #define O_RSYNC 0
 #endif
 
-static const int open_flag_table[15] = {
+static const int open_flag_table[16] = {
   O_RDONLY, O_WRONLY, O_RDWR, O_NONBLOCK, O_APPEND, O_CREAT, O_TRUNC, O_EXCL,
   O_NOCTTY, O_DSYNC, O_SYNC, O_RSYNC,
   0, /* O_SHARE_DELETE, Windows-only */
   0, /* O_CLOEXEC, treated specially */
-  0  /* O_KEEPEXEC, treated specially */
+  0, /* O_KEEPEXEC, treated specially */
+  O_NOFOLLOW
 };
 
 enum { CLOEXEC = 1, KEEPEXEC = 2 };
 
-static const int open_cloexec_table[15] = {
+static const int open_cloexec_table[16] = {
   0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0,
   0,
-  CLOEXEC, KEEPEXEC
+  CLOEXEC, KEEPEXEC, 0
 };
 
 CAMLprim value caml_unix_open(value path, value flags, value vperm)

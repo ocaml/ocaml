@@ -185,7 +185,7 @@ type _ t = Int : int -> int t | Bool : bool -> bool t
 (let
   (test/0 =
      (function param/0 : int
-       (if param/0 (field_imm 0 (field_imm 0 param/0)) 0)))
+       (if param/0 (field_int 0 (field_imm 0 param/0)) 0)))
   (apply (field_mut 1 (global Toploop!)) "test" test/0))
 val test : int t option -> int = <fun>
 |}]
@@ -207,7 +207,7 @@ type _ t = Int : int -> int t | Bool : bool -> bool t
   (test/1 =
      (function param/1 : int
        (let (*match*/8 =o (field_mut 0 param/1))
-         (if *match*/8 (field_imm 0 (field_imm 0 *match*/8)) 0))))
+         (if *match*/8 (field_int 0 (field_imm 0 *match*/8)) 0))))
   (apply (field_mut 1 (global Toploop!)) "test" test/1))
 val test : int t option ref -> int = <fun>
 |}]
@@ -238,8 +238,8 @@ type _ t = Int : int -> int t | Bool : bool -> bool t
            (let
              (*match*/10 =a (field_imm 0 *match*/9)
               *match*/11 =o (field_mut 0 (field_imm 0 *match*/10)))
-             (if *match*/11 (field_imm 0 (field_imm 1 *match*/10))
-               (~ (field_imm 0 (field_imm 1 *match*/10)))))
+             (if *match*/11 (field_int 0 (field_imm 1 *match*/10))
+               (~ (field_int 0 (field_imm 1 *match*/10)))))
            3))))
   (apply (field_mut 1 (global Toploop!)) "test" test/2))
 val test : 'a -> int = <fun>
@@ -409,7 +409,7 @@ external compare_string : string -> string -> int = "%compare"
          (switch* t1/0
           case tag 0:
            (switch t2/0
-            case tag 0: (compare_ints (field_imm 0 t1/0) (field_imm 0 t2/0))
+            case tag 0: (compare_ints (field_int 0 t1/0) (field_int 0 t2/0))
             default: -1)
           case tag 1:
            (catch
@@ -459,14 +459,16 @@ let f x y =
      (function x/3[int] y/0[int] : int
        (catch
          (catch
-           (catch (if (isint y/0) (if (!= y/0 19896) (exit 45) 0) (exit 45))
+           (catch
+             (if (isint_variant y/0) (if (!= y/0 19896) (exit 45) 0)
+               (exit 45))
             with (45)
              (if (!= x/3 19674)
                (if (>= x/3 19675) (exit 44) (if (>= y/0 19898) (exit 42) 1))
-               (if (isint y/0) (if (!= y/0 19897) (exit 44) (exit 42))
-                 (exit 44))))
+               (if (isint_variant y/0)
+                 (if (!= y/0 19897) (exit 44) (exit 42)) (exit 44))))
           with (44)
-           (if (isint y/0) (if (!= y/0 19898) (exit 42) 2) (exit 42)))
+           (if (isint_variant y/0) (if (!= y/0 19898) (exit 42) 2) (exit 42)))
         with (42) 3)))
   (apply (field_mut 1 (global Toploop!)) "f" f/4))
 val f : [< `X1 | `X2 | `X3 ] -> [< `Y1 | `Y2 | `Y3 ] -> int = <fun>
@@ -499,7 +501,7 @@ let check_results r1 r2 =
                           case tag 0: (exit 52)
                           case tag 1:
                            (let (*match*/18 =a (field_imm 0 *match*/17))
-                             (if (isint *match*/18)
+                             (if (isint_variant *match*/18)
                                (if (!= *match*/18 66) (exit 53) r/2)
                                (exit 53)))))
                        (switch* (field_imm 1 *match*/16)
@@ -514,3 +516,163 @@ val check_results :
   ('a -> ('b, [< `A | `B ]) result * ('b, [< `A | `B ]) result) ->
   'a -> ('b, [> `A | `B ]) result = <fun>
 |}];;
+
+type ab = A | B
+type t = { a : ab; mutable b : [ `X of int | `Y of int ] }
+
+let f x =
+  match x with
+  | { a = A; b = `Y _ } when (x.b <- `X 42; false) -> -1
+  | { a = A; b = `X n } -> n
+  | { a = B; b = _ } -> 0
+  | { a = _; b = `Y s } -> 1000 + s
+;;
+(* Correctness condition: the second read of (field_mut 1 x) must be
+   followed by a test of the tag, with a Match_failure case. *)
+[%%expect {|
+0
+type ab = A | B
+0
+type t = { a : ab; mutable b : [ `X of int | `Y of int ]; }
+Lines 5-9, characters 2-35:
+5 | ..match x with
+6 |   | { a = A; b = `Y _ } when (x.b <- `X 42; false) -> -1
+7 |   | { a = A; b = `X n } -> n
+8 |   | { a = B; b = _ } -> 0
+9 |   | { a = _; b = `Y s } -> 1000 + s
+Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled as
+  partial, even if it appears to be total. It may generate a "Match_failure"
+  exception. This typically occurs due to complex matches on mutable fields.
+  (see manual section 13.5.5)
+(let
+  (f/5 =
+     (function x/4 : int
+       (catch
+         (if (field_int 0 x/4) 0
+           (let (*match*/19 =o (field_mut 1 x/4))
+             (if (>= (field_imm 0 *match*/19) 89)
+               (if (seq (setfield_ptr 1 x/4 [0: 88 42]) 0) -1
+                 (let (*match*/20 =o (field_mut 1 x/4))
+                   (if (isint_variant *match*/20) (exit 56)
+                     (if (!= (field_imm 0 *match*/20) 89) (exit 56)
+                       (+ 1000 (field_imm 1 *match*/20))))))
+               (field_imm 1 *match*/19))))
+        with (56)
+         (raise (makeblock 0 (global Match_failure/0!) [0: "" 5 2])))))
+  (apply (field_mut 1 (global Toploop!)) "f" f/5))
+
+val f : t -> int = <fun>
+|}]
+
+
+let _ = f { a = A; b = `Y 0 };;
+[%%expect {|
+(let (f/5 = (apply (field_mut 0 (global Toploop!)) "f"))
+  (apply f/5 (makemutable 0 (int,*) 0 [0: 89 0])))
+Exception: Match_failure ("", 5, 2).
+|}]
+
+(* A variant with more than match_context_rows (default 32)
+   constructors takes a different path through the match compiler
+   (mk_failaction_neg rather than mk_failaction_pos). *)
+type u =
+  | K0 of int | K1 of int | K2 | K3 | K4 | K5 | K6 | K7 | K8 | K9 | K10
+  | K11 | K12 | K13 | K14 | K15 | K16 | K17 | K18 | K19 | K20 | K21 | K22
+  | K23 | K24 | K25 | K26 | K27 | K28 | K29 | K30 | K31 | K32
+type r = { a : bool; mutable b : u }
+
+let g x =
+  match x with
+  | { a = false; b = _ } -> 0
+  | { a = _; b = K0 _ } when (x.b <- K1 7; false) -> -1
+  | { a = _;
+      b = (K1 _ | K2 | K3 | K4 | K5 | K6 | K7 | K8 | K9 | K10 | K11 | K12
+          | K13 | K14 | K15 | K16 | K17 | K18 | K19 | K20 | K21 | K22
+          | K23 | K24 | K25 | K26 | K27 | K28 | K29 | K30 | K31 | K32) }
+    -> 1
+  | { a = true; b = K0 s } -> 1000 + s
+;;
+(* Correctness condition: the second read of (field_mut 1 x) must be
+   followed by a test of the constructor, with a Match_failure case. *)
+[%%expect {|
+0
+type u =
+    K0 of int
+  | K1 of int
+  | K2
+  | K3
+  | K4
+  | K5
+  | K6
+  | K7
+  | K8
+  | K9
+  | K10
+  | K11
+  | K12
+  | K13
+  | K14
+  | K15
+  | K16
+  | K17
+  | K18
+  | K19
+  | K20
+  | K21
+  | K22
+  | K23
+  | K24
+  | K25
+  | K26
+  | K27
+  | K28
+  | K29
+  | K30
+  | K31
+  | K32
+0
+type r = { a : bool; mutable b : u; }
+Lines 8-16, characters 2-38:
+ 8 | ..match x with
+ 9 |   | { a = false; b = _ } -> 0
+10 |   | { a = _; b = K0 _ } when (x.b <- K1 7; false) -> -1
+11 |   | { a = _;
+12 |       b = (K1 _ | K2 | K3 | K4 | K5 | K6 | K7 | K8 | K9 | K10 | K11 | K12
+13 |           | K13 | K14 | K15 | K16 | K17 | K18 | K19 | K20 | K21 | K22
+14 |           | K23 | K24 | K25 | K26 | K27 | K28 | K29 | K30 | K31 | K32) }
+15 |     -> 1
+16 |   | { a = true; b = K0 s } -> 1000 + s
+Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled as
+  partial, even if it appears to be total. It may generate a "Match_failure"
+  exception. This typically occurs due to complex matches on mutable fields.
+  (see manual section 13.5.5)
+(let
+  (g/0 =
+     (function x/5 : int
+       (catch
+         (if (field_int 0 x/5)
+           (let (*match*/21 =o (field_mut 1 x/5))
+             (catch
+               (switch *match*/21
+                case tag 0:
+                 (if (seq (setfield_ptr 1 x/5 [1: 7]) 0) -1
+                   (let (*match*/22 =o (field_mut 1 x/5))
+                     (switch *match*/22
+                      case tag 0: (+ 1000 (field_int 0 *match*/22))
+                      default: (exit 59))))
+                default: (exit 62))
+              with (62) 1))
+           0)
+        with (59)
+         (raise (makeblock 0 (global Match_failure/0!) [0: "" 8 2])))))
+  (apply (field_mut 1 (global Toploop!)) "g" g/0))
+
+val g : r -> int = <fun>
+|}]
+
+let _ = g { a = true; b = K0 42 };;
+[%%expect {|
+(let (g/0 = (apply (field_mut 0 (global Toploop!)) "g"))
+  (apply g/0 (makemutable 0 (int,*) 1 [0: 42])))
+Exception: Match_failure ("", 8, 2).
+|}]

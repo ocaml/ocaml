@@ -18,6 +18,7 @@ external format_int : string -> int -> string = "caml_format_int"
 let err_no_pred = "U+0000 has no predecessor"
 let err_no_succ = "U+10FFFF has no successor"
 let err_not_sv i = format_int "%X" i ^ " is not a Unicode scalar value"
+let err_not_ascii u = "U+" ^ format_int "%04X" u ^ " is not an ASCII character"
 let err_not_latin1 u = "U+" ^ format_int "%04X" u ^ " is not a latin1 character"
 
 type t = int
@@ -45,11 +46,17 @@ let of_int i = if is_valid i then i else invalid_arg (err_not_sv i)
 external unsafe_of_int : int -> t = "%identity"
 external to_int : t -> int = "%identity"
 
-let is_char u = u < 256
-let of_char c = Char.code c
-let to_char u =
-  if u > 255 then invalid_arg (err_not_latin1 u) else
+let is_ascii u = u < 128
+let ascii_to_char u =
+  if u >= 128 then invalid_arg (err_not_ascii u) else
   Char.unsafe_chr u
+let is_latin1 u = u < 256
+let latin1_to_char u =
+  if u >= 256 then invalid_arg (err_not_latin1 u) else
+  Char.unsafe_chr u
+let is_char = is_latin1
+let of_char c = Char.code c
+let to_char = latin1_to_char
 
 let unsafe_to_char = Char.unsafe_chr
 

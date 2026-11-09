@@ -1105,6 +1105,13 @@ let buffered_out_flush oc key () =
 let std_buf_key = Domain.DLS.new_key (fun () -> Buffer.create pp_buffer_size)
 let err_buf_key = Domain.DLS.new_key (fun () -> Buffer.create pp_buffer_size)
 
+(* Flush formatter, ignore [Sys_error _] if it was flushed previously, for use
+   at program exit and domain destruction. This is the same logic as in
+   [stdlib.ml] for out channels. *)
+let pp_print_flush_ignore_sys_error ppf () =
+  try pp_print_flush ppf ()
+  with Sys_error _ -> ()
+
 let std_formatter_key = DLS.new_key (fun () ->
   let ppf =
     pp_make_formatter (buffered_out_string std_buf_key)
@@ -1125,7 +1132,7 @@ let err_formatter_key = DLS.new_key (fun () ->
   ppf.pp_out_newline <- display_newline ppf;
   ppf.pp_out_spaces <- display_blanks ppf;
   ppf.pp_out_indent <- display_indent ppf;
-  Domain.at_exit (pp_print_flush ppf);
+  Domain.at_exit (pp_print_flush_ignore_sys_error ppf);
   ppf)
 let _ = DLS.set err_formatter_key err_formatter
 
@@ -1610,8 +1617,8 @@ let ldprintf fmt args ppf = lfprintf ppf fmt args
 (* Flushing standard formatters at end of execution. *)
 
 let flush_standard_formatters () =
-  pp_print_flush (DLS.get std_formatter_key) ();
-  pp_print_flush (DLS.get err_formatter_key) ()
+  pp_print_flush_ignore_sys_error (DLS.get std_formatter_key) ();
+  pp_print_flush_ignore_sys_error (DLS.get err_formatter_key) ()
 
 let () = at_exit flush_standard_formatters
 

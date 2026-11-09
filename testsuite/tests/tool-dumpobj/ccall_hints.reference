@@ -1,0 +1,115 @@
+       0  BRANCH 110
+       2  ACC0
+       3  C_CALL1 caml_ml_string_length
+       5  RETURN 1
+       7  ACC0
+       8  C_CALL1 caml_int64_bits_of_float (caml_int64_bits_of_float_unboxed: value -> int64)
+      10  RETURN 1
+      12  ACC0
+      13  C_CALL1 caml_sqrt_float (sqrt: float -> float)
+      15  RETURN 1
+      17  RESTART
+      18  GRAB 1
+      20  ACC1
+      21  PUSHACC1
+      22  C_CALL2 caml_nativeint_compare
+      24  RETURN 2
+      26  RESTART
+      27  GRAB 1
+      29  ACC1
+      30  PUSHACC1
+      31  C_CALL2 caml_equal (int64)
+      33  RETURN 2
+      35  RESTART
+      36  GRAB 1
+      38  ACC1
+      39  PUSHACC1
+      40  C_CALL2 caml_lessthan (int32)
+      42  RETURN 2
+      44  RESTART
+      45  GRAB 1
+      47  ACC1
+      48  PUSHACC1
+      49  C_CALL2 caml_ba_get_1 (generic)
+      51  RETURN 2
+      53  RESTART
+      54  GRAB 3
+      56  ACC3
+      57  PUSHACC3
+      58  PUSHACC3
+      59  PUSHACC3
+      60  C_CALL4 caml_ba_set_2 (unsafe camlint Fortran)
+      62  RETURN 4
+      64  RESTART
+      65  GRAB 1
+      67  ACC1
+      68  PUSHACC1
+      69  C_CALL2 caml_ba_get_1 (float64 C)
+      71  RETURN 2
+      73  RESTART
+      74  GRAB 1
+      76  ACC1
+      77  PUSHACC1
+      78  C_CALL2 caml_ba_uint8_get64 (unsafe)
+      80  RETURN 2
+      82  RESTART
+      83  GRAB 2
+      85  ACC2
+      86  PUSHACC2
+      87  PUSHACC2
+      88  C_CALL3 caml_bytes_set32 (unsafe)
+      90  RETURN 3
+      92  RESTART
+      93  GRAB 1
+      95  ACC1
+      96  PUSHACC1
+      97  C_CALL2 caml_string_get16 (unsafe)
+      99  RETURN 2
+     101  RESTART
+     102  GRAB 1
+     104  ACC1
+     105  PUSHACC1
+     106  C_CALL2 caml_string_get16
+     108  RETURN 2
+     110  CLOSURE 0, 102 (value -> int -> int)
+     113  PUSH
+     114  CLOSURE 0, 93 (value -> int -> int)
+     117  PUSH
+     118  CLOSURE 0, 83 (value -> int -> int32 -> int)
+     121  PUSH
+     122  CLOSURE 0, 74 (value -> int -> int64)
+     125  PUSH
+     126  CLOSURE 0, 65 (value -> int -> float)
+     129  PUSH
+     130  CLOSURE 0, 54 (value -> int -> int -> int -> int)
+     133  PUSH
+     134  CLOSURE 0, 45 (value -> int -> value)
+     137  PUSH
+     138  CLOSURE 0, 36 (int32 -> int32 -> int)
+     141  PUSH
+     142  CLOSURE 0, 27 (int64 -> int64 -> int)
+     145  PUSH
+     146  CLOSURE 0, 18 (nativeint -> nativeint -> int)
+     149  PUSH
+     150  CLOSURE 0, 12 (float -> float)
+     153  PUSH
+     154  CLOSURE 0, 7 (float -> int64)
+     157  PUSH
+     158  CLOSURE 0, 2 (value -> int)
+     161  PUSHACC0
+     162  PUSHACC2
+     163  PUSHACC4
+     164  PUSHACC6
+     165  PUSHACC 8
+     167  PUSHACC 10
+     169  PUSHACC 12
+     171  PUSHACC 14
+     173  PUSHACC 16
+     175  PUSHACC 18
+     177  PUSHACC 20
+     179  PUSHACC 22
+     181  PUSHACC 24
+     183  MAKEBLOCK 13, 0 (immutable)
+     186  POP 13
+     188  SETGLOBAL compilation unit `Ccall_hints'
+     190  STOP

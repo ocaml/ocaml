@@ -81,10 +81,12 @@ type atomic_kind =
   | Field (* operation on an atomic field (takes a pointer and an offset) *)
   | Loc   (* operation on a first-class field (takes a (pointer, offset) pair *)
 
+(* Exchange and Cas carry the immediacy of the stored value: only when it is
+   known immediate can we skip the write barrier and go native. *)
 type atomic_op =
   | Load
-  | Exchange
-  | Cas
+  | Exchange of immediate_or_pointer
+  | Cas of immediate_or_pointer
   | Faa
 
 type prim =
@@ -128,10 +130,12 @@ let gen_array_kind =
 let prim_sys_argv =
   Primitive.simple ~name:"caml_sys_argv" ~arity:1 ~alloc:true
 
+(* Kept for the maybe-pointer case, where the write barrier still has to run. *)
 let prim_atomic_exchange =
   Primitive.simple ~name:"caml_atomic_exchange_field" ~arity:3 ~alloc:false
 let prim_atomic_cas =
   Primitive.simple ~name:"caml_atomic_cas_field" ~arity:4 ~alloc:false
+
 let primitives_table =
   create_hashtable 57 [
     "%identity", Identity;
@@ -230,10 +234,12 @@ let primitives_table =
     "%floatarray_safe_set", Primitive ((Parraysets Pfloatarray), 3);
     "%floatarray_unsafe_get", Primitive ((Parrayrefu Pfloatarray), 2);
     "%floatarray_unsafe_set", Primitive ((Parraysetu Pfloatarray), 3);
-    "%obj_is_int", Primitive (Pisint, 1);
+    "%obj_is_int", Primitive (Pisint { variant_only = false }, 1);
     "%lazy_force", Lazy_force;
     "%nativeint_of_int", Primitive ((Pbintofint Pnativeint), 1);
     "%nativeint_to_int", Primitive ((Pintofbint Pnativeint), 1);
+    "%nativeint_of_float", Primitive ((Pbintoffloat Pnativeint), 1);
+    "%nativeint_to_float", Primitive ((Pfloatofbint Pnativeint), 1);
     "%nativeint_neg", Primitive ((Pnegbint Pnativeint), 1);
     "%nativeint_add", Primitive ((Paddbint Pnativeint), 2);
     "%nativeint_sub", Primitive ((Psubbint Pnativeint), 2);
@@ -250,6 +256,7 @@ let primitives_table =
     "%nativeint_asr", Primitive ((Pasrbint Pnativeint), 2);
     "%int32_of_int", Primitive ((Pbintofint Pint32), 1);
     "%int32_to_int", Primitive ((Pintofbint Pint32), 1);
+    "%int32_to_float", Primitive ((Pfloatofbint Pint32), 1);
     "%int32_neg", Primitive ((Pnegbint Pint32), 1);
     "%int32_add", Primitive ((Paddbint Pint32), 2);
     "%int32_sub", Primitive ((Psubbint Pint32), 2);
@@ -264,6 +271,8 @@ let primitives_table =
     "%int32_asr", Primitive ((Pasrbint Pint32), 2);
     "%int64_of_int", Primitive ((Pbintofint Pint64), 1);
     "%int64_to_int", Primitive ((Pintofbint Pint64), 1);
+    "%int64_of_float", Primitive ((Pbintoffloat Pint64), 1);
+    "%int64_to_float", Primitive ((Pfloatofbint Pint64), 1);
     "%int64_neg", Primitive ((Pnegbint Pint64), 1);
     "%int64_add", Primitive ((Paddbint Pint64), 2);
     "%int64_sub", Primitive ((Psubbint Pint64), 2);
@@ -387,16 +396,16 @@ let primitives_table =
     "%greaterthan", Comparison(Greater_than, Compare_generic);
     "%compare", Comparison(Compare, Compare_generic);
     "%atomic_load", Atomic(Load, Ref);
-    "%atomic_exchange", Atomic(Exchange, Ref);
-    "%atomic_cas", Atomic(Cas, Ref);
+    "%atomic_exchange", Atomic(Exchange Pointer, Ref);
+    "%atomic_cas", Atomic(Cas Pointer, Ref);
     "%atomic_fetch_add", Atomic(Faa, Ref);
     "%atomic_load_field", Atomic(Load, Field);
-    "%atomic_exchange_field", Atomic(Exchange, Field);
-    "%atomic_cas_field", Atomic(Cas, Field);
+    "%atomic_exchange_field", Atomic(Exchange Pointer, Field);
+    "%atomic_cas_field", Atomic(Cas Pointer, Field);
     "%atomic_fetch_add_field", Atomic(Faa, Field);
     "%atomic_load_loc", Atomic(Load, Loc);
-    "%atomic_exchange_loc", Atomic(Exchange, Loc);
-    "%atomic_cas_loc", Atomic(Cas, Loc);
+    "%atomic_exchange_loc", Atomic(Exchange Pointer, Loc);
+    "%atomic_cas_loc", Atomic(Cas Pointer, Loc);
     "%atomic_fetch_add_loc", Atomic(Faa, Loc);
     "%atomic_unsafe_index", Atomic_index;
     "%runstack", Primitive (Prunstack, 3);
@@ -469,6 +478,19 @@ let specialize_primitive env ty ~has_constant_constructor prim =
       match maybe_pointer_type env p2 with
       | Pointer -> None
       | Immediate -> Some (Primitive (Psetfield(n, Immediate, init), arity))
+    end
+  (* An atomic exchange or cas on an immediate needs no write barrier, so it
+     can be lowered natively. Only Ref and Loc put the stored value second;
+     Field takes an offset there, so leave it alone. *)
+  | Atomic (Exchange Pointer, ((Ref | Loc) as kind)), [_; p2] -> begin
+      match maybe_pointer_type env p2 with
+      | Pointer -> None
+      | Immediate -> Some (Atomic (Exchange Immediate, kind))
+    end
+  | Atomic (Cas Pointer, ((Ref | Loc) as kind)), [_; p2] -> begin
+      match maybe_pointer_type env p2 with
+      | Pointer -> None
+      | Immediate -> Some (Atomic (Cas Immediate, kind))
     end
   | Primitive (Pfield (n, Pointer, mut), arity), _ ->
       (* try strength reduction based on the *result type* *)
@@ -686,8 +708,8 @@ let atomic_arity op (kind : atomic_kind) =
   let arity_of_op =
     match op with
     | Load -> 1
-    | Exchange -> 2
-    | Cas -> 3
+    | Exchange _ -> 2
+    | Cas _ -> 3
     | Faa -> 2
   in
   let extra_kind_arity =
@@ -710,8 +732,10 @@ let lambda_of_atomic prim_name loc op (kind : atomic_kind) args =
   let prim =
     match op with
     | Load -> Patomic_load
-    | Exchange -> Pccall prim_atomic_exchange
-    | Cas -> Pccall prim_atomic_cas
+    | Exchange Immediate -> Patomic_exchange
+    | Exchange Pointer -> Pccall prim_atomic_exchange
+    | Cas Immediate -> Patomic_cas
+    | Cas Pointer -> Pccall prim_atomic_cas
     | Faa -> Patomic_fetch_add
   in
   match kind with
@@ -949,6 +973,7 @@ let lambda_primitive_needs_event_after = function
   | Pbytessets | Pmakearray (Pgenarray, _) | Pduparray _
   | Parrayrefu (Pgenarray | Pfloatarray) | Parraysetu (Pgenarray | Pfloatarray)
   | Parrayrefs _ | Parraysets _ | Pbintofint _ | Pcvtbint _ | Pnegbint _
+  | Pbintoffloat _ | Pfloatofbint _
   | Paddbint _ | Psubbint _ | Pmulbint _ | Pdivbint _ | Pmodbint _ | Pandbint _
   | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp _
   | Pcompare_bints _
@@ -970,8 +995,9 @@ let lambda_primitive_needs_event_after = function
   | Pcompare_ints | Pcompare_floats
   | Pfloatcomp _ | Pstringlength | Pstringrefu | Pbyteslength | Pbytesrefu
   | Pbytessetu | Pmakearray ((Pintarray | Paddrarray | Pfloatarray), _)
-  | Parraylength _ | Parrayrefu _ | Parraysetu _ | Pisint | Pisout | Pcheckbound
-  | Patomic_load | Patomic_fetch_add
+  | Parraylength _ | Parrayrefu _ | Parraysetu _ | Pisint _ | Pisout
+  | Pcheckbound | Patomic_load | Patomic_fetch_add
+  | Patomic_exchange | Patomic_cas
   | Pintofbint _ | Pctconst _ | Pbswap16 | Pint_as_pointer | Popaque | Pdls_get
   | Pmakelazyblock _
       -> false

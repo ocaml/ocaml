@@ -50,3 +50,14 @@ Line 1, characters 31-41:
                                    ^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}]
+
+(* PR #14993: on 32-bit systems, doubles and addresses are different
+   sizes, so a generic array literal that may be instantiated to a flat
+   float array must be classified as having dynamic size.  Before #14993
+   the following code produced a segmentation fault. *)
+let make v = let rec a = [| v; v; v; v; v; v; v; v |] in a
+let fa = make 2.5
+[%%expect {|
+val make : 'a -> 'a array = <fun>
+val fa : float array = [|2.5; 2.5; 2.5; 2.5; 2.5; 2.5; 2.5; 2.5|]
+|}]

@@ -172,6 +172,8 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
   | Pcheckbound -> fprintf ppf "checkbound"
   | Pbintofint bi -> print_boxed_integer "of_int" ppf bi
   | Pintofbint bi -> print_boxed_integer "to_int" ppf bi
+  | Pbintoffloat bi -> print_boxed_integer "of_float" ppf bi
+  | Pfloatofbint bi -> print_boxed_integer "to_float" ppf bi
   | Pcvtbint (bi1, bi2) ->
       fprintf ppf "%s_of_%s" (boxed_integer_name bi2) (boxed_integer_name bi1)
   | Pnegbint bi -> print_boxed_integer "neg" ppf bi
@@ -220,6 +222,8 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
   | Patomic_load -> fprintf ppf "atomic_load"
   | Patomic_fetch_add -> fprintf ppf "atomic_fetch_add"
+  | Patomic_exchange -> fprintf ppf "atomic_exchange"
+  | Patomic_cas -> fprintf ppf "atomic_cas"
   | Popaque -> fprintf ppf "opaque"
   | Pdls_get -> fprintf ppf "dls_get"
   | Ppoll -> fprintf ppf "poll"

@@ -22,8 +22,8 @@
     therefore reasonably efficient: accessing the minimum
     (resp. maximum) element takes constant time, and insertion and
     removal take time logarithmic in the size of the priority
-    queue. Note that [of_array] runs in linear time (and thus must be
-    preferred to repeated insertions with [add]).
+    queue. Note that [of_array] and [of_iarray] run in linear time
+    (and thus must be preferred to repeated insertions with [add]).
 
     It is fine to have several elements with the same priority.
     Nothing is guaranteed regarding the order in which they will be
@@ -111,6 +111,12 @@ module type Min =
     (** [of_array a] returns a new priority queue containing the
         elements of array [a]. Runs in linear time. *)
 
+    val of_iarray: elt iarray -> t
+    (** [of_iarray a] returns a new priority queue containing the
+        elements of immutable array [a]. Runs in linear time.
+
+        @since 5.6 *)
+
     val of_list: elt list -> t
     (** [of_list l] returns a new priority queue containing the
         elements of list [l]. Runs in linear time. *)
@@ -173,6 +179,7 @@ module type Max =
     val clear: t -> unit
     val copy: t -> t
     val of_array: elt array -> t
+    val of_iarray: elt iarray -> t
     val of_list: elt list -> t
     val of_iter: ((elt -> unit) -> 'x -> unit) -> 'x -> t
     val iter_unordered: (elt -> unit) -> t -> unit
@@ -234,6 +241,7 @@ module type MinPoly =
     val clear: 'a t -> unit
     val copy: 'a t -> 'a t
     val of_array: 'a elt array -> 'a t
+    val of_iarray: 'a elt iarray -> 'a t
     val of_list: 'a elt list -> 'a t
     val of_iter: (('a elt -> unit) -> 'x -> unit) -> 'x -> 'a t
     val iter_unordered: ('a elt -> unit) -> 'a t -> unit
@@ -262,6 +270,7 @@ module type MaxPoly =
     val clear: 'a t -> unit
     val copy: 'a t -> 'a t
     val of_array: 'a elt array -> 'a t
+    val of_iarray: 'a elt iarray -> 'a t
     val of_list: 'a elt list -> 'a t
     val of_iter: (('a elt -> unit) -> 'x -> unit) -> 'x -> 'a t
     val iter_unordered: ('a elt -> unit) -> 'a t -> unit

@@ -37,6 +37,7 @@ method oper_latency = function
   | Imulf -> 5
   | Idivf -> 33
   | Ispecific(Imultaddf | Imultsubf) -> 5
+  | Ispecific(Iroundf _) -> 4
   | _ -> 1
 
 method! reload_retaddr_latency = 12

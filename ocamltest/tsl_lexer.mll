@@ -124,6 +124,8 @@ and string acc = parse
     {string (acc ^ "\\") lexbuf}
   | '"'
     {acc}
+  | eof
+    { lexer_error "unterminated string" }
 and comment = parse
   | "(*"
     {
@@ -166,3 +168,5 @@ and modifier = parse
     { variable, `Append str }
   | _
     { failwith "syntax error in script response file" }
+  | eof
+    { failwith "unterminated modifier in script response file" }

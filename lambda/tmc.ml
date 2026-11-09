@@ -858,7 +858,7 @@ let rec choice ctx t =
     | Pstringlength | Pstringrefu  | Pstringrefs
     | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
     | Parraylength _ | Parrayrefu _ | Parraysetu _ | Parrayrefs _ | Parraysets _
-    | Pisint | Pisout | Pcheckbound
+    | Pisint _ | Pisout | Pcheckbound
     | Pignore
     | Pcompare_ints | Pcompare_floats | Pcompare_bints _
 
@@ -866,7 +866,7 @@ let rec choice ctx t =
     | Prunstack | Pperform | Presume | Preperform | Pdls_get
 
     (* we don't handle atomic primitives *)
-    | Patomic_load | Patomic_fetch_add
+    | Patomic_load | Patomic_fetch_add | Patomic_exchange | Patomic_cas
 
     (* we don't handle array indices as destinations yet *)
     | (Pmakearray _ | Pduparray _)
@@ -877,6 +877,7 @@ let rec choice ctx t =
     (* operations returning boxed values could be considered
        constructions someday *)
     | Pbintofint _ | Pintofbint _
+    | Pbintoffloat _ | Pfloatofbint _
     | Pcvtbint _
     | Pnegbint _
     | Paddbint _ | Psubbint _ | Pmulbint _ | Pdivbint _ | Pmodbint _

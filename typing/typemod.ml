@@ -81,6 +81,7 @@ type error =
   | With_cannot_remove_packed_modtype of Path.t * module_type
   | Cannot_alias of Path.t
   | Val_in_structure
+  | Unexpected_hole
 
 exception Error_forward of Location.error
 exception Errors of Location.t * Typing_recovery.Error_set.t
@@ -101,7 +102,7 @@ end = struct
 
   let () =
     Typing_recovery.register_recoverable (function
-        | In_context _ -> true
+        | In_context _ | Error_forward _ -> true
         | _ -> false
       )
 end
@@ -154,10 +155,15 @@ let initial_env ~loc ~initially_opened_module
     try
       snd (type_open_ Override env loc {txt;loc})
     with
-    | Typetexp.Error.In_context _
-    | Cmi_format.Error _
-    | Env.Error.In_context _
-    | Persistent_env.Error _ when !Clflags.typing_recovery -> env
+      (Typetexp.Error.In_context _
+      | Cmi_format.Error _
+      | Env.Error.In_context _
+      | Persistent_env.Error _) as exn when !Clflags.typing_recovery ->
+        (* Handles errors when the file is empty (but the context is
+           incorrect). If the error has already been logged, it will
+           be overwritten by the final set. *)
+        Typing_recovery.log_or_raise exn;
+        env
   in
   let add_units env units =
     String.Set.fold
@@ -2600,6 +2606,8 @@ and type_module_aux ~alias ~strengthen ~funct_body anchor env smod =
       Shape.leaf_for_unpack ()
   | Pmod_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
+  | Pmod_hole ->
+      Error.log_and_raise smod.pmod_loc env Unexpected_hole
 
 and type_application loc ~strengthen ~funct_body env smod =
   let rec extract_application ~funct_body env sargs smod =
@@ -2755,7 +2763,10 @@ and type_one_application ~ctx:(apply_loc,sfunct,md_f,args)
         | Pmod_ident l -> Includemod.Named_leftmost_functor l.txt
         | _ -> Includemod.Anonymous_functor
       in
-      raise(Includemod.Apply_error {loc=apply_loc;env;app_name;mty_f;args})
+      (* In Merlin, we can recover because we can synthesize an
+         artificial module with a typed hole. *)
+      Typing_recovery.log_and_raise
+        (Includemod.Apply_error {loc=apply_loc;env;app_name;mty_f;args})
 
 and type_open_decl ?used_slot ?toplevel ~funct_body names env sod =
   Builtin_attributes.warning_scope sod.popen_attributes
@@ -3281,6 +3292,7 @@ let lookup_type_in_sig sg =
     | Lapply _ -> assert false
 
 let type_package env m pack =
+  let outer_scope = Ctype.get_current_level () in
   let modl, scope =
     Typetexp.TyVarEnv.with_local_scope begin fun () ->
       (* type the module and create a scope in a raised level *)
@@ -3291,6 +3303,7 @@ let type_package env m pack =
       end
     end
   in
+  Mtype.lower_nongen outer_scope modl.mod_type;
   let fl', env =
     match pack.pack_constraints with
     | [] -> [], env
@@ -3863,6 +3876,9 @@ let report_error ~loc _env = function
         Misc.print_see_manual manual_ref
   | Val_in_structure ->
       Location.errorf ~loc "Value declarations are only allowed in signatures"
+  | Unexpected_hole ->
+      Location.errorf ~loc
+        "Uninterpreted module wildcard %a." Style.inline_code "_"
 
 let report_error env ~loc err =
   Printtyp.wrap_printing_env ~error:true env

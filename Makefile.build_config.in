@@ -148,6 +148,9 @@ RLWRAP=@rlwrap@
 # The best sed which is available (GNU sed if available)
 SED=@SED@
 
+# How to invoke nm
+NM=@NM@
+
 # Which document generator: odoc or ocamldoc?
 DOCUMENTATION_TOOL=@documentation_tool@
 DOCUMENTATION_TOOL_CMD=@documentation_tool_cmd@

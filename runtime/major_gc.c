@@ -1176,7 +1176,11 @@ update_major_slice_work(intnat howmuch,
   if (log_events) {
     CAML_EV_COUNTER(EV_C_MAJOR_HEAP_WORDS, (uintnat)heap_words);
     CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_WORDS, my_alloc_count);
-    /* TODO: add counters for direct, suspended, resumed allocs. */
+    CAML_EV_COUNTER(EV_C_MAJOR_DIRECT_ALLOCATED_WORDS, my_alloc_direct_count);
+    CAML_EV_COUNTER(EV_C_MAJOR_SUSPENDED_ALLOCATED_WORDS,
+                    my_alloc_suspended_count);
+    CAML_EV_COUNTER(EV_C_MAJOR_RESUMED_ALLOCATED_WORDS,
+                    my_alloc_resumed_count);
     CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_WORK, alloc_work);
     CAML_EV_COUNTER(EV_C_MAJOR_DEPENDENT_WORK, dependent_work);
     CAML_EV_COUNTER(EV_C_MAJOR_EXTRA_WORK, extra_work);
@@ -2277,19 +2281,28 @@ static void major_collection_slice(intnat howmuch,
        sweep work to have all domains switch to Idle (and then Mark)
        at the same time. (Needed for performance, not for safety.)
      */
-    uintnat wkcnt = work_counter;
-    intnat idle = diffmod (work_counter_min_before_mark, wkcnt);
-    if (idle <= 0){
+    intnat idle = diffmod (work_counter_min_before_mark, work_counter);
+    /* Idle work consumes slice budget, so explicit slices make
+       progress */
+    intnat idle_work = 0;
+    while (idle > 0) {
+      intnat todo = min2 (get_major_slice_work(mode), idle);
+      if (todo <= 0) break;
+      commit_major_slice_work (todo);
+      idle_work += todo;
+      idle = diffmod (work_counter_min_before_mark, work_counter);
+    }
+    if (idle_work > 0) {
+      caml_gc_log("Idle phase: %" CAML_PRIdNAT "%s", idle_work,
+                  idle <= 0 ? " [finished]" : "");
+    }
+    if (idle <= 0) {
       /* Idle phase is finished (or never existed), we should start marking. */
       request_mark_phase();
-    }else{
-      /* Idle phase: do nothing but commit to the work counter. */
-      intnat todo = diffmod (alloc_counter, wkcnt);
-      todo = min2(todo, idle);
-      caml_gc_log("Idle phase: %" CAML_PRIdNAT "%s", todo,
-                  todo == idle ? " [finished]" : "");
-      commit_major_slice_work (todo);
-      if (todo == idle) request_mark_phase ();
+      /* Marking begins at the next minor GC. Request one if we did no
+         sweep work in this slice, so non-allocating programs still
+         make progress. */
+      if (sweep_work == 0) caml_request_minor_gc ();
     }
   }
 

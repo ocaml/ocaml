@@ -1,5 +1,130 @@
 Working version
---------------
+---------------
+
+(Changes that can break existing programs are marked with a "*")
+
+### Language features:
+
+### Runtime system:
+
+- #15049: Add a runtime events lifecycle event EV_PROCESS_CREATE, emitted on
+  all platforms when a child process is created by Unix.create_process and the
+  functions built on it.
+  (Tim McGilchrist, review by Sadiq Jaffer)
+
+### Code generation and optimizations:
+
+- #14980: Emit direct assembly for `Atomic.exchange` and
+  `Atomic.compare_and_set`
+  when the stored value is statically known to be immediate, in which case
+  no write barrier is needed. `Atomic.exchange` and `Atomic.compare_and_set`
+  become externals so the primitive reaches the call site, where the type is
+  usually concrete.
+  (Zane Hambly, review by Stefan Muenzel)
+
+- #15202, #15208: Proper handling of integer sized constants in flambda
+  alias analysis
+  (Pierre Chambart, report by Ethan Chou,
+   review by Vincent Laviron)
+
+- #15212, #15213: Stops assuming that static float array fields are floats
+  (Pierre Chambart, report by Alperen Keleş,
+   review by Vincent Laviron)
+
+### Standard library:
+
+- #15168: `Scanf.unescaped`, `%S` and `%C` now accept all the escape sequences
+  of OCaml string and character literals: octal escapes `\o101`, escaped spaces
+  `\ `, Unicode escapes `\u{XXXX}` (in strings only), and tabs in the
+  indentation following an escaped newline.
+  (Nicolás Ojeda Bär, report by Chet Murthy, review by Florian Angeletti)
+
+### Other libraries:
+
+- #15121: Add support for `O_NOFOLLOW` to the `Unix` library, only implemented
+  on POSIX systems.
+  (Romain Beauxis, review by Stefan Muenzel and Antonin Décimo)
+
+### Tools:
+
+- #14448: ocamllex now prints a `missing-case` warning and shows an example
+  of nonmatching input if a rule is not exhaustive (Martin Jambon,
+  review by David Allsopp and Gabriel Scherer)
+
+- #15167: ocamldep: add a -strict flag to exit with a non-zero code whenever an
+  error occurs (input file does not exist, parse error, etc). No output is
+  generated in that case.
+  (Nicolás Ojeda Bär, review by Florian Angeletti)
+
+### Manual and documentation:
+
+- #15216: document the security issue reporting process with a SECURITY.md file
+  (Edwin Török, suggested by Xavier Leroy, review by Xavier Leroy)
+
+### Compiler user-interface and warnings:
+
+- #15144: Further improvement on typing error messages for Duplicate_constructor
+  and Duplicate_label, by adding locations in submessages
+  (Michał Kosior, review by Florian Angeletti)
+
+
+### Internal/compiler-libs changes:
+
+- #15140: Emitcode: call `Sys.getcwd` once per emission rather than multiple
+  times per debug event. This saves a lot of system time on macOS during
+  bytecode compilation jobs with -g.
+  (Michael Bacarella, review by Florian Angeletti, Nicolás Ojeda Bär,
+   Damien Doligez and Stefan Muenzel)
+
+### Build system:
+
+### Bug fixes:
+
+- #14602: on Windows, Sys.rename and Unix.rename now succeed when the
+  destination is an existing read-only file, as on POSIX systems.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer, Antonin Décimo,
+   David Allsopp and Miod Vallat)
+
+- #15204: fix a pattern-matching miscompilation where a scrutinee of
+  polymorphic variant type (or variant type with more than 32
+  constructors) is mutated during matching
+  (Jeremy Yallop, review by Gabriel Scherer)
+
+- #15185, #15187: fix a pattern-matching miscompilation on certain
+  combinations of immediate ranges and redundant patterns
+  (Gabriel Scherer, report by Alperer Keleş,
+   review by Vincent Laviron and Florian Angeletti)
+
+- #7826, #15139: Cache free variable computations to avoid quadratic
+  blowups in pathological cases
+  (Vincent Laviron, report by Pierre-Marie Pédrot, review by Stefan Muenzel)
+
+- #15151: fix the positions of the debugging events and of the optimization
+  hints of the code that the bytecode packager generates for the pack
+  itself. They were placed in the code of the first packed units.
+  (Jérôme Vouillon, review by Vincent Laviron)
+
+- #15158, #15155: Allow projection from closures with bottom approximation in
+  flambda
+  (Pierre Chambart, report by Michael Bacarella, review by Vincent Laviron)
+
+- #15074, #15077: Fix an out-of-bounds write when a custom event encoder
+  returns a length larger than the write buffer or a negative length.
+  Runtime_events.User.write now raises Invalid_argument for a length outside
+  the documented range.
+  (Tim McGilchrist, reported by Edwin Török, review by Edwin Török, Antonin
+   Décimo and Olivier Nicole)
+
+- #15043, #15076: runtime events library, fix an infinite loop when a user
+  event is larger than half the ring buffer.
+  (Tim McGilchrist, review by Sadiq Jaffer)
+
+- #15181: Allocate the exact size of runtime events ring file path.
+  Fixes an error on Windows with allocating long paths to this file.
+  (Tim McGilchrist, review by Antonin Décimo)
+
+OCaml 5.6.0
+-----------
 
 (Changes that can break existing programs are marked with a "*")
 
@@ -16,7 +141,24 @@ Working version
 - #14692: Allow unparenthesized application expressions in record update syntax
   (Stephen Dolan, review by Damien Doligez)
 
+- #15051: the wildcard `_` now parses in all simple expressions as `Pexp_hole`
+  and in all module expressions as `Pmod_hole`. These parsetree nodes must be
+  transformed by ppx rewriters; the compiler itself always rejects them.
+  (David Allsopp and Nailen Matschke, review by Florian Angeletti)
+
+- #14985: Enable the use of polymorphic types in optional function parameters
+    let run ?(observer : 'a. (unit -> 'a) -> 'a = fun k -> k ()) = ...
+    let run' ?(observer : 'a. ((unit -> 'a) -> 'a) option) = ...
+  (Alistair O'Brien, review by Florian Angeletti)
+
 ### Runtime system:
+
+- #15062: The last Idle GC slice must trigger the switch to Mark phase.
+  (Nick Barnes, review by Damien Doligez)
+
+- #14773 : Activate Haiku native backend
+  (Sylvain Kerjean, review by Kate Deplaix and Nicolas Ojeda Bar)
+  Enable native-code backend and testsuite on BeOS/Haiku.
 
 - #10258: Overhaul the locale code used for mingw/msvc in float<->string
   conversions.
@@ -118,6 +260,67 @@ Working version
 - #14506: Add frame pointers support for RISC-V Linux.
   (Miod Vallat and Tim McGilchrist, review by Zane Hambly)
 
+- #14933: Respect `sysconf(_SC_SIGSTKSZ)` when choosing the size for the
+  alternate signal stack, avoiding fatal errors when linked against musl libc on
+  some Intel CPUs.
+  (Nat Mote, review by Florian Angeletti and Miod Vallat)
+
+- #14505: Add frame pointer support to POWER linux.
+  Maintains an ELFv2 frame pointer in r31. The allocation pointer is
+  moved from r31 to r23 for enabled and disabled frame pointers.
+  r31 stays allocatable when frame pointers are disabled
+  (Tim McGilchrist, review by Zane Hambly and Olivier Nicole)
+
+- #14814: a `caml_result_find_exception` helper for the `caml_result` type
+  (Gabriel Scherer, review by Nicolás Ojeda Bär, request by Chris Vine)
+
+- #14872: harden loading of bytecode executable files against corrupted
+  or malicious files having 2^29 TOC entries or more.
+  (Xavier Leroy, review by Nicolás Ojeda Bär)
+
+- #14911, #14943: Fix declarations of thread-local symbols with external linkage
+  for C++ interoperability.
+  (Antonin Décimo, report by Kate Deplaix, review by David Allsopp)
+
+* #14997: Default to and recommend large file and year 2038 support on 32-bit
+  systems. LFS and 64-bit `time_t` _checks_ can be disabled by passing
+  respectively `--disable-largefile` and `--disable-year2038` to configure.
+  (Antonin Décimo, review by Miod Vallat)
+
+- #15019, #15030, OSEC-2026-18: `Marshal.from_{string,bytes}`: guard against
+  overflow in the computation of the total data length.
+  (Xavier Leroy, report by Akshay Singh, review by Nicolás Ojeda Bär
+  and Antonin Décimo)
+
+- #15001: Add runtime events counters EV_C_MAJOR_DIRECT_ALLOCATED_WORDS,
+  EV_C_MAJOR_SUSPENDED_ALLOCATED_WORDS and EV_C_MAJOR_RESUMED_ALLOCATED_WORDS,
+  reporting the words allocated directly in the major heap as opposed to
+  promoted from the minor heap, the words suspended during a GC ramp-up phase
+  and the words returned by Gc.ramp_down. Add the span
+  EV_EXPLICIT_GC_RAMP_UP covering a call to Gc.ramp_up.
+  (Tim McGilchrist, review by Sadiq Jaffer and Gabriel Scherer)
+
+- #15092: do not lose domain allocation stats on termination
+  (Edwin Török, report by Eduardo Souza, review by Stefan Muenzel)
+
+- #15033: optimize Weak.blit on 5.x, following the 4.x example
+  of #9259 by Arseniy Alekseyev.
+  (Gabriel Scherer, review by Damien Doligez)
+
+- #15117: The instrumented runtime is no longer installed by default.
+  (David Allsopp, review by Florian Angeletti, Nick Barnes and Sadiq Jaffer)
+
+- #15119, OSEC-2026-25: Harden decoding of runtime events messages from
+  ring buffers.
+  (Sadiq Jaffer, report by Hannes Mehnert, review by Olivier Nicole and
+  Edwin Török)
+
+- #15177, OSEC-2026-26: Maintain custom events cache integrity.
+  (Sadiq Jaffer, report by Hannes Mehnert, review by Edwin Török)
+
+- #15229 Bound the custom event payload by the buffer's own constant
+  (Tim McGilchrist, review by Sadiq Jaffer)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
@@ -137,8 +340,9 @@ Working version
    temporary regression reported by Jeremy Yallop, fix reviewed by Samuel
    Vivien and Florian Angeletti, other regression reported by Florian Angeletti)
 
-- #14512: Improve check for warning 16 (unerasable-optional-argument)
-  (Alistair O'Brien, review by Florian Angeletti, Gabriel Scherer)
+- #14512, #14671: Improve check for warning 16 (unerasable-optional-argument)
+  (Alistair O'Brien, Jacques Garrigue, review by Florian Angeletti,
+   Gabriel Scherer)
 
 - #12150: class type system improvements: self type constraints, virtual method
   inheritance in mutually recursive definition, immediate object inheritance.
@@ -149,11 +353,50 @@ Working version
   used.
   (Stefan Muenzel, report by Leo White, review by Jacques Garrigue)
 
+- #14897, #14913: When instantiating types with arguments, do not check if the
+  parameters occur in the arguments when the parameters are fresh
+  variables, avoiding potentially expensive checks with large arguments.
+  (Stefan Muenzel, review by Gabriel Scherer, Florian Angeletti, and
+   Jacques Garrigue, report by Jérôme Vouillon)
+
+- #14897, #14927, #14947, #14950, #14952: optimize the fast-paths
+  on equal type constructors (they apply more often by normalizing
+  type paths, and the check is faster) to avoid potentially
+  expensive expansions in type-comparing functions.
+  (Gabriel Scherer, review by Florian Angeletti and Jacques Garrigue,
+   suggestion by Florian Angeletti, report by Jérôme Vouillon).
+
 ### Code generation and optimizations:
 
 - #14575: Emit direct assembly for `Atomic.fetch_and_add`
   rather than going through C
   (Zane Hambly, review by Olivier Nicole and KC Sivaramakrishnan)
+
+- #15002: s390x: emit `sqdbr` for square root and `lrvgr` for byte swap
+  rather than calling into C
+  (Zane Hambly, review by Miod Vallat)
+
+- #15005: riscv: emit `fsqrt.d` for square root rather than calling into C
+  (Zane Hambly, review by Miod Vallat and Xavier Leroy)
+
+- #15006: power: emit `fsqrt` for square root rather than calling into C
+  (Zane Hambly, review by Miod Vallat and Xavier Leroy)
+
+- #15008: emit the fused multiply-add for `Float.fma` on arm64, power,
+  riscv and s390x rather than calling into C
+  (Zane Hambly, review by Miod Vallat and Xavier Leroy)
+
+- #15018: `Int.popcount`, `Int.leading_zeros` and `Int.trailing_zeros` become
+  C primitives, with `leading_zeros` and `trailing_zeros` emitted as `bsr`
+  and `bsf` on amd64 and `clz` and `rbit` on arm64 rather than calling
+  into C
+  (Zane Hambly, review by Xavier Leroy, Basile Clément, Antonin Décimo,
+   Jeremy Yallop and Nicolás Ojeda Bär)
+
+- #15017: emit the rounding instructions for `Float.round`, `Float.trunc`,
+  `ceil` and `floor` on arm64 and power rather than calling into C
+  (Zane Hambly, review by Miod Vallat and Nicolás Ojeda Bär)
+
 * #13919: optimize `lazy v` when `v` is a structured constant
   (below a size threshold), so that `Lazy.from_val v` should not be
   necessary anymore in most cases.
@@ -164,7 +407,8 @@ Working version
 
 - #13438: keep some optimization hints from lambda in bytecode modules
   and executables (to be used by Js_of_ocaml / Wasm_of_ocaml)
-  (Jérôme Vouillon)
+  (Jérôme Vouillon, review by Olivier Nicole, Vincent Laviron, and
+   David Allsopp)
 
 - #13588: propagate physical comparison operators to lambda
   (to be used by Js_of_ocaml / Wasm_of_ocaml)
@@ -195,7 +439,37 @@ Working version
   barrier; the default is chosen at configure time and can be overridden.
   (Sebastian Pop and Xavier Leroy, review by Xavier Leroy and Olivier Nicole)
 
+- #14898, #15035: do not trust GADT equations introduced by refutable arguments
+  in the Lambda IR.
+  (Florian Angeletti, report by Nathanaëlle Courant, review by Gabriel Scherer)
+
+- #15084: add the `%int64_of_float` and `%int64_to_float` primitives, their
+  Nativeint equivalents and `%int32_to_float`, so that `Int64.of_float`,
+  `Int64.to_float` and friends compile to a single instruction rather than
+  calling into C. `Int32.of_float` keeps its C call, so that bytecode and
+  native code agree on out-of-range arguments
+  (Zane Hambly, review by Stefan Muenzel, Xavier Leroy and
+   Nicolás Ojeda Bär)
+
+- #15090: Allow unaligned memory accesses on s390x.
+  (Zane Hambly, review by Xavier Leroy)
+
+- #15122: more optimization hints in bytecode modules and executables:
+  reads of values known to be immediates, and tests of whether a value
+  of a variant type is an immediate (to be used by Js_of_ocaml /
+  Wasm_of_ocaml)
+  (Jérôme Vouillon, review by Nicolás Ojeda Bär)
+
+- #15135: replace the bytecode hint on physical comparisons by a hint on
+  integer equality tests, so that a missing hint is always safe
+  (Jérôme Vouillon, review by Stefan Muenzel)
+
 ### Standard library:
+
+- #14974 : Add `Sys.filepath_exists` and improve documentation
+  for `Sys.file_exists`
+  (Khalid Belkassmi E.H., review by Kate Deplaix, Nicolás Ojeda Bär,
+   Xavier Leroy and Daniel Bünzli)
 
 - #14941, #13937: Add `{Option,Result}.try_value`
   (Michael Neumann, review by Daniel Bünzli, David Allsopp)
@@ -258,7 +532,49 @@ Working version
   the runtime's caml_hash_variant) to Obj.hash_variant.
   (David Allsopp, review by Léo Andrès and Nicolás Ojeda Bär)
 
+- #14909: Add Dynarray.append_iarray, Pqueue.of_iarray
+  (Nicolás Ojeda Bär, suggestion by Andreas Rossberg, review by Daniel Bünzli,
+  Léo Andrès, and Olivier Nicole)
+
+- #15026: Fix report #14765 of an uncaught exception when flushing formatters
+  at program exit.
+  (Olivier Nicole, report by Olivier Andrieu, review by Gabriel Scherer)
+
+- #14981: Add Uchar.{is_ascii,ascii_to_char,is_latin1,latin1_to_char} and
+  tweak the documentation of Uchar.of_char.
+  (Fabian Hemmer, suggestion by Daniel Bünzli, review by Daniel Bünzli and
+  Nicolás Ojeda Bär)
+
+- #15009: Improve Set.union, Set.inter, and Set.diff on physically shared sets,
+  avoiding unnecessary traversal and allocations and preserving sharing when the
+  result is unchanged.
+  (Nicolás Ojeda Bär, review by Vincent Laviron and Olivier Nicole)
+
+- #14848: Add Dynarray.stable_sort_sub, stable_sort and sort
+  (Jeanne Pottier, review by Nicolás Ojeda Bär and Olivier Nicole)
+
+- #15064: deprecate Weak.get_copy
+  (Gabriel Scherer, suggestion by Stephen Dolan and Josh Berdine,
+  review by Nicolás Ojeda Bär, Kate Deplaix and Léo Andrès.)
+
+- #15173: Fix Seq.ints_in_range overflowing and failing to terminate when
+  the last endpoint is max_int.
+  (Antonio Nuno Monteiro, review by Nicolás Ojeda Bär)
+
 ### Other libraries:
+
+- #13450: Fixes and improvements for Windows socketpair on AF_UNIX emulation.
+  (Antonin Décimo, review by Nicolás Ojeda Bär)
+
+- #14740: Various fixes in libunix. Fix compilation failures if gethostname or
+  IPv6 are not available. Add blocking sections to the wrappers of realpath and
+  lockf. Fix missing root registration.
+  (Antonin Décimo, review by Gabriel Scherer)
+
+- #14764: Fix a bug in the Win32 implementation of the `Unix` library that could
+  result in some file descriptors being dropped from the result of `Unix.select`
+  under certain circumstances.
+  (Zhang Rui, review by Nicolás Ojeda Bär, Antonin Décimo and David Allsopp)
 
 * #14788: The Win32 error code `ERROR_DIRECTORY` (= 267) is now mapped to
   `ENOTDIR` instead of `EUNKNOWNERR(-267)` when raised by functions in the
@@ -266,10 +582,20 @@ Working version
   (Nicolás Ojeda Bär, report by Adrián Montesinos González, review by Gabriel
   Scherer)
 
-- #14764: Fix a bug in the Win32 implementation of the `Unix` library that could
-  result in some file descriptors being dropped from the result of `Unix.select`
-  under certain circumstances.
-  (Zhang Rui, review by Nicolás Ojeda Bär, Antonin Décimo and David Allsopp)
+- #14984: Cache one write buffer for each domain in
+  `Runtime_events.User.write`, instead of a list for each thread. A write of
+  a custom event does not allocate in the usual single-threaded case.
+  (Anil Madhavapeddy, review by Thomas Leonard and Sadiq Jaffer)
+
+- #15025: Fix two bugs in the Win32 version of `Unix.select` that could result
+  in failure or incorrect results being returned when the same file descriptor
+  appeared more than one input list or more than once in a single input list.
+  (Nicolás Ojeda Bär, report by Zhang Rui, review by Antonin Décimo)
+
+- #15044: `Unix.realpath`: On Windows, improve normalization of UNC paths. For
+  example, `\\?\UNC\server\share` is now mapped to `\\server\share` rather than
+  `UNC\server\share`.
+  (Nicolás Ojeda Bär, review by David Allsopp and Antonin Décimo)
 
 ### Tools:
 
@@ -305,9 +631,13 @@ Working version
   (Nicolás Ojeda Bär, report by Igor Pikovets, review by Gabriel Scherer and
   Xavier Leroy)
 
-- #14448: ocamllex now prints a `missing-case` warning and shows an example
-  of nonmatching input if a rule is not exhaustive (Martin Jambon,
-  review by David Allsopp and Gabriel Scherer)
+* #14172: stop reversing the order of -L arguments in ocamlmklib, a quirk
+  introduced by accident in 2012.
+  (Alexandre Douard, review by Daniel Bünzli and Nicolás Ojeda Bär)
+
+- #15022: ocamldebug: requesting a header through the debugger protocol now
+  returns the full header instead of the low 32 bits.
+  (Vincent Laviron, review by Xavier Leroy)
 
 ### Manual and documentation:
 
@@ -317,7 +647,26 @@ Working version
   (Jeanne Pottier, review by Florian Angeletti, Gabriel Scherer
   and Daniel Bünzli)
 
+- #15082: Clarify in the manual that a character literal denotes a single
+  US-ASCII character, so a non-ASCII Unicode character is not a valid
+  character literal, and that the numerical escape sequences also denote
+  byte values outside the ASCII range.
+  (Abhay Chaudhary, report by baugigi, review by Florian Angeletti)
+
+- #15091: Document the OCAMLRUNPARAM `X` option for named GC tweaks and the
+  bounds on `d`, and align the ocamlrun man page with the manual on `b` and
+  on comma handling.
+  (Tim McGilchrist, review by Stefan Muenzel)
+
+- #15200, #15224: manual: fix syntax for local opens and labeled tuple patterns
+  (Simmo Saan, review by Florian Angeletti)
+
 ### Compiler user-interface and warnings:
+
+- #14958, #15120: Improve error messages for Duplicate_constructor and
+  Duplicate_label.
+  (Michał Kosior, review by Florian Angeletti)
+
 - #14887: More concise messages for the non-exhaustiveness warning.
   (Luc Maranget, review by Florian Angeletti)
 
@@ -344,8 +693,8 @@ Working version
 
 ### Internal/compiler-libs changes:
 
-- #14241, #14824, #14945: Introduction of a typing recovery mechanism to
-  collect more than one typing error, facilitating integration with editors
+- #14241, #14824, #14945, #14963: Introduction of a typing recovery mechanism
+  to collect more than one typing error, facilitating integration with editors
   that need to report more than one error.
   (Xavier Van de Woestyne, Ulysse Gerard, Thomas Refis and Frédéric
   Bour, review by Florian Angeletti and Thomas Refis)
@@ -397,19 +746,37 @@ Working version
 - #14759: expose the function parsing OCAMLRUNPARAM for easier testing
   (Gabriel Scherer, view by Antonin Décimo and Nicolás Ojeda Bär)
 
-- #14643: Test `-recypes` in addition to `-principal` in expect tests. Run all
-  test variants in the same invocation.
+- #14643, #14959: Test `-recypes` in addition to `-principal` in expect tests.
+  Run all test variants in the same invocation.
   (Stefan Muenzel, review by Alistar O'Brien and Florian Angeletti)
 
 - #14900: Speed up deep_occur_rec, improving typechecking performance of
   certain large types, as seen in #14897.
   (Stefan Muenzel, review by Gabriel Scherer and Vincent Laviron)
 
+- #14190: simplify the implementation of path compression in `Types.repr`
+  (Gabriel Scherer, review by Stefan Muenzel, Jacques Garrigue
+   and Florian Angeletti)
+
 - #14932: Fix `-dtypedtree` printing of `Twith_modtypesubst`.
   (Corentin De Souza, review by Nicolás Ojeda Bär)
 
 - #14946: Keep the continuation inside the typedtree using a dedicated type.
   (Xavier Van de Woestyne, review by Florian Angeletti)
+
+- #14995: Make failure in enforce_current_level a fatal error
+  (Jacques Garrigue, review by Samuel Vivien)
+
+- #15023: Extract Utf8_lexeme out of Misc into utils/utf8_lexeme.ml(i)
+  (Thomas Refis, review by Nicolás Ojeda Bär)
+
+- #15052: Fixed wrong exception raised in a dead code path when comparing type
+  declarations.
+  (Samuel Vivien, review by Stefan Muenzel and Florian Angeletti)
+
+- #15046, #15066: testsuite: skip the AFL fuzz test when the compiler is not
+  built with AFL instrumentation.
+  (Akash Kumar, report and review by Xavier Leroy)
 
 ### Build system:
 
@@ -421,11 +788,33 @@ Working version
   (Austin Thierault, review by Antonin Décimo, Edwin Török, David Allsopp and
    Olivier Nicole)
 
+- #15067, #15071: Fix detection of functions available in the future on macOS.
+  (Antonin Décimo, review by Nicolás Ojeda Bär and Damien Doligez)
+
 - #14915: Remove OCaml's environment variables (CAML_LD_LIBRARY_PATH, etc.) from
   the build environment.
   (David Allsopp, review by Antonin Décimo)
 
 ### Bug fixes:
+
+- #15072, #15075: Fix `Runtime_events` cursors becoming permanently unusable
+  when a user event decoder raises. The exception escaped `read_poll` without
+  clearing the in-poll flag, so every later poll on that cursor failed with
+  "poll called concurrently or reentrant". The decoder's exception is now
+  propagated through the normal path and the cursor is released.
+  (Abhay Chaudhary, review by Tim McGilchrist)
+
+- #14986: Take effect cases into account in the expansiveness check.
+  (Jeremy Yallop, review by Florian Angeletti)
+
+- #15021: On POWER, fix assembler errors from frame-management code when the
+  frame size exceeds a signed 16-bit displacement, by routing the affected
+  sequences through range-checked helpers.
+  (Tim McGilchrist, review by Miod Vallat and Zane Hambly)
+
+- #14993: the let-rec check should give generic arrays dynamic size,
+  since floats and addresses have different sizes on 32-bit systems.
+  (Jeremy Yallop, review by Vincent Laviron)
 
 - #13335: Fix infinite loop in runtime_events.c's write_to_ring when an
   event is larger than the configured ring buffer. Only really comes up
@@ -477,16 +866,153 @@ Working version
   (Pierre Chambart, report by Nathanaëlle Courant and
    Vincent Laviron review by Vincent Laviron)
 
+- #14842, #14983: Discard invalid type abbreviations when leaving the scope
+  of a modular explicit, and clean up Typecore.type_newtype
+  (Jacques Garrigue, review by Stefan Muenzel)
+
 - #14881, #14882: fix printing of external types that are subject to module
   constraints.
   (Stefan Muenzel, review by Florian Angeletti)
+
+- #14890, fix pattern compilation in presence of the [min_int] constant pattern
+  (Florian Angeletti, review by Luc Maranget)
+
+* #14982: Remove assumption that abstract types defined in the current
+  module are injective and contractive
+  (Jeremy Yallop, review by Jacques Garrigue)
+
+- #14999, #15000: Fix integer overflow in the runtime_events ring buffer size
+  computation. With OCAMLRUNPARAM=e=21 or higher the ring file was created
+  undersized and custom event registration wrote through a truncated offset.
+  (Tim McGilchrist, review by Xavier Leroy and Sadiq Jaffer)
+
+- #14966: add the missing EV_MINOR_EPHE_CLEAN constructor to
+  Runtime_events.runtime_phase, introduced in #13643. The runtime has emitted
+  this phase since 5.4, when a minor collection has to clean locked ephemerons,
+  but the OCaml type had no constructor for it, so consumers were handed an
+  out-of-range value and crashed when matching on it.
+  (Tim McGilchrist, review by Florian Angeletti)
+
+- #14969: Fix the units of the runtime events counter EV_C_MINOR_ALLOCATED_WORDS
+  to report as the number of words of minor heap consumed, including headers.
+  (Tim McGilchrist, review by Nicolás Ojeda Bär)
+
+- #15016, #14151: Fix spurious "Runtime_events: corrupt stream" failures when a
+  consumer falls behind the producer. The consumer now reports an overwritten
+  ring slot as lost events rather than corruption, and write_to_ring publishes
+  the ring head advance before overwriting the slots that advance releases.
+  (Tim McGilchrist, reported by mattiasdrp, review by Sadiq Jaffer and
+   Zane Hambly)
+
+* #14978: fix precedence of `with module type` construct in order to parse
+  `T with module type S = X -> X` as `T with module type S = (X -> X)`
+  (Pieter Goetschalckx, review by Gabriel Scherer and Florian Angeletti)
+
+- #14988: Don't copy continuations in Weak.get_copy.
+  (Jeremy Yallop, review by Stefan Muenzel)
+
+* #15010: Fix truncation of the lost event count in runtime_events_consumer.c
+  The count is a difference of two uint64_t ring positions but was passed to
+  the callback as an int. caml_runtime_events_set_lost_events now takes a
+  callback whose lost_words parameter is uint64_t, the OCaml API is unchanged.
+  (Tim McGilchrist, review by Sadiq Jaffer and Miod Vallat)
+
+- #15039: Various runtime events documentation improvements
+  (Tim McGilchrist, reviewed by Sadiq Jaffer and Antonin Décimo)
+
+- #15069: Fix unchaught exception when comparing signatures adding the same
+  extension constructor to types with different arities
+  (Samuel Vivien, reported by Florian Angeletti, review by Florian Angeletti)
+
+- #15045: Atomic loads whose results are unused should not be removed
+  during dead-code elimination.
+  (Xavier Clerc, review by Steven Dolan and KC Sivaramakrishnan)
+
+- #15048: Preserve the destination file when ocamllex fails before code
+  generation, including on a fatal missing-case warning.
+  (cuishuang, review by Nicolás Ojeda Bär)
+
+- #15093: Windows: fix a bug in the `Unix.select` emulation which could result
+  in an out-of-bounds memory access. This is triggered when the watched set
+  contains 63 or more sockets along with at least one non-socket descriptor, or
+  more than 64 sockets in a single list.
+  (Romain Beauxis, review by Nicolás Ojeda Bär, Stefan Muenzel and Antonin
+  Décimo)
+
+- #14975: Windows: fix a bug in `Unix.select` when the watched set consists of
+  sockets and non-sockets. If the call failed with an error, the sockets passed
+  to it could be left in non-blocking mode, and one system handle was also
+  leaked for each socket.
+  (Romain Beauxis, review by Nicolás Ojeda Bär)
+
+- #12195: Lower levels in checked module packages so that remaining weak
+  variables may not be unified with out-of-scope types.
+  (Chris Casinghino and Leo White, review by Jacques Garrigue)
+
+- #15112, OSEC-2026-22: `Unix.map_file`: protect against overflow
+  when computing the data size.
+  (Xavier Leroy and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär
+  and Edwin Török)
+
+- #15113, OSEC-2026-21: `Str.string_partial_match`: make sure captured groups
+  are valid.
+  (Xavier Leroy, review by Nicolás Ojeda Bär and Edwin Török)
+
+- #15114, #15206: Fix the compilation of pattern matching on records whose
+  field types mention a locally abstract type: a field could be read as an
+  immediate in all the rows of the match because of a GADT equation that only
+  holds in one of them. In native code, the value was then not registered as a
+  GC root.
+  (Jérôme Vouillon and Jeremy Yallop, review by Florian Angeletti)
+
+- #15115, OSEC-2026-23: Fix multiple issues in demarshaling
+  (`Marshal.from_{channel,string,bytes}`)
+  (Xavier Leroy, review by Nicolás Ojeda Bär)
+
+- #15118: Fix printing of module type names in the toplevel and -dsource when
+  the name is a reserved identifier.
+  (Nicolás Ojeda Bär, review by Florian Angeletti)
+
+- #15118: Fix printing of raw identifiers in exotic corner cases.
+  (Florian Angeletti, review by Nicolás Ojeda Bär)
+
+- #15125, #15134: support source files larger than max_string_length
+  (16MB on native 32-bit systems) which would fail since OCaml 5.2.
+  (Gabriel Scherer, review by Vincent Laviron, report by Stéphane Glondu)
+
+- #15133, OSEC 2026-24: Multiple issues in command quoting on Windows
+  (Xavier Leroy and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär)
+
+- #15127: Fix a memory leak when compacting the heap of a domain
+  if the size class had no live blocks.
+  (Ezequiel Lewin, review by Florian Angeletti)
+
+- #15186: Fix Windows Unix.LargeFile.lseek which seeked to a wrong offset
+  (regression since 5.1.0).
+  (Tim McGilchrist, review by Nicolas Ojeda Bar)
+
+- #15225: Fix a bug where Unix.select would report writability only once after
+  becoming writable. This occurred when the list of file descriptors contained a
+  mixture of sockets and non-sockets.
+  (Nicolás Ojeda Bär, report by Kento Okura, review by Antonin Décimo)
+
+- #15267: Fix a regression on Windows where Ctrl-Break terminated the program
+  instead of being delivered as Sys.sigint, so neither a Sys.sigint handler
+  nor Sys.catch_break could intercept it (regression since 5.0.0).
+  (Mark Elvers, review by Nicolás Ojeda Bär)
+
+* #15249: Functions taking a `Unix.sockaddr` now raise `Invalid_argument` when
+  the port of an `ADDR_INET` address is outside the range 0 to 65535, instead
+  of silently truncating it to 16 bits.
+  (Nicolás Ojeda Bär, report by KC Sivaramakrishnan, review by KC
+  Sivaramakrishnan and Antonin Décimo)
 
 OCaml 5.5.1
 -----------
 
 ### Bug fixes:
 
-- #14891, #14982: fix scope error leading to an erroneous typechecking for
+- #14891, #14892: fix scope error leading to an erroneous typechecking for
   non-dependent application of module-dependent function in presence of
   dependent first-class module types:
   ```ocaml
@@ -501,9 +1027,32 @@ OCaml 5.5.1
 - #14871, #14914: Ignore OCAMLTOP_INCLUDE_PATH during the build.
   (David Allsopp, report by Andreas Rossberg, review by Florian Angeletti)
 
+- #14901, #14923: Fix the generated installation script to cope with macOS's
+  geriatric version of bash when executing in opam's sandbox.
+  (David Allsopp, report by Julian Fondren and Sacha-Élie Ayoun, investigation
+   and initial fix by Kate Deplaix, review by Florian Angeletti)
+
 - #14940, fix a memory leak in the OCaml runtime by bounding the size
   of the internal cache of stacks.
   (Vesa Karvonen, Florian Angeletti, review by Gabriel Scherer)
+
+- #14989: Improve build reproducibility by letting only otherlibs/{str,unix}
+  build their own .cmi and .cmx. The generic %.cmi/%.cmx rules of the root
+  Makefile were racing with them under make -j and recorded a different source
+  path, which changed the interface digest (and, through it, most other compiled
+  artefacts) as well as the debug info packed into str.a and unix.a.
+  (Bernhard M. Wiedemann, review by David Allsopp and Stefan Muenzel)
+
+- #15029: Fix a regression on Windows where an OCaml thread that never
+  yielded voluntarily would keep the runtime lock forever, so that the other
+  threads of its domain never ran. Preemptive switching between systhreads had
+  no effect; only explicit calls to `Thread.yield` or blocking sections would
+  let other threads run.
+  (Nicolás Ojeda Bär, report by Daniel Larraz, review by Antonin Décimo)
+
+-#15163, #15219: faster variance check for type definitions with large
+ constrained parameter types.
+ (Florian Angeletti, report by Kate Deplaix, review by Gabriel Scherer)
 
 OCaml 5.5.0 (19 June 2026)
 -------------------------

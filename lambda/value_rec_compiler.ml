@@ -278,7 +278,9 @@ let compute_static_size lam =
     | Pmakearray (kind, _) ->
         let size = List.length args in
         begin match kind with
-        | Pgenarray | Paddrarray | Pintarray ->
+        | Pgenarray ->
+            dynamic_size ()
+        | Paddrarray | Pintarray ->
             Block (Regular_block size)
         | Pfloatarray ->
             Block (Float_record size)
@@ -334,10 +336,12 @@ let compute_static_size lam =
     | Parraylength _
     | Parrayrefu _
     | Parrayrefs _
-    | Pisint
+    | Pisint _
     | Pisout
     | Pbintofint _
     | Pintofbint _
+    | Pbintoffloat _
+    | Pfloatofbint _
     | Pcvtbint _
     | Pnegbint _
     | Paddbint _
@@ -366,7 +370,7 @@ let compute_static_size lam =
     | Pbswap16
     | Pbbswap _
     | Pint_as_pointer
-    | Patomic_load | Patomic_fetch_add
+    | Patomic_load | Patomic_fetch_add | Patomic_exchange | Patomic_cas
     | Popaque
     | Pdls_get ->
         dynamic_size ()

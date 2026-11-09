@@ -200,6 +200,7 @@ module Doc = struct
     let longident ?(is_constr=false) l =
       let kind = if is_constr then Constr else Value in
       Format_doc.doc_printer (any_longident ~kind) l.Location.txt in
+    let method_pr x = Format_doc.doc_printer (ident_of_name ~kind:Type) x in
     let rec nominal_exp doc exp =
       match exp.pexp_desc with
       | _ when exp.pexp_attributes <> [] -> None
@@ -215,7 +216,7 @@ module Doc = struct
             (nominal_exp doc parent)
       | Pexp_send (parent, meth) ->
           Option.map
-            (printf "#%s" meth.txt)
+            (printf "#%t" (method_pr meth.txt))
             (nominal_exp doc parent)
       (* String constants are syntactically too complex. For example, the
          quotes conflict with the 'inline_code' style and they might contain
@@ -242,6 +243,9 @@ let ident_of_value_name ppf i =
 
 let ident_of_name ppf i =
   Format_doc.compat (Doc.ident_of_name ~kind:Other) ppf i
+
+let ident_of_type_name ppf i =
+  Format_doc.compat (Doc.ident_of_name ~kind:Type) ppf i
 
 let constr ppf l = Format_doc.compat Doc.constr ppf l
 
@@ -464,7 +468,7 @@ and core_type ctxt f x =
 and tuple_type_component ctxt f (label, ty) =
   begin match label with
   | None   -> ()
-  | Some s -> pp f "%s:" s
+  | Some s -> pp f "%a:" ident_of_type_name s
   end;
   core_type1 ctxt f ty
 
@@ -618,9 +622,9 @@ and tuple_pattern_component ctxt (f:Format.formatter) (label, x) : unit =
   match label, simple_name with
   (* Labeled component can be represented with pun *)
   | Some lbl, Some simple_name when String.equal simple_name lbl ->
-    pp f "~%s" lbl
+    pp f "~%a" ident_of_type_name lbl
   (* Labeled component general case *)
-  | Some lbl, _ -> pp f "~%s:%a" lbl (pattern1 ctxt) x
+  | Some lbl, _ -> pp f "~%a:%a" ident_of_type_name lbl (pattern1 ctxt) x
   (* Unlabeled component *)
   | None, _ -> pattern1 ctxt f x
 
@@ -1022,6 +1026,7 @@ and simple_expr ctxt f x =
     (* |`Normal -> longident_loc f li *)
     (* | `Prefix _ | `Infix _ -> pp f "( %a )" longident_loc li) *)
     | Pexp_constant c -> constant f c;
+    | Pexp_hole -> pp f "_"
     | Pexp_pack (me, opty) ->
         pp f "(module@;%a" (module_expr ctxt) me;
         Option.iter (pp f " :@ %a" (package_type ctxt)) opty;
@@ -1441,8 +1446,8 @@ and signature_item ctxt f x : unit =
       let md = match md with
         | None -> assert false (* ast invariant *)
         | Some mt -> mt in
-      pp f "@[<hov2>module@ type@ %s@ :=@ %a@]%a"
-        s.txt (module_type ctxt) md
+      pp f "@[<hov2>module@ type@ %a@ :=@ %a@]%a"
+        ident_of_type_name s.txt (module_type ctxt) md
         (item_attributes ctxt) attrs
   | Psig_class_type (l) -> class_type_declaration_list ctxt f l
   | Psig_recmodule decls ->
@@ -1496,6 +1501,7 @@ and module_expr ctxt f x =
     | Pmod_unpack e ->
         pp f "(val@ %a)" (expression ctxt) e
     | Pmod_extension e -> extension ctxt f e
+    | Pmod_hole -> pp f "_"
 
 and structure ctxt f x = list ~sep:"@\n" (structure_item ctxt) f x
 
@@ -1574,7 +1580,7 @@ and binding_op ctxt f x =
   | {ppat_desc = Ppat_var { txt=pvar; _ }; ppat_attributes = []; _},
     {pexp_desc = Pexp_ident { txt=Lident evar; _}; pexp_attributes = []; _}
        when pvar = evar ->
-     pp f "@[<2>%s %s@]" x.pbop_op.txt evar
+     pp f "@[<2>%s %a@]" x.pbop_op.txt ident_of_name evar
   | pat, exp ->
      pp f "@[<2>%s %a@;=@;%a@]"
        x.pbop_op.txt (pattern ctxt) pat (expression ctxt) exp
@@ -1907,9 +1913,9 @@ and tuple_expr_component ctxt f (l,e) =
   in match (simple_name, l) with
   (* Labeled component can be represented with pun *)
   | Some simple_name, Some lbl when String.equal simple_name lbl ->
-    pp f "~%s" lbl
+    pp f "~%a" ident_of_type_name lbl
   (* Labeled component general case *)
-  | _, Some lbl -> pp f "~%s:%a" lbl (simple_expr ctxt) e
+  | _, Some lbl -> pp f "~%a:%a" ident_of_type_name lbl (simple_expr ctxt) e
   (* Unlabeled component *)
   | _, None  -> expression2 ctxt f e
 

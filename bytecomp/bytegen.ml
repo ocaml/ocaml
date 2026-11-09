@@ -156,8 +156,8 @@ let preserve_tailcall_for_prim = function
   | Pcompare_ints | Pcompare_floats | Pcompare_bints _
   | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
   | Pmakearray _ | Pduparray _ | Parraylength _ | Parrayrefu _ | Parraysetu _
-  | Parrayrefs _ | Parraysets _ | Pisint | Pisout | Pcheckbound
-  | Pbintofint _ | Pintofbint _
+  | Parrayrefs _ | Parraysets _ | Pisint _ | Pisout | Pcheckbound
+  | Pbintofint _ | Pintofbint _ | Pbintoffloat _ | Pfloatofbint _
   | Pcvtbint _ | Pnegbint _ | Paddbint _ | Psubbint _ | Pmulbint _ | Pdivbint _
   | Pmodbint _ | Pandbint _ | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _
   | Pasrbint _ | Pbintcomp _ | Pbigarrayref _ | Pbigarrayset _ | Pbigarraydim _
@@ -166,7 +166,7 @@ let preserve_tailcall_for_prim = function
   | Pbytes_set_64 _ | Pbigstring_load_16 _ | Pbigstring_load_32 _
   | Pbigstring_load_64 _ | Pbigstring_set_16 _ | Pbigstring_set_32 _
   | Pbigstring_set_64 _ | Pctconst _ | Pbswap16 | Pbbswap _ | Pint_as_pointer
-  | Patomic_load | Patomic_fetch_add
+  | Patomic_load | Patomic_fetch_add | Patomic_exchange | Patomic_cas
   | Pdls_get ->
       false
 
@@ -371,8 +371,8 @@ let comp_primitive stack_info p sz args =
   | Pcompare_ints -> Kccall("caml_int_compare", 2, None)
   | Pcompare_floats -> Kccall("caml_float_compare", 2, None)
   | Pcompare_bints bi -> comp_bint_primitive bi "compare" args
-  | Pfield(n, _ptr, _mut) -> Kgetfield n
-  | Pfield_computed -> Kgetvectitem
+  | Pfield(n, ptr, _mut) -> Kgetfield (n, ptr)
+  | Pfield_computed -> Kgetvectitem Pointer
   | Psetfield(n, _ptr, _init) -> Ksetfield n
   | Psetfield_computed(_ptr, _init) -> Ksetvectitem
   | Psetfloatfield (n, _init) -> Ksetfloatfield n
@@ -440,13 +440,16 @@ let comp_primitive stack_info p sz args =
   | Parraylength kind -> Kvectlength kind
   | Parrayrefs Pgenarray -> Kccall("caml_array_get", 2, None)
   | Parrayrefs Pfloatarray -> Kccall("caml_floatarray_get", 2, None)
-  | Parrayrefs _ -> Kccall("caml_array_get_addr", 2, None)
+  | Parrayrefs Pintarray ->
+      Kccall("caml_array_get_addr", 2, Some Hint_immediate_result)
+  | Parrayrefs Paddrarray -> Kccall("caml_array_get_addr", 2, None)
   | Parraysets Pgenarray -> Kccall("caml_array_set", 3, None)
   | Parraysets Pfloatarray -> Kccall("caml_floatarray_set", 3, None)
   | Parraysets _ -> Kccall("caml_array_set_addr", 3, None)
   | Parrayrefu Pgenarray -> Kccall("caml_array_unsafe_get", 2, None)
   | Parrayrefu Pfloatarray -> Kccall("caml_floatarray_unsafe_get", 2, None)
-  | Parrayrefu _ -> Kgetvectitem
+  | Parrayrefu Pintarray -> Kgetvectitem Immediate
+  | Parrayrefu Paddrarray -> Kgetvectitem Pointer
   | Parraysetu Pgenarray -> Kccall("caml_array_unsafe_set", 3, None)
   | Parraysetu Pfloatarray -> Kccall("caml_floatarray_unsafe_set", 3, None)
   | Parraysetu _ -> Ksetvectitem
@@ -462,11 +465,13 @@ let comp_primitive stack_info p sz args =
        | Backend_type -> "backend_type"
        | Standard_library_default -> "standard_library_default" in
      Kccall(Printf.sprintf "caml_sys_const_%s" const_name, 1, None)
-  | Pisint -> Kisint
+  | Pisint { variant_only } -> Kisint variant_only
   | Pisout -> Kisout
   | Pcheckbound -> Kccall("caml_check_bound", 2, None)
   | Pbintofint bi -> comp_bint_primitive bi "of_int" args
   | Pintofbint bi -> comp_bint_primitive bi "to_int" args
+  | Pbintoffloat bi -> comp_bint_primitive bi "of_float" args
+  | Pfloatofbint bi -> comp_bint_primitive bi "to_float" args
   | Pcvtbint(src, dst) ->
       begin match (src, dst) with
       | (Pint32, Pnativeint) -> Kccall("caml_nativeint_of_int32", 1, None)
@@ -528,6 +533,8 @@ let comp_primitive stack_info p sz args =
   | Pbytes_of_string -> Kccall("caml_bytes_of_string", 1, None)
   | Patomic_load -> Kccall("caml_atomic_load_field", 2, None)
   | Patomic_fetch_add -> Kccall("caml_atomic_fetch_add_field", 3, None)
+  | Patomic_exchange -> Kccall("caml_atomic_exchange_field", 3, None)
+  | Patomic_cas -> Kccall("caml_atomic_cas_field", 4, None)
   | Pdls_get -> Kccall("caml_domain_dls_get", 1, None)
   | Ppoll -> Kccall("caml_process_pending_actions_with_root", 1, None)
   (* The cases below are handled in [comp_expr] before the [comp_primitive] call

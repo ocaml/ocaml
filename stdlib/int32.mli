@@ -191,9 +191,7 @@ external of_float : float -> int32
    \[{!Int32.min_int}, {!Int32.max_int}\], no exception is raised, and
    an unspecified, platform-dependent integer is returned. *)
 
-external to_float : int32 -> float
-  = "caml_int32_to_float" "caml_int32_to_float_unboxed"
-  [@@unboxed] [@@noalloc]
+external to_float : int32 -> float = "%int32_to_float"
 (** Convert the given 32-bit integer to a floating-point number. *)
 
 external of_string : string -> int32 = "caml_int32_of_string"

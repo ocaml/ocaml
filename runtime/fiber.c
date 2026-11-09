@@ -479,6 +479,61 @@ void caml_rewrite_exception_stack(struct stack_info *old_stack,
 
 #endif
 
+#ifdef WITH_FRAME_POINTERS
+
+/* One link of the frame-pointer chain. */
+struct stack_frame {
+  struct stack_frame* prev;
+  void* retaddr;
+};
+
+/* Relocate by [delta] the frame pointers of the OCaml frames lying above the
+   C frame described by [link], for as long as they point inside [old_stack].
+   The OCaml frames have already been copied to the new stack, [link->sp] has
+   not been relocated yet. */
+Caml_inline void relocate_frame_pointers(struct c_stack_link* link,
+                                         struct stack_info* old_stack,
+                                         ptrdiff_t delta)
+{
+#if defined(TARGET_power)
+  /* On Power the c_stack_link sits above the ABI's 32-byte reserved area, so
+     the OCaml frame record is not adjacent to it.  Reach it through
+     [link->sp], which is the address of the innermost OCaml frame record,
+     relocated by [delta] since the stack has already been copied. */
+  struct stack_frame* fp = (struct stack_frame*)((char*)link->sp + delta);
+#elif defined(TARGET_riscv)
+  /* On RISC-V, the frame pointer s0 = CFA = sp + frame_size, pointing to the
+     address just AFTER the {saved_s0, saved_ra} frame record.  So fp->prev
+     gives a CFA value, and the actual frame record is at
+     (CFA - sizeof(struct stack_frame)).  ENTER_FUNCTION sets s0 = sp + 16,
+     so the saved s0 in the C function's frame equals link->sp + 16. */
+  struct stack_frame* fp = ((struct stack_frame*)link) - 1;
+  CAMLassert(fp->prev == (struct stack_frame*)((char*)link->sp + 16));
+#else /* AMD64 and ARM64 */
+  /* The frame pointer is pushed just below the c_stack_link.  This is
+     somewhat tricky to guarantee when there are stack arguments to C calls:
+     see caml_c_call_copy_stack_args */
+  struct stack_frame* fp = ((struct stack_frame*)link) - 1;
+  CAMLassert(fp->prev == (struct stack_frame*)link->sp);
+#endif
+
+#if defined(TARGET_riscv)
+  while ((value*)fp->prev > Stack_base(old_stack) &&
+         (value*)fp->prev <= Stack_high(old_stack)) {
+    fp->prev = (struct stack_frame*)((char*)fp->prev + delta);
+    fp = fp->prev - 1; /* CFA - 16 = frame record */
+  }
+#else
+  while (Stack_base(old_stack) <= (value*)fp->prev &&
+         (value*)fp->prev < Stack_high(old_stack)) {
+    fp->prev = (struct stack_frame*)((char*)fp->prev + delta);
+    fp = fp->prev;
+  }
+#endif
+}
+
+#endif /* WITH_FRAME_POINTERS */
+
 int caml_try_realloc_stack(asize_t required_space)
 {
   struct stack_info *old_stack, *new_stack;
@@ -525,51 +580,15 @@ int caml_try_realloc_stack(asize_t required_space)
    * multiple c_stack_links to point to the same stack since callbacks are run
    * on existing stacks. */
   {
+    ptrdiff_t delta =
+      (char*)Stack_high(new_stack) - (char*)Stack_high(old_stack);
+
     for (struct c_stack_link *link = Caml_state->c_stack;
          link != NULL;
          link = link->prev) {
       if (link->stack == old_stack) {
-        ptrdiff_t delta =
-          (char*)Stack_high(new_stack) - (char*)Stack_high(old_stack);
 #ifdef WITH_FRAME_POINTERS
-        struct stack_frame {
-          struct stack_frame* prev;
-          void* retaddr;
-        };
-
-        /* Frame pointer is pushed just below the c_stack_link.
-           This is somewhat tricky to guarantee when there are stack
-           arguments to C calls: see caml_c_call_copy_stack_args */
-        struct stack_frame* fp = ((struct stack_frame*)link) - 1;
-
-#if defined(TARGET_riscv)
-        /* On RISC-V, the frame pointer s0 = CFA = sp + frame_size,
-           pointing to the address just AFTER the {saved_s0, saved_ra}
-           frame record.  So fp->prev gives a CFA value, and the
-           actual frame record is at (CFA - sizeof(struct stack_frame)).
-           ENTER_FUNCTION sets s0 = sp + 16, so the saved s0 in the
-           C function's frame equals link->sp + 16. */
-        CAMLassert(fp->prev ==
-                   (struct stack_frame*)((char*)link->sp + 16));
-
-        /* Rewrite OCaml frame pointers above this C frame.
-           fp->prev is a CFA; the frame record is at CFA - 1 (in
-           struct stack_frame units, i.e. CFA - 16 bytes). */
-        while ((value*)fp->prev > Stack_base(old_stack) &&
-               (value*)fp->prev <= Stack_high(old_stack)) {
-          fp->prev = (struct stack_frame*)((char*)fp->prev + delta);
-          fp = fp->prev - 1; /* CFA - 16 = frame record */
-        }
-#else
-        CAMLassert(fp->prev == (struct stack_frame*)link->sp);
-
-        /* Rewrite OCaml frame pointers above this C frame */
-        while (Stack_base(old_stack) <= (value*)fp->prev &&
-               (value*)fp->prev < Stack_high(old_stack)) {
-          fp->prev = (struct stack_frame*)((char*)fp->prev + delta);
-          fp = fp->prev;
-        }
-#endif
+        relocate_frame_pointers(link, old_stack, delta);
 #endif
         link->stack = new_stack;
         link->sp = (char*)link->sp + delta;

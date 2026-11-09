@@ -40,9 +40,9 @@ and reaching_type_step =
 
 type error =
     Repeated_parameter
-  | Duplicate_constructor of string
+  | Duplicate_constructor of string * Location.t * Location.t list
   | Too_many_constructors
-  | Duplicate_label of string
+  | Duplicate_label of string * Location.t * Location.t list
   | Recursive_abbrev of string * Env.t * reaching_type_path
   | Cycle_in_def of string * Env.t * reaching_type_path
   | Definition_mismatch of type_expr * Env.t * Includecore.type_mismatch option
@@ -247,13 +247,21 @@ let make_params env params =
 
 let transl_labels env univars closed lbls =
   assert (lbls <> []);
-  let all_labels = ref String.Set.empty in
+  let all_labels = ref String.Map.empty in
   List.iter
     (fun {pld_name = {txt=name; loc}} ->
-       if String.Set.mem name !all_labels then
-         Error.log_and_raise loc (Duplicate_label name);
-       all_labels := String.Set.add name !all_labels)
+      all_labels := String.Map.add_to_list name loc !all_labels
+    )
     lbls;
+  String.Map.iter
+    (fun name locs ->
+      begin match List.rev locs with
+        | [] | [_] -> ()
+        | first :: rest ->
+          Error.log_and_raise first (Duplicate_label(name, first, rest))
+      end
+    )
+    !all_labels;
   let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;
           pld_attributes=attrs} =
     Builtin_attributes.warning_scope attrs
@@ -443,14 +451,21 @@ let transl_declaration env sdecl (id, uid) =
           | (_,_,loc)::_ ->
               Location.prerr_warning loc Warnings.Constraint_on_gadt
         end;
-        let all_constrs = ref String.Set.empty in
+        let all_constrs = ref String.Map.empty in
         List.iter
-          (fun {pcd_name = {txt = name}} ->
-             if String.Set.mem name !all_constrs then
-               Error.log_and_raise sdecl.ptype_loc
-                 (Duplicate_constructor name);
-            all_constrs := String.Set.add name !all_constrs)
+          (fun {pcd_name = {txt = name; loc}} ->
+            all_constrs := String.Map.add_to_list name loc !all_constrs
+          )
           scstrs;
+        String.Map.iter
+          (fun name locs ->
+            begin match List.rev locs with
+              | [] | [_] -> ()
+              | first :: rest -> Error.log_and_raise first
+                (Duplicate_constructor(name, first, rest))
+            end
+          )
+          !all_constrs;
         if List.length
             (List.filter (fun cd -> cd.pcd_args <> Pcstr_tuple []) scstrs)
            > (Config.max_tag + 1) then
@@ -2362,18 +2377,33 @@ let variance_error ~loc ~v1 ~v2 =
           n (Misc.ordinal_suffix n)
           (variance v2) (variance v1)
 
+let report_duplicate_definitions ~main ~loc other_defs =
+  let duplicate_definition loc =
+    Location.msg ~loc "Duplicate definition here" in
+  let sub = List.map duplicate_definition other_defs in
+  Location.errorf ~sub ~loc "%a" pp_doc main
+
+
 let report_error ~loc = function
   | Repeated_parameter ->
       Location.errorf ~loc "A type parameter occurs several times"
-  | Duplicate_constructor s ->
-      Location.errorf ~loc "Two constructors are named %a" Style.inline_code s
+  | Duplicate_constructor (s, first_def, other_defs) ->
+    let main = match List.length other_defs with
+      | 1 -> doc_printf "Two constructors are named %a" Style.inline_code s
+      | _ -> doc_printf "Multiple constructors are named %a" Style.inline_code s
+    in
+    report_duplicate_definitions ~main ~loc:first_def other_defs
   | Too_many_constructors ->
       Location.errorf ~loc
       "Too many non-constant constructors@ \
        -- maximum is %i non-constant constructors@]"
       (Config.max_tag + 1)
-  | Duplicate_label s ->
-      Location.errorf "Two labels are named %a" Style.inline_code s
+  | Duplicate_label (s, first_def, other_defs) ->
+    let main = match List.length other_defs with
+      | 1 -> doc_printf "Two labels are named %a" Style.inline_code s
+      | _ -> doc_printf "Multiple labels are named %a" Style.inline_code s
+    in
+    report_duplicate_definitions ~main ~loc:first_def other_defs
   | Recursive_abbrev (s, env, reaching_path) ->
       let reaching_path = Reaching_path.simplify reaching_path in
       Printtyp.wrap_printing_env ~error:true env @@ fun () ->

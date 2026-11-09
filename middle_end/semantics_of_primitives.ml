@@ -78,6 +78,8 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Pisout
   | Pbintofint _
   | Pintofbint _
+  | Pbintoffloat _
+  | Pfloatofbint _
   | Pcvtbint _
   | Pnegbint _
   | Paddbint _
@@ -117,7 +119,7 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Psetfield _
   | Psetfield_computed _
   | Psetfloatfield _
-  | Patomic_load | Patomic_fetch_add
+  | Patomic_load | Patomic_fetch_add | Patomic_exchange | Patomic_cas
   | Parraysetu _
   | Parraysets _
   | Pbytessetu
@@ -147,6 +149,7 @@ type return_type =
 let return_type_of_primitive (prim:Clambda_primitives.primitive) =
   match prim with
   | Pfloatofint
+  | Pfloatofbint _
   | Pnegfloat
   | Pabsfloat
   | Paddfloat

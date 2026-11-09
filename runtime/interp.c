@@ -242,7 +242,7 @@ Caml_inline void check_trap_barrier_for_effect
 #endif
 
 #ifdef DEBUG
-static CAMLthread_local intnat caml_bcodcount;
+static _Thread_local intnat caml_bcodcount;
 #endif
 
 static value raise_unhandled_effect;

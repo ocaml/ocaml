@@ -1,0 +1,49 @@
+       0  BRANCH 42
+       2  RESTART
+       3  GRAB 1
+       5  ACC1
+       6  PUSHACC1
+       7  NEQ
+       8  RETURN 2
+      10  RESTART
+      11  GRAB 1
+      13  ACC1
+      14  PUSHACC1
+      15  EQ
+      16  RETURN 2
+      18  RESTART
+      19  GRAB 1
+      21  ACC1
+      22  PUSHACC1
+      23  LTINT
+      24  RETURN 2
+      26  RESTART
+      27  GRAB 1
+      29  ACC1
+      30  PUSHACC1
+      31  NEQ (int equality test)
+      32  RETURN 2
+      34  RESTART
+      35  GRAB 1
+      37  ACC1
+      38  PUSHACC1
+      39  EQ (int equality test)
+      40  RETURN 2
+      42  CLOSURE 0, 35 (int -> int -> int)
+      45  PUSH
+      46  CLOSURE 0, 27 (int -> int -> int)
+      49  PUSH
+      50  CLOSURE 0, 19 (int -> int -> int)
+      53  PUSH
+      54  CLOSURE 0, 11 (value -> value -> int)
+      57  PUSH
+      58  CLOSURE 0, 3 (value -> value -> int)
+      61  PUSHACC0
+      62  PUSHACC2
+      63  PUSHACC4
+      64  PUSHACC6
+      65  PUSHACC 8
+      67  MAKEBLOCK 5, 0 (immutable)
+      70  POP 5
+      72  SETGLOBAL compilation unit `Comparison_hints'
+      74  STOP

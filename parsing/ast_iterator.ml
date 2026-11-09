@@ -365,6 +365,7 @@ module M = struct
         sub.module_expr sub m; sub.module_type sub mty
     | Pmod_unpack e -> sub.expr sub e
     | Pmod_extension x -> sub.extension sub x
+    | Pmod_hole -> ()
 
   let iter_structure_item sub {pstr_loc = loc; pstr_desc = desc} =
     sub.location sub loc;
@@ -489,6 +490,7 @@ module E = struct
     | Pexp_unreachable -> ()
     | Pexp_struct_item (si, e) ->
         sub.structure_item sub si; sub.expr sub e
+    | Pexp_hole -> ()
 
   let iter_binding_op sub {pbop_op; pbop_pat; pbop_exp; pbop_loc} =
     iter_loc iter_string sub pbop_op;

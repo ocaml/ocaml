@@ -15,13 +15,13 @@
 
 # Process this file with autoconf to produce a configure script.
 
-# Require Autoconf 2.71 for repeatability in CI
-AC_PREREQ([2.71])
+# Require Autoconf 2.72 for repeatability in CI
+AC_PREREQ([2.72])
 AC_INIT([OCaml],
         [OCAML__VERSION],
         [caml-list@inria.fr],
         [ocaml],
-        [http://www.ocaml.org])
+        [https://ocaml.org/])
 
 AC_MSG_NOTICE([Configuring OCaml version AC_PACKAGE_VERSION])
 
@@ -450,19 +450,7 @@ If your host is 64 bits, you can try with './configure CC="gcc -m64"' \
 
 AS_CASE([$target],
   [*-pc-windows],
-    [AS_IF([test -z "$CC"], [CC=cl])
-    ccomp_type=msvc
-    S=asm
-    SO=dll
-    outputexe=-Fe
-    outputobj=-Fo
-    syslib='$(1).lib'],
-  [ccomp_type=cc
-  S=s
-  SO=so
-  outputexe='-o '
-  outputobj='-o '
-  syslib='-l$(1)'])
+    [AS_IF([test -z "$CC"], [CC=cl])])
 
 AC_CHECK_PROG([csc],[csc],[csc])
 AS_IF([test -n "$csc"],
@@ -872,6 +860,26 @@ OCAML_ASM_SIZE_TYPE_DIRECTIVES
 ## Find vendor of the C compiler
 OCAML_CC_VENDOR
 
+AS_CASE([$target],
+  [*-pc-windows],
+    [OCAML_CC_CCOMP_TYPE
+    AS_CASE(["$ocaml_cv_cc_ccomp_type"],
+      [msvc], [ccomp_type=msvc],
+      [cc], [AC_MSG_ERROR([unsupported cc-like compiler driver for $target])],
+      [AC_MSG_ERROR([unknown ccomp_type $ocaml_cv_cc_ccomp_type])])
+    SO=dll],
+  [ccomp_type=cc])
+
+AS_IF([test "$ccomp_type" = 'msvc'],
+  [S=asm
+  outputexe=-Fe
+  outputobj=-Fo
+  syslib='$(1).lib'],
+  [S=s
+  outputexe='-o '
+  outputobj='-o '
+  syslib='-l$(1)'])
+
 DEP_CC_PREFIX=''
 AS_CASE([$target],
   [sparc-sun-solaris*],
@@ -1173,6 +1181,12 @@ AS_CASE([$ocaml_cc_vendor],
     internal_cflags="$cc_warnings"],
   [common_cflags="-O"])
 
+AS_CASE([$target],
+  [*-apple-darwin*],
+    [AX_CHECK_COMPILE_FLAG([-Werror=unguarded-availability-new],
+      [common_cflags="-Werror=unguarded-availability-new $common_cflags"], [],
+      [$warn_error_flag])])
+
 # Enable the prefetchw instruction on x86 and x86_64.
 AS_CASE([$target],
   [i686*|x86_64*],
@@ -1180,24 +1194,24 @@ AS_CASE([$target],
       [internal_cflags="$internal_cflags -mprfchw"], [], [$warn_error_flag])])
 
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
-# Enable 64-bit time_t in time.h
 AS_CASE([$target],
   [i686-w64-mingw32*],
-    [internal_cflags="$internal_cflags -mfpmath=sse -msse2"
-    # This instructs _mingw.h to adopt the switch in Visual Studio 8 (2005) to
-    # make time_t a 64-bit value.
-    internal_cppflags="$internal_cppflags -D__MINGW_USE_VC2005_COMPAT"])
+    [internal_cflags="$internal_cflags -mfpmath=sse -msse2"])
 
-# Use 64-bit file offset if possible
-# See also AC_SYS_LARGEFILE
-# Problem: flags are added to CC rather than CPPFLAGS
+# Default to enabling large file support and year 2038 support on 32-bit.
 AS_CASE([$target],
-  [*-w64-mingw32*|*-pc-windows], [],
-  [common_cppflags="$common_cppflags -D_FILE_OFFSET_BITS=64"])
+  [*-pc-windows], [], # LFS and 64-bit time_t are always enabled.
+  [AC_SYS_YEAR2038_RECOMMENDED
+  AS_CASE([$ac_cv_sys_largefile_opts],
+    ["none needed"|"support not detected"], [],
+    [common_cppflags="$common_cppflags $ac_cv_sys_largefile_opts"])
+  AS_CASE([$ac_cv_sys_year2038_opts],
+    ["none needed"|"support not detected"], [],
+    [common_cppflags="$common_cppflags $ac_cv_sys_year2038_opts"])])
 
 # Require Windows 8 / Server 2012 or later
 AS_CASE([$target],
-  [*-w64-mingw32*|*-pc-windows],
+  [*-pc-cygwin|*-w64-mingw32*|*-pc-windows],
     [internal_cppflags="$internal_cppflags -D_WIN32_WINNT=0x602"])
 
 # Adjust according to target
@@ -1633,6 +1647,7 @@ AS_IF([test x"$supports_shared_libraries" = 'xtrue'],
     [[i[3456]86-*-netbsd*]], [natdynlink=true],
     [x86_64-*-netbsd*], [natdynlink=true],
     [[i[3456]86-*-haiku*]], [natdynlink=true],
+    [x86_64-*-haiku*], [natdynlink=true],
     [arm*-*-linux*], [natdynlink=true],
     [arm*-*-freebsd*], [natdynlink=true],
     [earm*-*-netbsd*], [natdynlink=true],
@@ -1740,7 +1755,7 @@ AS_CASE([$target],
   [x86_64-*-openbsd*],
     [has_native_backend=yes; arch=amd64; system=openbsd],
   [x86_64-*-haiku*],
-    [arch=amd64; system=beos],
+    [has_native_backend=yes; arch=amd64; system=beos],
   [arm64-*-darwin*],
     [has_native_backend=yes; arch=arm64; system=macosx],
   [aarch64-*-darwin*],
@@ -2056,11 +2071,9 @@ AS_CASE([$target],
   ]
 )
 
-# The instrumented runtime is built by default
-# if the proper clock source is found.
-# If asked via --enable-instrumented-runtime, configuration fails if the proper
-# clock source is missing.
-AS_IF([test "x$enable_instrumented_runtime" != "xno" ],
+# The instrumented runtime can only be built if the proper clock source is
+# found.
+AS_IF([test "x$enable_instrumented_runtime" = "xyes" ],
   [
     AS_CASE([$target],
     [sparc-sun-solaris*],
@@ -2068,38 +2081,27 @@ AS_IF([test "x$enable_instrumented_runtime" != "xno" ],
     [*-pc-windows],
       [instrumented_runtime=true],
     [*-apple-darwin*], [
-      AS_CASE([$enable_instrumented_runtime,$has_monotonic_clock],
-        [*,true],
-          [instrumented_runtime=true],
-        [yes,false],
-          [AC_MSG_ERROR(m4_normalize([Instrumented runtime support requested
-            but no proper monotonic clock source was found.]))],
-        [auto,false],
-          [instrumented_runtime=false]
+      AS_IF([$has_monotonic_clock],
+        [instrumented_runtime=true],
+        [AC_MSG_ERROR(m4_normalize([Instrumented runtime support requested
+          but no proper monotonic clock source was found.]))]
     )],
     [AC_SEARCH_LIBS([clock_gettime], [rt],
       [has_clock_gettime=true],
       [has_clock_gettime=false])
-      AS_CASE(
-        [$enable_instrumented_runtime,$has_clock_gettime,$has_monotonic_clock],
-        [auto,false,*], [instrumented_runtime=false],
-        [auto,*,false], [instrumented_runtime=false],
-        [*,true,true],
-          [
-            instrumented_runtime=true
-            AS_IF([test "x$ac_cv_search_clock_gettime" = "xnone required"],
-              [instrumented_runtime_libs=""],
-              [instrumented_runtime_libs=$ac_cv_search_clock_gettime]
-            )
-          ],
-        [yes,false,*],
-          [AC_MSG_ERROR(m4_normalize([Instrumented runtime support requested
-            but clock_gettime is missing.]))],
-        [yes,*,false],
-          [AC_MSG_ERROR(m4_normalize([Instrumented runtime support requested
-            but no proper monotonic clock source was found.]))]
-      )]
-    )]
+      AS_IF([$has_clock_gettime],
+        [AS_IF([$has_monotonic_clock],
+           [instrumented_runtime=true
+           AS_IF([test "x$ac_cv_search_clock_gettime" = "xnone required"],
+             [instrumented_runtime_libs=""],
+             [instrumented_runtime_libs=$ac_cv_search_clock_gettime])],
+           [AC_MSG_ERROR(m4_normalize([Instrumented runtime support requested
+             but no proper monotonic clock source was found.]))]
+           )],
+        [AC_MSG_ERROR(m4_normalize([Instrumented runtime support requested
+          but clock_gettime is missing.]))]
+      )])
+    ]
 )
 
 # ThreadSanitizer support is currently only available for Linux/FreeBSD/macOS
@@ -2609,11 +2611,17 @@ AC_CHECK_FUNC([nice], [AC_DEFINE([HAS_NICE], [1])])
 
 ## dup3
 
-AC_CHECK_FUNC([dup3], [AC_DEFINE([HAS_DUP3], [1])])
+OCAML_CHECK_DECL_MACOS([dup3],
+  [AC_CHECK_FUNC([dup3], [AC_DEFINE([HAS_DUP3], [1])])], [],
+  [#define _GNU_SOURCE
+  AC_INCLUDES_DEFAULT])
 
 ## pipe2
 
-AC_CHECK_FUNC([pipe2], [AC_DEFINE([HAS_PIPE2], [1])])
+OCAML_CHECK_DECL_MACOS([pipe2],
+  [AC_CHECK_FUNC([pipe2], [AC_DEFINE([HAS_PIPE2], [1])])], [],
+  [#define _GNU_SOURCE
+  AC_INCLUDES_DEFAULT])
 
 ## accept4
 
@@ -2856,7 +2864,8 @@ AS_IF([$native_compiler],
 AS_IF([test x"$enable_frame_pointers" = "xyes"],
   [AS_CASE([$target],
     [x86_64-*-linux*|x86_64-*-darwin*|x86_64-*-freebsd*|x86_64-*-dragonfly*| \
-     aarch64-*-linux*|aarch64-*-darwin*|aarch64-*-freebsd*|riscv64-*-linux*],
+     aarch64-*-linux*|aarch64-*-darwin*|aarch64-*-freebsd*|riscv64-*-linux*| \
+     powerpc64-*-linux*|powerpc64le-*-linux*],
      [AS_CASE([$ocaml_cc_vendor],
         [clang-*|gcc-*],
          [common_cflags="$common_cflags -g  -fno-omit-frame-pointer"
@@ -2932,7 +2941,8 @@ AS_IF([$build_ocamltest],
   AC_CONFIG_LINKS([
     ocamltest/ocamltest_unix.ml:${ocamltest_unix_mod}
   ])
-  AC_CHECK_PROGS([DIFF], [patdiff diff],
+  AC_CHECK_PROGS([DIFF], [patdiff diff], [false])
+  AS_IF([test x"$DIFF" = "xfalse"],
     [AC_MSG_ERROR([ocamltest requires a diff tool])])
   AS_CASE([$DIFF], [diff], [flags_to_test='--strip-trailing-cr -u'])
   AC_CACHE_CHECK([for extra $DIFF flags],

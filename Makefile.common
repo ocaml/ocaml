@@ -589,7 +589,7 @@ BOOT_OCAMLLEX ?= $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
 
 OCAMLLEX ?= $(BEST_OCAMLLEX)
 
-OCAMLLEXFLAGS ?= -q
+OCAMLLEXFLAGS ?= -q -w @missing-case
 
 %.ml: %.mll
 	$(V_OCAMLLEX)$(OCAMLLEX) $(OCAMLLEXFLAGS) $<

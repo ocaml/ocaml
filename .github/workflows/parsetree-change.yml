@@ -12,7 +12,8 @@ on:
 
 jobs:
   comment-and-label:
-    if: ${{! contains(github.event.pull_request.labels.*.name, 'parsetree-change')}}
+    if: ${{github.repository == 'ocaml/ocaml'
+           && !contains(github.event.pull_request.labels.*.name, 'parsetree-change')}}
     permissions:
       pull-requests: write
     runs-on: ubuntu-latest

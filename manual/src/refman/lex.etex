@@ -174,7 +174,7 @@ escape-sequence:
 \end{syntax}
 
 Character literals are delimited by @"'"@ (single quote) characters.
-The two single quotes enclose either one character different from
+The two single quotes enclose either one US-ASCII character different from
 @"'"@ and @'\'@, or one of the escape sequences below:
 \begin{tableau}{|l|l|}{Sequence}{Character denoted}
 \entree{"\\\\"}{backslash ("\\")}
@@ -185,15 +185,19 @@ The two single quotes enclose either one character different from
 \entree{"\\t"}{horizontal tabulation (TAB)}
 \entree{"\\b"}{backspace (BS)}
 \entree{"\\"\var{space}}{space (SPC)}
-\entree{"\\"\var{ddd}}{the character with ASCII code \var{ddd} in decimal}
-\entree{"\\x"\var{hh}}{the character with ASCII code \var{hh} in hexadecimal}
-\entree{"\\o"\var{ooo}}{the character with ASCII code \var{ooo} in octal}
+\entree{"\\"\var{ddd}}{the character with code \var{ddd} in decimal}
+\entree{"\\x"\var{hh}}{the character with code \var{hh} in hexadecimal}
+\entree{"\\o"\var{ooo}}{the character with code \var{ooo} in octal}
 \end{tableau}
+
+A non-ASCII Unicode character is not a valid character literal.
+The numerical escape sequences denote a character by its code, and can be used
+both for characters in the ASCII range and for byte values outside it.
 
 \begin{caml_example}{toplevel}
 let a = 'a'
 let single_quote = '\''
-let copyright = '\xA9';;
+let char_max = '\xFF';;
 \end{caml_example}
 \subsubsection*{sss:stringliterals}{String literals}
 

@@ -1,0 +1,48 @@
+       0  BRANCH 47
+       2  ACC0
+       3  BNEQ 0, 9
+       6  CONST1
+       7  RETURN 1
+       9  ACC0
+      10  OFFSETINT -1
+      12  PUSHOFFSETCLOSURE3
+      13  APPTERM1 2
+      15  ACC0
+      16  BNEQ 0, 22
+      19  CONST0
+      20  RETURN 1
+      22  ACC0
+      23  OFFSETINT -1
+      25  PUSHOFFSETCLOSUREM3
+      26  APPTERM1 2
+      28  ATOM0 (immutable)
+      29  RETURN 1
+      31  ACC0
+      32  OFFSETINT 1
+      34  RETURN 1
+      36  ACC0
+      37  OFFSETINT 1
+      39  RETURN 1
+      41  RESTART
+      42  GRAB 3
+      44  ACC1
+      45  RETURN 4
+      47  CLOSURE 0, 42 (int -> float -> value -> value -> float)
+      50  PUSH
+      51  CLOSURE 0, 36 (int -> int inline)
+      54  PUSH
+      55  CLOSURE 0, 31 (int -> int inline:never)
+      58  PUSH
+      59  CLOSURE 0, 28 (value -> value functor)
+      62  PUSH
+      63  CLOSUREREC 0, 2, 15 (int -> int) (int -> int)
+      68  ACC0
+      69  PUSHACC2
+      70  PUSHACC4
+      71  PUSHACC6
+      72  PUSHACC 8
+      74  PUSHACC 10
+      76  MAKEBLOCK 6, 0 (immutable)
+      79  POP 6
+      81  SETGLOBAL compilation unit `Closure_hints'
+      83  STOP

@@ -130,6 +130,15 @@ let pseudoregs_for_operation op arg res =
      no separate mov is needed in emit. arg.(2) is &caml_num_domains_running. *)
   | Iatomic_fetch_add ->
       ([| arg.(0); res.(0); arg.(2) |], res)
+  (* See the exchange code in emit.mlp for the registers. *)
+  | Iatomic_exchange ->
+      let treg = Reg.create Int in
+      ([| arg.(0); res.(0); arg.(2) |], [| res.(0); treg |])
+  (* cmpxchg compares against rax and returns its result there. See the
+     compare-and-exchange code in emit.mlp for the registers. *)
+  | Iatomic_compare_exchange ->
+      let treg = Reg.create Int in
+      ([| arg.(0); rax; arg.(2); arg.(3) |], [| rax; treg |])
   (* Other instructions are regular *)
   | _ -> raise Use_default
 
@@ -137,7 +146,8 @@ let pseudoregs_for_operation op arg res =
    [effects_of], below. *)
 let inline_ops =
   [ "sqrt"; "caml_bswap16_direct"; "caml_int32_direct_bswap";
-    "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
+    "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap";
+    "caml_int_clz_direct"; "caml_int_ctz_direct" ]
 
 let is_immediate n = n <= 0x7FFF_FFFF && n >= -0x8000_0000
 
@@ -246,6 +256,10 @@ method! select_operation op args dbg =
   | Cextcall("caml_int64_direct_bswap", _, _, _)
   | Cextcall("caml_nativeint_direct_bswap", _, _, _) ->
       (Ispecific (Ibswap 64), args)
+  | Cextcall("caml_int_clz_direct", _, _, _) ->
+      (Ispecific Iclz, args)
+  | Cextcall("caml_int_ctz_direct", _, _, _) ->
+      (Ispecific Ictz, args)
   (* Recognize sign extension *)
   | Casr ->
       begin match args with
@@ -269,6 +283,12 @@ method! select_operation op args dbg =
          dlcode, where reading the symbol needs a GOTPCREL indirection and
          hence a register. *)
       (Iatomic_fetch_add,
+       args @ [Cconst_symbol ("caml_num_domains_running", dbg)])
+  | Catomic_exchange ->
+      (Iatomic_exchange,
+       args @ [Cconst_symbol ("caml_num_domains_running", dbg)])
+  | Catomic_compare_exchange ->
+      (Iatomic_compare_exchange,
        args @ [Cconst_symbol ("caml_num_domains_running", dbg)])
   | _ -> super#select_operation op args dbg
 

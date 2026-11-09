@@ -63,6 +63,9 @@
     # Remove trailing blanks
     gsub(/[ \t\r]+$/, "")
 
+    # Fix indentation: Xcode 27 on macOS adds two extra spaces here
+    gsub(/^      frame #/, "    frame #");
+
     if ($0 != "")
       print $0
 }

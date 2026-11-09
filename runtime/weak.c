@@ -97,7 +97,7 @@ CAMLprim value caml_weak_create (value len)
 
    The dead keys must be removed from the ephemerons and data removed
    when one of the keys is dead. Here we call it cleaning the ephemerons.
-   A specific phase of the GC is dedicated to this, Phase_clean. This
+   A specific phase of the GC is dedicated to this, [Phase_sweep_ephe]. This
    phase is just after the mark phase, so the white values are dead
    values. It iterates the function caml_ephe_clean through all the
    ephemerons.
@@ -116,9 +116,9 @@ CAMLprim value caml_weak_create (value len)
      trigger the cleaning of the ephemerons when the accessed key is
      dead. This test is fast.
 
-     In the case of value getter and value setter, there is no fast
+     In the case of data getter and data setter, there is no fast
      test because the removing of the data depend of the deadliness of the keys.
-     We must always try to clean the ephemerons.
+     We must always try to clean the whole ephemerons.
 
  */
 
@@ -321,118 +321,15 @@ CAMLprim value caml_weak_get (value ar, value n)
   return caml_ephe_get_key(ar, n);
 }
 
-/* Copy the contents of an object from `from` to `to` (which is
- * already allocated and has the necessary header word). Darken
- * any pointer fields. */
-
-static void ephe_copy_and_darken(value from, value to)
-{
-  mlsize_t i = 0; /* size of non-scannable prefix */
-
-  CAMLassert(Is_block(from));
-  CAMLassert(Is_block(to));
-  CAMLassert(Tag_val(from) == Tag_val(to));
-  CAMLassert(Tag_val(from) != Infix_tag);
-  CAMLassert(Wosize_val(from) == Wosize_val(to));
-
-  if (!Scannable_val(from)) {
-    i = Wosize_val(to);
-  }
-  else if (Tag_val(from) == Closure_tag) {
-    i = Start_env_closinfo(Closinfo_val(from));
-  }
-
-  /* Copy non-scannable prefix */
-  memcpy (Bp_val(to), Bp_val(from), Bsize_wsize(i));
-
-  /* Copy and darken scannable fields */
-  caml_domain_state* domain_state = Caml_state;
-  while (i < Wosize_val(to)) {
-    value field = Field(from, i);
-    if (caml_marking_started())
-      caml_darken (domain_state, field, 0);
-    Store_field(to, i, field);
-    ++ i;
-  }
-}
-
-static value ephe_get_field_copy (value e, mlsize_t offset)
-{
-  CAMLparam1 (e);
-  CAMLlocal3 (res, val, copy);
-  mlsize_t infix_offs = 0;
-
-  copy = Val_unit;
-  /* Loop in case allocating the copy triggers a GC which modifies the
-   * ephemeron or the value. In the common case, we go around this
-   * loop 1.5 times. */
-  while (1) {
-    clean_field(e, offset);
-    val = Field(e, offset);
-
-    if (val == caml_ephe_none) {
-      res = Val_none;
-      goto out;
-    }
-    infix_offs = 0;
-
-    /* Don't copy immediates */
-    if (!Is_block(val)) {
-      copy = val;
-      goto some;
-    }
-
-    /* Don't copy, but do darken, custom blocks #7279 */
-    if (Tag_val(val) == Custom_tag) {
-      if (caml_marking_started())
-        caml_darken (Caml_state, val, 0);
-      copy = val;
-      goto some;
-    }
-
-    if (Tag_val(val) == Infix_tag) {
-      infix_offs = Infix_offset_val(val);
-      val -= infix_offs;
-    }
-
-    if (copy != Val_unit &&
-        (Tag_val(val) == Tag_val(copy)) &&
-        (Wosize_val(val) == Wosize_val(copy))) {
-      /* The copy we allocated (on a previous iteration) is large
-       * enough and has the right header bits for us to copy the
-       * contents of val into it. Note that we don't care whether val
-       * has changed since we allocated copy. */
-      break;
-    }
-
-    /* This allocation could provoke a GC, which could change the
-       * header or size of val (e.g. in a finalizer). So we go around
-       * the loop to read val again. */
-    copy = caml_alloc (Wosize_val(val), Tag_val(val));
-    val = Val_unit;
-  }
-
-  ephe_copy_and_darken(val, copy);
-
-some:
-  res = caml_alloc_some(copy + infix_offs);
-out:
-  /* run GC and memprof callbacks */
-  caml_process_pending_actions();
-  CAMLreturn(res);
-}
-
 CAMLprim value caml_ephe_get_key_copy (value e, value n)
 {
-  mlsize_t offset = Long_val (n) + CAML_EPHE_FIRST_KEY;
-  if (offset < CAML_EPHE_FIRST_KEY || offset >= Wosize_val (e)){
-    caml_invalid_argument ("Weak.get");
-  }
-  return ephe_get_field_copy(e, offset);
+  // This function is now deprecated and an alias of [caml_ephe_get_key].
+  return caml_ephe_get_key(e, n);
 }
 
 CAMLprim value caml_weak_get_copy (value e, value n){
-  return caml_ephe_get_key_copy(e,n);
+  // This function is now deprecated and an alias of [caml_weak_get].
+  return caml_weak_get(e,n);
 }
 
 CAMLprim value caml_ephe_get_data (value e)
@@ -442,7 +339,8 @@ CAMLprim value caml_ephe_get_data (value e)
 
 CAMLprim value caml_ephe_get_data_copy (value e)
 {
-  return ephe_get_field_copy (e, CAML_EPHE_DATA_OFFSET);
+  // This function is now deprecated and an alias of [caml_ephe_get_data].
+  return caml_ephe_get_data(e);
 }
 
 static value ephe_check_field (value e, mlsize_t offset)
@@ -478,23 +376,24 @@ static value ephe_blit_keys (value es, mlsize_t offset_s,
                              value ed, mlsize_t offset_d, mlsize_t length)
 {
   CAMLparam2(es,ed);
+  /* We only need to clean the destination when it has data,
+     as the keys themselves are going to be replaced. */
+  bool ed_has_data = caml_ephe_check_data(ed);
 
   if (length == 0) CAMLreturn(Val_unit);
 
-  /* We clean the source and destination ephemerons before performing the blit.
-   * This guarantees that none of the keys and the data fields being accessed
-   * during a blit operation is unmarked during [Phase_sweep]. */
-  caml_ephe_clean(es);
-  caml_ephe_clean(ed);
-
   if (offset_d < offset_s) {
     for (long i = 0; i < length; i++) {
-      caml_ephe_await_key(ed, offset_d + i);
+      do_check_key_clean(es, offset_s + i);
+      if (ed_has_data) { do_check_key_clean(ed, offset_d + i); }
+      else { caml_ephe_await_key(ed, offset_d + i); }
       ephe_modify(ed, offset_d + i, Ephe_key(es, offset_s + i));
     }
   } else {
     for (long i = length - 1; i >= 0; i--) {
-      caml_ephe_await_key(ed, offset_d + i);
+      do_check_key_clean(es, offset_s + i);
+      if (ed_has_data) { do_check_key_clean(ed, offset_d + i); }
+      else { caml_ephe_await_key(ed, offset_d + i); }
       ephe_modify(ed, offset_d + i, Ephe_key(es, offset_s + i));
     }
   }

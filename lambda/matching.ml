@@ -2000,6 +2000,16 @@ let drop_expr_arg _head _arg rem = rem
    new  ``pattern_matching'' records.
 *)
 
+(* The typing environment of a pattern can contain GADT equations
+   introduced by the pattern itself or by other patterns of the same
+   row. These equations do not necessarily hold for the other rows of the
+   matrix, which share the same field accesses (or even for the current
+   row, when the fields are read before the corresponding constructor has
+   been tested). Hence, we remove all the local equations from the
+   environment before using it to determine whether a field is an
+   immediate. *)
+let field_env head = Env.remove_local_equations head.pat_env
+
 (* Matching against a constant *)
 
 let get_key_constant caller = function
@@ -2037,18 +2047,20 @@ let get_expr_args_constr ~scopes head { arg; mut; _ } rem =
     | _ -> fatal_error "Matching.get_expr_args_constr"
   in
   let loc = head_loc ~scopes head in
-  let make_field_accesses binding_kind first_pos last_pos argl =
-    let rec make_args pos =
-      if pos > last_pos then
-        argl
-      else
-        {
-          arg = Lprim (Pfield (pos, Pointer, Immutable), [ arg ], loc);
-          mut = compose_mut mut Immutable;
-          binding_kind;
-        } :: make_args (pos + 1)
+  let make_field_accesses binding_kind first_pos argl =
+    let env = field_env head in
+    let rec make_args pos arg_types =
+      match arg_types with
+      | [] -> argl
+      | ty :: arg_types ->
+          let ptr = Typeopt.maybe_pointer_type env ty in
+          {
+            arg = Lprim (Pfield (pos, ptr, Immutable), [ arg ], loc);
+            mut = compose_mut mut Immutable;
+            binding_kind;
+          } :: make_args (pos + 1) arg_types
     in
-    make_args first_pos
+    make_args first_pos cstr.cstr_args
   in
   if cstr.cstr_inlined <> None then
     { arg; binding_kind = Alias; mut } :: rem
@@ -2056,9 +2068,9 @@ let get_expr_args_constr ~scopes head { arg; mut; _ } rem =
     match cstr.cstr_tag with
     | Cstr_constant _
     | Cstr_block _ ->
-        make_field_accesses Alias 0 (cstr.cstr_arity - 1) rem
+        make_field_accesses Alias 0 rem
     | Cstr_unboxed -> { arg; binding_kind = Alias; mut } :: rem
-    | Cstr_extension _ -> make_field_accesses Alias 1 cstr.cstr_arity rem
+    | Cstr_extension _ -> make_field_accesses Alias 1 rem
 
 let divide_constructor ~scopes ctx pm =
   divide
@@ -2216,7 +2228,9 @@ let inline_lazy_force_switch arg loc =
       idarg,
       arg,
       Lifthenelse
-        ( Lprim (Pisint, [ varg ], loc),
+        ( (* A forced lazy value can be represented by the value itself,
+             which can be any immediate *)
+          Lprim (Pisint { variant_only = false }, [ varg ], loc),
           varg,
           Lswitch
             ( Lprim (Pccall prim_obj_tag, [ varg ], loc),
@@ -2326,12 +2340,13 @@ let get_expr_args_record ~scopes head { arg; mut; _ } rem =
     | _ ->
         assert false
   in
+  let env = field_env head in
   let rec make_args pos =
     if pos >= Array.length all_labels then
       rem
     else
       let lbl = all_labels.(pos) in
-      let ptr = Typeopt.maybe_pointer_type head.pat_env lbl.lbl_arg in
+      let ptr = Typeopt.maybe_pointer_type env lbl.lbl_arg in
       let access =
         match lbl.lbl_repres with
         | Record_regular
@@ -2795,6 +2810,23 @@ let get_edges ~low ~high l =
   | [] -> (low, high)
   | (x, _) :: _ -> (x, last high l)
 
+(** [as_interval_canfail fail ~low ~high] takes a sorted list of
+    (integer key, action) pairs, for example
+      0 -> act0
+      1 -> act1
+      2 -> act1
+      4 -> act1
+      5 -> act1
+   and returns a sorted list of contiguous intervals partitioning
+   [low; high], for example
+     [low; -1] -> fail
+     [0] -> act0
+     [1; 2] -> act1
+     [3] -> fail
+     [4; 5] -> act1
+     [6; high] -> fail
+   with missing keys mapped to the [fail] action.
+*)
 let as_interval_canfail fail ~low ~high l =
   let store = StoreExp.mk_store () in
   let do_store _tag act =
@@ -2804,7 +2836,22 @@ let as_interval_canfail fail ~low ~high l =
     *)
     i
   in
-  let rec nofail_rec cur_low cur_high cur_act = function
+  (* cover [low; high] with the provided mapping *)
+  let rec init_rec = function
+    | [] -> [ (low, high, 0) ]
+    | (i, act_i) :: rem ->
+        let index = do_store "INIT" act_i in
+        if index = 0 then
+          fail_rec low rem
+        else if low < i then
+          (low, i - 1, 0) :: nofail_rec i i index rem
+        else
+          nofail_rec i i index rem
+
+  (* cover [cur_low; high] with the provided mapping, assuming that:
+     - the keys are all within [cur_low; high]
+     - [cur_low; cur_high] goes to [cur_act] *)
+  and nofail_rec cur_low cur_high cur_act = function
     | [] ->
         if cur_high = high then
           [ (cur_low, cur_high, cur_act) ]
@@ -2816,42 +2863,49 @@ let as_interval_canfail fail ~low ~high l =
           if act_index = cur_act then
             nofail_rec cur_low i cur_act rem
           else if act_index = 0 then
-            (cur_low, i - 1, cur_act) :: fail_rec i i rem
+            (cur_low, i - 1, cur_act) :: fail_rec i rem
           else
             (cur_low, i - 1, cur_act) :: nofail_rec i i act_index rem
         else if act_index = 0 then
           (cur_low, cur_high, cur_act)
-          :: fail_rec (cur_high + 1) (cur_high + 1) all
+          :: fail_rec (cur_high + 1) all
         else
           (cur_low, cur_high, cur_act)
           :: (cur_high + 1, i - 1, 0)
           :: nofail_rec i i act_index rem
-  and fail_rec cur_low cur_high = function
-    | [] -> [ (cur_low, cur_high, 0) ]
+
+  (* cover [cur_low; high] with the provided mapping, assuming that:
+     - the keys are all within [cur_low; high]
+     - [cur_low] goes to [fail] *)
+  and fail_rec cur_low = function
+    | [] -> [ (cur_low, high, 0) ]
     | (i, act_i) :: rem ->
         let index = do_store "YES" act_i in
         if index = 0 then
-          fail_rec cur_low i rem
+          fail_rec cur_low rem
         else
           (cur_low, i - 1, 0) :: nofail_rec i i index rem
   in
-  let init_rec = function
-    | [] -> [ (low, high, 0) ]
-    | (i, act_i) :: rem ->
-        let index = do_store "INIT" act_i in
-        if index = 0 then
-          fail_rec low i rem
-        else if low < i then
-          (low, i - 1, 0) :: nofail_rec i i index rem
-        else
-          nofail_rec i i index rem
-  in
-  assert (do_store "FAIL" fail = 0);
-
-  (* fail has action index 0 *)
+  let fail_index = do_store "FAIL" fail in
+  assert (fail_index = 0);
   let r = init_rec l in
   (Array.of_list r, store)
 
+(** [as_interval_nofail] takes a sorted list of
+    (integer key, action) pairs, for example:
+     -1 -> act0
+     1 -> act0
+     2 -> act1
+     4 -> act1
+     5 -> act1
+   and returns a sorted list of contiguous intervals, for example
+     [-1; 1] -> act0
+     [2] -> act1
+     [3] -> act0
+     [4; 5] -> act1
+   with the first action (here [act0]) used for missing keys in the
+   convex hull of the input keys.
+*)
 let as_interval_nofail l =
   let store = StoreExp.mk_store () in
   let rec some_hole = function
@@ -3194,7 +3248,8 @@ let transl_match_on_option arg loc ~if_some ~if_none =
      slightly worse, but it lets the native compiler generate
      better code -- see #10681. *)
   if !Clflags.native_code then
-    Lifthenelse(Lprim (Pisint, [ arg ], loc), if_none, if_some)
+    Lifthenelse(Lprim (Pisint { variant_only = true }, [ arg ], loc),
+                if_none, if_some)
   else
     Lifthenelse(arg, if_some, if_none)
 
@@ -3328,7 +3383,7 @@ let combine_regular_constructor loc arg cstr partial ctx def
                    (The type of tokens has more than 120 constructors.)
                    *)
                 Lifthenelse
-                  ( Lprim (Pisint, [ arg ], loc),
+                  ( Lprim (Pisint { variant_only = true }, [ arg ], loc),
                     call_switcher loc fail_opt arg
                       ~low:0 ~high:(n - 1) consts,
                     act )
@@ -3388,7 +3443,8 @@ let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats)
   else
     num_constr := max_int;
   let test_int_or_block arg if_int if_block =
-    Lifthenelse (Lprim (Pisint, [ arg ], loc), if_int, if_block)
+    Lifthenelse
+      (Lprim (Pisint { variant_only = true }, [ arg ], loc), if_int, if_block)
   in
   let sig_complete = List.length tag_lambda_list = !num_constr
   and one_action = same_actions tag_lambda_list in
@@ -3816,7 +3872,8 @@ and compile_match_simplified ~scopes repr partial ctx
    decisions for a given argument switch. *)
 and compute_arg_partial partial mut =
   match partial.tempo, mut with
-  | Following, Mutable -> Arg { partial with global = Partial }
+  | Following, Mutable ->
+      Arg { partial with current = Partial; global = Partial }
   | First, _ | _, Immutable -> Arg partial
 
 and mut_of_binding_kind =

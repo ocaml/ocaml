@@ -25,7 +25,7 @@ rm -f /tmp/env-$USER.sh
 cat >/tmp/env-$USER.sh <<EOF
 # Update the data below
 export MAJOR=5
-export MINOR=2
+export MINOR=6
 export BUGFIX=0
 export PLUSEXT=
 
@@ -171,7 +171,7 @@ git branch $BRANCH
 #   altering.
 # Update ocaml-variants.opam with new version.
 tools/autogen
-# Add a "Working version" section" to Changes
+# Add a "Working version" section to Changes
 # Add common subsections in Changes, see Changelog.
 git commit -m "first commit after branching $BRANCH" -a
 git push
