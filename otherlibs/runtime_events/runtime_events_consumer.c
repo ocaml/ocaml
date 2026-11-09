@@ -519,10 +519,13 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
       ring_masked_pos = cursor->current_positions[domain_num] & ring_mask;
       header = ring_ptr[ring_masked_pos];
       msg_length = RUNTIME_EVENTS_ITEM_LENGTH(header);
+      bool ring_tail_head_bad =
+        ring_tail - ring_head > cursor->metadata.ring_size_elements;
 
       if (msg_length > RUNTIME_EVENTS_MAX_MSG_LENGTH
           || ring_masked_pos + msg_length
-             > cursor->metadata.ring_size_elements) {
+             > cursor->metadata.ring_size_elements
+          || ring_tail_head_bad) {
         /* The header may have been overwritten by the writer wrapping around
            between the ring_head check above and the read of the header, in
            which case it is not a header at all. Re-check before reporting
@@ -551,6 +554,15 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
 
           continue;
         }
+
+        /* ring_head may have been ahead of the position already,
+           and after a reread it could've changed again.
+           If we got here because the `tail - head` difference was too big:
+           recheck.
+         */
+        if (ring_tail_head_bad
+            && ring_tail - ring_head <= cursor->metadata.ring_size_elements)
+          continue;
 
         atomic_store(&cursor->cursor_in_poll, 0);
         return E_CORRUPT_STREAM;
