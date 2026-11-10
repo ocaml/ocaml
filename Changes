@@ -40,7 +40,7 @@ Working version
   (Nicolás Ojeda Bär, report by Chet Murthy, review by Florian Angeletti)
 
 - #15274: Fix integer overflow in bounds check for `Dynarray.blit` operations
-  which could accept an invalid source region. Rewrote addition to subtraction.
+  which could accept an invalid source region.
   (Durwasa Chakraborty, report by KC Sivaramakrishnan)
 
 ### Other libraries:

@@ -216,9 +216,9 @@ let () =
             | exception Invalid_argument msg ->
                 (*built with max_int, so it holds on 32 bit*)
                 msg = Printf.sprintf
-                        "Dynarray.blit: invalid source region (pos %d, len %d) \
+                        "Dynarray.blit: invalid source region (%d..%Ld) \
                         in source dynarray of length %d"
-                        max_int 1 3
+                        max_int (Int64.add (Int64.of_int max_int) (Int64.of_int 1))  3
             | _ -> false);
     assert (A.length a = 3);
     assert (A.to_list a = [4; 5; 6])
@@ -233,9 +233,9 @@ let () =
             | exception Invalid_argument msg ->
                 (*built with max_int, so it holds on 32 bit*)
                 msg = Printf.sprintf
-                        "Dynarray.blit: invalid target region (pos %d, len %d) \
+                        "Dynarray.blit: invalid target region (%d..%Ld) \
                         in target dynarray of length %d"
-                        max_int 1 3
+                        max_int (Int64.add (Int64.of_int max_int) (Int64.of_int 1))  3
             | _ -> false);
     assert (A.length a = 3);
     assert (A.to_list a = [4; 5; 6])
