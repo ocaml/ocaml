@@ -122,20 +122,43 @@ CAMLprim value caml_weak_create (value len)
 
  */
 
+static value ephe_normalize_key(value e, mlsize_t i)
+{
+  value key = Field(e, i);
+ephemeron_again:
+  if (Is_block(key)) {
+    if (Tag_val (key) == Forward_tag) {
+      value f = Forward_val (key);
+      if (Is_block(f)) {
+        if (Tag_val(f) == Forward_tag || Tag_val(f) == Lazy_tag ||
+            Tag_val(f) == Forcing_tag || Tag_val(f) == Double_tag) {
+          /* Do not short-circuit the pointer */
+        } else {
+          Field(e, i) = key = f;
+          if (Is_block (f) && Is_young (f))
+            add_to_ephe_ref_table(&Caml_state->minor_tables->ephe_ref, e, i);
+          goto ephemeron_again;
+        }
+      }
+    }
+    if (Tag_val (key) == Infix_tag)
+      key -= Infix_offset_val (key);
+  }
+  return key;
+}
+
 /* If we are in Phase_sweep_ephe we need to check if the key
    that is going to disappear is dead and so should trigger a cleaning
  */
 static void do_check_key_clean(value e, mlsize_t offset)
 {
-  value elt;
   CAMLassert (offset >= CAML_EPHE_FIRST_KEY);
   caml_ephe_await_key(e, offset);
 
   if (caml_gc_phase != Phase_sweep_ephe) return;
 
-  elt = Field(e, offset);
+  value elt = ephe_normalize_key(e, offset);
   if (elt != caml_ephe_none && Is_block (elt) && !Is_young (elt)) {
-    if (Tag_val(elt) == Infix_tag) elt -= Infix_offset_val(elt);
     if (is_unmarked(elt)) {
       Field(e, offset) = caml_ephe_none;
       atomic_store_relaxed(Ephe_data_addr(e), caml_ephe_none);
@@ -154,24 +177,8 @@ void caml_ephe_clean (value v) {
   hd = Hd_val(v);
   size = Wosize_hd (hd);
   for (mlsize_t i = CAML_EPHE_FIRST_KEY; i < size; i++) {
-    child = Ephe_key(v, i);
-  ephemeron_again:
+    child = ephe_normalize_key(v, i);
     if (child != caml_ephe_none && Is_block(child)) {
-      if (Tag_val (child) == Forward_tag) {
-        value f = Forward_val (child);
-        if (Is_block(f)) {
-          if (Tag_val(f) == Forward_tag || Tag_val(f) == Lazy_tag ||
-              Tag_val(f) == Forcing_tag || Tag_val(f) == Double_tag) {
-            /* Do not short-circuit the pointer */
-          } else {
-            Field(v, i) = child = f;
-            if (Is_block (f) && Is_young (f))
-              add_to_ephe_ref_table(&Caml_state->minor_tables->ephe_ref, v, i);
-            goto ephemeron_again;
-          }
-        }
-      }
-      if (Tag_val (child) == Infix_tag) child -= Infix_offset_val (child);
       if (!Is_young (child) && is_unmarked(child)) {
         release_data = 1;
         Field(v, i) = caml_ephe_none;
