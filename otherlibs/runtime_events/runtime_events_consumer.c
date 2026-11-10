@@ -470,6 +470,8 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
           cursor->metadata.headers_offset +
           domain_num * cursor->metadata.ring_header_size_bytes;
     if (offset >= cursor->ring_file_size_bytes
+        || cursor->metadata.ring_header_size_bytes
+           < sizeof(struct runtime_events_buffer_header)
         || offset + cursor->metadata.ring_header_size_bytes
            > cursor->ring_file_size_bytes) {
         atomic_store(&cursor->cursor_in_poll, 0);
