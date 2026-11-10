@@ -807,6 +807,42 @@ variable+="string"
 -variable
 ----
 
+==== Expected failures
+
+When working on a bugfix it can be useful to first demonstrate that the bug is present,
+then fix it, and then demonstrate that the bug is absent.
+
+This can be done by first creating a commit with a testcase that is expected to fail,
+and then the final commit that fixes the bug changes the testcase to expect to pass.
+This keeps all commits passing the testsuite, which can be useful for `git bisect`.
+It also allows reproducing and verifying the testcase itself on various platforms
+by checking out the testcase commit, without having to
+reorder git history to move it ahead of the bugfix.
+
+There isn't direct support for marking a test as expected to fail, however this
+can already be achieved by existing mechanisms.
+
+. First we pick an exitcode that is not used for anything else (e.g. 126),
+  and check that the test fails exactly in the expected way.
+  If the test passes instead, or exits with a different exitcode (e.g. an exception),
+  then that will be considered a failure of the testcase.
+
+  126 works here, because 125 is used for SKIP, 2 is used by exceptions,
+  and 1 can be used for other failures.
+
+  When the bug is fixed, then the `exit_status` line should be deleted in the
+  same commit.
++
+[source,ocaml]
+----
+(* TEST
+   exit_status = "126";
+*)
+
+let () =
+  (* if (some_condition_that_a_bug_is_present) then *)
+  exit 126
+----
 
 . If the test times out, instead of failing, then we turn this into
   an expected failure by using `Unix.alarm`. This is not implemented on Windows.

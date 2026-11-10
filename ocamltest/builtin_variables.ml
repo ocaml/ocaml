@@ -108,8 +108,14 @@ let test_source_directory = Variables.make ("test_source_directory",
 let test_pass = Variables.make ("TEST_PASS",
   "Exit code to let a script report success")
 
+let test_alarm = Variables.make ("TEST_ALARM",
+  "Exit code when killed by SIGALRM")
+
 let test_skip = Variables.make ("TEST_SKIP",
   "Exit code to let a script report skipping")
+
+let test_xfail = Variables.make ("TEST_XFAIL",
+  "Exit code to let a script report an expected failure")
 
 let test_fail = Variables.make ("TEST_FAIL",
   "Exit code to let a script report failure")
