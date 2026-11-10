@@ -159,8 +159,14 @@ CAMLextern value caml_win32_get_temp_path(void);
 
 #else
 
+/* for off_t */
+#include <sys/types.h>
+
 #define CAML_DIR_SEP T("/")
 #define Is_separator(c) (c == '/')
+
+CAMLextern void* caml_mmap(void*, size_t, int, int, int, off_t);
+CAMLextern int caml_munmap(void*, size_t);
 
 #endif /* _WIN32 */
 
