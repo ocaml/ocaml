@@ -182,8 +182,18 @@ let iter f h =
     flip_ongoing_traversal h;
     raise exn
 
-(* Removed cells are unlinked, and [h.size] updated, before [f] is called
-   on the next cell, so that the table is consistent if [f] raises. *)
+(* [filter_map_inplace_bucket f h i prec cell] applies [f] to [cell] and
+   to the cells that follow it in bucket [i] of [h], updating or unlinking
+   each one before moving on to the next.
+
+   [prec] is the last cell kept so far in this bucket, or [Empty] if there
+   is none: the current cell is reached from [prec.next], or from
+   [h.data.(i)].
+
+   Invariant: whenever [f] is called, the bucket holds exactly the cells
+   kept so far followed by the cells not yet visited, and [h.size] is the
+   number of cells in the table. So if [f] raises, the bindings already
+   processed stay removed or updated, and the others are left untouched. *)
 let rec filter_map_inplace_bucket f h i prec = function
   | Empty -> ()
   | (Cons ({key; data; next} as c)) as slot ->
