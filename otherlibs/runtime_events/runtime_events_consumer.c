@@ -276,6 +276,12 @@ runtime_events_error caml_runtime_events_create_cursor(
     goto fail_map_ring_file;
   }
 
+  if (cursor->ring_file_size_bytes
+      < sizeof(struct runtime_events_metadata_header)) {
+    ret = E_CORRUPT_STREAM;
+    goto fail_metadata_corrupt;
+  }
+
   cursor->metadata = *(struct runtime_events_metadata_header*)cursor->map;
 
   if (cursor->metadata.max_domains > Max_domains_max) {
