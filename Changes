@@ -61,7 +61,7 @@ Working version
 - #15216: document the security issue reporting process with a SECURITY.md file
   (Edwin Török, suggested by Xavier Leroy, review by Xavier Leroy)
 
-- #15268: Add warnings 74 and 75 to the ocamlc man page.
+- #15276: Add warnings 74 and 75 to the ocamlc man page.
   (Abhay Chaudhary, report by Kate Deplaix)
 
 ### Compiler user-interface and warnings:
