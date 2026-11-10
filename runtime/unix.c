@@ -470,23 +470,50 @@ void caml_init_os_params(void)
 }
 
 #if defined(__SANITIZE_ADDRESS__) && !defined(__CYGWIN__)
+CAMLexport bool caml_mmap_uses_asan(void)
+{
+  return true;
+}
 
 CAMLexport void* caml_mmap(void* addr, size_t const len, int const prot,
                            int const flags, int const fildes, off_t const off)
 {
-  return mmap(addr, len, prot, flags, fildes, off);
+  CAMLassert(!(flags & MAP_FIXED));
+  CAMLassert(caml_plat_pagesize > 0);
+  if (flags & MAP_FIXED) {
+    errno = EINVAL;
+    return MAP_FAILED;
+  }
+
+  addr = mmap(addr, len, prot, flags, fildes, off);
+
+  if (MAP_FAILED != addr && (PROT_NONE != prot)) {
+    size_t const poison_len = caml_mem_round_up_pages(len) - len;
+    if (poison_len)
+      ASAN_POISON_MEMORY_REGION((char*)addr + len, poison_len);
+  }
+  return addr;
 }
 
 CAMLexport int caml_munmap(void* const addr, size_t const len)
 {
+  size_t const poison_len = caml_mem_round_up_pages(len) - len;
+  if (poison_len)
+    ASAN_UNPOISON_MEMORY_REGION((char*)addr + len, poison_len);
   return munmap(addr, len);
 }
 
 #else
 
+CAMLexport bool caml_mmap_uses_asan(void)
+{
+  return false;
+}
+
 CAMLexport void* caml_mmap(void* const addr, size_t const len, int const prot,
                            int const flags, int const fildes, off_t const off)
 {
+  CAMLassert(!(flags & MAP_FIXED));
   return mmap(addr, len, prot, flags, fildes, off);
 }
 
