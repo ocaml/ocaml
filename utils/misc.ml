@@ -103,6 +103,9 @@ let rec split_last = function
       (hd :: lst, last)
 
 module Stdlib = struct
+  module Set = Stdlib.Set
+  module Map = Stdlib.Map
+
   module List = struct
     include Stdlib.List
 

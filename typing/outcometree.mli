@@ -78,7 +78,9 @@ type out_type =
   | Otyp_sum of out_constructor list
   | Otyp_tuple of (string option * out_type) list
   | Otyp_var of bool * string
-  | Otyp_variant of out_variant * bool * (string list) option
+  | Otyp_variant of { fields : out_variant;
+                      closed : bool;
+                      tags : (string list) option; }
   | Otyp_poly of string list * out_type
   | Otyp_module of out_package
   | Otyp_attribute of out_type * out_attribute
