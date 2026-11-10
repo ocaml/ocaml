@@ -807,6 +807,29 @@ variable+="string"
 -variable
 ----
 
+
+. If the test times out, instead of failing, then we turn this into
+  an expected failure by using `Unix.alarm`. This is not implemented on Windows.
+  The signal number is implementation dependent, so use a variable `"${TEST_ALARM}"`.
+  Don't forget to add `bytecode;` and `native;` at the end, otherwise no test will be run.
+  As before when the bug is fixed, then the `exit_status` line should be deleted in the
+  same commit. The `Unix.alarm` can stay, unless the test can be run on Windows too.
++
+[source,ocaml]
+----
+(* TEST
+   exit_status = "${TEST_ALARM}";
+   not windows;
+   hasunix;
+   include unix;
+   bytecode;
+   native;
+*)
+
+let () =
+  (* if (some_condition_that_a_bug_is_present) then *)
+  exit 126
+----
 [#concepts]
 == Key concepts
 
