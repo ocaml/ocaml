@@ -23,6 +23,18 @@
      bytecode;
      native;
    }
+   {
+     exit_status = "126";
+     arguments = "-1 7";
+     bytecode;
+     native;
+   }
+   {
+     exit_status = "126";
+     arguments = "\${PAGESIZE} \${PAGESIZE}";
+     bytecode;
+     native;
+   }
  *)
 
 external asan_enabled: unit -> bool = "stub_asan_enabled"
