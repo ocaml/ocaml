@@ -542,9 +542,15 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
 
   {
     header_t* p = POOL_FIRST_BLOCK(a, sz);
-    header_t* last_free_block = NULL;
+    header_t* last_free_block = NULL; /* head of last free run */
+    header_t* last_free_end = NULL; /* just past the last free run */
+    uintnat last_free_count = 0; /* blocks in last free run */
+    /* Per-pool stats accumulators, flushed once after the loop. */
+    uintnat freed_blocks = 0;
+    uintnat freed_words = 0;
     const header_t* end = POOL_END(a);
     const mlsize_t wh = whsize_sizeclass[sz];
+    const status garbage = caml_global_heap_state.GARBAGE;
     int all_used = 1;
     struct heap_stats* s = &local->stats;
 
@@ -555,9 +561,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
     while (p + wh <= end) {
       header_t hd = (header_t)atomic_load_relaxed((atomic_uintnat*)p);
 
-      if( (char*)p + caml_plat_pagesize < (char*)end ) {
-        caml_prefetchr((char*)p + caml_plat_pagesize);
-      }
+      caml_prefetchr((char*)p + caml_plat_pagesize);
 
       /* The pools mark a block as being free by setting the tag to No_scan_tag
         and the color to NOT_MARKABLE. The wosize is used to indicate the
@@ -567,7 +571,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
 
       /* Check if the current block is garbage, if it is turn it into a free
       block */
-      if (Has_status_hd(hd, caml_global_heap_state.GARBAGE)) {
+      if (Has_status_hd(hd, garbage)) {
         CAMLassert(Whsize_hd(hd) <= wh);
         if (Tag_hd (hd) == Custom_tag) {
           void (*final_fun)(value) = Custom_ops_val(Val_hp(p))->finalize;
@@ -587,11 +591,8 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
 #endif
 
         all_used = 0;
-        /* update stats */
-        s->pool_live_blocks--;
-        s->pool_live_words -= Whsize_hd(hd);
-        local->owner->swept_words += Whsize_hd(hd);
-        s->pool_frag_words -= (wh - Whsize_hd(hd));
+        freed_blocks++;
+        freed_words += Whsize_hd(hd);
 
         /* reload hd */
         hd = POOL_FREE_HEADER(0);
@@ -602,6 +603,8 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
       encountered or if we cannot then update the pointer in the last free block
       to point to this one */
       if (POOL_BLOCK_FREE_HD(hd)) {
+        header_t* next_p = p + (Wosize_hd(hd) + 1) * wh;
+
         /* if any block is free then this is no longer a full pool */
         all_used = 0;
 
@@ -610,17 +613,17 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
         if( last_free_block ) {
           CAMLassert(POOL_BLOCK_FREE_HP(last_free_block));
 
-          /* check if we can merge with the last free block */
-          if( last_free_block + (1 + Wosize_hp(last_free_block)) * wh == p ) {
-            /* if we can then update the wosize of the last free block */
-            *last_free_block = POOL_FREE_HEADER(Wosize_hp(last_free_block)
-                                                  + Wosize_hd(hd) + 1);
+          /* merge if the last free run ends exactly here */
+          if( last_free_end == p ) {
+            last_free_count += Wosize_hd(hd) + 1;
+            *last_free_block = POOL_FREE_HEADER(last_free_count);
           } else {
             /* in this case there's a non-free block between us so update
                 the next pointer */
             last_free_block[1] = (value)p;
 
             last_free_block = p;
+            last_free_count = Wosize_hd(hd);
           }
         } else {
           /* if we're the first free block then set the next_obj pointer for
@@ -628,19 +631,28 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
           a->next_obj = (value*)p;
 
           last_free_block = p;
+          last_free_count = Wosize_hd(hd);
         }
 
-        /* add the free blocks following this block, skipping over them */
-        p += wh * Wosize_hd(hd);
+        /* skip over the whole free run */
+        last_free_end = next_p;
+        p = next_p;
       } else {
         /* there's still a live block, the pool can't be released to the global
             freelist */
         release_to_global_pool = 0;
         work += wh;
+        p += wh;
       }
-      p += wh;
     }
     CAMLassert(p == end);
+
+    if (freed_blocks != 0) {
+      s->pool_live_blocks -= freed_blocks;
+      s->pool_live_words -= freed_words;
+      s->pool_frag_words -= freed_blocks * wh - freed_words;
+      local->owner->swept_words += freed_words;
+    }
 
     if( !all_used ) {
       /* the last free block should have 0 as its next pointer */
