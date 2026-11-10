@@ -387,7 +387,7 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
   | Texp_send (exp, _) ->
       sub.expr sub exp
   | Texp_new (_, lid, _) -> iter_loc_lid sub lid
-  | Texp_instvar (_, _, s) -> iter_loc sub s
+  | Texp_instvar (_, _, _, s) -> iter_loc sub s
   | Texp_setinstvar (_, _, s, exp) ->
       iter_loc sub s;
       sub.expr sub exp
