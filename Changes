@@ -794,6 +794,10 @@ OCaml 5.6.0
 - #15067, #15071: Fix detection of functions available in the future on macOS.
   (Antonin Décimo, review by Nicolás Ojeda Bär and Damien Doligez)
 
+- #14915: Remove OCaml's environment variables (CAML_LD_LIBRARY_PATH, etc.) from
+  the build environment.
+  (David Allsopp, review by Antonin Décimo)
+
 ### Bug fixes:
 
 - #15072, #15075: Fix `Runtime_events` cursors becoming permanently unusable
