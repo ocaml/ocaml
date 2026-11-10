@@ -1106,7 +1106,7 @@ update_major_slice_work(intnat howmuch,
                             + my_alloc_resumed_count.off_heap);
 
   /* Update the domain's statistics and suspended-count difference. */
-  d->stat_major_words += d->allocated_words->on_heap;
+  d->stat_major_words += my_alloc_count.on_heap;
   Caml_ac_op (*d->current_ramp_up_allocated_words_diff,
               *d->current_ramp_up_allocated_words_diff, +,
               my_alloc_suspended_count);
