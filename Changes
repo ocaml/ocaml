@@ -28,7 +28,7 @@ Working version
 
 - #15230: Move values directly between integer and float registers for
   int<->float conversions on POWER, instead of going through the stack.
-  (Tim McGilchrist and Zane Hambly, review by         )
+  (Tim McGilchrist and Zane Hambly, review by Miod Vallat)
 
 ### Standard library:
 
