@@ -17,7 +17,6 @@
 open Asttypes
 open Types
 
-module TypeSet = Btype.TypeSet
 module TypeMap = Btype.TypeMap
 
 type surface_variance = bool * bool * bool
@@ -150,26 +149,27 @@ let compute_variance_type env ~check (required, loc) decl tyl =
     List.iter
       (fun ty ->
         if Btype.is_Tvar ty || mem Inj (get_variance ty tvl) then () else
-        let visited = ref TypeSet.empty in
-        let rec check ty =
-          if TypeSet.mem ty !visited then () else begin
-            visited := TypeSet.add ty !visited;
-            if mem Inj (get_variance ty tvl) then () else
+        let rec check mark ty =
+          if not (try_mark_node mark ty) then mark else begin
+            if mem Inj (get_variance ty tvl) then mark else
             match get_desc ty with
             | Tvar _ -> raise Exit
             | Tconstr _ ->
-                let old = !visited in
+                let mark_snap = snapshot_mark mark in
                 begin try
-                  Btype.iter_type_expr check ty
+                  Btype.fold_type_expr check mark ty
                 with Exit ->
-                  visited := old;
+                  backtrack_mark mark mark_snap;
                   let ty' = Ctype.expand_head_opt env ty in
-                  if eq_type ty ty' then raise Exit else check ty'
+                  if eq_type ty ty' then raise Exit else check mark ty'
                 end
-            | _ -> Btype.iter_type_expr check ty
+            | _ -> Btype.fold_type_expr check mark ty
           end
         in
-        try check ty; compute_variance env tvl injective ty
+        try
+          with_type_mark (fun mark -> check mark ty)
+          |> (ignore : Types.type_mark -> unit);
+          compute_variance env tvl injective ty
         with Exit -> ())
       params;
   begin match check with
@@ -202,20 +202,39 @@ let compute_variance_type env ~check (required, loc) decl tyl =
           if p then if n then full else covariant else conjugate covariant in
         compute_variance env tvl2 v ty)
       params required;
-    let visited = ref TypeSet.empty in
-    let rec check ty =
-      if TypeSet.mem ty !visited then () else
-      let visited' = TypeSet.add ty !visited in
-      visited := visited';
+    let snap = Btype.snapshot () in
+    let tvl2 = TypeMap.bindings !tvl2 in
+    (* [is_equal] will expand every time, so better do it once. *)
+    let tvl2 =
+      List.map (fun (ty, v) -> Ctype.expand_head_nolink env ty, v) tvl2 in
+    (* No need to check against equal types, reduce runtime by doing
+       quadratic work on a smaller list *)
+    let rec consolidate = function
+      | (ty1, v1) :: rest ->
+          let rest, v1' =
+            List.fold_left
+              (fun (rest, v1') ((ty2, v2) as elt) ->
+                 if Ctype.is_equal env false [ty1] [ty2]
+                 then (rest, union v1' v2)
+                 else (elt :: rest, v1'))
+              ([], v1) rest
+          in
+          (ty1, v1') :: consolidate rest
+      | [] -> []
+    in
+    let tvl2 = consolidate tvl2 in
+    let rec check mark ty =
+      if not (try_mark_node mark ty) then mark else
       let v1 = get_variance ty tvl in
-      let snap = Btype.snapshot () in
+      let c1, n1 = get_upper v1 in
+      if not c1 && not n1 then mark else
       let v2 =
-        TypeMap.fold
-          (fun t vt v ->
-             if Ctype.is_equal env false [ty] [t] then union vt v else v)
-          !tvl2 null in
-      Btype.backtrack snap;
-      let (c1,n1) = get_upper v1 and (c2,n2,i2) = get_lower v2 in
+        List.fold_left
+          (fun v (t,vt) ->
+             if Ctype.is_equal env false [ty] [t]
+             then union v vt else v)
+          null tvl2 in
+      let c2,n2,i2 = get_lower v2 in
       if c1 && not c2 || n1 && not n2 then begin
         match List.find_opt (eq_type ty) fvl with
         | Some variable ->
@@ -230,16 +249,22 @@ let compute_variance_type env ~check (required, loc) decl tyl =
             let variance_error =
               Variance_variable_error { error; context; variable }
             in
+            Btype.backtrack snap;
             raise
               (Error (loc
                      , Bad_variance ( variance_error
                                     , (c1,n1,false)
                                     , (c2,n2,false))))
         | None ->
-            Btype.iter_type_expr check ty
+            Btype.fold_type_expr check mark ty
       end
+      else mark
     in
-    List.iter (fun (_,ty) -> check ty) tyl;
+    with_type_mark (fun mark ->
+        List.fold_left (fun mark (_,ty) -> check mark ty) mark tyl
+        |> (ignore : Types.type_mark -> unit)
+      );
+    Btype.backtrack snap
   end;
   List.map2
     (fun ty (p, n, _i) ->

@@ -44,6 +44,8 @@ module TypeMap = struct
   let singleton ty = wrap_repr singleton ty
   let fold f = TransientTypeMap.fold (wrap_type_expr f)
   let update ty = wrap_repr update ty
+  let bindings t =
+    List.map (fun (k,v) -> Transient_expr.type_expr k, v) (bindings t)
 end
 module TypeHash = struct
   include TransientTypeHash

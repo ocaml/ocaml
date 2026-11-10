@@ -225,7 +225,7 @@ Error: Signature mismatch:
          type t = < m : float; n : int >
        The type "< f : float; n : int >" is not equal to the type
          "< m : float; n : int >"
-       The second object type has no method "f"
+       The first object type has no method "m"
 |}];;
 
 module M : sig
