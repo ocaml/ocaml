@@ -844,6 +844,7 @@ rpath
 sharedlib_cflags
 asm_dwarf_version
 asm_size_type_directives
+asm_cfi_val_offset
 asm_cfi_supported
 AS
 endianness
@@ -3642,6 +3643,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L039
 
 
  # TODO: rename this variable
+
 
 
 
@@ -24895,12 +24897,80 @@ else case e in #(
 printf "%s\n" "disabled" >&6; } ;;
 esac
 fi
+
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the assembler supports .cfi_val_offset" >&5
+printf %s "checking whether the assembler supports .cfi_val_offset... " >&6; }
+  if $asm_cfi_supported
+then :
+  if test ${ocaml_cv_prog_as_cfi_val_offset+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e)
+  saved_CC="$CC"
+  saved_CFLAGS="$CFLAGS"
+  saved_CPPFLAGS="$CPPFLAGS"
+  saved_LIBS="$LIBS"
+  saved_ac_ext="$ac_ext"
+  saved_ac_compile="$ac_compile"
+  # Move the content of confdefs.h to another file so it does not
+  # get included
+  mv confdefs.h confdefs.h.bak
+  touch confdefs.h
+
+      # Modify C-compiler variables to use the assembler
+      CC="$AS"
+      CFLAGS="-o conftest.$ac_objext"
+      CPPFLAGS=""
+      ac_ext="S"
+      ac_compile='$CC $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+camlPervasives__loop_1128:
+        .cfi_startproc
+        .cfi_val_offset 15, -160
+        .cfi_endproc
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  ocaml_cv_prog_as_cfi_val_offset=true
+else case e in #(
+  e) ocaml_cv_prog_as_cfi_val_offset=false ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+
+  # Restore the content of confdefs.h
+  mv confdefs.h.bak confdefs.h
+  ac_compile="$saved_ac_compile"
+  ac_ext="$saved_ac_ext"
+  CPPFLAGS="$saved_CPPFLAGS"
+  CFLAGS="$saved_CFLAGS"
+  CC="$saved_CC"
+  LIBS="$saved_LIBS"
+ ;;
+esac
+fi
+
+    asm_cfi_val_offset="$ocaml_cv_prog_as_cfi_val_offset"
+else case e in #(
+  e) asm_cfi_val_offset=false ;;
+esac
+fi
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $asm_cfi_val_offset" >&5
+printf "%s\n" "$asm_cfi_val_offset" >&6; }
  ;;
 esac
 fi
 # Always assign a valid default OCaml value
 : ${ocaml_cv_prog_as_debug_prefix_map:=false}
 : ${asm_cfi_supported:=false}
+: ${asm_cfi_val_offset:=false}
 
 ## Frame pointers
 

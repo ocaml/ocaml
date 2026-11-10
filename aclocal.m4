@@ -226,6 +226,34 @@ camlPervasives__loop_1128:
     AC_MSG_RESULT([disabled])])
 ])
 
+AC_DEFUN([OCAML_AS_HAS_CFI_VAL_OFFSET], [
+  AC_MSG_CHECKING([whether the assembler supports .cfi_val_offset])
+  AS_IF([$asm_cfi_supported],
+    [AC_CACHE_VAL([ocaml_cv_prog_as_cfi_val_offset],
+      [OCAML_CC_SAVE_VARIABLES
+      # Modify C-compiler variables to use the assembler
+      CC="$AS"
+      CFLAGS="-o conftest.$ac_objext"
+      CPPFLAGS=""
+      ac_ext="S"
+      ac_compile='$CC $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+
+      AC_COMPILE_IFELSE(
+        [AC_LANG_SOURCE([
+camlPervasives__loop_1128:
+        .cfi_startproc
+        .cfi_val_offset 15, -160
+        .cfi_endproc
+        ])],
+        [ocaml_cv_prog_as_cfi_val_offset=true],
+        [ocaml_cv_prog_as_cfi_val_offset=false])
+
+      OCAML_CC_RESTORE_VARIABLES])
+    asm_cfi_val_offset="$ocaml_cv_prog_as_cfi_val_offset"],
+    [asm_cfi_val_offset=false])
+  AC_MSG_RESULT([$asm_cfi_val_offset])
+])
+
 AC_DEFUN([OCAML_MMAP_SUPPORTS_MAP_STACK], [
   AC_MSG_CHECKING([whether mmap supports MAP_STACK])
   AC_CACHE_VAL([ocaml_cv_func_mmap_MAP_STACK],

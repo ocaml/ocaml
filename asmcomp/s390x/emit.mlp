@@ -33,6 +33,10 @@ let frame_size env =
     (if env.f.fun_frame_required then size_addr else 0) in (* The return address *)
   Misc.align size 8
 
+(* The CFI follows the s390x ABI, where the CFA sits 160 bytes above the
+   caller's stack pointer, because SFrame assumes that layout. *)
+let cfa_bias = 160
+
 let slot_offset env loc cls =
   match loc with
     Local n ->
@@ -295,14 +299,10 @@ let emit_instr env i =
     | Lprologue ->
       let n = frame_size env in
       emit_stack_adjust n;
-      (* Use cfi_def_cfa_offset to SET the CFA, not adjust it.
-         The s390x CIE has a default offset of 160 for C ABI, but OCaml
-         has its own stack layout. CFA = sp + n after allocation. *)
-      cfi_def_cfa_offset n;
-      cfi_val_offset ~reg:15 ~offset:0;
+      cfi_def_cfa_offset (n + cfa_bias);
       if env.f.fun_frame_required then begin
         `	stg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
-        cfi_offset ~reg:14 ~offset:(-size_addr)
+        cfi_offset ~reg:14 ~offset:(-(size_addr + cfa_bias))
       end
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
@@ -775,10 +775,7 @@ let fundecl fundecl =
   `	.align	8\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
   cfi_startproc ();
-  (* Reset CFA from CIE default (r15+160) to r15+0 at function entry.
-     This ensures correct unwinding even when stopped before the prologue. *)
-  cfi_def_cfa_offset 0;
-  cfi_val_offset ~reg:15 ~offset:0;
+  cfi_val_offset ~reg:15 ~offset:(-cfa_bias);
 
   (* Dynamic stack checking *)
   let stack_threshold_size = Config.stack_threshold * 8 in (* bytes *)
@@ -809,18 +806,14 @@ let fundecl fundecl =
       `{emit_label overflow}:\n`;
       let s = (Config.stack_threshold + max_frame_size / 8) in
       `	lay	%r15, -8(%r15)\n`;
-      (* Set CFA = sp + 8 after allocating 8 bytes *)
-      cfi_def_cfa_offset 8;
-      cfi_val_offset ~reg:15 ~offset:0;
+      cfi_def_cfa_offset (8 + cfa_bias);
       `	stg	%r14, 0(%r15)\n`;
-      cfi_offset ~reg:14 ~offset:(-8);
+      cfi_offset ~reg:14 ~offset:(-(8 + cfa_bias));
       `	lgfi	%r12, {emit_int s}\n`;
       emit_call_got "caml_call_realloc_stack";
       `	lg	%r14, 0(%r15)\n`;
       `	la	%r15, 8(%r15)\n`;
-      (* Back to entry state: CFA = sp + 0 *)
-      cfi_def_cfa_offset 0;
-      cfi_val_offset ~reg:15 ~offset:0;
+      cfi_def_cfa_offset cfa_bias;
       `	brcl	15, {emit_label ret}\n`
     end
   end;
