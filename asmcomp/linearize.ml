@@ -136,11 +136,11 @@ let local_exit exit_info k =
 
 (* Linearize an instruction [i]: add it in front of the continuation [n] *)
 let linear i n contains_calls =
-  let rec linear exit_info i n =
+  let[@tail_mod_cons] rec linear exit_info i n =
     match i.Mach.desc with
       Iend -> n
     | Iop(Itailcall_ind | Itailcall_imm _ as op) ->
-        copy_instr (Lop op) i (discard_dead_code n)
+        (copy_instr[@tailcall false]) (Lop op) i (discard_dead_code n)
     | Iop(Imove | Ireload | Ispill)
       when i.Mach.arg.(0).loc = i.Mach.res.(0).loc ->
         linear exit_info i.Mach.next n
@@ -156,21 +156,24 @@ let linear i n contains_calls =
             Mach.Ipoll { return_label = Some lbl }, n.next
           | _ -> op, n
         in
-        copy_instr (Lop op) i n
+        (copy_instr[@tailcall false]) (Lop op) i n
     | Iop op ->
-        copy_instr (Lop op) i (linear exit_info i.Mach.next n)
+        (* Inlined version of copy_instr for tail mod cons *)
+        { desc = Lop op; next = linear exit_info i.Mach.next n;
+          arg = i.Mach.arg; res = i.Mach.res;
+          dbg = i.Mach.dbg; live = i.Mach.live }
     | Ireturn ->
         let n1 = copy_instr Lreturn i (discard_dead_code n) in
         if contains_calls
-        then cons_instr Lreloadretaddr n1
+        then (cons_instr[@tailcall false]) Lreloadretaddr n1
         else n1
     | Iifthenelse(test, ifso, ifnot) ->
         let n1 = linear exit_info i.Mach.next n in
         begin match (ifso.Mach.desc, ifnot.Mach.desc, n1.desc) with
           Iend, _, Lbranch lbl ->
-            copy_instr (Lcondbranch(test, lbl)) i (linear exit_info ifnot n1)
+            (copy_instr[@tailcall false]) (Lcondbranch(test, lbl)) i (linear exit_info ifnot n1)
         | _, Iend, Lbranch lbl ->
-            copy_instr
+            (copy_instr[@tailcall false])
               (Lcondbranch(invert_test test, lbl))
               i
               (linear exit_info ifso n1)
@@ -178,33 +181,33 @@ let linear i n contains_calls =
           when is_next_catch exit_info nfail1
             && local_exit exit_info nfail2 ->
             let lbl2 = find_exit_label exit_info nfail2 in
-            copy_instr
+            (copy_instr[@tailcall false])
               (Lcondbranch (invert_test test, lbl2))
               i
               (linear exit_info ifso n1)
         | Iexit nfail, _, _ when local_exit exit_info nfail ->
             let n2 = linear exit_info ifnot n1
             and lbl = find_exit_label exit_info nfail in
-            copy_instr (Lcondbranch(test, lbl)) i n2
+            (copy_instr[@tailcall false]) (Lcondbranch(test, lbl)) i n2
         | _,  Iexit nfail, _ when local_exit exit_info nfail ->
             let n2 = linear exit_info ifso n1 in
             let lbl = find_exit_label exit_info nfail in
-            copy_instr (Lcondbranch(invert_test test, lbl)) i n2
+            (copy_instr[@tailcall false]) (Lcondbranch(invert_test test, lbl)) i n2
         | Iend, _, _ ->
             let (lbl_end, n2) = get_label n1 in
-            copy_instr
+            (copy_instr[@tailcall false])
               (Lcondbranch(test, lbl_end))
               i
               (linear exit_info ifnot n2)
         | _,  Iend, _ ->
             let (lbl_end, n2) = get_label n1 in
-            copy_instr (Lcondbranch(invert_test test, lbl_end)) i
+            (copy_instr[@tailcall false]) (Lcondbranch(invert_test test, lbl_end)) i
                        (linear exit_info ifso n2)
         | _, _, _ ->
           (* Should attempt branch prediction here *)
             let (lbl_end, n2) = get_label n1 in
             let (lbl_else, nelse) = get_label (linear exit_info ifnot n2) in
-            copy_instr (Lcondbranch(invert_test test, lbl_else)) i
+            (copy_instr[@tailcall false]) (Lcondbranch(invert_test test, lbl_else)) i
               (linear exit_info ifso (add_branch lbl_end nelse))
         end
     | Iswitch(index, cases) ->
@@ -225,10 +228,10 @@ let linear i n contains_calls =
           let find_label n =
             let lbl = lbl_cases.(index.(n)) in
             if lbl = fallthrough_lbl then None else Some lbl in
-          copy_instr (Lcondbranch3(find_label 0, find_label 1, find_label 2))
+          (copy_instr[@tailcall false]) (Lcondbranch3(find_label 0, find_label 1, find_label 2))
                      i !n2
         end else
-          copy_instr (Lswitch(Array.map (fun n -> lbl_cases.(n)) index)) i !n2
+          (copy_instr[@tailcall false]) (Lswitch(Array.map (fun n -> lbl_cases.(n)) index)) i !n2
     | Icatch(_rec_flag, handlers, body) ->
         let (lbl_end, n1) = get_label(linear exit_info i.Mach.next n) in
         (* CR mshinwell for pchambart:
@@ -264,7 +267,7 @@ let linear i n contains_calls =
           if t = tt then i
           else loop (cons_instr Lpoptrap i) (tt - 1)
         in
-        loop (add_branch lbl n1) exit_info.try_depth
+        (loop[@tailcall false]) (add_branch lbl n1) exit_info.try_depth
     | Itrywith(body, handler) ->
         let (lbl_join, n1) = get_label (linear exit_info i.Mach.next n) in
         let (lbl_handler, n2) =
@@ -273,7 +276,7 @@ let linear i n contains_calls =
         let exit_info =
           { exit_info with try_depth = exit_info.try_depth + 1 } in
         assert (i.Mach.arg = [| |]);
-        let n3 = cons_instr (Lpushtrap { lbl_handler; })
+        let n3 = (cons_instr[@tailcall false]) (Lpushtrap { lbl_handler; })
                    (linear exit_info body
                       (cons_instr
                          Lpoptrap
@@ -281,7 +284,7 @@ let linear i n contains_calls =
         n3
 
     | Iraise k ->
-        copy_instr (Lraise k) i (discard_dead_code n)
+        (copy_instr[@tailcall false]) (Lraise k) i (discard_dead_code n)
   in linear { exit_label = []; try_depth = 0 } i n
 
 let add_prologue first_insn prologue_required =
