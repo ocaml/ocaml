@@ -350,6 +350,11 @@ OCaml 5.6.0
   the event stream alone.
   (Nick Barnes, review by Gabriel Scherer)
 
+- #15337: Ensure opportunistic GC work is recorded in runtime events, by
+  aggregating into spans to avoid flooding the event ring (or requiring the
+  GC verbosity bit to be set).
+  (Nick Barnes, review by ????)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and

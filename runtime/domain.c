@@ -102,7 +102,7 @@ static_assert(
     - STW sections must not trigger other callbacks into mutator code
       (eg. finalisers or signal handlers).
 
-   See the comments on [caml_try_run_on_all_domains_with_spin_work]
+   See the comments on [try_run_on_all_domains]
    below for more details on the synchronization mechanisms involved.
 */
 
@@ -215,8 +215,9 @@ static struct {
                    int participating_count,
                    caml_domain_state** others_participating);
   void* data;
-  int (*enter_spin_callback)(caml_domain_state*, void*);
-  void* enter_spin_data;
+  /* Whether waiting domains run opportunistic major slices while entering
+     the section (see stw_wait_for_running). */
+  bool spin_work;
 
   /* global_barrier state */
   int num_domains;
@@ -228,8 +229,7 @@ static struct {
   0,
   NULL,
   NULL,
-  NULL,
-  NULL,
+  false,
   0,
   CAML_PLAT_BARRIER_INITIALIZER,
   NULL
@@ -1662,18 +1662,20 @@ static void stw_wait_for_running(caml_domain_state* domain)
      tends to (and should) be fast, but we likely need to wait a bit
      in any case */
 
-  if (stw_request.enter_spin_callback) {
+  if (stw_request.spin_work) {
     /* Spin while there is useful work to do */
+    struct caml_opportunistic_events evs = { false, 0 };
     SPIN_WAIT_BOUNDED {
       if (caml_plat_barrier_is_released(&stw_request.domains_still_running)) {
+        caml_opportunistic_events_end(&evs);
         return;
       }
 
-      if (!stw_request.enter_spin_callback
-            (domain, stw_request.enter_spin_data)) {
+      if (!caml_do_opportunistic_major_slice(domain, &evs)) {
         break;
       }
     }
+    caml_opportunistic_events_end(&evs);
   }
 
   /* Spin a bit for the other domains */
@@ -1794,8 +1796,7 @@ int caml_domain_is_in_stw(void) {
   Bearing all that in mind, the spec of this function, which drives
   all STW sections, is as follows:
 
-  `caml_try_run_on_all_domains_with_spin_work
-    (sync, handler, data, leader_setup, enter_spin_callback, enter_spin_data)`
+  `try_run_on_all_domains(sync, handler, data, leader_setup, spin_work)`
 
   Try to run an STW section in which all domains will run
   `handler(domain, data, N, p)` (where `N` and `p` define the
@@ -1810,22 +1811,20 @@ int caml_domain_is_in_stw(void) {
 
   If `sync` is non-zero, all these calls are synchronous - none are
   called until after all domains have arrived at the "entry barrier".
-  If `enter_spin_callback` is non-NULL, then while any domain is
-  waiting for other domains to reach the entry barrier, it may run
-  `enter_spin_callback(domain, enter_spin_data)` repeatedly (stopping
-  if it ever returns zero).
+  If `spin_work` is true, then while any domain is waiting for other
+  domains to reach the entry barrier, it may run opportunistic major
+  GC slices (stopping when no work is available).
 
   If `sync` is zero, there is no entry barrier, so no synchronization
   happens. We still become the STW leader, so no other STW can
   interfere with this one.
 */
-int caml_try_run_on_all_domains_with_spin_work(
+static int try_run_on_all_domains(
   int sync,
   void (*handler)(caml_domain_state*, void*, int, caml_domain_state**),
   void* data,
   void (*leader_setup)(caml_domain_state*, void*),
-  int (*enter_spin_callback)(caml_domain_state*, void*),
-  void* enter_spin_data)
+  bool spin_work)
 {
   int i;
   caml_domain_state* domain_state = domain_self->state;
@@ -1874,8 +1873,7 @@ int caml_try_run_on_all_domains_with_spin_work(
 
   /* set up all fields for this stw_request; they must be available
      for domains when they get interrupted */
-  stw_request.enter_spin_callback = enter_spin_callback;
-  stw_request.enter_spin_data = enter_spin_data;
+  stw_request.spin_work = spin_work;
   stw_request.callback = handler;
   stw_request.data = data;
   stw_request.num_domains = stw_domains.active_domains;
@@ -1955,16 +1953,20 @@ int caml_try_run_on_all_domains_with_spin_work(
   return 1;
 }
 
+int caml_try_run_on_all_domains_with_spin_work(
+  void (*handler)(caml_domain_state*, void*, int, caml_domain_state**),
+  void* data,
+  void (*leader_setup)(caml_domain_state*, void *))
+{
+  return try_run_on_all_domains(1, handler, data, leader_setup, true);
+}
+
 int caml_try_run_on_all_domains(
   void (*handler)(caml_domain_state*, void*, int, caml_domain_state**),
   void* data,
   void (*leader_setup)(caml_domain_state*, void *))
 {
-  return
-      caml_try_run_on_all_domains_with_spin_work(1,
-                                                 handler,
-                                                 data,
-                                                 leader_setup, 0, 0);
+  return try_run_on_all_domains(1, handler, data, leader_setup, false);
 }
 
 int caml_try_run_on_all_domains_async(
@@ -1972,11 +1974,7 @@ int caml_try_run_on_all_domains_async(
   void* data,
   void (*leader_setup)(caml_domain_state*, void *))
 {
-  return
-      caml_try_run_on_all_domains_with_spin_work(0,
-                                                 handler,
-                                                 data,
-                                                 leader_setup, 0, 0);
+  return try_run_on_all_domains(0, handler, data, leader_setup, false);
 }
 
 void caml_interrupt_self(void)

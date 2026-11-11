@@ -269,6 +269,13 @@ Words of ephemeron sweeping work performed by this Domain in the major
 slice that is ending. Only emitted if non-zero.
 @since 5.6
 *)
+| EV_C_MAJOR_SLICE_WORK_DONE
+(**
+Words of major GC work performed in the major slice (or, within an
+EV_MAJOR_MARK_OPPORTUNISTIC span, the opportunistic spin phase) that
+just ended.
+@since 5.6
+*)
 
 (** The type for span events emitted by the runtime. *)
 type runtime_phase =

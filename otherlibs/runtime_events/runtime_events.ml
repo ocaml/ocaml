@@ -51,6 +51,7 @@ type runtime_counter =
 | EV_C_MAJOR_SLICE_MARK_WORK
 | EV_C_MAJOR_SLICE_EPHE_MARK_WORK
 | EV_C_MAJOR_SLICE_EPHE_SWEEP_WORK
+| EV_C_MAJOR_SLICE_WORK_DONE
 
 type runtime_phase =
 | EV_EXPLICIT_GC_SET
@@ -177,6 +178,8 @@ let runtime_counter_name counter =
       "major_slice_ephe_mark_work"
   | EV_C_MAJOR_SLICE_EPHE_SWEEP_WORK ->
       "major_slice_ephe_sweep_work"
+  | EV_C_MAJOR_SLICE_WORK_DONE ->
+      "major_slice_work_done"
 
 
 let runtime_phase_name phase =
