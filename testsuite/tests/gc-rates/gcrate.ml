@@ -182,26 +182,42 @@ let rand_len b mean = 1 + Random.State.int b.rng ((2 * mean) - 1)
 let pick_interned b =
   interned.(Random.State.int b.rng (Array.length interned))
 
-let fresh_string b =
+(* Smart constructors: each charges the builder for the words it
+   allocates (header included) as it constructs.  [build_leaf]
+   allocates nothing but still charges a word, so that budgets always
+   make progress; [build_interned] shares an existing string and
+   charges nothing. *)
+
+let build_leaf b = charge b 1; Leaf
+
+let build_interned b = Str (pick_interned b)
+
+let build_cons b x xs = charge b 3; Cons (x, xs)
+
+let build_pair b x y = charge b 3; Pair (x, y)
+
+let build_string b =
   let len = rand_len b 40 in
   charge b (2 + (len / 8));
   Str (String.make len (Char.chr (97 + Random.State.int b.rng 26)))
 
-let fresh_floats b =
+let build_floats b =
   let len = rand_len b 24 in
   charge b (1 + len);
   Floats (Float.Array.init len (fun i -> float_of_int i *. 1.5))
 
-let fresh_ints b =
+let build_ints b =
   let len = rand_len b 16 in
   charge b (1 + len);
   Ints (Array.init len (fun i -> i * 7))
 
+let build_rec b ~id ~name ~score ~kids =
+  charge b (6 + 2 + 1 + Array.length kids)
+    (* record + boxed float + kids array *);
+  Rec { id; name; hits = 0; score; kids }
+
 let rec build b depth =
-  if b.budget <= 0 || depth > 14 then begin
-    charge b 1;
-    Leaf
-  end
+  if b.budget <= 0 || depth > 14 then build_leaf b
   else
     match Random.State.int b.rng 100 with
     | n when n < 25 ->
@@ -209,43 +225,34 @@ let rec build b depth =
       let len = rand_len b 24 in
       let tail = ref Leaf in
       for _ = 1 to len do
-        charge b 3;
         let elt =
           match Random.State.int b.rng 10 with
-          | 0 | 1 | 2 | 3 -> Str (pick_interned b)
-          | 4 -> fresh_string b
-          | 5 ->
-            charge b 3;
-            Pair (Leaf, Leaf)
+          | 0 | 1 | 2 | 3 -> build_interned b
+          | 4 -> build_string b
+          | 5 -> build_pair b Leaf Leaf
           | _ -> Leaf
         in
-        tail := Cons (elt, !tail)
+        tail := build_cons b elt !tail
       done;
       !tail
-    | n when n < 40 -> fresh_string b
-    | n when n < 50 -> fresh_floats b
-    | n when n < 57 -> fresh_ints b
+    | n when n < 40 -> build_string b
+    | n when n < 50 -> build_floats b
+    | n when n < 57 -> build_ints b
     | n when n < 87 ->
       let nkids = 1 + Random.State.int b.rng 7 in
-      charge b (6 + 2 + 1 + nkids); (* record + boxed float + kids array *)
-      let kids = Array.init nkids (fun _ -> build b (depth + 1)) in
-      Rec
-        { id = Random.State.int b.rng 1000000;
-          name = pick_interned b;
-          hits = 0;
-          score = Random.State.float b.rng 1.0;
-          kids
-        }
+      build_rec b
+        ~id:(Random.State.int b.rng 1000000)
+        ~name:(pick_interned b)
+        ~score:(Random.State.float b.rng 1.0)
+        ~kids:(Array.init nkids (fun _ -> build b (depth + 1)))
     | _ ->
-      charge b 3;
-      Pair (build b (depth + 1), build b (depth + 1))
+      build_pair b (build b (depth + 1)) (build b (depth + 1))
 
 let build_slot rng budget =
   let b = { rng; budget } in
   let acc = ref Leaf in
   while b.budget > 0 do
-    charge b 3;
-    acc := Cons (build b 0, !acc)
+    acc := build_cons b (build b 0) !acc
   done;
   !acc
 
