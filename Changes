@@ -313,6 +313,10 @@ OCaml 5.6.0
 - #15229 Bound the custom event payload by the buffer's own constant
   (Tim McGilchrist, review by Sadiq Jaffer)
 
+- #15280: Add a testsuite benchmark measuring GC mark, sweep, promotion
+  and compaction speeds (tests/gc-rates/gcrate.ml), ported from OxCaml.
+  (Nick Barnes, review by ????)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and

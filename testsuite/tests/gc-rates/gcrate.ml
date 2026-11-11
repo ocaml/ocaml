@@ -1,7 +1,7 @@
 (* TEST
  include unix;
  include runtime_events;
- hasunix;
+ libunix; (* the stderr-redirection dance trips Windows file sharing *)
  not tsan; (* timing-sensitive; far too slow under TSan *)
  native;
 *)
