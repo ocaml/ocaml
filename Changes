@@ -321,6 +321,11 @@ OCaml 5.6.0
 - #15229 Bound the custom event payload by the buffer's own constant
   (Tim McGilchrist, review by Sadiq Jaffer)
 
+- #15283: Speed up major-heap pool sweeping by about 20%: hoist loop
+  invariants, batch statistics updates, and track free-run ends instead
+  of recomputing them.
+  (Nick Barnes, review by ????)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
