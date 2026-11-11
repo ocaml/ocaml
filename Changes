@@ -532,6 +532,9 @@ OCaml 5.6.0
 - #15200, #15224: manual: fix syntax for local opens and labeled tuple patterns
   (Simmo Saan, review by Florian Angeletti)
 
+- #15276: Add warnings 74 and 75 to the ocamlc man page.
+  (Abhay Chaudhary, report by Kate Deplaix, review by Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 
 - #14958, #15120: Improve error messages for Duplicate_constructor and
