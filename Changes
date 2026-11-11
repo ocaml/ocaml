@@ -134,6 +134,10 @@ Working version
   (Tim McGilchrist and Miod Vallat, reported by KC Sivaramakrishnan,
    reviews by Miod Vallat and Zane Hambly)
 
+- #15171: fix a compile-time failure in the pattern-matching compiler
+  coming from incorrect compilation of some useless guarded or-patterns
+  (Gabriel Scherer, report by Stefan Muenzel)
+
 OCaml 5.6.0
 -----------
 
