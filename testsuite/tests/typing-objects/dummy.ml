@@ -60,7 +60,7 @@ class foo1 = object(self)
     end
 end;;
 [%%expect{|
-class foo1 : object method child : child2 method previous : child2 option end
+class foo1 : object method child : child1 method previous : child1 option end
 |}]
 
 class nested = object
@@ -76,7 +76,7 @@ end;;
 [%%expect{|
 class nested :
   object
-    method obj : < child : unit -> child2; previous : child2 option >
+    method obj : < child : unit -> child1; previous : child1 option >
   end
 |}]
 
@@ -93,7 +93,7 @@ class just_to_see = object(self)
 end;;
 [%%expect{|
 class just_to_see :
-  object method child : child2 method previous : child2 option end
+  object method child : child1 method previous : child1 option end
 |}]
 
 class just_to_see2 = object
@@ -111,7 +111,7 @@ class just_to_see2 = object
 end;;
 [%%expect{|
 class just_to_see2 :
-  object method obj : < child : child2; previous : child2 option > end
+  object method obj : < child : child1; previous : child1 option > end
 |}]
 
 type gadt = Not_really_though : gadt
@@ -127,7 +127,7 @@ end;;
 [%%expect{|
 type gadt = Not_really_though : gadt
 class just_to_see3 :
-  object method child : gadt -> child2 method previous : child2 option end
+  object method child : gadt -> child1 method previous : child1 option end
 |}]
 
 class leading_up_to = object(self : 'a)

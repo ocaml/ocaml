@@ -210,8 +210,9 @@ OCaml 5.6.0
   (Alistair O'Brien, Jacques Garrigue, review by Florian Angeletti,
    Gabriel Scherer)
 
-- #12150: class type system improvements: self type constraints, virtual method
-  inheritance in mutually recursive definition, immediate object inheritance.
+- #12150, #15166: class type system improvements: self type constraints,
+  virtual method inheritance in mutually recursive definition, immediate object
+  inheritance.
   (Leo White, review by Florian Angeletti)
 
 - #14753, #14754: Prevent module constraints (`with type`) from introducing
