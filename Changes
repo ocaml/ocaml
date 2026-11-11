@@ -387,6 +387,11 @@ OCaml 5.6.0
   outline-atomics builds).
   (Sebastian Pop, review by Olivier Nicole, Gabriel Scherer, and Luc Maranget)
 
+- #15283: Speed up major-heap pool sweeping by about 20%: hoist loop
+  invariants, batch statistics updates, and track free-run ends instead
+  of recomputing them.
+  (Nick Barnes, review by ????)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
