@@ -265,6 +265,7 @@ AC_SUBST([ASPP])
 AC_SUBST([endianness])
 AC_SUBST([AS])
 AC_SUBST([asm_cfi_supported])
+AC_SUBST([asm_cfi_val_offset])
 AC_SUBST([asm_size_type_directives])
 AC_SUBST([asm_dwarf_version])
 AC_SUBST([sharedlib_cflags])
@@ -2859,10 +2860,12 @@ AS_IF([$native_compiler],
   [AS_CASE([$target],
     [*-w64-mingw32*|*-pc-windows], [],
     [OCAML_AS_HAS_DEBUG_PREFIX_MAP
-    OCAML_AS_HAS_CFI_DIRECTIVES])])
+    OCAML_AS_HAS_CFI_DIRECTIVES
+    OCAML_AS_HAS_CFI_VAL_OFFSET])])
 # Always assign a valid default OCaml value
 : ${ocaml_cv_prog_as_debug_prefix_map:=false}
 : ${asm_cfi_supported:=false}
+: ${asm_cfi_val_offset:=false}
 
 ## Frame pointers
 
