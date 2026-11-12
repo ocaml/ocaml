@@ -876,8 +876,7 @@ stdlib__Textloc.cmx : textloc.ml \
     camlinternalTextloc.cmx \
     stdlib__Textloc.cmi
 stdlib__Textloc.cmi : textloc.mli \
-    stdlib__Format.cmi \
-    camlinternalTextloc.cmi
+    stdlib__Format.cmi
 stdlib__Type.cmo : type.ml \
     stdlib__Obj.cmi \
     stdlib__Type.cmi
