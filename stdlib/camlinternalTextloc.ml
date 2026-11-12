@@ -15,53 +15,6 @@
 (**************************************************************************)
 
 module type S = sig
-  val file_none : string
-
-  type byte_pos = int
-  type line_num = int
-  type line_pos = line_num * byte_pos
-
-  type t
-
-  val none : t
-
-  val make :
-    file:string -> first_byte:byte_pos -> last_byte:byte_pos ->
-    first_line:line_pos -> last_line:line_pos -> t
-
-  val byte_pos_none : byte_pos
-  val line_num_none : line_num
-  val line_pos_first : line_pos
-  val line_pos_none : line_pos
-
-  val is_none : t -> bool
-  val is_empty : t -> bool
-  val equal : t -> t -> bool
-  val compare : t -> t -> int
-
-  val file : t -> string
-  val set_file : t -> string -> t
-
-  val first_byte : t -> byte_pos
-  val last_byte : t -> byte_pos
-
-  val first_line : t -> line_pos
-  val last_line : t -> line_pos
-
-  type line_range =
-    | Single_line of line_pos
-    | Range of line_pos * line_pos
-
-  val line_range : t -> line_range
-
-  val set_first : t -> first_byte:byte_pos -> first_line:line_pos -> t
-  val set_last : t -> last_byte:byte_pos -> last_line:line_pos -> t
-  val to_first : t -> t
-  val to_last : t -> t
-  val before : t -> t
-  val after : t -> t
-  val span : t -> t -> t
-  val reloc : first:t -> last:t -> t
 end
 
 let file_none = "-"
