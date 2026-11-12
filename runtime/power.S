@@ -515,8 +515,9 @@ FUNCTION caml_call_realloc_stack
         beq     1f
    /* Reallocation successful: return to caller */
         blr
-   /* Reallocation failed: raise the Stack_overflow exception */
-1:      Addrglobal(3, caml_exn_Stack_overflow)
+   /* Reallocation failed: restore LR and raise Stack_overflow */
+1:      mtlr    28
+        Addrglobal(3, caml_exn_Stack_overflow)
         b       .Lcaml_raise_exn
         CFI_ENDPROC
 ENDFUNCTION caml_call_realloc_stack
