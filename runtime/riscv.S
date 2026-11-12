@@ -517,7 +517,8 @@ FUNCTION(caml_call_realloc_stack)
 1:      RESTORE_ALL_REGS
     /* Raise the Stack_overflow exception */
         LEAVE_FUNCTION
-        addi    sp, sp, 16 /* pop argument */
+        ld      ra, 8(sp) /* reload retaddr */
+        addi    sp, sp, 16 /* pop argument, retaddr */
         la      a0, caml_exn_Stack_overflow
         j       L(caml_raise_exn)
 END_FUNCTION(caml_call_realloc_stack)
