@@ -141,7 +141,7 @@ Working version
 * #15259: Hashtbl.filter_map_inplace now leaves the table consistent when
   the function raises: removed bindings are unlinked as soon as the function
   returns None, so Hashtbl.length matches the bindings left in the table.
-  (ButteryPaws, report by KC Sivaramakrishnan)
+  (ButteryPaws, report by KC Sivaramakrishnan, review by Florian Angeletti)
 
 OCaml 5.6.0
 -----------

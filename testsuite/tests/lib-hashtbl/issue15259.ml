@@ -15,7 +15,7 @@ module H = Hashtbl.Make (struct
 end)
 
 let bindings h =
-  List.sort compare (H.fold (fun k v acc -> (k, v) :: acc) h [])
+  List.sort compare (List.of_seq @@ H.to_seq h)
 
 (* The reproducer from the issue: 2 is removed at the head of the bucket,
    then the function raises on 1. *)

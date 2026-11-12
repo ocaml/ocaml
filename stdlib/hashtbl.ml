@@ -182,31 +182,24 @@ let iter f h =
     flip_ongoing_traversal h;
     raise exn
 
-(* [filter_map_inplace_bucket f h i prec cell] applies [f] to [cell] and
-   to the cells that follow it in bucket [i] of [h], updating or unlinking
-   each one before moving on to the next.
-
-   [prec] is the last cell kept so far in this bucket, or [Empty] if there
-   is none: the current cell is reached from [prec.next], or from
-   [h.data.(i)].
-
-   Invariant: whenever [f] is called, the bucket holds exactly the cells
-   kept so far followed by the cells not yet visited, and [h.size] is the
-   number of cells in the table. So if [f] raises, the bindings already
-   processed stay removed or updated, and the others are left untouched. *)
+(* helper function for filter_map_inplace that applies
+to only one bucket of the hashtable array *)
 let rec filter_map_inplace_bucket f h i prec = function
   | Empty -> ()
   | (Cons ({key; data; next} as c)) as slot ->
       begin match f key data with
       | None ->
+        (* prec always points to last retained cell *)
           begin match prec with
           | Empty -> h.data.(i) <- next
           | Cons p -> p.next <- next
           end;
           h.size <- h.size - 1;
+          (* current cell dropped, so prec stays *)
           filter_map_inplace_bucket f h i prec next
       | Some data ->
           c.data <- data;
+          (* current cell retained, prec moves ahead *)
           filter_map_inplace_bucket f h i slot next
       end
 
