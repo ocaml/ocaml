@@ -1,9 +1,9 @@
 (* TEST
+ modules = "pid_stubs.c";
  include runtime_events;
  include unix;
  set OCAML_RUNTIME_EVENTS_PRESERVE = "1";
  hasunix;
- not target-windows;
  {
    bytecode;
  }{
@@ -11,6 +11,8 @@
  }
 *)
 open Runtime_events
+
+external pid_of_process : int -> int = "caml_test_pid_of_process"
 
 type User.tag += Ev of int
 
@@ -20,13 +22,13 @@ let ev0 =
 let custom_unit_type =
   Type.register ~encode:(fun buf () -> 0) ~decode:(fun buf sz -> ())
 
+(* The child is this same program re-executed with an argument, rather than a
+   fork, so that the test runs on Windows too. *)
 let () =
-  start ();
-  let parent_cwd = Sys.getcwd () in
-  let child_pid = Unix.fork () in
   (* child generates events*)
-  if child_pid == 0 then
+  if Array.length Sys.argv > 1 && Sys.argv.(1) = "child" then
   begin
+    start ();
     let ev1 = User.register "ev1" (Ev 1) Type.int in
     let ev2 = User.register "ev2" (Ev 2) Type.int in
     let ev3 = User.register "ev3" (Ev 3) Type.span in
@@ -42,8 +44,15 @@ let () =
   else
   (* parent consumes events *)
   begin
+  let parent_cwd = Sys.getcwd () in
+  let child_pid =
+    Unix.create_process Sys.executable_name
+      [| Sys.executable_name; "child" |] Unix.stdin Unix.stdout Unix.stderr
+  in
+  (* Unix.waitpid closes the handle on Windows, so translate it first *)
+  let child = pid_of_process child_pid in
   Unix.waitpid [] child_pid |> ignore;
-  let cursor = create_cursor (Some (parent_cwd, child_pid)) in
+  let cursor = create_cursor (Some (parent_cwd, child)) in
   let callback_counter _ _ ev v =
     match User.tag ev with
     | Ev i -> Printf.printf "known event ev %d => %d\n" i v
