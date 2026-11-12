@@ -8,7 +8,8 @@ let rec x = [| x |]; 1.;;
 Line 1, characters 12-19:
 1 | let rec x = [| x |]; 1.;;
                 ^^^^^^^
-Warning 10 [non-unit-statement]: this expression should have type unit.
+Warning 10 [non-unit-statement]: this expression should have type "unit",
+  but it has type "'a array".
 
 Line 1, characters 12-23:
 1 | let rec x = [| x |]; 1.;;
