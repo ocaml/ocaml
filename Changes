@@ -899,6 +899,10 @@ OCaml 5.6.0
   (Pierre Chambart, report by Ethan Chou,
    review by Vincent Laviron)
 
+- #15295: Fix incorrect CFLAGS used to build the relocatable compiler when
+  installing to a directory which includes symlinks, e.g. FreeBSD home
+  directories.
+  (David Allsopp, review by Florian Angeletti)
 
 OCaml 5.5.1
 -----------
