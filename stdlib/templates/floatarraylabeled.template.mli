@@ -125,6 +125,43 @@ val blit : src:t -> src_pos:int -> dst:t -> dst_pos:int -> len:int -> unit
     designate a valid subarray of [src], or if [dst_pos] and [len] do not
     designate a valid subarray of [dst]. *)
 
+val dot : t -> t -> float
+(** [dot a b] is the sum of the products of the corresponding elements of
+    [a] and [b]. The products are added in an unspecified order, so the
+    result may differ from a left-to-right sum by rounding.
+    The multiplications and additions may be fused into a single rounding,
+    as with {!Float.fma}.
+    @raise Invalid_argument if [a] and [b] have different lengths.
+    @since 5.6 *)
+
+val sum : t -> float
+(** [sum a] is the sum of the elements of [a], added in an unspecified
+    order.
+    @since 5.6 *)
+
+val scale : float -> t -> unit
+(** [scale c a] multiplies every element of [a] by [c] in place.
+    @since 5.6 *)
+
+val axpy : float -> x:t -> y:t -> unit
+(** [axpy c ~x ~y] replaces every element [y.(i)] by [c *. x.(i) +. y.(i)].
+    The multiplication and addition may be fused into a single rounding,
+    as with {!Float.fma}.
+    @raise Invalid_argument if [x] and [y] have different lengths.
+    @since 5.6 *)
+
+val add : t -> t -> dst:t -> unit
+(** [add a b ~dst] stores [a.(i) +. b.(i)] in [dst.(i)] for every index.
+    [dst] may be [a] or [b].
+    @raise Invalid_argument if the three arrays have different lengths.
+    @since 5.6 *)
+
+val mul : t -> t -> dst:t -> unit
+(** [mul a b ~dst] stores [a.(i) *. b.(i)] in [dst.(i)] for every index.
+    [dst] may be [a] or [b].
+    @raise Invalid_argument if the three arrays have different lengths.
+    @since 5.6 *)
+
 val to_list : t -> float list
 (** [to_list a] returns the list of all the elements of [a]. *)
 

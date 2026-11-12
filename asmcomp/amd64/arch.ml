@@ -63,6 +63,8 @@ let size_float = 8
 
 let allow_unaligned_access = true
 
+let floatarray_dot_kernel = None
+
 (* Behavior of division *)
 
 let division_crashes_on_overflow = true
