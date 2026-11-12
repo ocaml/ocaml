@@ -261,6 +261,10 @@ Working version
 
 ### Standard library:
 
+- #15294: Add `input_nul_line`, `{input,fold}_nul_lines` as nul-byte-separated
+  counterparts to existing new-line-separated input functions (`input_line`,
+  `{input,fold}_lines`). (Raphaël Proust)
+
 - #14974 : Add `Sys.filepath_exists` and improve documentation
   for `Sys.file_exists`
   (Khalid Belkassmi E.H., review by Kate Deplaix, Nicolás Ojeda Bär,
