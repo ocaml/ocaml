@@ -235,6 +235,9 @@ let () =
   assert (String.cut_last 2 "" = ("", ""));
   assert (String.cut_last 2 "a" = ("", "a"));
   assert (String.cut_last 2 "ab" = ("", "ab"));
+  assert (String.take_first min_int "ab" = "");
+  assert (String.take_last min_int "ab" = "");
+  assert (String.drop_last min_int "ab" = "ab");
   ()
 
 let () =
