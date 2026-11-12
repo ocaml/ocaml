@@ -1,5 +1,15 @@
-OCaml 5.5.2
+OCaml 5.5.3
 -----------
+
+### Bug fixes:
+
+- #15295: Fix incorrect CFLAGS used to build the relocatable compiler when
+  installing to a directory which includes symlinks, e.g. FreeBSD home
+  directories.
+  (David Allsopp, review by Florian Angeletti)
+
+OCaml 5.5.2 (23 October 2026)
+-----------------------------
 
 ### Bug fixes:
 
