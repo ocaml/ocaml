@@ -98,7 +98,7 @@ open Printpat.Compat
 
 module Scoped_location = Debuginfo.Scoped_location
 
-let dbg () = !Clflags.dump_matchcomp
+let dbg () = Clflags.Dump_option.get Match_comp
 
 let debugf fmt =
   if dbg ()

@@ -26,6 +26,7 @@ module rec A : sig
                  "t"[type] -> <.10>;
                  };
  }
+
 module rec A : sig type t = Leaf of B.t end
 and B : sig type t = int end
 |}]
@@ -48,6 +49,7 @@ end = B
  "A"[module] -> A<.11>;
  "B"[module] -> B<.12>;
  }
+
 module rec A : sig type t = Leaf of B.t end
 and B : sig type t = int end
 |}]
@@ -96,6 +98,7 @@ end = Set.Make(A)
       CU Stdlib . "Set"[module] . "Make"[module](A<.19>) . "t"[type];
     };
  }
+
 module rec A :
   sig
     type t = Leaf of string | Node of ASet.t
