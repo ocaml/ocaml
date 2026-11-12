@@ -1078,15 +1078,6 @@ val input_line : in_channel -> string
    @raise End_of_file if the end of the file is reached
    at the beginning of line. *)
 
-val input_nul_line : in_channel -> string
-(** Read characters from the given input channel, until a
-   nul byte ([\000]) character is encountered. Return the string of
-   all characters read, without the nul character at the end.
-   @raise End_of_file if the end of the file is reached
-   at the beginning of line.
-
-   @since ??? *)
-
 val input : in_channel -> bytes -> int -> int -> int
 (** [input ic buf pos len] reads up to [len] characters from
    the given channel [ic], storing them in byte sequence [buf], starting at
