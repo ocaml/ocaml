@@ -66,6 +66,11 @@ let input_line ic =
   | s -> Some s
   | exception End_of_file -> None
 
+let input_nul_line ic =
+  match Stdlib.input_nul_line ic with
+  | s -> Some s
+  | exception End_of_file -> None
+
 let input = Stdlib.input
 
 external unsafe_input_bigarray :
@@ -197,9 +202,19 @@ let [@tail_mod_cons] rec input_lines ic =
   | line -> line :: input_lines ic
   | exception End_of_file -> []
 
+let [@tail_mod_cons] rec input_nul_lines ic =
+  match Stdlib.input_nul_line ic with
+  | line -> line :: input_nul_lines ic
+  | exception End_of_file -> []
+
 let rec fold_lines f accu ic =
   match Stdlib.input_line ic with
   | line -> fold_lines f (f accu line) ic
+  | exception End_of_file -> accu
+
+let rec fold_nul_lines f accu ic =
+  match Stdlib.input_nul_line ic with
+  | line -> fold_nul_lines f (f accu line) ic
   | exception End_of_file -> accu
 
 let set_binary_mode = Stdlib.set_binary_mode_in

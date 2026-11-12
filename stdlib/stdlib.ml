@@ -441,6 +441,7 @@ let really_input_string ic len =
   bytes_unsafe_to_string s
 
 external input_scan_line : in_channel -> int = "caml_ml_input_scan_line"
+external input_scan_nul_line : in_channel -> int = "caml_ml_input_scan_nul_line"
 
 let input_line chan =
   let rec build_result buf pos = function
@@ -451,6 +452,34 @@ let input_line chan =
       build_result buf (pos - len) tl in
   let rec scan accu len =
     let n = input_scan_line chan in
+    if n = 0 then begin                   (* n = 0: we are at EOF *)
+      match accu with
+        [] -> raise End_of_file
+      | _  -> build_result (bytes_create len) len accu
+    end else if n > 0 then begin          (* n > 0: newline found in buffer *)
+      let res = bytes_create (n - 1) in
+      ignore (unsafe_input chan res 0 (n - 1));
+      ignore (input_char chan);           (* skip the newline *)
+      match accu with
+        [] -> res
+      |  _ -> let len = len + n - 1 in
+              build_result (bytes_create len) len (res :: accu)
+    end else begin                        (* n < 0: newline not found *)
+      let beg = bytes_create (-n) in
+      ignore(unsafe_input chan beg 0 (-n));
+      scan (beg :: accu) (len - n)
+    end
+  in bytes_unsafe_to_string (scan [] 0)
+
+let input_nul_line chan =
+  let rec build_result buf pos = function
+    [] -> buf
+  | hd :: tl ->
+      let len = bytes_length hd in
+      bytes_blit hd 0 buf (pos - len) len;
+      build_result buf (pos - len) tl in
+  let rec scan accu len =
+    let n = input_scan_nul_line chan in
     if n = 0 then begin                   (* n = 0: we are at EOF *)
       match accu with
         [] -> raise End_of_file
