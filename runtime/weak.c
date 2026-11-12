@@ -251,10 +251,15 @@ static value ephe_set_field (value e, mlsize_t offset, value el)
    already scanned and skipped (because of an unmarked key) into one whose
    keys are all alive. The store itself darkens nothing, so no new ephemeron
    round is requested and the data would remain unmarked. Darken the data, as
-   [caml_ephe_blit_data] does. See #9391 and #15288. */
+   [caml_ephe_blit_data] does. See #9391 and #15288.
+
+   This is not needed in [Phase_sweep_ephe], where the accessors clean the
+   ephemeron instead, and it would be wrong there: the data of an ephemeron
+   that has another dead key may be unmarked, and darkening it would create
+   marking work after marking has finished. */
 static void ephe_darken_data_after_key_store (value e)
 {
-  if (caml_marking_started ()) {
+  if (caml_ephe_marking_ongoing ()) {
     value data = Ephe_data (e);
     if (data != caml_ephe_none && Is_block (data))
       caml_darken (Caml_state, data, 0);
