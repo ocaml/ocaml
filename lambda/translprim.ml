@@ -716,8 +716,10 @@ let lambda_of_loc kind sloc =
       let textloc =
         if Location.is_none loc then CamlinternalTextloc.none
         else
-          CamlinternalTextloc.of_lexing_range
-            loc.Location.loc_start loc.Location.loc_end
+          CamlinternalTextloc.set_file
+            (CamlinternalTextloc.of_lexing_range
+               loc.Location.loc_start loc.Location.loc_end)
+            file
       in
       Lconst (Lambda_textloc.to_repr textloc)
 

@@ -35,6 +35,15 @@ let arch = make ("arch",
 let binary_modules = make ("binary_modules",
   "Additional binary modules to link")
 
+let export_build_path_prefix_map value =
+  ("BUILD_PATH_PREFIX_MAP", value)
+
+let build_path_prefix_map =
+  make_with_exporter
+    export_build_path_prefix_map
+    ("build_path_prefix_map",
+      "Equivalent of the BUILD_PATH_PREFIX_MAP environment variable")
+
 let bytecc_libs = make ("bytecc_libs",
   "Libraries to link with for bytecode")
 
@@ -263,6 +272,7 @@ let _ = List.iter register_variable
     all_modules;
     arch;
     binary_modules;
+    build_path_prefix_map;
     bytecc_libs;
     cpp;
     cppflags;
