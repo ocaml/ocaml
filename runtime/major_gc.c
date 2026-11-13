@@ -33,6 +33,7 @@
 #include "caml/gc_stats.h"
 #include "caml/memory.h"
 #include "caml/memprof.h"
+#include "caml/minor_gc.h"
 #include "caml/mlvalues.h"
 #include "caml/platform.h"
 #include "caml/roots.h"
@@ -563,20 +564,19 @@ static intnat ephe_mark (intnat budget, uintnat round,
               /* Do not short-circuit the pointer */
             } else {
               Field(ephe, i) = key = f;
+              if (Is_block (f) && Is_young (f))
+                add_to_ephe_ref_table(&domain_state->minor_tables->ephe_ref,
+                                      ephe, i);
               goto ephemeron_again;
             }
           }
         } else if (Tag_val (key) == Infix_tag) {
           key -= Infix_offset_val (key);
         }
-        /* Ephemerons with young keys cannot be in the todo set because
-           they were allocated after last minor GC, which is after the
-           start of the major GC cycle.
-           Weak arrays can have young keys but they have no data, so it
-           doesn't matter whether we decide to erase their data.
-        */
-        CAMLassert (!Is_young(key) || Ephe_data(ephe) == caml_ephe_none);
-        if (is_unmarked (key))
+        /* Young keys are not dead: they are reclaimed, and the
+           ephemeron cleaned, only by the minor GC. A young key can
+           appear here when a mutator sets it during marking. */
+        if (!Is_young (key) && is_unmarked (key))
           preserve_data = false;
       }
     }
@@ -2647,6 +2647,26 @@ int caml_init_major_gc(caml_domain_state* d) {
   d->mark_stack->compressed_stack_iter =
                   caml_addrmap_iterator(&d->mark_stack->compressed_stack);
 
+  /* Finalisers. Fresh domains participate in updating finalisers. */
+  d->final_info = caml_alloc_final_info ();
+  if(d->final_info == NULL) {
+    caml_stat_free(d->mark_stack->stack);
+    caml_stat_free(d->mark_stack);
+    d->mark_stack = NULL;
+    return -1;
+  }
+  d->ephe_info = caml_alloc_ephe_info();
+  if(d->ephe_info == NULL) {
+    caml_stat_free(d->final_info);
+    caml_stat_free(d->mark_stack->stack);
+    caml_stat_free(d->mark_stack);
+    d->final_info = NULL;
+    d->mark_stack = NULL;
+    return -1;
+  }
+  /* Sign up for marking only now that nothing can fail: on failure the
+     domain never joins the STW set, so the increment could not be undone
+     and the cycle could never complete. */
   if (caml_gc_phase == Phase_sweep_main) {
     /* This fresh domain will allocate UNMARKED until we start
      * marking, so must mark in this cycle. */
@@ -2660,22 +2680,6 @@ int caml_init_major_gc(caml_domain_state* d) {
     d->marking_done = 1;
   }
 
-  /* Finalisers. Fresh domains participate in updating finalisers. */
-  d->final_info = caml_alloc_final_info ();
-  if(d->final_info == NULL) {
-    caml_stat_free(d->mark_stack->stack);
-    caml_stat_free(d->mark_stack);
-    return -1;
-  }
-  d->ephe_info = caml_alloc_ephe_info();
-  if(d->ephe_info == NULL) {
-    caml_stat_free(d->final_info);
-    caml_stat_free(d->mark_stack->stack);
-    caml_stat_free(d->mark_stack);
-    d->final_info = NULL;
-    d->mark_stack = NULL;
-    return -1;
-  }
   (void)caml_atomic_counter_incr(&num_domains_to_final_update_first);
   (void)caml_atomic_counter_incr(&num_domains_to_final_update_last);
 
