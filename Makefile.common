@@ -872,8 +872,18 @@ export MSYS := $(strip \
   $(filter-out winsymlinks winsymlinks:%, $(MSYS)) winsymlinks:nativestrict)
 endif
 
-# Invocations of the compilers during the build use -nostdlib which ensures that
-# existing installations and the OCAMLLIB/CAMLLIB environment variables don't
-# affect the build. There isn't an equivalent flag for the toplevel's
-# OCAMLTOP_INCLUDE_PATH, so it's scrubbed from the environment instead.
+# Sanitize the build environment from any of our environment variables which may
+# interfere with the build. See the list in testsuite/tools/environment.ml
+unexport CAML_DEBUG_FILE
+unexport CAML_LD_LIBRARY_PATH
+unexport CAMLLIB
+unexport CAMLRUNPARAM
+unexport CAMLSIGPIPE
+unexport OCAML_RUNTIME_EVENTS_DIR
+unexport OCAML_RUNTIME_EVENTS_PRESERVE
+unexport OCAML_RUNTIME_EVENTS_START
+unexport OCAMLLIB
+unexport OCAMLPARAM
+unexport OCAMLPROF_DUMP
+unexport OCAMLRUNPARAM
 unexport OCAMLTOP_INCLUDE_PATH

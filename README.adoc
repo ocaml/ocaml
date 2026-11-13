@@ -20,8 +20,6 @@ performance degradations on our issue tracker.
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
   image:https://github.com/ocaml/ocaml/workflows/Hygiene/badge.svg?branch=trunk["GitHub CI Hygiene Status (trunk branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3AHygiene"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=trunk&svg=true["AppVeyor Build Status (trunk branch)",
-     link="https://ci.appveyor.com/project/avsm/ocaml"]
 | image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=5.6["GitHub CI Build Status (5.6 branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=5.6&svg=true["AppVeyor Build Status (5.6 branch)",
@@ -63,9 +61,9 @@ compiler currently runs on the following platforms:
 |====
 |                |  Tier 1 (actively maintained)   | Tier 2 (maintained when possible)
 
-| x86 64 bits    | Linux, Windows, FreeBSD      |  macOS, NetBSD, OpenBSD, DragonFly, OmniOS (Solaris)
+| x86 64 bits    | Linux, Windows, FreeBSD      |  macOS, NetBSD, OpenBSD, DragonFly, Illumos, Haiku
 | ARM 64 bits    | Linux, macOS                 |  FreeBSD, OpenBSD, NetBSD
-| Power 64 bits  | Linux (little-endian, ABIv2) |  Linux (big-endian, ABIv2)
+| Power 64 bits  | Linux (little-endian, ABIv2) |  Linux (big-endian, ABIv2), FreeBSD (little-endian and big-endian, ABIv2)
 | RISC-V 64 bits | Linux                        |
 | IBM Z (s390x)  | Linux                        |
 |====

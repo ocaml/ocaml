@@ -505,11 +505,11 @@ let[@inline] subrange ?(first = 0) ?(last = max_int) s =
   let last = if last > max then max else last in
   if first > last then "" else sub s first (last - first + 1)
 
-let take_first n s = subrange ~last:(n - 1) s
+let take_first n s = if n <= 0 then "" else subrange ~last:(n - 1) s
 let drop_first n s = subrange ~first:n s
 let cut_first n s = (take_first n s, drop_first n s)
-let take_last n s = subrange ~first:(length s - n) s
-let drop_last n s = subrange ~last:(length s - n - 1) s
+let take_last n s = if n <= 0 then "" else subrange ~first:(length s - n) s
+let drop_last n s = if n <= 0 then s else subrange ~last:(length s - n - 1) s
 let cut_last n s = (drop_last n s, take_last n s)
 
 let drop_prefix ~prefix s =

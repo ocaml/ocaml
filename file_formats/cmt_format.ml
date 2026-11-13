@@ -200,7 +200,7 @@ let iter_on_occurrences
             add_label exp_env lid label_descr
           | Overridden (lid, _) -> add_label exp_env lid label_descr
           | Kept _ -> ()) fields
-      | Texp_instvar  (_self_path, path, name) ->
+      | Texp_instvar  (_self_path, path, _mut, name) ->
           let lid = { name with txt = Longident.Lident name.txt } in
           f ~namespace:Value exp_env path lid
       | Texp_setinstvar  (_self_path, path, name, _) ->

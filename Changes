@@ -78,6 +78,10 @@ Working version
 
 ### Build system:
 
+- #10837: Build native-code compilers on FreeBSD/powerpc64le and
+  FreeBSD/powerpc64 (big-endian, ELFv2 ABI).
+  (Piotr Kubaj, review by Anil Madhavapeddy)
+
 ### Bug fixes:
 
 - #14602: on Windows, Sys.rename and Unix.rename now succeed when the
@@ -99,6 +103,11 @@ Working version
   blowups in pathological cases
   (Vincent Laviron, report by Pierre-Marie Pédrot, review by Stefan Muenzel)
 
+- #15151: fix the positions of the debugging events and of the optimization
+  hints of the code that the bytecode packager generates for the pack
+  itself. They were placed in the code of the first packed units.
+  (Jérôme Vouillon, review by Vincent Laviron)
+
 - #15158, #15155: Allow projection from closures with bottom approximation in
   flambda
   (Pierre Chambart, report by Michael Bacarella, review by Vincent Laviron)
@@ -117,6 +126,17 @@ Working version
 - #15181: Allocate the exact size of runtime events ring file path.
   Fixes an error on Windows with allocating long paths to this file.
   (Tim McGilchrist, review by Antonin Décimo)
+
+- #14605, #15243: On POWER, fix a TSan fatal error and corrupted
+  backtraces when a C call takes more arguments than fit in registers, and
+  a segfault when a fiber completes after an effect was handled on its
+  parent stack.
+  (Tim McGilchrist and Miod Vallat, reported by KC Sivaramakrishnan,
+   reviews by Miod Vallat and Zane Hambly)
+
+- #15171: fix a compile-time failure in the pattern-matching compiler
+  coming from incorrect compilation of some useless guarded or-patterns
+  (Gabriel Scherer, report by Stefan Muenzel)
 
 OCaml 5.6.0
 -----------
@@ -147,6 +167,9 @@ OCaml 5.6.0
   (Alistair O'Brien, review by Florian Angeletti)
 
 ### Runtime system:
+
+- #15062: The last Idle GC slice must trigger the switch to Mark phase.
+  (Nick Barnes, review by Damien Doligez)
 
 - #14773 : Activate Haiku native backend
   (Sylvain Kerjean, review by Kate Deplaix and Nicolas Ojeda Bar)
@@ -310,6 +333,9 @@ OCaml 5.6.0
 - #15177, OSEC-2026-26: Maintain custom events cache integrity.
   (Sadiq Jaffer, report by Hannes Mehnert, review by Edwin Török)
 
+- #15229 Bound the custom event payload by the buffer's own constant
+  (Tim McGilchrist, review by Sadiq Jaffer)
+
 ### Type system:
 
 * #11648, #14766, #14768, #14776, #14801, #14842, #14845: Keep expansion and
@@ -333,8 +359,9 @@ OCaml 5.6.0
   (Alistair O'Brien, Jacques Garrigue, review by Florian Angeletti,
    Gabriel Scherer)
 
-- #12150: class type system improvements: self type constraints, virtual method
-  inheritance in mutually recursive definition, immediate object inheritance.
+- #12150, #15166: class type system improvements: self type constraints,
+  virtual method inheritance in mutually recursive definition, immediate object
+  inheritance.
   (Leo White, review by Florian Angeletti)
 
 - #14753, #14754: Prevent module constraints (`with type`) from introducing
@@ -427,6 +454,9 @@ OCaml 5.6.0
   (Cortex-A53/-A57/-A72/-A73) are slower with a release store and keep the
   barrier; the default is chosen at configure time and can be overridden.
   (Sebastian Pop and Xavier Leroy, review by Xavier Leroy and Olivier Nicole)
+
+- #14861, #14868: Lift immutable instance variable reads
+  (Vincent Laviron, report by Romain Beauxis, review by Stefan Muenzel)
 
 - #14898, #15035: do not trust GADT equations introduced by refutable arguments
   in the Lambda IR.
@@ -650,6 +680,9 @@ OCaml 5.6.0
 - #15200, #15224: manual: fix syntax for local opens and labeled tuple patterns
   (Simmo Saan, review by Florian Angeletti)
 
+- #15276: Add warnings 74 and 75 to the ocamlc man page.
+  (Abhay Chaudhary, report by Kate Deplaix, review by Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 
 - #14958, #15120: Improve error messages for Duplicate_constructor and
@@ -780,11 +813,15 @@ OCaml 5.6.0
 - #15067, #15071: Fix detection of functions available in the future on macOS.
   (Antonin Décimo, review by Nicolás Ojeda Bär and Damien Doligez)
 
+- #14915: Remove OCaml's environment variables (CAML_LD_LIBRARY_PATH, etc.) from
+  the build environment.
+  (David Allsopp, review by Antonin Décimo)
+
 ### Bug fixes:
 
-- #15245: Scanf now respects the field width of `%S` when scanning escape
-  sequences.
-  (Nicolás Ojeda Bär, report by KC Sivaramakrishnan)
+- #15248, #15277: Fix integer overflow near `min_int` in `String.take_first`,
+  `String.take_last` and `String.drop_last`.
+  (Prakhand Patel, report by KC Sivaramakrishnan, review by Florian Angeletti)
 
 - #15072, #15075: Fix `Runtime_events` cursors becoming permanently unusable
   when a user event decoder raises. The exception escaped `read_poll` without
@@ -984,6 +1021,27 @@ OCaml 5.6.0
   becoming writable. This occurred when the list of file descriptors contained a
   mixture of sockets and non-sockets.
   (Nicolás Ojeda Bär, report by Kento Okura, review by Antonin Décimo)
+
+- #15267: Fix a regression on Windows where Ctrl-Break terminated the program
+  instead of being delivered as Sys.sigint, so neither a Sys.sigint handler
+  nor Sys.catch_break could intercept it (regression since 5.0.0).
+  (Mark Elvers, review by Nicolás Ojeda Bär)
+
+* #15249: Functions taking a `Unix.sockaddr` now raise `Invalid_argument` when
+  the port of an `ADDR_INET` address is outside the range 0 to 65535, instead
+  of silently truncating it to 16 bits.
+  (Nicolás Ojeda Bär, report by KC Sivaramakrishnan, review by KC
+  Sivaramakrishnan and Antonin Décimo)
+
+- #15295: Fix incorrect CFLAGS used to build the relocatable compiler when
+  installing to a directory which includes symlinks, e.g. FreeBSD home
+  directories.
+  (David Allsopp, review by ???)
+
+- #15245: Scanf now respects the field width of `%S` when scanning escape
+  sequences.
+  (Nicolás Ojeda Bär, report by KC Sivaramakrishnan, review by Florian
+  Angeletti)
 
 OCaml 5.5.1
 -----------

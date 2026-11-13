@@ -1273,9 +1273,8 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
     uintnat caml_string_len =
       string_len - (unsigned char)data_str[string_len];
 
-    // if the string length is over the max msg length, the stream is
-    // corrupt.
-    if (caml_string_len > RUNTIME_EVENTS_MAX_MSG_LENGTH) {
+    // if the string length is over the buffer size, the stream is corrupt.
+    if (caml_string_len > RUNTIME_EVENTS_MAX_CUSTOM_VALUE_BYTES) {
       holder->corrupt_stream = 1;
       CAMLreturnT(int, 0);
     }

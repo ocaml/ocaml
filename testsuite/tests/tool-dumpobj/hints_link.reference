@@ -1,0 +1,6 @@
+With -bytecode-hints:
+C_CALL3 caml_ba_set_1 (unsafe uint16 Fortran)
+C_CALL2 caml_ba_get_1 (unsafe complex32 Fortran)
+C_CALL3 caml_ba_get_2 (complex64 Fortran)
+C_CALL2 caml_ba_get_1 (sint8 Fortran)
+Without -bytecode-hints:
