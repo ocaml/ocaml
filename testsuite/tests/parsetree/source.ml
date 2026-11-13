@@ -7572,3 +7572,8 @@ module Hole' = F(_)(_ : S)(struct end);;
 include _;;
 open _;;
 let _ = (module _ : S);;
+
+(* #15302: constant constructors applied to an argument *)
+let f = function [] x -> 0 | true x -> 1 | false x -> 2 | () x -> 3;;
+let f = function 1 :: [] x -> 0;;
+let _ = ([] 1, true 2, false 3, () 4, 1 :: [] 2);;

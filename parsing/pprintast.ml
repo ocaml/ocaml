@@ -286,7 +286,7 @@ let view_expr x =
   | Pexp_construct ( {txt= Lident "[]";_},None) -> `nil
   | Pexp_construct ( {txt= Lident"::";_},Some _) ->
       let rec loop exp acc = match exp with
-          | {pexp_desc=Pexp_construct ({txt=Lident "[]";_},_);
+          | {pexp_desc=Pexp_construct ({txt=Lident "[]";_},None);
              pexp_attributes = []} ->
               (List.rev acc,true)
           | {pexp_desc=
@@ -595,7 +595,7 @@ and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
   else match x.ppat_desc with
     | Ppat_variant (l, Some p) ->
         pp f "@[<2>`%a@;%a@]" ident_of_name l (simple_pattern ctxt) p
-    | Ppat_construct (({txt=Lident("()"|"[]"|"true"|"false");_}), _) ->
+    | Ppat_construct (({txt=Lident("()"|"[]"|"true"|"false");_}), None) ->
         simple_pattern ctxt f x
     | Ppat_construct ({txt=Lident("::");_}, Some ([],
         {ppat_desc = Ppat_tuple([None, pat1; None, pat2], Closed);_})) ->
@@ -605,13 +605,12 @@ and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
         (* FIXME The third field always false *)
         (match po with
           | Some ([], x) ->
-              (* [true] and [false] are handled above *)
-              pp f "%a@;%a" longident_loc li (simple_pattern ctxt) x
+              pp f "%a@;%a" (with_loc constr) li (simple_pattern ctxt) x
           | Some (vl, x) ->
-              pp f "%a@ (type %a)@;%a" longident_loc li
+              pp f "%a@ (type %a)@;%a" (with_loc constr) li
                 (list ~sep:"@ " ident_of_name_loc) vl
                 (simple_pattern ctxt) x
-          | None -> pp f "%a" longident_loc li)
+          | None -> pp f "%a" (with_loc constr) li)
     | _ -> simple_pattern ctxt f x
 
 and tuple_pattern_component ctxt (f:Format.formatter) (label, x) : unit =
