@@ -1038,6 +1038,11 @@ OCaml 5.6.0
   directories.
   (David Allsopp, review by ???)
 
+- #15245: Scanf now respects the field width of `%S` when scanning escape
+  sequences.
+  (Nicolás Ojeda Bär, report by KC Sivaramakrishnan, review by Florian
+  Angeletti)
+
 OCaml 5.5.1
 -----------
 

@@ -1025,11 +1025,15 @@ let check_next_char message width ib =
 let check_next_char_for_char = check_next_char "a Char"
 let check_next_char_for_string = check_next_char "a String"
 
+let check_escape_width n width =
+  if width < n then bad_token_length "an escape sequence"
+
 let scan_backslash_char width ib =
   match check_next_char_for_char width ib with
   | '\\' | '\'' | '\"' | 'n' | 't' | 'b' | 'r' | ' ' as c ->
     Scanning.store_char width ib (char_for_backslash c)
   | '0' .. '9' as c ->
+    check_escape_width 3 width;
     let get_digit () =
       let c = Scanning.next_char ib in
       match c with
@@ -1040,6 +1044,7 @@ let scan_backslash_char width ib =
     let c2 = get_digit () in
     Scanning.store_char (width - 2) ib (char_for_decimal_code c0 c1 c2)
   | 'o' ->
+    check_escape_width 4 width;
     let get_digit () =
       let c = Scanning.next_char ib in
       match c with
@@ -1050,6 +1055,7 @@ let scan_backslash_char width ib =
     let c2 = get_digit () in
     Scanning.store_char (width - 3) ib (char_for_octal_code c0 c1 c2)
   | 'x' ->
+    check_escape_width 3 width;
     let get_digit () =
       let c = Scanning.next_char ib in
       match c with
@@ -1069,10 +1075,11 @@ let scan_backslash_uchar width ib =
   let rec scan_digits n cp =
     match Scanning.next_char ib with
     | '0' .. '9' | 'A' .. 'F' | 'a' .. 'f' as c ->
+      if n >= 6 then
+        bad_input "too many digits, expected 1 to 6 hexadecimal digits";
       scan_digits (n + 1) (16 * cp + hexadecimal_value_of_char c)
     | '}' when n > 0 ->
-      if n > 6 then
-        bad_input "too many digits, expected 1 to 6 hexadecimal digits";
+      check_escape_width (n + 3) width;
       if not (Uchar.is_valid cp) then
         bad_input
           (Printf.sprintf "%X is not a Unicode scalar value" cp);
@@ -1325,7 +1332,7 @@ fun ib fmt readers -> match fmt with
     let c = token_char ib in
     Cons (c, make_scanf ib rest readers)
   | Caml_char rest ->
-    let _ = scan_caml_char 0 ib in
+    let _ = scan_caml_char max_int ib in
     let c = token_char ib in
     Cons (c, make_scanf ib rest readers)
 
