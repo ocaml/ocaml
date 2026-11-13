@@ -18,4 +18,8 @@ let () =
   for n = 1 to 100 do
     let processed = Runtime_events.read_poll cursor callbacks (Some n) in
     assert (processed <= n)
-  done
+  done;
+  try
+    let _ : int = Runtime_events.read_poll cursor callbacks (Some ~-1) in
+    assert false
+  with Invalid_argument _ -> ()

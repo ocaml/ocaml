@@ -1417,8 +1417,6 @@ CAMLprim value caml_ml_runtime_events_read_poll(value wrapper,
   uintnat events_consumed = 0;
   struct caml_runtime_events_cursor *cursor = Cursor_val(wrapped_cursor);
   runtime_events_error res;
-  int max_events = Is_some(max_events_val) ?
-    Int_val(Some_val(max_events_val)) : 0;
 
   struct callbacks_exception_holder holder = {
     &callbacks_val, &exception, &wrapper, 0 };
@@ -1432,6 +1430,15 @@ CAMLprim value caml_ml_runtime_events_read_poll(value wrapper,
     caml_failwith("Runtime_events: cursor is not open");
   }
 
+  intnat max_events;
+  if (Is_some(max_events_val)) {
+    max_events = Long_val(Some_val(max_events_val));
+    if (max_events < 0)
+      caml_invalid_argument("Runtime_events.read_poll: negative max_option");
+  } else {
+    /* None = unlimited */
+    max_events = 0;
+  }
   res = caml_runtime_events_read_poll
                         (cursor, &holder, max_events, &events_consumed);
 

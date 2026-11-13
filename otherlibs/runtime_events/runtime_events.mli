@@ -792,4 +792,8 @@ val free_cursor : cursor -> unit
 val read_poll : cursor -> Callbacks.t -> int option -> int
 (** [read_poll cursor callbacks max_option] calls the corresponding functions
     on [callbacks] for up to [max_option] events read off [cursor]'s
-    runtime_events and returns the number of events read. *)
+    runtime_events and returns the number of events read.
+
+    @raise Invalid_argument when [max_option] is [Some negative_value]
+    @raise Failure on ring corruption or incorrect use of the [cursor]
+*)
