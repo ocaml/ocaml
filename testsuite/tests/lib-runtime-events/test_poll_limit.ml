@@ -38,4 +38,3 @@ let () =
   Runtime_events.User.write ev ();
   let n = Runtime_events.read_poll cursor callbacks (Some 1) in
   assert (n = 1)
-
