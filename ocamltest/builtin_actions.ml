@@ -417,6 +417,9 @@ let initialize_test_exit_status_variables _log env =
     Builtin_variables.test_pass, "0";
     Builtin_variables.test_fail, "1";
     Builtin_variables.test_skip, "125";
+    Builtin_variables.test_xfail, "126";
+    Builtin_variables.test_alarm,
+      Sys.sigalrm |> Sys.signal_to_int |> (~-) |> string_of_int;
   ] env
 
 let _ =
