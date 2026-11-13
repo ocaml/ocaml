@@ -1608,6 +1608,9 @@ let test64 () =
   fails (fun () -> sscanf {|"\o101"|} "%5S" id) &&
   fails (fun () -> sscanf {|"\x41"|} "%4S" id) &&
   fails (fun () -> sscanf {|"\u{41}"|} "%7S" id) &&
+  fails (fun () -> sscanf {|"\u{41}"|} "%6S" id) &&
+  fails (fun () ->
+    sscanf ({|"\u{|} ^ String.make 100 '0' ^ {|41}"|}) "%5S" id) &&
   fails (fun () -> sscanf {|"\u{41}"|} "%5S" id) &&
   fails (fun () ->
     sscanf ({|"\123|} ^ String.make 100 'a' ^ {|"|}) "%3S" id)

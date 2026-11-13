@@ -1072,25 +1072,21 @@ let scan_backslash_char width ib =
    [\u{X}] where [X] is 1 to 6 hexadecimal digits denoting a Unicode scalar
    value, and stores its UTF-8 encoding. *)
 let scan_backslash_uchar width ib =
-  let next_char width =
-    (* [width] includes for the current character, so reading the next one
-       requires at least two characters to remain available. *)
-    check_escape_width 2 width;
-    Scanning.next_char ib in
-  let rec scan_digits width n cp =
-    match next_char width with
+  let rec scan_digits n cp =
+    match Scanning.next_char ib with
     | '0' .. '9' | 'A' .. 'F' | 'a' .. 'f' as c ->
-      scan_digits (width - 1) (n + 1) (16 * cp + hexadecimal_value_of_char c)
-    | '}' when n > 0 ->
-      if n > 6 then
+      if n >= 6 then
         bad_input "too many digits, expected 1 to 6 hexadecimal digits";
+      scan_digits (n + 1) (16 * cp + hexadecimal_value_of_char c)
+    | '}' when n > 0 ->
+      check_escape_width (n + 3) width;
       if not (Uchar.is_valid cp) then
         bad_input
           (Printf.sprintf "%X is not a Unicode scalar value" cp);
-      Scanning.store_uchar (width - 1) ib (Uchar.unsafe_of_int cp)
+      Scanning.store_uchar (width - n - 2) ib (Uchar.unsafe_of_int cp)
     | c -> bad_input_escape c in
-  match next_char width with
-  | '{' -> scan_digits (width - 1) 0 0
+  match Scanning.next_char ib with
+  | '{' -> scan_digits 0 0
   | c -> bad_input_escape c
 
 
