@@ -10,12 +10,13 @@
    native;
  }
 *)
-
-  let runtime_begin _ _ _ = ()
-  let runtime_end _ _ _ = ()
-  let runtime_counter _ _ _ _ = ()
+  (* [lookup] the variant [v], if [v]'s value is out of range this could crash *)
+  let check lookup v = assert (lookup v |> String.is_empty |> not)
+  let runtime_begin _ _ phase = check Runtime_events.runtime_phase_name phase
+  let runtime_end _ _ phase = check Runtime_events.runtime_phase_name phase
+  let runtime_counter _ _ counter _ = check Runtime_events.runtime_counter_name counter
   let alloc _ _ _ = ()
-  let lifecycle _ _ _ _ = ()
+  let lifecycle _ _ lifecycle _ = check Runtime_events.lifecycle_name lifecycle
   let lost_events _ _ = ()
   let callbacks = Runtime_events.Callbacks.create
     ~runtime_begin ~runtime_end ~runtime_counter ~alloc ~lifecycle ~lost_events ()

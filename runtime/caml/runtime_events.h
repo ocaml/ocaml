@@ -69,7 +69,9 @@ typedef enum {
     EV_FORK_CHILD,
     EV_DOMAIN_SPAWN,
     EV_DOMAIN_TERMINATE,
-    EV_PROCESS_CREATE
+    EV_PROCESS_CREATE,
+
+    EV_LIFECYCLE_LAST
 } ev_lifecycle;
 
 typedef enum {
@@ -124,6 +126,8 @@ typedef enum {
     EV_EMPTY_MINOR,
     EV_MINOR_EPHE_CLEAN,
     EV_EXPLICIT_GC_RAMP_UP,
+
+    EV_RUNTIME_PHASE_LAST
 } ev_runtime_phase;
 
 typedef enum {
@@ -167,7 +171,9 @@ typedef enum {
     EV_C_MAJOR_SLICE_SWEEP_WORK,
     EV_C_MAJOR_SLICE_MARK_WORK,
     EV_C_MAJOR_SLICE_EPHE_MARK_WORK,
-    EV_C_MAJOR_SLICE_EPHE_SWEEP_WORK
+    EV_C_MAJOR_SLICE_EPHE_SWEEP_WORK,
+
+    EV_RUNTIME_COUNTER_LAST
 } ev_runtime_counter;
 
 typedef enum {
