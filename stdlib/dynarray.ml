@@ -1406,8 +1406,14 @@ let unsafe_to_iarray ~capacity (f : 'a t -> unit) =
   f a;
   let Pack {arr; length; dummy} = a in
   reset a;
-  (* At this point further updates to [a] (from this domain) will not mutate
-     [arr]. *)
+  (* At this point further updates to [a] will not mutate [arr]... except in
+     case of:
+       - a contrived escaping of the backing array by performing an effect from
+         [f] and resuming later, or
+       - writes from other domains without proper synchronization to force them
+         to happen-before [f] returned.
+     So this although this [reset] should cause an exception to be raised in
+     most cases, it by no means makes the present function safe. *)
   let capacity = Array.length arr in
   check_valid_length length arr;
   let values : ('a, _) Dummy.with_dummy array =
