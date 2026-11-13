@@ -682,9 +682,10 @@ val unsafe_to_iarray : capacity:int -> ('a t -> unit) -> 'a iarray
     Note that the [capacity] argument is only a hint. For example, nothing
     prevents from calling {!val:fit_capacity} at the end of [f].
 
-    This function is unsafe because type safety may be broken by concurrent
-    writes to the dynarray from other domains, without proper synchronization,
-    before [f] returns.
+    This function is unsafe because type safety may be broken if the dynarray
+    escapes [f] and is written to after [f] returns, or by concurrent writes to
+    the dynarray from other domains, without proper synchronization, before [f]
+    returns.
 
     @since 5.4 *)
 
