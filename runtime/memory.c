@@ -157,13 +157,8 @@
    On AArch64 both fences are redundant around a read-modify-write that runs as
    an acquire-release LSE atomic (SWPAL/CASAL/LDADDAL): it is a full ordering
    point (Arm acquire/release are RCsc). The ARMv8.0 LL/SC expansion
-   (LDAXR...STLXR) is not, so the trailing fence is load-bearing there
-   (ocaml/ocaml#10972). Rmw_is_full_barrier below drops the fences when an LSE
-   atomic is known to run: either the compiler targets FEAT_LSE
-   (__ARM_FEATURE_ATOMICS, inline LSE), or it uses libgcc's outline-atomics
-   trampolines (HAS_OUTLINE_ATOMICS), which run an LSE atomic exactly when
-   HWCAP_ATOMICS is set. Verified with herd7 and a Rocq proof:
-   https://github.com/sebpop/ocaml-arm64-barrier-proofs
+   (LDAXR...STLXR) is not, so the trailing fence is necessary in such
+   cases (see https://github.com/ocaml/ocaml/pull/14936).
 */
 
 /* Note [MMPS]: Publication safety in the memory model.
