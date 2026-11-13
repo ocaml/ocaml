@@ -39,6 +39,8 @@ val ocamltest_response : Variables.t
 
 val ocamltest_log : Variables.t
 
+val ocamlrunparam : Variables.t
+
 val output : Variables.t
 
 val program : Variables.t

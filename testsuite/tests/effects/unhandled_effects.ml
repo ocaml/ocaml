@@ -1,5 +1,5 @@
 (* TEST
- set OCAMLRUNPARAM = "s32";
+ ocamlrunparam += ",s32";
  native;
 *)
 
