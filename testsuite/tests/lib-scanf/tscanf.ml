@@ -1599,18 +1599,18 @@ test (test63 ())
 (* Field widths are respected by escape sequences in %S (#15245). *)
 let test64 () =
   let fails f = match f () with _ -> false | exception Scan_failure _ -> true in
-  sscanf "\"\\123\"" "%6S" id = "\123" &&
-  sscanf "\"\\o101\"" "%7S" id = "\o101" &&
-  sscanf "\"\\x41\"" "%6S" id = "\x41" &&
-  sscanf "\"\\u{41}\"" "%8S" id = "\u{41}" &&
-  fails (fun () -> sscanf "\"\\123abc\"" "%3S" id) &&
-  fails (fun () -> sscanf "\"\\123\"" "%5S" id) &&
-  fails (fun () -> sscanf "\"\\o101\"" "%5S" id) &&
-  fails (fun () -> sscanf "\"\\x41\"" "%4S" id) &&
-  fails (fun () -> sscanf "\"\\u{41}\"" "%7S" id) &&
-  fails (fun () -> sscanf "\"\\u{41}\"" "%5S" id) &&
+  sscanf {|"\123"|} "%6S" id = "\123" &&
+  sscanf {|"\o101"|} "%7S" id = "\o101" &&
+  sscanf {|"\x41"|} "%6S" id = "\x41" &&
+  sscanf {|"\u{41}"|} "%8S" id = "\u{41}" &&
+  fails (fun () -> sscanf {|"\123abc"|} "%3S" id) &&
+  fails (fun () -> sscanf {|"\123"|} "%5S" id) &&
+  fails (fun () -> sscanf {|"\o101"|} "%5S" id) &&
+  fails (fun () -> sscanf {|"\x41"|} "%4S" id) &&
+  fails (fun () -> sscanf {|"\u{41}"|} "%7S" id) &&
+  fails (fun () -> sscanf {|"\u{41}"|} "%5S" id) &&
   fails (fun () ->
-    sscanf ("\"\\123" ^ String.make 100 'a' ^ "\"") "%3S" id)
+    sscanf ({|"\123|} ^ String.make 100 'a' ^ {|"|}) "%3S" id)
 ;;
 
 test (test64 ())
