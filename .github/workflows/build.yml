@@ -319,7 +319,9 @@ jobs:
     needs: config
     container:
       image: debian:13
-      options: --platform linux/i386 --user root
+      # Docker 29.4.2 on ubuntu-26.04 blocks socketcall, which i386 glibc
+      # needs for networking (actions/runner-images#14790)
+      options: --platform linux/i386 --user root --security-opt seccomp=unconfined
     steps:
       - name: OS Dependencies
         run: |
