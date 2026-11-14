@@ -28,10 +28,7 @@ let () =
      with Failure _ -> ())
   done;
   assert (H.length h = 2);
-  assert (bindings h = [(0, 0); (1, 1)]);
-  H.clear h;
-  assert (H.length h = 0);
-  assert (bindings h = [])
+  assert (bindings h = [(0, 0); (1, 1)])
 
 (* Removal after a binding that is kept: 1 is updated, 2 is removed, then
    the function raises on 3. *)

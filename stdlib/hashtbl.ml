@@ -189,17 +189,17 @@ let rec filter_map_inplace_bucket f h i prec = function
   | (Cons ({key; data; next} as c)) as slot ->
       begin match f key data with
       | None ->
-        (* prec always points to last retained cell *)
+        (* [prec] always points to last retained cell *)
           begin match prec with
           | Empty -> h.data.(i) <- next
           | Cons p -> p.next <- next
           end;
           h.size <- h.size - 1;
-          (* current cell dropped, so prec stays *)
+          (* current cell dropped, so [prec] stays *)
           filter_map_inplace_bucket f h i prec next
       | Some data ->
           c.data <- data;
-          (* current cell retained, prec moves ahead *)
+          (* current cell retained, [prec] moves ahead *)
           filter_map_inplace_bucket f h i slot next
       end
 
