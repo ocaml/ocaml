@@ -1,0 +1,8 @@
+heap built: ok
+slices measured: ok
+sweep rate: ok
+mark rate: ok
+minor collections measured: ok
+promotion rate: ok
+compaction runs: ok
+compaction rate: ok
