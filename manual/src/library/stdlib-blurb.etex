@@ -70,6 +70,7 @@ from being garbage-collected \\
 "Ephemeron" & p.~\stdpageref{Ephemeron} & ephemerons and weak hash tables \\
 "Bigarray" & p.~\stdpageref{Bigarray} & large, multi-dimensional, numerical arrays \\
 "Iarray" & p.~\stdpageref{Iarray} & immutable arrays
+"Textloc" & p.~\stdpageref{Textloc} & locations in text files
 \end{tabular}
 \subsubsection*{sss:stdlib-arith}{Arithmetic:}
 \begin{tabular}{lll}
@@ -184,6 +185,7 @@ representation of values \\
 \stddocitem{String}{string operations}
 \stddocitem{StringLabels}{string operations (with labels)}
 \stddocitem{Sys}{system interface}
+\stddocitem{Textloc}{locations in source code}
 \stddocitem{Type}{type introspection}
 \stddocitem{Uchar}{Unicode characters}
 \stddocitem{Unit}{unit values}

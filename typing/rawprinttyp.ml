@@ -18,7 +18,6 @@
 
 open Format
 open Types
-open Asttypes
 let longident = Pprintast.longident
 
 let raw_list pr ppf = function

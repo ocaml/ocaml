@@ -178,6 +178,18 @@ camlinternalOO.cmx : \
     camlinternalOO.cmi
 camlinternalOO.cmi : \
     stdlib__Obj.cmi
+camlinternalTextloc.cmo : \
+    stdlib__String.cmi \
+    stdlib__Lexing.cmi \
+    stdlib__Int.cmi \
+    camlinternalTextloc.cmi
+camlinternalTextloc.cmx : \
+    stdlib__String.cmx \
+    stdlib__Lexing.cmx \
+    stdlib__Int.cmx \
+    camlinternalTextloc.cmi
+camlinternalTextloc.cmi : \
+    stdlib__Lexing.cmi
 stdlib__Char.cmo : char.ml \
     stdlib__Char.cmi
 stdlib__Char.cmx : char.ml \
@@ -855,6 +867,16 @@ stdlib__Sys.cmo : sys.ml \
 stdlib__Sys.cmx : sys.ml \
     stdlib__Sys.cmi
 stdlib__Sys.cmi : sys.mli
+stdlib__Textloc.cmo : textloc.ml \
+    stdlib__Format.cmi \
+    camlinternalTextloc.cmi \
+    stdlib__Textloc.cmi
+stdlib__Textloc.cmx : textloc.ml \
+    stdlib__Format.cmx \
+    camlinternalTextloc.cmx \
+    stdlib__Textloc.cmi
+stdlib__Textloc.cmi : textloc.mli \
+    stdlib__Format.cmi
 stdlib__Type.cmo : type.ml \
     stdlib__Obj.cmi \
     stdlib__Type.cmi

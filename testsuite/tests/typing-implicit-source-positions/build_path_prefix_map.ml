@@ -1,0 +1,18 @@
+(* TEST
+   native-compiler;
+   setup-ocamlopt.byte-build-env;
+   (* Escape special characters in the prefix path as per
+      BUILD_PATH_PREFIX_MAP's specification *)
+   script =
+     "sh ${test_source_directory}/encode_build_path_prefix_map.sh \
+      ${test_build_directory}";
+   script;
+   (* Make the program's relative path absolute: *)
+   all_modules = "${test_build_directory}/build_path_prefix_map.ml";
+   ocamlopt.byte;
+   run;
+   check-program-output;
+*)
+
+let f = fun ?(call_loc = [%call_loc]) () -> call_loc
+let _ = print_endline (Textloc.Compact.file (f ()));;
