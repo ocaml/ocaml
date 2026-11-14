@@ -105,6 +105,11 @@ type stat =
     (** Total space allocated outside of the OCaml heap for stack fragments.
         This includes stack metadata and stack fragments stored inside the stack
         fragment cache.
+
+        Each fiber has its own stack fragment, allocated when the fiber starts.
+        A suspended continuation keeps its fiber's stack fragment allocated
+        (see {!Effect}), so this value grows with the number of suspended
+        continuations. That memory does not appear in [heap_words].
         @since 5.5
     *)
 

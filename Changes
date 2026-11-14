@@ -61,6 +61,10 @@ Working version
 - #15216: document the security issue reporting process with a SECURITY.md file
   (Edwin Török, suggested by Xavier Leroy, review by Xavier Leroy)
 
+- #15271: document that fiber stacks live outside the OCaml heap and are
+  reported by `Gc.stat`'s `live_stacks_words`.
+  (Romain Beauxis)
+
 ### Compiler user-interface and warnings:
 
 - #15144: Further improvement on typing error messages for Duplicate_constructor
