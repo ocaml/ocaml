@@ -811,20 +811,6 @@ uintnat caml_heap_blocks(struct caml_heap_state* local) {
   return local->stats.pool_live_blocks + local->stats.large_blocks;
 }
 
-void caml_redarken_pool(struct pool* r, scanning_action f, void* fdata) {
-  mlsize_t wh = whsize_sizeclass[r->sz];
-  header_t* p = POOL_FIRST_BLOCK(r, r->sz);
-  header_t* end = POOL_END(r);
-
-  while (p + wh <= end) {
-    header_t hd = p[0];
-    if (Has_status_hd(hd, caml_global_heap_state.MARKED)) {
-      f(fdata, Val_hp(p), 0);
-    }
-    p += wh;
-  }
-}
-
 
 /* Heap and freelist stats */
 
