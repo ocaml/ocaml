@@ -26,4 +26,5 @@ let f ?(x = assert false) ((module M) : (module E)) () = 1;;
 let partial = f (module struct exception Ex end);;
 
 (* TEST
+ flags = "-warn-error -8";
 *)

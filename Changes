@@ -67,6 +67,12 @@ Working version
   and Duplicate_label, by adding locations in submessages
   (Michał Kosior, review by Florian Angeletti)
 
+* #15269: Warning 8 (partial-match) is now fatal by default in when detected via
+  ocamlc and ocamlopt. Other tools including the ocaml toplevel keeps it as a
+  simple non-fatal warning by default.
+  (Kate Deplaix, review by Nicolás Ojeda Bär, Stefan Muenzel, David Allsopp,
+   Olivier Nicole and Damien Doligez)
+
 
 ### Internal/compiler-libs changes:
 
