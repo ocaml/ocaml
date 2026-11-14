@@ -475,10 +475,11 @@ let expr sub x =
           map_loc_lid sub lid,
           cd
         )
-    | Texp_instvar (path1, path2, id) ->
+    | Texp_instvar (path1, path2, mut, id) ->
         Texp_instvar (
           path1,
           path2,
+          mut,
           map_loc sub id
         )
     | Texp_setinstvar (path1, path2, id, exp) ->
