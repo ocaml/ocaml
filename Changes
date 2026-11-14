@@ -1040,6 +1040,10 @@ OCaml 5.6.0
 - #15295: Fix incorrect CFLAGS used to build the relocatable compiler when
   installing to a directory which includes symlinks, e.g. FreeBSD home
   directories.
+  (David Allsopp, review by Florian Angeletti)
+
+- #15296: Fix two small memory leaks related to Relocatable OCaml found by
+  address sanitizer.
   (David Allsopp, review by ???)
 
 - #15302: fix infinite loops in Pprintast (eg -dsource) when printing patterns
