@@ -182,23 +182,24 @@ let iter f h =
     flip_ongoing_traversal h;
     raise exn
 
+(* helper function for filter_map_inplace that applies
+to only one bucket of the hashtable array *)
 let rec filter_map_inplace_bucket f h i prec = function
-  | Empty ->
-      begin match prec with
-      | Empty -> h.data.(i) <- Empty
-      | Cons c -> c.next <- Empty
-      end
+  | Empty -> ()
   | (Cons ({key; data; next} as c)) as slot ->
       begin match f key data with
       | None ->
+        (* prec always points to last retained cell *)
+          begin match prec with
+          | Empty -> h.data.(i) <- next
+          | Cons p -> p.next <- next
+          end;
           h.size <- h.size - 1;
+          (* current cell dropped, so prec stays *)
           filter_map_inplace_bucket f h i prec next
       | Some data ->
-          begin match prec with
-          | Empty -> h.data.(i) <- slot
-          | Cons c -> c.next <- slot
-          end;
           c.data <- data;
+          (* current cell retained, prec moves ahead *)
           filter_map_inplace_bucket f h i slot next
       end
 
