@@ -2443,7 +2443,11 @@ mark_again:
   }
 
   call_timing_hook(&caml_major_slice_end_hook);
-  if (log_events) CAML_EV_END(EV_MAJOR_SLICE);
+  if (log_events) {
+    CAML_EV_COUNTER(EV_C_MAJOR_SLICE_SWEEP_WORK, sweep_work);
+    CAML_EV_COUNTER(EV_C_MAJOR_SLICE_MARK_WORK, mark_work);
+    CAML_EV_END(EV_MAJOR_SLICE);
+  }
 
   caml_gc_log("Major slice [%c%c%c]: %" CAML_PRIdNAT " sweep, "
               "% " CAML_PRIdNAT " mark (%" CAML_PRIuNAT " blocks)",
