@@ -908,6 +908,12 @@ OCaml 5.6.0
   directories.
   (David Allsopp, review by Florian Angeletti)
 
+- #15302: fix infinite loops in Pprintast (eg -dsource) when printing patterns
+  of the form `[] p`, `() p`, `true p` or `false p`, and expressions of the form
+  `(::) e` where `e` is not a pair; also avoid dropping the argument of `[] e`
+  in a list expression and attributes on the argument of `(::)` in patterns.
+  (Nicolás Ojeda Bär, report by Edwin Török, review by Edwin Török)
+
 OCaml 5.5.1
 -----------
 
