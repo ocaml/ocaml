@@ -210,6 +210,8 @@ let primitive (p : Clambda_primitives.primitive) (args, approxs)
       | Pintoffloat -> S.const_int_expr expr (int_of_float x)
       | Pnegfloat -> S.const_float_expr expr (-. x)
       | Pabsfloat -> S.const_float_expr expr (abs_float x)
+      | Pccall {prim_native_name = "caml_signbit"; _} ->
+          S.const_bool_expr expr (Float.sign_bit x)
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [Value_float (Some n1); Value_float (Some n2)] when fpc ->
