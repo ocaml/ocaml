@@ -225,16 +225,23 @@ let string_of_type t =
              | M.Cstr_record l ->
                  string_of_record l
            in
-           P.sprintf "  | %s%s%s" cons.M.vc_name (
-             match cons.M.vc_args, cons.M.vc_ret with
+           P.sprintf "  | %s%s%s%s"
+             cons.M.vc_name
+             begin match cons.M.vc_args, cons.M.vc_ret with
               | M.Cstr_tuple [], None -> ""
               | li, None -> " of " ^ (string_of_parameters li)
               | M.Cstr_tuple [], Some r -> " : " ^ Odoc_print.string_of_type_expr r
               | li, Some r ->
                  P.sprintf " : %s -> %s" (string_of_parameters li)
                    (Odoc_print.string_of_type_expr r)
-             ) comment
-           ) l
+             end
+             comment
+             ( if cons.M.vc_generative = Asttypes.Generative then
+                 " [@generative]"
+               else
+                 ""
+             )
+          ) l
         )
       )
 

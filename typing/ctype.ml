@@ -3169,6 +3169,8 @@ and mcomp_variant_description type_pairs env xs ys =
     match x, y with
     | c1 :: xs, c2 :: ys   ->
       mcomp_type_option type_pairs env c1.cd_res c2.cd_res;
+      if c1.cd_generative <> c2.cd_generative then
+        raise Incompatible;
       begin match c1.cd_args, c2.cd_args with
       | Cstr_tuple l1, Cstr_tuple l2 -> mcomp_list type_pairs env l1 l2
       | Cstr_record l1, Cstr_record l2 ->

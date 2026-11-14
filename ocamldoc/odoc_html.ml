@@ -1835,6 +1835,8 @@ class html =
                  bs b (" " ^ (self#keyword "->") ^ " ");
                  self#html_of_type_expr b father r;
             );
+            if constr.vc_generative = Asttypes.Generative then
+              bs b " [@generative]";
             bs b "</code></td>\n";
             (
              match constr.vc_text with

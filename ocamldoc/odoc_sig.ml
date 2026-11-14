@@ -459,17 +459,17 @@ module Analyser =
         Types.Type_abstract _ ->
           Odoc_type.Type_abstract
       | Types.Type_variant (l,_) ->
-          let f {Types.cd_id=constructor_name;cd_args;cd_res=ret_type;cd_attributes} =
-            let constructor_name = Ident.name constructor_name in
+          let f cd =
+            let constructor_name = Ident.name cd.cd_id in
             let comment_opt =
               try match List.assoc constructor_name name_comment_list with
                 | Some { i_desc = None | Some []; _ } -> None
                 | x -> x
               with Not_found -> None
             in
-            let comment_opt = analyze_alerts comment_opt cd_attributes in
+            let comment_opt = analyze_alerts comment_opt cd.cd_attributes in
             let vc_args =
-              match cd_args with
+              match cd.cd_args with
               | Cstr_tuple l -> Cstr_tuple (List.map (Odoc_env.subst_type env) l)
               | Cstr_record l ->
                   Cstr_record (List.map (get_field env name_comment_list) l)
@@ -483,7 +483,8 @@ module Analyser =
             {
               vc_name;
               vc_args;
-              vc_ret =  Option.map (Odoc_env.subst_type env) ret_type;
+              vc_ret =  Option.map (Odoc_env.subst_type env) cd.cd_res;
+              vc_generative = cd.cd_generative;
               vc_text = comment_opt
             }
           in

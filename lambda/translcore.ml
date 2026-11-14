@@ -302,18 +302,28 @@ and transl_exp0 ~in_new_scope ~scopes e =
       | Cstr_unboxed ->
           (match ll with [v] -> v | _ -> assert false)
       | Cstr_block n ->
-          begin try
-            Lconst(Const_block(n, List.map extract_constant ll))
-          with Not_constant ->
-            Lprim(Pmakeblock(n, Immutable, Some shape), ll,
+          if cstr.cstr_generative = Generative then
+            Lprim(Pmakeblock(n, Mutable, Some shape), ll,
                   of_location ~scopes e.exp_loc)
-          end
+          else
+            begin try
+              Lconst(Const_block(n, List.map extract_constant ll))
+            with Not_constant ->
+              Lprim(Pmakeblock(n, Immutable, Some shape), ll,
+                    of_location ~scopes e.exp_loc)
+            end
       | Cstr_extension(path, is_const) ->
           let lam = transl_extension_path
                       (of_location ~scopes e.exp_loc) e.exp_env path in
           if is_const then lam
           else
-            Lprim(Pmakeblock(0, Immutable, Some (Pgenval :: shape)),
+            let mut =
+              if cstr.cstr_generative = Generative then
+                Mutable
+              else
+                Immutable
+            in
+            Lprim(Pmakeblock(0, mut, Some (Pgenval :: shape)),
                   lam :: ll, of_location ~scopes e.exp_loc)
       end
   | Texp_extension_constructor (_, path) ->
@@ -1018,16 +1028,22 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
     in
     let ll, shape = List.split (Array.to_list lv) in
     let mut =
-      if Array.exists (fun (lbl, _) -> lbl.lbl_mut = Mutable) fields
-      then Mutable
-      else Immutable in
+      if Array.exists (fun (lbl, _) -> lbl.lbl_mut = Mutable) fields then
+        Mutable
+      else
+        match repres with
+        | Record_inlined (_, Generative) ->
+            Mutable
+        | _ ->
+            Immutable
+    in
     let lam =
       try
         if mut = Mutable then raise Not_constant;
         let cl = List.map extract_constant ll in
         match repres with
         | Record_regular -> Lconst(Const_block(0, cl))
-        | Record_inlined tag -> Lconst(Const_block(tag, cl))
+        | Record_inlined (tag, _) -> Lconst(Const_block(tag, cl))
         | Record_unboxed _ -> Lconst(match cl with [v] -> v | _ -> assert false)
         | Record_float ->
             Lconst(Const_float_array(List.map extract_float cl))
@@ -1038,7 +1054,7 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
         match repres with
           Record_regular ->
             Lprim(Pmakeblock(0, mut, Some shape), ll, loc)
-        | Record_inlined tag ->
+        | Record_inlined (tag, _) ->
             Lprim(Pmakeblock(tag, mut, Some shape), ll, loc)
         | Record_unboxed _ -> (match ll with [v] -> v | _ -> assert false)
         | Record_float ->
