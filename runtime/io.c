@@ -543,6 +543,51 @@ intnat caml_input_scan_line(struct channel *channel)
   return (p - channel->curr);
 }
 
+intnat caml_input_scan_nul_line(struct channel *channel)
+{
+  char * p;
+  int n;
+ again:
+  check_pending(channel);
+  p = channel->curr;
+  do {
+    if (p >= channel->max) {
+      /* No more characters available in the buffer */
+      if (channel->curr > channel->buff) {
+        /* Try to make some room in the buffer by shifting the unread
+           portion at the beginning */
+        memmove(channel->buff, channel->curr, channel->max - channel->curr);
+        n = channel->curr - channel->buff;
+        channel->curr -= n;
+        channel->max -= n;
+        p -= n;
+      }
+      if (channel->max >= channel->end) {
+        /* Buffer is full, no room to read more characters from the input.
+           Return the number of characters in the buffer, with negative
+           sign to indicate that no newline was encountered. */
+        return -(channel->max - channel->curr);
+      }
+      /* Fill the buffer as much as possible */
+      n = caml_read_fd(channel->fd, channel->flags,
+                       channel->max, channel->end - channel->max);
+      if (n == -1) {
+        if (errno == EINTR) goto again; else caml_sys_io_error(NO_ARG);
+      }
+      else if (n == 0) {
+        /* End-of-file encountered. Return the number of characters in the
+           buffer, with negative sign since we haven't encountered
+           a newline. */
+        return -(channel->max - channel->curr);
+      }
+      channel->offset += n;
+      channel->max += n;
+    }
+  } while (*p++ != '\000');
+  /* Found a newline. Return the length of the line, newline included. */
+  return (p - channel->curr);
+}
+
 /* OCaml entry points for the I/O functions.  Wrap struct channel *
    objects into a heap-allocated object.  Perform locking
    and unlocking around the I/O operations. */
@@ -1114,6 +1159,18 @@ CAMLprim value caml_ml_input_scan_line(value vchannel)
 
   caml_channel_lock(channel);
   res = caml_input_scan_line(channel);
+  caml_channel_unlock(channel);
+  CAMLreturn (Val_long(res));
+}
+
+CAMLprim value caml_ml_input_scan_nul_line(value vchannel)
+{
+  CAMLparam1 (vchannel);
+  struct channel * channel = Channel(vchannel);
+  intnat res;
+
+  caml_channel_lock(channel);
+  res = caml_input_scan_nul_line(channel);
   caml_channel_unlock(channel);
   CAMLreturn (Val_long(res));
 }

@@ -66,6 +66,41 @@ let input_line ic =
   | s -> Some s
   | exception End_of_file -> None
 
+external unsafe_input : in_channel -> bytes -> int -> int -> int = "caml_ml_input"
+external input_scan_nul_line : in_channel -> int = "caml_ml_input_scan_nul_line"
+let input_nul_line_raw chan =
+  let rec build_result buf pos = function
+    [] -> buf
+  | hd :: tl ->
+      let len = Bytes.length hd in
+      Bytes.blit hd 0 buf (pos - len) len;
+      build_result buf (pos - len) tl in
+  let rec scan accu len =
+    let n = input_scan_nul_line chan in
+    if n = 0 then begin                   (* n = 0: we are at EOF *)
+      match accu with
+        [] -> raise End_of_file
+      | _  -> build_result (Bytes.create len) len accu
+    end else if n > 0 then begin          (* n > 0: newline found in buffer *)
+      let res = Bytes.create (n - 1) in
+      ignore (unsafe_input chan res 0 (n - 1));
+      ignore (input_char chan);           (* skip the newline *)
+      match accu with
+        [] -> res
+      |  _ -> let len = len + n - 1 in
+              build_result (Bytes.create len) len (res :: accu)
+    end else begin                        (* n < 0: newline not found *)
+      let beg = Bytes.create (-n) in
+      ignore(unsafe_input chan beg 0 (-n));
+      scan (beg :: accu) (len - n)
+    end
+  in Bytes.unsafe_to_string (scan [] 0)
+
+let input_nul_line ic =
+  match input_nul_line_raw ic with
+  | s -> Some s
+  | exception End_of_file -> None
+
 let input = Stdlib.input
 
 external unsafe_input_bigarray :
@@ -197,9 +232,19 @@ let [@tail_mod_cons] rec input_lines ic =
   | line -> line :: input_lines ic
   | exception End_of_file -> []
 
+let [@tail_mod_cons] rec input_nul_lines ic =
+  match input_nul_line_raw ic with
+  | line -> line :: input_nul_lines ic
+  | exception End_of_file -> []
+
 let rec fold_lines f accu ic =
   match Stdlib.input_line ic with
   | line -> fold_lines f (f accu line) ic
+  | exception End_of_file -> accu
+
+let rec fold_nul_lines f accu ic =
+  match input_nul_line_raw ic with
+  | line -> fold_nul_lines f (f accu line) ic
   | exception End_of_file -> accu
 
 let set_binary_mode = Stdlib.set_binary_mode_in
