@@ -207,6 +207,40 @@ let () =
             with exception _ -> true | _ -> false)
   in
   let () =
+    (* overflowing src_pos + len : invalid argument, dst unchanged *)
+    let a = A.of_list [4; 5; 6] in
+    let b = A.of_list [1; 2; 3] in
+    assert (match
+              A.blit ~src:b ~src_pos:max_int ~dst:a ~dst_pos:3 ~len:1
+            with
+            | exception Invalid_argument _ -> true
+            | _ -> false);
+    assert (A.length a = 3);
+    assert (A.to_list a = [4; 5; 6])
+  in
+  let () =
+    (* target region with dst_pos = max_int: the message must not overflow*)
+    let a = A.of_list [4; 5; 6] in
+    let b = A.of_list [1; 2; 3] in
+    assert (match
+              A.blit ~src:b ~src_pos:0 ~dst:a ~dst_pos:max_int ~len:1
+            with
+            | exception Invalid_argument _ -> true
+            | _ -> false);
+    assert (A.length a = 3);
+    assert (A.to_list a = [4; 5; 6])
+  in
+  let () =
+    (* overflowing src_pos + len : invalid argument, dst unchanged *)
+    let a = A.of_list [4; 5; 6] in
+    let b = A.of_list [1; 2; 3] in
+    assert (match
+              A.blit ~src:b ~src_pos:1 ~dst:a ~dst_pos:3 ~len:max_int
+            with exception Invalid_argument _ -> true | _ -> false);
+    assert (A.length a = 3);
+    assert (A.to_list a = [4; 5; 6])
+  in
+  let () =
     (* target range overflows target array: extend the array *)
     let a = A.of_list [1; 2] in
     let b = A.of_list [3; 4; 5] in
