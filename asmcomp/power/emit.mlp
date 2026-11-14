@@ -557,8 +557,8 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Ispecific(Icheckbound_imm_far _)) -> 3
     | Lop(Iintop_imm _) -> 1
     | Lop(Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf) -> 1
-    | Lop(Ifloatofint) -> 3
-    | Lop(Iintoffloat) -> 3
+    | Lop(Ifloatofint) -> if big_endian then 3 else 2
+    | Lop(Iintoffloat) -> if big_endian then 3 else 2
     | Lop(Iopaque) -> 0
     | Lop(Ispecific _) -> 1
     | Lop(Idls_get) -> 1
@@ -963,15 +963,23 @@ let emit_instr env i =
         let instr = name_for_floatop2 op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
     | Lop(Ifloatofint) ->
-        (* Can use protected zone (288 bytes below r1 *)
-        `	std	{emit_reg i.arg.(0)}, -16(1)\n`;
-        `	lfd	{emit_reg i.res.(0)}, -16(1)\n`;
+        if big_endian then begin
+          (* Can use protected zone (288 bytes below r1 *)
+          `	std	{emit_reg i.arg.(0)}, -16(1)\n`;
+          `	lfd	{emit_reg i.res.(0)}, -16(1)\n`
+        end else
+          (* POWER8: move GPR->FPR directly (no stack round-trip) *)
+          `	mtvsrd	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`;
         `	fcfid	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
     | Lop(Iintoffloat) ->
-        (* Can use protected zone (288 bytes below r1 *)
         `	fctidz	0, {emit_reg i.arg.(0)}\n`;
-        `	stfd	0, -16(1)\n`;
-        `	ld	{emit_reg i.res.(0)}, -16(1)\n`
+        if big_endian then begin
+          (* Can use protected zone (288 bytes below r1 *)
+          `	stfd	0, -16(1)\n`;
+          `	ld	{emit_reg i.res.(0)}, -16(1)\n`
+        end else
+          (* POWER8: move FPR->GPR directly (no stack round-trip) *)
+          `	mfvsrd	{emit_reg i.res.(0)}, 0\n`
     | Lop(Iopaque) ->
         assert (i.arg.(0).loc = i.res.(0).loc)
     | Lop(Ispecific Isqrtf) ->
@@ -1340,6 +1348,7 @@ let begin_assembly() =
   reset_debug_info();
   `	.file	\"\"\n`;  (* PR#7037 *)
   `	.abiversion 2\n`;
+  if not big_endian then `	.machine power8\n`;
   Hashtbl.clear tocref_entries;
   (* Emit the beginning of the segments *)
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
