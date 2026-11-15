@@ -1400,6 +1400,7 @@ CAMLextern char_os* caml_locate_standard_library (const wchar_t *exe_name,
                  OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
     if (h == INVALID_HANDLE_VALUE) {
       caml_stat_free(candidate);
+      caml_stat_free(root);
       return caml_stat_wcsdup(stdlib_default);
     }
 
