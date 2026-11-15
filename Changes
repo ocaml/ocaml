@@ -318,9 +318,9 @@ OCaml 5.6.0
 - #15092: do not lose domain allocation stats on termination
   (Edwin Török, report by Eduardo Souza, review by Stefan Muenzel)
 
-- #15033: optimize Weak.blit on 5.x, following the 4.x example
+- #15033, #15143: optimize Weak.blit on 5.x, following the 4.x example
   of #9259 by Arseniy Alekseyev.
-  (Gabriel Scherer, review by Damien Doligez)
+  (Gabriel Scherer, Josh Berdine, review by Damien Doligez, Nicolás Ojeda Bär)
 
 - #15117: The instrumented runtime is no longer installed by default.
   (David Allsopp, review by Florian Angeletti, Nick Barnes and Sadiq Jaffer)
