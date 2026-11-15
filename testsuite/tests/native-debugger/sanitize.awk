@@ -55,8 +55,8 @@
     gsub(/__libc_start_main_impl$/, "__libc_start_mainXXXX")
     gsub(/__libc_start_main@@GLIBC_[0-9]+.[0-9]+$/, "__libc_start_mainXXXX")
     gsub(/__libc_start_main$/, "__libc_start_mainXXXX")
-    gsub(/___lldb_unnamed_symbol_2a840$/, "__libc_start_call_main")
-
+    if (prevline ~ /`main$/)
+      gsub(/___lldb_unnamed_symbol_[0-9a-z]+$/, "__libc_start_call_main")
 
     gsub("warning: This version of LLDB", "This version of LLDB")
     gsub("This version of LLDB has no plugin for the language \"assembler\". Inspection of frame variables will be limited.", "")
@@ -69,6 +69,9 @@
     # Fix indentation: Xcode 27 on macOS adds two extra spaces here
     gsub(/^      frame #/, "    frame #");
 
-    if ($0 != "")
+
+    if ($0 != "") {
+      prevline = $0
       print $0
+    }
 }
