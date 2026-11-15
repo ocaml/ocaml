@@ -1413,6 +1413,7 @@ CAMLextern char_os* caml_locate_standard_library (const wchar_t *exe_name,
       l = GetFinalPathNameByHandle(h, resolved_candidate, buf_len,
                                    FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
     } while (l >= buf_len);
+    CloseHandle(h);
 
     if (l > 0) {
       /* GetFinalPathNameByHandle always returns \\?\ which needs stripping. */
