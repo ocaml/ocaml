@@ -2220,6 +2220,7 @@ static void major_collection_slice(intnat howmuch,
 {
   caml_domain_state* domain_state = Caml_state;
   intnat sweep_work = 0, mark_work = 0;
+  intnat ephe_mark_work = 0, ephe_sweep_work = 0;
   uintnat blocks_marked_before = domain_state->stat_blocks_marked;
   uintnat saved_ephe_round;
   uintnat saved_major_cycle = caml_major_cycles_completed;
@@ -2377,6 +2378,7 @@ mark_again:
           intnat left = ephe_mark(budget, saved_ephe_round, EPHE_MARK_DEFAULT);
           intnat work_done = budget - left;
           work_done += mark_work_done_between_slices();
+          ephe_mark_work += work_done;
           commit_major_slice_work (work_done);
 
           // FIXME: Can we delete this?
@@ -2412,6 +2414,7 @@ mark_again:
                (budget = get_major_slice_work(mode)) > 0) {
           intnat left = ephe_sweep(domain_state, budget);
           intnat work_done = budget - left;
+          ephe_sweep_work += work_done;
           commit_major_slice_work(work_done);
         }
 
@@ -2444,8 +2447,18 @@ mark_again:
 
   call_timing_hook(&caml_major_slice_end_hook);
   if (log_events) {
-    CAML_EV_COUNTER(EV_C_MAJOR_SLICE_SWEEP_WORK, sweep_work);
-    CAML_EV_COUNTER(EV_C_MAJOR_SLICE_MARK_WORK, mark_work);
+    if (sweep_work > 0) {
+      CAML_EV_COUNTER(EV_C_MAJOR_SLICE_SWEEP_WORK, sweep_work);
+    }
+    if (mark_work > 0) {
+      CAML_EV_COUNTER(EV_C_MAJOR_SLICE_MARK_WORK, mark_work);
+    }
+    if (ephe_mark_work > 0) {
+      CAML_EV_COUNTER(EV_C_MAJOR_SLICE_EPHE_MARK_WORK, ephe_mark_work);
+    }
+    if (ephe_sweep_work > 0) {
+      CAML_EV_COUNTER(EV_C_MAJOR_SLICE_EPHE_SWEEP_WORK, ephe_sweep_work);
+    }
     CAML_EV_END(EV_MAJOR_SLICE);
   }
 

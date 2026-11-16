@@ -49,6 +49,8 @@ type runtime_counter =
 | EV_C_MAJOR_RESUMED_ALLOCATED_WORDS
 | EV_C_MAJOR_SLICE_SWEEP_WORK
 | EV_C_MAJOR_SLICE_MARK_WORK
+| EV_C_MAJOR_SLICE_EPHE_MARK_WORK
+| EV_C_MAJOR_SLICE_EPHE_SWEEP_WORK
 
 type runtime_phase =
 | EV_EXPLICIT_GC_SET
@@ -171,6 +173,10 @@ let runtime_counter_name counter =
       "major_slice_sweep_work"
   | EV_C_MAJOR_SLICE_MARK_WORK ->
       "major_slice_mark_work"
+  | EV_C_MAJOR_SLICE_EPHE_MARK_WORK ->
+      "major_slice_ephe_mark_work"
+  | EV_C_MAJOR_SLICE_EPHE_SWEEP_WORK ->
+      "major_slice_ephe_sweep_work"
 
 
 let runtime_phase_name phase =
