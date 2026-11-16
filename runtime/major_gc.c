@@ -1260,9 +1260,9 @@ static void translate_back (pacing_phase p, double *w,
   CAMLassert (diff_work >= 0);
   if (diff_work > *w){
     double p = *w / diff_work;
-    diffs->on_heap = (uintnat) (diffs->on_heap * p);
-    diffs->off_heap = (uintnat) (diffs->off_heap * p);
-    *w = 0;
+    diffs->on_heap = (uintnat) (d_on * p);
+    diffs->off_heap = (uintnat) (d_off * p);
+    *w -= translate (p, diffs->on_heap, diffs->off_heap);
   }else{
     *w -= diff_work;
   }
