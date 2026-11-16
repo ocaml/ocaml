@@ -839,7 +839,7 @@ let rec choice ctx t =
     (* in common cases we just return *)
     | Pbytes_to_string | Pbytes_of_string
     | Pgetglobal _ | Psetglobal _
-    | Pfield _ | Pfield_computed
+    | Pfield _ | Pfield_computed _
     | Psetfield _ | Psetfield_computed _
     | Pfloatfield _ | Psetfloatfield _
     | Pccall _
@@ -866,7 +866,7 @@ let rec choice ctx t =
     | Prunstack | Pperform | Presume | Preperform | Pdls_get
 
     (* we don't handle atomic primitives *)
-    | Patomic_load | Patomic_fetch_add
+    | Patomic_load | Patomic_fetch_add | Patomic_exchange | Patomic_cas
 
     (* we don't handle array indices as destinations yet *)
     | (Pmakearray _ | Pduparray _)

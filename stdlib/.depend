@@ -734,6 +734,7 @@ stdlib__Result.cmx : result.ml \
 stdlib__Result.cmi : result.mli \
     stdlib__Seq.cmi
 stdlib__Scanf.cmo : scanf.ml \
+    stdlib__Uchar.cmi \
     stdlib__String.cmi \
     stdlib.cmi \
     stdlib__Printf.cmi \
@@ -744,6 +745,7 @@ stdlib__Scanf.cmo : scanf.ml \
     stdlib__Buffer.cmi \
     stdlib__Scanf.cmi
 stdlib__Scanf.cmx : scanf.ml \
+    stdlib__Uchar.cmx \
     stdlib__String.cmx \
     stdlib.cmx \
     stdlib__Printf.cmx \

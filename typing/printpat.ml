@@ -169,8 +169,7 @@ let top_pretty ppf v =
   fprintf ppf "@[%a@]" pretty_val v
 
 let pretty_pat ppf p =
-  top_pretty ppf p ;
-  pp_print_flush ppf ()
+  top_pretty ppf p
 
 type 'k matrix = 'k general_pattern list list
 

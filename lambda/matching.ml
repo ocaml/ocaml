@@ -938,7 +938,7 @@ end = struct
   let partial { partial = p; _ } = p
 
   let pp ppf ({ env; partial } : t) =
-    Format.fprintf ppf "@[<v 2>JUMPS:%t@]"
+    Format.fprintf ppf "@[<v 2>%t@]"
       (fun ppf ->
          if env = [] then
            Format.fprintf ppf " empty (%a)"
@@ -955,7 +955,7 @@ end = struct
          end)
 
   let pp_section ppf jumps =
-    Format.fprintf ppf "@,%a" pp jumps
+    Format.fprintf ppf "@,JUMPS:@,%a" pp jumps
 
   let extract i jumps =
     let rec extract i = function
@@ -1197,14 +1197,22 @@ let erase_cases f cases =
 let erase_pm pm =
   { pm with cases = erase_cases General.erase pm.cases }
 
+let pretty_case ppf (ps, l) =
+  Format.fprintf ppf "@[%t%t@]"
+    (fun ppf -> match ps with
+     | [] -> Format.pp_print_string ppf "empty row"
+     | _ -> pretty_line ppf ps
+    )
+    (fun ppf ->
+       if is_guarded l then
+         Format.fprintf ppf "@;<1 2>(guarded)"
+    )
+
 let pretty_cases ppf cases =
+  if cases = [] then Format.fprintf ppf "empty matrix" else
   Format.fprintf ppf "@[<v 2>  %a@]"
     (Format.pp_print_list ~pp_sep:Format.pp_print_cut
-       (fun ppf (ps, _l) ->
-          Format.fprintf ppf "@[";
-          List.iter (fun p -> Format.fprintf ppf "%a@ " pretty_pat p) ps;
-          Format.fprintf ppf "@]";
-       ))
+       pretty_case)
     cases
 
 let pretty_pm_ ~print_default ppf pm =
@@ -1225,18 +1233,19 @@ let rec pretty_precompiled_ ~print_default ppf = function
         (pretty_precompiled_ ~print_default) x.inside
   | PmOr x ->
       let pretty_handlers ppf handlers =
-        List.iter (fun { exit = i; pm; _ } ->
+        Format.pp_print_list ~pp_sep:Format.pp_print_cut
+          (fun ppf { exit = i; pm; _ } ->
           Format.fprintf ppf
-            "++ Handler %d ++@,\
+            "- handler %d:@,\
              %a"
             i
             (pretty_pm_ ~print_default) pm
-        ) handlers
+        ) ppf handlers
       in
       Format.fprintf ppf "PM Or:@,\
-                          %a@,\
-                          %a@,\
-                          %a"
+                          body:@,%a@,\
+                          or_matrix:@,%a@,\
+                          handlers:@,@[<v 2>  %a@]"
         (pretty_pm_ ~print_default) (erase_pm x.body)
         pretty_matrix x.or_matrix
         pretty_handlers x.handlers
@@ -2297,29 +2306,17 @@ let get_pat_args_tuple arity p rem =
 let get_expr_args_tuple ~scopes head { arg; mut; _ } rem =
   let loc = head_loc ~scopes head in
   let arity = Patterns.Head.arity head in
-  let field_kinds =
-    let env = field_env head in
-    match Types.get_desc (Ctype.expand_head env head.pat_type) with
-    | Ttuple l ->
-        assert (List.length l = arity);
-        List.map (fun (_, ty) -> Typeopt.maybe_pointer_type env ty) l
-    | _ ->
-        (* The type of the pattern can be a tuple type only thanks to a
-           GADT equation that we have removed from the environment, as in
-           [((x, y) : a)] when [a = int * string]. *)
-        List.init arity (fun _ -> Pointer)
+  let rec make_args pos =
+    if pos >= arity then
+      rem
+    else
+      {
+        arg = Lprim (Pfield (pos, Pointer, Immutable), [ arg ], loc);
+        binding_kind = Alias;
+        mut = compose_mut mut Immutable;
+      } :: make_args (pos + 1)
   in
-  let rec make_args pos field_kinds =
-    match field_kinds with
-    | [] -> rem
-    | ptr :: field_kinds ->
-        {
-          arg = Lprim (Pfield (pos, ptr, Immutable), [ arg ], loc);
-          binding_kind = Alias;
-          mut = compose_mut mut Immutable;
-        } :: make_args (pos + 1) field_kinds
-  in
-  make_args 0 field_kinds
+  make_args 0
 
 let divide_tuple ~scopes head ctx pm =
   let arity = Patterns.Head.arity head in
@@ -2822,6 +2819,23 @@ let get_edges ~low ~high l =
   | [] -> (low, high)
   | (x, _) :: _ -> (x, last high l)
 
+(** [as_interval_canfail fail ~low ~high] takes a sorted list of
+    (integer key, action) pairs, for example
+      0 -> act0
+      1 -> act1
+      2 -> act1
+      4 -> act1
+      5 -> act1
+   and returns a sorted list of contiguous intervals partitioning
+   [low; high], for example
+     [low; -1] -> fail
+     [0] -> act0
+     [1; 2] -> act1
+     [3] -> fail
+     [4; 5] -> act1
+     [6; high] -> fail
+   with missing keys mapped to the [fail] action.
+*)
 let as_interval_canfail fail ~low ~high l =
   let store = StoreExp.mk_store () in
   let do_store _tag act =
@@ -2831,7 +2845,22 @@ let as_interval_canfail fail ~low ~high l =
     *)
     i
   in
-  let rec nofail_rec cur_low cur_high cur_act = function
+  (* cover [low; high] with the provided mapping *)
+  let rec init_rec = function
+    | [] -> [ (low, high, 0) ]
+    | (i, act_i) :: rem ->
+        let index = do_store "INIT" act_i in
+        if index = 0 then
+          fail_rec low rem
+        else if low < i then
+          (low, i - 1, 0) :: nofail_rec i i index rem
+        else
+          nofail_rec i i index rem
+
+  (* cover [cur_low; high] with the provided mapping, assuming that:
+     - the keys are all within [cur_low; high]
+     - [cur_low; cur_high] goes to [cur_act] *)
+  and nofail_rec cur_low cur_high cur_act = function
     | [] ->
         if cur_high = high then
           [ (cur_low, cur_high, cur_act) ]
@@ -2843,42 +2872,49 @@ let as_interval_canfail fail ~low ~high l =
           if act_index = cur_act then
             nofail_rec cur_low i cur_act rem
           else if act_index = 0 then
-            (cur_low, i - 1, cur_act) :: fail_rec i i rem
+            (cur_low, i - 1, cur_act) :: fail_rec i rem
           else
             (cur_low, i - 1, cur_act) :: nofail_rec i i act_index rem
         else if act_index = 0 then
           (cur_low, cur_high, cur_act)
-          :: fail_rec (cur_high + 1) (cur_high + 1) all
+          :: fail_rec (cur_high + 1) all
         else
           (cur_low, cur_high, cur_act)
           :: (cur_high + 1, i - 1, 0)
           :: nofail_rec i i act_index rem
-  and fail_rec cur_low cur_high = function
-    | [] -> [ (cur_low, cur_high, 0) ]
+
+  (* cover [cur_low; high] with the provided mapping, assuming that:
+     - the keys are all within [cur_low; high]
+     - [cur_low] goes to [fail] *)
+  and fail_rec cur_low = function
+    | [] -> [ (cur_low, high, 0) ]
     | (i, act_i) :: rem ->
         let index = do_store "YES" act_i in
         if index = 0 then
-          fail_rec cur_low i rem
+          fail_rec cur_low rem
         else
           (cur_low, i - 1, 0) :: nofail_rec i i index rem
   in
-  let init_rec = function
-    | [] -> [ (low, high, 0) ]
-    | (i, act_i) :: rem ->
-        let index = do_store "INIT" act_i in
-        if index = 0 then
-          fail_rec low i rem
-        else if low < i then
-          (low, i - 1, 0) :: nofail_rec i i index rem
-        else
-          nofail_rec i i index rem
-  in
-  assert (do_store "FAIL" fail = 0);
-
-  (* fail has action index 0 *)
+  let fail_index = do_store "FAIL" fail in
+  assert (fail_index = 0);
   let r = init_rec l in
   (Array.of_list r, store)
 
+(** [as_interval_nofail] takes a sorted list of
+    (integer key, action) pairs, for example:
+     -1 -> act0
+     1 -> act0
+     2 -> act1
+     4 -> act1
+     5 -> act1
+   and returns a sorted list of contiguous intervals, for example
+     [-1; 1] -> act0
+     [2] -> act1
+     [3] -> act0
+     [4; 5] -> act1
+   with the first action (here [act0]) used for missing keys in the
+   convex hull of the input keys.
+*)
 let as_interval_nofail l =
   let store = StoreExp.mk_store () in
   let rec some_hole = function
@@ -3115,7 +3151,7 @@ let mk_failaction_pos arg_partial seen ctx defs =
              %a@]@,\
            @[<v 2>FAIL PATTERNS:@,\
              %a@]@,\
-           @[<v 2>POSITIVE JUMPS (%a):%a@]\
+           @[<v 2>POSITIVE JUMPS (%a):@,%a@]\
            @]"
       pp_arg_partiality arg_partial
       Default_environment.pp defs
@@ -3542,6 +3578,9 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
   let rec do_rec r total_r = function
     | [] -> (r, total_r)
     | { provenance = mat; exit = i; vars; pm } :: rem -> (
+        debugf "@,COMPILE_orhandlers %d:@,@[<v 2>%a@]@,"
+          i
+          pretty_cases pm.cases;
         let ctx = Context.select_columns mat ctx in
         match compile_fun ctx pm with
         | exception Unused ->
@@ -3698,6 +3737,8 @@ let arg_to_var arg cls =
 let rec compile_match ~scopes repr partial ctx
     (m : (args, initial_clause) pattern_matching) : lambda * Jumps.t =
   match m.cases with
+  | [] ->
+      compile_match_empty_matrix ~scopes partial ctx m.default
   | ([], action) :: rem ->
       let res =
         if is_guarded action then
@@ -3708,21 +3749,17 @@ let rec compile_match ~scopes repr partial ctx
         else
           (event_branch repr action, Jumps.empty Total)
       in
-      debugf "empty matrix%t"
-        (fun ppf -> if is_guarded action then Format.fprintf ppf " (guarded)");
+      debugf "%a" pretty_case ([], action);
       res
-  | nonempty_cases ->
-      compile_match_nonempty ~scopes repr partial ctx
-        { m with cases = map_on_rows Non_empty_row.of_initial nonempty_cases }
+  | nonempty_rows ->
+      compile_match_nonempty_rows ~scopes repr partial ctx
+        { m with cases = map_on_rows Non_empty_row.of_initial nonempty_rows }
 
-and compile_match_nonempty ~scopes repr partial ctx
+and compile_match_nonempty_rows ~scopes repr partial ctx
     (m : (args, Typedtree.pattern Non_empty_row.t clause) pattern_matching) =
   match m with
   | { cases = []; args = [] } ->
-      begin match comp_exit partial ctx m.default with
-      | None -> fatal_error "Matching: impossible empty matrix in a Total match"
-      | Some exit -> exit
-      end
+      compile_match_empty_matrix ~scopes partial ctx m.default
   | { args = { arg; binding_kind; _ } as first :: rest } ->
       let v = arg_to_var arg m.cases in
       bind_match_arg binding_kind v arg (
@@ -3734,6 +3771,25 @@ and compile_match_nonempty ~scopes repr partial ctx
         combine_handlers ~scopes repr partial ctx first_match rem
       )
   | _ -> assert false
+
+and compile_match_empty_matrix ~scopes:_ partial ctx def =
+  match comp_exit partial ctx def with
+  | None ->
+    (* #15171: This case was found to happen in the wild in some dead
+       code, with clauses of the (simplified) Form:
+       {[
+         | _ -> ...
+         | p when foo -> ...
+        ]}
+
+       This matrix is known to be Total, but the (useless / dead-code)
+       last clause is guarded. If it is not optimized away, during
+       compilation there will be a list of empty rows whose last
+       one is guarded. On guarded empty rows, [compile_match] calls itself
+       recursively on the rest of the matrix, which is empty in that case.
+    *)
+    comp_final_exit def
+  | Some exit -> exit
 
 and compile_match_simplified ~scopes repr partial ctx
     (m : (split_args, Simple.clause) pattern_matching) =
@@ -3845,7 +3901,8 @@ and compile_match_simplified ~scopes repr partial ctx
    decisions for a given argument switch. *)
 and compute_arg_partial partial mut =
   match partial.tempo, mut with
-  | Following, Mutable -> Arg { partial with global = Partial }
+  | Following, Mutable ->
+      Arg { partial with current = Partial; global = Partial }
   | First, _ | _, Immutable -> Arg partial
 
 and mut_of_binding_kind =
@@ -4101,7 +4158,7 @@ let compile_matching ~scopes loc ~failer repr arg pat_act_list partial =
     toplevel_handler ~scopes loc ~failer partial args rows
   in
   handler (fun partial pm ->
-    compile_match_nonempty ~scopes repr partial (Context.start 1) pm
+    compile_match_nonempty_rows ~scopes repr partial (Context.start 1) pm
   )
 
 let for_function ~scopes loc repr param pat_act_list partial =
@@ -4368,9 +4425,9 @@ let flatten_precompiled size args pmh =
 
 let compile_flattened ~scopes repr partial ctx pmh =
   match pmh with
-  | FPm pm -> compile_match_nonempty ~scopes repr partial ctx pm
+  | FPm pm -> compile_match_nonempty_rows ~scopes repr partial ctx pm
   | FPmOr { body = b; handlers = hs } ->
-      let lam, total = compile_match_nonempty ~scopes repr partial ctx b in
+      let lam, total = compile_match_nonempty_rows ~scopes repr partial ctx b in
       compile_orhandlers (compile_match ~scopes repr partial) lam total ctx hs
 
 let do_for_multiple_match ~scopes loc idl pat_act_list partial =

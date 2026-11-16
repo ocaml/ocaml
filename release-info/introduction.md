@@ -156,7 +156,7 @@ User feedback is welcome on which fixes from OCaml 5 should be also included in
 4.14.
 
 Once OCaml 5 is stabilized, this extended support of OCaml 4.14  will stop.
-Currently, we expect to support OCaml 4.14 until at least OCaml 5.5 (around January 2026).
+Currently, we expect to support OCaml 4.14 until at least 2027.
 
 
 # How are new versions of OCaml released?

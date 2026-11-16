@@ -1,0 +1,7 @@
+0: ok
+65535: ok
+-1: Invalid_argument
+65536: Invalid_argument
+70000: Invalid_argument
+max_int: Invalid_argument
+min_int: Invalid_argument

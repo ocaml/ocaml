@@ -63,7 +63,7 @@ type primitive =
   | Pmakeblock of int * mutable_flag * block_shape
   | Pmakelazyblock of lazy_block_tag
   | Pfield of int * immediate_or_pointer * mutable_flag
-  | Pfield_computed
+  | Pfield_computed of mutable_flag
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
   | Psetfield_computed of immediate_or_pointer * initialization_or_assignment
   | Pfloatfield of int
@@ -170,6 +170,10 @@ type primitive =
   (* Atomic operations *)
   | Patomic_load
   | Patomic_fetch_add
+  (* Native atomic exchange / compare-and-set, emitted only when the stored
+     value is statically immediate, so no write barrier is required. *)
+  | Patomic_exchange
+  | Patomic_cas
   (* Inhibition of optimisation *)
   | Popaque
   (* Fetching domain-local state *)
@@ -496,6 +500,10 @@ val map : (lambda -> lambda) -> lambda -> lambda
 
 val map_lfunction : (lambda -> lambda) -> lfunction -> lfunction
   (** Apply the given transformation on the function's body *)
+
+val map_functions : (lfunction -> lfunction) -> lambda -> lambda
+  (** Bottom-up rewriting, applying the parameter to all
+      nodes defining functions *)
 
 val shallow_map  : (lambda -> lambda) -> lambda -> lambda
   (** Rewrite each immediate sub-term with the function. *)

@@ -780,6 +780,7 @@ type checked_approx_for_closure_allowing_unresolved =
   | Unresolved of unresolved_value
   | Unknown
   | Unknown_because_of_unresolved_value of unresolved_value
+  | Bottom
   | Ok of value_closure * Variable.t option
           * Symbol.t option * value_set_of_closures
 
@@ -805,9 +806,10 @@ let check_approx_for_closure_allowing_unresolved t
   | Value_unknown (Unresolved_value value) ->
     Unknown_because_of_unresolved_value value
   | Value_unresolved symbol -> Unresolved symbol
+  | Value_bottom -> Bottom
   | Value_set_of_closures _ | Value_block _ | Value_int _ | Value_char _
   | Value_float _ | Value_boxed_int _
-  | Value_bottom | Value_extern _ | Value_string _ | Value_float_array _
+  | Value_extern _ | Value_string _ | Value_float_array _
   | Value_symbol _ ->
     Wrong
   (* CR-soon mshinwell: This should be unwound once the reason for a value
@@ -816,6 +818,7 @@ let check_approx_for_closure_allowing_unresolved t
 
 type checked_approx_for_closure =
   | Wrong
+  | Bottom
   | Ok of value_closure * Variable.t option
           * Symbol.t option * value_set_of_closures
 
@@ -825,6 +828,7 @@ let check_approx_for_closure t : checked_approx_for_closure =
       value_set_of_closures) ->
     Ok (value_closure, set_of_closures_var, set_of_closures_symbol,
       value_set_of_closures)
+  | Bottom -> Bottom
   | Wrong | Unknown | Unresolved _ | Unknown_because_of_unresolved_value _ ->
     Wrong
 

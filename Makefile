@@ -1696,6 +1696,7 @@ stdlib/libcamlrun.$(A): runtime-all
 clean::
 	rm -f $(addprefix runtime/, *.o *.obj *.a *.lib *.so *.dll)
 	rm -f $(addprefix runtime/, ocamlrun ocamlrund ocamlruni ocamlruns sak)
+	rm -f sak.obj
 	rm -f $(addprefix runtime/, \
 	  ocamlrun.exe ocamlrund.exe ocamlruni.exe ocamlruns.exe sak.exe)
 # jumptbl.h and opnames.h stopped being generated in #14488, but the two headers

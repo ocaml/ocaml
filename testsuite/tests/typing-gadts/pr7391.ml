@@ -29,7 +29,7 @@ class virtual child2 :
   object ('a)
     method private virtual parent : < previous : 'a option; .. >
   end
-- : < child : child2; previous : child2 option > = <obj>
+- : < child : child1; previous : child1 option > = <obj>
 |}]
 
 (* Worked in 4.03 *)
@@ -43,7 +43,7 @@ let _ =
       end
   end;;
 [%%expect{|
-- : < child : unit -> child2; previous : child2 option > = <obj>
+- : < child : unit -> child1; previous : child1 option > = <obj>
 |}]
 
 (* Worked in 4.03 *)
@@ -57,7 +57,7 @@ let _ =
       end
   end;;
 [%%expect{|
-- : < child : unit -> child2; previous : child2 option > = <obj>
+- : < child : unit -> child1; previous : child1 option > = <obj>
 |}]
 
 (* Didn't work in 4.03, but works in 4.07 *)
@@ -73,7 +73,7 @@ let _ =
       in o
   end;;
 [%%expect{|
-- : < child : child2; previous : child2 option > = <obj>
+- : < child : child1; previous : child1 option > = <obj>
 |}]
 
 (* Also didn't work in 4.03 *)
@@ -91,5 +91,5 @@ let _ =
   end;;
 [%%expect{|
 type gadt = Not_really_though : gadt
-- : < child : gadt -> child2; previous : child2 option > = <obj>
+- : < child : gadt -> child1; previous : child1 option > = <obj>
 |}]

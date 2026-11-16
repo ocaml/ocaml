@@ -82,9 +82,6 @@ META.in                  typo.missing-header
 /Changes                 typo.non-ascii typo.missing-header
 /release-info/News       typo.non-ascii typo.missing-header
 /LICENSE                 typo.very-long-line typo.missing-header
-# tools/ci/appveyor/appveyor_build.cmd only has missing-header because
-# dra27 too lazy to update check-typo to interpret Cmd-style comments!
-/tools/ci/appveyor/appveyor_build.cmd       typo.very-long-line typo.missing-header typo.non-ascii
 /tools/ci/inria/bootstrap/remove-sinh-primitive.patch typo.prune
 /release-info/howto.md                    typo.missing-header typo.long-line
 /release-info/templates/*.md              typo.missing-header typo.very-long-line=may
@@ -185,8 +182,6 @@ tools/magic                       typo.missing-header
 # ocamltest hooks which are used in the testsuite
 *.check-program-output text eol=lf
 *.run text eol=lf
-
-/tools/ci/appveyor/appveyor_build.cmd text eol=crlf
 
 Makefile* linguist-language=Makefile
 *.c linguist-language=C

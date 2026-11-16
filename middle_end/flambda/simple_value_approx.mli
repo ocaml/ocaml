@@ -427,6 +427,7 @@ val check_approx_for_set_of_closures : t -> checked_approx_for_set_of_closures
 
 type checked_approx_for_closure =
   | Wrong
+  | Bottom
   | Ok of value_closure * Variable.t option
           * Symbol.t option * value_set_of_closures
 
@@ -442,6 +443,7 @@ type checked_approx_for_closure_allowing_unresolved =
   | Unresolved of unresolved_value
   | Unknown
   | Unknown_because_of_unresolved_value of unresolved_value
+  | Bottom
   | Ok of value_closure * Variable.t option
           * Symbol.t option * value_set_of_closures
 

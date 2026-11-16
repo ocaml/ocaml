@@ -553,12 +553,13 @@ Event indicating that the Runtime_events ring buffer has been resumed.
 | EV_FORK_PARENT
 (**
 Event indicating that a fork has occurred and the current domain is the parent.
-Includes the PID of the child as an argument.
+Includes the PID of the child as an argument. Emitted by [Unix.fork].
 @since 5.0
 *)
 | EV_FORK_CHILD
 (**
 Event indicating that a fork has occurred and the current domain is the child.
+Emitted by [Unix.fork].
 @since 5.0
 *)
 | EV_DOMAIN_SPAWN
@@ -572,6 +573,14 @@ process as an argument.
 Event indicating that a domain has terminated. Includes the PID of the process
 as an argument.
 @since 5.0
+*)
+| EV_PROCESS_CREATE
+(**
+Event indicating that a child process has been created. Includes the PID of the
+new process as an argument. Emitted when the Unix library creates a process, by
+[Unix.create_process], [Unix.create_process_env], [Unix.system] and the
+[Unix.open_process] functions.
+@since 5.6
 *)
 
 val lifecycle_name : lifecycle -> string
@@ -629,7 +638,12 @@ module Type : sig
       written. The decoder gets a slice of the buffer of specified length, and
       returns the decoded value.
 
-      The maximum value length is 1024 bytes. *)
+      The maximum value length is 1024 bytes.
+
+      @raise Invalid_argument when the event is written, if [encode] returns
+      a negative length or one above the maximum.
+
+      @before 5.6 {!Invalid_argument} was not raised *)
 end
 
 module User : sig
@@ -652,7 +666,12 @@ module User : sig
       carrying a [tag] and values of type [ty]. *)
 
   val write : 'value t -> 'value -> unit
-  (** [write t v] emits value [v] for event [t]. *)
+  (** [write t v] emits value [v] for event [t].
+
+      @raise Invalid_argument if the encoder registered for [t] returns a
+      length outside the bounds documented for [Type.register].
+
+      @before 5.6 {!Invalid_argument} was not raised *)
 
   val name : _ t -> string
   (** [name t] is the unique identifying name of event [t]. *)

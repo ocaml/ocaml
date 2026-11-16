@@ -171,7 +171,8 @@ let primitive ppf = function
         | Pointer, Immutable -> "field_imm "
       in
       fprintf ppf "%s%i" instr n
-  | Pfield_computed -> fprintf ppf "field_computed"
+  | Pfield_computed Mutable -> fprintf ppf "field_computed_mut"
+  | Pfield_computed Immutable -> fprintf ppf "field_computed_imm"
   | Psetfield(n, ptr, init) ->
       let instr =
         match ptr with
@@ -365,6 +366,8 @@ let primitive ppf = function
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
   | Patomic_load -> fprintf ppf "atomic_load"
   | Patomic_fetch_add -> fprintf ppf "atomic_fetch_add"
+  | Patomic_exchange -> fprintf ppf "atomic_exchange"
+  | Patomic_cas -> fprintf ppf "atomic_cas"
   | Popaque -> fprintf ppf "opaque"
   | Pdls_get -> fprintf ppf "dls_get"
   | Ppoll -> fprintf ppf "poll"
@@ -378,7 +381,7 @@ let name_of_primitive = function
   | Pmakeblock _ -> "Pmakeblock"
   | Pmakelazyblock _ -> "Pmakelazyblock"
   | Pfield _ -> "Pfield"
-  | Pfield_computed -> "Pfield_computed"
+  | Pfield_computed _ -> "Pfield_computed"
   | Psetfield _ -> "Psetfield"
   | Psetfield_computed _ -> "Psetfield_computed"
   | Pfloatfield _ -> "Pfloatfield"
@@ -477,6 +480,8 @@ let name_of_primitive = function
   | Pint_as_pointer -> "Pint_as_pointer"
   | Patomic_load -> "Patomic_load"
   | Patomic_fetch_add -> "Patomic_fetch_add"
+  | Patomic_exchange -> "Patomic_exchange"
+  | Patomic_cas -> "Patomic_cas"
   | Popaque -> "Popaque"
   | Prunstack -> "Prunstack"
   | Presume -> "Presume"

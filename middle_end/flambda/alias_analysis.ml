@@ -20,6 +20,7 @@ open! Int_replace_polymorphic_compare
 type allocation_point =
   | Symbol of Symbol.t
   | Variable of Variable.t
+  | Const of Flambda.const
 
 type allocated_const =
   | Normal of Allocated_const.t
@@ -96,6 +97,8 @@ let rec resolve_definition
       fetch_symbol_field definitions s n ~the_dead_constant
     | Variable v ->
       fetch_variable_field definitions v n ~the_dead_constant
+    | Const (Int _ | Char _) ->
+      Symbol the_dead_constant
     end
   | Symbol_field (symbol, field) ->
     fetch_symbol_field definitions symbol field ~the_dead_constant
@@ -138,7 +141,7 @@ and fetch_symbol_field
     begin match List.nth fields field with
     | exception Not_found -> Symbol the_dead_constant
     | Symbol s -> Symbol s
-    | Const _ -> Symbol sym
+    | Const c -> Const c
     end
   | exception Not_found ->
     begin match Symbol.Tbl.find definitions.initialize_symbol sym with

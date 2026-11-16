@@ -1,0 +1,4 @@
+Ctrl-C: handler called with SIGINT
+Ctrl-Break: handler called with SIGINT
+Ctrl-C: Sys.Break raised
+Ctrl-Break: Sys.Break raised

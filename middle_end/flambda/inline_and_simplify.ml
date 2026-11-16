@@ -311,6 +311,8 @@ let simplify_move_within_set_of_closures env r
           move_to = move_within_set_of_closures.move_to;
         },
         ret r (A.value_unknown (Unresolved_value value))
+    | Bottom ->
+      Expr Proved_unreachable, ret r A.value_bottom
     | Ok (_value_closure, set_of_closures_var, set_of_closures_symbol,
           value_set_of_closures) ->
       let freshen =
@@ -500,6 +502,8 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
     | Unknown_because_of_unresolved_value value ->
       Project_var { project_var with closure },
         ret r (A.value_unknown (Unresolved_value value))
+    | Bottom ->
+      Expr Proved_unreachable, ret r A.value_bottom
     | Wrong ->
       (* We must have the correct approximation of the value to ensure
          we take account of all freshenings. *)
@@ -767,6 +771,8 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
                 arity Flambda.print (Flambda.Apply apply)
           in
           wrap result, r
+        | Bottom ->
+          Proved_unreachable, ret r A.value_bottom
         | Wrong ->  (* Insufficient approximation information to simplify. *)
           Apply ({ func = lhs_of_application; args; kind = Indirect; dbg;
               inline = inline_requested; specialise = specialise_requested; }),

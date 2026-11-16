@@ -1178,6 +1178,12 @@ transformation.
 .B 73 [generative-application-expects-unit]
 A generative functor is applied to an empty structure (struct end) rather than
 to ().
+.TP
+.B 74 [degraded-to-partial-match]
+A pattern-matching is compiled as partial even if it appears to be total.
+.TP
+.B 75 [unnecessarily-partial-tuple-pattern]
+A tuple pattern ends in .. but fully matches its expected type.
 .RE
 .IP
 The letters stand for the following sets of warnings.  Any letter not

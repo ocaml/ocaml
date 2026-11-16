@@ -36,12 +36,7 @@ expr:
   | constr expr
   | "`"tag-name expr
   | expr '::' expr
-  | '[' expr { ';' expr } [';'] ']'
-  | '[|' expr { ';' expr } [';'] '|]'
-  | '{' field [':' typexpr] ['=' expr]%
-    { ';' field [':' typexpr] ['=' expr] } [';'] '}'
-  | '{' expr 'with' field [':' typexpr] ['=' expr]%
-    { ';' field [':' typexpr] ['=' expr] } [';'] '}'
+  | delimited-expr
   | expr {{ argument }}
   | prefix-symbol expr
   | '-' expr
@@ -67,12 +62,20 @@ expr:
   | '(' expr ':' typexpr ':>' typexpr ')'
   | 'assert' expr
   | 'lazy' expr
-  | local-open-shorthand
+  | local-open-expr
   | object-expr
 ;
 %BEGIN LATEX
 \end{syntax} \begin{syntax}
 %END LATEX
+delimited-expr:
+    '[' expr { ';' expr } [';'] ']'
+  | '[|' expr { ';' expr } [';'] '|]'
+  | '{' field [':' typexpr] ['=' expr]%
+    { ';' field [':' typexpr] ['=' expr] } [';'] '}'
+  | '{' expr 'with' field [':' typexpr] ['=' expr]%
+    { ';' field [':' typexpr] ['=' expr] } [';'] '}'
+;
 argument:
     expr
   | '~' label-name
@@ -100,12 +103,13 @@ parameter:
   | '?' label-name ':' pattern
   | '?' label-name ':' '(' pattern [':' typexpr] ['=' expr] ')'
 ;
-local-open-shorthand:
+local-open-expr:
   | module-path '.(' expr ')'
-  | module-path '.[' expr ']'
-  | module-path '.[|' expr '|]'
-  | module-path '.{' expr '}'
-  | module-path '.{<' expr '>}'
+%  | module-path '.()' % technically supported, but niche and possibly confusing
+  | module-path '.[]'
+  | module-path '.[||]'
+  | module-path '.' delimited-expr
+  | module-path '.' delimited-object-expr
 ;
 object-expr:
   | 'new' class-path
@@ -113,6 +117,9 @@ object-expr:
   | expr '#' method-name
   | inst-var-name
   | inst-var-name '<-' expr
+  | delimited-object-expr
+;
+delimited-object-expr:
   | '{<' [ inst-var-name ['=' expr] { ';' inst-var-name ['=' expr] } [';'] ] '>}'
 \end{syntax}
 See also the following language extensions:
@@ -1304,11 +1311,9 @@ let map_3d_matrix' f =
 \end{caml_example}
 
 When the body of a local open expression is delimited by
-@'[' ']'@,  @'[|' '|]'@,  or @'{' '}'@, the parentheses can be omitted.
-For expression, parentheses can also be omitted for @'{<' '>}'@.
-For example, @module-path'.['expr']'@ is equivalent to
-@module-path'.(['expr'])'@, and @module-path'.[|' expr '|]'@ is
-equivalent to @module-path'.([|' expr '|])'@.
+@'[' ']'@,  @'[|' '|]'@, @'{' '}'@, or @'{<' '>}'@, the parentheses can be omitted.
+That is, @module-path'.'delimited-expr@ is equivalent to
+@module-path'.('delimited-expr')'@.
 
 \begin{caml_example}{toplevel}
 let vector = Random.[|int 255; int 255; int 255; int 255|];;

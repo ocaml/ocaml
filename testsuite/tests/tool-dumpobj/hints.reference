@@ -11,7 +11,7 @@
       14  ACC0
       15  GETFIELD1
       16  PUSHACC1
-      17  GETFIELD0 (immediate)
+      17  GETFIELD0
       18  MAKEBLOCK2 0 (immutable)
       20  RETURN 1
       22  RESTART

@@ -30,7 +30,7 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
       Pmakelazyblock tag
   | Pfield (field, imm_or_pointer, mutability) ->
       Pfield (field, imm_or_pointer, mutability)
-  | Pfield_computed -> Pfield_computed
+  | Pfield_computed _ -> Pfield_computed
   | Psetfield (field, imm_or_pointer, init_or_assign) ->
       Psetfield (field, imm_or_pointer, init_or_assign)
   | Psetfield_computed (imm_or_pointer, init_or_assign) ->
@@ -153,6 +153,8 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Pint_as_pointer -> Pint_as_pointer
   | Patomic_load -> Patomic_load
   | Patomic_fetch_add -> Patomic_fetch_add
+  | Patomic_exchange -> Patomic_exchange
+  | Patomic_cas -> Patomic_cas
   | Popaque -> Popaque
   | Pdls_get -> Pdls_get
   | Ppoll -> Ppoll

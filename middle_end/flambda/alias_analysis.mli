@@ -19,6 +19,7 @@
 type allocation_point =
   | Symbol of Symbol.t
   | Variable of Variable.t
+  | Const of Flambda.const
 
 type allocated_const =
   | Normal of Allocated_const.t

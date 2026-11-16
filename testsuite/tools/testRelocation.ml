@@ -74,8 +74,8 @@ let bindir_rules config file =
                                    "ocamlyacc"])
       in
       let linker_embeds_stdlib_location =
-        (* If the launcher doesn't search for ocamlrun, then either the #! stub
-           will include the absolute path or the RNTM section will *)
+        (* Unless the launcher only searches for ocamlrun, either the #! stub
+           or the RNTM section will include the absolute location of bindir. *)
         match classification with
         | Tendered _ when config.has_runtime_search <> Config.Enable -> true
         | _ -> false

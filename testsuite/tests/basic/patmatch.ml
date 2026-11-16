@@ -34,6 +34,10 @@ let k = function
              '~'|'^'|'|'|'*' -> "oper"
   | _ -> "othr"
 
+let[@warning "-redundant-case"] test g x =
+  (* #15171 *)
+  match x with _ -> 1 | (0|1) when g () -> 5
+
 (* Matching on arrays *)
 
 let p = function [| x |] -> x | _ -> assert false

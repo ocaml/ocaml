@@ -491,8 +491,11 @@ static void socket_poll (HANDLE hStop, void *_data)
   SELECTMODE       mode;
   WSANETWORKEVENTS events;
   BOOL             bCollectResults;
+  fd_set           writefds;
+  struct timeval   tv = {0, 0};
 
   lpSelectData = (LPSELECTDATA)_data;
+  FD_ZERO(&writefds);
 
   DEBUG_PRINT("Worker has %d queries to service", lpSelectData->nQueriesCount);
   for (nEvents = 0; nEvents < lpSelectData->nQueriesCount; nEvents++)
@@ -511,6 +514,7 @@ static void socket_poll (HANDLE hStop, void *_data)
     {
       DEBUG_PRINT("Polling write for %d", iterQuery->hFileDescr);
       maskEvents |= FD_WRITE | FD_CONNECT | FD_CLOSE;
+      FD_SET((SOCKET)(iterQuery->hFileDescr), &writefds);
     }
     if ((mode & SELECT_MODE_EXCEPT) != 0)
     {
@@ -529,7 +533,17 @@ static void socket_poll (HANDLE hStop, void *_data)
   aEvents[nEvents]  = hStop;
   nEvents++;
 
-  if (lpSelectData->nError == 0)
+  /* Unlike the other network events, FD_WRITE is only recorded when the
+     socket gets connected and after a send fails with WSAEWOULDBLOCK, so a
+     socket that is already writable would not be reported again. Check for
+     writability directly, and only wait if no socket is writable. */
+  if (lpSelectData->nError == 0 && writefds.fd_count > 0)
+  {
+    check_error(lpSelectData,
+        select(0, NULL, &writefds, NULL, &tv) == SOCKET_ERROR);
+  }
+
+  if (lpSelectData->nError == 0 && writefds.fd_count == 0)
   {
     check_error(lpSelectData,
         WaitForMultipleObjects(
@@ -574,6 +588,14 @@ static void socket_poll (HANDLE hStop, void *_data)
                                  iterQuery->hFileDescr);
         }
       }
+    }
+
+    if (bCollectResults
+        && FD_ISSET((SOCKET)(iterQuery->hFileDescr), &writefds)
+        && !handle_set_mem(&lpSelectData->writeResults, iterQuery->hFileDescr))
+    {
+      select_data_result_add(lpSelectData, SELECT_MODE_WRITE,
+                             iterQuery->hFileDescr);
     }
 
     if (aEvents[i] == NULL)

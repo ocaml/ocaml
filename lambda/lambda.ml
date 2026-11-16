@@ -59,7 +59,7 @@ type primitive =
   | Pmakeblock of int * mutable_flag * block_shape
   | Pmakelazyblock of lazy_block_tag
   | Pfield of int * immediate_or_pointer * mutable_flag
-  | Pfield_computed
+  | Pfield_computed of mutable_flag
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
   | Psetfield_computed of immediate_or_pointer * initialization_or_assignment
   | Pfloatfield of int
@@ -159,6 +159,11 @@ type primitive =
   (* Atomic operations *)
   | Patomic_load
   | Patomic_fetch_add
+  (* Native atomic exchange / compare-and-set, emitted only when the stored
+     value is statically immediate, so no write barrier is required.  Pointer
+     cases keep going through the C call, which runs the barrier. *)
+  | Patomic_exchange
+  | Patomic_cas
   (* Inhibition of optimisation *)
   | Popaque
   (* Fetching domain-local state *)
@@ -944,12 +949,7 @@ let duplicate_function =
      ~freshen_bound_variables:true
      Ident.Map.empty).subst_lfunction
 
-let map_lfunction f { kind; params; return; body; attr; loc;
-                      free_variables = _ } =
-  let body = f body in
-  lfunction' ~kind ~params ~return ~body ~attr ~loc
-
-let shallow_map f = function
+let shallow_map_gen ~map_lfunction f = function
   | Lvar _
   | Lmutvar _
   | Lconst _ as lam -> lam
@@ -1015,8 +1015,22 @@ let shallow_map f = function
   | Lifused (v, e) ->
       Lifused (v, f e)
 
+let map_lfunction f { kind; params; return; body; attr; loc;
+                      free_variables = _ } =
+  let body = f body in
+  lfunction' ~kind ~params ~return ~body ~attr ~loc
+
+let shallow_map f lam = shallow_map_gen ~map_lfunction f lam
+
 let map f =
   let rec g lam = f (shallow_map g lam) in
+  g
+
+let map_functions lfun_map =
+  let map_lfunction f lfun =
+    map_lfunction f (lfun_map lfun)
+  in
+  let rec g lam = shallow_map_gen ~map_lfunction g lam in
   g
 
 (* To let-bind expressions to variables *)

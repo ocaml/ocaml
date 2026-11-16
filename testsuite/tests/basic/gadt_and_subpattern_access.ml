@@ -50,6 +50,20 @@ let[@inline never] record (type a) (x : a) (w : a t) =
   | { w = Int; v = n } -> n = 42
   | { w = Str; v = s } -> Gc.minor (); s == !keep
 
+type _ w = Int_w : int w | Bytes_w : bytes w
+
+(* Component whose sub-pattern has a type of its own ([0 : int]) in the
+   first row: the tuple pattern's type is [a ty * int] *)
+let[@inline never] tuple_subpattern (type a) (p : a w * a) =
+  match p with
+  | (Int_w, 0) -> ref "int"
+  | (Int_w, _) -> ref "int"
+  | (Bytes_w, b) ->
+      Gc.minor ();
+      let victim = ref "victim" in
+      Bytes.fill b 0 (Bytes.length b) 'X';
+      victim
+
 let () =
   assert (tuple (Sys.opaque_identity (42, Int)));
   assert (tuple (Sys.opaque_identity (fresh (), Str)));
@@ -61,4 +75,7 @@ let () =
   assert (constructor_rev (fresh ()) Str);
   assert (record 42 Int);
   assert (record (fresh ()) Str);
+  Gc.minor ();
+  assert (!(tuple_subpattern (Sys.opaque_identity (Bytes_w, Bytes.make 7 'b')))
+          = "victim");
   print_endline "OK"

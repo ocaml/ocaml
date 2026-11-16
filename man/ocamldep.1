@@ -192,6 +192,11 @@ Under Unix, this option does nothing.
 .B \-sort
 Sort files according to their dependencies.
 .TP
+.B \-strict
+Stop processing at the first error (e.g. a syntax error), without
+printing any dependencies. In this mode, a missing input file is an
+error; otherwise, missing input files are silently ignored.
+.TP
 .B \-version
 Print version string and exit.
 .TP

@@ -145,7 +145,7 @@ let preserve_tailcall_for_prim = function
   | Prunstack | Pperform | Presume | Preperform | Ppoll ->
       true
   | Pbytes_to_string | Pbytes_of_string | Pignore | Pgetglobal _ | Psetglobal _
-  | Pmakeblock _ | Pmakelazyblock _ | Pfield _ | Pfield_computed | Psetfield _
+  | Pmakeblock _ | Pmakelazyblock _ | Pfield _ | Pfield_computed _ | Psetfield _
   | Psetfield_computed _ | Pfloatfield _ | Psetfloatfield _ | Pduprecord _
   | Pccall _ | Praise _ | Pnot | Pnegint | Paddint | Psubint | Pmulint
   | Pdivint _ | Pmodint _ | Pandint | Porint | Pxorint | Plslint | Plsrint
@@ -166,7 +166,7 @@ let preserve_tailcall_for_prim = function
   | Pbytes_set_64 _ | Pbigstring_load_16 _ | Pbigstring_load_32 _
   | Pbigstring_load_64 _ | Pbigstring_set_16 _ | Pbigstring_set_32 _
   | Pbigstring_set_64 _ | Pctconst _ | Pbswap16 | Pbbswap _ | Pint_as_pointer
-  | Patomic_load | Patomic_fetch_add
+  | Patomic_load | Patomic_fetch_add | Patomic_exchange | Patomic_cas
   | Pdls_get ->
       false
 
@@ -372,7 +372,7 @@ let comp_primitive stack_info p sz args =
   | Pcompare_floats -> Kccall("caml_float_compare", 2, None)
   | Pcompare_bints bi -> comp_bint_primitive bi "compare" args
   | Pfield(n, ptr, _mut) -> Kgetfield (n, ptr)
-  | Pfield_computed -> Kgetvectitem Pointer
+  | Pfield_computed _ -> Kgetvectitem Pointer
   | Psetfield(n, _ptr, _init) -> Ksetfield n
   | Psetfield_computed(_ptr, _init) -> Ksetvectitem
   | Psetfloatfield (n, _init) -> Ksetfloatfield n
@@ -533,6 +533,8 @@ let comp_primitive stack_info p sz args =
   | Pbytes_of_string -> Kccall("caml_bytes_of_string", 1, None)
   | Patomic_load -> Kccall("caml_atomic_load_field", 2, None)
   | Patomic_fetch_add -> Kccall("caml_atomic_fetch_add_field", 3, None)
+  | Patomic_exchange -> Kccall("caml_atomic_exchange_field", 3, None)
+  | Patomic_cas -> Kccall("caml_atomic_cas_field", 4, None)
   | Pdls_get -> Kccall("caml_domain_dls_get", 1, None)
   | Ppoll -> Kccall("caml_process_pending_actions_with_root", 1, None)
   (* The cases below are handled in [comp_expr] before the [comp_primitive] call

@@ -41,6 +41,12 @@
 #include "caml/finalise.h"
 #include "misc_internals.h"
 
+#ifdef _WIN32
+typedef void (*sighandler)(int sig);
+extern sighandler caml_win32_signal(int sig, sighandler action);
+#define signal(sig,act) caml_win32_signal(sig,act)
+#endif
+
 /* The set of pending signals (received but not yet processed).
    It is represented as a bit vector.
    Valid signal numbers range from 1 to NSIG - 1 included.

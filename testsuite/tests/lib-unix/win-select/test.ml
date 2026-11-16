@@ -99,3 +99,25 @@ let () =
 
   close file; unlink path;
   close pr; close pw
+
+let () =
+  let server = socket PF_INET SOCK_STREAM 0 in
+  bind server (ADDR_INET (inet_addr_loopback, 0));
+  listen server 1;
+  let client = socket PF_INET SOCK_STREAM 0 in
+  connect client (getsockname server);
+  let pr, pw = pipe () in
+  let writable () =
+    match select [pr] [client] [] 0.5 with
+    | _, [_], _ -> true
+    | _ -> false
+  in
+  let first = writable () in
+  let second = writable () in
+  if first && second then
+    Printf.printf "SUCCESS: Writable socket is reported by every call.\n"
+  else
+    Printf.printf "BUG REPRODUCED: Writable socket reported %b, %b.\n"
+      first second;
+  close pr; close pw;
+  close client; close server
