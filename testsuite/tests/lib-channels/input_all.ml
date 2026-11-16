@@ -10,7 +10,7 @@
 *)
 
 let data_file =
-  "data.txt"
+  "test/subdir/data.txt"
 
 let random_string size =
   String.init size (fun _ -> Char.chr (Random.int 256))
@@ -19,7 +19,7 @@ let random_string size =
 
 let check size =
   let data = random_string size in
-  Out_channel.with_open_bin data_file (fun oc -> Out_channel.output_string oc data);
+  Out_channel.with_open_bin ~mkdirs:0o700 data_file (fun oc -> Out_channel.output_string oc data);
   let read_data = In_channel.with_open_bin data_file In_channel.input_all in
   assert (data = read_data)
 
