@@ -46,36 +46,47 @@ val stdout : t
 val stderr : t
 (** The standard error output for the process. *)
 
-val open_bin : string -> t
+val open_bin : ?mkdirs:int -> string -> t
 (** Open the named file for writing, and return a new output channel on that
     file, positioned at the beginning of the file. The file is truncated to zero
-    length if it already exists. It is created if it does not already exists. *)
+    length if it already exists. It is created if it does not already exists.
+    The [mkdirs] argument has the same meaning as in [open_gen]. *)
 
-val open_text : string -> t
+val open_text : ?mkdirs:int -> string -> t
 (** Same as {!open_bin}, but the file is opened in text mode, so that newline
     translation takes place during writes. On operating systems that do not
     distinguish between text mode and binary mode, this function behaves like
-    {!open_bin}. *)
+    {!open_bin}. The [mkdirs] argument has the same meaning as in [open_gen]. *)
 
-val open_gen : open_flag list -> int -> string -> t
+val open_gen : ?mkdirs:int -> open_flag list -> int -> string -> t
 (** [open_gen mode perm filename] opens the named file for writing, as described
     above. The extra argument [mode] specifies the opening mode. The extra
     argument [perm] specifies the file permissions, in case the file must be
     created.  {!open_text} and {!open_bin} are special cases of this
-    function. *)
+    function.
 
-val with_open_bin : string -> (t -> 'a) -> 'a
+    [open_gen ~mkdirs:perms mode perm filename] does exactly the same,
+    but before doing anything, all parent and ancestor directories of
+    [filename] are automatically created as needed, each newly created
+    directory with permissions [perms], similar to the Unix [install -D]
+    command. *)
+
+val with_open_bin : ?mkdirs:int -> string -> (t -> 'a) -> 'a
 (** [with_open_bin fn f] opens a channel [oc] on file [fn] and returns [f
     oc]. After [f] returns, either with a value or by raising an exception, [oc]
-    is guaranteed to be closed. *)
+    is guaranteed to be closed. The [mkdirs] argument has the same meaning as in
+    [open_gen]. *)
 
-val with_open_text : string -> (t -> 'a) -> 'a
+val with_open_text : ?mkdirs:int -> string -> (t -> 'a) -> 'a
 (** Like {!with_open_bin}, but the channel is opened in text mode (see
-    {!open_text}). *)
+    {!open_text}). The [mkdirs] argument has the same meaning as in
+    [open_gen]. *)
 
-val with_open_gen : open_flag list -> int -> string -> (t -> 'a) -> 'a
+val with_open_gen :
+  ?mkdirs:int -> open_flag list -> int -> string -> (t -> 'a) -> 'a
 (** Like {!with_open_bin}, but can specify the opening mode and file permission,
-    in case the file must be created (see {!open_gen}). *)
+    in case the file must be created (see {!open_gen}). The [mkdirs] argument
+    has the same meaning as in [open_gen]. *)
 
 val close : t -> unit
 (** Close the given channel, flushing all buffered write operations.  Output

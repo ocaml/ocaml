@@ -619,11 +619,13 @@ stdlib__Option.cmi : option.mli \
 stdlib__Out_channel.cmo : out_channel.ml \
     stdlib.cmi \
     stdlib__Fun.cmi \
+    stdlib__Filename.cmi \
     stdlib__Bigarray.cmi \
     stdlib__Out_channel.cmi
 stdlib__Out_channel.cmx : out_channel.ml \
     stdlib.cmx \
     stdlib__Fun.cmx \
+    stdlib__Filename.cmx \
     stdlib__Bigarray.cmx \
     stdlib__Out_channel.cmi
 stdlib__Out_channel.cmi : out_channel.mli \
