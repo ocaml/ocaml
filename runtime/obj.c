@@ -384,15 +384,15 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
       CAMLassert(Tag_val(dummy) == Tag_val(newval));
   } else if (tag == Double_array_tag){
     CAMLassert (Wosize_val(newval) == Wosize_val(dummy));
-    CAMLassert (Tag_val(dummy) != Infix_tag);
-    Unsafe_store_tag_val(dummy, Double_array_tag);
+    /* The dummy was created by [caml_alloc_dummy_float]. */
+    CAMLassert (Tag_val(dummy) == Double_array_tag);
     size = Wosize_val (newval) / Double_wosize;
     for (mlsize_t i = 0; i < size; i++) {
       Store_double_flat_field (dummy, i, Double_flat_field (newval, i));
     }
   } else {
     CAMLassert (Scannable_tag(tag));
-    CAMLassert(Scannable_val(dummy));
+    CAMLassert (Scannable_val(dummy));
     CAMLassert (Tag_val(dummy) != Infix_tag);
     Unsafe_store_tag_val(dummy, tag);
     size = Wosize_val(newval);
