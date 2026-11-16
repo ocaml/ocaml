@@ -818,7 +818,7 @@ module Map : sig
 
           @since 4.03 *)
 
-      val inter: f:(key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
+      val inter: f:(key -> 'a -> 'b -> 'c option) -> 'a t -> 'b t -> 'c t
       (** [inter ~f m1 m2] computes a map whose keys are a subset of the keys
           that are bound in both [m1] and [m2]. For each such key, [f] is called
           to determine whether the key should be bound in the resulting map and
@@ -832,7 +832,7 @@ module Map : sig
 
           @since 5.7 *)
 
-      val diff: 'a t -> 'a t -> 'a t
+      val diff: 'a t -> 'b t -> 'a t
       (** [diff m1 m2] computes the map whose keys are the subset of keys of
           [m1] that are not bound in [m2].
 

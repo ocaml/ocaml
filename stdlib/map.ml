@@ -33,8 +33,8 @@ module type S =
       (key -> 'a option -> 'b option -> 'c option) ->
       'a t -> 'b t -> 'c t
     val union: (key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
-    val inter: (key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
-    val diff: 'a t -> 'a t -> 'a t
+    val inter: (key -> 'a -> 'b -> 'c option) -> 'a t -> 'b t -> 'c t
+    val diff: 'a t -> 'b t -> 'a t
     val cardinal: 'a t -> int
     val bindings: 'a t -> (key * 'a) list
     val min_binding: 'a t -> (key * 'a)
