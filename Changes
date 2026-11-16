@@ -8,6 +8,10 @@ OCaml 5.5.3
   directories.
   (David Allsopp, review by Florian Angeletti)
 
+- #15296: Fix three small memory leaks related to Relocatable OCaml and an
+  unclosed directory handle caml_locate_standard_library on Windows.
+  (David Allsopp, review by Nicolás Ojeda Bär)
+
 OCaml 5.5.2 (23 October 2026)
 -----------------------------
 
