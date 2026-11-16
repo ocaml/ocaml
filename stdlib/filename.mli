@@ -125,6 +125,37 @@ val null : string
 
     @since 4.10 *)
 
+val mkdirs : ?exists_ok:bool -> string -> int -> unit
+(** Create a directory along with all ancestors as needed.
+
+    Every newly created directory along the path gets the provided
+    permissions, while all existing directories do not have their
+    permissions changed.
+
+    This is the moral equivalent to the Unix [mkdir -p] and
+    [install -d] commands.
+
+    If [exists_ok] is [true] (the default), this command succeeds if
+    the provided directory already exists, just like [mkdir -p] and
+    [install -d].  Otherwise, if [exists_ok] is [false], this command
+    expects to actually create the final directory, similar to a plain
+    [mkdir].
+
+    @since 5.6
+*)
+
+val rmtree : string -> unit
+(** Remove a file or directory tree recursively.
+
+    This is the moral equivalent to the Unix [rm -rf] command.
+
+    If at any point within the tree, a file or directory vanishes
+    before it was removed, that kind of "error" is silently ignored.
+    This allows two processes to remove the same tree at the same time.
+
+    @since 5.6
+*)
+
 val temp_file : ?temp_dir: string -> string -> string -> string
 (** [temp_file prefix suffix] returns the name of a
    fresh temporary file in the temporary directory.
@@ -177,6 +208,16 @@ val temp_dir : ?temp_dir: string -> ?perms:int  -> string -> string -> string
 
    @raise Sys_error if the directory could not be created.
    @since 5.1
+*)
+
+val with_temp_dir :
+      ?temp_dir:string -> ?perms:int -> string -> string -> (string -> 'a) -> 'a
+(** [with_temp_dir prefix suffix fn] creates a fresh temporary directory
+    [temp_dir] and calls [fn temp_dir].  It ensures that [temp_dir]
+    will be always be cleaned up (via [rmtree temp_dir]) at the end of
+    the function call, even if an exception is thrown.
+
+   @since 5.6
 *)
 
 val get_temp_dir_name : unit -> string

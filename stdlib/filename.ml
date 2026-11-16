@@ -322,6 +322,37 @@ let remove_extension name =
   let l = extension_len name in
   if l = 0 then name else String.sub name 0 (String.length name - l)
 
+let rec mkdirs ?(exists_ok = true) p perms =
+  match exists_ok && Sys.filepath_exists p with
+  | true ->
+      if not (Sys.is_directory p) then
+        (* This will fail and generate a useful error message *)
+        Sys.mkdir p perms
+  | false ->
+      mkdirs ~exists_ok:true (dirname p) perms;
+      Sys.mkdir p perms
+
+let rec rmtree p =
+  (* Sys.remove deletes a symbolic link itself, also a link to a directory;
+   * a Windows junction needs Sys.rmdir instead. Trying both first therefore
+   * keeps links from being followed, except for a link that cannot be
+   * deleted, e.g. in a read-only directory: Sys cannot tell it from a real
+   * directory, and the contents of its target are deleted. *)
+  match Sys.remove p with
+  | () -> ()
+  | exception (Sys_error _ as ex) ->
+      let bt = Printexc.get_raw_backtrace () in
+      begin match Sys.rmdir p with
+      | () -> ()
+      | exception Sys_error _ ->
+          if not (Sys.file_exists p) then ()
+          else if Sys.is_directory p then begin
+            Array.iter (fun e -> rmtree (concat p e)) (Sys.readdir p);
+            Sys.rmdir p
+          end
+          else Printexc.raise_with_backtrace ex bt
+      end
+
 external open_desc: string -> open_flag list -> int -> int = "caml_sys_open"
 external close_desc: int -> unit = "caml_sys_close"
 
@@ -371,3 +402,7 @@ let temp_dir ?(temp_dir = Domain.DLS.get current_temp_dir_name)
     with Sys_error _ as e ->
       if counter >= 20 then raise e else try_name (counter + 1)
   in try_name 0
+
+let with_temp_dir ?temp_dir:temp_dir' ?perms prefix suffix fn =
+  let name = temp_dir ?temp_dir:temp_dir' ?perms prefix suffix in
+  Fun.protect ~finally:(fun () -> rmtree name) @@ fun () -> fn name
