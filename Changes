@@ -12,6 +12,12 @@ OCaml 5.5.3
   unclosed directory handle caml_locate_standard_library on Windows.
   (David Allsopp, review by Nicolás Ojeda Bär)
 
+- #15310: Use TARGET_BINDIR when linking bytecode executables in the "fallback"
+  searching mode. Affects cross-compilation where TARGET_BINDIR != HOST_BINDIR
+  and --enable-runtime-search=fallback (which is not the default, nor used in
+  opam installations).
+  (David Allsopp, review by Nicolás Ojeda Bär)
+
 OCaml 5.5.2 (23 October 2026)
 -----------------------------
 

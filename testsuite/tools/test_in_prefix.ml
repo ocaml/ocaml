@@ -152,7 +152,7 @@ let () =
      relocatable and also required support from the assembler and C compiler. *)
   let relocatable =
     config.has_relative_libdir <> None
-    && config.has_runtime_search <> Config.Disable
+    && config.has_runtime_search = Config.Enable
   in
   let reproducible =
     relocatable
@@ -163,7 +163,7 @@ let () =
     && (not Toolchain.c_compiler_always_embeds_build_path
         || not Toolchain.c_compiler_debug_paths_can_be_absolute)
   in
-  let target_relocatable = (Config.search_method <> Config.Disable) in
+  let target_relocatable = (Config.search_method = Config.Enable) in
   (* Use Harness.pp_path unless --verbose was specified *)
   let pp_path =
     if verbose then
