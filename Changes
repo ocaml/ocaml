@@ -908,6 +908,10 @@ OCaml 5.6.0
   directories.
   (David Allsopp, review by Florian Angeletti)
 
+- #15296: Fix three small memory leaks related to Relocatable OCaml and an
+  unclosed directory handle caml_locate_standard_library on Windows.
+  (David Allsopp, review by Nicolás Ojeda Bär)
+
 - #15302: fix infinite loops in Pprintast (eg -dsource) when printing patterns
   of the form `[] p`, `() p`, `true p` or `false p`, and expressions of the form
   `(::) e` where `e` is not a pair; also avoid dropping the argument of `[] e`

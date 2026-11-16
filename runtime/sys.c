@@ -795,12 +795,15 @@ CAMLprim value caml_sys_get_stdlib_dirs(value vstdlib_default)
 
   stdlib =
     caml_locate_standard_library(caml_params->exe_name, stdlib_default, &root);
+  caml_stat_free(stdlib_default);
 
   eff = caml_copy_string_of_os(stdlib);
+  caml_stat_free(stdlib);
   if (root == NULL) {
     root_dir = Val_none;
   } else {
     root_dir = caml_copy_string_of_os(root);
+    caml_stat_free(root);
     root_dir = caml_alloc_some(root_dir);
   }
   result = caml_alloc_2(0, eff, root_dir);
