@@ -510,7 +510,7 @@ let write_header outchan =
       Bytesections.init_record outchan
   | Shebang_bin_sh bin_sh ->
       (* Use the shebang launcher *)
-      write_sh_launcher outchan bin_sh bindir search runtime;
+      write_sh_launcher outchan bin_sh !Clflags.target_bindir search runtime;
       Bytesections.init_record outchan
   | Executable ->
       (* Use the executable stub launcher *)
@@ -527,8 +527,8 @@ let write_header outchan =
       else begin
         if search = Fallback then
           (* Ensure bindir does _not_ end up with a separator *)
-          output_string outchan
-            (Filename.(dirname (concat bindir current_dir_name)));
+          output_string outchan (Filename.(
+            dirname (concat !Clflags.target_bindir current_dir_name)));
         output_char outchan '\000';
         output_string outchan runtime
       end;
