@@ -142,6 +142,11 @@ Working version
   e.g. `(module%foo M : S) -> int`, because they cannot be represented.
   (Hugo Heuzard, review by Florian Angeletti)
 
+- #15316: fix a major GC crash on `let rec`-bound float records and float
+  arrays with more than 8 fields: the placeholder block is now allocated
+  with `Double_array_tag` rather than as a scannable block.
+  (Nick Barnes, review by ????)
+
 OCaml 5.6.0
 -----------
 
