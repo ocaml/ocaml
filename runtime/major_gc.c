@@ -1249,20 +1249,20 @@ static intnat get_major_slice_work(collection_slice_mode mode){
    diffs = translated amounts of work
    w = overflow work, if any
 */
-static void translate_back (pacing_phase p, double *w,
+static void translate_back (pacing_phase ph, double *w,
                             caml_alloc_counter *diffs)
 {
   intnat d_on = diffs->on_heap;
   intnat d_off = diffs->off_heap;
   if (d_on < 0) d_on = 0;
   if (d_off < 0) d_off = 0;
-  double diff_work = translate (p, d_on, d_off);
+  double diff_work = translate (ph, d_on, d_off);
   CAMLassert (diff_work >= 0);
   if (diff_work > *w){
-    double p = *w / diff_work;
-    diffs->on_heap = (uintnat) (diffs->on_heap * p);
-    diffs->off_heap = (uintnat) (diffs->off_heap * p);
-    *w = 0;
+    double prop = *w / diff_work;
+    diffs->on_heap = (uintnat) (d_on * prop);
+    diffs->off_heap = (uintnat) (d_off * prop);
+    *w -= translate (ph, diffs->on_heap, diffs->off_heap);
   }else{
     *w -= diff_work;
   }
