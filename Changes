@@ -322,11 +322,9 @@ OCaml 5.6.0
   (Tim McGilchrist, review by Sadiq Jaffer)
 
 - #15285: Add runtime-events counters reporting each major slice's
-  sweep, mark and ephemeron work in words (EV_C_MAJOR_SLICE_SWEEP_WORK,
-  EV_C_MAJOR_SLICE_MARK_WORK, EV_C_MAJOR_SLICE_EPHE_MARK_WORK,
-  EV_C_MAJOR_SLICE_EPHE_SWEEP_WORK), so GC rates can be measured from
+  sweep, mark and ephemeron work in words, so GC rates can be measured from
   the event stream alone.
-  (Nick Barnes, review by ????)
+  (Nick Barnes, review by Gabriel Scherer)
 
 ### Type system:
 
