@@ -1618,3 +1618,32 @@ let test64 () =
 
 test (test64 ())
 ;;
+
+(* A sign is not read when the field width is exhausted. *)
+let test65 () =
+  let fails f = match f () with _ -> false | exception Scan_failure _ -> true in
+  sscanf "+1234" "%2d" id = 1 &&
+  sscanf "-1234" "%2i" id = -1 &&
+  sscanf "1e-1" "%4f" id = 0.1 &&
+  fails (fun () -> sscanf "+1234" "%0d" id) &&
+  fails (fun () -> sscanf "-1234" "%0i" id) &&
+  fails (fun () -> sscanf "-1.5" "%0f" id) &&
+  fails (fun () -> sscanf "1e-1" "%2f" id) &&
+  fails (fun () -> sscanf ("1e-" ^ String.make 100 '0') "%2f" id)
+;;
+
+test (test65 ())
+;;
+
+(* Leading characters are not read when the field width is exhausted. *)
+let test66 () =
+  let fails f = match f () with _ -> false | exception Scan_failure _ -> true in
+  sscanf "0123" "%1i" id = 0 &&
+  sscanf {|"abc"|} "%5S" id = "abc" &&
+  fails (fun () -> sscanf "0123" "%0i" id) &&
+  fails (fun () -> sscanf {|"abc"|} "%0S" id) &&
+  fails (fun () -> sscanf ({|"|} ^ String.make 100 'a' ^ {|"|}) "%0S" id)
+;;
+
+test (test66 ())
+;;

@@ -659,6 +659,7 @@ let scan_hexadecimal_int = scan_digit_plus "hexadecimal" is_hexa_digit
 let scan_unsigned_decimal_int = scan_decimal_digit_plus
 
 let scan_sign width ib =
+  if width = 0 then width else
   let c = Scanning.checked_peek_char ib in
   match c with
   | '+' -> Scanning.store_char width ib c
@@ -676,6 +677,7 @@ let scan_optionally_signed_decimal_int width ib =
    assumed to be written respectively in hexadecimal, hexadecimal,
    octal, or binary. *)
 let scan_unsigned_int width ib =
+  if width = 0 then bad_token_length "digits" else
   match Scanning.checked_peek_char ib with
   | '0' as c ->
     let width = Scanning.store_char width ib c in
@@ -1117,6 +1119,7 @@ let scan_caml_char width ib =
 let scan_caml_string width ib =
 
   let rec find_start width =
+    if width = 0 then bad_token_length "a String" else
     match Scanning.checked_peek_char ib with
     | '\"' -> find_stop (Scanning.ignore_char width ib)
     | c -> character_mismatch '\"' c
