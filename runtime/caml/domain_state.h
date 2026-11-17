@@ -29,6 +29,27 @@ extern "C" {
 #define NUM_EXTRA_PARAMS 64
 typedef value extra_params_area[NUM_EXTRA_PARAMS];
 
+/* Counters of how many words were allocated. */
+typedef struct caml_alloc_counter {
+  uintnat on_heap;
+  uintnat off_heap;
+} caml_alloc_counter;
+
+#define Caml_ac_assign(dest,src) do {                   \
+    (dest).on_heap = (src).on_heap;                     \
+    (dest).off_heap = (src).off_heap;                   \
+  } while(false)
+
+#define Caml_ac_op(dest,a,op,b) do {                    \
+    (dest).on_heap = (a).on_heap op (b).on_heap;        \
+    (dest).off_heap = (a).off_heap op (b).off_heap;     \
+  } while(false)
+
+#define Caml_ac_clear(dest) do {                        \
+    (dest).on_heap = 0;                                 \
+    (dest).off_heap = 0;                                \
+  } while(false)
+
 /* This structure sits in the TLS area and is also accessed efficiently
  * via native code, which is why the indices are important */
 typedef struct {

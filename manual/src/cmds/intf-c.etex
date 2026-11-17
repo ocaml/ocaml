@@ -2200,9 +2200,9 @@ data, and whose associated operations are given by \var{ops} (a
 pointer to a "struct custom_operations", usually statically allocated
 as a C global variable).
 
-The two parameters \var{used} and \var{max} are used to control the
-speed of garbage collection when the finalized object contains
-pointers to out-of-heap resources.  Generally speaking, the
+The parameter \var{used} is used to control the
+speed of garbage collection when the custom object contains
+pointers to out-of-heap memory.  Generally speaking, the
 OCaml incremental major collector adjusts its speed relative to the
 allocation rate of the program.  The faster the program allocates, the
 harder the GC works in order to reclaim quickly unreachable blocks
@@ -2211,49 +2211,34 @@ objects that the GC has not yet collected).
 
 Normally, the allocation rate is measured by counting the in-heap size
 of allocated blocks.  However, it often happens that finalized
-objects contain pointers to out-of-heap memory blocks and other resources
-(such as file descriptors, X Windows bitmaps, etc.).  For those
+objects contain pointers to out-of-heap memory blocks.  For those
 blocks, the in-heap size of blocks is not a good measure of the
-quantity of resources allocated by the program.
+quantity of memory allocated by the program.
 
-The two arguments \var{used} and \var{max} give the GC an idea of how
-much out-of-heap resources are consumed by the finalized block
-being allocated: you give the amount of resources allocated to this
-object as parameter \var{used}, and the maximum amount that you want
-to see in floating garbage as parameter \var{max}.  The units are
-arbitrary: the GC cares only about the ratio $\var{used} / \var{max}$.
+The argument \var{used} must be the number of words of out-of-heap
+memory consumed by the custom block being allocated. The argument
+\var{max} is not used.
 
 For instance, if you are allocating a finalized block holding an X
-Windows bitmap of \var{w} by \var{h} pixels, and you'd rather not
-have more than 1 mega-pixels of unreclaimed bitmaps, specify
-$\var{used} = \var{w} * \var{h}$ and $\var{max} = 1000000$.
+Windows bitmap of \var{w} by \var{h} pixels, and one pixel uses one
+word of memory, specify $\var{used} = \var{w} * \var{h}$, and
+the GC will manage to keep the X server's memory usage reasonable
+according to the "space_overhead" parameter described in the GC
+module documentation.
 
-Another way to describe the effect of the \var{used} and \var{max}
-parameters is in terms of full GC cycles.  If you allocate many custom
-blocks with $\var{used} / \var{max} = 1 / \var{N}$, the GC will then do one
-full cycle (examining every object in the heap and calling
-finalization functions on those that are unreachable) every \var{N}
-allocations.  For instance, if $\var{used} = 1$ and $\var{max} = 1000$,
-the GC will do one full cycle at least every 1000 allocations of
-custom blocks.
-
-If your finalized blocks contain no pointers to out-of-heap resources,
+If your finalized blocks contain no pointers to out-of-heap memory,
 or if the previous discussion made little sense to you, just take
-$\var{used} = 0$ and $\var{max} = 1$.  But if you later find that the
-finalization functions are not called ``often enough'', consider
-increasing the $\var{used} / \var{max}$ ratio.
+$\var{used} = 0$.
 
 \begin{center}
 "caml_alloc_custom_mem("\var{ops}", "\var{size}", "\var{used}")"
 \end{center}
-Use this function when your custom block holds only out-of-heap memory
-(memory allocated with "malloc" or "caml_stat_alloc") and no other
-resources. "used" should be the number of bytes of out-of-heap
-memory that are held by your custom block. This function works like
-"caml_alloc_custom" except that the "max" parameter is under the
-control of the user (via the "custom_major_ratio",
-"custom_minor_ratio", and "custom_minor_max_size" parameters) and
-proportional to the heap sizes. It has been available since OCaml 4.08.0.
+This is the same as "caml_alloc_custom", with two differences:
+\begin{itemize}
+\item For reasons of backward compatibility, the \var{used} parameter
+      is a number of bytes, not words.
+\item Blocks allocated with this function will be sampled by Memprof.
+\end{itemize}
 
 \subsection{ss:c-custom-access}{Accessing custom blocks}
 
@@ -2349,8 +2334,9 @@ function must not access the OCaml runtime.)
 returns a fresh custom block of size \var{n}+1 words, with
 finalization function \var{f}. The first word is reserved for storing
 the custom operations; the other \var{n} words are available for your
-data. The two parameters \var{used} and \var{max} are used to control
+data. The parameter \var{used} is used to control
 the speed of garbage collection, as described for "caml_alloc_custom".
+The parameter \var{max} is ignored.
 
 \section{s:C-Bigarrays}{Advanced topic: Bigarrays and the OCaml-C interface}
 
