@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Clflags
-
 module Backend = struct
   (* See backend_intf.mli. *)
 
@@ -36,7 +34,7 @@ let backend = (module Backend : Backend_intf.S)
 
 module Options = Main_args.Make_optcomp_options (Main_args.Default.Optmain)
 let main argv ppf =
-  native_code := true;
+  Clflags.native_code := true;
   let program = "ocamlopt" in
   match
     Compenv.readenv ppf Before_args;
@@ -67,12 +65,13 @@ let main argv ppf =
     Compenv.readenv ppf Before_link;
     if
       List.length (List.filter (fun x -> !x)
-                     [make_package; make_archive; shared;
-                      Compenv.stop_early; output_c_object]) > 1
+                     [Clflags.make_package; Clflags.make_archive;
+                      Clflags.shared; Compenv.stop_early;
+                      Clflags.output_c_object]) > 1
     then
     begin
       let module P = Clflags.Compiler_pass in
-      match !stop_after with
+      match !Clflags.stop_after with
       | None ->
           Compenv.fatal "Please specify at most one of -pack, -a, -shared, -c, \
                          -output-obj";
@@ -84,34 +83,34 @@ let main argv ppf =
           (String.concat "|"
              (P.available_pass_names ~filter:(fun _ -> true) ~native:true))
     end;
-    if !make_archive then begin
+    if !Clflags.make_archive then begin
       Compmisc.init_path ();
-      let target = Compenv.extract_output !output_name in
+      let target = Compenv.extract_output !Clflags.output_name in
       Asmlibrarian.create_archive
         (Compenv.get_objfiles ~with_ocamlparam:false) target;
       Warnings.check_fatal ();
     end
-    else if !make_package then begin
+    else if !Clflags.make_package then begin
       Compmisc.init_path ();
-      let target = Compenv.extract_output !output_name in
+      let target = Compenv.extract_output !Clflags.output_name in
       Compmisc.with_ppf_dump ~file_prefix:target (fun ppf_dump ->
         Asmpackager.package_files ~ppf_dump (Compmisc.initial_env ())
           (Compenv.get_objfiles ~with_ocamlparam:false) target ~backend);
       Warnings.check_fatal ();
     end
-    else if !shared then begin
+    else if !Clflags.shared then begin
       Compmisc.init_path ();
-      let target = Compenv.extract_output !output_name in
+      let target = Compenv.extract_output !Clflags.output_name in
       Compmisc.with_ppf_dump ~file_prefix:target (fun ppf_dump ->
         Asmlink.link_shared ~ppf_dump
           (Compenv.get_objfiles ~with_ocamlparam:false) target);
       Warnings.check_fatal ();
     end
     else if not !Compenv.stop_early &&
-            (!objfiles <> [] || !Compenv.has_linker_inputs) then begin
+            (!Clflags.objfiles <> [] || !Compenv.has_linker_inputs) then begin
       let target =
-        if !output_c_object then
-          let s = Compenv.extract_output !output_name in
+        if !Clflags.output_c_object then
+          let s = Compenv.extract_output !Clflags.output_name in
           if (Filename.check_suffix s Config.ext_obj
             || Filename.check_suffix s Config.ext_dll)
           then s
@@ -122,7 +121,7 @@ let main argv ppf =
                  Config.ext_obj Config.ext_dll
               )
         else
-          Compenv.default_output !output_name
+          Compenv.default_output !Clflags.output_name
       in
       Compmisc.init_path ();
       Compmisc.with_ppf_dump ~file_prefix:target (fun ppf_dump ->

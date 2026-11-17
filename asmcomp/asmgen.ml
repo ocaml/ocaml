@@ -18,8 +18,6 @@
 [@@@ocaml.warning "+a-4-9-40-41-42"]
 
 open Format
-open Config
-open Clflags
 open Misc
 open Cmm
 
@@ -55,7 +53,8 @@ let pass_dump_linear_if ppf flag message phrase =
 let start_from_emit = ref true
 
 let should_save_before_emit () =
-  should_save_ir_after Compiler_pass.Scheduling && (not !start_from_emit)
+  Clflags.(should_save_ir_after Compiler_pass.Scheduling)
+    && (not !start_from_emit)
 
 let linear_unit_info =
   { Linear_format.unit_name = "";
@@ -85,13 +84,14 @@ let save_linear f =
 
 let write_linear prefix =
   if should_save_before_emit () then begin
-    let filename = Compiler_pass.(to_output_filename Scheduling ~prefix) in
+    let filename =
+      Clflags.Compiler_pass.(to_output_filename Scheduling ~prefix) in
     linear_unit_info.items <- List.rev linear_unit_info.items;
     Linear_format.save filename linear_unit_info
   end
 
 let should_emit () =
-  not (should_stop_after Compiler_pass.Scheduling)
+  not (Clflags.(should_stop_after Compiler_pass.Scheduling))
 
 let if_emit_do f x = if should_emit () then f x else ()
 let emit_begin_assembly = if_emit_do Emit.begin_assembly
@@ -109,24 +109,25 @@ let rec regalloc ~ppf_dump round fd =
   if round > 50 then
     fatal_error(fd.Mach.fun_name ^
                 ": function too complex, cannot complete register allocation");
-  dump_if ppf_dump dump_live "Liveness analysis" fd;
+  dump_if ppf_dump Clflags.dump_live "Liveness analysis" fd;
   let num_stack_slots =
-    if !use_linscan then begin
+    if !Clflags.use_linscan then begin
       (* Linear Scan *)
       let intervals = Interval.build_intervals fd in
-      if !dump_interval then Printmach.intervals ppf_dump intervals;
+      if !Clflags.dump_interval then Printmach.intervals ppf_dump intervals;
       Linscan.allocate_registers intervals
     end else begin
       (* Graph Coloring *)
       Interf.build_graph fd;
-      if !dump_interf then Printmach.interferences ppf_dump ();
-      if !dump_prefer then Printmach.preferences ppf_dump ();
+      if !Clflags.dump_interf then Printmach.interferences ppf_dump ();
+      if !Clflags.dump_prefer then Printmach.preferences ppf_dump ();
       Coloring.allocate_registers()
     end
   in
-  dump_if ppf_dump dump_regalloc "After register allocation" fd;
+  dump_if ppf_dump Clflags.dump_regalloc "After register allocation" fd;
   let (newfd, redo_regalloc) = Reload.fundecl fd num_stack_slots in
-  dump_if ppf_dump dump_reload "After insertion of reloading code" newfd;
+  dump_if ppf_dump Clflags.dump_reload "After insertion of reloading code"
+          newfd;
   if redo_regalloc then begin
     Reg.reinit(); Liveness.fundecl newfd; regalloc ~ppf_dump (round + 1) newfd
   end else newfd
@@ -142,25 +143,26 @@ let compile_fundecl ~ppf_dump ~funcnames fd_cmm =
                     (Selection.fundecl ~future_funcnames:funcnames)
   ++ Profile.record ~accumulate:true "polling"
                     (Polling.instrument_fundecl ~future_funcnames:funcnames)
-  ++ pass_dump_if ppf_dump dump_selection "After instruction selection"
+  ++ pass_dump_if ppf_dump Clflags.dump_selection "After instruction selection"
   ++ Profile.record ~accumulate:true "comballoc" Comballoc.fundecl
-  ++ pass_dump_if ppf_dump dump_combine "After allocation combining"
+  ++ pass_dump_if ppf_dump Clflags.dump_combine "After allocation combining"
   ++ Profile.record ~accumulate:true "cse" CSE.fundecl
-  ++ pass_dump_if ppf_dump dump_cse "After CSE"
+  ++ pass_dump_if ppf_dump Clflags.dump_cse "After CSE"
   ++ Profile.record ~accumulate:true "liveness" liveness
   ++ Profile.record ~accumulate:true "deadcode" Deadcode.fundecl
-  ++ pass_dump_if ppf_dump dump_live "Liveness analysis"
+  ++ pass_dump_if ppf_dump Clflags.dump_live "Liveness analysis"
   ++ Profile.record ~accumulate:true "spill" Spill.fundecl
   ++ Profile.record ~accumulate:true "liveness" liveness
-  ++ pass_dump_if ppf_dump dump_spill "After spilling"
+  ++ pass_dump_if ppf_dump Clflags.dump_spill "After spilling"
   ++ Profile.record ~accumulate:true "split" Split.fundecl
-  ++ pass_dump_if ppf_dump dump_split "After live range splitting"
+  ++ pass_dump_if ppf_dump Clflags.dump_split "After live range splitting"
   ++ Profile.record ~accumulate:true "liveness" liveness
   ++ Profile.record ~accumulate:true "regalloc" (regalloc ~ppf_dump 1)
   ++ Profile.record ~accumulate:true "linearize" Linearize.fundecl
-  ++ pass_dump_linear_if ppf_dump dump_linear "Linearized code"
+  ++ pass_dump_linear_if ppf_dump Clflags.dump_linear "Linearized code"
   ++ Profile.record ~accumulate:true "scheduling" Scheduling.fundecl
-  ++ pass_dump_linear_if ppf_dump dump_scheduling "After instruction scheduling"
+  ++ pass_dump_linear_if ppf_dump Clflags.dump_scheduling
+                         "After instruction scheduling"
   ++ save_linear
   ++ emit_fundecl
 
@@ -183,7 +185,7 @@ let compile_phrases ~ppf_dump ps =
     match ps with
     | [] -> ()
     | p :: ps ->
-       if !dump_cmm then fprintf ppf_dump "%a@." Printcmm.phrase p;
+       if !Clflags.dump_cmm then fprintf ppf_dump "%a@." Printcmm.phrase p;
        match p with
        | Cfunction fd ->
           compile_fundecl ~ppf_dump ~funcnames fd;
@@ -268,15 +270,15 @@ type middle_end =
   -> Clambda.with_constants
 
 let asm_filename output_prefix =
-    if !keep_asm_file || !Emitaux.binary_backend_available
-    then output_prefix ^ ext_asm
-    else Filename.temp_file "camlasm" ext_asm
+    if !Clflags.keep_asm_file || !Emitaux.binary_backend_available
+    then output_prefix ^ Config.ext_asm
+    else Filename.temp_file "camlasm" Config.ext_asm
 
 let compile_implementation ?toplevel ~backend ~prefixname ~middle_end
       ~ppf_dump (program : Lambda.program) =
   compile_unit ~output_prefix:prefixname
-    ~asm_filename:(asm_filename prefixname) ~keep_asm:!keep_asm_file
-    ~obj_filename:(prefixname ^ ext_obj)
+    ~asm_filename:(asm_filename prefixname) ~keep_asm:!Clflags.keep_asm_file
+    ~obj_filename:(prefixname ^ Config.ext_obj)
     (fun () ->
       Ident.Set.iter Compilenv.require_global program.required_globals;
       let clambda_with_constants =
@@ -303,8 +305,8 @@ let linear_gen_implementation filename =
 let compile_implementation_linear target =
   let output_prefix = Unit_info.prefix target in
   compile_unit ~output_prefix
-    ~asm_filename:(asm_filename output_prefix) ~keep_asm:!keep_asm_file
-    ~obj_filename:(output_prefix ^ ext_obj)
+    ~asm_filename:(asm_filename output_prefix) ~keep_asm:!Clflags.keep_asm_file
+    ~obj_filename:(output_prefix ^ Config.ext_obj)
     (fun () ->
       linear_gen_implementation (Unit_info.input_source_file target))
 

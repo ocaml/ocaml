@@ -16,7 +16,6 @@
 (* Link a set of .cmo files and produce a bytecode executable. *)
 
 open Misc
-open Config
 open Cmo_format
 
 module String = Misc.Stdlib.String
@@ -124,8 +123,9 @@ let scan_file ldeps obj_name tolink =
       raise(Error(File_not_found obj_name)) in
   let ic = open_in_bin file_name in
   try
-    let buffer = really_input_string ic (String.length cmo_magic_number) in
-    if buffer = cmo_magic_number then begin
+    let buffer =
+      really_input_string ic (String.length Config.cmo_magic_number) in
+    if buffer = Config.cmo_magic_number then begin
       (* This is a .cmo file. It must be linked in any case.
          Read the relocation information to see which modules it
          requires. *)
@@ -136,7 +136,7 @@ let scan_file ldeps obj_name tolink =
       linkdeps_unit ldeps ~filename:obj_name compunit;
       Link_object(file_name, compunit) :: tolink
     end
-    else if buffer = cma_magic_number then begin
+    else if buffer = Config.cma_magic_number then begin
       (* This is an archive file. Each unit contained in it will be linked
          in only if needed. *)
       let pos_toc = input_binary_int ic in    (* Go to table of contents *)
@@ -522,10 +522,10 @@ let write_header outchan =
          is written verbatim (no extra NUL), otherwise the directory separator
          just before the basename is effectively turned into a NUL (for Enable,
          there is no dirname, so the string "begins" with a NUL character). *)
-      if search = Disable then
+      if search = Config.Disable then
         output_string outchan runtime
       else begin
-        if search = Fallback then
+        if search = Config.Fallback then
           (* Ensure bindir does _not_ end up with a separator *)
           output_string outchan (Filename.(
             dirname (concat !Clflags.target_bindir current_dir_name)));
