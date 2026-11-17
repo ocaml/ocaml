@@ -1025,7 +1025,7 @@ let check_next_char message width ib =
 let check_next_char_for_char = check_next_char "a Char"
 let check_next_char_for_string = check_next_char "a String"
 
-let check_escape_width n width =
+let check_escape_width ~width n =
   if width < n then bad_token_length "an escape sequence"
 
 let scan_backslash_char width ib =
@@ -1033,7 +1033,7 @@ let scan_backslash_char width ib =
   | '\\' | '\'' | '\"' | 'n' | 't' | 'b' | 'r' | ' ' as c ->
     Scanning.store_char width ib (char_for_backslash c)
   | '0' .. '9' as c ->
-    check_escape_width 3 width;
+    check_escape_width ~width 3;
     let get_digit () =
       let c = Scanning.next_char ib in
       match c with
@@ -1044,7 +1044,7 @@ let scan_backslash_char width ib =
     let c2 = get_digit () in
     Scanning.store_char (width - 2) ib (char_for_decimal_code c0 c1 c2)
   | 'o' ->
-    check_escape_width 4 width;
+    check_escape_width ~width 4;
     let get_digit () =
       let c = Scanning.next_char ib in
       match c with
@@ -1055,7 +1055,7 @@ let scan_backslash_char width ib =
     let c2 = get_digit () in
     Scanning.store_char (width - 3) ib (char_for_octal_code c0 c1 c2)
   | 'x' ->
-    check_escape_width 3 width;
+    check_escape_width ~width 3;
     let get_digit () =
       let c = Scanning.next_char ib in
       match c with
@@ -1079,7 +1079,7 @@ let scan_backslash_uchar width ib =
         bad_input "too many digits, expected 1 to 6 hexadecimal digits";
       scan_digits (n + 1) (16 * cp + hexadecimal_value_of_char c)
     | '}' when n > 0 ->
-      check_escape_width (n + 3) width;
+      check_escape_width ~width (n + 3);
       if not (Uchar.is_valid cp) then
         bad_input
           (Printf.sprintf "%X is not a Unicode scalar value" cp);
