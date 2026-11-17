@@ -1412,7 +1412,7 @@ let unsafe_to_iarray ~capacity (f : 'a t -> unit) =
          [f] and resuming later, or
        - writes from other domains without proper synchronization to force them
          to happen-before [f] returned.
-     So this although this [reset] should cause an exception to be raised in
+     So although this [reset] should cause an exception to be raised in
      most cases, it by no means makes the present function safe. *)
   let capacity = Array.length arr in
   check_valid_length length arr;
