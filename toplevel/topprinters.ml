@@ -17,7 +17,7 @@
 
 let type_arrow ta tb =
   let ta = Ctype.newmono ta in
-  Ctype.newty (Tarrow (Asttypes.Nolabel, ta, tb, Types.commu_var ()))
+  Ctype.newty (Tarrow (Types.Nolabel, ta, tb, Types.commu_var ()))
 
 let type_formatter () =
   let format = Path.Pident (Ident.create_persistent "Stdlib__Format") in
@@ -78,7 +78,7 @@ let match_simple_printer_type env ty ~is_old_style =
 let filter_arrow env ty =
   let ty = Ctype.expand_head env ty in
   match Types.get_desc ty with
-  | Tarrow (lbl, l, r, _) when not (Btype.is_optional lbl) -> Some (l, r)
+  | Tarrow (lbl, l, r, _) when not (Btype.is_omittable lbl) -> Some (l, r)
   | _ -> None
 
 let extract_last_arrow env ty =

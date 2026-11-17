@@ -96,11 +96,11 @@ let rec baz =
   let x = M.x in
   fun () -> x
 [%%expect {|
-(apply (field_mut 1 (global Toploop!)) "M/466"
+(apply (field_mut 1 (global Toploop!)) "M/467"
   (let (x/1 =[int] 0) (makeblock 0 x/1)))
 module M : sig val x : int end
 (let
-  (M/0 = (apply (field_mut 0 (global Toploop!)) "M/466")
+  (M/0 = (apply (field_mut 0 (global Toploop!)) "M/467")
    letrec_function_context/3 = (caml_alloc_dummy 0))
   (letrec (baz/0 (function param/5[int] : int (field_imm 0 M/0)))
     (seq

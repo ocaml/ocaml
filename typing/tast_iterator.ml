@@ -406,6 +406,7 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
   | Texp_struct_item (si, e) ->
       sub.structure_item sub si;
       sub.expr sub e
+  | Texp_src_loc -> ()
 
 let package_type sub {tpt_constraints; tpt_txt; _} =
   List.iter
@@ -626,6 +627,7 @@ let typ sub {ctyp_loc; ctyp_desc; ctyp_env; ctyp_attributes; _} =
       iter_loc sub id;
       sub.package_type sub pack;
       sub.typ sub ct
+  | Ttyp_call_loc -> ()
 
 let class_structure sub {cstr_self; cstr_fields; _} =
   sub.pat sub cstr_self;

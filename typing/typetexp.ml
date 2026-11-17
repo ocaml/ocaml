@@ -47,6 +47,7 @@ type error =
   | Not_an_object of type_expr
   | Repeated_tuple_label of string
   | Functor_optional_param of string
+  | Invalid_label_for_call_loc of Asttypes.arg_label
 
 
 exception Error_forward of Location.error
@@ -465,6 +466,63 @@ let type_open :
     ref =
   ref (fun ?used_slot:_ _ -> assert false)
 
+let transl_label (label : Asttypes.arg_label)
+    (arg_opt : Parsetree.core_type option) =
+  match label, arg_opt with
+  | Optional l, Some { ptyp_desc = Ptyp_extension ({txt="call_loc"; _}, _); _}
+      -> Position l
+  | _,
+    Some ({ ptyp_desc = Ptyp_extension ({txt="call_loc"; _}, _); _} as arg) ->
+      Error.log_and_raise
+        arg.ptyp_loc
+        Env.empty
+        (Invalid_label_for_call_loc label)
+  | Labelled l, _ -> Labelled l
+  | Optional l, _ -> Optional l
+  | Nolabel, _ -> Nolabel
+
+let transl_label_from_pat_and_default
+    (label : Asttypes.arg_label)
+    (pat : Parsetree.pattern)
+    (default : Parsetree.expression option)
+    : Types.arg_label * Parsetree.pattern =
+  let label, inner_pat =
+    match default, pat with
+    | Some { pexp_desc = Pexp_extension ({txt="call_loc"; _}, _); _ },
+      { ppat_desc =
+          Ppat_constraint (
+            inner_pat,
+            ({ ptyp_desc = Ptyp_extension ({txt="call_loc"; _}, _); _} as ty));
+        _ } ->
+        (* Maybe valid case: [?(label = [%call_loc] : [%call_loc])].
+           [transl_label] will check that the argument is optional. *)
+        transl_label label (Some ty), inner_pat
+    | None,
+      { ppat_desc =
+          Ppat_constraint (
+            inner_pat,
+            ({ ptyp_desc = Ptyp_extension ({txt="call_loc"; _}, _); _} as ty));
+        _ } ->
+        (* Maybe an (invalid) expression [fun ?(label : [%call_loc]) -> ...] or
+           a type [?label:[%call_loc] -> ...]. [transl_label] will check that
+           the argument is optional. For the expression case, it is up to this
+           function's caller to reject it due to the missing default
+           expression. *)
+        transl_label label (Some ty), inner_pat
+    | Some { pexp_desc = Pexp_extension ({txt="call_loc"; _}, _); _ }, _ ->
+        (* Maybe valid case: [?(label = [%call_loc])].
+           [transl_label] will check that the argument is optional. *)
+        let ty =
+          { ptyp_desc = Ptyp_extension (Location.mknoloc "call_loc", PStr []);
+            ptyp_loc = Location.none;
+            ptyp_loc_stack = [];
+            ptyp_attributes = [] }
+        in
+        transl_label label (Some ty), pat
+    | _ -> transl_label label None, pat
+  in
+  label, if Btype.is_position label then inner_pat else pat
+
 let rec transl_type env ~policy ?(aliased=false) ~row_context styp =
   let delayed () =
     Builtin_attributes.warning_scope styp.ptyp_attributes
@@ -509,7 +567,14 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
     in
     ctyp (Ttyp_var name) ty
   | Ptyp_arrow(l, st1, st2) ->
-    let arg_cty = transl_type env ~policy ~row_context st1 in
+    let l = transl_label l (Some st1) in
+    let arg_cty =
+      (* If argument is of the form [?label:[%call_loc]], then its type is that
+         of a lexing location *)
+      if Btype.is_position l then
+        ctyp Ttyp_call_loc (newconstr Predef.path_textloc [])
+      else transl_type env ~policy ~row_context st1
+    in
     let ret_cty = transl_type env ~policy ~row_context st2 in
     let arg_ty = arg_cty.ctyp_type in
     let arg_ty =
@@ -517,7 +582,7 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
     in
     let arg_ty =
       match l with
-      | Nolabel | Labelled _ -> arg_ty
+      | Nolabel | Labelled _ | Position _ -> arg_ty
       | Optional _ -> begin
           (* Optional parameter types store [option] inside [Tpoly],
              leaving any quantifiers directly beneath [Tarrow]. *)
@@ -776,11 +841,13 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
   | Ptyp_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
   | Ptyp_functor (lbl, name, ptyp, st) ->
-    begin match lbl with
-      | Optional l ->
-          Error.log_and_raise ptyp.ppt_loc env (Functor_optional_param l);
-      | Nolabel | Labelled _ -> ()
-    end;
+    let lbl =
+      match lbl with
+        | Optional l ->
+            Error.log_and_raise ptyp.ppt_loc env (Functor_optional_param l);
+        | Nolabel -> Types.Nolabel
+        | Labelled s -> Types.Labelled s
+    in
     let pack, mty, ptys =
       transl_package env ~policy ~row_context ComputeMType ptyp in
     let t = newvar () in
@@ -1127,6 +1194,15 @@ let report_error_doc loc env = function
       Location.errorf ~loc
         "@[Module-dependent parameter %a cannot be optional@]"
         Style.inline_code l
+  | Invalid_label_for_call_loc arg_label ->
+      let negation, adjective =
+        match arg_label with
+        | Nolabel -> "not ", "unlabelled"
+        | Optional _ -> assert false
+        | Labelled _ -> "", "optional"
+      in
+      Location.errorf ~loc "A position argument must %sbe %s."
+        negation adjective
 
 let () =
   Location.register_error_of_exn

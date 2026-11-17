@@ -35,7 +35,8 @@ type t = Warnings.loc = {
     When loc_ghost=true, the location is usually a best effort approximation.
 
     This info is used by tools like merlin that want to relate source code with
-    parsetrees or later asts. ocamlprof skips instrumentation of ghost nodes.
+    parsetrees or later asts. ocamlprof skips instrumentation of ghost nodes,
+    and the [-annot] option will not try to display their type.
 
     Example: in `let f x = x`, we have:
     - a structure item at location "let f x = x"
@@ -74,6 +75,9 @@ val init : Lexing.lexbuf -> string -> unit
 
 val curr : Lexing.lexbuf -> t
 (** Get the location of the current token from the [lexbuf]. *)
+
+val ghostify : t -> t
+(** Return a version of the location with [loc_ghost = true] *)
 
 val symbol_rloc: unit -> t
 val symbol_gloc: unit -> t
