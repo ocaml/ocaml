@@ -1,0 +1,14 @@
+(* TEST
+ flags = "-dlambda -dcanonical-ids";
+ expect;
+*)
+
+(* Or-patterns flow through the pattern-matching compiler in a particular way.
+   This test checks that mutable context is properly erased even when or-patterns
+   are present. *)
+
+let f (r : int option ref) =
+  match r with
+  | ({ contents = Some (1 as x) } | { contents = Some x }) when (r := None; false) -> x
+  | { contents = None } -> 0
+  | { contents = Some v } -> v + 1000

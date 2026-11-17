@@ -494,6 +494,81 @@ and free_variables_list set exprs =
   List.fold_left (fun set expr -> Ident.Set.union (free_variables expr) set)
     set exprs
 
+module IS = Numbers.Int.Set
+
+let rec free_exits = function
+  | Lvar _
+  | Lmutvar _
+  | Lconst _
+  | Lfunction _ -> IS.empty
+  | Lapply{ap_func = fn; ap_args = args} ->
+      free_exits_list (free_exits fn) args
+  | Llet(_, _k, _id, arg, body)
+  | Lmutlet(_k, _id, arg, body) ->
+      IS.union
+        (free_exits arg)
+        (free_exits body)
+  | Lletrec(_decl, body) ->
+      free_exits body
+  | Lprim(_p, args, _loc) ->
+      free_exits_list IS.empty args
+  | Lswitch(arg, sw,_) ->
+      let set =
+        free_exits_list
+          (free_exits_list (free_exits arg)
+             (List.map snd sw.sw_consts))
+          (List.map snd sw.sw_blocks)
+      in
+      begin match sw.sw_failaction with
+      | None -> set
+      | Some failaction -> IS.union set (free_exits failaction)
+      end
+  | Lstringswitch (arg,cases,default,_) ->
+      let set =
+        free_exits_list (free_exits arg)
+          (List.map snd cases)
+      in
+      begin match default with
+      | None -> set
+      | Some default -> IS.union set (free_exits default)
+      end
+  | Lstaticraise (i,args) ->
+      free_exits_list (IS.singleton i) args
+  | Lstaticcatch(body, (i, _params), handler) ->
+      IS.union
+        (IS.remove i
+           (free_exits body))
+        (free_exits handler)
+  | Ltrywith(body, _param, handler) ->
+      IS.union
+        (free_exits handler)
+        (free_exits body)
+  | Lifthenelse(e1, e2, e3) ->
+      IS.union
+        (IS.union (free_exits e1) (free_exits e2))
+        (free_exits e3)
+  | Lsequence(e1, e2) ->
+      IS.union (free_exits e1) (free_exits e2)
+  | Lwhile(e1, e2) ->
+      IS.union (free_exits e1) (free_exits e2)
+  | Lfor(_v, lo, hi, _dir, body) ->
+      let set = IS.union (free_exits lo) (free_exits hi) in
+      IS.union set (free_exits body)
+  | Lassign(_id, e) ->
+      free_exits e
+  | Lsend (_k, met, obj, args, _) ->
+      free_exits_list
+        (IS.union (free_exits met) (free_exits obj))
+        args
+  | Levent (lam, _evt) ->
+      free_exits lam
+  | Lifused (_v, e) ->
+      free_exits e
+
+and free_exits_list set exprs =
+  List.fold_left (fun set expr -> IS.union (free_exits expr) set)
+    set exprs
+
 let lfunction' ~kind ~params ~return ~body ~attr ~loc =
   assert (List.length params <= max_arity ());
   let free_variables =
