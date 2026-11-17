@@ -245,6 +245,30 @@ last major slice. Work suspended during a ramp-up phase and never resumed is
 never collected against.
 @since 5.6
 *)
+| EV_C_MAJOR_SLICE_SWEEP_WORK
+(**
+Words of sweeping work performed by this Domain in the major slice that
+is ending, excluding ephemeron sweeping. Only emitted if non-zero.
+@since 5.6
+*)
+| EV_C_MAJOR_SLICE_MARK_WORK
+(**
+Words of marking work performed by this Domain in the major slice that
+is ending, excluding ephemeron marking. Only emitted if non-zero.
+@since 5.6
+*)
+| EV_C_MAJOR_SLICE_EPHE_MARK_WORK
+(**
+Words of ephemeron marking work performed by this Domain in the major
+slice that is ending. Only emitted if non-zero.
+@since 5.6
+*)
+| EV_C_MAJOR_SLICE_EPHE_SWEEP_WORK
+(**
+Words of ephemeron sweeping work performed by this Domain in the major
+slice that is ending. Only emitted if non-zero.
+@since 5.6
+*)
 
 (** The type for span events emitted by the runtime. *)
 type runtime_phase =
