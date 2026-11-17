@@ -103,6 +103,12 @@ Working version
   blowups in pathological cases
   (Vincent Laviron, report by Pierre-Marie Pédrot, review by Stefan Muenzel)
 
+* #14987, #15164: Reject `[%atomic.loc]` on polymorphic atomic record fields
+  to prevent unsound writes through their locations. Ordinary reads of these
+  fields remain valid.
+  (Demetrios Agourakis, report by Ryan Tjoa and Nathan Farlow,
+   review by Gabriel Scherer)
+
 - #15151: fix the positions of the debugging events and of the optimization
   hints of the code that the bytecode packager generates for the pack
   itself. They were placed in the code of the first packed units.

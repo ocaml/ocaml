@@ -232,6 +232,7 @@ type error =
   | Not_an_extension_constructor
   | Invalid_atomic_loc_payload
   | Label_not_atomic of Longident.t
+  | Polymorphic_atomic_loc of Longident.t
   | Atomic_in_pattern of Longident.t
   | Literal_overflow of string
   | Unknown_literal of string * char
