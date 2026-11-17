@@ -2410,9 +2410,7 @@ let rec erase_mutable p = match p.pat_desc with
           | Immutable -> (loc, lbl, erase_mutable p))
         lps
     in
-    { p with
-      pat_desc =
-        Tpat_record (lps, closed) }
+    { p with pat_desc = Tpat_record (lps, closed) }
   | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_variant (_,None,_) -> p
   | Tpat_alias (p',v,loc,uid,ty) ->
     { p with pat_desc = Tpat_alias (erase_mutable p', v, loc, uid, ty) }
@@ -2429,8 +2427,9 @@ let rec erase_mutable p = match p.pat_desc with
       pat_desc =
         Tpat_array (Immutable, List.map erase_mutable ps) }
   | Tpat_tuple labeled_ps ->
-    { p with
-      pat_desc =
-        Tpat_tuple (List.map (fun (lbl_opt, pat) -> (lbl_opt, erase_mutable pat)) labeled_ps) }
+    let labeled_ps =
+      List.map (fun (lbl_opt, pat) -> (lbl_opt, erase_mutable pat)) labeled_ps
+    in
+    { p with pat_desc = Tpat_tuple labeled_ps }
   | Tpat_lazy p' ->
     { p with pat_desc = Tpat_lazy (erase_mutable p') }

@@ -4584,6 +4584,7 @@ lambda/lambda.cmo : \
     typing/types.cmi \
     typing/primitive.cmi \
     typing/path.cmi \
+    utils/numbers.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
     typing/ident.cmi \
@@ -4597,6 +4598,7 @@ lambda/lambda.cmx : \
     typing/types.cmx \
     typing/primitive.cmx \
     typing/path.cmx \
+    utils/numbers.cmx \
     utils/misc.cmx \
     parsing/longident.cmx \
     typing/ident.cmx \
@@ -4610,6 +4612,7 @@ lambda/lambda.cmi : \
     typing/types.cmi \
     typing/primitive.cmi \
     typing/path.cmi \
+    utils/numbers.cmi \
     typing/ident.cmi \
     typing/env.cmi \
     lambda/debuginfo.cmi \
@@ -4627,6 +4630,7 @@ lambda/matching.cmo : \
     typing/patterns.cmi \
     typing/path.cmi \
     typing/parmatch.cmi \
+    utils/numbers.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
@@ -4651,6 +4655,7 @@ lambda/matching.cmx : \
     typing/patterns.cmx \
     typing/path.cmx \
     typing/parmatch.cmx \
+    utils/numbers.cmx \
     utils/misc.cmx \
     parsing/longident.cmx \
     parsing/location.cmx \
