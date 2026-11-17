@@ -12,4 +12,4 @@ File "unify_errors.ml", line 18, characters 9-10:
 18 |   1 + f [x]
               ^
   The value x has type 'a list but an expression was expected of type 'a
-  The type variable 'b occurs inside 'b list
+  The type variable 'a occurs inside 'a list

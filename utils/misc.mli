@@ -111,6 +111,8 @@ val create_hashtable: int -> ('a * 'b) list -> ('a, 'b) Hashtbl.t
 (** {1 Extensions to the standard library} *)
 
 module Stdlib : sig
+  module Set = Stdlib.Set
+  module Map = Stdlib.Map
 
 (** {2 Extensions to the List module} *)
   module List : sig

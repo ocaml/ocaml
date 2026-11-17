@@ -14,7 +14,7 @@ File "log_or_raise.ml", line 12, characters 2-24:
        ^^^^^^^^^^^^^^^^^^^^^^
   The variable x on the left-hand side of this or-pattern has type 'a
   but on the right-hand side it has type 'a option
-  The type variable 'b occurs inside 'b option
+  The type variable 'a occurs inside 'a option
 File "log_or_raise.ml", line 12, characters 28-29:
 12 | | Some x, Some x | [], x -> x
                                  ^
