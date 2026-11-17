@@ -933,6 +933,11 @@ OCaml 5.6.0
   (ButteryPaws, report by KC Sivaramakrishnan, review by Florian Angeletti and
   KC Sivaramakrishnan)
 
+- #15316: fix a major GC crash on `let rec`-bound float records and float
+  arrays with more than 8 fields: the placeholder block is now allocated
+  with `Double_array_tag` rather than as a scannable block.
+  (Nick Barnes, review by Vincent Laviron)
+
 OCaml 5.5.1
 -----------
 
