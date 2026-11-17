@@ -1360,7 +1360,8 @@ static void mark_stack_prune(struct mark_stack* stk)
               compressed_entries+old_compressed_entries);
 
   stk->count = new_stk_count;
-  CAMLassert(stk->count < stk->size);
+  /* If every entry was large, compression frees nothing. */
+  CAMLassert(stk->count <= stk->size);
 
   /* setup the compressed stack iterator */
   stk->compressed_stack_iter = caml_addrmap_iterator(&stk->compressed_stack);
@@ -1374,11 +1375,14 @@ static void realloc_mark_stack (struct mark_stack* stk)
   uintnat local_heap_bsize = caml_heap_size(Caml_state->shared_heap);
   uintnat factor = caml_mark_stack_prune_factor;
 
-  /* When the mark stack might not increase, we count the large mark entries
-     to adjust our allocation. This is needed because large mark stack entries
-     will not compress and because we are using a domain local heap bound we
-     need to fit large blocks into the local mark stack. See PR#11284 */
+  /* The heuristic here, from PR #11284, compares the mark
+   * stack size to a bound based on the domain's own major heap
+   * size. That is not useful for many common multidomain
+   * workloads. TODO: fix this. */
   if (factor > 0 && mark_stack_bsize >= local_heap_bsize / factor) {
+    /* Over the bound. Decide whether the mark stack is "compressible"
+     * by counting large mark stack entries (which compression
+     * leaves). */
     for (uintnat i = 0; i < stk->count; ++i) {
       mark_entry* me = &stk->stack[i];
       if (me->end - me->start > BITS_PER_WORD)
@@ -1386,29 +1390,40 @@ static void realloc_mark_stack (struct mark_stack* stk)
     }
   }
 
-  if (factor == 0 ||
-      mark_stack_bsize - mark_stack_large_bsize < local_heap_bsize / factor) {
-    uintnat target_bsize = (mark_stack_bsize - mark_stack_large_bsize) * 2
-                              + mark_stack_large_bsize;
-    caml_gc_log ("Growing mark stack to %" CAML_PRIuNAT "k bytes"
-                 "(large block %" CAML_PRIuNAT "k bytes)\n",
-                 target_bsize / 1024, mark_stack_large_bsize / 1024);
-
-    new = (mark_entry*) caml_stat_resize_noexc ((char*) stk->stack,
-                                                target_bsize);
-    if (new != NULL) {
-      stk->stack = new;
-      stk->size = target_bsize / sizeof(mark_entry);
+  if (factor > 0 &&
+      mark_stack_bsize - mark_stack_large_bsize >= local_heap_bsize / factor) {
+    /* Lots of small mark stack entries; compress the mark stack. */
+    caml_gc_log ("Mark stack size is %" CAML_PRIuNAT " bytes (> major heap "
+                 "size of this domain %" CAML_PRIuNAT " bytes / %"
+                 CAML_PRIuNAT "). Compressing...\n",
+                 mark_stack_bsize, local_heap_bsize, factor);
+    mark_stack_prune(stk);
+    if (stk->count < stk->size)
       return;
-    }
-    caml_gc_log ("No room for growing mark stack. Compressing..\n");
   }
 
-  caml_gc_log ("Mark stack size is %" CAML_PRIuNAT " bytes (> major heap size "
-               "of this domain %" CAML_PRIuNAT " bytes / 32). Compressing...\n",
-               mark_stack_bsize,
-               local_heap_bsize);
+  /* Either the mark stack was below the bound or it did not
+   * compress. Grow it by at least 50%. */
+  uintnat target_bsize = (mark_stack_bsize - mark_stack_large_bsize) * 2
+                            + mark_stack_large_bsize;
+  if (target_bsize < mark_stack_bsize + mark_stack_bsize / 2)
+    target_bsize = mark_stack_bsize + mark_stack_bsize / 2;
+  caml_gc_log ("Growing mark stack to %" CAML_PRIuNAT "k bytes"
+               "(large block %" CAML_PRIuNAT "k bytes)\n",
+               target_bsize / 1024, mark_stack_large_bsize / 1024);
+
+  new = (mark_entry*) caml_stat_resize_noexc ((char*) stk->stack,
+                                              target_bsize);
+  if (new != NULL) {
+    stk->stack = new;
+    stk->size = target_bsize / sizeof(mark_entry);
+    return;
+  }
+
+  caml_gc_log ("No room for growing mark stack. Compressing...\n");
   mark_stack_prune(stk);
+  if (stk->count == stk->size)
+    caml_fatal_error("no room to grow the mark stack");
 }
 
 /* This function is used for reads that may race with a concurrent `caml_modify`
