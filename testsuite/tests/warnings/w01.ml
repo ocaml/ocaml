@@ -54,7 +54,7 @@ match 1 with
 (* re-re *)
 
 (* TEST
- flags = "-w +A-70";
+ flags = "-w +A-70 -warn-error -8";
  setup-ocamlc.byte-build-env;
  compile_only = "true";
  ocamlc.byte;
