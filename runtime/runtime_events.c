@@ -760,7 +760,7 @@ CAMLprim value caml_runtime_events_user_register(value event_name,
 
   int index = atomic_fetch_add(&runtime_custom_event_index, 1);
 
-  if (index > RUNTIME_EVENTS_MAX_CUSTOM_EVENTS) {
+  if (index >= RUNTIME_EVENTS_MAX_CUSTOM_EVENTS) {
     caml_invalid_argument(
       "Runtime_events.User.register: maximum number of custom events exceeded");
   }
