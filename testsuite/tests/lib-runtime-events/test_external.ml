@@ -1,8 +1,8 @@
 (* TEST
+ modules = "pid_stubs.c";
  include runtime_events;
  include unix;
  hasunix;
- not target-windows;
  {
    bytecode;
  }{
@@ -22,14 +22,19 @@ let runtime_end domain_id ts phase =
     got_minor := true
   | _ -> ()
 
+external current_pid : unit -> int = "caml_test_current_pid"
+
+(* The child is this same program re-executed with the parent's pid, rather
+   than a fork, so that the test runs on Windows too. It cannot use
+   Unix.getppid, which raises Invalid_argument there, and the pid has to come
+   from current_pid rather than Unix.getpid, which is a process handle on
+   Windows. The child inherits the working directory, so it finds the ring
+   beside itself. *)
 let () =
-  (* start runtime_events now to avoid a race *)
-  Runtime_events.start ();
-  let parent_pid = Unix.getpid () in
   let parent_cwd = Sys.getcwd () in
-  let child_pid = Unix.fork () in
-  if child_pid == 0 then begin
+  if Array.length Sys.argv > 2 && Sys.argv.(1) = "child" then begin
     (* we are in the child *)
+    let parent_pid = int_of_string Sys.argv.(2) in
     let cursor = Runtime_events.create_cursor (Some (parent_cwd, parent_pid)) in
     let callbacks = Runtime_events.Callbacks.create ~runtime_end () in
     let started = Unix.gettimeofday () in
@@ -41,8 +46,16 @@ let () =
     assert(!got_minor);
     assert(!got_major);
   end else begin
+    (* start runtime_events before spawning, so the child cannot race us to
+       the ring *)
+    Runtime_events.start ();
+    let child_pid =
+      Unix.create_process Sys.executable_name
+        [| Sys.executable_name; "child"; string_of_int (current_pid ()) |]
+        Unix.stdin Unix.stdout Unix.stderr
+    in
     (* we are in the parent, generate some events *)
     Gc.full_major ();
     (* now wait for our child to finish *)
-    Unix.wait () |> ignore
+    Unix.waitpid [] child_pid |> ignore
   end

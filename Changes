@@ -76,6 +76,9 @@ Working version
   (Michael Bacarella, review by Florian Angeletti, Nicolás Ojeda Bär,
    Damien Doligez and Stefan Muenzel)
 
+- #15191: Enable runtime events tests on Windows
+  (Tim McGilchrist, review by David Allsopp)
+
 ### Build system:
 
 - #10837: Build native-code compilers on FreeBSD/powerpc64le and
