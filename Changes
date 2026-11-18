@@ -652,6 +652,10 @@ OCaml 5.6.0
   built with AFL instrumentation.
   (Akash Kumar, report and review by Xavier Leroy)
 
+- #15170: Do not track register usage timestamps in Spill when -linscan
+  is set. This avoids large compile-time overheads on some extreme code.
+  (Pierre-Marie Pédrot, review by Vincent Laviron)
+
 ### Build system:
 
 - #14552: Export `AR` and `ARFLAGS` in Makefile.config.
