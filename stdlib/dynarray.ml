@@ -814,14 +814,13 @@ let blit ~src ~src_pos ~dst ~dst_pos ~len =
         "Dynarray.blit: invalid source region (%d..%d) \
          in source dynarray of length %d"
         src_pos (src_pos + len) src_length;
+  if dst_pos > max_int - len then
+    invalid_arg "Dynarray.blit: invalid target region (overflow)";
   if dst_pos < 0 || dst_pos > dst_length then
-    if dst_pos > max_int - len then
-      invalid_arg "Dynarray.blit: invalid target region (overflow)"
-    else
-      Printf.ksprintf invalid_arg
-        "Dynarray.blit: invalid target region (%d..%d) \
-         in target dynarray of length %d"
-        dst_pos (dst_pos + len) dst_length;
+    Printf.ksprintf invalid_arg
+      "Dynarray.blit: invalid target region (%d..%d) \
+       in target dynarray of length %d"
+      dst_pos (dst_pos + len) dst_length;
   ensure_capacity dst (dst_pos + len);
   blit_assume_room
     src src_pos src_length
