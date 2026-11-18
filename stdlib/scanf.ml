@@ -651,6 +651,7 @@ let scan_hexadecimal_int = scan_digit_plus "hexadecimal" is_hexa_digit
 let scan_unsigned_decimal_int = scan_decimal_digit_plus
 
 let scan_sign width ib =
+  if width = 0 then width else
   let c = Scanning.checked_peek_char ib in
   match c with
   | '+' -> Scanning.store_char width ib c
@@ -668,6 +669,7 @@ let scan_optionally_signed_decimal_int width ib =
    assumed to be written respectively in hexadecimal, hexadecimal,
    octal, or binary. *)
 let scan_unsigned_int width ib =
+  if width = 0 then bad_token_length "digits" else
   match Scanning.checked_peek_char ib with
   | '0' as c ->
     let width = Scanning.store_char width ib c in
@@ -1001,11 +1003,15 @@ let check_next_char message width ib =
 let check_next_char_for_char = check_next_char "a Char"
 let check_next_char_for_string = check_next_char "a String"
 
+let check_escape_width ~width n =
+  if width < n then bad_token_length "an escape sequence"
+
 let scan_backslash_char width ib =
   match check_next_char_for_char width ib with
   | '\\' | '\'' | '\"' | 'n' | 't' | 'b' | 'r' as c ->
     Scanning.store_char width ib (char_for_backslash c)
   | '0' .. '9' as c ->
+    check_escape_width ~width 3;
     let get_digit () =
       let c = Scanning.next_char ib in
       match c with
@@ -1016,6 +1022,7 @@ let scan_backslash_char width ib =
     let c2 = get_digit () in
     Scanning.store_char (width - 2) ib (char_for_decimal_code c0 c1 c2)
   | 'x' ->
+    check_escape_width ~width 3;
     let get_digit () =
       let c = Scanning.next_char ib in
       match c with
@@ -1055,6 +1062,7 @@ let scan_caml_char width ib =
 let scan_caml_string width ib =
 
   let rec find_start width =
+    if width = 0 then bad_token_length "a String" else
     match Scanning.checked_peek_char ib with
     | '\"' -> find_stop (Scanning.ignore_char width ib)
     | c -> character_mismatch '\"' c
@@ -1269,7 +1277,7 @@ fun ib fmt readers -> match fmt with
     let c = token_char ib in
     Cons (c, make_scanf ib rest readers)
   | Caml_char rest ->
-    let _ = scan_caml_char 0 ib in
+    let _ = scan_caml_char max_int ib in
     let c = token_char ib in
     Cons (c, make_scanf ib rest readers)
 
