@@ -15,8 +15,7 @@ No longer supported:
   _Power ISA User Instruction Set Architecture_,
   book 1 of _Power Instruction Set_
   (https://openpowerfoundation.org/specifications/isa/)
-  Version 2.07 corresponds to POWER8; newer versions include
-  additional instructions that are not in POWER8.
+  Version 2.07 corresponds to POWER8.
 
 * ELF ABI 64 bits version 2:
   _OpenPOWER ABI for Linux Supplement for the Power Architecture
