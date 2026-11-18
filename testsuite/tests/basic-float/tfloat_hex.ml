@@ -38,6 +38,19 @@ let () =
 
   try_float_of_string "0x1p1\000suffix"
 
+(* #15291: subnormal results are rounded once, not twice *)
+let () =
+  let bits str =
+    Printf.printf "%s %Ld\n" str (Int64.bits_of_float (float_of_string str))
+  in
+  bits "0x50000000000001p-1127";
+  bits "-0x50000000000001p-1127";
+  bits "0x1.00000000000000001p-1075";
+  bits "0x3p-1075";
+  bits "0x1p-1075";
+  bits "0x0.ffffffffffffffffp-1022";
+  bits "0x1p-1074"
+
 let () =
   (* check that the compiler can also parse tokens *)
   let _ = 0x1A in
