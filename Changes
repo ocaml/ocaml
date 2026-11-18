@@ -88,8 +88,9 @@ Working version
 
 ### Bug fixes:
 
-- #15291: float_of_string rounded some hexadecimal literals with a subnormal
-  result twice, giving a result one ulp off. They are now rounded once.
+- #15291, #15329: float_of_string rounded some hexadecimal literals with a
+  subnormal result twice, giving a result one ulp off. They are now rounded
+  once.
   (Sankur Kundu, report by KC Sivaramakrishnan)
 
 - #14602: on Windows, Sys.rename and Unix.rename now succeed when the
