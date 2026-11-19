@@ -1143,6 +1143,22 @@ let arg_of_pure = function
   | Var v -> Lvar v
   | Tuple tup -> tup
 
+let pp_arg ppf { arg; binding_kind; mut; } =
+  Format.fprintf ppf "{ arg = %a; binding_kind = %s; mut = %s }"
+    Printlambda.lambda arg
+    (match binding_kind with
+     | Alias -> "Alias"
+     | Strict -> "Strict"
+     | StrictOpt -> "StrictOpt"
+    )
+    (match mut with
+     | Mutable -> "Mutable"
+     | Immutable -> "Immutable"
+    )
+
+let _pp_pure_arg ppf arg =
+  pp_arg ppf { arg with arg = arg_of_pure arg.arg }
+
 type handler = {
   provenance : matrix;
   exit : int;
