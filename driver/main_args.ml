@@ -634,6 +634,37 @@ let mk_error_style f =
     \  If the option is not specified, these setting can alternatively\n\
     \  be set through the OCAML_ERROR_STYLE environment variable."
 
+let mk_log_format f =
+  let symbols = ["fmt-light"; "fmt-full"; "sexp"; "json"] in
+  "-log-format", Arg.Symbol (symbols, f),
+  Printf.sprintf
+    "  Control the format of compiler diagnostics.\n\
+    \    The following formats are supported:\n\
+    \      fmt-light    classic mode\n\
+    \      fmt-full     classic mode with label names\n\
+    \      json         json object\n\
+    \      sexp         s-expression\n\
+    \    The default setting is 'fmt-light'.\n\
+    \    If the option is not specified, these setting can alternatively\n\
+    \    be set through the OCAML_LOG_FORMAT environment variable."
+
+let mk_log_version f =
+  "-log-version", Arg.String f,
+  Printf.sprintf
+    "<version>  Control which version of compiler diagnostics is printed.\n\
+    \    The compiler restricts the schema of the printed diagnostics to the\n\
+    \    required version.\n\
+    \    If the option is not specified, these setting can alternatively\n\
+    \    be set through the OCAML_LOG_VERSION environment variable."
+
+let mk_log_file f =
+  "-log-file", Arg.String f,
+  Printf.sprintf
+    "<filename>  Output compiler diagnostics to <filename>.\n\
+    \    If the option is not specified, these setting can alternatively\n\
+    \    be set through the OCAML_LOG_FILE environment variable."
+
+
 let mk_where f =
   "-where", Arg.Unit f, " Print location of standard library and exit"
 
@@ -885,6 +916,9 @@ module type Core_options = sig
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
 
+  val _log_format: string -> unit
+  val _log_version: string -> unit
+  val _log_file: string -> unit
 end
 
 module type Compiler_options = sig
@@ -1103,6 +1137,9 @@ struct
     mk_cmi_file F._cmi_file;
     mk_color F._color;
     mk_error_style F._error_style;
+    mk_log_format F._log_format;
+    mk_log_version F._log_version;
+    mk_log_file F._log_file;
     mk_compat_32 F._compat_32;
     mk_config F._config;
     mk_config_var F._config_var;
@@ -1272,6 +1309,9 @@ struct
     mk__ F.anonymous;
     mk_color F._color;
     mk_error_style F._error_style;
+    mk_log_format F._log_format;
+    mk_log_version F._log_version;
+    mk_log_file F._log_file;
 
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
@@ -1317,6 +1357,9 @@ struct
     mk_classic_inlining F._classic_inlining;
     mk_color F._color;
     mk_error_style F._error_style;
+    mk_log_format F._log_format;
+    mk_log_version F._log_version;
+    mk_log_file F._log_file;
     mk_compact F._compact;
     mk_config F._config;
     mk_config_var F._config_var;
@@ -1546,7 +1589,9 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk__ F.anonymous;
     mk_color F._color;
     mk_error_style F._error_style;
-
+    mk_log_format F._log_format;
+    mk_log_version F._log_version;
+    mk_log_file F._log_file;
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
     mk_dparsetree_loc_ghost_invariants F._dparsetree_loc_ghost_invariants;
@@ -1679,6 +1724,7 @@ let options_with_command_line_syntax options r =
 
 module Default = struct
   let set r () = r := true
+  let dump_set flag () = Clflags.Dump_option.set flag true
   let clear r () = r := false
 
   module Common = struct
@@ -1721,15 +1767,15 @@ module Default = struct
     let _H dir =
       Clflags.hidden_include_dirs := dir :: (!Clflags.hidden_include_dirs)
     let _color = Misc.set_or_ignore Clflags.color_reader.parse Clflags.color
-    let _dlambda = set Clflags.dump_lambda
-    let _dparsetree = set Clflags.dump_parsetree
+    let _dlambda = dump_set Lambda
+    let _dparsetree = dump_set Parsetree
     let _dparsetree_loc_ghost_invariants =
       set Clflags.parsetree_ghost_loc_invariant
-    let _drawlambda = set Clflags.dump_rawlambda
-    let _dsource = set Clflags.dump_source
-    let _dtypedtree = set Clflags.dump_typedtree
-    let _dshape = set Clflags.dump_shape
-    let _dmatchcomp = set Clflags.dump_matchcomp
+    let _drawlambda = dump_set Raw_lambda
+    let _dsource = dump_set Source
+    let _dtypedtree = dump_set Typedtree
+    let _dshape = dump_set Shape
+    let _dmatchcomp = dump_set Match_comp
     let _dunique_ids = set Clflags.unique_ids
     let _dno_unique_ids = clear Clflags.unique_ids
     let _dcanonical_ids = set Clflags.canonical_ids
@@ -1738,6 +1784,12 @@ module Default = struct
     let _dno_locations = clear Clflags.locations
     let _error_style =
       Misc.set_or_ignore Clflags.error_style_reader.parse Clflags.error_style
+    let _log_format =
+      Misc.set_or_ignore Clflags.log_format_reader.parse Clflags.log_format
+    let _log_version =
+      Misc.set_or_ignore Clflags.log_version_reader.parse Clflags.log_version
+    let _log_file =
+      Misc.set_or_ignore Clflags.log_file_reader.parse Clflags.log_file
     let _nopervasives = set Clflags.nopervasives
     let _ppx s = Compenv.first_ppx := (s :: (!Compenv.first_ppx))
     let _keywords s = Clflags.keyword_edition := (Some s)
@@ -1752,30 +1804,30 @@ module Default = struct
     let _clambda_checks () = Clflags.clambda_checks := true
     let _classic_inlining () = Clflags.classic_inlining := true
     let _compact = clear Clflags.optimize_for_speed
-    let _dalloc = set Clflags.dump_regalloc
-    let _dclambda = set Clflags.dump_clambda
-    let _dcmm = set Clflags.dump_cmm
+    let _dalloc = dump_set Regalloc
+    let _dclambda = dump_set Clambda
+    let _dcmm = dump_set Cmm
     let _dcmm_invariants = set Clflags.cmm_invariants
-    let _dcombine = set Clflags.dump_combine
-    let _dcse = set Clflags.dump_cse
-    let _dflambda = set Clflags.dump_flambda
+    let _dcombine = dump_set Combine
+    let _dcse = dump_set CSE
+    let _dflambda = dump_set Flambda
     let _dflambda_invariants = set Clflags.flambda_invariant_checks
     let _dflambda_let stamp = Clflags.dump_flambda_let := (Some stamp)
     let _dflambda_no_invariants = clear Clflags.flambda_invariant_checks
     let _dflambda_verbose () =
-      set Clflags.dump_flambda (); set Clflags.dump_flambda_verbose ()
-    let _dinterval = set Clflags.dump_interval
-    let _dinterf = set Clflags.dump_interf
-    let _dlinear = set Clflags.dump_linear
-    let _dlive () = Clflags.dump_live := true
-    let _dprefer = set Clflags.dump_prefer
-    let _drawclambda = set Clflags.dump_rawclambda
-    let _drawflambda = set Clflags.dump_rawflambda
-    let _dreload = set Clflags.dump_reload
-    let _dscheduling = set Clflags.dump_scheduling
-    let _dsel = set Clflags.dump_selection
-    let _dspill = set Clflags.dump_spill
-    let _dsplit = set Clflags.dump_split
+      dump_set Flambda (); dump_set Flambda_verbose ()
+    let _dinterval = dump_set Interval
+    let _dinterf = dump_set Interf
+    let _dlinear = dump_set Linear
+    let _dlive () = dump_set Live ()
+    let _dprefer = dump_set Prefer
+    let _drawclambda = dump_set Raw_clambda
+    let _drawflambda = dump_set Raw_flambda
+    let _dreload = dump_set Reload
+    let _dscheduling = dump_set Scheduling
+    let _dsel = dump_set Selection
+    let _dspill = dump_set Spill
+    let _dsplit = dump_set Split
     let _dstartup = set Clflags.keep_startup_file
     let _dump_pass pass = Clflags.set_dumped_pass pass true
     let _inline spec =
@@ -1867,11 +1919,11 @@ module Default = struct
     let _cclib s = Compenv.defer (ProcessObjects (Misc.rev_split_words s))
     let _ccopt s = Compenv.first_ccopts := (s :: (!Compenv.first_ccopts))
     let _cmi_file s = Clflags.cmi_file := (Some s)
-    let _config = Misc.show_config_and_exit
-    let _config_var = Misc.show_config_variable_and_exit
+    let _config = Clflags.show_config_and_exit
+    let _config_var = Conf_diagnostic.show_variable_and_exit
     let _dprofile () = Clflags.profile_columns := Profile.all_columns
     let _dtimings () = Clflags.profile_columns := [`Time]
-    let _dump_into_file = set Clflags.dump_into_file
+    let _dump_into_file () = Clflags.dump_into_file := true
     let _dump_dir s = Clflags.dump_dir := Some s
     let _for_pack s = Clflags.for_package := (Some s)
     let _g = set Clflags.debug
@@ -1949,7 +2001,7 @@ module Default = struct
   module Topmain = struct
     include Toplevel
     include Core
-    let _dinstr = set Clflags.dump_instr
+    let _dinstr = dump_set Instr
   end
 
   module Opttopmain = struct
@@ -2024,7 +2076,7 @@ third-party libraries such as Lwt, but with a different API."
     let _compat_32 = set Clflags.bytecode_compatible_32
     let _custom = set Clflags.custom_runtime
     let _dcamlprimc = set Clflags.keep_camlprimc_file
-    let _dinstr = set Clflags.dump_instr
+    let _dinstr = dump_set Instr
     let _dllib s = Compenv.defer (ProcessDLLs (false, Misc.rev_split_words s))
     let _dllib_suffixed s =
       Compenv.defer (ProcessDLLs (true, Misc.rev_split_words s))

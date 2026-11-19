@@ -1,0 +1,13 @@
+\begin{camlexample}{verbatim}
+\begin{caml}
+\begin{camlinput}
+type error_report = {
+  footnote: structured_text array option [@optional];
+  sub: error_msg array option [@optional];
+  main: error_msg;
+  kind: error_kind;
+} [@@since 0.1]
+[@@version 0.1]
+\end{camlinput}
+\end{caml}
+\end{camlexample}

@@ -1,0 +1,13 @@
+\begin{camlexample}{verbatim}
+\begin{caml}
+\begin{camlinput}
+type loc = {
+  characters: (int * int) option [@optional];
+  stop_line: int option [@optional];
+  start_line: int option [@optional];
+  file: string option [@optional];
+} [@@since 0.1]
+[@@version 0.1]
+\end{camlinput}
+\end{caml}
+\end{camlexample}
