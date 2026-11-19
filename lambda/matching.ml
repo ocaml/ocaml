@@ -489,6 +489,7 @@ module Context : sig
 
   val rshift : t -> t
 
+  val lshift_num : int -> t -> t
   val rshift_num : int -> t -> t
 
   val lub : pattern -> t -> t
@@ -498,8 +499,6 @@ module Context : sig
   val matches : t -> matrix -> bool
 
   val combine : t -> t
-
-  val select_columns : matrix -> t -> t
 
   val union : t -> t -> t
 end = struct
@@ -575,6 +574,10 @@ end = struct
       (* Context pruning *)
       get_mins Row.le (List.map Row.lforget ctx)
 
+  let rec lshift_num n ctx =
+    if n = 0 then ctx
+    else lshift_num (n - 1) (lshift ctx)
+
   let rshift ctx = List.map Row.rshift ctx
 
   let erase_first_col ctx = List.map Row.erase_first_col ctx
@@ -611,17 +614,6 @@ end = struct
         )
     in
     filter_rec ctx
-
-  let select_columns pss ctx =
-    let n = ncols pss in
-    let lub_row ps { Row.left; right } =
-      let transfer, right = rev_split_at n right in
-      match lubs transfer ps with
-      | exception Empty -> None
-      | inter -> Some { Row.left = inter @ left; right }
-    in
-    let lub_with_ctx ps = List.filter_map (lub_row ps) ctx in
-    List.flatten (List.map lub_with_ctx pss)
 
   let lub p ctx =
     List.filter_map
@@ -3597,7 +3589,7 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
         debugf "@,COMPILE_orhandlers %d:@,@[<v 2>%a@]@,"
           i
           pretty_cases pm.cases;
-        let ctx = Context.select_columns mat ctx in
+        let ctx = Context.lshift_num (ncols mat) ctx in
         match compile_fun ctx pm with
         | exception Unused ->
           if rem <> [] then separate_debug_output ();
