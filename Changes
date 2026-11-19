@@ -88,6 +88,9 @@ Working version
 
 ### Bug fixes:
 
+- Fix Float.ldexp and Stdlib.ldexp for exponents outside the range of a C int.
+  (Sora Morimoto)
+
 - #14602: on Windows, Sys.rename and Unix.rename now succeed when the
   destination is an existing read-only file, as on POSIX systems.
   (Nicolás Ojeda Bär, review by Gabriel Scherer, Antonin Décimo,

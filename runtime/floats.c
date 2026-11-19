@@ -850,16 +850,19 @@ CAMLprim value caml_frexp_float(value f)
   CAMLreturn (res);
 }
 
-// Seems dumb but intnat could not correspond to int type.
 double caml_ldexp_float_unboxed(double f, intnat i)
 {
+#if SIZEOF_PTR > SIZEOF_INT
+  if (i > INT_MAX) i = INT_MAX;
+  if (i < INT_MIN) i = INT_MIN;
+#endif
   return ldexp(f, (int) i);
 }
 
 
 CAMLprim value caml_ldexp_float(value f, value i)
 {
-  return caml_copy_double(ldexp(Double_val(f), Int_val(i)));
+  return caml_copy_double(caml_ldexp_float_unboxed(Double_val(f), Long_val(i)));
 }
 
 CAMLprim value caml_log_float(value f)
