@@ -90,7 +90,7 @@ Working version
   GNU Make 3.81, the default make shipped on macOS.
   (Tim McGilchrist, review by Miod Vallat and David Allsopp)
 
-- #15384: set use_sigaltstack=0 in ASAN_OPTIONS
+- #15384: set use_sigaltstack=0,detect_stack_use_after_return=0 in ASAN_OPTIONS
   (Edwin Török, report by Ali Caglayan, review by)
 
 ### Bug fixes:
