@@ -86,6 +86,9 @@ Working version
   FreeBSD/powerpc64 (big-endian, ELFv2 ABI).
   (Piotr Kubaj, review by Anil Madhavapeddy)
 
+- #15338: set use_sigaltstack=0 in ASAN_OPTIONS
+  (Edwin Török, report by Ali Caglayan, review by)
+
 ### Bug fixes:
 
 - #14602: on Windows, Sys.rename and Unix.rename now succeed when the
