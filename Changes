@@ -80,6 +80,10 @@ Working version
   is set. This avoids large compile-time overheads on some extreme code.
   (Pierre-Marie Pédrot, review by Vincent Laviron)
 
+- #14536, refactorize error trace, add more contextual information for variants
+  and objects.
+  (Florian Angeletti, review by Alistair O'Brien and Gabriel Scherer)
+
 ### Build system:
 
 - #10837: Build native-code compilers on FreeBSD/powerpc64le and
