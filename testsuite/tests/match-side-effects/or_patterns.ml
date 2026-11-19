@@ -12,25 +12,30 @@ let f (r : int option ref) =
   | ({ contents = Some (1 as x) } | { contents = Some x }) when (r := None; false) -> x
   | { contents = None } -> 0
   | { contents = Some v } -> v + 1000
-(* The recorded output below is currently INCORRECT, as the
-   [(field_imm 0 *match*/1)] access should be guarded by a test on
-   match/1. *)
+(* In this version, there must be a check on the second mutable read
+   [*match*/1 = (field_mut 0 r/0)]: the read of the sub-field
+   [field_imm 0 *match*/1] can only happen after checking that
+   [*match*/1] is not [0] / [None]. *)
 [%%expect {|
 (let
   (f/0 =
      (function r/0 : int
        (catch
          (catch
-           (let (*match*/0 =o (field_mut 0 r/0))
-             (if *match*/0
-               (let (x/0 =a (field_imm 0 *match*/0))
-                 (catch (if (!= x/0 1) (exit 4) (exit 3 x/0)) with (4)
-                   (let (x/1 =a x/0) (exit 3 x/1))))
-               0))
-          with (3 x/2[int]) (if (seq (setfield_ptr 0 r/0 0) 0) x/2 (exit 2)))
-        with (2)
-         (let (*match*/1 =o (field_mut 0 r/0) v/0 =a (field_imm 0 *match*/1))
-           (+ v/0 1000)))))
+           (catch
+             (let (*match*/0 =o (field_mut 0 r/0))
+               (if *match*/0
+                 (let (x/0 =a (field_imm 0 *match*/0))
+                   (catch (if (!= x/0 1) (exit 4) (exit 3 x/0)) with (4)
+                     (let (x/1 =a x/0) (exit 3 x/1))))
+                 0))
+            with (3 x/2[int])
+             (if (seq (setfield_ptr 0 r/0 0) 0) x/2 (exit 2)))
+          with (2)
+           (let (*match*/1 =o (field_mut 0 r/0))
+             (if *match*/1
+               (let (v/0 =a (field_imm 0 *match*/1)) (+ v/0 1000)) (exit 1))))
+        with (1) (raise (makeblock 0 (global Match_failure/0!) [0: "" 2 2])))))
   (apply (field_mut 1 (global Toploop!)) "f" f/0))
 val f : int option ref -> int = <fun>
 |}];;
