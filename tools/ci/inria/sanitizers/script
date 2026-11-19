@@ -146,7 +146,9 @@ rm -f asan asan.o asan.c
 #make $jobs
 # TEMPORARY: cleanup-at-exit mode is broken in 5.0, so turn off leak
 # detection entirely
-ASAN_OPTIONS="detect_leaks=0,use_sigaltstack=0" make $jobs
+
+ASAN_OPTIONS="detect_leaks=0,use_sigaltstack=0\
+    ,detect_stack_use_after_return=0" make $jobs
 
 # Run the testsuite.
 # We deactivate leak detection for two reasons:
@@ -158,7 +160,12 @@ ASAN_OPTIONS="detect_leaks=0,use_sigaltstack=0" make $jobs
 # We already use sigaltstack for signal handling. Our use might
 # interact with ASAN's. Hence, we tell ASAN not to use it.
 
-ASAN_OPTIONS="detect_leaks=0,use_sigaltstack=0" $run_testsuite
+# The stack unwinding in fail_nat.c conflicts with
+# detect_stack_use_after_return=1 which moves some local variables
+# (including the local roots) to the heap
+
+ASAN_OPTIONS="detect_leaks=0,use_sigaltstack=0\
+    ,detect_stack_use_after_return=0" $run_testsuite
 
 #########################################################################
 

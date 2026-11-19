@@ -68,7 +68,7 @@ flags: compiler
 build-env: [
   [MSYS2_ARG_CONV_EXCL = "*"]
   [LSAN_OPTIONS = "detect_leaks=0,exitcode=0"]
-  [ASAN_OPTIONS = "detect_leaks=0,exitcode=0,use_sigaltstack=0"]
+  [ASAN_OPTIONS = "detect_leaks=0,exitcode=0,use_sigaltstack=0,detect_stack_use_after_return=0"]
 ]
 build: [
   [
