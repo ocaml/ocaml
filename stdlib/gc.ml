@@ -204,3 +204,11 @@ module Tweak = struct
   external list_active : unit -> (string * int) list =
     "caml_gc_tweak_list_active"
 end
+
+type phase =
+  | Phase_sweep_main
+  | Phase_sweep_and_mark_main
+  | Phase_mark_final
+  | Phase_sweep_ephe
+
+external current_phase : unit -> phase = "caml_gc_current_phase"

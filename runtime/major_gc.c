@@ -152,6 +152,10 @@ Caml_inline char caml_gc_phase_char(int may_access_gc_phase) {
   }
 }
 
+CAMLprim value caml_gc_current_phase(value vunit) {
+  return Val_long(caml_gc_phase);
+}
+
 static bool is_complete_phase_sweep_and_mark_main (void);
 static bool is_complete_phase_mark_final (void);
 static bool is_complete_phase_sweep_ephe (void);

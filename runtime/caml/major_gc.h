@@ -20,6 +20,7 @@
 
 #include <stdbool.h>
 
+/* To be kept in sync with Gc.phase. */
 typedef enum {
   Phase_sweep_main,
   Phase_sweep_and_mark_main,
