@@ -88,10 +88,6 @@ Working version
 
 ### Bug fixes:
 
-- Fix `Complex.pow` to return zero when a zero base is raised to a finite,
-  strictly positive real power, including fractional powers.
-  (Sora Morimoto)
-
 - #14602: on Windows, Sys.rename and Unix.rename now succeed when the
   destination is an existing read-only file, as on POSIX systems.
   (Nicolás Ojeda Bär, review by Gabriel Scherer, Antonin Décimo,
@@ -164,6 +160,10 @@ Working version
   arrays with more than 8 fields: the placeholder block is now allocated
   with `Double_array_tag` rather than as a scannable block.
   (Nick Barnes, review by Vincent Laviron)
+
+- #15340: Fix `Complex.pow` to return zero when a zero base is raised to a
+  finite, strictly positive real power, including fractional powers.
+  (Sora Morimoto)
 
 OCaml 5.6.0
 -----------
