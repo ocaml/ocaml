@@ -132,6 +132,11 @@ external chdir : string -> unit = "caml_sys_chdir"
 external mkdir : string -> int -> unit = "caml_sys_mkdir"
 (** Create a directory with the given permissions.
 
+    For example, [0o755] grants the owner read, write, and execute permissions,
+    and the group and others read and execute permissions.
+
+    The permissions may be restricted by the {i umask} of the calling process.
+
     @since 4.12
 *)
 
