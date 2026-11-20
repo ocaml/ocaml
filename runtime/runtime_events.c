@@ -177,9 +177,7 @@ static void runtime_events_teardown_from_stw_single(int remove_file) {
       DeleteFile(current_ring_loc);
     }
 #else
-    /* This cast is necessary for compatibility with Illumos' non-POSIX
-      mmap/munmap */
-    munmap((void*)current_metadata, current_ring_total_size);
+    caml_munmap(current_metadata, current_ring_total_size);
 
     if( remove_file ) {
       unlink(current_ring_loc);
@@ -362,11 +360,9 @@ static void runtime_events_create_from_stw_single(void) {
       caml_fatal_error("Can't resize ring buffer");
     }
 
-    /* This cast is necessary for compatibility with Illumos' non-POSIX
-      mmap/munmap */
-    current_metadata = (struct runtime_events_metadata_header*)
-                        mmap(NULL, current_ring_total_size,
-                            PROT_READ | PROT_WRITE, MAP_SHARED, ring_fd, 0);
+    current_metadata =
+      caml_mmap(NULL, current_ring_total_size,
+                PROT_READ | PROT_WRITE, MAP_SHARED, ring_fd, 0);
 
     if (current_metadata == MAP_FAILED) {
       caml_fatal_error("Unable to mmap ring buffer");

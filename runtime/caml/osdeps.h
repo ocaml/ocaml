@@ -159,8 +159,32 @@ CAMLextern value caml_win32_get_temp_path(void);
 
 #else
 
+/* for off_t */
+#include <sys/types.h>
+
 #define CAML_DIR_SEP T("/")
 #define Is_separator(c) (c == '/')
+
+/* Like mmap(2), but uses ASAN instrumentation to poison the memory between
+ * [addr+len, addr+caml_mem_round_up_pages(len)),
+ * so that out of bounds accesses are detected more reliably.
+ *
+ * See:
+ *  https://github.com/google/sanitizers/wiki/AddressSanitizerAlgorithm#mapping
+ *  https://github.com/google/sanitizers/wiki/AddressSanitizerManualPoisoning
+ *
+ * This must not be used for MAP_FIXED.
+ *
+ * The entire returned region should stay allocated until caml_munmap is called,
+ * it shouldn't be partially unmapped.
+ */
+CAMLextern void* caml_mmap(void*, size_t, int, int, int, off_t);
+
+/* Like munmap(2), but the whole region must've been allocated with caml_mmap */
+CAMLextern int caml_munmap(void*, size_t);
+
+/* whether ASAN poisoning was enabled in caml_mmap/caml_munmap */
+CAMLextern bool caml_mmap_uses_asan(void);
 
 #endif /* _WIN32 */
 
