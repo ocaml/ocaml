@@ -2396,3 +2396,40 @@ let check_ambiguous_bindings =
             ns
       in
       ignore (List.fold_left check_case [] cases)
+
+let rec erase_mutable p = match p.pat_desc with
+  | Tpat_array (Mutable, ps) ->
+    { p with
+      pat_desc =
+        Tpat_array (Mutable, omega_list ps) }
+  | Tpat_record (lps,closed) ->
+    let lps =
+      List.map (fun (loc, lbl, p) ->
+          match lbl.lbl_mut with
+          | Mutable -> (loc, lbl, omega)
+          | Immutable -> (loc, lbl, erase_mutable p))
+        lps
+    in
+    { p with pat_desc = Tpat_record (lps, closed) }
+  | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_variant (_,None,_) -> p
+  | Tpat_alias (p',v,loc,uid,ty) ->
+    { p with pat_desc = Tpat_alias (erase_mutable p', v, loc, uid, ty) }
+  | Tpat_variant (lbl,Some p',row) ->
+    { p with pat_desc = Tpat_variant (lbl, Some (erase_mutable p'),row) }
+  | Tpat_or (p1,p2,row_opt) ->
+    { p with pat_desc = Tpat_or (erase_mutable p1, erase_mutable p2, row_opt) }
+  | Tpat_construct (name,descr,ps,ty_opt) ->
+    { p with
+      pat_desc =
+        Tpat_construct (name, descr, List.map erase_mutable ps, ty_opt) }
+  | Tpat_array (Immutable, ps) ->
+    { p with
+      pat_desc =
+        Tpat_array (Immutable, List.map erase_mutable ps) }
+  | Tpat_tuple labeled_ps ->
+    let labeled_ps =
+      List.map (fun (lbl_opt, pat) -> (lbl_opt, erase_mutable pat)) labeled_ps
+    in
+    { p with pat_desc = Tpat_tuple labeled_ps }
+  | Tpat_lazy p' ->
+    { p with pat_desc = Tpat_lazy (erase_mutable p') }

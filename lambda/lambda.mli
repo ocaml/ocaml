@@ -462,6 +462,7 @@ val is_evaluated : lambda -> bool
     or a function abstract. *)
 
 val free_variables: lambda -> Ident.Set.t
+val free_exits: lambda -> Numbers.Int.Set.t
 
 val transl_module_path: scoped_location -> Env.t -> Path.t -> lambda
 val transl_value_path: scoped_location -> Env.t -> Path.t -> lambda

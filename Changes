@@ -31,6 +31,9 @@ Working version
   (Pierre Chambart, report by Alperen Keleş,
    review by Vincent Laviron)
 
+- #15326: Fix a soundness bug in the pattern-matching compiler
+  (Vincent Laviron, report by Mark Shinwell, review by ...)
+
 ### Standard library:
 
 - #15168: `Scanf.unescaped`, `%S` and `%C` now accept all the escape sequences

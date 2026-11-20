@@ -82,6 +82,9 @@ val get_mins : ('a -> 'a -> bool) -> 'a list -> 'a list
 *)
 val set_args : pattern -> pattern list -> pattern list
 
+(** Replace all patterns under mutable structures with omega *)
+val erase_mutable : pattern -> pattern
+
 val pat_of_constr : pattern -> constructor_description -> pattern
 val complete_constrs :
     constructor_description pattern_data ->

@@ -502,6 +502,8 @@ module Context : sig
   val select_columns : matrix -> t -> t
 
   val union : t -> t -> t
+
+  val degrade_mutable : t -> t
 end = struct
   module Row = struct
     type t = { left : pattern list; right : pattern list }
@@ -550,6 +552,10 @@ end = struct
       match left with
       | p :: ps -> { left = ps; right = set_args p right }
       | _ -> assert false
+
+    let degrade_mutable { left; right } =
+      { left = List.map Parmatch.erase_mutable left;
+        right = List.map Parmatch.erase_mutable right }
   end
 
   type t = Row.t list
@@ -582,6 +588,8 @@ end = struct
   let rshift_num n ctx = List.map (Row.rshift_num n) ctx
 
   let combine ctx = List.map Row.combine ctx
+
+  let degrade_mutable ctx = List.map Row.degrade_mutable ctx
 
   let specialize head ctx =
     let non_empty = function
@@ -926,6 +934,10 @@ module Jumps : sig
       and the rest of the jump summary. *)
   val extract : int -> t -> Context.t * t
 
+  val degrade_mutable : free_exits:Numbers.Int.Set.t -> t -> t
+
+  val must_degrade : int -> t -> bool
+
   val pp : Format.formatter -> t -> unit
 
   val pp_section : Format.formatter -> t -> unit
@@ -933,14 +945,15 @@ end = struct
   type t = {
     env : (int * Context.t) list;
     partial : partial;
+    degraded_handlers : Numbers.Int.Set.t;
   }
 
   let partial { partial = p; _ } = p
 
-  let pp ppf ({ env; partial } : t) =
+  let pp ppf ({ env; partial; degraded_handlers } : t) =
     Format.fprintf ppf "@[<v 2>%t@]"
       (fun ppf ->
-         if env = [] then
+         if env = [] && Numbers.Int.Set.is_empty degraded_handlers then
            Format.fprintf ppf " empty (%a)"
              pp_partial partial
          else begin
@@ -951,7 +964,14 @@ end = struct
                 %a"
                i
                Context.pp ctx
-           ) ppf env
+           ) ppf env;
+           if Numbers.Int.Set.is_empty degraded_handlers
+           then ()
+           else begin
+             Format.fprintf ppf "degraded handlers:@ ";
+             Numbers.Int.Set.iter (fun i -> Format.fprintf ppf "%d@ " i)
+               degraded_handlers
+           end
          end)
 
   let pp_section ppf jumps =
@@ -980,7 +1000,8 @@ end = struct
     in
     { jumps with env = remove i jumps.env }
 
-  let empty partial = { env = []; partial; }
+  let empty partial = { env = []; partial;
+                        degraded_handlers = Numbers.Int.Set.empty }
 
   let add i ctx jumps =
     let rec add = function
@@ -1022,6 +1043,8 @@ end = struct
         | Total, Total -> Total
         | Partial, _ | _, Partial -> Partial
       );
+      degraded_handlers =
+        Numbers.Int.Set.union j1.degraded_handlers j2.degraded_handlers;
     }
 
   let rec merge = function
@@ -1038,6 +1061,19 @@ end = struct
     { jumps with
       env = List.map (fun (i, pss) -> (i, f pss)) jumps.env;
     }
+
+  let degrade_mutable ~free_exits jumps =
+    let jumps = map Context.erase_first_col jumps in
+    let degraded_handlers =
+      Numbers.Int.Set.fold (fun i handlers ->
+          if List.mem_assoc i jumps.env then handlers
+          else Numbers.Int.Set.add i handlers)
+        free_exits jumps.degraded_handlers
+    in
+    { jumps with degraded_handlers }
+
+  let must_degrade i jumps =
+    Numbers.Int.Set.mem i jumps.degraded_handlers
 end
 
 (* Temporality information *)
@@ -3582,6 +3618,11 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
           i
           pretty_cases pm.cases;
         let ctx = Context.select_columns mat ctx in
+        let ctx =
+          if Jumps.must_degrade i total_r
+          then Context.degrade_mutable ctx
+          else ctx
+        in
         match compile_fun ctx pm with
         | exception Unused ->
           if rem <> [] then separate_debug_output ();
@@ -3949,7 +3990,8 @@ and bind_match_arg kind v arg (lam, jumps) =
     match mut_of_binding_kind kind with
     | Immutable -> jumps
     | Mutable ->
-        Jumps.map Context.erase_first_col jumps in
+        Jumps.degrade_mutable ~free_exits:(Lambda.free_exits lam) jumps
+  in
   (bind_check kind v arg lam,
    jumps)
 
