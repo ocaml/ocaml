@@ -33,6 +33,23 @@ Working version
 
 ### Standard library:
 
+- #15314: Add argument `?mkdirs:perms` to all `open_*` and `with_open_*`
+  functions of `Out_channel`, to create all parent and ancestor directories
+  automatically, similar to `install -D`.
+  (Volker Diels-Grabsch)
+
+- #15313: Add function `Filename.with_temp_dir` as a variant of
+  `Filename.temp_dir` that ensure proper subtree cleanup of the whole
+  temporary directory even when an exception is raised.
+  (Volker Diels-Grabsch)
+
+- #15313: Add function `Filename.rmtree` that works like `rm -rf`.
+  (Volker Diels-Grabsch)
+
+- #15313: Add function `Filename.mkdirs` that works like `mkdir -p`
+  respectively `install -d`.
+  (Volker Diels-Grabsch)
+
 - #15168: `Scanf.unescaped`, `%S` and `%C` now accept all the escape sequences
   of OCaml string and character literals: octal escapes `\o101`, escaped spaces
   `\ `, Unicode escapes `\u{XXXX}` (in strings only), and tabs in the

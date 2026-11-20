@@ -28,23 +28,37 @@ type open_flag = Stdlib.open_flag =
 
 let stdout = Stdlib.stdout
 let stderr = Stdlib.stderr
-let open_bin = Stdlib.open_out_bin
-let open_text = Stdlib.open_out
-let open_gen = Stdlib.open_out_gen
 
-let with_open openfun s f =
-  let oc = openfun s in
+let mkdirs_if_needed mkdirs s =
+  begin match mkdirs with
+  | None -> ()
+  | Some perms -> Filename.mkdirs ~exists_ok:true (Filename.dirname s) perms
+  end
+
+let open_bin ?mkdirs s =
+  mkdirs_if_needed mkdirs s;
+  Stdlib.open_out_bin s
+
+let open_text ?mkdirs s =
+  mkdirs_if_needed mkdirs s;
+  Stdlib.open_out s
+
+let open_gen ?mkdirs flags perm s =
+  mkdirs_if_needed mkdirs s;
+  Stdlib.open_out_gen flags perm s
+
+let with_oc oc f =
   Fun.protect ~finally:(fun () -> Stdlib.close_out_noerr oc)
     (fun () -> f oc)
 
-let with_open_bin s f =
-  with_open Stdlib.open_out_bin s f
+let with_open_bin ?mkdirs s f =
+  with_oc (open_bin ?mkdirs s) f
 
-let with_open_text s f =
-  with_open Stdlib.open_out s f
+let with_open_text ?mkdirs s f =
+  with_oc (open_text ?mkdirs s) f
 
-let with_open_gen flags perm s f =
-  with_open (Stdlib.open_out_gen flags perm) s f
+let with_open_gen ?mkdirs flags perm s f =
+  with_oc (open_gen ?mkdirs flags perm s) f
 
 external unsafe_output_bigarray :
   t -> _ Bigarray.Array1.t -> int -> int -> unit
