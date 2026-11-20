@@ -54,6 +54,7 @@
 #include "caml/fail.h"
 #include "caml/gc_ctrl.h"
 #include "caml/major_gc.h"
+#include "caml/minor_gc.h"
 #include "caml/io.h"
 #include "caml/mlvalues.h"
 #include "caml/osdeps.h"
@@ -137,6 +138,16 @@ CAMLexport void caml_do_exit(int retcode)
   caml_domain_state* domain_state = Caml_state;
   struct gc_stats s;
 
+  /* Report the minor heap allocation outstanding at exit, which no
+     collection will ever report. With [cleanup_on_exit] the collection in
+     [caml_domain_terminate] reports it instead, now that the ring survives
+     until then, so emitting it here as well would count it twice. It goes
+     unreported in the one case where neither runs: [cleanup_on_exit] set and
+     [caml_shutdown] returning early with other domains still active. */
+  if (!caml_params->cleanup_on_exit)
+    caml_ev_minor_allocated((uintnat)domain_state->young_end
+                            - (uintnat)domain_state->young_ptr);
+
   if ((atomic_load_relaxed(&caml_verb_gc) & CAML_GC_MSG_STATS) != 0) {
     caml_compute_gc_stats(&s);
     {
@@ -180,14 +191,20 @@ CAMLexport void caml_do_exit(int retcode)
     }
   }
 
-/* Tear down runtime_events before we leave */
-CAML_RUNTIME_EVENTS_DESTROY();
-
 #ifndef NATIVE_CODE
   caml_debugger(PROGRAM_EXIT, Val_unit);
 #endif
   if (caml_params->cleanup_on_exit)
     caml_shutdown();
+  /* Tear the ring down after [caml_shutdown], so that the events emitted
+     while shutting down are recorded.
+
+     [caml_domain_terminate] tears the ring down itself, later than this.
+     But it only runs when [caml_shutdown] is called and does not return
+     early, which is not the common case: [cleanup_on_exit] is unset by
+     default. Note teardown is idempotent, so whichever happens second does
+     nothing. */
+  CAML_RUNTIME_EVENTS_DESTROY();
 #ifdef _WIN32
   caml_restore_win32_terminal();
 #endif
