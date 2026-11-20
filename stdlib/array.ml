@@ -469,7 +469,9 @@ let unsafe_stable_sort_sub cmp a init_ofs init_len =
   if l <= cutoff then isortto base a base l else begin
     let l1 = l / 2 in
     let l2 = l - l1 in
-    let t = make l2 (get a base) in
+    (* [t] is created with [sub] rather than [make] so that it has the same
+       runtime representation as [a] if it is a float array. *)
+    let t = sub a base l2 in
     sortto (base + l1) t 0 l2;
     sortto base a (base + l2) l1;
     merge (base + l2) l1 t 0 l2 a base;
