@@ -899,12 +899,12 @@ let emit_instr env i =
         emit_poll env i return_label false
     | Lop(Ispecific(Ipoll_far { return_label })) ->
         emit_poll env i return_label true
-    | Lop(Iintop Isub) ->               (* subfc has swapped arguments *)
-        `	subfc	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
+    | Lop(Iintop Isub) ->               (* subf has swapped arguments *)
+        `	subf	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
     | Lop(Iintop Imod) ->
         `	divd	0, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	mulld	0, 0, {emit_reg i.arg.(1)}\n`;
-        `	subfc	{emit_reg i.res.(0)}, 0, {emit_reg i.arg.(0)}\n`
+        `	subf	{emit_reg i.res.(0)}, 0, {emit_reg i.arg.(0)}\n`
     | Lop(Iintop(Icomp cmp)) ->
         begin match cmp with
           Isigned c ->

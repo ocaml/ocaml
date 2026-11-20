@@ -31,6 +31,10 @@ Working version
   (Pierre Chambart, report by Alperen Keleş,
    review by Vincent Laviron)
 
+- #15232: Use a plain subtract on POWER for subtraction and modulo, instead
+  of one that also sets a carry nothing reads.
+  (Tim McGilchrist and Zane Hambly, review by         )
+
 ### Standard library:
 
 - #15168: `Scanf.unescaped`, `%S` and `%C` now accept all the escape sequences
