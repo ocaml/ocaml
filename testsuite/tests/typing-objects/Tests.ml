@@ -823,7 +823,8 @@ fun (x : 'a t) -> (x : 'a); ();;
 Line 1, characters 18-26:
 1 | fun (x : 'a t) -> (x : 'a); ();;
                       ^^^^^^^^
-Warning 10 [non-unit-statement]: this expression should have type unit.
+Warning 10 [non-unit-statement]: this expression should have type "unit",
+  but it has type "< x : 'a > as 'a".
 
 - : (< x : 'a > as 'a) t -> unit = <fun>
 |}];;
