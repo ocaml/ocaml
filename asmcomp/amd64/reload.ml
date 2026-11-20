@@ -75,11 +75,11 @@ method! reload_operation op arg res =
       else (arg, res)
   | Iintop(Icomp _) ->
       (* The result must be a register (PR#11803) *)
-      let res = self#makeregs res in
+      let r = if stackp res.(0) then self#makereg res.(0) else res.(0) in
       (* One of the two arguments can reside in the stack, but not both *)
       if stackp arg.(0) && stackp arg.(1)
-      then ([|arg.(0); self#makereg arg.(1)|], res)
-      else (arg, res)
+      then ([|arg.(0); self#makereg arg.(1); r|], [|r|])
+      else ([|arg.(0); arg.(1); r|], [|r|])
   | Iintop_imm(Iadd, _) when arg.(0).loc <> res.(0).loc ->
       (* This add will be turned into a lea; args and results must be
          in registers *)
@@ -91,7 +91,8 @@ method! reload_operation op arg res =
       else (arg, res)
   | Iintop_imm(Icomp _, _) ->
       (* The result must be in a register (PR#11803) *)
-      (arg, self#makeregs res)
+      let r = if stackp res.(0) then self#makereg res.(0) else res.(0) in
+      ([|arg.(0); r|], [|r|])
   | Iintop(Imulh | Idiv | Imod | Ilsl | Ilsr | Iasr)
   | Iintop_imm(_, _) ->
       (* The argument(s) and results can be either in register or on stack *)

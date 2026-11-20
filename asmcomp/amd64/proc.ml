@@ -315,7 +315,7 @@ let destroyed_at_oper = function
         -> [| rax; rdx |]
   | Iop(Istore(Single, _, _)) -> [| rxmm15 |]
   | Iop(Ialloc _ | Ipoll _) -> destroyed_at_alloc_or_poll
-  | Iop(Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
+  | Iop(Iintop(Imulh))
         -> [| rax |]
   | Iswitch(_, _) -> [| rax; rdx |]
   | Itrywith _ -> [| r11 |]
@@ -353,8 +353,6 @@ let max_register_pressure =
       consumes ~int:2 ~float:0
   | Ialloc _ | Ipoll _ ->
       consumes ~int:(1 + num_destroyed_by_plt_stub) ~float:0
-  | Iintop(Icomp _) | Iintop_imm((Icomp _), _) ->
-      consumes ~int:1 ~float:0
   | Istore(Single, _, _) ->
       consumes ~int:0 ~float:1
   | Icompf _ ->
