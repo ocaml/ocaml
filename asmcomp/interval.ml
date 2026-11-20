@@ -134,6 +134,10 @@ let build_intervals fd =
     | Iop(Icall_ind | Icall_imm _ | Iextcall{alloc = true; _}
           | Itailcall_ind | Itailcall_imm _) ->
         walk_instruction i.next
+    | Iop(Iatomic_fetch_add | Iatomic_exchange | Iatomic_compare_exchange) ->
+        insert_destroyed_at_oper intervals i !pos;
+        Array.iter (update_interval_position intervals !pos Live) i.arg;
+        walk_instruction i.next
     | Iop _ ->
         insert_destroyed_at_oper intervals i !pos;
         walk_instruction i.next
