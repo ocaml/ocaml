@@ -1105,6 +1105,10 @@ OCaml 5.6.0
   (Nicolás Ojeda Bär, report by KC Sivaramakrishnan, review by Florian
   Angeletti)
 
+- #15381: fix `Unix.utimes` failing with EINVAL on Linux for negative
+  times with a fractional part.
+  (Prakhand Patel, report by KC Sivaramakrishnan)
+
 OCaml 5.5.1
 -----------
 
