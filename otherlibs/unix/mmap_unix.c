@@ -30,6 +30,9 @@
 
 #include <errno.h>
 #include <unistd.h>
+#ifdef HAS_PWRITE
+#include <fcntl.h>
+#endif
 #ifdef HAS_MMAP
 #include <sys/types.h>
 #include <sys/mman.h>
@@ -50,13 +53,21 @@ extern value caml_unix_mapped_alloc(int, int, void *, intnat *);
 static int caml_grow_file(int fd, file_offset size)
 {
   char c;
+  bool retry_ftruncate = false;
 
   /* First use pwrite for growing - it is a conservative method, as it
-     can never happen that we shrink by accident
+     can never happen that we shrink by accident. pwrite cannot be used
+     when the fd's mode is O_APPEND (#15306)
    */
 #ifdef HAS_PWRITE
   c = 0;
-  ssize_t p = pwrite(fd, &c, 1, size - 1);
+  int flags = fcntl(fd, F_GETFL);
+  ssize_t p = -1;
+  if(flags != -1 && !(flags & O_APPEND)) {
+    p = pwrite(fd, &c, 1, size - 1);
+  } else {
+    retry_ftruncate = true;
+  }
 #else
 
   /* Emulate pwrite with lseek. This should only be necessary on ancient
@@ -76,7 +87,7 @@ static int caml_grow_file(int fd, file_offset size)
   else p=-1;
 #endif
 #ifdef HAS_TRUNCATE
-  if (p == -1 && errno == ESPIPE) {
+  if (p == -1 && (retry_ftruncate || errno == ESPIPE)) {
     /* Plan B. Check if at least ftruncate is possible. There are
        some non-seekable descriptor types that do not support pwrite
        but ftruncate, like shared memory. We never get into this case
