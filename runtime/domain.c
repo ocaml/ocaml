@@ -2304,13 +2304,21 @@ void caml_domain_terminate(bool last)
 
     /* No need to check for interrupts if we are the last domain running. */
     if (last) {
+      /* [caml_orphan_ephemerons] may have pushed new marking work
+         (force-alive ephemeron data): drain it so that teardown sees an
+         empty mark stack. */
+      caml_finish_marking();
       CAML_EV_LIFECYCLE(EV_DOMAIN_TERMINATE, getpid());
       break;
     }
 
-    /* If new marking or sweeping work appeared during orphaning,
-       run a new loop iteration. */
-    if (!marking_and_sweeping_done(domain_state))
+    /* If new marking or sweeping work appeared during orphaning, or if
+       cleaning orphaned ephemerons recorded new minor-table entries
+       (which only a minor collection can flush), run a new loop
+       iteration. */
+    if (!marking_and_sweeping_done(domain_state)
+        || domain_state->minor_tables->ephe_ref.ptr
+           > domain_state->minor_tables->ephe_ref.base)
       continue;
 
     /* Orphan the local shared heap.
