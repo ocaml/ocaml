@@ -302,7 +302,9 @@ let emit_frame_push n =
 (* After a comparison, extract the result as 0 or 1 *)
 
 let emit_extract_crbit bitnum negated res =
-  `	mfcr	0\n`;
+  (* Only CR0 is read here; mfocrf 0x80 copies just that field, avoiding the
+     microcoded whole-register mfcr.  Bit positions are identical to mfcr. *)
+  `	mfocrf	0, 0x80\n`;
   `	rlwinm	{emit_reg res}, 0, {emit_int(bitnum+1)}, 31, 31\n`;
   if negated then
     `	xori	{emit_reg res}, {emit_reg res}, 1\n`
