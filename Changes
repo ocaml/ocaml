@@ -601,7 +601,7 @@ OCaml 5.6.0
   result is unchanged.
   (Nicolás Ojeda Bär, review by Vincent Laviron and Olivier Nicole)
 
-- #14848: Add Dynarray.stable_sort_sub, stable_sort and sort
+- #14848, #15386: Add Dynarray.stable_sort_sub, stable_sort and sort
   (Jeanne Pottier, review by Nicolás Ojeda Bär and Olivier Nicole)
 
 - #15064: deprecate Weak.get_copy
@@ -1104,11 +1104,6 @@ OCaml 5.6.0
   sequences.
   (Nicolás Ojeda Bär, report by KC Sivaramakrishnan, review by Florian
   Angeletti)
-
-- #15386: Fix memory corruption in `Dynarray.sort` and
-  `Dynarray.stable_sort_sub` on dynarrays of floats.
-  (Nicolás Ojeda Bär, report by KC Sivaramakrishnan, review by KC
-  Sivaramakrishnan)
 
 OCaml 5.5.1
 -----------
