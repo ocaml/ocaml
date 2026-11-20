@@ -3582,15 +3582,16 @@ let compile_list compile_fun division =
   in
   c_rec [] division
 
-let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
+let compile_orhandlers compile_fun lambda1 partial total1 ctx to_catch =
   let rec do_rec r total_r = function
     | [] -> (r, total_r)
     | { provenance = mat; exit = i; vars; pm } :: rem -> (
         debugf "@,COMPILE_orhandlers %d:@,@[<v 2>%a@]@,"
           i
           pretty_cases pm.cases;
+        let partial = { partial with tempo = Following } in
         let ctx = Context.lshift_num (ncols mat) ctx in
-        match compile_fun ctx pm with
+        match compile_fun partial ctx pm with
         | exception Unused ->
           if rem <> [] then separate_debug_output ();
           do_rec (Lstaticcatch (r, (i, vars), lambda_unit)) total_r rem
@@ -4065,9 +4066,13 @@ and do_compile_matching ~scopes repr partial ctx pmh =
       (lam, Jumps.map Context.rshift total)
   | PmOr { body; handlers } ->
       let lam, total =
-        compile_match_simplified ~scopes repr partial ctx body in
-      compile_orhandlers (compile_match ~scopes repr partial)
-        lam total ctx handlers
+        (* the 'body' matrix of a PmOr always exits *)
+        let partial =
+          if handlers = [] then partial
+          else { partial with current = Partial } in
+        compile_match_simplified ~scopes repr partial  ctx body in
+      compile_orhandlers (compile_match ~scopes repr)
+        lam partial total ctx handlers
 
 and compile_no_test ~scopes divide up_ctx repr partial ctx to_match =
   let { pm = this_match; ctx = this_ctx } = divide ctx to_match in
@@ -4435,8 +4440,13 @@ let compile_flattened ~scopes repr partial ctx pmh =
   match pmh with
   | FPm pm -> compile_match_nonempty_rows ~scopes repr partial ctx pm
   | FPmOr { body = b; handlers = hs } ->
-      let lam, total = compile_match_nonempty_rows ~scopes repr partial ctx b in
-      compile_orhandlers (compile_match ~scopes repr partial) lam total ctx hs
+      let lam, total =
+        (* the [body] matrix of a PmOr with handlers always exits *)
+        let partial =
+          if hs = [] then partial
+          else { partial with current = Partial } in
+        compile_match_nonempty_rows ~scopes repr partial ctx b in
+      compile_orhandlers (compile_match ~scopes repr) lam partial total ctx hs
 
 let do_for_multiple_match ~scopes loc idl pat_act_list partial =
   let repr = None in
