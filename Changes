@@ -61,6 +61,9 @@ Working version
 - #15216: document the security issue reporting process with a SECURITY.md file
   (Edwin Török, suggested by Xavier Leroy, review by Xavier Leroy)
 
+- #15282: document how to mark a test as expected to fail in the testsuite
+  (Edwin Török, review by )
+
 ### Compiler user-interface and warnings:
 
 - #15144: Further improvement on typing error messages for Duplicate_constructor
