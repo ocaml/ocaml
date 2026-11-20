@@ -29,7 +29,7 @@ CAMLprim value caml_unix_realpath (value p)
 
   caml_unix_check_path (p, "realpath");
   path = caml_stat_strdup(String_val(p));
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   r = realpath (path, NULL);
   caml_leave_blocking_section();
   caml_stat_free(path);

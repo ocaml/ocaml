@@ -144,7 +144,7 @@ CAMLprim value caml_unix_gethostbyname(value name)
 
 #if !defined(HAS_GETHOSTBYNAME_R)
 #ifdef _WIN32
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
 #endif
   hp = gethostbyname(hostname);
 #ifdef _WIN32
@@ -152,14 +152,14 @@ CAMLprim value caml_unix_gethostbyname(value name)
 #endif
 #elif HAS_GETHOSTBYNAME_R == 5
   {
-    caml_enter_blocking_section();
+    caml_enter_blocking_section_no_pending();
     hp = gethostbyname_r(hostname, &h, buffer, sizeof(buffer), &err);
     caml_leave_blocking_section();
   }
 #elif HAS_GETHOSTBYNAME_R == 6
   {
     int rc;
-    caml_enter_blocking_section();
+    caml_enter_blocking_section_no_pending();
     rc = gethostbyname_r(hostname, &h, buffer, sizeof(buffer), &hp, &err);
     caml_leave_blocking_section();
     if (rc != 0) hp = NULL;

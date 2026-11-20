@@ -35,7 +35,7 @@ CAMLprim value caml_unix_readlink(value opath)
   caml_unix_check_path(opath, "readlink");
   path = caml_stat_strdup_to_utf16(String_val(opath));
 
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   attributes = GetFileAttributes(path);
   caml_leave_blocking_section();
 
@@ -49,7 +49,7 @@ CAMLprim value caml_unix_readlink(value opath)
     caml_unix_error(EINVAL, "readlink", opath);
   }
   else {
-    caml_enter_blocking_section();
+    caml_enter_blocking_section_no_pending();
     if ((h = CreateFile(path,
                         FILE_READ_ATTRIBUTES,
                         FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,

@@ -35,7 +35,7 @@ CAMLprim value caml_unix_truncate(value path, value vlen)
   file_offset len = Long_val(vlen);
   caml_unix_check_path(path, "truncate");
   p = caml_stat_strdup(String_val(path));
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   ret = truncate(p, len);
   caml_leave_blocking_section();
   caml_stat_free(p);
@@ -52,7 +52,7 @@ CAMLprim value caml_unix_truncate_64(value path, value vlen)
   file_offset len = File_offset_val(vlen);
   caml_unix_check_path(path, "truncate");
   p = caml_stat_strdup(String_val(path));
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   ret = truncate(p, len);
   caml_leave_blocking_section();
   caml_stat_free(p);

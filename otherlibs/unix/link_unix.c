@@ -44,7 +44,7 @@ CAMLprim value caml_unix_link(value follow, value path1, value path2)
     ? AT_SYMLINK_FOLLOW
     : 0;
 # endif
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   if (follow_is_none)
     ret = link(p1, p2);
   else {

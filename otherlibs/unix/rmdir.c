@@ -28,7 +28,7 @@ CAMLprim value caml_unix_rmdir(value path)
   int ret;
   caml_unix_check_path(path, "rmdir");
   p = caml_stat_strdup_to_os(String_val(path));
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   ret = rmdir_os(p);
   caml_leave_blocking_section();
   caml_stat_free(p);
