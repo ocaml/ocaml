@@ -219,7 +219,8 @@ let () =
     assert (A.to_list a = [4; 5; 6])
   in
   let () =
-    (* target region with dst_pos = max_int: the message must not overflow*)
+    (* target region with dst_pos = max_int;
+       the overflow check also guards ensure_capacity *)
     let a = A.of_list [4; 5; 6] in
     let b = A.of_list [1; 2; 3] in
     assert (match

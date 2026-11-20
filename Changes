@@ -39,9 +39,6 @@ Working version
   indentation following an escaped newline.
   (Nicolás Ojeda Bär, report by Chet Murthy, review by Florian Angeletti)
 
-- #15274: Fix integer overflow in bounds check for `Dynarray.blit`.
-  (Durwasa Chakraborty, report by KC Sivaramakrishnan)
-
 ### Other libraries:
 
 - #15121: Add support for `O_NOFOLLOW` to the `Unix` library, only implemented
@@ -552,6 +549,9 @@ OCaml 5.6.0
 - #15173: Fix Seq.ints_in_range overflowing and failing to terminate when
   the last endpoint is max_int.
   (Antonio Nuno Monteiro, review by Nicolás Ojeda Bär)
+
+- #15274: Fix integer overflow in bounds check for `Dynarray.blit`.
+  (Durwasa Chakraborty, report by KC Sivaramakrishnan)
 
 ### Other libraries:
 
