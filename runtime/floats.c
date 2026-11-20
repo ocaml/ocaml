@@ -427,10 +427,6 @@ static int caml_float_of_hex(const char * s, const char * end, double * res)
     }
   }
   if (n_bits == 0) return -1;
-  /* Convert mantissa to FP.  We use a signed conversion because we can
-     (m has 60 bits at most) and because it is faster
-     on several architectures. */
-  f = (double) (int64_t) m;
   /* Adjust exponent to take decimal point and extra digits into account */
   {
     int adj = x_bits;
@@ -443,6 +439,33 @@ static int caml_float_of_hex(const char * s, const char * end, double * res)
     else
       exp = exp + adj;
   }
+  /* If the result is subnormal, converting m to FP and then scaling it
+     would round twice.  Instead, round m to the subnormal precision here
+     (ties to even) and scale the result exactly.  The round-to-odd bit of
+     m can only be set if m has 57 to 60 significant bits; in that case at
+     least 5 bits are dropped here, so it cannot produce a false tie. */
+  if (m != 0 && exp < -1074) {
+    int nb = 0;                 /* number of significant bits in m */
+    int s = -1074 - exp;        /* number of bits to drop, > 0 */
+    uint64_t q;
+    for (q = m; q != 0; q >>= 1) nb++;
+    if (nb + exp <= -1022) {
+      if (s > 62) {
+        q = 0;                  /* less than half the smallest subnormal */
+      } else {
+        uint64_t r = (uint64_t) m & (((uint64_t) 1 << s) - 1);
+        uint64_t half = (uint64_t) 1 << (s - 1);
+        q = (uint64_t) m >> s;
+        if (r > half || (r == half && (q & 1))) q++;
+      }
+      *res = ldexp((double) q, -1074);
+      return 0;
+    }
+  }
+  /* Convert mantissa to FP.  We use a signed conversion because we can
+     (m has 60 bits at most) and because it is faster
+     on several architectures. */
+  f = (double) (int64_t) m;
   /* Apply exponent if needed */
   if (exp != 0) f = ldexp(f, exp);
   /* Done! */
