@@ -71,3 +71,36 @@ type 'a immut_ref = { contents : 'a; }
   (apply (field_mut 1 (global Toploop!)) "g" g/0))
 val g : int option immut_ref -> int = <fun>
 |}];;
+
+(* a variation of the [immut_ref] example where code gets pessimized *)
+let h (r : int option immut_ref) =
+  match r with
+  | ({ contents = Some (1 as x) } | { contents = Some x }) when (false) -> x
+  | { contents = None } -> 0
+  | { contents = Some v } when true -> v + 1000
+[@@warning "-partial-match"]
+[%%expect {|
+(let
+  (h/0 =
+     (function r/2 : int
+       (catch
+         (catch
+           (catch
+             (let (*match*/4 =a (field_imm 0 r/2))
+               (if *match*/4
+                 (let (x/6 =a (field_imm 0 *match*/4))
+                   (catch (if (!= x/6 1) (exit 14) (exit 13 x/6)) with (14)
+                     (let (x/7 =a x/6) (exit 13 x/7))))
+                 0))
+            with (13 x/8[int]) (if 0 x/8 (exit 12)))
+          with (12)
+           (let (*match*/5 =a (field_imm 0 r/2))
+             (if *match*/5
+               (if 1 (let (v/2 =a (field_imm 0 *match*/5)) (+ v/2 1000))
+                 (exit 11))
+               (exit 11))))
+        with (11)
+         (raise (makeblock 0 (global Match_failure/0!) [0: "" 2 2])))))
+  (apply (field_mut 1 (global Toploop!)) "h" h/0))
+val h : int option immut_ref -> int = <fun>
+|}]
