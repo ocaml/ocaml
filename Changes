@@ -103,6 +103,11 @@ Working version
 - #15216: document the security issue reporting process with a SECURITY.md file
   (Edwin Török, suggested by Xavier Leroy, review by Xavier Leroy)
 
+- #15387: document how to troubleshoot TSAN not working,
+  e.g. inside a container
+  (Edwin Török, report by Ali Caglayan,
+  with some suggestions from Puneeth Chaganti, review by Olivier Nicole)
+
 ### Compiler user-interface and warnings:
 
 - #15144: Further improvement on typing error messages for Duplicate_constructor
