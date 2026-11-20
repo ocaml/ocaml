@@ -165,6 +165,10 @@ Working version
   with `Double_array_tag` rather than as a scannable block.
   (Nick Barnes, review by Vincent Laviron)
 
+- #15340: Fix `Complex.pow` to return zero when a zero base is raised to a
+  finite, strictly positive real power, including fractional powers.
+  (Sora Morimoto)
+
 OCaml 5.6.0
 -----------
 

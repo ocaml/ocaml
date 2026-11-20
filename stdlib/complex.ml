@@ -76,4 +76,7 @@ let exp x =
 
 let log x = { re = log (norm x); im = atan2 x.im x.re }
 
-let pow x y = exp (mul y (log x))
+let pow x y =
+  if x.re = 0.0 && x.im = 0.0 && y.im = 0.0 &&
+     y.re > 0.0 && y.re < infinity then zero
+  else exp (mul y (log x))
