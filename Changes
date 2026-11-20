@@ -223,6 +223,10 @@ Working version
   of a C int.
   (Sora Morimoto, review by Olivier Nicole)
 
+* #15389: Runtime_events.path is now an absolute path to make cleanup on exit
+  possible when the application uses `chdir`
+  (Edwin Török, report by Sam Moelius, review by)
+
 OCaml 5.6.0
 -----------
 

@@ -270,22 +270,17 @@ static char_os* abspath(const char_os *dir)
   }
   return out;
 #else
-# ifdef HAS_REALPATH
-  char *c = realpath(dir, NULL);
-  if (!c)
-    return NULL;
-  char *out = caml_stat_strdup(c);
-  free(c);
-  return out;
-# else
+  /* realpath seems like the better option here,
+   * but what if it fails, or is not available? */
   if (Is_separator(dir[0]))
     return caml_stat_strdup(dir); /* already an absolute path */
   /* matches caml_sys_getcwd, PATH_MAX may be -1 if it is unbounded. */
   char cwd[4096];
   if (!getcwd(cwd, countof(cwd)))
     return NULL;
+  if (dir[0] == '.' && dir[1] == '\0')
+    return caml_stat_strdup(cwd); /* avoid cwd/./%d.events */
   return caml_stat_strconcat(3, cwd, "/", dir);
-# endif
 #endif
 }
 
