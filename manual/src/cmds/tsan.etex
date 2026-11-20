@@ -254,3 +254,57 @@ will be delayed until the next call to the TSan runtime (e.g.\ until the next
 access to mutable data). This limitation of TSan can have surprising effects:
 for instance, pure, recursive functions that do not allocate cannot be
 interrupted until they terminate.
+
+\section{s:tsan-containers}{Using TSan inside containers}
+
+When you run TSan inside a container you may get an error message:
+\begin{verbatim}
+FATAL: ThreadSanitizer: unexpected memory mapping 0x616ee2056000-0x616ee2057000
+\end{verbatim}
+Newer versions give a more verbose error message:
+\begin{verbatim}
+FATAL: ThreadSanitizer: encountered an incompatible memory layout but was unable to disable ASLR (perhaps sandboxing is enabled?).
+FATAL: Please rerun with lower ASLR entropy, ASLR disabled, and/or sandboxing disabled.
+\end{verbatim}
+
+This happens because some distros set \verb|vm_mmap_rnd_bits| higher than 30 (e.g.\ to 32).
+Latest upstream TSan supports at most \href{https://github.com/llvm/llvm-project/commit/7d039effc4930be9240446a4241d268a39960e0b}{vm_mmap_rnd_bits=30}, and earlier versions supported at most \href{https://github.com/google/sanitizers/issues/1716#issuecomment-2010399341}{vm.mmap_rnd_bits=28}.
+TSan will attempt to disable ASLR on the process when it detects this.
+However when running inside a container that is not permitted with the \href{https://github.com/moby/moby/issues/43011}{default seccomp profile}.
+
+\subsection{ss:tsan-container-workarounds}{Workarounds}
+
+In order of preference (from most secure to least secure):
+\begin{itemize}
+
+\item use a custom seccomp profile: docker doesn't support extending seccomp profiles, so fetch the latest, and add allow \verb|ADDR_NO_RANDOMIZE| in the \verb|personality| syscall:
+\begin{verbatim}
+curl -o default.json -fL \
+    https://raw.githubusercontent.com/moby/profiles/refs/heads/main/seccomp/default.json
+jq '.syscalls += [
+    {
+    "names": [
+        "personality"
+    ],
+    "action": "SCMP_ACT_ALLOW",
+    "args": [
+        {
+        "index": 0,
+        "value": 262144,
+        "op": "SCMP_CMP_EQ"
+        }
+    ]
+    }]' <default.json >tsan.json
+docker run --security-opt seccomp=./tsan.json ...
+\end{verbatim}
+
+\item disable seccomp for the containers that run TSan by adding \verb|--security-opt seccomp=unconfined| to the \verb|docker run| line
+
+\item reduce ASLR entropy system-wide with \verb|sudo sysctl -w vm.mmap_rnd_bits=30|
+
+\item for older TSan versions, reduce ASLR entropy further with \verb|sudo sysctl -w vm.mmap_rnd_bits=28|
+
+\item if nothing else works, then disable ASLR entirely \verb|sudo sysctl -w kernel.randomize_va_space=0|
+\end{itemize}
+
+
