@@ -267,6 +267,9 @@ val asm: string
 val asm_cfi_supported: bool
 (** Whether assembler understands CFI directives *)
 
+val asm_cfi_val_offset: bool
+(** Whether assembler understands the [.cfi_val_offset] directive *)
+
 val asm_size_type_directives: bool
 (** Whether the [.size] and [.type] assembler directives can be used
 

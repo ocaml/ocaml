@@ -433,12 +433,33 @@ let cfi_def_cfa_register ~reg =
     emit_string "\n"
   end
 
+let sleb128 n =
+  let rec loop n acc =
+    let byte = n land 0x7f and rest = n asr 7 in
+    if (rest = 0 && byte land 0x40 = 0) || (rest = -1 && byte land 0x40 <> 0)
+    then List.rev (byte :: acc)
+    else loop rest (byte lor 0x80 :: acc)
+  in
+  loop n []
+
 let cfi_val_offset ~reg ~offset =
   if is_cfi_enabled () then begin
-    emit_string "\t.cfi_escape 0x14, "; (* DW_CFA_val_offset (0x14) *)
-    emit_int reg;
-    emit_string ", ";
-    emit_int offset;
+    if Config.asm_cfi_val_offset then begin
+      emit_string "\t.cfi_val_offset ";
+      emit_int reg;
+      emit_string ", ";
+      emit_int offset
+    end else begin
+      assert (0 <= reg && reg < 128);
+      (* This is DW_CFA_val_expression computing CFA + offset with
+         DW_OP_consts and DW_OP_plus, so no alignment factor is needed. *)
+      let expr = 0x11 :: sleb128 offset @ [0x22] in
+      emit_string "\t.cfi_escape 0x16, ";
+      emit_int reg;
+      emit_string ", ";
+      emit_int (List.length expr);
+      List.iter (fun b -> emit_string ", "; emit_int b) expr
+    end;
     emit_string "\n"
   end
 

@@ -22,6 +22,11 @@ Working version
   usually concrete.
   (Zane Hambly, review by Stefan Muenzel)
 
+- #15278: s390x: follow the ABI's CFA convention in the CFI so that gas can
+  emit SFrame for OCaml functions, and use .cfi_val_offset when the assembler
+  supports it.
+  (Zane Hambly, review by )
+
 - #15202, #15208: Proper handling of integer sized constants in flambda
   alias analysis
   (Pierre Chambart, report by Ethan Chou,
