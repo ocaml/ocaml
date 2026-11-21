@@ -139,6 +139,18 @@ jobs:
           arch: ${{ matrix.arch == 'x86_64' && 'x64' || 'x86' }}
         if: matrix.cc != 'gcc'
 
+      # The runner image ships a standalone LLVM in C:\Program Files\LLVM which
+      # comes first in PATH and may lag behind the version required by the
+      # MSVC STL headers (STL1000 "Unexpected compiler version"). Use the
+      # clang-cl bundled with Visual Studio instead, which is kept in sync.
+      - name: Use the clang-cl bundled with Visual Studio
+        if: matrix.cc == 'clang-cl'
+        shell: pwsh
+        run: |
+          $llvm = Join-Path $env:VCINSTALLDIR 'Tools\Llvm\x64\bin'
+          & (Join-Path $llvm 'clang-cl.exe') --version
+          Add-Content -Path $env:GITHUB_PATH -Value $llvm
+
       - name: Install opam
         if: matrix.opam == 'true'
         shell: pwsh
