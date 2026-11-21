@@ -109,7 +109,7 @@ CAMLprim value caml_unix_getaddrinfo(value vnode, value vserv, value vopts)
       }
   }
   /* Do the call */
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   retcode = getaddrinfo(node, serv, &hints, &res);
   caml_leave_blocking_section();
   if (node != NULL) caml_stat_free(node);

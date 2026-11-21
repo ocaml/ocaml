@@ -28,7 +28,7 @@ CAMLprim value caml_unix_unlink(value path)
   int ret;
   caml_unix_check_path(path, "unlink");
   p = caml_stat_strdup_to_os(String_val(path));
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   ret = caml_unlink(p);
   caml_leave_blocking_section();
   caml_stat_free(p);

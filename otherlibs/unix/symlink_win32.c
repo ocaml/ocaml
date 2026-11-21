@@ -88,7 +88,7 @@ CAMLprim value caml_unix_symlink(value to_dir, value osource, value odest)
   source = caml_stat_strdup_to_utf16(String_val(osource));
   dest = caml_stat_strdup_to_utf16(String_val(odest));
 
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   result = CreateSymbolicLink(dest, source, flags);
   caml_leave_blocking_section();
 

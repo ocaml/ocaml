@@ -35,7 +35,7 @@ CAMLprim value caml_unix_system(value command)
   if (! caml_string_is_c_safe (command))
     caml_unix_error(EINVAL, "system", Nothing);
   buf = caml_stat_strdup_to_utf16(String_val(command));
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   _flushall();
   status = _wsystem(buf);
   caml_leave_blocking_section();

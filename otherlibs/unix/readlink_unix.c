@@ -40,7 +40,7 @@ CAMLprim value caml_unix_readlink(value path)
   char * p;
   caml_unix_check_path(path, "readlink");
   p = caml_stat_strdup(String_val(path));
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   len = readlink(p, buffer, sizeof(buffer) - 1);
   caml_leave_blocking_section();
   caml_stat_free(p);

@@ -177,7 +177,7 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, i
     h = fstat;
   }
   else {
-    caml_enter_blocking_section();
+    caml_enter_blocking_section_no_pending();
     h = CreateFile(path,
                    FILE_READ_ATTRIBUTES,
                    FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
@@ -192,7 +192,7 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, i
     return 0;
   }
   else {
-    caml_enter_blocking_section();
+    caml_enter_blocking_section_no_pending();
     if (!GetFileInformationByHandle(h, &info)) {
       caml_win32_maperr(GetLastError());
       caml_leave_blocking_section();
@@ -222,7 +222,7 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, i
         REPARSE_DATA_BUFFER point;
       } buffer;
 
-      caml_enter_blocking_section();
+      caml_enter_blocking_section_no_pending();
       if (DeviceIoControl(h, FSCTL_GET_REPARSE_POINT, NULL, 0, &buffer.point, sizeof(buffer.raw), &read, NULL)) {
         if (buffer.point.ReparseTag == IO_REPARSE_TAG_SYMLINK) {
           is_symlink = do_lstat;
@@ -233,7 +233,7 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, i
 
       if (!is_symlink) {
         CloseHandle(h);
-        caml_enter_blocking_section();
+        caml_enter_blocking_section_no_pending();
         if ((h = CreateFile(path,
                             FILE_READ_ATTRIBUTES,
                             FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,

@@ -31,7 +31,7 @@ CAMLprim value caml_unix_symlink(value to_dir, value path1, value path2)
   caml_unix_check_path(path2, "symlink");
   p1 = caml_stat_strdup(String_val(path1));
   p2 = caml_stat_strdup(String_val(path2));
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   ret = symlink(p1, p2);
   caml_leave_blocking_section();
   caml_stat_free(p1);

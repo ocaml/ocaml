@@ -117,7 +117,7 @@ CAMLprim value caml_unix_stat(value path)
   char * p;
   caml_unix_check_path(path, "stat");
   p = caml_stat_strdup(String_val(path));
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   ret = stat(p, &buf);
   caml_leave_blocking_section();
   caml_stat_free(p);
@@ -135,7 +135,7 @@ CAMLprim value caml_unix_lstat(value path)
   char * p;
   caml_unix_check_path(path, "lstat");
   p = caml_stat_strdup(String_val(path));
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
 #ifdef HAS_SYMLINK
   ret = lstat(p, &buf);
 #else
@@ -170,7 +170,7 @@ CAMLprim value caml_unix_stat_64(value path)
   char * p;
   caml_unix_check_path(path, "stat");
   p = caml_stat_strdup(String_val(path));
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   ret = stat(p, &buf);
   caml_leave_blocking_section();
   caml_stat_free(p);
@@ -186,7 +186,7 @@ CAMLprim value caml_unix_lstat_64(value path)
   char * p;
   caml_unix_check_path(path, "lstat");
   p = caml_stat_strdup(String_val(path));
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
 #ifdef HAS_SYMLINK
   ret = lstat(p, &buf);
 #else

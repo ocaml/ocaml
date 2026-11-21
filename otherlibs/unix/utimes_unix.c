@@ -45,7 +45,7 @@ CAMLprim value caml_unix_utimes(value path, value atime, value mtime)
     t = tv;
   }
   p = caml_stat_strdup(String_val(path));
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   ret = utimes(p, t);
   caml_leave_blocking_section();
   caml_stat_free(p);
@@ -76,7 +76,7 @@ CAMLprim value caml_unix_utimes(value path, value atime, value mtime)
     t = &times;
   }
   p = caml_stat_strdup(String_val(path));
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   ret = utime(p, t);
   caml_leave_blocking_section();
   caml_stat_free(p);

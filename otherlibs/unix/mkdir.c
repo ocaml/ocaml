@@ -34,7 +34,7 @@ CAMLprim value caml_unix_mkdir(value path, value vperm)
   int perm = Int_val(vperm);
   caml_unix_check_path(path, "mkdir");
   p = caml_stat_strdup_to_os(String_val(path));
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   ret = mkdir_os(p, perm);
   caml_leave_blocking_section();
   caml_stat_free(p);

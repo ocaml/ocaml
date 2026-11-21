@@ -31,7 +31,7 @@ CAMLprim value caml_unix_mkfifo(value path, value vmode)
   int mode = Int_val(vmode);
   caml_unix_check_path(path, "mkfifo");
   p = caml_stat_strdup(String_val(path));
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   ret = mkfifo(p, mode);
   caml_leave_blocking_section();
   caml_stat_free(p);
@@ -55,7 +55,7 @@ CAMLprim value caml_unix_mkfifo(value path, value vmode)
   int mode = Int_val(vmode);
   caml_unix_check_path(path, "mkfifo");
   p = caml_stat_strdup(String_val(path));
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   ret = mknod(p, (mode & 07777) | S_IFIFO, 0);
   caml_leave_blocking_section();
   caml_stat_free(p);

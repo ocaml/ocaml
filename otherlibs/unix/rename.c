@@ -30,7 +30,7 @@ CAMLprim value caml_unix_rename(value oldname, value newname)
   caml_unix_check_path(newname, "rename");
   p_old = caml_stat_strdup_to_os(String_val(oldname));
   p_new = caml_stat_strdup_to_os(String_val(newname));
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   ret = rename_os(p_old, p_new);
   caml_leave_blocking_section();
   caml_stat_free(p_new);

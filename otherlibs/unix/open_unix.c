@@ -75,7 +75,7 @@ CAMLprim value caml_unix_open(value path, value flags, value vperm)
 #endif
   p = caml_stat_strdup(String_val(path));
   /* open on a named FIFO can block (PR#8005) */
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   fd = open(p, cv_flags, perm);
   caml_leave_blocking_section();
   caml_stat_free(p);

@@ -39,7 +39,7 @@ CAMLprim value caml_unix_utimes(value path, value atime, value mtime)
   at = Double_val(atime);
   mt = Double_val(mtime);
   wpath = caml_stat_strdup_to_utf16(String_val(path));
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   hFile = CreateFile(wpath,
                      FILE_WRITE_ATTRIBUTES,
                      FILE_SHARE_READ | FILE_SHARE_WRITE,
@@ -63,7 +63,7 @@ CAMLprim value caml_unix_utimes(value path, value atime, value mtime)
     lastModificationTime.ul =
       (ULONGLONG)(mt * (NSEC_PER_SEC / 100)) + CAML_NT_EPOCH_100ns_TICKS;
   }
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   res = SetFileTime(hFile, NULL, &lastAccessTime.ft, &lastModificationTime.ft);
   caml_leave_blocking_section();
   if (res == 0) {
