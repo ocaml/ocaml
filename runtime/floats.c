@@ -188,7 +188,11 @@ static value caml_alloc_sprintf_l(locale_t loc, const char * format, ...)
      excluding the terminating '\0'. */
   n = vsnprintf_l(buf, sizeof(buf), loc, format, args);
   va_end(args);
-  if (n < sizeof(buf)) {
+  if (n < 0) {
+    /* #15251: vsnprintf_l may fail, e.g. because the format asks for an
+       absurd width or precision. */
+    caml_raise_out_of_memory();
+  } else if (n < sizeof(buf)) {
     /* All output characters were written to buf, including the
        terminating '\0'.  Allocate a Caml string with length "n" as
        computed by vsnprintf_l, and copy the output of vsnprintf_l into it. */
