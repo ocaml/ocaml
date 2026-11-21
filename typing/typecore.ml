@@ -427,7 +427,7 @@ let check_scope_escape loc env level ty =
   with Escape esc ->
     (* We don't expand the type here because if we do, we might expand to the
        type that escaped, leading to confusing error messages. *)
-    let trace = Errortrace.[Escape (map_escape trivial_expansion esc)] in
+    let trace = Errortrace.(root (Escape (map_escape trivial_expansion esc))) in
     Error.log_or_raise loc env
       (Pattern_type_clash(Errortrace.unification_error ~trace, None))
 
@@ -4006,9 +4006,9 @@ let check_univars env kind exp ty_expected vars =
   let ty, errs = polyfy env exp_ty vars in
   if errs <> [] then
     let ty_expected = instance ty_expected in
-    let diff = Ctype.expanded_diff env ~got:ty ~expected:ty_expected in
-    let explanation = Errortrace.Univar (Quantification_mismatch errs) in
-    let err = Errortrace.unification_error ~trace:[diff;explanation] in
+    let root = Errortrace.(root (Univar (Quantification_mismatch errs))) in
+    let trace = Ctype.expanded_diff env ~got:ty ~expected:ty_expected root in
+    let err = Errortrace.unification_error ~trace in
     Error.log_and_raise exp.exp_loc env (Less_general(kind,err))
 
 (* [check_statement] implements the [non-unit-statement] check.
@@ -8161,11 +8161,9 @@ let tuple_component ~print_article ppf lbl =
   | None -> fprintf ppf "%sunlabeled component" article
 
 (* Returns the first diff of the trace *)
-let type_clash_of_trace trace =
-  Errortrace.(explain trace (fun ~prev:_ -> function
-    | Diff diff -> Some diff
-    | _ -> None
-  ))
+let type_clash_of_trace trace = match trace.Errortrace.path with
+  | d :: _ -> Some d
+  | _ -> None
 
 (** More precise denomination for type errors. Used by messages:
 
@@ -8235,7 +8233,7 @@ let report_literal_type_constraint expected_type const =
 
 let report_literal_type_constraint const = function
   | Some tr ->
-      begin match get_desc Errortrace.(tr.expected.ty) with
+      begin match get_desc Errortrace.(tr.d.expected.ty) with
         Tconstr (typ, [], _) ->
           report_literal_type_constraint typ const
       | _ -> []
@@ -8244,7 +8242,7 @@ let report_literal_type_constraint const = function
 
 let report_partial_application = function
   | Some tr -> begin
-      match get_desc tr.Errortrace.got.Errortrace.expanded with
+      match get_desc Errortrace.(tr.d.got.expanded) with
       | Tarrow _ | Tfunctor _ ->
           [ Location.msg
               "@[@{<hint>Hint@}:@ This function application is partial,@ \
@@ -8421,15 +8419,9 @@ let report_error ~loc env =
     (* The last diff's expected type will be the locally-abstract type
        that the GADT pattern introduced an equation on.
     *)
-    let type_with_local_equation =
-      let last_diff =
-        List.find_map
-          (function Errortrace.Diff diff -> Some diff | _ -> None)
-          (List.rev trace)
-      in
-      match last_diff with
-      | None -> None
-      | Some diff -> Some diff.expected.ty
+    let type_with_local_equation = match List.rev trace.path with
+        | x :: _ -> Some x.d.expected.ty
+        | [] -> None
     in
     (* [syntactic_arity>1] for this error, so "arguments" is always plural. *)
     Location.errorf ~loc

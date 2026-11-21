@@ -96,5 +96,5 @@ Error: Signature mismatch:
        Type "[> `B of [> `BA | `BB of int list ] | `C of unit ]"
        is not compatible with type
          "t" = "[ `A of int | `B of [ `BA | `BB of unit list ] | `C of unit ]"
-       Types for tag "`BB" are incompatible
+       In tag "`BB", type "int list" is not compatible with type "unit list"
 |}]
