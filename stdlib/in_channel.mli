@@ -100,6 +100,15 @@ val input_line : t -> string option
     {!Sys.win32} is [true] in which case it is the sequence of characters
     [\r\n]. *)
 
+val input_nul_line : t -> string option
+(** [input_nul_line ic] reads characters from [ic] until a nul byte ([\000])
+    or the end of file is reached.  returns the string of all characters read,
+    without the nul byte (if any).  returns [none] if the end of the file has
+    been reached. in particular, this will be the case if the last line of
+    input is empty.
+
+    @since ??? *)
+
 val really_input_string : t -> int -> string option
 (** [really_input_string ic len] reads [len] characters from channel [ic] and
     returns them in a new string.  Returns [None] if the end of file is reached
@@ -122,6 +131,15 @@ val input_lines : t -> string list
     Empty lines produce empty strings.
 
     @since 5.1 *)
+
+val input_nul_lines : t -> string list
+(** [input_lines ic] reads lines using {!input_nul_line}
+    until the end of file is reached.  It returns the list of all
+    lines read, in the order they were read.  The nul byte characters
+    that terminate lines are not included in the returned strings.
+    Empty lines produce empty strings.
+
+    @since ??? *)
 
 (** {1:advanced_input Advanced input}*)
 
@@ -173,6 +191,19 @@ val fold_lines : ('acc -> string -> 'acc) -> 'acc -> t -> 'acc
     lines read.
 
     @since 5.1 *)
+
+val fold_nul_lines : ('acc -> string -> 'acc) -> 'acc -> t -> 'acc
+(** [fold_nul_lines f init ic] reads lines from [ic] using {!input_nul_line}
+    until the end of file is reached, and successively passes each line
+    to function [f] in the style of a fold.
+    More precisely, if lines [l1, ..., lN] are read,
+    [fold_nul_lines f init ic] computes [f (... (f (f init l1) l2) ...) lN].
+    If [f] has no side effects, this is equivalent to
+    [List.fold_left f init (In_channel.input_nul_lines ic)],
+    but is more efficient since it does not construct the list of all
+    lines read.
+
+    @since ??? *)
 
 (** {1:seeking Seeking} *)
 
