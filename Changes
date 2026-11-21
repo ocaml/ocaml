@@ -423,7 +423,7 @@ OCaml 5.6.0
   result is unchanged.
   (Nicolás Ojeda Bär, review by Vincent Laviron and Olivier Nicole)
 
-- #14848: Add Dynarray.stable_sort_sub, stable_sort and sort
+- #14848, #15386: Add Dynarray.stable_sort_sub, stable_sort and sort
   (Jeanne Pottier, review by Nicolás Ojeda Bär and Olivier Nicole)
 
 - #15064: deprecate Weak.get_copy
