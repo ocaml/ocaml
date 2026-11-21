@@ -2,6 +2,15 @@
 
 let is_nan2 (x, y) = Float.is_nan x && Float.is_nan y
 
+let ldexp_special_values ldexp =
+  List.for_all (fun exponent ->
+    ldexp infinity exponent = infinity &&
+    ldexp neg_infinity exponent = neg_infinity &&
+    Float.is_nan (ldexp nan exponent) &&
+    1. /. ldexp 0. exponent = infinity &&
+    1. /. ldexp (-0.) exponent = neg_infinity
+  ) [min_int; max_int]
+
 type test = True of (unit -> bool)
           | False of (unit -> bool)
           | Equal of ((unit -> float) * float)
@@ -118,6 +127,17 @@ let cases = [
                         (1. /. x, 1. /. y)), (neg_infinity, infinity)));
   (93, Pair ((fun () -> let x, y = Float.min_max_num (+0.) (-0.) in
                         (1. /. x, 1. /. y)), (neg_infinity, infinity)));
+
+  (94, Equal((fun () -> Float.ldexp 1. max_int), infinity));
+  (95, Equal((fun () -> Float.ldexp (-1.) max_int), neg_infinity));
+  (96, Equal((fun () -> 1. /. Float.ldexp 1. min_int), infinity));
+  (97, Equal((fun () -> 1. /. Float.ldexp (-1.) min_int), neg_infinity));
+  (98, Equal((fun () -> Stdlib.ldexp 1. max_int), infinity));
+  (99, Equal((fun () -> Stdlib.ldexp (-1.) max_int), neg_infinity));
+  (100, Equal((fun () -> 1. /. Stdlib.ldexp 1. min_int), infinity));
+  (101, Equal((fun () -> 1. /. Stdlib.ldexp (-1.) min_int), neg_infinity));
+  (102, True (fun () -> ldexp_special_values Float.ldexp));
+  (103, True (fun () -> ldexp_special_values Stdlib.ldexp));
 ]
 
 let () =
