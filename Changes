@@ -92,6 +92,14 @@ Working version
 
 ### Bug fixes:
 
+- #15252, #15368, #15369, #15371, #15380: check arguments to Unix.kill, waitpid,
+  alarm, mktime and Sys.signal before narrowing. Unix.alarm rejects negative
+  delays. On Unix, getpwuid, getgrgid, setuid, setgid and initgroups
+  check that IDs round-trip through uid_t or gid_t. Preserve large signal
+  numbers, runtime event integers and type IDs. Check the event registration
+  limit and Bigarray slice arity.
+  (KC Sivaramakrishnan, review by Stefan Muenzel)
+
 - #14602: on Windows, Sys.rename and Unix.rename now succeed when the
   destination is an existing read-only file, as on POSIX systems.
   (Nicolás Ojeda Bär, review by Gabriel Scherer, Antonin Décimo,
