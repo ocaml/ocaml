@@ -200,8 +200,8 @@ external leading_zeros : t -> (int [@untagged])
     It is an integer between 0 and {!Sys.int_size} inclusive.
     If [n] is negative, [leading_zeros n = 0] since the most significant
     bit of [n] is 1.
-    [leading_zeros n = {!Sys.int_size}] if and only if [n = zero].
-    Note that [leading_zeros n + unsigned_bitsize n = {!Sys.int_size}].
+    [leading_zeros n = ]{!Sys.int_size} if and only if [n = zero].
+    Note that [leading_zeros n + unsigned_bitsize n = ]{!Sys.int_size}.
 
     @since 5.5 *)
 
@@ -209,10 +209,10 @@ val leading_sign_bits: t -> int
 (** [leading_sign_bits n] is the number of leading (most significant)
     sign bits in the binary representation of [n],
     excluding the sign bit itself.
-    It is an integer between 0 and [{!Sys.int_size} - 1] inclusive.
+    It is an integer between 0 and {!Sys.int_size}[ - 1] inclusive.
     For positive [n], it is the number of leading zero bits minus one.
     For negative [n], it is the number of leading one bits minus one.
-    Note that [leading_sign_bits n + signed_bitsize n = {!Sys.int_size}].
+    Note that [leading_sign_bits n + signed_bitsize n = ]{!Sys.int_size}.
 
     @since 5.5 *)
 
@@ -221,10 +221,10 @@ external trailing_zeros : (t [@untagged]) -> (int [@untagged])
 (** [trailing_zeros n] is the number of trailing (least significant) 0 bits in
     the binary representation of [n].
     It is an integer between 0 and {!Sys.int_size} inclusive.
-    It is the largest integer [i <= {!Sys.int_size}]
+    It is the largest integer [i <= ]{!Sys.int_size}
     such that [2{^i}] divides [n] evenly.
     For example, [trailing_zeros n = 0] if and only if [n] is odd,
-    and [trailing_zeros n = {!Sys.int_size}] if and only if [n = zero].
+    and [trailing_zeros n = ]{!Sys.int_size} if and only if [n = zero].
 
     @since 5.5 *)
 
