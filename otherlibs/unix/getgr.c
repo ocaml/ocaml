@@ -94,6 +94,8 @@ CAMLprim value caml_unix_getgrgid(value gid)
 {
   value res;
   struct group * entry;
+  gid_t gid_c =
+    (gid_t) caml_unix_id_val(gid, "Unix.getgrgid: gid out of range");
 
 #ifdef HAVE_GETGRGID_R
   long initlen = sysconf(_SC_GETGR_R_SIZE_MAX);
@@ -103,7 +105,7 @@ CAMLprim value caml_unix_getgrgid(value gid)
   if (buffer == NULL)
     caml_unix_error(ENOMEM, "getgrgid", Nothing);
   int e;
-  while ((e = getgrgid_r(Int_val(gid), &result, buffer, len, &entry))
+  while ((e = getgrgid_r(gid_c, &result, buffer, len, &entry))
          == ERANGE) {
     len *= 2;
     char *newbuffer;
@@ -124,7 +126,7 @@ CAMLprim value caml_unix_getgrgid(value gid)
   caml_stat_free(buffer);
 #else
   errno = 0;
-  entry = getgrgid(Int_val(gid));
+  entry = getgrgid(gid_c);
   if (entry == NULL) {
     if (errno == EINTR)
       caml_uerror("getgrgid", Nothing);

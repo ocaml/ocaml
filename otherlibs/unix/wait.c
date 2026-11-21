@@ -92,8 +92,10 @@ CAMLprim value caml_unix_waitpid(value flags, value pid_req)
   int pid, status, cv_flags;
 
   cv_flags = caml_convert_flag_list(flags, wait_flag_table);
+  pid_t pid_c =
+    (pid_t) caml_checked_c_int(pid_req, "Unix.waitpid: pid out of range");
   caml_enter_blocking_section();
-  pid = waitpid(Int_val(pid_req), &status, cv_flags);
+  pid = waitpid(pid_c, &status, cv_flags);
   caml_leave_blocking_section();
   if (pid == -1) caml_uerror("waitpid", Nothing);
   return alloc_process_status(pid, status);

@@ -274,7 +274,9 @@ val waitpid : mode:wait_flag list -> int -> int * process_status
    immediately without waiting, and whether it should report stopped
    children.
 
-   On Windows: can only wait for a given PID, not any child process. *)
+   On Windows: can only wait for a given PID, not any child process.
+
+   @raise Invalid_argument on Unix if the PID does not fit in a C [int]. *)
 
 val system : string -> process_status
 (** Execute the given command, wait until it terminates, and return
@@ -1174,7 +1176,10 @@ val kill : pid:int -> signal:Sys.signal -> unit
 
    On Windows: only the {!Sys.sigkill} signal is emulated, causing the receiving
    process to exit with code [ERROR_PROCESS_ABORTED] (1067). Before OCaml 5.5,
-   the receiving process exited with code 0. *)
+   the receiving process exited with code 0.
+
+   @raise Invalid_argument on Unix if the PID or signal number is outside the
+   range of a C [int]. *)
 
 type sigprocmask_command = Unix.sigprocmask_command =
     SIG_SETMASK
@@ -1281,12 +1286,16 @@ val mktime : tm -> float * tm
    [tm_yday], and [tm_isdst] fields recomputed from the other fields,
    and the other fields normalized (so that, e.g., 40 October is
    changed into 9 November).  The [tm] argument is interpreted in the
-   local time zone. *)
+   local time zone.
+
+   @raise Invalid_argument if a field used by [mktime] is outside the range of
+   a C [int]. *)
 
 val alarm : int -> int
 (** Schedule a [SIGALRM] signal after the given number of seconds.
 
-   @raise Invalid_argument on Windows *)
+   @raise Invalid_argument on Windows, or on Unix if the delay is negative or
+   exceeds the range of an unsigned C [int]. *)
 
 val sleep : int -> unit
 (** Stop execution for at least the given number of seconds. *)
@@ -1362,7 +1371,8 @@ val geteuid : unit -> int
 val setuid : int -> unit
 (** Set the real user id and effective user id for the process.
 
-   @raise Invalid_argument on Windows *)
+   @raise Invalid_argument on Windows, or on 64-bit Unix if the ID is below
+   [-1] or exceeds the range of an unsigned C [int]. *)
 
 val getgid : unit -> int
 (** Return the group id of the user executing the process.
@@ -1377,7 +1387,8 @@ val getegid : unit -> int
 val setgid : int -> unit
 (** Set the real group id and effective group id for the process.
 
-   @raise Invalid_argument on Windows *)
+   @raise Invalid_argument on Windows, or on 64-bit Unix if the ID is below
+   [-1] or exceeds the range of an unsigned C [int]. *)
 
 val getgroups : unit -> int array
 (** Return the list of groups to which the user executing the process
@@ -1397,7 +1408,8 @@ val initgroups : string -> int -> unit
     which [user] is a member. The additional group [group] is also
     added to the list.
 
-    @raise Invalid_argument on Windows *)
+    @raise Invalid_argument on Windows, or on 64-bit Unix if the ID is below
+    [-1] or exceeds the range of an unsigned C [int]. *)
 
 type passwd_entry = Unix.passwd_entry =
   { pw_name : string;
@@ -1433,12 +1445,18 @@ val getgrnam : string -> group_entry
 val getpwuid : int -> passwd_entry
 (** Find an entry in [passwd] with the given user id.
 
-   @raise Not_found if no such entry exists, or always on Windows. *)
+   @raise Not_found if no such entry exists, or always on Windows.
+
+   @raise Invalid_argument on 64-bit Unix if the ID is below [-1] or exceeds
+   the range of an unsigned C [int]. *)
 
 val getgrgid : int -> group_entry
 (** Find an entry in [group] with the given group id.
 
-   @raise Not_found if no such entry exists, or always on Windows. *)
+   @raise Not_found if no such entry exists, or always on Windows.
+
+   @raise Invalid_argument on 64-bit Unix if the ID is below [-1] or exceeds
+   the range of an unsigned C [int]. *)
 
 
 (** {1 Internet addresses} *)

@@ -1105,9 +1105,10 @@ CAMLprim value caml_ba_slice(value vb, value vind)
   char * sub_data;
 
   /* Check number of indices <= number of dimensions of array */
-  num_inds = Wosize_val(vind);
-  if (num_inds > b->num_dims)
+  mlsize_t len = Wosize_val(vind);
+  if (len > (mlsize_t) b->num_dims)
     caml_invalid_argument("Bigarray.slice: too many indices");
+  num_inds = (int) len;
   /* Compute offset and check bounds */
   switch ((enum caml_ba_layout)(b->flags & CAML_BA_LAYOUT_MASK)) {
   case CAML_BA_C_LAYOUT: {

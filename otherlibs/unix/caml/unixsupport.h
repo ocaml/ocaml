@@ -17,6 +17,10 @@
 #define CAML_UNIXSUPPORT_H
 
 #include <caml/mlvalues.h>
+#ifdef CAML_BUILDING_UNIX
+#include <limits.h>
+#include <caml/fail.h>
+#endif
 
 #ifdef _WIN32 /* Windows */
 #define WIN32_LEAN_AND_MEAN
@@ -95,6 +99,23 @@ extern void caml_win32_maperr(DWORD errcode);
 #define CAML_NT_EPOCH_100ns_TICKS 116444736000000000ULL
 
 #endif /* _WIN32 */
+
+#ifdef CAML_BUILDING_UNIX
+/* On 32-bit targets, accept every int and cast it, as before: Unix.getuid
+   and friends return large IDs as negative ints, and they must round-trip
+   On 64-bit targets, reject values that would be truncated, except -1,
+   which is passed to the C call unchanged for compatibility. */
+Caml_inline unsigned int caml_unix_id_val(value v, const char *msg)
+{
+  intnat id = Long_val(v);
+#ifdef ARCH_SIXTYFOUR
+  if (id < -1 || id > (intnat)UINT_MAX) caml_invalid_argument(msg);
+#else
+  (void)msg;
+#endif
+  return (unsigned int)id;
+}
+#endif
 
 #define Nothing ((value) 0)
 
