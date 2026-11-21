@@ -321,6 +321,9 @@ CFI_STARTPROC
 LBL(120):
         RESTORE_ALL_REGS
         LEAVE_FUNCTION
+    /* Pop the argument and reload the return address */
+        lg      %r14, 0(%r15)
+        la      %r15, 8(%r15)
         LEA_VAR(caml_exn_Stack_overflow, %r2)
         brcl    15, GCALL(caml_raise_exn)
 CFI_ENDPROC
