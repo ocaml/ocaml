@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/fail.h>
@@ -75,12 +77,13 @@ CAMLprim value caml_unix_mktime(value t)
   time_t clock;
   value res;
 
-  tm.tm_sec = Int_val(Field(t, 0));
-  tm.tm_min = Int_val(Field(t, 1));
-  tm.tm_hour = Int_val(Field(t, 2));
-  tm.tm_mday = Int_val(Field(t, 3));
-  tm.tm_mon = Int_val(Field(t, 4));
-  tm.tm_year = Int_val(Field(t, 5));
+  const char *msg = "Unix.mktime: field out of range";
+  tm.tm_sec = caml_checked_c_int(Field(t, 0), msg);
+  tm.tm_min = caml_checked_c_int(Field(t, 1), msg);
+  tm.tm_hour = caml_checked_c_int(Field(t, 2), msg);
+  tm.tm_mday = caml_checked_c_int(Field(t, 3), msg);
+  tm.tm_mon = caml_checked_c_int(Field(t, 4), msg);
+  tm.tm_year = caml_checked_c_int(Field(t, 5), msg);
   tm.tm_isdst = -1;
   tm.tm_wday = -1;
   clock = mktime(&tm);

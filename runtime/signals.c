@@ -539,7 +539,10 @@ CAMLexport int caml_convert_signal_number(int signo)
 
 CAMLprim value caml_sys_convert_signal_number(value signo)
 {
-  return Val_int(caml_convert_signal_number(Int_val(signo)));
+  intnat i = Long_val(signo);
+  /* A positive number that OCaml has no name for converts to itself. */
+  if (!caml_fits_c_int(i)) return signo;
+  return Val_int(caml_convert_signal_number((int) i));
 }
 
 CAMLexport int caml_rev_convert_signal_number(int signo)
@@ -551,7 +554,10 @@ CAMLexport int caml_rev_convert_signal_number(int signo)
 
 CAMLprim value caml_sys_rev_convert_signal_number(value signo)
 {
-  return Val_int(caml_rev_convert_signal_number(Int_val(signo)));
+  intnat i = Long_val(signo);
+  /* A positive number that OCaml has no name for converts to itself. */
+  if (!caml_fits_c_int(i)) return signo;
+  return Val_int(caml_rev_convert_signal_number((int) i));
 }
 
 #ifdef POSIX_SIGNALS
@@ -733,7 +739,9 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
   CAMLlocal2 (res, tmp_signal_handlers);
   int sig, act, oldact;
 
-  sig = caml_convert_signal_number(Int_val(signal_number));
+  int signo =
+    caml_checked_c_int(signal_number, "Sys.signal: unavailable signal");
+  sig = caml_convert_signal_number(signo);
   if (sig <= 0 || sig >= NSIG)
     caml_invalid_argument("Sys.signal: unavailable signal");
   switch(action) {

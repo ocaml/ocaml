@@ -17,6 +17,7 @@
 #define CAML_FAIL_H
 
 #ifdef CAML_INTERNALS
+#include <limits.h>
 #include <setjmp.h>
 #endif /* CAML_INTERNALS */
 
@@ -133,6 +134,27 @@ CAMLextern value caml_exception_zero_divide (void);
 CAMLextern value caml_exception_not_found (void);
 CAMLextern value caml_exception_array_bound_error (void);
 CAMLextern value caml_exception_sys_blocked_io (void);
+
+#ifdef CAML_INTERNALS
+/* A 31-bit OCaml int always fits in a C int on supported targets. */
+Caml_inline int caml_fits_c_int(intnat i)
+{
+#ifdef ARCH_SIXTYFOUR
+  return INT_MIN <= i && i <= INT_MAX;
+#else
+  (void)i;
+  return 1;
+#endif
+}
+
+Caml_inline int caml_checked_c_int(value v, const char *msg)
+{
+  intnat i = Long_val(v);
+  if (!caml_fits_c_int(i)) caml_invalid_argument(msg);
+  return (int)i;
+}
+
+#endif
 
 /* Returns the value of a [caml_result] or raises the exception.
    This function replaced [caml_raise_if_exception] in 5.3. */

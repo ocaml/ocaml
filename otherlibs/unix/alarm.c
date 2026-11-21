@@ -14,9 +14,13 @@
 /**************************************************************************/
 
 #include <caml/mlvalues.h>
+#include <caml/fail.h>
 #include "caml/unixsupport.h"
 
 CAMLprim value caml_unix_alarm(value t)
 {
-  return Val_int(alarm((unsigned int) Long_val(t)));
+  intnat seconds = Long_val(t);
+  if (seconds < 0 || (intnat)(unsigned int)seconds != seconds)
+    caml_invalid_argument("Unix.alarm: seconds out of range");
+  return Val_int(alarm((unsigned int)seconds));
 }

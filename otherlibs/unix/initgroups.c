@@ -28,9 +28,11 @@
 
 CAMLprim value caml_unix_initgroups(value user, value group)
 {
+  gid_t group_c =
+    (gid_t) caml_unix_id_val(group, "Unix.initgroups: gid out of range");
   if (! caml_string_is_c_safe(user))
     caml_unix_error(EINVAL, "initgroups", user);
-  if (initgroups(String_val(user), Int_val(group)) == -1) {
+  if (initgroups(String_val(user), group_c) == -1) {
     caml_uerror("initgroups", Nothing);
   }
   return Val_unit;
