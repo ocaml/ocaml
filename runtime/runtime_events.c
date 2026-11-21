@@ -860,7 +860,7 @@ CAMLprim value caml_runtime_events_user_write(
     if ( !ring_is_active() )
       CAMLreturn(Val_unit);
 
-    intnat len_bytes = Int_val(res);
+    intnat len_bytes = Long_val(res);
 
     /* [encode] returns the number of bytes it wrote. The write buffer is
        RUNTIME_EVENTS_MAX_CUSTOM_VALUE_BYTES plus one element to hold the
@@ -891,7 +891,7 @@ CAMLprim value caml_runtime_events_user_write(
 
     // Int
     if (event_type_id == EV_USER_ML_TYPE_INT) {
-      uint64_t c_event_content = Int_val(event_content);
+      uint64_t c_event_content = Long_val(event_content);
       write_to_ring(EV_USER, (ev_message_type){.user=EV_USER_MSG_TYPE_INT},
         Int_val(event_id), 1, &c_event_content, 0);
     }
