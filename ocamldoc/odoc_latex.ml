@@ -650,10 +650,12 @@ class latex =
           | Type_variant l ->
              if l = [] then (p fmt2 "@[<h 6>  |"; [CodePre (flush2())]) else (
              let constructors =
-               List.map (fun {vc_name; vc_args; vc_ret; vc_text} ->
-                   p fmt2 "@[<h 6>  | %s" vc_name ;
-                   let l = self#latex_of_cstr_args f mod_name (vc_args,vc_ret) in
-                   l @ (self#entry_comment f vc_text) ) l
+               List.map (fun vc ->
+                   p fmt2 "@[<h 6>  | %s" vc.vc_name ;
+                   let l = self#latex_of_cstr_args f mod_name (vc.vc_args, vc.vc_ret) in
+                   if vc.vc_generative = Asttypes.Generative then
+                     p fmt2 " [@generative]";
+                   l @ (self#entry_comment f vc.vc_text) ) l
              in
              List.flatten constructors)
           | Type_record l ->

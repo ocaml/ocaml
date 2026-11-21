@@ -306,7 +306,7 @@ and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
   | Record_float                        (* All fields are floats *)
   | Record_unboxed of bool    (* Unboxed single-field record, inlined or not *)
-  | Record_inlined of int               (* Inlined record *)
+  | Record_inlined of int * generative_flag (* Inlined record *)
   | Record_extension of Path.t          (* Inlined record under extension *)
 
 and variant_representation =
@@ -329,6 +329,7 @@ and constructor_declaration =
     cd_id: Ident.t;
     cd_args: constructor_arguments;
     cd_res: type_expr option;
+    cd_generative: generative_flag;
     cd_loc: Location.t;
     cd_attributes: Parsetree.attributes;
     cd_uid: Uid.t;

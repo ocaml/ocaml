@@ -46,6 +46,8 @@ type override_flag = Override | Fresh
 
 type closed_flag = Closed | Open
 
+type generative_flag = Nongenerative | Generative
+
 type label = string
 
 type arg_label =
