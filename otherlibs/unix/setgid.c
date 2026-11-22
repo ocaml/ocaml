@@ -14,10 +14,13 @@
 /**************************************************************************/
 
 #include <caml/mlvalues.h>
+#include <caml/fail.h>
 #include "caml/unixsupport.h"
 
 CAMLprim value caml_unix_setgid(value gid)
 {
-  if (setgid(Int_val(gid)) == -1) caml_uerror("setgid", Nothing);
+  gid_t gid_c =
+    caml_unix_gid_val(gid, "Unix.setgid: gid out of range");
+  if (setgid(gid_c) == -1) caml_uerror("setgid", Nothing);
   return Val_unit;
 }

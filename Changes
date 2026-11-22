@@ -953,6 +953,14 @@ OCaml 5.6.0
   (Nicolás Ojeda Bär, report by KC Sivaramakrishnan, review by Florian
   Angeletti)
 
+- #15252, #15368, #15369, #15371, #15380, #15390: check arguments to Unix.kill,
+  waitpid, alarm, mktime and Sys.signal before narrowing. Unix.alarm rejects
+  negative delays. On Unix, getpwuid, getgrgid, setuid, setgid and initgroups
+  check that IDs round-trip through uid_t or gid_t. Preserve large signal
+  numbers, runtime event integers and type IDs. Check the event registration
+  limit and Bigarray slice arity.
+  (KC Sivaramakrishnan, review by Stefan Muenzel)
+
 OCaml 5.5.1
 -----------
 

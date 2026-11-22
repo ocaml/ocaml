@@ -100,6 +100,8 @@ CAMLprim value caml_unix_getpwuid(value uid)
 {
   value res;
   struct passwd * entry;
+  uid_t uid_c =
+    caml_unix_uid_val(uid, "Unix.getpwuid: uid out of range");
 
 #ifdef HAVE_GETPWUID_R
   long initlen = sysconf(_SC_GETPW_R_SIZE_MAX);
@@ -109,7 +111,7 @@ CAMLprim value caml_unix_getpwuid(value uid)
   if (buffer == NULL)
     caml_unix_error(ENOMEM, "getpwuid", Nothing);
   int e;
-  while ((e = getpwuid_r(Int_val(uid), &result, buffer, len, &entry))
+  while ((e = getpwuid_r(uid_c, &result, buffer, len, &entry))
          == ERANGE) {
     len *= 2;
     char *newbuffer;
@@ -130,7 +132,7 @@ CAMLprim value caml_unix_getpwuid(value uid)
   caml_stat_free(buffer);
 #else
   errno = 0;
-  entry = getpwuid(Int_val(uid));
+  entry = getpwuid(uid_c);
   if (entry == NULL) {
     if (errno == EINTR)
       caml_uerror("getpwuid", Nothing);

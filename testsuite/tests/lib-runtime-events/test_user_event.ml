@@ -35,7 +35,7 @@ let () =
   User.write span Begin;
   User.write event ();
   User.write counter 17;
-  User.write counter2 18;
+  User.write counter2 max_int;
   User.write custom "hello";
   User.write span End
 
@@ -81,7 +81,7 @@ let () =
     ignore(read_poll cursor callbacks None)
   done;
   assert (!got_event);
-  assert (!counter_value = 18);
+  assert (!counter_value = max_int);
   assert (!got_span_begin);
   assert (!got_span_end);
   assert (!custom_value = "hello")

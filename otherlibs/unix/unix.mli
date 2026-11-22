@@ -274,7 +274,10 @@ val waitpid : wait_flag list -> int -> int * process_status
    immediately without waiting, and whether it should report stopped
    children.
 
-   On Windows: can only wait for a given PID, not any child process. *)
+   On Windows: can only wait for a given PID, not any child process.
+
+   @raise Invalid_argument on Unix if the PID does not fit in the platform's
+   process ID type ([pid_t]). *)
 
 val system : string -> process_status
 (** Execute the given command, wait until it terminates, and return
@@ -1169,7 +1172,10 @@ val kill : int -> Sys.signal -> unit
 
    On Windows: only the {!Sys.sigkill} signal is emulated, causing the receiving
    process to exit with code [ERROR_PROCESS_ABORTED] (1067). Before OCaml 5.5,
-   the receiving process exited with code 0. *)
+   the receiving process exited with code 0.
+
+   @raise Invalid_argument on Unix if the PID does not fit in the platform's
+   process ID type ([pid_t]) or the signal number does not fit in a C [int]. *)
 
 type sigprocmask_command =
     SIG_SETMASK
@@ -1276,12 +1282,16 @@ val mktime : tm -> float * tm
    [tm_yday], and [tm_isdst] fields recomputed from the other fields,
    and the other fields normalized (so that, e.g., 40 October is
    changed into 9 November).  The [tm] argument is interpreted in the
-   local time zone. *)
+   local time zone.
+
+   @raise Invalid_argument if a field used by [mktime] does not fit in
+   a C [int]. *)
 
 val alarm : int -> int
 (** Schedule a [SIGALRM] signal after the given number of seconds.
 
-   @raise Invalid_argument on Windows *)
+   @raise Invalid_argument on Windows, or on Unix if the delay does not fit in
+   a C [unsigned int] (for example, if it is negative). *)
 
 val sleep : int -> unit
 (** Stop execution for at least the given number of seconds. *)
@@ -1342,7 +1352,11 @@ val setitimer :
    @raise Invalid_argument on Windows *)
 
 
-(** {1 User id, group id} *)
+(** {1 User id, group id}
+
+    On 32-bit Unix platforms, some large user and group IDs are represented
+    by negative OCaml integers. The range checks below accept these
+    representations. *)
 
 val getuid : unit -> int
 (** Return the user id of the user executing the process.
@@ -1357,7 +1371,8 @@ val geteuid : unit -> int
 val setuid : int -> unit
 (** Set the real user id and effective user id for the process.
 
-   @raise Invalid_argument on Windows *)
+   @raise Invalid_argument on Windows, or on Unix for an out-of-range
+   user ID (the platform's [uid_t] type). *)
 
 val getgid : unit -> int
 (** Return the group id of the user executing the process.
@@ -1372,7 +1387,8 @@ val getegid : unit -> int
 val setgid : int -> unit
 (** Set the real group id and effective group id for the process.
 
-   @raise Invalid_argument on Windows *)
+   @raise Invalid_argument on Windows, or on Unix for an out-of-range
+   group ID (the platform's [gid_t] type). *)
 
 val getgroups : unit -> int array
 (** Return the list of groups to which the user executing the process
@@ -1392,7 +1408,8 @@ val initgroups : string -> int -> unit
     which [user] is a member. The additional group [group] is also
     added to the list.
 
-    @raise Invalid_argument on Windows *)
+    @raise Invalid_argument on Windows, or on Unix for an out-of-range
+    group ID (the platform's [gid_t] type). *)
 
 type passwd_entry =
   { pw_name : string;
@@ -1428,12 +1445,18 @@ val getgrnam : string -> group_entry
 val getpwuid : int -> passwd_entry
 (** Find an entry in [passwd] with the given user id.
 
-   @raise Not_found if no such entry exists, or always on Windows. *)
+   @raise Not_found if no such entry exists, or always on Windows.
+
+   @raise Invalid_argument on Unix for an out-of-range
+   user ID (the platform's [uid_t] type). *)
 
 val getgrgid : int -> group_entry
 (** Find an entry in [group] with the given group id.
 
-   @raise Not_found if no such entry exists, or always on Windows. *)
+   @raise Not_found if no such entry exists, or always on Windows.
+
+   @raise Invalid_argument on Unix for an out-of-range
+   group ID (the platform's [gid_t] type). *)
 
 
 (** {1 Internet addresses} *)

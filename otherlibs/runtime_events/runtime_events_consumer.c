@@ -959,10 +959,10 @@ static value user_events_find_callback_list_for_event_type(value callbacks_root,
   */
   if (Is_block(event_type)) {
     // Custom
-    event_index = Int_val(Field(Field(event_type, 0), 2));
+    event_index = Long_val(Field(Field(event_type, 0), 2));
   } else {
     // Unit | Int | Span
-    event_index = Int_val(event_type);
+    event_index = Long_val(event_type);
   }
 
   if (event_index >= array_length) {
