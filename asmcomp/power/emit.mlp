@@ -964,7 +964,7 @@ let emit_instr env i =
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
     | Lop(Ifloatofint) ->
         if big_endian then begin
-          (* Can use protected zone (288 bytes below r1 *)
+          (* Can use protected zone (288 bytes below r1) *)
           `	std	{emit_reg i.arg.(0)}, -16(1)\n`;
           `	lfd	{emit_reg i.res.(0)}, -16(1)\n`
         end else
@@ -974,7 +974,7 @@ let emit_instr env i =
     | Lop(Iintoffloat) ->
         `	fctidz	0, {emit_reg i.arg.(0)}\n`;
         if big_endian then begin
-          (* Can use protected zone (288 bytes below r1 *)
+          (* Can use protected zone (288 bytes below r1) *)
           `	stfd	0, -16(1)\n`;
           `	ld	{emit_reg i.res.(0)}, -16(1)\n`
         end else
