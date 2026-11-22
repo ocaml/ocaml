@@ -1,6 +1,6 @@
 # Supported platforms
 
-IBM POWER8 and up, 64-bit, little-endian, ELF ABI v2.
+IBM POWER8 and up, 64-bit, little-endian and big-endian, ELF ABI v2.
 (Called `ppc64el` in Debian.)
 
 No longer supported:
