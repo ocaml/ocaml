@@ -31,6 +31,9 @@ Working version
   (Pierre Chambart, report by Alperen Keleş,
    review by Vincent Laviron)
 
+- #14925: Inline the full-application case of caml_apply
+  (Stefan Muenzel, extensive benchmarking by Michael Bacarella, review by ???)
+
 ### Standard library:
 
 - #15168: `Scanf.unescaped`, `%S` and `%C` now accept all the escape sequences
