@@ -47,6 +47,9 @@ let () =
   assert (rejects (fun () -> User.write claimed (max_len + 1)));
   assert (rejects (fun () -> User.write claimed (-1)));
 
+  if Sys.int_size > 32 then
+    assert (rejects (fun () -> User.write claimed ((1 lsl 32) + 5)));
+
   (* The documented maximum is accepted, and so is one byte under it. *)
   User.write custom (String.make (max_len - 1) 'y');
   User.write custom (String.make max_len 'x')

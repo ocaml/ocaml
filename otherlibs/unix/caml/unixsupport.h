@@ -17,6 +17,9 @@
 #define CAML_UNIXSUPPORT_H
 
 #include <caml/mlvalues.h>
+#ifdef CAML_BUILDING_UNIX
+#include <caml/fail.h>
+#endif
 
 #ifdef _WIN32 /* Windows */
 #define WIN32_LEAN_AND_MEAN
@@ -95,6 +98,34 @@ extern void caml_win32_maperr(DWORD errcode);
 #define CAML_NT_EPOCH_100ns_TICKS 116444736000000000ULL
 
 #endif /* _WIN32 */
+
+#if defined(CAML_BUILDING_UNIX) && !defined(_WIN32)
+/* Compare at native unsigned width to preserve the negative OCaml
+   representations of large unsigned IDs on 32-bit hosts. */
+Caml_inline uid_t caml_unix_uid_val(value v, const char *msg)
+{
+  intnat id = Long_val(v);
+  uid_t uid = (uid_t)id;
+  if ((uintnat)uid != (uintnat)id) caml_invalid_argument(msg);
+  return uid;
+}
+
+Caml_inline gid_t caml_unix_gid_val(value v, const char *msg)
+{
+  intnat id = Long_val(v);
+  gid_t gid = (gid_t)id;
+  if ((uintnat)gid != (uintnat)id) caml_invalid_argument(msg);
+  return gid;
+}
+
+Caml_inline pid_t caml_unix_pid_val(value v, const char *msg)
+{
+  intnat id = Long_val(v);
+  pid_t pid = (pid_t)id;
+  if ((intnat)pid != id) caml_invalid_argument(msg);
+  return pid;
+}
+#endif
 
 #define Nothing ((value) 0)
 
