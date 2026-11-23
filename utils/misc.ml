@@ -1324,14 +1324,14 @@ module RuntimeID = struct
         match c with
         | '0'..'9' -> Char.code c - Char.code '0'
         | 'a'..'v' -> Char.code c - Char.code 'a' + 10
-        | _ -> min_int
+        | _ -> -1
       in
       let set bit q = (q land (1 lsl bit) <> 0) in
       let q0 = convert s.[0] in
       let q1 = convert s.[1] in
       let q2 = convert s.[2] in
       let q3 = convert s.[3] in
-      if q0 + q1 + q2 + q3 >= 0 then
+      if q0 lor q1 lor q2 lor q3 >= 0 then
         Some {dev = set 0 q0; release = ((q1 land 0b11) lsl 4) lor (q0 lsr 1);
               reserved = ((q2 land 0b11) lsl 2) lor (q1 lsr 2);
               no_flat_float_array = set 2 q2; fp = set 3 q2; tsan = set 4 q2;
