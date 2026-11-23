@@ -131,11 +131,6 @@ static int st_masterlock_init(st_masterlock * m)
   return 0;
 }
 
-static void st_masterlock_destroy(st_masterlock * m)
-{
-  (void) m;
-}
-
 static uintnat st_masterlock_waiters(st_masterlock * m)
 {
   return atomic_load_acquire(&m->waiters);

@@ -294,6 +294,12 @@ static void reset_active(void)
 
 static void caml_thread_enter_blocking_section(void)
 {
+  if (This_thread == NULL) {
+    /* Domain startup or teardown outside the systhreads hook lifetime. */
+    caml_bt_exit_ocaml();
+    caml_release_domain_lock();
+    return;
+  }
   /* Save the current runtime state in the thread descriptor
      of the current thread */
   save_runtime_state();
@@ -311,11 +317,13 @@ static void caml_thread_leave_blocking_section(void)
 #endif
   caml_thread_t th = This_thread;
   /* Wait until the runtime is free */
-  thread_lock_acquire(th->domain_id);
-  /* Update Active_thread to point to the thread descriptor
-     corresponding to the thread currently executing and restore the
-     runtime state */
-  restore_runtime_state(th);
+  if (th == NULL) {
+    caml_bt_enter_ocaml();
+    caml_acquire_domain_lock();
+  } else {
+    thread_lock_acquire(th->domain_id);
+    restore_runtime_state(th);
+  }
 #ifdef _WIN32
   SetLastError(error);
 #endif
@@ -521,7 +529,7 @@ static void caml_thread_domain_stop_hook(void) {
      around when a domain exits. If the domain is not the last one (and the last
      one will always be domain 0) we force the domain to join on every thread
      on its chain before wrapping up. */
-  if (!caml_domain_alone()) {
+  if (Active_thread != NULL && !caml_domain_alone()) {
 
     while (Active_thread->next != Active_thread) {
       caml_thread_join(Active_thread->next->descr);
@@ -539,6 +547,7 @@ static void caml_thread_domain_stop_hook(void) {
     /* We free the thread info but not its resources: they are owned
        by Caml_state at this point, and will be cleaned-up later. */
     caml_stat_free(This_thread);
+    st_tls_set(caml_thread_key, NULL);
   };
 }
 
@@ -549,21 +558,25 @@ static value caml_thread_domain_initialize_hook_exn(void)
 
   atomic_store_release(&Tick_thread_stop, 0);
 
-  int ret = st_masterlock_init(Thread_lock(Caml_state->id));
-  if (ret != 0)
-    return caml_check_error_exn(ret, "caml_thread_domain_initialize_hook");
-
   new_thread =
     (caml_thread_t) caml_stat_alloc_noexc(sizeof(struct caml_thread_struct));
-  if (new_thread == NULL) {
-    res = Make_exception_result(caml_exception_out_of_memory());
-    goto err1;
-  }
+  if (new_thread == NULL)
+    return Make_exception_result(caml_exception_out_of_memory());
 
   new_thread->domain_id = Caml_state->id;
 
   res = caml_thread_new_descriptor_exn(Val_unit);
-  if (Is_exception_result(res)) goto err2;
+  if (Is_exception_result(res)) {
+    caml_stat_free(new_thread);
+    return res;
+  }
+  /* Initialise the slot's master lock only once the descriptor exists.
+     On success the lock lives as long as the slot. */
+  int ret = st_masterlock_init(Thread_lock(Caml_state->id));
+  if (ret != 0) {
+    caml_stat_free(new_thread);
+    return caml_check_error_exn(ret, "caml_thread_domain_initialize_hook");
+  }
   new_thread->descr = res;
 
   new_thread->next = new_thread;
@@ -577,12 +590,6 @@ static value caml_thread_domain_initialize_hook_exn(void)
   Active_thread = new_thread;
   caml_memprof_enter_thread(new_thread->memprof);
   return Val_unit;
-
- err2:
-  caml_stat_free(new_thread);
- err1:
-  st_masterlock_destroy(Thread_lock(Caml_state->id));
-  return res;
 }
 
 static void thread_yield(void);

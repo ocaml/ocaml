@@ -2664,19 +2664,6 @@ int caml_init_major_gc(caml_domain_state* d) {
   d->mark_stack->compressed_stack_iter =
                   caml_addrmap_iterator(&d->mark_stack->compressed_stack);
 
-  if (caml_gc_phase == Phase_sweep_main) {
-    /* This fresh domain will allocate UNMARKED until we start
-     * marking, so must mark in this cycle. */
-    d->sweeping_done = 1;
-    d->marking_done = 0;
-    (void)caml_atomic_counter_incr(&num_domains_to_mark);
-  } else {
-    /* This fresh domain will allocate MARKED in this cycle,
-     * so doesn't need to mark. */
-    d->sweeping_done = 1;
-    d->marking_done = 1;
-  }
-
   /* Finalisers. Fresh domains participate in updating finalisers. */
   d->final_info = caml_alloc_final_info ();
   if(d->final_info == NULL) {
@@ -2693,10 +2680,27 @@ int caml_init_major_gc(caml_domain_state* d) {
     d->mark_stack = NULL;
     return -1;
   }
+  return 0;
+}
+
+/* Called under all_domains_lock once domain startup can no longer fail. */
+void caml_major_gc_register_domain(caml_domain_state *d)
+{
+  if (caml_gc_phase == Phase_sweep_main) {
+    /* This fresh domain will allocate UNMARKED until we start
+     * marking, so must mark in this cycle. */
+    d->sweeping_done = 1;
+    d->marking_done = 0;
+    (void)caml_atomic_counter_incr(&num_domains_to_mark);
+  } else {
+    /* This fresh domain will allocate MARKED in this cycle,
+     * so doesn't need to mark. */
+    d->sweeping_done = 1;
+    d->marking_done = 1;
+  }
+
   (void)caml_atomic_counter_incr(&num_domains_to_final_update_first);
   (void)caml_atomic_counter_incr(&num_domains_to_final_update_last);
-
-  return 0;
 }
 
 void caml_teardown_major_gc(void) {

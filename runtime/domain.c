@@ -126,7 +126,7 @@ static_assert(
 
            BT_INIT  <---------------------------------------+
               |                                             |
-   (install_backup_thread_exn)                              |
+   (install_backup_thread)                                  |
        [main thread]                                        |
               |                                             |
               v                                             |
@@ -800,10 +800,13 @@ static uintnat fresh_domain_unique_id(void) {
     return next;
 }
 
-/* must be run on the domain's thread */
-static void domain_create(uintnat initial_minor_heap_wsize,
+static int install_backup_thread(dom_internal *di);
+
+/* Returns a system error if installing the backup thread failed. */
+static int domain_create(uintnat initial_minor_heap_wsize,
                           caml_domain_state *parent)
 {
+  int backup_error = 0;
   dom_internal* d = 0;
   caml_domain_state* domain_state;
   struct interruptor* s;
@@ -963,7 +966,13 @@ static void domain_create(uintnat initial_minor_heap_wsize,
     goto alloc_main_stack_failure;
   }
 
+  if (parent != NULL) {
+    backup_error = install_backup_thread(d);
+    if (backup_error != 0) goto backup_thread_failure;
+  }
+
   /* No remaining failure cases. */
+  caml_major_gc_register_domain(domain_state);
 
   s->running = 1;
 
@@ -1014,11 +1023,18 @@ static void domain_create(uintnat initial_minor_heap_wsize,
   activate_parked_domain(d);
   goto domain_init_complete;
 
+backup_thread_failure:
+  caml_free_stack(domain_state->current_stack);
+  domain_state->current_stack = NULL;
 alloc_main_stack_failure:
+  caml_free_stack_cache(domain_state->stack_cache);
+  domain_state->stack_cache = NULL;
 create_stack_cache_failure:
   caml_remove_generational_global_root(&domain_state->dls_root);
   free_minor_heap_arena();
 allocate_minor_heap_arena_failure:
+  caml_stat_free(domain_state->ephe_info);
+  caml_stat_free(domain_state->final_info);
   caml_teardown_major_gc();
 init_major_gc_failure:
   caml_orphan_shared_heap(d->state->shared_heap);
@@ -1042,6 +1058,7 @@ domain_parking_failure:
 domain_init_complete:
   caml_gc_log("domain init complete");
   caml_plat_unlock(&all_domains_lock);
+  return backup_error;
 }
 
 CAMLexport void caml_reset_domain_lock(void)
@@ -1164,6 +1181,7 @@ struct domain_startup_params {
                                 parent and child synchronize on this value. */
   struct domain_ml_values* ml_values; /* in */
   uintnat unique_id; /* out */
+  int backup_error; /* out: system error if backup thread creation failed */
   const char *error; /* out: set iff status is Dom_failed */
 };
 
@@ -1228,7 +1246,7 @@ backup_thread_func(void* v)
   return 0;
 }
 
-static value install_backup_thread_exn (dom_internal* di)
+static int install_backup_thread (dom_internal* di)
 {
   int err;
   caml_plat_thread backup_thread;
@@ -1261,10 +1279,12 @@ static value install_backup_thread_exn (dom_internal* di)
   pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
 #endif
 
-  if (err != 0)
-      return caml_check_error_exn(err, "failed to create domain backup thread");
+  if (err != 0) {
+    atomic_store_release(&di->backup_thread_msg, BT_INIT);
+    return err;
+  }
   caml_plat_thread_detach(backup_thread);
-  return Val_unit;
+  return 0;
 }
 
 static void terminate_backup_thread(dom_internal *di)
@@ -1308,6 +1328,13 @@ CAMLexport void (*caml_domain_external_interrupt_hook)(void) =
 CAMLexport _Atomic caml_timing_hook caml_domain_terminated_hook =
   (caml_timing_hook)NULL;
 
+static value make_finished_error(value exn, value bt)
+{
+  value res = caml_alloc_2(0, exn, bt);
+  res = caml_alloc_1(1 /* Error */, res);
+  return caml_alloc_1(0 /* Finished */, res);
+}
+
 static value make_finished(caml_result result)
 {
   CAMLparam0();
@@ -1317,12 +1344,7 @@ static value make_finished(caml_result result)
                           subsequent allocations */
     /* res = exn */
     bt = caml_get_exception_raw_backtrace(Val_unit);
-    res = caml_alloc_2(0, res, bt);
-    /* res = (exn, bt) */
-    res = caml_alloc_1(1 /* Error */, res);
-    /* res = Error (exn, bt) */
-    res = caml_alloc_1(0 /* Finished */, res);
-    /* res = Finished(Error(exn, bt)) */
+    res = make_finished_error(res, bt);
   } else {
     res = caml_alloc_1(0 /* Ok */,result.data);
     /* res = Ok v */
@@ -1402,21 +1424,25 @@ domain_thread_func(void* v)
 {
   struct domain_startup_params* p = v;
   struct domain_ml_values *ml_values = p->ml_values;
-  /* This thread now owns ml_values */
+  /* Ownership passes to this thread at handshake_success. */
 
   /* Create domain and do handshake with parent */
 #ifndef _WIN32
   void * signal_stack = caml_init_signal_stack();
   if (signal_stack == NULL) {
     handshake_failure(p, "failed to allocate domain: signal stack");
-    goto out1;
+    return 0;
   }
 #endif
 
-  domain_create(caml_params->init_minor_heap_wsz, p->parent->state);
+  p->backup_error =
+    domain_create(caml_params->init_minor_heap_wsz, p->parent->state);
   if (domain_self == NULL) {
     handshake_failure(p, "failed to allocate domain: domain_create");
-    goto out2;
+#ifndef _WIN32
+    caml_free_signal_stack(signal_stack);
+#endif
+    return 0;
   }
   domain_self->tid = caml_plat_thread_self();
   /* this domain is now part of the STW participant set */
@@ -1426,19 +1452,13 @@ domain_thread_func(void* v)
   v = NULL;
   p = NULL;
 
-  value exn = install_backup_thread_exn(domain_self);
-  if (Is_exception_result(exn)) {
-    sync_and_terminate(ml_values, Result_exception(exn));
-    goto out2;
-  }
-
   caml_gc_log("Domain starting (unique_id = %" CAML_PRIuNAT ")",
               domain_self->interruptor.unique_id);
   CAML_EV_LIFECYCLE(EV_DOMAIN_SPAWN, getpid());
 
-  exn = caml_domain_initialize_hook_exn();
+  value exn = caml_domain_initialize_hook_exn();
   if (Is_exception_result(exn)) {
-    sync_and_terminate(ml_values, Result_exception(exn));
+    sync_and_terminate(ml_values, Result_exception(Extract_exception(exn)));
     goto out2;
   }
 
@@ -1453,7 +1473,6 @@ domain_thread_func(void* v)
  out2:
 #ifndef _WIN32
   caml_free_signal_stack(signal_stack);
- out1:
 #endif
   /* [ml_values] must be freed after unlocking its [term_sync] mutex.
      This ensures that the [term_sync] field is only removed from the
@@ -1505,12 +1524,13 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
      domain. We create its backup thread before spawning domain 1. */
   domain_self->tid = caml_plat_thread_self();
   if (!backup_thread_running(domain_self)) {
-    value res = install_backup_thread_exn(domain_self);
-    if (Is_exception_result(res)) caml_raise(Extract_exception(res));
+    caml_check_error(install_backup_thread(domain_self),
+                     "failed to create domain backup thread");
   }
 
   p.parent = domain_self;
   p.status = Dom_starting;
+  p.backup_error = 0;
 
   p.ml_values =
       (struct domain_ml_values*) caml_stat_alloc(
@@ -1523,8 +1543,6 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
     caml_check_error(err, "failed to create domain thread: "
                      "caml_plat_thread_create");
   }
-
-  /* p.ml_values is now owned by the new domain */
 
   /* Handshake with the new domain. While waiting for the child thread
      to start up, we need to service any stop-the-world requests as
@@ -1550,7 +1568,14 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
     CAMLassert (p.status == Dom_failed);
     /* failed */
     caml_plat_thread_join(th);
-    caml_failwith(p.error);
+    free_domain_ml_values(p.ml_values);
+    if (p.backup_error == 0) caml_failwith(p.error);
+
+    /* The child failed to create its backup thread. Startup failed before
+       the callback ran, so report it here, like the failure to create the
+       parent's own backup thread above. */
+    caml_check_error(p.backup_error,
+                     "failed to create domain backup thread");
   }
 
   CAMLreturn (Val_long(p.unique_id));
