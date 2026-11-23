@@ -173,6 +173,11 @@ Working version
   with `Double_array_tag` rather than as a scannable block.
   (Nick Barnes, review by Vincent Laviron)
 
+- #15327: fix a mark stack overflow, and resulting heap corruption, when a
+  domain with a small major heap marks many large blocks (more than 64
+  fields on 64-bit platforms) from other domains' heaps.
+  (Nick Barnes, review by ????)
+
 OCaml 5.6.0
 -----------
 
