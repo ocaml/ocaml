@@ -12,6 +12,10 @@ Working version
   functions built on it.
   (Tim McGilchrist, review by Sadiq Jaffer)
 
+- #15280: Add a testsuite benchmark measuring GC mark, sweep, promotion
+  and compaction speeds (tests/gc-rates/gcrate.ml), ported from OxCaml.
+  (Nick Barnes, review by Damien Doligez)
+
 ### Code generation and optimizations:
 
 - #14980: Emit direct assembly for `Atomic.exchange` and
