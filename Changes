@@ -16,6 +16,23 @@ Working version
   and compaction speeds (tests/gc-rates/gcrate.ml), ported from OxCaml.
   (Nick Barnes, review by Damien Doligez)
 
+- #15283: Speed up major-heap pool sweeping by about 20%: hoist loop
+  invariants, batch statistics updates, and track free-run ends instead
+  of recomputing them.
+  (Nick Barnes, review by Damien Doligez and Sadiq Jaffer).
+
+- #15285: Add runtime-events counters reporting each major slice's
+  sweep, mark and ephemeron work in words, so GC rates can be measured from
+  the event stream alone.
+  (Nick Barnes, review by Gabriel Scherer)
+
+- #14936: On AArch64, drop the memory-model fences around the atomic
+  read-modify-writes (`Atomic.exchange`, `Atomic.compare_and_set`,
+  `Atomic.fetch_and_add`) when they run as an LSE atomic, which makes the
+  fences redundant (detected at compile time via FEAT_LSE, or at run time for
+  outline-atomics builds).
+  (Sebastian Pop, review by Olivier Nicole, Gabriel Scherer, and Luc Maranget)
+
 ### Code generation and optimizations:
 
 - #14980: Emit direct assembly for `Atomic.exchange` and
@@ -374,18 +391,6 @@ OCaml 5.6.0
 
 - #15229 Bound the custom event payload by the buffer's own constant
   (Tim McGilchrist, review by Sadiq Jaffer)
-
-- #15285: Add runtime-events counters reporting each major slice's
-  sweep, mark and ephemeron work in words, so GC rates can be measured from
-  the event stream alone.
-  (Nick Barnes, review by Gabriel Scherer)
-
-- #14936: On AArch64, drop the memory-model fences around the atomic
-  read-modify-writes (`Atomic.exchange`, `Atomic.compare_and_set`,
-  `Atomic.fetch_and_add`) when they run as an LSE atomic, which makes the
-  fences redundant (detected at compile time via FEAT_LSE, or at run time for
-  outline-atomics builds).
-  (Sebastian Pop, review by Olivier Nicole, Gabriel Scherer, and Luc Maranget)
 
 ### Type system:
 
