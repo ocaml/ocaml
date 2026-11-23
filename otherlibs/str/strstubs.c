@@ -513,6 +513,9 @@ CAMLprim value re_replacement_text(value repl, value groups, value orig)
         end = Long_val(Field(groups, c*2 + 1));
         if (start == (mlsize_t) -1)
           caml_failwith("Str.replace: reference to unmatched group");
+        /* [orig] may not be the string that was searched (#15290) */
+        if (end > caml_string_length(orig))
+          caml_invalid_argument("Str.replace_matched");
         len += end - start;
         break;
       default:
