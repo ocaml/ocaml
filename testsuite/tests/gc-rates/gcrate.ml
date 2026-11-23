@@ -21,8 +21,7 @@
    With no arguments (testsuite mode): small heap, a few seconds, terse
    output checking the rates clear generous de-minimis thresholds.  With
    arguments (manual mode): gcrate LIVE-GIB SECONDS [SEED] prints a full
-   report.  Steady-state major heap is roughly 2.4x LIVE-GIB at the default
-   space_overhead of 80. *)
+   report. *)
 
 module RE = Runtime_events
 
