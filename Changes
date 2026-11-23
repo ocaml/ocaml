@@ -33,6 +33,9 @@ Working version
   outline-atomics builds).
   (Sebastian Pop, review by Olivier Nicole, Gabriel Scherer, and Luc Maranget)
 
+- #14571: Faster minor GC.
+  (Nick Barnes, review by Damien Doligez).
+
 ### Code generation and optimizations:
 
 - #14980: Emit direct assembly for `Atomic.exchange` and
@@ -391,9 +394,6 @@ OCaml 5.6.0
 
 - #15229 Bound the custom event payload by the buffer's own constant
   (Tim McGilchrist, review by Sadiq Jaffer)
-
-- #14571: Faster minor GC.
-  (Nick Barnes, review by Damien Doligez).
 
 ### Type system:
 
