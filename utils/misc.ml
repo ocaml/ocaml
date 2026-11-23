@@ -1333,7 +1333,7 @@ module RuntimeID = struct
       let q3 = convert s.[3] in
       if q0 lor q1 lor q2 lor q3 >= 0 then
         Some {dev = set 0 q0; release = ((q1 land 0b11) lsl 4) lor (q0 lsr 1);
-              reserved = ((q2 land 0b11) lsl 2) lor (q1 lsr 2);
+              reserved = ((q2 land 0b11) lsl 3) lor (q1 lsr 2);
               no_flat_float_array = set 2 q2; fp = set 3 q2; tsan = set 4 q2;
               int31 = set 0 q3; static = set 1 q3; no_compression = set 2 q3;
               ansi = set 3 q3; (* bit 4 of q3 is unused *)}
