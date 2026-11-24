@@ -12,6 +12,13 @@ Working version
   functions built on it.
   (Tim McGilchrist, review by Sadiq Jaffer)
 
+- #15068: Tear down the runtime events ring later, so that events emitted
+  while the program shuts down are recorded, and the ring file is no longer
+  leaked by programs that embed the runtime and call caml_shutdown. Report
+  the minor heap allocation outstanding at exit. EV_DOMAIN_TERMINATE is no
+  longer emitted for the initial domain.
+  (Tim McGilchrist, review by Sadiq Jaffer)
+
 - #15280: Add a testsuite benchmark measuring GC mark, sweep, promotion
   and compaction speeds (tests/gc-rates/gcrate.ml), ported from OxCaml.
   (Nick Barnes, review by Damien Doligez)

@@ -523,6 +523,13 @@ int caml_do_opportunistic_major_slice
 static void minor_gc_leave_barrier
   (caml_domain_state* domain, int participating_count);
 
+/* Report [bytes] of minor heap allocation. */
+void caml_ev_minor_allocated(uintnat bytes)
+{
+  CAML_EV_COUNTER(EV_C_MINOR_ALLOCATED, bytes);
+  CAML_EV_COUNTER(EV_C_MINOR_ALLOCATED_WORDS, Wsize_bsize(bytes));
+}
+
 typedef struct {
   bool locked_ephemerons;
 } promote_result;
@@ -757,9 +764,7 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
   CAML_EV_COUNTER(EV_C_MINOR_PROMOTED_WORDS,
                   domain->allocated_words - prev_alloc_words);
 
-  CAML_EV_COUNTER(EV_C_MINOR_ALLOCATED, minor_allocated_bytes);
-  CAML_EV_COUNTER(EV_C_MINOR_ALLOCATED_WORDS,
-                  Wsize_bsize(minor_allocated_bytes));
+  caml_ev_minor_allocated(minor_allocated_bytes);
 
   CAML_EV_END(EV_MINOR);
   if (minor_allocated_bytes == 0)
