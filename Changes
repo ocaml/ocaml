@@ -80,6 +80,9 @@ Working version
   generated in that case.
   (Nicolás Ojeda Bär, review by Florian Angeletti)
 
+- #15281, #15401: ocamldoc: support (** @custom *) without arguments like odoc
+  (Florian Angeletti, review by Olivier Nicole)
+
 ### Manual and documentation:
 
 - #15216: document the security issue reporting process with a SECURITY.md file
