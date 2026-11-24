@@ -795,6 +795,14 @@ let automated_test() =
           "abc012def3ghi45")
        "abc-012-12-def3ghi45";
 
+  start_test "Replacement with a string shorter than the one searched";
+  let s = "abcde" in
+  ignore (Str.search_forward (Str.regexp "b\\(c\\)de") s 0);
+  test (Str.replace_matched "\\0,\\1" s) "bcde,c";
+  test (match Str.replace_matched "\\0" "x" with
+        | exception Invalid_argument _ -> true
+        | _ -> false) true;
+
   (** Splitting *)
   start_test "Splitting";
   test (Str.split (Str.regexp "[ \t]+") "si non e vero")
