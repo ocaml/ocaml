@@ -967,6 +967,10 @@ OCaml 5.6.0
   limit and Bigarray slice arity.
   (KC Sivaramakrishnan, review by Stefan Muenzel)
 
+- #15341: Fix Float.ldexp and Stdlib.ldexp for exponents outside the range
+  of a C int.
+  (Sora Morimoto, review by Olivier Nicole)
+
 OCaml 5.5.1
 -----------
 
