@@ -267,3 +267,64 @@ Error: Signature mismatch:
        Their variances do not agree.
 Unexecuted phrases: 1 phrases did not execute due to an error
 |}]
+
+(* #15142: the abstract type in the functor argument might be an invariant
+   GADT. Its composition with an injective bivariant type must be invariant. *)
+type 'a q = Q
+module Possibly_invariant_gadt (X : sig type 'a t end) : sig
+  type +-'a s
+  val inj : 'a q X.t -> 'a s
+  val prj : 'a s -> 'a q X.t
+end = struct
+  type 'a s = 'a q X.t
+  let inj x = x
+  let prj x = x
+end
+[%%expect{|
+type +-!'a q = Q
+module Possibly_invariant_gadt :
+  (X : sig type 'a t end) ->
+    sig type +-'a s val inj : 'a q X.t -> 'a s val prj : 'a s -> 'a q X.t end
+|}]
+
+(* A concrete phantom alias can be expanded without using its parameter. *)
+type 'a phantom = unit
+type 'a outer
+type +-'a erased = 'a phantom outer
+[%%expect{|
+type +-'a phantom = unit
+type 'a outer
+type +-'a erased = 'a phantom outer
+|}]
+
+(* An alias of an abstract bivariant type inherits its possible injectivity. *)
+type +-'a bivariant
+type +-'a non_injective = 'a phantom
+type +-'a possibly_injective = 'a bivariant
+[%%expect{|
+type +-'a bivariant
+type +-'a non_injective = 'a phantom
+type +-'a possibly_injective = 'a bivariant
+|}]
+
+type +-'a erased_alias = 'a non_injective outer
+[%%expect{|
+type +-'a erased_alias = 'a non_injective outer
+|}]
+
+(* A possibly invariant outer parameter preserves possible invariance when
+   the inner parameter may be injective. *)
+type +-'a possibly_invariant = 'a possibly_injective outer
+[%%expect{|
+type +-'a possibly_invariant = 'a possibly_injective outer
+|}]
+
+(* A private row without occurrences of the parameter can be bivariant. *)
+module Private_row (X : sig type +-'a p = private [< `X ] end) = struct
+  type +-'a t = 'a X.p outer
+end
+[%%expect{|
+module Private_row :
+  (X : sig type +-'a p = private [< `X ] end) ->
+    sig type +-'a t = 'a X.p outer end
+|}]
