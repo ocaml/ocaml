@@ -117,9 +117,10 @@ let compute_variance env visited vari ty =
   in
   compute_variance_rec env vari ty
 
-let make p n i =
+let make ?(may_inj = false) p n i =
   let open Variance in
-  set_if p May_pos (set_if n May_neg (set_if i Inj null))
+  let v = set_if i Inj (set_if may_inj May_inj null) in
+  set_if p May_pos (set_if n May_neg v)
 
 let injective = Variance.(set Inj null)
 
@@ -378,7 +379,7 @@ let compute_variance_decl env ~check decl (required, _ as rloc) =
   | {type_kind = Type_abstract _ | Type_open | Type_external _;
      type_manifest = None} ->
     List.map
-      (fun (c, n, i) -> make (not n) (not c) (not abstract || i))
+      (fun (c, n, i) -> make ~may_inj:true (not n) (not c) (not abstract || i))
       required
   | { type_kind = _; type_manifest = Some _ }
   | { type_kind = Type_record _ | Type_variant _; type_manifest = _ } ->
