@@ -1374,15 +1374,18 @@ static void realloc_mark_stack (struct mark_stack* stk)
   uintnat mark_stack_bsize = stk->size * sizeof(mark_entry);
   uintnat local_heap_bsize = caml_heap_size(Caml_state->shared_heap);
   uintnat factor = caml_mark_stack_prune_factor;
+  bool pruned = false;
 
   /* The heuristic here, from PR #11284, compares the mark
    * stack size to a bound based on the domain's own major heap
    * size. That is not useful for many common multidomain
    * workloads. TODO: fix this. */
+
+  /* When the mark stack might not increase, we count the large mark entries
+     to adjust our allocation. This is needed because large mark stack entries
+     will not compress and because we are using a domain local heap bound we
+     need to fit large blocks into the local mark stack. See PR#11284 */
   if (factor > 0 && mark_stack_bsize >= local_heap_bsize / factor) {
-    /* Over the bound. Decide whether the mark stack is "compressible"
-     * by counting large mark stack entries (which compression
-     * leaves). */
     for (uintnat i = 0; i < stk->count; ++i) {
       mark_entry* me = &stk->stack[i];
       if (me->end - me->start > BITS_PER_WORD)
@@ -1400,6 +1403,7 @@ static void realloc_mark_stack (struct mark_stack* stk)
     mark_stack_prune(stk);
     if (stk->count < stk->size)
       return;
+    pruned = true;
   }
 
   /* Either the mark stack was below the bound or it did not
@@ -1420,8 +1424,12 @@ static void realloc_mark_stack (struct mark_stack* stk)
     return;
   }
 
-  caml_gc_log ("No room for growing mark stack. Compressing...\n");
-  mark_stack_prune(stk);
+  /* If compression has already left the mark stack full, it cannot
+   * make room now. */
+  if (!pruned) {
+    caml_gc_log ("No room for growing mark stack. Compressing...\n");
+    mark_stack_prune(stk);
+  }
   if (stk->count == stk->size)
     caml_fatal_error("no room to grow the mark stack");
 }
