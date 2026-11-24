@@ -971,6 +971,9 @@ OCaml 5.6.0
   of a C int.
   (Sora Morimoto, review by Olivier Nicole)
 
+- #15396: Fix Misc.RuntimeID.of_string when reserved-header-bits is non-zero.
+  (David Allsopp, review by Nicolás Ojeda Bär)
+
 OCaml 5.5.1
 -----------
 
