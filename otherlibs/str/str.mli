@@ -231,7 +231,9 @@ val replace_matched : string -> string -> string
    that was matched by the last call to a matching or searching
    function (see {!Str.matched_string} for details).
    [s] must be the same string that was passed to the matching or
-   searching function. *)
+   searching function.
+   @raise Invalid_argument if used on a different string (if the group
+   indices are invalid in this string). *)
 
 
 (** {1 Splitting} *)

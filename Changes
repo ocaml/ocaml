@@ -677,6 +677,12 @@ OCaml 5.6.0
 
 ### Bug fixes:
 
+- #15290, #15394: Fix out-of-bounds reads in `Str.replace_matched`: raise
+  `Invalid_argument` when a group referenced by the replacement extends past
+  the end of the supplied string.
+  (Anirudh Sudhir, report by KC Sivaramakrishnan,
+   review by Florian Angeletti and KC Sivaramakrishnan)
+
 - #15248, #15277: Fix integer overflow near `min_int` in `String.take_first`,
   `String.take_last` and `String.drop_last`.
   (Prakhand Patel, report by KC Sivaramakrishnan, review by Florian Angeletti)

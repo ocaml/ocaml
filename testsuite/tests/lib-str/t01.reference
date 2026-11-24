@@ -103,6 +103,8 @@ Global replacement
   ...
 First replacement
   ..
+Replacement with a string shorter than the one searched
+  ..
 Splitting
   ......
 XML tokenization
