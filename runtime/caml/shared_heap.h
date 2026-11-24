@@ -23,6 +23,7 @@
 #include "roots.h"
 #include "domain.h"
 #include "misc.h"
+#include "gc.h"
 #include "gc_stats.h"
 #include "major_gc.h"
 #include "sizeclasses.h"
