@@ -1,0 +1,8 @@
+dropped young
+[ocaml] (use Sys.enable_runtime_warnings to control these warnings)
+[ocaml] continuation dies without being resumed
+dropped after promotion
+[ocaml] continuation dies without being resumed
+resumed
+warnings disabled
+done

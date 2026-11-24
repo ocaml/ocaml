@@ -734,6 +734,8 @@ void caml_free_dead_continuation(value cont)
       || !atomic_compare_exchange_strong(Op_atomic_val(cont), &v,
                                          Val_ptr(NULL)))
     return;
+  if (caml_runtime_warnings_active())
+    fprintf(stderr, "[ocaml] continuation dies without being resumed\n");
   struct stack_info* cont_tail = Ptr_val(v);
   struct stack_info* stack = Stack_parent(cont_tail);
   /* A captured chain is a cycle from [cont_tail] to its head: cut it there. */
