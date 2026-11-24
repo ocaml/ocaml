@@ -32,6 +32,7 @@
 #include "caml/gc_ctrl.h"
 #include "caml/platform.h"
 #include "caml/minor_gc.h"
+#include "caml/signals.h"
 #include "caml/misc.h"
 #include "caml/major_gc.h"
 #include "caml/memory.h"
@@ -57,6 +58,23 @@ static atomic_uintnat live_stack_counter = 0;
 
 uintnat caml_live_stacks_memory (void) {
   return atomic_load(&live_stack_counter);
+}
+
+Caml_inline uintnat stack_bytes(struct stack_info* stack)
+{
+  return (uintnat)((char*)(stack->handler + 1) - (char*)stack);
+}
+
+extern _Atomic uintnat caml_custom_minor_ratio; /* see custom.c */
+
+/* Count the memory of a fiber stack towards the minor GC's pace, as for a
+   young custom block. */
+static void account_new_fiber_stack(struct stack_info* stack)
+{
+  caml_adjust_minor_gc_speed(
+    stack_bytes(stack),
+    Bsize_wsize(Caml_state->minor_heap_wsz) / 100
+      * atomic_load_relaxed(&caml_custom_minor_ratio));
 }
 
 uintnat caml_get_init_stack_wsize (void)
@@ -213,6 +231,7 @@ alloc_size_class_stack_noexc(mlsize_t wosize, int cache_bucket, value hval,
   stack->sp = (value*)hand;
   stack->exception_ptr = NULL;
   stack->id = id;
+  stack->is_major_charged = false;
 #ifdef DEBUG
   stack->magic = 42;
 #endif
@@ -237,11 +256,13 @@ caml_alloc_stack_noexc(mlsize_t wosize, value hval, value hexn, value heff,
 
 value caml_alloc_stack (value hval, value hexn, value heff) {
   const int64_t id = atomic_fetch_add(&fiber_id, 1);
+  bool cached = Caml_state->stack_cache[0] != NULL;
   struct stack_info* stack =
     alloc_size_class_stack_noexc(caml_fiber_wsz, 0 /* first bucket */,
                                  hval, hexn, heff, id);
 
   if (!stack) caml_raise_out_of_memory();
+  if (!cached) account_new_fiber_stack(stack);
 
   fiber_debug_log ("Allocate stack=%p of %" CAML_PRIuNAT "words",
                    stack, caml_fiber_wsz);
@@ -366,11 +387,13 @@ CAMLprim value caml_alloc_stack(value hval, value hexn, value heff)
 {
   value* sp;
   const int64_t id = atomic_fetch_add(&fiber_id, 1);
+  bool cached = Caml_state->stack_cache[0] != NULL;
   struct stack_info* stack =
     alloc_size_class_stack_noexc(caml_fiber_wsz, 0 /* first bucket */,
                                  hval, hexn, heff, id);
 
   if (!stack) caml_raise_out_of_memory();
+  if (!cached) account_new_fiber_stack(stack);
 
   sp = Stack_high(stack);
   sp -= 1;
@@ -596,6 +619,14 @@ int caml_try_realloc_stack(asize_t required_space)
     }
   }
 
+  /* Count fibers only, not the main stack of a domain. */
+  if (Stack_parent(new_stack) != NULL) account_new_fiber_stack(new_stack);
+  /* A stack already counted towards the major GC's pace stays counted;
+     only its growth is added. */
+  if (old_stack->is_major_charged) {
+    new_stack->is_major_charged = true;
+    caml_adjust_gc_speed(stack_bytes(new_stack) - stack_bytes(old_stack), 0);
+  }
   caml_free_stack(old_stack);
   Caml_state->current_stack = new_stack;
   return 1;
@@ -673,6 +704,143 @@ void caml_free_stack (struct stack_info* stack)
   } else {
     caml_free_stack_memory(stack);
   }
+}
+
+/* Reclaiming the stacks of unreachable continuations. See fiber.h. */
+
+uintnat caml_continuation_charge_stacks(struct stack_info* cont_tail)
+{
+  uintnat bytes = 0;
+  struct stack_info* stack = cont_tail;
+  do {
+    if (!stack->is_major_charged) {
+      bytes += stack_bytes(stack);
+      stack->is_major_charged = true;
+    }
+    stack = Stack_parent(stack);
+  } while (stack != cont_tail && stack != NULL);
+  return bytes;
+}
+
+/* The CAS to [Val_ptr(NULL)] claims [cont], so its stacks are freed once. */
+void caml_free_dead_continuation(value cont)
+{
+  CAMLnoalloc;
+  /* A borrow neither allocates nor polls, so a dead continuation is never
+     borrowed. */
+  value v = atomic_load_relaxed(Op_atomic_val(cont));
+  CAMLassert(v != Val_cont_borrowed);
+  if (v == Val_ptr(NULL)
+      || !atomic_compare_exchange_strong(Op_atomic_val(cont), &v,
+                                         Val_ptr(NULL)))
+    return;
+  struct stack_info* cont_tail = Ptr_val(v);
+  struct stack_info* stack = Stack_parent(cont_tail);
+  /* A captured chain is a cycle from [cont_tail] to its head: cut it there. */
+  Stack_parent(cont_tail) = NULL;
+  while (stack != NULL) {
+    struct stack_info* next = Stack_parent(stack);
+    fiber_debug_log("Free stack=%p of unreachable continuation", stack);
+    caml_free_stack(stack);
+    stack = next;
+  }
+}
+
+/* The table of young continuations (fiber.h): [Young_conts_initial] entries,
+   and a reserve that [perform] uses past the threshold. */
+#define Young_conts_initial 256
+#define Young_conts_reserve 64
+/* After compaction, the table doubles if more than this fraction of it
+   is still in use. */
+#define Young_conts_grow_fraction 4
+
+/* The word below [young_conts_base] is a sentinel entry that is never taken,
+   so [caml_perform] reads the top entry without a bounds check. */
+static const value young_conts_sentinel_field = 0;
+
+static void set_young_conts(caml_domain_state* domain, value* base,
+                            uintnat size)
+{
+  domain->young_conts_base = domain->young_conts_ptr = base;
+  domain->young_conts_limit = base == NULL ? NULL : base + size;
+  domain->young_conts_end =
+    base == NULL ? NULL : base + size + Young_conts_reserve;
+}
+
+Caml_inline uintnat young_conts_size(caml_domain_state* domain)
+{
+  return domain->young_conts_end - domain->young_conts_base
+         - Young_conts_reserve;
+}
+
+/* Allocate the table, or resize it to [size] entries keeping the entries
+   it holds. Nothing points into the table, so it can move. */
+static bool resize_young_conts(caml_domain_state* domain, uintnat size)
+{
+  value* base = domain->young_conts_base;
+  uintnat used = base == NULL ? 0 : domain->young_conts_ptr - base;
+  value* t = caml_stat_resize_noexc(base == NULL ? NULL : base - 1,
+                 (1 + size + Young_conts_reserve) * sizeof(value));
+  if (t == NULL) return false;
+  t[0] = (value)&young_conts_sentinel_field;
+  set_young_conts(domain, t + 1, size);
+  domain->young_conts_ptr = t + 1 + used;
+  return true;
+}
+
+int caml_init_young_conts(caml_domain_state* domain)
+{
+  CAMLassert(domain->young_conts_base == NULL);
+  return resize_young_conts(domain, Young_conts_initial) ? 0 : -1;
+}
+
+void caml_free_young_conts(caml_domain_state* domain)
+{
+  CAMLassert(domain->young_conts_ptr == domain->young_conts_base);
+  if (domain->young_conts_base != NULL)
+    caml_stat_free(domain->young_conts_base - 1);
+  set_young_conts(domain, NULL, 0);
+}
+
+void caml_compact_young_conts(caml_domain_state* domain)
+{
+  value* base = domain->young_conts_base;
+  value* q = base;
+  /* Keep the entries that are not taken, in order. Other domains may take
+     one at any time, hence the atomic load; a take is final. */
+  for (value* p = base; p < domain->young_conts_ptr; p++) {
+    value cont = *p;
+    if (atomic_load_relaxed(Op_atomic_val(cont)) != Val_ptr(NULL)) *q++ = cont;
+  }
+  uintnat size = young_conts_size(domain);
+  domain->young_conts_ptr = q;
+  domain->young_conts_limit = base + size;
+  if ((uintnat)(q - base) > size / Young_conts_grow_fraction)
+    (void)resize_young_conts(domain, 2 * size);
+  /* Still full: stay in the reserve and request a minor GC, which empties
+     the table; [caml_reset_young_limit] keeps the interrupt armed until
+     then. */
+  if (domain->young_conts_ptr >= domain->young_conts_limit) {
+    domain->young_conts_limit = domain->young_conts_end;
+    caml_request_minor_gc();
+  }
+}
+
+void caml_free_dead_young_continuations(caml_domain_state* domain)
+{
+  value* base = domain->young_conts_base;
+  value* ptr = domain->young_conts_ptr;
+  if (base == NULL) return;
+  /* After the end barrier, no domain points into our minor heap. A promoted
+     continuation may be in use on another domain, so it is left alone. */
+  for (value* p = base; p < ptr; p++) {
+    value cont = *p;
+    CAMLassert((value*)cont > domain->young_start
+               && (value*)cont < domain->young_end);
+    if (!Is_promoted_hd(Hd_val(cont))) caml_free_dead_continuation(cont);
+  }
+  /* Empty the table; it keeps its size. */
+  set_young_conts(domain, base, young_conts_size(domain));
 }
 
 void caml_free_gc_regs_buckets(value *gc_regs_buckets)

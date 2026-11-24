@@ -54,8 +54,12 @@ struct stack_info {
    * this size is pooled. If unpooled, it is [-1].
    *
    * Stacks may be unpooled if either the stack size is not 2**N multiple of
-   * [caml_fiber_wsz] or the stack is bigger than pooled sizes. */
-  int cache_bucket;
+   * [caml_fiber_wsz] or the stack is bigger than pooled sizes. It is 16 bits
+   * wide so that it fits in one word with [is_major_charged]. */
+  int16_t cache_bucket;
+  /* True if the memory of this stack has been counted towards the pace of
+     the major GC. */
+  bool is_major_charged;
   size_t size; /* only used when USE_MMAP_MAP_STACK is defined */
   uintnat magic;
   int64_t id;
@@ -332,6 +336,30 @@ value caml_make_unhandled_effect_exn (value effect);
 
 CAMLextern uintnat caml_live_stacks_memory(void);
 CAMLextern uintnat caml_current_stack_size(void);
+
+/* [perform] records each young continuation in the domain's table
+   [Caml_state->young_conts_*]. The stacks of those that die untaken are
+   freed after the minor GC; those of promoted ones, by the sweeper. */
+
+/* Return the bytes of the stacks of [cont_tail]'s chain not yet counted
+   towards the major GC's pace, and mark them counted. */
+uintnat caml_continuation_charge_stacks(struct stack_info* cont_tail);
+
+/* Free the stacks of the dead continuation [cont], unless it was taken. */
+void caml_free_dead_continuation(value cont);
+
+/* Called by the minor GC after its end barrier: free the stacks of this
+   domain's dead young continuations and empty the table. */
+void caml_free_dead_young_continuations(caml_domain_state* domain);
+
+/* Allocate a domain's table of young continuations. Returns -1 on failure. */
+int caml_init_young_conts(caml_domain_state* domain);
+/* Free a domain's (empty) table of young continuations. */
+void caml_free_young_conts(caml_domain_state* domain);
+
+/* Drop the taken entries of the domain's table, keeping their order, and
+   grow the table if it stays too full. */
+void caml_compact_young_conts(caml_domain_state* domain);
 
 #endif /* CAML_INTERNALS */
 

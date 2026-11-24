@@ -732,6 +732,22 @@ CFI_STARTPROC
         lg      %r4, Caml_state(current_stack) /* %r4 := current_stack */
         lay     %r5, 1(%r4) /* %r5 := Val_ptr(current_stack) */
         stg     %r5, 0(%r3) /* Initialise continuation */
+        CFI_REMEMBER_STATE
+    /*  Record the continuation in the young continuations table (fiber.h):
+        replace a taken top entry, else push. Rare cases are out of line,
+        with the CFI state saved here. */
+        lg      %r8, Caml_state(young_conts_ptr)
+        lg      %r9, -8(%r8) /* %r9 := top entry */
+        lg      %r9, 0(%r9) /* %r9 := Field(entry, 0) */
+        clgfi   %r9, 1 /* taken: Field(entry, 0) == Val_ptr(NULL) */
+        je      LBL(young_conts_reuse)
+        clg     %r8, Caml_state(young_conts_limit)
+        je      LBL(young_conts_full)
+LBL(young_conts_store):
+        stg     %r3, 0(%r8)
+        aghi    %r8, 8
+        stg     %r8, Caml_state(young_conts_ptr)
+LBL(young_conts_done):
         lgr     %r6, %r4 /* %r6 := cont_head */
 LBL(do_perform):
     /*  %r2: effect to perform
@@ -750,9 +766,25 @@ LBL(do_perform):
         stg     %r6, Handler_parent(%r9) /* Connect cont_tail to cont_head */
         lg      %r4, Handler_effect(%r9) /* %r4 := effect handler (closure) */
         brcl    15, GCALL(caml_apply2)
+    /*  Out-of-line cases of recording the continuation (see above). */
+        CFI_RESTORE_STATE
+LBL(young_conts_reuse):
+        stg     %r3, -8(%r8)
+        j       LBL(young_conts_done)
+LBL(young_conts_full):
+        lg      %r9, Caml_state(young_conts_end)
+        clgr    %r8, %r9
+        je      LBL(young_conts_done)
+        stg     %r9, Caml_state(young_conts_limit)
+        lghi    %r9, -1
+        stg     %r9, Caml_state(young_limit)
+        j       LBL(young_conts_store)
 LBL(112):
     /* No parent stack. Switch back to original performer before raising
-       Effect.Unhandled. */
+       Effect.Unhandled. The fibers of the continuation run again, so mark it
+       as taken. */
+        lghi    %r9, 1
+        stg     %r9, 0(%r3) /* Field(cont, 0) := Val_ptr(NULL) */
         SWITCH_OCAML_STACKS(%r4, %r6)
     /* No parent stack. Raise Unhandled. */
         LEA_VAR(caml_raise_unhandled_effect, ADDITIONAL_ARG)

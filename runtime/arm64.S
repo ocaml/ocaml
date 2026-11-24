@@ -1069,6 +1069,22 @@ FUNCTION(caml_perform)
         ldr     x2, Caml_state(current_stack) /* x2 := current_stack */
         add     x3, x2, 1 /* x3 := Val_ptr(current_stack) */
         str     x3, [x1] /* Initialize continuation */
+        CFI_REMEMBER_STATE
+    /*  Record the continuation in the young continuations table (fiber.h):
+        replace a taken top entry, else push. Rare cases are out of line,
+        with the CFI state saved here. */
+        ldr     x9, Caml_state(young_conts_ptr)
+        ldr     x10, [x9, -8] /* x10 := top entry */
+        ldr     x11, [x10] /* x11 := Field(entry, 0) */
+        cmp     x11, 1 /* taken: Field(entry, 0) == Val_ptr(NULL) */
+        b.eq    L(young_conts_reuse)
+        ldr     x10, Caml_state(young_conts_limit)
+        cmp     x9, x10
+        b.eq    L(young_conts_full)
+L(young_conts_store):
+        str     x1, [x9], 8
+        str     x9, Caml_state(young_conts_ptr)
+L(young_conts_done):
         mov     x4, x2 /* x4 := cont_head */
 L(do_perform):
     /*  x0: effect to perform
@@ -1115,9 +1131,25 @@ L(do_perform):
         str     x4, Handler_parent(x9) /* Connect new cont_tail to cont_head */
         ldr     x2, Handler_effect(x9) /* x2 := effect handler */
         b       G(caml_apply2)
+    /*  Out-of-line cases of recording the continuation (see above). */
+        CFI_RESTORE_STATE
+L(young_conts_reuse):
+        str     x1, [x9, -8]
+        b       L(young_conts_done)
+L(young_conts_full):
+        ldr     x11, Caml_state(young_conts_end)
+        cmp     x9, x11
+        b.eq    L(young_conts_done)
+        str     x11, Caml_state(young_conts_limit)
+        mov     x10, -1
+        str     x10, Caml_state(young_limit)
+        b       L(young_conts_store)
 1:
     /*  No parent stack. Switch back to original performer before raising
-        Effect.Unhandled. */
+        Effect.Unhandled. The fibers of the continuation run again, so mark
+        it as taken. */
+        mov     x10, 1
+        str     x10, [x1] /* Field(cont, 0) := Val_ptr(NULL) */
         SWITCH_OCAML_STACKS x2, x4
     /*  Raise Effect.Unhandled. */
 #if defined(WITH_THREAD_SANITIZER)

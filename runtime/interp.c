@@ -1342,6 +1342,22 @@ do_resume: {
       }
 
       Alloc_small(cont, 1, Cont_tag, Enter_gc);
+      /* Initialise [cont] first: compaction reads it. */
+      Field(cont, 0) = Val_ptr(old_stack);
+      /* Record [cont] in the table of young continuations, as [caml_perform]
+         does; the sentinel below the table is never taken. */
+      {
+        value* p = domain_state->young_conts_ptr;
+        if (atomic_load_relaxed(Op_atomic_val(p[-1])) == Val_ptr(NULL)) {
+          p[-1] = cont;
+        } else if (p < domain_state->young_conts_end) {
+          *p = cont;
+          domain_state->young_conts_ptr = p + 1;
+          /* Threshold: use the reserve, and compact now. */
+          if (p == domain_state->young_conts_limit)
+            caml_compact_young_conts(domain_state);
+        }
+      }
 
       sp -= 4;
       sp[0] = Val_long(domain_state->trap_sp_off);
@@ -1353,7 +1369,6 @@ do_resume: {
       domain_state->current_stack = parent_stack;
       sp = parent_stack->sp;
       Stack_parent(old_stack) = old_stack;
-      Field(cont, 0) = Val_ptr(old_stack);
 
       domain_state->trap_sp_off = Long_val(sp[0]);
       extra_args = Long_val(sp[1]);

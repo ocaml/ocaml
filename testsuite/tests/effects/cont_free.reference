@@ -1,0 +1,5 @@
+dropped young: reclaimed true
+kept: not reclaimed true
+resumed: 5000
+dropped after promotion: reclaimed true
+paced: bounded true

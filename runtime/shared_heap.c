@@ -619,6 +619,8 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
         if (Tag_hd (hd) == Custom_tag) {
           void (*final_fun)(value) = Custom_ops_val(Val_hp(p))->finalize;
           if (final_fun != NULL) final_fun(Val_hp(p));
+        } else if (Tag_hd (hd) == Cont_tag) {
+          caml_free_dead_continuation(Val_hp(p));
         }
 
         /* add to freelist. This could be optimised, we don't need
@@ -741,6 +743,8 @@ static intnat large_alloc_sweep(struct caml_heap_state* local) {
     if (Tag_hd (hd) == Custom_tag) {
       void (*final_fun)(value) = Custom_ops_val(Val_hp(p))->finalize;
       if (final_fun != NULL) final_fun(Val_hp(p));
+    } else if (Tag_hd (hd) == Cont_tag) {
+      caml_free_dead_continuation(Val_hp(p));
     }
 
     local->stats.large_words -=
@@ -824,6 +828,8 @@ static void pool_finalise(struct caml_heap_state* local, pool** plist,
         if (Tag_hd (hd) == Custom_tag) {
           void (*final_fun)(value) = Custom_ops_val(Val_hp(p))->finalize;
           if (final_fun != NULL) final_fun(Val_hp(p));
+        } else if (Tag_hd (hd) == Cont_tag) {
+          caml_free_dead_continuation(Val_hp(p));
         }
         atomic_store_relaxed((atomic_uintnat*)p, 0);
         p[1] = (value)0;
@@ -1451,6 +1457,8 @@ void caml_compact_heap(caml_domain_state* domain_state,
             if (Tag_hd (hd) == Custom_tag) {
               void (*final_fun)(value) = Custom_ops_val(Val_hp(p))->finalize;
               if (final_fun) final_fun(Val_hp(p));
+            } else if (Tag_hd (hd) == Cont_tag) {
+              caml_free_dead_continuation(Val_hp(p));
             }
 
             heap->stats.pool_live_blocks--;
