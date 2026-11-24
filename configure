@@ -4788,6 +4788,14 @@ esac
 fi
 
 
+# Decide here if ocamltest is built. The C++ checks below use this result.
+case $enable_ocamltest,true in #(
+  yes,*|,true) :
+    build_ocamltest=true ;; #(
+  *) :
+    build_ocamltest=false ;;
+esac
+
 # Initialization of libtool
 # Allow the MSVC linker to be found even if ld isn't installed.
 # User-specified LD still takes precedence.
@@ -25131,10 +25139,9 @@ else case e in #(
 esac
 fi
 
-case $enable_ocamltest,true in #(
-  yes,*|,true) :
-    build_ocamltest=true
-    ocamltest_target=ocamltest
+if $build_ocamltest
+then :
+  ocamltest_target=ocamltest
     ocamltest_opt_target=ocamltest.opt
     ocamltest='ocamltest'
     if $native_compiler
@@ -25211,11 +25218,11 @@ fi
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ocaml_cv_prog_cxx:-none found}" >&5
 printf "%s\n" "${ocaml_cv_prog_cxx:-none found}" >&6; }
-  ocamltest_CXX="$ocaml_cv_prog_cxx" ;; #(
-  *) :
-    build_ocamltest=false
-  ocamltest='' ;;
+  ocamltest_CXX="$ocaml_cv_prog_cxx"
+else case e in #(
+  e) ocamltest='' ;;
 esac
+fi
 
 # config.status needs the values of ocamltest_unix_mod and unix_or_win32
 # for creating symlinks

@@ -823,6 +823,11 @@ AS_IF(
 # Bypass libtool check for the manifest tool
 AC_CHECK_TOOLS(MANIFEST_TOOL, [mt], :)
 
+# Decide here if ocamltest is built. The C++ checks below use this result.
+AS_CASE([$enable_ocamltest,OCAML__DEVELOPMENT_VERSION],
+  [yes,*|,true], [build_ocamltest=true],
+  [build_ocamltest=false])
+
 # Initialization of libtool
 # Allow the MSVC linker to be found even if ld isn't installed.
 # User-specified LD still takes precedence.
@@ -2942,10 +2947,8 @@ AS_IF([test x"$enable_ocamlobjinfo" != 'xno'],
   [build_ocamlobjinfo=true],
   [build_ocamlobjinfo=false])
 
-AS_CASE([$enable_ocamltest,OCAML__DEVELOPMENT_VERSION],
-  [yes,*|,true],
-    [build_ocamltest=true
-    ocamltest_target=ocamltest
+AS_IF([$build_ocamltest],
+    [ocamltest_target=ocamltest
     ocamltest_opt_target=ocamltest.opt
     ocamltest='ocamltest'
     AS_IF([$native_compiler],
@@ -2956,8 +2959,7 @@ testsuite/tools/test_in_prefix"])
     testsuite_tools='testsuite/tools/codegen testsuite/tools/expect'
     optional_bytecode_tools="$optional_bytecode_tools $testsuite_tools"
     OCAML_CXX_COMPILE_STDCXX_11],
-  [build_ocamltest=false
-  ocamltest=''])
+  [ocamltest=''])
 
 # config.status needs the values of ocamltest_unix_mod and unix_or_win32
 # for creating symlinks
