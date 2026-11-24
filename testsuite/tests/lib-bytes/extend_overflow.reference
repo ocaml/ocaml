@@ -1,0 +1,7 @@
+extend abc max_int min_int: length 2
+extend abc min_int max_int: length 2
+extend abc max_int (-max_int): length 3
+extend abc max_int max_int: Invalid_argument "Bytes.extend"
+extend abc min_int min_int: Invalid_argument "Bytes.extend"
+extend abc max_int 0: Invalid_argument "Bytes.extend"
+extend abc min_int 0: Invalid_argument "Bytes.create"

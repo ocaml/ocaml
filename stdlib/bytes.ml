@@ -81,7 +81,9 @@ let (++) a b =
   | _ -> c
 
 let extend s left right =
-  let len = length s ++ left ++ right in
+  (* Since [length s >= 0], adding it last overflows only if the result is
+     too long and cannot undo an overflow of [left + right]. *)
+  let len = length s ++ (left ++ right) in
   let r = create len in
   let (srcoff, dstoff) = if left < 0 then -left, 0 else 0, left in
   let cpylen = Int.min (length s - srcoff) (len - dstoff) in
