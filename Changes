@@ -116,6 +116,9 @@ Working version
 
 ### Bug fixes:
 
+- #15399: Fix a space leak in continuations captured in a shallow handler.
+  (KC Sivaramakrishnan, review by ????)
+
 - #15252, #15368, #15369, #15371, #15380: check arguments to Unix.kill, waitpid,
   alarm, mktime and Sys.signal before narrowing. Unix.alarm rejects negative
   delays. On Unix, getpwuid, getgrgid, setuid, setgid and initgroups

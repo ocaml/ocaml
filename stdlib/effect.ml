@@ -133,12 +133,21 @@ module Shallow = struct
     ('d t -> ('d,'b) continuation -> 'c) ->
     ('a,'c) stack = "caml_continuation_use_and_update_handler_noexc" [@@noalloc]
 
+  (* Only for a continuation not yet seen by user code; [update_handler]
+     installs a handler again before any resume. *)
+  external clear_handler : ('a,'b) continuation -> unit =
+    "caml_continuation_clear_handler_noexc" [@@noalloc]
+
   external reperform : 'a t -> ('a, 'b) continuation -> 'c = "%reperform"
 
   let continue_gen k resume_fun v handler =
     let effc eff k =
       match handler.effc eff with
-      | Some f -> f k
+      | Some f ->
+          (* [k] is suspended until it is resumed with a new handler, so
+             do not let it keep this one alive. *)
+          clear_handler k;
+          f k
       | None -> reperform eff k
     in
     let stack = update_handler k handler.retc handler.exnc effc in

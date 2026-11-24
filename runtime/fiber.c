@@ -741,6 +741,24 @@ CAMLprim value caml_continuation_use_and_update_handler_noexc
   return stack;
 }
 
+/* Clear handler slots of the continuation captured by a shallow handler.
+   For shallow handlers, the handler slots will be filled in when the
+   continuation is resumed. Avoids space leak. */
+CAMLprim value caml_continuation_clear_handler_noexc (value cont)
+{
+  struct stack_info* stk;
+
+  if (!Is_young(cont) && caml_marking_started())
+    caml_darken_cont(cont);
+
+  stk = Ptr_val(Field(cont, 0));
+  CAMLassert (stk != NULL);
+  Stack_handle_value(stk) = Val_unit;
+  Stack_handle_exception(stk) = Val_unit;
+  Stack_handle_effect(stk) = Val_unit;
+  return Val_unit;
+}
+
 void caml_continuation_replace(value cont, struct stack_info* stk)
 {
   value n = Val_ptr(NULL);
