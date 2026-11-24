@@ -18,6 +18,9 @@ OCaml 5.5.3
   opam installations).
   (David Allsopp, review by Nicolás Ojeda Bär)
 
+- #15396: Fix Misc.RuntimeID.of_string when reserved-header-bits is non-zero.
+  (David Allsopp, review by Nicolás Ojeda Bär)
+
 OCaml 5.5.2 (23 October 2026)
 -----------------------------
 
