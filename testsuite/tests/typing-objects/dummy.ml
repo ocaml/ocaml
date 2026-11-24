@@ -197,6 +197,8 @@ Error: The value "param" has type
          "< redrawWidget : parameter_contains_self -> unit; .. >"
        but an expression was expected of type
          "< redrawWidget : #parameter_contains_self -> unit; .. >"
+       The method "redrawWidget" has type "parameter_contains_self -> unit",
+       but the expected method type was "#parameter_contains_self -> unit"
        Type "parameter_contains_self" = "< invalidate : unit >"
        is not compatible with type
          "#parameter_contains_self" = "< invalidate : unit; .. >"
@@ -214,6 +216,8 @@ Error: The value "param" has type
          "< redrawWidget : parameter_contains_self -> unit; .. >"
        but an expression was expected of type
          "< redrawWidget : #parameter_contains_self -> unit; .. >"
+       The method "redrawWidget" has type "parameter_contains_self -> unit",
+       but the expected method type was "#parameter_contains_self -> unit"
        Type "parameter_contains_self" = "< invalidate : unit >"
        is not compatible with type
          "#parameter_contains_self" = "< invalidate : unit; .. >"

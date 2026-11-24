@@ -341,9 +341,10 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
                 (* Expansion is not helpful here -- the restriction on GADT
                    return types is purely syntactic.  (In the worst case,
                    expansion produces gibberish.) *)
-                [Ctype.unexpanded_diff
+                Ctype.unexpanded_diff
                    ~got:ret_type
-                   ~expected:(Ctype.newconstr type_path type_params)]
+                   ~expected:(Ctype.newconstr type_path type_params)
+                   Errortrace.empty_root
               in
               Error.log_and_raise sret_type.ptyp_loc
                 (Constraint_failed (env, Errortrace.unification_error ~trace))
