@@ -39,7 +39,7 @@ Working version
 - #14580, #15419: Free the fiber stacks of a continuation that becomes
   unreachable without being resumed. `continue` no longer fails with
   `Continuation_already_resumed` while another domain reads the callstack
-  of the continuation.
+  of the continuation. Add `caml_continuation_clone`.
   (KC Sivaramakrishnan, review by ????)
 
 ### Code generation and optimizations:

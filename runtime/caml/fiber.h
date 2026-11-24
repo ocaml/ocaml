@@ -328,6 +328,11 @@ value caml_continuation_use (value cont);
 struct stack_info* caml_continuation_borrow(value cont);
 void caml_continuation_unborrow(value cont, struct stack_info* stk);
 
+/* [caml_continuation_clone(k)] returns a new continuation that resumes a
+   copy of the computation suspended in [k]; [k] is unchanged. Raises
+   [Continuation_already_resumed] if [k] was resumed, or [Out_of_memory]. */
+CAMLextern value caml_continuation_clone(value k);
+
 CAMLnoret CAMLextern void caml_raise_continuation_already_resumed (void);
 
 CAMLnoret CAMLextern void caml_raise_unhandled_effect (value effect);
