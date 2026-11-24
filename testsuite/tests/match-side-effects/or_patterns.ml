@@ -94,11 +94,12 @@ let h (r : int option immut_ref) =
                  0))
             with (13 x/8[int]) (if 0 x/8 (exit 12)))
           with (12)
-           (let (*match*/5 =a (field_imm 0 r/2))
-             (if *match*/5
-               (if 1 (let (v/2 =a (field_imm 0 *match*/5)) (+ v/2 1000))
-                 (exit 11))
-               (exit 11))))
+           (if 1
+             (let
+               (*match*/5 =a (field_imm 0 r/2)
+                v/2 =a (field_imm 0 *match*/5))
+               (+ v/2 1000))
+             (exit 11)))
         with (11)
          (raise (makeblock 0 (global Match_failure/0!) [0: "" 2 2])))))
   (apply (field_mut 1 (global Toploop!)) "h" h/0))

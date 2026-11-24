@@ -156,14 +156,14 @@ let expand_record_head h =
       { h with pat_desc = Record (Array.to_list lbl_all) }
   | _ -> h
 
-let bind_alias p id ~arg ~action =
+let bind_alias p id ~arg ~action:(lam, jmp_opt) =
   let k = Typeopt.value_kind p.pat_env p.pat_type in
-  bind_with_value_kind Alias (id, k) arg action
+  bind_with_value_kind Alias (id, k) arg lam, jmp_opt
 
 let head_loc ~scopes head =
   Scoped_location.of_location ~scopes head.pat_loc
 
-type 'a clause = 'a * lambda
+type 'a clause = 'a * (lambda * int option)
 
 let map_on_row f (row, action) = (f row, action)
 
@@ -272,9 +272,9 @@ module Simple : sig
   val explode_or_pat :
     arg:lambda ->
     Half_simple.pattern ->
-    mk_action:(vars:Ident.t list -> lambda) ->
+    mk_action:(vars:Ident.t list -> lambda * int) ->
     patbound_action_vars:Ident.t list ->
-    (pattern * lambda) list
+    (pattern * (lambda * int option)) list
 end = struct
   include Patterns.Simple
 
@@ -328,7 +328,7 @@ end = struct
   *)
   let explode_or_pat ~arg (p : Half_simple.pattern)
         ~mk_action ~patbound_action_vars
-    : (pattern * lambda) list =
+    : (pattern * (lambda * int option)) list =
     let rec explode p aliases rem =
       let split_explode p aliases rem = explode (General.view p) aliases rem in
       match p.pat_desc with
@@ -359,8 +359,8 @@ end = struct
           let rec fresh_clause arg_id action_vars renaming_env = function
             | [] ->
                 let fresh_pat = alpha renaming_env { p with pat_desc = view } in
-                let fresh_action = mk_action ~vars:(List.rev action_vars) in
-                (fresh_pat, fresh_action)
+                let fresh_action, i = mk_action ~vars:(List.rev action_vars) in
+                (fresh_pat, (fresh_action, Some i))
             | pat_id :: rem_vars ->
               if not (List.mem pat_id aliases) then begin
                 let fresh_id = Ident.rename pat_id in
@@ -1205,7 +1205,7 @@ let erase_cases f cases =
 let erase_pm pm =
   { pm with cases = erase_cases General.erase pm.cases }
 
-let pretty_case ppf (ps, l) =
+let pretty_case ppf (ps, (l, _)) =
   Format.fprintf ppf "@[%t%t@]"
     (fun ppf -> match ps with
      | [] -> Format.pp_print_string ppf "empty row"
@@ -1357,9 +1357,10 @@ let same_actions = function
 
 let safe_before ((p, ps), act_p) l =
   (* Test for swapping two clauses *)
-  let same_actions act1 act2 =
+  let same_actions (act1, _jump_opt1) (act2, _jump_opt2) =
     match (make_key act1, make_key act2) with
-    | Some key1, Some key2 -> key1 = key2
+    | Some key1, Some key2 ->
+        key1 = key2 (* && Option.equal Int.equal jump_opt1 jump_opt2 *)
     | None, _
     | _, None ->
         false
@@ -1400,7 +1401,7 @@ let what_is_cases = what_is_cases ~skip_any:true
 
 let pm_free_variables { cases } =
   List.fold_right
-    (fun (_, act) r -> Ident.Set.union (free_variables act) r)
+    (fun (_, (act, _)) r -> Ident.Set.union (free_variables act) r)
     cases Ident.Set.empty
 
 (* Basic grouping predicates *)
@@ -1492,7 +1493,7 @@ module Or_matrix = struct
   (* Conditions for appending to the Or matrix *)
   let disjoint p q = not (may_compat p q)
 
-  let safe_below (ps, act) qs =
+  let safe_below (ps, (act, _)) qs =
     (not (is_guarded act)) && Parmatch.le_pats ps qs
 
   let safe_below_or_matrix l (q, qs) =
@@ -1846,7 +1847,7 @@ and precompile_or (cls : Simple.clause list) ors args def k =
             let or_num = next_raise_count () in
             let new_patl = Patterns.omega_list patl in
             let mk_new_action ~vars =
-              Lstaticraise (or_num, List.map (fun v -> Lvar v) vars)
+              Lstaticraise (or_num, List.map (fun v -> Lvar v) vars), or_num
             in
             let new_cases =
               let arg = arg_of_pure args.first.arg in
@@ -3582,7 +3583,7 @@ let compile_list compile_fun division =
   in
   c_rec [] division
 
-let compile_orhandlers compile_fun lambda1 partial total1 ctx to_catch =
+let compile_orhandlers compile_fun lambda1 partial total1 to_catch =
   let rec do_rec r total_r = function
     | [] -> (r, total_r)
     | { provenance = mat; exit = i; vars; pm } :: rem -> (
@@ -3590,7 +3591,8 @@ let compile_orhandlers compile_fun lambda1 partial total1 ctx to_catch =
           i
           pretty_cases pm.cases;
         let partial = { partial with tempo = Following } in
-        let ctx = Context.lshift_num (ncols mat) ctx in
+        let ctx_jump, total_r = Jumps.extract i total_r in
+        let ctx = Context.lshift_num (ncols mat) ctx_jump in
         match compile_fun partial ctx pm with
         | exception Unused ->
           if rem <> [] then separate_debug_output ();
@@ -3748,8 +3750,8 @@ let rec compile_match ~scopes repr partial ctx
   match m.cases with
   | [] ->
       compile_match_empty_matrix ~scopes partial ctx m.default
-  | ([], action) :: rem ->
-      let res =
+  | ([], (action, jump_opt)) :: rem ->
+      let lambda, total =
         if is_guarded action then
           let lambda, total =
             compile_match ~scopes None partial ctx { m with cases = rem }
@@ -3758,8 +3760,13 @@ let rec compile_match ~scopes repr partial ctx
         else
           (event_branch repr action, Jumps.empty Total)
       in
-      debugf "%a" pretty_case ([], action);
-      res
+      let total =
+        match jump_opt with
+        | None -> total
+        | Some i -> Jumps.union total (Jumps.singleton i ctx)
+      in
+      debugf "%a" pretty_case ([], (action, jump_opt));
+      lambda, total
   | nonempty_rows ->
       compile_match_nonempty_rows ~scopes repr partial ctx
         { m with cases = map_on_rows Non_empty_row.of_initial nonempty_rows }
@@ -4072,7 +4079,7 @@ and do_compile_matching ~scopes repr partial ctx pmh =
           else { partial with current = Partial } in
         compile_match_simplified ~scopes repr partial  ctx body in
       compile_orhandlers (compile_match ~scopes repr)
-        lam partial total ctx handlers
+        lam partial total handlers
 
 and compile_no_test ~scopes divide up_ctx repr partial ctx to_match =
   let { pm = this_match; ctx = this_ctx } = divide ctx to_match in
@@ -4166,6 +4173,7 @@ let root_arg arg binding_kind =
 
 let compile_matching ~scopes loc ~failer repr arg pat_act_list partial =
   let args = [ root_arg arg Strict ] in
+  let pat_act_list = List.map (fun (pat, act) -> (pat, (act, None))) pat_act_list in
   let rows = map_on_rows (fun pat -> (pat, [])) pat_act_list in
   let handler =
     toplevel_handler ~scopes loc ~failer partial args rows
@@ -4364,6 +4372,7 @@ let for_let ~scopes loc param pat body =
 
 (* Easy case since variables are available *)
 let for_tupled_function ~scopes loc paraml pats_act_list partial =
+  let pats_act_list = List.map (fun (pat, act) -> (pat, (act, None))) pats_act_list in
   let args = List.map (fun id -> root_arg (Lvar id) Strict) paraml in
   let handler =
     toplevel_handler ~scopes loc ~failer:Raise_match_failure
@@ -4446,9 +4455,10 @@ let compile_flattened ~scopes repr partial ctx pmh =
           if hs = [] then partial
           else { partial with current = Partial } in
         compile_match_nonempty_rows ~scopes repr partial ctx b in
-      compile_orhandlers (compile_match ~scopes repr) lam partial total ctx hs
+      compile_orhandlers (compile_match ~scopes repr) lam partial total hs
 
 let do_for_multiple_match ~scopes loc idl pat_act_list partial =
+  let pat_act_list = List.map (fun (pat, act) -> (pat, (act, None))) pat_act_list in
   let repr = None in
   let arg =
     let sloc = Scoped_location.of_location ~scopes loc in
