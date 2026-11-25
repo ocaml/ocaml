@@ -43,6 +43,8 @@
 
 /* Note [MM]: Enforcing the memory model.
 
+   FIXME: rewrite this
+
    Multicore OCaml implements the memory consistency model defined in
 
      Bounding Data Races in Space and Time (PLDI '18)
