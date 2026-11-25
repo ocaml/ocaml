@@ -353,14 +353,21 @@ class virtual text =
     method html_of_Raw b s = bs b (self#escape s)
 
     method html_of_Code b s =
+      (* convert any whitespace starting with a newline to single space
+         (i.e., long sequences of newlines become a single space)
+       *)
+      let strip_s = Str.global_replace (Str.regexp "\n[ \n\t\r]*") " " s in
       if !colorize_code then
-        self#html_of_code b ~with_pre: false s
+        (* with_pre = true assumes that style.css sets white-space : pre
+           for <code> elements
+         *)
+        self#html_of_code b ~with_pre: true strip_s
       else
         (
          bs b "<code class=\"";
          bs b Odoc_ocamlhtml.code_class ;
          bs b "\">";
-         bs b (self#escape s);
+         bs b (self#escape strip_s);
          bs b "</code>"
         )
 
@@ -925,6 +932,7 @@ class html =
 
         "a {color: #416DFF; text-decoration: none}";
         "a:hover {background-color: #ddd; text-decoration: underline}";
+        "code { white-space : pre }";
         "pre { margin-bottom: 4px; font-family: monospace; }" ;
         "pre.verbatim, pre.codepre { }";
 
