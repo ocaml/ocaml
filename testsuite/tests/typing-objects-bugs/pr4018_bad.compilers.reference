@@ -39,13 +39,13 @@ Error: This type entity = < destroy_subject : id subject; entity_id : id >
          observer =
            < notify : < add_observer : 'g -> unit;
                         notify_observers : id -> unit > ->
-                      id -> unit as 'h >
-           as 'g = < notify : 'h >
+                      id -> unit >
+           as 'g
        is not compatible with type
-         < add_entity : (< destroy_subject : < add_observer : 'i -> 'b; .. >;
+         < add_entity : (< destroy_subject : < add_observer : 'h -> 'b; .. >;
                            .. >
                          as 'a) ->
                         'b;
            notify : 'a -> id -> unit >
-         as 'i
+         as 'h
        The first object type has no method add_entity
