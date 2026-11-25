@@ -1,0 +1,4 @@
+lstat: S_SOCK
+stat: S_SOCK
+LargeFile.lstat: S_SOCK
+LargeFile.stat: S_SOCK
