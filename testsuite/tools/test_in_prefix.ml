@@ -152,7 +152,7 @@ let () =
      relocatable and also required support from the assembler and C compiler. *)
   let relocatable =
     config.has_relative_libdir <> None
-    && config.has_runtime_search <> Config.Disable
+    && config.has_runtime_search = Config.Enable
   in
   let reproducible =
     relocatable
@@ -163,7 +163,7 @@ let () =
     && (not Toolchain.c_compiler_always_embeds_build_path
         || not Toolchain.c_compiler_debug_paths_can_be_absolute)
   in
-  let target_relocatable = (Config.search_method <> Config.Disable) in
+  let target_relocatable = (Config.search_method = Config.Enable) in
   (* Use Harness.pp_path unless --verbose was specified *)
   let pp_path =
     if verbose then
@@ -172,8 +172,7 @@ let () =
       Harness.pp_path ~prefix ~bindir_suffix ~libdir_suffix ~test_root in
   (* Force colour display in CI *)
   let style =
-    if Sys.getenv_opt "GITHUB_ACTIONS" <> None
-    || Sys.getenv_opt "APPVEYOR_BUILD_ID" <> None then
+    if Sys.getenv_opt "GITHUB_ACTIONS" <> None then
       Some Misc.Color.Always
     else
       None
@@ -186,7 +185,12 @@ let () =
     error = no_markup [Bold; FG Red];
     loc = no_markup [Bold; FG Blue];
     hint = no_markup [Bold; FG Green];
-    inline_code = no_markup [FG Blue]});
+    inline_code = no_markup [FG Blue];
+    insertion = no_markup [Bold; FG Red];
+    deletion = no_markup [Bold; FG Red];
+    modification = no_markup [Bold; FG Yellow];
+    preservation = no_markup [Bold; FG Green];
+  });
   print_summary config header_size
                 ~prefix ~bindir_suffix ~libdir_suffix
                 ~relocatable ~target_relocatable ~reproducible;

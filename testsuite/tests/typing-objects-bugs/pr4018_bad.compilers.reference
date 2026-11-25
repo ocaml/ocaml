@@ -23,20 +23,29 @@ Error: This type entity = < destroy_subject : id subject; entity_id : id >
                           'b;
            .. >
          as 'd
+       The method add_observer has type
+       < notify : < add_observer : 'c; notify_observers : id -> unit > ->
+                  id -> unit > ->
+       unit as 'c, but the expected method type was
+       < add_entity : (< destroy_subject : < add_observer : 'e; .. >; .. >
+                       as 'a) ->
+                      'b;
+         notify : 'a -> id -> unit > ->
+       'b as 'e
        Type
-         (< add_observer : < notify : 'e -> id -> unit > -> unit;
+         (< add_observer : < notify : 'f -> id -> unit > -> unit;
             notify_observers : id -> unit >
-          as 'e, id)
+          as 'f, id)
          observer =
-           < notify : < add_observer : 'f -> unit;
+           < notify : < add_observer : 'g -> unit;
                         notify_observers : id -> unit > ->
-                      id -> unit as 'g >
-           as 'f = < notify : 'g >
+                      id -> unit as 'h >
+           as 'g = < notify : 'h >
        is not compatible with type
-         < add_entity : (< destroy_subject : < add_observer : 'h -> 'b; .. >;
+         < add_entity : (< destroy_subject : < add_observer : 'i -> 'b; .. >;
                            .. >
                          as 'a) ->
                         'b;
            notify : 'a -> id -> unit >
-         as 'h
+         as 'i
        The first object type has no method add_entity

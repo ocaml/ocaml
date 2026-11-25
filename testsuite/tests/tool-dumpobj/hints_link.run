@@ -1,0 +1,11 @@
+if [ ${os_type} = 'Win32' ]; then
+  ocamlrun=$(cygpath "${ocamlrun}")
+fi
+dump () {
+  "${ocamlrun}" "${ocamlsrcdir}/tools/dumpobj" -nobanners "$1" \
+  | tr -d '\r' | grep 'Fortran)' | sed -e 's/^ *[0-9]* *//'
+}
+(echo "With -bytecode-hints:"
+ dump "${program}"
+ echo "Without -bytecode-hints:"
+ dump "${test_build_directory}/hints_link_without_hints.byte") > "${output}"

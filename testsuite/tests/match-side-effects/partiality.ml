@@ -325,8 +325,8 @@ type _ t = Bool : bool t | Int : int t | Char : char t
   (test/3 =
      (function param/2 : int
        (catch
-         (if (>= (field_int 0 param/2) 2) (exit 24)
-           (if (>= (field_int 1 param/2) 2) (exit 24) 0))
+         (if (>= (field_imm 0 param/2) 2) (exit 24)
+           (if (>= (field_imm 1 param/2) 2) (exit 24) 0))
         with (24) 0)))
   (apply (field_mut 1 (global Toploop!)) "test" test/3))
 val test : 'a t * 'a t -> unit = <fun>
@@ -353,7 +353,7 @@ type t = A | B | C of nothing
   (f/3 =
      (function param/3 : int
        (catch
-         (if (field_int 0 param/3)
+         (if (field_imm 0 param/3)
            (switch* (field_imm 1 param/3)
             case int 0: 3
             case int 1: (exit 27))

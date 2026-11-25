@@ -17,6 +17,7 @@
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
+#include <caml/fail.h>
 #include <errno.h>
 #include "caml/unixsupport.h"
 
@@ -48,6 +49,14 @@ CAMLexport value caml_unix_alloc_inet6_addr(struct in6_addr * a)
 }
 
 #endif
+
+static unsigned short get_port(value vport)
+{
+  intnat port = Long_val(vport);
+  if (port < 0 || port > 0xFFFF)
+    caml_invalid_argument("Unix.sockaddr: port number out of range");
+  return htons((unsigned short) port);
+}
 
 void caml_unix_get_sockaddr(value vaddr,
                        struct sockaddr_storage * addr /*out*/,
@@ -84,7 +93,7 @@ void caml_unix_get_sockaddr(value vaddr,
       memset(s_inet6, 0, sizeof(struct sockaddr_in6));
       s_inet6->sin6_family = AF_INET6;
       s_inet6->sin6_addr = GET_INET6_ADDR(Field(vaddr, 0));
-      s_inet6->sin6_port = htons(Int_val(Field(vaddr, 1)));
+      s_inet6->sin6_port = get_port(Field(vaddr, 1));
 #ifdef SIN6_LEN
       s_inet6->sin6_len = sizeof(struct sockaddr_in6);
 #endif
@@ -96,7 +105,7 @@ void caml_unix_get_sockaddr(value vaddr,
       memset(s_inet, 0, sizeof(struct sockaddr_in));
       s_inet->sin_family = AF_INET;
       s_inet->sin_addr = GET_INET_ADDR(Field(vaddr, 0));
-      s_inet->sin_port = htons(Int_val(Field(vaddr, 1)));
+      s_inet->sin_port = get_port(Field(vaddr, 1));
 #ifdef SIN6_LEN
       s_inet->sin_len = sizeof(struct sockaddr_in);
 #endif

@@ -940,6 +940,68 @@ let simplify_local_functions lam =
   else
     rewrite lam
 
+(* Lifting immutable instance variable reads *)
+
+(* This function implements a transformation where instance
+   variable reads inside methods (and object initializers)
+   are lifted to the beginning of the method, when it is correct to do so
+   (i.e. when the variable is not mutable).
+
+   This is particularly relevant for class parameters and variables bound
+   in the class definition before the object, which are treated as
+   invisible instance variables, and it would be counter-intuitive for
+   a reference to such a variable to keep the object itself alive.
+*)
+let lift_self_projections lam =
+  let lift_lfunction (lfun : Lambda.lfunction) =
+    match lfun.params with
+    | [] -> lfun
+    | (param, _) :: _ ->
+      (* Methods and object initializers take self as their first parameter.
+         All these self parameters start with self-, which is not a valid
+         source name, so there is no risk of hitting unrelated code. *)
+      if not (String.starts_with ~prefix:"self-" (Ident.name param))
+      then lfun
+      else
+        (* Index variables are bound to the runtime offset of the
+           instance variable into the object.
+           Field variables are created by this transformation and
+           will be bound to the actual contents of the instance variable. *)
+        let index_var_to_field_var = ref Ident.Map.empty in
+        let get_field_var index_var =
+          match Ident.Map.find_opt index_var !index_var_to_field_var with
+          | Some var -> var
+          | None ->
+            let field_var = Ident.rename index_var in
+            index_var_to_field_var :=
+              Ident.Map.add index_var field_var !index_var_to_field_var;
+            field_var
+        in
+        let rewrite_projection lam =
+          match lam with
+          | Lprim (Pfield_computed Immutable, [Lvar block; Lvar index], _) ->
+            if not (Ident.same block param)
+            then lam
+            else
+              let field_var = get_field_var index in
+              Lvar field_var
+          | _ -> lam
+        in
+        let translate_body body =
+          let body = Lambda.map rewrite_projection body in
+          Ident.Map.fold (fun index_var field_var body ->
+              Llet (StrictOpt, Pgenval, field_var,
+                    Lprim (Pfield_computed Immutable,
+                           [Lvar param; Lvar index_var],
+                           Loc_unknown),
+                    body))
+            !index_var_to_field_var
+            body
+        in
+        Lambda.map_lfunction translate_body lfun
+  in
+  Lambda.map_functions lift_lfunction lam
+
 (* The entry point:
    simplification
    + rewriting of tail-modulo-cons calls
@@ -949,6 +1011,7 @@ let simplify_local_functions lam =
 let simplify_lambda lam =
   let lam =
     lam
+    |> lift_self_projections
     |> (if !Clflags.native_code || not !Clflags.debug
         then simplify_local_functions else Fun.id
        )

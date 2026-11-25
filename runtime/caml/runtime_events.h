@@ -68,7 +68,8 @@ typedef enum {
     EV_FORK_PARENT,
     EV_FORK_CHILD,
     EV_DOMAIN_SPAWN,
-    EV_DOMAIN_TERMINATE
+    EV_DOMAIN_TERMINATE,
+    EV_PROCESS_CREATE
 } ev_lifecycle;
 
 typedef enum {
@@ -162,7 +163,11 @@ typedef enum {
 
     EV_C_MAJOR_DIRECT_ALLOCATED_WORDS,
     EV_C_MAJOR_SUSPENDED_ALLOCATED_WORDS,
-    EV_C_MAJOR_RESUMED_ALLOCATED_WORDS
+    EV_C_MAJOR_RESUMED_ALLOCATED_WORDS,
+    EV_C_MAJOR_SLICE_SWEEP_WORK,
+    EV_C_MAJOR_SLICE_MARK_WORK,
+    EV_C_MAJOR_SLICE_EPHE_MARK_WORK,
+    EV_C_MAJOR_SLICE_EPHE_SWEEP_WORK
 } ev_runtime_counter;
 
 typedef enum {
@@ -334,8 +339,8 @@ CAMLextern char_os* caml_runtime_events_current_location(void);
 
 /* Functions for putting runtime data on to the runtime_events. These are all
    internal to the runtime, except for caml_ev_lifecycle which is needed in
-   otherlibs/unix/fork.c so must be declared CAMLextern in order to work on
-   Cygwin. */
+   otherlibs/unix (fork.c, spawn.c and createprocess.c) so must be declared
+   CAMLextern in order to work on Cygwin. */
 void caml_ev_begin(ev_runtime_phase phase);
 void caml_ev_end(ev_runtime_phase phase);
 void caml_ev_counter(ev_runtime_counter counter, uint64_t val);

@@ -634,6 +634,37 @@ let mk_error_style f =
     \  If the option is not specified, these setting can alternatively\n\
     \  be set through the OCAML_ERROR_STYLE environment variable."
 
+let mk_log_format f =
+  let symbols = ["fmt-light"; "fmt-full"; "sexp"; "json"] in
+  "-log-format", Arg.Symbol (symbols, f),
+  Printf.sprintf
+    "  Control the format of compiler diagnostics.\n\
+    \    The following formats are supported:\n\
+    \      fmt-light    classic mode\n\
+    \      fmt-full     classic mode with label names\n\
+    \      json         json object\n\
+    \      sexp         s-expression\n\
+    \    The default setting is 'fmt-light'.\n\
+    \    If the option is not specified, these setting can alternatively\n\
+    \    be set through the OCAML_LOG_FORMAT environment variable."
+
+let mk_log_version f =
+  "-log-version", Arg.String f,
+  Printf.sprintf
+    "<version>  Control which version of compiler diagnostics is printed.\n\
+    \    The compiler restricts the schema of the printed diagnostics to the\n\
+    \    required version.\n\
+    \    If the option is not specified, these setting can alternatively\n\
+    \    be set through the OCAML_LOG_VERSION environment variable."
+
+let mk_log_file f =
+  "-log-file", Arg.String f,
+  Printf.sprintf
+    "<filename>  Output compiler diagnostics to <filename>.\n\
+    \    If the option is not specified, these setting can alternatively\n\
+    \    be set through the OCAML_LOG_FILE environment variable."
+
+
 let mk_where f =
   "-where", Arg.Unit f, " Print location of standard library and exit"
 
@@ -885,6 +916,9 @@ module type Core_options = sig
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
 
+  val _log_format: string -> unit
+  val _log_version: string -> unit
+  val _log_file: string -> unit
 end
 
 module type Compiler_options = sig
@@ -1103,6 +1137,9 @@ struct
     mk_cmi_file F._cmi_file;
     mk_color F._color;
     mk_error_style F._error_style;
+    mk_log_format F._log_format;
+    mk_log_version F._log_version;
+    mk_log_file F._log_file;
     mk_compat_32 F._compat_32;
     mk_config F._config;
     mk_config_var F._config_var;
@@ -1272,6 +1309,9 @@ struct
     mk__ F.anonymous;
     mk_color F._color;
     mk_error_style F._error_style;
+    mk_log_format F._log_format;
+    mk_log_version F._log_version;
+    mk_log_file F._log_file;
 
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
@@ -1317,6 +1357,9 @@ struct
     mk_classic_inlining F._classic_inlining;
     mk_color F._color;
     mk_error_style F._error_style;
+    mk_log_format F._log_format;
+    mk_log_version F._log_version;
+    mk_log_file F._log_file;
     mk_compact F._compact;
     mk_config F._config;
     mk_config_var F._config_var;
@@ -1546,7 +1589,9 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk__ F.anonymous;
     mk_color F._color;
     mk_error_style F._error_style;
-
+    mk_log_format F._log_format;
+    mk_log_version F._log_version;
+    mk_log_file F._log_file;
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
     mk_dparsetree_loc_ghost_invariants F._dparsetree_loc_ghost_invariants;
@@ -1678,37 +1723,37 @@ let options_with_command_line_syntax options r =
   ) options
 
 module Default = struct
-  open Clflags
   let set r () = r := true
+  let dump_set flag () = Clflags.Dump_option.set flag true
   let clear r () = r := false
 
   module Common = struct
     let _absname = set Clflags.absname
     let _alert = Warnings.parse_alert_option
-    let _alias_deps = clear no_alias_deps
-    let _app_funct = set applicative_functors
-    let _i_variance = set print_variance
-    let _labels = clear classic
+    let _alias_deps = clear Clflags.no_alias_deps
+    let _app_funct = set Clflags.applicative_functors
+    let _i_variance = set Clflags.print_variance
+    let _labels = clear Clflags.classic
     let _no_absname = clear Clflags.absname
-    let _no_alias_deps = set no_alias_deps
-    let _no_app_funct = clear applicative_functors
-    let _no_principal = clear principal
-    let _no_rectypes = clear recursive_types
-    let _no_strict_formats = clear strict_formats
-    let _no_strict_sequence = clear strict_sequence
-    let _no_unboxed_types = clear unboxed_types
-    let _noassert = set noassert
-    let _nolabels = set classic
-    let _nostdlib = set no_std_include
-    let _nocwd = set no_cwd
-    let _open s = open_modules := (s :: (!open_modules))
-    let _principal = set principal
-    let _rectypes = set recursive_types
-    let _safer_matching = set safer_matching
-    let _short_paths = clear real_paths
-    let _strict_formats = set strict_formats
-    let _strict_sequence = set strict_sequence
-    let _unboxed_types = set unboxed_types
+    let _no_alias_deps = set Clflags.no_alias_deps
+    let _no_app_funct = clear Clflags.applicative_functors
+    let _no_principal = clear Clflags.principal
+    let _no_rectypes = clear Clflags.recursive_types
+    let _no_strict_formats = clear Clflags.strict_formats
+    let _no_strict_sequence = clear Clflags.strict_sequence
+    let _no_unboxed_types = clear Clflags.unboxed_types
+    let _noassert = set Clflags.noassert
+    let _nolabels = set Clflags.classic
+    let _nostdlib = set Clflags.no_std_include
+    let _nocwd = set Clflags.no_cwd
+    let _open s = Clflags.open_modules := (s :: (!Clflags.open_modules))
+    let _principal = set Clflags.principal
+    let _rectypes = set Clflags.recursive_types
+    let _safer_matching = set Clflags.safer_matching
+    let _short_paths = clear Clflags.real_paths
+    let _strict_formats = set Clflags.strict_formats
+    let _strict_sequence = set Clflags.strict_sequence
+    let _unboxed_types = set Clflags.unboxed_types
     let _w s =
       Warnings.parse_options false s |> Option.iter Location.(prerr_alert none)
 
@@ -1718,112 +1763,125 @@ module Default = struct
 
   module Core = struct
     include Common
-    let _I dir = include_dirs := dir :: (!include_dirs)
-    let _H dir = hidden_include_dirs := dir :: (!hidden_include_dirs)
-    let _color = Misc.set_or_ignore color_reader.parse color
-    let _dlambda = set dump_lambda
-    let _dparsetree = set dump_parsetree
-    let _dparsetree_loc_ghost_invariants = set parsetree_ghost_loc_invariant
-    let _drawlambda = set dump_rawlambda
-    let _dsource = set dump_source
-    let _dtypedtree = set dump_typedtree
-    let _dshape = set dump_shape
-    let _dmatchcomp = set dump_matchcomp
-    let _dunique_ids = set unique_ids
-    let _dno_unique_ids = clear unique_ids
-    let _dcanonical_ids = set canonical_ids
-    let _dno_canonical_ids = clear canonical_ids
-    let _dlocations = set locations
-    let _dno_locations = clear locations
+    let _I dir = Clflags.include_dirs := dir :: (!Clflags.include_dirs)
+    let _H dir =
+      Clflags.hidden_include_dirs := dir :: (!Clflags.hidden_include_dirs)
+    let _color = Misc.set_or_ignore Clflags.color_reader.parse Clflags.color
+    let _dlambda = dump_set Lambda
+    let _dparsetree = dump_set Parsetree
+    let _dparsetree_loc_ghost_invariants =
+      set Clflags.parsetree_ghost_loc_invariant
+    let _drawlambda = dump_set Raw_lambda
+    let _dsource = dump_set Source
+    let _dtypedtree = dump_set Typedtree
+    let _dshape = dump_set Shape
+    let _dmatchcomp = dump_set Match_comp
+    let _dunique_ids = set Clflags.unique_ids
+    let _dno_unique_ids = clear Clflags.unique_ids
+    let _dcanonical_ids = set Clflags.canonical_ids
+    let _dno_canonical_ids = clear Clflags.canonical_ids
+    let _dlocations = set Clflags.locations
+    let _dno_locations = clear Clflags.locations
     let _error_style =
-      Misc.set_or_ignore error_style_reader.parse error_style
-    let _nopervasives = set nopervasives
+      Misc.set_or_ignore Clflags.error_style_reader.parse Clflags.error_style
+    let _log_format =
+      Misc.set_or_ignore Clflags.log_format_reader.parse Clflags.log_format
+    let _log_version =
+      Misc.set_or_ignore Clflags.log_version_reader.parse Clflags.log_version
+    let _log_file =
+      Misc.set_or_ignore Clflags.log_file_reader.parse Clflags.log_file
+    let _nopervasives = set Clflags.nopervasives
     let _ppx s = Compenv.first_ppx := (s :: (!Compenv.first_ppx))
     let _keywords s = Clflags.keyword_edition := (Some s)
-    let _unsafe = set unsafe
+    let _unsafe = set Clflags.unsafe
     let _warn_error s =
       Warnings.parse_options true s |> Option.iter Location.(prerr_alert none)
     let _warn_help = Warnings.help_warnings
   end
 
   module Native = struct
-    let _S = set keep_asm_file
-    let _clambda_checks () = clambda_checks := true
-    let _classic_inlining () = classic_inlining := true
-    let _compact = clear optimize_for_speed
-    let _dalloc = set dump_regalloc
-    let _dclambda = set dump_clambda
-    let _dcmm = set dump_cmm
-    let _dcmm_invariants = set cmm_invariants
-    let _dcombine = set dump_combine
-    let _dcse = set dump_cse
-    let _dflambda = set dump_flambda
-    let _dflambda_invariants = set flambda_invariant_checks
-    let _dflambda_let stamp = dump_flambda_let := (Some stamp)
-    let _dflambda_no_invariants = clear flambda_invariant_checks
+    let _S = set Clflags.keep_asm_file
+    let _clambda_checks () = Clflags.clambda_checks := true
+    let _classic_inlining () = Clflags.classic_inlining := true
+    let _compact = clear Clflags.optimize_for_speed
+    let _dalloc = dump_set Regalloc
+    let _dclambda = dump_set Clambda
+    let _dcmm = dump_set Cmm
+    let _dcmm_invariants = set Clflags.cmm_invariants
+    let _dcombine = dump_set Combine
+    let _dcse = dump_set CSE
+    let _dflambda = dump_set Flambda
+    let _dflambda_invariants = set Clflags.flambda_invariant_checks
+    let _dflambda_let stamp = Clflags.dump_flambda_let := (Some stamp)
+    let _dflambda_no_invariants = clear Clflags.flambda_invariant_checks
     let _dflambda_verbose () =
-      set dump_flambda (); set dump_flambda_verbose ()
-    let _dinterval = set dump_interval
-    let _dinterf = set dump_interf
-    let _dlinear = set dump_linear
-    let _dlive () = dump_live := true
-    let _dprefer = set dump_prefer
-    let _drawclambda = set dump_rawclambda
-    let _drawflambda = set dump_rawflambda
-    let _dreload = set dump_reload
-    let _dscheduling = set dump_scheduling
-    let _dsel = set dump_selection
-    let _dspill = set dump_spill
-    let _dsplit = set dump_split
-    let _dstartup = set keep_startup_file
-    let _dump_pass pass = set_dumped_pass pass true
+      dump_set Flambda (); dump_set Flambda_verbose ()
+    let _dinterval = dump_set Interval
+    let _dinterf = dump_set Interf
+    let _dlinear = dump_set Linear
+    let _dlive () = dump_set Live ()
+    let _dprefer = dump_set Prefer
+    let _drawclambda = dump_set Raw_clambda
+    let _drawflambda = dump_set Raw_flambda
+    let _dreload = dump_set Reload
+    let _dscheduling = dump_set Scheduling
+    let _dsel = dump_set Selection
+    let _dspill = dump_set Spill
+    let _dsplit = dump_set Split
+    let _dstartup = set Clflags.keep_startup_file
+    let _dump_pass pass = Clflags.set_dumped_pass pass true
     let _inline spec =
-      Float_arg_helper.parse spec "Syntax: -inline <n> | <round>=<n>[,...]"
-        inline_threshold
+      Clflags.Float_arg_helper.parse spec
+        "Syntax: -inline <n> | <round>=<n>[,...]"
+        Clflags.inline_threshold
     let _inline_alloc_cost spec =
-      Int_arg_helper.parse spec
+      Clflags.Int_arg_helper.parse spec
         "Syntax: -inline-alloc-cost <n> | <round>=<n>[,...]"
-        inline_alloc_cost
+        Clflags.inline_alloc_cost
     let _inline_branch_cost spec =
-      Int_arg_helper.parse spec
+      Clflags.Int_arg_helper.parse spec
         "Syntax: -inline-branch-cost <n> | <round>=<n>[,...]"
-        inline_branch_cost
+        Clflags.inline_branch_cost
     let _inline_branch_factor spec =
-      Float_arg_helper.parse spec
+      Clflags.Float_arg_helper.parse spec
         "Syntax: -inline-branch-factor <n> | <round>=<n>[,...]"
-        inline_branch_factor
+        Clflags.inline_branch_factor
     let _inline_call_cost spec =
-      Int_arg_helper.parse spec
-        "Syntax: -inline-call-cost <n> | <round>=<n>[,...]" inline_call_cost
+      Clflags.Int_arg_helper.parse spec
+        "Syntax: -inline-call-cost <n> | <round>=<n>[,...]"
+        Clflags.inline_call_cost
     let _inline_indirect_cost spec =
-      Int_arg_helper.parse spec
+      Clflags.Int_arg_helper.parse spec
         "Syntax: -inline-indirect-cost <n> | <round>=<n>[,...]"
-        inline_indirect_cost
+        Clflags.inline_indirect_cost
     let _inline_lifting_benefit spec =
-      Int_arg_helper.parse spec
+      Clflags.Int_arg_helper.parse spec
         "Syntax: -inline-lifting-benefit <n> | <round>=<n>[,...]"
-        inline_lifting_benefit
+        Clflags.inline_lifting_benefit
     let _inline_max_depth spec =
-      Int_arg_helper.parse spec
-        "Syntax: -inline-max-depth <n> | <round>=<n>[,...]" inline_max_depth
+      Clflags.Int_arg_helper.parse spec
+        "Syntax: -inline-max-depth <n> | <round>=<n>[,...]"
+        Clflags.inline_max_depth
     let _inline_max_unroll spec =
-      Int_arg_helper.parse spec
+      Clflags.Int_arg_helper.parse spec
         "Syntax: -inline-max-unroll <n> | <round>=<n>[,...]"
-        inline_max_unroll
+        Clflags.inline_max_unroll
     let _inline_prim_cost spec =
-      Int_arg_helper.parse spec
-        "Syntax: -inline-prim-cost <n> | <round>=<n>[,...]" inline_prim_cost
+      Clflags.Int_arg_helper.parse spec
+        "Syntax: -inline-prim-cost <n> | <round>=<n>[,...]"
+        Clflags.inline_prim_cost
     let _inline_toplevel spec =
-      Int_arg_helper.parse spec
+      Clflags.Int_arg_helper.parse spec
         "Syntax: -inline-toplevel <n> | <round>=<n>[,...]"
-        inline_toplevel_threshold
-    let _inlining_report () = inlining_report := true
-    let _insn_sched = set insn_sched
-    let _no_insn_sched = clear insn_sched
-    let _linscan = set use_linscan
-    let _no_float_const_prop = clear float_const_prop
-    let _no_unbox_free_vars_of_closures = clear unbox_free_vars_of_closures
-    let _no_unbox_specialised_args = clear unbox_specialised_args
+        Clflags.inline_toplevel_threshold
+    let _inlining_report () = Clflags.inlining_report := true
+    let _insn_sched = set Clflags.insn_sched
+    let _no_insn_sched = clear Clflags.insn_sched
+    let _linscan = set Clflags.use_linscan
+    let _no_float_const_prop = clear Clflags.float_const_prop
+    let _no_unbox_free_vars_of_closures =
+      clear Clflags.unbox_free_vars_of_closures
+    let _no_unbox_specialised_args = clear Clflags.unbox_specialised_args
     (* CR-someday mshinwell: should stop e.g. -O2 -classic-inlining
        lgesbert: could be done in main() below, like for -pack and -c, but that
        would prevent overriding using OCAMLPARAM.
@@ -1834,84 +1892,84 @@ module Default = struct
        transformed into the settings of the individual parameters.
     *)
     let _o2 () =
-      default_simplify_rounds := 2;
-      use_inlining_arguments_set o2_arguments;
-      use_inlining_arguments_set ~round:0 o1_arguments
+      Clflags.default_simplify_rounds := 2;
+      Clflags.use_inlining_arguments_set Clflags.o2_arguments;
+      Clflags.use_inlining_arguments_set ~round:0 Clflags.o1_arguments
     let _o3 () =
-      default_simplify_rounds := 3;
-      use_inlining_arguments_set o3_arguments;
-      use_inlining_arguments_set ~round:1 o2_arguments;
-      use_inlining_arguments_set ~round:0 o1_arguments
-    let _remove_unused_arguments = set remove_unused_arguments
-    let _rounds n = simplify_rounds := (Some n)
-    let _unbox_closures = set unbox_closures
-    let _unbox_closures_factor f = unbox_closures_factor := f
-    let _verbose = set verbose
+      Clflags.default_simplify_rounds := 3;
+      Clflags.use_inlining_arguments_set Clflags.o3_arguments;
+      Clflags.use_inlining_arguments_set ~round:1 Clflags.o2_arguments;
+      Clflags.use_inlining_arguments_set ~round:0 Clflags.o1_arguments
+    let _remove_unused_arguments = set Clflags.remove_unused_arguments
+    let _rounds n = Clflags.simplify_rounds := (Some n)
+    let _unbox_closures = set Clflags.unbox_closures
+    let _unbox_closures_factor f = Clflags.unbox_closures_factor := f
+    let _verbose = set Clflags.verbose
   end
 
   module Compiler = struct
-    let _a = set make_archive
-    let _annot = set annotations
+    let _a = set Clflags.make_archive
+    let _annot = set Clflags.annotations
     let _args = Arg.read_arg
     let _args0 = Arg.read_arg0
-    let _binannot = set binary_annotations
-    let _binannot_occurrences = set store_occurrences
-    let _c = set compile_only
-    let _cc s = c_compiler := (Some s)
+    let _binannot = set Clflags.binary_annotations
+    let _binannot_occurrences = set Clflags.store_occurrences
+    let _c = set Clflags.compile_only
+    let _cc s = Clflags.c_compiler := (Some s)
     let _cclib s = Compenv.defer (ProcessObjects (Misc.rev_split_words s))
     let _ccopt s = Compenv.first_ccopts := (s :: (!Compenv.first_ccopts))
-    let _cmi_file s = cmi_file := (Some s)
-    let _config = Misc.show_config_and_exit
-    let _config_var = Misc.show_config_variable_and_exit
-    let _dprofile () = profile_columns := Profile.all_columns
-    let _dtimings () = profile_columns := [`Time]
-    let _dump_into_file = set dump_into_file
-    let _dump_dir s = dump_dir := Some s
-    let _for_pack s = for_package := (Some s)
-    let _g = set debug
-    let _no_g = clear debug
-    let _i = set print_types
+    let _cmi_file s = Clflags.cmi_file := (Some s)
+    let _config = Clflags.show_config_and_exit
+    let _config_var = Conf_diagnostic.show_variable_and_exit
+    let _dprofile () = Clflags.profile_columns := Profile.all_columns
+    let _dtimings () = Clflags.profile_columns := [`Time]
+    let _dump_into_file () = Clflags.dump_into_file := true
+    let _dump_dir s = Clflags.dump_dir := Some s
+    let _for_pack s = Clflags.for_package := (Some s)
+    let _g = set Clflags.debug
+    let _no_g = clear Clflags.debug
+    let _i = set Clflags.print_types
     let _impl = Compenv.impl
     let _intf = Compenv.intf
     let _intf_suffix s = Config.interface_suffix := s
-    let _keep_docs = set keep_docs
-    let _keep_locs = set keep_locs
-    let _linkall = set link_everything
-    let _match_context_rows n = match_context_rows := n
-    let _no_keep_docs = clear keep_docs
-    let _no_keep_locs = clear keep_locs
-    let _noautolink = set no_auto_link
-    let _o s = output_name := (Some s)
-    let _opaque = set opaque
-    let _pack = set make_package
-    let _plugin _p = plugin := true
-    let _pp s = preprocessor := (Some s)
-    let _runtime_variant s = runtime_variant := s
+    let _keep_docs = set Clflags.keep_docs
+    let _keep_locs = set Clflags.keep_locs
+    let _linkall = set Clflags.link_everything
+    let _match_context_rows n = Clflags.match_context_rows := n
+    let _no_keep_docs = clear Clflags.keep_docs
+    let _no_keep_locs = clear Clflags.keep_locs
+    let _noautolink = set Clflags.no_auto_link
+    let _o s = Clflags.output_name := (Some s)
+    let _opaque = set Clflags.opaque
+    let _pack = set Clflags.make_package
+    let _plugin _p = Clflags.plugin := true
+    let _pp s = Clflags.preprocessor := (Some s)
+    let _runtime_variant s = Clflags.runtime_variant := s
     let _set_runtime_default s = Compenv.parse_runtime_parameter s
     let _stop_after pass =
-      let module P = Compiler_pass in
+      let module P = Clflags.Compiler_pass in
         match P.of_string pass with
         | None -> () (* this should not occur as we use Arg.Symbol *)
         | Some pass ->
-          match !stop_after with
-          | None -> stop_after := (Some pass)
+          match !Clflags.stop_after with
+          | None -> Clflags.stop_after := (Some pass)
           | Some p ->
             if not (p = pass) then
               Compenv.fatal "Please specify at most one -stop-after <pass>."
     let _save_ir_after pass =
-      let module P = Compiler_pass in
+      let module P = Clflags.Compiler_pass in
         match P.of_string pass with
         | None -> () (* this should not occur as we use Arg.Symbol *)
         | Some pass ->
-          set_save_ir_after pass true
-    let _thread = set use_threads
-    let _verbose = set verbose
+          Clflags.set_save_ir_after pass true
+    let _thread = set Clflags.use_threads
+    let _verbose = set Clflags.verbose
     let _version () = Compenv.print_version_string ()
     let _vnum () = Compenv.print_version_string ()
     let _where () = Compenv.print_standard_library ()
-    let _typing_recovery = set typing_recovery
-    let _with_runtime = set with_runtime
-    let _without_runtime = clear with_runtime
+    let _typing_recovery = set Clflags.typing_recovery
+    let _with_runtime = set Clflags.with_runtime
+    let _without_runtime = clear Clflags.with_runtime
   end
 
   module Toplevel = struct
@@ -1928,12 +1986,12 @@ module Default = struct
 
     let _args (_:string) = (* placeholder: wrap_expand Arg.read_arg *) [||]
     let _args0 (_:string) = (* placeholder: wrap_expand Arg.read_arg0 *) [||]
-    let _init s = init_file := (Some s)
-    let _no_version = set noversion
-    let _noinit = set noinit
-    let _prompt = clear noprompt
-    let _noprompt = set noprompt
-    let _nopromptcont = set nopromptcont
+    let _init s = Clflags.init_file := (Some s)
+    let _no_version = set Clflags.noversion
+    let _noinit = set Clflags.noinit
+    let _prompt = clear Clflags.noprompt
+    let _noprompt = set Clflags.noprompt
+    let _nopromptcont = set Clflags.nopromptcont
     let _stdin () = (* placeholder: file_argument ""*) ()
     let _version () = print_version ()
     let _vnum () = print_version_num ()
@@ -1943,7 +2001,7 @@ module Default = struct
   module Topmain = struct
     include Toplevel
     include Core
-    let _dinstr = set dump_instr
+    let _dinstr = dump_set Instr
   end
 
   module Opttopmain = struct
@@ -1956,21 +2014,21 @@ module Default = struct
     include Native
     include Core
     include Compiler
-    let _afl_inst_ratio n = afl_inst_ratio := n
-    let _afl_instrument = set afl_instrument
+    let _afl_inst_ratio n = Clflags.afl_inst_ratio := n
+    let _afl_instrument = set Clflags.afl_instrument
     let _function_sections () =
       assert Config.function_sections;
       Compenv.first_ccopts := ("-ffunction-sections" ::(!Compenv.first_ccopts));
-      function_sections := true
-    let _nodynlink = clear dlcode
+      Clflags.function_sections := true
+    let _nodynlink = clear Clflags.dlcode
     let _output_complete_obj () =
-      set output_c_object (); set output_complete_object ()
-    let _output_obj = set output_c_object
+      set Clflags.output_c_object (); set Clflags.output_complete_object ()
+    let _output_obj = set Clflags.output_c_object
     let _p () =
       Compenv.fatal
         "Profiling with \"gprof\" (option `-p') is only supported up to \
          OCaml 4.08.0"
-    let _shared () = shared := true; dlcode := true
+    let _shared () = Clflags.shared := true; Clflags.dlcode := true
     let _v () = Compenv.print_version_and_library "native-code compiler"
   end
 
@@ -2014,53 +2072,56 @@ third-party libraries such as Lwt, but with a different API."
 
     include Core
     include Compiler
-    let _bytecode_hints = set bytecode_hints
-    let _compat_32 = set bytecode_compatible_32
-    let _custom = set custom_runtime
-    let _dcamlprimc = set keep_camlprimc_file
-    let _dinstr = set dump_instr
+    let _bytecode_hints = set Clflags.bytecode_hints
+    let _compat_32 = set Clflags.bytecode_compatible_32
+    let _custom = set Clflags.custom_runtime
+    let _dcamlprimc = set Clflags.keep_camlprimc_file
+    let _dinstr = dump_set Instr
     let _dllib s = Compenv.defer (ProcessDLLs (false, Misc.rev_split_words s))
     let _dllib_suffixed s =
       Compenv.defer (ProcessDLLs (true, Misc.rev_split_words s))
-    let _dllpath s = dllpaths := ((!dllpaths) @ [s])
+    let _dllpath s = Clflags.dllpaths := ((!Clflags.dllpaths) @ [s])
     let _make_runtime () =
-      custom_runtime := true; make_runtime := true; link_everything := true
-    let _no_check_prims = set no_check_prims
+      Clflags.custom_runtime := true;
+      Clflags.make_runtime := true;
+      Clflags.link_everything := true
+    let _no_check_prims = set Clflags.no_check_prims
     let _output_complete_obj () =
-      output_c_object := true;
-      output_complete_object := true;
-      custom_runtime := true
+      Clflags.output_c_object := true;
+      Clflags.output_complete_object := true;
+      Clflags.custom_runtime := true
     let _output_complete_exe () =
-      _output_complete_obj (); output_complete_executable := true
-    let _output_obj () = output_c_object := true; custom_runtime := true
-    let _use_prims s = use_prims := s
-    let _use_runtime s = use_runtime := s
+      _output_complete_obj (); Clflags.output_complete_executable := true
+    let _output_obj () =
+      Clflags.output_c_object := true; Clflags.custom_runtime := true
+    let _use_prims s = Clflags.use_prims := s
+    let _use_runtime s = Clflags.use_runtime := s
     let _launch_method s =
       let setting =
         try
           let s, bindir = Misc.cut_at s ' ' in
-          target_bindir := bindir;
+          Clflags.target_bindir := bindir;
           s
         with Not_found ->
           s
       in
       match setting with
       | "exe" ->
-          launch_method := Config.Executable;
+          Clflags.launch_method := Config.Executable;
       | "sh" ->
-          launch_method := Config.Shebang None
+          Clflags.launch_method := Config.Shebang None
       | s when s <> "" && s.[0] = '/' ->
-          launch_method := Config.Shebang (Some s)
+          Clflags.launch_method := Config.Shebang (Some s)
       | _ ->
           Compenv.fatal
             "-launch-method: expect sh, exe or an absolute path for <method>"
     let _search_method = function
     | "disable" ->
-        search_method := Config.Disable
+        Clflags.search_method := Config.Disable
     | "fallback" ->
-        search_method := Config.Fallback
+        Clflags.search_method := Config.Fallback
     | "enable" ->
-        search_method := Config.Enable
+        Clflags.search_method := Config.Enable
     | _ ->
         assert false
     let _v () = Compenv.print_version_and_library "compiler"

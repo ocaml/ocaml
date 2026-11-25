@@ -2220,6 +2220,7 @@ static void major_collection_slice(intnat howmuch,
 {
   caml_domain_state* domain_state = Caml_state;
   intnat sweep_work = 0, mark_work = 0;
+  intnat ephe_mark_work = 0, ephe_sweep_work = 0;
   uintnat blocks_marked_before = domain_state->stat_blocks_marked;
   uintnat saved_ephe_round;
   uintnat saved_major_cycle = caml_major_cycles_completed;
@@ -2281,19 +2282,28 @@ static void major_collection_slice(intnat howmuch,
        sweep work to have all domains switch to Idle (and then Mark)
        at the same time. (Needed for performance, not for safety.)
      */
-    uintnat wkcnt = work_counter;
-    intnat idle = diffmod (work_counter_min_before_mark, wkcnt);
-    if (idle <= 0){
+    intnat idle = diffmod (work_counter_min_before_mark, work_counter);
+    /* Idle work consumes slice budget, so explicit slices make
+       progress */
+    intnat idle_work = 0;
+    while (idle > 0) {
+      intnat todo = min2 (get_major_slice_work(mode), idle);
+      if (todo <= 0) break;
+      commit_major_slice_work (todo);
+      idle_work += todo;
+      idle = diffmod (work_counter_min_before_mark, work_counter);
+    }
+    if (idle_work > 0) {
+      caml_gc_log("Idle phase: %" CAML_PRIdNAT "%s", idle_work,
+                  idle <= 0 ? " [finished]" : "");
+    }
+    if (idle <= 0) {
       /* Idle phase is finished (or never existed), we should start marking. */
       request_mark_phase();
-    }else{
-      /* Idle phase: do nothing but commit to the work counter. */
-      intnat todo = diffmod (alloc_counter, wkcnt);
-      todo = min2(todo, idle);
-      caml_gc_log("Idle phase: %" CAML_PRIdNAT "%s", todo,
-                  todo == idle ? " [finished]" : "");
-      commit_major_slice_work (todo);
-      if (todo == idle) request_mark_phase ();
+      /* Marking begins at the next minor GC. Request one if we did no
+         sweep work in this slice, so non-allocating programs still
+         make progress. */
+      if (sweep_work == 0) caml_request_minor_gc ();
     }
   }
 
@@ -2368,6 +2378,7 @@ mark_again:
           intnat left = ephe_mark(budget, saved_ephe_round, EPHE_MARK_DEFAULT);
           intnat work_done = budget - left;
           work_done += mark_work_done_between_slices();
+          ephe_mark_work += work_done;
           commit_major_slice_work (work_done);
 
           // FIXME: Can we delete this?
@@ -2403,6 +2414,7 @@ mark_again:
                (budget = get_major_slice_work(mode)) > 0) {
           intnat left = ephe_sweep(domain_state, budget);
           intnat work_done = budget - left;
+          ephe_sweep_work += work_done;
           commit_major_slice_work(work_done);
         }
 
@@ -2434,7 +2446,21 @@ mark_again:
   }
 
   call_timing_hook(&caml_major_slice_end_hook);
-  if (log_events) CAML_EV_END(EV_MAJOR_SLICE);
+  if (log_events) {
+    if (sweep_work > 0) {
+      CAML_EV_COUNTER(EV_C_MAJOR_SLICE_SWEEP_WORK, sweep_work);
+    }
+    if (mark_work > 0) {
+      CAML_EV_COUNTER(EV_C_MAJOR_SLICE_MARK_WORK, mark_work);
+    }
+    if (ephe_mark_work > 0) {
+      CAML_EV_COUNTER(EV_C_MAJOR_SLICE_EPHE_MARK_WORK, ephe_mark_work);
+    }
+    if (ephe_sweep_work > 0) {
+      CAML_EV_COUNTER(EV_C_MAJOR_SLICE_EPHE_SWEEP_WORK, ephe_sweep_work);
+    }
+    CAML_EV_END(EV_MAJOR_SLICE);
+  }
 
   caml_gc_log("Major slice [%c%c%c]: %" CAML_PRIdNAT " sweep, "
               "% " CAML_PRIdNAT " mark (%" CAML_PRIuNAT " blocks)",

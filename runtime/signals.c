@@ -41,6 +41,12 @@
 #include "caml/finalise.h"
 #include "misc_internals.h"
 
+#ifdef _WIN32
+typedef void (*sighandler)(int sig);
+extern sighandler caml_win32_signal(int sig, sighandler action);
+#define signal(sig,act) caml_win32_signal(sig,act)
+#endif
+
 /* The set of pending signals (received but not yet processed).
    It is represented as a bit vector.
    Valid signal numbers range from 1 to NSIG - 1 included.
@@ -533,7 +539,10 @@ CAMLexport int caml_convert_signal_number(int signo)
 
 CAMLprim value caml_sys_convert_signal_number(value signo)
 {
-  return Val_int(caml_convert_signal_number(Int_val(signo)));
+  intnat i = Long_val(signo);
+  /* A positive number that OCaml has no name for converts to itself. */
+  if (!caml_fits_c_int(i)) return signo;
+  return Val_int(caml_convert_signal_number((int) i));
 }
 
 CAMLexport int caml_rev_convert_signal_number(int signo)
@@ -545,7 +554,10 @@ CAMLexport int caml_rev_convert_signal_number(int signo)
 
 CAMLprim value caml_sys_rev_convert_signal_number(value signo)
 {
-  return Val_int(caml_rev_convert_signal_number(Int_val(signo)));
+  intnat i = Long_val(signo);
+  /* A positive number that OCaml has no name for converts to itself. */
+  if (!caml_fits_c_int(i)) return signo;
+  return Val_int(caml_rev_convert_signal_number((int) i));
 }
 
 #ifdef POSIX_SIGNALS
@@ -727,7 +739,10 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
   CAMLlocal2 (res, tmp_signal_handlers);
   int sig, act, oldact;
 
-  sig = caml_convert_signal_number(Int_val(signal_number));
+  int signo =
+    caml_check_argument_fits_c_int(signal_number,
+                                   "Sys.signal: unavailable signal");
+  sig = caml_convert_signal_number(signo);
   if (sig <= 0 || sig >= NSIG)
     caml_invalid_argument("Sys.signal: unavailable signal");
   switch(action) {

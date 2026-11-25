@@ -1,0 +1,120 @@
+{
+  "metadata" :
+    { "version" : [0, 1], "downward_compatible" : true, "valid" : ["Full"] },
+  "output" :
+    [["Box", ["V"], 0,
+       [["Box", ["B"], 2,
+          [["Box", ["B"], 2,
+             [["Text", "val x :"], ["Simple_break", 1, 0],
+               ["Box", ["B"], 0, [["Text", "int"]]]]],
+            ["Text", " ="], ["Simple_break", 1, 0], ["Text", "1"]]],
+         ["Simple_break", 1, 0],
+         ["Box", ["B"], 2,
+           [["Box", ["B"], 2,
+              [["Text", "val y :"], ["Simple_break", 1, 0],
+                ["Box", ["B"], 0, [["Text", "float"]]]]],
+             ["Text", " ="], ["Simple_break", 1, 0], ["Text", "2."]]]]]]
+}
+{
+  "metadata" :
+    { "version" : [0, 1], "downward_compatible" : true, "valid" : ["Full"] },
+  "errors" :
+    [[["Tag", ["String_tag", "ralign"], [["Text", " Unknown directive "]]],
+       ["Tag", ["Inline_code"], [["Text", "shw"]]], ["Text", "."],
+       ["Flush", true],
+       ["Box", ["B"], 0,
+         [["Tag", ["Hint"], [["Text", "Hint"]]], ["Text", ": "],
+           ["Tag", ["String_tag", "ralign"], [["Text", "Did you mean "]]],
+           ["Text", ""], ["Tag", ["Inline_code"], [["Text", "show"]]],
+           ["Text", "?"]]]]]
+}
+{
+  "metadata" :
+    { "version" : [0, 1], "downward_compatible" : true, "valid" : ["Full"] },
+  "output" :
+    [["Box", ["B"], 0,
+       [["Box", ["V"], 0,
+          [["Box", ["B"], 2,
+             [["Text", "val hd :"], ["Simple_break", 1, 0],
+               ["Box", ["B"], 0,
+                 [["Box", ["B"], 0,
+                    [["Text", "'a"], ["Simple_break", 1, 0],
+                      ["Text", "list"]]],
+                   ["Text", " ->"], ["Simple_break", 1, 0], ["Text", "'a"]]]]]]]]]]
+}
+{
+  "metadata" :
+    { "version" : [0, 1], "downward_compatible" : true, "valid" : ["Full"] },
+  "compiler" :
+    {
+      "error" :
+        {
+          "kind" : ["Report_error"],
+          "main" :
+            {
+              "msg" :
+                [["Box", ["V"], 0,
+                   [["Box", ["B"], 0,
+                      [["Text", "The value "],
+                        ["Tag", ["Inline_code"], [["Text", "y"]]],
+                        ["Text", " has type"], ["Simple_break", 1, 2],
+                        ["Tag", ["Inline_code"],
+                          [["Box", ["B"], 0, [["Text", "float"]]]]],
+                        ["Simple_break", 1, 0],
+                        ["Text", "but an expression was expected of type"],
+                        ["Simple_break", 1, 2],
+                        ["Tag", ["Inline_code"],
+                          [["Box", ["B"], 0, [["Text", "int"]]]]]]]]]],
+              "loc" :
+                {
+                  "start_line" : 2,
+                  "stop_line" : 2,
+                  "characters" : [12, 13]
+                }
+            }
+        }
+    }
+}
+{
+  "metadata" :
+    { "version" : [0, 1], "downward_compatible" : true, "valid" : ["Full"] },
+  "trace" :
+    [[["Tag", ["Inline_code"], [["Text", "List.map"]]],
+       ["Text", " is now traced."]]]
+}
+{
+  "metadata" :
+    { "version" : [0, 1], "downward_compatible" : true, "valid" : ["Full"] },
+  "output" :
+    [["Box", ["V"], 0,
+       [["Box", ["B"], 2,
+          [["Box", ["B"], 2,
+             [["Text", "val l :"], ["Simple_break", 1, 0],
+               ["Box", ["B"], 0,
+                 [["Box", ["B"], 0, [["Text", "int"]]],
+                   ["Simple_break", 1, 0], ["Text", "list"]]]]],
+            ["Text", " ="], ["Simple_break", 1, 0],
+            ["Box", ["B"], 1,
+              [["Text", "[2;"], ["Simple_break", 1, 0], ["Text", "3;"],
+                ["Simple_break", 1, 0], ["Text", "4]"]]]]]]]],
+  "trace" :
+    [[["Box", ["B"], 2,
+        [["Text", "List.map* -->"], ["Simple_break", 1, 0],
+          ["Box", ["B"], 1,
+            [["Text", "[<poly>;"], ["Simple_break", 1, 0],
+              ["Text", "<poly>;"], ["Simple_break", 1, 0],
+              ["Text", "<poly>]"]]]]]],
+      [["Box", ["B"], 2,
+         [["Text", "List.map* <--"], ["Simple_break", 1, 0],
+           ["Box", ["B"], 1,
+             [["Text", "[<poly>;"], ["Simple_break", 1, 0],
+               ["Text", "<poly>;"], ["Simple_break", 1, 0],
+               ["Text", "<poly>]"]]]]]],
+      [["Box", ["B"], 2,
+         [["Text", "List.map -->"], ["Simple_break", 1, 0],
+           ["Text", "<fun>"]]]],
+      [["Box", ["B"], 2,
+         [["Text", "List.map <--"], ["Simple_break", 1, 0],
+           ["Text", "<fun>"]]]]]
+}
+

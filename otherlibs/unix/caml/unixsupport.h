@@ -17,6 +17,9 @@
 #define CAML_UNIXSUPPORT_H
 
 #include <caml/mlvalues.h>
+#ifdef CAML_BUILDING_UNIX
+#include <caml/fail.h>
+#endif
 
 #ifdef _WIN32 /* Windows */
 #define WIN32_LEAN_AND_MEAN
@@ -95,6 +98,34 @@ extern void caml_win32_maperr(DWORD errcode);
 #define CAML_NT_EPOCH_100ns_TICKS 116444736000000000ULL
 
 #endif /* _WIN32 */
+
+#if defined(CAML_BUILDING_UNIX) && !defined(_WIN32)
+/* Compare at native unsigned width to preserve the negative OCaml
+   representations of large unsigned IDs on 32-bit hosts. */
+Caml_inline uid_t caml_unix_uid_val(value v, const char *msg)
+{
+  intnat id = Long_val(v);
+  uid_t uid = (uid_t)id;
+  if ((uintnat)uid != (uintnat)id) caml_invalid_argument(msg);
+  return uid;
+}
+
+Caml_inline gid_t caml_unix_gid_val(value v, const char *msg)
+{
+  intnat id = Long_val(v);
+  gid_t gid = (gid_t)id;
+  if ((uintnat)gid != (uintnat)id) caml_invalid_argument(msg);
+  return gid;
+}
+
+Caml_inline pid_t caml_unix_pid_val(value v, const char *msg)
+{
+  intnat id = Long_val(v);
+  pid_t pid = (pid_t)id;
+  if ((intnat)pid != id) caml_invalid_argument(msg);
+  return pid;
+}
+#endif
 
 #define Nothing ((value) 0)
 
@@ -192,8 +223,9 @@ Caml_inline struct timespec caml_timespec_of_sec(double sec)
 Caml_inline struct timeval caml_timeval_of_sec(double sec)
 {
   double int_sec, frac_sec;
+  struct timeval tv;
   frac_sec = modf(sec, &int_sec);
-  return (struct timeval)
+  tv = (struct timeval)
 #ifdef _WIN32
     { .tv_sec  = (long) int_sec,
       .tv_usec = (long) (frac_sec * USEC_PER_SEC) };
@@ -201,6 +233,9 @@ Caml_inline struct timeval caml_timeval_of_sec(double sec)
     { .tv_sec  = (time_t) int_sec,
       .tv_usec = (suseconds_t) (frac_sec * USEC_PER_SEC) };
 #endif
+  /* tv_usec must be non-negative (#15381) */
+  if (tv.tv_usec < 0) { tv.tv_usec += USEC_PER_SEC; tv.tv_sec -= 1; }
+  return tv;
 }
 #endif  /* CAML_INTERNALS */
 

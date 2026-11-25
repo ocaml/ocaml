@@ -530,7 +530,8 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
           atomic_load_acquire(&runtime_events_buffer_header->ring_head);
 
         if (ring_head > cursor->current_positions[domain_num]) {
-          int lost_words = ring_head - cursor->current_positions[domain_num];
+          uint64_t lost_words =
+            ring_head - cursor->current_positions[domain_num];
           cursor->current_positions[domain_num] = ring_head;
 
           if (cursor->lost_events) {
@@ -968,10 +969,10 @@ static value user_events_find_callback_list_for_event_type(value callbacks_root,
   */
   if (Is_block(event_type)) {
     // Custom
-    event_index = Int_val(Field(Field(event_type, 0), 2));
+    event_index = Long_val(Field(Field(event_type, 0), 2));
   } else {
     // Unit | Int | Span
-    event_index = Int_val(event_type);
+    event_index = Long_val(event_type);
   }
 
   if (event_index >= array_length) {
@@ -1273,9 +1274,8 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
     uintnat caml_string_len =
       string_len - (unsigned char)data_str[string_len];
 
-    // if the string length is over the max msg length, the stream is
-    // corrupt.
-    if (caml_string_len > RUNTIME_EVENTS_MAX_MSG_LENGTH) {
+    // if the string length is over the buffer size, the stream is corrupt.
+    if (caml_string_len > RUNTIME_EVENTS_MAX_CUSTOM_VALUE_BYTES) {
       holder->corrupt_stream = 1;
       CAMLreturnT(int, 0);
     }

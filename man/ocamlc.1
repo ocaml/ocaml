@@ -543,6 +543,19 @@ setting the
 option ensures that this module will
 always be linked if it is put in a library and this library is linked.
 .TP
+.BI \-log\-format " format"
+Use the format
+.IR format
+for diagnostics (warnings, error messages, REPL evaluation).
+.TP
+.BI \-log\-version " major.minor"
+Emit diagnostics with a format compatible with the version
+.IR major.minor "."
+.TP
+.BI \-log\-file " filename"
+Emit diagnostics to the file
+.IR filename "."
+.TP
 .B \-make\-runtime
 Build a custom runtime system (in the file specified by option
 .BR \-o )
@@ -1178,6 +1191,12 @@ transformation.
 .B 73 [generative-application-expects-unit]
 A generative functor is applied to an empty structure (struct end) rather than
 to ().
+.TP
+.B 74 [degraded-to-partial-match]
+A pattern-matching is compiled as partial even if it appears to be total.
+.TP
+.B 75 [unnecessarily-partial-tuple-pattern]
+A tuple pattern ends in .. but fully matches its expected type.
 .RE
 .IP
 The letters stand for the following sets of warnings.  Any letter not

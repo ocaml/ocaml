@@ -187,14 +187,17 @@ CAMLexport char_os * caml_parse_ld_conf(const char_os * stdlib,
   }
 
   /* Now concatenate them all and load the search path */
-  char_os *result = caml_stat_alloc(length * sizeof(char_os));
-  p = result;
-  for (int i = 0; i < entries.size; i++) {
-    char_os *entry = entries.contents[i];
-    length = strlen_os(entry) + 1;
-    memcpy(p, entry, length * sizeof(char_os));
-    caml_ext_table_add(table, p);
-    p += length;
+  char_os *result = NULL;
+  if (entries.size > 0) {
+    result = caml_stat_alloc(length * sizeof(char_os));
+    p = result;
+    for (int i = 0; i < entries.size; i++) {
+      char_os *entry = entries.contents[i];
+      length = strlen_os(entry) + 1;
+      memcpy(p, entry, length * sizeof(char_os));
+      caml_ext_table_add(table, p);
+      p += length;
+    }
   }
   caml_ext_table_free(&entries, 1);
 

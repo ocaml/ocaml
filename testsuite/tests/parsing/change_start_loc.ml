@@ -23,7 +23,9 @@ let print_error_in_parse set_position_variant =
             set_position_variant lexbuf position;
             Lexing.set_filename lexbuf "file.ml"; (* also testing set_filename *)
             Parse.expression lexbuf in ()
-    with e -> Location.report_exception Format.std_formatter e
+    with e ->
+      let log = Location.log_on_device Log.Device.std in
+      Location.log_exception log e
 
 let _ =
     print_string "Incomplete version:\n";

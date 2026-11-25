@@ -114,7 +114,8 @@ return:
 ;
 
 custom:
-    T_CUSTOM Desc { customs := !customs @ [($1, $2)] }
+| T_CUSTOM      { customs := !customs @ [($1,"")]}
+| T_CUSTOM Desc { customs := !customs @ [($1, $2)] }
 ;
 
 

@@ -14,10 +14,13 @@
 /**************************************************************************/
 
 #include <caml/mlvalues.h>
+#include <caml/fail.h>
 #include "caml/unixsupport.h"
 
 CAMLprim value caml_unix_setuid(value uid)
 {
-  if (setuid(Int_val(uid)) == -1) caml_uerror("setuid", Nothing);
+  uid_t uid_c =
+    caml_unix_uid_val(uid, "Unix.setuid: uid out of range");
+  if (setuid(uid_c) == -1) caml_uerror("setuid", Nothing);
   return Val_unit;
 }

@@ -47,6 +47,10 @@ type runtime_counter =
 | EV_C_MAJOR_DIRECT_ALLOCATED_WORDS
 | EV_C_MAJOR_SUSPENDED_ALLOCATED_WORDS
 | EV_C_MAJOR_RESUMED_ALLOCATED_WORDS
+| EV_C_MAJOR_SLICE_SWEEP_WORK
+| EV_C_MAJOR_SLICE_MARK_WORK
+| EV_C_MAJOR_SLICE_EPHE_MARK_WORK
+| EV_C_MAJOR_SLICE_EPHE_SWEEP_WORK
 
 type runtime_phase =
 | EV_EXPLICIT_GC_SET
@@ -110,6 +114,7 @@ type lifecycle =
 | EV_FORK_CHILD
 | EV_DOMAIN_SPAWN
 | EV_DOMAIN_TERMINATE
+| EV_PROCESS_CREATE
 
 let runtime_counter_name counter =
   match counter with
@@ -164,6 +169,14 @@ let runtime_counter_name counter =
       "major_suspended_allocated_words"
   | EV_C_MAJOR_RESUMED_ALLOCATED_WORDS ->
       "major_resumed_allocated_words"
+  | EV_C_MAJOR_SLICE_SWEEP_WORK ->
+      "major_slice_sweep_work"
+  | EV_C_MAJOR_SLICE_MARK_WORK ->
+      "major_slice_mark_work"
+  | EV_C_MAJOR_SLICE_EPHE_MARK_WORK ->
+      "major_slice_ephe_mark_work"
+  | EV_C_MAJOR_SLICE_EPHE_SWEEP_WORK ->
+      "major_slice_ephe_sweep_work"
 
 
 let runtime_phase_name phase =
@@ -230,6 +243,7 @@ let lifecycle_name lifecycle =
   | EV_FORK_CHILD -> "fork_child"
   | EV_DOMAIN_SPAWN -> "domain_spawn"
   | EV_DOMAIN_TERMINATE -> "domain_terminate"
+  | EV_PROCESS_CREATE -> "process_create"
 
 type cursor
 

@@ -105,6 +105,18 @@ See the "Initialization file" section below.
 .B \-labels
 Labels are not ignored in types, labels may be used in applications,
 and labelled parameters can be given in any order.  This is the default.
+.BI \-log\-format " format"
+Use the format
+.IR format
+for diagnostics (warnings, error messages, REPL evaluation).
+.TP
+.BI \-log\-version " major.minor"
+Emit diagnostics with a format compatible with the version
+.IR major.minor "."
+.TP
+.BI \-log\-file " filename"
+Emit diagnostics to the file
+.IR filename "."
 .TP
 .B \-no\-app\-funct
 Deactivates the applicative behaviour of functors. With this option,

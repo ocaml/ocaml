@@ -56,12 +56,6 @@ static_assert(sizeof(pool) == Bsize_wsize(POOL_HEADER_WSIZE), "");
 #define POOL_FIRST_BLOCK(p, sz) ((header_t*)(p) + POOL_SLAB_WOFFSET(sz))
 #define POOL_END(p) ((header_t*)(p) + POOL_WSIZE)
 
-
-#define POOL_BLOCK_FREE_HD(hd) \
-  (Tag_hd(hd) == No_scan_tag && (Color_hd(hd) == NOT_MARKABLE))
-#define POOL_BLOCK_FREE_HP(p) (POOL_BLOCK_FREE_HD(Hd_hp(p)))
-#define POOL_FREE_HEADER(wosize) Make_header(wosize, No_scan_tag, NOT_MARKABLE)
-
 typedef struct large_alloc {
   caml_domain_state* owner;
   struct large_alloc* next;
@@ -89,6 +83,7 @@ static struct {
 
 /* readable and writable only by the current thread */
 struct caml_heap_state {
+  struct shared_heap_fast_data_s free;
   pool* avail_pools[NUM_SIZECLASSES];
   pool* full_pools[NUM_SIZECLASSES];
   pool* unswept_avail_pools[NUM_SIZECLASSES];
@@ -111,6 +106,23 @@ static void adopt_pool_stats_with_lock(struct caml_heap_state *,
 static void adopt_all_pool_stats_with_lock(struct caml_heap_state *adopter);
 
 
+shared_heap_fast_data_p caml_shared_fast_data(struct caml_heap_state *heap)
+{
+  return &heap->free;
+}
+
+void caml_shared_add_pool_stats(struct caml_heap_state *heap,
+                                uintnat pool_live_blocks,
+                                uintnat pool_live_words,
+                                uintnat pool_frag_words)
+{
+  struct heap_stats* s = &heap->stats;
+  s->pool_live_blocks += pool_live_blocks;
+  s->pool_live_words += pool_live_words;
+  s->pool_frag_words += pool_frag_words;
+}
+
+
 struct caml_heap_state* caml_init_shared_heap (void) {
   struct caml_heap_state* heap;
 
@@ -119,6 +131,7 @@ struct caml_heap_state* caml_init_shared_heap (void) {
     for (sizeclass i = 0; i < NUM_SIZECLASSES; i++) {
       heap->avail_pools[i] = heap->full_pools[i] =
         heap->unswept_avail_pools[i] = heap->unswept_full_pools[i] = 0;
+      heap->free.lists[i] = 0;
     }
     heap->next_to_sweep = 0;
     heap->swept_large = NULL;
@@ -152,7 +165,7 @@ void caml_orphan_shared_heap(struct caml_heap_state* heap) {
     released +=
       move_all_pools(&heap->avail_pools[i],
                      &pool_freelist.global_avail_pools[i], NULL);
-
+    heap->free.lists[i] = NULL;
     released +=
       move_all_pools(&heap->full_pools[i],
                      &pool_freelist.global_full_pools[i], NULL);
@@ -354,6 +367,7 @@ static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
       r->next = 0;
       r->owner = local->owner;
       local->avail_pools[sz] = r;
+      local->free.lists[sz] = &r->next_obj;
       adopt_pool_stats_with_lock(local, r, sz);
 
       #ifdef DEBUG
@@ -431,8 +445,40 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
   /* Having allocated a new pool, set it up for size sz */
   local->avail_pools[sz] = r;
   pool_initialize(r, sz, local->owner);
+  local->free.lists[sz] = &r->next_obj;
 
   return r;
+}
+
+/* Move one pool from the avail list to the full list, because it is full */
+
+static void avail_pool_full(struct caml_heap_state* local,
+                            sizeclass sz)
+{
+  pool *p = local->avail_pools[sz];
+  CAMLassert(p);
+  CAMLassert(p->next_obj == NULL);
+
+  local->avail_pools[sz] = p->next;
+  if (p->next) {
+    caml_prefetchw(p->next->next_obj);
+    local->free.lists[sz] = &p->next->next_obj;
+  } else {
+    local->free.lists[sz] = NULL;
+  }
+  p->next = local->full_pools[sz];
+  local->full_pools[sz] = p;
+}
+
+/* Respond to a free list becoming empty. */
+
+void caml_shared_fast_data_refill(struct caml_heap_state *local,
+                                  sizeclass sz)
+{
+  /* All we have to do is move the avail pool for the sizeclass to the
+   * full list, get a fresh avail pool if there is one, and reset the
+   * free list pointer, all of which is done by avail_pool_full */
+  avail_pool_full(local, sz);
 }
 
 static void* pool_allocate(struct caml_heap_state* local, sizeclass sz) {
@@ -462,9 +508,7 @@ static void* pool_allocate(struct caml_heap_state* local, sizeclass sz) {
 
   r->next_obj = next;
   if (!next) {
-    local->avail_pools[sz] = r->next;
-    r->next = local->full_pools[sz];
-    local->full_pools[sz] = r;
+    avail_pool_full(local, sz);
   }
 
   CAMLassert(
@@ -501,12 +545,11 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
   CAML_EV_ALLOC(wosize);
 
   if (whsize <= SIZECLASS_MAX) {
-    struct heap_stats* s;
     sizeclass sz = sizeclass_whsize[whsize];
     CAMLassert(whsize_sizeclass[sz] >= whsize);
     p = pool_allocate(local, sz);
     if (!p) return 0;
-    s = &local->stats;
+    struct heap_stats* s = &local->stats;
     s->pool_live_blocks++;
     s->pool_live_words += whsize;
     s->pool_frag_words += wfrag_whsize[whsize];
@@ -542,9 +585,15 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
 
   {
     header_t* p = POOL_FIRST_BLOCK(a, sz);
-    header_t* last_free_block = NULL;
+    header_t* last_free_block = NULL; /* head of last free run */
+    header_t* last_free_end = NULL; /* just past the last free run */
+    uintnat last_free_count = 0; /* blocks in last free run */
+    /* Per-pool stats accumulators, flushed once after the loop. */
+    uintnat freed_blocks = 0;
+    uintnat freed_words = 0;
     const header_t* end = POOL_END(a);
     const mlsize_t wh = whsize_sizeclass[sz];
+    const status garbage = caml_global_heap_state.GARBAGE;
     int all_used = 1;
     struct heap_stats* s = &local->stats;
 
@@ -555,9 +604,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
     while (p + wh <= end) {
       header_t hd = (header_t)atomic_load_relaxed((atomic_uintnat*)p);
 
-      if( (char*)p + caml_plat_pagesize < (char*)end ) {
-        caml_prefetchr((char*)p + caml_plat_pagesize);
-      }
+      caml_prefetchr((char*)p + caml_plat_pagesize);
 
       /* The pools mark a block as being free by setting the tag to No_scan_tag
         and the color to NOT_MARKABLE. The wosize is used to indicate the
@@ -567,7 +614,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
 
       /* Check if the current block is garbage, if it is turn it into a free
       block */
-      if (Has_status_hd(hd, caml_global_heap_state.GARBAGE)) {
+      if (Has_status_hd(hd, garbage)) {
         CAMLassert(Whsize_hd(hd) <= wh);
         if (Tag_hd (hd) == Custom_tag) {
           void (*final_fun)(value) = Custom_ops_val(Val_hp(p))->finalize;
@@ -587,11 +634,8 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
 #endif
 
         all_used = 0;
-        /* update stats */
-        s->pool_live_blocks--;
-        s->pool_live_words -= Whsize_hd(hd);
-        local->owner->swept_words += Whsize_hd(hd);
-        s->pool_frag_words -= (wh - Whsize_hd(hd));
+        freed_blocks++;
+        freed_words += Whsize_hd(hd);
 
         /* reload hd */
         hd = POOL_FREE_HEADER(0);
@@ -602,6 +646,8 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
       encountered or if we cannot then update the pointer in the last free block
       to point to this one */
       if (POOL_BLOCK_FREE_HD(hd)) {
+        header_t* next_p = p + (Wosize_hd(hd) + 1) * wh;
+
         /* if any block is free then this is no longer a full pool */
         all_used = 0;
 
@@ -610,17 +656,17 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
         if( last_free_block ) {
           CAMLassert(POOL_BLOCK_FREE_HP(last_free_block));
 
-          /* check if we can merge with the last free block */
-          if( last_free_block + (1 + Wosize_hp(last_free_block)) * wh == p ) {
-            /* if we can then update the wosize of the last free block */
-            *last_free_block = POOL_FREE_HEADER(Wosize_hp(last_free_block)
-                                                  + Wosize_hd(hd) + 1);
+          /* merge if the last free run ends exactly here */
+          if( last_free_end == p ) {
+            last_free_count += Wosize_hd(hd) + 1;
+            *last_free_block = POOL_FREE_HEADER(last_free_count);
           } else {
             /* in this case there's a non-free block between us so update
                 the next pointer */
             last_free_block[1] = (value)p;
 
             last_free_block = p;
+            last_free_count = Wosize_hd(hd);
           }
         } else {
           /* if we're the first free block then set the next_obj pointer for
@@ -628,19 +674,28 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
           a->next_obj = (value*)p;
 
           last_free_block = p;
+          last_free_count = Wosize_hd(hd);
         }
 
-        /* add the free blocks following this block, skipping over them */
-        p += wh * Wosize_hd(hd);
+        /* skip over the whole free run */
+        last_free_end = next_p;
+        p = next_p;
       } else {
         /* there's still a live block, the pool can't be released to the global
             freelist */
         release_to_global_pool = 0;
         work += wh;
+        p += wh;
       }
-      p += wh;
     }
     CAMLassert(p == end);
+
+    if (freed_blocks != 0) {
+      s->pool_live_blocks -= freed_blocks;
+      s->pool_live_words -= freed_words;
+      s->pool_frag_words -= freed_blocks * wh - freed_words;
+      local->owner->swept_words += freed_words;
+    }
 
     if( !all_used ) {
       /* the last free block should have 0 as its next pointer */
@@ -660,6 +715,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
       pool** list = all_used ? &local->full_pools[sz] : &local->avail_pools[sz];
       a->next = *list;
       *list = a;
+      if (!all_used) local->free.lists[sz] = &a->next_obj;
     }
   }
 
@@ -809,20 +865,6 @@ uintnat caml_top_heap_words(struct caml_heap_state* local) {
 
 uintnat caml_heap_blocks(struct caml_heap_state* local) {
   return local->stats.pool_live_blocks + local->stats.large_blocks;
-}
-
-void caml_redarken_pool(struct pool* r, scanning_action f, void* fdata) {
-  mlsize_t wh = whsize_sizeclass[r->sz];
-  header_t* p = POOL_FIRST_BLOCK(r, r->sz);
-  header_t* end = POOL_END(r);
-
-  while (p + wh <= end) {
-    header_t hd = p[0];
-    if (Has_status_hd(hd, caml_global_heap_state.MARKED)) {
-      f(fdata, Val_hp(p), 0);
-    }
-    p += wh;
-  }
 }
 
 
@@ -1652,6 +1694,7 @@ void caml_cycle_heap(struct caml_heap_state* local) {
     CAMLassert(local->unswept_avail_pools[i] == NULL);
     local->unswept_avail_pools[i] = local->avail_pools[i];
     local->avail_pools[i] = NULL;
+    local->free.lists[i] = NULL;
     CAMLassert(local->unswept_full_pools[i] == NULL);
     local->unswept_full_pools[i] = local->full_pools[i];
     local->full_pools[i] = NULL;

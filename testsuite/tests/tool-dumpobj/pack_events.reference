@@ -1,0 +1,36 @@
+File "_none_", line 0, characters -1--1:
+       0  ATOM0 (immutable)
+File "_none_", line 0, characters -1--1:
+       1  SETGLOBAL Pack_events_pack.Pack_events_a
+       3  BRANCH 8
+File "pack_events.ml", line 26, characters 10-11:
+       5  ACC0
+       6  RETURN 1
+       8  CLOSURE 0, 5 (value -> value)
+File "pack_events.ml", line 26, characters 6-11:
+      11  PUSH
+File "_none_", line 0, characters -1--1:
+      12  ACC0
+      13  MAKEBLOCK1 0 (immutable)
+File "_none_", line 0, characters -1--1:
+      15  POP 1
+      17  SETGLOBAL Pack_events_pack.Pack_events
+      19  BRANCH 24
+      21  ACC0
+      22  RETURN 1
+      24  GETGLOBAL Pack_events_pack.Pack_events
+      26  PUSHGETGLOBAL Pack_events_pack.Pack_events_a
+      28  MAKEBLOCK2 0 (immutable)
+File "_none_", line 0, characters -1--1:
+      30  PUSH
+      31  ATOM0 (immutable)
+File "_none_", line 0, characters -1--1:
+      32  PUSH
+      33  CLOSURE 0, 21 (value -> value)
+File "_none_", line 0, characters -1--1:
+      36  MAKEBLOCK1 0 (immutable)
+File "_none_", line 0, characters -1--1:
+      38  MAKEBLOCK2 0 (immutable)
+File "_none_", line 0, characters -1--1:
+      40  POP 1
+      42  SETGLOBAL Pack_events_pack

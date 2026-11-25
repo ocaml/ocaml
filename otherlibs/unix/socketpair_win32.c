@@ -38,9 +38,9 @@ extern const int caml_unix_socket_type_table[]; /* from socket.c */
 #define SOCKETPAIR_BIND_ATTEMPTS 8
 
 /* from win32.c */
-extern DWORD (WINAPI *caml_get_temp_path)(DWORD, LPWSTR);
-extern INIT_ONCE caml_get_temp_path_init_once;
-BOOL WINAPI caml_get_temp_path_init(PINIT_ONCE, PVOID, PVOID *);
+CAMLextern DWORD (WINAPI *caml_get_temp_path)(DWORD, LPWSTR);
+CAMLextern INIT_ONCE caml_get_temp_path_init_once;
+CAMLextern BOOL WINAPI caml_get_temp_path_init(PINIT_ONCE, PVOID, PVOID *);
 
 /* Generate a unique path without creating a file first.
    This avoids a TOCTOU race between file creation and socket binding. */

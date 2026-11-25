@@ -7,6 +7,42 @@ Working version
 
 ### Runtime system:
 
+- #15049: Add a runtime events lifecycle event EV_PROCESS_CREATE, emitted on
+  all platforms when a child process is created by Unix.create_process and the
+  functions built on it.
+  (Tim McGilchrist, review by Sadiq Jaffer)
+
+- #15068: Tear down the runtime events ring later, so that events emitted
+  while the program shuts down are recorded, and the ring file is no longer
+  leaked by programs that embed the runtime and call caml_shutdown. Report
+  the minor heap allocation outstanding at exit. EV_DOMAIN_TERMINATE is no
+  longer emitted for the initial domain.
+  (Tim McGilchrist, review by Sadiq Jaffer)
+
+- #15280: Add a testsuite benchmark measuring GC mark, sweep, promotion
+  and compaction speeds (tests/gc-rates/gcrate.ml), ported from OxCaml.
+  (Nick Barnes, review by Damien Doligez)
+
+- #15283: Speed up major-heap pool sweeping by about 20%: hoist loop
+  invariants, batch statistics updates, and track free-run ends instead
+  of recomputing them.
+  (Nick Barnes, review by Damien Doligez and Sadiq Jaffer).
+
+- #15285: Add runtime-events counters reporting each major slice's
+  sweep, mark and ephemeron work in words, so GC rates can be measured from
+  the event stream alone.
+  (Nick Barnes, review by Gabriel Scherer)
+
+- #14936: On AArch64, drop the memory-model fences around the atomic
+  read-modify-writes (`Atomic.exchange`, `Atomic.compare_and_set`,
+  `Atomic.fetch_and_add`) when they run as an LSE atomic, which makes the
+  fences redundant (detected at compile time via FEAT_LSE, or at run time for
+  outline-atomics builds).
+  (Sebastian Pop, review by Olivier Nicole, Gabriel Scherer, and Luc Maranget)
+
+- #14571: Faster minor GC.
+  (Nick Barnes, review by Damien Doligez).
+
 ### Code generation and optimizations:
 
 - #14980: Emit direct assembly for `Atomic.exchange` and
@@ -25,6 +61,10 @@ Working version
 - #15212, #15213: Stops assuming that static float array fields are floats
   (Pierre Chambart, report by Alperen Keleş,
    review by Vincent Laviron)
+
+- #15230: Move values directly between integer and float registers for
+  int<->float conversions on POWER, instead of going through the stack.
+  (Tim McGilchrist and Zane Hambly, review by Miod Vallat)
 
 - #15232: Use a plain subtract on POWER for subtraction and modulo, instead
   of one that also sets a carry nothing reads.
@@ -55,7 +95,13 @@ Working version
   generated in that case.
   (Nicolás Ojeda Bär, review by Florian Angeletti)
 
+- #15281, #15401: ocamldoc: support (** @custom *) without arguments like odoc
+  (Florian Angeletti, review by Olivier Nicole)
+
 ### Manual and documentation:
+
+- #15216: document the security issue reporting process with a SECURITY.md file
+  (Edwin Török, suggested by Xavier Leroy, review by Xavier Leroy)
 
 ### Compiler user-interface and warnings:
 
@@ -72,9 +118,33 @@ Working version
   (Michael Bacarella, review by Florian Angeletti, Nicolás Ojeda Bär,
    Damien Doligez and Stefan Muenzel)
 
+- #15170: Do not track register usage timestamps in Spill when -linscan
+  is set. This avoids large compile-time overheads on some extreme code.
+  (Pierre-Marie Pédrot, review by Vincent Laviron)
+
+- #14536, refactorize error trace, add more contextual information for variants
+  and objects.
+  (Florian Angeletti, review by Alistair O'Brien and Gabriel Scherer)
+
 ### Build system:
 
+- #10837: Build native-code compilers on FreeBSD/powerpc64le and
+  FreeBSD/powerpc64 (big-endian, ELFv2 ABI).
+  (Piotr Kubaj, review by Anil Madhavapeddy)
+
+- #15201: Fix make -j hanging when rebuilding an already-built tree with
+  GNU Make 3.81, the default make shipped on macOS.
+  (Tim McGilchrist, review by Miod Vallat and David Allsopp)
+
 ### Bug fixes:
+
+- #15252, #15368, #15369, #15371, #15380: check arguments to Unix.kill, waitpid,
+  alarm, mktime and Sys.signal before narrowing. Unix.alarm rejects negative
+  delays. On Unix, getpwuid, getgrgid, setuid, setgid and initgroups
+  check that IDs round-trip through uid_t or gid_t. Preserve large signal
+  numbers, runtime event integers and type IDs. Check the event registration
+  limit and Bigarray slice arity.
+  (KC Sivaramakrishnan, review by Stefan Muenzel)
 
 - #14602: on Windows, Sys.rename and Unix.rename now succeed when the
   destination is an existing read-only file, as on POSIX systems.
@@ -86,6 +156,10 @@ Working version
   constructors) is mutated during matching
   (Jeremy Yallop, review by Gabriel Scherer)
 
+- #15196, #15203: fix a memory corruption in native code when a minor GC
+  happens while evaluating the argument of perform.
+  (Tim McGilchrist, report by Ethan Chou, review by Stefan Muenzel)
+
 - #15185, #15187: fix a pattern-matching miscompilation on certain
   combinations of immediate ranges and redundant patterns
   (Gabriel Scherer, report by Alperer Keleş,
@@ -94,6 +168,17 @@ Working version
 - #7826, #15139: Cache free variable computations to avoid quadratic
   blowups in pathological cases
   (Vincent Laviron, report by Pierre-Marie Pédrot, review by Stefan Muenzel)
+
+* #14987, #15164: Reject `[%atomic.loc]` on polymorphic atomic record fields
+  to prevent unsound writes through their locations. Ordinary reads of these
+  fields remain valid.
+  (Demetrios Agourakis, report by Ryan Tjoa and Nathan Farlow,
+   review by Gabriel Scherer)
+
+- #15151: fix the positions of the debugging events and of the optimization
+  hints of the code that the bytecode packager generates for the pack
+  itself. They were placed in the code of the first packed units.
+  (Jérôme Vouillon, review by Vincent Laviron)
 
 - #15158, #15155: Allow projection from closures with bottom approximation in
   flambda
@@ -113,6 +198,30 @@ Working version
 - #15181: Allocate the exact size of runtime events ring file path.
   Fixes an error on Windows with allocating long paths to this file.
   (Tim McGilchrist, review by Antonin Décimo)
+
+- #14605, #15243: On POWER, fix a TSan fatal error and corrupted
+  backtraces when a C call takes more arguments than fit in registers, and
+  a segfault when a fiber completes after an effect was handled on its
+  parent stack.
+  (Tim McGilchrist and Miod Vallat, reported by KC Sivaramakrishnan,
+   reviews by Miod Vallat and Zane Hambly)
+
+- #15171: fix a compile-time failure in the pattern-matching compiler
+  coming from incorrect compilation of some useless guarded or-patterns
+  (Gabriel Scherer, report by Stefan Muenzel)
+
+- #14886: Reject extensions on module-dependent functor type domains,
+  e.g. `(module%foo M : S) -> int`, because they cannot be represented.
+  (Hugo Heuzard, review by Florian Angeletti)
+
+- #15316: fix a major GC crash on `let rec`-bound float records and float
+  arrays with more than 8 fields: the placeholder block is now allocated
+  with `Double_array_tag` rather than as a scannable block.
+  (Nick Barnes, review by Vincent Laviron)
+
+- #15341: Fix Float.ldexp and Stdlib.ldexp for exponents outside the range
+  of a C int.
+  (Sora Morimoto, review by Olivier Nicole)
 
 OCaml 5.6.0
 -----------
@@ -143,6 +252,9 @@ OCaml 5.6.0
   (Alistair O'Brien, review by Florian Angeletti)
 
 ### Runtime system:
+
+- #15062: The last Idle GC slice must trigger the switch to Mark phase.
+  (Nick Barnes, review by Damien Doligez)
 
 - #14773 : Activate Haiku native backend
   (Sylvain Kerjean, review by Kate Deplaix and Nicolas Ojeda Bar)
@@ -266,6 +378,10 @@ OCaml 5.6.0
   or malicious files having 2^29 TOC entries or more.
   (Xavier Leroy, review by Nicolás Ojeda Bär)
 
+- #14911, #14943: Fix declarations of thread-local symbols with external linkage
+  for C++ interoperability.
+  (Antonin Décimo, report by Kate Deplaix, review by David Allsopp)
+
 * #14997: Default to and recommend large file and year 2038 support on 32-bit
   systems. LFS and 64-bit `time_t` _checks_ can be disabled by passing
   respectively `--disable-largefile` and `--disable-year2038` to configure.
@@ -287,9 +403,9 @@ OCaml 5.6.0
 - #15092: do not lose domain allocation stats on termination
   (Edwin Török, report by Eduardo Souza, review by Stefan Muenzel)
 
-- #15033: optimize Weak.blit on 5.x, following the 4.x example
+- #15033, #15143: optimize Weak.blit on 5.x, following the 4.x example
   of #9259 by Arseniy Alekseyev.
-  (Gabriel Scherer, review by Damien Doligez)
+  (Gabriel Scherer, Josh Berdine, review by Damien Doligez, Nicolás Ojeda Bär)
 
 - #15117: The instrumented runtime is no longer installed by default.
   (David Allsopp, review by Florian Angeletti, Nick Barnes and Sadiq Jaffer)
@@ -301,6 +417,9 @@ OCaml 5.6.0
 
 - #15177, OSEC-2026-26: Maintain custom events cache integrity.
   (Sadiq Jaffer, report by Hannes Mehnert, review by Edwin Török)
+
+- #15229 Bound the custom event payload by the buffer's own constant
+  (Tim McGilchrist, review by Sadiq Jaffer)
 
 ### Type system:
 
@@ -325,8 +444,9 @@ OCaml 5.6.0
   (Alistair O'Brien, Jacques Garrigue, review by Florian Angeletti,
    Gabriel Scherer)
 
-- #12150: class type system improvements: self type constraints, virtual method
-  inheritance in mutually recursive definition, immediate object inheritance.
+- #12150, #15166: class type system improvements: self type constraints,
+  virtual method inheritance in mutually recursive definition, immediate object
+  inheritance.
   (Leo White, review by Florian Angeletti)
 
 - #14753, #14754: Prevent module constraints (`with type`) from introducing
@@ -419,6 +539,9 @@ OCaml 5.6.0
   (Cortex-A53/-A57/-A72/-A73) are slower with a release store and keep the
   barrier; the default is chosen at configure time and can be overridden.
   (Sebastian Pop and Xavier Leroy, review by Xavier Leroy and Olivier Nicole)
+
+- #14861, #14868: Lift immutable instance variable reads
+  (Vincent Laviron, report by Romain Beauxis, review by Stefan Muenzel)
 
 - #14898, #15035: do not trust GADT equations introduced by refutable arguments
   in the Lambda IR.
@@ -531,7 +654,7 @@ OCaml 5.6.0
   result is unchanged.
   (Nicolás Ojeda Bär, review by Vincent Laviron and Olivier Nicole)
 
-- #14848: Add Dynarray.stable_sort_sub, stable_sort and sort
+- #14848, #15386: Add Dynarray.stable_sort_sub, stable_sort and sort
   (Jeanne Pottier, review by Nicolás Ojeda Bär and Olivier Nicole)
 
 - #15064: deprecate Weak.get_copy
@@ -541,6 +664,9 @@ OCaml 5.6.0
 - #15173: Fix Seq.ints_in_range overflowing and failing to terminate when
   the last endpoint is max_int.
   (Antonio Nuno Monteiro, review by Nicolás Ojeda Bär)
+
+- #15274: Fix integer overflow in bounds check for `Dynarray.blit`.
+  (Durwasa Chakraborty, report by KC Sivaramakrishnan)
 
 ### Other libraries:
 
@@ -579,6 +705,11 @@ OCaml 5.6.0
   (Nicolás Ojeda Bär, review by David Allsopp and Antonin Décimo)
 
 ### Tools:
+
+- #13766: add a `-log-format <format> to output compiler diagnostics
+ in structured formats, with both `json` and `s-expression` currently
+ supported.
+ (Florian Angeletti, review by Gabriel Scherer and Olivier Nicole)
 
 - #14318, #14709, ocamldoc: use "Module_name (Library name)" rather than
    "Library name: Module_name" as the title of html pages.
@@ -639,8 +770,11 @@ OCaml 5.6.0
   on comma handling.
   (Tim McGilchrist, review by Stefan Muenzel)
 
-- #15200: manual: fix syntax for local opens
+- #15200, #15224: manual: fix syntax for local opens and labeled tuple patterns
   (Simmo Saan, review by Florian Angeletti)
+
+- #15276: Add warnings 74 and 75 to the ocamlc man page.
+  (Abhay Chaudhary, report by Kate Deplaix, review by Florian Angeletti)
 
 ### Compiler user-interface and warnings:
 
@@ -772,7 +906,21 @@ OCaml 5.6.0
 - #15067, #15071: Fix detection of functions available in the future on macOS.
   (Antonin Décimo, review by Nicolás Ojeda Bär and Damien Doligez)
 
+- #14915: Remove OCaml's environment variables (CAML_LD_LIBRARY_PATH, etc.) from
+  the build environment.
+  (David Allsopp, review by Antonin Décimo)
+
 ### Bug fixes:
+
+- #15290, #15394: Fix out-of-bounds reads in `Str.replace_matched`: raise
+  `Invalid_argument` when a group referenced by the replacement extends past
+  the end of the supplied string.
+  (Anirudh Sudhir, report by KC Sivaramakrishnan,
+   review by Florian Angeletti and KC Sivaramakrishnan)
+
+- #15248, #15277: Fix integer overflow near `min_int` in `String.take_first`,
+  `String.take_last` and `String.drop_last`.
+  (Prakhand Patel, report by KC Sivaramakrishnan, review by Florian Angeletti)
 
 - #15072, #15075: Fix `Runtime_events` cursors becoming permanently unusable
   when a user event decoder raises. The exception escaped `read_poll` without
@@ -799,6 +947,10 @@ OCaml 5.6.0
   (like e=4) during the first major GC inside caml_ev_alloc_flush.
   Now the runtime reports it as a fatal error instead.
   (Michael Bacarella, review by Gabriel Scherer)
+
+- #13450, #15300: Fix relocation errors when loading the Unix DLL on 64-bit
+  MinGW Windows under certain circumstances.
+  (Antonio Nuno Monteiro, review by Nicolás Ojeda Bär)
 
 - #14943: On RISC-V, fix assembler errors from Ireturn_addr and Iextcall
   with stack arguments when the offset exceeds a 12-bit immediate, by routing
@@ -888,7 +1040,8 @@ OCaml 5.6.0
 - #14988: Don't copy continuations in Weak.get_copy.
   (Jeremy Yallop, review by Stefan Muenzel)
 
-* #15010: Fix truncation of the lost event count in runtime_events_consumer.c
+* #15010, #15406: Fix truncation of the lost event count in
+  runtime_events_consumer.c
   The count is a difference of two uint64_t ring positions but was passed to
   the callback as an int. caml_runtime_events_set_lost_events now takes a
   callback whose lost_words parameter is uint64_t, the OCaml API is unchanged.
@@ -935,11 +1088,12 @@ OCaml 5.6.0
   are valid.
   (Xavier Leroy, review by Nicolás Ojeda Bär and Edwin Török)
 
-- #15114: Fix the compilation of pattern matching on records whose field types
-  mention a locally abstract type: a field could be read as an immediate in
-  all the rows of the match because of a GADT equation that only holds in one
-  of them. In native code, the value was then not registered as a GC root.
-  (Jérôme Vouillon, review by Florian Angeletti)
+- #15114, #15206: Fix the compilation of pattern matching on records whose
+  field types mention a locally abstract type: a field could be read as an
+  immediate in all the rows of the match because of a GADT equation that only
+  holds in one of them. In native code, the value was then not registered as a
+  GC root.
+  (Jérôme Vouillon and Jeremy Yallop, review by Florian Angeletti)
 
 - #15115, OSEC-2026-23: Fix multiple issues in demarshaling
   (`Marshal.from_{channel,string,bytes}`)
@@ -967,6 +1121,59 @@ OCaml 5.6.0
   (regression since 5.1.0).
   (Tim McGilchrist, review by Nicolas Ojeda Bar)
 
+- #15225: Fix a bug where Unix.select would report writability only once after
+  becoming writable. This occurred when the list of file descriptors contained a
+  mixture of sockets and non-sockets.
+  (Nicolás Ojeda Bär, report by Kento Okura, review by Antonin Décimo)
+
+- #15267: Fix a regression on Windows where Ctrl-Break terminated the program
+  instead of being delivered as Sys.sigint, so neither a Sys.sigint handler
+  nor Sys.catch_break could intercept it (regression since 5.0.0).
+  (Mark Elvers, review by Nicolás Ojeda Bär)
+
+* #15249: Functions taking a `Unix.sockaddr` now raise `Invalid_argument` when
+  the port of an `ADDR_INET` address is outside the range 0 to 65535, instead
+  of silently truncating it to 16 bits.
+  (Nicolás Ojeda Bär, report by KC Sivaramakrishnan, review by KC
+  Sivaramakrishnan and Antonin Décimo)
+
+- #15295: Fix incorrect CFLAGS used to build the relocatable compiler when
+  installing to a directory which includes symlinks, e.g. FreeBSD home
+  directories.
+  (David Allsopp, review by Florian Angeletti)
+
+- #15296: Fix three small memory leaks related to Relocatable OCaml and an
+  unclosed directory handle caml_locate_standard_library on Windows.
+  (David Allsopp, review by Nicolás Ojeda Bär)
+
+- #15302: fix infinite loops in Pprintast (eg -dsource) when printing patterns
+  of the form `[] p`, `() p`, `true p` or `false p`, and expressions of the form
+  `(::) e` where `e` is not a pair; also avoid dropping the argument of `[] e`
+  in a list expression and attributes on the argument of `(::)` in patterns.
+  (Nicolás Ojeda Bär, report by Edwin Török, review by Edwin Török)
+
+- #15310: Use TARGET_BINDIR when linking bytecode executables in the "fallback"
+  searching mode. Affects cross-compilation where TARGET_BINDIR != HOST_BINDIR
+  and --enable-runtime-search=fallback (which is not the default, nor used in
+  opam installations).
+  (David Allsopp, review by Nicolás Ojeda Bär)
+
+* #15259, #15270: `Hashtbl.filter_map_inplace f h` now leaves the table
+  consistent when `f` raises: bindings are removed as soon as possible.
+  (ButteryPaws, report by KC Sivaramakrishnan, review by Florian Angeletti and
+  KC Sivaramakrishnan)
+
+- #15245: Scanf now respects the field width of `%S` when scanning escape
+  sequences.
+  (Nicolás Ojeda Bär, report by KC Sivaramakrishnan, review by Florian
+  Angeletti)
+
+- #15396: Fix Misc.RuntimeID.of_string when reserved-header-bits is non-zero.
+  (David Allsopp, review by Nicolás Ojeda Bär)
+
+- #15381, #15388: fix `Unix.utimes` failing with EINVAL on Linux for negative
+  times with a fractional part.
+  (Prakhand Patel, report by KC Sivaramakrishnan, review by Stefan Muenzel)
 
 OCaml 5.5.1
 -----------
@@ -1010,6 +1217,10 @@ OCaml 5.5.1
   no effect; only explicit calls to `Thread.yield` or blocking sections would
   let other threads run.
   (Nicolás Ojeda Bär, report by Daniel Larraz, review by Antonin Décimo)
+
+-#15163, #15219: faster variance check for type definitions with large
+ constrained parameter types.
+ (Florian Angeletti, report by Kate Deplaix, review by Gabriel Scherer)
 
 OCaml 5.5.0 (19 June 2026)
 -------------------------
