@@ -1029,7 +1029,8 @@ OCaml 5.6.0
 - #14988: Don't copy continuations in Weak.get_copy.
   (Jeremy Yallop, review by Stefan Muenzel)
 
-* #15010: Fix truncation of the lost event count in runtime_events_consumer.c
+* #15010, #15406: Fix truncation of the lost event count in
+  runtime_events_consumer.c
   The count is a difference of two uint64_t ring positions but was passed to
   the callback as an int. caml_runtime_events_set_lost_events now takes a
   callback whose lost_words parameter is uint64_t, the OCaml API is unchanged.

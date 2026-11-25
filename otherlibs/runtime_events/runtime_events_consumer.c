@@ -530,7 +530,8 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
           atomic_load_acquire(&runtime_events_buffer_header->ring_head);
 
         if (ring_head > cursor->current_positions[domain_num]) {
-          int lost_words = ring_head - cursor->current_positions[domain_num];
+          uint64_t lost_words =
+            ring_head - cursor->current_positions[domain_num];
           cursor->current_positions[domain_num] = ring_head;
 
           if (cursor->lost_events) {
