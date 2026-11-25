@@ -64,3 +64,13 @@ module PR6566' : PR6566 = PR6566;;
 
 module A = struct module B = struct type t = T end end;;
 module M2 = struct type u = A.B.t type foo = int type v = A.B.t end;;
+
+
+module Avoid__me = struct
+  type 'a t = A
+end
+type 'a s = 'a Avoid__me.t
+type 'a u = 'a s
+
+(** Deep occur to split the behaviour of [get_folded_desc] and [get_abbrev] *)
+let f (x: <x:'a> s as 'a) (y: <x:'b * 'b> u as 'b) = x = y;;
