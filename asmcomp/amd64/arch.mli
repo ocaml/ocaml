@@ -16,6 +16,8 @@
 
 (* Machine-specific command-line options *)
 
+val fma : unit -> bool
+
 val command_line_options : (string * Arg.spec * string) list
 
 (* Specific operations for the AMD64 processor *)
@@ -38,6 +40,7 @@ type specific_operation =
   | Iclz                               (* count leading zeros *)
   | Ictz                               (* count trailing zeros *)
   | Isqrtf                             (* Float square root *)
+  | Imuladdf                           (* Fused multiply-add *)
   | Ifloatsqrtf of addressing_mode     (* Float square root from memory *)
   | Isextend32                         (* 32 to 64 bit conversion with sign
                                           extension *)

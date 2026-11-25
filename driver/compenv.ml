@@ -489,6 +489,15 @@ let read_one_param log position name v =
     if !Clflags.native_code then
       set "pic" [ Clflags.pic_code ] v
 
+  | "target-features" ->
+    if !Clflags.native_code then begin
+      match position with
+      | Before_args ->
+        Clflags.target_features_first := !Clflags.target_features_first @ [v]
+      | Before_compile _ | Before_link ->
+        Clflags.target_features_last := !Clflags.target_features_last @ [v]
+    end
+
   | "can-discard" ->
     can_discard := v ::!can_discard
 

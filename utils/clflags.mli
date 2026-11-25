@@ -199,6 +199,8 @@ val classic_inlining : bool ref
 val afl_instrument : bool ref
 val afl_inst_ratio : int ref
 val function_sections : bool ref
+val target_features_first : string list ref
+val target_features_last : string list ref
 
 val dump_flambda_let: int option ref
 val all_passes : string list ref

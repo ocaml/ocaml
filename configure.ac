@@ -171,6 +171,7 @@ AC_SUBST([arch])
 AC_SUBST([arch_specific_SOURCES])
 AC_SUBST([arch64])
 AC_SUBST([model])
+AC_SUBST([target_features])
 AC_SUBST([system])
 AC_SUBST([target_os_type])
 AC_SUBST([bytecode_cflags])
@@ -775,6 +776,12 @@ AC_ARG_WITH([flexdll],
 AC_ARG_WITH([zstd],
   [AS_HELP_STRING([--without-zstd],
     [disable compression of compilation artefacts])])
+
+AC_ARG_WITH([target-features],
+  [AS_HELP_STRING([--with-target-features=LIST],
+    [instruction set extensions ocamlopt uses by default, as a level,
+     feature names and no-FEATURE separated by commas, instead of
+     detecting them])])
 
 AS_IF([test x"$enable_unix_lib" = "xno"],
   [AS_IF([test x"$enable_ocamldebug" = "xyes"],
@@ -1826,6 +1833,59 @@ AS_IF([test x"$arch" = "xarm64"],
         [ocaml_arm64_store="stlr (store-release)"])],
      [ocaml_arm64_store="stlr (store-release, cross-compiling)"])
    AC_MSG_RESULT([$ocaml_arm64_store])])
+
+AS_CASE([$with_target_features],
+  [no],[target_features=''],
+  [yes|''],[target_features=detect],
+  [target_features="$with_target_features"])
+
+# Pick the instruction set extensions ocamlopt uses by default. A native
+# build runs the instruction, which checks the CPU, that the OS saves the
+# AVX state, and that the assembler knows the mnemonic, all in one go. A
+# cross build, or one whose CFLAGS already name a target, asks the C
+# compiler's predefined macros instead. vfmadd213sd computes
+# dst = src2 * dst + src3, so the run probe should give 2 * 3 + 1.
+AS_IF([test x"$target_features" = xdetect],
+  [target_features=''
+  AS_IF([test x"$arch" = xamd64],
+    [AC_MSG_CHECKING([whether ocamlopt can use FMA3 by default])
+    AS_CASE(["$CC $CFLAGS $CPPFLAGS"],
+      [*-march=*|*-mfma*|*-mno-fma*|*-mno-avx*|*/arch:*|*-arch:*],
+        [ocaml_amd64_fma_probe=compile],
+      [ocaml_amd64_fma_probe=run])
+    AS_IF([test x"$ocaml_amd64_fma_probe" = xrun],
+      [AC_RUN_IFELSE(
+        [AC_LANG_PROGRAM([[
+#if defined(_MSC_VER) && !defined(__clang__)
+#include <immintrin.h>
+#endif
+          ]], [[
+          volatile double x = 2.0, y = 3.0, z = 1.0;
+#if defined(_MSC_VER) && !defined(__clang__)
+          double r = _mm_cvtsd_f64(
+            _mm_fmadd_sd(_mm_set_sd(x), _mm_set_sd(y), _mm_set_sd(z)));
+#else
+          double r = x, b = y, c = z;
+          __asm__ __volatile__("vfmadd213sd %2, %1, %0"
+            : "+x" (r) : "x" (b), "x" (c));
+#endif
+          return r == 7.0 ? 0 : 1;
+        ]])],
+        [ocaml_amd64_fma=yes],
+        [ocaml_amd64_fma=no],
+        [ocaml_amd64_fma_probe=compile])])
+    AS_IF([test x"$ocaml_amd64_fma_probe" = xcompile],
+      [AC_COMPILE_IFELSE(
+        [AC_LANG_PROGRAM([[
+#if !(defined(__FMA__) || (defined(_MSC_VER) && defined(__AVX2__)))
+#error FMA3 is not enabled
+#endif
+          ]], [])],
+        [ocaml_amd64_fma=yes],
+        [ocaml_amd64_fma=no])])
+    AS_IF([test x"$ocaml_amd64_fma" = xyes],
+      [target_features="${target_features:+$target_features,}fma"])
+    AC_MSG_RESULT([$ocaml_amd64_fma])])])
 
 # On arm64, detect whether the C compiler lowers atomic read-modify-writes to
 # libgcc's outline-atomics trampolines (__aarch64_{swp,cas,ldadd}*), the default

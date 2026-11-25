@@ -241,6 +241,7 @@ intel_SOURCES = \
 
 asmcomp_SOURCES = \
   $(addprefix asmcomp/, $(arch_specific_SOURCES)) \
+  asmcomp/target_features.mli asmcomp/target_features.ml \
   asmcomp/arch.mli asmcomp/arch.ml \
   asmcomp/cmm.mli asmcomp/cmm.ml \
   asmcomp/printcmm.mli asmcomp/printcmm.ml \

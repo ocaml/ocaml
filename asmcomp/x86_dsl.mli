@@ -197,6 +197,7 @@ module I : sig
   val set: condition -> arg -> unit
   val shr: arg -> arg -> unit
   val sqrtsd: arg -> arg -> unit
+  val vfmadd213sd: arg -> arg -> arg -> unit
   val sub: arg -> arg -> unit
   val subsd: arg -> arg -> unit
   val test: arg -> arg -> unit

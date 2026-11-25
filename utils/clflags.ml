@@ -203,6 +203,8 @@ let afl_instrument = ref Config.afl_instrument (* -afl-instrument *)
 let afl_inst_ratio = ref 100           (* -afl-inst-ratio *)
 
 let function_sections = ref false      (* -function-sections *)
+let target_features_first = ref []     (* OCAMLPARAM before the arguments *)
+let target_features_last = ref []      (* OCAMLPARAM after the arguments *)
 
 let simplify_rounds = ref None        (* -rounds *)
 let default_simplify_rounds = ref 1        (* -rounds *)

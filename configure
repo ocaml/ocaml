@@ -936,6 +936,7 @@ bytecode_cppflags
 bytecode_cflags
 target_os_type
 system
+target_features
 model
 arch64
 arch_specific_SOURCES
@@ -1068,6 +1069,7 @@ enable_runtime_search_target
 with_afl
 with_flexdll
 with_zstd
+with_target_features
 enable_shared
 enable_static
 enable_pic
@@ -1814,6 +1816,10 @@ Optional Packages:
   --with-afl              use the AFL fuzzer
   --with-flexdll          bootstrap FlexDLL from the given sources
   --without-zstd          disable compression of compilation artefacts
+  --with-target-features=LIST
+                          instruction set extensions ocamlopt uses by default,
+                          as a level, feature names and no-FEATURE separated
+                          by commas, instead of detecting them
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
   --with-sysroot[=DIR]    Search for dependent libraries within DIR (or the
                           compiler's sysroot if not specified).
@@ -3641,6 +3647,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L039
 
 
 
+
  # TODO: rename this variable
 
 
@@ -4597,6 +4604,14 @@ fi
 if test ${with_zstd+y}
 then :
   withval=$with_zstd;
+fi
+
+
+
+# Check whether --with-target-features was given.
+if test ${with_target_features+y}
+then :
+  withval=$with_target_features;
 fi
 
 
@@ -19885,6 +19900,114 @@ fi
 
    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ocaml_arm64_store" >&5
 printf "%s\n" "$ocaml_arm64_store" >&6; }
+fi
+
+case $with_target_features in #(
+  no) :
+    target_features='' ;; #(
+  yes|'') :
+    target_features=detect ;; #(
+  *) :
+    target_features="$with_target_features" ;;
+esac
+
+# Pick the instruction set extensions ocamlopt uses by default. A native
+# build runs the instruction, which checks the CPU, that the OS saves the
+# AVX state, and that the assembler knows the mnemonic, all in one go. A
+# cross build, or one whose CFLAGS already name a target, asks the C
+# compiler's predefined macros instead. vfmadd213sd computes
+# dst = src2 * dst + src3, so the run probe should give 2 * 3 + 1.
+if test x"$target_features" = xdetect
+then :
+  target_features=''
+  if test x"$arch" = xamd64
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ocamlopt can use FMA3 by default" >&5
+printf %s "checking whether ocamlopt can use FMA3 by default... " >&6; }
+    case "$CC $CFLAGS $CPPFLAGS" in #(
+  *-march=*|*-mfma*|*-mno-fma*|*-mno-avx*|*/arch:*|*-arch:*) :
+    ocaml_amd64_fma_probe=compile ;; #(
+  *) :
+    ocaml_amd64_fma_probe=run ;;
+esac
+    if test x"$ocaml_amd64_fma_probe" = xrun
+then :
+  if test "$cross_compiling" = yes
+then :
+  ocaml_amd64_fma_probe=compile
+else case e in #(
+  e) cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#if defined(_MSC_VER) && !defined(__clang__)
+#include <immintrin.h>
+#endif
+
+int
+main (void)
+{
+
+          volatile double x = 2.0, y = 3.0, z = 1.0;
+#if defined(_MSC_VER) && !defined(__clang__)
+          double r = _mm_cvtsd_f64(
+            _mm_fmadd_sd(_mm_set_sd(x), _mm_set_sd(y), _mm_set_sd(z)));
+#else
+          double r = x, b = y, c = z;
+          __asm__ __volatile__("vfmadd213sd %2, %1, %0"
+            : "+x" (r) : "x" (b), "x" (c));
+#endif
+          return r == 7.0 ? 0 : 1;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_run "$LINENO"
+then :
+  ocaml_amd64_fma=yes
+else case e in #(
+  e) ocaml_amd64_fma=no ;;
+esac
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext ;;
+esac
+fi
+
+fi
+    if test x"$ocaml_amd64_fma_probe" = xcompile
+then :
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#if !(defined(__FMA__) || (defined(_MSC_VER) && defined(__AVX2__)))
+#error FMA3 is not enabled
+#endif
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  ocaml_amd64_fma=yes
+else case e in #(
+  e) ocaml_amd64_fma=no ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+    if test x"$ocaml_amd64_fma" = xyes
+then :
+  target_features="${target_features:+$target_features,}fma"
+fi
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ocaml_amd64_fma" >&5
+printf "%s\n" "$ocaml_amd64_fma" >&6; }
+fi
 fi
 
 # On arm64, detect whether the C compiler lowers atomic read-modify-writes to

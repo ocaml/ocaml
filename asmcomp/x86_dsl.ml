@@ -204,6 +204,7 @@ module I = struct
   let set cond x = emit (SET (cond, x))
   let shr x y = emit (SHR (x, y))
   let sqrtsd x y = emit (SQRTSD (x, y))
+  let vfmadd213sd x y z = emit (VFMADD213SD (x, y, z))
   let sub x y = emit (SUB (x, y))
   let subsd  x y = emit (SUBSD (x, y))
   let test x y= emit (TEST (x, y))

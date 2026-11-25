@@ -109,6 +109,7 @@ and scst b = function
 let i0 b s = bprintf b "\t%s" s
 let i1 b s x = bprintf b "\t%s\t%a" s arg x
 let i2 b s x y = bprintf b "\t%s\t%a, %a" s arg y arg x
+let i3 b s x y z = bprintf b "\t%s\t%a, %a, %a" s arg z arg y arg x
 
 let i1_call_jmp b s = function
   | Sym x -> bprintf b "\t%s\t%s" s x
@@ -211,6 +212,7 @@ let print_instr b = function
   | SET (c, arg) -> i1 b ("set" ^ string_of_condition c) arg
   | SHR (arg1, arg2) -> i2 b "shr" arg1 arg2
   | SQRTSD (arg1, arg2) -> i2 b "sqrtsd" arg1 arg2
+  | VFMADD213SD (arg1, arg2, arg3) -> i3 b "vfmadd213sd" arg1 arg2 arg3
   | SUB (arg1, arg2) -> i2 b "sub" arg1 arg2
   | SUBSD (arg1, arg2) -> i2 b "subsd" arg1 arg2
   | TEST (arg1, arg2) -> i2 b "test" arg1 arg2
