@@ -577,6 +577,7 @@ let constructor_of_extension_constructor
     ocstr_name = ext.oext_name;
     ocstr_args = ext.oext_args;
     ocstr_return_type = ext.oext_ret_type;
+    ocstr_generative = Nongenerative;
   }
 
 let split_anon_functor_arguments params =
@@ -792,34 +793,30 @@ and print_out_type_decl kwd ppf td =
     print_unboxed
 
 and print_out_constr ppf constr =
-  let {
-    ocstr_name = name;
-    ocstr_args = tyl;
-    ocstr_return_type = return_type;
-  } = constr in
   let name =
-    match name with
+    match constr.ocstr_name with
     | "::" -> "(::)"   (* #7200 *)
     | s -> s
   in
-  match return_type with
+  fprintf ppf "@[<2>%s" name;
+  begin match constr.ocstr_return_type with
   | None ->
-      begin match tyl with
-      | [] ->
-          pp_print_string ppf name
-      | _ ->
-          fprintf ppf "@[<2>%s of@ %a@]" name
-            (print_typlist print_simple_out_type " *") tyl
-      end
+      if constr.ocstr_args <> [] then
+        fprintf ppf " of@ %a"
+          (print_typlist print_simple_out_type " *") constr.ocstr_args
   | Some ret_type ->
-      begin match tyl with
+      begin match constr.ocstr_args with
       | [] ->
-          fprintf ppf "@[<2>%s :@ %a@]" name print_simple_out_type  ret_type
+          fprintf ppf " :@ %a" print_simple_out_type ret_type
       | _ ->
-          fprintf ppf "@[<2>%s :@ %a -> %a@]" name
+          fprintf ppf " :@ %a -> %a"
             (print_typlist print_simple_out_type " *")
-            tyl print_simple_out_type ret_type
+            constr.ocstr_args print_simple_out_type ret_type
       end
+  end;
+  if constr.ocstr_generative = Asttypes.Generative then
+    fprintf ppf " [@generative]";
+  fprintf ppf "@]"
 
 and print_out_extension_constructor ppf ext =
   let print_extended_type ppf =

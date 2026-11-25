@@ -111,6 +111,11 @@ let fmt_private_flag f x =
   | Public -> fprintf f "Public"
   | Private -> fprintf f "Private"
 
+let fmt_generative_flag f x =
+  match x with
+  | Nongenerative -> fprintf f "Nongenerative"
+  | Generative -> fprintf f "Generative"
+
 let fmt_partiality f x =
   match x with
   | Total -> ()
@@ -167,7 +172,10 @@ let record_representation i ppf = let open Types in function
   | Record_regular -> line i ppf "Record_regular\n"
   | Record_float -> line i ppf "Record_float\n"
   | Record_unboxed b -> line i ppf "Record_unboxed %b\n" b
-  | Record_inlined i -> line i ppf "Record_inlined %d\n" i
+  | Record_inlined (i, generative) ->
+      line i ppf "Record_inlined %d %a\n"
+        i
+        fmt_generative_flag generative
   | Record_extension p -> line i ppf "Record_extension %a\n" fmt_path p
 
 let attribute i ppf k a =
@@ -963,14 +971,14 @@ and core_type_x_core_type_x_location i ppf (ct1, ct2, l) =
   core_type (i+1) ppf ct1;
   core_type (i+1) ppf ct2;
 
-and constructor_decl i ppf {cd_id; cd_name = _; cd_vars;
-                            cd_args; cd_res; cd_loc; cd_attributes} =
-  line i ppf "%a\n" fmt_location cd_loc;
-  line (i+1) ppf "%a\n" fmt_ident cd_id;
-  if cd_vars <> [] then line (i+1) ppf "cd_vars =%a\n" typevars cd_vars;
-  attributes i ppf cd_attributes;
-  constructor_arguments (i+1) ppf cd_args;
-  option (i+1) core_type ppf cd_res
+and constructor_decl i ppf cd =
+  line i ppf "%a\n" fmt_location cd.cd_loc;
+  line (i+1) ppf "%a\n" fmt_ident cd.cd_id;
+  if cd.cd_vars <> [] then line (i+1) ppf "cd_vars =%a\n" typevars cd.cd_vars;
+  attributes i ppf cd.cd_attributes;
+  constructor_arguments (i+1) ppf cd.cd_args;
+  option (i+1) core_type ppf cd.cd_res;
+  line (i+1) ppf "%a\n" fmt_generative_flag cd.cd_generative
 
 and constructor_arguments i ppf = function
   | Cstr_tuple l -> list i core_type ppf l

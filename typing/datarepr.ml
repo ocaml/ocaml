@@ -107,14 +107,14 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
     cstrs;
   let rec describe_constructors idx_const idx_nonconst = function
       [] -> []
-    | {cd_id; cd_args; cd_res; cd_loc; cd_attributes; cd_uid} :: rem ->
+    | cd :: rem ->
         let ty_res =
-          match cd_res with
+          match cd.cd_res with
           | Some ty_res' -> ty_res'
           | None -> ty_res
         in
         let (tag, descr_rem) =
-          match cd_args, rep with
+          match cd.cd_args, rep with
           | _, Variant_unboxed ->
             assert (rem = []);
             (Cstr_unboxed, [])
@@ -124,14 +124,14 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
           | _, Variant_regular  ->
              (Cstr_block idx_nonconst,
               describe_constructors idx_const (idx_nonconst+1) rem) in
-        let cstr_name = Ident.name cd_id in
+        let cstr_name = Ident.name cd.cd_id in
         let existentials, cstr_args, cstr_inlined =
           let representation =
             match rep with
             | Variant_unboxed -> Record_unboxed true
-            | Variant_regular -> Record_inlined idx_nonconst
+            | Variant_regular -> Record_inlined (idx_nonconst, cd.cd_generative)
           in
-          constructor_args ~current_unit decl.type_private cd_args cd_res
+          constructor_args ~current_unit decl.type_private cd.cd_args cd.cd_res
             Path.(Pextra_ty (ty_path, Pcstr_ty cstr_name)) representation
         in
         let cstr =
@@ -144,13 +144,14 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
             cstr_consts = !num_consts;
             cstr_nonconsts = !num_nonconsts;
             cstr_private = decl.type_private;
-            cstr_generalized = cd_res <> None;
-            cstr_loc = cd_loc;
-            cstr_attributes = cd_attributes;
+            cstr_generalized = cd.cd_res <> None;
+            cstr_generative= cd.cd_generative;
+            cstr_loc = cd.cd_loc;
+            cstr_attributes = cd.cd_attributes;
             cstr_inlined;
-            cstr_uid = cd_uid;
+            cstr_uid = cd.cd_uid;
           } in
-        (cd_id, cstr) :: descr_rem in
+        (cd.cd_id, cstr) :: descr_rem in
   describe_constructors 0 0 cstrs
 
 let extension_descr ~current_unit path_ext ext =
@@ -173,6 +174,7 @@ let extension_descr ~current_unit path_ext ext =
       cstr_nonconsts = -1;
       cstr_private = ext.ext_private;
       cstr_generalized = ext.ext_ret_type <> None;
+      cstr_generative = Nongenerative;
       cstr_loc = ext.ext_loc;
       cstr_attributes = ext.ext_attributes;
       cstr_inlined;
