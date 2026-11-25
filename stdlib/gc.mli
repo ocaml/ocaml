@@ -694,3 +694,15 @@ module Tweak : sig
       have non-default values *)
   val list_active : unit -> (string * int) list
 end
+
+(** Internal type for tracking the GC phase. See the original definition in
+    the C header for the meaning of the constructors. *)
+type phase =
+  | Phase_sweep_main
+  | Phase_sweep_and_mark_main
+  | Phase_mark_final
+  | Phase_sweep_ephe
+
+external current_phase : unit -> phase = "caml_gc_current_phase"
+(** Get the current GC phase. Intended to help reproduce bugs sensitive to
+    the GC internal algorithms. *)
