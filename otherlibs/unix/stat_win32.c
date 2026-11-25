@@ -33,6 +33,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <assert.h>
 #include <winioctl.h>
 #include "caml/winsupport.h"
 #include "misc_internals.h"
@@ -54,11 +55,13 @@
 #endif
 #endif
 #ifndef S_IFSOCK
-#define S_IFSOCK (S_IFDIR | S_IFCHR)
+#define S_IFSOCK (S_IFDIR | S_IFIFO)
 #endif
 #ifndef S_IFBLK
 #define S_IFBLK 0
 #endif
+
+static_assert(S_IFSOCK != S_IFBLK && S_IFSOCK != S_IFLNK, "");
 
 #ifndef IO_REPARSE_TAG_AF_UNIX
 #define IO_REPARSE_TAG_AF_UNIX 0x80000023L
