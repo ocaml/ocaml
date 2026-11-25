@@ -209,15 +209,7 @@ jobs:
           eval $(tools/msvs-promote-path)
           if ! ./configure ${{ env.CONFIG_ARGS }} ; then
             rm -rf config.cache
-            failed=0
-            ./configure ${{ env.CONFIG_ARGS }} || failed=$?
-            if ((failed)) ; then
-              echo
-              echo "::group::config.log content ($(wc -l config.log) lines)"
-              cat config.log
-              echo '::endgroup::'
-              exit $failed
-            fi
+            tools/ci/run-configure.sh ${{ env.CONFIG_ARGS }}
           fi
 
       - name: Save Autoconf cache

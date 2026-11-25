@@ -132,7 +132,7 @@ $CC $LDFLAGS asan.o -o asan
 test $? -eq 1
 rm -f asan asan.o asan.c
 
-./configure \
+tools/ci/run-configure.sh \
   CC="$CC" \
   CFLAGS="$CFLAGS" \
   LDFLAGS="$LDFLAGS" \
@@ -170,7 +170,7 @@ echo "======== clang ${llvm_version}, thread sanitizer ========"
 
 git clean -q -f -d -x
 
-./configure \
+tools/ci/run-configure.sh \
   CC="$CC" \
   --enable-tsan \
   CPPFLAGS="-DTSAN_INSTRUMENT_ALL" \

@@ -48,13 +48,9 @@ jobs:
           PREFIX="$HOME/.local"
           echo "$PREFIX/bin" >> "$GITHUB_PATH"
           set -x
-          ./configure --disable-warn-error --disable-ocamldoc \
+          tools/ci/run-configure.sh --disable-warn-error --disable-ocamldoc \
               --disable-ocamltest --disable-stdlib-manpages \
-              --prefix="$PREFIX" || failed=$?
-          if ((failed)) ; then set +x
-            echo ; echo "::group::config.log content ($(wc -l config.log) lines)"
-            cat config.log ; echo '::endgroup::' ; exit $failed
-          fi
+              --prefix="$PREFIX"
           make -j
           make install
           cd "$HOME"
@@ -90,12 +86,8 @@ jobs:
       - name: Configure, build and install Linux-to-Windows OCaml
         run: |
           set -x
-          ./configure --prefix="$HOME/cross" --target=x86_64-w64-mingw32 \
-              TARGET_LIBDIR="$TESTDIR" || failed=$?
-          if ((failed)) ; then set +x
-            echo ; echo "::group::config.log content ($(wc -l config.log) lines)"
-            cat config.log ; echo '::endgroup::' ; exit $failed
-          fi
+          tools/ci/run-configure.sh --prefix="$HOME/cross" \
+              --target=x86_64-w64-mingw32 TARGET_LIBDIR="$TESTDIR"
           # The OOM-killer may be triggered if the number of parallel
           # jobs isn't limited.
           make crossopt -j$(nproc)
@@ -164,12 +156,8 @@ jobs:
       - name: Configure, build and install Linux-to-Windows OCaml
         run: |
           set -x
-          ./configure --prefix="$HOME/cross" --target=aarch64-linux-gnu \
-              || failed=$?
-          if ((failed)) ; then set +x
-            echo ; echo "::group::config.log content ($(wc -l config.log) lines)"
-            cat config.log ; echo '::endgroup::' ; exit $failed
-          fi
+          tools/ci/run-configure.sh --prefix="$HOME/cross" \
+              --target=aarch64-linux-gnu
           make crossopt -j
           make installcross
       - name: Show opt.opt configuration
@@ -252,17 +240,13 @@ jobs:
           # `pthread_cancel` isn't available on Android, so the result
           # program should _not_ be run with cleanup on exit (so no
           # `c=1` in `OCAMLRUNPARAM`)
-          ./configure --prefix="$HOME/cross" --target=$TARGET \
+          tools/ci/run-configure.sh --prefix="$HOME/cross" --target=$TARGET \
               TARGET_LIBDIR="/dummy/directory" \
               CC="$DIR/clang --target=$TARGET" \
               AR="$DIR/llvm-ar" \
               PARTIALLD="$DIR/ld -r" \
               RANLIB="$DIR/llvm-ranlib" \
-              STRIP="$DIR/llvm-strip" || failed=$?
-          if ((failed)) ; then set +x
-            echo ; echo "::group::config.log content ($(wc -l config.log) lines)"
-            cat config.log ; echo '::endgroup::' ; exit $failed
-          fi
+              STRIP="$DIR/llvm-strip"
           make crossopt -j
           make installcross
       - name: Show opt.opt configuration

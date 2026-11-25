@@ -220,7 +220,7 @@ git reset --hard HEAD
 if $flambda; then
   confoptions="$confoptions -enable-flambda --enable-flambda-invariants"
 fi
-eval "./configure $build $host --prefix='$instdir' $confoptions"
+eval "tools/ci/run-configure.sh $build $host --prefix='$instdir' $confoptions"
 
 $make world
 
