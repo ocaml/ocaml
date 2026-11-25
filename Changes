@@ -1167,6 +1167,10 @@ OCaml 5.6.0
 - #15396: Fix Misc.RuntimeID.of_string when reserved-header-bits is non-zero.
   (David Allsopp, review by Nicolás Ojeda Bär)
 
+- #15381, #15388: fix `Unix.utimes` failing with EINVAL on Linux for negative
+  times with a fractional part.
+  (Prakhand Patel, report by KC Sivaramakrishnan, review by Stefan Muenzel)
+
 OCaml 5.5.1
 -----------
 
