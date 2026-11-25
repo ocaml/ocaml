@@ -14,6 +14,11 @@ Prerequisites
 Note that you must make sure `hevea.sty` is installed into TeX properly. Your
 package manager may not do this for you. Run `kpsewhich hevea.sty` to check.
 
+On a pristine Ubuntu 22.04.1 LTS environment, ensure that you have the `hevea` package installed:
+
+```
+apt install hevea
+```
 
 Building the manual
 --------
