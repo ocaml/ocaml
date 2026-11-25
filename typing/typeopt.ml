@@ -45,8 +45,13 @@ let scrape env ty =
 
 let is_function_type env ty =
   match scrape env ty with
-  | Some (Tarrow (_, lhs, rhs, _)) -> Some (lhs, rhs)
-  | _ -> None
+  | Some (Tarrow (_, lhs, rhs, _)) ->
+    Some (lhs, rhs)
+  | Some (Tfunctor (_, _id, package, rhs)) ->
+    let lhs = Ctype.newmono_package package in
+    Some (lhs, rhs)
+  | _ ->
+    None
 
 let is_base_type env ty base_ty_path =
   match scrape env ty with
