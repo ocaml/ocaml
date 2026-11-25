@@ -1175,6 +1175,12 @@ OCaml 5.6.0
   times with a fractional part.
   (Prakhand Patel, report by KC Sivaramakrishnan, review by Stefan Muenzel)
 
+- #XXXXX: on Windows, `Unix.setsockopt_float` and `Unix.getsockopt_float`
+  incorrectly handled `SO_RCVTIMEO` and `SO_SNDTIMEO`. The fractional part of
+  the argument would be discarded and the integer part would be interpreted as
+  milliseconds rather than seconds.
+  (Nicolás Ojeda Bär, report by Thomas Gazagnaire)
+
 OCaml 5.5.1
 -----------
 
