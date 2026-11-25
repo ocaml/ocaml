@@ -92,6 +92,7 @@ STDLIB_MODULE_BASENAMES = \
   camlinternalOO \
   oo \
   dynarray \
+  hashtbl2 \
   format \
   camlinternalMod \
   pqueue \
