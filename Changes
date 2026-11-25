@@ -28,7 +28,7 @@ Working version
 
 - #15232: Use a plain subtract on POWER for subtraction and modulo, instead
   of one that also sets a carry nothing reads.
-  (Tim McGilchrist and Zane Hambly, review by         )
+  (Tim McGilchrist and Zane Hambly, review by Stefan Muenzel)
 
 ### Standard library:
 
