@@ -66,6 +66,10 @@ Working version
   int<->float conversions on POWER, instead of going through the stack.
   (Tim McGilchrist and Zane Hambly, review by Miod Vallat)
 
+- #15232: Use a plain subtract on POWER for subtraction and modulo, instead
+  of one that also sets a carry nothing reads.
+  (Tim McGilchrist and Zane Hambly, review by Stefan Muenzel)
+
 ### Standard library:
 
 - #15168: `Scanf.unescaped`, `%S` and `%C` now accept all the escape sequences
