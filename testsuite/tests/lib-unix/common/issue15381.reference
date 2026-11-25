@@ -1,0 +1,4 @@
+utimes -100.0 -> ok, mtime -100.000
+utimes -100.5 -> ok, mtime -100.500
+utimes 100.5 -> ok, mtime 100.500
+utimes -0.2 -> ok, mtime -0.250
