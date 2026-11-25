@@ -54,6 +54,10 @@ enum caml_byte_program_mode {
   EMBEDDED  /* bytecode embedded in C (e.g. -output-complete-exe/-output-obj) */
 };
 
+/* Defined in prims.c or supplied by the bytecode linker */
+extern char * caml_marshalled_global_data;
+extern asize_t caml_marshalled_global_data_size;
+
 extern const enum caml_byte_program_mode caml_byte_program_mode;
 
 /* The default location of the Standard Library as used by the runtime to find

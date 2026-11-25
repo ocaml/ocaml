@@ -43,6 +43,7 @@ extern struct ext_table caml_prim_name_table;
 #define PrimitiveN(n) \
     ((value (*)(value*,int)) caml_prim_table.contents[n])
 
+/* Defined in prims.c or supplied by the bytecode linker */
 extern char * caml_section_table;
 extern asize_t caml_section_table_size;
 
