@@ -2028,20 +2028,18 @@ let print_items showval env x =
   let post_process (env,l) = List.map (extend_val env) l in
   List.concat_map post_process @@ tree_of_signature_rec env x
 
+let same_tconstr p tl p' tl' =
+  let (p1, s1) = best_type_path p and (p2, s2)  = best_type_path p' in
+  Path.same p1 p2 &&
+  let tl = apply_subst s1 tl and tl' = apply_subst s2 tl' in
+  List.length tl = List.length tl' &&
+  List.for_all2 eq_type tl tl'
+
 let same_path t t' =
   let open Types in
   eq_type t t' && get_abbrev t = None && get_abbrev t' = None ||
   match printer_get_desc t, printer_get_desc t' with
-    Tconstr(p,tl,_), Tconstr(p',tl',_) ->
-      let (p1, s1) = best_type_path p and (p2, s2)  = best_type_path p' in
-      begin match s1, s2 with
-        Nth n1, Nth n2 when n1 = n2 -> true
-      | (Id | Map _), (Id | Map _) when Path.same p1 p2 ->
-          let tl = apply_subst s1 tl and tl' = apply_subst s2 tl' in
-          List.length tl = List.length tl' &&
-          List.for_all2 eq_type tl tl'
-      | _ -> false
-      end
+    Tconstr(p,tl,_), Tconstr(p',tl',_) -> same_tconstr p tl p' tl'
   | _ -> false
 
 type expansion_diff =
@@ -2050,21 +2048,17 @@ type expansion_diff =
 
 let trees_of_type_expansion mode Errortrace.{ty = t; expanded = t'} =
   Aliases.reset ();
-  let with_abbrev = match get_abbrev t with
+  let abbrev = match get_abbrev t with
     | None -> None
     | Some {abbr_path=tconstr; abbr_args=params} ->
         match printer_get_desc t with
-        | Tconstr (p, tl, _) when
-            (Path.same p tconstr
-             && List.length tl = List.length params
-             && List.for_all2 eq_type tl params)
-          -> None
+        | Tconstr (p, tl, _) when same_tconstr tconstr params p tl -> None
         | _ -> Some(tconstr, params)
   in
-  match with_abbrev with
+  match abbrev with
   | Some (tconstr, params) ->
       List.iter Aliases.mark_loops params;
-      let path = tree_of_path (Some Type) tconstr in
+      let path = tree_of_type_path tconstr in
       let t = Otyp_constr (path, tree_of_typlist mode params) in
       Aliases.reset ();
       Aliases.mark_loops t';
