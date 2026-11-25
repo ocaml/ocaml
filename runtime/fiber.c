@@ -701,18 +701,48 @@ CAMLprim value caml_continuation_use_noexc (value cont)
   if (!Is_young(cont) && caml_marking_started())
     caml_darken_cont(cont);
 
-  v = Field(cont, 0);
-
   if (caml_domain_alone()) {
+    v = Field(cont, 0);
+    CAMLassert(v != Val_cont_borrowed);
     Field(cont, 0) = null_stk;
     return v;
   }
 
-  if (atomic_compare_exchange_strong(Op_atomic_val(cont), &v, null_stk)) {
-    return v;
-  } else {
-    return null_stk;
+  while (1) {
+    v = atomic_load_acquire(Op_atomic_val(cont));
+    if (v == null_stk) return null_stk;
+    if (v == Val_cont_borrowed) {
+      /* Borrowed: wait. The borrower neither allocates nor polls, so this
+         cannot deadlock. */
+      cpu_relax();
+      continue;
+    }
+    if (atomic_compare_exchange_strong(Op_atomic_val(cont), &v, null_stk))
+      return v;
   }
+}
+
+struct stack_info* caml_continuation_borrow(value cont)
+{
+  CAMLassert(Is_block(cont) && Tag_val(cont) == Cont_tag);
+  /* Mark the continuation before borrowing it, so that no marking domain
+     scans it while it is borrowed. */
+  if (!Is_young(cont) && caml_marking_started())
+    caml_darken_cont(cont);
+  while (1) {
+    value v = atomic_load_acquire(Op_atomic_val(cont));
+    if (v == Val_ptr(NULL)) caml_raise_continuation_already_resumed();
+    if (v == Val_cont_borrowed) { cpu_relax(); continue; }
+    if (atomic_compare_exchange_strong(Op_atomic_val(cont), &v,
+                                       Val_cont_borrowed))
+      return Ptr_val(v);
+  }
+}
+
+void caml_continuation_unborrow(value cont, struct stack_info* stk)
+{
+  CAMLassert(Field(cont, 0) == Val_cont_borrowed);
+  atomic_store_release(Op_atomic_val(cont), Val_ptr(stk));
 }
 
 CAMLprim value caml_continuation_use (value cont)
@@ -739,14 +769,6 @@ CAMLprim value caml_continuation_use_and_update_handler_noexc
   Stack_handle_exception(stk) = hexn;
   Stack_handle_effect(stk) = heff;
   return stack;
-}
-
-void caml_continuation_replace(value cont, struct stack_info* stk)
-{
-  value n = Val_ptr(NULL);
-  int b = atomic_compare_exchange_strong(Op_atomic_val(cont), &n, Val_ptr(stk));
-  CAMLassert(b);
-  (void)b; /* squash unused warning */
 }
 
 static const value * _Atomic caml_unhandled_effect_exn = NULL;

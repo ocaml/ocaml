@@ -316,11 +316,13 @@ caml_rewrite_exception_stack(struct stack_info *old_stack,
 
 value caml_continuation_use (value cont);
 
-/* Replace the stack of a continuation that was previously removed
-   with caml_continuation_use. The GC must not be allowed to run
-   between continuation_use and continuation_replace.
-   Used for cloning continuations and continuation backtraces. */
-void caml_continuation_replace(value cont, struct stack_info* stack);
+/* Field 0 of a borrowed continuation; not the [Val_ptr] of a stack. */
+#define Val_cont_borrowed ((value) 3)
+/* Borrow the stack of [cont] to read it; raises if [cont] was resumed.
+   A concurrent take or borrow waits until the unborrow. The borrower
+   must not allocate or poll before the unborrow. */
+struct stack_info* caml_continuation_borrow(value cont);
+void caml_continuation_unborrow(value cont, struct stack_info* stk);
 
 CAMLnoret CAMLextern void caml_raise_continuation_already_resumed (void);
 

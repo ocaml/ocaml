@@ -353,6 +353,7 @@ tail_call:
       if (tag == Cont_tag) {
         CAMLassert(infix_offset == 0);
         CAMLassert(sz == 1);
+        CAMLassert(field0 != Val_cont_borrowed);
         struct stack_info* stk = Ptr_val(field0);
         Field(result, 0) = field0;
         if (stk != NULL) {

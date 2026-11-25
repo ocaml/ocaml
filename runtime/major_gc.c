@@ -1774,6 +1774,7 @@ void caml_darken_cont(value cont)
               Hp_atomic_val(cont), &hd,
               With_status_hd(hd, NOT_MARKABLE))) {
         value stk = Field(cont, 0);
+        CAMLassert(stk != Val_cont_borrowed);
         if (Ptr_val(stk) != NULL)
           caml_scan_stack(&caml_darken, darken_scanning_flags, Caml_state,
                           Ptr_val(stk), 0);
