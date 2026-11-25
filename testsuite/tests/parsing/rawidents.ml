@@ -127,6 +127,7 @@ Line 1, characters 8-13:
 1 | let x = \#let;;
             ^^^^^
 Error: Unbound value "\#let"
+Hint: Did you mean "let@"?
 |}]
 
 let f ~\#let ?\#and () = 1
