@@ -31,6 +31,9 @@ let short_closed_tuple_pat loc =
   let pat = H.Pat.mk Ppat_any in
   H.Pat.tuple ~loc [Some "baz", pat] Closed
 
+let empty_function loc =
+  H.Exp.function_ ~loc [] None (Pfunction_cases ([], loc, []))
+
 let super = M.default_mapper
 let expr mapper e =
   match e.pexp_desc with
@@ -38,6 +41,7 @@ let expr mapper e =
   | Pexp_extension({txt="record";loc},_) -> empty_record loc
   | Pexp_extension({txt="no_args";loc},PStr[{pstr_desc= Pstr_eval (e,_);_}])
     -> empty_apply loc e
+  | Pexp_extension({txt="empty_function"; loc}, _) -> empty_function loc
   | _ -> super.M.expr mapper e
 
 let pat mapper p =
