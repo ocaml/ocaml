@@ -315,6 +315,7 @@ AC_SUBST([cxx_extra_warnings])
 AC_SUBST([header_cflags])
 AC_SUBST([header_ldflags])
 AC_SUBST([header_libs])
+AC_SUBST([test_common_cxx_cxxflags])
 
 ## Generated files
 
@@ -448,9 +449,10 @@ If your host is 64 bits, you can try with './configure CC="gcc -m64"' \
 
 # MSVC special case
 
+# cl compiles C and C++. It uses the file extension to select the language.
 AS_CASE([$target],
   [*-pc-windows],
-    [AS_IF([test -z "$CC"], [CC=cl])])
+    [: "${CC:=cl}" "${CXX:=$CC}"])
 
 AC_CHECK_PROG([csc],[csc],[csc])
 AS_IF([test -n "$csc"],
@@ -822,6 +824,11 @@ AS_IF(
 # Bypass libtool check for the manifest tool
 AC_CHECK_TOOLS(MANIFEST_TOOL, [mt], :)
 
+# Decide here if ocamltest is built. The C++ checks below use this result.
+AS_CASE([$enable_ocamltest,OCAML__DEVELOPMENT_VERSION],
+  [yes,*|,true], [build_ocamltest=true],
+  [build_ocamltest=false])
+
 # Initialization of libtool
 # Allow the MSVC linker to be found even if ld isn't installed.
 # User-specified LD still takes precedence.
@@ -845,6 +852,23 @@ pushdef([host_os], target_os)dnl
 old_host_os=$host_os
 AS_IF([test x"$host_os" = "xwindows"],[host_os=mingw])
 saved_CFLAGS="$CFLAGS"
+AC_PROG_CC
+# The testsuite uses a C++ compiler to make sure that C++ code can use the C
+# API of the runtime. Do the C++ checks before LT_INIT. If CXX is "no",
+# libtool does not configure C++.
+# If a target is given, AC_CHECK_TARGET_TOOLS does not select an unprefixed
+# compiler for the wrong system.
+AS_IF([$build_ocamltest],
+  [AS_IF([test -n "$target_alias"],
+    [AC_CHECK_TARGET_TOOLS([CXX], [g++ c++ clang++], [no])])],
+  [CXX=no])
+AC_PROG_CXX
+# AC_PROG_CXX can add an option to CXX. Thus, set CXX to "no" again.
+AS_IF([$build_ocamltest],
+  [AS_IF([test "x$CXX" != xno],
+    [AX_CXX_COMPILE_STDCXX([11], [], [optional])
+    AS_IF([test "x$HAVE_CXX11" != x1], [CXX=no])])],
+  [CXX=no])
 LT_INIT
 CFLAGS="$saved_CFLAGS"
 host_os=$old_host_os
@@ -2941,10 +2965,8 @@ AS_IF([test x"$enable_ocamlobjinfo" != 'xno'],
   [build_ocamlobjinfo=true],
   [build_ocamlobjinfo=false])
 
-AS_CASE([$enable_ocamltest,OCAML__DEVELOPMENT_VERSION],
-  [yes,*|,true],
-    [build_ocamltest=true
-    ocamltest_target=ocamltest
+AS_IF([$build_ocamltest],
+    [ocamltest_target=ocamltest
     ocamltest_opt_target=ocamltest.opt
     ocamltest='ocamltest'
     AS_IF([$native_compiler],
@@ -2954,9 +2976,9 @@ testsuite/tools/test_in_prefix.opt"],
 testsuite/tools/test_in_prefix"])
     testsuite_tools='testsuite/tools/codegen testsuite/tools/expect'
     optional_bytecode_tools="$optional_bytecode_tools $testsuite_tools"
-    OCAML_CXX_COMPILE_STDCXX_11],
-  [build_ocamltest=false
-  ocamltest=''])
+    AS_IF([test "x$CXX" != xno], [ocamltest_CXX="$CXX"])
+],
+  [ocamltest=''])
 
 # config.status needs the values of ocamltest_unix_mod and unix_or_win32
 # for creating symlinks
@@ -3113,6 +3135,12 @@ AS_CASE(["$toolchain"],
   [header_cflags=''
   header_ldflags=''
   header_libs=''])
+
+# The flags enabling C11 atomics are C-only and may be rejected by the C++
+# compiler, so they are only added to the C flags.
+test_common_cxx_cxxflags="$common_cflags"
+AS_IF([test -n "$ocaml_cv_prog_cc_c11_atomic_cflags"],
+  [common_cflags="$common_cflags $ocaml_cv_prog_cc_c11_atomic_cflags"])
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
