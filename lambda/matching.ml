@@ -912,8 +912,6 @@ module Jumps : sig
 
   val map : (Context.t -> Context.t) -> t -> t
 
-  val remove : int -> t -> t
-
   (** [extract exit jumps] returns the context at the given exit
       and the rest of the jump summary. *)
   val extract : int -> t -> Context.t * t
@@ -963,14 +961,6 @@ end = struct
     in
     let (ctx, rem) = extract i jumps.env in
     (ctx, { jumps with env = rem })
-
-  let remove i jumps =
-    let rec remove i = function
-    | [] -> []
-    | (j, _) :: rem when i = j -> rem
-    | x :: rem -> x :: remove i rem
-    in
-    { jumps with env = remove i jumps.env }
 
   let empty partial = { env = []; partial; }
 
@@ -3583,41 +3573,50 @@ let compile_list compile_fun division =
   in
   c_rec [] division
 
-let compile_orhandlers compile_fun lambda1 partial total1 to_catch =
-  let rec do_rec r total_r = function
+let compile_pm_or ~compile_body ~compile_handler partial ctx
+      { body; handlers; or_matrix = _ }
+=
+  let lambda_body, total_body =
+    (* the 'body' matrix of a PmOr always exits *)
+    let partial =
+      if handlers = [] then partial
+      else { partial with current = Partial } in
+    compile_body partial ctx body
+  in
+  let partial = { partial with tempo = Following } in
+  let rec comp_handlers r total_r = function
     | [] -> (r, total_r)
     | { provenance = mat; exit = i; vars; pm } :: rem -> (
         debugf "@,COMPILE_orhandlers %d:@,@[<v 2>%a@]@,"
           i
           pretty_cases pm.cases;
-        let partial = { partial with tempo = Following } in
         let ctx_jump, total_r = Jumps.extract i total_r in
-        let ctx = Context.lshift_num (ncols mat) ctx_jump in
-        match compile_fun partial ctx pm with
+        let ctx_jump = Context.lshift_num (ncols mat) ctx_jump in
+        match compile_handler partial ctx_jump pm with
         | exception Unused ->
           if rem <> [] then separate_debug_output ();
-          do_rec (Lstaticcatch (r, (i, vars), lambda_unit)) total_r rem
+          comp_handlers (Lstaticcatch (r, (i, vars), lambda_unit)) total_r rem
         | handler_i, total_i ->
           if rem <> [] then separate_debug_output ();
-          begin match raw_action r with
+          let total_i = Jumps.map (Context.rshift_num (ncols mat)) total_i in
+          begin match raw_action lambda_body with
           | Lstaticraise (j, args) ->
               if i = j then
                 ( List.fold_right2
                     (bind_with_value_kind Alias)
                     vars args handler_i,
-                  Jumps.map (Context.rshift_num (ncols mat)) total_i )
+                  total_i )
               else
-                do_rec r total_r rem
+                comp_handlers r total_r rem
           | _ ->
-              do_rec
+              comp_handlers
                 (Lstaticcatch (r, (i, vars), handler_i))
-                (Jumps.union (Jumps.remove i total_r)
-                   (Jumps.map (Context.rshift_num (ncols mat)) total_i))
+                (Jumps.union total_r total_i)
                 rem
           end
       )
   in
-  do_rec lambda1 total1 to_catch
+  comp_handlers lambda_body total_body handlers
 
 let compile_test compile_fun arg_partial divide combine ctx to_match =
   let division = divide ctx to_match in
@@ -4071,15 +4070,11 @@ and do_compile_matching ~scopes repr partial ctx pmh =
         do_compile_matching ~scopes repr partial (Context.lshift ctx) pmh
       in
       (lam, Jumps.map Context.rshift total)
-  | PmOr { body; handlers } ->
-      let lam, total =
-        (* the 'body' matrix of a PmOr always exits *)
-        let partial =
-          if handlers = [] then partial
-          else { partial with current = Partial } in
-        compile_match_simplified ~scopes repr partial  ctx body in
-      compile_orhandlers (compile_match ~scopes repr)
-        lam partial total handlers
+  | PmOr pm_or ->
+      compile_pm_or
+        ~compile_body:(compile_match_simplified ~scopes repr)
+        ~compile_handler:(compile_match ~scopes repr)
+        partial ctx pm_or
 
 and compile_no_test ~scopes divide up_ctx repr partial ctx to_match =
   let { pm = this_match; ctx = this_ctx } = divide ctx to_match in
@@ -4448,14 +4443,11 @@ let flatten_precompiled size args pmh =
 let compile_flattened ~scopes repr partial ctx pmh =
   match pmh with
   | FPm pm -> compile_match_nonempty_rows ~scopes repr partial ctx pm
-  | FPmOr { body = b; handlers = hs } ->
-      let lam, total =
-        (* the [body] matrix of a PmOr with handlers always exits *)
-        let partial =
-          if hs = [] then partial
-          else { partial with current = Partial } in
-        compile_match_nonempty_rows ~scopes repr partial ctx b in
-      compile_orhandlers (compile_match ~scopes repr) lam partial total hs
+  | FPmOr pm_or ->
+      compile_pm_or
+        ~compile_body:(compile_match_nonempty_rows ~scopes repr)
+        ~compile_handler:(compile_match ~scopes repr)
+        partial ctx pm_or
 
 let do_for_multiple_match ~scopes loc idl pat_act_list partial =
   let pat_act_list = List.map (fun (pat, act) -> (pat, (act, None))) pat_act_list in
