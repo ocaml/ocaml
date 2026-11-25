@@ -15,6 +15,8 @@
 
 set -e
 
+echo "Re-run this script with ${0@Q} ${*@Q}"
+
 # Hygiene Checks: check that Changes has been updated in PRs
 # One of the following must be true:
 #   - A commit in the PR alters the Changes file
