@@ -765,18 +765,6 @@ static caml_result runtime_events_user_register(value event_name,
   CAMLparam3(event_name, event_tag, event_type);
   CAMLlocal2(list_item, event);
 
-  uintnat index = atomic_fetch_add(&runtime_custom_event_index, 1);
-
-  if (index >= RUNTIME_EVENTS_MAX_CUSTOM_EVENTS) {
-    /* Saturate so that rejected calls cannot wrap the counter and reissue
-       an id. */
-    atomic_store_relaxed(&runtime_custom_event_index,
-                         RUNTIME_EVENTS_MAX_CUSTOM_EVENTS);
-    event = caml_exception_invalid_argument(
-      "Runtime_events.User.register: maximum number of custom events exceeded");
-    CAMLreturnT(caml_result, Result_exception(event));
-  }
-
   int length = caml_string_length(event_name);
   if (length > RUNTIME_EVENTS_CUSTOM_EVENT_ID_LENGTH - 1) {
     event = caml_exception_invalid_argument(
@@ -787,6 +775,18 @@ static caml_result runtime_events_user_register(value event_name,
   if (!caml_string_is_c_safe(event_name)) {
     event = caml_exception_invalid_argument(
       "Runtime_events.User.register: event name has null characters");
+    CAMLreturnT(caml_result, Result_exception(event));
+  }
+
+  uintnat index = atomic_fetch_add(&runtime_custom_event_index, 1);
+
+  if (index >= RUNTIME_EVENTS_MAX_CUSTOM_EVENTS) {
+    /* Saturate so that rejected calls cannot wrap the counter and reissue
+       an id. */
+    atomic_store_relaxed(&runtime_custom_event_index,
+                         RUNTIME_EVENTS_MAX_CUSTOM_EVENTS);
+    event = caml_exception_invalid_argument(
+      "Runtime_events.User.register: maximum number of custom events exceeded");
     CAMLreturnT(caml_result, Result_exception(event));
   }
 
