@@ -108,6 +108,10 @@ Working version
   and objects.
   (Florian Angeletti, review by Alistair O'Brien and Gabriel Scherer)
 
+- #15409: simplify some rare error message by always using a two-point
+   comparison.
+  (Florian Angeletti, review by Stefan Muenzel)
+
 ### Build system:
 
 - #10837: Build native-code compilers on FreeBSD/powerpc64le and
