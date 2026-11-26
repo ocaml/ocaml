@@ -238,8 +238,10 @@ let at_exit_key = DLS.new_key (fun () -> (fun () -> ()))
 
 let at_exit f =
   let old_exit : unit -> unit = DLS.get at_exit_key in
+  let f_yet_to_run = Atomic.make true in
   let new_exit () =
-    f (); old_exit ()
+    if Atomic.compare_and_set f_yet_to_run true false then f ();
+    old_exit ()
   in
   DLS.set at_exit_key new_exit
 
