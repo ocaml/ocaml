@@ -100,6 +100,10 @@ Working version
 
 ### Manual and documentation:
 
+- #15372, #15400: document that the hash and equality functions of a hashed
+  type should avoid accessing the table.
+  (KC Sivaramakrishnan, review by ????)
+
 - #15216: document the security issue reporting process with a SECURITY.md file
   (Edwin Török, suggested by Xavier Leroy, review by Xavier Leroy)
 

@@ -369,9 +369,9 @@ module type HashedType =
           The hash value of a key should remain constant as long as the key is
           in the table. In particular, if the hash function depends on mutable
           key data, then that data must not be mutated while the key is in the
-          table. Similarly, as the hash function may be called while the table
-          itself is being modified, it should avoid accessing the table as
-          part of its computation.
+          table. Similarly, as the hash and equality functions may be called
+          while the table itself is being modified, they should avoid
+          accessing the table as part of their computation.
 
           Examples: suitable ([equal], [hash]) pairs for arbitrary key
           types include
@@ -463,7 +463,8 @@ module type SeededHashedType =
       (** A seeded hashing function on keys.  The first argument is
           the seed.  It must be the case that if [equal x y] is true,
           then [seeded_hash seed x = seeded_hash seed y] for any value of
-          [seed].  A suitable choice for [seeded_hash] is the function
+          [seed]. See {!HashedType.hash} for more precise requirements over
+          hash functions. A suitable choice for [seeded_hash] is the function
           {!Hashtbl.seeded_hash} below. *)
   end
 (** The input signature of the functor {!MakeSeeded}.
