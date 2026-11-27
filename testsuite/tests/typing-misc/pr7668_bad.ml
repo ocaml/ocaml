@@ -23,9 +23,9 @@ val partition_map :
 Lines 12-13, characters 35-18:
 12 | ...................................partition_map (fun x -> if x then `Left ()
 13 | else `Right ()) xs
-Error: This expression has type "unit list * unit list"
-       but an expression was expected of type "int list * int list"
-       Type "unit" is not compatible with type "int"
+Error: This expression has type "(|unit|) list * unit list"
+       but an expression was expected of type "(|int|) list * int list"
+       Type "(|unit|)" is not compatible with type "(|int|)"
 |}]
 
 module M : sig
@@ -93,8 +93,8 @@ Error: Signature mismatch:
          "[ `A of int | `B of [ `BA | `BB of unit list ] | `C of unit ] ->
          [> `B of [> `BA | `BB of int list ] | `C of unit ]"
        is not compatible with the type "t -> t"
-       Type "[> `B of [> `BA | `BB of int list ] | `C of unit ]"
+       Type "[> `B of [> `BA | `BB of int (|list|) ] | `C of unit ]"
        is not compatible with type
-         "t" = "[ `A of int | `B of [ `BA | `BB of unit list ] | `C of unit ]"
-       In tag "`BB", type "int list" is not compatible with type "unit list"
+         "t" = "[ `A of int | `B of [ `BA | `BB of unit (|list|) ] | `C of unit ]"
+       In tag "`BB", type "(|int|) list" is not compatible with type "(|unit|) list"
 |}]

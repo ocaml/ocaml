@@ -27,8 +27,8 @@ let f (x : ('a, empty Lazy.t) result) =
 Line 4, characters 16-20:
 4 |   | Error (lazy Refl) -> .;;
                     ^^^^
-Error: This pattern matches values of type "(int, int) eq"
+Error: This pattern matches values of type "((|int|), (|int|)) eq"
        but a pattern was expected which matches values of type
-         "empty" = "(int, unit) eq"
-       Type "int" is not compatible with type "unit"
+         "empty" = "(int, (|unit|)) eq"
+       Type "(|int|)" is not compatible with type "(|unit|)"
 |}]

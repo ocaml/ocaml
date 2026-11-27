@@ -59,12 +59,14 @@
                         ["Tag", ["Inline_code"], [["Text", "y"]]],
                         ["Text", " has type"], ["Simple_break", 1, 2],
                         ["Tag", ["Inline_code"],
-                          [["Box", ["B"], 0, [["Text", "float"]]]]],
+                          [["Box", ["B"], 0,
+                             [["Tag", ["Diff"], [["Text", "float"]]]]]]],
                         ["Simple_break", 1, 0],
                         ["Text", "but an expression was expected of type"],
                         ["Simple_break", 1, 2],
                         ["Tag", ["Inline_code"],
-                          [["Box", ["B"], 0, [["Text", "int"]]]]]]]]]],
+                          [["Box", ["B"], 0,
+                             [["Tag", ["Diff"], [["Text", "int"]]]]]]]]]]]],
               "loc" :
                 {
                   "start_line" : 2,

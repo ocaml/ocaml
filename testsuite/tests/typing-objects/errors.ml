@@ -11,7 +11,7 @@ Error: The type of this class,
        "class virtual ['_a] c :
          object constraint '_a = [< `A of int & float ] as '_weak1 end",
        contains non-collapsible conjunctive types in constraints.
-       Type "int" is not compatible with type "float"
+       Type "(|int|)" is not compatible with type "(|float|)"
 |}]
 
 class type ct = object
@@ -31,8 +31,8 @@ Error: The class type object method x : 'a * float end
        is not matched by the class type ct
        The class type object method x : 'a * float end
        is not matched by the class type object method x : int end
-       The method x has type "'a * float" but is expected to have type "int"
-       Type "'a * float" is not compatible with type "int"
+       The method x has type "'a (|*|) float" but is expected to have type "(|int|)"
+       Type "'a (|*|) float" is not compatible with type "(|int|)"
 |}]
 
 let foo = 42#m;;

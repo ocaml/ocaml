@@ -44,16 +44,16 @@ Error: Signature mismatch:
          "f0 : unit * unit * unit * float * unit * unit * unit;"
        is not the same as:
          "f0 : unit * unit * unit * int * unit * unit * unit;"
-       The type "unit * unit * unit * float * unit * unit * unit"
-       is not equal to the type "unit * unit * unit * int * unit * unit * unit"
-       Type "float" is not equal to type "int"
+       The type "unit * unit * unit * (|float|) * unit * unit * unit"
+       is not equal to the type "unit * unit * unit * (|int|) * unit * unit * unit"
+       Type "(|float|)" is not equal to type "(|int|)"
        2. Fields do not match:
          "f1 : unit * unit * unit * string * unit * unit * unit;"
        is not the same as:
          "f1 : unit * unit * unit * int * unit * unit * unit;"
-       The type "unit * unit * unit * string * unit * unit * unit"
-       is not equal to the type "unit * unit * unit * int * unit * unit * unit"
-       Type "string" is not equal to type "int"
+       The type "unit * unit * unit * (|string|) * unit * unit * unit"
+       is not equal to the type "unit * unit * unit * (|int|) * unit * unit * unit"
+       Type "(|string|)" is not equal to type "(|int|)"
 |}];;
 
 
@@ -104,9 +104,9 @@ Error: Signature mismatch:
          "f1 : unit * unit * unit * string * unit * unit * unit;"
        is not the same as:
          "f1 : unit * unit * unit * int * unit * unit * unit;"
-       The type "unit * unit * unit * string * unit * unit * unit"
-       is not equal to the type "unit * unit * unit * int * unit * unit * unit"
-       Type "string" is not equal to type "int"
+       The type "unit * unit * unit * (|string|) * unit * unit * unit"
+       is not equal to the type "unit * unit * unit * (|int|) * unit * unit * unit"
+       Type "(|string|)" is not equal to type "(|int|)"
 |}];;
 
 module M3 : sig
@@ -356,7 +356,7 @@ Error: Signature mismatch:
          "f : int;"
        is not the same as:
          "f : float;"
-       The type "int" is not equal to the type "float"
+       The type "(|int|)" is not equal to the type "(|float|)"
 |}]
 
 (** Existential types introduce equations that must be taken in account
@@ -391,7 +391,7 @@ Error: Signature mismatch:
          "x : 'x;"
        is not the same as:
          "x : 'a;"
-       The type "'x" is not equal to the type "'a"
+       The type "(|'x|)" is not equal to the type "(|'a|)"
 |}]
 
 
@@ -532,7 +532,7 @@ Error: Signature mismatch:
          "b : float;"
        is not the same as:
          "b : int;"
-       The type "float" is not equal to the type "int"
+       The type "(|float|)" is not equal to the type "(|int|)"
 |}]
 
 

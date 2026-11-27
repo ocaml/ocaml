@@ -9,8 +9,8 @@ if 3 then ();;
 Line 1, characters 3-4:
 1 | if 3 then ();;
        ^
-Error: The constant "3" has type "int" but an expression was expected of type
-         "bool"
+Error: The constant "3" has type "(|int|)" but an expression was expected of type
+         "(|bool|)"
        because it is in the condition of an if-statement
 |}];;
 
@@ -20,8 +20,8 @@ fun b -> if true then (print_int b) else (if b then ());;
 Line 1, characters 45-46:
 1 | fun b -> if true then (print_int b) else (if b then ());;
                                                  ^
-Error: The value "b" has type "int" but an expression was expected of type "
-       bool" because it is in the condition of an if-statement
+Error: The value "b" has type "(|int|)" but an expression was expected of type "
+       (|bool|)" because it is in the condition of an if-statement
 |}];;
 
 (* Left-to-right bias is still there: if we swap the branches, the new error
@@ -32,7 +32,7 @@ fun b -> if true then (if b then ()) else (print_int b);;
 Line 1, characters 53-54:
 1 | fun b -> if true then (if b then ()) else (print_int b);;
                                                          ^
-Error: The value "b" has type "bool" but an expression was expected of type "int"
+Error: The value "b" has type "(|bool|)" but an expression was expected of type "(|int|)"
 |}];;
 
 if (let x = 3 in x) then ();;
@@ -41,8 +41,8 @@ if (let x = 3 in x) then ();;
 Line 1, characters 17-18:
 1 | if (let x = 3 in x) then ();;
                      ^
-Error: The value "x" has type "int" but an expression was expected of type "
-       bool" because it is in the condition of an if-statement
+Error: The value "x" has type "(|int|)" but an expression was expected of type "
+       (|bool|)" because it is in the condition of an if-statement
 |}];;
 
 if (if true then 3 else 4) then ();;
@@ -51,8 +51,8 @@ if (if true then 3 else 4) then ();;
 Line 1, characters 17-18:
 1 | if (if true then 3 else 4) then ();;
                      ^
-Error: The constant "3" has type "int" but an expression was expected of type
-         "bool"
+Error: The constant "3" has type "(|int|)" but an expression was expected of type
+         "(|bool|)"
        because it is in the condition of an if-statement
 |}];;
 
@@ -62,8 +62,8 @@ if true then 3;;
 Line 1, characters 13-14:
 1 | if true then 3;;
                  ^
-Error: The constant "3" has type "int" but an expression was expected of type
-         "unit"
+Error: The constant "3" has type "(|int|)" but an expression was expected of type
+         "(|unit|)"
        because it is in the result of a conditional with no else branch
 |}];;
 
@@ -83,8 +83,8 @@ while 42 do () done;;
 Line 1, characters 6-8:
 1 | while 42 do () done;;
           ^^
-Error: The constant "42" has type "int" but an expression was expected of type
-         "bool"
+Error: The constant "42" has type "(|int|)" but an expression was expected of type
+         "(|bool|)"
        because it is in the condition of a while-loop
 |}];;
 
@@ -96,8 +96,8 @@ while true do (if true then 3 else 4) done;;
 Line 1, characters 14-37:
 1 | while true do (if true then 3 else 4) done;;
                   ^^^^^^^^^^^^^^^^^^^^^^^
-Error: This "if-then-else" expression has type "int"
-       but an expression was expected of type "unit"
+Error: This "if-then-else" expression has type "(|int|)"
+       but an expression was expected of type "(|unit|)"
        because it is in the body of a while-loop
 |}];;
 
@@ -107,8 +107,8 @@ for i = 3. to 4 do () done;;
 Line 1, characters 8-10:
 1 | for i = 3. to 4 do () done;;
             ^^
-Error: The constant "3." has type "float" but an expression was expected of type
-         "int"
+Error: The constant "3." has type "(|float|)" but an expression was expected of type
+         "(|int|)"
        because it is in a for-loop start index
 |}];;
 
@@ -118,8 +118,8 @@ for i = 3 to 4. do () done;;
 Line 1, characters 13-15:
 1 | for i = 3 to 4. do () done;;
                  ^^
-Error: The constant "4." has type "float" but an expression was expected of type
-         "int"
+Error: The constant "4." has type "(|float|)" but an expression was expected of type
+         "(|int|)"
        because it is in a for-loop stop index
 |}];;
 
@@ -131,8 +131,8 @@ for i = 0 to 0 do (if true then 3 else 4) done;;
 Line 1, characters 18-41:
 1 | for i = 0 to 0 do (if true then 3 else 4) done;;
                       ^^^^^^^^^^^^^^^^^^^^^^^
-Error: This "if-then-else" expression has type "int"
-       but an expression was expected of type "unit"
+Error: This "if-then-else" expression has type "(|int|)"
+       but an expression was expected of type "(|unit|)"
        because it is in the body of a for-loop
 |}];;
 
@@ -142,8 +142,8 @@ assert 12;;
 Line 1, characters 7-9:
 1 | assert 12;;
            ^^
-Error: The constant "12" has type "int" but an expression was expected of type
-         "bool"
+Error: The constant "12" has type "(|int|)" but an expression was expected of type
+         "(|bool|)"
        because it is in the condition of an assertion
 |}];;
 
@@ -154,8 +154,8 @@ Error: The constant "12" has type "int" but an expression was expected of type
 Line 1, characters 0-18:
 1 | (let x = 3 in x+1); ();;
     ^^^^^^^^^^^^^^^^^^
-Error: This expression has type "int" but an expression was expected of type
-         "unit"
+Error: This expression has type "(|int|)" but an expression was expected of type
+         "(|unit|)"
        because it is in the left-hand side of a sequence
 |}];;
 
@@ -180,8 +180,8 @@ Error: This variant expression is expected to have type "unit"
 Line 2, characters 11-16:
 2 |   | y when y + 1 -> ()
                ^^^^^
-Error: This expression has type "int" but an expression was expected of type
-         "bool"
+Error: This expression has type "(|int|)" but an expression was expected of type
+         "(|bool|)"
        because it is in a when-guard
 |}];;
 

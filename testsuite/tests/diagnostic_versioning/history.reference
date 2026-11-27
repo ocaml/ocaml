@@ -155,6 +155,7 @@ Main:
       New label Warning
       New label Loc
       New label Inline_code
+      New label Diff
       New label Hint
       New label Deletion
       New label Insertion

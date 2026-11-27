@@ -54,9 +54,9 @@ let f g = g ?x:(g ?x:(Some g)) 0
 Line 1, characters 15-30:
 1 | let f g = g ?x:(g ?x:(Some g)) 0
                    ^^^^^^^^^^^^^^^
-Error: This expression has type "'a -> 'b"
+Error: This expression has type "'a (|->|) 'b"
        but an expression was expected of type
-         "(?x:'c -> 'a -> 'b as 'c) option"
+         "(?x:'c -> 'a -> 'b as 'c) (|option|)"
 Hint: This function application is partial, maybe some arguments are missing.
 |}]
 

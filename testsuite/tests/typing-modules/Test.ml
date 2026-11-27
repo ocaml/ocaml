@@ -99,7 +99,7 @@ Error: This variant or record definition does not match that of type "u"
          "X of bool"
        is not the same as:
          "X of int"
-       The type "bool" is not equal to the type "int"
+       The type "(|bool|)" is not equal to the type "(|int|)"
 |}];;
 
 (* PR#5815 *)
@@ -170,7 +170,7 @@ Error: Signature mismatch:
          "E of int"
        is not the same as:
          "E of char"
-       The type "int" is not equal to the type "char"
+       The type "(|int|)" is not equal to the type "(|char|)"
 |}];;
 
 module M : sig type t += C of int end = struct type t += E of int end;;

@@ -2202,7 +2202,8 @@ let explain_unbound_gen ppf ~params tv tl typ kwd pr =
 let explain_unbound ppf ~params tv tl typ kwd lab =
   explain_unbound_gen ppf ~params tv tl typ kwd
     (fun ppf ti ->
-       fprintf ppf "%s%a" (lab ti) Out_type.prepared_type_expr (typ ti)
+       fprintf ppf "%s%a" (lab ti)
+         (Out_type.prepared_type_expr ?htarget:None) (typ ti)
     )
 
 let explain_unbound_single ppf ~params tv ty =
@@ -2452,8 +2453,8 @@ let report_error ~loc = function
          All uses need to match the definition for the recursive type \
          to be regular.@]"
         Style.inline_code (Path.name definition)
-        quoted_out_type (Out_type.tree_of_typexp Type defined_as)
-        quoted_out_type (Out_type.tree_of_typexp Type used_as)
+        quoted_out_type (Out_type.tree_of_typexp [] Type defined_as)
+        quoted_out_type (Out_type.tree_of_typexp [] Type used_as)
         (fun pp ->
            let is_expansion = function Expands_to _ -> true | _ -> false in
            if List.exists is_expansion reaching_path then

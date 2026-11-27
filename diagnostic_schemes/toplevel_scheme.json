@@ -242,9 +242,9 @@
           "oneOf" :
             [{ "const" : "Preservation" }, { "const" : "Modification" },
               { "const" : "Insertion" }, { "const" : "Deletion" },
-              { "const" : "Hint" }, { "const" : "Inline_code" },
-              { "const" : "Loc" }, { "const" : "Warning" },
-              { "const" : "Error" },
+              { "const" : "Hint" }, { "const" : "Diff" },
+              { "const" : "Inline_code" }, { "const" : "Loc" },
+              { "const" : "Warning" }, { "const" : "Error" },
               {
                 "oneOf" :
                   [{

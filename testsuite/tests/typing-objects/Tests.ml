@@ -37,7 +37,7 @@ Lines 3-5, characters 4-3:
 5 | end..
 Error: Some type variables are unbound in this type:
          class d : unit -> object method f : 'a -> unit end
-       The method "f" has type "'a -> unit" where "'a" is unbound
+       The method "f" has type "(|'a|) -> unit" where "(|'a|)" is unbound
 |}];;
 
 (* Create instance #c *)
@@ -713,9 +713,9 @@ Error: Signature mismatch:
        is not included in
          val f : #c -> #c
        The type "(#c as 'a) -> 'a" is not compatible with the type "#c -> #c"
-       Type "#c as 'a" = "< m : 'a; .. >" is not compatible with type
-         "#c as 'b" = "< m : 'b; .. >"
-       Type "'a" is not compatible with type "'b"
+       Type "(|#c as 'a|)" = "< m : (|'a|); .. >" is not compatible with type
+         "(|#c as 'b|)" = "< m : (|'b|); .. >"
+       Type "(|'a|)" is not compatible with type "(|'b|)"
 |}];;
 
 module M = struct type t = int class t () = object end end;;
@@ -740,7 +740,7 @@ fun x -> (x : int -> bool :> 'a -> 'a);;
 Line 1, characters 9-38:
 1 | fun x -> (x : int -> bool :> 'a -> 'a);;
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type "int -> bool" is not a subtype of "int -> int"
+Error: Type "int -> (|bool|)" is not a subtype of "int -> (|int|)"
        Type "bool" is not a subtype of "int"
 |}];;
 fun x -> (x : int -> bool :> int -> int);;
@@ -748,7 +748,7 @@ fun x -> (x : int -> bool :> int -> int);;
 Line 1, characters 9-40:
 1 | fun x -> (x : int -> bool :> int -> int);;
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type "int -> bool" is not a subtype of "int -> int"
+Error: Type "int -> (|bool|)" is not a subtype of "int -> (|int|)"
        Type "bool" is not a subtype of "int"
 |}];;
 fun x -> (x : < > :> < .. >);;
@@ -783,7 +783,7 @@ fun (x : 'a t as 'a) -> ();;
 Line 1, characters 17-19:
 1 | fun (x : 'a t as 'a) -> ();;
                      ^^
-Error: This alias is bound to type "'a t" but is used as an instance of type "'a"
+Error: This alias is bound to type "(|'a|) t" but is used as an instance of type "(|'a|)"
        The type variable "'a" occurs inside "'a t"
 |}];;
 fun (x : 'a t) -> (x : 'a); ();;
@@ -791,7 +791,7 @@ fun (x : 'a t) -> (x : 'a); ();;
 Line 1, characters 19-20:
 1 | fun (x : 'a t) -> (x : 'a); ();;
                        ^
-Error: The value "x" has type "'a t" but an expression was expected of type "'a"
+Error: The value "x" has type "(|'a|) t" but an expression was expected of type "(|'a|)"
        The type variable "'a" occurs inside "'a t"
 |}];;
 fun ((x : 'a) | (x : 'a t)) -> ();;
@@ -799,7 +799,7 @@ fun ((x : 'a) | (x : 'a t)) -> ();;
 Line 1, characters 10-12:
 1 | fun ((x : 'a) | (x : 'a t)) -> ();;
               ^^
-Error: This type "'a t" should be an instance of type "'a"
+Error: This type "(|'a|) t" should be an instance of type "(|'a|)"
        The type variable "'a" occurs inside "'a t"
 |}];;
 fun ((x : 'a) | (x : 'a t)) -> ();;
@@ -807,7 +807,7 @@ fun ((x : 'a) | (x : 'a t)) -> ();;
 Line 1, characters 10-12:
 1 | fun ((x : 'a) | (x : 'a t)) -> ();;
               ^^
-Error: This type "'a t" should be an instance of type "'a"
+Error: This type "(|'a|) t" should be an instance of type "(|'a|)"
        The type variable "'a" occurs inside "'a t"
 |}];;
 type 'a t = < x : 'a >;;
@@ -1034,8 +1034,8 @@ Error: The class type object method a : int method b : 'a end
        The class type object method a : int method b : 'a end
        is not matched by the class type
          object method a : 'a method b : 'a end
-       The method a has type "int" but is expected to have type "'a"
-       Type "int" is not compatible with type "'a"
+       The method a has type "(|int|)" but is expected to have type "(|'a|)"
+       Type "(|int|)" is not compatible with type "(|'a|)"
 |}];;
 
 class type ['a] ct = object ('a) end
@@ -1067,9 +1067,9 @@ Lines 3-5, characters 8-3:
 Error: The class type object ('a) method m : < m : 'a; .. > as 'a end
        is not matched by the class type
          object method m : < m : 'a > as 'a end
-       The method m has type "< m : 'a; .. > as 'a"
-       but is expected to have type "< m : 'b > as 'b"
-       Type "'a" is not compatible with type "<  >"
+       The method m has type "(|< m : (|'a|); .. > as 'a|)"
+       but is expected to have type "(|< m : (|'b|) > as 'b|)"
+       Type "(|'a|)" is not compatible with type "(|<  >|)"
 |}];;
 
 class c :
@@ -1088,9 +1088,9 @@ Error: The class type
          object method foo : (< foo : int; .. > as 'a) -> 'a -> unit end
        is not matched by the class type
          object method foo : < foo : int; .. > -> < foo : int > -> unit end
-       The method foo has type "'a. (< foo : int; .. > as 'a) -> 'a -> unit"
+       The method foo has type "'a. (< foo : int; .. > as 'a) -> (|'a|) -> unit"
        but is expected to have type
-         "'b. (< foo : int; .. > as 'b) -> < foo : int > -> unit"
+         "'b. (< foo : int; .. > as 'b) -> (|< foo : int >|) -> unit"
        Type "'c" is not compatible with type "<  >"
 |}];;
 
@@ -1126,10 +1126,10 @@ Error: The class type
          object ('a) method m : (< m : 'a -> unit; .. > as 'a) -> unit end
        is not matched by the class type
          object method m : < m : 'a; x : int; .. > -> unit as 'a end
-       The method m has type "(< m : 'a -> unit; .. > as 'a) -> unit"
+       The method m has type "(< m : (|'a|) -> unit; .. > as 'a) -> unit"
        but is expected to have type
          "'b. (< m : 'c; x : int; .. > as 'b) -> unit as 'c"
-       Type "'a" is not compatible with type "< x : int; .. >"
+       Type "(|'a|)" is not compatible with type "(|< x : int; .. >|)"
 |}];;
 
 let is_empty (x : < >) = ()
@@ -1180,9 +1180,9 @@ class ['a] p :
 Line 2, characters 12-32:
 2 | class c = [ < foo : string; .. > ] p;;
                 ^^^^^^^^^^^^^^^^^^^^
-Error: The type parameter "< foo : string; .. >"
-       does not meet its constraint: it should be "< foo : int; .. >"
-       The method "foo" has type "string", but the expected method type was "int"
+Error: The type parameter "< foo : (|string|); .. >"
+       does not meet its constraint: it should be "< foo : (|int|); .. >"
+       The method "foo" has type "(|string|)", but the expected method type was "(|int|)"
 |}];;
 
 (* Errors for undefined methods *)
@@ -1466,7 +1466,7 @@ Line 2, characters 0-16:
 2 | class d = ['a] c
     ^^^^^^^^^^^^^^^^
 Error: Some type variables are unbound in this type: class d : ['a] c
-       The method "m" has type "(< f : 'b; x : 'a > as 'b) -> unit" where "'a"
+       The method "m" has type "(< f : 'b; x : (|'a|) > as 'b) -> unit" where "(|'a|)"
        is unbound
 |}]
 

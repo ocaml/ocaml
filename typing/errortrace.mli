@@ -107,6 +107,12 @@ type univar =
   | Var_mismatch of { order:order; diff:type_expr diff }
   | Quantification_mismatch of type_expr list
 
+type highlight_target =
+  | Type of Outcometree.highlight_kind * type_expr
+  | Type_constructor of Path.t
+
+type highlight_hint = highlight_target list diff
+
 type ('a, 'variety) root =
   (* Common *)
   | Variant : 'variety variant -> ('a, 'variety) root
@@ -116,6 +122,7 @@ type ('a, 'variety) root =
   | Tuple_label_mismatch of string option diff
   | First_class_module: first_class_module -> ('a,_) root
   | Univar of univar
+  | Highlight_hint of highlight_hint
   (* Unification & Moregen; included in Equality for simplicity *)
   | Rec_occur : type_expr * type_expr -> ('a, _) root
 
@@ -132,6 +139,7 @@ val map_types :
   (type_expr -> type_expr) ->
   (expanded_type, 'variety) t -> (expanded_type, 'variety) t
 
+val no_ctx: 'a diff -> 'a ctx_diff
 val diff:
   ?ctx:ctx -> got:'a -> expected:'a -> ('a,'variety) t -> ('a,'variety) t
 val root: ('a,'variety) root -> ('a,'variety) t
@@ -146,6 +154,9 @@ val in_tag:
   l:string -> (type_expr, 'f) t -> (type_expr, 'f) t
 
 val variant_arity_mismatch: string -> ('any, 'f) root
+
+val highlight_type:
+  Outcometree.highlight_kind -> Types.type_expr -> highlight_target list
 
 val swap_trace : ('a, 'variety) t -> ('a, 'variety) t
 
@@ -218,13 +229,14 @@ module Structured: sig
   (** We extend the core explanation type with promoted explanation generated
       from the main trace *)
   type 'a extended_explanation =
-    | Promoted of Format_doc.t
     | Standard of 'a
+    | Promoted of highlight_hint option * Format_doc.t
+    | Hint of highlight_hint
 
-  type ('a,'b) s = {
+  type ('a,'b,'c) s = {
     top: ('a ctx_diff * bool) option; (* top = None => tr = [] *)
     tr: 'a ctx_diff list;
-    expl: ('a, 'b) root extended_explanation option
+    expl: ('b, 'c) root extended_explanation option
   }
   (** The structured version of the trace is split in three parts:
       - {!top} the first element of the trace
@@ -255,6 +267,6 @@ module Structured: sig
 val parse:
     promote:('a diff -> Format_doc.t option) ->
     status:('a ctx_diff -> printing_status) ->
-    ('a, 'b) t -> ('a, 'b) s
+    ('a, 'b) t -> ('a, 'a, 'b) s
 
 end

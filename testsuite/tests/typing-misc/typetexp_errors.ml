@@ -46,7 +46,7 @@ let f (x: int as 'a) (y: float as 'a) = (x,y)
 Line 1, characters 25-36:
 1 | let f (x: int as 'a) (y: float as 'a) = (x,y)
                              ^^^^^^^^^^^
-Error: This type "float" should be an instance of type "int"
+Error: This type "(|float|)" should be an instance of type "(|int|)"
 |}]
 
 type 'a t1 = 'a constraint 'a = 'b list
@@ -59,5 +59,5 @@ type 'a t2 = 'a constraint 'a = 'b option
 Line 4, characters 36-38:
 4 | let f (x : 'a t1) = (assert false : 'a t2)
                                         ^^
-Error: This type "'a option" should be an instance of type "'b list"
+Error: This type "'a (|option|)" should be an instance of type "'b (|list|)"
 |}]

@@ -994,6 +994,7 @@ typing/envaux.cmi : \
 typing/errortrace.cmo : \
     typing/types.cmi \
     typing/path.cmi \
+    typing/outcometree.cmi \
     typing/ident.cmi \
     utils/format_doc.cmi \
     parsing/asttypes.cmi \
@@ -1001,6 +1002,7 @@ typing/errortrace.cmo : \
 typing/errortrace.cmx : \
     typing/types.cmx \
     typing/path.cmx \
+    typing/outcometree.cmi \
     typing/ident.cmx \
     utils/format_doc.cmx \
     parsing/asttypes.cmx \
@@ -1008,11 +1010,13 @@ typing/errortrace.cmx : \
 typing/errortrace.cmi : \
     typing/types.cmi \
     typing/path.cmi \
+    typing/outcometree.cmi \
     typing/ident.cmi \
     utils/format_doc.cmi \
     parsing/asttypes.cmi
 typing/errortrace_report.cmo : \
     typing/types.cmi \
+    typing/syntactic_highlighting.cmi \
     typing/printtyp.cmi \
     typing/predef.cmi \
     typing/path.cmi \
@@ -1030,6 +1034,7 @@ typing/errortrace_report.cmo : \
     typing/errortrace_report.cmi
 typing/errortrace_report.cmx : \
     typing/types.cmx \
+    typing/syntactic_highlighting.cmx \
     typing/printtyp.cmx \
     typing/predef.cmx \
     typing/path.cmx \
@@ -1305,6 +1310,7 @@ typing/oprint.cmo : \
     utils/utf8_lexeme.cmi \
     parsing/pprintast.cmi \
     typing/outcometree.cmi \
+    utils/misc.cmi \
     parsing/lexer.cmi \
     utils/format_doc.cmi \
     parsing/asttypes.cmi \
@@ -1313,6 +1319,7 @@ typing/oprint.cmx : \
     utils/utf8_lexeme.cmx \
     parsing/pprintast.cmx \
     typing/outcometree.cmi \
+    utils/misc.cmx \
     parsing/lexer.cmx \
     utils/format_doc.cmx \
     parsing/asttypes.cmx \
@@ -1780,6 +1787,14 @@ typing/subst.cmi : \
     parsing/parsetree.cmi \
     parsing/location.cmi \
     typing/ident.cmi
+typing/syntactic_highlighting.cmo : \
+    typing/outcometree.cmi \
+    typing/syntactic_highlighting.cmi
+typing/syntactic_highlighting.cmx : \
+    typing/outcometree.cmi \
+    typing/syntactic_highlighting.cmi
+typing/syntactic_highlighting.cmi : \
+    typing/outcometree.cmi
 typing/tast_iterator.cmo : \
     typing/typedtree.cmi \
     parsing/parsetree.cmi \

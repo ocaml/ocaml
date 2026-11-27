@@ -140,7 +140,7 @@ let execute_phrase print_outcome log phr =
                         let outv = outval_of_value newenv v exp.exp_type in
                         let ty =
                           Out_type.prepare_for_printing [exp.exp_type];
-                          Out_type.tree_of_typexp Type_scheme exp.exp_type
+                          Out_type.tree_of_typexp [] Type_scheme exp.exp_type
                         in
                         Ophr_eval (outv, ty)
                       | None -> Ophr_signature (pr_item oldenv sg'))

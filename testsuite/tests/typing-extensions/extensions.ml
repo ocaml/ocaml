@@ -231,7 +231,7 @@ let a = A 9
 Line 1, characters 10-11:
 1 | let a = A 9
               ^
-Error: The constant "9" has type "int" but an expression was expected of type
+Error: The constant "9" has type "(|int|)" but an expression was expected of type
          "[> `Var ]"
 |}]
 
@@ -241,7 +241,7 @@ type 'a foo += B : int foo
 Line 1, characters 19-22:
 1 | type 'a foo += B : int foo
                        ^^^
-Error: This type "int" should be an instance of type "[> `Var ]"
+Error: This type "(|int|)" should be an instance of type "[> `Var ]"
 |}]
 
 (* Signatures can make an extension private *)
@@ -324,7 +324,7 @@ Error: Signature mismatch:
          "A of float"
        is not the same as:
          "A of int"
-       The type "float" is not equal to the type "int"
+       The type "(|float|)" is not equal to the type "(|int|)"
 |}]
 
 module M : sig
@@ -350,7 +350,7 @@ Error: Signature mismatch:
          "A of 'b"
        is not the same as:
          "A of 'a"
-       The type "'b" is not equal to the type "'a"
+       The type "(|'b|)" is not equal to the type "(|'a|)"
 |}]
 
 module M : sig
@@ -376,7 +376,7 @@ Error: Signature mismatch:
          "A of 'a"
        is not the same as:
          "A of 'a"
-       The type "'a" is not equal to the type "'b"
+       The type "(|'a|)" is not equal to the type "(|'b|)"
 |}];;
 
 
@@ -403,7 +403,7 @@ Error: Signature mismatch:
          "A : 'd -> ('c, 'd) bar"
        is not the same as:
          "A : 'c -> ('c, 'd) bar"
-       The type "'d" is not equal to the type "'c"
+       The type "(|'d|)" is not equal to the type "(|'c|)"
 |}]
 
 (* Extensions can be rebound *)
@@ -438,7 +438,7 @@ type bar += A3 = M.A1
 Line 1, characters 17-21:
 1 | type bar += A3 = M.A1
                      ^^^^
-Error: The constructor "M.A1" has type "foo" but was expected to be of type "bar"
+Error: The constructor "M.A1" has type "(|foo|)" but was expected to be of type "(|bar|)"
 |}]
 
 module M = struct type foo += private B1 of int end

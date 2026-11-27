@@ -27,6 +27,6 @@ end
 Line 3, characters 17-18:
 3 |     match x with I -> M.print I
                      ^
-Error: This pattern matches values of type "'a g"
-       but a pattern was expected which matches values of type "M.t"
+Error: This pattern matches values of type "'a (|g|)"
+       but a pattern was expected which matches values of type "(|M.t|)"
 |}]

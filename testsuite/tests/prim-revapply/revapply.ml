@@ -99,7 +99,7 @@ val f : ?x:'a -> y:'b -> unit -> unit = <fun>
 Line 3, characters 34-40:
 3 | let () = () |> (let type u = A in f ~y:0)
                                       ^^^^^^
-Error: This expression has type "?x:'a -> unit -> unit"
+Error: This expression has type "?(|x|):'a -> unit -> unit"
        but an expression was expected of type "unit -> 'b"
        The first argument is labeled "?x",
        but an unlabeled argument was expected

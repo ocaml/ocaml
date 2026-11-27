@@ -439,11 +439,14 @@ function
   | Ptop_def (st :: _) :: _ -> Some st.pstr_loc.loc_start.pos_lnum
 
 
-let visible_inline_code () =
+let visible_inline_code_and_diff () =
   let open Misc.Style in
   let default = get_styles () in
   let inline_code = { ansi = []; text_open = {|"|}; text_close={|"|} } in
-  set_styles { default with inline_code }
+  let difference_highlight =
+    { ansi = []; text_open ="(|"; text_close = "|)" }
+  in
+  set_styles { default with inline_code; difference_highlight }
 
 let eval_expect_file _fname ~file_contents =
   Warnings.reset_fatal ();
@@ -453,7 +456,7 @@ let eval_expect_file _fname ~file_contents =
   let buf = Buffer.create 1024 in
   let ppf = Format.formatter_of_buffer buf in
   let () =
-    visible_inline_code ();
+    visible_inline_code_and_diff ();
     Misc.Style.set_tag_handling ~color:false ppf in
   let dev = Log.Device.make (ref ppf) in
   let log = Topcommon.log_on_device dev in

@@ -92,5 +92,5 @@ Error: Type "(module A with type a = int)" is not a subtype of "(module B)"
          type c = int
        is not included in
          type c = float
-       The type "int" is not equal to the type "float"
+       The type "(|int|)" is not equal to the type "(|float|)"
 |}]
