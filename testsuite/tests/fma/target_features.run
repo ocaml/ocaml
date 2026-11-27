@@ -1,0 +1,11 @@
+#!/bin/sh
+
+exec > "${output}" 2>&1
+
+${program} | tr -d '\r'
+
+if grep -q vfmadd213sd "${test_build_directory}/target_features.${asmext}"; then
+  echo fused
+else
+  echo called
+fi

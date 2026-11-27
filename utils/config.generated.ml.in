@@ -78,6 +78,7 @@ let native_compiler = @native_compiler@
 
 let architecture = {@QS@|@arch@|@QS@}
 let model = {@QS@|@model@|@QS@}
+let target_features = {@QS@|@target_features@|@QS@}
 let system = {@QS@|@system@|@QS@}
 let target_os_type = {@QS@|@target_os_type@|@QS@}
 

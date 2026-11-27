@@ -193,6 +193,7 @@ type instruction =
   | SET of condition * arg
   | SHR of arg * arg
   | SQRTSD of arg * arg
+  | VFMADD213SD of arg * arg * arg
   | SUB of arg * arg
   | SUBSD of arg * arg
   | TEST of arg * arg

@@ -16,11 +16,21 @@
 
 (* Machine-specific command-line options *)
 
+let features =
+  Target_features.create ~arch:"amd64"
+    ~features:[ "fma", "the FMA3 fused multiply-add instructions" ]
+    ~levels:[ "x86-64", []; "x86-64-v2", [];
+              "x86-64-v3", [ "fma" ]; "x86-64-v4", [ "fma" ] ]
+    Config.target_features
+
+let fma () = Target_features.enabled features "fma"
+
 let command_line_options =
   [ "-fPIC", Arg.Set Clflags.pic_code,
       " Generate position-independent machine code (default)";
     "-fno-PIC", Arg.Clear Clflags.pic_code,
       " Generate position-dependent machine code" ]
+  @ Target_features.command_line_options features
 
 (* Specific operations for the AMD64 processor *)
 
@@ -44,6 +54,7 @@ type specific_operation =
   | Iclz                               (* count leading zeros *)
   | Ictz                               (* count trailing zeros *)
   | Isqrtf                             (* Float square root *)
+  | Imuladdf                           (* Fused multiply-add *)
   | Ifloatsqrtf of addressing_mode     (* Float square root from memory *)
   | Isextend32                         (* 32 to 64 bit conversion with sign
                                           extension *)
@@ -111,6 +122,9 @@ let print_specific_operation printreg op ppf arg =
       fprintf ppf "[%a] +:= %i" (print_addressing printreg addr) arg n
   | Isqrtf ->
       fprintf ppf "sqrtf %a" printreg arg.(0)
+  | Imuladdf ->
+      fprintf ppf "%a *f %a +f %a"
+        printreg arg.(0) printreg arg.(1) printreg arg.(2)
   | Ifloatsqrtf addr ->
      fprintf ppf "sqrtf float64[%a]"
              (print_addressing printreg addr) [|arg.(0)|]
@@ -144,7 +158,8 @@ let win64 =
 (* Specific operations that are pure *)
 
 let operation_is_pure = function
-  | Ilea _ | Ibswap _ | Iclz | Ictz | Isqrtf | Isextend32 | Izextend32 -> true
+  | Ilea _ | Ibswap _ | Iclz | Ictz | Isqrtf | Imuladdf
+  | Isextend32 | Izextend32 -> true
   | Ifloatarithmem _ | Ifloatsqrtf _ -> true
   | _ -> false
 

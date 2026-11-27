@@ -70,6 +70,12 @@ Working version
   of one that also sets a carry nothing reads.
   (Tim McGilchrist and Zane Hambly, review by Stefan Muenzel)
 
+- #15415: Let ocamlopt use optional instruction set extensions, chosen by
+  configure from the build machine and overridden with
+  --with-target-features, -ftarget-level, -f<feature>, -fno-<feature> or
+  OCAMLPARAM. The first is FMA3 on amd64, used for Float.fma.
+  (Zane Hambly, review by         )
+
 ### Standard library:
 
 - #15168: `Scanf.unescaped`, `%S` and `%C` now accept all the escape sequences

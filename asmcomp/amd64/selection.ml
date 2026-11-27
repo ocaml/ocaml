@@ -91,6 +91,8 @@ let pseudoregs_for_operation op arg res =
   | Iabsf | Inegf
   | Ispecific(Ibswap (32|64)) ->
       (res, res)
+  | Ispecific Imuladdf ->
+      ([|res.(0); arg.(1); arg.(2)|], res)
   (* For xchg, args must be a register allowing access to high 8 bit register
      (rax, rbx, rcx or rdx). Keep it simple, just force the argument in rax. *)
   | Ispecific(Ibswap 16) ->
@@ -144,10 +146,13 @@ let pseudoregs_for_operation op arg res =
 
 (* If you update [inline_ops], you may need to update [is_simple_expr] and/or
    [effects_of], below. *)
-let inline_ops =
-  [ "sqrt"; "caml_bswap16_direct"; "caml_int32_direct_bswap";
-    "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap";
-    "caml_int_clz_direct"; "caml_int_ctz_direct" ]
+let inline_ops () =
+  let ops =
+    [ "sqrt"; "caml_bswap16_direct"; "caml_int32_direct_bswap";
+      "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap";
+      "caml_int_clz_direct"; "caml_int_ctz_direct" ]
+  in
+  if Arch.fma () then "caml_fma" :: ops else ops
 
 let is_immediate n = n <= 0x7FFF_FFFF && n >= -0x8000_0000
 
@@ -171,7 +176,7 @@ method is_immediate_test _cmp n = is_immediate n
 method! is_simple_expr e =
   match e with
   | Cop(Cextcall (fn, _, _, _), args, _)
-    when List.mem fn inline_ops ->
+    when List.mem fn (inline_ops ()) ->
       (* inlined ops are simple if their arguments are *)
       List.for_all self#is_simple_expr args
   | _ ->
@@ -180,7 +185,7 @@ method! is_simple_expr e =
 method! effects_of e =
   match e with
   | Cop(Cextcall(fn, _, _, _), args, _)
-    when List.mem fn inline_ops ->
+    when List.mem fn (inline_ops ()) ->
       Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
   | _ ->
       super#effects_of e
@@ -239,6 +244,9 @@ method! select_operation op args dbg =
      | _ ->
          assert false
      end
+  | Cextcall("caml_fma", _, [XFloat; XFloat; XFloat], false)
+    when Arch.fma () ->
+      (Ispecific Imuladdf, args)
   (* Recognize store instructions *)
   | Cstore ((Word_int|Word_val as chunk), _init) ->
       begin match args with

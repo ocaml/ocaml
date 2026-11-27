@@ -148,6 +148,7 @@ let configuration_variables () =
   p_bool "native_compiler" native_compiler;
   p "architecture" architecture;
   p "model" model;
+  p "target_features" target_features;
   p_int "int_size" Sys.int_size;
   p_int "word_size" Sys.word_size;
   p "system" system;

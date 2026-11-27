@@ -65,6 +65,7 @@ let native_compiler = false
 let tsan = false
 let architecture = "none"
 let model = "default"
+let target_features = ""
 let system = "unknown"
 let target_os_type =
   "The boot compiler should not be using Config.target_os_type"

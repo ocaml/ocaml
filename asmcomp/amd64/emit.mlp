@@ -757,6 +757,11 @@ let emit_instr env fallthrough i =
       if arg i 0 <> res i 0 then
         I.xorpd (res i 0) (res i 0); (* avoid partial register stall *)
       I.sqrtsd (arg i 0) (res i 0)
+  | Lop(Ispecific Imuladdf) ->
+      (* The 213 form computes dst = src2 * dst + src3, so with the result
+         tied to the first argument this is arg0 * arg1 + arg2, rounded
+         once. Operands are in AT&T order here. *)
+      I.vfmadd213sd (arg i 2) (arg i 1) (res i 0)
   | Lop(Ispecific(Ifloatsqrtf addr)) ->
       I.xorpd (res i 0) (res i 0); (* avoid partial register stall *)
       I.sqrtsd (addressing addr REAL8 i 0) (res i 0)

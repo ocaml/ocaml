@@ -3824,6 +3824,17 @@ asmcomp/strmatch.cmx : \
 asmcomp/strmatch.cmi : \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi
+asmcomp/target_features.cmo : \
+    utils/misc.cmi \
+    parsing/location.cmi \
+    utils/clflags.cmi \
+    asmcomp/target_features.cmi
+asmcomp/target_features.cmx : \
+    utils/misc.cmx \
+    parsing/location.cmx \
+    utils/clflags.cmx \
+    asmcomp/target_features.cmi
+asmcomp/target_features.cmi :
 asmcomp/thread_sanitizer.cmo : \
     lambda/debuginfo.cmi \
     asmcomp/cmm_helpers.cmi \
@@ -3904,12 +3915,14 @@ asmcomp/CSE.cmx : \
     asmcomp/CSE.cmi
 asmcomp/arch.cmo : \
     asmcomp/x86_ast.cmi \
+    asmcomp/target_features.cmi \
     lambda/lambda.cmi \
     utils/config.cmi \
     utils/clflags.cmi \
     asmcomp/arch.cmi
 asmcomp/arch.cmx : \
     asmcomp/x86_ast.cmi \
+    asmcomp/target_features.cmx \
     lambda/lambda.cmx \
     utils/config.cmx \
     utils/clflags.cmx \

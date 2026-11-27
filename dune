@@ -164,7 +164,8 @@
    polling printcmm printlinear printmach proc
    reg reload reloadgen
    schedgen scheduling selectgen selection spill split
-   strmatch thread_sanitizer x86_ast x86_dsl x86_gas x86_masm x86_proc
+   strmatch target_features thread_sanitizer
+   x86_ast x86_dsl x86_gas x86_masm x86_proc
    stackframegen stackframe
 
    ;; file_formats/

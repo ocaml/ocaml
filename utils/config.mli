@@ -234,6 +234,9 @@ val architecture: string
 val model: string
 (** Name of processor submodel for the native-code compiler *)
 
+val target_features: string
+(** Instruction set extensions the native-code compiler uses by default *)
+
 val system: string
 (** Name of operating system for the native-code compiler *)
 
