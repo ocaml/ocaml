@@ -723,7 +723,8 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
 
 
 
-      if (RUNTIME_EVENTS_ITEM_TYPE(header) != EV_INTERNAL) {
+      if (!RUNTIME_EVENTS_ITEM_IS_RUNTIME(header)
+          || RUNTIME_EVENTS_ITEM_TYPE(header) != EV_INTERNAL) {
         consumed++;
       }
 
@@ -1415,7 +1416,6 @@ CAMLprim value caml_ml_runtime_events_read_poll(value wrapper,
   wrapped_cursor = Field(wrapper, 0);
 
   uintnat events_consumed = 0;
-  int max_events = Is_some(max_events_val) ? Some_val(max_events_val) : 0;
   struct caml_runtime_events_cursor *cursor = Cursor_val(wrapped_cursor);
   runtime_events_error res;
 
@@ -1431,6 +1431,17 @@ CAMLprim value caml_ml_runtime_events_read_poll(value wrapper,
     caml_failwith("Runtime_events: cursor is not open");
   }
 
+  intnat max_events;
+  if (Is_some(max_events_val)) {
+    max_events = Long_val(Some_val(max_events_val));
+    if (max_events < 0)
+      caml_invalid_argument("Runtime_events.read_poll: negative max_option");
+    if (!max_events)
+      CAMLreturn(Val_int(0));
+  } else {
+    /* None = unlimited */
+    max_events = 0;
+  }
   res = caml_runtime_events_read_poll
                         (cursor, &holder, max_events, &events_consumed);
 

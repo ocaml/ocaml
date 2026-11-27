@@ -792,4 +792,13 @@ val free_cursor : cursor -> unit
 val read_poll : cursor -> Callbacks.t -> int option -> int
 (** [read_poll cursor callbacks max_option] calls the corresponding functions
     on [callbacks] for up to [max_option] events read off [cursor]'s
-    runtime_events and returns the number of events read. *)
+    runtime_events and returns the number of events read.
+
+    When [max_option] is [None] there is no limit on the number of events
+    processed.
+    When it is [Some 0] it only checks the [cursor]
+    (older versions of OCaml used to treat [Some 0] as [None]).
+
+    @raise Invalid_argument when [max_option] is [Some negative_value]
+    @raise Failure on ring corruption or incorrect use of the [cursor]
+*)

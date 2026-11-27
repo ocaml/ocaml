@@ -237,6 +237,13 @@ Working version
   of a C int.
   (Sora Morimoto, review by Olivier Nicole)
 
+* #15421: `max_option=Some n` in `Runtime_events.read_poll` allowed `2n+1`
+  events. And `Some 0` was treated the same as `None` (unlimited),
+  instead it now only checks the cursor and returns. Negative `max_option`
+  values are rejected with `Invalid_argument`. User `Type.unit` events are
+  now counted.
+  (Edwin Török, report by KC Sivaramakrishnan, review by)
+
 OCaml 5.6.0
 -----------
 
