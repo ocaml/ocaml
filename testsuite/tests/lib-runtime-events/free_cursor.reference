@@ -1,0 +1,1 @@
+freeing cursor from inside its own event callback

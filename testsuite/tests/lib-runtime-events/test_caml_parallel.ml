@@ -75,6 +75,9 @@ let num_minors = 30
 let () =
     start ();
     let cursor = create_cursor None in
+    let cursor_race = create_cursor None in
+    let cursor_race_free_ok = Atomic.make 0 in
+    let cursor_race_free_failed = Atomic.make 0 in
     let gc_churn_f () =
         let list_ref = ref [] in
         for j = 0 to num_minors do
@@ -83,7 +86,17 @@ let () =
                 list_ref := (Sys.opaque_identity(ref 42)) :: !list_ref
             done;
             Gc.minor ();
-        done
+        done;
+        let () =
+          try
+            let (_ : int) = read_poll cursor_race (Callbacks.create ()) None in
+            ()
+          with Failure _ -> ()
+        in
+        try
+          free_cursor cursor_race;
+          Atomic.incr cursor_race_free_ok
+        with Failure _ -> Atomic.incr cursor_race_free_failed
     in
     let domains_list = List.init num_domains (fun _ -> Domain.spawn gc_churn_f) in
     let _ = List.iter Domain.join domains_list in
@@ -92,4 +105,8 @@ let () =
     ignore(read_poll cursor callbacks None);
     assert(!got_start);
     assert(Atomic.get minors >= num_minors);
-    assert(!lost_events_count == 0)
+    assert(!lost_events_count == 0);
+    assert(Atomic.get cursor_race_free_ok = 1);
+    assert(Atomic.get cursor_race_free_failed = num_domains - 1);
+    (* test finalisers *)
+    Gc.full_major ()
