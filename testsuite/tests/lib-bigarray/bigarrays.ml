@@ -257,7 +257,19 @@ let tests () =
                   65519.0, 65504.0;
                   -65519.0, -65504.0;
                   65520.0, infinity;
-                  -65520.0, neg_infinity]);
+                  -65520.0, neg_infinity;
+                  0x1.002p+0, 1.0;
+                  0x1.0020000001p+0, 0x1.004p+0;
+                  -0x1.0020000001p+0, -0x1.004p+0;
+                  0x1.ffdffffffffffp+15, 65504.0;
+                  0x1.0000000000001p-25, 0x1p-24]);
+  begin
+    let a = Array1.create float16 c_layout 2 in
+    a.{0} <- 0x1.0020000001p+0;
+    Array1.fill (Array1.sub a 1 1) 0x1.0020000001p+0;
+    test 18 a.{0} 0x1.004p+0;
+    test 19 a.{1} 0x1.004p+0
+  end;
 
   testing_function "set/get (specialized)";
   let a = Array1.create int c_layout 3 in
