@@ -589,8 +589,13 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
         switch (RUNTIME_EVENTS_ITEM_TYPE(header)) {
         case EV_BEGIN:
           if (cursor->runtime_begin) {
+            unsigned phase = RUNTIME_EVENTS_ITEM_ID(header);
+            if (phase >= EV_RUNTIME_PHASE_LAST) {
+              atomic_store(&cursor->cursor_in_poll, 0);
+              return E_CORRUPT_STREAM;
+            }
             if( !cursor->runtime_begin(domain_num, callback_data, buf[1],
-                                        RUNTIME_EVENTS_ITEM_ID(header)) ) {
+                                        phase) ) {
                                           early_exit = 1;
                                           continue;
                                         }
@@ -598,8 +603,13 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
           break;
         case EV_EXIT:
           if (cursor->runtime_end) {
+            unsigned phase = RUNTIME_EVENTS_ITEM_ID(header);
+            if (phase >= EV_RUNTIME_PHASE_LAST) {
+              atomic_store(&cursor->cursor_in_poll, 0);
+              return E_CORRUPT_STREAM;
+            }
             if( !cursor->runtime_end(domain_num, callback_data, buf[1],
-                                      RUNTIME_EVENTS_ITEM_ID(header)) ) {
+                                      phase) ) {
                                         early_exit = 1;
                                         continue;
                                       };
@@ -607,12 +617,13 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
           break;
         case EV_COUNTER:
           if (cursor->runtime_counter) {
-            if (msg_length < 3) {
+            unsigned counter = RUNTIME_EVENTS_ITEM_ID(header);
+            if (msg_length < 3 || counter >= EV_RUNTIME_COUNTER_LAST) {
               atomic_store(&cursor->cursor_in_poll, 0);
               return E_CORRUPT_STREAM;
             }
             if( !cursor->runtime_counter(domain_num, callback_data, buf[1],
-                                        RUNTIME_EVENTS_ITEM_ID(header), buf[2]
+                                        counter, buf[2]
                                         ) ) {
                                             early_exit = 1;
                                             continue;
@@ -637,8 +648,13 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
             /* EV_RING_STOP genuinely has msg_length = 2,
                buf[2] is unused in that case */
             int64_t data = msg_length > 2 ? buf[2] : 0;
+            unsigned lifecycle = RUNTIME_EVENTS_ITEM_ID(header);
+            if (lifecycle >= EV_LIFECYCLE_LAST) {
+              atomic_store(&cursor->cursor_in_poll, 0);
+              return E_CORRUPT_STREAM;
+            }
             if( !cursor->lifecycle(domain_num, callback_data, buf[1],
-                                    RUNTIME_EVENTS_ITEM_ID(header), data) ) {
+                                    lifecycle, data) ) {
                                       early_exit = 1;
                                       continue;
                                     }
