@@ -33,6 +33,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <assert.h>
 #include <winioctl.h>
 #include "caml/winsupport.h"
 #include "misc_internals.h"
@@ -54,10 +55,16 @@
 #endif
 #endif
 #ifndef S_IFSOCK
-#define S_IFSOCK (S_IFDIR | S_IFCHR)
+#define S_IFSOCK (S_IFDIR | S_IFIFO)
 #endif
 #ifndef S_IFBLK
 #define S_IFBLK 0
+#endif
+
+static_assert(S_IFSOCK != S_IFBLK && S_IFSOCK != S_IFLNK, "");
+
+#ifndef IO_REPARSE_TAG_AF_UNIX
+#define IO_REPARSE_TAG_AF_UNIX 0x80000023L
 #endif
 
 static const int file_kind_table[] = {
@@ -170,6 +177,7 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, i
   HANDLE h;
   unsigned short mode;
   int is_symlink = 0;
+  int is_socket = 0;
   ULONGLONG stamp;
   time_t mtime = 0;
 
@@ -228,10 +236,13 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, i
           is_symlink = do_lstat;
           res->st_size = buffer.point.SymbolicLinkReparseBuffer.SubstituteNameLength / 2;
         }
+        else if (buffer.point.ReparseTag == IO_REPARSE_TAG_AF_UNIX) {
+          is_socket = 1;
+        }
       }
       caml_leave_blocking_section();
 
-      if (!is_symlink) {
+      if (!is_symlink && !is_socket) {
         CloseHandle(h);
         caml_enter_blocking_section();
         if ((h = CreateFile(path,
@@ -302,6 +313,9 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, i
 
   if (do_lstat && is_symlink) {
     mode = S_IFLNK | S_IEXEC | S_IWRITE;
+  }
+  else if (is_socket) {
+    mode = S_IFSOCK;
   }
   else {
     mode = (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ? _S_IFDIR | _S_IEXEC : _S_IFREG);
