@@ -15,6 +15,7 @@
 
 #define CAML_INTERNALS
 #include <errno.h>
+#include <math.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
@@ -108,7 +109,7 @@ static const char * setsockopt_fun_name[] = {
 union option_value {
   int i;
   struct linger lg;
-  struct timeval tv;
+  DWORD ms;
 };
 
 CAMLexport value caml_unix_getsockopt_aux(const char * name,
@@ -129,7 +130,7 @@ CAMLexport value caml_unix_getsockopt_aux(const char * name,
   case TYPE_LINGER:
     optsize = sizeof(optval.lg); break;
   case TYPE_TIMEVAL:
-    optsize = sizeof(optval.tv); break;
+    optsize = sizeof(optval.ms); break;
   default:
     caml_unix_error(EINVAL, name, Nothing);
   }
@@ -152,8 +153,7 @@ CAMLexport value caml_unix_getsockopt_aux(const char * name,
     }
     break;
   case TYPE_TIMEVAL:
-    res = caml_copy_double((double) optval.tv.tv_sec
-                           + (double) optval.tv.tv_usec / USEC_PER_SEC);
+    res = caml_copy_double((double) optval.ms / 1e3);
     break;
   case TYPE_UNIX_ERROR:
     if (optval.i == 0) {
@@ -188,10 +188,19 @@ CAMLexport value caml_unix_setsockopt_aux(const char * name,
     if (optval.lg.l_onoff)
       optval.lg.l_linger = Int_val(Some_val(val));
     break;
-  case TYPE_TIMEVAL:
-    optval.tv = caml_timeval_of_sec(Double_val(val));
-    optsize = sizeof(optval.tv);
+  case TYPE_TIMEVAL: {
+    double sec = Double_val(val);
+    double ms = round(sec * 1e3);
+    /* Reject negative, NaN and out-of-range values. */
+    if (!(sec >= 0.0 && ms < (double) MAXDWORD))
+      caml_unix_error(EINVAL, name, Nothing);
+    /* A small positive timeout must not become 0, which means "no
+       timeout". */
+    if (ms == 0.0 && sec > 0.0) ms = 1.0;
+    optval.ms = (DWORD) ms;
+    optsize = sizeof(optval.ms);
     break;
+  }
   case TYPE_UNIX_ERROR:
   default:
     caml_unix_error(EINVAL, name, Nothing);
