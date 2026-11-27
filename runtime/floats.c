@@ -188,7 +188,11 @@ static value caml_alloc_sprintf_l(locale_t loc, const char * format, ...)
      excluding the terminating '\0'. */
   n = vsnprintf_l(buf, sizeof(buf), loc, format, args);
   va_end(args);
-  if (n < sizeof(buf)) {
+  if (n < 0) {
+    /* #15251: vsnprintf_l may fail, e.g. because the format asks for an
+       absurd width or precision. */
+    caml_raise_out_of_memory();
+  } else if (n < sizeof(buf)) {
     /* All output characters were written to buf, including the
        terminating '\0'.  Allocate a Caml string with length "n" as
        computed by vsnprintf_l, and copy the output of vsnprintf_l into it. */
@@ -226,14 +230,15 @@ static value caml_alloc_sprintf_l(locale_t loc, const char * format, ...)
        Allocate a Caml string of length "n" and copy the characters into it. */
     res = caml_alloc_initialized_string(n, buf);
   } else {
-    /* PR#7568: if the format is in the Caml heap, the following
-       caml_alloc_string could move or free the format.  To prevent
-       this, take a copy of the format outside the Caml heap. */
-    char * saved_format = caml_stat_strdup(format);
     /* Determine actual length of output, excluding final '\0' */
     va_start(args, format);
     n = _vscprintf_l(format, loc, args);
     va_end(args);
+    if (n < 0) caml_raise_out_of_memory();
+    /* PR#7568: if the format is in the Caml heap, the following
+       caml_alloc_string could move or free the format.  To prevent
+       this, take a copy of the format outside the Caml heap. */
+    char * saved_format = caml_stat_strdup(format);
     res = caml_alloc_string(n);
     /* Re-do the formatting, outputting directly in the Caml string.
        Note that caml_alloc_string left room for a '\0' at position n,
