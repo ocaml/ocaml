@@ -759,11 +759,24 @@ void events_register_write_buffer(int idx, value event_name) {
           RUNTIME_EVENTS_CUSTOM_EVENT_ID_LENGTH - 1);
 }
 
-CAMLprim value caml_runtime_events_user_register(value event_name,
+static caml_result runtime_events_user_register(value event_name,
   value event_tag, value event_type)
 {
   CAMLparam3(event_name, event_tag, event_type);
   CAMLlocal2(list_item, event);
+
+  int length = caml_string_length(event_name);
+  if (length > RUNTIME_EVENTS_CUSTOM_EVENT_ID_LENGTH - 1) {
+    event = caml_exception_invalid_argument(
+      "Runtime_events.User.register: maximum length for event name exceeded");
+    CAMLreturnT(caml_result, Result_exception(event));
+  }
+
+  if (!caml_string_is_c_safe(event_name)) {
+    event = caml_exception_invalid_argument(
+      "Runtime_events.User.register: event name has null characters");
+    CAMLreturnT(caml_result, Result_exception(event));
+  }
 
   uintnat index = atomic_fetch_add(&runtime_custom_event_index, 1);
 
@@ -772,19 +785,9 @@ CAMLprim value caml_runtime_events_user_register(value event_name,
        an id. */
     atomic_store_relaxed(&runtime_custom_event_index,
                          RUNTIME_EVENTS_MAX_CUSTOM_EVENTS);
-    caml_invalid_argument(
+    event = caml_exception_invalid_argument(
       "Runtime_events.User.register: maximum number of custom events exceeded");
-  }
-
-  int length = caml_string_length(event_name);
-  if (length > RUNTIME_EVENTS_CUSTOM_EVENT_ID_LENGTH - 1) {
-    caml_invalid_argument(
-      "Runtime_events.User.register: maximum length for event name exceeded");
-  }
-
-  if (!caml_string_is_c_safe(event_name)) {
-    caml_invalid_argument(
-      "Runtime_events.User.register: event name has null characters");
+    CAMLreturnT(caml_result, Result_exception(event));
   }
 
   // type 'a t = {
@@ -822,7 +825,15 @@ CAMLprim value caml_runtime_events_user_register(value event_name,
   // end critical section
   caml_plat_unlock(&user_events_lock);
 
-  CAMLreturn(event);
+  CAMLreturnT(caml_result, Result_value(event));
+}
+
+CAMLprim value caml_runtime_events_user_register(value event_name,
+  value event_tag, value event_type)
+{
+  caml_result res =
+    runtime_events_user_register(event_name, event_tag, event_type);
+  return caml_get_value_or_raise(res);
 }
 
 CAMLprim value caml_runtime_events_user_write(
@@ -929,7 +940,7 @@ CAMLprim value caml_runtime_events_user_write(
    then it can be partially reconstructed, the only missing information being
    the associated tag. This function returns an event structure, except when the
    event is unknown and the event type id is EV_USER_ML_TYPE_CUSTOM. */
-CAMLexport value caml_runtime_events_user_resolve(
+CAMLexport caml_result caml_runtime_events_user_resolve(
   char* event_name, ev_user_ml_type event_type_id)
 {
   CAMLparam0();
@@ -947,7 +958,7 @@ CAMLexport value caml_runtime_events_user_resolve(
 
     if (strncmp(String_val(cur_event_name), event_name,
                 RUNTIME_EVENTS_CUSTOM_EVENT_ID_LENGTH) == 0) {
-      CAMLreturn(event);
+      CAMLreturnT(caml_result, Result_value(event));
     }
 
     current_user_event = Field(current_user_event, 1);
@@ -960,11 +971,10 @@ CAMLexport value caml_runtime_events_user_resolve(
     uintnat event_name_len = strnlen(event_name,
                                       RUNTIME_EVENTS_CUSTOM_EVENT_ID_LENGTH);
     ml_event_name = caml_alloc_initialized_string(event_name_len, event_name);
-    event = caml_runtime_events_user_register(ml_event_name, Val_none,
-                                              event_type);
-
-    CAMLreturn(event);
+    caml_result res = runtime_events_user_register(ml_event_name, Val_none,
+                                         event_type);
+    CAMLreturnT(caml_result, res);
   }
 
-  CAMLreturn (Val_none);
+  CAMLreturnT(caml_result, Result_value(Val_none));
 }

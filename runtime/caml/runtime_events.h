@@ -220,7 +220,6 @@ CAMLextern int caml_runtime_events_are_active(void);
 #endif
 
 #ifdef CAML_INTERNALS
-
 /* Force alignment to prevent GCC note on i686. Standard C alignas
    isn't enough to silence the note. */
 #if defined(__GNUC__) && __has_attribute(aligned)
@@ -370,7 +369,7 @@ CAMLextern value caml_runtime_events_user_write(
 
 /* Resolve an event name to the associated event value using known registered
    events. */
-CAMLextern value caml_runtime_events_user_resolve(char* event_name,
+CAMLextern caml_result caml_runtime_events_user_resolve(char* event_name,
    ev_user_ml_type event_type);
 
 #endif /* CAML_INTERNALS */

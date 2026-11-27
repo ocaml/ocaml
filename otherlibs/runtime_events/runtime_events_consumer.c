@@ -1011,7 +1011,7 @@ static int user_events_call_callback_list(
    *corrupt_stream is also set. */
 static value caml_runtime_events_user_resolve_cached(
   value wrapper_root, uintnat event_id, char* event_name,
-  ev_user_ml_type event_type, bool* corrupt_stream)
+  ev_user_ml_type event_type, struct callbacks_exception_holder *holder)
 {
   CAMLparam1(wrapper_root);
   CAMLlocal4(event, cache_resized, cache, resolved_type);
@@ -1043,7 +1043,15 @@ static value caml_runtime_events_user_resolve_cached(
     cache_hit = true;
   } else {
     // we never encountered this ID
-    event = caml_runtime_events_user_resolve(event_name, event_type);
+    caml_result res = caml_runtime_events_user_resolve(event_name, event_type);
+    value* exc = caml_result_find_exception(&res);
+    if (exc) {
+      *holder->exception = *exc;
+      holder->corrupt_stream = 1;
+      CAMLreturn(Val_none);
+    } else {
+      event = res.data;
+    }
   }
 
   // The event is resolved by name, or by a previously cached ID, independently
@@ -1059,7 +1067,7 @@ static value caml_runtime_events_user_resolve_cached(
                           : resolved_type == Val_int(event_type);
 
     if (!type_matches) {
-      *corrupt_stream = true;
+      holder->corrupt_stream = true;
       CAMLreturn(Val_none);
     }
   }
@@ -1110,7 +1118,7 @@ static int ml_user_unit(int domain_id, void *callback_data, int64_t timestamp,
   event = caml_runtime_events_user_resolve_cached(wrapper_root, event_id,
                                                                 event_name,
                                                          EV_USER_ML_TYPE_UNIT,
-                                    &holder->corrupt_stream);
+                                                  holder);
 
   // Val_none is only returned for a corrupt stream here
   if (event == Val_none) {
@@ -1154,7 +1162,7 @@ static int ml_user_span(int domain_id, void *callback_data, int64_t timestamp,
   event = caml_runtime_events_user_resolve_cached(wrapper_root, event_id,
                                                                 event_name,
                                                           EV_USER_ML_TYPE_SPAN,
-                                    &holder->corrupt_stream);
+                                    holder);
 
   // Val_none is only returned for a corrupt stream here
   if (event == Val_none) {
@@ -1197,7 +1205,7 @@ static int ml_user_int(int domain_id, void *callback_data,
   event = caml_runtime_events_user_resolve_cached(wrapper_root, event_id,
                                                                   event_name,
                                    EV_USER_ML_TYPE_INT,
-                                    &holder->corrupt_stream);
+                                    holder);
 
   // Val_none is only returned for a corrupt stream here
   if (event == Val_none) {
@@ -1242,7 +1250,7 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
   event = caml_runtime_events_user_resolve_cached(wrapper_root, event_id,
                                                                 event_name,
                                     EV_USER_ML_TYPE_CUSTOM,
-                                    &holder->corrupt_stream);
+                                    holder);
 
   // the function may return Val_none if the event is unknown
   // (see caml_runtime_events_user_resolve), in which case we skip it, or if
