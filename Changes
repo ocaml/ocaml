@@ -912,6 +912,11 @@ OCaml 5.6.0
 
 ### Bug fixes:
 
+- #15254, #15417: Fix `Domain.at_exit` handlers running more than once when
+  `at_exit` processing is triggered more than once, for instance by a handler
+  that calls `exit`.
+  (Abhay Chaudhary, report by KC Sivaramakrishnan)
+
 - #15290, #15394: Fix out-of-bounds reads in `Str.replace_matched`: raise
   `Invalid_argument` when a group referenced by the replacement extends past
   the end of the supplied string.
