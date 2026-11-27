@@ -24,6 +24,7 @@
 #include "caml/osdeps.h"
 #include "caml/platform.h"
 #include "caml/startup_aux.h"
+#include "caml/sys.h"
 
 #include <assert.h>
 #include <fcntl.h>
@@ -354,13 +355,26 @@ static void runtime_events_create_from_stw_single(void) {
     if( current_metadata == NULL ) {
       caml_fatal_error("failed to map view of file");
     }
-#else
-    ring_fd =
-        open(current_ring_loc, O_RDWR | O_CREAT, (S_IRUSR | S_IWUSR));
 
-    if (ring_fd < 0) {
-      caml_fatal_error("Couldn't open ring buffer loc: %s",
-                        current_ring_loc);
+#else
+
+    {
+      char buf[1024];
+      if (unlink(current_ring_loc) < 0 && ENOENT != errno) {
+        caml_fatal_error("Couldn't remove stale ring buffer file \"%s\": %s",
+                         current_ring_loc,
+                         caml_strerror(errno, buf, sizeof(buf)));
+      }
+
+      ring_fd =
+          open(current_ring_loc, O_RDWR | O_CREAT | O_EXCL,
+               (S_IRUSR | S_IWUSR));
+
+      if (ring_fd < 0) {
+        caml_fatal_error("Couldn't open ring buffer loc: \"%s\": %s",
+                         current_ring_loc,
+                         caml_strerror(errno, buf, sizeof(buf)));
+      }
     }
 
     ret = ftruncate(ring_fd, current_ring_total_size);
