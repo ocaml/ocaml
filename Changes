@@ -223,6 +223,11 @@ Working version
   of a C int.
   (Sora Morimoto, review by Olivier Nicole)
 
+- #15425: `Runtime_events.free_cursor`: avoid use-after-free by raising an
+  exception instead. Avoid double-free by letting the finalizer free it.
+  The C consumer API will free it immediately when not in use.
+  (Edwin Török, report by KC Sivaramakrishnan, review by)
+
 OCaml 5.6.0
 -----------
 
