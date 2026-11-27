@@ -982,6 +982,11 @@ OCaml 5.6.0
   times with a fractional part.
   (Prakhand Patel, report by KC Sivaramakrishnan, review by Stefan Muenzel)
 
+- #15251, #15272: fix float formatting with an absurd width or precision
+  building a string of bogus length instead of raising Out_of_memory.
+  (Prakhand Patel, report by KC Sivaramakrishnan, review by Stefan Muenzel
+  and Florian Angeletti)
+
 OCaml 5.5.1
 -----------
 
