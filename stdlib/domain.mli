@@ -37,6 +37,10 @@ val spawn : (unit -> 'a) -> 'a t
     @raise Failure if the program has insufficient resources to create another
     domain.
 
+    @raise Sys_error if the runtime cannot create a system thread, for example
+    a domain's backup thread. [Out_of_memory] is raised instead when the error
+    reported by the operating system is ENOMEM.
+
     Note that an option [S] can be passed to OCAMLRUNPARAM to configure
     the minimum system stack size for new threads, which can be useful for
     threads that call FFI code that needs a larger system stack. *)

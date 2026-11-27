@@ -43,6 +43,13 @@ Working version
 - #14571: Faster minor GC.
   (Nick Barnes, review by Damien Doligez).
 
+* #15260, #15308, #15333, #15395: Roll back a domain's startup when it fails
+  before the handshake, so that a failed `Domain.spawn` no longer leaves the
+  major GC waiting for a domain that never started. A failure to create the
+  new domain's backup thread is now reported by `Domain.spawn` instead of
+  `Domain.join`.
+  (KC Sivaramakrishnan, review by ????)
+
 ### Code generation and optimizations:
 
 - #14980: Emit direct assembly for `Atomic.exchange` and

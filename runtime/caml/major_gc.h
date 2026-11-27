@@ -60,6 +60,7 @@ void caml_major_collection_slice (intnat);
 void caml_finish_sweeping(void);
 void caml_finish_marking (void);
 int caml_init_major_gc(caml_domain_state*);
+void caml_major_gc_register_domain(caml_domain_state*);
 void caml_teardown_major_gc(void);
 void caml_darken(void*, value, volatile value* ignored);
 void caml_darken_cont(value);
