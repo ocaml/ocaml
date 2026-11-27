@@ -81,7 +81,6 @@ STDLIB_MODULE_BASENAMES = \
   fun \
   gc \
   in_channel \
-  out_channel \
   digest \
   bigarray \
   random \
@@ -97,6 +96,7 @@ STDLIB_MODULE_BASENAMES = \
   pqueue \
   ephemeron \
   filename \
+  out_channel \
   complex \
   arrayLabels \
   listLabels \
