@@ -142,6 +142,11 @@ Working version
 
 ### Bug fixes:
 
+- #15414: Bytes.extend no longer raises Invalid_argument when only an
+  intermediate sum overflows: Bytes.extend s max_int min_int now returns
+  a result of length (length s - 1), as documented.
+  (Nathan Taylor)
+
 - #15252, #15368, #15369, #15371, #15380: check arguments to Unix.kill, waitpid,
   alarm, mktime and Sys.signal before narrowing. Unix.alarm rejects negative
   delays. On Unix, getpwuid, getgrgid, setuid, setgid and initgroups
