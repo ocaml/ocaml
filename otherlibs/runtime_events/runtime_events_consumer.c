@@ -723,7 +723,8 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
 
 
 
-      if (RUNTIME_EVENTS_ITEM_TYPE(header) != EV_INTERNAL) {
+      if (!RUNTIME_EVENTS_ITEM_IS_RUNTIME(header)
+          || RUNTIME_EVENTS_ITEM_TYPE(header) != EV_INTERNAL) {
         consumed++;
       }
 
