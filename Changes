@@ -921,6 +921,10 @@ OCaml 5.6.0
 
 ### Bug fixes:
 
+- #15358, #15416: Fix `Unix.establish_server` leaving its socket open when
+  `bind` or `listen` fails.
+  (Abhay Chaudhary, report by KC Sivaramakrishnan)
+
 - #15290, #15394: Fix out-of-bounds reads in `Str.replace_matched`: raise
   `Invalid_argument` when a group referenced by the replacement extends past
   the end of the supplied string.
