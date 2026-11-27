@@ -223,6 +223,11 @@ Working version
   of a C int.
   (Sora Morimoto, review by Olivier Nicole)
 
+- #NNNN: `Runtime_events.read_poll` should let escaping exceptions
+  wedge/leak the cursor.
+  (Edwin Török, review by)
+
+
 OCaml 5.6.0
 -----------
 
