@@ -104,4 +104,11 @@ Error: Signature mismatch:
        The type t is not equal to the type string
 module A : sig module B : sig type t = T end end
 module M2 : sig type u = A.B.t type foo = int type v = u end
+Line 10, characters 57-58:
+10 | let f (x: <x:'a> s as 'a) (y: <x:'b * 'b> u as 'b) = x = y;;
+                                                              ^
+Error: The value y has type < x : 'a * 'a > u as 'a
+       but an expression was expected of type < x : 'b > u as 'b
+       The method x has type < x : 'c > u * < x : 'c > u as 'c,
+       but the expected method type was < x : 'b > u as 'b
 

@@ -2028,88 +2028,68 @@ let print_items showval env x =
   let post_process (env,l) = List.map (extend_val env) l in
   List.concat_map post_process @@ tree_of_signature_rec env x
 
+let same_tconstr p tl p' tl' =
+  let (p1, s1) = best_type_path p and (p2, s2)  = best_type_path p' in
+  Path.same p1 p2 &&
+  let tl = apply_subst s1 tl and tl' = apply_subst s2 tl' in
+  List.length tl = List.length tl' &&
+  List.for_all2 eq_type tl tl'
+
 let same_path t t' =
   let open Types in
   eq_type t t' && get_abbrev t = None && get_abbrev t' = None ||
   match printer_get_desc t, printer_get_desc t' with
-    Tconstr(p,tl,_), Tconstr(p',tl',_) ->
-      let (p1, s1) = best_type_path p and (p2, s2)  = best_type_path p' in
-      begin match s1, s2 with
-        Nth n1, Nth n2 when n1 = n2 -> true
-      | (Id | Map _), (Id | Map _) when Path.same p1 p2 ->
-          let tl = apply_subst s1 tl and tl' = apply_subst s2 tl' in
-          List.length tl = List.length tl' &&
-          List.for_all2 eq_type tl tl'
-      | _ -> false
-      end
+    Tconstr(p,tl,_), Tconstr(p',tl',_) -> same_tconstr p tl p' tl'
   | _ -> false
 
 type expansion_diff =
-  { ty : out_type
-  ; expanded : out_type option
-  ; manifest : out_type option
-  }
+  | Same of out_type
+  | With_expansion of out_type * out_type
 
 let trees_of_type_expansion mode Errortrace.{ty = t; expanded = t'} =
-  let manifest =
-    match get_abbrev t with
+  Aliases.reset ();
+  let abbrev = match get_abbrev t with
     | None -> None
     | Some {abbr_path=tconstr; abbr_args=params} ->
-        let should_use_manifest =
-          match printer_get_desc t with
-          | Tconstr (p, tl, _) ->
-              not(
-                (Path.same p tconstr)
-                && List.length tl = List.length params
-                && List.for_all2 eq_type tl params
-              )
-          | _ -> true
-        in
-        if not should_use_manifest then None
-        else begin
-          List.iter Aliases.mark_loops params;
-          Some (Otyp_constr (tree_of_path (Some Type) tconstr,
-                             tree_of_typlist mode params))
-        end
+        match printer_get_desc t with
+        | Tconstr (p, tl, _) when same_tconstr tconstr params p tl -> None
+        | _ -> Some(tconstr, params)
   in
-  Aliases.reset ();
-  Aliases.mark_loops t;
-  if same_path t t'
-  then begin
-    Aliases.add_delayed (proxy t);
-    { ty = tree_of_typexp mode t
-    ; expanded = None
-    ; manifest
-    }
-  end
-  else begin
-    let t' = if proxy t == proxy t' then unalias t' else t' in
-    Aliases.mark_loops t';
-    (* beware order matter due to side effect,
-       e.g. when printing object types *)
-    let first = tree_of_typexp mode t in
-    let second = tree_of_typexp mode t' in
-    { ty = first
-    ; expanded = if first = second then None else Some second
-    ; manifest
-    }
-  end
+  match abbrev with
+  | Some (tconstr, params) ->
+      List.iter Aliases.mark_loops params;
+      let path = tree_of_type_path tconstr in
+      let t = Otyp_constr (path, tree_of_typlist mode params) in
+      Aliases.reset ();
+      Aliases.mark_loops t';
+      let t' = tree_of_typexp mode t' in
+      With_expansion (t,t')
+  | None ->
+      Aliases.mark_loops t;
+      if same_path t t'
+      then begin
+        Aliases.add_delayed (proxy t);
+        Same (tree_of_typexp mode t)
+      end
+      else begin
+        let t' = if proxy t == proxy t' then unalias t' else t' in
+        Aliases.mark_loops t';
+        (* beware order matter due to side effect,
+           e.g. when printing object types *)
+        let first = tree_of_typexp mode t in
+        let second = tree_of_typexp mode t' in
+        if first = second then Same first else With_expansion (first,second)
+      end
 
 let pp_type ppf t =
   Style.as_inline_code !Oprint.out_type ppf t
 
 let pp_type_expansion ppf = function
-  | { ty; expanded = None; manifest = None } -> pp_type ppf ty
-  | { ty = second; expanded = None; manifest = Some first }
-  | { ty = first; expanded = Some second; manifest = None } ->
+  | Same ty -> pp_type ppf ty
+  | With_expansion (first, second) ->
       fprintf ppf "@[<2>%a@ =@ %a@]"
         pp_type first
         pp_type second
-  | { ty = second; expanded = Some third; manifest = Some first } ->
-      fprintf ppf "@[<2>%a@ =@ %a@ =@ %a@]"
-        pp_type first
-        pp_type second
-        pp_type third
 
 (* Hide variant name and var, to force printing the expanded type *)
 let hide_variant_name t =
