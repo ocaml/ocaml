@@ -103,6 +103,10 @@ Working version
 - #15216: document the security issue reporting process with a SECURITY.md file
   (Edwin Török, suggested by Xavier Leroy, review by Xavier Leroy)
 
+- #15422: document that `Runtime_events.cursor` uses memory mappings and shares
+    `Unix.map_file`'s limitations.
+  (Edwin Török, review by)
+
 ### Compiler user-interface and warnings:
 
 - #15144: Further improvement on typing error messages for Duplicate_constructor
@@ -236,6 +240,11 @@ Working version
 - #15341: Fix Float.ldexp and Stdlib.ldexp for exponents outside the range
   of a C int.
   (Sora Morimoto, review by Olivier Nicole)
+
+- #15422: `Runtime_events.read_poll` avoid hanging on malformed ring with
+  excessive ring tail - head difference, ring position wraparound,
+  or too many padding records.
+  (Edwin Török, report by Sam Moelius and KC Sivaramakrishnan, review by)
 
 OCaml 5.6.0
 -----------

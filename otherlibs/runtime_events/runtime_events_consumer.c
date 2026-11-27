@@ -276,6 +276,12 @@ runtime_events_error caml_runtime_events_create_cursor(
     goto fail_map_ring_file;
   }
 
+  if (cursor->ring_file_size_bytes
+      < sizeof(struct runtime_events_metadata_header)) {
+    ret = E_CORRUPT_STREAM;
+    goto fail_metadata_corrupt;
+  }
+
   cursor->metadata = *(struct runtime_events_metadata_header*)cursor->map;
 
   if (cursor->metadata.max_domains > Max_domains_max) {
@@ -464,6 +470,8 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
           cursor->metadata.headers_offset +
           domain_num * cursor->metadata.ring_header_size_bytes;
     if (offset >= cursor->ring_file_size_bytes
+        || cursor->metadata.ring_header_size_bytes
+           < sizeof(struct runtime_events_buffer_header)
         || offset + cursor->metadata.ring_header_size_bytes
            > cursor->ring_file_size_bytes) {
         atomic_store(&cursor->cursor_in_poll, 0);
@@ -511,10 +519,13 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
       ring_masked_pos = cursor->current_positions[domain_num] & ring_mask;
       header = ring_ptr[ring_masked_pos];
       msg_length = RUNTIME_EVENTS_ITEM_LENGTH(header);
+      bool ring_tail_head_bad =
+        ring_tail - ring_head > cursor->metadata.ring_size_elements;
 
       if (msg_length > RUNTIME_EVENTS_MAX_MSG_LENGTH
           || ring_masked_pos + msg_length
-             > cursor->metadata.ring_size_elements) {
+             > cursor->metadata.ring_size_elements
+          || ring_tail_head_bad) {
         /* The header may have been overwritten by the writer wrapping around
            between the ring_head check above and the read of the header, in
            which case it is not a header at all. Re-check before reporting
@@ -543,6 +554,15 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
 
           continue;
         }
+
+        /* ring_head may have been ahead of the position already,
+           and after a reread it could've changed again.
+           If we got here because the `tail - head` difference was too big:
+           recheck.
+         */
+        if (ring_tail_head_bad
+            && ring_tail - ring_head <= cursor->metadata.ring_size_elements)
+          continue;
 
         atomic_store(&cursor->cursor_in_poll, 0);
         return E_CORRUPT_STREAM;
@@ -643,6 +663,20 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
                                       continue;
                                     }
           }
+          break;
+        case EV_INTERNAL:
+          if (ring_masked_pos + msg_length
+              != cursor->metadata.ring_size_elements) {
+              /* This is unexpected, padding records should only be at
+                 the end of the ring.
+                 Padding records aren't counted against the max limit,
+                 so exit now to avoid looping for too long.
+                 We could also mark the ring as corrupted instead.
+               */
+              early_exit = 1;
+              continue;
+          }
+          break;
         }
       } else {
         // User events
@@ -727,7 +761,15 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
         consumed++;
       }
 
-      cursor->current_positions[domain_num] += msg_length;
+      uint64_t current = cursor->current_positions[domain_num];
+      uint64_t next = current + msg_length;
+      if (next < current) {
+          /* ring head wraparound */
+          atomic_store(&cursor->cursor_in_poll, 0);
+          return E_CORRUPT_STREAM;
+      }
+
+      cursor->current_positions[domain_num] = next;
     } while (cursor->current_positions[domain_num] < ring_tail &&
              (max_events == 0 || consumed < max_events) && !early_exit);
 
