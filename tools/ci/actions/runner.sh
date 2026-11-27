@@ -26,20 +26,6 @@ MAKE_WARN="$MAKE --warn-undefined-variables"
 
 export PATH=$PREFIX/bin:$PATH
 
-call-configure () {
-  local failed
-  ./configure "$@" || failed=$?
-  if ((failed)); then
-    # Output seems to be a little unpredictable in GitHub Actions: ensure that
-    # the fold is definitely on a new line
-    echo
-    echo "::group::config.log content ($(wc -l config.log) lines)"
-    cat config.log
-    echo '::endgroup::'
-    exit $failed
-  fi
-}
-
 Configure () {
   mkdir -p $PREFIX
   cat<<EOF
@@ -56,7 +42,7 @@ EOF
   # arguments requiring spaces from the workflows.
   # $CONFIG_ARG also appears last to allow settings specified here to be
   # overridden by the workflows.
-  call-configure --prefix="$PREFIX" \
+  tools/ci/run-configure.sh --prefix="$PREFIX" \
                  --docdir="$PREFIX/doc/ocaml" \
                  --enable-flambda-invariants \
                  --enable-ocamltest \
@@ -271,7 +257,7 @@ This test checks the global structure of the reference manual
 --------------------------------------------------------------------------
 EOF
   # we need some of the configuration data provided by configure
-  call-configure
+  tools/ci/run-configure.sh
   $MAKE check-stdlib check-case-collision -C manual/tests
 
 }
@@ -300,7 +286,7 @@ BasicCompiler () {
   local failed
   trap ReportBuildStatus ERR
 
-  call-configure --disable-debug-runtime \
+  tools/ci/run-configure.sh --disable-debug-runtime \
                  --disable-instrumented-runtime \
                  --enable-ocamltest \
 

@@ -79,7 +79,7 @@ export LC_ALL=C
 
 git clean -q -f -d -x
 
-./configure \
+tools/ci/run-configure.sh \
    --disable-shared \
    --disable-debug-runtime \
    --disable-instrumented-runtime \

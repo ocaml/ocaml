@@ -291,7 +291,8 @@ case $NODE_NAME in
 esac
 
 main_build() {
-  eval ./configure "$CCOMP" $build $host --prefix='$instdir' $confoptions
+  eval tools/ci/run-configure.sh "$CCOMP" $build $host --prefix='$instdir' \
+    $confoptions
 
   grep -q '^NATIVE_COMPILER=false' Makefile.config && make_native=false
 
