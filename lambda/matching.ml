@@ -3596,40 +3596,38 @@ let compile_pm_or ~compile_body ~compile_handler partial ctx
       else { partial with current = Partial } in
     compile_body partial ctx body
   in
-  let partial = { partial with tempo = Following } in
-  let rec comp_handlers r total_r = function
-    | [] -> (r, total_r)
-    | { provenance = mat; exit = i; vars; pm } :: rem -> (
-        debugf "@,COMPILE_orhandlers %d:@,@[<v 2>%a@]@,"
-          i
-          pretty_cases pm.cases;
-        let ctx_jump, total_r = Jumps.extract i total_r in
-        let ctx_jump = Context.lshift_num (ncols mat) ctx_jump in
-        match compile_handler partial ctx_jump pm with
-        | exception Unused ->
-          if rem <> [] then separate_debug_output ();
-          comp_handlers (Lstaticcatch (r, (i, vars), lambda_unit)) total_r rem
-        | handler_i, total_i ->
-          if rem <> [] then separate_debug_output ();
-          let total_i = Jumps.map (Context.rshift_num (ncols mat)) total_i in
-          begin match raw_action lambda_body with
-          | Lstaticraise (j, args) ->
-              if i = j then
-                ( List.fold_right2
-                    (bind_with_value_kind Alias)
-                    vars args handler_i,
-                  total_i )
-              else
-                comp_handlers r total_r rem
-          | _ ->
-              comp_handlers
-                (Lstaticcatch (r, (i, vars), handler_i))
-                (Jumps.union total_r total_i)
-                rem
-          end
-      )
+  let comp_handler nargs partial ctx pm =
+    let partial =
+      (* the handler code is evaluated after/following the body *)
+      { partial with tempo = Following } in
+    let ctx = Context.lshift_num nargs ctx in
+    match compile_handler partial ctx pm with
+    | exception Unused -> ( lambda_unit, Jumps.empty Total )
+    | lam, total ->
+        lam, Jumps.map (Context.rshift_num nargs) total
   in
-  comp_handlers lambda_body total_body handlers
+  let exit_is j { exit; _ } = exit = j in
+  match raw_action lambda_body with
+  | Lstaticraise (j, args) when List.exists (exit_is j) handlers ->
+    (* if the body is a jump to a handler, we inline it directly *)
+    let { provenance = mat; vars; pm; _ } = List.find (exit_is j) handlers in
+    let handler_j, total_j = comp_handler (ncols mat) partial ctx pm in
+    ( List.fold_right2
+        (bind_with_value_kind Alias)
+        vars args handler_j,
+      total_j )
+  | _ ->
+    (* otherwise we generate a static-cach for each handler *)
+    let handle (r, total_r) { provenance = mat; exit = i; vars; pm } =
+      debugf "@,COMPILE_orhandlers %d:@,@[<v 2>%a@]@,"
+        i
+        pretty_cases pm.cases;
+      let ctx_i, total_r = Jumps.extract i total_r in
+      let handler_i, total_i = comp_handler (ncols mat) partial ctx_i pm in
+      (Lstaticcatch (r, (i, vars), handler_i),
+       Jumps.union total_r total_i)
+    in
+    List.fold_left handle (lambda_body, total_body) handlers
 
 let compile_test compile_fun arg_partial divide combine ctx to_match =
   let division = divide ctx to_match in
