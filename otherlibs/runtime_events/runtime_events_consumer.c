@@ -747,7 +747,15 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
         consumed++;
       }
 
-      cursor->current_positions[domain_num] += msg_length;
+      uint64_t current = cursor->current_positions[domain_num];
+      uint64_t next = current + msg_length;
+      if (next < current) {
+          /* ring head wraparound */
+          atomic_store(&cursor->cursor_in_poll, 0);
+          return E_CORRUPT_STREAM;
+      }
+
+      cursor->current_positions[domain_num] = next;
     } while (cursor->current_positions[domain_num] < ring_tail &&
              (max_events == 0 || consumed < max_events) && !early_exit);
 
