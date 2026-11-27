@@ -1,0 +1,2 @@
+chdir: false, file exists after child exits: false
+chdir: true, file exists after child exits: false

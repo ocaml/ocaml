@@ -24,6 +24,7 @@
 #include "caml/osdeps.h"
 #include "caml/platform.h"
 #include "caml/startup_aux.h"
+#include "misc_internals.h"
 
 #include <assert.h>
 #include <fcntl.h>
@@ -249,6 +250,40 @@ void caml_runtime_events_destroy(void) {
   }
 }
 
+/* Returns a `caml_stat` allocated path.
+ * Depending on the platform it may resolve symlinks
+ */
+static char_os* abspath(const char_os *dir)
+{
+  if (!dir)
+    dir = T(".");
+#ifdef _WIN32
+  char_os *out;
+  DWORD len = GetFullPathName(dir, 0, NULL, NULL);
+  if (!len)
+    return NULL;
+  out = caml_stat_alloc(len * sizeof(char_os));
+  DWORD ret = GetFullPathName(dir, len, out, NULL);
+  if (!ret || ret >= len) {
+    caml_stat_free(out);
+    return NULL;
+  }
+  return out;
+#else
+  /* realpath seems like the better option here,
+   * but what if it fails, or is not available? */
+  if (Is_separator(dir[0]))
+    return caml_stat_strdup(dir); /* already an absolute path */
+  /* matches caml_sys_getcwd, PATH_MAX may be -1 if it is unbounded. */
+  char cwd[4096];
+  if (!getcwd(cwd, countof(cwd)))
+    return NULL;
+  if (dir[0] == '.' && dir[1] == '\0')
+    return caml_stat_strdup(cwd); /* avoid cwd/./%d.events */
+  return caml_stat_strconcat(3, cwd, "/", dir);
+#endif
+}
+
 /* Create the initial runtime_events ring buffers. This must be called from
   within a stop-the-world section if we cannot be sure there is only a single
   domain running. */
@@ -256,6 +291,7 @@ static void runtime_events_create_from_stw_single(void) {
   /* Don't initialise runtime_events twice */
   if (!atomic_load_acquire(&runtime_events_enabled)) {
     size_t ring_headers_length, ring_data_length;
+    char_os *dir;
 #ifdef _WIN32
     DWORD pid = GetCurrentProcessId();
 #else
@@ -265,26 +301,25 @@ static void runtime_events_create_from_stw_single(void) {
 
     int path_len, err;
 
-    if (runtime_events_path) {
-      path_len = snprintf_os(NULL, 0, T("%s/%ld.events"),
-                             runtime_events_path, pid);
-    } else {
-      path_len = snprintf_os(NULL, 0, T("%ld.events"), pid);
-    }
+    dir = abspath(runtime_events_path);
+    if (!dir)
+      caml_fatal_error("runtime_events: cannot look up absolute path for: %s",
+                       runtime_events_path
+                       ? caml_stat_strdup_of_os(runtime_events_path) : ".");
+
+    path_len = snprintf_os(NULL, 0, T("%s/%ld.events"),
+                             dir, pid);
     if (path_len < 0) {
+      caml_stat_free(dir);
       caml_fatal_error("runtime_events: cannot format the ring buffer path");
     }
 
     /* The length is in char_os, which is wider than a byte on Windows. */
     current_ring_loc = caml_stat_alloc((path_len + 1) * sizeof(char_os));
 
-    if (runtime_events_path) {
-      err = snprintf_os(current_ring_loc, path_len + 1,
-                        T("%s/%ld.events"), runtime_events_path, pid);
-    } else {
-      err = snprintf_os(current_ring_loc, path_len + 1,
-                        T("%ld.events"), pid);
-    }
+    err = snprintf_os(current_ring_loc, path_len + 1,
+                      T("%s/%ld.events"), dir, pid);
+    caml_stat_free(dir);
     if (err != path_len) {
       caml_fatal_error("runtime_events: cannot format the ring buffer path");
     }
