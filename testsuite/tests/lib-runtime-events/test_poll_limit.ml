@@ -22,4 +22,10 @@ let () =
   try
     let _ : int = Runtime_events.read_poll cursor callbacks (Some ~-1) in
     assert false
-  with Invalid_argument _ -> ()
+  with Invalid_argument _ -> ();
+  (* create some more events *)
+  Gc.full_major ();
+  let n : int = Runtime_events.read_poll cursor callbacks (Some 0) in
+  assert (n = 0);
+  let n : int = Runtime_events.read_poll cursor callbacks None in
+  assert (n > 0)

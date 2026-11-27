@@ -1435,6 +1435,8 @@ CAMLprim value caml_ml_runtime_events_read_poll(value wrapper,
     max_events = Long_val(Some_val(max_events_val));
     if (max_events < 0)
       caml_invalid_argument("Runtime_events.read_poll: negative max_option");
+    if (!max_events)
+      CAMLreturn(Val_int(0));
   } else {
     /* None = unlimited */
     max_events = 0;
