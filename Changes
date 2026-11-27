@@ -138,6 +138,11 @@ Working version
 
 ### Bug fixes:
 
+- #15420: fix double rounding when converting a float to float16 in
+  Bigarray: the value was rounded to float32 and then to float16, which
+  can differ from rounding directly to float16. Ported from OxCaml.
+  (Max Slater)
+
 - #15252, #15368, #15369, #15371, #15380: check arguments to Unix.kill, waitpid,
   alarm, mktime and Sys.signal before narrowing. Unix.alarm rejects negative
   delays. On Unix, getpwuid, getgrgid, setuid, setgid and initgroups
