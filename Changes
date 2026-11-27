@@ -215,9 +215,9 @@ Working version
   with `Double_array_tag` rather than as a scannable block.
   (Nick Barnes, review by Vincent Laviron)
 
-- #15340: Fix `Complex.pow` to return zero when a zero base is raised to a
-  finite, strictly positive real power, including fractional powers.
-  (Sora Morimoto)
+- #15340: Fix `Complex.pow` to return one for zero to the power of zero,
+  and zero for a zero base with a finite exponent whose real part is positive.
+  (Sora Morimoto, review by Olivier Nicole and Florian Angeletti)
 
 - #15341: Fix Float.ldexp and Stdlib.ldexp for exponents outside the range
   of a C int.
