@@ -168,21 +168,25 @@ and method_privacy =
 (* Variance forms a product lattice of the following partial orders:
      0 <= may_pos <= pos
      0 <= may_weak <= may_neg <= neg
-     0 <= inj
+     0 <= may_inj <= inj
    may_pos/may_neg mean possible positive/negative occurrences;
-     thus, may_pos + may_neg = invariant
+     thus, may_pos + may_neg = may_inv.
+   Composition preserves may_inv when the inner parameter may be injective.
+   may_inj records possible injectivity. Abstract types are always at least
+   possibly injective; an abbreviation can be known to be non-injective.
    Additionally, the following implications are valid
      pos => inj
      neg => inj
    Examples:
-     type 'a t        : may_pos + may_neg
-     type +'a t       : may_pos
-     type -'a t       : may_neg
-     type +-'a t      : null (no occurrence of 'a assured)
+     type 'a t        : may_pos + may_neg + may_inj
+     type +'a t       : may_pos + may_inj
+     type -'a t       : may_neg + may_inj
+     type +-'a t      : may_inj (neither occurrence nor absence of 'a assured)
      type !'a t       : may_pos + may_neg + inj
      type +!'a t      : may_pos + inj
      type -!'a t      : may_neg + inj
      type +-!'a t     : inj
+     type 'a t = unit : null
      type 'a t = 'a   : pos
      type 'a t = 'a -> unit : neg
      type 'a t = ('a -> unit) -> unit : pos + may_weak
@@ -194,15 +198,16 @@ and method_privacy =
 
 module Variance = struct
   type t = int
-  type f = May_pos | May_neg | May_weak | Inj | Pos | Neg | Inv
+  type f = May_pos | May_neg | May_weak | May_inj | Inj | Pos | Neg | Inv
   let single = function
     | May_pos -> 1
     | May_neg -> 2 + 4
     | May_weak -> 4
-    | Inj -> 8
-    | Pos -> 16 + 8 + 1
-    | Neg -> 32 + 8 + 4 + 2
-    | Inv -> 63
+    | May_inj -> 8
+    | Inj -> 16 + 8
+    | Pos -> 32 + 16 + 8 + 1
+    | Neg -> 64 + 16 + 8 + 4 + 2
+    | Inv -> 127
   let union v1 v2 = v1 lor v2
   let inter v1 v2 = v1 land v2
   let subset v1 v2 = (v1 land v2 = v1)
@@ -211,7 +216,7 @@ module Variance = struct
   let set_if b x v = if b then set x v else v
   let mem x = subset (single x)
   let null = 0
-  let unknown = 7
+  let unknown = 0xF
   let full = single Inv
   let covariant = single Pos
   let contravariant = single Neg
@@ -221,17 +226,26 @@ module Variance = struct
     let v' = inter v (union (single Inj) (single May_weak)) in
     swap Pos Neg v (swap May_pos May_neg v v')
   let compose v1 v2 =
+    (* Composition must be compatible with abstraction in both arguments:
+       abstracting an argument must yield a valid abstraction of the result. *)
     if mem Inv v1 && mem Inj v2 then full else
+    (* Preserve possible invariance if the outer type might be invariant and
+       the inner one might be injective. *)
+    let may_inv = mem May_pos v1 && mem May_neg v1 && mem May_inj v2 in
     let mp =
+      may_inv ||
       mem May_pos v1 && mem May_pos v2 || mem May_neg v1 && mem May_neg v2
     and mn =
+      may_inv ||
       mem May_pos v1 && mem May_neg v2 || mem May_neg v1 && mem May_pos v2
     and mw = mem May_weak v1 && v2 <> null || v1 <> null && mem May_weak v2
+    and may_inj = mem May_inj v1 && mem May_inj v2
     and inj = mem Inj v1 && mem Inj v2
     and pos = mem Pos v1 && mem Pos v2 || mem Neg v1 && mem Neg v2
     and neg = mem Pos v1 && mem Neg v2 || mem Neg v1 && mem Pos v2 in
     List.fold_left (fun v (b,f) -> set_if b f v) null
-      [mp, May_pos; mn, May_neg; mw, May_weak; inj, Inj; pos, Pos; neg, Neg]
+      [mp, May_pos; mn, May_neg; mw, May_weak; may_inj, May_inj;
+       inj, Inj; pos, Pos; neg, Neg]
   let strengthen v =
     if mem May_neg v then v else v land (full - single May_weak)
   let get_upper v = (mem May_pos v, mem May_neg v)

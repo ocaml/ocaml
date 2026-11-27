@@ -169,6 +169,11 @@ Working version
   blowups in pathological cases
   (Vincent Laviron, report by Pierre-Marie Pédrot, review by Stefan Muenzel)
 
+* #15142, #15165: Fix variance composition when composing a possibly invariant
+  type constructor with a possibly injective bivariant type constructor.
+  (Demetrios Agourakis, report by Leo White,
+   review by Jacques Garrigue and Florian Angeletti)
+
 * #14987, #15164: Reject `[%atomic.loc]` on polymorphic atomic record fields
   to prevent unsound writes through their locations. Ordinary reads of these
   fields remain valid.

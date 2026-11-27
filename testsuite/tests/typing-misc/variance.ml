@@ -267,3 +267,89 @@ Error: Signature mismatch:
        Their variances do not agree.
 Unexecuted phrases: 1 phrases did not execute due to an error
 |}]
+
+(* #15142: the abstract type in the functor argument might be an invariant
+   GADT. Its composition with an injective bivariant type must be invariant. *)
+type 'a q = Q
+module Possibly_invariant_gadt (X : sig type 'a t end) : sig
+  type +-'a s
+  val inj : 'a q X.t -> 'a s
+  val prj : 'a s -> 'a q X.t
+end = struct
+  type 'a s = 'a q X.t
+  let inj x = x
+  let prj x = x
+end
+[%%expect{|
+type +-!'a q = Q
+Lines 6-10, characters 6-3:
+ 6 | ......struct
+ 7 |   type 'a s = 'a q X.t
+ 8 |   let inj x = x
+ 9 |   let prj x = x
+10 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type 'a s = 'a q X.t val inj : 'a -> 'a val prj : 'a -> 'a end
+       is not included in
+         sig
+           type +-'a s
+           val inj : 'a q X.t -> 'a s
+           val prj : 'a s -> 'a q X.t
+         end
+       Type declarations do not match:
+         type 'a s = 'a q X.t
+       is not included in
+         type +-'a s
+       Their variances do not agree.
+|}]
+
+(* A concrete phantom alias can be expanded without using its parameter. *)
+type 'a phantom = unit
+type 'a outer
+type +-'a erased = 'a phantom outer
+[%%expect{|
+type +-'a phantom = unit
+type 'a outer
+type +-'a erased = 'a phantom outer
+|}]
+
+(* An alias of an abstract bivariant type inherits its possible injectivity. *)
+type +-'a bivariant
+type +-'a non_injective = 'a phantom
+type +-'a possibly_injective = 'a bivariant
+[%%expect{|
+type +-'a bivariant
+type +-'a non_injective = 'a phantom
+type +-'a possibly_injective = 'a bivariant
+|}]
+
+type +-'a erased_alias = 'a non_injective outer
+[%%expect{|
+type +-'a erased_alias = 'a non_injective outer
+|}]
+
+(* A possibly invariant outer parameter preserves possible invariance when
+   the inner parameter may be injective. *)
+type +-'a possibly_invariant = 'a possibly_injective outer
+[%%expect{|
+Line 1, characters 0-58:
+1 | type +-'a possibly_invariant = 'a possibly_injective outer
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, expected parameter variances are not satisfied.
+       The 1st type parameter was expected to be unrestricted,
+       but it is invariant.
+|}]
+
+(* A private row can hide a possibly injective parameter. *)
+module Private_row (X : sig type +-'a p = private [< `X ] end) = struct
+  type +-'a t = 'a X.p outer
+end
+[%%expect{|
+Line 2, characters 2-28:
+2 |   type +-'a t = 'a X.p outer
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, expected parameter variances are not satisfied.
+       The 1st type parameter was expected to be unrestricted,
+       but it is invariant.
+|}]
