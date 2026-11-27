@@ -663,6 +663,20 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
                                       continue;
                                     }
           }
+          break;
+        case EV_INTERNAL:
+          if (ring_masked_pos + msg_length
+              != cursor->metadata.ring_size_elements) {
+              /* This is unexpected, padding records should only be at
+                 the end of the ring.
+                 Padding records aren't counted against the max limit,
+                 so exit now to avoid looping for too long.
+                 We could also mark the ring as corrupted instead.
+               */
+              early_exit = 1;
+              continue;
+          }
+          break;
         }
       } else {
         // User events
