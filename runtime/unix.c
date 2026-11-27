@@ -469,6 +469,102 @@ void caml_init_os_params(void)
   return;
 }
 
+#if defined(__SANITIZE_ADDRESS__) && !defined(__CYGWIN__)
+CAMLexport bool caml_mmap_uses_asan(void)
+{
+  return true;
+}
+
+Caml_inline size_t round_up_guarded(size_t len)
+{
+  return caml_mem_round_up_pages(len) + 2 * caml_plat_pagesize;
+}
+
+CAMLexport void* caml_mmap(void* addr, size_t const len, int const prot,
+                           int const flags, int const fildes, off_t const off)
+{
+  CAMLassert(!(flags & MAP_FIXED));
+  CAMLassert(caml_plat_pagesize > 0);
+  if (flags & MAP_FIXED) {
+    errno = EINVAL;
+    return MAP_FAILED;
+  }
+
+  /* create the entire mapping as inaccessible pages
+   * with 1 extra page before and 1 after to trap
+   * out of bounds accesses */
+  size_t const guarded_len = round_up_guarded(len);
+  void* guarded_addr;
+
+  guarded_addr = mmap(NULL, guarded_len, PROT_NONE,
+                      MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  if (MAP_FAILED == guarded_addr)
+    return MAP_FAILED;
+
+  /* 1 inaccessible page before the allocation */
+  addr = (char*)guarded_addr + caml_plat_pagesize;
+
+  /* now map the requested region (or file) */
+  addr = mmap(addr, len, prot, flags | MAP_FIXED, fildes, off);
+
+  if (MAP_FAILED != addr && (PROT_NONE != prot)) {
+    char* const guarded_end = (char*)guarded_addr + guarded_len;
+    size_t const poison_len = caml_mem_round_up_pages(len) - len;
+    ASAN_POISON_MEMORY_REGION(guarded_addr, caml_plat_pagesize);
+    if (poison_len)
+      ASAN_POISON_MEMORY_REGION((char*)addr + len, poison_len);
+    ASAN_POISON_MEMORY_REGION(guarded_end - caml_plat_pagesize,
+                              caml_plat_pagesize);
+  }
+
+  if (MAP_FAILED == addr) {
+    int const saved_errno = errno;
+    /* avoid leaking memory on mmap failures */
+    munmap(guarded_addr, guarded_len);
+    errno = saved_errno;
+  }
+
+  return addr;
+}
+
+CAMLexport int caml_munmap(void* const addr, size_t const len)
+{
+  CAMLassert(caml_plat_pagesize > 0);
+  void* const guarded_addr = (char*)addr - caml_plat_pagesize;
+  size_t const guarded_len = round_up_guarded(len);
+
+  char* const guarded_end = (char*)guarded_addr + guarded_len;
+  size_t const poison_len = caml_mem_round_up_pages(len) - len;
+  ASAN_UNPOISON_MEMORY_REGION(guarded_addr, caml_plat_pagesize);
+  if (poison_len)
+    ASAN_UNPOISON_MEMORY_REGION((char*)addr + len, poison_len);
+  ASAN_UNPOISON_MEMORY_REGION(guarded_end - caml_plat_pagesize,
+                              caml_plat_pagesize);
+
+  return munmap(guarded_addr, guarded_len);
+}
+
+#else
+
+CAMLexport bool caml_mmap_uses_asan(void)
+{
+  return false;
+}
+
+CAMLexport void* caml_mmap(void* const addr, size_t const len, int const prot,
+                           int const flags, int const fildes, off_t const off)
+{
+  CAMLassert(!(flags & MAP_FIXED));
+  return mmap(addr, len, prot, flags, fildes, off);
+}
+
+CAMLexport int caml_munmap(void* const addr, size_t const len)
+{
+  return munmap(addr, len);
+}
+
+#endif
+
 #ifndef __CYGWIN__
 
 void *caml_plat_mem_map(uintnat size, int reserve_only)

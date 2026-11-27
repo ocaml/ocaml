@@ -43,6 +43,9 @@ Working version
 - #14571: Faster minor GC.
   (Nick Barnes, review by Damien Doligez).
 
+- #NNNNN: implement ASAN redzones for the runtime events ring buffer
+  (Edwin Török, review by)
+
 ### Code generation and optimizations:
 
 - #14980: Emit direct assembly for `Atomic.exchange` and
