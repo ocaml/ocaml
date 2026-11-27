@@ -84,6 +84,7 @@ val log: t -> t
 
 val pow: t -> t -> t
 (** Power function.  [pow z1 z2] returns [z1] to the [z2] power.
-    [pow zero zero] returns {!one}. For a finite exponent [z] with
-    [z.re > 0.], [pow zero z] returns {!zero}. For all other exponents,
-    [pow zero z] returns [nan] in both the real and imaginary parts. *)
+    [pow zero zero] returns {!one}. If [z] has a positive real part
+    (including [infinity]) and a finite imaginary part, [pow zero z]
+    returns {!zero}. For all other exponents, [pow zero z] returns [nan]
+    in both the real and imaginary parts. *)

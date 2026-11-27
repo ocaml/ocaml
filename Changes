@@ -216,7 +216,8 @@ Working version
   (Nick Barnes, review by Vincent Laviron)
 
 - #15340: Fix `Complex.pow` to return one for zero to the power of zero,
-  and zero for a zero base with a finite exponent whose real part is positive.
+  and zero for a zero base when the exponent has a positive real part
+  and a finite imaginary part.
   (Sora Morimoto, review by Olivier Nicole and Florian Angeletti)
 
 - #15341: Fix Float.ldexp and Stdlib.ldexp for exponents outside the range
