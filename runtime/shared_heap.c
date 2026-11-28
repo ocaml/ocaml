@@ -914,7 +914,7 @@ void caml_accum_orphan_heap_stats(struct heap_stats* acc)
 
 
 /* Atoms */
-static const header_t atoms[256] = {
+static CAMLalign(sizeof(value)) const header_t atoms[256] = {
 #define A(i) Make_header(0, i, NOT_MARKABLE)
 A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9),A(10),
 A(11),A(12),A(13),A(14),A(15),A(16),A(17),A(18),A(19),A(20),
