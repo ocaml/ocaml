@@ -31,6 +31,8 @@
    - a pointer to a well-formed block outside the minor heap. It may be in the
      major heap, or static data allocated by the OCaml code or the OCaml
      runtime, or a foreign pointer.
+   Moreover, a pointer must be aligned modulo sizeof(value), which is not
+   automatic on e.g. m68k.
 
    To create a well-formed block outside the heap that the GC will not scan,
    one can use the Caml_out_of_heap_header from mlvalues.h.

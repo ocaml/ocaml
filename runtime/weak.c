@@ -30,7 +30,7 @@
 #include "caml/weak.h"
 #include "caml/platform.h"
 
-static value weak_dummy[] =
+static CAMLalign(sizeof(value)) value weak_dummy[] =
   {(value)Make_header(0,Abstract_tag, NOT_MARKABLE),
    Val_unit,
    (value)Make_header(0,Abstract_tag, NOT_MARKABLE),

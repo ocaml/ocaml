@@ -43,6 +43,10 @@ Working version
 - #14571: Faster minor GC.
   (Nick Barnes, review by Damien Doligez).
 
+- #15429: Align statically allocated blocks on sizeof(value) to cope with m68k
+  having weaker alignment constraints.
+  (Stéphane Glondu)
+
 ### Code generation and optimizations:
 
 - #14980: Emit direct assembly for `Atomic.exchange` and
