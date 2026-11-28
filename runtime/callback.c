@@ -405,7 +405,11 @@ CAMLprim value caml_register_named_value(value vname, value val)
   if (!found) {
     size_t namelen = strlen(String_val(vname));
     struct named_value * nv =
-      caml_stat_alloc(sizeof(struct named_value) + namelen + 1);
+      caml_stat_alloc_noexc(sizeof(struct named_value) + namelen + 1);
+    if (nv == NULL) {
+      caml_plat_unlock(&named_value_lock);
+      caml_raise_out_of_memory();
+    }
     memcpy(nv->name, String_val(vname), namelen + 1);
     nv->val = val;
     nv->next = named_value_table[h];

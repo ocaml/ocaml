@@ -926,6 +926,10 @@ OCaml 5.6.0
 
 ### Bug fixes:
 
+- #15350: Release mutex in `Callback.register` before it raises
+  `Out_of_memory`.
+  (Prakhand Patel, report by KC Sivaramakrishnan, review by ???)
+
 - #15290, #15394: Fix out-of-bounds reads in `Str.replace_matched`: raise
   `Invalid_argument` when a group referenced by the replacement extends past
   the end of the supplied string.
