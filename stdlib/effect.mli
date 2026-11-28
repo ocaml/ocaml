@@ -16,6 +16,14 @@
 
     See 'Language extensions/Effect handlers' section in the manual.
 
+    Each handled computation runs on its own fiber, whose stack is allocated
+    outside the OCaml heap. While a computation is suspended, its stack stays
+    allocated. It is freed when the computation returns, after its
+    continuation is resumed with [continue] or [discontinue].
+    Fiber stacks are not counted in [heap_words] nor sampled by
+    {!Gc.Memprof}: the [live_stacks_words] field of {!Gc.stat} reports their
+    memory.
+
     @since 5.0 *)
 
 [@@@alert unstable
