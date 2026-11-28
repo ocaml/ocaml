@@ -107,6 +107,12 @@ Working version
   (Gabriel Scherer, report by Alperer Keleş,
    review by Vincent Laviron and Florian Angeletti)
 
+- oxcaml/8030, #15326, #15339: fix a pattern-matching miscompilation
+  when the scrutinee is mutated during matching (for example by `when` guards),
+  in presence of or-pattern: this is leftover issue after #7241.
+  (Vincent Laviron and Gabriel Scherer, report by Mark Shinwell,
+   review by Vincent Laviron)
+
 - #7826, #15139: Cache free variable computations to avoid quadratic
   blowups in pathological cases
   (Vincent Laviron, report by Pierre-Marie Pédrot, review by Stefan Muenzel)
