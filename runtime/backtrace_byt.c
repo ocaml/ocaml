@@ -422,7 +422,9 @@ CAMLprim value caml_get_continuation_callstack (value cont, value max_frames)
   struct stack_info *cont_tail, *cont_head;
   value *sp;
 
-  cont_tail = Ptr_val(caml_continuation_use(cont));
+  /* A concurrent [continue] waits until the unborrow. No allocation or
+     poll in between. */
+  cont_tail = caml_continuation_borrow(cont);
   cont_head = Stack_parent(cont_tail);
   {
     CAMLnoalloc; /* GC must not see the stack outside the cont */
@@ -430,7 +432,7 @@ CAMLprim value caml_get_continuation_callstack (value cont, value max_frames)
     slots = get_callstack(sp, Long_val(sp[0]),
                           cont_head, Long_val(max_frames),
                           &backtrace, &trace_size);
-    caml_continuation_replace(cont, cont_tail);
+    caml_continuation_unborrow(cont, cont_tail);
   }
 
   return alloc_callstack(backtrace, slots);

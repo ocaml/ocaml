@@ -32,6 +32,7 @@
 #include "caml/gc_ctrl.h"
 #include "caml/platform.h"
 #include "caml/minor_gc.h"
+#include "caml/signals.h"
 #include "caml/misc.h"
 #include "caml/major_gc.h"
 #include "caml/memory.h"
@@ -57,6 +58,23 @@ static atomic_uintnat live_stack_counter = 0;
 
 uintnat caml_live_stacks_memory (void) {
   return atomic_load(&live_stack_counter);
+}
+
+Caml_inline uintnat stack_bytes(struct stack_info* stack)
+{
+  return (uintnat)((char*)(stack->handler + 1) - (char*)stack);
+}
+
+extern _Atomic uintnat caml_custom_minor_ratio; /* see custom.c */
+
+/* Count the memory of a fiber stack towards the minor GC's pace, as for a
+   young custom block. */
+static void account_new_fiber_stack(struct stack_info* stack)
+{
+  caml_adjust_minor_gc_speed(
+    stack_bytes(stack),
+    Bsize_wsize(Caml_state->minor_heap_wsz) / 100
+      * atomic_load_relaxed(&caml_custom_minor_ratio));
 }
 
 uintnat caml_get_init_stack_wsize (void)
@@ -213,6 +231,7 @@ alloc_size_class_stack_noexc(mlsize_t wosize, int cache_bucket, value hval,
   stack->sp = (value*)hand;
   stack->exception_ptr = NULL;
   stack->id = id;
+  stack->is_major_charged = false;
 #ifdef DEBUG
   stack->magic = 42;
 #endif
@@ -237,11 +256,13 @@ caml_alloc_stack_noexc(mlsize_t wosize, value hval, value hexn, value heff,
 
 value caml_alloc_stack (value hval, value hexn, value heff) {
   const int64_t id = atomic_fetch_add(&fiber_id, 1);
+  bool cached = Caml_state->stack_cache[0] != NULL;
   struct stack_info* stack =
     alloc_size_class_stack_noexc(caml_fiber_wsz, 0 /* first bucket */,
                                  hval, hexn, heff, id);
 
   if (!stack) caml_raise_out_of_memory();
+  if (!cached) account_new_fiber_stack(stack);
 
   fiber_debug_log ("Allocate stack=%p of %" CAML_PRIuNAT "words",
                    stack, caml_fiber_wsz);
@@ -366,11 +387,13 @@ CAMLprim value caml_alloc_stack(value hval, value hexn, value heff)
 {
   value* sp;
   const int64_t id = atomic_fetch_add(&fiber_id, 1);
+  bool cached = Caml_state->stack_cache[0] != NULL;
   struct stack_info* stack =
     alloc_size_class_stack_noexc(caml_fiber_wsz, 0 /* first bucket */,
                                  hval, hexn, heff, id);
 
   if (!stack) caml_raise_out_of_memory();
+  if (!cached) account_new_fiber_stack(stack);
 
   sp = Stack_high(stack);
   sp -= 1;
@@ -534,6 +557,38 @@ Caml_inline void relocate_frame_pointers(struct c_stack_link* link,
 
 #endif /* WITH_FRAME_POINTERS */
 
+/* Copy [old] into a new stack of [wsize] words with fiber id [id] and no
+   parent, relocating its exception handlers from [*exn_ptr] (or from [old]'s
+   own if [exn_ptr] is NULL). Returns NULL on failure. */
+static struct stack_info* copy_stack(struct stack_info* old, mlsize_t wsize,
+                                     int64_t id, void** exn_ptr)
+{
+  uintnat used = Stack_high(old) - (value*)old->sp;
+  struct stack_info* new =
+    caml_alloc_stack_noexc(wsize,
+                           Stack_handle_value(old),
+                           Stack_handle_exception(old),
+                           Stack_handle_effect(old),
+                           id);
+  if (new == NULL) return NULL;
+  /* [wsize] is at least the used part of [old]: a fiber keeps
+     [Stack_threshold] words free below [sp]. */
+  CAMLassert(Stack_high(new) - Stack_base(new) >= used);
+  memcpy(Stack_high(new) - used, Stack_high(old) - used,
+         used * sizeof(value));
+  new->sp = Stack_high(new) - used;
+#ifdef NATIVE_CODE
+  if (exn_ptr == NULL) {
+    new->exception_ptr = old->exception_ptr;
+    exn_ptr = &new->exception_ptr;
+  }
+  caml_rewrite_exception_stack(old, (value**)exn_ptr, new);
+#else
+  (void)exn_ptr;
+#endif
+  return new;
+}
+
 int caml_try_realloc_stack(asize_t required_space)
 {
   struct stack_info *old_stack, *new_stack;
@@ -559,22 +614,12 @@ int caml_try_realloc_stack(asize_t required_space)
                  (uintnat) wsize * sizeof(value));
   }
 
-  new_stack = caml_alloc_stack_noexc(wsize,
-                                     Stack_handle_value(old_stack),
-                                     Stack_handle_exception(old_stack),
-                                     Stack_handle_effect(old_stack),
-                                     old_stack->id);
-
+  /* The running stack's chain of exception handlers starts from the
+     domain's [exn_handler]. */
+  new_stack = copy_stack(old_stack, wsize, old_stack->id,
+                         &Caml_state->exn_handler);
   if (!new_stack) return 0;
-  memcpy(Stack_high(new_stack) - stack_used,
-         Stack_high(old_stack) - stack_used,
-         stack_used * sizeof(value));
-  new_stack->sp = Stack_high(new_stack) - stack_used;
   Stack_parent(new_stack) = Stack_parent(old_stack);
-#ifdef NATIVE_CODE
-  caml_rewrite_exception_stack(old_stack, (value**)&Caml_state->exn_handler,
-                              new_stack);
-#endif
 
   /* Update stack pointers in Caml_state->c_stack. It is possible to have
    * multiple c_stack_links to point to the same stack since callbacks are run
@@ -596,6 +641,14 @@ int caml_try_realloc_stack(asize_t required_space)
     }
   }
 
+  /* Count fibers only, not the main stack of a domain. */
+  if (Stack_parent(new_stack) != NULL) account_new_fiber_stack(new_stack);
+  /* A stack already counted towards the major GC's pace stays counted;
+     only its growth is added. */
+  if (old_stack->is_major_charged) {
+    new_stack->is_major_charged = true;
+    caml_adjust_gc_speed(stack_bytes(new_stack) - stack_bytes(old_stack), 0);
+  }
   caml_free_stack(old_stack);
   Caml_state->current_stack = new_stack;
   return 1;
@@ -675,6 +728,145 @@ void caml_free_stack (struct stack_info* stack)
   }
 }
 
+/* Reclaiming the stacks of unreachable continuations. See fiber.h. */
+
+uintnat caml_continuation_charge_stacks(struct stack_info* cont_tail)
+{
+  uintnat bytes = 0;
+  struct stack_info* stack = cont_tail;
+  do {
+    if (!stack->is_major_charged) {
+      bytes += stack_bytes(stack);
+      stack->is_major_charged = true;
+    }
+    stack = Stack_parent(stack);
+  } while (stack != cont_tail && stack != NULL);
+  return bytes;
+}
+
+/* The CAS to [Val_ptr(NULL)] claims [cont], so its stacks are freed once. */
+void caml_free_dead_continuation(value cont)
+{
+  CAMLnoalloc;
+  /* A borrow neither allocates nor polls, so a dead continuation is never
+     borrowed. */
+  value v = atomic_load_relaxed(Op_atomic_val(cont));
+  CAMLassert(v != Val_cont_borrowed);
+  if (v == Val_ptr(NULL)
+      || !atomic_compare_exchange_strong(Op_atomic_val(cont), &v,
+                                         Val_ptr(NULL)))
+    return;
+  if (caml_runtime_warnings_active())
+    fprintf(stderr, "[ocaml] continuation dies without being resumed\n");
+  struct stack_info* cont_tail = Ptr_val(v);
+  struct stack_info* stack = Stack_parent(cont_tail);
+  /* A captured chain is a cycle from [cont_tail] to its head: cut it there. */
+  Stack_parent(cont_tail) = NULL;
+  while (stack != NULL) {
+    struct stack_info* next = Stack_parent(stack);
+    fiber_debug_log("Free stack=%p of unreachable continuation", stack);
+    caml_free_stack(stack);
+    stack = next;
+  }
+}
+
+/* The table of young continuations (fiber.h): [Young_conts_initial] entries,
+   and a reserve that [perform] uses past the threshold. */
+#define Young_conts_initial 256
+#define Young_conts_reserve 64
+/* After compaction, the table doubles if more than this fraction of it
+   is still in use. */
+#define Young_conts_grow_fraction 4
+
+/* The word below [young_conts_base] is a sentinel entry that is never taken,
+   so [caml_perform] reads the top entry without a bounds check. */
+static const value young_conts_sentinel_field = 0;
+
+static void set_young_conts(caml_domain_state* domain, value* base,
+                            uintnat size)
+{
+  domain->young_conts_base = domain->young_conts_ptr = base;
+  domain->young_conts_limit = base == NULL ? NULL : base + size;
+  domain->young_conts_end =
+    base == NULL ? NULL : base + size + Young_conts_reserve;
+}
+
+Caml_inline uintnat young_conts_size(caml_domain_state* domain)
+{
+  return domain->young_conts_end - domain->young_conts_base
+         - Young_conts_reserve;
+}
+
+/* Allocate the table, or resize it to [size] entries keeping the entries
+   it holds. Nothing points into the table, so it can move. */
+static bool resize_young_conts(caml_domain_state* domain, uintnat size)
+{
+  value* base = domain->young_conts_base;
+  uintnat used = base == NULL ? 0 : domain->young_conts_ptr - base;
+  value* t = caml_stat_resize_noexc(base == NULL ? NULL : base - 1,
+                 (1 + size + Young_conts_reserve) * sizeof(value));
+  if (t == NULL) return false;
+  t[0] = (value)&young_conts_sentinel_field;
+  set_young_conts(domain, t + 1, size);
+  domain->young_conts_ptr = t + 1 + used;
+  return true;
+}
+
+int caml_init_young_conts(caml_domain_state* domain)
+{
+  CAMLassert(domain->young_conts_base == NULL);
+  return resize_young_conts(domain, Young_conts_initial) ? 0 : -1;
+}
+
+void caml_free_young_conts(caml_domain_state* domain)
+{
+  CAMLassert(domain->young_conts_ptr == domain->young_conts_base);
+  if (domain->young_conts_base != NULL)
+    caml_stat_free(domain->young_conts_base - 1);
+  set_young_conts(domain, NULL, 0);
+}
+
+void caml_compact_young_conts(caml_domain_state* domain)
+{
+  value* base = domain->young_conts_base;
+  value* q = base;
+  /* Keep the entries that are not taken, in order. Other domains may take
+     one at any time, hence the atomic load; a take is final. */
+  for (value* p = base; p < domain->young_conts_ptr; p++) {
+    value cont = *p;
+    if (atomic_load_relaxed(Op_atomic_val(cont)) != Val_ptr(NULL)) *q++ = cont;
+  }
+  uintnat size = young_conts_size(domain);
+  domain->young_conts_ptr = q;
+  domain->young_conts_limit = base + size;
+  if ((uintnat)(q - base) > size / Young_conts_grow_fraction)
+    (void)resize_young_conts(domain, 2 * size);
+  /* Still full: stay in the reserve and request a minor GC, which empties
+     the table; [caml_reset_young_limit] keeps the interrupt armed until
+     then. */
+  if (domain->young_conts_ptr >= domain->young_conts_limit) {
+    domain->young_conts_limit = domain->young_conts_end;
+    caml_request_minor_gc();
+  }
+}
+
+void caml_free_dead_young_continuations(caml_domain_state* domain)
+{
+  value* base = domain->young_conts_base;
+  value* ptr = domain->young_conts_ptr;
+  if (base == NULL) return;
+  /* After the end barrier, no domain points into our minor heap. A promoted
+     continuation may be in use on another domain, so it is left alone. */
+  for (value* p = base; p < ptr; p++) {
+    value cont = *p;
+    CAMLassert((value*)cont > domain->young_start
+               && (value*)cont < domain->young_end);
+    if (!Is_promoted_hd(Hd_val(cont))) caml_free_dead_continuation(cont);
+  }
+  /* Empty the table; it keeps its size. */
+  set_young_conts(domain, base, young_conts_size(domain));
+}
+
 void caml_free_gc_regs_buckets(value *gc_regs_buckets)
 {
   while (gc_regs_buckets != NULL) {
@@ -701,18 +893,168 @@ CAMLprim value caml_continuation_use_noexc (value cont)
   if (!Is_young(cont) && caml_marking_started())
     caml_darken_cont(cont);
 
-  v = Field(cont, 0);
-
   if (caml_domain_alone()) {
+    v = Field(cont, 0);
+    CAMLassert(v != Val_cont_borrowed);
     Field(cont, 0) = null_stk;
     return v;
   }
 
-  if (atomic_compare_exchange_strong(Op_atomic_val(cont), &v, null_stk)) {
-    return v;
-  } else {
-    return null_stk;
+  while (1) {
+    v = atomic_load_acquire(Op_atomic_val(cont));
+    if (v == null_stk) return null_stk;
+    if (v == Val_cont_borrowed) {
+      /* Borrowed: wait. The borrower neither allocates nor polls, so this
+         cannot deadlock. */
+      cpu_relax();
+      continue;
+    }
+    if (atomic_compare_exchange_strong(Op_atomic_val(cont), &v, null_stk))
+      return v;
   }
+}
+
+struct stack_info* caml_continuation_borrow(value cont)
+{
+  CAMLassert(Is_block(cont) && Tag_val(cont) == Cont_tag);
+  /* Mark the continuation before borrowing it, so that no marking domain
+     scans it while it is borrowed. */
+  if (!Is_young(cont) && caml_marking_started())
+    caml_darken_cont(cont);
+  while (1) {
+    value v = atomic_load_acquire(Op_atomic_val(cont));
+    if (v == Val_ptr(NULL)) caml_raise_continuation_already_resumed();
+    if (v == Val_cont_borrowed) { cpu_relax(); continue; }
+    if (atomic_compare_exchange_strong(Op_atomic_val(cont), &v,
+                                       Val_cont_borrowed))
+      return Ptr_val(v);
+  }
+}
+
+void caml_continuation_unborrow(value cont, struct stack_info* stk)
+{
+  CAMLassert(Field(cont, 0) == Val_cont_borrowed);
+  atomic_store_release(Op_atomic_val(cont), Val_ptr(stk));
+}
+
+/* Cloning a continuation. See fiber.h. */
+
+#if defined(NATIVE_CODE) && defined(WITH_FRAME_POINTERS)
+/* Relocate the saved frame pointers of [copy], the copy of the chain from
+   [src] to [src_tail]: in each fiber from its saved [sp] to its bottom
+   record, then the link to the parent; the tail's link is cleared. */
+static void relocate_cloned_frame_pointers(struct stack_info* src,
+                                           struct stack_info* src_tail,
+                                           struct stack_info* copy)
+{
+  while (1) {
+    ptrdiff_t delta = (char*)Stack_high(copy) - (char*)Stack_high(src);
+    /* The record that links a fiber to its parent, at the slot that
+       [UPDATE_BASE_POINTER] writes, below the handler. */
+#if defined(TARGET_power)
+    /* 16 + TRAP_SIZE (48) + RESERVED_STACK (32) in power.S. */
+    struct stack_frame* bottom =
+      (struct stack_frame*)((char*)copy->handler - (16 + 48 + 32));
+#else
+    /* 4 words of [caml_runstack] and the record. */
+    struct stack_frame* bottom =
+      (struct stack_frame*)((char*)copy->handler - 48);
+#endif
+    struct stack_frame* fp = (struct stack_frame*)copy->sp;
+    while (fp != bottom) {
+      fp->prev = (struct stack_frame*)((char*)fp->prev + delta);
+#if defined(TARGET_riscv)
+      fp = fp->prev - 1; /* CFA - 16 = frame record */
+#else
+      fp = fp->prev;
+#endif
+    }
+    if (src == src_tail) {
+      bottom->prev = NULL;
+      break;
+    }
+    struct stack_info* src_parent = Stack_parent(src);
+    struct stack_info* copy_parent = Stack_parent(copy);
+    /* A fiber of a suspended chain other than the tail was last resumed by
+       its parent ([UPDATE_BASE_POINTER] in [caml_reperform]). */
+    bottom->prev = (struct stack_frame*)
+      ((char*)bottom->prev
+       + ((char*)Stack_high(copy_parent) - (char*)Stack_high(src_parent)));
+    src = src_parent;
+    copy = copy_parent;
+  }
+}
+#endif
+
+CAMLexport value caml_continuation_clone(value k)
+{
+  CAMLparam1(k);
+  CAMLlocal1(clone);
+  struct stack_info *tail, *stack, *copy_head = NULL, *copy_tail = NULL;
+  bool ok = true;
+
+  CAMLassert(Is_block(k) && Tag_val(k) == Cont_tag);
+  /* Allocate first: from the borrow on, no GC may run, since the copied
+     stacks hold roots that no continuation reaches yet. */
+  clone = caml_alloc_1(Cont_tag, Val_ptr(NULL));
+
+  /* Raises if [k] was resumed. A [continue] of [k] waits until the unborrow. */
+  tail = caml_continuation_borrow(k);
+  /* Make room in the table for the clone. */
+  caml_domain_state* d = Caml_state;
+  if (d->young_conts_ptr == d->young_conts_end) caml_compact_young_conts(d);
+  if (d->young_conts_ptr == d->young_conts_end
+      && !resize_young_conts(d, 2 * young_conts_size(d))) {
+    caml_continuation_unborrow(k, tail);
+    caml_raise_out_of_memory();
+  }
+  {
+    CAMLnoalloc;
+    /* From the head, [Stack_parent(tail)], to [tail]. A suspended fiber
+       holds only OCaml frames: a [perform] cannot cross a C callback. */
+    stack = Stack_parent(tail);
+    while (1) {
+      /* zero alignment bit, as in [caml_try_realloc_stack] */
+      mlsize_t wsize = (Stack_high(stack) - Stack_base(stack)) & ~1;
+      int bucket = stack_cache_bucket(wsize);
+      bool cached = bucket != -1 && Caml_state->stack_cache[bucket] != NULL;
+      struct stack_info* copy =
+        copy_stack(stack, wsize, atomic_fetch_add(&fiber_id, 1), NULL);
+      if (copy == NULL) { ok = false; break; }
+      if (!cached) account_new_fiber_stack(copy);
+      if (copy_tail == NULL) copy_head = copy;
+      else Stack_parent(copy_tail) = copy;
+      copy_tail = copy;
+      if (stack == tail) break;
+      stack = Stack_parent(stack);
+    }
+#if defined(NATIVE_CODE) && defined(WITH_FRAME_POINTERS)
+    /* Before the unborrow: the source stacks may be resumed, and freed,
+       once [k] is given back. */
+    if (ok) relocate_cloned_frame_pointers(Stack_parent(tail), tail,
+                                           copy_head);
+#endif
+    caml_continuation_unborrow(k, tail);
+  }
+  if (!ok) {
+    /* The copies made so far are linked from [copy_head], ending with a
+       NULL parent. */
+    while (copy_head != NULL) {
+      struct stack_info* next = Stack_parent(copy_head);
+      caml_free_stack(copy_head);
+      copy_head = next;
+    }
+    caml_raise_out_of_memory();
+  }
+  Stack_parent(copy_tail) = copy_head;
+  atomic_store_release(Op_atomic_val(clone), Val_ptr(copy_tail));
+  /* [clone] is on this domain's minor heap, and the table has room. */
+  CAMLassert(Is_young(clone));
+  value* p = d->young_conts_ptr;
+  *p = clone;
+  d->young_conts_ptr = p + 1;
+  if (p == d->young_conts_limit) caml_compact_young_conts(d);
+  CAMLreturn(clone);
 }
 
 CAMLprim value caml_continuation_use (value cont)
@@ -739,14 +1081,6 @@ CAMLprim value caml_continuation_use_and_update_handler_noexc
   Stack_handle_exception(stk) = hexn;
   Stack_handle_effect(stk) = heff;
   return stack;
-}
-
-void caml_continuation_replace(value cont, struct stack_info* stk)
-{
-  value n = Val_ptr(NULL);
-  int b = atomic_compare_exchange_strong(Op_atomic_val(cont), &n, Val_ptr(stk));
-  CAMLassert(b);
-  (void)b; /* squash unused warning */
 }
 
 static const value * _Atomic caml_unhandled_effect_exn = NULL;

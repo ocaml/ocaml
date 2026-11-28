@@ -71,6 +71,8 @@ ENDFILE {
   if (label != "") {
     sub(/^0*/,"",$1)
     sub(/:$/,"",$1)
+    # dumpbin prints a leading 0 before an offset that starts with a letter
+    if ($1 ~ /^[A-F]/) $1 = "0" $1
     labels[label] = $1
     label=""
   } else {

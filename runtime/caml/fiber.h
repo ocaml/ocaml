@@ -54,8 +54,12 @@ struct stack_info {
    * this size is pooled. If unpooled, it is [-1].
    *
    * Stacks may be unpooled if either the stack size is not 2**N multiple of
-   * [caml_fiber_wsz] or the stack is bigger than pooled sizes. */
-  int cache_bucket;
+   * [caml_fiber_wsz] or the stack is bigger than pooled sizes. It is 16 bits
+   * wide so that it fits in one word with [is_major_charged]. */
+  int16_t cache_bucket;
+  /* True if the memory of this stack has been counted towards the pace of
+     the major GC. */
+  bool is_major_charged;
   size_t size; /* only used when USE_MMAP_MAP_STACK is defined */
   uintnat magic;
   int64_t id;
@@ -316,11 +320,18 @@ caml_rewrite_exception_stack(struct stack_info *old_stack,
 
 value caml_continuation_use (value cont);
 
-/* Replace the stack of a continuation that was previously removed
-   with caml_continuation_use. The GC must not be allowed to run
-   between continuation_use and continuation_replace.
-   Used for cloning continuations and continuation backtraces. */
-void caml_continuation_replace(value cont, struct stack_info* stack);
+/* Field 0 of a borrowed continuation; not the [Val_ptr] of a stack. */
+#define Val_cont_borrowed ((value) 3)
+/* Borrow the stack of [cont] to read it; raises if [cont] was resumed.
+   A concurrent take or borrow waits until the unborrow. The borrower
+   must not allocate or poll before the unborrow. */
+struct stack_info* caml_continuation_borrow(value cont);
+void caml_continuation_unborrow(value cont, struct stack_info* stk);
+
+/* [caml_continuation_clone(k)] returns a new continuation that resumes a
+   copy of the computation suspended in [k]; [k] is unchanged. Raises
+   [Continuation_already_resumed] if [k] was resumed, or [Out_of_memory]. */
+CAMLextern value caml_continuation_clone(value k);
 
 CAMLnoret CAMLextern void caml_raise_continuation_already_resumed (void);
 
@@ -330,6 +341,30 @@ value caml_make_unhandled_effect_exn (value effect);
 
 CAMLextern uintnat caml_live_stacks_memory(void);
 CAMLextern uintnat caml_current_stack_size(void);
+
+/* [perform] records each young continuation in the domain's table
+   [Caml_state->young_conts_*]. The stacks of those that die untaken are
+   freed after the minor GC; those of promoted ones, by the sweeper. */
+
+/* Return the bytes of the stacks of [cont_tail]'s chain not yet counted
+   towards the major GC's pace, and mark them counted. */
+uintnat caml_continuation_charge_stacks(struct stack_info* cont_tail);
+
+/* Free the stacks of the dead continuation [cont], unless it was taken. */
+void caml_free_dead_continuation(value cont);
+
+/* Called by the minor GC after its end barrier: free the stacks of this
+   domain's dead young continuations and empty the table. */
+void caml_free_dead_young_continuations(caml_domain_state* domain);
+
+/* Allocate a domain's table of young continuations. Returns -1 on failure. */
+int caml_init_young_conts(caml_domain_state* domain);
+/* Free a domain's (empty) table of young continuations. */
+void caml_free_young_conts(caml_domain_state* domain);
+
+/* Drop the taken entries of the domain's table, keeping their order, and
+   grow the table if it stays too full. */
+void caml_compact_young_conts(caml_domain_state* domain);
 
 #endif /* CAML_INTERNALS */
 

@@ -476,9 +476,11 @@ val enable_runtime_warnings: bool -> unit
     "The status of runtime warnings is a mutable global state."
 ]
 (** Control whether the OCaml runtime system can emit warnings
-    on stderr.  Currently, the only supported warning is triggered
-    when a channel created by [open_*] functions is finalized without
-    being closed.  Runtime warnings are disabled by default.
+    on stderr.  Currently, a warning is triggered when a channel
+    created by [open_*] functions is finalized without being closed,
+    and when the runtime reclaims a continuation that was never
+    resumed (see {!Effect.Deep.continuation}).  Runtime warnings are
+    disabled by default.
 
     @since 4.03 *)
 

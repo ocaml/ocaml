@@ -1131,6 +1131,21 @@ CFI_STARTPROC
         movq    Caml_state(current_stack), %rsi /* %rsi := current_stack */
         leaq    1(%rsi), %rdi /* %rdi := Val_ptr(current_stack) */
         movq    %rdi, 0(%rbx) /* Initialise continuation */
+        CFI_REMEMBER_STATE
+    /*  Record the continuation in the young continuations table (fiber.h):
+        replace a taken top entry, else push. Rare cases are out of line,
+        with the CFI state saved here. */
+        movq    Caml_state(young_conts_ptr), %r10
+        movq    -8(%r10), %r11 /* %r11 := top entry */
+        cmpq    $1, 0(%r11) /* taken: Field(entry, 0) == Val_ptr(NULL) */
+        je      LBL(young_conts_reuse)
+        cmpq    Caml_state(young_conts_limit), %r10
+        je      LBL(young_conts_full)
+LBL(young_conts_store):
+        movq    %rbx, 0(%r10)
+        addq    $8, %r10
+        movq    %r10, Caml_state(young_conts_ptr)
+LBL(young_conts_done):
         movq    %rsi, %rdx /* %rdx := cont_head */
 LBL(do_perform):
     /*  %rdi: Val_ptr(current_stack)
@@ -1177,9 +1192,23 @@ LBL(do_perform):
         movq    %rdx, Handler_parent(%r11) /* Connect cont_tail to cont_head */
         movq    Handler_effect(%r11), %rdi /* %rdi := effect handler */
         jmp     GCALL(caml_apply2)
+    /*  Out-of-line cases of recording the continuation (see above). */
+        CFI_RESTORE_STATE
+LBL(young_conts_reuse):
+        movq    %rbx, -8(%r10)
+        jmp     LBL(young_conts_done)
+LBL(young_conts_full):
+        movq    Caml_state(young_conts_end), %r11
+        cmpq    %r11, %r10
+        je      LBL(young_conts_done)
+        movq    %r11, Caml_state(young_conts_limit)
+        movq    $-1, Caml_state(young_limit)
+        jmp     LBL(young_conts_store)
 LBL(112):
     /* No parent stack. Switch back to original performer before raising
-       Effect.Unhandled. */
+       Effect.Unhandled. The fibers of the continuation run again, so mark it
+       as taken. */
+        movq    $1, 0(%rbx) /* Field(cont, 0) := Val_ptr(NULL) */
         movq    %rdx, %r10 /* %r10 := cont_head */
         SWITCH_OCAML_STACKS /* SWITCH_OCAML_STACK (source=%rsi, target=%r10) */
         ENTER_FUNCTION

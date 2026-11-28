@@ -252,13 +252,15 @@ CAMLprim value caml_get_continuation_callstack (value cont, value max_frames)
   size_t slots;
   struct stack_info *cont_tail, *cont_head;
 
-  cont_tail = Ptr_val(caml_continuation_use(cont));
+  /* A concurrent [continue] waits until the unborrow. No allocation or
+     poll in between. */
+  cont_tail = caml_continuation_borrow(cont);
   cont_head = Stack_parent(cont_tail);
   {
     CAMLnoalloc;
     slots = get_callstack(cont_head, max_frames, -1,
                           &trace, &trace_size);
-    caml_continuation_replace(cont, cont_tail);
+    caml_continuation_unborrow(cont, cont_tail);
   }
 
   return alloc_callstack(trace, slots);

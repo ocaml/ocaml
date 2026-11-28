@@ -205,5 +205,12 @@ DOMAIN_STATE(struct caml_exception_context*, external_raise)
 DOMAIN_STATE(struct memprof_domain_s *, memprof)
 DOMAIN_STATE(value *, memprof_young_trigger)
 
+DOMAIN_STATE(value*, young_conts_ptr)
+DOMAIN_STATE(value*, young_conts_base)
+DOMAIN_STATE(value*, young_conts_limit)
+DOMAIN_STATE(value*, young_conts_end)
+/* The young continuations recorded by [perform] (fiber.h):
+   [young_conts_base] <= [_ptr] <= [_limit] <= [_end]. */
+
 DOMAIN_STATE(extra_params_area, extra_params)
 /* This member must occur last, because it is an array, not a scalar */

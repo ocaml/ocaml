@@ -945,6 +945,10 @@ static void domain_create(uintnat initial_minor_heap_wsize,
     goto allocate_minor_heap_arena_failure;
   }
 
+  if (caml_init_young_conts(domain_state) < 0) {
+    goto init_young_conts_failure;
+  }
+
   domain_state->dls_root = Val_unit;
   caml_register_generational_global_root(&domain_state->dls_root);
 
@@ -1017,6 +1021,8 @@ static void domain_create(uintnat initial_minor_heap_wsize,
 alloc_main_stack_failure:
 create_stack_cache_failure:
   caml_remove_generational_global_root(&domain_state->dls_root);
+  caml_free_young_conts(domain_state);
+init_young_conts_failure:
   free_minor_heap_arena();
 allocate_minor_heap_arena_failure:
   caml_teardown_major_gc();
@@ -2053,7 +2059,10 @@ void caml_reset_young_limit(caml_domain_state * dom_st)
   if (interruptor_has_pending(&d->interruptor)
       || dom_st->requested_minor_gc
       || dom_st->requested_major_slice
-      || dom_st->major_slice_epoch < atomic_load (&caml_major_slice_epoch)) {
+      || dom_st->major_slice_epoch < atomic_load (&caml_major_slice_epoch)
+      /* The table of young continuations is past its threshold. */
+      || (dom_st->young_conts_limit == dom_st->young_conts_end
+          && dom_st->young_conts_base != NULL)) {
     interrupt_domain_local(dom_st);
   }
   /* We might be here due to a recently-recorded signal or forced
@@ -2153,6 +2162,11 @@ void caml_poll_gc_work(void)
     /* If caml_try_run_on_all_domains_async fails, we'll try again next time
        caml_poll_gc_work is called. */
   }
+
+  /* Compact the table of young continuations if [perform] filled it. */
+  if (d->young_conts_limit == d->young_conts_end
+      && d->young_conts_base != NULL)
+    caml_compact_young_conts(d);
 
   caml_reset_young_limit(d);
 }
@@ -2298,6 +2312,9 @@ void caml_domain_terminate(bool last)
     CAMLassert (caml_gc_phase != Phase_sweep_main);
     caml_orphan_ephemerons(domain_state);
     caml_orphan_finalisers(domain_state);
+    /* The minor heap is empty, hence the table of young continuations too. */
+    CAMLassert (domain_state->young_conts_ptr ==
+                domain_state->young_conts_base);
 
     /* Orphaning ephemerons and finalizers may create new marking or
        sweeping work, so we may need to mark and/or sweep again. */
@@ -2418,6 +2435,7 @@ void caml_domain_terminate(bool last)
   domain_state->shared_heap = NULL;
   caml_free_minor_tables(domain_state->minor_tables);
   domain_state->minor_tables = NULL;
+  caml_free_young_conts(domain_state);
 
   caml_orphan_alloc_stats(domain_state);
   /* At this point, the stats of the domain must be empty.

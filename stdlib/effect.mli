@@ -43,7 +43,11 @@ module Deep : sig
 
   type nonrec ('a,'b) continuation = ('a,'b) continuation
   (** [('a,'b) continuation] is a delimited continuation that expects a ['a]
-      value and returns a ['b] value. *)
+      value and returns a ['b] value.
+
+      If a continuation is never resumed, the garbage collector frees the
+      memory it uses, but its handlers and cleanup code, such as the
+      [finally] function of {!Fun.protect}, are never executed. *)
 
   val continue: ('a, 'b) continuation -> 'a -> 'b
   (** [continue k x] resumes the continuation [k] by passing [x] to [k].
@@ -99,7 +103,11 @@ module Shallow : sig
 
   type ('a,'b) continuation
   (** [('a,'b) continuation] is a delimited continuation that expects a ['a]
-      value and returns a ['b] value. *)
+      value and returns a ['b] value.
+
+      If a continuation is never resumed, the garbage collector frees the
+      memory it uses, but its handlers and cleanup code, such as the
+      [finally] function of {!Fun.protect}, are never executed. *)
 
   val fiber : ('a -> 'b) -> ('a, 'b) continuation
   (** [fiber f] constructs a continuation that runs the computation [f]. *)

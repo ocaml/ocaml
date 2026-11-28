@@ -550,6 +550,19 @@ caml_perform:
         mov     rsi, Caml_state(current_stack) ; %rsi := current_stack
         lea     rdi, [rsi + 1] ; %rdi := Val_ptr(current_stack)
         mov     qword ptr [rbx], rdi ; Initialise continuation
+    ; Record the continuation in the young continuations table (fiber.h):
+    ; replace a taken top entry, else push. Rare cases are out of line.
+        mov     r10, Caml_state(young_conts_ptr)
+        mov     r11, qword ptr [r10-8] ; %r11 := top entry
+        cmp     qword ptr [r11], 1 ; taken: Field(entry, 0) == Val_ptr(NULL)
+        je      L120
+        cmp     r10, Caml_state(young_conts_limit)
+        je      L121
+L123:
+        mov     qword ptr [r10], rbx
+        add     r10, 8
+        mov     Caml_state(young_conts_ptr), r10
+L122:
         mov     rdx, rsi ; %rdx := cont_head
 do_perform:
     ;  %rdi: Val_ptr(current_stack)
@@ -566,9 +579,22 @@ do_perform:
         mov     qword ptr [r11+24], rdx ; Connect new cont_tail to cont_head
         mov     rdi, qword ptr [r11+16]  ; %rdi := effect handler
         jmp     caml_apply2
+    ; Out-of-line cases of recording the continuation (see above).
+L120:
+        mov     qword ptr [r10-8], rbx
+        jmp     L122
+L121:
+        mov     r11, Caml_state(young_conts_end)
+        cmp     r10, r11
+        je      L122
+        mov     Caml_state(young_conts_limit), r11
+        mov     qword ptr Caml_state(young_limit), -1
+        jmp     L123
 L112:
     ; No parent stack. Switch back to original performer before raising
-    ; Effect.Unhandled.
+    ; Effect.Unhandled. The fibers of the continuation run again, so mark it
+    ; as taken.
+        mov     qword ptr [rbx], 1 ; Field(cont, 0) := Val_ptr(NULL)
         mov     r10, rdx ; %r10 := cont_head
         SWITCH_OCAML_STACKS ; SWITCH_OCAML_STACK (source=%rsi, target=%r10)
     ; No parent stack. Raise Effect.Unhandled.
